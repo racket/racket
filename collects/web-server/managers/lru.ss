@@ -1,5 +1,6 @@
 (module lru mzscheme
-  (require (lib "plt-match.ss"))
+  (require (lib "plt-match.ss")
+           (lib "kw.ss"))
   (require "manager.ss")
   (provide create-LRU-manager)
   
@@ -14,9 +15,13 @@
                                         ; Private
                                         instances
                                         next-instance-id))
-  (define (create-LRU-manager
-           instance-expiration-handler
-           collect?)
+  (define/kw (create-LRU-manager
+              instance-expiration-handler
+              time0 time1
+              collect?
+              #:key 
+              [initial-count 1]
+              [inform-p (lambda _ (void))])
     ;; Instances
     (define instances (make-hash-table))
     (define next-instance-id (make-counter))    
@@ -68,7 +73,7 @@
          (define salt (random 100000000))
          (hash-table-put! htable
                           k-id
-                          (list salt k expiration-handler 1))
+                          (list salt k expiration-handler initial-count))
          (list k-id salt)]))
     (define (continuation-lookup instance-id a-k-id a-salt)
       (match (instance-lookup instance-id)
@@ -131,17 +136,27 @@
               (set-box! removed (add1 (unbox removed)))
               (hash-table-remove! instances instance-id))])))
       (unless (zero? (unbox removed))
-        #;(printf "Collect: ~S ~S~n"
-                  (unbox removed)                 
-                  (round (/ (current-memory-use)
-                            (* 1024 1024))))
+        (inform-p (unbox removed))
         (collect-garbage)
         (collect-garbage)))
     (define manager-thread
       (thread
        (lambda ()
-         (let loop ()
-           (collect)
-           (loop)))))
+         (define (seconds->msecs s)
+           (+ (current-inexact-milliseconds)
+              (* s 1000)))
+         (let loop ([msecs0 (seconds->msecs time0)]
+                    [msecs1 (seconds->msecs time1)])
+           (sync (handle-evt
+                  (alarm-evt msecs0)
+                  (lambda _
+                    (when (collect?)
+                      (collect))
+                    (loop (seconds->msecs time0) msecs1)))
+                 (handle-evt
+                  (alarm-evt msecs1)
+                  (lambda _
+                    (collect)
+                    (loop msecs0 (seconds->msecs time1)))))))))
     
     the-manager))
