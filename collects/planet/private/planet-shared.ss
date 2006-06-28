@@ -267,7 +267,7 @@ Various common pieces of code that both the client and server need to access
               #f
               (let ((best-row
                      (car 
-                      (sort
+                      (quicksort
                        matches
                        (λ (a b) (> (assoc-table-row->min a) (assoc-table-row->min b)))))))
                 (make-pkg
