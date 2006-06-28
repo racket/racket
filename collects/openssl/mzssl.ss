@@ -52,12 +52,6 @@
 
   (define ssl-load-fail-reason #f)
 
-  (define (ffi-lib-xxxxxxx name)
-    (let* ([f (format "~a~a" name filename-version-part)])
-      (or (with-handlers ([exn? (lambda (x) #f)])
-            (ffi-lib (format "~a~a" name filename-version-part)))
-	  (ffi-lib (format "~axxxxxxx" name)))))
-
   (define 3m? (regexp-match #rx#"3m" (path->bytes (system-library-subpath))))
 
   (define libcrypto
@@ -81,11 +75,7 @@
 	     [else
 	      (ffi-lib "libssl")]))))
 
-  (define libmz
-    (case (system-type)
-      [(windows)
-       (ffi-lib-xxxxxxx (format "libmzsch~a" (if 3m? "3m" "")))]
-      [else #f]))
+  (define libmz (ffi-lib #f))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL bindings and constants
