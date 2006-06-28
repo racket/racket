@@ -11,6 +11,7 @@ Various common pieces of code that both the client and server need to access
            (lib "port.ss")
            (lib "file.ss")
            (lib "getinfo.ss" "setup")
+           (prefix srfi1: (lib "1.ss" "srfi"))
            "../config.ss")
   
   (provide (all-defined))
@@ -96,7 +97,7 @@ Various common pieces of code that both the client and server need to access
         empty-table))
   
   ; the link table format:
-  ; (listof (list string[name] (listof string[path]) num num bytes[directory])
+  ; (listof (list string[name] (listof string[path]) num num bytes[directory] (union string[mzscheme version] #f))
   
   ; hard-links : FULL-PKG-SPEC -> (listof assoc-table-row)
   (define (hard-links pkg)
@@ -134,6 +135,14 @@ Various common pieces of code that both the client and server need to access
          (equal? maj  (assoc-table-row->maj row))
          (equal? min  (assoc-table-row->min row))))
   
+  ;; row->package : assoc-table-row -> PKG | #f
+  (define (row->package row)
+    (get-installed-package 
+     (car (assoc-table-row->path row)) ;; owner
+     (assoc-table-row->name row)
+     (assoc-table-row->maj row)
+     (assoc-table-row->min row)))
+  
   ;; save-hard-link-table : assoc-table -> void
   ;; saves the given table, overwriting any file that might be there
   (define (save-hard-link-table table)
@@ -152,18 +161,23 @@ Various common pieces of code that both the client and server need to access
   ;; adds the given hard link, clearing any previous ones already in place
   ;; for the same package
   (define (add-hard-link! name path maj min dir)
-    (let* ([original-table (get-hard-link-table)]
-           [new-table (cons
-                       (make-assoc-table-row name path maj min dir #f)
-                       (filter
-                        (lambda (row) (not (points-to? row name path maj min)))
-                        original-table))])
-      (save-hard-link-table new-table)))
+    (let ([complete-dir (path->complete-path dir)])
+      (let* ([original-table (get-hard-link-table)]
+             [new-table (cons
+                         (make-assoc-table-row name path maj min complete-dir #f)
+                         (filter
+                          (lambda (row) (not (points-to? row name path maj min)))
+                          original-table))])
+        (save-hard-link-table new-table))))
   
   ;; filter-link-table! : (row -> boolean) -> void
-  ;; removes all rows from the link table that don't match the given predicate
-  (define (filter-link-table! f)
-    (save-hard-link-table (filter f (get-hard-link-table))))
+  ;; removes all rows from the hard link table that don't match the given predicate.
+  ;; also updates auxiliary datastructures that might have dangling pointers to
+  ;; the removed links
+  (define (filter-link-table! f on-delete)
+    (let-values ([(in-links out-links) (srfi1:partition f (get-hard-link-table))])
+      (for-each on-delete out-links)
+      (save-hard-link-table in-links)))
   
   ;; update-element : number (x -> y) (listof any [x in position number]) -> (listof any [y in position number])
   (define (update-element n f l)
@@ -281,7 +295,13 @@ Various common pieces of code that both the client and server need to access
   (define-struct pkg-spec (name maj minor-lo minor-hi path stx core-version) (make-inspector))
   ; PKG : string (listof string) Nat Nat path
   (define-struct pkg (name route maj min path))
-  
+    
+  ;; get-installed-package : string string nat nat -> PKG | #f
+  ;; gets the package associated with this package specification, if any
+  (define (get-installed-package owner name maj min)
+    (lookup-package (make-pkg-spec name maj min min (list owner) #f (version))))
+    
+    
   ; ==========================================================================================
   ; UTILITY
   ; Miscellaneous utility functions

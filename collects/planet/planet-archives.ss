@@ -4,7 +4,11 @@
            "config.ss"
            "cachepath.ss")
   
-  (provide repository-tree get-installed-planet-archives get-planet-cache-path)
+  (provide repository-tree 
+           get-installed-planet-archives
+           
+           get-hard-linked-packages
+           get-planet-cache-path)
   
   (define (repository-tree)
     (define (id x) x)
@@ -16,8 +20,8 @@
                       4)
      (list id id id string->number string->number)))
   
-  ;; get-installed-planet-dirs : -> listof path[absolute, dir]
-  ;; directories of all installed planet archives
+  ;; get-installed-planet-dirs : -> listof (list path[absolute, dir] string string (listof string) nat nat)
+  ;; directories of all normally-installed planet archives [excluding hard links]
   (define (get-installed-planet-archives)
     (with-handlers ((exn:fail:filesystem:no-directory? (lambda (e) '())))
       (tree-apply 
@@ -31,4 +35,18 @@
                    min)))
            x))
        (repository-tree)
-       3))))
+       3)))
+  
+  ;; get-hard-linked-packages : -> listof (list path[absolute, dir] string string (listof string) nat nat)
+  ;; directories of all hard-linked packages
+  (define (get-hard-linked-packages)
+    (map
+     (lambda (row)
+       (map (lambda (f) (f row))
+            (list assoc-table-row->dir
+                  (lambda (r) (car (assoc-table-row->path r)))
+                  assoc-table-row->name
+                  (lambda (r) (cdr (assoc-table-row->path r)))
+                  assoc-table-row->maj
+                  assoc-table-row->min)))
+     (get-hard-link-table))))

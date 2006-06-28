@@ -51,7 +51,7 @@
                  'append)))))))
     pkg)
   
-  ;; remove-linkage! string string nat nat -> void
+  ;; remove-linkage! pkg-spec -> void
   ;; eliminates linkage to the given package
   (define (remove-linkage-to! pkg)
     (let ((l (get-linkage-table)))

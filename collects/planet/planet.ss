@@ -150,14 +150,44 @@ PLANNED FEATURES:
         (fail "Could not find package"))))
         
   (define (show-installed-packages)
-    (for-each 
-     (lambda (l) (apply printf "  ~a\t~a\t~a ~a\n" l))
-     (sort-by-criteria 
-      (map (lambda (x) (match x [(_ owner pkg _ maj min) (list owner pkg maj min)])) (get-installed-planet-archives))
-      (list string<? string=?)
-      (list string<? string=?)
-      (list < =)
-      (list < =))))
+    (let ([normal-packages (get-installed-planet-archives)]
+          [devel-link-packages (get-hard-linked-packages)])
+      
+      (define (show-normals)
+        (printf "Normally-installed packages:\n")
+        (for-each 
+         (lambda (l) (apply printf "  ~a\t~a\t~a ~a\n" l))
+         (sort-by-criteria 
+          (map (lambda (x) (match x [(_ owner pkg _ maj min) (list owner pkg maj min)])) normal-packages)
+          (list string<? string=?)
+          (list string<? string=?)
+          (list < =)
+          (list < =))))
+      
+      (define (show-devel-links)
+        (printf "Development links:\n")
+        (for-each 
+         (lambda (l) (apply printf "  ~a\t~a\t~a ~a\n    --> ~a\n" l))
+         (sort-by-criteria 
+          (map 
+           (lambda (x) (match x [(dir owner pkg _ maj min) (list owner pkg maj min (path->string dir))]))
+           devel-link-packages)
+          (list string<? string=?)
+          (list string<? string=?)
+          (list < =)
+          (list < =)
+          (list string<? string=?))))
+      
+      (cond
+        [(and (pair? normal-packages) (pair? devel-link-packages))
+         (begin 
+           (show-normals)
+           (newline)
+           (show-devel-links))]
+        [(pair? normal-packages) (show-normals)]
+        [(pair? devel-link-packages) (show-devel-links)]
+        [else (printf "No packages installed.\n")])))
+      
   
   (define (show-linkage)
     (for-each
@@ -173,6 +203,8 @@ PLANNED FEATURES:
     (let* ([maj (read-from-string majstr)]
            [min (read-from-string minstr)]
            [path (string->path pathstr)])
+      (unless (and (integer? maj) (integer? min) (> maj 0) (>= min 0))
+        (fail "Invalid major/minor version"))
       (add-hard-link ownerstr pkgstr maj min path)))
   
   (define (remove-hard-link-cmd ownerstr pkgstr majstr minstr)
