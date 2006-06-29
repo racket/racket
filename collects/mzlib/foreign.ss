@@ -217,7 +217,7 @@
    [(name lib type) (get-ffi-obj* name lib type #f)]
    [(name lib type failure)
     (let ([name (get-ffi-obj-name 'get-ffi-obj name)]
-          [lib  (get-ffi-lib lib)])
+          [lib  (get-ffi-lib-internal lib)])
       (let-values ([(obj error?)
                     (with-handlers
                         ([exn:fail:filesystem?
