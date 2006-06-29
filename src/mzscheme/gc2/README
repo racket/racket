@@ -1,6 +1,7 @@
 
 This README provides and overview of the precise GC interface used by
-MzScheme. The header file gc2.h provides additional documentation.
+MzScheme. The header files gc2.h and gc2_dump.h provide additional
+documentation.
 
 GC Architecture
 ---------------

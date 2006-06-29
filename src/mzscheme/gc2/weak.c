@@ -10,8 +10,9 @@
       GC_malloc_ephemeron
       size_ephemeron, mark_ephemeron, fixup_ephemeron
       init_ephemerons mark_ready_ephemerons zero_remaining_ephemerons
+      num_last_seen_ephemerons
    Requires:
-      gc_weak_array_tag
+      weak_array_tag
       weak_box_tag
       ephemeron_tag
       is_marked(p)
@@ -107,7 +108,7 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
   replace_val = park[0];
   park[0] = NULL;
 
-  w->type = gc_weak_array_tag;
+  w->type = weak_array_tag;
   w->replace_val = replace_val;
   w->count = (size_in_bytes >> LOG_WORD_SIZE);
   
@@ -246,6 +247,8 @@ typedef struct GC_Ephemeron {
 
 static GC_Ephemeron *ephemerons;
 
+static int num_last_seen_ephemerons = 0;
+
 static int size_ephemeron(void *p)
 {
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
@@ -297,6 +300,7 @@ void *GC_malloc_ephemeron(void *k, void *v)
 
 void init_ephemerons() {
   ephemerons = NULL;
+  num_last_seen_ephemerons = 0;
 }
 
 static void mark_ready_ephemerons()
@@ -307,6 +311,7 @@ static void mark_ready_ephemerons()
     next = eph->next;
     if (is_marked(eph->key)) {
       gcMARK(eph->val);
+      num_last_seen_ephemerons++;
     } else {
       eph->next = waiting;
       waiting = eph;

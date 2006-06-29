@@ -8,9 +8,7 @@
 // Copyright:  (c) 1993-94, AIAI, University of Edinburgh. All Rights Reserved.
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef WX_CARBON
-# include <QuickDraw.h>
-#endif
+#include "common.h"
 #include "wx_gdi.h"
 #include "wx_dc.h"
 

@@ -82,6 +82,7 @@
 typedef short Type_Tag;
 
 #include "gc2.h"
+#include "gc2_dump.h"
 
 #define BYTEPTR(x) ((char *)x)
 
@@ -98,7 +99,7 @@ typedef short Type_Tag;
 #define KEEP_BACKPOINTERS 0
 #define DEFINE_MALLOC_FREE 0
 
-#ifdef COMPACT_BACKTRACE_GC
+#ifdef MZ_GC_BACKTRACE
 # undef KEEP_BACKPOINTERS
 # define KEEP_BACKPOINTERS 1
 #endif
@@ -160,8 +161,8 @@ void GC_set_variable_stack(void **p) { GC_variable_stack = p; }
 /********************* Type tags *********************/
 Type_Tag weak_box_tag = 42; /* set by client */
 Type_Tag ephemeron_tag = 42; /* set by client */
+Type_Tag weak_array_tag  = 42; /* set by client */
 
-#define gc_weak_array_tag 256
 #define gc_on_free_list_tag 257
 
 #define _num_tags_ 260
@@ -465,10 +466,11 @@ void GC_set_stack_base(void *base)
   stack_base = (unsigned long)base;
 }
 
-void GC_init_type_tags(int count, int weakbox, int ephemeron)
+void GC_init_type_tags(int count, int weakbox, int ephemeron, int weakarray)
 {
   weak_box_tag = weakbox;
   ephemeron_tag = ephemeron;
+  weak_array_tag = weakarray;
 }
 
 void GC_register_traversers(Type_Tag tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup, 
@@ -2858,7 +2860,7 @@ static void check_ptr(void **a)
 	  || (!size_table[tag] 
 	      && (tag != weak_box_tag)
 	      && (tag != ephemeron_tag)
-	      && (tag != gc_weak_array_tag)
+	      && (tag != weak_array_tag)
 	      && (tag != gc_on_free_list_tag))) {
 	GCPRINT(GCOUTF, "bad tag: %d at %lx, references from %lx\n", tag, (long)p, (long)a);
 	GCFLUSHOUT();
@@ -2955,7 +2957,7 @@ static void init(void)
   if (!initialized) {
     GC_register_traversers(weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 1, 0);
     GC_register_traversers(ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 1, 0);
-    GC_register_traversers(gc_weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
+    GC_register_traversers(weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
 #if USE_FREELIST
     GC_register_traversers(gc_on_free_list_tag, size_on_free_list, size_on_free_list, size_on_free_list, 0, 0);
 #endif
@@ -4328,18 +4330,41 @@ static void check_not_freed(MPage *page, const void *p)
 static long dump_info_array[BIGBLOCK_MIN_SIZE];
 
 #if KEEP_BACKPOINTERS
-# define MAX_FOUND_OBJECTS 5000
-int GC_show_trace = 0;
-int GC_show_finals = 0;
-int GC_trace_for_tag = 57;
-int GC_path_length_limit = 1000;
-static int found_object_count;
-static void *found_objects[MAX_FOUND_OBJECTS];
-void (*GC_for_each_found)(void *p) = NULL;
-char *(*GC_get_xtagged_name)(void *p) = NULL;
+
+static void *trace_backpointer(MPage *page, void *p)
+{
+
+  if (page->flags & MFLAG_BIGBLOCK)
+    return (void *)page->backpointer_page;
+  else {
+    int offset;
+    offset = ((char *)p - (char *)page->block_start) >> LOG_WORD_SIZE;
+    if (page->type != MTYPE_TAGGED)
+      offset -= 1;
+    if (offset > 0)
+      return page->backpointer_page[offset];
+    else
+      return NULL; /* This shouldn't happen */
+  }
+}
+
+# define trace_page_t MPage
+# define trace_page_type(page) (page)->type
+# define TRACE_PAGE_TAGGED MTYPE_TAGGED
+# define TRACE_PAGE_ARRAY MTYPE_ARRAY
+# define TRACE_PAGE_TAGGED_ARRAY MTYPE_TAGGED_ARRAY
+# define TRACE_PAGE_ATOMIC MTYPE_ATOMIC
+# define TRACE_PAGE_XTAGGED MTYPE_XTAGGED
+# define TRACE_PAGE_MALLOCFREE MTYPE_MALLOCFREE
+# define TRACE_PAGE_BAD 0
+# define trace_page_is_big(page) ((page)->flags & MFLAG_BIGBLOCK)
+
+# include "backtrace.c"
+
 #endif
 
-static long scan_tagged_mpage(void **p, MPage *page)
+static long scan_tagged_mpage(void **p, MPage *page, short trace_for_tag,
+			      GC_for_each_found_proc for_each_found)
 {
   void **top, **bottom = p;
 
@@ -4373,15 +4398,13 @@ static long scan_tagged_mpage(void **p, MPage *page)
       dump_info_array[tag]++;
       dump_info_array[tag + _num_tags_] += size;
 
+      if (tag == trace_for_tag) {
 #if KEEP_BACKPOINTERS
-      if (tag == GC_trace_for_tag) {
-	if (found_object_count < MAX_FOUND_OBJECTS) {
-	  found_objects[found_object_count++] = p;
-	}
-	if (GC_for_each_found)
-	  GC_for_each_found(p);
-      }
+	register_traced_object(p);
 #endif
+	if (for_each_found)
+	  for_each_found(p);
+      }
 
       p += size;
 #if ALIGN_DOUBLES
@@ -4415,13 +4438,7 @@ static long scan_untagged_mpage(void **p, MPage *page)
   return MPAGE_WORDS;
 }
 
-/* HACK! */
-extern char *scheme_get_type_name(Type_Tag t);
-
 #if KEEP_BACKPOINTERS
-extern void scheme_print_tagged_value(const char *prefix, 
-				      void *v, int xtagged, unsigned long diff, int max_w,
-				      const char *suffix);
 
 int GC_is_tagged(void *p)
 {
@@ -4521,176 +4538,127 @@ void *GC_next_tagged_start(void *p)
   }
 }
 
-void *print_out_pointer(const char *prefix, void *p)
-{
-  MPage *page;
-  const char *what;
-
-  page = find_page(p);
-  if (!page || !page->type) {
-    GCPRINT(GCOUTF, "%s??? %p\n", prefix, p);
-    return NULL;
-  }
-
-  if (page->type == MTYPE_TAGGED) {
-    Type_Tag tag;
-    tag = *(Type_Tag *)p;
-    if ((tag >= 0) && (tag < _num_tags_) && scheme_get_type_name(tag)) {
-      scheme_print_tagged_value(prefix, p, 0, 0, 1000, "\n");
-    } else {
-      GCPRINT(GCOUTF, "%s<#%d> %p\n", prefix, tag, p);
-    }
-    what = NULL;
-  } else if (page->type == MTYPE_ARRAY) {
-    what = "ARRAY";
-  } else if (page->type == MTYPE_TAGGED_ARRAY) {
-    what = "TARRAY";
-  } else if (page->type == MTYPE_ATOMIC) {
-    what = "ATOMIC";
-  } else if (page->type == MTYPE_XTAGGED) {
-    if (GC_get_xtagged_name)
-      what = GC_get_xtagged_name(p);
-    else
-      what = "XTAGGED";
-  } else if (page->type == MTYPE_MALLOCFREE) {
-    what = "MALLOCED";
-  } else {
-    what = "?!?";
-  }
-
-  if (what) {
-    GCPRINT(GCOUTF, "%s%s%s %p\n", 
-	    prefix, what, 
-	    ((page->flags & MFLAG_BIGBLOCK) ? "b" : ""),
-	    p);
-  }
-
-  if (page->flags & MFLAG_BIGBLOCK)
-    p = (void *)page->backpointer_page;
-  else {
-    int offset;
-    offset = ((char *)p - (char *)page->block_start) >> LOG_WORD_SIZE;
-    if (what)
-      offset -= 1;
-    if (offset > 0)
-      p = page->backpointer_page[offset];
-    else
-      p = NULL; /* This shouldn't happen */
-  }
-
-  return p;
-}
 #endif
 
-void GC_dump(void)
+void GC_dump_with_traces(int flags,
+			 GC_get_type_name_proc get_type_name,
+			 GC_get_xtagged_name_proc get_xtagged_name,
+			 GC_for_each_found_proc for_each_found,
+			 short trace_for_tag,
+			 GC_print_tagged_value_proc print_tagged_value,
+			 int path_length_limit)
 {
   int i;
   long waste = 0;
 
+  if (!(flags & GC_DUMP_SHOW_TRACE))
+    trace_for_tag = -1;
 #if KEEP_BACKPOINTERS
-  found_object_count = 0;
-  if (GC_for_each_found)
+  reset_object_traces();
+#endif
+  if (for_each_found)
     avoid_collection++;
-#endif
 
-  GCPRINT(GCOUTF, "t=tagged a=atomic v=array x=xtagged g=tagarray\n");
-  GCPRINT(GCOUTF, "mpagesize=%ld  opagesize=%ld\n", (long)MPAGE_SIZE, (long)OPAGE_SIZE);
-  GCPRINT(GCOUTF, "[");
-  for (i = 0; i < MAPS_SIZE; i++) {
-    if (i && !(i & 63))
-      GCPRINT(GCOUTF, "\n ");
+  if (flags & GC_DUMP_SHOW_DETAILS) {
+    GCPRINT(GCOUTF, "t=tagged a=atomic v=array x=xtagged g=tagarray\n");
+    GCPRINT(GCOUTF, "mpagesize=%ld  opagesize=%ld\n", (long)MPAGE_SIZE, (long)OPAGE_SIZE);
+    GCPRINT(GCOUTF, "[");
+    for (i = 0; i < MAPS_SIZE; i++) {
+      if (i && !(i & 63))
+	GCPRINT(GCOUTF, "\n ");
 
-    if (mpage_maps[i])
-      GCPRINT(GCOUTF, "*");
-    else
-      GCPRINT(GCOUTF, "-");
-  }
-  GCPRINT(GCOUTF, "]\n");
-  for (i = 0; i < MAPS_SIZE; i++) {
-    MPage *maps = mpage_maps[i];
-    if (maps) {
-      int j;
-      GCPRINT(GCOUTF, "%.2x:\n ", i);
-      for (j = 0; j < MAP_SIZE; j++) {
-	if (j && !(j & 63))
-	  GCPRINT(GCOUTF, "\n ");
+      if (mpage_maps[i])
+	GCPRINT(GCOUTF, "*");
+      else
+	GCPRINT(GCOUTF, "-");
+    }
+    GCPRINT(GCOUTF, "]\n");
+    for (i = 0; i < MAPS_SIZE; i++) {
+      MPage *maps = mpage_maps[i];
+      if (maps) {
+	int j;
+	GCPRINT(GCOUTF, "%.2x:\n ", i);
+	for (j = 0; j < MAP_SIZE; j++) {
+	  if (j && !(j & 63))
+	    GCPRINT(GCOUTF, "\n ");
 
-	if (maps[j].type
+	  if (maps[j].type
 #if DEFINE_MALLOC_FREE
-	    && (maps[j].type != MTYPE_MALLOCFREE)
+	      && (maps[j].type != MTYPE_MALLOCFREE)
 #endif
-	    ) {
-	  int c;
+	      ) {
+	    int c;
 
-	  if (maps[j].flags & MFLAG_CONTINUED) 
-	    c = '.';
-	  else {
-	    if (maps[j].type <= MTYPE_TAGGED)
-	      c = 't';
-	    else if (maps[j].type == MTYPE_TAGGED_ARRAY)
-	      c = 'g';
-	    else if (maps[j].type == MTYPE_ATOMIC)
-	      c = 'a';
-	    else if (maps[j].type == MTYPE_XTAGGED)
-	      c = 'x';
-	    else
-	      c = 'v';
+	    if (maps[j].flags & MFLAG_CONTINUED) 
+	      c = '.';
+	    else {
+	      if (maps[j].type <= MTYPE_TAGGED)
+		c = 't';
+	      else if (maps[j].type == MTYPE_TAGGED_ARRAY)
+		c = 'g';
+	      else if (maps[j].type == MTYPE_ATOMIC)
+		c = 'a';
+	      else if (maps[j].type == MTYPE_XTAGGED)
+		c = 'x';
+	      else
+		c = 'v';
 	    
-	    if (maps[j].flags & MFLAG_BIGBLOCK)
-	      c = c - ('a' - 'A');
-	  }
+	      if (maps[j].flags & MFLAG_BIGBLOCK)
+		c = c - ('a' - 'A');
+	    }
 
-	  GCPRINT(GCOUTF, "%c", c);
-	} else {
-	  GCPRINT(GCOUTF, "-");
+	    GCPRINT(GCOUTF, "%c", c);
+	  } else {
+	    GCPRINT(GCOUTF, "-");
+	  }
 	}
+	GCPRINT(GCOUTF, "\n");
+      }
+    }
+
+    {
+      MPage *page;
+
+      GCPRINT(GCOUTF, "Block info: [type][modified?][age][refs-age]\n");
+      for (page = first, i = 0; page; page = page->next, i++) {
+	int c;
+
+	if (page->flags & MFLAG_CONTINUED) 
+	  c = '.';
+	else {
+	  if (page->type <= MTYPE_TAGGED)
+	    c = 't';
+	  else if (page->type == MTYPE_TAGGED_ARRAY)
+	    c = 'g';
+	  else if (page->type == MTYPE_ATOMIC)
+	    c = 'a';
+	  else if (page->type == MTYPE_XTAGGED)
+	    c = 'x';
+	  else
+	    c = 'v';
+	 
+	  if (page->flags & MFLAG_BIGBLOCK)
+	    c = c - ('a' - 'A');
+	}
+       
+	GCPRINT(GCOUTF, " %c%c%c%c",
+		c,
+		((page->flags & MFLAG_MODIFIED)
+		 ? 'M'
+		 : '_'),
+		((page->age < 10)
+		 ? (page->age + '0')
+		 : (page->age + 'a' - 10)),
+		((page->type == MTYPE_ATOMIC)
+		 ? '-'
+		 : ((page->refs_age < 10)
+		    ? (page->refs_age + '0')
+		    : (page->refs_age + 'a' - 10))));
+	if ((i % 10) == 9)
+	  GCPRINT(GCOUTF, "\n");
       }
       GCPRINT(GCOUTF, "\n");
     }
-  }
-
-  {
-    MPage *page;
-
-    GCPRINT(GCOUTF, "Block info: [type][modified?][age][refs-age]\n");
-    for (page = first, i = 0; page; page = page->next, i++) {
-       int c;
-
-       if (page->flags & MFLAG_CONTINUED) 
-	 c = '.';
-       else {
-	 if (page->type <= MTYPE_TAGGED)
-	   c = 't';
-	 else if (page->type == MTYPE_TAGGED_ARRAY)
-	   c = 'g';
-	 else if (page->type == MTYPE_ATOMIC)
-	   c = 'a';
-	 else if (page->type == MTYPE_XTAGGED)
-	   c = 'x';
-	 else
-	   c = 'v';
-	 
-	 if (page->flags & MFLAG_BIGBLOCK)
-	   c = c - ('a' - 'A');
-       }
-       
-       GCPRINT(GCOUTF, " %c%c%c%c",
-	       c,
-	       ((page->flags & MFLAG_MODIFIED)
-		? 'M'
-		: '_'),
-	       ((page->age < 10)
-		? (page->age + '0')
-		: (page->age + 'a' - 10)),
-	       ((page->type == MTYPE_ATOMIC)
-		? '-'
-		: ((page->refs_age < 10)
-		   ? (page->refs_age + '0')
-		   : (page->refs_age + 'a' - 10))));
-      if ((i % 10) == 9)
-	GCPRINT(GCOUTF, "\n");
-    }
-    GCPRINT(GCOUTF, "\n");
   }
 
   {
@@ -4723,39 +4691,41 @@ void GC_dump(void)
 	  if (j >= NUM_TAGGED_SETS)
 	    used = scan_untagged_mpage(page->block_start, page); /* gets size counts */
 	  else
-	    used = scan_tagged_mpage(page->block_start, page); /* gets tag counts */
+	    used = scan_tagged_mpage(page->block_start, page, 
+				     trace_for_tag, for_each_found); /* gets tag counts */
 
 	  total += used;
 	  waste += (MPAGE_WORDS - used);
 	}
-#if KEEP_BACKPOINTERS
 	if ((page->flags & MFLAG_BIGBLOCK)
 	    && (page->type == kind)
-	    && (((GC_trace_for_tag >= (BIGBLOCK_MIN_SIZE >> LOG_WORD_SIZE))
-		 && (page->u.size > GC_trace_for_tag))
-		|| (page->u.size == -GC_trace_for_tag))) {
-	  if (found_object_count < MAX_FOUND_OBJECTS)
-	    found_objects[found_object_count++] = page->block_start;
-	  if (GC_for_each_found)
-	    GC_for_each_found(page->block_start);
-	}
+	    && (((trace_for_tag >= (BIGBLOCK_MIN_SIZE >> LOG_WORD_SIZE))
+		 && (page->u.size > trace_for_tag))
+		|| (page->u.size == -trace_for_tag))) {
+#if KEEP_BACKPOINTERS
+	  register_traced_object(page->block_start);
 #endif
+	  if (for_each_found)
+	    for_each_found(page->block_start);
+	}
       }
 
       if (j >= NUM_TAGGED_SETS) {
 	int k = 0;
-	GCPRINT(GCOUTF, "%s counts: ", name);
-	for (i = 0; i < (BIGBLOCK_MIN_SIZE >> LOG_WORD_SIZE); i++) {
-	  if (dump_info_array[i]) {
-	    k++;
-	    if (k == 10) {
-	      GCPRINT(GCOUTF, "\n    ");
-	      k = 0;
+	if (flags & GC_DUMP_SHOW_DETAILS) {
+	  GCPRINT(GCOUTF, "%s counts: ", name);
+	  for (i = 0; i < (BIGBLOCK_MIN_SIZE >> LOG_WORD_SIZE); i++) {
+	    if (dump_info_array[i]) {
+	      k++;
+	      if (k == 10) {
+		GCPRINT(GCOUTF, "\n    ");
+		k = 0;
+	      }
+	      GCPRINT(GCOUTF, " [%d:%ld]", i << LOG_WORD_SIZE, dump_info_array[i]);
 	    }
-	    GCPRINT(GCOUTF, " [%d:%ld]", i << LOG_WORD_SIZE, dump_info_array[i]);
 	  }
+	  GCPRINT(GCOUTF, "\n");
 	}
-	GCPRINT(GCOUTF, "\n");
       } else {
 	GCPRINT(GCOUTF, "Tag counts and sizes:\n");
 	GCPRINT(GCOUTF, "Begin MzScheme3m\n");
@@ -4763,10 +4733,14 @@ void GC_dump(void)
 	  if (dump_info_array[i]) {
 	    char *tn, buf[256];
 	    switch(i) {
-	    case gc_weak_array_tag: tn = "weak-array"; break;
 	    case gc_on_free_list_tag: tn = "freelist-elem"; break;
 	    default:
-	      tn = scheme_get_type_name((Type_Tag)i);
+	      if (i == weak_array_tag)
+		tn = "weak-array";
+	      else if (get_type_name)
+		tn = get_type_name((Type_Tag)i);
+	      else
+		tn = NULL;
 	      if (!tn) {
 		sprintf(buf, "unknown,%d", i);
 		tn = buf;
@@ -4779,7 +4753,7 @@ void GC_dump(void)
 	GCPRINT(GCOUTF, "End MzScheme3m\n");
       }
 
-      {
+      if (flags & GC_DUMP_SHOW_DETAILS) {
 	int did_big = 0;
 	for (page = first; page; page = page->next) {
 	  if ((page->type == kind) && (page->flags & MFLAG_BIGBLOCK) && !(page->flags & MFLAG_CONTINUED)) {
@@ -4826,34 +4800,26 @@ void GC_dump(void)
 	  (100.0 * ((double)page_reservations - memory_in_use)) / memory_in_use);
 
 #if KEEP_BACKPOINTERS
-  if (GC_show_trace) {
-    avoid_collection++;
-    GCPRINT(GCOUTF, "Begin Trace\n");
-    for (i = 0; i < found_object_count; i++) {
-      void *p;
-      int limit = GC_path_length_limit;
-      p = found_objects[i];
-      p = print_out_pointer("==* ", p);
-      while (p && limit) {
-	p = print_out_pointer(" <- ", p);
-	limit--;
-      }
-    }
-    GCPRINT(GCOUTF, "End Trace\n");
-    GC_trace_for_tag = 57;
-    --avoid_collection;
+  if (flags & GC_DUMP_SHOW_TRACE) {
+    print_traced_objects(path_length_limit, get_type_name, get_xtagged_name, print_tagged_value);
   }
-  if (GC_show_finals) {
+  if (flags & GC_DUMP_SHOW_FINALS) {
     Fnl *f;
     avoid_collection++;
     GCPRINT(GCOUTF, "Begin Finalizations\n");
     for (f = finalizers; f; f = f->next) {
-      print_out_pointer("==@ ", f->p);
+      print_out_pointer("==@ ", f->p, get_type_name, get_xtagged_name, print_tagged_value);
     }
     GCPRINT(GCOUTF, "End Finalizations\n");
     --avoid_collection;
   }
-  if (GC_for_each_found)
-    avoid_collection++;
 #endif
+  if (for_each_found)
+    --avoid_collection;
 }
+
+void GC_dump(void)
+{
+  GC_dump_with_traces(0, NULL, NULL, NULL, 0, NULL, 0);
+}
+

@@ -10,6 +10,7 @@
 // not responsible for what this might do to your macintosh, use at your own risk
 // sorry I do not have time to add more comments, but hope this is of some use
 
+#include "common.h"
 #include "wx_gdi.h"
 #include "wx_canvs.h"
 #include "wx_dc.h"

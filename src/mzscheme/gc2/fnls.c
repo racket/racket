@@ -5,6 +5,7 @@
       GC_set_finalizer
       reset_finalizer_tree
       finalizers
+      num_fnls
    Requires:
       GC_weak_array_tag
       is_finalizable_page(p)

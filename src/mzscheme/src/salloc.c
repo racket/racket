@@ -425,6 +425,8 @@ typedef struct {
 
 #ifdef MZ_PRECISE_GC
 
+#include "../gc2/gc2_dump.h"
+
 START_XFORM_SKIP;
 
 #define MARKS_FOR_SALLOC_C
@@ -920,7 +922,7 @@ static void count_managed(Scheme_Custodian *m, int *c, int *a, int *u, int *t,
 #endif
 
 #if defined(MZ_PRECISE_GC)
-# ifdef COMPACT_BACKTRACE_GC
+# ifdef MZ_GC_BACKTRACE
 #  define MZ_PRECISE_GC_TRACE 1
 # else
 #  define MZ_PRECISE_GC_TRACE 0
@@ -930,12 +932,7 @@ static void count_managed(Scheme_Custodian *m, int *c, int *a, int *u, int *t,
 #endif
 
 #if MZ_PRECISE_GC_TRACE
-extern int GC_show_trace;
-extern int GC_show_finals;
-extern int GC_trace_for_tag;
-extern int GC_path_length_limit;
-extern void (*GC_for_each_found)(void *p);
-
+char *(*GC_get_xtagged_name)(void *p) = NULL;
 static Scheme_Object *cons_accum_result;
 static void cons_onto_list(void *p)
 {
@@ -947,9 +944,6 @@ static void cons_onto_list(void *p)
 
 # ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
-extern int GC_is_tagged(void *p);
-extern int GC_is_tagged_start(void *p);
-extern void *GC_next_tagged_start(void *p);
 #  ifdef DOS_FILE_SYSTEM
 extern void gc_fprintf(int ignored, const char *c, ...);
 #   define object_console_printf gc_fprintf
@@ -976,7 +970,7 @@ static int check_home(Scheme_Object *o)
 #endif
 }
 
-void scheme_print_tagged_value(const char *prefix, 
+static void print_tagged_value(const char *prefix, 
 			       void *v, int xtagged, unsigned long diff, int max_w,
 			       const char *suffix)
 {
@@ -1134,6 +1128,19 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 #ifdef USE_TAGGED_ALLOCATION
   void *initial_trace_root = NULL;
   int (*inital_root_skip)(void *, size_t) = NULL;
+#endif
+#if MZ_PRECISE_GC_TRACE
+  int trace_for_tag = 0;
+  int flags = 0;
+  int path_length_limit = 1000;
+  GC_for_each_found_proc for_each_found = NULL;
+#else
+# define flags 0
+# define trace_for_tag 0
+# define path_length_limit 1000
+# define for_each_found NULL
+# define GC_get_xtagged_name NULL
+# define print_tagged_value NULL
 #endif
 
   scheme_start_atomic();
@@ -1342,10 +1349,6 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 #else
 
 # if MZ_PRECISE_GC_TRACE
-  GC_trace_for_tag = -1;
-  GC_show_trace = 0;
-  GC_show_finals = 0;
-  GC_for_each_found = NULL;
   cons_accum_result = scheme_void;
   if (c && SCHEME_SYMBOLP(p[0])) {
     Scheme_Object *sym;
@@ -1361,14 +1364,14 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       void *tn;
       tn = scheme_get_type_name(i);
       if (tn && !strcmp(tn, s)) {
-	GC_trace_for_tag = i;
-	GC_show_trace = 1;
+	trace_for_tag = i;
+	flags |= GC_DUMP_SHOW_TRACE;
 	break;
       }
     }
 
     if (!strcmp("fnl", s))
-      GC_show_finals = 1;
+      flags |= GC_DUMP_SHOW_FINALS;
 
     if (!strcmp("peek", s) && (c == 3)) {
       long n;
@@ -1399,21 +1402,30 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       return scheme_make_integer_value((long)p[1]);
     }
   } else if (SCHEME_INTP(p[0])) {
-    GC_trace_for_tag = SCHEME_INT_VAL(p[0]);
-    GC_show_trace = 1;
+    trace_for_tag = SCHEME_INT_VAL(p[0]);
+    flags |= GC_DUMP_SHOW_TRACE;
   }
   if ((c > 1) && SCHEME_INTP(p[1]))
-    GC_path_length_limit = SCHEME_INT_VAL(p[1]);
+    path_length_limit = SCHEME_INT_VAL(p[1]);
   else if ((c > 1) && SCHEME_SYMBOLP(p[1]) && !strcmp("cons", SCHEME_SYM_VAL(p[1]))) {
-    GC_for_each_found = cons_onto_list;
+    for_each_found = cons_onto_list;
     cons_accum_result = scheme_null;
-    GC_show_trace = 0;
-  } else
-    GC_path_length_limit = 1000;
+    flags -= (flags & GC_DUMP_SHOW_TRACE);
+  }
   scheme_console_printf("Begin Dump\n");
 #endif
 
+# ifdef MZ_PRECISE_GC
+  GC_dump_with_traces(flags, 
+		      scheme_get_type_name,
+		      GC_get_xtagged_name,
+		      for_each_found,
+		      trace_for_tag,
+		      print_tagged_value,
+		      path_length_limit);
+# else
   GC_dump();
+# endif
 #endif
 
   if (scheme_external_dump_info)
@@ -1455,9 +1467,9 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 		|| (home == tagged_atomic)
 		|| (home == tagged_uncollectable)
 		|| (home == tagged_eternal))) {
-	  scheme_print_tagged_value("\n  ->", v, 0, diff, max_w, "");
+	  print_tagged_value("\n  ->", v, 0, diff, max_w, "");
 	} else
-	  scheme_print_tagged_value("\n  ->", v, 1, diff, max_w, "");
+	  print_tagged_value("\n  ->", v, 1, diff, max_w, "");
       }
       scheme_console_printf("\n");
     }

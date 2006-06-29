@@ -8,6 +8,7 @@
 // Copyright:  (c) 1993-94, AIAI, University of Edinburgh. All Rights Reserved.
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "common.h"
 #include "wxBorderArea.h"
 #include "wxRectBorder.h"
 

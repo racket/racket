@@ -221,7 +221,7 @@ kern_return_t catch_exception_raise(mach_port_t port,
 				    exception_data_t exception_data,
 				    mach_msg_type_number_t data_count)
 {
-#if  GENERATIONS
+#if GENERATIONS
   /* kernel return value is in exception_data[0], faulting address in
      exception_data[1] */
   if(exception_data[0] == KERN_PROTECTION_FAILURE) {

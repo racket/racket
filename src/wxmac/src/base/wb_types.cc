@@ -14,6 +14,7 @@
 #endif
 #endif
 
+#include "common.h"
 #include "wx_utils.h"
 #include "wx_types.h"
 

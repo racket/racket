@@ -44,7 +44,7 @@ AC_ARG_ENABLE(sgc, [  --enable-sgc            use Senora GC instead of the Boehm
 AC_ARG_ENABLE(sgcdebug, [  --enable-sgcdebug       use Senora GC for debugging])
 AC_ARG_ENABLE(account, [  --enable-account        3m: use memory-accounting GC (enabled by default)], , enable_account=yes)
 AC_ARG_ENABLE(compact, [  --enable-compact        3m: use compact GC (no accounting)])
-AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: compact plus backtrace info])
+AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps])
 
 AC_ARG_ENABLE(float, [  --enable-float          include support for single-precision floats])
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   compile to use single-precision by default])
@@ -666,8 +666,7 @@ fi
 AC_MSG_RESULT($mbsrtowcs)
 
 if test "${enable_backtrace}" = "yes" ; then
-  enable_compact=yes
-  GC2OPTIONS="$GC2OPTIONS -DCOMPACT_BACKTRACE_GC"
+  GC2OPTIONS="$GC2OPTIONS -DMZ_GC_BACKTRACE"
 fi
 
 if test "${enable_compact}" = "yes" ; then

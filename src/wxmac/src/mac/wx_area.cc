@@ -8,6 +8,7 @@
 // Copyright:  (c) 1993-94, AIAI, University of Edinburgh. All Rights Reserved.
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "common.h"
 #include "wx_area.h"
 #include "wx_win.h"
 #include "wx_frame.h"

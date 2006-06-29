@@ -8,6 +8,7 @@
 // Copyright:  (c) 1993-94, AIAI, University of Edinburgh. All Rights Reserved.
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "common.h"
 #include "wxLabelArea.h"
 #include "wx_messg.h"
 #include "wx_gdi.h"

@@ -64,7 +64,7 @@ GC2_EXTERN void GC_add_roots(void *start, void *end);
    Called by MzScheme to install roots. The memory between
    `start' (inclusive) and `end' (exclusive) contains pointers. */
 
-GC2_EXTERN void GC_init_type_tags(int count, int weakbox, int ephemeron);
+GC2_EXTERN void GC_init_type_tags(int count, int weakbox, int ephemeron, int weakarray);
 /*
    Called by MzScheme to indicate the number of different type tags it
    uses, starting from 0. `count' is always less than 256. The weakbox

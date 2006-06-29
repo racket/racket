@@ -57,7 +57,7 @@
       (current-library-collection-paths (list (build-path (current-directory) "xform-collects")))
       
       (error-print-width 100)
-      
+
       (dynamic-require '(lib "xform-mod.ss" "xform") #f))
 
     ;; Otherwise, we assume that it's ok to use the collects

@@ -253,7 +253,7 @@ typedef struct {
   int pos;
 } Wrap_Pos;
 
-static void WRAP_POS_SET_FIRST(Wrap_Pos *w)
+XFORM_NONGCING static void WRAP_POS_SET_FIRST(Wrap_Pos *w)
 {
   if (!SCHEME_NULLP(w->l)) {
     Scheme_Object *a;
@@ -269,7 +269,7 @@ static void WRAP_POS_SET_FIRST(Wrap_Pos *w)
   }
 }
 
-static
+XFORM_NONGCING static
 #ifndef NO_INLINE_KEYWORD
 MSC_IZE(inline)
 #endif
@@ -309,7 +309,7 @@ void DO_WRAP_POS_INC(Wrap_Pos *w)
 
 /* Walking backwards through one chunk: */
 
-static void DO_WRAP_POS_REVINIT(Wrap_Pos *w, Scheme_Object *k)
+XFORM_NONGCING static void DO_WRAP_POS_REVINIT(Wrap_Pos *w, Scheme_Object *k)
 {
   Scheme_Object *a;
   a = SCHEME_CAR(k);

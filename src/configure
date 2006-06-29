@@ -870,7 +870,7 @@ Optional Features:
   --enable-sgcdebug       use Senora GC for debugging
   --enable-account        3m: use memory-accounting GC (enabled by default)
   --enable-compact        3m: use compact GC (no accounting)
-  --enable-backtrace      3m: compact plus backtrace info
+  --enable-backtrace      3m: support GC backtrace dumps
   --enable-float          include support for single-precision floats
   --enable-floatinstead   compile to use single-precision by default
   --enable-pthread        link MrEd with pthreads (sometimes needed for GL)
@@ -9170,8 +9170,7 @@ echo "$as_me:$LINENO: result: $mbsrtowcs" >&5
 echo "${ECHO_T}$mbsrtowcs" >&6
 
 if test "${enable_backtrace}" = "yes" ; then
-  enable_compact=yes
-  GC2OPTIONS="$GC2OPTIONS -DCOMPACT_BACKTRACE_GC"
+  GC2OPTIONS="$GC2OPTIONS -DMZ_GC_BACKTRACE"
 fi
 
 if test "${enable_compact}" = "yes" ; then

@@ -14,7 +14,7 @@
 #endif
 #endif
 
-#include "wx_obj.h"
+#include "common.h"
 #include "wx_types.h"
 
 int wx_object_count;

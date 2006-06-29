@@ -5,7 +5,7 @@
 #if defined(_MSC_VER)
 # include "wx.h"
 #endif
-#if defined(OS_X) && defined(MZ_PRECISE_GC)
+#if defined(OS_X)
 # include "common.h"
 #endif
 

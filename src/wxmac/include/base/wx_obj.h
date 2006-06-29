@@ -11,8 +11,6 @@
 #ifndef wxb_objh
 #define wxb_objh
 
-#include "common.h"
-
 #ifdef IN_CPROTO
 typedef       void    *wxObject ;
 #else
