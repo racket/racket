@@ -53,7 +53,7 @@ install-normal:
 mredinstall-stub: @MAKE_MREDINSTALL@
 
 setup-plt:
-	$(DESTDIR)$(bindir)/mzscheme -mvqX "$(DESTDIR)$(collectsdir)" -M setup
+	"$(DESTDIR)$(bindir)/mzscheme" -mvqX "$(DESTDIR)$(collectsdir)" -M setup
 
 plain-install-3m:
 	$(MAKE) install-normal
@@ -70,7 +70,7 @@ mredinstall3m-stub: @MAKE_MREDINSTALL3M@
 
 clean:
 	cd mzscheme; $(MAKE) clean
-	if [ -d mred ] ; then cd mred; $(MAKE) clean; fi
+	if [ -d mred ]; then cd mred; $(MAKE) clean; fi
 
 
 mz:
@@ -108,12 +108,12 @@ copytree:
 	mzscheme/mzscheme -mvxqu \
           "$(srcdir)/../collects/setup/unixstyle-install.ss" \
           make-install-copytree "$(srcdir)/.." \
-          $(ALLDIRINFO) @INSTALL_ORIG_TREE@
+          $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
           mzscheme/mzscheme -mvxqu \
             "$(srcdir)/../collects/setup/unixstyle-install.ss" \
             make-install-destdir-fix "$(srcdir)/.." \
-            $(ALLDIRINFO) @INSTALL_ORIG_TREE@; \
+            $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
         fi

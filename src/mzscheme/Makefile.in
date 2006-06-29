@@ -232,11 +232,6 @@ $(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.ss
 cstartup.zo:
 	$(MAKE) startup CSTARTUPEXTRA='zo' CSTARTUPDEST="../cstartup.zo"
 
-zo:
-	rm -f ../collects/mzlib/compiled/*.zo
-	rm -f ../collects/mzlib/compiled/*/*.so
-	$(MZSCHEME) -qf mkmzlib.ss -e '(make-zo)' -e '(exit)'
-
 3m:
 	$(MAKE) bin
 	cd gc2; $(MAKE) all
@@ -266,7 +261,7 @@ clean@OSX@:
 	rm -rf PLT_MzScheme.framework
 	$(MAKE) clean@NOT_OSX@
 
-BUILDINFO="$(DESTDIR)$(libpltdir)/buildinfo"
+BUILDINFO=$(DESTDIR)$(libpltdir)/buildinfo
 ICP=@ICP@
 
 install:
@@ -292,12 +287,12 @@ unix-install:
 	cd ..; $(ICP) mzscheme/mzscheme "$(DESTDIR)$(bindir)/mzscheme"
 	cd ..; cp mzscheme/starter "$(DESTDIR)$(libpltdir)/starter"
 	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@EXE_SUFFIX@" @COLLECTS_PATH@
-	cd ..; echo 'CC=@CC@' > $(BUILDINFO)
-	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
-	cd ..; echo 'OPTIONS=@OPTIONS@' >> $(BUILDINFO)
-	cd ..; echo 'MZOPTIONS=@MZOPTIONS@' >> $(BUILDINFO)
-	cd ..; echo "LDFLAGS=@LDFLAGS@" >> $(BUILDINFO)
-	cd ..; echo 'LIBS=@LIBS@' >> $(BUILDINFO)
+	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
+	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
+	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
+	cd ..; echo 'MZOPTIONS=@MZOPTIONS@' >> "$(BUILDINFO)"
+	cd ..; echo "LDFLAGS=@LDFLAGS@" >> "$(BUILDINFO)"
+	cd ..; echo 'LIBS=@LIBS@' >> "$(BUILDINFO)"
 
 normal-install:
 	$(MAKE) unix-install
@@ -327,6 +322,3 @@ install-3m@OSX@:
 unix-cygwin-install:
 	$(MAKE) unix-install
 	cd dynsrc; $(MAKE) cygwin-install
-
-config:
-	autoconf $(srcdir)/configure.ac | mzscheme -qr $(srcdir)/clean_ac.ss > $(srcdir)/../configure

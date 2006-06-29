@@ -1,7 +1,7 @@
 
 #################################################################
 # This is the source for the `configure' script, to be compiled #
-# by autoconf.                                                  #
+# by autoconf (use make-configure in this directory).           #
 #################################################################
 
 # Remember:
