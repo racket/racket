@@ -6,8 +6,8 @@
   
   (provide repository-tree 
            get-installed-planet-archives
-           
            get-hard-linked-packages
+           get-all-planet-packages
            get-planet-cache-path)
   
   (define (repository-tree)
@@ -49,4 +49,12 @@
                   (lambda (r) (cdr (assoc-table-row->path r)))
                   assoc-table-row->maj
                   assoc-table-row->min)))
-     (get-hard-link-table))))
+     (get-hard-link-table)))
+  
+  ;; get-all-planet-packages : -> listof (list path[absolute, dir] string string (listof string) nat nat)
+  ;; get every planet package, regardless of origin
+  (define (get-all-planet-packages)
+    (append (get-installed-planet-archives)
+            (get-hard-linked-packages)))
+  
+  )

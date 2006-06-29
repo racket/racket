@@ -191,7 +191,7 @@
         (remove-falses
          (map (lambda (spec) (apply planet->cc spec))
               (if (and (null? x-specific-collections) (null? x-specific-planet-dirs))
-                  (get-installed-planet-archives)
+                  (get-all-planet-packages)
                   x-specific-planet-dirs))))
       
       (define collections-to-compile
