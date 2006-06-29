@@ -113,11 +113,13 @@
 				   i
 				   f)]))
 		       (let ([l (with-input-from-file f read)])
-			 (unless (list? l)
-			   (error 'find-relevant-directories
-				  "bad info-domain cache file: ~a" 
-				  f))
-			 l)))))
+			 (cond
+                           [(list? l) l]
+                           [(eof-object? l) '()] ;; allow completely empty files
+                           [else
+                            (error 'find-relevant-directories
+                                   "bad info-domain cache file: ~a" 
+                                   f)]))))))
 		(reverse (table-paths t)))
       ;; For each coll, invert the mapping, adding the col name to the list for each sym: 
       (hash-table-for-each colls
