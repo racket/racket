@@ -40,6 +40,7 @@ pict snip :
            build-lib-pict-stx)
 
   (define orig-inspector (current-code-inspector))
+  (define orig-lcp (current-library-collection-paths))
 
   (define-syntax syntax/cert 
     (syntax-rules ()
@@ -656,7 +657,8 @@ pict snip :
       (define system-eventspace (current-eventspace))
       
       (define (ss-dynamic-require lib id)
-	(parameterize ([current-code-inspector orig-inspector])
+	(parameterize ([current-code-inspector orig-inspector]
+		       [current-library-collection-paths orig-lcp])
 	  (dynamic-require lib id)))
 
       ;; send-over : any syntax -> void
