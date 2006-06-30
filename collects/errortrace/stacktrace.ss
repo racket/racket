@@ -397,14 +397,21 @@
              ;; Just wrap body expressions
              [(module name init-import (#%plain-module-begin body ...))
               top?
-              (let ([bodys (syntax->list (syntax (body ...)))])
+              (let ([bodys (syntax->list (syntax (body ...)))]
+		    [mb (list-ref (syntax->list expr) 3)])
                 (let ([bodyl (map (lambda (b)
                                     (annotate-top b trans?))
                                   bodys)])
-                  (certify
-                   expr
-                   (rebuild expr (map cons bodys bodyl)))))]
-
+		  (certify
+		   expr
+		   (rebuild
+		    expr
+		    (list (cons
+			   mb
+			   (certify
+			    mb
+			    (rebuild mb (map cons bodys bodyl)))))))))]
+		   
              ;; No way to wrap
              [(require i ...) expr]
              [(require-for-syntax i ...) expr]

@@ -77,11 +77,13 @@
                  (if (memq id syms)
                    '()
                    (list #`(define #,(datum->syntax-object stx id stx) #,v))))
-               #`(#%plain-module-begin
-                  (provide #,@path-exports #,@flag-exports)
-                  (define name expr) ...
-                  #,@(apply append (map (mkdef #'use-default) path-exports))
-                  #,@(apply append (map (mkdef #'#f) flag-exports))))))])))
+	       (syntax-property
+		#`(#%plain-module-begin
+		   (provide #,@path-exports #,@flag-exports)
+		   (define name expr) ...
+		   #,@(apply append (map (mkdef #'use-default) path-exports))
+		   #,@(apply append (map (mkdef #'#f) flag-exports)))
+		'certify-mode 'transparent))))])))
 
   (provide (rename config-module-begin #%module-begin)
 	   define

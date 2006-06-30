@@ -266,6 +266,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define orig-inspector (current-code-inspector))
+
   (define errortrace-annotate
     (lambda (top-e)
       (define (normal e)
@@ -280,13 +282,17 @@
                  [(module name init-import (#%plain-module-begin body ...))
                   (normal
                    #`(module name init-import
-                       (#%plain-module-begin
-                        #,((make-syntax-introducer)
-                           #'(require (lib "errortrace-key.ss" "errortrace")))
-                        #,((make-syntax-introducer)
-                           #'(require-for-syntax
-                              (lib "errortrace-key.ss" "errortrace")))
-                        body ...)))])))]
+                       #,(syntax-recertify
+			  #`(#%plain-module-begin
+			     #,((make-syntax-introducer)
+				#'(require (lib "errortrace-key.ss" "errortrace")))
+			     #,((make-syntax-introducer)
+				#'(require-for-syntax
+				   (lib "errortrace-key.ss" "errortrace")))
+			     body ...)
+			  (list-ref (syntax->list top-e) 3)
+			  orig-inspector
+			  #f)))])))]
         [_else
          (normal top-e)])))
 
