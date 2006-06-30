@@ -377,6 +377,8 @@
             (lambda ()
               (display header)
               (newline)
+              ;; comments needed to rehack launchers when paths change
+              ;; (see setup/unixstyle-install.ss)
               (display "# {{{ bindir\n")
               (display dir-finder)
               (display "# }}} bindir\n")
