@@ -1,8 +1,8 @@
 (module parse-table mzscheme
-  (require (lib "list.ss"))
+  (require (lib "list.ss")
+           (lib "contract.ss"))
   (require "configuration-table-structs.ss"
            "bindings.ss")
-  (provide parse-configuration-table)
   
   (define (get-binding key bindings default)
     (first (get-binding* key bindings (list default))))
@@ -83,4 +83,8 @@
   
   ; nat? : tst -> bool
   (define (nat? x)
-    (and (number? x) (exact? x) (integer? x) (<= 0 x))))
+    (and (number? x) (exact? x) (integer? x) (<= 0 x)))
+  
+  (provide/contract
+   ; XXX contract
+   [parse-configuration-table (list? . -> . configuration-table?)]))

@@ -1,10 +1,15 @@
 (module web-server mzscheme
   (require (lib "tcp-sig.ss" "net")
            (lib "unitsig.ss")
+           (lib "contract.ss")
            "sig.ss"
            "web-server-unit.ss"
-	   "configuration.ss")
-  (provide serve)
+	   "configuration.ss"
+           "configuration-structures.ss")
+  (provide/contract
+   [serve (case-> [configuration? . -> . (-> void?)]
+                  [configuration? natural-number/c . -> . (-> void?)]
+                  [configuration? natural-number/c string? . -> . (-> void?)])])
   
   ; : configuration [nat] [(U str #f)] -> -> void
   (define serve
@@ -29,6 +34,4 @@
                    (serve))
                  s)])
        (export))
-     net:tcp^))
-
-)
+     net:tcp^)))

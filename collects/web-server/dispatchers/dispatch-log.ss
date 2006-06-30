@@ -3,11 +3,14 @@
            (lib "date.ss")
            (lib "kw.ss")
            (lib "async-channel.ss")
-           (lib "plt-match.ss"))
+           (lib "plt-match.ss")
+           (lib "contract.ss"))
   (require "dispatch.ss"
            "../servlet-helpers.ss")  
-  (provide interface-version
-           make)
+  (provide/contract
+   [interface-version dispatcher-interface-version?])
+  (provide ; XXX contract kw
+   make)  
   
   (define interface-version 'v1)
   (define/kw (make #:key 

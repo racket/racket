@@ -1,8 +1,8 @@
 (module configuration-util mzscheme
-  (require (lib "file.ss")           
+  (require (lib "contract.ss")
+           (lib "file.ss")           
            (lib "pretty.ss"))
-  (require "configuration-table-structs.ss")
-  (provide (all-defined))
+  (require "configuration-table-structs.ss")   
   
   ; write-configuration-table : configuration-table path -> void
   ; writes out the new configuration file
@@ -55,4 +55,9 @@
   (define (write-to-file file-name x)
     (call-with-output-file file-name
       (lambda (out) (pretty-print x out))
-      'truncate)))
+      'truncate))
+  
+  (provide/contract
+   [write-configuration-table (configuration-table? string? . -> . void)]
+   [format-host (host-table? . -> . list?)]
+   [write-to-file (string? list? . -> . void)]))

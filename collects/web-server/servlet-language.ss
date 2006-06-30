@@ -1,10 +1,11 @@
 (module servlet-language mzscheme
   (require (lib "class.ss")
            (lib "tool.ss" "drscheme")
+           (lib "contract.ss")
            ;(lib "mred.ss" "mred")
            (lib "unitsig.ss"))
-
-  (provide tool@)
+  (provide/contract
+   [tool@ unit/sig?])
 
   (define tool@
     (unit/sig drscheme:tool-exports^
@@ -99,5 +100,4 @@
             ;(language-numbers (list -1000 1000))
             ))
 
-        )))
-  )
+        ))))

@@ -36,5 +36,5 @@
    [rename new-cache-table make-cache-table
            (-> cache-table?)]
    [cache-table-lookup! (cache-table? symbol? (-> any/c) . -> . any/c)]
-   [cache-table-clear! (cache-table? . -> . void?)])
-  (provide cache-table?))
+   [cache-table-clear! (cache-table? . -> . void?)]
+   [cache-table? (any/c . -> . boolean?)]))

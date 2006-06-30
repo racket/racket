@@ -1,13 +1,16 @@
 (module dispatch-passwords mzscheme
-  (require (lib "kw.ss"))
+  (require (lib "kw.ss")
+           (lib "contract.ss"))
   (require "dispatch.ss"
            (all-except "../util.ss" translate-escapes)
            "../configuration.ss"
            "../servlet-helpers.ss"
            "../connection-manager.ss"
            "../response.ss")  
-  (provide interface-version
-           make)
+  (provide/contract
+   [interface-version dispatcher-interface-version?])
+  (provide ; XXX contract kw
+   make)
   
   (define interface-version 'v1)
   (define/kw (make #:key

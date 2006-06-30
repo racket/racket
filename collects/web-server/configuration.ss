@@ -1,5 +1,6 @@
-; configuration language example
 (module configuration mzscheme
+  (require (lib "unitsig.ss")
+           (lib "contract.ss"))
   (require "configuration-structures.ss"
            "configuration-table-structs.ss"
            "sig.ss"
@@ -7,30 +8,6 @@
            "parse-table.ss"
            "private/cache-table.ss"
            "response.ss")
-  (require (lib "unitsig.ss")
-           (lib "contract.ss"))
-  
-  (provide complete-configuration
-           get-configuration
-           build-developer-configuration
-           build-developer-configuration/vhosts ;; added 2/3/05 by Jacob
-           default-configuration-table-path
-           update-configuration)
-  
-  (provide/contract
-   [load-configuration (path? . -> . unit/sig?)]
-   [load-developer-configuration (path? . -> . unit/sig?)])
-  
-  (provide error-response
-           servlet-loading-responder
-           gen-servlet-not-found
-           gen-servlet-responder
-           gen-servlets-refreshed
-           gen-passwords-refreshed
-           gen-authentication-responder
-           gen-protocol-responder
-           gen-file-not-found-responder
-           gen-collect-garbage-responder)
   
   (define default-configuration-table-path
     (build-path (collection-path "web-server") "configuration-table"))
@@ -111,8 +88,6 @@
   
   ; begin stolen from commander.ss, which was stolen from private/drscheme/eval.ss
   ; FIX - abstract this out to a namespace library somewhere (ask Robby and Matthew)
-  
-  
   (define to-be-copied-module-specs
     '(mzscheme
       ;; allow people (SamTH) to use MrEd primitives from servlets.
@@ -121,7 +96,6 @@
       ;; JM: We get around it by only doing it if the module is already attached.
       (lib "mred.ss" "mred")
       (lib "servlet.ss" "web-server")))
-  
   
   ; JBC : added error-handler hack; the right answer is only to transfer the 'mred'
   ; module binding when asked to, e.g. by a field in the configuration file.
@@ -203,7 +177,7 @@
   ; gen-servlet-responder : str -> url tst -> response
   (define (gen-servlet-responder servlet-error-file)
     (lambda (url exn)
-      ; more here - use separate log file
+      ; XXX use separate log file
       ((error-display-handler)
        (format "Servlet exception:\n~a\n" (exn-message exn))
        exn)
@@ -296,4 +270,28 @@
                    (and (regexp-match (car x) host-name-possibly-followed-by-a-collon-and-a-port-number)
                         (cadr x)))
                  expanded-virtual-host-table)
-          default-host))))
+          default-host)))
+  
+  (provide/contract
+   [complete-configuration (string? configuration-table? . -> . configuration?)]
+   [get-configuration (string? . -> . configuration-table?)]
+   ; XXX contract
+   [build-developer-configuration (list? . -> . configuration?)]
+   ; XXX contract
+   [build-developer-configuration/vhosts (list? . -> . configuration?)]
+   [default-configuration-table-path path?]
+   [update-configuration (configuration? (listof (cons/c symbol? any/c)) . -> . configuration?)]
+   [load-configuration (path? . -> . configuration?)]
+   [load-developer-configuration (path? . -> . configuration?)])  
+  (provide/contract
+   [error-response ((natural-number/c string? string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
+   ; XXX contract
+   [servlet-loading-responder (string? any/c . -> . response?)]
+   [gen-servlet-not-found (string? . -> . (string? . -> . response?))]
+   [gen-servlet-responder (string? . -> . (string? any/c . -> . response?))]
+   [gen-servlets-refreshed (string? . -> . (-> response?))]
+   [gen-passwords-refreshed (string? . -> . (-> response?))]
+   [gen-authentication-responder (string? . -> . (string? (cons/c symbol? string?) . -> . response?))]
+   [gen-protocol-responder (string? . -> . (string? . -> . response?))]
+   [gen-file-not-found-responder (string? . -> . (string? . -> . response?))]
+   [gen-collect-garbage-responder (string? . -> . (-> response?))]))

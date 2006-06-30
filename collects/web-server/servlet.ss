@@ -7,35 +7,8 @@
            "private/servlet.ss"
            "private/url.ss"
            "servlet-helpers.ss"
-           "timer.ss"
-           "web-cells.ss")
-  
-  ;; CONTRACT HELPERS
-  (define servlet-response? any/c)
-  
-  (define (xexpr/callback? x)
-    (correct-xexpr? x 
-                    (lambda () #t)
-                    (lambda (exn)
-                      (if (procedure? (exn:invalid-xexpr-code exn))
-                          #t
-                          (begin ((error-display-handler) (exn-message exn) exn)
-                                 #f)))))
-  
-  (define response-generator?
-    (string? . -> . servlet-response?))
-  
-  (define url-transform?
-    (string? . -> . string?))
-  
-  (define expiration-handler?
-    (request? . -> . void?))
-  
-  (define (parameter/c c)
-    parameter?)
-  
-  (define embed/url?
-    (((request? . -> . any/c)) (expiration-handler?) . opt-> . string?))
+           "web-cells.ss"
+           "servlet-structs.ss")  
   
   ;; ************************************************************
   ;; HELPERS
@@ -52,10 +25,11 @@
   ;; Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
-   [xexpr/callback? (any/c . -> . boolean?)]
    [xexpr/callback->xexpr (embed/url? xexpr/callback? . -> . xexpr?)]
-   [current-url-transform (parameter/c url-transform?)]
-   [current-servlet-continuation-expiration-handler (parameter/c expiration-handler?)]
+   ; XXX contract
+   [current-url-transform parameter?]
+   ; XXX contract
+   [current-servlet-continuation-expiration-handler parameter?]
    [redirect/get (-> request?)]
    [redirect/get/forget (-> request?)]
    [adjust-timeout! (number? . -> . void?)]
@@ -68,17 +42,18 @@
    [send/suspend/callback (xexpr/callback? . -> . any/c)])
   
   (require "url.ss")
-  (provide
-   (all-from "web-cells.ss")
-   (all-from "servlet-helpers.ss")
-   (all-from "url.ss"))
+  (provide (all-from "web-cells.ss")
+           (all-from "servlet-helpers.ss")
+           (all-from "url.ss")
+           (all-from "servlet-structs.ss"))
   
   ;; ************************************************************
   ;; EXPORTS
   
   ;; current-url-transform : string? -> string?
+  (define (default-url-transformer x) x)
   (define current-url-transform
-    (make-parameter identity))
+    (make-parameter default-url-transformer))
   
   ;; current-servlet-continuation-expiration-handler : request -> response
   (define current-servlet-continuation-expiration-handler

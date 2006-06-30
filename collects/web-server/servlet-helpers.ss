@@ -1,5 +1,5 @@
 (module servlet-helpers mzscheme
-  (require (lib "list.ss")
+  (require (lib "contract.ss")
            (lib "etc.ss")
            (lib "plt-match.ss")
            (lib "xml.ss" "xml")
@@ -8,21 +8,10 @@
   (require "util.ss"
            "response.ss"
            "request-structs.ss"
-           "bindings.ss")
-  (provide get-host
-           (all-from "bindings.ss")
-           extract-user-pass
-           build-suspender
-           make-html-response/incremental
-           report-errors-to-browser
-           redirect-to
-           permanently
-           temporarily
-           see-other
-           (all-from "request-structs.ss")
-           request-bindings
-           request-headers
-           translate-escapes)
+           "bindings.ss"
+           "servlet-structs.ss")
+  (provide (all-from "bindings.ss")
+           (all-from "request-structs.ss"))  
   
   (define (request-headers request)
     (map (match-lambda
@@ -51,7 +40,7 @@
             [(struct header (_ v))
              (string->symbol (bytes->string/utf-8 v))])]
       [else DEFAULT-HOST-NAME]))
-      
+  
   ; build-suspender : (listof html) (listof html) [(listof (cons sym str))] [(listof (cons sym str))] -> str -> response
   (define build-suspender
     (opt-lambda (title content [body-attributes '([bgcolor "white"])] [head-attributes null])
@@ -134,4 +123,24 @@
   ;; does the second part of the authorization header start with #"Basic "
   (define basic?
     (let ([rx (byte-regexp #"^Basic .*")])
-      (lambda (a) (regexp-match rx a)))))
+      (lambda (a) (regexp-match rx a))))
+  
+  (provide ; all-from
+   translate-escapes)
+  (provide/contract
+   [get-host (url? (listof header?) . -> . symbol?)]
+   ; XXX contract maybe
+   [extract-user-pass ((listof header?) . -> . (or/c false/c (cons/c string? string?)))]
+   [build-suspender (((listof xexpr?) (listof xexpr?))
+                     ((listof (list/c symbol? string?)) (listof (list/c symbol? string?)))
+                     . opt-> .
+                     (k-url? . -> . xexpr?))]
+   [make-html-response/incremental (((string? . -> . void) . -> . void) . -> . response/incremental?)]
+   [report-errors-to-browser ((servlet-response? . -> . void) . -> . void)]
+   [redirect-to ((string?) (redirection-status?) . opt-> . response/full?)]
+   [permanently redirection-status?]
+   [temporarily redirection-status?]
+   [see-other redirection-status?]
+   [request-bindings (request? . -> . (listof (or/c (cons/c symbol? string?)
+                                                    (cons/c symbol? bytes?))))]
+   [request-headers (request? . -> . (listof (cons/c symbol? string?)))]))

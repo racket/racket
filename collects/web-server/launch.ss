@@ -2,12 +2,14 @@
 (module launch mzscheme
   (require (lib "cmdline.ss")
            (lib "pregexp.ss")
-           "util.ss"
+           (lib "contract.ss")
+           (lib "unitsig.ss")
+           (lib "tcp-sig.ss" "net"))
+  (require "util.ss"
            "web-server-unit.ss"
            "sig.ss"
            "configuration.ss"
-           (lib "unitsig.ss")
-           (lib "tcp-sig.ss" "net"))
+           "configuration-structures.ss")
 
   (define configuration@
     (parse-command-line
@@ -58,4 +60,5 @@
      (export (open S)))
     #f net:tcp^)
 
-  (provide serve))
+  (provide ; XXX contract
+   serve))

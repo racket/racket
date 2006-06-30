@@ -1,20 +1,11 @@
 (module sig mzscheme
   (require (lib "unitsig.ss"))
-  (provide 
-   dispatch-server^ dispatch-server-config^
+  (require "dispatch-server-sig.ss")
+  (provide ; XXX contract signature
    web-server^ servlet^ web-config^ web-config/pervasive^ web-config/local^)
 
-  (define-signature dispatch-server^
-    (serve
-     serve-ports
-     ; for environment:
-     server-loop))
   (define-signature web-server^
     ((open dispatch-server^)))
-  
-  (define-signature dispatch-server-config^
-    (port listen-ip max-waiting initial-connection-timeout
-          read-request dispatch))
   
   (define-signature servlet^
     (initial-request send/suspend send/finish send/back send/forward adjust-timeout!))

@@ -1,18 +1,12 @@
 (module url mzscheme
   (require (lib "list.ss")
            (lib "etc.ss")
+           (lib "contract.ss")
            (lib "url.ss" "net")
            (lib "struct.ss"))
   (require "private/url.ss"
            "request-structs.ss")
-           
-  ;; URL parsing
-  (provide (struct servlet-url (protocol host port servlets-root instance-id k-id nonce servlet-path extra-path))
-           servlet-url->url-string
-           servlet-url->url-string/no-continuation
-           servlet-url->servlet-url/no-extra-path 
-           request->servlet-url
-           uri->servlet-url)
+  
   (define-struct servlet-url (protocol host port
                                        servlets-root 
                                        instance-id k-id nonce 
@@ -38,17 +32,17 @@
   (define (servlet-url->url-string su)
     (let ([the-url
            (make-url (servlet-url-protocol su)
-                         #f
-                         #f ;(servlet-url-host su)
-                         #f ;(servlet-url-port su)
-                         #t
-                         (append (reverse (rest (reverse (servlet-url-servlets-root su))))
-                                 (list (make-path/param (path/param-path (first (reverse (servlet-url-servlets-root su))))
-                                                        empty))
-                                 (servlet-url-servlet-path su)
-                                 (servlet-url-extra-path su))
-                         empty
-                         #f)])
+                     #f
+                     #f ;(servlet-url-host su)
+                     #f ;(servlet-url-port su)
+                     #t
+                     (append (reverse (rest (reverse (servlet-url-servlets-root su))))
+                             (list (make-path/param (path/param-path (first (reverse (servlet-url-servlets-root su))))
+                                                    empty))
+                             (servlet-url-servlet-path su)
+                             (servlet-url-extra-path su))
+                     empty
+                     #f)])
       (if (and (servlet-url-instance-id su)
                (servlet-url-k-id su) 
                (servlet-url-nonce su))               
@@ -88,4 +82,22 @@
                           (list (first (url-path uri)))
                           k-instance k-id k-salt
                           servlet-path
-                          path)))))
+                          path))))
+  
+  (provide/contract
+   ; XXX contract maybe
+   [struct servlet-url ([protocol (or/c false/c string?)]
+                        [host (or/c false/c string?)]
+                        [port (or/c false/c natural-number/c)]
+                        [servlets-root (listof path/param?)]
+                        [instance-id number?]
+                        [k-id number?]
+                        [nonce number?]
+                        [servlet-path (listof path/param?)]
+                        [extra-path (listof path/param?)])]
+   [servlet-url->url-string (servlet-url? . -> . string?)]
+   [servlet-url->url-string/no-continuation (servlet-url? . -> . string?)]
+   [servlet-url->servlet-url/no-extra-path (servlet-url? . -> . servlet-url?)]
+   [request->servlet-url (request? . -> . servlet-url?)]
+   ; XXX contract maybe
+   [uri->servlet-url ((url?) ((or/c false/c string?) (or/c false/c natural-number/c)) . opt-> . servlet-url?)]))

@@ -1,11 +1,8 @@
 (module timer mzscheme
-  (require "timer-structs.ss")
   (require (lib "list.ss")
+           (lib "contract.ss")
            (lib "async-channel.ss"))
-  (provide timer? 
-           start-timer reset-timer! increment-timer!
-           cancel-timer!
-           start-timer-manager)
+  (require "timer-structs.ss")
   
   (define timer-ch (make-async-channel))
   
@@ -86,7 +83,15 @@
     (revise-timer! timer
                    (+ (- (timer-expire-seconds timer) (current-inexact-milliseconds))
                       (* 1000 secs))
-                   (timer-action timer))))
+                   (timer-action timer)))
+  
+  (provide/contract
+   [timer? (any/c . -> . boolean?)]
+   [start-timer-manager (custodian? . -> . void)]
+   [start-timer (number? (-> void) . -> . timer?)]
+   [reset-timer! (timer? number? . -> . void)]
+   [increment-timer! (timer? number? . -> . void)]
+   [cancel-timer! (timer? . -> . void)]))
 
 ; --- timeout plan
 

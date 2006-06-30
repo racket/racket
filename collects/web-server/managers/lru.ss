@@ -1,8 +1,12 @@
 (module lru mzscheme
   (require (lib "plt-match.ss")
+           (lib "contract.ss")
            (lib "kw.ss"))
-  (require "manager.ss")
-  (provide create-LRU-manager)
+  (require "manager.ss"
+           "../servlet-structs.ss")
+  (provide/contract
+   ; XXX contract kw
+   [create-LRU-manager ((expiration-handler? number? number? (-> boolean?)) any/c . ->* . (manager?))])
   
   ;; Utility
   (define (make-counter)

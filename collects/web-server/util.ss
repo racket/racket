@@ -8,24 +8,6 @@
            (lib "uri-codec.ss" "net"))
   (require "request-structs.ss")
   
-  (provide provide-define-struct
-           extract-flag
-           translate-escapes
-           hash-table-empty?
-           url-path->string)
-  
-  (provide/contract
-   [valid-port? (any/c . -> . boolean?)]
-   [decompose-request ((request?) . ->* . (url? symbol? string?))]
-   [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
-   [path->list  (path? . -> . (cons/c (or/c path? (symbols 'up 'same))
-                                      (listof (or/c path? (symbols 'up 'same)))))]
-   [url-path->path ((or/c (symbols 'up 'same) path?) string? . -> . path?)]
-   [directory-part (path? . -> . path?)]
-   [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
-   [exn->string ((or/c exn? any/c) . -> . string?)]
-   [build-path-unless-absolute (path? (or/c string? path?) . -> . path?)])
-  
   ;; valid-port? : any/c -> boolean?
   (define (valid-port? p)
     (and (number? p) (integer? p) (exact? p) (<= 1 p 65535)))
@@ -40,7 +22,7 @@
          [else (list* "/"
                       (maybe-join-params (car strs))
                       (loop (cdr strs)))]))))
-  
+    
   ;; needs to unquote things!
   (define (maybe-join-params s)
     (cond
@@ -89,7 +71,7 @@
   ;; Notes: (GregP)
   ;; 1. What's the significance of char # 255 ???
   ;; 2. 255 isn't an ascii character. ascii is 7-bit
-  ;; 3. OK fuck this. It is only used in three places, some of them
+  ;; 3. OK f this. It is only used in three places, some of them
   ;;    will involve bytes while the others may involve strings. So
   ;;    I will just use regular expressions and get on with life.
   (define (prefix?-old prefix)
@@ -152,20 +134,6 @@
                              [else (cons x acc)]))
                          null
                          (regexp-split #rx"/" p)))))))
-
-  ; update-params : Url (U #f String) -> String
-  ; to create a new url just like the old one, but with a different parameter part
-  ;; GREGP: this is broken! replace with the version from new-kernel
-  ;  (define (update-params uri params)
-  ;    (url->string
-  ;     (make-url (url-scheme uri)
-  ;               (url-user uri)
-  ;               (url-host uri)
-  ;               (url-port uri)
-  ;               (url-path uri)
-  ;               params
-  ;               (url-query uri)
-  ;               (url-fragment uri))))
   
   ; to convert a platform dependent path into a listof path parts such that
   ; (forall x (equal? (path->list x) (path->list (apply build-path (path->list x)))))
@@ -178,19 +146,9 @@
             [else ; conflate 'relative and #f
              new-acc])))))
   
-  ; this should go somewhere that other collections can use it too
-  (define-syntax provide-define-struct
-    (lambda (stx)
-      (syntax-case stx ()
-        [(_ (struct-name parent-name) (field ...))
-         (syntax (begin (define-struct (struct-name parent-name) (field ...))
-                        (provide (struct struct-name (field ...)))))]
-        [(_ struct-name (field ...))
-         (syntax (begin (define-struct struct-name (field ...))
-                        (provide (struct struct-name (field ...)))))])))
-  
   ; this is used by launchers
   ; extract-flag : sym (listof (cons sym alpha)) alpha -> alpha
+  ; XXX remove
   (define (extract-flag name flags default)
     (let ([x (assq name flags)])
       (if x
@@ -199,9 +157,7 @@
   
   ; hash-table-empty? : hash-table -> bool
   (define (hash-table-empty? table)
-    (let/ec out
-      (hash-table-for-each table (lambda (k v) (out #f)))
-      #t))
+    (zero? (hash-table-count table)))
   
   ; This comes from Shriram's collection, and should be exported form there.
   ; translate-escapes : String -> String
@@ -220,4 +176,20 @@
             (cond
               [(char=? ic #\+) #\space]
               [else ic]))
-          (list* c (loop cs))])))))
+          (list* c (loop cs))]))))
+  
+  (provide/contract
+   [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
+   [extract-flag (symbol? (listof (cons/c symbol? any/c)) any/c . -> . any/c)]
+   [translate-escapes (string? . -> . string?)]
+   [hash-table-empty? (any/c . -> . boolean?)]
+   [valid-port? (any/c . -> . boolean?)]
+   [decompose-request ((request?) . ->* . (url? symbol? string?))]
+   [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
+   [path->list  (path? . -> . (cons/c (or/c path? (symbols 'up 'same))
+                                      (listof (or/c path? (symbols 'up 'same)))))]
+   [url-path->path ((or/c (symbols 'up 'same) path?) string? . -> . path?)]
+   [directory-part (path? . -> . path?)]
+   [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
+   [exn->string ((or/c exn? any/c) . -> . string?)]
+   [build-path-unless-absolute (path? (or/c string? path?) . -> . path?)]))

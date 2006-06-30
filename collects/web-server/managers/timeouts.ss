@@ -1,8 +1,11 @@
 (module timeouts mzscheme
-  (require (lib "plt-match.ss"))
+  (require (lib "plt-match.ss")
+           (lib "contract.ss"))
   (require "manager.ss")
-  (require "../timer.ss")
-  (provide create-timeout-manager)
+  (require "../timer.ss"
+           "../servlet-structs.ss")
+  (provide/contract
+   [create-timeout-manager (expiration-handler? number? number? . -> . manager?)])
   
   ;; Utility
   (define (make-counter)

@@ -1,9 +1,7 @@
 (module bindings mzscheme
-  (require (lib "list.ss"))
-  (provide extract-binding/single
-           extract-bindings
-           exists-binding?)
-                
+  (require (lib "list.ss")
+           (lib "contract.ss"))
+  
   ; extract-binding/single : sym (listof (cons str str)) -> str
   (define (extract-binding/single name bindings)
     (define lst (extract-bindings name bindings))
@@ -24,4 +22,9 @@
   (define (exists-binding? name bindings)
     (if (assq name bindings)
         #t
-        #f)))
+        #f))
+  
+  (provide/contract
+   [extract-binding/single (symbol? (listof (cons/c symbol? any/c)) . -> . any/c)]
+   [extract-bindings (symbol? (listof (cons/c symbol? any/c)) . -> . (listof any/c))]
+   [exists-binding? (symbol? (listof (cons/c symbol? any/c)) . -> . boolean?)]))

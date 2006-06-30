@@ -1,13 +1,9 @@
 (module monitor-server mzscheme
   (require (lib "etc.ss")
-           "monitor-poke-web-server.ss"
-           "monitor-emailer.ss"
+           (lib "contract.ss")
            (lib "match.ss"))
-  
-  (provide monitor
-           default-server-port
-           default-poll-frequency-seconds
-           default-server-response-timeout-seconds)
+  (require "monitor-poke-web-server.ss"
+           "monitor-emailer.ss")
   
   (define default-server-port 80)
   (define default-poll-frequency-seconds 3600)
@@ -33,4 +29,10 @@
             [`(ok) (void)]
             [else (send-email (result->message result))])
           (sleep poll-frequency-seconds)
-          (check-server))))))
+          (check-server)))))
+  
+  (provide/contract 
+   [monitor ((string? string?) (number? number? number?) . -> . void)]
+   [default-server-port number?]
+   [default-poll-frequency-seconds number?]
+   [default-server-response-timeout-seconds number?]))

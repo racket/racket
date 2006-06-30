@@ -2,7 +2,8 @@
   (require (lib "url.ss" "net")
            (lib "kw.ss")
            (lib "plt-match.ss")
-           (lib "unitsig.ss"))
+           (lib "unitsig.ss")
+           (lib "contract.ss"))
   (require "dispatch.ss"
            "../web-server-structs.ss"
            "../connection-manager.ss"
@@ -13,11 +14,15 @@
            (all-except "../util.ss" translate-escapes)
            "../managers/manager.ss"
            "../managers/timeouts.ss"
+           "../managers/lru.ss"
            "../private/url.ss"
            "../private/servlet.ss"
            "../private/cache-table.ss")  
-  (provide interface-version
-           make)
+  (provide/contract
+   [interface-version dispatcher-interface-version?])
+  (provide ; XXX contract improve
+   ; XXX contract kw
+   make)
   
   (define interface-version 'v1)
   (define/kw (make config:instances config:scripts config:make-servlet-namespace

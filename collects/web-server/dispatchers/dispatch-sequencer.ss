@@ -1,8 +1,11 @@
 (module dispatch-sequencer mzscheme
-  (require (lib "list.ss"))
+  (require (lib "list.ss")
+           (lib "contract.ss"))
   (require "dispatch.ss")
-  (provide interface-version
-           make)
+  (provide/contract
+   [interface-version dispatcher-interface-version?])
+  (provide ; XXX contract kw
+   make)
   
   (define interface-version 'v1)
   (define ((make . dispatchers) conn req)

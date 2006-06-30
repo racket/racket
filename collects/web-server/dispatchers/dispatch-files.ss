@@ -2,14 +2,17 @@
   (require (lib "url.ss" "net")
            (lib "xml.ss" "xml")
            (lib "kw.ss")
-           (lib "list.ss"))
+           (lib "list.ss")
+           (lib "contract.ss"))
   (require "dispatch.ss"
            "../configuration.ss"
            "../util.ss"
            "../mime-types.ss"
-           "../response.ss")  
-  (provide interface-version
-           make)
+           "../response.ss")
+  (provide/contract
+   [interface-version dispatcher-interface-version?])
+  (provide ; XXX contract kw
+   make)
   
   (define interface-version 'v1)
   (define/kw (make #:key 

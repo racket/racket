@@ -1,5 +1,4 @@
 (module configure mzscheme
-  (provide servlet servlet-maker)
   (require (lib "unitsig.ss")
            (lib "servlet-sig.ss" "web-server")
            (lib "url.ss" "net")
@@ -7,12 +6,17 @@
            (lib "list.ss")
            (lib "pretty.ss")
            (lib "file.ss")
+           (lib "contract.ss")
            (only (lib "configuration.ss" "web-server")
                  default-configuration-table-path)
            (lib "configuration-table-structs.ss" "web-server")
            (lib "parse-table.ss" "web-server")
            (lib "configuration-util.ss" "web-server")
            (all-except (lib "util.ss" "web-server") translate-escapes))
+  (provide/contract
+   [servlet unit/sig?]
+   ; XXX contract
+   [servlet-maker (string? . -> . unit/sig?)])
   
   ;; FIX
   ; - fuss with changing absolute paths into relative ones internally
