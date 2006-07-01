@@ -1,7 +1,7 @@
 package idraw;
         
 public abstract class World {
- public Canvas theCanvas; 
+ protected Canvas theCanvas; 
  public void bigBang(int width, int height, double s) {
 	if (width <= 0)
            throw new RuntimeException(

@@ -70,7 +70,14 @@
       (define (check-arg value method argument)
 	(or (> value 0)
 	    (raise-error
-	      (format "Method ~a expects an int >= 0 for ~a argument, given ~a" method argument value))))
+             (format "Method ~a expects an int >= 0 for ~a argument, given ~a" method argument value))))
+      
+      ;Raises an error if string is null
+      ;check-string: string string string -> boolean
+      (define (check-string value method argument)
+	(when (null? value)
+          (raise-error (format "Method ~a expects a non-null String for ~a argument, given null" method argument)))
+        #t)
   
       (define (to-lower-case s)
 	(letrec ((lower 
@@ -130,8 +137,9 @@
       (define (drawLine-draw.Posn-draw.Posn-draw.Color-native this accs gets privates p0 p1 c)
 	(wrap-start-check 
 	  ([hash-table-get privates '%draw-solid-line] (build-posn p0) (build-posn p1) (color->symbol c))))
-    
+
       (define (drawString-draw.Posn-java.lang.String-native this accs gets privates p s)
+	(define _ (check-string s "drawString(Posn, String)" "second"))
 	(define s* (send s get-mzscheme-string))
 	(wrap-start-check
 	  ([hash-table-get privates '%draw-string] (build-posn p) s*)))
