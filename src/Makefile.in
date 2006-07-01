@@ -38,7 +38,7 @@ SETUP_ARGS = -mvqX "$(DESTDIR)$(collectsdir)" -M setup
 
 install:
 	$(MAKE) plain-install
-	"$(DESTDIR)$(bindir)/mzscheme3m" $(SETUP_ARGS)
+	"$(DESTDIR)$(bindir)/mzscheme" $(SETUP_ARGS)
 	$(MAKE) fix-paths
 
 plain-install:
