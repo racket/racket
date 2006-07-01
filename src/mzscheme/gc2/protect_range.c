@@ -5,6 +5,14 @@
    [page allocator]
 */
 
+#ifdef _WIN32
+
+# define initialize_protect_page_ranges(b, s) /* */
+# define add_protect_page_range(s, l, a, w) protect_pages(s, l, w)
+# define flush_protect_page_ranges(w) /* */
+
+#else
+
 static Page_Range protect_range;
 
 static void initialize_protect_page_ranges(void *block, unsigned long size)
@@ -32,3 +40,5 @@ static void add_protect_page_range(void *_start, unsigned long len, unsigned lon
     add_page_range(&protect_range, _start, len, alignment);
   }
 }
+
+#endif
