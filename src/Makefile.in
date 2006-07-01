@@ -34,10 +34,11 @@ mred-stub: @MAKE_MRED@
 
 mred3m-stub: @MAKE_MRED3M@
 
+SETUP_ARGS = -mvqX "$(DESTDIR)$(collectsdir)" -M setup
 
 install:
 	$(MAKE) plain-install
-	$(MAKE) setup-plt
+	"$(DESTDIR)$(bindir)/mzscheme3m" $(SETUP_ARGS)
 	$(MAKE) fix-paths
 
 plain-install:
@@ -52,9 +53,6 @@ install-normal:
 
 mredinstall-stub: @MAKE_MREDINSTALL@
 
-setup-plt:
-	"$(DESTDIR)$(bindir)/mzscheme" -mvqX "$(DESTDIR)$(collectsdir)" -M setup
-
 plain-install-3m:
 	$(MAKE) install-normal
 	$(MAKE) mzinstall3m
@@ -62,7 +60,7 @@ plain-install-3m:
 
 install-3m:
 	$(MAKE) plain-install-3m
-	$(MAKE) setup-plt
+	"$(DESTDIR)$(bindir)/mzscheme3m" $(SETUP_ARGS)
 	$(MAKE) fix-paths
 
 mredinstall3m-stub: @MAKE_MREDINSTALL3M@

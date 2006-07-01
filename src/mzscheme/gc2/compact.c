@@ -3932,6 +3932,11 @@ void *GC_malloc_one_tagged(size_t size_in_bytes)
   return m;
 }
 
+void *GC_malloc_one_small_tagged(size_t size_in_bytes)
+{
+  return GC_malloc_one_tagged(size_in_bytes);
+}
+
 #ifndef gcINLINE
 # define gcINLINE inline
 #endif
@@ -4096,7 +4101,7 @@ void GC_free(void *p)
   }
 }
 
-long GC_malloc_atomic_stays_put_threshold() 
+long GC_malloc_stays_put_threshold() 
 { 
   return BIGBLOCK_MIN_SIZE;
 }

@@ -164,6 +164,8 @@ inline static void free_used_pages(size_t len)
 #define LOGICALLY_FREEING_PAGES(len) free_used_pages(len)
 #define ACTUALLY_FREEING_PAGES(len) /* empty */
 
+#include "page_range.c"
+
 #if _WIN32
 # include "vm_win.c"
 # define MALLOCATOR_DEFINED
@@ -184,6 +186,8 @@ void designate_modified(void *p);
 #ifndef MALLOCATOR_DEFINED
 # include "vm_mmap.c"
 #endif
+
+#include "protect_range.c"
 
 #define malloc_dirty_pages(size,align) malloc_pages(size,align)
 
@@ -476,7 +480,29 @@ void *GC_malloc_atomic_uncollectable(size_t s) { return malloc(s); }
 void *GC_malloc_allow_interior(size_t s) {return allocate_big(s, PAGE_ARRAY);}
 void GC_free(void *p) {}
 
-long GC_malloc_atomic_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW); }
+void *GC_malloc_one_small_tagged(size_t sizeb)
+{
+  unsigned long newsize;
+
+  sizeb += WORD_SIZE;
+  newsize = gen0_alloc_page->size + sizeb;
+
+  if(newsize > GEN0_PAGE_SIZE) {
+    return GC_malloc_one_tagged(sizeb - WORD_SIZE);
+  } else {
+    void *retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
+    struct objhead *info = (struct objhead *)retval;
+
+    /* info->type = type; */ /* We know that the type field is already 0 */
+    info->size = (sizeb >> gcLOG_WORD_SIZE);
+    gen0_alloc_page->size = newsize;
+    gen0_current_size += sizeb;
+    
+    return PTR(NUM(retval) + WORD_SIZE);
+  }
+}
+
+long GC_malloc_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW); }
 
 /* this function resizes generation 0 to the closest it can get (erring high)
    to the size we've computed as ideal */
@@ -563,7 +589,6 @@ inline static void reset_nursery(void)
 /*   } */
   
   resize_gen0(new_gen0_size);
-  flush_freed_pages();
 }
 
 /* This procedure fundamentally returns true if a pointer is marked, and
@@ -1805,6 +1830,8 @@ void GC_init_type_tags(int count, int weakbox, int ephemeron, int weakarray)
 			   fixup_weak_array, 0, 0);
     initialize_signal_handler();
     GC_add_roots(&park, (char *)&park + sizeof(park) + 1);
+
+    initialize_protect_page_ranges(malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE), APAGE_SIZE);
   }
 }
 
@@ -2268,9 +2295,14 @@ static void prepare_pages_for_collection(void)
   if(gc_full) {
     /* we need to make sure that previous_size for every page is reset, so
        we don't accidentally screw up the mark routine */
+    if (generations_available) {
+      for(i = 0; i < PAGE_TYPES; i++)
+	for(work = pages[i]; work; work = work->next)
+	  add_protect_page_range(work, work->big_page ? work->size : APAGE_SIZE, APAGE_SIZE, 1);
+      flush_protect_page_ranges(1);
+    }
     for(i = 0; i < PAGE_TYPES; i++)
       for(work = pages[i]; work; work = work->next) {
-	protect_pages(work, work->big_page ? work->size : APAGE_SIZE, 1);
 	work->live_size = 0;
 	work->previous_size = HEADER_SIZEB;
       }
@@ -2279,9 +2311,11 @@ static void prepare_pages_for_collection(void)
        pages in pages[] from the page map */
     for(i = 0; i < PAGE_TYPES; i++)
       for(work = pages[i]; work; work = work->next) {
-	protect_pages(work, work->big_page ? work->size : APAGE_SIZE, 1);
+	if (generations_available)
+	  add_protect_page_range(work, work->big_page ? work->size : APAGE_SIZE, APAGE_SIZE, 1);
 	pagemap_remove(work);
       }
+    flush_protect_page_ranges(1);
   }
 
   /* we do this here because, well, why not? */
@@ -2330,7 +2364,6 @@ static void mark_backpointers(void)
 	  }
 	  work->previous_size = HEADER_SIZEB;
 	} else {
-	  protect_pages(work, work->big_page ? work->size : APAGE_SIZE, 1);
 	  GCDEBUG((DEBUGOUTF,"Setting previous_size on %p to %i\n", work,
 		   work->size));
 	  work->previous_size = work->size;
@@ -2632,7 +2665,9 @@ static void protect_old_pages(void)
     if(i != PAGE_ATOMIC)
       for(page = pages[i]; page; page = page->next)
 	if(page->page_type != PAGE_ATOMIC) 
-	  protect_pages(page, page->size, 0);
+	  add_protect_page_range(page, page->size, APAGE_SIZE, 0);
+
+  flush_protect_page_ranges(0);
 }
 
 static void gc_overmem_abort()
@@ -2724,7 +2759,8 @@ static void garbage_collect(int force_full)
   do_btc_accounting();
   if (generations_available)
     protect_old_pages();
-  flush_freed_pages();
+  if (gc_full)
+    flush_freed_pages();
   reset_finalizer_tree();
 
   /* new we do want the allocator freaking if we go over half */

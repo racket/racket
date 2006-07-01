@@ -2562,18 +2562,25 @@
                                   [(null? body)
                                    ;; Starting live-vars record for this block:
                                    ;;  Create new tag
-                                   ;;  Locally-defined arrays and records are always live.
+                                   ;;  Locally-defined arrays, records, and & variables, are always live.
                                    ;;  Start with -1 maxlive in case we want to check whether anything
                                    ;;   was pushed in the block.
                                    (values null (make-live-var-info (gentag)
                                                                     -1
                                                                     0
                                                                     (append
+								     (let loop ([vars extra-vars])
+								       (cond
+									[(null? vars) null]
+									[(memq (caar vars) &-vars)
+									 (cons (car vars) (loop (cdr vars)))]
+									[else (loop (cdr vars))]))
                                                                      (let loop ([vars local-vars])
                                                                        (cond
                                                                          [(null? vars) null]
                                                                          [(or (array-type? (cdar vars))
-                                                                              (struc-type? (cdar vars)))
+                                                                              (struc-type? (cdar vars))
+									      (memq (caar vars) &-vars))
                                                                           (cons (car vars) (loop (cdr vars)))]
                                                                          [else (loop (cdr vars))]))
                                                                      (live-var-info-vars live-vars))

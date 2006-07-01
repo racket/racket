@@ -1,3 +1,14 @@
+/* 
+   Provides OR requires:
+    Tree (with left and right Tree fields)
+    Splay_Item
+    Set_Splay_Item
+   Provides, can can be renamed via macros (to support
+                    multiplue uses of the file):
+    splay
+    splay_insert
+    splay_delete
+*/
 /*
                 An implementation of top-down splaying
                     D. Sleator <sleator@cs.cmu.edu>
@@ -121,6 +132,8 @@ static Tree * splay_insert(unsigned long i, Tree * new, Tree * t) {
     }
 }
 
+#ifndef OMIT_SPLAY_DELETE
+
 static Tree * splay_delete(unsigned long i, Tree * t) {
 /* Deletes i from the tree if it's there.               */
 /* Return a pointer to the resulting tree.              */
@@ -138,3 +151,5 @@ static Tree * splay_delete(unsigned long i, Tree * t) {
     }
     return t;                         /* It wasn't there */
 }
+
+#endif

@@ -126,6 +126,11 @@ GC2_EXTERN void *GC_malloc_one_tagged(size_t);
    Alloc a tagged item, initially zeroed.  MzScheme sets the tag
    before a collection. */
 
+GC2_EXTERN void *GC_malloc_one_small_tagged(size_t);
+/* 
+   Like GC_malloc_one_tagged, but the size must be less than 1kb,
+   it must not be zero, and it must be a multiple of the word size. */
+
 GC2_EXTERN void *GC_malloc_one_xtagged(size_t);
 /* 
    Alloc an item, initially zeroed. Rather than having a specific tag,
@@ -191,10 +196,11 @@ GC2_EXTERN void GC_free_immobile_box(void **b);
    Allocate (or free) a non-GCed box containing a pointer to a GCed
    value.  The pointer is stored as the first longword of the box. */
 
-GC2_EXTERN long GC_malloc_atomic_stays_put_threshold();
+GC2_EXTERN long GC_malloc_stays_put_threshold();
 /*
-   Returns a minimum size for which atomic allocations generate
-   objects that never move. */
+   Returns a minimum size for which allocations generate
+   objects that never move, and where pointers are allowed
+   into the object's interior. */
 
 /***************************************************************************/
 /* Memory tracing                                                          */

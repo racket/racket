@@ -2457,8 +2457,8 @@ Scheme_Object *scheme_stx_activate_certs(Scheme_Object *o)
 /*                           stx comparison                               */
 /*========================================================================*/
 
-static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, int ignore_barrier, 
-		      Scheme_Object *barrier_env, Scheme_Object *ignore_rib)
+XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, int ignore_barrier, 
+				     Scheme_Object *barrier_env, Scheme_Object *ignore_rib)
 /* Compares the marks in two wraps lists. A result of 2 means that the
    result depended on a mark barrier or barrier env. Use #f for barrier_env
    to treat no rib envs as barriers; we check for barrier_env only in ribs

@@ -1413,9 +1413,9 @@ MZ_EXTERN void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b);
 
 /* Allocation */
 #define scheme_alloc_object() \
-   ((Scheme_Object *) scheme_malloc_tagged(sizeof(Scheme_Simple_Object)))
+   ((Scheme_Object *) scheme_malloc_small_tagged(sizeof(Scheme_Simple_Object)))
 #define scheme_alloc_small_object() \
-   ((Scheme_Object *) scheme_malloc_tagged(sizeof(Scheme_Small_Object)))
+   ((Scheme_Object *) scheme_malloc_small_tagged(sizeof(Scheme_Small_Object)))
 #define scheme_alloc_stubborn_object() \
    ((Scheme_Object *) scheme_malloc_stubborn_tagged(sizeof(Scheme_Simple_Object)))
 #define scheme_alloc_stubborn_small_object() \
@@ -1459,6 +1459,7 @@ void *scheme_malloc(size_t size);
 #  include "../gc2/gc2.h"
 # endif
 # define scheme_malloc_tagged GC_malloc_one_tagged
+# define scheme_malloc_small_tagged(s) GC_malloc_one_small_tagged(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(s)))
 # define scheme_malloc_array_tagged GC_malloc_array_tagged
 # define scheme_malloc_atomic_tagged GC_malloc_atomic_tagged
 # define scheme_malloc_stubborn_tagged GC_malloc_one_tagged
@@ -1479,6 +1480,7 @@ extern void *scheme_malloc_uncollectable_tagged(size_t);
 extern void *scheme_malloc_envunbox(size_t);
 # else
 #  define scheme_malloc_tagged scheme_malloc
+#  define scheme_malloc_small_tagged scheme_malloc
 #  define scheme_malloc_array_tagged scheme_malloc
 #  define scheme_malloc_atomic_tagged scheme_malloc_atomic
 #  define scheme_malloc_stubborn_tagged scheme_malloc_stubborn

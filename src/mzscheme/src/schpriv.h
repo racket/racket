@@ -29,7 +29,7 @@
 
 #define _MALLOC_N(x, n, malloc) ((x*)malloc(sizeof(x)*(n)))
 #define MALLOC_ONE(x) _MALLOC_N(x, 1, scheme_malloc)
-#define MALLOC_ONE_TAGGED(x) _MALLOC_N(x, 1, scheme_malloc_tagged)
+#define MALLOC_ONE_TAGGED(x) _MALLOC_N(x, 1, scheme_malloc_small_tagged)
 #define MALLOC_N_TAGGED(x, n) _MALLOC_N(x, n, scheme_malloc_array_tagged)
 #ifdef MZTAG_REQUIRED
 # define scheme_malloc_rt(x) scheme_malloc_tagged(x)
@@ -1107,7 +1107,7 @@ typedef struct {
 # define SCHEME_BIGPOS(b) (MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) & 0x1)
 # define SCHEME_SET_BIGPOS(b, v) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) = ((v) | SCHEME_BIGINLINE(b))
 # define SCHEME_BIGINLINE(b) (MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) & 0x2)
-# define SCHEME_SET_BIGINLINE(b, v) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) = (((v) << 1) | SCHEME_BIGPOS(b))
+# define SCHEME_SET_BIGINLINE(b) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) |= (0x2 | SCHEME_BIGPOS(b))
 #else
 # define SCHEME_BIGPOS(b) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso)
 # define SCHEME_SET_BIGPOS(b, v) SCHEME_BIGPOS(b) = v

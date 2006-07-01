@@ -262,6 +262,9 @@ typedef struct {
 #define STACK_END(r) (local_list_stack_pos = r.pos, local_list_stack = r.stack)
 
 #ifdef MZ_PRECISE_GC
+/* Although list stacks should work with precise GC as implemented
+   below, there's much less to be gained with a generational GC, so 
+   we keep it simple. */
 # define USE_LISTSTACK(x) 0
 #else
 # define USE_LISTSTACK(x) x
@@ -528,16 +531,35 @@ void scheme_init_read(Scheme_Env *env)
 			     env);
 }
 
+static Scheme_Simple_Object *malloc_list_stack()
+{
+#ifdef MZ_PRECISE_GC
+  long sz = sizeof(Scheme_Simple_Object) * NUM_CELLS_PER_STACK;
+  Scheme_Simple_Object *r;
+
+  if (sz < GC_malloc_stays_put_threshold()) {
+    sz = GC_malloc_stays_put_threshold();
+    while (sz % sizeof(Scheme_Simple_Object)) {
+      sz++;
+    }
+  }
+
+  r = (Scheme_Simple_Object *)GC_malloc_array_tagged(sz);
+
+  /* Must set the tag on the first element: */
+  r[0].iso.so.type = scheme_pair_type;
+  return r;
+#else
+  return MALLOC_N_RT(Scheme_Simple_Object, NUM_CELLS_PER_STACK);
+#endif
+}
+
 void scheme_alloc_list_stack(Scheme_Thread *p)
 {
   Scheme_Simple_Object *sa;
   p->list_stack_pos = 0;
-  sa = MALLOC_N_RT(Scheme_Simple_Object, NUM_CELLS_PER_STACK);
+  sa = malloc_list_stack();
   p->list_stack = sa;
-#ifdef MZ_PRECISE_GC
-  /* Must set the tag on the first element: */
-  p->list_stack[0].iso.so.type = scheme_pair_type;
-#endif
 }
 
 void scheme_clean_list_stack(Scheme_Thread *p)
@@ -545,6 +567,12 @@ void scheme_clean_list_stack(Scheme_Thread *p)
   if (p->list_stack) {
     memset(p->list_stack + p->list_stack_pos, 0,
 	   (NUM_CELLS_PER_STACK - p->list_stack_pos) * sizeof(Scheme_Simple_Object));
+#ifdef MZ_PRECISE_GC
+    if (!p->list_stack_pos) {
+      /* Must set the tag on the first element: */
+      p->list_stack[0].iso.so.type = scheme_pair_type;
+    }
+#endif
   }
 }
 
@@ -2176,7 +2204,7 @@ read_list(Scheme_Object *port,
       if (local_list_stack_pos >= NUM_CELLS_PER_STACK) {
 	/* Overflow */
 	Scheme_Simple_Object *sa;
-	sa = MALLOC_N_RT(Scheme_Simple_Object, NUM_CELLS_PER_STACK);
+	sa = malloc_list_stack();
 	local_list_stack = sa;
 	local_list_stack_pos = 0;
       }
@@ -3700,20 +3728,25 @@ void scheme_ill_formed(struct CPort *port
 		  );
 }
 
-static long read_compact_number(CPort *port)
+/* Since read_compact_number is called often, we want it to be
+   a cheap call in 3m, so avoid anything that allocated --- even
+   error reporting, since we can make up a valid number. */
+#define NUM_ZO_CHECK(x) if (!(x)) return 0;
+
+XFORM_NONGCING static long read_compact_number(CPort *port)
 {
   /* >>> See also read_compact_number_from_port(), below. <<< */
 
   long flag, v, a, b, c, d;
 
-  ZO_CHECK(port->pos < port->size);
+  NUM_ZO_CHECK(port->pos < port->size);
 
   flag = CP_GETC(port);
 
   if (flag < 252)
     return flag;
   else if (flag == 252) {
-    ZO_CHECK(port->pos + 1 < port->size);
+    NUM_ZO_CHECK(port->pos + 1 < port->size);
 
     a = CP_GETC(port);
     b = CP_GETC(port);
@@ -3722,12 +3755,12 @@ static long read_compact_number(CPort *port)
       + (b << 8);
     return v;
   } else if (flag == 254) {
-    ZO_CHECK(port->pos < port->size);
+    NUM_ZO_CHECK(port->pos < port->size);
 
     return -CP_GETC(port);
   }
 
-  ZO_CHECK(port->pos + 3 < port->size);
+  NUM_ZO_CHECK(port->pos + 3 < port->size);
 
   a = CP_GETC(port);
   b = CP_GETC(port);
@@ -4354,7 +4387,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	if (local_list_stack_pos >= NUM_CELLS_PER_STACK) {
 	  /* Overflow */
 	  Scheme_Simple_Object *sa;
-	  sa = MALLOC_N_RT(Scheme_Simple_Object, NUM_CELLS_PER_STACK);
+	  sa = malloc_list_stack();
 	  local_list_stack = sa;
 	  local_list_stack_pos = 0;
 	}
@@ -4393,7 +4426,7 @@ static Scheme_Object *read_compact_list(int c, int proper, int use_stack, CPort 
     if (local_list_stack_pos >= NUM_CELLS_PER_STACK) {
       /* Overflow */
       Scheme_Simple_Object *sa;
-      sa = MALLOC_N_RT(Scheme_Simple_Object, NUM_CELLS_PER_STACK);
+      sa = malloc_list_stack();
       local_list_stack = sa;
       local_list_stack_pos = 0;
     }
@@ -4414,7 +4447,7 @@ static Scheme_Object *read_compact_list(int c, int proper, int use_stack, CPort 
       if (local_list_stack_pos >= NUM_CELLS_PER_STACK) {
 	/* Overflow */
 	Scheme_Simple_Object *sa;
-	sa = MALLOC_N_RT(Scheme_Simple_Object, NUM_CELLS_PER_STACK);
+	sa = malloc_list_stack();
 	local_list_stack = sa;
 	local_list_stack_pos = 0;
       }
@@ -4494,7 +4527,7 @@ static Scheme_Object *read_marshalled(int type, CPort *port)
 
 static long read_compact_number_from_port(Scheme_Object *port)
 {
-  /* >>> See also read_compact_number_port(), above. <<< */
+  /* >>> See also read_compact_number(), above. <<< */
 
   long flag, v, a, b, c, d;
 

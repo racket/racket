@@ -95,9 +95,17 @@ static void *malloc_pages(size_t len, size_t alignment)
     if (pre_extra)
       if (munmap(r, pre_extra))
 	GCPRINT(GCOUTF, "Unmap warning: %lx, %ld, %d\n", (long)r, pre_extra, errno);
-    if (pre_extra < extra)
-      if (munmap(real_r + len, extra - pre_extra))
-	GCPRINT(GCOUTF, "Unmap warning: %lx, %ld, %d\n", (long)r, pre_extra, errno);
+    if (pre_extra < extra) {
+      if (!pre_extra) {
+	/* Instead of actually unmapping, put it in the cache, and there's
+	   a good chance we can use it next time: */
+	ACTUALLY_ALLOCATING_PAGES(extra);
+	free_actual_pages(real_r + len, extra, 1);
+      } else {
+	if (munmap(real_r + len, extra - pre_extra))
+	  GCPRINT(GCOUTF, "Unmap warning: %lx, %ld, %d\n", (long)r, pre_extra, errno);
+      }
+    }
     r = real_r;
   }
 

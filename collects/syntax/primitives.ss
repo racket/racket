@@ -18,7 +18,8 @@
 	     port-read-handler error-value->string-handler
 	     call/ec call/cc hash-table-get
 	     hash-table-map hash-table-for-each make-input-port make-output-port
-	     current-module-name-resolver))
+	     current-module-name-resolver
+	     call-with-semaphore call-with-semaphore/enable-break))
 
    ;; The following primitives can compute return values by an
    ;;  internal chained tail call (relevant to mzc)
@@ -27,6 +28,8 @@
 	error
 	call-with-current-continuation
 	call-with-escape-continuation
+	call-with-semaphore
+	call-with-semaphore/enable-break
 	hash-table-get
 	write-image-to-file
 	syntax-local-value))

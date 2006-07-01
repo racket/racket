@@ -6,7 +6,7 @@
    Requires (defined earlier):
       system_free_pages --- called with len already rounded up to page size
       page_size --- in bytes
-      my_qsort --- possibyl from my_qsort.c
+      my_qsort --- possibly from my_qsort.c
       LOGICALLY_ALLOCATING_PAGES(len)
       ACTUALLY_ALLOCATING_PAGES(len)
       LOGICALLY_FREEING_PAGES(len)
@@ -16,7 +16,7 @@
 typedef struct {
   void *start;
   long len;
-  int age;
+  short age, zeroed;
 } Free_Block;
 
 #define BLOCKFREE_UNMAP_AGE 1
@@ -39,10 +39,12 @@ static void collapse_adjacent_pages(void)
   my_qsort(blockfree, BLOCKFREE_CACHE_SIZE, sizeof(Free_Block), compare_free_block);
   j = 0;
   for (i = 1; i < BLOCKFREE_CACHE_SIZE; i++) {
-    if ((blockfree[j].start + blockfree[j].len) ==blockfree[i].start) {
+    if ((blockfree[j].start + blockfree[j].len) == blockfree[i].start) {
       blockfree[j].len += blockfree[i].len;
       blockfree[i].start = NULL;
       blockfree[i].len = 0;
+      if (!blockfree[i].zeroed)
+	blockfree[j].zeroed = 0;
     } else
       j = i;
   }
@@ -60,7 +62,8 @@ inline static void *find_cached_pages(size_t len, size_t alignment)
       if (!alignment || !((unsigned long)r & (alignment - 1))) {
 	blockfree[i].start = NULL;
 	blockfree[i].len = 0;
-	memset(r, 0, len);
+	if (!blockfree[i].zeroed)
+	  memset(r, 0, len);
 	LOGICALLY_ALLOCATING_PAGES(len);
 	return r;
       }
@@ -75,7 +78,8 @@ inline static void *find_cached_pages(size_t len, size_t alignment)
       if (!alignment || !((unsigned long)r & (alignment - 1))) {
 	blockfree[i].start += len;
 	blockfree[i].len -= len;
-	memset(r, 0, len);
+	if (!blockfree[i].zeroed)
+	  memset(r, 0, len);
 	LOGICALLY_ALLOCATING_PAGES(len);
 	return r;
       }
@@ -84,7 +88,8 @@ inline static void *find_cached_pages(size_t len, size_t alignment)
       r = blockfree[i].start + (blockfree[i].len - len);
       if (!((unsigned long)r & (alignment - 1))) {
 	blockfree[i].len -= len;
-	memset(r, 0, len);
+	if (!blockfree[i].zeroed)
+	  memset(r, 0, len);
 	LOGICALLY_ALLOCATING_PAGES(len);
 	return r;
       }
@@ -98,7 +103,7 @@ inline static void *find_cached_pages(size_t len, size_t alignment)
   return NULL;
 }
 
-static void free_pages(void *p, size_t len)
+static void free_actual_pages(void *p, size_t len, int zeroed)
 {
   int i;
 
@@ -106,19 +111,21 @@ static void free_pages(void *p, size_t len)
   if (len & (page_size - 1))
     len += page_size - (len & (page_size - 1));
 
-  LOGICALLY_FREEING_PAGES(len);
-
   /* Try to free pages in larger blocks, since the OS may be slow. */
 
   for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++)
     if(blockfree[i].start && (blockfree[i].len < (1024 * 1024))) {
       if (p == blockfree[i].start + blockfree[i].len) {
 	blockfree[i].len += len;
+	if (!zeroed)
+	  blockfree[i].zeroed = 0;
 	return;
       }
       if (p + len == blockfree[i].start) {
 	blockfree[i].start = p;
 	blockfree[i].len += len;
+	if (!zeroed)
+	  blockfree[i].zeroed = 0;
 	return;
       }
     }
@@ -128,6 +135,7 @@ static void free_pages(void *p, size_t len)
       blockfree[i].start = p;
       blockfree[i].len = len;
       blockfree[i].age = 0;
+      blockfree[i].zeroed = zeroed;
       return;
     }
   }
@@ -138,6 +146,12 @@ static void free_pages(void *p, size_t len)
   system_free_pages(p, len);
 
   ACTUALLY_FREEING_PAGES(len);
+}
+
+static void free_pages(void *p, size_t len)
+{
+  LOGICALLY_FREEING_PAGES(len);
+  free_actual_pages(p, len, 0);
 }
 
 static void flush_freed_pages(void)

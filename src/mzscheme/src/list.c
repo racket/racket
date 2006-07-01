@@ -1563,7 +1563,7 @@ static Scheme_Object *hash_table_put(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
 {
-  void *v;
+  Scheme_Object *v;
 
   if (!(SCHEME_HASHTP(argv[0]) || SCHEME_BUCKTP(argv[0])))
     scheme_wrong_type("hash-table-get", "hash-table", 0, argc, argv);
@@ -1571,7 +1571,7 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
   if (SCHEME_BUCKTP(argv[0])){
     Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)argv[0];
     if (t->mutex) scheme_wait_sema(t->mutex, 0);
-    v = scheme_lookup_in_table(t, (char *)argv[1]);
+    v = (Scheme_Object *)scheme_lookup_in_table(t, (char *)argv[1]);
     if (t->mutex) scheme_post_sema(t->mutex);
   } else {
     Scheme_Hash_Table *t = (Scheme_Hash_Table *)argv[0];
@@ -1581,10 +1581,14 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
   }
 
   if (v)
-    return (Scheme_Object *)v;
-  else if (argc == 3)
-    return _scheme_tail_apply(argv[2], 0, NULL);
-  else {
+    return v;
+  else if (argc == 3) {
+    v = argv[2];
+    if (SCHEME_PROCP(v))
+      return _scheme_tail_apply(v, 0, NULL);
+    else
+      return v;
+  } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 		     "hash-table-get: no value found for key: %V",
 		     argv[1]);

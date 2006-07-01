@@ -329,7 +329,7 @@ void scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STAC
 
 static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
 {
-  Scheme_Jumpup_Buf *c;
+  GC_CAN_IGNORE Scheme_Jumpup_Buf *c;
   long top_delta = 0, bottom_delta = 0, size;
   void *cfrom, *cto;
 

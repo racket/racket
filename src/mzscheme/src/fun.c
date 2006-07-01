@@ -2590,7 +2590,7 @@ apply(int argc, Scheme_Object *argv[])
   }
   num_rands += (argc - 2);
 
-  if (1 || num_rands > p->tail_buffer_size) {
+  if (num_rands > p->tail_buffer_size) {
     rand_vec = MALLOC_N(Scheme_Object *, num_rands);
     /* num_rands might be very big, so don't install it as the tail buffer */
   } else

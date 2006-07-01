@@ -1,3 +1,8 @@
+Version 350.3
+Changed hash-table-get to accept a non-prcedure third argument as
+ a default value (instead of requiring a thunk)
+Improved 3m performance
+
 Version 350.2
 Changed the module name resolver protocol so that the resolver is
  required to accept 1, 3, and 4 arguments; the new 4-argument mode
@@ -6,6 +11,7 @@ Changed namespace-attach-module and namespace-unprotect-module
  to accept quoted module paths, instead of only symbolic names
 Fixed avoidable overflow and undeflow in magnitude and / for
  inexact complex numbers
+Fixed bug in continuation sharing
 
 Version 350.1
 Added define-member-name, member-name-key, and generate-member-key

@@ -105,7 +105,7 @@
 		      ;; Check that all exports are distinct (as symbols)
 		      (let ([ht (make-hash-table)])
 			(for-each (lambda (name)
-				    (when (hash-table-get ht (syntax-e name) (lambda () #f))
+				    (when (hash-table-get ht (syntax-e name) #f)
 				      (raise-syntax-error
 				       #f
 				       "duplicate export"
@@ -218,17 +218,17 @@
 			      (for-each
 			       (lambda (kind+name)
 				 (let ([name (cdr kind+name)])
-				   (let ([l (hash-table-get ht (syntax-e name) (lambda () null))])
+				   (let ([l (hash-table-get ht (syntax-e name) null)])
 				     (hash-table-put! (if (eq? (car kind+name) 'val) ht stx-ht)
 						      (syntax-e name) 
 						      (cons name l)))))
 			       all-defined-names/kinds)
 			      (for-each 
 			       (lambda (n)
-				 (let ([v (hash-table-get ht (syntax-e n) (lambda () null))])
+				 (let ([v (hash-table-get ht (syntax-e n) null)])
 				   (unless (ormap (lambda (i) (bound-identifier=? i n)) v)
 				     ;; Either not defined, or defined as syntax:
-				     (let ([stx-v (hash-table-get stx-ht (syntax-e n) (lambda () null))])
+				     (let ([stx-v (hash-table-get stx-ht (syntax-e n) null)])
 				       (if (ormap (lambda (i) (bound-identifier=? i n)) stx-v)
 					   (raise-syntax-error
 					    #f
@@ -246,14 +246,14 @@
 			    (let ([ht (make-hash-table)])
 			      (for-each
 			       (lambda (name)
-				 (let ([l (hash-table-get ht (syntax-e name) (lambda () null))])
+				 (let ([l (hash-table-get ht (syntax-e name) null)])
 				   (hash-table-put! ht (syntax-e name) (cons name l))))
 			       exported-names)
 			      (let ([internal-names
 				     (let loop ([l all-defined-val-names])
 				       (cond
 					[(null? l) null]
-					[(let ([v (hash-table-get ht (syntax-e (car l)) (lambda () null))])
+					[(let ([v (hash-table-get ht (syntax-e (car l)) null)])
 					   (ormap (lambda (i) (bound-identifier=? i (car l))) v))
 					 (loop (cdr l))]
 					[else (cons (car l) (loop (cdr l)))]))])

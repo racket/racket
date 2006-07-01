@@ -802,7 +802,7 @@
 			     (lambda (what l)
 			       (let ([ht (make-hash-table)])
 				 (for-each (lambda (id)
-					     (when (hash-table-get ht (syntax-e id) (lambda () #f))
+					     (when (hash-table-get ht (syntax-e id) #f)
 					       (bad (format "duplicate declared external ~a name" what) id))
 					     (hash-table-put! ht (syntax-e id) #t))
 					   l)))])
@@ -820,20 +820,20 @@
 			    [stx-ht (make-hash-table)])
 			(for-each
 			 (lambda (defined-name)
-			   (let ([l (hash-table-get ht (syntax-e defined-name) (lambda () null))])
+			   (let ([l (hash-table-get ht (syntax-e defined-name) null)])
 			     (hash-table-put! ht (syntax-e defined-name) (cons defined-name l))))
 			 defined-method-names)
 			(for-each
 			 (lambda (defined-name)
-			   (let ([l (hash-table-get stx-ht (syntax-e defined-name) (lambda () null))])
+			   (let ([l (hash-table-get stx-ht (syntax-e defined-name) null)])
 			     (hash-table-put! stx-ht (syntax-e defined-name) (cons defined-name l))))
 			 defined-syntax-names)
 			(for-each
 			 (lambda (pubovr-name)
-			   (let ([l (hash-table-get ht (syntax-e pubovr-name) (lambda () null))])
+			   (let ([l (hash-table-get ht (syntax-e pubovr-name) null)])
 			     (unless (ormap (lambda (i) (bound-identifier=? i pubovr-name)) l)
 			       ;; Either undefined or defined as syntax:
-			       (let ([stx-l (hash-table-get stx-ht (syntax-e pubovr-name) (lambda () null))])
+			       (let ([stx-l (hash-table-get stx-ht (syntax-e pubovr-name) null)])
 				 (if (ormap (lambda (i) (bound-identifier=? i pubovr-name)) stx-l)
 				     (bad 
 				      "method declared but defined as syntax"
@@ -850,7 +850,7 @@
 				      (hash-table-put! ht (syntax-e (cdr pub)) #t))
 				    (append publics public-finals overrides override-finals augrides))
 			  (for-each (lambda (inn)
-				      (when (hash-table-get ht (syntax-e (cdr inn)) (lambda () #f))
+				      (when (hash-table-get ht (syntax-e (cdr inn)) #f)
 					(bad
 					 "inner method is locally declared as public, override, public-final, override-final, or augride"
 					 (cdr inn))))
@@ -1702,7 +1702,7 @@
 	(unless no-new-methods?
 	  (let loop ([ids public-names][p (class-method-width super)])
 	    (unless (null? ids)
-	      (when (hash-table-get method-ht (car ids) (lambda () #f))
+	      (when (hash-table-get method-ht (car ids) #f)
 		(obj-error 'class* "superclass already contains method: ~a~a" 
 			   (car ids)
 			   (for-class name)))
@@ -1711,7 +1711,7 @@
 	(unless no-new-fields?
 	  (let loop ([ids public-field-names][p (class-field-width super)])
 	    (unless (null? ids)
-	      (when (hash-table-get field-ht (car ids) (lambda () #f))
+	      (when (hash-table-get field-ht (car ids) #f)
 		(obj-error 'class* "superclass already contains field: ~a~a" 
 			   (car ids)
 			   (for-class name)))
@@ -1720,7 +1720,7 @@
 
 	;; Check that superclass has expected fields
 	(for-each (lambda (id)
-		    (unless (hash-table-get field-ht id (lambda () #f))
+		    (unless (hash-table-get field-ht id #f)
 		      (obj-error 'class* "superclass does not provide field: ~a~a" 
 				 id
 				 (for-class name))))
@@ -1761,7 +1761,7 @@
 	     (lambda (intf)
 	       (for-each
 		(lambda (var)
-		  (unless (hash-table-get method-ht var (lambda () #f))
+		  (unless (hash-table-get method-ht var #f)
 		    (obj-error 'class* 
 			       "interface-required method missing: ~a~a~a" 
 			       var
@@ -2159,7 +2159,7 @@
        (lambda (super)
 	 (for-each
 	  (lambda (var)
-	    (when (hash-table-get ht var (lambda () #f))
+	    (when (hash-table-get ht var #f)
 	      (obj-error 'interface "variable already in superinterface: ~a~a~a" 
 			 var
 			 (for-intf name)
@@ -2557,7 +2557,7 @@
                        (identifier? (syntax abs-object))
                        (syntax
                         (let* ([c (object-ref abs-object)]
-                               [pos (hash-table-get (class-method-ht c) name (lambda () #f))])
+                               [pos (hash-table-get (class-method-ht c) name #f)])
                           (cond
                             [pos (values (vector-ref (class-methods c) pos) abs-object)]
                             [(wrapper-object? abs-object) wrapper-case]
@@ -2699,7 +2699,7 @@
              [index (hash-table-get 
                      field-ht
                      id
-                     (lambda () #f))])
+		     #f)])
         (cond
           [index
            ((class-field-ref (car index)) obj (cdr index))]
@@ -2729,7 +2729,7 @@
     (let loop ([obj obj])
       (let* ([cls (object-ref obj)]
              [field-ht (class-field-ht cls)])
-        (or (and (hash-table-get field-ht id (lambda () #f))
+        (or (and (hash-table-get field-ht id #f)
                  #t) ;; ensure that only #t and #f leak out, not bindings in ht
             (and (wrapper-object? obj)
                  (loop (wrapper-object-wrapped obj)))))))
@@ -2850,7 +2850,7 @@
       (raise-type-error 'object-method-arity-includes? "non-negative exact integer" cnt))
     (let loop ([o o])
       (let* ([c (object-ref o)]
-	     [pos (hash-table-get (class-method-ht c) name (lambda () #f))])
+	     [pos (hash-table-get (class-method-ht c) name #f)])
 	(cond
 	 [pos (procedure-arity-includes? (vector-ref (class-methods c) pos) 
 					 (add1 cnt))]
@@ -2867,7 +2867,7 @@
     (unless (interface? i)
       (raise-type-error 'interface-extension? "interface" 1 v i))
     (and (interface? i)
-	 (hash-table-get (interface-all-implemented v) i (lambda () #f))))
+	 (hash-table-get (interface-all-implemented v) i #f)))
   
   (define (method-in-interface? s i)
     (unless (symbol? s)

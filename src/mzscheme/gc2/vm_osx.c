@@ -55,8 +55,9 @@ void designate_modified(void *p);
 # define CHECK_USED_AGAINST_MAX(x) /* empty */
 #endif
 
-/* Forward declaration: */
+/* Forward declarations: */
 inline static void *find_cached_pages(size_t len, size_t alignment);
+static void free_actual_pages(void *p, size_t len, int zeroed);
 
 /* the structure of an exception msg and its reply */
 typedef struct rep_msg {
@@ -130,11 +131,18 @@ static void *malloc_pages(size_t len, size_t alignment)
       }
     }
     if(pre_extra < extra) {
-      retval = vm_deallocate(task_self, (vm_address_t)real_r + len, 
-			     extra - pre_extra);
-      if(retval != KERN_SUCCESS) {
-	GCPRINT(GCOUTF, "WARNING: couldn't deallocate post-extra: %s\n",
-	       mach_error_string(retval));
+      if (!pre_extra) {
+	/* Instead of actually unmapping, put it in the cache, and there's
+	   a good chance we can use it next time: */
+	ACTUALLY_ALLOCATING_PAGES(extra);
+	free_actual_pages(real_r + len, extra, 1);
+      } else {
+	retval = vm_deallocate(task_self, (vm_address_t)real_r + len, 
+			       extra - pre_extra);
+	if(retval != KERN_SUCCESS) {
+	  GCPRINT(GCOUTF, "WARNING: couldn't deallocate post-extra: %s\n",
+		  mach_error_string(retval));
+	}
       }
     }
     r = real_r;

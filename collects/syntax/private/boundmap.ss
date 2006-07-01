@@ -38,7 +38,7 @@
                                 (cdr i)))
                          (hash-table-get (identifier-mapping-ht bi)
                                          (identifier->symbol id) 
-                                         (lambda () null)))
+                                         null))
                   (fail))))
           
           (define identifier-mapping-put!
@@ -46,7 +46,7 @@
               (let ([l (hash-table-get
                         (identifier-mapping-ht bi)
                         (identifier->symbol id) 
-                        (lambda () null))])
+                        null)])
                 (hash-table-put!
                  (identifier-mapping-ht bi)
                  (identifier->symbol id) 

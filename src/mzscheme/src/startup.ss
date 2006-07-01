@@ -575,60 +575,65 @@
       ;; if `defined-names' is #f.
       ;; If `expr?' is #t, then generate an expression to build the info,
       ;; otherwise build the info directly.
-      (let ([qs (if gen-expr? (lambda (x) (and x `((syntax-local-certifier) (quote-syntax ,x)))) values)]
-	    [every-other (lambda (l)
-			   (let loop ([l l][r null])
-			     (cond
-			      [(null? l) r]
-			      [(null? (cdr l)) (cons (car l) r)]
-			      [else (loop (cddr l) (cons (car l) r))])))]
-	    [super-info (and super-id 
-			     (syntax-local-value super-id (lambda () #f)))])
-	(if super-id 
-	    ;; Did we get valid super-info ?
-	    (if (or (not (struct-info? super-info))
-		    (not (struct-info-type-id super-info)))
-		(raise-syntax-error
-		 #f
-		 (if (struct-info? super-info)
-		     "parent struct information does not include a type for subtyping"
-		     (format "parent struct type not defined~a"
+      (let ([cert-id (and gen-expr? (gensym))])
+	(let ([qs (if gen-expr? (lambda (x) (and x `(,cert-id (quote-syntax ,x)))) values)]
+	      [every-other (lambda (l)
+			     (let loop ([l l][r null])
+			       (cond
+				[(null? l) r]
+				[(null? (cdr l)) (cons (car l) r)]
+				[else (loop (cddr l) (cons (car l) r))])))]
+	      [super-info (and super-id 
+			       (syntax-local-value super-id (lambda () #f)))])
+	  (if super-id 
+	      ;; Did we get valid super-info ?
+	      (if (or (not (struct-info? super-info))
+		      (not (struct-info-type-id super-info)))
+		  (raise-syntax-error
+		   #f
+		   (if (struct-info? super-info)
+		       "parent struct information does not include a type for subtyping"
+		       (format "parent struct type not defined~a"
+			       (if super-info
+				   (format " (~a does not name struct type information)"
+					   (syntax-e super-id))
+				   "")))
+		   orig-stx
+		   super-id)))
+	  (values
+	   (if super-info
+	       (struct-info-type-id super-info)
+	       #f)
+	   (if defined-names
+	       (let-values ([(initial-gets initial-sets)
 			     (if super-info
-				 (format " (~a does not name struct type information)"
-					 (syntax-e super-id))
-				 "")))
-		 orig-stx
-		 super-id)))
-	(values
-	 (if super-info
-	     (struct-info-type-id super-info)
-	     #f)
-	 (if defined-names
-	     (let-values ([(initial-gets initial-sets)
-			   (if super-info
-			       (values (map qs (struct-info-accessor-ids super-info))
-				       (map qs (struct-info-mutator-ids super-info)))
-			       (values null null))]
-			  [(fields) (cdddr defined-names)]
-			  [(wrap) (if gen-expr? (lambda (x) (cons 'list-immutable x)) values)])
-	       (wrap
-		(list-immutable (qs (car defined-names))
-				(qs (cadr defined-names))
-				(qs (caddr defined-names))
-				(wrap
-				 (list->immutable-list
-				  (append (map qs (every-other fields)) 
-					  initial-gets)))
-				(wrap
-				 (list->immutable-list
-				  (append (map qs (if (null? fields) 
-						      null 
-						      (every-other (cdr fields)))) 
-					  initial-sets)))
-				(if super-id
-				    (qs super-id)
-				    #t))))
-	     #f)))))
+				 (values (map qs (struct-info-accessor-ids super-info))
+					 (map qs (struct-info-mutator-ids super-info)))
+				 (values null null))]
+			    [(fields) (cdddr defined-names)]
+			    [(wrap) (if gen-expr? (lambda (x) (cons 'list-immutable x)) values)]
+			    [(total-wrap) (if gen-expr?
+					      (lambda (x) `(let ([,cert-id (syntax-local-certifier)]) ,x))
+					      values)])
+		 (total-wrap
+		  (wrap
+		   (list-immutable (qs (car defined-names))
+				   (qs (cadr defined-names))
+				   (qs (caddr defined-names))
+				   (wrap
+				    (list->immutable-list
+				     (append (map qs (every-other fields)) 
+					     initial-gets)))
+				   (wrap
+				    (list->immutable-list
+				     (append (map qs (if (null? fields) 
+							 null 
+							 (every-other (cdr fields)))) 
+					     initial-sets)))
+				   (if super-id
+				       (qs super-id)
+				       #t)))))
+	       #f))))))
 
   (provide get-stx-info))
 
@@ -1144,7 +1149,7 @@
 	    (let loop ([r r])
 	      (cond
 	       [(syntax? r)
-		(let ([l (hash-table-get ht (syntax-e r) (lambda () null))])
+		(let ([l (hash-table-get ht (syntax-e r) null)])
 		  (when (ormap (lambda (i) (bound-identifier=? i r)) l)
 		    (raise-syntax-error 
 		     (syntax-e who)
@@ -1399,7 +1404,7 @@
 			(if proto-r
 			    #f
 			    (lambda (r)
-			      (let ([l (hash-table-get ht (syntax-e r) (lambda () null))])
+			      (let ([l (hash-table-get ht (syntax-e r) null)])
 				(unless (and (pair? l)
 					     (ormap (lambda (i) (bound-identifier=? i r)) l))
 				  (hash-table-put! ht (syntax-e r) (cons r l)))))))])
@@ -2110,7 +2115,7 @@
 	   (unless (identifier? defined-name)
 	     (raise-type-error 'check-duplicate-identifier
 			       "list of identifiers" names))
-	   (let ([l (hash-table-get ht (syntax-e defined-name) (lambda () null))])
+	   (let ([l (hash-table-get ht (syntax-e defined-name) null)])
 	     (when (ormap (lambda (i) (bound-identifier=? i defined-name)) l)
 	       (escape defined-name))
 	     (hash-table-put! ht (syntax-e defined-name) (cons defined-name l))))
@@ -3309,15 +3314,14 @@
 	(when planet-resolver
 	  ;; Let planet resolver register, too:
 	  (planet-resolver s))
-	(let ([ht (hash-table-get
-		   -module-hash-table-table
-		   (namespace-module-registry (current-namespace))
-		   (lambda ()
-		     (let ([ht (make-hash-table)])
-		       (hash-table-put! -module-hash-table-table
-					(namespace-module-registry (current-namespace))
-					ht)
-		       ht)))])
+	(let ([ht (or (hash-table-get -module-hash-table-table
+				      (namespace-module-registry (current-namespace))
+				      #f)
+		      (let ([ht (make-hash-table)])
+			(hash-table-put! -module-hash-table-table
+					 (namespace-module-registry (current-namespace))
+					 ht)
+			ht))])
 	  (hash-table-put! ht s 'attach))]
        [(s relto stx) (standard-module-name-resolver s relto stx #t)]
        [(s relto stx load?)
@@ -3350,7 +3354,7 @@
 		   (cond
 		    [(string? s)
 		     (let* ([dir (get-dir)])
-		       (or (hash-table-get -path-cache (cons s dir) (lambda () #f))
+		       (or (hash-table-get -path-cache (cons s dir) #f)
 			   (let ([s (string->bytes/utf-8 s)])
 			     (if (regexp-match-positions -re:ok-relpath s)
 				 ;; Parse Unix-style relative path string
@@ -3377,23 +3381,22 @@
 			 (not (list? s)))
 		     #f]
 		    [(eq? (car s) 'lib)
-		     (hash-table-get
-		      -path-cache
-		      (cons s (current-library-collection-paths))
-		      (lambda ()
-			(let ([cols (let ([len (length s)])
-				      (if (= len 2)
-					  (list "mzlib")
-					  (if (> len 2)
-					      (cddr s)
-					      #f)))])
-			  (and cols
-			       (andmap (lambda (x) (and (string? x) 
-							(relative-path? x))) cols)
-			       (string? (cadr s))
-			       (relative-path? (cadr s))
-			       (let ([p (-find-col 'standard-module-name-resolver (car cols) (cdr cols))])
-				 (build-path p (cadr s)))))))]
+		     (or (hash-table-get -path-cache
+					 (cons s (current-library-collection-paths))
+					 #f)
+			 (let ([cols (let ([len (length s)])
+				       (if (= len 2)
+					   (list "mzlib")
+					   (if (> len 2)
+					       (cddr s)
+					       #f)))])
+			   (and cols
+				(andmap (lambda (x) (and (string? x) 
+							 (relative-path? x))) cols)
+				(string? (cadr s))
+				(relative-path? (cadr s))
+				(let ([p (-find-col 'standard-module-name-resolver (car cols) (cdr cols))])
+				  (build-path p (cadr s))))))]
 		    [(eq? (car s) 'file)
 		     (and (= (length s) 2)
 			  (let ([p (cadr s)])
@@ -3442,18 +3445,17 @@
 				      (vector-ref s-parsed 6)
 				      (let ([m (regexp-match -re:suffix (path->bytes name))])
 					(if m (car m) #t)))]
-			  [ht (hash-table-get
-			       -module-hash-table-table
-			       (namespace-module-registry (current-namespace))
-			       (lambda ()
-				 (let ([ht (make-hash-table)])
-				   (hash-table-put! -module-hash-table-table
-						    (namespace-module-registry (current-namespace))
-						    ht)
-				   ht)))])
+			  [ht (or (hash-table-get -module-hash-table-table
+						  (namespace-module-registry (current-namespace))
+						  #f)
+				  (let ([ht (make-hash-table)])
+				    (hash-table-put! -module-hash-table-table
+						     (namespace-module-registry (current-namespace))
+						     ht)
+				    ht))])
 		      ;; Loaded already?
 		      (when load?
-			(let ([got (hash-table-get ht modname (lambda () #f))])
+			(let ([got (hash-table-get ht modname #f)])
 			  (when got
 			    ;; Check the suffix, which gets lost when creating a key:
 			    (unless (or (symbol? got) (equal? suffix got))

@@ -4,6 +4,7 @@
            (prefix dynext: (lib "link.ss" "dynext"))
            (lib "file.ss")
 	   (lib "dirs.ss" "setup")
+	   (lib "launcher.ss" "launcher")
            (lib "string.ss" "srfi" "13"))
   
   (provide make-gl-info)
@@ -113,14 +114,15 @@ end-string
       (dynext:link-extension #f (list file.o) file.so)
       (delete/continue file.o)))
 
-  (define (build-helper compile-directory home)
+  (define (build-helper compile-directory home 3m?)
     (let ((file (build-path compile-directory "make-gl-info-helper"))
           (c (build-path compile-directory "make-gl-info-helper.c"))
           (so (build-path compile-directory
                           "native"
                           (system-library-subpath #f) 
+			  (if 3m? "3m" 'same)
                           "make-gl-info-helper.so")))
-      (make-directory* (build-path compile-directory "native" (system-library-subpath #f)))
+      (make-directory* (build-path compile-directory "native" (system-library-subpath #f) (if 3m? "3m" 'same)))
       (with-output-to-file c
         (lambda () (display c-file))
         'replace)
@@ -166,7 +168,10 @@ end-string
                   (define gl-clampf-size 4)
                   (define gl-clampd-size 8)))
              (else
-              (build-helper compile-directory home)
+              (build-helper compile-directory home #f)
+	      (when (memq '3m (available-mzscheme-variants))
+		(parameterize ([dynext:link-variant '3m])
+		  (build-helper compile-directory home #t)))
               `(module gl-info mzscheme
                  (provide (all-defined))
                  ,@(map 

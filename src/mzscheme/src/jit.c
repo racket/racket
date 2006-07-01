@@ -344,7 +344,7 @@ static void *generate_one(mz_jit_state *old_jitter,
       } else {
 #ifdef MZ_PRECISE_GC
 	long minsz;
-	minsz = GC_malloc_atomic_stays_put_threshold();
+	minsz = GC_malloc_stays_put_threshold();
 	if (size < minsz)
 	  size = minsz;
 	buffer = (char *)scheme_malloc_atomic(size);

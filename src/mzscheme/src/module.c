@@ -175,7 +175,7 @@ static Scheme_Object *parse_requires(Scheme_Object *form,
 				     Scheme_Object *rn, Scheme_Object *post_ex_rn,
 				     Check_Func ck, void *data,
 				     int start, int expstart, Scheme_Object *redef_modname,
-				     int unpack_kern, int copy_vars,
+				     int unpack_kern, int copy_vars, int can_save_marshal,
 				     int *all_simple);
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, int delay_exptime, int with_tt, Scheme_Object *cycle_list);
 static void expstart_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, int delay_exptime, int with_tt, Scheme_Object *cycle_list);
@@ -969,7 +969,7 @@ static Scheme_Object *do_namespace_require(int argc, Scheme_Object *argv[], int 
   rn = scheme_make_module_rename(for_exp, mzMOD_RENAME_TOPLEVEL, NULL);
 
   (void)parse_requires(form, scheme_false, env, rn, rn,
-		       NULL, NULL, !etonly, etonly, NULL, 1, copy, NULL);
+		       NULL, NULL, !etonly, etonly, NULL, 1, copy, 0, NULL);
 
   brn = env->rename;
   if (!brn) {
@@ -4142,7 +4142,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv, 
 				 rn, post_ex_rn, check_require_name, tables, 0, 1,
-				 redef_modname, 0, 0,
+				 redef_modname, 0, 0, 1,
 				 &all_simple_renames);
 	
 	  /* Add required modules to requires list: */
@@ -4160,7 +4160,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv->exp_env,
 				 et_rn, post_ex_et_rn, check_require_name, et_tables, 1, 0,
-				 redef_modname, 0, 0,
+				 redef_modname, 0, 0, 1,
 				 &et_all_simple_renames);
 
 	  /* Add required modules to et_requires list: */
@@ -4182,7 +4182,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv->template_env,
 				 tt_rn, post_ex_tt_rn, check_require_name, tt_tables, 0, 0,
-				 redef_modname, 0, 0,
+				 redef_modname, 0, 0, 1,
 				 &tt_all_simple_renames);
 
 	  /* Add required modules to tt_requires list: */
@@ -5171,6 +5171,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 			Scheme_Object *ename, /* NULL or symbol for a single import */
 			Scheme_Object *mark_src, /* default mark_src; if onlys, each is also mark_src */
 			int unpack_kern, int copy_vars, int for_unmarshal,
+			int can_save_marshal,
 			int *all_simple,
 			Check_Func ck, /* NULL or called for each addition */
 			void *data, Scheme_Object *form, Scheme_Object *cki /* ck args */
@@ -5179,7 +5180,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   int j, var_count;
   Scheme_Object *orig_idx = idx;
   Scheme_Object **exs, **exsns, **exss;
-  int is_kern, has_context, save_marshal_info = 0, can_save_marshal = 1;
+  int is_kern, has_context, save_marshal_info = 0;
   Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name;
   
   if (mark_src) {
@@ -5405,7 +5406,7 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
 		     rn, NULL,
 		     exns, NULL, prefix, NULL, NULL,
 		     NULL,
-		     0, 0, 1,
+		     0, 0, 1, 0,
 		     NULL,
 		     NULL,
 		     NULL, NULL, NULL);
@@ -5417,7 +5418,7 @@ Scheme_Object *parse_requires(Scheme_Object *form,
 			      Scheme_Object *rn, Scheme_Object *post_ex_rn,
 			      Check_Func ck, void *data,
 			      int start, int expstart, Scheme_Object *redef_modname,
-			      int unpack_kern, int copy_vars,
+			      int unpack_kern, int copy_vars, int can_save_marshal,
 			      int *all_simple) 
 {
   Scheme_Object *ll = form;
@@ -5641,7 +5642,7 @@ Scheme_Object *parse_requires(Scheme_Object *form,
     add_single_require(m->me, idx, env, rn, post_ex_rn,
 		       exns, onlys, prefix, iname, ename,
 		       mark_src, 
-		       unpack_kern, copy_vars && start, 0,
+		       unpack_kern, copy_vars && start, 0, can_save_marshal,
 		       all_simple,
 		       ck, data, form, i);
 
@@ -5720,7 +5721,7 @@ top_level_require_execute(Scheme_Object *data)
 
   (void)parse_requires(form, modidx, env, rn, rn,
 		       check_dup_require, ht, (for_phase > -1), (for_phase == 0), NULL,
-		       !env->module, 0, NULL);
+		       !env->module, 0, 0, NULL);
 
   brn = env->rename;
   if (!brn) {
@@ -5796,7 +5797,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
 
   (void)parse_requires(form, modidx, genv, rn, rn,
 		       check_dup_require, ht, 0, 0, 
-		       NULL, 0, 0, NULL);
+		       NULL, 0, 0, 0, NULL);
 
   if (rec[drec].comp) {
     /* Dummy lets us access a top-level environment: */

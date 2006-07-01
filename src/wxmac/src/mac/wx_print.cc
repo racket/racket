@@ -8,13 +8,13 @@
  * Copyright:   (c) 1995, AIAI, University of Edinburgh
  */
 
+#include "common.h"
+
 #ifdef OS_X
 # include <ApplicationServices/ApplicationServices.h>
 #else
 # include <ApplicationServices.h>
 #endif
-
-#include "common.h"
 
 #if USE_PRINTING_ARCHITECTURE
 #if USE_COMMON_DIALOGS

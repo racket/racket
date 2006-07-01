@@ -10,14 +10,14 @@
 	  (lambda (s)
 	    (cond
 	     [(symbol? s)
-	      (if (hash-table-get table s (lambda () #f))
+	      (if (hash-table-get table s #f)
 		  #f
 		  (begin
 		    (hash-table-put! table s s)
 		    #t))]
 	     [(and (pair? s) (symbol? (car s)))
 	      (let ([name (car s)])
-		(if (hash-table-get table name (lambda () #f))
+		(if (hash-table-get table name #f)
 		  #f
 		  (let ([t (make-hash-table)])
 		    (hash-table-put! table name t)
@@ -33,6 +33,8 @@
 	  (loop (format "~a:~a" s (car path))
 		(cdr path)))))
 
+  (define no-val (gensym))
+
   (define (check-sig-match table sig path exact? who src-context dest-context wrapped? unwrap)
     (and (wrapped? sig)
 	 (vector? (unwrap sig))
@@ -40,18 +42,18 @@
 	  (lambda (s)
 	    (cond
 	     [(symbol? s)
-	      (let ([v (hash-table-get table s
-				       (lambda ()
-					 (raise
-					  (make-exn:fail:unit
-					   (string->immutable-string
-					    (format
-					     "~a: ~a is missing a value name `~a', required by ~a"
-					     who
-					     src-context
-					     (sig-path-name s path)
-					     dest-context))
-					   (current-continuation-marks)))))])
+	      (let ([v (hash-table-get table s no-val)])
+		(when (eq? v no-val)
+		  (raise
+		   (make-exn:fail:unit
+		    (string->immutable-string
+		     (format
+		      "~a: ~a is missing a value name `~a', required by ~a"
+		      who
+		      src-context
+		      (sig-path-name s path)
+		      dest-context))
+		    (current-continuation-marks))))
 		(and v
 		     (begin
 		       (unless (symbol? v)
@@ -70,18 +72,18 @@
 		       (hash-table-put! table s #f)
 		       #t)))]
 	     [(and (pair? s) (symbol? (car s)))
-	      (let ([v (hash-table-get table (car s)
-				       (lambda ()
-					 (raise
-					  (make-exn:fail:unit
-					   (string->immutable-string
-					    (format
-					     "~a: ~a is missing a sub-unit name `~a', required by ~a"
-					     who
-					     src-context
-					     (sig-path-name (car s) path)
-					     dest-context))
-					   (current-continuation-marks)))))])
+	      (let ([v (hash-table-get table (car s) no-val)])
+		(when (eq? v no-val)
+		  (raise
+		   (make-exn:fail:unit
+		    (string->immutable-string
+		     (format
+		      "~a: ~a is missing a sub-unit name `~a', required by ~a"
+		      who
+		      src-context
+		      (sig-path-name (car s) path)
+		      dest-context))
+		    (current-continuation-marks))))
 		(and v
 		     (begin
 		       (unless (hash-table? v)

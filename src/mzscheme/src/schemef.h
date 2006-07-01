@@ -915,7 +915,7 @@ MZ_EXTERN Scheme_Object *scheme_make_location(Scheme_Object *src,
 MZ_EXTERN int scheme_is_location(Scheme_Object *o);
 
 MZ_EXTERN Scheme_Object *scheme_make_inspector(Scheme_Object *superior);
-MZ_EXTERN int scheme_is_subinspector(Scheme_Object *i, Scheme_Object *sup);
+XFORM_NONGCING MZ_EXTERN int scheme_is_subinspector(Scheme_Object *i, Scheme_Object *sup);
 
 /*========================================================================*/
 /*                              utilities                                 */
@@ -926,7 +926,7 @@ MZ_EXTERN int scheme_eqv(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_equal(Scheme_Object *obj1, Scheme_Object *obj2);
 
 #ifdef MZ_PRECISE_GC
-MZ_EXTERN long scheme_hash_key(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN long scheme_hash_key(Scheme_Object *o);
 #endif
 MZ_EXTERN long scheme_equal_hash_key(Scheme_Object *o);
 MZ_EXTERN long scheme_equal_hash_key2(Scheme_Object *o);

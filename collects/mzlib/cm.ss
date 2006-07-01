@@ -210,7 +210,7 @@
   (define (compile-root mode path up-to-date)
     (let ([path (simplify-path (expand-path path))])
       (let ((stamp (and up-to-date
-			(hash-table-get up-to-date path (lambda () #f)))))
+			(hash-table-get up-to-date path #f))))
 	(cond
           (stamp stamp)
           (else

@@ -572,7 +572,7 @@ typedef struct {
 static SectorPage **sector_pagetables;
 
 #if !RELEASE_UNUSED_SECTORS
-# include "splay.c"
+# include "../utils/splay.c"
 
 typedef struct SectorFreepage {
   long size; 
