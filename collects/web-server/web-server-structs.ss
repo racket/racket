@@ -1,6 +1,5 @@
 (module web-server-structs mzscheme
   (require (lib "contract.ss"))
-  (require "contract.ss")
   
   (define current-server-custodian (make-parameter #f))
   (provide current-server-custodian) ; parameter
