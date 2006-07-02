@@ -36,6 +36,7 @@ int fd, fd_created;
 #endif
 
 inline static void *find_cached_pages(size_t len, size_t alignment);
+static void free_actual_pages(void *p, size_t len, int zeroed);
 
 /* Instead of immediately freeing pages with munmap---only to mmap
    them again---we cache BLOCKFREE_CACHE_SIZE freed pages. A page is

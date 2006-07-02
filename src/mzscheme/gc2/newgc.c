@@ -419,8 +419,10 @@ static void *allocate_big(size_t sizeb, int type)
 
 #ifdef ALIGN_DOUBLES
 # define ALIGN_SIZE(sizew) ((sizew & 0x1) ? (sizew + 1) : sizew)
+# define ALIGN_BYTES_SIZE(sizeb) ((sizeb & WORD_SIZE) ? (sizeb + WORD_SIZE) : sizeb)
 #else
 # define ALIGN_SIZE(sizew) (sizew)
+# define ALIGN_BYTES_SIZE(sizeb) (sizeb)
 #endif
 
 inline static void *allocate(size_t sizeb, int type)
@@ -485,6 +487,7 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
   unsigned long newsize;
 
   sizeb += WORD_SIZE;
+  sizeb = ALIGN_BYTES_SIZE(sizeb);
   newsize = gen0_alloc_page->size + sizeb;
 
   if(newsize > GEN0_PAGE_SIZE) {
