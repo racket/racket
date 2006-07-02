@@ -55,7 +55,7 @@
 # include <X11/Xft/Xft.h>
 #endif
 
-static Atom utf8_atom = 0;
+static Atom utf8_atom = 0, net_wm_name_atom, net_wm_icon_name_atom;
 
 extern void wxSetSensitive(Widget, Bool enabled);
 
@@ -243,19 +243,36 @@ void wxWindow::SetName(char *name)
 
 void wxWindow::SetTitle(char *title)
 {
+    /* Note: widget must be realized */
+
     if (!X->frame) // forbid, if no widget associated
 	return;
 
     if (!utf8_atom) {
       utf8_atom = XInternAtom(XtDisplay(X->frame), "UTF8_STRING", FALSE);
+      net_wm_name_atom = XInternAtom(XtDisplay(X->frame), "_NET_WM_NAME", FALSE);
+      net_wm_icon_name_atom = XInternAtom(XtDisplay(X->frame), "_NET_WM_ICON_NAME", FALSE);
     }
 
+#if 0
     XtVaSetValues(X->frame, 
 		  XtNtitle, title, 
 		  XtNiconName, title, 
 		  XtNtitleEncoding, utf8_atom,
 		  XtNiconNameEncoding, utf8_atom,
 		  NULL);
+#endif
+
+    {
+      int i;
+      for (i = 0; i < 2; i++) {
+	XChangeProperty(XtDisplay(X->frame), XtWindow(X->frame),
+			!i ? net_wm_name_atom: net_wm_icon_name_atom,
+			utf8_atom,
+			8, PropModeReplace,
+			(unsigned char *)title, strlen(title));
+      }
+    }
 }
 
 //-----------------------------------------------------------------------------

@@ -227,7 +227,6 @@ Bool wxFrame::Create(wxFrame *frame_parent, char *title,
     }
     // set common data
     SetSize(x, y, width, height, wxSIZE_AUTO | wxPOS_USE_MINUS_ONE);
-    SetTitle(title);
     // create board widget
     wgt = XtVaCreateManagedWidget(
 	name, xfwfBoardWidgetClass, X->frame,
@@ -238,6 +237,7 @@ Bool wxFrame::Create(wxFrame *frame_parent, char *title,
     AddEventHandlers();
 
     XtRealizeWidget(X->frame);
+    SetTitle(title);
     // make a WM_PROTOCOLS atom if necessary
     XInternAtom(XtDisplay(X->frame), "WM_PROTOCOLS", False);
     // make a WM_DELETE_WINDOW atom
