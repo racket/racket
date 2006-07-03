@@ -328,7 +328,8 @@ static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
 	  mods = (HMODULE *)scheme_malloc_atomic(cnt);
 	  if (!mzEnumProcessModules(me, mods, cnt, &actual_cnt))
 	    mods = NULL;
-	}
+	} else
+	  cnt = actual_cnt;
       } else
 	mods = NULL;
       if (mods) {
