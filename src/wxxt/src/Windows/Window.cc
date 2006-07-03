@@ -254,14 +254,15 @@ void wxWindow::SetTitle(char *title)
       net_wm_icon_name_atom = XInternAtom(XtDisplay(X->frame), "_NET_WM_ICON_NAME", FALSE);
     }
 
-#if 0
+    /* Set title and icon title as string sintead fo utf-8. If
+       a Window manager can handle UTF-8, we expect it to use the
+       _NET variants. */
     XtVaSetValues(X->frame, 
 		  XtNtitle, title, 
 		  XtNiconName, title, 
-		  XtNtitleEncoding, utf8_atom,
-		  XtNiconNameEncoding, utf8_atom,
+		  XtNtitleEncoding, XA_STRING,
+		  XtNiconNameEncoding, XA_STRING,
 		  NULL);
-#endif
 
     {
       int i;
