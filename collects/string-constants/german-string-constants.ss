@@ -57,6 +57,7 @@
  (bug-report-field-docs-installed "Installierte Dokumentation")
  (bug-report-field-collections "Kollektionen")
  (bug-report-field-human-language "Interaktionssprache")	;
+ (bug-report-field-memory-use "Speicherverbrauch")
  (bug-report-field-version "Version")
  (bug-report-synthesized-information "Generierte Information")  ;; dialog title
  (bug-report-show-synthesized-info "Generierte Informationen anzeigen")	; (an)zeigen
