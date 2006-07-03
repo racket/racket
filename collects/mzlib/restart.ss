@@ -12,7 +12,7 @@
 	   [no-coll-paths? #f]
 	   [no-init-file? #f]
            [no-define-argv? #f]
-	   [case-sensitive? #f]
+	   [case-sensitive? #t]
 	   [allow-set!-undefined? #t]
 	   [print-error
 	    (lambda (e)
@@ -103,6 +103,9 @@
 	       [("-g" "--case-sens")
 		,(lambda (f) (set! case-sensitive? #t))
 		("Identifiers and symbols are initially case-sensitive")]
+	       [("-G" "--case-insens")
+		,(lambda (f) (set! case-sensitive? #f))
+		("Identifiers and symbols are initially case-insensitive")]
 	       [("-s" "--set-undef")
 		,(lambda (f) (set! allow-set!-undefined? #t))
 		("Set! works on undefined identifiers")]
