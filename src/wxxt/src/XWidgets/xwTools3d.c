@@ -155,7 +155,7 @@ GC Xaw3dGetGC(
     XtGCMask  valuemask;
     XGCValues values;
 	
-    if (be_nice_to_cmap || DefaultDepthOfScreen(Xaw3dScreen(w))==1) {
+    if ((be_nice_to_cmap || DefaultDepthOfScreen(Xaw3dScreen(w))==1) && pxmap) {
 	valuemask         = GCTile | GCFillStyle;
 	values.tile       = pxmap;
 	values.fill_style = FillTiled;

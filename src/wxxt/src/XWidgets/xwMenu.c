@@ -407,7 +407,6 @@ static Boolean MenuSetValues(gcurrent, grequest, gnew)
     }
 
     if (CHANGED_bg_
-	|| CHANGED(be_nice_to_cmap)
 	|| CHANGED(top_shadow_pixel) || CHANGED(top_shadow_contrast)
 	|| CHANGED(bot_shadow_pixel) || CHANGED(bot_shadow_contrast)) {
 	ReleaseShadowGCs(new);
@@ -415,7 +414,6 @@ static Boolean MenuSetValues(gcurrent, grequest, gnew)
 	redisplay = TRUE;
     }
     if (CHANGED_bg_
-	|| CHANGED(be_nice_to_cmap)
 	|| CHANGED(foreground) || CHANGED(font)
 #ifdef WX_USE_XFT
 	|| CHANGED(xft_font)
@@ -743,7 +741,7 @@ static void CreateGCs(MenuWidget mw)
 				     &xgcv);
     }
 
-    if (mw->menu.be_nice_to_cmap || DefaultDepthOfScreen(scr) == 1) {
+    if (DefaultDepthOfScreen(scr) == 1) {
 	mw->menu.indicator_pxmap = Xaw3dAllocPixmap((Widget)mw,
 						    mw->core.background_pixel,
 						    GRAY);
@@ -770,13 +768,13 @@ static void CreateGCs(MenuWidget mw)
 	  mw->menu.highlight_top_pixel = res;
 	}
     }
-    mw->menu.indicator_GC = Xaw3dGetGC((Widget)mw, mw->menu.be_nice_to_cmap,
+    mw->menu.indicator_GC = Xaw3dGetGC((Widget)mw, 0,
 				       mw->menu.indicator_pxmap,
 				       mw->menu.indicator_pixel);
-    mw->menu.highlight_GC = Xaw3dGetGC((Widget)mw, mw->menu.be_nice_to_cmap,
+    mw->menu.highlight_GC = Xaw3dGetGC((Widget)mw, 0,
 				       0,
 				       mw->menu.highlight_pixel);
-    mw->menu.highlight_top_GC = Xaw3dGetGC((Widget)mw, mw->menu.be_nice_to_cmap,
+    mw->menu.highlight_top_GC = Xaw3dGetGC((Widget)mw, 0,
 					   0,
 					   mw->menu.highlight_top_pixel);
 }
@@ -786,7 +784,7 @@ static void CreateShadowGCs(MenuWidget mw)
     Screen  *scr = XtScreen((Widget)mw);
     Pixel   bg   = mw->core.background_pixel, res;
 
-    if (mw->menu.be_nice_to_cmap || DefaultDepthOfScreen (scr) == 1) {
+    if (DefaultDepthOfScreen (scr) == 1) {
 	mw->menu.top_shadow_pxmap = Xaw3dAllocPixmap((Widget)mw, bg, LIGHTER);
 	mw->menu.bot_shadow_pxmap = Xaw3dAllocPixmap((Widget)mw, bg, DARKER);
     } else {
@@ -801,10 +799,10 @@ static void CreateShadowGCs(MenuWidget mw)
 	  mw->menu.bot_shadow_pxmap = (Pixmap)0;
 	}
     }
-    mw->menu.top_shadow_GC = Xaw3dGetGC((Widget)mw, mw->menu.be_nice_to_cmap,
+    mw->menu.top_shadow_GC = Xaw3dGetGC((Widget)mw, 0,
 					mw->menu.top_shadow_pxmap,
 					mw->menu.top_shadow_pixel);
-    mw->menu.bot_shadow_GC = Xaw3dGetGC((Widget)mw, mw->menu.be_nice_to_cmap,
+    mw->menu.bot_shadow_GC = Xaw3dGetGC((Widget)mw, 0,
 					mw->menu.bot_shadow_pxmap,
 					mw->menu.bot_shadow_pixel);
 }
