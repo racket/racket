@@ -5021,6 +5021,75 @@ _ACEOF
 
 
 
+ msg="for stack direction"
+echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6
+if test "$cross_compiling" = yes; then
+  stack_direction=unknown
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+int grows_down_p(int n, void *cmp) {
+     if (!cmp)
+       return grows_down_p(10, &cmp);
+     else if (!n)
+       return ((unsigned long)&cmp < (unsigned long)cmp);
+     else
+       return grows_down_p(n - 1, cmp);
+   }
+   int main() {
+      return grows_down_p();
+   }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  stack_direction=up
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+stack_direction=down
+fi
+rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+echo "$as_me:$LINENO: result: $stack_direction" >&5
+echo "${ECHO_T}$stack_direction" >&6
+
+if test "${stack_direction}" = "uknown" ; then
+  echo configure: cannot determine stack direction
+  exit 1
+fi
+
+if test "${stack_direction}" = "up" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define STACK_DIRECTION 1
+_ACEOF
+
+fi
+if test "${stack_direction}" = "down" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define STACK_DIRECTION -1
+_ACEOF
+
+fi
+
 ###### Some flags imply other flags #######
 
 if test "${enable_smalloskit}" = "yes" ; then

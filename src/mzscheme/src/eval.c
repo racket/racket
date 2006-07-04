@@ -135,8 +135,6 @@ Scheme_Object *scheme_multiple_values;
 
 volatile int scheme_fuel_counter;
 
-int scheme_stack_grows_up;
-
 int scheme_startup_use_jit = 1;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 
@@ -540,17 +538,17 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
 void scheme_init_stack_check()
      /* Finds the C stack limit --- platform-specific. */
 {
-  int *v;
+  int *v, stack_grows_up;
   unsigned long deeper;
 #ifdef UNIX_FIND_STACK_BOUNDS
   struct rlimit rl;
 #endif
   
   deeper = scheme_get_deeper_address();
-  scheme_stack_grows_up = (deeper > (unsigned long)&v);
+  stack_grows_up = (deeper > (unsigned long)&v);
 
 #ifdef STACK_GROWS_UP
-  if (!scheme_stack_grows_up) {
+  if (!stack_grows_up) {
     if (scheme_console_printf)
       scheme_console_printf("Stack grows DOWN, not UP.\n");
     else
@@ -559,7 +557,7 @@ void scheme_init_stack_check()
   }
 #endif
 #ifdef STACK_GROWS_DOWN
-  if (scheme_stack_grows_up) {
+  if (stack_grows_up) {
     if (scheme_console_printf)
       scheme_console_printf("Stack grows UP, not DOWN.\n");
     else
@@ -570,7 +568,7 @@ void scheme_init_stack_check()
 
 #ifdef ASSUME_FIXED_STACK_SIZE
   scheme_stack_boundary = scheme_get_stack_base();
-  if (scheme_stack_grows_up)
+  if (stack_grows_up)
     scheme_stack_boundary += (FIXED_STACK_SIZE - STACK_SAFETY_MARGIN);
   else
     scheme_stack_boundary += (STACK_SAFETY_MARGIN - FIXED_STACK_SIZE);
@@ -618,7 +616,7 @@ void scheme_init_stack_check()
       lim = UNIX_STACK_MAXIMUM;
 # endif
 
-    if (scheme_stack_grows_up)
+    if (stack_grows_up)
       bnd += (lim - STACK_SAFETY_MARGIN);
     else
       bnd += (STACK_SAFETY_MARGIN - lim);

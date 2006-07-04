@@ -486,6 +486,8 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
 {
   unsigned long newsize;
 
+  return GC_malloc_one_tagged(sizeb);
+
   sizeb += WORD_SIZE;
   sizeb = ALIGN_BYTES_SIZE(sizeb);
   newsize = gen0_alloc_page->size + sizeb;
@@ -805,114 +807,27 @@ unsigned long GC_get_stack_base()
   return stack_base;
 }
 
-#define traverse_stack(var_stack, delta, limit, operation) {          \
-    long size, count;                                                 \
-    void ***p, **a;                                                   \
-                                                                      \
-    while(var_stack) {                                                \
-      var_stack = (void **)((char *)var_stack + delta);               \
-      if(var_stack == limit) return;                                  \
-                                                                      \
-      size = *(long*)(var_stack + 1); p = (void***)(var_stack + 2);   \
-      while(size--) {                                                 \
-        a = *p;                                                       \
-        if(!a) {                                                      \
-          count = ((long *)p)[2]; a = ((void***)p)[1];                \
-          p += 2; size -= 2; a = (void**)((char *)a + delta);         \
-          while(count--) { operation(*a); a++; }                      \
-        } else {                                                      \
-          a = (void**)((char *)a + delta); operation(*a);             \
-        }                                                             \
-        p++;                                                          \
-      }                                                               \
-      var_stack = *var_stack;                                         \
-    }                                                                 \
-  }
-
-
 #define gc_stack_base ((void*)(GC_get_thread_stack_base               \
                                ? GC_get_thread_stack_base()           \
                                : (unsigned long)stack_base)) 
 
-/* these names are fixed by the gc2 spec; which is a bit unfortunate */
-void GC_mark_variable_stack(void **var_stack, long delta, void *limit) 
-{
-  long size, count;
-  void ***p, **a;
+#include "stack_comp.c"
 
-  while (var_stack) {
-    var_stack = (void **)((char *)var_stack + delta);
-    if (var_stack == limit)
-      return;
+#define GC_X_variable_stack GC_mark_variable_stack
+#define gcX(p) gcMARK(p)
+#define X_source(p) set_backtrace_source(p, BT_STACK)
+#include "var_stack.c"
+#undef GC_X_variable_stack
+#undef gcX
+#undef X_source
 
-    size = *(long *)(var_stack + 1);
-    p = (void ***)(var_stack + 2);
-    
-    while (size--) {
-      a = *p;
-      if (!a) {
-	/* Array */
-	count = ((long *)p)[2];
-	a = ((void ***)p)[1];
-	p += 2;
-	size -= 2;
-	a = (void **)((char *)a + delta);
-	while (count--) {
-	  set_backtrace_source(a, BT_STACK);
-	  gcMARK(*a);
-	  a++;
-	}
-      } else {
-	a = (void **)((char *)a + delta);
-	set_backtrace_source(a, BT_STACK);
-	gcMARK(*a);
-      }
-      p++;
-    }
-
-    var_stack = *var_stack;
-  }
-/*   traverse_stack(var_stack, delta, limit, gcMARK); */
-}
-
-void GC_fixup_variable_stack(void **var_stack, long delta, void *limit) 
-{
-  long size, count;
-  void ***p, **a;
-
-  while (var_stack) {
-    var_stack = (void **)((char *)var_stack + delta);
-    if (var_stack == limit)
-      return;
-
-    size = *(long *)(var_stack + 1);
-
-    p = (void ***)(var_stack + 2);
-    
-    while (size--) {
-      a = *p;
-      if (!a) {
-	/* Array */
-	count = ((long *)p)[2];
-	a = ((void ***)p)[1];
-	p += 2;
-	size -= 2;
-	a = (void **)((char *)a + delta);
-	while (count--) {
-	  gcFIXUP(*a);
-	  a++;
-	}
-      } else {
-	a = (void **)((char *)a + delta);
-	gcFIXUP(*a);
-      }
-      p++;
-    }
-
-    var_stack = *var_stack;
-  }
-/*   traverse_stack(var_stack, delta, limit, gcFIXUP); */
-} 
+#define GC_X_variable_stack GC_fixup_variable_stack
+#define gcX(p) gcFIXUP(p)
+#define X_source(p) /* */
+#include "var_stack.c"
+#undef GC_X_variable_stack
+#undef gcX
+#undef X_source
 
 /*****************************************************************************/
 /* Routines for root sets                                                    */
@@ -1795,7 +1710,7 @@ int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
 /* administration / initialization                                           */
 /*****************************************************************************/
 
-static int generations_available = 1;
+static int generations_available = 0;
 
 void designate_modified(void *p)
 {

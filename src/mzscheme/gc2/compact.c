@@ -89,8 +89,8 @@ typedef short Type_Tag;
 /* Debugging and performance tools: */
 #define TIME 0
 #define SEARCH 0
-#define CHECKS 0
-#define CHECK_STACK_PTRS 0
+#define CHECKS 1
+#define CHECK_STACK_PTRS 1
 #define NOISY 0
 #define MARK_STATS 0
 #define ALLOC_GC_PHASE 0
@@ -2720,124 +2720,27 @@ static int stack_depth;
 static int record_stack_source = 0;
 #endif
 
-void GC_mark_variable_stack(void **var_stack,
-			    long delta,
-			    void *limit)
-{
-  long size, count;
-  void ***p, **a;
+#include "stack_comp.c"
 
-#if TIME
-  stack_depth = 0;
-#endif
-
-  while (var_stack) {
-    var_stack = (void **)((char *)var_stack + delta);
-    if (var_stack == limit)
-      return;
-
-    size = *(long *)(var_stack + 1);
-
-#if CHECKS
-    oo_var_stack = o_var_stack;
-    o_var_stack = var_stack;
-#endif
-
-    p = (void ***)(var_stack + 2);
-    
-    while (size--) {
-      a = *p;
-      if (!a) {
-	/* Array */
-	count = ((long *)p)[2];
-	a = ((void ***)p)[1];
-	p += 2;
-	size -= 2;
-	a = (void **)((char *)a + delta);
-	while (count--) {
+#define GC_X_variable_stack GC_mark_variable_stack
 #if RECORD_MARK_SRC
-	  if (record_stack_source) {
-	    mark_src = a;
-	    mark_type = MTYPE_STACK;
-	  }
+# define X_source(p) if (record_stack_source) { mark_src = p; mark_type = MTYPE_STACK; }
+#else
+# define X_source(p) /* */
 #endif
-	  gcMARK(*a);
-	  a++;
-	}
-      } else {
-	a = (void **)((char *)a + delta);
-#if RECORD_MARK_SRC
-	if (record_stack_source) {
-	  mark_src = a;
-	  mark_type = MTYPE_STACK;
-	}
-#endif
-	gcMARK(*a);
-      }
-      p++;
-    }
+#define gcX(p) gcMARK(p)
+#include "var_stack.c"
+#undef GC_X_variable_stack
+#undef gcX
+#undef X_source
 
-#if 0
-    if (*var_stack && ((unsigned long)*var_stack < (unsigned long)var_stack)) {
-      GCPRINT(GCOUTF, "bad %d\n", stack_depth);
-      CRASH(32);
-    }
-#endif
-
-    var_stack = *var_stack;
-
-#if TIME
-    stack_depth++;
-#endif
-  }
-}
-
-void GC_fixup_variable_stack(void **var_stack,
-			     long delta,
-			     void *limit)
-{
-  long size, count;
-  void ***p, **a;
-
-#if TIME
-  stack_depth = 0;
-#endif
-
-  while (var_stack) {
-    var_stack = (void **)((char *)var_stack + delta);
-    if (var_stack == limit)
-      return;
-
-    size = *(long *)(var_stack + 1);
-
-    p = (void ***)(var_stack + 2);
-    
-    while (size--) {
-      a = *p;
-      if (!a) {
-	/* Array */
-	count = ((long *)p)[2];
-	a = ((void ***)p)[1];
-	p += 2;
-	size -= 2;
-	a = (void **)((char *)a + delta);
-	while (count--) {
-	  gcFIXUP(*a);
-	  a++;
-	}
-      } else {
-	a = (void **)((char *)a + delta);
-	gcFIXUP(*a);
-      }
-      p++;
-    }
-
-    var_stack = *var_stack;
-#if TIME
-    stack_depth++;
-#endif
-  }
-}
+#define GC_X_variable_stack GC_fixup_variable_stack
+#define gcX(p) gcFIXUP(p)
+#define X_source(p) /* */
+#include "var_stack.c"
+#undef GC_X_variable_stack
+#undef gcX
+#undef X_source
 
 #if CHECKS
 # if CHECK_STACK_PTRS
@@ -2899,6 +2802,11 @@ void GC_check_variable_stack()
     if (*var_stack && ((unsigned long)*var_stack <= (unsigned long)var_stack))
       CRASH(33);
 # endif
+       
+    size = *(long *)(var_stack + 1);
+
+    if (var_stack + size + 2 == limit)
+      return;
 
 # if CHECK_STACK_PTRS
     size = *(long *)(var_stack + 1);

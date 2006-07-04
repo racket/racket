@@ -2714,14 +2714,12 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
       }
       errid = SOCK_ERRNO();
     } else {
-      int ok;
+      int ok = 1;
 
 #ifdef USE_NULL_TO_DISCONNECT_UDP
       if (!origid) {
 	if (udp->connected)
 	  ok = !connect(udp->s, NULL, 0);
-	else
-	  ok = 1;
       } else
 #endif
 	{

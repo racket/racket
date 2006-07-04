@@ -27,7 +27,6 @@
 
 # define SYSTEM_TYPE_NAME "oskit"
 
-# define STACK_GROWS_DOWN
 # define DO_STACK_CHECK
 # ifndef OSKIT_TEST
 #  define OSKIT_FIXED_STACK_BOUNDS
@@ -83,7 +82,6 @@
 
 # include "uconfig.h"
 
-# define STACK_GROWS_DOWN
 # ifndef i386
 #  define SCHEME_BIG_ENDIAN
 # endif
@@ -138,7 +136,6 @@
 # include "uconfig.h"
 # undef USE_FCHDIR
 
-# define STACK_GROWS_DOWN
 # define SCHEME_BIG_ENDIAN
 # define UNIX_LIMIT_STACK 33554944
 
@@ -209,10 +206,7 @@
 # endif
 
 # if defined(__hppa__)
-#  define STACK_GROWS_UP
 #  define SIXTY_FOUR_BIT_INTEGERS
-# else
-#  define STACK_GROWS_DOWN
 # endif
 
 # define USE_IEEE_FP_PREDS
@@ -254,8 +248,6 @@
 # undef HAS_STANDARD_IOB
 # define HAS_BSD_IOB
 
-# define STACK_GROWS_DOWN
-
 #ifndef __ELF__
 # define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
 #endif
@@ -296,8 +288,6 @@
 
 # define HAS_BSD_IOB
 
-# define STACK_GROWS_DOWN
-
 #ifndef __ELF__
 # define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
 #endif
@@ -330,8 +320,6 @@
 # undef HAS_STANDARD_IOB
 
 # define HAS_BSD_IOB
-
-# define STACK_GROWS_DOWN
 
 # ifdef FREEBSD_VERSION_2x
 #  define UNDERSCORE_DYNLOAD_SYMBOL_PREFIX
@@ -367,7 +355,6 @@
 
 # include "uconfig.h"
 
-# define STACK_GROWS_DOWN
 # define SCHEME_BIG_ENDIAN
 
 # define DIRENT_NO_NAMLEN
@@ -402,7 +389,6 @@
 
 # define DIRENT_NO_NAMLEN
 
-# define STACK_GROWS_DOWN
 # define SCHEME_BIG_ENDIAN
 
 # define NO_USLEEP
@@ -419,8 +405,6 @@
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-osf1"
 
 # include "uconfig.h"
-
-# define STACK_GROWS_DOWN
 
 # define SIXTY_FOUR_BIT_INTEGERS
 
@@ -441,7 +425,6 @@
 
 # include "uconfig.h"
 
-# define STACK_GROWS_UP
 # define SCHEME_BIG_ENDIAN
 
 # define SOME_FDS_ARE_NOT_SELECTABLE
@@ -479,8 +462,6 @@
 # define DIRENT_NO_NAMLEN
 
 # define HAS_SCO_IOB
-
-# define STACK_GROWS_DOWN
 
 # define USE_SCO_IEEE_FP_PREDS
 # define USE_EXPLICT_FP_FORM_CHECK
@@ -522,7 +503,6 @@
 # define GETENV_FUNCTION
 # define DIR_FUNCTION
 
-# define STACK_GROWS_DOWN
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
 
@@ -628,7 +608,6 @@
 
 # define USE_DIVIDE_MAKE_INFINITY
 
-# define STACK_GROWS_DOWN
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
 
@@ -670,7 +649,6 @@
 # define SYSTEM_TYPE_NAME "macosx"
 #endif
 
-# define STACK_GROWS_DOWN
 #ifdef __POWERPC__
 # define SCHEME_BIG_ENDIAN
 #endif
@@ -713,7 +691,6 @@
 
 # include "uconfig.h"
 
-# define STACK_GROWS_DOWN
 # define USE_MAP_ANON
 
 # define USE_DYNAMIC_FDSET_SIZE
@@ -769,7 +746,6 @@
 #  define LINK_EXTENSIONS_BY_TABLE
 # endif
 
-# define STACK_GROWS_DOWN
 # define SCHEME_BIG_ENDIAN
 
 # define DO_STACK_CHECK
@@ -827,8 +803,6 @@
 # define GETENV_FUNCTION
 # define DIR_FUNCTION
 
-# define STACK_GROWS_DOWN
-
 # define DO_STACK_CHECK
 # define USE_STACKAVAIL
 # define STACK_SAFETY_MARGIN 15000
@@ -863,7 +837,6 @@
 # define NO_USER_BREAK_HANDLER
 # define NO_USLEEP
 
-# define STACK_GROWS_DOWN
 # define SCHEME_BIG_ENDIAN
 
 # define DO_STACK_CHECK
@@ -1248,14 +1221,6 @@
 # define DO_STACK_CHECK
 # define UNIX_FIND_STACK_BOUNDS
 # define STACK_SAFETY_MARGIN 50000
-
- /* STACK_GROWS_UP means that deeper stack values have higher
-     numbered addresses.
-    STACK_GROWS_DOWN means that deeper stack values have lower
-     numbered addresses. This is usually the case (Sparc and
-     Intel platforms, for example, use this).
-    Use only one or none of these. (It's faster if you know which
-     one applies, but it can also be figured it out dynamically.) */
 
  /* DO_STACK_CHECK checks for stack overflow during execution.
      Requires either UNIX_FIND_STACK_BOUNDS, USE_STACKAVAIL,

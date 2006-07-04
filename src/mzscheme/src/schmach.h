@@ -25,21 +25,24 @@
 
 /* If stacks grow up then */
 
-#if !defined(STACK_GROWS_UP) && !defined(STACK_GROWS_DOWN)
-# define STACK_GROWS_UNKNOWN
+ /* STACK_GROWS_UP means that deeper stack values have higher
+     numbered addresses.
+    STACK_GROWS_DOWN means that deeper stack values have lower
+     numbered addresses. This is usually the case (Sparc and
+     Intel platforms, for example, use this). */
+
+#if STACK_DIRECTION > 0
+# define STACK_GROWS_UP
+#else
+# define STACK_GROWS_DOWN
 #endif
 
 #ifdef STACK_GROWS_UP
 # define STK_COMP(a,b) ((a) > (b))
 # define STK_DIFF(a, b) ((a) - (b))
 #else
-# ifdef STACK_GROWS_DOWN
-#  define STK_COMP(a,b) ((a) < (b))
+# define STK_COMP(a,b) ((a) < (b))
 # define STK_DIFF(a, b) ((b) - (a))
-# else
-#  define STK_COMP(a,b) (scheme_stack_grows_up == ((a) > (b)))
-#  define STK_DIFF(a,b) (scheme_stack_grows_up ? ((b) - (a)) : ((a) - (b)))
-# endif
 #endif
 
 #ifdef SHORT_ALIGN
@@ -47,8 +50,6 @@ typedef short stack_val;
 #else
 typedef long stack_val;
 #endif
-
-extern int scheme_stack_grows_up;
 
 #ifndef STACK_SAFETY_MARGIN
 # define STACK_SAFETY_MARGIN 50000

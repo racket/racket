@@ -89,6 +89,34 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(long long)
 
+[ msg="for stack direction" ]
+AC_MSG_CHECKING($msg)
+AC_TRY_RUN(
+   int grows_down_p(int n, void *cmp) {
+     if (!cmp)
+       return grows_down_p(10, &cmp);
+     else if (!n)
+       return ((unsigned long)&cmp < (unsigned long)cmp);
+     else
+       return grows_down_p(n - 1, cmp);
+   }
+   int main() {
+      return grows_down_p();
+   }, stack_direction=up, stack_direction=down, stack_direction=unknown)
+AC_MSG_RESULT($stack_direction) 
+
+if test "${stack_direction}" = "uknown" ; then
+  echo configure: cannot determine stack direction
+  exit 1
+fi
+
+if test "${stack_direction}" = "up" ; then
+  AC_DEFINE(STACK_DIRECTION,1,[Stack direction up])
+fi
+if test "${stack_direction}" = "down" ; then
+  AC_DEFINE(STACK_DIRECTION,-1,[Stack direction down])
+fi
+
 ###### Some flags imply other flags #######
 
 if test "${enable_smalloskit}" = "yes" ; then

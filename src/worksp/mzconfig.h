@@ -4,7 +4,11 @@
  * things that should be defined here.
  */
 
-/* These are not used on Windows. */
+#ifndef __MZSCHEME_CONFIGURATION_INFO__
+#define __MZSCHEME_CONFIGURATION_INFO__
+
+
+/* Undefined items are not used on Windows. */
 
 /* The size of a `char', as computed by sizeof. */
 #undef SIZEOF_CHAR
@@ -21,9 +25,14 @@
 /* The size of a `long long', as computed by sizeof. */
 #undef SIZEOF_LONG_LONG
 
+/* Direction of stack growth: 1 = up, -1 = down, 0 = unknown */
+#define STACK_DIRECTION -1
 
 /* whether nl_langinfo works */
 #undef HAVE_CODESET
 
 /* whether getaddrinfo works */
 #define HAVE_GETADDRINFO 1
+
+
+#endif

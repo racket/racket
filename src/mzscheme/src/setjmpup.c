@@ -28,14 +28,9 @@
 #include "schgc.h"
 
 #ifdef STACK_GROWS_UP
-#define DEEPPOS(b) ((unsigned long)(b)->stack_from+(unsigned long)(b)->stack_size)
+# define DEEPPOS(b) ((unsigned long)(b)->stack_from+(unsigned long)(b)->stack_size)
 #else
-#ifdef STACK_GROWS_DOWN
-#define DEEPPOS(b) ((unsigned long)(b)->stack_from)
-#else
-#define DEEPPOS(b) ((unsigned long)(b)->stack_from+ \
-                 (scheme_stack_grows_up ? (unsigned long)(b)->stack_size : 0))
-#endif
+# define DEEPPOS(b) ((unsigned long)(b)->stack_from)
 #endif
 
 #ifdef MZ_PRECISE_GC
@@ -258,12 +253,12 @@ void scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STAC
   here = &size;
 
   size = (long)here XFORM_OK_MINUS (long)start;
-  if (scheme_stack_grows_up) {
-    b->stack_from = start;
-  } else {
-    size = -size;
-    b->stack_from = here;
-  }
+#ifdef STACK_GROWS_UP
+  b->stack_from = start;
+#else
+  size = -size;
+  b->stack_from = here;
+#endif
 
   if (size < 0)
     size = 0;
@@ -361,16 +356,16 @@ static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
     memcpy(cto, cfrom, size);
 
     if (c->cont) {
-      if (scheme_stack_grows_up) {
-	top_delta = ((unsigned long)c->stack_from 
-		     - ((unsigned long)c->cont->buf.stack_from
-			+ c->cont->buf.stack_size));
-      } else {
-	bottom_delta = ((unsigned long)c->stack_from 
-			+ c->stack_size
-			- (unsigned long)c->cont->buf.stack_from);
-	top_delta = bottom_delta;
-      }
+#ifdef STACK_GROWS_UP
+      top_delta = ((unsigned long)c->stack_from 
+		   - ((unsigned long)c->cont->buf.stack_from
+		      + c->cont->buf.stack_size));
+#else
+      bottom_delta = ((unsigned long)c->stack_from 
+		      + c->stack_size
+		      - (unsigned long)c->cont->buf.stack_from);
+      top_delta = bottom_delta;
+#endif
       c = &c->cont->buf;
     } else
       c = NULL;
@@ -411,19 +406,19 @@ static long find_same(char *p, char *low, long max_size)
     max_size = MAX_STACK_DIFF;
   }
 
-  if (scheme_stack_grows_up) {
-    while (max_size--) {
-      if (p[cnt] != low[cnt])
-	break;
-      cnt++;
-    }
-  } else {
-    while (max_size--) {
-      if (p[max_size] != low[max_size])
-	break;
-      cnt++;
-    }
+#ifdef STACK_GROWS_UP
+  while (max_size--) {
+    if (p[cnt] != low[cnt])
+      break;
+    cnt++;
   }
+#else
+  while (max_size--) {
+    if (p[max_size] != low[max_size])
+      break;
+    cnt++;
+  }
+#endif
 
   if (cnt & (SHARED_STACK_ALIGNMENT - 1)) {
     cnt -= (cnt & (SHARED_STACK_ALIGNMENT - 1));
@@ -435,15 +430,63 @@ static long find_same(char *p, char *low, long max_size)
 #ifdef MZ_PRECISE_GC
 static void *align_var_stack(void **vs, void *s)
 {
+  void **nvs, **next;
+  long i, cnt;
+  void *a;
+  
   while (STK_COMP((unsigned long)vs, (unsigned long)s)) {
     vs = (void **)(*vs);
   }
-  return (void *)vs;
+
+  s = (void *)vs;
+
+  /* Check next few frames to see whether they refer to variables
+     before s. This can happen due to inlining, so that an older
+     frame is shallower in the stack. It shouldn't happen much,
+     though. */
+  nvs = *vs;
+  while (nvs) {
+    next = NULL;
+    cnt = ((long *)nvs)[1];
+    for (i = 0; i < cnt; i++) {
+      a = nvs[i+2];
+      if (!a) {
+	a = nvs[i+3];
+	i += 2;
+      }
+      if (STK_COMP((unsigned long)a, (unsigned long)s)) {
+	/* We need nvs to update part of copied stack! */
+	vs = nvs;
+	s = (void *)vs;
+	next = *nvs;
+	break;
+      }
+    }
+    nvs = next;
+  }
+
+  return s;
 }
 #define ALIGN_VAR_STACK(vs, s) s = align_var_stack(vs, s)
+
+static void *shift_var_stack(void *s)
+{
+#ifdef STACK_GROWS_UP
+  return s;
+#else
+  void **vs = (void **)s;
+  long cnt;
+  
+  /* Set s past end of vs: */
+  cnt = ((long *)vs)[1];
+  return (void *)(vs + cnt + 2);
+#endif
+}
+#define PAST_VAR_STACK(s) s = shift_var_stack(s);
 END_XFORM_SKIP;
 #else
 # define ALIGN_VAR_STACK(vs, s) /* empty */
+# define PAST_VAR_STACK(s) /* empty */
 #endif
 
 int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
@@ -457,9 +500,6 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
 #endif
 
   FLUSH_REGISTER_WINDOWS;
-
-  if (STK_COMP((unsigned long)start, (unsigned long)&local))
-    start = (void *)&local;
 
   if (!(local = scheme_setjmp(b->buf))) {
     if (c) {
@@ -481,17 +521,19 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
       START_XFORM_SKIP;
       same_size = find_same(get_copy(c->buf.stack_copy), c->buf.stack_from, c->buf.stack_size);
       b->cont = c;
-      if (scheme_stack_grows_up) {
-	start = (void *)((char *)c->buf.stack_from + same_size);
-      } else {
-	start = (void *)((char *)c->buf.stack_from + (c->buf.stack_size - same_size));
-      }
-      /* In 3m-mode, we need to copy on a var-stack boundary: */
+#ifdef STACK_GROWS_UP
+      start = (void *)((char *)c->buf.stack_from + same_size);
+#else
+      start = (void *)((char *)c->buf.stack_from + (c->buf.stack_size - same_size));
+#endif
+      /* In 3m-mode, we need `start' on a var-stack boundary: */
       ALIGN_VAR_STACK(__gc_var_stack__, start);
       END_XFORM_SKIP;
     } else
       b->cont = NULL;
 
+    /* In 3m-mode, we need `start' at the end of the frame */
+    PAST_VAR_STACK(start);
 
     /* b is a pointer into the middle of `base', which bad for precise
      gc, so we hide it. */
