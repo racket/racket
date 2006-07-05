@@ -97,8 +97,8 @@ START_XFORM_SKIP;
 #endif
 
 int epm_tried = 0;
-typedef BOOL (*EnumProcessModules_t)(HANDLE hProcess, HMODULE* lphModule,
-                                     DWORD cb, LPDWORD lpcbNeeded);
+typedef BOOL (WINAPI *EnumProcessModules_t)(HANDLE hProcess, HMODULE* lphModule,
+                                            DWORD cb, LPDWORD lpcbNeeded);
 EnumProcessModules_t _EnumProcessModules;
 #include <tlhelp32.h>
 
