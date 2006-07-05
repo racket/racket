@@ -1980,7 +1980,7 @@
 
 (module #%stxloc #%kernel
   (require #%stxcase #%define-et-al)
-  (require-for-syntax #%kernel #%stxcase)
+  (require-for-syntax #%kernel #%stxcase #%sc)
 
   ;; Regular syntax-case
   (-define-syntax syntax-case*
@@ -2013,7 +2013,11 @@
     (lambda (stx)
       (syntax-case** #f #t stx () module-identifier=?
 	[(_ loc pattern)
-	 (syntax (relocate loc (syntax pattern)))])))
+	 (if (if (symbol? (syntax-e #'pattern))
+		 (syntax-mapping? (syntax-local-value #'pattern (lambda () #f)))
+		 #f)
+	     (syntax (syntax pattern))
+	     (syntax (relocate loc (syntax pattern))))])))
 
   (provide syntax/loc syntax-case* syntax-case))
 
