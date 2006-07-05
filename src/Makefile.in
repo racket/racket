@@ -47,8 +47,8 @@ plain-install:
 install-normal:
 	mkdir -p $(ALLDIRINFO)
 	$(MAKE) mzinstall
-	$(MAKE) mredinstall-stub
 	$(MAKE) copytree-stub
+	$(MAKE) mredinstall-stub
 	$(MAKE) lib-finish
 
 mredinstall-stub: @MAKE_MREDINSTALL@
