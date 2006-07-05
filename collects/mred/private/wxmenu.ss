@@ -129,11 +129,9 @@
 	[get-items (lambda () items)]
 	[append-item (lambda (i iwx) 
 		       (set! items (append items (list i)))
-		       (unless (or (send iwx ignore-enabled?)
-				   (not (send iwx is-enabled?)))
-			 (let ([k (send iwx get-keymap)])
-			   (when k
-			     (send keymap chain-to-keymap k #f)))))]
+		       (let ([k (send iwx get-keymap)])
+			 (when k
+			   (send keymap chain-to-keymap k #f))))]
 	[delete-sep (lambda (i iwx)
 		      (delete-by-position (find-pos items i eq?))
 		      (set! items (remq i items)))]
