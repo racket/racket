@@ -2438,10 +2438,10 @@
 		  (raise-syntax-error
 		   #f
 		   (syntax-case stx ()
-		     [(_ id expr ...)
-		      "bad syntax (multiple expressions after identifier)"]
 		     [(_ id)
 		      "bad syntax (zero expressions after identifier)"]
+		     [(_ id expr ...)
+		      "bad syntax (multiple expressions after identifier)"]
 		     [(_ id . rest)
 		      "bad syntax (illegal use of `.')"])
 		   stx)]
