@@ -1169,9 +1169,11 @@ void scheme_wrong_type(const char *name, const char *expected,
 
   if ((which < 0) || (argc == 1))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: expects %s of type <%s>; "
+		     "%s: expect%s %s of type <%s>; "
 		     "given %t",
-		     name, isress, expected, s, slen);
+		     name, 
+		     (which < 0) ? "ed" : "s",
+		     isress, expected, s, slen);
   else {
     char *other;
     long olen;

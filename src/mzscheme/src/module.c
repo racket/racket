@@ -1804,6 +1804,11 @@ static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx,
 
     name = scheme_apply(scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_RESOLVER), 4, a);
     
+    if (!SCHEME_SYMBOLP(name)) {
+      a[0] = name;
+      scheme_wrong_type("module name resolver", "symbol", -1, -1, a);
+    }
+
     ((Scheme_Modidx *)modidx)->resolved = name;
   }
 
