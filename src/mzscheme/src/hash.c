@@ -156,7 +156,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
 {
   Scheme_Object *tkey, **keys;
   hash_v_t h, h2, useme = 0;
-  long size = table->size;
+  unsigned long size = table->size;
 
  rehash_key:
 
@@ -436,19 +436,21 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
   hash_v_t h, h2;
   Scheme_Bucket *bucket;
   Compare_Proc compare = table->compare;
-
+  unsigned long size;
 
  rehash_key:
 
+  size = table->size;
+
   if (table->make_hash_indices) {
     table->make_hash_indices((void *)key, (long *)&h, (long *)&h2);
-    h = h % table->size;
-    h2 = h2 % table->size;
+    h = h % size;
+    h2 = h2 % size;
   } else {
     unsigned long lkey;
     lkey = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
-    h = (lkey >> 2) % table->size;
-    h2 = (lkey >> 3) % table->size;
+    h = (lkey >> 2) % size;
+    h2 = (lkey >> 3) % size;
   }
 
   if (!h2)
@@ -475,7 +477,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
       } else if (add)
 	break;
       scheme_hash_iteration_count++;
-      h = (h + h2) % table->size;
+      h = (h + h2) % size;
     }
   } else {
     scheme_hash_request_count++;
@@ -485,7 +487,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
       else if (compare && !compare((void *)bucket->key, (void *)key))
 	return bucket;
       scheme_hash_iteration_count++;
-      h = (h + h2) % table->size;
+      h = (h + h2) % size;
     }
   }
 
