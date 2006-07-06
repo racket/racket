@@ -1,3 +1,6 @@
+Version 350.4
+Upgraded to gc 6.7
+
 Version 350.3
 Changed syntax/loc to not adjust location information for a
  template that contains only a pattern variable
