@@ -38,7 +38,7 @@ CFLAGS= $(BASEFLAGS) @PROFFLAGS@ $(OPTIONS) -DNO_EXECUTE_PERMISSION -DSILENT -DN
 # -DGC_LINUX_THREADS -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC
 # To build the parallel collector in a static library on HP/UX,
 # add to the above:
-# -DGC_HPUX_THREADS -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC -D_POSIX_C_SOURCE=199506L
+# -DGC_HPUX_THREADS -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC -D_POSIX_C_SOURCE=199506L -mt
 # To build the thread-safe collector on Tru64, add to the above:
 # -pthread -DGC_OSF1_THREADS
 
@@ -72,10 +72,11 @@ HOSTCFLAGS=$(BASEFLAGS)
 #   Also requires -D_REENTRANT or -D_POSIX_C_SOURCE=199506L. See README.hp.
 # -DGC_LINUX_THREADS enables support for Xavier Leroy's Linux threads.
 #   see README.linux.  -D_REENTRANT may also be required.
-# -DGC_OSF1_THREADS enables support for Tru64 pthreads.  Untested.
-# -DGC_FREEBSD_THREADS enables support for FreeBSD pthreads.  Untested.
+# -DGC_OSF1_THREADS enables support for Tru64 pthreads.
+# -DGC_FREEBSD_THREADS enables support for FreeBSD pthreads.
 #   Appeared to run into some underlying thread problems.
-# -DGC_DARWIN_THREADS enables support for Mac OS X pthreads.  Untested.
+# -DGC_DARWIN_THREADS enables support for Mac OS X pthreads.
+# -DGC_AIX_THREADS enables support for IBM AIX threads.
 # -DGC_DGUX386_THREADS enables support for DB/UX on I386 threads.
 #   See README.DGUX386.
 # -DGC_WIN32_THREADS enables support for win32 threads.  That makes sense
@@ -145,9 +146,9 @@ HOSTCFLAGS=$(BASEFLAGS)
 # -DJAVA_FINALIZATION makes it somewhat safer to finalize objects out of
 #   order by specifying a nonstandard finalization mark procedure  (see
 #   finalize.c).  Objects reachable from finalizable objects will be marked
-#   in a sepearte postpass, and hence their memory won't be reclaimed.
+#   in a seperate postpass, and hence their memory won't be reclaimed.
 #   Not recommended unless you are implementing a language that specifies
-#   these semantics.  Since 5.0, determines only only the initial value
+#   these semantics.  Since 5.0, determines only the initial value
 #   of GC_java_finalization variable.
 # -DFINALIZE_ON_DEMAND causes finalizers to be run only in response
 #   to explicit GC_invoke_finalizers() calls.
@@ -235,8 +236,8 @@ HOSTCFLAGS=$(BASEFLAGS)
 # -DTHREAD_LOCAL_ALLOC defines GC_local_malloc(), GC_local_malloc_atomic()
 #   and GC_local_gcj_malloc().  Needed for gc_gcj.h interface.  These allocate
 #   in a way that usually does not involve acquisition of a global lock.
-#   Currently requires -DGC_LINUX_THREADS, but should be easy to port to
-#   other pthreads environments.  Recommended for multiprocessors.
+#   Currently works only on platforms such as Linux which use pthread_support.c.
+#   Recommended for multiprocessors.
 # -DUSE_COMPILER_TLS causes thread local allocation to use compiler-supported
 #   "__thread" thread-local variables.  This is the default in HP/UX.  It
 #   may help performance on recent Linux installations.  (It failed for
@@ -278,6 +279,10 @@ HOSTCFLAGS=$(BASEFLAGS)
 # -DPOINTER_SHIFT=n causes the collector to left shift candidate pointers
 #   by the indicated amount before trying to interpret them.  Applied
 #   after POINTER_MASK. EXPERIMENTAL.  See also the preceding macro.
+# -DDARWIN_DONT_PARSE_STACK Causes the Darwin port to discover thread
+#   stack bounds in the same way as other pthread ports, without trying to
+#   walk the frames onthe stack.  This is recommended only as a fallback
+#   for applications that don't support proper stack unwinding.
 #
 
 CXXFLAGS= $(CFLAGS) 
@@ -286,9 +291,9 @@ ARFLAGS= @ARFLAGS@
 RANLIB= @RANLIB@
 
 
-OBJS= alloc.@LTO@ reclaim.@LTO@ allchblk.@LTO@ misc.@LTO@ mach_dep.@LTO@ os_dep.@LTO@ mark_rts.@LTO@ headers.@LTO@ mark.@LTO@ obj_map.@LTO@ blacklst.@LTO@ finalize.@LTO@ new_hblk.@LTO@ dbg_mlc.@LTO@ malloc.@LTO@ stubborn.@LTO@ checksums.@LTO@ solaris_threads.@LTO@ aix_irix_threads.@LTO@ pthread_support.@LTO@ pthread_stop_world.@LTO@ darwin_stop_world.@LTO@ typd_mlc.@LTO@ ptr_chck.@LTO@ mallocx.@LTO@ solaris_pthreads.@LTO@ gcj_mlc.@LTO@ specific.@LTO@ gc_dlopen.@LTO@ backgraph.@LTO@ win32_threads.@LTO@
+OBJS= alloc.@LTO@ reclaim.@LTO@ allchblk.@LTO@ misc.@LTO@ mach_dep.@LTO@ os_dep.@LTO@ mark_rts.@LTO@ headers.@LTO@ mark.@LTO@ obj_map.@LTO@ blacklst.@LTO@ finalize.@LTO@ new_hblk.@LTO@ dbg_mlc.@LTO@ malloc.@LTO@ stubborn.@LTO@ checksums.@LTO@ solaris_threads.@LTO@ pthread_support.@LTO@ pthread_stop_world.@LTO@ darwin_stop_world.@LTO@ typd_mlc.@LTO@ ptr_chck.@LTO@ mallocx.@LTO@ solaris_pthreads.@LTO@ gcj_mlc.@LTO@ specific.@LTO@ gc_dlopen.@LTO@ backgraph.@LTO@ win32_threads.@LTO@
 
-CSRCS= reclaim.c allchblk.c misc.c alloc.c mach_dep.c os_dep.c mark_rts.c headers.c mark.c obj_map.c pcr_interface.c blacklst.c finalize.c new_hblk.c real_malloc.c dyn_load.c dbg_mlc.c malloc.c stubborn.c checksums.c solaris_threads.c aix_irix_threads.c pthread_support.c pthread_stop_world.c darwin_stop_world.c typd_mlc.c ptr_chck.c mallocx.c solaris_pthreads.c gcj_mlc.c specific.c gc_dlopen.c backgraph.c win32_threads.c
+CSRCS= reclaim.c allchblk.c misc.c alloc.c mach_dep.c os_dep.c mark_rts.c headers.c mark.c obj_map.c pcr_interface.c blacklst.c finalize.c new_hblk.c real_malloc.c dyn_load.c dbg_mlc.c malloc.c stubborn.c checksums.c solaris_threads.c pthread_support.c pthread_stop_world.c darwin_stop_world.c typd_mlc.c ptr_chck.c mallocx.c solaris_pthreads.c gcj_mlc.c specific.c gc_dlopen.c backgraph.c win32_threads.c
 
 CORD_SRCS=  cord/cordbscs.c cord/cordxtra.c cord/cordprnt.c cord/de.c cord/cordtest.c include/cord.h include/ec.h include/private/cord_pos.h cord/de_win.c cord/de_win.h cord/de_cmds.h cord/de_win.ICO cord/de_win.RC
 
@@ -728,9 +733,6 @@ solaris_threads.@LTO@: $(srcdir)/solaris_threads.c
 
 win32_threads.@LTO@: $(srcdir)/win32_threads.c
 	$(CC) $(CFLAGS) -c $(srcdir)/win32_threads.c
-
-aix_irix_threads.@LTO@: $(srcdir)/aix_irix_threads.c
-	$(CC) $(CFLAGS) -c $(srcdir)/aix_irix_threads.c
 
 pthread_support.@LTO@: $(srcdir)/pthread_support.c
 	$(CC) $(CFLAGS) -c $(srcdir)/pthread_support.c

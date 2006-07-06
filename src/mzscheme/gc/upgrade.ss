@@ -1,6 +1,6 @@
 
 (define old-dir (current-directory))
-(define new-dir "~/tmp/gc6.3")
+(define new-dir "~/Desktop/gc6.7")
 (define really-svn? #t)
 
 (require (lib "file.ss")

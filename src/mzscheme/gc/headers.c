@@ -210,7 +210,7 @@ register struct hblk * h;
     result = alloc_hdr();
     SET_HDR(h, result);
 #   ifdef USE_MUNMAP
-	result -> hb_last_reclaimed = GC_gc_no;
+	result -> hb_last_reclaimed = (unsigned short)GC_gc_no;
 #   endif
     return(result);
 }

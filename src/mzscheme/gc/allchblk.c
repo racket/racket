@@ -285,8 +285,8 @@ int n;
 	GET_HDR(hhdr -> hb_prev, phdr);
 	phdr -> hb_next = hhdr -> hb_next;
     }
+    FREE_ASSERT(GC_free_bytes[index] >= hhdr -> hb_sz);
     INCR_FREE_BYTES(index, - (signed_word)(hhdr -> hb_sz));
-    FREE_ASSERT(GC_free_bytes[index] >= 0);
     if (0 != hhdr -> hb_next) {
 	hdr * nhdr;
 	GC_ASSERT(!IS_FORWARDING_ADDR_OR_NIL(NHDR(hhdr)));
@@ -529,7 +529,7 @@ int index;	/* Index of free list */
 				/* free blocks in GC_add_to_fl.		*/
 #     endif
 #   ifdef USE_MUNMAP
-      hhdr -> hb_last_reclaimed = GC_gc_no;
+      hhdr -> hb_last_reclaimed = (unsigned short)GC_gc_no;
 #   endif
     hhdr -> hb_sz = h_size;
     GC_add_to_fl(h, hhdr);
@@ -590,8 +590,9 @@ int n;
 	    GET_HDR(hbp, hhdr);
 	    size_avail = hhdr->hb_sz;
 	    if (size_avail < size_needed) continue;
-	    if (!GC_use_entire_heap
-		&& size_avail != size_needed
+	    if (size_avail != size_needed
+		&& !GC_use_entire_heap
+		&& !GC_dont_gc
 		&& USED_HEAP_SIZE >= GC_requested_heapsize
 		&& !TRUE_INCREMENTAL && GC_should_collect()) {
 #		ifdef USE_MUNMAP
@@ -608,7 +609,8 @@ int n;
 		    /* If we are deallocating lots of memory from	*/
 		    /* finalizers, fail and collect sooner rather	*/
 		    /* than later.					*/
-		    if (GC_finalizer_mem_freed > (GC_heapsize >> 4))  {
+		    if (WORDS_TO_BYTES(GC_finalizer_mem_freed)
+			> (GC_heapsize >> 4))  {
 		      continue;
 		    }
 #		endif /* !USE_MUNMAP */
@@ -701,7 +703,7 @@ int n;
 	              struct hblk * h;
 		      struct hblk * prev = hhdr -> hb_prev;
 	              
-		      GC_words_wasted += total_size;
+		      GC_words_wasted += BYTES_TO_WORDS(total_size);
 		      GC_large_free_bytes -= total_size;
 		      GC_remove_from_fl(hhdr, n);
 	              for (h = hbp; h < limit; h++) {
@@ -794,7 +796,7 @@ signed_word size;
     GC_remove_counts(hbp, (word)size);
     hhdr->hb_sz = size;
 #   ifdef USE_MUNMAP
-      hhdr -> hb_last_reclaimed = GC_gc_no;
+      hhdr -> hb_last_reclaimed = (unsigned short)GC_gc_no;
 #   endif
     
     /* Check for duplicate deallocation in the easy case */
@@ -822,7 +824,7 @@ signed_word size;
 	  GC_remove_from_fl(prevhdr, FL_UNKNOWN);
 	  prevhdr -> hb_sz += hhdr -> hb_sz;
 #	  ifdef USE_MUNMAP
-	    prevhdr -> hb_last_reclaimed = GC_gc_no;
+	    prevhdr -> hb_last_reclaimed = (unsigned short)GC_gc_no;
 #	  endif
 	  GC_remove_header(hbp);
 	  hbp = prev;

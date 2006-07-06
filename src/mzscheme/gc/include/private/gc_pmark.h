@@ -248,7 +248,8 @@ exit_label: ; \
 	if (map_entry == OFFSET_TOO_BIG) { \
 	  map_entry = displ % (hhdr -> hb_sz); \
 	  displ -= map_entry; \
-	  if (displ + (hhdr -> hb_sz) > BYTES_TO_WORDS(HBLKSIZE)) { \
+	  if (displ + (hhdr -> hb_sz) > BYTES_TO_WORDS(HBLKSIZE) \
+	      && displ != 0) { \
 	    GC_ADD_TO_BLACK_LIST_NORMAL((word)current, source); \
 	    goto exit_label; \
 	  } \

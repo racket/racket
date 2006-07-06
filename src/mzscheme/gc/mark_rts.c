@@ -375,8 +375,11 @@ ptr_t p;
 
 ptr_t GC_approx_sp()
 {
-    word dummy;
+    VOLATILE word dummy;
 
+    dummy = 42;	/* Force stack to grow if necessary.	Otherwise the	*/
+    		/* later accesses might cause the kernel to think we're	*/
+    		/* doing something wrong.				*/
 #   ifdef _MSC_VER
 #     pragma warning(disable:4172)
 #   endif
@@ -662,3 +665,4 @@ void GC_flush_mark_stack()
 {
   while (!GC_mark_stack_empty()) GC_mark_from_mark_stack();
 }
+

@@ -60,6 +60,10 @@
 #   include <signal.h>
 # endif
 
+#if defined(LINUX) || defined(LINUX_STACKBOTTOM)
+# include <ctype.h>
+#endif
+
 /* Blatantly OS dependent routines, except for those that are related 	*/
 /* to dynamic loading.							*/
 
@@ -80,7 +84,7 @@
 #   define NEED_FIND_LIMIT
 # endif
 
-#if defined(FREEBSD) && defined(I386)
+#if defined(FREEBSD) && (defined(I386) || defined(powerpc) || defined(__powerpc__))
 #  include <machine/trap.h>
 #  if !defined(PCR)
 #    define NEED_FIND_LIMIT
@@ -245,30 +249,11 @@ word GC_apply_to_maps(word (*fn)(char *))
 //  XXXXXXXX-XXXXXXXX r-xp 00000000 30:05 260537     name of mapping...\n
 //  ^^^^^^^^ ^^^^^^^^ ^^^^          ^^
 //  start    end      prot          maj_dev
-//  0        9        18            32
-//  
-//  For 64 bit ABIs:
-//  0	     17	      34	    56
 //
-//  The parser is called with a pointer to the entry and the return value
-//  is either NULL or is advanced to the next entry(the byte after the
-//  trailing '\n'.)
+//  Note that since about auguat 2003 kernels, the columns no longer have
+//  fixed offsets on 64-bit kernels.  Hence we no longer rely on fixed offsets
+//  anywhere, which is safer anyway.
 //
-#if CPP_WORDSZ == 32
-# define OFFSET_MAP_START   0
-# define OFFSET_MAP_END     9
-# define OFFSET_MAP_PROT   18
-# define OFFSET_MAP_MAJDEV 32
-# define ADDR_WIDTH 	    8
-#endif
-
-#if CPP_WORDSZ == 64
-# define OFFSET_MAP_START   0
-# define OFFSET_MAP_END    17
-# define OFFSET_MAP_PROT   34
-# define OFFSET_MAP_MAJDEV 56
-# define ADDR_WIDTH 	   16
-#endif
 
 /*
  * Assign various fields of the first line in buf_ptr to *start, *end,
@@ -277,37 +262,46 @@ word GC_apply_to_maps(word (*fn)(char *))
 char *GC_parse_map_entry(char *buf_ptr, word *start, word *end,
                                 char *prot_buf, unsigned int *maj_dev)
 {
-    int i;
-    char *tok;
+    char *start_start, *end_start, *prot_start, *maj_dev_start;
+    char *p;
+    char *endp;
 
     if (buf_ptr == NULL || *buf_ptr == '\0') {
         return NULL;
     }
 
-    memcpy(prot_buf, buf_ptr+OFFSET_MAP_PROT, 4);
-    				/* do the protections first. */
+    p = buf_ptr;
+    while (isspace(*p)) ++p;
+    start_start = p;
+    GC_ASSERT(isxdigit(*start_start));
+    *start = strtoul(start_start, &endp, 16); p = endp;
+    GC_ASSERT(*p=='-');
+
+    ++p;
+    end_start = p;
+    GC_ASSERT(isxdigit(*end_start));
+    *end = strtoul(end_start, &endp, 16); p = endp;
+    GC_ASSERT(isspace(*p));
+
+    while (isspace(*p)) ++p;
+    prot_start = p;
+    GC_ASSERT(*prot_start == 'r' || *prot_start == '-');
+    memcpy(prot_buf, prot_start, 4);
     prot_buf[4] = '\0';
-
-    if (prot_buf[1] == 'w') {/* we can skip all of this if it's not writable. */
-
-        tok = buf_ptr;
-        buf_ptr[OFFSET_MAP_START+ADDR_WIDTH] = '\0';
-        *start = strtoul(tok, NULL, 16);
-
-        tok = buf_ptr+OFFSET_MAP_END;
-        buf_ptr[OFFSET_MAP_END+ADDR_WIDTH] = '\0';
-        *end = strtoul(tok, NULL, 16);
-
-        buf_ptr += OFFSET_MAP_MAJDEV;
-        tok = buf_ptr;
-        while (*buf_ptr != ':') buf_ptr++;
-        *buf_ptr++ = '\0';
-        *maj_dev = strtoul(tok, NULL, 16);
+    if (prot_buf[1] == 'w') {/* we can skip the rest if it's not writable. */
+	/* Skip past protection field to offset field */
+          while (!isspace(*p)) ++p; while (isspace(*p)) ++p;
+          GC_ASSERT(isxdigit(*p));
+	/* Skip past offset field, which we ignore */
+          while (!isspace(*p)) ++p; while (isspace(*p)) ++p;
+	maj_dev_start = p;
+        GC_ASSERT(isxdigit(*maj_dev_start));
+        *maj_dev = strtoul(maj_dev_start, NULL, 16);
     }
 
-    while (*buf_ptr && *buf_ptr++ != '\n');
+    while (*p && *p++ != '\n');
 
-    return buf_ptr;
+    return p;
 }
 
 #endif /* Need to parse /proc/self/maps. */	
@@ -706,7 +700,7 @@ ptr_t GC_get_stack_base()
 #   if defined(SUNOS5SIGS) || defined(IRIX5) || defined(OSF1) \
     || defined(HURD) || defined(NETBSD)
 	static struct sigaction old_segv_act;
-#	if defined(_sigargs) /* !Irix6.x */ || defined(HPUX) \
+#	if defined(IRIX5) || defined(HPUX) \
 	|| defined(HURD) || defined(NETBSD)
 	    static struct sigaction old_bus_act;
 #	endif
@@ -739,9 +733,11 @@ ptr_t GC_get_stack_base()
 		/* and setting a handler at the same time.		*/
 	        (void) sigaction(SIGSEGV, 0, &old_segv_act);
 	        (void) sigaction(SIGSEGV, &act, 0);
+	        (void) sigaction(SIGBUS, 0, &old_bus_act);
+	        (void) sigaction(SIGBUS, &act, 0);
 #	  else
 	        (void) sigaction(SIGSEGV, &act, &old_segv_act);
-#		if defined(IRIX5) && defined(_sigargs) /* Irix 5.x, not 6.x */ \
+#		if defined(IRIX5) \
 		   || defined(HPUX) || defined(HURD) || defined(NETBSD)
 		    /* Under Irix 5.x or HP/UX, we may get SIGBUS.	*/
 		    /* Pthreads doesn't exist under Irix 5.x, so we	*/
@@ -780,7 +776,7 @@ ptr_t GC_get_stack_base()
 #       if defined(SUNOS5SIGS) || defined(IRIX5) \
 	   || defined(OSF1) || defined(HURD) || defined(NETBSD)
 	  (void) sigaction(SIGSEGV, &old_segv_act, 0);
-#	  if defined(IRIX5) && defined(_sigargs) /* Irix 5.x, not 6.x */ \
+#	  if defined(IRIX5) \
 	     || defined(HPUX) || defined(HURD) || defined(NETBSD)
 	      (void) sigaction(SIGBUS, &old_bus_act, 0);
 #	  endif
@@ -861,13 +857,14 @@ ptr_t GC_get_stack_base()
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <ctype.h>
 
 # define STAT_SKIP 27   /* Number of fields preceding startstack	*/
 			/* field in /proc/self/stat			*/
 
+#ifdef USE_LIBC_PRIVATES
 # pragma weak __libc_stack_end
   extern ptr_t __libc_stack_end;
+#endif
 
 # ifdef IA64
     /* Try to read the backing store base from /proc/self/maps.	*/
@@ -897,30 +894,33 @@ ptr_t GC_get_stack_base()
         return GC_apply_to_maps(backing_store_base_from_maps);
     }
 
-#   pragma weak __libc_ia64_register_backing_store_base
-    extern ptr_t __libc_ia64_register_backing_store_base;
+#   ifdef USE_LIBC_PRIVATES
+#     pragma weak __libc_ia64_register_backing_store_base
+      extern ptr_t __libc_ia64_register_backing_store_base;
+#   endif
 
     ptr_t GC_get_register_stack_base(void)
     {
-      if (0 != &__libc_ia64_register_backing_store_base
-	  && 0 != __libc_ia64_register_backing_store_base) {
-	/* Glibc 2.2.4 has a bug such that for dynamically linked	*/
-	/* executables __libc_ia64_register_backing_store_base is 	*/
-	/* defined but uninitialized during constructor calls.  	*/
-	/* Hence we check for both nonzero address and value.		*/
-	return __libc_ia64_register_backing_store_base;
-      } else {
-	word result = backing_store_base_from_proc();
-	if (0 == result) {
+#     ifdef USE_LIBC_PRIVATES
+        if (0 != &__libc_ia64_register_backing_store_base
+	    && 0 != __libc_ia64_register_backing_store_base) {
+	  /* Glibc 2.2.4 has a bug such that for dynamically linked	*/
+	  /* executables __libc_ia64_register_backing_store_base is 	*/
+	  /* defined but uninitialized during constructor calls.  	*/
+	  /* Hence we check for both nonzero address and value.		*/
+	  return __libc_ia64_register_backing_store_base;
+        }
+#     endif
+      word result = backing_store_base_from_proc();
+      if (0 == result) {
 	  /* Use dumb heuristics.  Works only for default configuration. */
 	  result = (word)GC_stackbottom - BACKING_STORE_DISPLACEMENT;
 	  result += BACKING_STORE_ALIGNMENT - 1;
 	  result &= ~(BACKING_STORE_ALIGNMENT - 1);
 	  /* Verify that it's at least readable.  If not, we goofed. */
 	  GC_noop1(*(word *)result); 
-	}
-	return (ptr_t)result;
       }
+      return (ptr_t)result;
     }
 # endif
 
@@ -943,6 +943,7 @@ ptr_t GC_get_stack_base()
     /* since the correct value of __libc_stack_end never	*/
     /* becomes visible to us.  The second test works around 	*/
     /* this.							*/  
+#   ifdef USE_LIBC_PRIVATES
       if (0 != &__libc_stack_end && 0 != __libc_stack_end ) {
 #       ifdef IA64
 	  /* Some versions of glibc set the address 16 bytes too	*/
@@ -952,9 +953,19 @@ ptr_t GC_get_stack_base()
 	  } /* Otherwise it's not safe to add 16 bytes and we fall	*/
 	    /* back to using /proc.					*/
 #	else 
+#	ifdef SPARC
+	  /* Older versions of glibc for 64-bit Sparc do not set
+	   * this variable correctly, it gets set to either zero
+	   * or one.
+	   */
+	  if (__libc_stack_end != (ptr_t) (unsigned long)0x1)
+	    return __libc_stack_end;
+#	else
 	  return __libc_stack_end;
 #	endif
+#	endif
       }
+#   endif
     f = open("/proc/self/stat", O_RDONLY);
     if (f < 0 || STAT_READ(f, stat_buf, STAT_BUF_SIZE) < 2 * STAT_SKIP) {
 	ABORT("Couldn't read /proc/self/stat");
@@ -1177,12 +1188,15 @@ void GC_register_data_segments()
   	/* This used to be set for gcc, to avoid dealing with		*/
   	/* the structured exception handling issues.  But we now have	*/
   	/* assembly code to do that right.				*/
+  GC_bool GC_wnt = FALSE;
+        /* This is a Windows NT derivative, i.e. NT, W2K, XP or later.  */
   
   void GC_init_win32()
   {
     /* if we're running under win32s, assume that no DLLs will be loaded */
     DWORD v = GetVersion();
-    GC_no_win32_dlls |= ((v & 0x80000000) && (v & 0xff) <= 3);
+    GC_wnt = !(v & 0x80000000);
+    GC_no_win32_dlls |= ((!GC_wnt) && (v & 0xff) <= 3);
   }
 
   /* Return the smallest address a such that VirtualQuery		*/
@@ -1385,7 +1399,7 @@ int * etext_addr;
 }
 # endif
 
-# if defined(FREEBSD) && defined(I386) && !defined(PCR)
+# if defined(FREEBSD) && (defined(I386) || defined(powerpc) || defined(__powerpc__)) && !defined(PCR)
 /* Its unclear whether this should be identical to the above, or 	*/
 /* whether it should apply to non-X86 architectures.			*/
 /* For now we don't assume that there is always an empty page after	*/
@@ -1494,7 +1508,7 @@ void GC_register_data_segments()
 
 # if !defined(OS2) && !defined(PCR) && !defined(AMIGA) \
 	&& !defined(MSWIN32) && !defined(MSWINCE) \
-	&& !defined(MACOS) && !defined(DOS4GW)
+	&& !defined(MACOS) && !defined(DOS4GW) && !defined(NONSTOP)
 
 # ifdef SUNOS4
     extern caddr_t sbrk();
@@ -1506,7 +1520,7 @@ void GC_register_data_segments()
 # endif
 
 
-# ifdef RS6000
+# if 0 && defined(RS6000)  /* We now use mmap */
 /* The compiler seems to generate speculative reads one past the end of	*/
 /* an allocated object.  Hence we need to make sure that the page 	*/
 /* following the last heap page is also mapped.				*/
@@ -1572,13 +1586,6 @@ ptr_t GC_unix_get_mem(bytes)
 word bytes;
 {
     void *result;
-    /* PLTSCHEME: make sure HEAP_START and MAP_FAILED are defined: */
-#if !defined(HEAP_START)
-# define HEAP_START 0
-#endif
-#if !defined(MAP_FAILED)
-# define MAP_FAILED ((void *)-1)
-#endif
     static ptr_t last_addr = HEAP_START;
 
 #   ifndef USE_MMAP_ANON
@@ -1616,18 +1623,6 @@ word bytes;
 ptr_t GC_unix_get_mem(bytes)
 word bytes;
 {
-  /* PLTSCHEME: The SunOS4 man page says not use to sbrk() with malloc().
-     Xt definitely breaks in SunOS 4.x if I use sbrk. */
-#if defined(sun)
-  ptr_t mem;
-
-  mem = malloc(bytes + HBLKSIZE - 1);
-
-  if ((long)mem % HBLKSIZE)
-    return mem + (HBLKSIZE - ((long)mem % HBLKSIZE));
-  else
-    return mem;
-#else /* PLTSCHEME: end malloc() */
   ptr_t result;
 # ifdef IRIX5
     /* Bare sbrk isn't thread safe.  Play by malloc rules.	*/
@@ -1649,7 +1644,6 @@ word bytes;
     __UNLOCK_MALLOC();
 # endif
   return(result);
-#endif /* PLTSCHEME: close */
 }
 
 #endif /* Not USE_MMAP */
@@ -1709,7 +1703,7 @@ word bytes;
 	/* This wastes a small amount of memory, and risks	*/
 	/* increased fragmentation.  But better alternatives	*/
 	/* would require effort.				*/
-        /* PLTSCHEME: PAGE_READWRITE works better for MrEd (because I don't need execute?) */
+        /* PLTSCHEME: use more conservative PAGE_READWRITE */
         result = (ptr_t) VirtualAlloc(NULL, bytes + 1,
     				      MEM_COMMIT | MEM_RESERVE,
     				      PAGE_READWRITE);
@@ -2400,7 +2394,7 @@ SIG_PF GC_old_segv_handler;	/* Also old MSWIN32 ACCESS_VIOLATION filter */
 #   endif
 #   ifdef FREEBSD
 #     define SIG_OK (sig == SIGBUS)
-#     define CODE_OK (code == BUS_PAGE_FAULT)
+#     define CODE_OK TRUE
 #   endif
 # endif /* SUNOS4 || (FREEBSD && !SUNOS5SIGS) */
 
@@ -2538,7 +2532,11 @@ SIG_PF GC_old_segv_handler;	/* Also old MSWIN32 ACCESS_VIOLATION filter */
 #               if defined(ARM32)
                   char * addr = (char *)sc.fault_address;
 #               else
-		  --> architecture not supported
+#		  if defined(CRIS)
+		    char * addr = (char *)sc.regs.csraddr;
+#		  else
+		    --> architecture not supported
+#		  endif
 #               endif
 #	      endif
 #	    endif
@@ -2961,8 +2959,7 @@ word len;
 /* to the write-protected heap with a system call.			*/
 /* This still serves as sample code if you do want to wrap system calls.*/
 
-/* PLTSCHEME: no read() redefinition for MacOS X */
-#if !defined(MSWIN32) && !defined(MSWINCE) && !defined(GC_USE_LD_WRAP) && !defined(DARWIN)
+#if !defined(MSWIN32) && !defined(MSWINCE) && !defined(GC_USE_LD_WRAP)
 /* Replacement for UNIX system call.					  */
 /* Other calls that write to the heap should be handled similarly.	  */
 /* Note that this doesn't work well for blocking reads:  It will hold	  */
@@ -3745,7 +3742,7 @@ static kern_return_t GC_forward_exception(
     exception_behavior_t behavior;
     thread_state_flavor_t flavor;
     
-    thread_state_data_t thread_state;
+    thread_state_t thread_state;
     mach_msg_type_number_t thread_state_count = THREAD_STATE_MAX;
         
     for(i=0;i<GC_old_exc_ports.count;i++)
@@ -3806,13 +3803,23 @@ catch_exception_raise(
     char *addr;
     struct hblk *h;
     int i;
-#ifdef POWERPC
-    thread_state_flavor_t flavor = PPC_EXCEPTION_STATE;
-    mach_msg_type_number_t exc_state_count = PPC_EXCEPTION_STATE_COUNT;
-    ppc_exception_state_t exc_state;
-#else
-#	error FIXME for non-ppc darwin
-#endif
+#   if defined(POWERPC)
+#     if CPP_WORDSZ == 32
+        thread_state_flavor_t flavor = PPC_EXCEPTION_STATE;
+        mach_msg_type_number_t exc_state_count = PPC_EXCEPTION_STATE_COUNT;
+        ppc_exception_state_t exc_state;
+#     else
+        thread_state_flavor_t flavor = PPC_EXCEPTION_STATE64;
+        mach_msg_type_number_t exc_state_count = PPC_EXCEPTION_STATE64_COUNT;
+        ppc_exception_state64_t exc_state;
+#     endif
+#   elif defined(I386)
+        thread_state_flavor_t flavor = i386_EXCEPTION_STATE;
+        mach_msg_type_number_t exc_state_count = i386_EXCEPTION_STATE_COUNT;
+        i386_exception_state_t exc_state;
+#   else
+#	error FIXME for non-ppc/x86 darwin
+#   endif
 
     
     if(exception != EXC_BAD_ACCESS || code[0] != KERN_PROTECTION_FAILURE) {
@@ -3841,7 +3848,13 @@ catch_exception_raise(
     }
     
     /* This is the address that caused the fault */
+#if defined(POWERPC)
     addr = (char*) exc_state.dar;
+#elif defined (I386)
+    addr = (char*) exc_state.faultvaddr;
+#else
+#   error FIXME for non POWERPC/I386
+#endif
         
     if((HDR(addr)) == 0) {
         /* Ugh... just like the SIGBUS problem above, it seems we get a bogus 
@@ -3972,10 +3985,14 @@ kern_return_t catch_exception_raise_state_identity(
 #      if defined (DRSNX)
 #	 include <sys/sparc/frame.h>
 #      else
-#	 if defined(OPENBSD) || defined(NETBSD)
+#	 if defined(OPENBSD)
 #	   include <frame.h>
 #	 else
-#	   include <sys/frame.h>
+#	   if defined(FREEBSD) || defined(NETBSD)
+#	     include <machine/frame.h>
+#	   else
+#	     include <sys/frame.h>
+#	   endif
 #	 endif
 #      endif
 #    endif
@@ -4004,6 +4021,16 @@ kern_return_t catch_exception_raise_state_identity(
 #if NARGS == 0 && NFRAMES % 2 == 0 /* No padding */ \
     && defined(GC_HAVE_BUILTIN_BACKTRACE)
 
+#ifdef REDIRECT_MALLOC
+  /* Deal with possible malloc calls in backtrace by omitting	*/
+  /* the infinitely recursing backtrace.			*/
+# ifdef THREADS
+    __thread 	/* If your compiler doesn't understand this */
+    		/* you could use something like pthread_getspecific.	*/
+# endif
+  GC_in_save_callers = FALSE;
+#endif
+
 void GC_save_callers (info) 
 struct callinfo info[NFRAMES];
 {
@@ -4013,15 +4040,26 @@ struct callinfo info[NFRAMES];
   
   /* We retrieve NFRAMES+1 pc values, but discard the first, since it	*/
   /* points to our own frame.						*/
+# ifdef REDIRECT_MALLOC
+    if (GC_in_save_callers) {
+      info[0].ci_pc = (word)(&GC_save_callers);
+      for (i = 1; i < NFRAMES; ++i) info[i].ci_pc = 0;
+      return;
+    }
+    GC_in_save_callers = TRUE;
+# endif
   GC_ASSERT(sizeof(struct callinfo) == sizeof(void *));
   npcs = backtrace((void **)tmp_info, NFRAMES + IGNORE_FRAMES);
   BCOPY(tmp_info+IGNORE_FRAMES, info, (npcs - IGNORE_FRAMES) * sizeof(void *));
   for (i = npcs - IGNORE_FRAMES; i < NFRAMES; ++i) info[i].ci_pc = 0;
+# ifdef REDIRECT_MALLOC
+    GC_in_save_callers = FALSE;
+# endif
 }
 
 #else /* No builtin backtrace; do it ourselves */
 
-#if (defined(OPENBSD) || defined(NETBSD)) && defined(SPARC)
+#if (defined(OPENBSD) || defined(NETBSD) || defined(FREEBSD)) && defined(SPARC)
 #  define FR_SAVFP fr_fp
 #  define FR_SAVPC fr_pc
 #else

@@ -28,9 +28,6 @@ extern ptr_t GC_clear_stack();  /* in misc.c, behaves like identity */
 void GC_extend_size_map();      /* in misc.c. */
 GC_bool GC_alloc_reclaim_list();	/* in malloc.c */
 
-/* PLTSCHEME: For MSVC /MD Compilation */
-#ifndef  USE_MSVC_MD_LIBRARY
-
 /* Some externally visible but unadvertised variables to allow access to */
 /* free lists from inlined allocators without including gc_priv.h	 */
 /* or introducing dependencies on internal data structure layouts.	 */
@@ -41,7 +38,6 @@ ptr_t * GC_CONST GC_uobjfreelist_ptr = GC_uobjfreelist;
     ptr_t * GC_CONST GC_auobjfreelist_ptr = GC_auobjfreelist;
 # endif
 
-#endif /* PLTSCHEME: GC_MSVC_MD_LIBRARY */
 
 GC_PTR GC_generic_or_special_malloc(lb,knd)
 word lb;
@@ -176,7 +172,8 @@ int obj_kind;
 # endif /* REDIRECT_REALLOC */
 
 
-/* The same thing, except caller does not hold allocation lock.	*/
+/* Allocate memory such that only pointers to near the 		*/
+/* beginning of the object are considered.			*/
 /* We avoid holding allocation lock while we clear memory.	*/
 ptr_t GC_generic_malloc_ignore_off_page(lb, k)
 register size_t lb;

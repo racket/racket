@@ -34,6 +34,12 @@ after defining the appropriate <TT>GC_</tt><I>XXXX</i><TT>_THREADS</tt> macro.
 The header file <TT>gc.h</tt> must be included
 in files that use either GC or threads primitives, since threads primitives
 will be redefined to cooperate with the GC on many platforms.
+<P>
+Thread users should also be aware that on many platforms objects reachable
+only from thread-local variables may be prematurely reclaimed.
+Thus objects pointed to by thread-local variables should also be pointed to
+by a globally visible data structure.  (This is viewed as a bug, but as
+one that is exceedingly hard to fix without some libc hooks.)
 <DL>
 <DT> <B>void * GC_MALLOC(size_t <I>nbytes</i>)</b>
 <DD>
@@ -179,6 +185,11 @@ memory is referenced by pointers stored in one of
 but are scanned for pointers to collectable objects.
 They are allocated by <TT>GC_MALLOC_UNCOLLECTABLE</tt>, as described
 above, and through some interfaces described below.
+<P>
+(On most platforms, the collector may not trace correctly from in-flight
+exception objects.  Thus objects thrown as exceptions should only
+point to otherwise reachable memory.  This is another bug whose
+proper repair requires platform hooks.)
 <P>
 The easiest way to ensure that collectable objects are properly referenced
 is to allocate only collectable objects.  This requires that every
