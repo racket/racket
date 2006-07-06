@@ -1793,6 +1793,7 @@ typedef struct Scheme_Ephemeron {
 static Scheme_Ephemeron *ephemerons, *done_ephemerons; /* not registered as a root! */
 
 #ifdef USE_SENORA_GC
+extern void *GC_base(void *d);
 # define GC_is_marked(p) GC_base(p)
 # define GC_did_mark_stack_overflow() 0
 #else

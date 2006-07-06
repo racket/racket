@@ -4,7 +4,8 @@
 
 #ifndef MZ_PRECISE_GC
 # ifdef USE_SENORA_GC
-# define GC_is_marked(p) GC_base(p)
+extern void *GC_base(void *d);
+#  define GC_is_marked(p) GC_base(p)
 # else
 extern MZ_DLLIMPORT int GC_is_marked(void *);
 # endif

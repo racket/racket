@@ -26,7 +26,7 @@ test: $(OBJS) test.o
 
 gcobjects: $(OBJS)
 
-sgc.o: $(srcdir)/sgc.c $(srcdir)/autostat.inc $(srcdir)/collect.inc $(srcdir)/splay.c
+sgc.o: $(srcdir)/sgc.c $(srcdir)/autostat.inc $(srcdir)/collect.inc $(srcdir)/../utils/splay.c
 	$(CC) $(CFLAGS) -I.. -c $(srcdir)/sgc.c -o sgc.o
 
 test.o: $(srcdir)/test.c
