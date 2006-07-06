@@ -19,6 +19,7 @@
 	   checkable-menu-item%
 	   menu%
 	   menu-bar%
+	   get-default-shortcut-prefix
 	   (protect menu-parent-only
 		    menu-or-bar-parent))
 
@@ -168,8 +169,59 @@
       [(#\;) (if print? ";" "Semicolon")]
       [else c]))
 
+  (define key-code->keymap-name #hasheq((prior . #"pageup")
+					(next . #"pagedown")
+					(escape . #"esc")))
+
+  (define (check-shortcut who c)
+    (unless (or (not c) 
+		(char? c)
+		(and (symbol? c)
+		     (positive? (wx:key-symbol-to-integer c))))
+      (raise-type-error (who->name who) "character, key-code symbol, or #f" c)))
+
+  (define (check-shortcut-prefix who p)
+    (unless (and (list? p)
+		 (andmap (lambda (i)
+			   (memq i '(meta alt cmd shift option ctl)))
+			 p)
+		 (let loop ([p p])
+		   (cond
+		    [(null? p) #t]
+		    [(memq (car p) (cdr p)) #f]
+		    [else (loop (cdr p))])))
+      (raise-type-error (who->name who)
+			"list of unique symbols: 'shift, 'meta, 'alt, 'cmd, 'option, and 'ctl" 
+			p))
+    (let ([disallowed (case (system-type)
+			[(unix) '(cmd option)]
+			[(windows) '(cmd option meta)]
+			[(macosx) '(meta alt)])])
+      (for-each (lambda (i)
+		  (when (memq i p)
+		    (raise-mismatch-error (who->name who)
+					  "prefix not supported for the current platform: "
+					  i)))
+		disallowed)
+      (when (eq? 'unix (system-type))
+	(when (and (memq 'meta p)
+		   (memq 'alt p))
+	  (raise-mismatch-error (who->name who)
+				"prefix contains both 'meta and 'alt: "
+				p)))))
+
+  (define default-prefix
+    (case (system-type)
+      [(unix) (list-immutable default-x-prefix)]
+      [(windows) (list-immutable 'ctl)]
+      [(macosx) (list-immutable 'cmd)]))
+
+  (define (get-default-shortcut-prefix)
+    default-prefix)
+
   (define basic-selectable-menu-item%
-    (class100* basic-labelled-menu-item% (selectable-menu-item<%>) (lbl checkable? mnu cb shrtcut help-string set-wx demand-callback)
+    (class100* basic-labelled-menu-item% (selectable-menu-item<%>) (lbl checkable? mnu cb shrtcut help-string set-wx 
+									demand-callback shrtcut-prefix)
       (inherit is-enabled?)
       (rename [super-restore restore] [super-set-label set-label]
 	      [super-is-deleted? is-deleted?]
@@ -186,38 +238,61 @@
 		   (check-instance '(method selectable-menu-item<%> command) wx:control-event% 'control-event% #f e)
 		   (void (callback this e)))])
       (private-field
-       [x-prefix default-x-prefix])
+        [prefix (apply list-immutable shrtcut-prefix)])
       (private
 	[calc-labels (lambda (label)
 		       (let* ([new-label (if shortcut
 					     (string-append
 					      (strip-tab label)
 					      (case (system-type)
-						[(unix) (format "~a~a~a" #\tab 
-								(case x-prefix
-								  [(meta) "Meta+"]
-								  [(alt) "Alt+"]
-								  [(ctl-m) "Ctl+M "]
-								  [(ctl) "Ctl+"])
-								(char-name
-								 (char-upcase shortcut)
-								 #t))]
-						[(windows) (format "~aCtl+~a" #\tab 
-								   (char-name (char-upcase shortcut) #t))]
-						[(macos macosx) (format "~aCmd+~a" #\tab 
-									(char-name (char-upcase shortcut) #t))]))
+						[(unix windows)
+						 (format "~a~a~a~a~a~a" #\tab 
+							 (if (memq 'ctl prefix) "Ctrl+" "")
+							 (if (memq 'shift prefix) "Shift+" "")
+							 (if (memq 'meta prefix) "Meta+" "")
+							 (if (memq 'alt prefix) "Alt+" "")
+							 (if (symbol? shortcut)
+							     (string-titlecase (symbol->string shortcut))
+							     (char-name
+							      (char-upcase shortcut)
+							      #t)))]
+						[(macosx) 
+						 (format "\tCut=~a~a"
+							 (integer->char
+							  (+ (if (memq 'shift prefix) 1 0)
+							     (if (memq 'option prefix) 2 0)
+							     (if (memq 'ctl prefix) 4 0)
+							     (if (memq 'cmd prefix) 0 8)
+							     (char->integer #\A)))
+							 (if (char? shortcut)
+							     (char->integer (char-upcase shortcut))
+							     (wx:key-symbol-to-integer shortcut)))]))
 					     (strip-tab label))]
 			      [key-binding (and shortcut
-						(case (system-type)
-						  [(unix) (format "~a~a" 
-								  (case x-prefix
-								    [(meta) ":m:"]
-								    [(alt) ":m:"]
-								    [(ctl-m) ":c:m;:"]
-								    [(ctl) ":c:"])
-								  (char-name (char-downcase shortcut) #f))]
-						  [(windows) (format ":c:~a" (char-name (char-downcase shortcut) #f))]
-						  [(macos macosx) (format ":d:~a" (char-name (char-downcase shortcut) #f))]))]
+						(let ([base (if (symbol? shortcut)
+								(hash-table-get key-code->keymap-name shortcut (lambda () shortcut))
+								(char-name (char-downcase shortcut) #f))]
+						      [exact (if (or (symbol? shortcut)
+								     (and (char-alphabetic? shortcut)
+									  ((char->integer shortcut) . < . 128))
+								     (char-numeric? shortcut))
+								 ":"
+								 "")])
+						  (case (system-type)
+						    [(unix windows) (format "~a~a~a~a~a?:~a" 
+									    exact
+									    (if (memq 'shift prefix) "s:" "")
+									    (if (memq 'meta prefix) "m:" "")
+									    (if (memq 'alt prefix) "m:" "")
+									    (if (memq 'ctl prefix) "c:" "")
+									    base)]
+						    [(macosx) (format "~a~a~a~a~a?:~a" 
+								      exact
+								      (if (memq 'shift prefix) "s:" "")
+								      (if (memq 'cmd prefix) "d:" "")
+								      (if (memq 'ctl prefix) "c:" "")
+								      (if (memq 'option prefix) "a:" "")
+								      base)])))]
 			      [keymap (and key-binding
 					   (let ([keymap (make-object wx:keymap%)])
 					     (send keymap add-function "menu-item" 
@@ -244,41 +319,42 @@
 	[set-label (lambda (s) (do-set-label s))])
       (public
 	[set-shortcut (lambda (c) 
-			(check-char/false '(method selectable-menu-item<%> set-shortcut) c)
+			(check-shortcut '(method selectable-menu-item<%> set-shortcut) c)
 			(unless (equal? shortcut c)
 			  (set! shortcut c) 
 			  (do-set-label label)))]
 	[get-shortcut (lambda () shortcut)]
-	[get-x-shortcut-prefix (lambda () x-prefix)]
-	[set-x-shortcut-prefix (lambda (p) 
-				 (unless (memq p '(meta alt ctl-m ctl))
-				   (raise-type-error (who->name '(method selectable-menu-item<%> set-x-shortcut-prefix))
-						     "symbol: meta, alt, ctl-m, or ctl" p))
-				 (set! x-prefix p) (do-set-label label))])
+	[get-shortcut-prefix (lambda () prefix)]
+	[set-shortcut-prefix (lambda (p) 
+			       (check-shortcut-prefix '(method selectable-menu-item<%> set-x-shortcut-prefix) p)
+			       (set! prefix p) (do-set-label label))])
       (sequence
 	(set! label (string->immutable-string label))
 	(let-values ([(new-label keymap) (calc-labels label)])
 	  (super-init menu new-label help-string #f checkable? keymap (lambda (x) (set! wx x) (set-wx x)) demand-callback)))))
 
-  (define (check-shortcut-args who label menu callback shortcut help-string demand-callback)
+  (define (check-shortcut-args who label menu callback shortcut help-string demand-callback shortcut-prefix)
     (let ([cwho `(constructor ,who)])
       (check-label-string cwho label)
       (menu-parent-only who menu)
       (check-callback cwho callback)
-      (check-char/false cwho shortcut)
+      (check-shortcut cwho shortcut)
       (check-label-string/false cwho help-string)
-      (check-callback1 cwho demand-callback)))
+      (check-callback1 cwho demand-callback)
+      (check-shortcut-prefix cwho shortcut-prefix)))
 
   (define menu-item%
-    (class100 basic-selectable-menu-item% (label parent callback [shortcut #f] [help-string #f] [demand-callback void])
+    (class100 basic-selectable-menu-item% (label parent callback [shortcut #f] [help-string #f] [demand-callback void] 
+						 [shortcut-prefix default-prefix])
       (sequence 
-	(check-shortcut-args 'menu-item label parent callback shortcut help-string demand-callback)
-	(super-init label #f parent callback shortcut help-string (lambda (x) x) demand-callback))))
+	(check-shortcut-args 'menu-item label parent callback shortcut help-string demand-callback shortcut-prefix)
+	(super-init label #f parent callback shortcut help-string (lambda (x) x) demand-callback shortcut-prefix))))
 
   (define checkable-menu-item%
-    (class100 basic-selectable-menu-item% (label parent callback [shortcut #f] [help-string #f] [demand-callback void] [checked #f])
+    (class100 basic-selectable-menu-item% (label parent callback [shortcut #f] [help-string #f] [demand-callback void] 
+						 [checked #f] [shortcut-prefix default-prefix])
       (sequence
-	(check-shortcut-args 'checkable-menu-item label parent callback shortcut help-string demand-callback))
+	(check-shortcut-args 'checkable-menu-item label parent callback shortcut help-string demand-callback shortcut-prefix))
       (private-field
        [mnu parent]
        [wx #f])
@@ -286,7 +362,7 @@
 	[check (entry-point (lambda (on?) (send (send (mred->wx mnu) get-container) check (send wx id) on?)))]
 	[is-checked? (entry-point (lambda () (send (send (mred->wx mnu) get-container) checked? (send wx id))))])
       (sequence
-	(super-init label #t mnu callback shortcut help-string (lambda (x) (set! wx x) x) demand-callback)
+	(super-init label #t mnu callback shortcut help-string (lambda (x) (set! wx x) x) demand-callback shortcut-prefix)
 	(when checked (check #t)))))
 
   (define menu%

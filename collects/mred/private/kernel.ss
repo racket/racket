@@ -467,6 +467,8 @@
     get-position
     set-position)
   (define-class key-event% event% ([key-code #\nul] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [x 0] [y 0] [time-stamp 0])
+    set-other-shift-key-code
+    get-other-shift-key-code
     get-key-code
     set-key-code
     get-key-release-code
@@ -483,6 +485,7 @@
     set-x
     get-y
     set-y)
+  (define-function key-symbol-to-integer)
   (define-class mouse-event% event% (event-type [left-down #f] [middle-down #f] [right-down #f] [x 0] [y 0] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [time-stamp 0])
     moving?
     leaving?

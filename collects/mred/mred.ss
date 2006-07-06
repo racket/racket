@@ -218,6 +218,7 @@
 	   labelled-menu-item<%>
 	   menu-item%
 	   checkable-menu-item%
+	   get-default-shortcut-prefix
 	   menu-item-container<%>
 	   menu%
 	   menu-bar%

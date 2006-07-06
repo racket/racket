@@ -81,6 +81,7 @@
      gauge%
      get-choices-from-user
      get-color-from-user
+     get-default-shortcut-prefix
      get-directory
      get-display-depth
      get-display-left-top-inset

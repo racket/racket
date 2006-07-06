@@ -602,6 +602,31 @@
 	[get-act-date/milliseconds (lambda () act-date/milliseconds)])
       (sequence (apply super-init mred proxy args))))
 
+  (define function-keys #hasheq((f1 . #t)
+				(f2 . #t)
+				(f3 . #t)
+				(f4 . #t)
+				(f5 . #t)
+				(f6 . #t)
+				(f7 . #t)
+				(f8 . #t)
+				(f9 . #t)
+				(f10 . #t)
+				(f11 . #t)
+				(f12 . #t)
+				(f13 . #t)
+				(f14 . #t)
+				(f15 . #t)
+				(f16 . #t)
+				(f17 . #t)
+				(f18 . #t)
+				(f19 . #t)
+				(f20 . #t)
+				(f21 . #t)
+				(f22 . #t)
+				(f23 . #t)
+				(f24 . #t)))
+
   (define wx-frame%
     (make-top-level-window-glue% 
      (class100 (make-top-container% wx:frame% #f) args
@@ -650,10 +675,11 @@
 	  (lambda (event)
 	    (and menu-bar 
 		 ;; It can't be a menu event without a
-		 ;; control, meta, or alt key...
+		 ;; control, meta, alt key, or function key
 		 (or (send event get-control-down)
 		     (send event get-meta-down)
-		     (send event get-alt-down))
+		     (send event get-alt-down)
+		     (hash-table-get function-keys (send event get-key-code) #f))
 		 (begin
 		   (send menu-bar on-demand)
 		   (send menu-bar handle-key event))))])

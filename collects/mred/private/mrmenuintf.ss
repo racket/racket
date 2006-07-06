@@ -27,7 +27,7 @@
     (interface (labelled-menu-item<%>)
       command
       get-shortcut set-shortcut
-      get-x-shortcut-prefix set-x-shortcut-prefix))
+      get-shortcut-prefix set-shortcut-prefix))
   
   (define menu-item-container<%> 
     (interface () 
