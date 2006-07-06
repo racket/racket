@@ -1,4 +1,7 @@
 package draw;
+
+import geometry.*;
+import colors.*;
         
 public class Canvas {
   private int width = 0; 

@@ -16,6 +16,8 @@ fi
 (define libraries*
   '(#"A Functional Drawing Library (HtDC)"
     #"An Imperative Drawing Library (HtDC)"
+    #"A Geometry Library (HtDC)"
+    #"A Colors Library (HtDC)"
     ))
 
 (define dest-dir (build-path (find-doc-dir) "teachpack-htdc"))

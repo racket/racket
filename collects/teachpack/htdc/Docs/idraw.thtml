@@ -7,8 +7,8 @@ for a visual world. Here is its class diagram of public fields and methods:
 
 <pre>
 <code>
-import draw.Color; 
-import draw.Posn; 
+import colors.*; 
+import geometry.*; 
 
   +---------------------------------+     
   | abstract World                  |

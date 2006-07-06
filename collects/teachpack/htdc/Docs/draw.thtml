@@ -5,6 +5,9 @@ This <code>draw</code> package provides classes and methods for a visual
 world. Here is its class diagram of public fields and methods: 
 <pre>
 <code>
+import colors.*;
+import geometry.*;
+
  +-----------------------------------+
  | abstract World                    |
  +-----------------------------------+       +---------------------------------------+
@@ -23,26 +26,6 @@ world. Here is its class diagram of public fields and methods:
                                              | boolean clearRect(Posn,int,int,Color) |
                                              | boolean clearLine(Posn,Posn,Color)    |
                                              +---------------------------------------+
-
-                      +----------+
-                      | Posn     |
-                      +----------+
-                      | int x    |
-                      | int y    |
-                      +----------+
-
-                              +-------+
-                              | Color |
-                              +-------+
-                                  |
-                                 / \
-                                 ---
-                                  |
-             ------------------------------------------
-             |          |         |         |         |     
-         +-------+  +-------+ +-------+ +-------+ +-------+  
-         | Blue  |  | Green | | Red   | | White | | Yellow| 
-         +-------+  +-------+ +-------+ +-------+ +-------+ 
 </code>
 </pre>
 
@@ -157,14 +140,6 @@ Canvas</code> from <code>p0</code> to <code>p1</code> using color
 </ul>
 The methods may fail due to the unavailability of the physical devices,
 inappropriate uses, etc. In those cases, they fail with an exception.</p>
-</p>
-
-<p>To create an instance of the <code>Posn</code> class, a program must supply
-two <code>int</code> values: one for its x coordinate of the canvas and the
-second for its y coordinate. </p>
-
-<p>The <code>Color</code> class is abstract. Its variants (subclasses) are
-created with no arguments. 
 </p>
 
 {(include "foot.tinc")}

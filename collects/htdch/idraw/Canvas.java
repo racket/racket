@@ -1,7 +1,7 @@
 package idraw;
 
-import draw.Color;
-import draw.Posn;
+import colors.*;
+import geometry.*;
         
 public class Canvas {
   private int width = 0; 

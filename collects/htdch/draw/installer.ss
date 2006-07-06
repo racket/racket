@@ -14,15 +14,6 @@
                  (compile-java 'file 'file 'full
                                (build-path draw-path file)
                                #f #f)))))
-        (javac "Posn.java")
-        (javac "Color.java")
         (javac "Canvas.java")
-        (javac "World.java")
-        (javac "Red.java")
-        (javac "White.java")
-        (javac "Blue.java")
-        (javac "Black.java")
-        (javac "Green.java")
-        (javac "Yellow.java")
-        ))))
+        (javac "World.java")))))
            

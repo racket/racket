@@ -5,12 +5,15 @@ The Java Wizard helps programmers create
    
 The class wizard requests class name, superclass, and field specifications. 
 From these, it generates a class, its constructor, and optionally a partial 
-template for methods and a toString method. 
+template for methods, a toString method, and a diagram. 
 
 The union wizard requests a union name and specifications for the variants. 
 From these, it generates an abstract class (for the union name) and one 
 variant class that extends the abstract class per variant specification. 
-Again, it optionally adds templates and toString methods. 
+Again, it optionally adds templates, a toString method, and a diagram. 
+
+Both wizards generate their text in a language-sensitive manner. For 
+Beginner and Intermediate, they omit privacy specifications. 
 
 The wizards are added to the Special menu and insert text at the current 
 point. 
@@ -23,29 +26,31 @@ The two major files are:
  class.scm, which is the model and provides the functions for turning 
   a spec into a string that represents a class or a union. 
 
-At the moment, class.scm does not use the Java implementation to perform
-basic checks on the information. It just leaves this to the programmer. 
-So, for example, if a programmer says a field has type "moo" and "moo" 
-doesn't exist as a class, then the wizard inserts a buggy program. 
-
+Also, class.scm does not use the Java implementation to perform basic
+checks on the information. It just leaves this to the programmer.  So, for
+example, if a programmer says a field has type "moo" and "moo" doesn't
+exist as a class, then the wizard inserts a buggy class.
 |#
 
-bugs: 
+BUGS: 
 
-drawing: 
+* union: 
 
-* finish drawing unions, recursion
+** when a programmer changes the name of the Union after the variants have
+   been specified, the wizard fails to change the type name in the
+   variants. 
 
-model 
+* drawing: 
 
-* figure out how to add toString and template flags to the macro version 
+** the Union wizard draws the method specs into the boxes for the
+   classes. The book "thinks" of them as inherited. 
 
 view
 
-both
+FEATURES:
 
-* allow common fields in abstract classes
-* parameterize over language level? 
-* privacy modifiers
+** allow the introduction of an abstract class for common features in
+   Unions (common fields, common methods) 
 
+** specification of mutually recursive features 
 
