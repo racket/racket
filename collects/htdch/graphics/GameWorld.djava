@@ -16,13 +16,13 @@ public abstract class GameWorld extends World {
      return this;
   }
 
-   World nextWorld = this;
+  World nextWorld = this;
 
   void oneStepPrivate(World oldWorld, World newWorld) {
      ((GameWorld) newWorld).timer = ((GameWorld) oldWorld).timer;
      newWorld.display = oldWorld.display;
      display.allowImage(false);
-     oldWorld.erase();
+//     oldWorld.erase();
      newWorld.draw();
      display.allowImage(true);
   }
@@ -56,39 +56,3 @@ public abstract class GameWorld extends World {
   }
 
 }
-
- /*  class TimerCallBack {
-      private World nextWorld;
-      TimerCallBack( World w) {
-        nextWorld = w;
-      }
-      public void callBack() {
-        	rename.printer(nextWorld.toString());
-         nextWorld.erase();
-         nextWorld = nextWorld.onTick();
-         rename.printer(nextWorld.toString());
-         nextWorld.draw();
-      }
-
-      void updateNextWorld(World w) {
-         rename.printer("Calling update "+this.toString());
-         nextWorld = w;
-      }
-   }
-
-   class KeyCallBack { 
-       private World nextWorld;
-       private TimerCallBack t;
-
-       KeyCallBack( World w, TimerCallBack t) {
-           nextWorld = w;
-           this.t = t;
-     }  
-     public void callBack(dynamic key) {
-        rename.printer(key);
-        nextWorld = nextWorld.onKey(key);
-        rename.printer("Should call updateNextWorld next"+nextWorld.toString());
-        t.updateNextWorld(this.nextWorld);
-     }
-   }
-*/

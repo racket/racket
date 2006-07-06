@@ -11,28 +11,35 @@ public class PictureFactory {
     this.pinholeInCenter = pinholeInCenter;
   }
 
+  Image setPinhole(Image i ) {
+    if (pinholeInCenter)
+      return i;
+    else 
+      return i.putPinhole(new Posn(0,0));
+  }
+
   public Image makeCircle( int r, String mode, Color c) {
-    return new Image( image.circle( r, rename.toSymbol(mode), c.toString() ) );
+    return setPinhole(new Image( image.circle( r, rename.toSymbol(mode), c.toString() ) ));
   }
 
   public Image makeRectangle( int width, int height, String mode, Color c) {
-    return new Image( image.rectangle( width, height, rename.toSymbol(mode), c.toString() ));
+    return setPinhole(new Image( image.rectangle( width, height, rename.toSymbol(mode), c.toString() )));
   }
 
   public Image makeEllipse( int width, int height, String mode, Color c) {
-    return new Image( image.ellipse( width, height, rename.toSymbol(mode), c.toString() ));
+    return setPinhole(new Image( image.ellipse( width, height, rename.toSymbol(mode), c.toString() )));
   }
 
   public Image makeTriangle( int edge, String mode, Color c) {
-    return new Image( image.triangle( edge, rename.toSymbol(mode), c.toString() ));
+    return setPinhole(new Image( image.triangle( edge, rename.toSymbol(mode), c.toString() )));
   }
 
   public Image makeLine( Posn to, Color c) {
-    return new Image( image.line(to.x,to.y,c.toString()));
+    return setPinhole(new Image( image.line(to.x,to.y,c.toString())));
   }
 
   public Image makeText( String text, int ptSize, Color c) {
-    return new Image( image.text( text, ptSize, c.toString() ) );
+    return setPinhole(new Image( image.text( text, ptSize, c.toString() ) ));
   }
 
 }

@@ -73,11 +73,11 @@ public class View {
 
   //The Image is again an equality testable version of the canvas after applying all commands
   //Issues the commands in reverse order
-//  public Image drawSequence( CommandSequence commands ) {
-//    commands.drawAll(this);
-//    dc.drawBitmap(buffer.getBitmap(), 0 ,0);
-//    return getBufferCopy();
-//  }
+  public Image drawSequence( CommandSequence commands ) {
+    commands.drawAll(this);
+    dc.drawBitmap(buffer.getBitmap(), 0 ,0);
+    return getBufferCopy();
+  }
 
   //Methods not seen by students
 
@@ -121,4 +121,9 @@ public class View {
     //c.issue(buffer);
   }
 
-}
+  void drawToCanvas( Command c) {
+    if (!visible)
+      throw new RuntimeException("View must be displayed in order to draw in it");
+    c.issue(buffer);
+   }
+} 

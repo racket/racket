@@ -28,7 +28,7 @@ public class Image {
   }
 
   public Image overlayXY( Image i, Posn p) {
-    return new Image( rename.overlayXY( theImage, i.theImage, p.x, p.y));
+    return new Image( rename.overlayXY( theImage, p.x, p.y, i.theImage));
   }
 
   public Posn getPinhole() {
