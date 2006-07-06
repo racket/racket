@@ -1,11 +1,13 @@
 (module installer mzscheme
-  (require (lib "compile.ss" "profj"))
+  (require (lib "compile.ss" "profj")
+           (prefix colors: (lib "installer.ss" "htdch" "colors")))
   (provide installer)
   
   (define (mprintf . a)
     (fprintf a (current-error-port)))
   
   (define (installer plthome)
+    (colors:installer plthome)
     (let ((draw-path (build-path (collection-path "htdch" "draw"))))
       (let ((javac
              (lambda (file)
