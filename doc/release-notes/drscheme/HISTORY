@@ -2,6 +2,19 @@
         Version 350
 ------------------------------
 
+  [ The top three in this list were in 350, but weren't
+    listed in the release notes at the time of the
+    release. oops. ]
+
+  . contract-violation->string parameter: now takes one fewer
+    argument. It is no longer passed the `other-party'. Similarly,
+    raise-contract-error no longer accepts the other party argument.
+
+  . added one-of/c to contract library
+
+  . remap [ to be ``smart'' (ie often but not always change the square
+    bracket to a paren)
+
   . Added two new keybindings to DrScheme (in Scheme mode):
 
     c-c; c-o move-sexp-out: the sexpression following the insertion
