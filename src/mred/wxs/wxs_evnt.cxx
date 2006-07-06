@@ -1458,6 +1458,10 @@ static Scheme_Object *bundle_symset_keyCode(int v) {
 }
 
 
+static long GetOtherKey(wxKeyEvent *k) { return k->otherKeyCode; }
+static void SetOtherKey(wxKeyEvent *k, long c) { k->otherKeyCode = c; }
+
+
 
 
 
@@ -1492,6 +1496,50 @@ CONSTRUCTOR_INIT(: wxKeyEvent_ext(x0, x1, x2, x3, x4, x5, x6, x7))
 os_wxKeyEvent::~os_wxKeyEvent()
 {
     objscheme_destroy(this, (Scheme_Object *) __gc_external);
+}
+
+static Scheme_Object *os_wxKeyEventSetOtherKey(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxKeyEvent_class, "set-other-shift-key-code in key-event%", n, p);
+  long x0 INIT_NULLED_OUT;
+
+  SETUP_VAR_STACK_REMEMBERED(2);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x0);
+
+  
+  x0 = (SCHEME_FALSEP(p[POFFSET+0]) ? 0 : unbundle_symset_keyCode(p[POFFSET+0], METHODNAME("key-event%","get-other-shift-key-code")));
+
+  
+  WITH_VAR_STACK(SetOtherKey(((wxKeyEvent *)((Scheme_Class_Object *)p[0])->primdata), x0));
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
+static Scheme_Object *os_wxKeyEventGetOtherKey(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  long r;
+  objscheme_check_valid(os_wxKeyEvent_class, "get-other-shift-key-code in key-event%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  r = WITH_VAR_STACK(GetOtherKey(((wxKeyEvent *)((Scheme_Class_Object *)p[0])->primdata)));
+
+  
+  
+  READY_TO_RETURN;
+  return (r ? bundle_symset_keyCode(r) : scheme_false);
 }
 
 static Scheme_Object *objscheme_wxKeyEvent_GetkeyCode(int n,  Scheme_Object *p[])
@@ -1842,8 +1890,10 @@ void objscheme_setup_wxKeyEvent(Scheme_Env *env)
 
   wxREGGLOB(os_wxKeyEvent_class);
 
-  os_wxKeyEvent_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "key-event%", "event%", (Scheme_Method_Prim *)os_wxKeyEvent_ConstructScheme, 16));
+  os_wxKeyEvent_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "key-event%", "event%", (Scheme_Method_Prim *)os_wxKeyEvent_ConstructScheme, 18));
 
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class, "set-other-shift-key-code" " method", (Scheme_Method_Prim *)os_wxKeyEventSetOtherKey, 1, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class, "get-other-shift-key-code" " method", (Scheme_Method_Prim *)os_wxKeyEventGetOtherKey, 0, 0));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"get-key-code" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_GetkeyCode, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxKeyEvent_class,"set-key-code" " method", (Scheme_Method_Prim *)objscheme_wxKeyEvent_SetkeyCode, 1, 1));
@@ -1921,6 +1971,43 @@ class wxKeyEvent *objscheme_unbundle_wxKeyEvent(Scheme_Object *obj, const char *
     return (os_wxKeyEvent *)o->primdata;
   else
     return (wxKeyEvent *)o->primdata;
+}
+
+
+static int wxKeySymbolToInteger(int v) { return v; }
+
+
+
+static Scheme_Object *wxKeyEventGlobalwxKeySymbolToInteger(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  int r;
+  int x0;
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+  x0 = WITH_VAR_STACK(unbundle_symset_keyCode(p[0+0], NULL));
+
+  
+  r = WITH_VAR_STACK(wxKeySymbolToInteger(x0));
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_make_integer(r);
+}
+
+void objscheme_setup_wxKeyEventGlobal(Scheme_Env *env)
+{
+  Scheme_Object *functmp INIT_NULLED_OUT;
+  SETUP_VAR_STACK(1);
+  VAR_STACK_PUSH(0, env);
+  functmp = WITH_VAR_STACK(scheme_make_prim_w_arity((Scheme_Prim *)wxKeyEventGlobalwxKeySymbolToInteger, "key-symbol-to-integer", 1, 1));
+  WITH_VAR_STACK(scheme_install_xc_global("key-symbol-to-integer", functmp, env));
+  READY_TO_RETURN;
 }
 
 

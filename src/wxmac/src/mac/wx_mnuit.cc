@@ -13,7 +13,8 @@
 #include "wx_utils.h"
 #include "wx_mac_utils.h"
 
-extern char *wxBuildMacMenuString(StringPtr setupstr, char *itemName, Bool stripCmds);
+extern char *wxBuildMacMenuString(StringPtr setupstr, char *itemName, 
+				  int *spc, int *modifiers, int *is_virt);
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Constructors
@@ -146,19 +147,27 @@ void wxMenuItem::SetLabel(char* label)
     Str255 tempString;
     char *s;
     MenuHandle nmh;
+    int spc = 0, modifiers, is_virt;
 
     nmh = parentMenu->MacMenu();
 
-    s = wxBuildMacMenuString(tempString, label, 0);
+    s = wxBuildMacMenuString(tempString, label, 
+			     &spc, &modifiers, &is_virt);
 
-    /* Add item such the command keys are set */
+    /* Effectively clears shortcuts, if any: */
     ::DeleteMenuItem(nmh, macMenuItem);
     ::InsertMenuItem(nmh, tempString, macMenuItem - 1);
 
-    /* Install the real label */
+    /* Install the label */
     ct = wxCFString(s);
     ::SetMenuItemTextWithCFString(nmh, macMenuItem, ct);
     CFRelease(ct);
+
+    /* Set the command key: */
+    if (spc) {
+      SetMenuItemCommandKey(nmh, macMenuItem, is_virt, spc);
+      SetMenuItemModifiers(nmh, macMenuItem, modifiers);
+    }
 
     /* restore the submenu id, if any */
     if (subMenu)

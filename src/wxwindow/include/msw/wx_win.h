@@ -129,4 +129,8 @@ int wxCharCodeWXToMSW(int id, Bool *IsVirtual);
 int wxEventTrampoline(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, 
 		      LRESULT *res, WNDPROC proc);
 
+extern wxKeyEvent *wxMakeCharEvent(BOOL just_check, WORD wParam, LPARAM lParam, Bool isASCII, Bool isRelease, HWND handle);
+
+extern BOOL wxTranslateMessage(MSG *m);
+
 #endif

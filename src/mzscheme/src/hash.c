@@ -62,13 +62,7 @@ long PTR_TO_LONG(Scheme_Object *o)
 
 #define FILL_FACTOR 1.4
 
-#define MIN_HTABLE_SIZE 7
-
-long scheme_hash_primes[] = 
-{MIN_HTABLE_SIZE, 31, 61, 127, 257, 521, 1031, 2053, 4099, 8209, 16411, 
-   32779, 65543, 131101, 262147, 425329, 1048583, 2097169,
-   4194319, 8388617, 16777259, 33554467, 67108879, 134217757,
-   268435459, 536870923, 1073741827};
+#define MIN_HTABLE_SIZE 8
 
 typedef int (*Hash_Compare_Proc)(void*, void*);
 
@@ -131,7 +125,6 @@ Scheme_Hash_Table *scheme_make_hash_table(int type)
 
   table = MALLOC_ONE_TAGGED(Scheme_Hash_Table);
 
-  table->step = 0;
   table->size = 0;
     
   table->iso.so.type = scheme_hash_table_type;
@@ -156,23 +149,24 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
 {
   Scheme_Object *tkey, **keys;
   hash_v_t h, h2, useme = 0;
-  unsigned long size = table->size;
+  unsigned long mask;
 
  rehash_key:
 
+  mask = table->size - 1;
+
   if (table->make_hash_indices) {
     table->make_hash_indices((void *)key, (long *)&h, (long *)&h2);
-    h = h % size;
-    h2 = h2 % size;
+    h = h & mask;
+    h2 = h2 & mask;
   } else {
     unsigned long lkey;
     lkey = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
-    h = (lkey >> 2) % size;
-    h2 = (lkey >> 3) % size;
+    h = (lkey >> 2) & mask;
+    h2 = (lkey >> 3) & mask;
   }
 
-  if (!h2)
-    h2 = 2;
+  h2 |= 1;
 
   keys = table->keys;
   
@@ -196,7 +190,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
 	  return table->vals[h];
       }
       scheme_hash_iteration_count++;
-      h = (h + h2) % size;
+      h = (h + h2) & mask;
     }
   } else {
     scheme_hash_request_count++;
@@ -218,7 +212,7 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
 	}
       } 
       scheme_hash_iteration_count++;
-      h = (h + h2) % size;
+      h = (h + h2) & mask;
     }
   }
 
@@ -227,14 +221,14 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
 
   if (set == 1)
     h = useme;
-  else if (table->mcount * FILL_FACTOR >= size) {
+  else if (table->mcount * FILL_FACTOR >= table->size) {
     /* Rehash */
-    int i, oldsize = table->size;
+    int i, oldsize = table->size, size;
     Scheme_Object **oldkeys = table->keys;
     Scheme_Object **oldvals = table->vals;
 
-    table->size = scheme_hash_primes[++table->step];
-    size = table->size;
+    size = oldsize << 1;
+    table->size = size;
     
     {
       Scheme_Object **ba;
@@ -268,7 +262,7 @@ void scheme_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object
   if (!table->vals) {
     Scheme_Object **ba;
 
-    table->size = scheme_hash_primes[0];
+    table->size = 8;
 
     ba = MALLOC_N(Scheme_Object *, table->size);
     table->vals = ba;
@@ -345,16 +339,15 @@ Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht)
 
 void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
 {
-  if (!table->step
-      || ((table->count * FILL_FACTOR > (scheme_hash_primes[table->step - 1])))) {
+  if ((table->size <= 8)
+      || (table->count * FILL_FACTOR > (table->size >> 1))) {
     /* Keep same size */
     memset(table->vals, 0, sizeof(Scheme_Object *) * table->size);
     memset(table->keys, 0, sizeof(Scheme_Object *) * table->size);
   } else {
     /* Shrink by one step */
     Scheme_Object **ba;
-    --table->step;
-    table->size = scheme_hash_primes[table->step];
+    table->size >>= 1;
     ba = MALLOC_N(Scheme_Object *, table->size);
     memcpy(ba, table->vals, sizeof(Scheme_Object *) * table->size);
     table->vals = ba;
@@ -378,11 +371,10 @@ scheme_make_bucket_table (int size, int type)
 
   table = MALLOC_ONE_TAGGED(Scheme_Bucket_Table);
 
-  table->step = 0;
-  while (scheme_hash_primes[table->step] < size) {
-    table->step++;
+  table->size = 1;
+  while (table->size < size) {
+    table->size <<= 1;
   }
-  table->size = scheme_hash_primes[table->step];
 
   table->count = 0;
 
@@ -409,7 +401,6 @@ Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt)
   table->so.type = scheme_bucket_table_type;
   table->size = bt->size;
   table->count = bt->count;
-  table->step = bt->step;
   table->weak = bt->weak;
   table->with_home = 0;
   table->make_hash_indices = bt->make_hash_indices;
@@ -436,27 +427,24 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
   hash_v_t h, h2;
   Scheme_Bucket *bucket;
   Compare_Proc compare = table->compare;
-  unsigned long size;
+  unsigned long mask;
 
  rehash_key:
 
-  size = table->size;
+  mask = table->size - 1;
 
   if (table->make_hash_indices) {
     table->make_hash_indices((void *)key, (long *)&h, (long *)&h2);
-    h = h % size;
-    h2 = h2 % size;
+    h = h & mask;
+    h2 = h2 & mask;
   } else {
     unsigned long lkey;
     lkey = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
-    h = (lkey >> 2) % size;
-    h2 = (lkey >> 3) % size;
+    h = (lkey >> 2) & mask;
+    h2 = (lkey >> 3) & mask;
   }
 
-  if (!h2)
-    h2 = 2;
-  else if (h2 & 0x1)
-    h2++;
+  h2 |= 0x1;
 
   if (table->weak) {
     scheme_hash_request_count++;
@@ -477,7 +465,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
       } else if (add)
 	break;
       scheme_hash_iteration_count++;
-      h = (h + h2) % size;
+      h = (h + h2) & mask;
     }
   } else {
     scheme_hash_request_count++;
@@ -487,7 +475,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
       else if (compare && !compare((void *)bucket->key, (void *)key))
 	return bucket;
       scheme_hash_iteration_count++;
-      h = (h + h2) % size;
+      h = (h + h2) & mask;
     }
   }
 
@@ -514,12 +502,12 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
       }
 
       if (actual * FILL_FACTOR < table->count) {
-	/* Decrement step so that the table won't actually grow. */
-	--table->step;
+	/* Decrement size so that the table won't actually grow. */
+	table->size >>= 1;
       }
     }
 
-    table->size = scheme_hash_primes[++table->step];
+    table->size <<= 1;
     
     asize = (size_t)table->size * sizeof(Scheme_Bucket *);
     {

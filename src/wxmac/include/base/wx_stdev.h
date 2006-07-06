@@ -188,10 +188,11 @@ class wxKeyEvent: public wxEvent
   int y ;
   long keyCode;
   long keyUpCode;
+  long otherKeyCode;
   Bool controlDown;
   Bool shiftDown;
   Bool altDown;
-  Bool metaDown;		//mflatt
+  Bool metaDown;
   
   wxKeyEvent(WXTYPE keyType);
 

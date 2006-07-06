@@ -429,7 +429,7 @@ void wxApp::doMacMouseUp(void)
       theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
       theMouseEvent->x = hitX;
       theMouseEvent->y = hitY;
-      theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when); // mflatt
+      theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
       
       /* Grab is now only used for grabbing on mouse-down for canvases & panels: */
       if (wxSubType(mouseWindow->__type, wxTYPE_CANVAS) 
@@ -472,7 +472,7 @@ void wxApp::doMacMouseUp(void)
 	  theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
 	  theMouseEvent->x = hitX;
 	  theMouseEvent->y = hitY;
-	  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when); // mflatt
+	  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
 
 	  macWxFrame->SeekMouseEventArea(theMouseEvent, &metal_drag_ok);
 	}
@@ -497,7 +497,7 @@ void wxApp::doMacMouseMotion(void)
   theMouseEvent->controlDown = FALSE;
   theMouseEvent->altDown = isAltKey;
   theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
-  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when); // mflatt
+  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
   
   if (wxWindow::gMouseWindow)
     {
@@ -560,7 +560,7 @@ void wxApp::doMacMouseLeave(void)
   theMouseEvent->controlDown = FALSE;
   theMouseEvent->altDown = isAltKey;
   theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
-  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when); // mflatt
+  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
   
   rc = (void *)cCurrentEvent.message;
   win = (wxWindow*)GET_SAFEREF(rc);
@@ -601,7 +601,7 @@ void wxApp::doMacKeyUpDown(Bool down)
 {
   wxFrame* theMacWxFrame;
   wxKeyEvent *theKeyEvent;
-  int key;
+  int key, otherKey = 0;
 
   theMacWxFrame = findMacWxFrame(MrEdKeyWindow());
   
@@ -742,102 +742,123 @@ void wxApp::doMacKeyUpDown(Bool down)
       break;
     default:
       {
-	char cstr[3];
-	int from_str = 0;
+	int iter, akey, orig_key = key;
 
-	if (cCurrentEvent.modifiers & wxMacDisableMods) {
-	  /* The following code manually translates the virtual key event
-	     into a character. We'd use this code all the time, except
-	     that dead keys have already been filtered before we get here,
-	     which means that option-e-e doesn't produce an accented e.
-	     So, instead, we only use this code to find out what would
-	     happen if the control key weren't pressed. */
-	  int mods;
-	  OSStatus status;
-	  UniCharCount len;
-	  UniChar keys[1];
-	  SInt16 currentKeyLayoutID;
-	  static UCKeyboardLayout *key_layout;
+	key = 0; /* let compiler know that key is assigned */
+	for (iter = 0; iter < ((cCurrentEvent.modifiers & cmdKey) ? 2 : 1); iter++) {
+	  char cstr[3];
+	  int from_str = 0;
 
-	  /* Remove effect of anything in wxMacDisableMods: */
-	  mods = cCurrentEvent.modifiers - (cCurrentEvent.modifiers & wxMacDisableMods);
-	  
-	  currentKeyLayoutID = GetScriptVariable(GetScriptManagerVariable(smKeyScript), smScriptKeys);
-	  if ((!uchrHandle && !KCHRHandle) || (currentKeyLayoutID != lastKeyLayoutID)) {
-	    key_state = 0;
-	    KCHRHandle = GetResource('KCHR', currentKeyLayoutID);
-	    if (!KCHRHandle)
-	      uchrHandle = GetResource('uchr', currentKeyLayoutID);
-	    else
-	      uchrHandle = NULL;
-	    lastKeyLayoutID = currentKeyLayoutID;
-	  }
+	  akey = orig_key;
 
-	  if (!uchrHandle) {
-	    if (!KCHRHandle) {
-	      key = '?';
+	  if (cCurrentEvent.modifiers & (wxMacDisableMods | cmdKey)) {
+	    /* The following code manually translates the virtual key event
+	       into a character. We'd use this code all the time, except
+	       that dead keys have already been filtered before we get here,
+	       which means that option-e-e doesn't produce an accented e.
+	       So, instead, we only use this code to find out what would
+	       happen if the control/option key wasn't pressed. */
+	    int mods;
+	    OSStatus status;
+	    UniCharCount len;
+	    UniChar keys[1];
+	    SInt16 currentKeyLayoutID;
+	    static UCKeyboardLayout *key_layout;
+
+	    mods = cCurrentEvent.modifiers;
+	    if (mods & cmdKey) {
+	      /* Strip control and option modifiers when command is pressed: */
+	      mods -= (mods & (optionKey | controlKey | cmdKey | shiftKey));
+	      /* On second iteration, set the shift key: */
+	      if (iter)
+		mods |= shiftKey;
 	    } else {
-	      int trans;
-	      trans = KeyTranslate(*KCHRHandle, key | mods, &key_state);
-	      if (trans & 0xFF0000) {
-		/* 2-byte result */
-		cstr[0] = (trans & 0xFF0000) >> 16;
-		cstr[1] = trans & 0xFF;
-		cstr[2] = 0;
-	      } else {
-		/* 1-byte result */
-		cstr[0] = trans & 0xFF;
-		cstr[1] = 0;
-	      }
+	      /* Remove effect of anything in wxMacDisableMods: */
+	      mods -= (mods & wxMacDisableMods);
+	    }
 
-	      key = '?'; /* temporary */
-	      from_str = 1;
+	    currentKeyLayoutID = GetScriptVariable(GetScriptManagerVariable(smKeyScript), smScriptKeys);
+	    if ((!uchrHandle && !KCHRHandle) || (currentKeyLayoutID != lastKeyLayoutID)) {
+	      key_state = 0;
+	      KCHRHandle = GetResource('KCHR', currentKeyLayoutID);
+	      if (!KCHRHandle)
+		uchrHandle = GetResource('uchr', currentKeyLayoutID);
+	      else
+		uchrHandle = NULL;
+	      lastKeyLayoutID = currentKeyLayoutID;
+	    }
+
+	    if (!uchrHandle) {
+	      if (!KCHRHandle) {
+		akey = '?';
+	      } else {
+		int trans;
+		trans = KeyTranslate(*KCHRHandle, akey | mods, &key_state);
+		if (trans & 0xFF0000) {
+		  /* 2-byte result */
+		  cstr[0] = (trans & 0xFF0000) >> 16;
+		  cstr[1] = trans & 0xFF;
+		  cstr[2] = 0;
+		} else {
+		  /* 1-byte result */
+		  cstr[0] = trans & 0xFF;
+		  cstr[1] = 0;
+		}
+
+		akey = '?'; /* temporary */
+		from_str = 1;
+	      }
+	    } else {
+	      key_layout = (UCKeyboardLayout *)*uchrHandle;
+
+	      status = UCKeyTranslate(key_layout,
+				      akey,
+				      cCurrentEvent.what - keyDown,
+				      mods >> 8,
+				      LMGetKbdType(),
+				      0 /* options */,
+				      &key_state,
+				      1,
+				      &len,
+				      keys);
+
+	      if (status == noErr)
+		akey = keys[0];
+	      else
+		akey = '?';
 	    }
 	  } else {
-	    key_layout = (UCKeyboardLayout *)*uchrHandle;
-
-	    status = UCKeyTranslate(key_layout,
-				    key,
-				    cCurrentEvent.what - keyDown,
-				    mods >> 8,
-				    LMGetKbdType(),
-				    0 /* options */,
-				    &key_state,
-				    1,
-				    &len,
-				    keys);
-
-	    if (status == noErr)
-	      key = keys[0];
-	    else
-	      key = '?';
+	    akey = '?'; /* temporary */
+	    cstr[0] = cCurrentEvent.message & charCodeMask;
+	    cstr[1] = 0;
+	    from_str = 1;
 	  }
-	} else {
-	  key = '?'; /* temporary */
-	  cstr[0] = cCurrentEvent.message & charCodeMask;
-	  cstr[1] = 0;
-	  from_str = 1;
-	}
 
-	if (from_str) {
-	  CFStringRef str;
-	  UniChar keys[1];
+	  if (from_str) {
+	    CFStringRef str;
+	    UniChar keys[1];
   
-	  str = CFStringCreateWithCStringNoCopy(NULL, cstr,
-						GetScriptManagerVariable(smKeyScript),
-						kCFAllocatorNull);
-	  if (str) {
-	    if (CFStringGetLength(str) > 0) {
-	      GC_CAN_IGNORE CFRange rng;
-	      rng = CFRangeMake(0, 1);
-	      CFStringGetCharacters(str, rng, keys);
+	    str = CFStringCreateWithCStringNoCopy(NULL, cstr,
+						  GetScriptManagerVariable(smKeyScript),
+						  kCFAllocatorNull);
+	    if (str) {
+	      if (CFStringGetLength(str) > 0) {
+		GC_CAN_IGNORE CFRange rng;
+		rng = CFRangeMake(0, 1);
+		CFStringGetCharacters(str, rng, keys);
+	      } else
+		keys[0] = '?';
+	      CFRelease(str);
 	    } else
 	      keys[0] = '?';
-	    CFRelease(str);
-	  } else
-	    keys[0] = '?';
 
-	  key = keys[0];
+	    akey = keys[0];
+	  }
+
+	  if (!iter)
+	    key = akey;
+	  else
+	    otherKey = akey;
 	}
       }
     } // end switch
@@ -850,6 +871,7 @@ void wxApp::doMacKeyUpDown(Bool down)
     theKeyEvent->keyCode = WXK_RELEASE;
     theKeyEvent->keyUpCode = key;
   }  
+  theKeyEvent->otherKeyCode = otherKey;
 
   {
     wxWindow *in_win;
@@ -1152,7 +1174,7 @@ void wxApp::doMacContentClick(wxFrame* frame)
   theMouseEvent->controlDown = FALSE;
   theMouseEvent->altDown = isAltKey;
   theMouseEvent->metaDown = cCurrentEvent.modifiers & cmdKey;
-  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when); // mflatt
+  theMouseEvent->timeStamp = SCALE_TIMESTAMP(cCurrentEvent.when);
 
   hitX = cCurrentEvent.where.h; // screen window c.s.
   hitY = cCurrentEvent.where.v; // screen window c.s.
@@ -1353,4 +1375,81 @@ void wxPrimDialogCleanUp()
   event.modifiers = activeFlag;
   event.message = (long)w;
   QueueMrEdEvent(&event);
+}
+
+
+//------------------------------------------------------------------------
+
+int wxKeyCodeToVirtualKey(int wxk) {
+  switch (wxk) {
+#   define wxKEYF(code, wxk)  case wxk: return code
+    wxKEYF(122, WXK_F1);
+    wxKEYF(120, WXK_F2);
+    wxKEYF(99, WXK_F3);
+    wxKEYF(118, WXK_F4);
+    wxKEYF(96, WXK_F5);
+    wxKEYF(97, WXK_F6);
+    wxKEYF(98, WXK_F7);
+    wxKEYF(100, WXK_F8);
+    wxKEYF(101, WXK_F9);
+    wxKEYF(109, WXK_F10);
+    wxKEYF(103, WXK_F11);
+    wxKEYF(111, WXK_F12);
+    wxKEYF(105, WXK_F13);
+    wxKEYF(107, WXK_F14);
+    wxKEYF(113, WXK_F15);
+  case WXK_UP:
+    return 0x7e;
+  case WXK_DOWN:
+    return 0x7d;
+  case WXK_LEFT:
+    return 0x7b;
+  case WXK_RIGHT:
+    return 0x7c;
+  case WXK_RETURN:
+    return 0x24;
+  case WXK_TAB:
+    return 0x30;
+  case WXK_BACK:
+    return 0x33;
+  case WXK_DELETE:
+    return 0x75;
+  case WXK_HOME:
+    return 0x73;
+  case WXK_END:
+    return 0x77;
+  case WXK_PRIOR:
+    return 0x74;
+  case WXK_NEXT:
+    return 0x79;
+  case WXK_ADD:
+    return 0x45;
+  case WXK_SUBTRACT:
+    return 78;
+  case WXK_MULTIPLY:
+    return 0x43;
+  case WXK_DIVIDE:
+    return 0x4B;
+  case WXK_SEPARATOR:
+    return 71;
+  case WXK_DECIMAL:
+    return 65;
+  case 3:
+    return 76;
+  case WXK_NUMPAD0:
+  case WXK_NUMPAD1:
+  case WXK_NUMPAD2:
+  case WXK_NUMPAD3:
+  case WXK_NUMPAD4:
+  case WXK_NUMPAD5:
+  case WXK_NUMPAD6:
+  case WXK_NUMPAD7:
+    return (wxk - WXK_NUMPAD0) + 82;
+  case WXK_NUMPAD8:
+    return 91;
+  case WXK_NUMPAD9:
+    return 92;
+  default:
+    return 0;
+  }
 }

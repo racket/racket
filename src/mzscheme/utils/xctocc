@@ -2201,7 +2201,7 @@ sub PrintBundleVar
 	$var = "&$var" unless $outgoing;
 	&PrintBundleObject($var, $paramtype, $wvs);
     } elsif (substr($paramtype, 0, 3) eq 'SYM') {
-	$paramtype =~ /SYM\[(.*)\]/;
+	$paramtype =~ /SYMZ?\[(.*)\]/;
 	$symtype = $1;
 	print "$wvs(bundle_symset_${symtype}($var))";
     } else {
@@ -2427,6 +2427,10 @@ sub PrintUnbundleVar
 	substr($paramtype, -1) = '';
 	print "*" if ($outgoing);
 	&PrintUnbundleObject("$var", $paramtype, 0, $mname);
+    } elsif (substr($paramtype, 0, 4) eq 'SYMZ') {
+	$paramtype =~ /SYMZ\[(.*)\]/;
+	$symtype = $1;
+	print "WITH_VAR_STACK(unbundle_symset_${symtype}($var, NULL))";
     } elsif (substr($paramtype, 0, 3) eq 'SYM') {
 	$paramtype =~ /SYM\[(.*)\]/;
 	$symtype = $1;
@@ -2798,7 +2802,7 @@ sub PrintTypecheck
 	substr($paramtype, -1) = '';
 	&PrintTypecheckObj("$var", $paramtype, $stop);
     } elsif (substr($paramtype, 0, 3) eq 'SYM') {
-	$paramtype =~ /SYM\[(.*)\]/;
+	$paramtype =~ /SYMZ?\[(.*)\]/;
 	$symtype = $1;
 	print "WITH_REMEMBERED_STACK(istype_symset_${symtype}($var, $stop))";
     } else {

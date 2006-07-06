@@ -245,8 +245,6 @@ static int skip_next_return;
 extern int wx_start_win_event(const char *who, HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, int tramp, LONG *_retval);
 extern void wx_end_win_event(const char *who, HWND hWnd, UINT message, int tramp);
 
-extern wxKeyEvent *wxMakeCharEvent(WORD wParam, LPARAM lParam, Bool isASCII, Bool isRelease, HWND handle);
-
 LONG wxDoItemPres(wxItem *item, HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
 		 long *result, int tramp)
 {
@@ -426,7 +424,7 @@ LONG wxDoItemPres(wxItem *item, HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	
 	event = new wxKeyEvent(wxEVENT_TYPE_CHAR);
 	
-	event = wxMakeCharEvent(wParam, lParam, 
+	event = wxMakeCharEvent(FALSE, wParam, lParam, 
 				((message == WM_CHAR) || (message == WM_SYSCHAR)), 
 				FALSE, hWnd);
 

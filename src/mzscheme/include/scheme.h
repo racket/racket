@@ -735,8 +735,9 @@ typedef struct {
 typedef struct Scheme_Hash_Table
 {
   Scheme_Inclhash_Object iso;
-  int size, count, step;
-  Scheme_Object **keys;
+  int size; /* power of 2 */
+  int count;
+    Scheme_Object **keys;
   Scheme_Object **vals;
   void (*make_hash_indices)(void *v, long *h1, long *h2);
   int (*compare)(void *v1, void *v2);
@@ -755,7 +756,8 @@ typedef struct Scheme_Bucket
 typedef struct Scheme_Bucket_Table
 {
   Scheme_Object so;
-  int size, count, step;
+  int size; /* power of 2 */
+  int count;
   Scheme_Bucket **buckets;
   char weak, with_home;
   void (*make_hash_indices)(void *v, long *h1, long *h2);

@@ -32,7 +32,7 @@
 #include <ctype.h>
 #include "schgc.h"
 
-# define HASH_TABLE_SIZE_STEP 4
+# define HASH_TABLE_INIT_SIZE 256
 #ifdef SMALL_HASH_TABLES
 # define FILL_FACTOR 1.30
 #else
@@ -74,8 +74,6 @@ static int gensym_counter;
 typedef unsigned long hash_v_t;
 #define HASH_SEED  0xF0E1D2C3
 
-extern long scheme_hash_primes[];
-
 #define SYMTAB_LOST_CELL scheme_false
 
 #ifdef MZ_PRECISE_GC
@@ -90,11 +88,14 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
 				    Scheme_Object *naya)
 {
   hash_v_t h, h2;
+  unsigned long mask;
   Scheme_Object *bucket;
 
   /* WARNING: key may be GC-misaligned... */
 
  rehash_key:
+  mask = table->size - 1;
+
   {
     unsigned int i;
     i = 0;
@@ -110,14 +111,11 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
     h ^= (h << 5) + (h >> 2) + 0xA0A0;
     h ^= (h << 5) + (h >> 2) + 0x0505;
 
-    h = h % table->size;
-    h2 = h2 % table->size;
+    h = h & mask;
+    h2 = h2 & mask;
   }
 
-  if (!h2)
-    h2 = 2;
-  else if (h2 & 0x1)
-    h2++; /* note: table size is never even, so no % needed */
+  h2 |= 0x1;
 
   while ((bucket = table->keys[WEAK_ARRAY_HEADSIZE + h])) {
     if (SAME_OBJ(bucket, SYMTAB_LOST_CELL)) {
@@ -130,7 +128,7 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
     } else if (((int)length == SCHEME_SYM_LEN(bucket))
 	       && !memcmp(key, SCHEME_SYM_VAL(bucket), length))
       return bucket;
-    h = (h + h2) % table->size;
+    h = (h + h2) & mask;
   }
 
   /* In case it's GC-misaligned: */
@@ -155,9 +153,9 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
 	lostc++;
     }
     if ((lostc * 2) < table->count)
-      table->step++;
-
-    newsize = scheme_hash_primes[table->step];
+      newsize = oldsize << 1;
+    else
+      newsize = oldsize;
 
     asize = (size_t)newsize * sizeof(Scheme_Object *);
     {
@@ -241,8 +239,7 @@ static Scheme_Hash_Table *init_one_symbol_table()
 
   symbol_table = scheme_make_hash_table(SCHEME_hash_ptr);
 
-  symbol_table->step = HASH_TABLE_SIZE_STEP;
-  symbol_table->size = scheme_hash_primes[symbol_table->step];
+  symbol_table->size = HASH_TABLE_INIT_SIZE;
   
   size = symbol_table->size * sizeof(Scheme_Object *);
 #ifdef MZ_PRECISE_GC

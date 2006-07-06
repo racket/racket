@@ -220,7 +220,7 @@ int FindReady(MrEdContext *c, MSG *msg, int remove, MrEdContext **c_return)
     MSG pmsg;
     while (PeekMessage(&pmsg, NULL, 0x4000, 0xFFFF, PM_REMOVE)) {
       found_nothing = 0;
-      TranslateMessage(&pmsg);
+      wxTranslateMessage(&pmsg);
       DispatchMessage(&pmsg);
     }
   }
@@ -314,7 +314,7 @@ void MrEdDispatchEvent(MSG *msg)
     fflush(log);
 #endif
 
-    TranslateMessage(msg);
+    wxTranslateMessage(msg);
 
     can_trampoline_win = msg->hwnd;
     last_msg_time = msg->time;

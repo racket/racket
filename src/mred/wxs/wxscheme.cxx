@@ -3261,6 +3261,7 @@ static void wxScheme_Install(Scheme_Env *global_env)
   objscheme_setup_wxPopupEvent(global_env);
   objscheme_setup_wxScrollEvent(global_env);
   objscheme_setup_wxKeyEvent(global_env);
+  objscheme_setup_wxKeyEventGlobal(global_env);
   objscheme_setup_wxMouseEvent(global_env);
   objscheme_setup_wxDC(global_env);
   objscheme_setup_wxDCGlobal(global_env);

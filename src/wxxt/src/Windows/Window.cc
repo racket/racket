@@ -58,6 +58,8 @@
 static Atom utf8_atom = 0, net_wm_name_atom, net_wm_icon_name_atom;
 
 extern void wxSetSensitive(Widget, Bool enabled);
+extern int wxLocaleStringToChar(char *str, int slen);
+extern int wxUTF8StringToChar(char *str, int slen);
 
 static wxWindow *grabbing_panel;
 static Time grabbing_panel_time;
@@ -1571,11 +1573,72 @@ extern Bool wxIsAlt(KeySym key_sym);
 static XComposeStatus compose_status;
 #ifndef NO_XMB_LOOKUP_STRING
 # define XMB_KC_STATUS(status) (status == XLookupKeySym) || (status == XLookupBoth)
+# define XMB_STR_STATUS(status) (status == XLookupChars) || (status == XLookupBoth)
 # define DEFAULT_XMB_STATUS XLookupKeySym
+# ifdef X_HAVE_UTF8_STRING
+#  define X___LookupString Xutf8LookupString
+# else
+#  define X___LookupString XmbLookupString
+# endif
 #else
 # define XMB_KC_STATUS(status) (status)
+# define XMB_STR_STATUS(status) 0
 # define DEFAULT_XMB_STATUS 1
 #endif
+
+
+Status wxWindow::LookupKey(int unshifted, Widget w, wxWindow *win, XEvent *xev, KeySym *_keysym, char *str, int *_len)
+{
+  KeySym keysym;
+  Status status;
+  int len;
+  XKeyPressedEvent evt;
+
+  memcpy(&evt, &(xev->xkey), sizeof(XKeyPressedEvent));
+  if (unshifted) {
+    if (evt.state & ShiftMask)
+      evt.state -= ShiftMask;
+    else
+      evt.state |= ShiftMask;
+  }
+    
+#ifndef NO_XMB_LOOKUP_STRING
+  if (!the_im) {
+    the_im = XOpenIM(wxAPP_DISPLAY, NULL, NULL, NULL);
+  }
+  if (the_im) {
+    if (!win->X->ic) {
+      win->X->ic = XCreateIC(the_im, 
+			     XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+			     NULL);
+      win->X->us_ic = XCreateIC(the_im, 
+				XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+				NULL);
+    }
+  }
+
+  if (win->X->ic && (xev->xany.type == KeyPress)) {
+    XIC ic;
+    ic = unshifted ? win->X->ic : win->X->ic;
+    XSetICValues(ic, 
+		 XNClientWindow, XtWindow(w),
+		 XNFocusWindow,  XtWindow(w),
+		 NULL);
+    XSetICFocus(ic);
+
+    len = X___LookupString(ic, &evt, str, 10, &keysym, &status);
+  } else
+#endif
+    {
+      (void)XLookupString(&evt, str, 10, &keysym, &compose_status);
+      status = DEFAULT_XMB_STATUS;
+      len = 0;
+    }
+
+  *_len = len;
+  *_keysym = keysym;
+  return status;
+}
 
 void wxWindow::WindowEventHandler(Widget w,
 				  wxWindow **winp,
@@ -1639,38 +1702,16 @@ void wxWindow::WindowEventHandler(Widget w,
       win->current_state = xev->xkey.state;
       { /* ^^^ fallthrough !!!! ^^^ */
 	wxKeyEvent *wxevent;
-	KeySym	   keysym;
-	long       kc;
-	Status     status;
-	char       str[10];
+	KeySym	   keysym, other_keysym;
+	long       kc, other_kc;
+	Status     status, other_status;
+	char       str[10], other_str[10];
+	int        slen, other_slen;
 
 	wxevent = new wxKeyEvent(wxEVENT_TYPE_CHAR);
 
-#ifndef NO_XMB_LOOKUP_STRING
-	if (!the_im) {
-	  the_im = XOpenIM(wxAPP_DISPLAY, NULL, NULL, NULL);
-	}
-	if (!win->X->ic) {
-	  if (the_im) {
-	    win->X->ic = XCreateIC(the_im, 
-				   XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
-				   NULL);
-	  }
-	}
-
-	if (win->X->ic && (xev->xany.type == KeyPress)) {
-	  XSetICValues(win->X->ic, 
-		       XNClientWindow, XtWindow(w),
-		       XNFocusWindow,  XtWindow(w),
-		       NULL);
-	  XSetICFocus(win->X->ic);
-	  (void)XmbLookupString(win->X->ic, &(xev->xkey), str, 10, &keysym, &status);
-	} else
-#endif
-	  {
-	    (void)XLookupString(&(xev->xkey), str, 10, &keysym, &compose_status);
-	    status = DEFAULT_XMB_STATUS;
-	  }
+	status = LookupKey(0, w, win, xev, &keysym, str, &slen);
+	other_status = LookupKey(1, w, win, xev, &other_keysym, other_str, &other_slen);
 
 	if (xev->xany.type == KeyPress) {
 	  static int handle_alt = 0;
@@ -1689,15 +1730,39 @@ void wxWindow::WindowEventHandler(Widget w,
 	  }
 	}
 
-	if (XMB_KC_STATUS(status))
+	if (XMB_STR_STATUS(status)) {
+	  if (slen > 9)
+	    slen = 9;
+	  str[slen] = 0;
+#ifdef X_HAVE_UTF8_STRING
+	  kc = wxUTF8StringToChar(str, slen);
+#else
+	  kc = wxLocaleStringToChar(str, slen);
+#endif
+	} else if (XMB_KC_STATUS(status))
 	  kc = CharCodeXToWX(keysym);
-	else
+	else 
 	  kc = 0;
+
+	if (XMB_STR_STATUS(other_status)) {
+	  if (other_slen > 9)
+	    other_slen = 9;
+	  other_str[other_slen] = 0;
+#ifdef X_HAVE_UTF8_STRING
+	  other_kc = wxUTF8StringToChar(other_str, other_slen);
+#else
+	  other_kc = wxLocaleStringToChar(other_str, other_slen);
+#endif
+	} else if (XMB_KC_STATUS(other_status))
+	  other_kc = CharCodeXToWX(other_keysym);
+	else 
+	  other_kc = 0;
 
 	// set wxWindows event structure
 	wxevent->eventHandle	= (char*)xev;
 	wxevent->keyCode	= (xev->xany.type == KeyPress) ? kc : WXK_RELEASE;
 	wxevent->keyUpCode	= (xev->xany.type == KeyRelease) ? kc : WXK_PRESS;
+	wxevent->otherKeyCode	= other_kc;
 	wxevent->x		= xev->xkey.x;
 	wxevent->y		= xev->xkey.y;
 	wxevent->altDown	= /* xev->xkey.state & Mod3Mask */ FALSE;

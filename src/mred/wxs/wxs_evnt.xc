@@ -220,6 +220,11 @@ wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int 
 @SYM "release" : WXK_RELEASE
 @ENDSYMBOLS
 
+@MACRO bKeyOrFalse = ({x} ? bundle_symset_keyCode({x}) : scheme_false)
+@MACRO ubKeyOrFalse = (SCHEME_FALSEP({x}) ? 0 : unbundle_symset_keyCode({x}, METHODNAME("key-event%","get-other-shift-key-code")))
+static long GetOtherKey(wxKeyEvent *k) { return k->otherKeyCode; }
+static void SetOtherKey(wxKeyEvent *k, long c) { k->otherKeyCode = c; }
+
 @CLASSBASE wxKeyEvent=wxKeyEvent_ext "key-event":"event" / nofnl
 
 @CREATOR (SYM[keyCode]=0, bool=0, bool=0, bool=0, bool=0, int=0, int=0, ExactLong=0)
@@ -234,6 +239,17 @@ wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int 
 
 @IVAR "x" : int x
 @IVAR "y" : int y
+
+@ m "get-other-shift-key-code" : long/bKeyOrFalse GetOtherKey();
+@ m "set-other-shift-key-code" : void SetOtherKey(long//ubKeyOrFalse////push);
+
+@END
+
+static int wxKeySymbolToInteger(int v) { return v; }
+
+@GLOBAL wxKeyEventGlobal
+
+@ "key-symbol-to-integer" : int wxKeySymbolToInteger(SYMZ[keyCode])
 
 @END
 

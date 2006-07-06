@@ -44,6 +44,7 @@ public:
     unsigned int  last_clickbutton;		//   if a double click has arrived
 #ifndef NO_XMB_LOOKUP_STRING
     XIC ic;
+    XIC us_ic;
     XIM im;
 #endif
 };
@@ -192,6 +193,7 @@ protected:
     static void WindowEventHandler(Widget w,   wxWindow **win,
 				   XEvent *ev, Boolean *continue_to_dispatch_return);
     static void ScrollEventHandler(Widget w, wxWindow **win, XtPointer p_XfwfScrollInfo);
+    static Status wxWindow::LookupKey(int unshifted, Widget w, wxWindow *win, XEvent *xev, KeySym *_keysym, char *s, int *_len);
     void RegisterAll(Widget ww);
 #   endif
 protected:

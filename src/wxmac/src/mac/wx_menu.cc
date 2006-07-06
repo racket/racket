@@ -22,6 +22,8 @@
 int wxNumHelpItems;
 MenuHandle wxHelpMenu;
 
+extern int wxKeyCodeToVirtualKey(int wxk);
+
 void wxSetUpAppleMenu(wxMenuBar *mbar);
 
 extern int wxCan_Do_Pref();
@@ -219,10 +221,10 @@ wxMenu::~wxMenu(void)
 // setupstr should be used with AppendItem; the result should then be used with SetMenuItemText
 // If stripCmds is TRUE, instead of replacing wxMenu string special chars, 
 // we delete them. This is appropriate for the menu text of a pulldown Menu.
-char *wxBuildMacMenuString(StringPtr setupstr, char *itemName, Bool stripCmds)
+char *wxBuildMacMenuString(StringPtr setupstr, char *itemName,
+			   int *spc, int *modifiers, int *is_virt)
 {
   int s, d;
-  char spc = '\0';
   char *showstr;
 
   showstr = copystring(itemName);
@@ -232,9 +234,27 @@ char *wxBuildMacMenuString(StringPtr setupstr, char *itemName, Bool stripCmds)
     showstr[d++] = ' ';
   for (s = 0; itemName[s] != '\0'; ) {
     if (itemName[s] == '\t') {
-      s++;
-      if (strncmp("Cmd+", itemName + s, 4) == 0)
-	spc = itemName[s+4];
+      if (spc) {
+	s++;
+	if (strncmp("Cmd+", itemName + s, 4) == 0) {
+	  *spc = itemName[s+4];
+	  *modifiers = 0;
+	  *is_virt = 0;
+	}
+	if (strncmp("Cut=", itemName + s, 4) == 0) {
+	  /* 1 byte for modfiers, then string version of a integer: */
+	  int vk;
+	  *modifiers = itemName[s+4] - 'A';
+	  vk = strtol(itemName XFORM_OK_PLUS (s + 5), NULL, 10);
+	  *spc = vk;
+	  vk = wxKeyCodeToVirtualKey(*spc);
+	  if (vk) {
+	    *spc = vk;
+	    *is_virt = 1;
+	  } else
+	    *is_virt = 0;
+	}
+      }
       break;
     } 
     else {
@@ -247,12 +267,7 @@ char *wxBuildMacMenuString(StringPtr setupstr, char *itemName, Bool stripCmds)
   showstr = wxItemStripLabel(showstr);
   if (setupstr) {
     setupstr[1] = 'X'; // temporary menu item name
-    if (spc && !stripCmds) {
-      setupstr[2] = '/';
-      setupstr[3] = spc;
-      setupstr[0] = 3;
-    } else
-      setupstr[0] = 1;
+    setupstr[0] = 1;
   }
 
   return showstr;
@@ -266,6 +281,7 @@ MenuHandle wxMenu::CreateCopy(char *title, Bool doabouthack, MenuHandle toHandle
   int helpflg;
   int hId;
   int cnt;
+  int spc, modifiers, is_virt;
   wxNode* node;
   wxMenuItem* menuItem;
 	
@@ -300,6 +316,7 @@ MenuHandle wxMenu::CreateCopy(char *title, Bool doabouthack, MenuHandle toHandle
     // Try to recreate from the wxMenuItem
     menuItem = (wxMenuItem*)node->Data(); 
     hId = 0;
+    spc = 0;
     if (menuItem->itemId == -1) {
       // Separator
       title = "-";
@@ -307,12 +324,12 @@ MenuHandle wxMenu::CreateCopy(char *title, Bool doabouthack, MenuHandle toHandle
       tempString[1] = '-';
     } else if (menuItem->subMenu) {
       wxMenu *subMenu;
-      title = wxBuildMacMenuString(tempString, menuItem->itemName, TRUE);
+      title = wxBuildMacMenuString(tempString, menuItem->itemName, NULL, NULL, NULL);
       subMenu = menuItem->subMenu;
       subMenu->wxMacInsertSubmenu();
       hId = subMenu->cMacMenuId;
     } else {
-      title = wxBuildMacMenuString(tempString, menuItem->itemName, FALSE);
+      title = wxBuildMacMenuString(tempString, menuItem->itemName, &spc, &modifiers, &is_virt);
       if (!i && doabouthack && helpflg && (!strncmp("About", title, 5))) {
 	if (menu_bar) {
 	  // This is a very sad hack !
@@ -326,6 +343,10 @@ MenuHandle wxMenu::CreateCopy(char *title, Bool doabouthack, MenuHandle toHandle
       ct = wxCFString(title);
       ::SetMenuItemTextWithCFString(nmh, i + offset, ct);
       CFRelease(ct);
+    }
+    if (spc) {
+      SetMenuItemCommandKey(nmh, i + offset, is_virt, spc);
+      SetMenuItemModifiers(nmh, i + offset, modifiers);
     }
     {
       Bool v;
@@ -809,6 +830,7 @@ void wxMenu::Append(int Id, char* Label, char* helpString, Bool checkable)
   //	assert(Id >= 1);
   wxMenuItem* item;
   Str255 menusetup;
+  int spc = 0, modifiers, is_virt;
 
   item = new WXGC_PTRS wxMenuItem(this, checkable);
 
@@ -818,7 +840,7 @@ void wxMenu::Append(int Id, char* Label, char* helpString, Bool checkable)
   menuItems->Append(item);
   no_items ++;
 
-  Label = wxBuildMacMenuString(menusetup, item->itemName, FALSE);
+  Label = wxBuildMacMenuString(menusetup, item->itemName, &spc, &modifiers, &is_virt);
   wxPrepareMenuDraw();
   ::AppendMenu(cMacMenu, menusetup);
   {
@@ -826,6 +848,10 @@ void wxMenu::Append(int Id, char* Label, char* helpString, Bool checkable)
     ct = wxCFString(Label);
     ::SetMenuItemTextWithCFString(cMacMenu, no_items, ct);
     CFRelease(ct);
+  }
+  if (spc) {
+    SetMenuItemCommandKey(cMacMenu, no_items, is_virt, spc);
+    SetMenuItemModifiers(cMacMenu, no_items, modifiers);
   }
   wxDoneMenuDraw();
   CheckHelpHack();
@@ -859,7 +885,7 @@ void wxMenu::Append(int Id, char* Label, wxMenu* SubMenu, char* helpString)
   menuItems->Append(item);
   no_items++;
 
-  Label = wxBuildMacMenuString(menusetup, item->itemName, TRUE);
+  Label = wxBuildMacMenuString(menusetup, item->itemName, NULL, NULL, NULL);
 	
   wxPrepareMenuDraw();
   ::AppendMenu(cMacMenu, menusetup);

@@ -62,10 +62,10 @@ class wxKeymap : public wxObject
   wxBreakSequenceFunction onBreak;
   void *onBreakData;
 
-  class wxKeycode *FindKey(long, Bool, Bool, Bool, Bool, class wxKeycode *);
-  int HandleEvent(long code, Bool shift, Bool ctrl, Bool alt, Bool meta,
+  class wxKeycode *FindKey(long, long, Bool, Bool, Bool, Bool, class wxKeycode *);
+  int HandleEvent(long code, long, Bool shift, Bool ctrl, Bool alt, Bool meta,
 		  int score, char **fname, int *fullset);
-  int GetBestScore(long code, Bool shift, Bool ctrl, Bool alt, Bool meta);
+  int GetBestScore(long code, long, Bool shift, Bool ctrl, Bool alt, Bool meta);
 
   Bool CycleCheck(wxKeymap *km);
 
@@ -104,7 +104,7 @@ class wxKeymap : public wxObject
   void SetBreakSequenceCallback(wxBreakSequenceFunction f, void *data);
 
   class wxKeycode *MapFunction(long code, int shift, int ctrl, 
-			       int alt, int meta, 
+			       int alt, int meta, int check_alt,
 			       char *fname, class wxKeycode *prevkey=NULL, 
 			       int keytype = wxKEY_FINAL);
   void MapFunction(char *keyname, char *fname);

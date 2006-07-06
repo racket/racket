@@ -1189,7 +1189,7 @@ void wxGL::Reset(wxGLConfig *cfg, CGrafPtr gp, int offscreen, int w, int h)
     aglSetDrawable(ctx, NULL);
     aglDestroyContext(ctx); 
 
-    gl_ctx = NULL;
+    gl_ctx = 0;
   }
 
   if (gp) {

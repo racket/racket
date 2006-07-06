@@ -1128,19 +1128,10 @@ static LONG WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, in
       wxUnhideCursor();
       retval = wnd->DefWindowProc(message, wParam, lParam);
     }
-  case WM_KEYUP:
+  case WM_KEYUP:   /* ^^^ fallthrough */
   case WM_KEYDOWN: /* ^^^ fallthrough */
     {
-      // Avoid duplicate messages to OnChar
-      if ((message == WM_KEYUP)
-	  || ((wParam != VK_ESCAPE) 
-	      && (wParam != VK_SHIFT) 
-	      && (wParam != VK_CONTROL) 
-	      && (wParam != VK_SPACE) 
-	      && (wParam != VK_RETURN) 
-	      && (wParam != VK_TAB) 
-	      && (wParam != VK_BACK)))
-	wnd->OnChar((WORD)wParam, lParam, FALSE, message == WM_KEYUP);
+      wnd->OnChar((WORD)wParam, lParam, FALSE, message == WM_KEYUP);
       break;
     }
   case WM_SYSCHAR:
@@ -2011,122 +2002,75 @@ static int dot_scan_code;
 
 static int generic_ascii_code[256];
 
+static const char *find_shift_alts = "!@#$%^&*()_+-=\\|[]{}:\";',.<>/?~`";
+static int shift_alt_key_codes[36], sakc_initialized;
+
 #define THE_SCAN_CODE(lParam) ((((unsigned long)lParam) >> 16) & 0x1FF)
 
-wxKeyEvent *wxMakeCharEvent(WORD wParam, LPARAM lParam, Bool isASCII, Bool isRelease, HWND handle)
+wxKeyEvent *wxMakeCharEvent(BOOL just_check, WORD wParam, LPARAM lParam, Bool isASCII, Bool isRelease, HWND handle)
 {
-  int id;
-  Bool tempControlDown;
+  int id, other_id = 0;
+  Bool tempControlDown, tempAltDown;
 
   tempControlDown = (::GetKeyState(VK_CONTROL) >> 1);
+  tempAltDown = ((HIWORD(lParam) & KF_ALTDOWN) == KF_ALTDOWN);
 
   if (isASCII) {
     int sc;
 
-    // If 1 -> 26, translate to CTRL plus a letter.
     id = wParam;
-    if ((id > 0) && (id < 27) && tempControlDown) {
-      id = id + 96;
-    }
-    // Map id 28 to ctl+backslash
-    if (tempControlDown) {
-      switch (id) {
-      case 27:
-	id = '[';
-	break;
-      case 28:
-	id = '\\';
-	break;
-      case 29:
-	id = ']';
-	break;
-      case 30:
-	id = '^';
-	break;
-      case 31:
-	id = '_';
-	break;
-      default:
-	break;
-      }
-    }
-    
-    /* Ignore character created by numpad, since it's
-       already handled as WM_KEYDOWN */
-    sc = THE_SCAN_CODE(lParam);
-    if (sc) {
-      if ((id >= '0') && (id <= '9')) {
-	if (numpad_scan_codes[id - '0'] == sc)
-	  id = -1;
-      } else if (id == '+') {
-	if (sc == plus_scan_code)
-	  id = -1;
-      } else if (id == '-') {
-	if (sc == minus_scan_code)
-	  id = -1;
-      } else if (id == '*') {
-	if (sc == times_scan_code)
-	  id = -1;
-      } else if (id == '/') {
-	if (sc == divide_scan_code)
-	  id = -1;
-      } else if (id == '.') {
-	if (sc == dot_scan_code)
-	  id = -1;
-      }
-    }
 
+    /* Remember scan codes to help with some key-release events: */
+    sc = THE_SCAN_CODE(lParam);
     if ((id >= 0) && (id <= 255))
       generic_ascii_code[id] = sc;
   } else {
+    int override_mapping = (tempControlDown && !tempAltDown);
+
     if ((id = wxCharCodeMSWToWX(wParam)) == 0) {
-      if (tempControlDown) {
-	int sd;
-	sd = (::GetKeyState(VK_SHIFT) >> 1);
-	switch(wParam) {
-	case VK_OEM_1:
-	  id = (sd ? ':' : ';');
-	  break;
-	case VK_OEM_2:
-	  id = (sd ? '|' : -1);
-	  break;
-	case VK_OEM_3:
-	  id = (sd ? '~' : '`');
-	  break;
-	case VK_OEM_7:
-	  id = (sd ? '"' : '\'');
-	  break;
-	case VK_OEM_PLUS:
-	  id = (sd ? '+' : '=');
-	  break;
-	case VK_OEM_MINUS:
-	  id = (sd ? -1 : '-');
-	  break;
-	case VK_OEM_PERIOD:
-	  id = (sd ? '>' : '.');
-	  break;
-	case VK_OEM_COMMA:
-	  id = (sd ? '<' : ',');
-	  break;
-	default:
+      if (override_mapping || isRelease) {
+	int j;
+
+	id = MapVirtualKey(wParam, 2);
+	id &= 0xFFFF;
+	if (!id)
 	  id = -1;
+	else if (id < 128)
+	  id = tolower(id);
+
+	/* Look for shifted alternate: */
+	if (!sakc_initialized) {
+	  for (j = 0; find_shift_alts[j]; j++) {
+	    shift_alt_key_codes[j] = VkKeyScan(find_shift_alts[j]) & 0xFF;
+	  }
 	}
+	for (j = 0; find_shift_alts[j]; j++) {
+	  if (shift_alt_key_codes[j] == wParam) {
+	    if (find_shift_alts[j] != id) {
+	      other_id = find_shift_alts[j];
+	    }
+	  }
+	}
+	
       } else
 	id = -1;
-    }
-    if ((id >= WXK_NUMPAD0) && (id <= WXK_NUMPAD9)) {
-      /* remember scan code so we can ignore the WM_CHAR part */
-      numpad_scan_codes[id - WXK_NUMPAD0] = THE_SCAN_CODE(lParam);
-    } else if (id == WXK_ADD) {
-      plus_scan_code = THE_SCAN_CODE(lParam);
-    } else if (id == WXK_SUBTRACT) {
-      minus_scan_code = THE_SCAN_CODE(lParam);
-    } else if (id == WXK_MULTIPLY) {
-      times_scan_code = THE_SCAN_CODE(lParam);
-    } else if (id == WXK_DIVIDE) {
-      divide_scan_code = THE_SCAN_CODE(lParam);
-    } else if (id == WXK_DECIMAL) {
-      dot_scan_code = THE_SCAN_CODE(lParam);
+    } else {
+      /* Don't generat control-key down events: */
+      if (!isRelease && (wParam == VK_CONTROL))
+	return NULL;
+
+      if (!override_mapping && !isRelease) {
+	/* Let these get translated to WM_CHAR or skipped
+	   entirely: */
+	if ((wParam == VK_ESCAPE) 
+	    || (wParam == VK_SHIFT) 
+	    || (wParam == VK_CONTROL) 
+	    || (wParam == VK_SPACE) 
+	    || (wParam == VK_RETURN) 
+	    || (wParam == VK_TAB) 
+	    || (wParam == VK_BACK))
+	  id = -1;
+      }
     }
 
     if (isRelease && (id < 0)) {
@@ -2136,9 +2080,15 @@ wxKeyEvent *wxMakeCharEvent(WORD wParam, LPARAM lParam, Bool isASCII, Bool isRel
       for (i = 0; i < 256; i++) {
 	if (generic_ascii_code[i] == sc) {
 	  id = i;
+	  if (id < 127)
+	    id = tolower(id);
 	  break;
 	}
       }
+    }
+
+    if (id < 0) {
+      return NULL;
     }
   } 
 
@@ -2147,18 +2097,22 @@ wxKeyEvent *wxMakeCharEvent(WORD wParam, LPARAM lParam, Bool isASCII, Bool isRel
     RECT rect;
     wxKeyEvent *event;
 
+    if (just_check)
+      return (wxKeyEvent *)0x1;
+
     event = new wxKeyEvent(wxEVENT_TYPE_CHAR);
 
     if (::GetKeyState(VK_SHIFT) >> 1)
       event->shiftDown = TRUE;
     if (tempControlDown)
       event->controlDown = TRUE;
-    if ((HIWORD(lParam) & KF_ALTDOWN) == KF_ALTDOWN)
+    if (tempAltDown)
       event->metaDown = TRUE;
 
     event->keyCode = (isRelease ? WXK_RELEASE : id);
     event->keyUpCode = (isRelease ? id : WXK_PRESS);
-    event->SetTimestamp(last_msg_time); /* MATTHEW: timeStamp */
+    event->otherKeyCode = other_id;
+    event->SetTimestamp(last_msg_time);
 
     GetCursorPos(&pt);
     GetWindowRect(handle,&rect);
@@ -2173,11 +2127,23 @@ wxKeyEvent *wxMakeCharEvent(WORD wParam, LPARAM lParam, Bool isASCII, Bool isRel
     return NULL;
 }
 
+BOOL wxTranslateMessage(MSG *m)
+{
+  if ((m->message == WM_KEYDOWN) || (m->message == WM_SYSKEYDOWN)
+      || (m->message == WM_KEYUP) || (m->message == WM_SYSKEYUP))
+    if (!wxMakeCharEvent(TRUE, m->wParam, m->lParam, FALSE, 
+			 (m->message == WM_KEYUP) || (m->message == WM_SYSKEYUP), 
+			 m->hwnd))
+      return TranslateMessage(m);
+  
+  return FALSE;
+}
+
 void wxWnd::OnChar(WORD wParam, LPARAM lParam, Bool isASCII, Bool isRelease)
 {
   wxKeyEvent *event;
 
-  event = wxMakeCharEvent(wParam, lParam, isASCII, isRelease, handle);
+  event = wxMakeCharEvent(FALSE, wParam, lParam, isASCII, isRelease, handle);
 
   if (event && wx_window) {
     if (!wx_window->CallPreOnChar(wx_window->PreWindow(), event))

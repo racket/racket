@@ -63,6 +63,8 @@ class wxKeycode
   TF_Flag( metaOn );
   TF_Flag( metaOff );
 
+  TF_Flag( checkOther );
+
   TF_Flag( fullset );
 #undef TF_Flag
 
@@ -164,7 +166,7 @@ void wxKeymap::SetBreakSequenceCallback(wxBreakSequenceFunction f,
     fold(dataold);
 }
 
-wxKeycode *wxKeymap::FindKey(long code, 
+wxKeycode *wxKeymap::FindKey(long code, long other_code,
 			     Bool shift, Bool ctrl, 
 			     Bool alt, Bool meta,
 			     wxKeycode *prefix)
@@ -172,33 +174,38 @@ wxKeycode *wxKeymap::FindKey(long code,
   wxKeycode *key;
   wxKeycode *bestKey = NULL;
   int bestScore = -1;
+  int iter;
 
   if (!keys)
     return NULL;
 
-  key = (wxKeycode *)keys->Get(code);
-  while (key) {
-    if (key->code == code
-	&& ((key->shiftOn && shift)
-	    || (key->shiftOff && !shift)
-	    || (!key->shiftOn && !key->shiftOff))
-	&& ((key->ctrlOn && ctrl)
-	    || (key->ctrlOff && !ctrl)
-	    || (!key->ctrlOn && !key->ctrlOff))
-	&& ((key->altOn && alt)
-	    || (key->altOff && !alt)
-	    || (!key->altOn && !key->altOff))
-	&& ((key->metaOn && meta)
-	    || (key->metaOff && !meta)
-	    || (!key->metaOn && !key->metaOff))
-	&& key->seqprefix == prefix) {
-      int score = key->score;
-      if (score > bestScore) {
-	bestKey = key;
-	bestScore = score;
+  for (iter = 0; iter < 2; iter++) {
+    key = (wxKeycode *)keys->Get(iter ? other_code : code);
+    while (key) {
+      if (((key->code == code)
+	   || (key->checkOther
+	       && (key->code == other_code)))
+	  && ((key->shiftOn && shift)
+	      || (key->shiftOff && !shift)
+	      || (!key->shiftOn && !key->shiftOff))
+	  && ((key->ctrlOn && ctrl)
+	      || (key->ctrlOff && !ctrl)
+	      || (!key->ctrlOn && !key->ctrlOff))
+	  && ((key->altOn && alt)
+	      || (key->altOff && !alt)
+	      || (!key->altOn && !key->altOff))
+	  && ((key->metaOn && meta)
+	      || (key->metaOff && !meta)
+	      || (!key->metaOn && !key->metaOff))
+	  && key->seqprefix == prefix) {
+	int score = key->score;
+	if (score > bestScore) {
+	  bestKey = key;
+	  bestScore = score;
+	}
       }
+      key = key->next;
     }
-    key = key->next;
   }
 
   return bestKey;
@@ -288,7 +295,7 @@ static Keybind keylist[]
 		{ NULL, 0 }};
 
 wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl, 
-				 int alt, int meta,
+				 int alt, int meta, int checkOther,
 				 char *fname, wxKeycode *prev, int type)
 {
   wxKeycode *key, *newkey;
@@ -305,6 +312,7 @@ wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl,
 	&& (key->altOff == (alt < 0))
 	&& (key->metaOn == (meta > 0))
 	&& (key->metaOff == (meta < 0))
+	&& (key->checkOther == (checkOther ? 1 : 0))
 	&& key->seqprefix == prev)
       break;
     key = key->next;
@@ -342,9 +350,9 @@ wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl,
       }
 
       if (keystr)
-	sprintf(buffer, "keymap: \"%s%s\" ", modbuf, keystr);
+	sprintf(buffer, "keymap: \"%s%s%s\" ", modbuf, checkOther ? "?" : "", keystr);
       else
-	sprintf(buffer, "keymap: \"%s%c\" ", modbuf, (char)code);
+	sprintf(buffer, "keymap: \"%s%s%c\" ", modbuf, checkOther ? "?" : "", (char)code);
 
       strcat(buffer, "is already mapped as a ");
       if (!key->isprefix)
@@ -373,6 +381,7 @@ wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl,
   newkey->altOff = (alt < 0);
   newkey->metaOn = (meta > 0);
   newkey->metaOff = (meta < 0);
+  newkey->checkOther = (checkOther ? 1 : 0);
   newkey->score = ((newkey->shiftOn ? 1 : 0)
 		   + (newkey->shiftOff ? 5 : 0)
 		   + (newkey->ctrlOn ? 1 : 0)
@@ -380,7 +389,8 @@ wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl,
 		   + (newkey->altOn ? 1 : 0)
 		   + (newkey->altOff ? 5 : 0)
 		   + (newkey->metaOn ? 1 : 0)
-		   + (newkey->metaOn ? 5 : 0));
+		   + (newkey->metaOn ? 5 : 0)
+		   + (newkey->checkOther ? 0 : 20));
   newkey->fullset = 0;
   newkey->fname = copystring(fname);
   newkey->next = NULL;
@@ -420,12 +430,15 @@ static long GetCode(unsigned char *keyseq, int *_kp, int *fullset)
   for (i = 1; keyseq[kp] && (keyseq[kp] != ';'); i++, kp++) {
     if (i >= MAX_BUF - 1)
       return 0;
-    buffer[i] = tolower(keyseq[kp]);
+    buffer[i] = keyseq[kp];
+    if (buffer[i] < 128)
+      buffer[i] = tolower(buffer[i]);
   }
   buffer[i] = 0;
   code = 0;
   if (buffer[1]) {
-    buffer[0] = tolower(buffer[0]);
+    if (buffer[0] < 128)
+      buffer[0] = tolower(buffer[0]);
     for (i = 0; keylist[i].str; i++) {
       if (!strcmp((char *)buffer, keylist[i].str)) {
 	code = keylist[i].code;
@@ -449,7 +462,7 @@ void wxKeymap::MapFunction(char *keys, char *fname)
   char *keyseq = keys;
   int num_keys, num_new_keys, kp, start_keys;
   wxKeycode **key, **new_key;
-  int shift, ctrl, alt, meta, mod;
+  int shift, ctrl, alt, meta, mod, checkOther;
   int part = 1, i, j;
   long code;
   int fullset;
@@ -466,6 +479,7 @@ void wxKeymap::MapFunction(char *keys, char *fname)
     shift = ctrl = alt = meta = 0;
     code = 0;
     fullset = 0;
+    checkOther = 0;
 
     while (keyseq[kp] && (keyseq[kp] != ';')) {
       mod = 1;
@@ -484,7 +498,11 @@ void wxKeymap::MapFunction(char *keys, char *fname)
 	kp++;
       } else if (keyseq[kp + 1] == ':') {
       do_mod:
-	switch (tolower(keyseq[kp])) {
+	unsigned char mch;
+	mch = keyseq[kp];
+	if (mch < 128)
+	  mch = tolower(mch);
+	switch (mch) {
 	case 's':
 	  shift = mod;
 	  break;
@@ -510,6 +528,14 @@ void wxKeymap::MapFunction(char *keys, char *fname)
 	case 'a':
 	  alt = mod;
 	  break;
+	case '?':
+	  if (mod == 1) {
+	    checkOther = 1;
+	  } else {
+	    errstr = "cannot negate ? modifier";
+	    goto key_error;
+	  }
+	  break;
 	default:
 	  errstr = "bad modifier";
 	  goto key_error;
@@ -527,10 +553,16 @@ void wxKeymap::MapFunction(char *keys, char *fname)
     }
 
     if (code) {
-      if ((code > 0) && (code < 256) && isalpha(code)) {
-	if (shift > 0)
-	  code = toupper(code);
-	else if (isupper(code))
+      if ((code > 0) && (code < 127) && isalpha(code)) {
+	if (shift > 0) {
+#ifdef wx_mac
+	  if (!meta)
+#endif
+#ifdef wx_msw
+	    if (!ctrl || meta)
+#endif
+	      code = toupper(code);
+	} else if (isupper(code))
 	  shift = TRUE;
       } 
 
@@ -539,7 +571,7 @@ void wxKeymap::MapFunction(char *keys, char *fname)
 
       for (i = 0, j = 0; i < num_keys; i++) {
 	wxKeycode *mf;
-	mf = MapFunction(code, shift, ctrl, alt, meta, fname, key[i], 
+	mf = MapFunction(code, shift, ctrl, alt, meta, checkOther, fname, key[i], 
 			 keyseq[kp] ? wxKEY_PREFIX : wxKEY_FINAL);
 	mf->fullset = fullset;
 	new_key[j++] = mf;
@@ -570,13 +602,13 @@ void wxKeymap::MapFunction(char *keys, char *fname)
   wxsKeymapError(buffer);
 }
 
-int wxKeymap::HandleEvent(long code, Bool shift, Bool ctrl, 
+int wxKeymap::HandleEvent(long code, long other_code, Bool shift, Bool ctrl, 
 			  Bool alt, Bool meta, int score,
 			  char **fname, int *fullset)
 {
   wxKeycode *key;
 
-  key = FindKey(code, shift, ctrl, alt, meta, prefix);
+  key = FindKey(code, other_code, shift, ctrl, alt, meta, prefix);
   
   prefix = NULL;
 
@@ -595,13 +627,13 @@ int wxKeymap::HandleEvent(long code, Bool shift, Bool ctrl,
   return 0;
 }
 
-int wxKeymap::GetBestScore(long code, Bool shift, Bool ctrl, 
+int wxKeymap::GetBestScore(long code, long other_code, Bool shift, Bool ctrl, 
 			   Bool alt, Bool meta)
 {
   wxKeycode *key;
   int s, i;
 
-  key = FindKey(code, shift, ctrl, alt, meta, prefix);
+  key = FindKey(code, other_code, shift, ctrl, alt, meta, prefix);
 
   if (key)
     s = key->score;
@@ -610,7 +642,7 @@ int wxKeymap::GetBestScore(long code, Bool shift, Bool ctrl,
 
   for (i = 0; i < chainCount; i++) {
     int r;
-    r = chainTo[i]->GetBestScore(code, shift, ctrl, alt, meta);
+    r = chainTo[i]->GetBestScore(code, other_code, shift, ctrl, alt, meta);
     if (r > s)
       s = r;
   }
@@ -648,6 +680,7 @@ Bool wxKeymap::HandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event)
 int wxKeymap::GetBestScore(wxKeyEvent *event)
 {
   return GetBestScore(event->keyCode,
+		      event->otherKeyCode,
 		      event->shiftDown,
 		      event->controlDown,
 		      event->altDown,
@@ -703,6 +736,7 @@ int wxKeymap::ChainHandleKeyEvent(UNKNOWN_OBJ media, wxKeyEvent *event,
     return OtherHandleKeyEvent(media, event, grab, grabData, -1, score);
 
   if (HandleEvent(event->keyCode,
+		  event->otherKeyCode,
 		  event->shiftDown,
 		  event->controlDown,
 		  event->altDown,
@@ -794,7 +828,8 @@ int wxKeymap::GetBestScore(wxMouseEvent *event)
     }
   }
   
-  return GetBestScore(code,
+  return GetBestScore(code, 
+		      -1,
 		      event->shiftDown,
 		      event->controlDown,
 		      event->altDown,
@@ -895,6 +930,7 @@ int wxKeymap::ChainHandleMouseEvent(UNKNOWN_OBJ media, wxMouseEvent *event,
 
   do {
     if (HandleEvent(code,
+		    -1,
 		    event->shiftDown,
 		    event->controlDown,
 		    event->altDown,

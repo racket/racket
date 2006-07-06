@@ -702,3 +702,23 @@ wxWindow *wxLocationToWindow(int x, int y)
  
  return result;
 }
+
+int wxLocaleStringToChar(char *str, int slen)
+{
+  Scheme_Object *s;
+  s = scheme_make_locale_string(str);
+  if (SCHEME_CHAR_STRLEN_VAL(s))
+    return SCHEME_CHAR_STR_VAL(s)[0];
+  else
+    return 0;
+}
+
+int wxUTF8StringToChar(char *str, int slen)
+{
+  mzchar s[1];
+  s[0] = 0;
+  scheme_utf8_decode((unsigned char *)str, 0, slen,
+		     s, 0, 1,
+		     NULL, 0, '?');
+  return (int)s[0];
+}

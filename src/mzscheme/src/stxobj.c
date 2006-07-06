@@ -803,10 +803,10 @@ static int maybe_add_chain_cache(Scheme_Stx *stx)
       /* ok to skip, but don't count toward needing a cache */
     } else if (SCHEME_HASHTP(p)) {
       /* Hack: we store the depth of the table in the chain
-	 in the `step' fields, at least until the table is initialized: */
+	 in the `size' fields, at least until the table is initialized: */
       Scheme_Hash_Table *ht2 = (Scheme_Hash_Table *)p;
       if (!ht2->count)
-	pos = ht2->step;
+	pos = ht2->size;
       else {
 	p = scheme_hash_get(ht2, scheme_make_integer(2));
 	pos = SCHEME_INT_VAL(p);
@@ -825,7 +825,7 @@ static int maybe_add_chain_cache(Scheme_Stx *stx)
 
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
 
-    ht->step = pos;
+    ht->size = pos;
 
     p = scheme_make_pair((Scheme_Object *)ht, stx->wraps);
     stx->wraps = p;
@@ -878,8 +878,8 @@ static void fill_chain_cache(Scheme_Object *wraps)
 
     scheme_hash_set(ht, scheme_make_integer(5), NULL);
   } else {
-    pos = ht->step;
-    ht->step = 0;
+    pos = ht->size;
+    ht->size = 0;
 
     wraps = SCHEME_CDR(wraps);
 
@@ -913,11 +913,11 @@ static void fill_chain_cache(Scheme_Object *wraps)
       /* ok to skip */
     } else if (SCHEME_HASHTP(p)) {
       /* Hack: we store the depth of the table in the chain
-	 in the `step' fields, at least until the table is initialized: */
+	 in the `size' fields, at least until the table is initialized: */
       Scheme_Hash_Table *ht2 = (Scheme_Hash_Table *)p;
       int pos2;
       if (!ht2->count)
-	pos2 = ht2->step;
+	pos2 = ht2->size;
       else {
 	p = scheme_hash_get(ht2, scheme_make_integer(2));
 	pos2 = SCHEME_INT_VAL(p);
