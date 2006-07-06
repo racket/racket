@@ -193,7 +193,7 @@ it around flattened out.
                   #f]))
              
              (define (struct/c ctc-x ...)
-               (let ([ctc-x (coerce-contract struct/c ctc-x)] ...)
+               (let ([ctc-x (coerce-contract 'struct/c ctc-x)] ...)
                  (contract-maker ctc-x ...)))
              
              (define (selectors x) (burrow-in x 'selectors selector-indicies)) ...
@@ -233,6 +233,7 @@ it around flattened out.
                                  (list (cons pos-proj-prop lazy-contract-pos-proj)
                                        (cons neg-proj-prop lazy-contract-neg-proj)
                                        (cons name-prop lazy-contract-name)
+                                       (cons first-order-prop (λ (ctc) predicate))
                                        (cons stronger-prop stronger-lazy-contract?)))))))]))
   
   (define-struct contract/info (contract pos neg src-info orig-str))

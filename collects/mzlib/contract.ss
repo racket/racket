@@ -9,5 +9,7 @@
    (all-from "private/contract-ds.ss")
    (all-from "private/contract-arrow.ss")
    (all-from-except "private/contract-guts.ss"
-                    build-compound-type-name)
+                    build-compound-type-name
+                    first-order-prop
+                    first-order-get)
    (all-from "private/contract.ss")))

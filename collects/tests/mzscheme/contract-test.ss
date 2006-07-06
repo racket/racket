@@ -128,6 +128,9 @@
   (test/no-error '(listof any/c))
   (test/no-error '(listof (lambda (x) #t)))
   
+  (test/spec-passed/result 'any/c '(contract any/c 1 'pos 'neg) 1)
+  (test/pos-blame 'none/c '(contract none/c 1 'pos 'neg))
+  
   (test/spec-passed
    'contract-arrow-star0a
    '(contract (->* (integer?) (integer?))
@@ -1135,6 +1138,34 @@
      1))
   
   (test/pos-blame
+   'contract-case->0a
+   '(contract (case->)
+              (lambda (x) x)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'contract-case->0b
+   '(contract (case->)
+              (lambda () 1)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'contract-case->0c
+   '(contract (case->)
+              1
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'contract-case->0d
+   '(contract (case->)
+              (case-lambda)
+              'pos
+              'neg))
+  
+  (test/pos-blame
    'contract-case->1
    '(contract (case-> (integer? integer? . -> . integer?) (integer? . -> . integer?))
               (lambda (x) x)
@@ -1335,6 +1366,47 @@
      #f)
    #f)
 
+  (test/spec-passed/result
+   'or/c9
+   '((contract (or/c (-> string?) (-> integer? integer?))
+               (λ () "x")
+               'pos
+               'neg))
+   "x")
+  
+  (test/spec-passed/result
+   'or/c10
+   '((contract (or/c (-> string?) (-> integer? integer?))
+               (λ (x) x)
+               'pos
+               'neg) 
+     1)
+   1)
+  
+  (test/pos-blame
+   'or/c11
+   '(contract (or/c (-> string?) (-> integer? integer?))
+              1
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'or/c12
+   '((contract (or/c (-> string?) (-> integer? integer?))
+               1
+               'pos
+               'neg)
+     'x))
+  
+  (test 1 'or/c-not-error-early 
+        (begin (or/c (-> integer? integer?) (-> boolean? boolean?))
+               1))
+  (error-test #'(contract (or/c (-> integer? integer?) (-> boolean? boolean?))
+                          (λ (x) x)
+                          'pos
+                          'neg)
+              exn:fail?)
+  
   (test
    '(1 2)
    'or/c-ordering
@@ -1363,6 +1435,20 @@
                'anything
                'pos
                'neg)
+     x))
+  
+  (test
+   (reverse '(1 3 4 2))
+   'ho-and/c-ordering
+   (let ([x '()])
+     ((contract (and/c (-> (lambda (y) (set! x (cons 1 x)) #t)
+                           (lambda (y) (set! x (cons 2 x)) #t))
+                       (-> (lambda (y) (set! x (cons 3 x)) #t)
+                           (lambda (y) (set! x (cons 4 x)) #t)))
+                (λ (x) x)
+                'pos
+                'neg)
+      1)
      x))
   
   (test/spec-passed
@@ -3964,6 +4050,7 @@
                       (-> integer? integer? integer?))
              (case-> (->r ((x number?) (y boolean?) (z pair?)) number?)
                      (-> integer? integer? integer?)))
+  (test-name '(case->) (case->))
   
   (test-name '(case-> (-> integer? integer?) (-> integer? integer? integer?))
              (case-> (-> integer? integer?) (-> integer? integer? integer?)))
@@ -4151,6 +4238,28 @@
   (test #f contract-stronger? (symbols 'z 'x 'y) (symbols 'x 'y))
   (test #t contract-stronger? (one-of/c (expt 2 100)) (one-of/c (expt 2 100) 12))
   
+  (test #t contract-stronger?
+        (or/c (-> (>=/c 3) (>=/c 3)) (-> string?))
+        (or/c (-> (>=/c 4) (>=/c 3)) (-> string?)))
+  (test #f contract-stronger?
+        (or/c (-> string?) (-> integer? integer?))
+        (or/c (-> string?) (-> any/c integer?)))
+  (test #f contract-stronger?
+        (or/c (-> string?) (-> any/c integer?))
+        (or/c (-> string?) (-> integer? integer?)))
+  (test #t contract-stronger?
+        (or/c (-> string?) (-> integer? integer?) integer? boolean?)
+        (or/c (-> string?) (-> integer? integer?) integer? boolean?))
+  (test #f contract-stronger?
+        (or/c (-> string?) (-> integer? integer?) integer? char?)
+        (or/c (-> string?) (-> integer? integer?) integer? boolean?))
+  (test #f contract-stronger?
+        (or/c (-> string?) (-> integer? integer?) integer?)
+        (or/c (-> string?) (-> integer? integer?) integer? boolean?))
+  (test #f contract-stronger?
+        (or/c (-> string?) (-> integer? integer?) integer?)
+        (or/c (-> integer? integer?) integer?))
+  
   (let ()
     (define-contract-struct couple (hd tl))
     (define (non-zero? x) (not (zero? x)))
@@ -4193,6 +4302,186 @@
     (test #f contract-stronger? (short-sorted-list/less-than 5) (short-sorted-list/less-than 4))
     (test #t contract-stronger? (sorted-list/less-than 4) (sorted-list/less-than 5))
     (test #f contract-stronger? (sorted-list/less-than 5) (sorted-list/less-than 4)))
+  
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  first-order tests
+  ;;
+  
+  (test #t contract-first-order-passes? (flat-contract integer?) 1)
+  (test #f contract-first-order-passes? (flat-contract integer?) 'x)
+  (test #t contract-first-order-passes? (flat-contract boolean?) #t)
+  (test #f contract-first-order-passes? (flat-contract boolean?) 'x)
+  (test #t contract-first-order-passes? any/c 1)
+  (test #t contract-first-order-passes? any/c #t)
+  (test #t contract-first-order-passes? (-> integer? integer?) (λ (x) #t))
+  (test #f contract-first-order-passes? (-> integer? integer?) (λ (x y) #t))
+  (test #f contract-first-order-passes? (-> integer? integer?) 'x)
+  (test #t contract-first-order-passes? (-> integer? boolean? integer?) (λ (x y) #t))
+  (test #f contract-first-order-passes? (-> integer? boolean? integer?) (λ (x) #t))
+  (test #f contract-first-order-passes? (-> integer? boolean? integer?) (λ (x y z) #t))
+  
+  (test #t contract-first-order-passes? (->* (integer?) boolean? (char? any/c)) (λ (x . y) #f))
+  (test #f contract-first-order-passes? (->* (integer?) boolean? (char? any/c)) (λ (x y . z) #f))
+  (test #f contract-first-order-passes? (->* (integer?) boolean? (char? any/c)) (λ (x) #f))
+  (test #t contract-first-order-passes? (->* (integer?) boolean? (char? any/c)) (λ x #f))
+  
+  (test #t contract-first-order-passes? (->d integer? boolean? (lambda (x y) char?)) (λ (x y) x))
+  (test #f contract-first-order-passes? (->d integer? boolean? (lambda (x y) char?)) (λ (x) x))
+  (test #f contract-first-order-passes? (->d integer? boolean? (lambda (x y) char?)) (λ (x y z) x))
+
+  (test #t contract-first-order-passes? (list-immutableof integer?) (list-immutable 1))
+  (test #f contract-first-order-passes? (list-immutableof integer?) (list 1))
+  (test #f contract-first-order-passes? (list-immutableof integer?) #f)
+
+  (test #t contract-first-order-passes? (vector-immutableof integer?) (vector->immutable-vector (vector 1)))
+  (test #f contract-first-order-passes? (vector-immutableof integer?) 'x)
+  (test #f contract-first-order-passes? (vector-immutableof integer?) '())
+  
+  (test #t contract-first-order-passes? (promise/c integer?) (delay 1))
+  (test #f contract-first-order-passes? (promise/c integer?) 1)
+  
+  (test #t contract-first-order-passes? (->d* (integer? boolean?) (lambda (x y) char?)) (λ (x y) #t))
+  (test #f contract-first-order-passes? (->d* (integer? boolean?) (lambda (x y) char?)) (λ (x) #t))
+  (test #f contract-first-order-passes? (->d* (integer? boolean?) (lambda (x y) char?)) (λ (x y z) #t))
+
+  (test #t contract-first-order-passes? 
+        (->d* (integer? boolean?) any/c (lambda (x y . z) char?))
+        (λ (x y . z) z))
+  (test #t contract-first-order-passes? 
+        (->d* (integer? boolean?) any/c (lambda (x y . z) char?))
+        (λ (y . z) z))
+  (test #t contract-first-order-passes? 
+        (->d* (integer? boolean?) any/c (lambda (x y . z) char?))
+        (λ z z))
+  (test #f contract-first-order-passes? 
+        (->d* (integer? boolean?) any/c (lambda (x y . z) char?))
+        (λ (x y z . w) 1))
+  (test #f contract-first-order-passes? 
+        (->d* (integer? boolean?) any/c (lambda (x y . z) char?))
+        (λ (x y) 1))
+  
+  (test #t contract-first-order-passes? (->r ((x number?)) number?) (λ (x) 1))
+  (test #f contract-first-order-passes? (->r ((x number?)) number?) (λ (x y) 1))
+  (test #f contract-first-order-passes? (->r ((x number?)) number?) (λ () 1))
+  (test #t contract-first-order-passes? (->r ((x number?)) number?) (λ args 1))
+  
+  (test #t contract-first-order-passes? (->pp ((x number?)) #t number? blech #t) (λ (x) 1))
+  (test #f contract-first-order-passes? (->pp ((x number?)) #t number? blech #t) (λ () 1))
+  (test #t contract-first-order-passes? (->pp ((x number?)) #t number? blech #t) (λ (x . y) 1))
+  
+  (test #f contract-first-order-passes? 
+        (case-> (-> integer? integer?)
+                (-> integer? integer? integer?))
+        (λ () 1))
+  (test #f contract-first-order-passes? 
+        (case-> (-> integer? integer?)
+                (-> integer? integer? integer?))
+        (λ (x) 1))
+  (test #f contract-first-order-passes? 
+        (case-> (-> integer? integer?)
+                (-> integer? integer? integer?))
+        (λ (x y) 1))
+  (test #f contract-first-order-passes? 
+        (case->)
+        1)
+  
+  (test #t contract-first-order-passes? 
+        (case->)
+        (case-lambda))
+  
+  (test #t contract-first-order-passes? 
+        (case-> (-> integer? integer?)
+                (-> integer? integer? integer?))
+        (case-lambda [(x) x] [(x y) x]))
+  (test #t contract-first-order-passes? 
+        (case-> (-> integer? integer?)
+                (-> integer? integer? integer?))
+        (case-lambda [() 1] [(x) x] [(x y) x]))
+  (test #t contract-first-order-passes? 
+        (case-> (-> integer? integer?)
+                (-> integer? integer? integer?))
+        (case-lambda [() 1] [(x) x] [(x y) x] [(x y z) x]))
+  
+  (test #t contract-first-order-passes? (and/c (-> positive? positive?) (-> integer? integer?)) (λ (x) x))
+  (test #t contract-first-order-passes? (and/c (-> positive? positive?) (-> integer? integer?)) values)
+  (test #f contract-first-order-passes? (and/c (-> integer?) (-> integer? integer?)) (λ (x) x))
+  
+  (test #t contract-first-order-passes? 
+        (cons-immutable/c boolean? (-> integer? integer?))
+        (list*-immutable #t (λ (x) x)))
+  (test #t contract-first-order-passes? 
+        (cons-immutable/c boolean? (-> integer? integer?))
+        (list*-immutable 1 2))
+  
+  (test #f contract-first-order-passes? (flat-rec-contract the-name) 1)
+
+  (test #t contract-first-order-passes? 
+        (object-contract (m (-> integer? integer?)))
+        (new object%))
+  (test #t contract-first-order-passes? 
+        (object-contract (m (-> integer? integer?)))
+        1)
+
+  (let ()
+    (define-contract-struct couple (hd tl))
+    (test #t contract-first-order-passes?
+          (couple/c any/c any/c) 
+          (make-couple 1 2))
+    
+    (test #f contract-first-order-passes?
+          (couple/c any/c any/c) 
+          2)
+    
+    (test #t contract-first-order-passes?
+          (couple/dc [hd any/c] [tl any/c]) 
+          (make-couple 1 2))
+    
+    (test #f contract-first-order-passes?
+          (couple/dc [hd any/c] [tl any/c]) 
+          1)
+    
+    (test #t contract-first-order-passes?
+          (couple/dc [hd any/c] [tl (hd) any/c]) 
+          (make-couple 1 2))
+    
+    (test #f contract-first-order-passes?
+          (couple/dc [hd any/c] [tl (hd) any/c]) 
+          1))
+
+  (test #t contract-first-order-passes? (or/c (-> (>=/c 5) (>=/c 5)) boolean?) #t)
+  (test #t contract-first-order-passes? (or/c (-> (>=/c 5) (>=/c 5)) boolean?) (λ (x) x))
+  (test #f contract-first-order-passes? (or/c (-> (>=/c 5) (>=/c 5)) boolean?) 'x)
+
+  (test #t contract-first-order-passes? 
+        (or/c (-> integer? integer? integer?)
+              (-> integer? integer?))
+        (λ (x) x))
+  (test #t contract-first-order-passes? 
+        (or/c (-> integer? integer? integer?)
+              (-> integer? integer?))
+        (λ (x y) x))
+  (test #f contract-first-order-passes? 
+        (or/c (-> integer? integer? integer?)
+              (-> integer? integer?))
+        (λ () x))
+  (test #f contract-first-order-passes? 
+        (or/c (-> integer? integer? integer?)
+              (-> integer? integer?))
+        1)
+  
+  (test-name '(or/c) (or/c))
+  (test-name '(or/c integer? gt0?) (or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
+  (test-name '(or/c integer? boolean?)
+             (or/c (flat-contract integer?)
+                   (flat-contract boolean?)))
+  (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+             (or/c (-> (>=/c 5) (>=/c 5)) boolean?))
+  (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+             (or/c boolean? (-> (>=/c 5) (>=/c 5))))
+  
+  
   
 ))
 (report-errs)

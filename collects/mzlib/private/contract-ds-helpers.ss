@@ -67,7 +67,7 @@ which are then called when the contract's fields are explored
                                                   (syntax (x ...))
                                                   field-names)
                                      #,(defeat-inlining
-                                         #`(#,coerce-contract #,name ctc-exp)))])
+                                         #`(#,coerce-contract '#,name ctc-exp)))])
                   (loop (cdr clauses)
                         (cdr ac-ids)
                         (cons (car ac-ids) prior-ac-ids)
@@ -84,7 +84,7 @@ which are then called when the contract's fields are explored
                 (loop (cdr clauses)
                       (cdr ac-ids)
                       (cons (car ac-ids) prior-ac-ids)
-                      (cons #`(#,coerce-contract #,name ctc-exp) maker-args))]
+                      (cons #`(#,coerce-contract '#,name ctc-exp) maker-args))]
                [(id ctc-exp)
                 (raise-syntax-error name "expected identifier" stx (syntax id))]))]))))
   
