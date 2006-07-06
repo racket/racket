@@ -1,4 +1,6 @@
 Version 350.3
+Changed syntax/loc to not adjust location information for a
+ template that contains only a pattern variable
 Changed hash-table-get to accept a non-prcedure third argument as
  a default value (instead of requiring a thunk)
 Improved 3m performance
