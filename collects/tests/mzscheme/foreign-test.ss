@@ -6,6 +6,8 @@
 (require (lib "foreign.ss"))
 (unsafe!)
 
+(require (lib "etc.ss"))
+
 (let ([big/little
        (if (system-big-endian?) (lambda (x y) x) (lambda (x y) y))]
       [p (malloc _int32)])
@@ -20,9 +22,9 @@
   (test (big/little 4 1) ptr-ref p _int8 3))
 
 (require (lib "compile.ss" "dynext") (lib "link.ss" "dynext"))
-(let ([c  "foreign-test.c"]
-      [o  "foreign-test.o"]
-      [so "foreign-test.so"])
+(let ([c  (build-path (this-expression-source-directory) "foreign-test.c")]
+      [o  (build-path (current-directory) "foreign-test.o")]
+      [so (build-path (current-directory) "foreign-test.so")])
   (when (file-exists? o) (delete-file o))
   (when (file-exists? so) (delete-file so))
   (compile-extension #t c o '())
