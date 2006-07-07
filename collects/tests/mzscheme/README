@@ -21,6 +21,7 @@ Test compilation and writing/reading compiled code with:
 
 Run the standard tests with no output except for the results with:
  > (load "PATHTOHERE/quiet.ss")
+(Also get an error code -- use with scripts.)
 
 Run 3 copies of the test suite concurrently in separate threads:
  > (load "PATHTOHERE/parallel.ss")
