@@ -314,7 +314,7 @@ long wxTextFontInfo(int font, int size, int face, FontInfo *finfo, char *str,
     
     if (str) {
       if (len < 0)
-	strlen(str XFORM_OK_PLUS d);
+	len = strlen(str XFORM_OK_PLUS d);
       
       result = TextWidth(str XFORM_OK_PLUS d, 0, len);
     }
@@ -872,7 +872,6 @@ int wxDisplayDepth(void)
 void wxDisplaySize(int *width, int *height, int flags)
 {
   BitMap screenBits;
-  int mbh;
 
   if (!flags) {
     Rect r;

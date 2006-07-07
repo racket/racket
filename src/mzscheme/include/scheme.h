@@ -77,6 +77,16 @@
 # define FUEL_AUTODECEREMENTS
 #endif
 
+#ifdef SIZEOF_LONG
+# if SIZEOF_LONG == 8
+#  define SIXTY_FOUR_BIT_INTEGERS
+#  ifdef USE_LONG_LONG_FOR_BIGDIG
+     Don ot specify USE_LONG_LONG_FOR_BIGDIG on a platform with
+     64-bit integers
+#  endif
+# endif
+#endif
+
 #ifdef MZ_PRECISE_GC
 # define MZ_HASH_KEY_EX  short keyex;
 # define MZ_OPT_HASH_KEY_EX /**/
@@ -1475,6 +1485,7 @@ void *scheme_malloc(size_t size);
 # ifdef USE_TAGGED_ALLOCATION
 extern void *scheme_malloc_tagged(size_t);
 #  define scheme_malloc_array_tagged scheme_malloc
+#  define scheme_malloc_small_tagged scheme_malloc
 extern void *scheme_malloc_atomic_tagged(size_t);
 extern void *scheme_malloc_stubborn_tagged(size_t);
 extern void *scheme_malloc_eternal_tagged(size_t);

@@ -20,13 +20,16 @@
 /* The size of a `long long', as computed by sizeof. */
 #undef SIZEOF_LONG_LONG
 
-/* Direction of stack growth: 1 = up, -1 = down, 0 = unknown */
+/* Endianness. */
+#undef SCHEME_BIG_ENDIAN
+
+/* Direction of stack growth: 1 = up, -1 = down, 0 = unknown. */
 #undef STACK_DIRECTION
 
-/* whether nl_langinfo works */
+/* Whether nl_langinfo works. */
 #undef HAVE_CODESET
 
-/* whether getaddrinfo works */
+/* Whether getaddrinfo works. */
 #undef HAVE_GETADDRINFO
 
 

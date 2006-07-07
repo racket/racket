@@ -46,7 +46,9 @@
 
 static void COLLECT(OFFSET_ARG)
 {
+#ifndef SIXTY_FOUR_BIT_INTEGERS
   SectorPage **local_sector_pagetables;
+#endif
   unsigned local_low_plausible;
   unsigned local_high_plausible;
   int local_collect_stack_size;
@@ -55,7 +57,9 @@ static void COLLECT(OFFSET_ARG)
   long local_mem_use;
 
   /* Download globals into locals so they can be put in registers: */
+#ifndef SIXTY_FOUR_BIT_INTEGERS
   local_sector_pagetables = sector_pagetables;
+#endif
   local_low_plausible = low_plausible;
   local_high_plausible = high_plausible;
   local_collect_stack_size = collect_stack_size;
@@ -130,7 +134,17 @@ static void COLLECT(OFFSET_ARG)
       MARK_STATISTIC(num_interior_checks_stat++);
 #endif
       if (p >= local_low_plausible && p < local_high_plausible && ALIGNED(p)) {
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+        SectorPage *pagetable;
+        DECL_SECTOR_PAGETABLES;
+        FIND_SECTOR_PAGETABLES(p);
+        if (sector_pagetables)
+          pagetable = sector_pagetables[SECTOR_LOOKUP_PAGETABLE(p)];
+        else
+          pagetable = NULL;
+#else
 	SectorPage *pagetable = local_sector_pagetables[SECTOR_LOOKUP_PAGETABLE(p)];
+#endif
 
 	MARK_STATISTIC(num_plausibles_stat++);
 

@@ -1135,12 +1135,14 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   int path_length_limit = 1000;
   GC_for_each_found_proc for_each_found = NULL;
 #else
-# define flags 0
-# define trace_for_tag 0
-# define path_length_limit 1000
-# define for_each_found NULL
-# define GC_get_xtagged_name NULL
-# define print_tagged_value NULL
+# ifndef USE_TAGGED_ALLOCATION
+#  define flags 0
+#  define trace_for_tag 0
+#  define path_length_limit 1000
+#  define for_each_found NULL
+#  define GC_get_xtagged_name NULL
+#  define print_tagged_value NULL
+# endif
 #endif
 
   scheme_start_atomic();

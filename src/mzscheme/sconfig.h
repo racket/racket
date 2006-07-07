@@ -82,10 +82,6 @@
 
 # include "uconfig.h"
 
-# ifndef i386
-#  define SCHEME_BIG_ENDIAN
-# endif
-
 # define USE_EXPLICT_FP_FORM_CHECK
 # define POW_HANDLES_INF_CORRECTLY
 
@@ -136,7 +132,6 @@
 # include "uconfig.h"
 # undef USE_FCHDIR
 
-# define SCHEME_BIG_ENDIAN
 # define UNIX_LIMIT_STACK 33554944
 
 # define SELECT_INCLUDE
@@ -186,11 +181,6 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-linux"
 # endif
 
-# include <endian.h>
-# if __BYTE_ORDER == __BIG_ENDIAN
-#  define SCHEME_BIG_ENDIAN
-# endif
-
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
 # ifndef __ELF__
@@ -200,14 +190,6 @@
 # define DIRENT_NO_NAMLEN
 
 # define HAS_LINUX_IOB
-
-# if defined(__alpha) || defined(__x86_64__)
-#  define SIXTY_FOUR_BIT_INTEGERS
-# endif
-
-# if defined(__hppa__)
-#  define SIXTY_FOUR_BIT_INTEGERS
-# endif
 
 # define USE_IEEE_FP_PREDS
 # define USE_EXPLICT_FP_FORM_CHECK
@@ -260,7 +242,6 @@
 # define USE_TM_GMTOFF_FIELD
 
 #if defined(__alpha__)
-# define SIXTY_FOUR_BIT_INTEGERS
 # define USE_DIVIDE_MAKE_INFINITY
 #endif
 
@@ -355,8 +336,6 @@
 
 # include "uconfig.h"
 
-# define SCHEME_BIG_ENDIAN
-
 # define DIRENT_NO_NAMLEN
 
 # define BSTRING_INCLUDE
@@ -389,8 +368,6 @@
 
 # define DIRENT_NO_NAMLEN
 
-# define SCHEME_BIG_ENDIAN
-
 # define NO_USLEEP
 # define USE_FCNTL_O_NONBLOCK
 
@@ -405,8 +382,6 @@
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-osf1"
 
 # include "uconfig.h"
-
-# define SIXTY_FOUR_BIT_INTEGERS
 
 # define ALPHA_CONTROL_FP
 # define USE_OSF_FP_PREDS
@@ -424,8 +399,6 @@
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "parisc-hpux"
 
 # include "uconfig.h"
-
-# define SCHEME_BIG_ENDIAN
 
 # define SOME_FDS_ARE_NOT_SELECTABLE
 # define USE_FCNTL_O_NONBLOCK
@@ -649,9 +622,6 @@
 # define SYSTEM_TYPE_NAME "macosx"
 #endif
 
-#ifdef __POWERPC__
-# define SCHEME_BIG_ENDIAN
-#endif
 # define USE_MAP_ANON
 
 # define USE_CARBON_FP_PREDS
@@ -746,8 +716,6 @@
 #  define LINK_EXTENSIONS_BY_TABLE
 # endif
 
-# define SCHEME_BIG_ENDIAN
-
 # define DO_STACK_CHECK
 # define MACOS_FIND_STACK_BOUNDS
 # define STACK_SAFETY_MARGIN 10000
@@ -836,8 +804,6 @@
 # define NO_STAT_PROC
 # define NO_USER_BREAK_HANDLER
 # define NO_USLEEP
-
-# define SCHEME_BIG_ENDIAN
 
 # define DO_STACK_CHECK
 # define PALM_FIND_STACK_BOUNDS
@@ -1207,8 +1173,6 @@
  /* Byte Order and long long */
 /****************************/
 
- /* SCHEME_BIG_ENDIAN indicates that the process is big-endian */
-
  /* INT64_AS_LONG_LONG indicates that long long is not supported, but
     _int64 is */
 
@@ -1345,10 +1309,8 @@
     be work best one way for Sparc machines, and better the other
     way for x86 machines. */
 
- /* SIXTY_FOUR_BIT_INTEGERS indicates that 'long's are 64-bits wide. */
-
  /* USE_LONG_LONG_FOR_BIGDIG indicates that `long long' is available
-    and 64 bits wide (don't mix with SIXTY_FOUR_BIT_INTEGERS). */
+    and 64 bits wide. (Don't use when `long' is 64 bits wide). */
 
  /* MACOS_UNICODE_SUPPORT and WINDOWS_UNICODE_SUPPORT indicate that
     platform-native functions should be used for string comparisons

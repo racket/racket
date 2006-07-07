@@ -81,7 +81,7 @@ fi
 
 OS=`$UNAME -s`
 
-###### Get data sizes #######
+###### Get data sizes and direction #######
 
 AC_CHECK_SIZEOF(char)
 AC_CHECK_SIZEOF(short)
@@ -105,7 +105,7 @@ AC_TRY_RUN(
    }, stack_direction=up, stack_direction=down, stack_direction=unknown)
 AC_MSG_RESULT($stack_direction) 
 
-if test "${stack_direction}" = "uknown" ; then
+if test "${stack_direction}" = "unknown" ; then
   echo configure: cannot determine stack direction
   exit 1
 fi
@@ -115,6 +115,16 @@ if test "${stack_direction}" = "up" ; then
 fi
 if test "${stack_direction}" = "down" ; then
   AC_DEFINE(STACK_DIRECTION,-1,[Stack direction down])
+fi
+
+AC_C_BIGENDIAN(endianness=big, endianness=little, endiannes=unknown)
+if test "${endianness}" = "unknown" ; then
+  echo configure: cannot determine endianness
+  exit 1
+fi
+
+if test "${endianness}" = "big" ; then
+  AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
 fi
 
 ###### Some flags imply other flags #######

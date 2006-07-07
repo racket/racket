@@ -31,7 +31,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "../sconfig.h"
+#include "mzconfig.h"
 #include "sgc.h"
+
+#ifdef SIZEOF_LONG
+# if SIZEOF_LONG == 8
+#  define SIXTY_FOUR_BIT_INTEGERS
+# endif
+#endif
 
 /****************************************************************************/
 /* Option bundles                                                           */
@@ -323,8 +330,7 @@
 #define SECTOR_LOOKUP_PAGETABLE(x) (LOW_32_BITS(x) >> SECTOR_LOOKUP_SHIFT)
 #define SECTOR_LOOKUP_PAGEPOS(x) ((LOW_32_BITS(x) >> LOG_SECTOR_SEGMENT_SIZE) & SECTOR_LOOKUP_PAGEMASK)
 
-#define LOG_SECTOR_PAGEREC_SIZE (LOG_MAP_PTR_SIZE + 1)
-
+#define LOG_SECTOR_PAGEREC_SIZE (LOG_PTR_SIZE + 1)
 
 /***************************************************************************/
 
@@ -569,46 +575,6 @@ typedef struct {
                           is deallocated, but 0 => not in any sector */
 } SectorPage;
 
-#ifdef SIXTY_FOUR_BIT_INTEGERS
-static SectorPage ***sector_pagetablesss[1 << 16];
-# define DECL_SECTOR_PAGETABLES SectorPage **sector_pagetables;
-# define GET_SECTOR_PAGETABLES(p) sector_pagetables = create_sector_pagetables(p);
-# define FIND_SECTOR_PAGETABLES(p) sector_pagetables = get_sector_pagetables(p); if (!sector_pagetables) return NULL
-inline static SectorPage **create_sector_pagetables(unsigned long p) {
-  unsigned long pos;
-  SectorPage ***sector_pagetabless, **sector_pagetables;
-  pos = (unsigned long)p >> 48;
-  sector_pagetabless = sector_pagetablesss[pos];
-  if (!sector_pagetabless) {
-    sector_pagetabless = (SectorPage ***)malloc_plain_sector(sizeof(SectorPage **) * (1 << 16));
-    sector_pagetablesss[pos] = sector_pagetabless;
-  }
-  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
-  sector_pagetables = sector_pagetabless[pos];
-  if (!sector_pagetables) {
-    sector_pagetables = (SectorPage **)malloc_plain_sector(sizeof(SectorPage *) * (1 << USEFUL_ADDR_BITS));
-    sector_pagetabless[pos] = sector_pagetables;
-  }
-  return sector_pagetables;
-}
-inline static SectorPage **get_sector_pagetables(unsigned long p) {
-  unsigned long pos;
-  SectorPage ***sector_pagetabless;
-  pos = (unsigned long)p >> 48;
-  sector_pagetabless = sector_pagetablesss[pos];
-  if (!sector_pagetabless)
-    return NULL;
-  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
-  return sector_pagetabless[pos];
-}
-#else
-static SectorPage **sector_pagetables;
-# define DECL_SECTOR_PAGETABLES /**/
-# define GET_SECTOR_PAGETABLES(p) /**/
-# define FIND_SECTOR_PAGETABLES(p) /**/
-#endif
-
-
 #if !RELEASE_UNUSED_SECTORS
 # include "../utils/splay.c"
 
@@ -845,6 +811,56 @@ static void free_error(const char *msg)
 #endif
 
 /*************************************************************/
+/* Page mapping: */
+
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+static SectorPage ***sector_pagetablesss[1 << 16];
+# define DECL_SECTOR_PAGETABLES SectorPage **sector_pagetables;
+# define GET_SECTOR_PAGETABLES(p) sector_pagetables = create_sector_pagetables(p)
+# define FIND_SECTOR_PAGETABLES(p) sector_pagetables = get_sector_pagetables(p);
+static void *malloc_plain_sector(int count);
+inline static SectorPage **create_sector_pagetables(unsigned long p) {
+  unsigned long pos;
+  SectorPage ***sector_pagetabless, **sector_pagetables;
+  pos = (unsigned long)p >> 48;
+  sector_pagetabless = sector_pagetablesss[pos];
+  if (!sector_pagetabless) {
+    int c = (sizeof(SectorPage **) << 16) >> LOG_SECTOR_SEGMENT_SIZE;
+    sector_pagetabless = (SectorPage ***)malloc_plain_sector(c);
+    sector_pagetablesss[pos] = sector_pagetabless;
+    sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
+  }
+  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
+  sector_pagetables = sector_pagetabless[pos];
+  if (!sector_pagetables) {
+    int c = (SECTOR_LOOKUP_PAGESETBITS + LOG_PTR_SIZE) - LOG_SECTOR_SEGMENT_SIZE;
+    if (c < 0)
+      c = 0;
+    c = 1 << c;
+    sector_pagetables = (SectorPage **)malloc_plain_sector(c);
+    sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
+    sector_pagetabless[pos] = sector_pagetables;
+  }
+  return sector_pagetables;
+}
+inline static SectorPage **get_sector_pagetables(unsigned long p) {
+  unsigned long pos;
+  SectorPage ***sector_pagetabless;
+  pos = (unsigned long)p >> 48;
+  sector_pagetabless = sector_pagetablesss[pos];
+  if (!sector_pagetabless)
+    return NULL;
+  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
+  return sector_pagetabless[pos];
+}
+#else
+static SectorPage **sector_pagetables;
+# define DECL_SECTOR_PAGETABLES /**/
+# define GET_SECTOR_PAGETABLES(p) /**/
+# define FIND_SECTOR_PAGETABLES(p) /**/
+#endif
+
+/*************************************************************/
 
 /* 
    The kinds of allocation:
@@ -1025,9 +1041,8 @@ static void register_sector(void *naya, int need, long kind)
     if (!pagetable) {
       int c = (LOG_SECTOR_LOOKUP_PAGESIZE + LOG_SECTOR_PAGEREC_SIZE) - LOG_SECTOR_SEGMENT_SIZE;
       int j;
-      
       if (c < 0)
-	c = 0;
+        c = 0;
       c = 1 << c;
       pagetable = (SectorPage *)malloc_plain_sector(c);
       sector_pagetables[pagetableindex] = pagetable;
@@ -1046,7 +1061,7 @@ static void register_sector(void *naya, int need, long kind)
 
 static void *malloc_sector(long size, long kind, int no_new)
 {
-  long need, i;
+  long need;
   void *naya;
 #if !RELEASE_UNUSED_SECTORS
   SectorFreepage *fp;
@@ -1063,7 +1078,7 @@ static void *malloc_sector(long size, long kind, int no_new)
 
 #ifndef SIXTY_FOUR_BIT_INTEGERS
   if (!sector_pagetables) {
-    int c = (SECTOR_LOOKUP_PAGESETBITS + LOG_PTR_SIZE) - LOG_SECTOR_SEGMENT_SIZE;
+    int i, c = (SECTOR_LOOKUP_PAGESETBITS + LOG_PTR_SIZE) - LOG_SECTOR_SEGMENT_SIZE;
     if (c < 0)
       c = 0;
     c = 1 << c;
