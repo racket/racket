@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'embed)
+(Section 'embed)
 
 (require (lib "embed.ss" "compiler")
 	 (lib "process.ss"))
