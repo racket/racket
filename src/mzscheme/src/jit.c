@@ -1301,7 +1301,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
 
   /* Before inlined native, check stack depth: */
   (void)jit_movi_p(JIT_R1, &scheme_stack_boundary);
-  jit_ldr_i(JIT_R1, JIT_R1);
+  jit_ldr_l(JIT_R1, JIT_R1);
   ref9 = jit_bltr_ul(jit_forward(), JIT_STACK, JIT_R1);
   CHECK_LIMIT();
 
