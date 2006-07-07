@@ -38,7 +38,7 @@ extern void free(void *);
 #define GMP_NAIL_BITS 0
 #define GMP_LIMB_BITS BITS_PER_MP_LIMB
 #define GMP_NUMB_BITS BITS_PER_MP_LIMB
-#define GMP_LIMB_HIGHBIT (1 << (BITS_PER_MP_LIMB - 1))
+#define GMP_LIMB_HIGHBIT ((mp_limb_t)1 << (BITS_PER_MP_LIMB - 1))
 #define GMP_NUMB_HIGHBIT GMP_LIMB_HIGHBIT
 
 #ifndef NULL
