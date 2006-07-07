@@ -49,8 +49,8 @@ static void COLLECT(OFFSET_ARG)
 #ifndef SIXTY_FOUR_BIT_INTEGERS
   SectorPage **local_sector_pagetables;
 #endif
-  unsigned local_low_plausible;
-  unsigned local_high_plausible;
+  unsigned long local_low_plausible;
+  unsigned long local_high_plausible;
   int local_collect_stack_size;
   int local_collect_stack_count;
   unsigned long *local_collect_stack;

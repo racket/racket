@@ -817,7 +817,7 @@ static void free_error(const char *msg)
 static SectorPage ***sector_pagetablesss[1 << 16];
 # define DECL_SECTOR_PAGETABLES SectorPage **sector_pagetables;
 # define GET_SECTOR_PAGETABLES(p) sector_pagetables = create_sector_pagetables(p)
-# define FIND_SECTOR_PAGETABLES(p) sector_pagetables = get_sector_pagetables(p);
+# define FIND_SECTOR_PAGETABLES(p) sector_pagetables = get_sector_pagetables(p)
 static void *malloc_plain_sector(int count);
 inline static SectorPage **create_sector_pagetables(unsigned long p) {
   unsigned long pos;
