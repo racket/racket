@@ -37,18 +37,6 @@
 # define SCHEME_NO_GC_PROTO
 #endif
 
-#if defined(mips) || defined(__mips)
-/* Irix SPROCS needs to load some files first, so find out if we're SPROCS. */
-# include "../sconfig.h"
-
-# ifdef MZ_USE_IRIX_SPROCS
-/* Don't include anything else before this */
-#  include "../gc/gc.h"
-#  include "../gc/semaphores.h"
-#  include "../gc/sproc.h"
-# endif
-#endif
-
 #include "schpriv.h"
 #include "schmach.h"
 #include "schgc.h"

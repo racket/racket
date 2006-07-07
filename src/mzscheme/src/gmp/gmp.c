@@ -30,6 +30,7 @@ extern void free(void *);
 #define FREE(p, s) free(p)
 
 #include "../../sconfig.h"
+#include "mzconfig.h"
 #include "gmp.h"
 #include "gmp-impl.h"
 #include "gmplonglong.h"

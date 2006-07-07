@@ -19,6 +19,12 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#ifdef SIZEOF_LONG
+# if SIZEOF_LONG == 8
+#  define SIXTY_FOUR_BIT_INTEGERS
+# endif
+#endif
+
 #if defined(SIXTY_FOUR_BIT_INTEGERS) || defined(_LONG_LONG_LIMB)
 # define BITS_PER_MP_LIMB 64
 # define BYTES_PER_MP_LIMB 8
