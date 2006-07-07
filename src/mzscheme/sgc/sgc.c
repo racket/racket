@@ -827,6 +827,7 @@ inline static SectorPage **create_sector_pagetables(unsigned long p) {
   if (!sector_pagetabless) {
     int c = (sizeof(SectorPage **) << 16) >> LOG_SECTOR_SEGMENT_SIZE;
     sector_pagetabless = (SectorPage ***)malloc_plain_sector(c);
+    memset(sector_pagetabless, 0, c << LOG_SECTOR_SEGMENT_SIZE);
     sector_pagetablesss[pos] = sector_pagetabless;
     sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
   }
@@ -838,6 +839,7 @@ inline static SectorPage **create_sector_pagetables(unsigned long p) {
       c = 0;
     c = 1 << c;
     sector_pagetables = (SectorPage **)malloc_plain_sector(c);
+    memset(sector_pagetables, 0, c << LOG_SECTOR_SEGMENT_SIZE);
     sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
     sector_pagetabless[pos] = sector_pagetables;
   }
@@ -1039,8 +1041,7 @@ static void register_sector(void *naya, int need, long kind)
     pagetableindex = SECTOR_LOOKUP_PAGETABLE(ns);
     pagetable = sector_pagetables[pagetableindex];
     if (!pagetable) {
-      int c = (LOG_SECTOR_LOOKUP_PAGESIZE + LOG_SECTOR_PAGEREC_SIZE) - LOG_SECTOR_SEGMENT_SIZE;
-      int j;
+      int j, c = (LOG_SECTOR_LOOKUP_PAGESIZE + LOG_SECTOR_PAGEREC_SIZE) - LOG_SECTOR_SEGMENT_SIZE;
       if (c < 0)
         c = 0;
       c = 1 << c;
@@ -1048,8 +1049,8 @@ static void register_sector(void *naya, int need, long kind)
       sector_pagetables[pagetableindex] = pagetable;
       sector_admin_mem_use += (c << LOG_SECTOR_SEGMENT_SIZE);
       for (j = 0; j < SECTOR_LOOKUP_PAGESIZE; j++) {
-	pagetable[j].start = 0; 
-	pagetable[j].kind = sector_kind_free;
+       pagetable[j].start = 0; 
+       pagetable[j].kind = sector_kind_free;
       }
     }
 
