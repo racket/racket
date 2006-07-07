@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'STRUCT)
+(Section 'struct)
 
 (let-values ([(prop:p p? p-ref) (make-struct-type-property 'prop (lambda (x y) (add1 x)))]
 	     [(prop:p2 p2? p2-ref) (make-struct-type-property 'prop2)]

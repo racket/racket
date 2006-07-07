@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'thread)
+(Section 'thread)
 
 (require (lib "thread.ss"))
 

@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'COMMAND-LINE)
+(Section 'command-line)
 
 (require (lib "cmdline.ss"))
 

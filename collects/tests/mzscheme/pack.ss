@@ -4,7 +4,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'pack)
+(Section 'pack)
 
 (require (lib "pack.ss" "setup")
 	 (lib "unpack.ss" "setup")

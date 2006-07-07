@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'OpenSSL)
+(Section 'openssl)
 
 (require (lib "mzssl.ss" "openssl"))
 

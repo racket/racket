@@ -1,8 +1,8 @@
 
-(if (not (defined? 'SECTION))
+(if (not (defined? 'Section))
     (load-relative "testing.ss"))
 
-(SECTION 'mzlib-threads)
+(Section 'mzlib-threads)
 
 (require-library "thread.ss")
 

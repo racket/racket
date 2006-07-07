@@ -3,7 +3,7 @@
 (require (lib "package.ss"))
 
 
-(SECTION 'packages)
+(Section 'packages)
 
 (define expand-test-use-toplevel? #t)
 

@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'UDP)
+(Section 'udp)
 
 (define udp1 (udp-open-socket))
 (define us1 (make-bytes 10))

@@ -5,7 +5,7 @@
 (require (lib "unitsig.ss"))
 (require (lib "include.ss"))
 
-(SECTION 'unit/sig)
+(Section 'unit/sig)
 
 (syntax-test #'(define-signature))
 (syntax-test #'(define-signature))

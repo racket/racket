@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'optimization)
+(Section 'optimization)
 
 ;; Check JIT inlining of primitives:
 (parameterize ([current-namespace (make-namespace)]

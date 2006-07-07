@@ -2,7 +2,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'threads)
+(Section 'threads)
 
 (define SLEEP-TIME 0.1)
 

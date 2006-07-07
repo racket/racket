@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'namespaces)
+(Section 'namespaces)
 
 (arity-test eval 1 2)
 (arity-test compile 1 1)

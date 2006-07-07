@@ -1,7 +1,7 @@
 
 ; Test the oe extension
 
-(if (not (defined? 'SECTION))
+(if (not (defined? 'Section))
     (load-relative "testing.ss"))
 
 (define b1 (class object% () (public [z1 7][z2 8]) (sequence (super-init))))

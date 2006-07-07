@@ -1,5 +1,5 @@
 (load-relative "../loadtest.ss")
-(SECTION 'MATCH)
+(Section 'match)
 (require  (lib "match.ss"))
 ;(require  "../match.ss")
 

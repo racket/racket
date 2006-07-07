@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'char-set/SRFI-14)
+(Section 'char-set/srfi-14)
 
 (require (lib "char-set.ss" "srfi" "14"))
 

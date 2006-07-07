@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'port)
+(Section 'port)
 
 (define SLEEP-TIME 0.1)
 

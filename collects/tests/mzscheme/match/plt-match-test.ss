@@ -1,5 +1,5 @@
 (load-relative "../loadtest.ss")
-(SECTION 'PLT-MATCH)
+(Section 'plt-match)
 
 
 (require (lib "plt-match.ss"))

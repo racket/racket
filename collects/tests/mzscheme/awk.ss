@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'awk)
+(Section 'awk)
 
 (require (lib "awk.ss"))
 

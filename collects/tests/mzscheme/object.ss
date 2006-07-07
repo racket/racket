@@ -5,7 +5,7 @@
 
 (require (lib "class.ss"))
 
-(SECTION 'OBJECT)
+(Section 'object)
 
 ;; ------------------------------------------------------------
 ;; Test syntax errors

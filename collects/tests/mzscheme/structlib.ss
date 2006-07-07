@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'structlib)
+(Section 'structlib)
 
 (require (lib "struct.ss"))
 

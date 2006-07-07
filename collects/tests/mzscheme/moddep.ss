@@ -2,7 +2,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'MODDEP)
+(Section 'moddep)
 
 (require (lib "moddep.ss" "syntax"))
 

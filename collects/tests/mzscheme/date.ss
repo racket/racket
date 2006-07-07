@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'date)
+(Section 'date)
 
 (require (lib "date.ss"))
 

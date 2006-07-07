@@ -10,7 +10,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'PRETTY)
+(Section 'pretty)
 
 (require (lib "pretty.ss"))
 

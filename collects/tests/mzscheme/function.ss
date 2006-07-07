@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'function)
+(Section 'function)
 
 (require (lib "list.ss"))
 (require (lib "etc.ss"))

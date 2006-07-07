@@ -2,7 +2,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'serialization)
+(Section 'serialization)
 
 (require (lib "serialize.ss"))
 

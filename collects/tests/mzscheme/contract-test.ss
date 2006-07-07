@@ -3,7 +3,7 @@
 	 (lib "class.ss")
          (lib "etc.ss"))
   
-(SECTION 'contract)
+(Section 'contract)
 
 (parameterize ([error-print-width 200])
 (let ()

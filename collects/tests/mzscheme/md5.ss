@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'md5)
+(Section 'md5)
 
 (require (lib "md5.ss"))
 

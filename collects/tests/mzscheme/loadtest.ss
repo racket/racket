@@ -1,3 +1,3 @@
 
-(unless (namespace-variable-value 'SECTION #f (lambda () #f))
+(unless (namespace-variable-value 'Section #f (lambda () #f))
   (load-relative "testing.ss"))

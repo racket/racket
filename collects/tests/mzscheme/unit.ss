@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'unit)
+(Section 'unit)
 (require (lib "unit.ss"))
 
 (syntax-test #'(unit))

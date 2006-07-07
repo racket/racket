@@ -3,7 +3,7 @@
 
 (define testing.ss (build-path (current-load-relative-directory) "testing.ss"))
 
-(SECTION 6 10 1)
+(Section 6 10 1)
 (test #t input-port? (current-input-port))
 (test #t output-port? (current-output-port))
 (test #t output-port? (current-error-port))
@@ -30,7 +30,7 @@
 (err/rt-test (current-input-port (current-output-port)))
 (err/rt-test (current-output-port (current-input-port)))
 (err/rt-test (current-error-port (current-input-port)))
-(SECTION 6 10 2)
+(Section 6 10 2)
 (test #\; peek-char this-file)
 (arity-test peek-char 0 2)
 (arity-test peek-char-or-special 0 2)
@@ -69,7 +69,7 @@
   (test display-test-obj read test-file)
   (test load-test-obj read test-file)
   (close-input-port test-file))
-(SECTION 6 10 3)
+(Section 6 10 3)
 (define write-test-obj
   '(#t #f #\a () 9739 -3 . #((test) "te \" \" st" "" test #() b c)))
 (define display-test-obj
@@ -1035,11 +1035,11 @@
 
 ; --------------------------------------------------
 
-(SECTION 6 10 4)
+(Section 6 10 4)
 (load "tmp1")
 (test write-test-obj 'load foo)
 
-(SECTION 'INEXACT-I/IO)
+(Section 'inexact-i/io)
 (define wto write-test-obj)
 (define dto display-test-obj)
 (define lto load-test-obj)
@@ -1064,7 +1064,7 @@
 (define badc-range-start 0)
 (define badc-range-end 255)
 
-(SECTION 'PRINTF)
+(Section 'printf)
 (define (test-format format)
   (test "~" format "~~")
   (test "hello---~---there" format "~a---~~---~a" "hello" 'there)
@@ -1305,7 +1305,7 @@
 (arity-test udp-send-ready-evt 1 1)
 (arity-test udp-receive-ready-evt 1 1)
 
-(SECTION 'file-after-udp)
+(Section 'file-after-udp)
 
 ;;----------------------------------------------------------------------
 ;; Security guards:

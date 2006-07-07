@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'deep)
+(Section 'deep)
 
 ; Test deep stacks
 

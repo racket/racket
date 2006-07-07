@@ -17,10 +17,10 @@
 (let ([f (lambda () #&7)])
   (test #t eq? (f) (f)))
 
-(SECTION 2 1);; test that all symbol characters are supported.
+(Section 2 1);; test that all symbol characters are supported.
 '(+ - ... !.. $.+ %.- &.! *.: /:. :+. <-. =. >. ?. ~. _. ^.)
 
-(SECTION 3 4)
+(Section 3 4)
 (define disjoint-type-functions
   (list boolean? char? null? number? pair? procedure? string? symbol? vector?))
 (define type-examples
@@ -41,7 +41,7 @@
 	   t))
        type-examples))
 
-(SECTION 6 1)
+(Section 6 1)
 (test #f not #t)
 (test #f not 3)
 (test #f not (list 3))
@@ -57,7 +57,7 @@
 (test #f boolean? '())
 (arity-test boolean? 1 1)
 
-(SECTION 6 2)
+(Section 6 2)
 (test #t eqv? 'a 'a)
 (test #f eqv? 'a 'b)
 (test #t eqv? 2 2)
@@ -118,7 +118,7 @@
 (arity-test eqv? 2 2)
 (arity-test equal? 2 2)
 
-(SECTION 6 3)
+(Section 6 3)
 (test '(a b c d e) 'dot '(a . (b . (c . (d . (e . ()))))))
 (define x (list 'a 'b 'c))
 (define y x)
@@ -350,7 +350,7 @@
 (test #t immutable? (string->immutable-string "hi"))
 (test #t immutable? (string->immutable-string (string-copy "hi")))
 
-(SECTION 6 4)
+(Section 6 4)
 (test #t symbol? 'foo)
 (test #t symbol? (car '(a b)))
 (test #f symbol? "bar")
@@ -399,7 +399,7 @@
 
 (arity-test symbol? 1 1)
 
-(SECTION 6 6)
+(Section 6 6)
 
 (define (char-tests)
   (test #t eqv? '#\  #\Space)
@@ -649,7 +649,7 @@
 (test-up/down char-upcase 'char-upcase lowers (map cons lowers uppers))
 (test-up/down char-downcase 'char-downcase uppers (map cons uppers lowers))
 
-(SECTION 6 7)
+(Section 6 7)
 (test #t string? "The word \"recursion\\\" has many meanings.")
 (test #t string? "")
 (arity-test string? 1 1)
@@ -1265,7 +1265,7 @@
 (arity-test regexp-replace 3 3)
 (arity-test regexp-replace* 3 3)
 
-(SECTION 6 8)
+(Section 6 8)
 (test #t vector? '#(0 (2 2 2 2) "Anna"))
 (test #t vector? '#())
 (arity-test vector? 1 1)
@@ -1311,7 +1311,7 @@
 (arity-test vector-fill! 2 2)
 (err/rt-test (vector-fill! '(1 2 3) 0))
 
-(SECTION 6 9)
+(Section 6 9)
 (test #t procedure? car)
 (test #f procedure? 'car)
 (test #t procedure? (lambda (x) (* x x)))
@@ -1436,7 +1436,7 @@
 (define (test-cont)
   (newline)
   (display ";testing continuations; ")
-  (SECTION 6 9)
+  (Section 6 9)
   (test #t leaf-eq? '(a (b (c))) '((a) b c))
   (test #f leaf-eq? '(a (b (c))) '((a) b c d))
   '(report-errs))
@@ -1776,7 +1776,7 @@
 
 (newline)
 (display ";testing scheme 4 functions; ")
-(SECTION 6 7)
+(Section 6 7)
 (test '(#\P #\space #\l) string->list "P l")
 (test '() string->list "")
 (test "1\\\"" list->string '(#\1 #\\ #\"))
@@ -1787,7 +1787,7 @@
 (err/rt-test (list->string 'hello))
 (err/rt-test (list->string '(#\h . #\e)))
 (err/rt-test (list->string '(#\h 1 #\e)))
-(SECTION 6 8)
+(Section 6 8)
 (test '(dah dah didah) vector->list '#(dah dah didah))
 (test '() vector->list '#())
 (test '#(dididit dah) list->vector '(dididit dah))

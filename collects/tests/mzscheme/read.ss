@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'READING)
+(Section 'reading)
 (define readstr
   (lambda (s)
     (let* ([o (open-input-string s)]

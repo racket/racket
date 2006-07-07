@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'pconvert)
+(Section 'pconvert)
 
 (require (lib "unit.ss")
          (lib "file.ss")

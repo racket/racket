@@ -8,7 +8,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'imap)
+(Section 'imap)
 
 (require (lib "mzssl.ss" "openssl")
 	 (lib "imap.ss" "net")

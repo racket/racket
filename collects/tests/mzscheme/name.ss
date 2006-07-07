@@ -6,7 +6,7 @@
 (require (lib "class.ss"))
 (require (lib "unit.ss"))
 
-(SECTION 'NAMES)
+(Section 'names)
 
 (arity-test object-name 1 1)
 (test #f object-name 0)

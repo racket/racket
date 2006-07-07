@@ -2,7 +2,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'synchronization)
+(Section 'synchronization)
 
 (define SYNC-SLEEP-DELAY 0.025)
 (define SYNC-BUSY-DELAY 0.1) ; go a little slower to check busy waits

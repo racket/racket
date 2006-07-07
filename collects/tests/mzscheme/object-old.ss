@@ -5,7 +5,7 @@
 
 (require (lib "class.ss"))
 
-(SECTION 'OBJECT)
+(Section 'object)
 
 (define (stx-test e)
   (syntax-test (datum->syntax-object #f e #f)))

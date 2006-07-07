@@ -63,18 +63,18 @@
 (test-values '(1 2) (lambda () (with-handlers ([void void])
 				 (values 1 2))))
 
-(SECTION 4 1 2)
+(Section 4 1 2)
 (test '(quote a) 'quote (quote 'a))
 (test '(quote a) 'quote ''a)
 (syntax-test #'quote)
 (syntax-test #'(quote))
 (syntax-test #'(quote 1 2))
 
-(SECTION 4 1 3)
+(Section 4 1 3)
 (test 12 (if #f + *) 3 4)
 (syntax-test #'(+ 3 . 4))
 
-(SECTION 4 1 4)
+(Section 4 1 4)
 (test 8 (lambda (x) (+ x x)) 4)
 (define reverse-subtract
   (lambda (x y) (- y x)))
@@ -174,7 +174,7 @@
 (syntax-test #'(case-lambda [(y) 7] [(x x) 8]))
 (syntax-test #'(case-lambda [(y) 7] [(x . x) 8]))
 
-(SECTION 4 1 5)
+(Section 4 1 5)
 (test 'yes 'if (if (> 3 2) 'yes 'no))
 (test 'no 'if (if (> 2 3) 'yes 'no))
 (test '1 'if (if (> 3 2) (- 3 2) (+ 3 2)))
@@ -214,7 +214,7 @@
 (syntax-test #'(unless 1 . 2))
 (error-test #'(unless (values 1 2) 0) arity?)
 
-(SECTION 4 1 6)
+(Section 4 1 6)
 (define x 2)
 (test 3 'define (+ x 1))
 (set! x 4)
@@ -261,7 +261,7 @@
 
 (error-test #'(set! unbound-variable 5) exn:fail:contract:variable?)
 
-(SECTION 4 2 1)
+(Section 4 2 1)
 (test 'greater 'cond (cond ((> 3 2) 'greater)
 			   ((< 3 2) 'less)))
 (test 'equal 'cond (cond ((> 3 3) 'greater)
@@ -355,7 +355,7 @@
 (error-test #'(and #t (values 1 2) 8) arity?)
 (error-test #'(or #f (values 1 2) 8) arity?)
 
-(SECTION 4 2 2)
+(Section 4 2 2)
 (test 6 'let (let ((x 2) (y 3)) (* x y)))
 (test 'second 'let (let ((x 2) (y 3)) (* x y) 'second))
 (test 6 'let-values (let-values (((x) 2) ((y) 3)) (* x y)))
@@ -538,7 +538,7 @@
   (wrap 7 '((begin) (begin) (begin (define x 7) (begin) x)))
   (wrap 7 '((begin (begin (begin (define x 7) (begin) x))))))
 
-(SECTION 4 2 3)
+(Section 4 2 3)
 (define x 0)
 (define (test-begin bg nested-bg)
   (let* ([make-args
@@ -615,7 +615,7 @@
 
 (error-test #'(begin (define foo (let/cc k k)) (foo 10)) exn:application:type?) ; not exn:application:continuation?
 
-(SECTION 4 2 5)
+(Section 4 2 5)
 (define f-check #t)
 (define f (delay (begin (set! f-check #f) 5)))
 (test #t (lambda () f-check))
@@ -632,7 +632,7 @@
 (syntax-test #'(delay 1 . 2))
 (syntax-test #'(delay 1 2))
 
-(SECTION 4 2 6)
+(Section 4 2 6)
 (test '(list 3 4) 'quasiquote `(list ,(+ 1 2) 4))
 (test '(list a (quote a)) 'quasiquote (let ((name 'a)) `(list ,name ',name)))
 (test '(a 3 4 5 6 b) 'quasiquote `(a ,(+ 1 2) ,@(map abs '(4 -5 6)) b))
@@ -695,7 +695,7 @@
 (error-test #'`(10 ,(values 1 2)) arity?)
 (error-test #'`(10 ,@(values 1 2)) arity?)
 
-(SECTION 5 2 1)
+(Section 5 2 1)
 (define add3 (lambda (x) (+ x 3)))
 (test 6 'define (add3 3))
 (define (add3 x) (+ x 3))
@@ -782,7 +782,7 @@
 (syntax-test #'(if #t (define ed-t3 3) (define ed-t3 -3)))
 (syntax-test #'(if #f (define ed-t3 3) (define ed-t3 -3)))
 
-(SECTION 5 2 2)
+(Section 5 2 2)
 (test 45 'define
 	(let ((x 5))
 		(define foo (lambda (y) (bar x y)))
@@ -842,7 +842,7 @@
 
 (test 87 (lambda () (define x 87) (begin) (begin x)))
 
-(SECTION 4 2 4)
+(Section 4 2 4)
 (test '#(0 1 2 3 4) 'do (do ((vec (make-vector 5))
 			     (i 0 (+ i 1)))
 			    ((= i 5) vec)
@@ -880,7 +880,7 @@
 (syntax-test #'(do ((x 1)) (#t . 5) 5))
 (syntax-test #'(do ((x 1)) (#t 5) . 5))
 
-(SECTION 'let/cc)
+(Section 'let/cc)
 
 (test 0 'let/cc (let/cc k (k 0) 1))
 (test 0 'let/cc (let/cc k 0))
@@ -904,7 +904,7 @@
 (syntax-test #'(let/ec k . 1))
 (syntax-test #'(let/ec 1 1))
 
-(SECTION 'fluid-let)
+(Section 'fluid-let)
 (define x 1)
 (define y -1)
 (define (get-x) x)
@@ -935,7 +935,7 @@
 (syntax-test #'(fluid-let ([x 5]) . 9))
 (syntax-test #'(fluid-let ([x 5]) 9 . 10))
 
-(SECTION 'parameterize)
+(Section 'parameterize)
 
 (test 5 'parameterize (parameterize () 5))
 (test 6 'parameterize (parameterize ([error-print-width 10]) 6))
@@ -985,7 +985,7 @@
 (arity-test check-parameter-procedure 1 1)
 |#
 
-(SECTION 'time)
+(Section 'time)
 (test 1 'time (time 1))
 (test -1 'time (time (cons 1 2) -1))
 (test-values '(-1 1) (lambda () (time (values -1 1))))
@@ -994,7 +994,7 @@
 (syntax-test #'(time . 1))
 (syntax-test #'(time 1 . 2))
 
-(SECTION 'compiler)
+(Section 'compiler)
 ; Tests specifically aimed at the compiler
 (error-test #'(let ([x (values 1 2)]) x) exn:application:arity?)
 ; Known primitive
@@ -1021,7 +1021,7 @@
 ; Known local with revsed arguments:
 (test 10 (letrec ([f (lambda (a b) (if (zero? a) b (f b a)))]) f) 10 0)
 
-(SECTION '#%datum-et-al)
+(Section '#%datum-et-al)
 
 (syntax-test #'#%datum)
 (syntax-test #'(let ([#%datum 5])

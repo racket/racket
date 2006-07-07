@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'mzlib-string)
+(Section 'mzlib-string)
 
 (require (lib "string.ss"))
 

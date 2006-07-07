@@ -24,10 +24,10 @@
 The test form has these two shapes:
 
   (test <expected> <procdure> <argument1> <argument2> ...)
-  
+
   (test <expected> <symbolic-name> <expression>)
 
-In the first case, it applies the result of <procedure> 
+In the first case, it applies the result of <procedure>
 to the results of <argument1> etc and compares that (with equal?)
 to the result of the <expected>
 
@@ -36,29 +36,34 @@ the results of that (with equal?) to the value of the
 <expected>. In this case, <symbolic-name> must evaluate to
 something that isn't a procedure. That name is used in the
 transcript.
-  
-|#
 
+|#
 
 
 (define teval eval)
 
-(namespace-variable-value 
- 'building-flat-tests?
- #f
- (lambda ()
-   (namespace-set-variable-value! 'building-flat-tests? #f)))
-(namespace-variable-value 
- 'in-drscheme?
- #f
- (lambda ()
-   (namespace-set-variable-value! 'in-drscheme? #f)))
+(define-syntax defvar
+  (syntax-rules ()
+    [(_ name val)
+     (namespace-variable-value 'name #f
+       (lambda () (namespace-set-variable-value! 'name val)))]))
 
-(define SECTION (lambda args
-		  (let ([ep (current-error-port)])
-		    (display "SECTION" ep) (write args ep) (newline ep)
-		    (set! cur-section args) #t)))
-(define record-error (lambda (e) (set! errs (cons (list cur-section e) errs))))
+(defvar building-flat-tests? #f)
+(defvar in-drscheme?         #f)
+
+;; used for quiet testing (quiet.ss) to really show something
+(defvar real-error-port #f)
+(define (eprintf* fmt . args)
+  (let ([msg (apply format fmt args)])
+    (display msg (or real-error-port (current-error-port)))))
+
+(define (Section . args)
+  (eprintf* "Section~s\n" args)
+  (set! cur-section args)
+  #t)
+
+(define (record-error e)
+  (set! errs (cons (list cur-section e) errs)))
 
 (print-struct #t)
 
@@ -66,23 +71,17 @@ transcript.
 (define number-of-error-tests 0)
 (define number-of-exn-tests 0)
 
-(define test
-  (lambda (expect fun . args)
-    (set! number-of-tests (add1 number-of-tests))
-    (write (cons fun args))
-    (display "  ==> ")
-    (flush-output)
-    ((lambda (res)
-      (write res)
-      (newline)
-      (cond ((not (equal? expect res))
-	     (record-error (list res expect (cons fun args)))
-	     (display " BUT EXPECTED ")
-	     (write expect)
-	     (newline)
-	     #f)
-	    (else #t)))
-     (if (procedure? fun) (apply fun args) (car args)))))
+(define (test expect fun . args)
+  (set! number-of-tests (add1 number-of-tests))
+  (printf "~s ==> " (cons fun args))
+  (flush-output)
+  (let ([res (if (procedure? fun) (apply fun args) (car args))])
+    (printf "~s\n" res)
+    (let ([ok? (equal? expect res)])
+      (unless ok?
+        (record-error (list res expect (cons fun args)))
+        (printf "  BUT EXPECTED ~s\n" expect))
+      ok?)))
 
 
 (define (nonneg-exact? x)
@@ -100,7 +99,7 @@ transcript.
 	(cons exn? (cons exn-continuation-marks continuation-mark-set?))
 	(cons exn:fail:contract:variable? (cons exn:fail:contract:variable-id symbol?))
 	(cons exn:fail:syntax? (cons exn:fail:syntax-exprs (lambda (x) (and (list? x) (andmap syntax? x)))))
-	
+
 	(cons exn:fail:read? (cons exn:fail:read-srclocs (lambda (x) (and (list? x) (andmap srcloc? x)))))))
 
 (define exn:application:mismatch? exn:fail:contract?)
@@ -110,13 +109,12 @@ transcript.
 (define mz-test-syntax-errors-allowed? #t)
 
 (define thunk-error-test
-  (case-lambda 
+  (case-lambda
    [(th expr) (thunk-error-test th expr exn:application:type?)]
    [(th expr exn?)
     (set! expr (syntax-object->datum expr))
     (set! number-of-error-tests (add1 number-of-error-tests))
-    (write expr)
-    (display "  =e=> ")
+    (printf "~s  =e=> " expr)
     (flush-output)
     (call/ec (lambda (escape)
 	       (let* ([old-esc-handler (error-escape-handler)]
@@ -139,7 +137,7 @@ transcript.
 			  (lambda (row)
 			    (let ([pred? (car row)])
 			      (when (pred? e)
-				    (set! number-of-exn-tests 
+				    (set! number-of-exn-tests
 					  (add1 number-of-exn-tests))
 				    (let ([sel (cadr row)]
 					  [pred? (cddr row)])
@@ -147,10 +145,10 @@ transcript.
 					      (printf " WRONG EXN ELEM ~s: ~s " sel e)
 					      (record-error (list e (cons 'exn-elem sel) expr)))))))
 			  exn-table)
-						 
+
 			 (old-handler e))])
 		 (dynamic-wind
-		  (lambda () 
+		  (lambda ()
 		    (current-error-port (current-output-port))
 		    (current-exception-handler test-exn-handler)
 		    (error-escape-handler test-handler))
@@ -161,21 +159,15 @@ transcript.
 		      (record-error (list v 'Error expr))
 		      (newline)
 		      #f))
-		  (lambda () 
+		  (lambda ()
 		    (current-error-port orig-err-port)
 		    (current-exception-handler old-handler)
 		    (error-escape-handler old-esc-handler))))))]))
 
-(namespace-variable-value
- 'error-test 
- #f
- (lambda ()
-  (namespace-set-variable-value!
-   'error-test
-   (case-lambda 
+(defvar error-test
+  (case-lambda
     [(expr) (error-test expr exn:application:type?)]
-    [(expr exn?)
-     (thunk-error-test (lambda () (eval expr)) expr exn?)]))))
+    [(expr exn?) (thunk-error-test (lambda () (eval expr)) expr exn?)]))
 
 (require (rename mzscheme err:mz:lambda lambda)) ; so err/rt-test works with beginner.ss
 (define-syntax err/rt-test
@@ -187,15 +179,16 @@ transcript.
       [(_ e)
        (syntax
 	(err/rt-test e exn:application:type?))])))
-  
+
 (define no-extra-if-tests? #f)
 
 (define (syntax-test expr)
   (error-test expr exn:fail:syntax?)
   (unless no-extra-if-tests?
-    (error-test (datum->syntax-object expr `(if #f ,expr) expr) exn:fail:syntax?)))
+    (error-test (datum->syntax-object expr `(if #f ,expr) expr)
+                exn:fail:syntax?)))
 
-(define arity-test 
+(define arity-test
   (case-lambda
    [(f min max except)
     (letrec ([aok?
@@ -232,21 +225,21 @@ transcript.
 		  (let ([v (with-handlers ([void
 					    (lambda (exn)
 					      (if (check? exn)
-						  (printf " ~a~n" (exn-message exn))
+						  (printf " ~a\n" (exn-message exn))
 						  (let ([ok-type? (exn:application:arity? exn)])
-						    (printf " WRONG EXN ~a: ~s~n" 
+						    (printf " WRONG EXN ~a: ~s\n"
 							    (if ok-type?
 								"FIELD"
 								"TYPE")
 							    exn)
-						    (record-error (list exn 
+						    (record-error (list exn
 									(if ok-type?
 									    'exn-field
 									    'exn-type)
 									(cons f args)))))
 					      (done (void)))])
 			     (apply f args))])
-		    (printf "~s~n BUT EXPECTED ERROR~n" v)
+		    (printf "~s\n BUT EXPECTED ERROR\n" v)
 		    (record-error (list v 'Error (cons f args))))))])
       (let loop ([n 0][l '()])
 	(unless (>= n min)
@@ -270,25 +263,24 @@ transcript.
 (define (test-values l thunk)
   (test l call-with-values thunk list))
 
-(define (report-errs)
-  (printf "~nPerformed ~a expression tests (~a good expressions, ~a bad expressions)~n"
-	  (+ number-of-tests number-of-error-tests)
-	  number-of-tests 
-	  number-of-error-tests)
-  (printf "and ~a exception field tests.~n~n" 
-	  number-of-exn-tests)
-  (if (null? errs) 
-      (display "Passed all tests.")
-      (begin
-	(display "Errors were:")
-	(newline)
-	(display "(SECTION (got expected (call)))")
-	(newline)
-	(for-each (lambda (l) (write l) (newline))
-		  errs)))
-  (newline)
-  (display "(Other messages report successful tests of error-handling behavior.)")
-  (newline))
+(define (report-errs . final?)
+  (let* ([final? (and (pair? final?) (car final?))]
+         [printf (if final? eprintf* printf)]
+         [ok?    (null? errs)])
+    (printf "\nPerformed ~a expression tests (~a ~a, ~a ~a)\n"
+            (+ number-of-tests number-of-error-tests)
+            number-of-tests "good expressions"
+            number-of-error-tests "bad expressions")
+    (printf "and ~a exception field tests.\n\n"
+            number-of-exn-tests)
+    (if ok?
+      (printf "Passed all tests.\n")
+      (begin (printf "Errors were:\n(Section (got expected (call)))\n")
+             (for-each (lambda (l) (printf "~s\n" l)) errs)
+             (when final? (exit 1))))
+    (when final? (exit (if ok? 0 1)))
+    (printf "(Other messages report successful tests of~a.)\n"
+            " error-handling behavior")))
 
 (define type? exn:application:type?)
 (define arity? exn:application:arity?)

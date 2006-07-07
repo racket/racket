@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'macrolib)
+(Section 'macrolib)
 
 (require (lib "etc.ss"))
 

@@ -4,7 +4,7 @@
 
 (require (lib "unit.ss"))
 
-(SECTION 'continuation-marks)
+(Section 'continuation-marks)
 
 (define (extract-current-continuation-marks key)
   (continuation-mark-set->list (current-continuation-marks) key))

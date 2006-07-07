@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'READTABLE)
+(Section 'readtable)
 
 (require (rename (lib "port.ss") relocate-input-port relocate-input-port))
 (define (shift-rt-port p deltas)

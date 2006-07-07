@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'multi-threaded-ports)
+(Section 'multi-threaded-ports)
 
 ; Read from file with 3 threads, all writing to the same pipe
 ; read from pipe with 3 threads, all writing to the same output string

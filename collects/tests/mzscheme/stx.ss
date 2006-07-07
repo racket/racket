@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'stx)
+(Section 'stx)
 
 (test #t syntax? (datum->syntax-object #f 'hello #f))
 

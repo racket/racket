@@ -3,7 +3,7 @@
 
 (require (lib "restart.ss"))
 
-(SECTION 'restart)
+(Section 'restart)
 
 (test #t restart-mzscheme #("ignore-me") values #("-qmv") void)
 (let ([test-in-out 

@@ -1,5 +1,5 @@
 (load-relative "../loadtest.ss")
-(SECTION 'MATCH-PERFORMANCE)
+(Section 'match-performance)
 
 (require (lib "pretty.ss"))
 (require-for-syntax (lib "pretty.ss"))

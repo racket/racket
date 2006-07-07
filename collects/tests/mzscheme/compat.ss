@@ -2,7 +2,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'compat)
+(Section 'compat)
 
 (require (lib "compat.ss"))
 

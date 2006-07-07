@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'MACRO)
+(Section 'macro)
 
 (error-test #'(define-syntaxes () (values 1)) exn:application:arity?)
 (error-test #'(define-syntaxes () (values 1 2)) exn:application:arity?)

@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'parameters)
+(Section 'parameters)
 
 (let ([p (open-output-file "tmp5" 'replace)])
   (display (compile '(cons 1 2)) p)

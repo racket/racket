@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'kw)
+(Section 'kw)
 
 (require (lib "kw.ss"))
 

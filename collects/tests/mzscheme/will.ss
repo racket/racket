@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'wills)
+(Section 'wills)
 
 (test #f will-executor? 5)
 (test #t will-executor? (make-will-executor))

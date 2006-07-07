@@ -3,7 +3,7 @@
 
 (require (lib "process.ss"))
 
-(SECTION 'SUBPROCESS)
+(Section 'subprocess)
 
 (define self (find-executable-path (find-system-path 'exec-file) #f))
 (define cat (find-executable-path "cat" #f))
@@ -253,7 +253,7 @@
   (fprintf w "~a~n" in)
   (when out
     (test out (lambda (ignored) (read-line r)) in)))
-			  
+
 (test-line "17" "(display 17) (newline)")
 
 (close-input-port r)

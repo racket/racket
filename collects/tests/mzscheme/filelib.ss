@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(SECTION 'file)
+(Section 'file)
 
 (require (lib "file.ss")
 	 (lib "process.ss")
