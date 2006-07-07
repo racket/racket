@@ -3168,7 +3168,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  mz_popr_p(JIT_V1);
 	  jit_ldi_p(JIT_R0, &scheme_current_thread);
 	  CHECK_LIMIT();
-	  jit_ldxi_i(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
+	  jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
 	  jit_lshi_l(JIT_V1, JIT_V1, 0x1);
 	  jit_ori_l(JIT_V1, JIT_V1, 0x1);
 	  mz_pushr_p(JIT_V1);
@@ -3178,9 +3178,9 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  (void)jit_movi_p(JIT_R1, 0x0);
 	  mz_pushr_p(JIT_R1); /* pushing 0 indicates that multi-array follows */
 	  /* If multi-value array is values buffer, zero out values buffer */
-	  jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Thread *)0x0)->values_buffer);
+	  jit_ldxi_p(JIT_R2, JIT_R0, &((Scheme_Thread *)0x0)->values_buffer);
 	  ref2 = jit_bner_p(jit_forward(), JIT_V1, JIT_R2);
-	  jit_stxi_i(&((Scheme_Thread *)0x0)->values_buffer, JIT_R0, JIT_R1);
+	  jit_stxi_p(&((Scheme_Thread *)0x0)->values_buffer, JIT_R0, JIT_R1);
 	  CHECK_LIMIT();
 
 	  /* evaluate remaining expressions */
@@ -3203,7 +3203,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_ldi_p(JIT_R0, &scheme_current_thread);
 	  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
 	  jit_rshi_ul(JIT_R2, JIT_R2, 0x1);
-	  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
+	  jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
 	  (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
 
 	  mz_patch_branch(ref);
@@ -3312,7 +3312,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	    ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
 	    /* Handle multiple values: */
 	    jit_ldi_p(JIT_R2, &scheme_current_thread);
-	    jit_ldxi_i(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);	  
+	    jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);	  
 	    ref3 = jit_bnei_p(jit_forward(), JIT_R1, cnt);
 	    CHECK_LIMIT();
 	    /* Received results match expected results */
@@ -3594,7 +3594,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
 	/* Load count and result array: */
 	jit_ldi_p(JIT_R2, &scheme_current_thread);
-	jit_ldxi_i(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
+	jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
 	jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.array);
 	CHECK_LIMIT();
 	/* If we got the expected count, jump to installing values: */
@@ -3947,7 +3947,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* Jumped-to from non-tail contexts  */
   bad_result_arity_code = (Native_Get_Arity_Proc)jit_get_ip().ptr;
   jit_ldi_p(JIT_R2, &scheme_current_thread);
-  jit_ldxi_i(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
+  jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
   jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.array);
   CHECK_LIMIT();
   mz_prepare(3);

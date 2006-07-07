@@ -988,7 +988,7 @@ typedef struct Scheme_Thread {
     } apply;
     struct {
       Scheme_Object **array;
-      int count;
+      long count;
     } multiple;
     struct {
       void *p1, *p2, *p3, *p4, *p5;
