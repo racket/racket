@@ -164,7 +164,7 @@ static void COLLECT(OFFSET_ARG)
 	    if ((p >= bstart) && (p < block->top)) {
 	      int size = block->size;
 	      int pos = block->positions[(p - bstart) >> LOG_PTR_SIZE];
-	      int start = bstart + pos * size;
+	      unsigned long start = bstart + pos * size;
 	    
 	      MARK_STATISTIC(num_blockallocs_stat++);
 

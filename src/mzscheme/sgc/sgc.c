@@ -822,7 +822,7 @@ static void *malloc_plain_sector(int count);
 inline static SectorPage **create_sector_pagetables(unsigned long p) {
   unsigned long pos;
   SectorPage ***sector_pagetabless, **sector_pagetables;
-  pos = (unsigned long)p >> 48;
+  pos = ((unsigned long)p >> 48) & ((1 << 16) - 1);
   sector_pagetabless = sector_pagetablesss[pos];
   if (!sector_pagetabless) {
     int c = (sizeof(SectorPage **) << 16) >> LOG_SECTOR_SEGMENT_SIZE;
@@ -848,7 +848,7 @@ inline static SectorPage **create_sector_pagetables(unsigned long p) {
 inline static SectorPage **get_sector_pagetables(unsigned long p) {
   unsigned long pos;
   SectorPage ***sector_pagetabless;
-  pos = (unsigned long)p >> 48;
+  pos = ((unsigned long)p >> 48) & ((1 << 16) - 1);
   sector_pagetabless = sector_pagetablesss[pos];
   if (!sector_pagetabless)
     return NULL;
