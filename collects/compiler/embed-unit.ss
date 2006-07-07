@@ -426,58 +426,64 @@
 						     (cons path (mod-full-name m))
 						     #f)))
 					     code-l)))])
-	   (current-module-name-resolver
-	    (lambda (name rel-to stx)
-	      (if (or (not name)
-		      (not (eq? (current-namespace) ns)))
-		  ;; a notification,or wrong namespace
-		  (orig name rel-to stx)
-		  ;; Have a relative mapping?
-		  (let ([a (assoc rel-to mapping-table)])
-		    (if a
-			(let ([a2 (assoc name (cadr a))])
-			  (if a2
-			      (cdr a2)
-			      ;; No relative mapping found (presumably a lib)
-			      (orig name rel-to stx)))
-			;; A library mapping that we have? 
-			(let ([a3 (and (pair? name)
-				       (eq? (car name) 'lib)
-				       (ormap (lambda (lib-entry)
-						(with-handlers ([exn:fail? (lambda (x) #f)])
-						  ;; To check equality of library references,
-						  ;; we have to consider relative paths in the
-						  ;; filename part of the name.
-						  (let loop ([a (build-path
-								 (apply build-path 
-									'same
-									(cddar lib-entry))
-								 (cadar lib-entry))]
-							     [b (build-path
-								 (apply build-path 
-									'same
-									(let ([d (cddr name)])
-									  (if (null? d)
-									      '("mzlib")
-									      d)))
-								 (cadr name))])
-						    (if (equal? a b)
-							lib-entry
-							(let-values ([(abase aname d?) (split-path a)])
-							  (if (eq? aname 'same)
-							      (loop abase b)
-							      (let-values ([(bbase bname a?) (split-path b)])
-								(if (eq? bname 'same)
-								    (loop a bbase)
-								    (if (equal? aname bname)
-									(loop abase bbase)
-									#f)))))))))
-					      library-table))])
-			  (if a3
-			      ;; Have it:
-			      (cdr a3)
-			      ;; Let default handler try:
-			      (orig name rel-to stx))))))))))
+	   (letrec ([embedded-resolver
+                     (case-lambda 
+                      [(name)
+                       ;; a notification
+                       (orig name)]
+                      [(name rel-to stx)
+                       (embedded-resolver name rel-to stx #t)]
+                      [(name rel-to stx load?)
+                       (if (not (eq? (current-namespace) ns))
+                           ;; Wrong namespace
+                           (orig name rel-to stx load?)
+                           ;; Have a relative mapping?
+                           (let ([a (assoc rel-to mapping-table)])
+                             (if a
+                                 (let ([a2 (assoc name (cadr a))])
+                                   (if a2
+                                       (cdr a2)
+                                       ;; No relative mapping found (presumably a lib)
+                                       (orig name rel-to stx)))
+                                 ;; A library mapping that we have? 
+                                 (let ([a3 (and (pair? name)
+                                                (eq? (car name) 'lib)
+                                                (ormap (lambda (lib-entry)
+                                                         (with-handlers ([exn:fail? (lambda (x) #f)])
+                                                           ;; To check equality of library references,
+                                                           ;; we have to consider relative paths in the
+                                                           ;; filename part of the name.
+                                                           (let loop ([a (build-path
+                                                                          (apply build-path 
+                                                                                 'same
+                                                                                 (cddar lib-entry))
+                                                                          (cadar lib-entry))]
+                                                                      [b (build-path
+                                                                          (apply build-path 
+                                                                                 'same
+                                                                                 (let ([d (cddr name)])
+                                                                                   (if (null? d)
+                                                                                       '("mzlib")
+                                                                                       d)))
+                                                                          (cadr name))])
+                                                             (if (equal? a b)
+                                                                 lib-entry
+                                                                 (let-values ([(abase aname d?) (split-path a)])
+                                                                   (if (eq? aname 'same)
+                                                                       (loop abase b)
+                                                                       (let-values ([(bbase bname a?) (split-path b)])
+                                                                         (if (eq? bname 'same)
+                                                                             (loop a bbase)
+                                                                             (if (equal? aname bname)
+                                                                                 (loop abase bbase)
+                                                                                 #f)))))))))
+                                                       library-table))])
+                                   (if a3
+                                       ;; Have it:
+                                       (cdr a3)
+                                       ;; Let default handler try:
+                                       (orig name rel-to stx load?))))))])])
+             (current-module-name-resolver embedded-resolver))))
 
       ;; Write a module bundle that can be loaded with 'load' (do not embed it
       ;; into an executable). The bundle is written to the current output port.
