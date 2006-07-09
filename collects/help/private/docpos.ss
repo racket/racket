@@ -2,10 +2,6 @@
   (require (lib "list.ss")
            (lib "contract.ss"))
 
-  (provide/contract
-   [standard-html-doc-position (path? . -> . number?)]
-   [known-docs (listof (cons/c path? string?))])
-
   ;; Define an order on the standard docs.
   (define (standard-html-doc-position d)
     (let ([str (path->string d)])
@@ -61,4 +57,8 @@
       ("profj-intermediate" "ProfessorJ Intermediate Language" 211)
       ("profj-advanced" "ProfessorJ Advanced Language" 212)))
 
-  (define known-docs (map (lambda (x) (cons (string->path (car x)) (cadr x))) docs-and-positions)))
+  (define known-docs (map (lambda (x) (cons (string->path (car x)) (cadr x))) docs-and-positions))
+  
+  (provide/contract
+   [standard-html-doc-position (path? . -> . number?)]
+   [known-docs (listof (cons/c path? string?))]))

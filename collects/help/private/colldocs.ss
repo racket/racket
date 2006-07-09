@@ -3,10 +3,6 @@
            (lib "getinfo.ss" "setup")
            (lib "contract.ss"))
   
-  (provide/contract 
-   [colldocs (-> (values (listof (list/c path? path?))
-                         (listof string?)))])
-
   (define (colldocs)
     (let loop ([dirs (sort (map path->string (find-relevant-directories
                                               '(doc.txt) 'all-available))
@@ -27,4 +23,8 @@
                                       docs)
                                 (cons name names))
                           (loop (cdr dirs) docs names)))
-                    (loop (cdr dirs) docs names)))]))))
+                    (loop (cdr dirs) docs names)))])))
+  
+  (provide/contract 
+   [colldocs (-> (values (listof (list/c path? path?))
+                         (listof string?)))]))

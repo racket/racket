@@ -11,242 +11,6 @@
       [(_ (name contract docs ...) ...)
        (syntax (provide/contract (name contract) ...))]))
   
-  (provide/contract/docs
-   
-   (gui-utils:trim-string
-    (string?
-     (and/c number? positive?)
-     . ->d .
-     (λ (str size)
-       (and/c string?
-	      (λ (str)
-		((string-length str) . <= . size)))))
-    (str size)
-    "Constructs a string whose size is less"
-    "than \\var{size} by trimming the \\var{str}"
-    "and inserting an ellispses into it.")
-
-   (gui-utils:cancel-on-right?
-    (-> boolean?)
-    ()
-    "Returns \\scheme{#t} if cancel should be on the right-hand side (or below)"
-    "in a dialog and \\scheme{#f} otherwise."
-    ""
-    "See also"
-    "@flink gui-utils:ok/cancel-buttons %"
-    ".")
-   (gui-utils:ok/cancel-buttons
-    (opt->*
-     ((is-a?/c area-container<%>)
-      ((is-a?/c button%) (is-a?/c event%) . -> . any)
-      ((is-a?/c button%) (is-a?/c event%) . -> . any))
-     (string?
-      string?)
-     ((is-a?/c button%)
-      (is-a?/c button%)))
-    ((parent
-      confirm-callback
-      cancel-callback)
-     ((confirm-label (string-constant ok))
-      (cancel-label (string-constant cancel))))
-    "Adds an Ok and a cancel button to a panel, changing the order"
-    "to suit the platform. Under \\MacOSBoth{} and unix, the confirmation action"
-    "is on the right (or bottom) and under Windows, the canceling action is on the"
-    "right (or bottom)."
-    "The confirmation action button has the \\scheme|'(border)| style."
-    "The buttons are also sized to be the same width."
-    ""
-    "The first result is be the OK button and the second is"
-    "the cancel button."
-    ""
-    "See also"
-    "@flink gui-utils:cancel-on-right? %"
-    ".")
-   
-   (gui-utils:next-untitled-name
-    (-> string?)
-    ()
-    "Returns a name for the next opened untitled frame. The first"
-    "name is ``Untitled'', the second is ``Untitled 2'',"
-    "the third is ``Untitled 3'', and so forth.")
-   (gui-utils:cursor-delay
-    (case->
-     (-> real?)
-     (real? . -> . void?))
-    (() (new-delay))
-    "This function is {\\em not\\/} a parameter."
-    "Instead, the state is just stored in the closure."
-    ""
-    "The first case in the case lambda"
-    "returns the current delay in seconds before a watch cursor is shown,"
-    "when either \\iscmprocedure{gui-utils:local-busy-cursor} or"
-    "\\iscmprocedure{gui-utils:show-busy-cursor} is called."
-
-    "The second case in the case lambda"
-    "Sets the delay, in seconds, before a watch cursor is shown, when"
-    "either \\iscmprocedure{gui-utils:local-busy-cursor} or"
-    "\\iscmprocedure{gui-utils:show-busy-cursor} is called.")
-   (gui-utils:show-busy-cursor
-    (opt->
-     ((-> any/c))
-     (integer?)
-     any/c)
-    ((thunk)
-     ((delay (gui-utils:cursor-delay))))
-    "Evaluates \\rawscm{(\\var{thunk})} with a watch cursor. The argument"
-    "\\var{delay} specifies the amount of time before the watch cursor is"
-    "opened. Use \\iscmprocedure{gui-utils:cursor-delay} to set this value"
-    "to all calls."
-    ""
-    "This function returns the result of \\var{thunk}.")
-   (gui-utils:delay-action
-    (real?
-     (-> void?)
-     (-> void?)
-     . -> .
-     void?)
-    (delay-time open close)
-    "Use this function to delay an action for some period of time. It also"
-    "supports cancelling the action before the time period elapses. For"
-    "example, if you want to display a watch cursor, but you only want it"
-    "to appear after 2 seconds and the action may or may not take more than"
-    "two seconds, use this pattern:"
-    ""
-    "\\begin{schemedisplay}"
-    "(let ([close-down"
-    "       (gui-utils:delay-action"
-    "        2"
-    "        (λ () .. init watch cursor ...)"
-    "        (λ () .. close watch cursor ...))])"
-    "  ;; .. do action ..."
-    "  (close-down))"
-    "\\end{schemedisplay}"
-    ""
-    "Creates a thread that waits \\var{delay-time}. After \\var{delay-time}"
-    "has elapsed, if the result thunk has {\\em not} been called, call"
-    "\\var{open}. Then, when the result thunk is called, call"
-    "\\var{close}. The function \\var{close} will only be called if"
-    "\\var{open} has been called.")
-
-   (gui-utils:local-busy-cursor
-    (opt->
-     ((is-a?/c window<%>)
-      (-> any/c))
-     (integer?)
-     any/c)
-    ((window thunk)
-     ((delay (gui-utils:cursor-delay))))
-    "Evaluates \\rawscm{(\\var{thunk})} with a watch cursor in \\var{window}. If"
-    "\\var{window} is \\rawscm{\\#f}, the watch cursor is turned on globally. The"
-    "argument \\var{delay} specifies the amount of time before the watch"
-    "cursor is opened. Use "
-    "@flink gui-utils:cursor-delay "
-    "to set this value for all uses of this function."
-    ""
-    "The result of this function is the result of \\var{thunk}.")
-
-   (gui-utils:unsaved-warning
-    (opt->
-     (string?
-      string?)
-     (boolean?
-      (or/c false/c
-            (is-a?/c frame%)
-            (is-a?/c dialog%)))
-     (symbols 'continue 'save 'cancel))
-    ((filename action)
-     ((can-save-now? #f)
-      (parent #f)))
-
-    "This displays a dialog that warns the user of a unsaved file."
-    ""
-    "The string, \\var{action}, indicates what action is about to"
-    "take place, without saving. For example, if the application"
-    "is about to close a file, a good action is \\rawscm{\"Close"
-    "Anyway\"}. The result symbol indicates the user's choice. If"
-    "\\var{can-save-now?} is \\rawscm{\\#f}, this function does not"
-    "give the user the ``Save'' option and thus will not return"
-    "\\rawscm{'save}.")
-
-   (gui-utils:get-choice
-    (opt->
-     (string?
-      string?
-      string?)
-     (string?
-      any/c
-      (or/c false/c (is-a?/c frame%) (is-a?/c dialog%))
-      (symbols 'app 'caution 'stop)
-      (or/c false/c (case-> (boolean? . -> . void?)
-                            (-> boolean?)))
-      string?)
-     any/c)
-    ((message true-choice false-choice)
-     ((title (string-constant warning))
-      (default-result 'disallow-close)
-      (parent #f)
-      (style 'app)
-      (checkbox-proc #f)
-      (checkbox-label (string-constant dont-ask-again))))
-
-    "Opens a dialog that presents a binary choice to the user. The user is forced"
-    "to choose between these two options, ie cancelling or closing the dialog"
-    "opens a message box asking the user to actually choose one of the two options."
-    ""
-    "The dialog will contain the string \\var{message} and two buttons,"
-    "labeled with the \\var{true-choice} and the \\var{false-choice}.  If the"
-    "user clicks on \\var{true-choice} \\rawscm{\\#t} is returned. If the user"
-    "clicks on \\var{false-choice}, \\rawscm{\\#f} is returned."
-    ""
-    "The argument \\var{default-result} determines how closing the window is"
-    "treated. If the argument is \\rawscm{'disallow-close}, closing the window"
-    "is not allowed. If it is anything else, that value is returned when"
-    "the user closes the window."
-    ""
-    "If "
-    "@flink gui-utils:cancel-on-right?"
-    "returns \\scheme|#t|, the false choice is on the right."
-    "Otherwise, the true choice is on the right."
-    ""
-    "The \\var{style} parameter is (eventually) passed to"
-    "@link message"
-    "as an icon in the dialog."
-    ""
-    "If \\var{checkbox-proc} is given, it should be a procedure that behaves"
-    "like a parameter for getting/setting a boolean value.  The intention for"
-    "this value is that it can be used to disable the dialog.  When it is"
-    "given, a checkbox will appear with a \\var{checkbox-label} label"
-    "(defaults to the \\rawscm{dont-ask-again} string constant), and that"
-    "checkbox value will be sent to the \\var{checkbox-proc} when the dialog"
-    "is closed.  Note that the dialog will always pop-up --- it is the"
-    "caller's responsibility to avoid the dialog if not needed.")
-
-   (gui-utils:get-clicked-clickback-delta
-    (-> (is-a?/c style-delta%))
-    ()
-    "This delta is designed for use with"
-    "@link text set-clickback %"
-    ". Use it as one of the \\iscmclass{style-delta} argument to"
-    "@link text set-clickback %"
-    "."
-    ""
-    "See also"
-    "@flink gui-utils:get-clickback-delta %"
-    ".")
-
-   (gui-utils:get-clickback-delta
-    (-> (is-a?/c style-delta%))
-    ()
-    "This delta is designed for use with"
-    "@link text set-clickback %"
-    ". Use the result of this function as the style"
-    "for the region"
-    "text where the clickback is set." 
-    ""
-    "See also"
-    "@flink gui-utils:get-clicked-clickback-delta %"
-    "."))
-
   (define (trim-string str size)
     (let ([str-size (string-length str)])
       (cond
@@ -497,4 +261,241 @@
   (define gui-utils:get-clickback-delta get-clickback-delta)
   (define gui-utils:ok/cancel-buttons ok/cancel-buttons)
   (define gui-utils:cancel-on-right? cancel-on-right?)
-  (define gui-utils:cursor-delay cursor-delay))
+  (define gui-utils:cursor-delay cursor-delay)
+  
+  
+  (provide/contract/docs
+   
+   (gui-utils:trim-string
+    (string?
+     (and/c number? positive?)
+     . ->d .
+     (λ (str size)
+       (and/c string?
+	      (λ (str)
+		((string-length str) . <= . size)))))
+    (str size)
+    "Constructs a string whose size is less"
+    "than \\var{size} by trimming the \\var{str}"
+    "and inserting an ellispses into it.")
+
+   (gui-utils:cancel-on-right?
+    (-> boolean?)
+    ()
+    "Returns \\scheme{#t} if cancel should be on the right-hand side (or below)"
+    "in a dialog and \\scheme{#f} otherwise."
+    ""
+    "See also"
+    "@flink gui-utils:ok/cancel-buttons %"
+    ".")
+   (gui-utils:ok/cancel-buttons
+    (opt->*
+     ((is-a?/c area-container<%>)
+      ((is-a?/c button%) (is-a?/c event%) . -> . any)
+      ((is-a?/c button%) (is-a?/c event%) . -> . any))
+     (string?
+      string?)
+     ((is-a?/c button%)
+      (is-a?/c button%)))
+    ((parent
+      confirm-callback
+      cancel-callback)
+     ((confirm-label (string-constant ok))
+      (cancel-label (string-constant cancel))))
+    "Adds an Ok and a cancel button to a panel, changing the order"
+    "to suit the platform. Under \\MacOSBoth{} and unix, the confirmation action"
+    "is on the right (or bottom) and under Windows, the canceling action is on the"
+    "right (or bottom)."
+    "The confirmation action button has the \\scheme|'(border)| style."
+    "The buttons are also sized to be the same width."
+    ""
+    "The first result is be the OK button and the second is"
+    "the cancel button."
+    ""
+    "See also"
+    "@flink gui-utils:cancel-on-right? %"
+    ".")
+   
+   (gui-utils:next-untitled-name
+    (-> string?)
+    ()
+    "Returns a name for the next opened untitled frame. The first"
+    "name is ``Untitled'', the second is ``Untitled 2'',"
+    "the third is ``Untitled 3'', and so forth.")
+   (gui-utils:cursor-delay
+    (case->
+     (-> real?)
+     (real? . -> . void?))
+    (() (new-delay))
+    "This function is {\\em not\\/} a parameter."
+    "Instead, the state is just stored in the closure."
+    ""
+    "The first case in the case lambda"
+    "returns the current delay in seconds before a watch cursor is shown,"
+    "when either \\iscmprocedure{gui-utils:local-busy-cursor} or"
+    "\\iscmprocedure{gui-utils:show-busy-cursor} is called."
+
+    "The second case in the case lambda"
+    "Sets the delay, in seconds, before a watch cursor is shown, when"
+    "either \\iscmprocedure{gui-utils:local-busy-cursor} or"
+    "\\iscmprocedure{gui-utils:show-busy-cursor} is called.")
+   (gui-utils:show-busy-cursor
+    (opt->
+     ((-> any/c))
+     (integer?)
+     any/c)
+    ((thunk)
+     ((delay (gui-utils:cursor-delay))))
+    "Evaluates \\rawscm{(\\var{thunk})} with a watch cursor. The argument"
+    "\\var{delay} specifies the amount of time before the watch cursor is"
+    "opened. Use \\iscmprocedure{gui-utils:cursor-delay} to set this value"
+    "to all calls."
+    ""
+    "This function returns the result of \\var{thunk}.")
+   (gui-utils:delay-action
+    (real?
+     (-> void?)
+     (-> void?)
+     . -> .
+     void?)
+    (delay-time open close)
+    "Use this function to delay an action for some period of time. It also"
+    "supports cancelling the action before the time period elapses. For"
+    "example, if you want to display a watch cursor, but you only want it"
+    "to appear after 2 seconds and the action may or may not take more than"
+    "two seconds, use this pattern:"
+    ""
+    "\\begin{schemedisplay}"
+    "(let ([close-down"
+    "       (gui-utils:delay-action"
+    "        2"
+    "        (λ () .. init watch cursor ...)"
+    "        (λ () .. close watch cursor ...))])"
+    "  ;; .. do action ..."
+    "  (close-down))"
+    "\\end{schemedisplay}"
+    ""
+    "Creates a thread that waits \\var{delay-time}. After \\var{delay-time}"
+    "has elapsed, if the result thunk has {\\em not} been called, call"
+    "\\var{open}. Then, when the result thunk is called, call"
+    "\\var{close}. The function \\var{close} will only be called if"
+    "\\var{open} has been called.")
+
+   (gui-utils:local-busy-cursor
+    (opt->
+     ((is-a?/c window<%>)
+      (-> any/c))
+     (integer?)
+     any/c)
+    ((window thunk)
+     ((delay (gui-utils:cursor-delay))))
+    "Evaluates \\rawscm{(\\var{thunk})} with a watch cursor in \\var{window}. If"
+    "\\var{window} is \\rawscm{\\#f}, the watch cursor is turned on globally. The"
+    "argument \\var{delay} specifies the amount of time before the watch"
+    "cursor is opened. Use "
+    "@flink gui-utils:cursor-delay "
+    "to set this value for all uses of this function."
+    ""
+    "The result of this function is the result of \\var{thunk}.")
+
+   (gui-utils:unsaved-warning
+    (opt->
+     (string?
+      string?)
+     (boolean?
+      (or/c false/c
+            (is-a?/c frame%)
+            (is-a?/c dialog%)))
+     (symbols 'continue 'save 'cancel))
+    ((filename action)
+     ((can-save-now? #f)
+      (parent #f)))
+
+    "This displays a dialog that warns the user of a unsaved file."
+    ""
+    "The string, \\var{action}, indicates what action is about to"
+    "take place, without saving. For example, if the application"
+    "is about to close a file, a good action is \\rawscm{\"Close"
+    "Anyway\"}. The result symbol indicates the user's choice. If"
+    "\\var{can-save-now?} is \\rawscm{\\#f}, this function does not"
+    "give the user the ``Save'' option and thus will not return"
+    "\\rawscm{'save}.")
+
+   (gui-utils:get-choice
+    (opt->
+     (string?
+      string?
+      string?)
+     (string?
+      any/c
+      (or/c false/c (is-a?/c frame%) (is-a?/c dialog%))
+      (symbols 'app 'caution 'stop)
+      (or/c false/c (case-> (boolean? . -> . void?)
+                            (-> boolean?)))
+      string?)
+     any/c)
+    ((message true-choice false-choice)
+     ((title (string-constant warning))
+      (default-result 'disallow-close)
+      (parent #f)
+      (style 'app)
+      (checkbox-proc #f)
+      (checkbox-label (string-constant dont-ask-again))))
+
+    "Opens a dialog that presents a binary choice to the user. The user is forced"
+    "to choose between these two options, ie cancelling or closing the dialog"
+    "opens a message box asking the user to actually choose one of the two options."
+    ""
+    "The dialog will contain the string \\var{message} and two buttons,"
+    "labeled with the \\var{true-choice} and the \\var{false-choice}.  If the"
+    "user clicks on \\var{true-choice} \\rawscm{\\#t} is returned. If the user"
+    "clicks on \\var{false-choice}, \\rawscm{\\#f} is returned."
+    ""
+    "The argument \\var{default-result} determines how closing the window is"
+    "treated. If the argument is \\rawscm{'disallow-close}, closing the window"
+    "is not allowed. If it is anything else, that value is returned when"
+    "the user closes the window."
+    ""
+    "If "
+    "@flink gui-utils:cancel-on-right?"
+    "returns \\scheme|#t|, the false choice is on the right."
+    "Otherwise, the true choice is on the right."
+    ""
+    "The \\var{style} parameter is (eventually) passed to"
+    "@link message"
+    "as an icon in the dialog."
+    ""
+    "If \\var{checkbox-proc} is given, it should be a procedure that behaves"
+    "like a parameter for getting/setting a boolean value.  The intention for"
+    "this value is that it can be used to disable the dialog.  When it is"
+    "given, a checkbox will appear with a \\var{checkbox-label} label"
+    "(defaults to the \\rawscm{dont-ask-again} string constant), and that"
+    "checkbox value will be sent to the \\var{checkbox-proc} when the dialog"
+    "is closed.  Note that the dialog will always pop-up --- it is the"
+    "caller's responsibility to avoid the dialog if not needed.")
+
+   (gui-utils:get-clicked-clickback-delta
+    (-> (is-a?/c style-delta%))
+    ()
+    "This delta is designed for use with"
+    "@link text set-clickback %"
+    ". Use it as one of the \\iscmclass{style-delta} argument to"
+    "@link text set-clickback %"
+    "."
+    ""
+    "See also"
+    "@flink gui-utils:get-clickback-delta %"
+    ".")
+
+   (gui-utils:get-clickback-delta
+    (-> (is-a?/c style-delta%))
+    ()
+    "This delta is designed for use with"
+    "@link text set-clickback %"
+    ". Use the result of this function as the style"
+    "for the region"
+    "text where the clickback is set." 
+    ""
+    "See also"
+    "@flink gui-utils:get-clicked-clickback-delta %"
+    ".")))

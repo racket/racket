@@ -5,12 +5,6 @@
 	   "stx.ss")
   (require-for-template mzscheme)
   
-  (provide/contract
-   [build-struct-names
-    (opt-> (identifier? (listof identifier?) boolean? boolean?)
-           ((union false/c syntax?))
-           (listof identifier?))])
-  
   (provide parse-define-struct
 
 	   build-struct-generation
@@ -326,4 +320,10 @@
 	      (syntax-property result 
 			       'disappeared-use 
 			       (syntax-local-introduce super-id))
-	      result))))))
+	      result)))))
+  
+  (provide/contract
+   [build-struct-names
+    (opt-> (identifier? (listof identifier?) boolean? boolean?)
+           ((union false/c syntax?))
+           (listof identifier?))]))

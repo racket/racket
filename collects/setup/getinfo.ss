@@ -12,15 +12,6 @@
   (define info? (opt-> (symbol?) ((-> any/c)) any/c))
   (define path-or-string? (lambda (x) (or (path? x) (string? x))))
   
-  (provide/contract
-   (get-info ((listof path-or-string?) . -> . (or/c info? boolean?)))
-   (get-info/full (path? . -> . (or/c info? boolean?)))
-   (find-relevant-directories (opt-> ((listof symbol?))
-                                     ((lambda (x) (or (eq? x 'preferred)
-                                                      (eq? x 'all-available))))
-                                     (listof path?))))
-
-
   
   ;; in addition to infodomain/compiled/cache.ss, getinfo will look in this 
   ;; file to find mappings. PLaneT uses this to put info about installed
@@ -175,4 +166,12 @@
   (define (compare-directories a b)
     (let-values ([(base1 name1 dir?1) (split-path a)]
                  [(base2 name2 dir?2) (split-path b)])
-      (bytes<? (path->bytes name1) (path->bytes name2)))))
+      (bytes<? (path->bytes name1) (path->bytes name2))))
+  
+  (provide/contract
+   (get-info ((listof path-or-string?) . -> . (or/c info? boolean?)))
+   (get-info/full (path? . -> . (or/c info? boolean?)))
+   (find-relevant-directories (opt-> ((listof symbol?))
+                                     ((lambda (x) (or (eq? x 'preferred)
+                                                      (eq? x 'all-available))))
+                                     (listof path?)))))

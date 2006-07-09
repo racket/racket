@@ -128,15 +128,11 @@ it around flattened out.
                              (let ([ctc (if (procedure? ctc-field)
                                             (ctc-field f-xs ...)
                                             ctc-field)])
-                               (if (contract/info-pos contract/info)
-                                   ((((pos-proj-get ctc) ctc) (contract/info-pos contract/info)
-                                                              (contract/info-src-info contract/info)
-                                                              (contract/info-orig-str contract/info))
-                                    ctc-x)
-                                   ((((neg-proj-get ctc) ctc) (contract/info-neg contract/info)
-                                                              (contract/info-src-info contract/info)
-                                                              (contract/info-orig-str contract/info))
-                                    ctc-x))))] ...)
+                               ((((proj-get ctc) ctc) (contract/info-pos contract/info)
+                                                      (contract/info-neg contract/info)
+                                                      (contract/info-src-info contract/info)
+                                                      (contract/info-orig-str contract/info))
+                                ctc-x)))] ...)
                  (values f-x ...)))
              
              (define (stronger-lazy-contract? a b)
@@ -145,28 +141,18 @@ it around flattened out.
                      (contract-get a selector-indicies)
                      (contract-get b selector-indicies)) ...))
              
-             (define (lazy-contract-pos-proj ctc)
-               (λ (blame src-info orig-str)
-                 (let ([contract/info (make-contract/info ctc blame #f src-info orig-str)])
+             (define (lazy-contract-proj ctc)
+               (λ (pos-blame neg-blame src-info orig-str)
+                 (let ([contract/info (make-contract/info ctc pos-blame neg-blame src-info orig-str)])
                    (λ (val)
                      (unless (or (wrap-predicate val) 
                                  (raw-predicate val))
                        (raise-contract-error
                         val
                         src-info
-                        blame
+                        pos-blame
                         orig-str
                         "expected <~a>, got ~e" 'name val))
-                     (cond
-                       [(already-there? contract/info val lazy-depth-to-look)
-                        val]
-                       [else
-                        (wrap-maker val contract/info)])))))
-             
-             (define (lazy-contract-neg-proj ctc)
-               (λ (blame src-info orig-str)
-                 (let ([contract/info (make-contract/info ctc #f blame src-info orig-str)])
-                   (λ (val)
                      (cond
                        [(already-there? contract/info val lazy-depth-to-look)
                         val]
@@ -230,8 +216,7 @@ it around flattened out.
                                  field-count
                                  0 ;; auto-field-k
                                  '() ;; auto-field-v
-                                 (list (cons pos-proj-prop lazy-contract-pos-proj)
-                                       (cons neg-proj-prop lazy-contract-neg-proj)
+                                 (list (cons proj-prop lazy-contract-proj)
                                        (cons name-prop lazy-contract-name)
                                        (cons first-order-prop (λ (ctc) predicate))
                                        (cons stronger-prop stronger-lazy-contract?)))))))]))

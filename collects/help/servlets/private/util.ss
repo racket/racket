@@ -6,28 +6,6 @@
            (lib "string-constant.ss" "string-constants")
            (lib "contract.ss"))
 
-  (provide/contract
-   [fold-into-web-path ((listof string?) . -> . string?)])
-  
-  (provide get-pref/default
-           get-bool-pref/default
-           put-prefs
-           repos-or-nightly-build?
-           search-height-default
-           search-bg-default
-           search-text-default
-           search-link-default
-           color-highlight
-           color-with
-           collection-doc-link
-           home-page
-           format-collection-message
-           nl
-           plt-version
-           make-javascript
-           redir-javascript
-           onload-redir)
-
   ;; would be nice if this could use version:version from the framework.
   (define (plt-version)
     (let ([mz-version (version)]
@@ -138,9 +116,26 @@
     (string-append 
      "setTimeout(\"redir()\","
      (number->string (* secs 1000))
-     ")")))
-
-
-
-
-
+     ")"))
+  
+  (provide/contract
+   [fold-into-web-path ((listof string?) . -> . string?)])
+  
+  (provide get-pref/default
+           get-bool-pref/default
+           put-prefs
+           repos-or-nightly-build?
+           search-height-default
+           search-bg-default
+           search-text-default
+           search-link-default
+           color-highlight
+           color-with
+           collection-doc-link
+           home-page
+           format-collection-message
+           nl
+           plt-version
+           make-javascript
+           redir-javascript
+           onload-redir))

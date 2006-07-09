@@ -17,21 +17,6 @@
            "../servlets/private/util.ss"
            "../servlets/private/headelts.ss")
 
-  (provide main-manual-page)
-  (provide finddoc
-	   finddoc-page-anchor)
-  
-  (provide/contract [manual-entry (string? string? xexpr? . -> . xexpr?)]
-                    [finddoc-page (string? string? . -> . string?)]
-                    [get-doc-name (path? . -> . string?)]
-                    [find-doc-directories (-> (listof path?))]
-                    [find-doc-directory (path? . -> . (or/c false/c path?))]
-                    [find-doc-names (-> (listof (cons/c path? string?)))]
-                    [get-manual-index (-> string? string?)]
-                    [get-index-file (path? . -> . (or/c false/c path?))])
-  
-  (provide find-manuals)
-
   ;; type sec = (make-sec name regexp (listof regexp))
   (define-struct sec (name reg seps))
   
@@ -380,4 +365,20 @@
                            (if (file-exists? (build-path dir index-file))
                                index-file
                                #f)))
-                    (loop (cdr contents))))]))))
+                    (loop (cdr contents))))])))
+  
+  
+  (provide main-manual-page)
+  (provide finddoc
+	   finddoc-page-anchor)
+  
+  (provide/contract [manual-entry (string? string? xexpr? . -> . xexpr?)]
+                    [finddoc-page (string? string? . -> . string?)]
+                    [get-doc-name (path? . -> . string?)]
+                    [find-doc-directories (-> (listof path?))]
+                    [find-doc-directory (path? . -> . (or/c false/c path?))]
+                    [find-doc-names (-> (listof (cons/c path? string?)))]
+                    [get-manual-index (-> string? string?)]
+                    [get-index-file (path? . -> . (or/c false/c path?))])
+  
+  (provide find-manuals))

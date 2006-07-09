@@ -15,32 +15,6 @@
   (define (search-how? x)
     (member x '("exact-match" "containing-match" "regexp-match")))
   
-  (provide search-type? search-how?)
-  (provide/contract 
-   (make-relative-results-url (string? 
-                               search-type? 
-                               search-how?
-                               any/c 
-                               (listof path?)
-                               any/c
-                               (or/c false/c string?) . -> . string?))
-   (make-results-url (string?
-                      search-type? search-how? any/c 
-                      (listof path?) 
-                      any/c
-                      (or/c false/c string?)
-                      . -> .
-                      string?))
-   (flush-manuals-url string?)
-   (flush-manuals-path string?)
-   (make-missing-manual-url (string? string? string? . -> . string?))
-   (get-hd-location ((lambda (sym) (memq sym hd-location-syms))
-                     . -> . 
-                     string?))
-   [prefix-with-server (string? . -> . string?)]
-   [make-docs-plt-url (string? . -> . string?)]
-   [make-docs-html-url (string? . -> . string?)])
-
   (define (base-docs-url)
     (if (repos-or-nightly-build?)
       "http://pre.plt-scheme.org/docs"
@@ -112,4 +86,30 @@
 
   (define (get-hd-location sym)
     ; the assq is guarded by the contract
-    (cadr (assq sym hd-locations))))
+    (cadr (assq sym hd-locations)))
+  
+  (provide search-type? search-how?)
+  (provide/contract 
+   (make-relative-results-url (string? 
+                               search-type? 
+                               search-how?
+                               any/c 
+                               (listof path?)
+                               any/c
+                               (or/c false/c string?) . -> . string?))
+   (make-results-url (string?
+                      search-type? search-how? any/c 
+                      (listof path?) 
+                      any/c
+                      (or/c false/c string?)
+                      . -> .
+                      string?))
+   (flush-manuals-url string?)
+   (flush-manuals-path string?)
+   (make-missing-manual-url (string? string? string? . -> . string?))
+   (get-hd-location ((lambda (sym) (memq sym hd-location-syms))
+                     . -> . 
+                     string?))
+   [prefix-with-server (string? . -> . string?)]
+   [make-docs-plt-url (string? . -> . string?)]
+   [make-docs-html-url (string? . -> . string?)]))

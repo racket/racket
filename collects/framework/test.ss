@@ -10,207 +10,6 @@
       [(_ (name contract docs ...) ...)
        (syntax (provide/contract (name contract) ...))]))
   
-  (provide/contract/docs
-   (test:number-pending-actions
-    (-> number?)
-    ()
-    "Returns the number of pending events (those that haven't completed yet)")
-
-   (test:run-interval
-    (case->
-     (number? . -> . void?)
-     (-> number?))
-    ((msec) ())
-    "See also"
-    "\\hyperref{Actions and completeness}{Actions and completeness, section~}{}{fw:actions-completeness}."
-    "The first case in the case-lambda sets"
-    "the run interval to \\var{msec} milliseconds and the second"
-    "returns the current setting.")
-
-   (test:reraise-error
-    (-> void?)
-    ()
-    "See also"
-    "\\hyperref{Errors}{Errors, section~}{}{fw:test:errors}.")
-
-   (test:run-one
-    ((-> void?) . -> . void?)
-    (f)
-    "Runs the function \\var{f} as if it was a simulated event. See also"
-    "\\hyperref{the test section}{section ~}{}{fw:test}.")
-
-   (test:current-get-eventspaces
-    (case->
-     ((-> (listof eventspace?)) . -> . void?)
-     (-> (-> (listof eventspace?))))
-    ((func) ())
-
-    "This parameter that specifies which "
-    "\\hyperref{eventspaces}{eventspace (see section~}{)}{eventspaceinfo}"
-    "are considered when finding the frontmost frame."
-
-    "The first case"
-    "sets the parameter to \\var{func}. The procedure \\var{func} will be"
-    "invoked with no arguments to determine the eventspaces to consider"
-    "when finding the frontmost frame for simulated user events."
-
-    "The second case"
-    "returns the current value of the parameter. This will be a procedure"
-    "which, when invoked, returns a list of eventspaces.")
-   (test:close-top-level-window
-    ((is-a?/c top-level-window<%>) . -> . void?)
-    (tlw)
-    "Use this function to simulate clicking on the close box of a frame."
-    "Closes \\var{tlw} with this expression:"
-    ""
-    "\\begin{schemedisplay}"
-    "(when (send tlw can-close?)"
-    "  (send tlw on-close)"
-    "  (send tlw show #f))"
-    "\\end{schemedisplay}")
-
-   (test:top-level-focus-window-has?
-    (((is-a?/c area<%>) . -> . boolean?) . -> . boolean?)
-    (test)
-    "Calls \\var{test} for each child of the top-level-focus-frame"
-    "and returns \\scheme|#t| if \\var{test} ever does, otherwise"
-    "returns \\scheme|#f|. If there"
-    "is no top-level-focus-window, returns \\scheme|#f|.")
-
-   ;; ((frame-has? p) f) =
-   ;;    f is a frame and it has a child (in it or a subpanel) that responds #t to p
-   (test:button-push
-    ((or/c (λ (str)
-              (and (string? str)
-                   (test:top-level-focus-window-has?
-                    (λ (c)
-                      (and (is-a? c button%)
-                           (string=? (send c get-label) str)
-                           (send c is-enabled?)
-                           (send c is-shown?))))))
-	    
-            (and/c (is-a?/c button%)
-		   (λ (btn)
-		     (and (send btn is-enabled?)
-			  (send btn is-shown?)))
-		   (λ (btn)
-		     (test:top-level-focus-window-has?
-		      (λ (c) (eq? c btn))))))
-     . -> .
-     void?)
-    (button)
-    "Simulates pushing \\var{button}.  If a string is supplied, the"
-    "primitive searches for a button labelled with that string in the"
-    "active frame. Otherwise, it pushes the button argument.")
-
-   (test:set-radio-box!
-    ((or/c string? (is-a?/c radio-box%)) (or/c string? number?) . -> . void?)
-    (radio-box state)
-    "Sets the radio-box to \\var{state}. If \\var{state} is a"
-    "string, this function finds the choice with that label and"
-    "if it is a number, it uses the number as an index into the"
-    "state. If the number is out of range or if the label isn't"
-    "in the radio box, an exception is raised."
-    ""
-    "If \\var{radio-box} is a string, this function searches for a"
-    "\\iscmclass{radio-box} with a label matching that string,"
-    "otherwise it uses \\var{radio-box} itself.")
-
-   (test:set-radio-box-item!
-    (string? . -> . void?)
-    (entry)
-    "Finds a \\iscmclass{radio-box} that has a label \\var{entry}"
-    "and sets the radio-box to \\var{entry}.")
-   (test:set-check-box!
-    ((or/c string? (is-a?/c check-box%)) boolean? . -> . void?)
-    (check-box state)
-    "Clears the \\iscmclass{check-box} item if \\var{state} is \\rawscm{\\#f}, and sets it"
-    "otherwise."
-    ""
-    "If \\var{check-box} is a string,"
-    "this function searches for a \\iscmclass{check-box} with a label matching that string,"
-    "otherwise it uses \\var{check-box} itself.")
-
-   (test:set-choice!
-    ((or/c string? (is-a?/c choice%)) string? . -> . void?)
-    (choice str)
-    "Selects \\var{choice}'s item \\var{str}. If \\var{choice} is a string,"
-    "this function searches for a \\iscmclass{choice} with a label matching"
-    "that string, otherwise it uses \\var{choice} itself.")
-
-   (test:keystroke
-    (opt->
-     ((or/c char? symbol?))
-     ((listof (symbols 'alt 'control 'meta 'shift 'noalt 'nocontrol 'nometea 'noshift)))
-     void?)
-    ((key)
-     ((modifier-list null)))
-    "This function simulates a user pressing a key. The argument, \\var{key},"
-    "is just like the argument to the"
-    "@link key-event get-key-code"
-    "method of the"
-    "@link key-event"
-    "class. "
-    ""
-    "{\\it Note:}"
-    "To send the ``Enter'' key, use \\verb|#\return|,"
-    "not \\verb|#\newline|."
-    ""
-    "The \\rawscm{'shift} or \\rawscm{'noshift} modifier is implicitly set from \\var{key},"
-    "but is overridden by the argument list. The \\rawscm{'shift} modifier is"
-    "set for any capitol alpha-numeric letters and any of the following characters:"
-    "\\begin{schemedisplay}"
-    "#\\? #\\: #\\~ #\\\\ #\\|"
-    "#\\< #\\> #\\{ #\\} #\\[ #\\] #\\( #\\)"
-    "#\\! #\\@ #\\# #\\$ #\\% #\\^ #\\& #\\* #\\_ #\\+"
-    "\\end{schemedisplay}"
-    ""
-    "If conflicting modifiers are provided, the ones later in the list are used.")
-
-   (test:menu-select
-    (string? string? . -> . void?)
-    (menu item)
-    "Selects the menu-item named \\var{item} in the menu named \\var{menu}."
-    ""
-    "{\\it Note:}"
-    "The string for the menu item does not include its keyboard equivalent."
-    "For example, to select ``New'' from the ``File'' menu, "
-    "use ``New'', not ``New Ctrl+m n''.")
-
-   (test:mouse-click
-    (opt->
-     ((symbols 'left 'middle 'right)
-      (and/c exact? integer?)
-      (and/c exact? integer?))
-     ((listof (symbols 'alt 'control 'meta 'shift 'noalt 'nocontrol 'nometa 'noshift)))
-     void?)
-    ((button x y)
-     ((modifiers null)))
-    "Simulates a mouse click at the coordinate: $(x,y)$ in the currently"
-    "focused \\iscmintf{window}, assuming that it supports the "
-    "@ilink canvas on-event"
-    "method."
-    "Use"
-    "@flink test:button-push"
-    "to click on a button."
-    ""
-    "On the Macintosh, \\rawscm{'right} corresponds to holding down the command"
-    "modifier key while clicking and \\rawscm{'middle} cannot be generated."
-    ""
-    "Under Windows, \\rawscm{'middle} can only be generated if the user has a"
-    "three button mouse."
-    ""
-    "The modifiers later in the list \\var{modifiers} take precedence over"
-    "ones that appear earlier.")
-
-   (test:new-window 
-    ((is-a?/c window<%>) . -> . void?)
-    (window)
-    "Moves the keyboard focus to a new window within the currently active"
-    "frame.  Unfortunately, neither this function nor any other function in"
-    "the test engine can cause the focus to move from the top-most (active)"
-    "frame. "))
-
   (define (test:top-level-focus-window-has? pred)
     (let ([tlw (get-top-level-focus-window)])
       (and tlw
@@ -1036,4 +835,205 @@
   (define test:keystroke keystroke)
   (define test:menu-select menu-select)
   (define test:mouse-click mouse-click)
-  (define test:new-window new-window))
+  (define test:new-window new-window)
+  
+  (provide/contract/docs
+   (test:number-pending-actions
+    (-> number?)
+    ()
+    "Returns the number of pending events (those that haven't completed yet)")
+
+   (test:run-interval
+    (case->
+     (number? . -> . void?)
+     (-> number?))
+    ((msec) ())
+    "See also"
+    "\\hyperref{Actions and completeness}{Actions and completeness, section~}{}{fw:actions-completeness}."
+    "The first case in the case-lambda sets"
+    "the run interval to \\var{msec} milliseconds and the second"
+    "returns the current setting.")
+
+   (test:reraise-error
+    (-> void?)
+    ()
+    "See also"
+    "\\hyperref{Errors}{Errors, section~}{}{fw:test:errors}.")
+
+   (test:run-one
+    ((-> void?) . -> . void?)
+    (f)
+    "Runs the function \\var{f} as if it was a simulated event. See also"
+    "\\hyperref{the test section}{section ~}{}{fw:test}.")
+
+   (test:current-get-eventspaces
+    (case->
+     ((-> (listof eventspace?)) . -> . void?)
+     (-> (-> (listof eventspace?))))
+    ((func) ())
+
+    "This parameter that specifies which "
+    "\\hyperref{eventspaces}{eventspace (see section~}{)}{eventspaceinfo}"
+    "are considered when finding the frontmost frame."
+
+    "The first case"
+    "sets the parameter to \\var{func}. The procedure \\var{func} will be"
+    "invoked with no arguments to determine the eventspaces to consider"
+    "when finding the frontmost frame for simulated user events."
+
+    "The second case"
+    "returns the current value of the parameter. This will be a procedure"
+    "which, when invoked, returns a list of eventspaces.")
+   (test:close-top-level-window
+    ((is-a?/c top-level-window<%>) . -> . void?)
+    (tlw)
+    "Use this function to simulate clicking on the close box of a frame."
+    "Closes \\var{tlw} with this expression:"
+    ""
+    "\\begin{schemedisplay}"
+    "(when (send tlw can-close?)"
+    "  (send tlw on-close)"
+    "  (send tlw show #f))"
+    "\\end{schemedisplay}")
+
+   (test:top-level-focus-window-has?
+    (((is-a?/c area<%>) . -> . boolean?) . -> . boolean?)
+    (test)
+    "Calls \\var{test} for each child of the top-level-focus-frame"
+    "and returns \\scheme|#t| if \\var{test} ever does, otherwise"
+    "returns \\scheme|#f|. If there"
+    "is no top-level-focus-window, returns \\scheme|#f|.")
+
+   ;; ((frame-has? p) f) =
+   ;;    f is a frame and it has a child (in it or a subpanel) that responds #t to p
+   (test:button-push
+    ((or/c (λ (str)
+              (and (string? str)
+                   (test:top-level-focus-window-has?
+                    (λ (c)
+                      (and (is-a? c button%)
+                           (string=? (send c get-label) str)
+                           (send c is-enabled?)
+                           (send c is-shown?))))))
+	    
+            (and/c (is-a?/c button%)
+		   (λ (btn)
+		     (and (send btn is-enabled?)
+			  (send btn is-shown?)))
+		   (λ (btn)
+		     (test:top-level-focus-window-has?
+		      (λ (c) (eq? c btn))))))
+     . -> .
+     void?)
+    (button)
+    "Simulates pushing \\var{button}.  If a string is supplied, the"
+    "primitive searches for a button labelled with that string in the"
+    "active frame. Otherwise, it pushes the button argument.")
+
+   (test:set-radio-box!
+    ((or/c string? (is-a?/c radio-box%)) (or/c string? number?) . -> . void?)
+    (radio-box state)
+    "Sets the radio-box to \\var{state}. If \\var{state} is a"
+    "string, this function finds the choice with that label and"
+    "if it is a number, it uses the number as an index into the"
+    "state. If the number is out of range or if the label isn't"
+    "in the radio box, an exception is raised."
+    ""
+    "If \\var{radio-box} is a string, this function searches for a"
+    "\\iscmclass{radio-box} with a label matching that string,"
+    "otherwise it uses \\var{radio-box} itself.")
+
+   (test:set-radio-box-item!
+    (string? . -> . void?)
+    (entry)
+    "Finds a \\iscmclass{radio-box} that has a label \\var{entry}"
+    "and sets the radio-box to \\var{entry}.")
+   (test:set-check-box!
+    ((or/c string? (is-a?/c check-box%)) boolean? . -> . void?)
+    (check-box state)
+    "Clears the \\iscmclass{check-box} item if \\var{state} is \\rawscm{\\#f}, and sets it"
+    "otherwise."
+    ""
+    "If \\var{check-box} is a string,"
+    "this function searches for a \\iscmclass{check-box} with a label matching that string,"
+    "otherwise it uses \\var{check-box} itself.")
+
+   (test:set-choice!
+    ((or/c string? (is-a?/c choice%)) string? . -> . void?)
+    (choice str)
+    "Selects \\var{choice}'s item \\var{str}. If \\var{choice} is a string,"
+    "this function searches for a \\iscmclass{choice} with a label matching"
+    "that string, otherwise it uses \\var{choice} itself.")
+
+   (test:keystroke
+    (opt->
+     ((or/c char? symbol?))
+     ((listof (symbols 'alt 'control 'meta 'shift 'noalt 'nocontrol 'nometea 'noshift)))
+     void?)
+    ((key)
+     ((modifier-list null)))
+    "This function simulates a user pressing a key. The argument, \\var{key},"
+    "is just like the argument to the"
+    "@link key-event get-key-code"
+    "method of the"
+    "@link key-event"
+    "class. "
+    ""
+    "{\\it Note:}"
+    "To send the ``Enter'' key, use \\verb|#\return|,"
+    "not \\verb|#\newline|."
+    ""
+    "The \\rawscm{'shift} or \\rawscm{'noshift} modifier is implicitly set from \\var{key},"
+    "but is overridden by the argument list. The \\rawscm{'shift} modifier is"
+    "set for any capitol alpha-numeric letters and any of the following characters:"
+    "\\begin{schemedisplay}"
+    "#\\? #\\: #\\~ #\\\\ #\\|"
+    "#\\< #\\> #\\{ #\\} #\\[ #\\] #\\( #\\)"
+    "#\\! #\\@ #\\# #\\$ #\\% #\\^ #\\& #\\* #\\_ #\\+"
+    "\\end{schemedisplay}"
+    ""
+    "If conflicting modifiers are provided, the ones later in the list are used.")
+
+   (test:menu-select
+    (string? string? . -> . void?)
+    (menu item)
+    "Selects the menu-item named \\var{item} in the menu named \\var{menu}."
+    ""
+    "{\\it Note:}"
+    "The string for the menu item does not include its keyboard equivalent."
+    "For example, to select ``New'' from the ``File'' menu, "
+    "use ``New'', not ``New Ctrl+m n''.")
+
+   (test:mouse-click
+    (opt->
+     ((symbols 'left 'middle 'right)
+      (and/c exact? integer?)
+      (and/c exact? integer?))
+     ((listof (symbols 'alt 'control 'meta 'shift 'noalt 'nocontrol 'nometa 'noshift)))
+     void?)
+    ((button x y)
+     ((modifiers null)))
+    "Simulates a mouse click at the coordinate: $(x,y)$ in the currently"
+    "focused \\iscmintf{window}, assuming that it supports the "
+    "@ilink canvas on-event"
+    "method."
+    "Use"
+    "@flink test:button-push"
+    "to click on a button."
+    ""
+    "On the Macintosh, \\rawscm{'right} corresponds to holding down the command"
+    "modifier key while clicking and \\rawscm{'middle} cannot be generated."
+    ""
+    "Under Windows, \\rawscm{'middle} can only be generated if the user has a"
+    "three button mouse."
+    ""
+    "The modifiers later in the list \\var{modifiers} take precedence over"
+    "ones that appear earlier.")
+
+   (test:new-window 
+    ((is-a?/c window<%>) . -> . void?)
+    (window)
+    "Moves the keyboard focus to a new window within the currently active"
+    "frame.  Unfortunately, neither this function nor any other function in"
+    "the test engine can cause the focus to move from the top-most (active)"
+    "frame. ")))

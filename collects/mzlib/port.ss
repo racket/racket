@@ -5,23 +5,6 @@
 	   (lib "list.ss")
 	   "private/port.ss")
 
-  (provide open-output-nowhere
-	   make-pipe-with-specials
-	   make-input-port/read-to-peek
-	   peeking-input-port
-	   relocate-input-port
-	   transplant-input-port
-	   relocate-output-port
-	   transplant-output-port
-	   merge-input
-	   copy-port
-	   input-port-append
-	   convert-stream
-	   make-limited-input-port
-	   reencode-input-port
-	   reencode-output-port
-	   strip-shell-command-start)
-
   (define (exact-non-negative-integer? i)
     (and (number? i) (exact? i) (integer? i) (i . >= . 0)))
 
@@ -40,42 +23,6 @@
   (define (evt?/false v)
     (or (eq? #f v) (evt? v)))
   
-  (provide/contract (read-bytes-avail!-evt (mutable-bytes? input-port-with-progress-evts?
-							   . -> . evt?))
-		    (peek-bytes-avail!-evt (mutable-bytes? exact-non-negative-integer? evt?/false
-							   input-port-with-progress-evts? 
-							   . -> . evt?))
-		    (read-bytes!-evt (mutable-bytes? input-port-with-progress-evts? . -> . evt?))
-		    (peek-bytes!-evt (mutable-bytes? exact-non-negative-integer? evt?/false
-						     input-port-with-progress-evts? 
-						     . -> . evt?))
-		    (read-bytes-evt (exact-non-negative-integer? input-port-with-progress-evts? 
-								 . -> . evt?))
-		    (peek-bytes-evt (exact-non-negative-integer? exact-non-negative-integer? evt?/false
-								 input-port-with-progress-evts? 
-								 . -> . evt?))
-		    (read-string!-evt (mutable-string? input-port-with-progress-evts? 
-						       . -> . evt?))
-		    (peek-string!-evt (mutable-string? exact-non-negative-integer? evt?/false
-						       input-port-with-progress-evts? 
-						       . -> . evt?))
-		    (read-string-evt (exact-non-negative-integer? input-port-with-progress-evts? 
-								  . -> . evt?))
-		    (peek-string-evt (exact-non-negative-integer? exact-non-negative-integer? evt?/false
-								  input-port-with-progress-evts? 
-								  . -> . evt?))
-		    (regexp-match-evt ((or/c regexp? byte-regexp? string? bytes?)
-				       input-port-with-progress-evts? 
-				       . -> . evt?))
-
-		    (read-bytes-line-evt (case->
-					  (input-port-with-progress-evts? . -> . evt?)
-					  (input-port-with-progress-evts? line-mode-symbol? . -> . evt?)))
-		    (read-line-evt (case->
-				    (input-port-with-progress-evts? . -> . evt?)
-				    (input-port-with-progress-evts? line-mode-symbol? . -> . evt?)))
-		    (eof-evt (input-port-with-progress-evts? . -> . evt?)))
-
   ;; ----------------------------------------
 
   (define (strip-shell-command-start in)
@@ -1535,4 +1482,57 @@
 			      (and (eq? old 'line)
 				   (memq mode '(none))))
 		      ;; Flush output
-		      (write-it #"" 0 0 #f #f)))]))))))
+		      (write-it #"" 0 0 #f #f)))])))))
+  
+  (provide open-output-nowhere
+	   make-pipe-with-specials
+	   make-input-port/read-to-peek
+	   peeking-input-port
+	   relocate-input-port
+	   transplant-input-port
+	   relocate-output-port
+	   transplant-output-port
+	   merge-input
+	   copy-port
+	   input-port-append
+	   convert-stream
+	   make-limited-input-port
+	   reencode-input-port
+	   reencode-output-port
+	   strip-shell-command-start)
+  
+  (provide/contract (read-bytes-avail!-evt (mutable-bytes? input-port-with-progress-evts?
+							   . -> . evt?))
+		    (peek-bytes-avail!-evt (mutable-bytes? exact-non-negative-integer? evt?/false
+							   input-port-with-progress-evts? 
+							   . -> . evt?))
+		    (read-bytes!-evt (mutable-bytes? input-port-with-progress-evts? . -> . evt?))
+		    (peek-bytes!-evt (mutable-bytes? exact-non-negative-integer? evt?/false
+						     input-port-with-progress-evts? 
+						     . -> . evt?))
+		    (read-bytes-evt (exact-non-negative-integer? input-port-with-progress-evts? 
+								 . -> . evt?))
+		    (peek-bytes-evt (exact-non-negative-integer? exact-non-negative-integer? evt?/false
+								 input-port-with-progress-evts? 
+								 . -> . evt?))
+		    (read-string!-evt (mutable-string? input-port-with-progress-evts? 
+						       . -> . evt?))
+		    (peek-string!-evt (mutable-string? exact-non-negative-integer? evt?/false
+						       input-port-with-progress-evts? 
+						       . -> . evt?))
+		    (read-string-evt (exact-non-negative-integer? input-port-with-progress-evts? 
+								  . -> . evt?))
+		    (peek-string-evt (exact-non-negative-integer? exact-non-negative-integer? evt?/false
+								  input-port-with-progress-evts? 
+								  . -> . evt?))
+		    (regexp-match-evt ((or/c regexp? byte-regexp? string? bytes?)
+				       input-port-with-progress-evts? 
+				       . -> . evt?))
+
+		    (read-bytes-line-evt (case->
+					  (input-port-with-progress-evts? . -> . evt?)
+					  (input-port-with-progress-evts? line-mode-symbol? . -> . evt?)))
+		    (read-line-evt (case->
+				    (input-port-with-progress-evts? . -> . evt?)
+				    (input-port-with-progress-evts? line-mode-symbol? . -> . evt?)))
+		    (eof-evt (input-port-with-progress-evts? . -> . evt?))))

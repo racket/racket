@@ -2,9 +2,6 @@
   (require (lib "contract.ss")
            (lib "stx.ss" "syntax"))
   
-  (provide/contract [syntax->string (-> (and/c syntax? stx-list?)
-                                        string?)])
-  
   (require (lib "list.ss"))
 
   (define (syntax->string c)
@@ -69,4 +66,7 @@
                  (set! col (+ col (string-length s)))
                  (display s))])))
         (for-each (loop (lambda () (set! col init-col))) l))
-      (get-output-string s))))
+      (get-output-string s)))
+  
+  (provide/contract [syntax->string (-> (and/c syntax? stx-list?)
+                                        string?)]))

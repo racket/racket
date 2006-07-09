@@ -8,12 +8,6 @@
 	   (lib "config.ss" "planet")
            (lib "dirs.ss" "setup"))
   
-  (provide/contract (get-help-url
-                     (opt->
-                      ((or/c path? path-string?))
-                      (string?)
-                      string?)))
-  
   ; given a manual path, convert to absolute Web path
   ; manual path is an anchored path to a doc manual, never a servlet
   (define get-help-url
@@ -64,4 +58,10 @@
         [(null? long) #f]
         [(equal? (car short) (car long))
          (loop (cdr short) (cdr long))]
-        [else #f]))))
+        [else #f])))
+  
+  (provide/contract (get-help-url
+                     (opt->
+                      ((or/c path? path-string?))
+                      (string?)
+                      string?))))
