@@ -1,6 +1,8 @@
 
 (load-relative "loadtest.ss")
 
+(Section 'net)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; url.ss tests
