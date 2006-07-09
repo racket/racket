@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-typedef signed char byte;
+typedef unsigned char byte;
 
 int  add1_int_int   (int  x) { return x + 1; }
 int  add1_byte_int  (byte x) { return x + 1; }
