@@ -276,7 +276,7 @@ transcript.
     (if ok?
       (printf "Passed all tests.\n")
       (begin (printf "Errors were:\n(Section (got expected (call)))\n")
-             (for-each (lambda (l) (printf "~s\n" l)) errs)
+             (for-each (lambda (l) (printf "~s\n" l)) (reverse errs))
              (when final? (exit 1))))
     (when final? (exit (if ok? 0 1)))
     (printf "(Other messages report successful tests of~a.)\n"
