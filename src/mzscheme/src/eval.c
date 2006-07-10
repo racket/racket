@@ -3068,7 +3068,7 @@ static void *compile_k(void)
 	 find one, break it up to eval first expression
 	 before the rest. */
       while (1) {
-	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv));
+	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), scheme_false);
 	form = scheme_check_immediate_macro(form, 
 					    cenv, &rec, 0,
 					    0, &gval, NULL, NULL);
@@ -3105,7 +3105,7 @@ static void *compile_k(void)
       Scheme_Object *l, *prev_o = NULL;
 
       while (1) {
-	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv));
+	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), scheme_false);
 
 	scheme_init_compile_recs(&rec, 0, &rec2, 1);
 
@@ -4013,7 +4013,7 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
   ip = MALLOC_N(Scheme_Comp_Env *, 1);
   *ip = inserted;
 
-  scheme_frame_captures_lifts(inserted, pair_lifted, (Scheme_Object *)ip);
+  scheme_frame_captures_lifts(inserted, pair_lifted, (Scheme_Object *)ip, scheme_false);
 
   if (rec[drec].comp) {
     scheme_init_compile_recs(rec, drec, recs, 2);
@@ -6085,7 +6085,7 @@ static void *expand_k(void)
     erec1.certs = certs;
 
     if (catch_lifts)
-      scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env));
+      scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), scheme_false);
   
     if (just_to_top) {
       Scheme_Object *gval;

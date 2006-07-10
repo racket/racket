@@ -782,6 +782,7 @@ Scheme_Object *(*scheme_caddr)(Scheme_Object *pair);
 Scheme_Object *(*scheme_vector_to_list)(Scheme_Object *vec);
 Scheme_Object *(*scheme_list_to_vector)(Scheme_Object *list);
 Scheme_Object *(*scheme_append)(Scheme_Object *lstx, Scheme_Object *lsty);
+Scheme_Object *(*scheme_reverse)(Scheme_Object *l);
 Scheme_Object *(*scheme_box)(Scheme_Object *v);
 Scheme_Object *(*scheme_unbox)(Scheme_Object *obj);
 void (*scheme_set_box)(Scheme_Object *b, Scheme_Object *v);

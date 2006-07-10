@@ -951,6 +951,7 @@ MZ_EXTERN Scheme_Object *scheme_vector_to_list(Scheme_Object *vec);
 MZ_EXTERN Scheme_Object *scheme_list_to_vector(Scheme_Object *list);
 
 MZ_EXTERN Scheme_Object *scheme_append(Scheme_Object *lstx, Scheme_Object *lsty);
+MZ_EXTERN Scheme_Object *scheme_reverse(Scheme_Object *l);
 
 MZ_EXTERN Scheme_Object *scheme_box(Scheme_Object *v);
 MZ_EXTERN Scheme_Object *scheme_unbox(Scheme_Object *obj);

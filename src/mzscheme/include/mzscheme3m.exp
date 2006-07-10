@@ -481,6 +481,7 @@ scheme_caddr
 scheme_vector_to_list
 scheme_list_to_vector
 scheme_append
+scheme_reverse
 scheme_box
 scheme_unbox
 scheme_set_box

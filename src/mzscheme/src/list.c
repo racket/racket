@@ -935,6 +935,13 @@ scheme_append (Scheme_Object *lst1, Scheme_Object *lst2)
   return first;
 }
 
+Scheme_Object *scheme_reverse(Scheme_Object *l)
+{
+  Scheme_Object *a[1];
+  a[0] = l;
+  return reverse_prim(1, a);
+}
+
 static Scheme_Object *
 scheme_append_bang (Scheme_Object *lst1, Scheme_Object *lst2)
 {

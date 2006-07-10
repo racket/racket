@@ -3674,6 +3674,11 @@ static Scheme_Object *stx_sym(Scheme_Object *name, Scheme_Object *_genv)
   return scheme_tl_id_sym((Scheme_Env *)_genv, name, NULL, 2);
 }
 
+static Scheme_Object *add_a_rename(Scheme_Object *fm, Scheme_Object *post_ex_rn)
+{
+  return scheme_add_rename(fm, post_ex_rn);
+}
+
 static Scheme_Object *add_req(Scheme_Object *imods, Scheme_Object *requires)
 {
   for (; !SCHEME_NULLP(imods); imods = SCHEME_CDR(imods)) {
@@ -3743,6 +3748,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   int excount, exvcount, exicount;
   int reprovide_kernel;
   int all_simple_renames = 1, et_all_simple_renames = 1, tt_all_simple_renames = 1;
+  int maybe_has_lifts = 0;
   Scheme_Object *redef_modname;
 
   if (!(env->flags & SCHEME_MODULE_FRAME))
@@ -3897,10 +3903,12 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   form = scheme_add_rename(form, post_ex_rn);
   form = scheme_add_rename(form, post_ex_et_rn);
   form = scheme_add_rename(form, post_ex_tt_rn);
+
+  maybe_has_lifts = 0;
   
   /* Partially expand all expressions, and process definitions, requires,
      and provides. Also, flatten top-level `begin' expressions: */
-  for (fm = SCHEME_STX_CDR(form); !SCHEME_STX_NULLP(fm); fm = SCHEME_STX_CDR(fm)) {
+  for (fm = SCHEME_STX_CDR(form); !SCHEME_STX_NULLP(fm); ) {
     Scheme_Object *e;
     int normal;
 
@@ -3909,7 +3917,11 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
       e = SCHEME_STX_CAR(fm);
 
-      scheme_frame_captures_lifts(xenv, scheme_make_lifted_defn, scheme_sys_wraps(xenv));
+      p = (maybe_has_lifts 
+           ? scheme_frame_get_end_statement_lifts(xenv) 
+           : scheme_null);
+      scheme_frame_captures_lifts(xenv, scheme_make_lifted_defn, scheme_sys_wraps(xenv), p);
+      maybe_has_lifts = 1;
 
       {
 	Scheme_Expand_Info erec1;
@@ -3925,7 +3937,12 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	/* Expansion lifted expressions, so add them to
 	   the front and try again. */
 	fm = SCHEME_STX_CDR(fm);
-	/* Why don't we need post_ex renames on fst and e? */
+        e = scheme_add_rename(e, post_ex_rn);
+        e = scheme_add_rename(e, post_ex_et_rn);
+        e = scheme_add_rename(e, post_ex_tt_rn);
+        fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_rn);
+        fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_et_rn);
+        fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_tt_rn);
 	fm = scheme_append(fst, scheme_make_pair(e, fm));
       } else {
 	/* No lifts added... */
@@ -3941,8 +3958,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  e = scheme_add_rename(e, post_ex_tt_rn);
 	  fm = scheme_flatten_begin(e, fm);
 	  if (SCHEME_STX_NULLP(fm)) {
-	    e = NULL;
-	    break;
+            fm = scheme_frame_get_end_statement_lifts(xenv);
+            fm = scheme_reverse(fm);
+            maybe_has_lifts = 0;
+            if (SCHEME_NULLP(fm)) {
+              e = NULL;
+              break;
+            }
 	  }
 	} else
 	  break;
@@ -4470,6 +4492,15 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	first = p;
       last = p;
     }
+
+    fm = SCHEME_STX_CDR(fm);
+
+    /* If we're out of declarations, check for lifted-to-end: */
+    if (SCHEME_STX_NULLP(fm) && maybe_has_lifts) {
+      fm = scheme_frame_get_end_statement_lifts(xenv);
+      fm = scheme_reverse(fm);
+      maybe_has_lifts = 0;
+    }
   }
   /* first =  a list of (cons semi-expanded-expression normal?) */
 
@@ -4485,6 +4516,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   SCHEME_VEC_ELS(lift_data)[1] = self_modidx;
   SCHEME_VEC_ELS(lift_data)[2] = rn;
 
+  maybe_has_lifts = 0;
+
   prev_p = NULL;
   for (p = first; !SCHEME_NULLP(p); ) {
     Scheme_Object *e, *l, *ll;
@@ -4494,7 +4527,11 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     normal = SCHEME_TRUEP(SCHEME_CDR(e));
     e = SCHEME_CAR(e);
     if (normal) {
-      scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data);
+      l = (maybe_has_lifts 
+           ? scheme_frame_get_end_statement_lifts(cenv) 
+           : scheme_null);
+      scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data, l);
+      maybe_has_lifts = 1;
 
       if (rec[drec].comp) {
 	Scheme_Compile_Info crec1;
@@ -4533,6 +4570,22 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       SCHEME_CAR(p) = e;
       prev_p = p;
       p = SCHEME_CDR(p);
+    }
+
+    /* If we're out of declarations, check for lifted-to-end: */
+    if (SCHEME_NULLP(p) && maybe_has_lifts) {
+      p = scheme_frame_get_end_statement_lifts(cenv);
+      p = scheme_reverse(p);
+      for (ll = p; SCHEME_PAIRP(ll); ll = SCHEME_CDR(ll)) {
+        e = scheme_make_pair(SCHEME_CAR(ll), scheme_true);
+        SCHEME_CAR(ll) = e;
+      }
+      maybe_has_lifts = 0;
+      if (prev_p) {
+        SCHEME_CDR(prev_p) = p;
+      } else {
+        first = p;
+      }
     }
   }
   /* first =  a list of expanded/compiled expressions */

@@ -525,6 +525,7 @@
   scheme_extension_table->scheme_vector_to_list = scheme_vector_to_list;
   scheme_extension_table->scheme_list_to_vector = scheme_list_to_vector;
   scheme_extension_table->scheme_append = scheme_append;
+  scheme_extension_table->scheme_reverse = scheme_reverse;
   scheme_extension_table->scheme_box = scheme_box;
   scheme_extension_table->scheme_unbox = scheme_unbox;
   scheme_extension_table->scheme_set_box = scheme_set_box;
