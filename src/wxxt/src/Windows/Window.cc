@@ -1572,8 +1572,9 @@ extern Bool wxIsAlt(KeySym key_sym);
 /* Used for XLookupString */
 static XComposeStatus compose_status;
 #ifndef NO_XMB_LOOKUP_STRING
-# define XMB_KC_STATUS(status) (status == XLookupKeySym) || (status == XLookupBoth)
-# define XMB_STR_STATUS(status) (status == XLookupChars) || (status == XLookupBoth)
+# define XMB_KC_STATUS(status) ((status == XLookupKeySym) || (status == XLookupBoth))
+# define XMB_STR_STATUS(status) ((status == XLookupChars) || (status == XLookupBoth))
+# define XMB_STR_PREFERRED_STATUS(status, xev) ((status == XLookupChars) || ((status == XLookupBoth) && !(xev->xkey.state & ControlMask)))
 # define DEFAULT_XMB_STATUS XLookupKeySym
 # ifdef X_HAVE_UTF8_STRING
 #  define X___LookupString Xutf8LookupString
@@ -1583,9 +1584,21 @@ static XComposeStatus compose_status;
 #else
 # define XMB_KC_STATUS(status) (status)
 # define XMB_STR_STATUS(status) 0
+# define XMB_STR_PREFERRED_STATUS(status, xev) 0
 # define DEFAULT_XMB_STATUS 1
 #endif
 
+static int extract_string_key(char *str, int slen)
+{
+  if (slen > 9)
+    slen = 9;
+  str[slen] = 0;
+#ifdef X_HAVE_UTF8_STRING
+  return wxUTF8StringToChar(str, slen);
+#else
+  return wxLocaleStringToChar(str, slen);
+#endif
+}
 
 Status wxWindow::LookupKey(int unshifted, Widget w, wxWindow *win, XEvent *xev, KeySym *_keysym, char *str, int *_len)
 {
@@ -1730,31 +1743,21 @@ void wxWindow::WindowEventHandler(Widget w,
 	  }
 	}
 
-	if (XMB_STR_STATUS(status)) {
-	  if (slen > 9)
-	    slen = 9;
-	  str[slen] = 0;
-#ifdef X_HAVE_UTF8_STRING
-	  kc = wxUTF8StringToChar(str, slen);
-#else
-	  kc = wxLocaleStringToChar(str, slen);
-#endif
-	} else if (XMB_KC_STATUS(status))
+	if (XMB_STR_PREFERRED_STATUS(status, xev))
+          kc = extract_string_key(str, slen);
+	else if (XMB_KC_STATUS(status))
 	  kc = CharCodeXToWX(keysym);
+	else if (XMB_STR_STATUS(status))
+          kc = extract_string_key(str, slen);
 	else 
 	  kc = 0;
 
-	if (XMB_STR_STATUS(other_status)) {
-	  if (other_slen > 9)
-	    other_slen = 9;
-	  other_str[other_slen] = 0;
-#ifdef X_HAVE_UTF8_STRING
-	  other_kc = wxUTF8StringToChar(other_str, other_slen);
-#else
-	  other_kc = wxLocaleStringToChar(other_str, other_slen);
-#endif
-	} else if (XMB_KC_STATUS(other_status))
+	if (XMB_STR_PREFERRED_STATUS(other_status, xev))
+          kc = extract_string_key(other_str, other_slen);
+	else if (XMB_KC_STATUS(other_status))
 	  other_kc = CharCodeXToWX(other_keysym);
+	else if (XMB_STR_STATUS(other_status))
+          kc = extract_string_key(other_str, other_slen);
 	else 
 	  other_kc = 0;
 
