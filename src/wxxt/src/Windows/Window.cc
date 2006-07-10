@@ -1753,11 +1753,11 @@ void wxWindow::WindowEventHandler(Widget w,
 	  kc = 0;
 
 	if (XMB_STR_PREFERRED_STATUS(other_status, xev))
-          kc = extract_string_key(other_str, other_slen);
+          other_kc = extract_string_key(other_str, other_slen);
 	else if (XMB_KC_STATUS(other_status))
 	  other_kc = CharCodeXToWX(other_keysym);
 	else if (XMB_STR_STATUS(other_status))
-          kc = extract_string_key(other_str, other_slen);
+          other_kc = extract_string_key(other_str, other_slen);
 	else 
 	  other_kc = 0;
 
