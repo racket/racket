@@ -1506,7 +1506,6 @@
       (eval '(require contract-test-suite-define1))))
   
 
-
   
 ;                                                                                                     
 ;                                                                                                     
@@ -4474,7 +4473,6 @@
   
   ;; provide/contract should signal errors without requiring a reference to the variable
   ;; this test is bogus, because provide/contract'd variables can be set!'d.
-  #;
   (test/pos-blame
    'provide/contract15
    '(parameterize ([current-namespace (make-namespace)])
@@ -4485,7 +4483,6 @@
       (eval '(require pos))))
   
   ;; this is really a positive violation, but name the module `neg' just for an addl test
-  #;
   (test/neg-blame
    'provide/contract16
    '(parameterize ([current-namespace (make-namespace)])
@@ -4494,6 +4491,24 @@
                (define i #f)
                (provide/contract [i integer?])))
       (eval '(require neg))))
+  
+  ;; this test doesn't pass yet ... waiting for support from define-struct
+  
+  #;
+  (test/neg-blame
+   'provide/contract17
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module pos mzscheme
+               (require (lib "contract.ss"))
+               (define-struct s (a))
+               (provide/contract [struct s ((a integer?))])))
+      (eval '(module neg mzscheme
+               (require pos)
+               (define-struct (t s) ())
+               (make-t #f)))
+      (eval '(require neg))))
+  
+
   
 
   

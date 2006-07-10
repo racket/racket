@@ -469,25 +469,11 @@ add struct contracts for immutable structs?
                                                          '
                                                          ()  ;; immutable-k-list
                                                          (λ (selector-ids ... ignore) 
-                                                           (values (-contract field-contract-ids selector-ids 'guess1 'guess2)
+                                                           (values (-contract field-contract-ids selector-ids 'not-enough-info-for-blame 'not-enough-info-for-blame)
                                                                    ...)))])
                            struct:struct-name))
                        (provide (rename -struct:struct-name struct:struct-name)))))))))
- 
-         ;; map/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
-         #;
-         (define (map/count f l1 l2)
-           (let loop ([l1 l1]
-                      [l2 l2]
-                      [i 0])
-             (cond
-               [(and (null? l1) (null? l2)) '()]
-               [(or (null? l1) (null? l2)) (error 'map/count "mismatched lists")]
-               [else (cons (f (car l1) (car l2) i)
-                           (loop (cdr l1)
-                                 (cdr l2)
-                                 (+ i 1)))])))
-         
+          
          (define (map/count f . ls)
            (let loop ([ls ls]
                       [i 0])
@@ -592,13 +578,20 @@ add struct contracts for immutable structs?
                                 (define pos-module-source (module-source-as-symbol #'pos-stx))
                                 (define contract-id ctrct)
                                 
-                                (if #f id)
+                                ;(if #f id)
+                                ; syntax-local-lift
                                 ;(check-first-order contract-id id #'pos-stx) ;; we'd like to use this ...
                                 
                                 (define-syntax id-rename
 				  (make-provide/contract-transformer (quote-syntax contract-id)
 								     (quote-syntax id)
 								     (quote-syntax pos-module-source)))))])
+               
+               (syntax-local-lift-module-end-declaration
+                #'(begin 
+                    (-contract contract-id id pos-module-source 'ignored #'pos-stx)
+                    (void)))
+               
                (syntax (code id-rename)))))
          
          (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])
@@ -606,9 +599,6 @@ add struct contracts for immutable structs?
             (begin
               bodies ...))))]))
   
-  (define (check-first-order ctc val src-info) 
-    (-contract ctc val (module-source-as-symbol src-info) 'ignored src-info)
-    (void))
   
   (define (test-proc/flat-contract f x)
     (if (flat-contract? f)
