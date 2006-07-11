@@ -1057,19 +1057,20 @@
               (let* ([edit (get-editor)]
                      [b (box #f)]
                      [filename (send edit get-filename b)])
-                (if (or (not filename) 
+                (if (or (not filename)
                         (unbox b))
                     (bell)
-                    (when (gui-utils:get-choice
-                           (string-constant are-you-sure-revert)
-                           (string-constant yes)
-                           (string-constant no)
-                           (string-constant are-you-sure-revert-title)
-                           #f
-                           this)
+                    (when (or (not (send (get-editor) is-modified?))
+                              (gui-utils:get-choice
+                               (string-constant are-you-sure-revert)
+                               (string-constant yes)
+                               (string-constant no)
+                               (string-constant are-you-sure-revert-title)
+                               #f
+                               this))
                       (revert))))
               #t))
-          
+
           (define/public (revert)
             (let* ([edit (get-editor)]
                    [b (box #f)]
