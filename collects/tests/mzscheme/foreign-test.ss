@@ -62,10 +62,14 @@
   (t  9 'callback3_int_byte_byte  (_fun (_fun _int  -> _byte) -> _byte) sqr)
   (t  9 'callback3_byte_byte_byte (_fun (_fun _byte -> _byte) -> _byte) sqr)
   ;; ---
-  (tc 3 'curry_int_int_int   (_fun _int  -> (_fun _int  -> _int)) 1 2)
-  (tc 3 'curry_byte_int_int  (_fun _byte -> (_fun _int  -> _int)) 1 2)
-  (tc 3 'curry_int_byte_int  (_fun _int  -> (_fun _byte -> _int)) 1 2)
-  (tc 3 'curry_byte_byte_int (_fun _byte -> (_fun _byte -> _int)) 1 2)
+  (tc 3 'curry_int_int_int    (_fun _int  -> (_fun _int  -> _int )) 1 2)
+  (tc 3 'curry_byte_int_int   (_fun _byte -> (_fun _int  -> _int )) 1 2)
+  (tc 3 'curry_int_byte_int   (_fun _int  -> (_fun _byte -> _int )) 1 2)
+  (tc 3 'curry_byte_byte_int  (_fun _byte -> (_fun _byte -> _int )) 1 2)
+  (tc 3 'curry_int_int_byte   (_fun _int  -> (_fun _int  -> _byte)) 1 2)
+  (tc 3 'curry_byte_int_byte  (_fun _byte -> (_fun _int  -> _byte)) 1 2)
+  (tc 3 'curry_int_byte_byte  (_fun _int  -> (_fun _byte -> _byte)) 1 2)
+  (tc 3 'curry_byte_byte_byte (_fun _byte -> (_fun _byte -> _byte)) 1 2)
   ;; ---
   (test* 14 'ho (_fun (_fun _int -> _int) _int -> (_fun _int -> _int))
          (lambda (p) ((p add1 3) 10)))
