@@ -29,14 +29,14 @@ int  curry_return_int_int   (int  x) { return g1 + x; }
 int  curry_return_byte_int  (byte x) { return g1 + x; }
 byte curry_return_int_byte  (int  x) { return g1 + x; }
 byte curry_return_byte_byte (byte x) { return g1 + x; }
-void* curry_int_int_int   (int x)  { g1 = x; return &curry_return_int_int;   }
-void* curry_byte_int_int  (int x)  { g1 = x; return &curry_return_int_int;   }
-void* curry_int_byte_int  (int x)  { g1 = x; return &curry_return_byte_int;  }
-void* curry_byte_byte_int (int x)  { g1 = x; return &curry_return_byte_int;  }
-void* curry_int_int_byte  (int x)  { g1 = x; return &curry_return_int_byte;  }
-void* curry_byte_int_byte (int x)  { g1 = x; return &curry_return_int_byte;  }
-void* curry_int_byte_byte (int x)  { g1 = x; return &curry_return_byte_byte; }
-void* curry_byte_byte_byte(int x)  { g1 = x; return &curry_return_byte_byte; }
+void* curry_int_int_int   (int  x)  { g1 = x; return &curry_return_int_int;   }
+void* curry_byte_int_int  (byte x)  { g1 = x; return &curry_return_int_int;   }
+void* curry_int_byte_int  (int  x)  { g1 = x; return &curry_return_byte_int;  }
+void* curry_byte_byte_int (byte x)  { g1 = x; return &curry_return_byte_int;  }
+void* curry_int_int_byte  (int  x)  { g1 = x; return &curry_return_int_byte;  }
+void* curry_byte_int_byte (byte x)  { g1 = x; return &curry_return_int_byte;  }
+void* curry_int_byte_byte (int  x)  { g1 = x; return &curry_return_byte_byte; }
+void* curry_byte_byte_byte(byte x)  { g1 = x; return &curry_return_byte_byte; }
 
 int g2;
 int ho_return(int x) { return g2 + x; }
