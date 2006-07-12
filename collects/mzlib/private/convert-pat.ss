@@ -13,7 +13,7 @@
     
   (define (handle-clause stx)
     (syntax-case stx ()
-      [(pat . rest) #`(#,(convert-pat (syntax pat)) . rest)]))
+      [(pat . rest) (quasisyntax/loc stx (#,(convert-pat #'pat) . rest))]))
   
   (define (handle-clauses stx) (syntax-map handle-clause stx))
   

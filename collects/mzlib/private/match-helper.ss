@@ -18,6 +18,14 @@
       [(_ nm func)
        (define-syntax (nm stx) (func stx stx))]))
   
+  ;; bind an identifier to be syntax/loc with a particular location, in an expression
+  (define-syntax md-help
+    (syntax-rules ()
+      [(md-help id stx e)
+       (let-syntax ([id (syntax-rules () [(id arg) (syntax/loc stx arg)])])
+         e)]))
+  
+  
   
   ;;!(function symbol-append
   ;;          (form (symbol-append . args) -> symbol)

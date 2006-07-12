@@ -125,61 +125,66 @@
   (require-for-syntax "private/convert-pat.ss"
                       "private/match-helper.ss")
   
+  (require-for-template mzscheme)
+  
   (require  (prefix plt: "private/match-internal-func.ss")
 	    "private/match-expander.ss"
 	    "private/match-helper.ss"
 	    "private/match-error.ss"
 	    "private/test-no-order.ss")
   
-  (define-syntax (match-lambda stx)
-    (syntax-case stx ()
-      [(k clause ...)
-       (with-syntax ([(new-clauses ...) (handle-clauses #'(clause ...))]) 
-          #'(plt:match-lambda new-clauses ...))]))
   
-  (define-syntax (match-lambda* stx)
-    (syntax-case stx ()
-      [(k clause ...)
-       (with-syntax ([(new-clauses ...) (handle-clauses #'(clause ...))])
-         #'(plt:match-lambda* new-clauses ...))]))
+  (define-syntax match-definer
+    (syntax-rules ()
+      [(match-definer name clauses ...)
+       (define-syntax (name stx)
+         (md-help syntax stx
+                  (syntax-case stx ()
+                    clauses ...)))]))
   
-  (define-syntax (match-let stx)
-    (syntax-case stx ()
-      [(k name (clauses ...) body ...)
-       (identifier? (syntax name))
-       (with-syntax ([(new-clauses ...) (handle-clauses #'(clauses ...))])
-          #'(plt:match-let name (new-clauses ...) body ...))]          
-      [(k (clauses ...) body ...)
-       (with-syntax ([(new-clauses ...) (handle-clauses #'(clauses ...))])
-          #'(plt:match-let (new-clauses ...) body ...))]))          
+  (match-definer match-lambda
+    [(k clause ...)
+     (with-syntax ([(new-clauses ...) (handle-clauses #'(clause ...))]) 
+       #'(plt:match-lambda new-clauses ...))])
   
-  (define-syntax (match-let* stx)
-    (syntax-case stx ()
-      [(k (clauses ...) body ...)
-       (with-syntax
-           ([(new-clauses ...) (handle-clauses #'(clauses ...))])
-         #'(plt:match-let* (new-clauses ...) body ...))]))
+  (match-definer match-lambda*
+    [(k clause ...)
+     (with-syntax ([(new-clauses ...) (handle-clauses #'(clause ...))])
+       #'(plt:match-lambda* new-clauses ...))])
   
-  (define-syntax (match stx)
-    (syntax-case stx ()
-      [(_ exp clause ...)
-       (with-syntax 
-           ([(new-clauses ...) (handle-clauses #'(clause ...))])
-         #'(plt:match exp new-clauses ...))]))
+  (match-definer match-let
+    [(k name (clauses ...) body ...)
+     (identifier? (syntax name))
+     (with-syntax ([(new-clauses ...) (handle-clauses #'(clauses ...))])
+       #'(plt:match-let name (new-clauses ...) body ...))]          
+    [(k (clauses ...) body ...)
+     (with-syntax ([(new-clauses ...) (handle-clauses #'(clauses ...))])
+       #'(plt:match-let (new-clauses ...) body ...))])
   
-  (define-syntax (match-letrec stx)
-    (syntax-case stx ()
-      [(k (clauses ...) body ...)
-       (with-syntax 
-           ([(new-clauses ...) (handle-clauses #'(clauses ...))])
-         #'(plt:match-letrec (new-clauses ...) body ...))]))
+  (match-definer match-let*
+    [(k (clauses ...) body ...)
+     (with-syntax
+         ([(new-clauses ...) (handle-clauses #'(clauses ...))])
+       #'(plt:match-let* (new-clauses ...) body ...))])
+
+  (match-definer match
+    [(_ exp clause ...)
+     (with-syntax 
+         ([(new-clauses ...) (handle-clauses #'(clause ...))])
+       #'(plt:match exp new-clauses ...))])
+  
+  
+  (match-definer match-letrec
+    [(k (clauses ...) body ...)
+     (with-syntax 
+         ([(new-clauses ...) (handle-clauses #'(clauses ...))])
+       #'(plt:match-letrec (new-clauses ...) body ...))])
 
   
-  (define-syntax (match-define stx)
-    (syntax-case stx ()
-      [(k pat exp)
-       (with-syntax ([new-pat (convert-pat #'pat)])
-         #'(plt:match-define new-pat exp))]))
+  (match-definer match-define
+    [(k pat exp)
+     (with-syntax ([new-pat (convert-pat #'pat)])
+       #'(plt:match-define new-pat exp))])
   
   
   

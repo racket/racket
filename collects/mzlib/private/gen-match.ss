@@ -169,7 +169,7 @@
           (match:syntax-err stx "null clause list"))
         (let* ([marked-clauses (mark-patlist patlist)]
                [compiled-match
-                #`(let ([match-failure (lambda () (match:error #,exp '#,stx))])
+                #`(let ([match-failure (lambda () #,(quasisyntax/loc stx (match:error #,exp)))])
                     #,(gen exp tsf marked-clauses
                            stx
                            #'(match-failure)
