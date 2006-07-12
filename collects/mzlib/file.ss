@@ -475,31 +475,25 @@
   ;; fold-files : (pathname sym alpha -> alpha) alpha pathname/#f -> alpha
   (define fold-files
     (opt-lambda (f init [path #f] [follow-links? #t])
-
-      (define (traverse-dir dir base acc)
-	(let loop ([subs (directory-list dir)] [acc acc])
-	  (cond [(null? subs) acc]
-                [else (loop (cdr subs)
-                            (let ([path (if base
-                                          (build-path base (car subs))
-                                          (car subs))])
-                              (traverse-file/dir path path acc)))])))
-
-      (define (traverse-file/dir file/dir base acc)
-	(cond [(and (not follow-links?) (link-exists? file/dir))
-               (f file/dir 'link acc)]
-              [(directory-exists? file/dir)
-               (traverse-dir file/dir base (if base (f file/dir 'dir acc) acc))]
-              [else (f file/dir 'file acc)]))
-
-      (traverse-file/dir (or path (current-directory)) path init)))
+      (define (do-path path acc)
+        (cond [(and (not follow-links?) (link-exists? path)) (f path 'link acc)]
+              [(directory-exists? path)
+               (do-paths (map (lambda (p) (build-path path p))
+                              (directory-list path))
+                         (f path 'dir acc))]
+              [(file-exists? path) (f path 'file acc)]
+              [(link-exists? path) (f path 'link acc)] ; dangling links
+              [else (error 'fold-files "path disappeared: ~e" path)]))
+      (define (do-paths paths acc)
+        (cond [(null? paths) acc]
+              [else (do-paths (cdr paths) (do-path (car paths) acc))]))
+      (if path (do-path path init) (do-paths (directory-list) init))))
 
   (define find-files
     (opt-lambda (f [path #f])
-      (reverse! (fold-files (lambda (path kind acc)
-                              (if (f path) (cons path acc) acc))
-                            null
-                            path))))
+      (reverse!
+       (fold-files (lambda (path kind acc) (if (f path) (cons path acc) acc))
+                   null path))))
 
   (define (pathlist-closure paths)
     (let loop ([paths (map (lambda (p) (simplify-path (resolve-path p) #f))
