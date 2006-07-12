@@ -723,6 +723,7 @@
        (define (pr obj extra pp-pair depth)
 	 ;; may have to split on multiple lines
 	 (let* ([can-multi (and width
+                                (not (size-hook obj display?))
 				(or (pair? obj) (vector? obj) 
 				    (box? obj) 
 				    (and (custom-write? obj)
