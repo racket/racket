@@ -200,11 +200,7 @@
           
           ;; This recognizes constants such strings
           [pt
-           (let ([pt (syntax-e #'pt)])
-             (or (string? pt)
-                 (boolean? pt)
-                 (char? pt)
-                 (number? pt)))
+           (constant-data? (syntax-e #'pt))
            (list
             (reg-test 
              `(equal? ,(syntax-object->datum ae)

@@ -30,10 +30,7 @@
         (syntax-case phrase (quasiquote unquote unquote-splicing)
           (p
            (let ((pat (syntax-object->datum (syntax p))))
-             (or (string? pat)
-                 (boolean? pat)
-                 (char? pat)
-                 (number? pat)
+             (or (constant-data? pat)
                  (dot-dot-k? pat)))
            (syntax p))
           (p

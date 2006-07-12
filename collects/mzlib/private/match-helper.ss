@@ -25,6 +25,13 @@
        (let-syntax ([id (syntax-rules () [(id arg) (syntax/loc stx arg)])])
          e)]))
   
+  (define (constant-data? v)
+    (or
+     (string? v)
+     (boolean? v)
+     (char? v)
+     (number? v)
+     (keyword? v)))
   
   
   ;;!(function symbol-append
