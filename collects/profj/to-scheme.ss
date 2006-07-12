@@ -2935,7 +2935,8 @@
                       ,@(if range (list t a r) (list t a))
                       ,extracted-info ,src
                       (namespace-variable-value 'current~test~object% #f 
-                                                (lambda () #f)))
+                                                (lambda () #f))
+                      ,(testcase-ext?))
                    (build-src src))))
   
   ;translate-check-catch: expression type-spec src -> syntax

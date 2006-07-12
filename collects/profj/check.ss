@@ -2602,6 +2602,7 @@
                    (is-eq-subclass? type exp-type type-recs)
                    (implements? exp-type type type-recs)
                    (implements? type exp-type type-recs))) 'boolean)
+         ((and (ref-type? type) (eq? 'null exp-type)) 'boolean)
          ((and (ref-type? exp-type) (ref-type? type))
           (instanceof-error 'not-related-type type exp-type src))
          ((ref-type? exp-type)

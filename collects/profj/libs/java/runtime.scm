@@ -202,12 +202,14 @@
   (define in-check-mutate? (make-parameter #f))
   (define stored-checks (make-parameter null))
   
-  ;compare: val val (list symbol string ...) string (U #f object)-> boolean
-  (define (compare test act info src test-obj)
-    (compare-within test act 0.0 info src test-obj #f))
+  ;compare: val val (list symbol string ...) string (U #f object) boolean-> boolean
+  (define (compare test act info src test-obj catch?)
+    (compare-within test act 0.0 info src test-obj catch? #f))
   
-  ;compare-within: (-> val) val val (list symbol string) (U #f object) . boolean -> boolean
-  (define (compare-within test act range info src test-obj . within?)
+  (define exception (gensym 'exception))
+  
+  ;compare-within: (-> val) val val (list symbol string) (U #f object) boolean . boolean -> boolean
+  (define (compare-within test act range info src test-obj catch? . within?)
     (letrec ((java-equal?
               (lambda (v1 v2 visited-v1 visited-v2)
                 (or (eq? v1 v2)
@@ -241,9 +243,16 @@
                                                    (map (lambda (v) (cons v1 visited-v1)) v1-fields)
                                                    (map (lambda (v) (cons v2 visited-v2)) v2-fields)))))))))
                       ((and (not (object? v1)) (not (object? v2))) (equal? v1 v2))
-                      (else #f))))))
-      (set! test (test))
-      (let ([res (java-equal? test act null null)]
+                      (else #f)))))
+             (fail? #f))
+      (set! test 
+            (with-handlers ((exn? 
+                             (lambda (e) (if catch? 
+                                             (begin (set! fail? #t)
+                                                    (list exception e))
+                                             (raise e)))))
+              (test)))
+      (let ([res (if fail? #f (java-equal? test act null null))]
             [values-list (append (list act test) (if (null? within?) (list range) null))])
         (if (in-check-mutate?)
             (stored-checks (cons (list res 'check-expect info values-list src) (stored-checks)))
@@ -302,21 +311,29 @@
               src))))
 
   (define (compose-message test-obj check-kind info values mutate-message)
-    (let ((test-format (construct-info-msg info))           
-          (formatted-values (map (lambda (v) (send test-obj format-value v)) values))
-          (expected-format
-           (case check-kind
-             ((check-expect) "to produce ")
-             ((check-catch) "to throw an instance of "))))      
+    (letrec ((test-format (construct-info-msg info))
+             (exception-raised? #f)
+             (formatted-values (map (lambda (v) 
+                                      (if (and (pair? v) (eq? (car v) exception))
+                                          (begin (set! exception-raised? #t)
+                                                 (send test-obj format-value (cadr v)))
+                                          (send test-obj format-value v))) values))
+             (expected-format
+              (case check-kind
+                ((check-expect) "to produce ")
+                ((check-catch) "to throw an instance of "))))
       (append (list (if mutate-message mutate-message "check expected ")
                     test-format
                     expected-format
                     (first formatted-values))
               (case check-kind
                 ((check-expect)
-                 (if (= (length formatted-values) 3)
-                     (list ", within " (third formatted-values) ", instead found " (second formatted-values))
-                     (list ", instead found" (second formatted-values))))
+                 (append (if (= (length formatted-values) 3)
+                             (list ", within " (third formatted-values))
+                             null)
+                         (if exception-raised?
+                             (list ", instead a " (second formatted-values) " exception occurred")
+                             (list ", instead found " (second formatted-values)))))
                 ((check-catch)
                  (if (= (length formatted-values) 1)
                      (list ", instead no exceptions occured")
