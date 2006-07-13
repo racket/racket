@@ -3453,7 +3453,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   /* If fm isn't a single expression, it certainly needs a
      `#%module-begin': */
-  if (SCHEME_PAIRP(fm) && SCHEME_STX_NULLP(SCHEME_STX_CDR(fm))) {
+  if (SCHEME_STX_PAIRP(fm) && SCHEME_STX_NULLP(SCHEME_STX_CDR(fm))) {
     /* Perhaps expandable... */
     fm = SCHEME_STX_CAR(fm);
   } else {
