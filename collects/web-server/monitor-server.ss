@@ -32,7 +32,7 @@
           (check-server)))))
   
   (provide/contract 
-   [monitor ((string? string?) (number? number? number?) . -> . void)]
+   [monitor ((string? string?) (number? number? number?) . opt-> . void)]
    [default-server-port number?]
    [default-poll-frequency-seconds number?]
    [default-server-response-timeout-seconds number?]))
