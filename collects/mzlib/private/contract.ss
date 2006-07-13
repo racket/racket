@@ -456,22 +456,12 @@ add struct contracts for immutable structs?
                        mutator-codes ...
                        predicate-code
                        constructor-code
-                       (define -struct:struct-name
-                         (let-values ([(struct:struct-name _make _pred _get _set)
-                                       (make-struct-type 'struct-name
-                                                         struct:struct-name
-                                                         0 ;; init
-                                                         0 ;; auto
-                                                         #f  ;; auto-v
-                                                         '() ;; props
-                                                         #f  ;; inspector
-                                                         #f ;; proc-spec
-                                                         '
-                                                         ()  ;; immutable-k-list
-                                                         (λ (selector-ids ... ignore) 
-                                                           (values (-contract field-contract-ids selector-ids 'not-enough-info-for-blame 'not-enough-info-for-blame)
-                                                                   ...)))])
-                           struct:struct-name))
+                       
+                       ;; expanding out the body of the `make-pc-struct-type' function
+                       ;; directly here in the expansion makes this very expensive at compile time
+                       ;; when there are a lot of provide/contract clause using structs
+                       (define -struct:struct-name 
+                         (make-pc-struct-type 'struct-name struct:struct-name field-contract-ids ...))
                        (provide (rename -struct:struct-name struct:struct-name)))))))))
           
          (define (map/count f . ls)
@@ -599,6 +589,33 @@ add struct contracts for immutable structs?
             (begin
               bodies ...))))]))
   
+  
+  (define (make-pc-struct-type struct-name struct:struct-name . ctcs)
+    (let-values ([(struct:struct-name _make _pred _get _set)
+                  (make-struct-type struct-name
+                                    struct:struct-name
+                                    0 ;; init
+                                    0 ;; auto
+                                    #f  ;; auto-v
+                                    '() ;; props
+                                    #f  ;; inspector
+                                    #f ;; proc-spec
+                                    '()  ;; immutable-k-list
+                                    (λ args
+                                      (let ([vals (let loop ([args args])
+                                                    (cond
+                                                      [(null? args) null]
+                                                      [(null? (cdr args)) null]
+                                                      [else (cons (car args) (loop (cdr args)))]))])
+                                        (apply values
+                                               (map (λ (ctc val)
+                                                      (-contract ctc
+                                                                 val
+                                                                 'not-enough-info-for-blame
+                                                                 'not-enough-info-for-blame))
+                                                    ctcs
+                                                    vals)))))])
+      struct:struct-name))
   
   (define (test-proc/flat-contract f x)
     (if (flat-contract? f)
