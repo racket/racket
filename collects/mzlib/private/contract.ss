@@ -568,10 +568,6 @@ add struct contracts for immutable structs?
                                 (define pos-module-source (module-source-as-symbol #'pos-stx))
                                 (define contract-id ctrct)
                                 
-                                ;(if #f id)
-                                ; syntax-local-lift
-                                ;(check-first-order contract-id id #'pos-stx) ;; we'd like to use this ...
-                                
                                 (define-syntax id-rename
 				  (make-provide/contract-transformer (quote-syntax contract-id)
 								     (quote-syntax id)
@@ -579,7 +575,7 @@ add struct contracts for immutable structs?
                
                (syntax-local-lift-module-end-declaration
                 #'(begin 
-                    (-contract contract-id id pos-module-source 'ignored #'pos-stx)
+                    (-contract contract-id id pos-module-source 'ignored #'id)
                     (void)))
                
                (syntax (code id-rename)))))

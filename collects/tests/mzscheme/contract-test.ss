@@ -4509,6 +4509,16 @@
       (eval '(require neg))))
   
 
+  (error-test
+   #'(parameterize ([current-namespace (make-namespace)])
+       (eval '(module bug mzscheme
+                (require (lib "contract.ss"))
+                (define the-defined-variable 'five)
+                (provide/contract [the-defined-variable number?])))
+       (eval '(require bug)))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"on the-defined-variable" (exn-message x)))))
   
 
   
