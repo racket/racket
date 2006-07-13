@@ -1,4 +1,31 @@
 ------------------------------
+        Version 351
+------------------------------
+
+  . the or/c contract now accepts multiple higher-order
+    contracts, as long as they can be distinguished by some
+    first-order property (for example, the arity of the
+    function).
+
+  . failures of the first-order aspects of contracts are now
+    checked in the module that provides, not just the
+    requiring module. This means that this module:
+
+    (module m mzscheme 
+      (require (lib "contract.ss"))
+      (provide/contact [f (-> integer? integer?)])
+      (define (f x y) x))
+
+    will signal an error as soon as it is required, rather
+    than waiting for a variable reference to `f' (as it used
+    to).
+
+  . rewrote some of the internals of the contract library to
+    get a factor of 2 speedup for tight loops that do a lot
+    of contract checking (FWIW, I had introduced this
+    slowdown a few months ago in an attempt to optimize ...)
+
+------------------------------
         Version 350
 ------------------------------
 
