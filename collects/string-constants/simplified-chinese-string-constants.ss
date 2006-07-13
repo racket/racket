@@ -82,6 +82,7 @@
   (bug-report-field-docs-installed "已安装文档")
   (bug-report-field-collections "Collections")
   (bug-report-field-human-language "自然语言")
+  (bug-report-field-memory-use "内存使用")
   (bug-report-field-version "版本")
   (bug-report-synthesized-information "综合信息")  ;; dialog title
   (bug-report-show-synthesized-info "显示综合信息")
