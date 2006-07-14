@@ -479,12 +479,16 @@
         (cond [(and (not follow-links?) (link-exists? path)) (f path 'link acc)]
               [(directory-exists? path)
                (call-with-values (lambda () (f path 'dir acc))
-                 (lambda (acc . descend?)
-                   (if (if (pair? descend?) (car descend?) #t)
-                     (do-paths (map (lambda (p) (build-path path p))
-                                    (directory-list path))
-                               acc)
-                     acc)))]
+                 (letrec ([descend
+                           (case-lambda
+                             [(acc)
+                              (do-paths (map (lambda (p) (build-path path p))
+                                             (sort
+                                              (directory-list path) void))
+                                        acc)]
+                             [(acc descend?)
+                              (if descend? (descend acc) acc)])])
+                   descend))]
               [(file-exists? path) (f path 'file acc)]
               [(link-exists? path) (f path 'link acc)] ; dangling links
               [else (error 'fold-files "path disappeared: ~e" path)]))
