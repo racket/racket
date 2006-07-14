@@ -1117,19 +1117,6 @@ module browser threading seems wrong.
             (send (make-object message% (path->string logging) hp) stretchable-width #t)
             (make-object button% (string-constant stop-logging) hp (λ (x y) (stop-logging))))
           
-          ;; remove-logging-pref-callback : -> void
-          ;; removes the callback that shows and hides the logging panel
-          (field [remove-logging-pref-callback
-                  (preferences:add-callback
-                   'framework:show-status-line
-                   (λ (p v)
-                     (when (is-a? logging-parent-panel panel%)
-                       (send logging-parent-panel change-children
-                             (λ (l)
-                               (if v 
-                                   (list logging-panel)
-                                   null))))))])
-          
           ;; ensure-empty : string[directory] -> boolean
           ;; if the log-directory is empty, just return #t
           ;; if not, ask the user about emptying it. 
@@ -1180,8 +1167,8 @@ module browser threading seems wrong.
                                            (parent louter-panel)
                                            (stretchable-height #f)))
               (set! logging-panel (make-object horizontal-panel% logging-parent-panel))
-              (unless (preferences:get 'framework:show-status-line)
-                (send logging-parent-panel change-children (λ (l) null)))
+              (unless toolbar-shown?
+                (send logging-parent-panel change-children (λ (l) '())))
               root))
 
           (inherit show-info hide-info is-info-hidden?)
@@ -1201,10 +1188,12 @@ module browser threading seems wrong.
               [toolbar-shown?
                (show-info)
                (send top-outer-panel change-children (λ (l) (list top-panel)))
+               (send logging-parent-panel change-children (λ (l) (list logging-panel)))
                (send toolbar-menu-item set-label (string-constant hide-toolbar))]
               [else
                (hide-info)
                (send top-outer-panel change-children (λ (l) '()))
+               (send logging-parent-panel change-children (λ (l) '()))
                (send toolbar-menu-item set-label (string-constant show-toolbar))])
             (update-defs/ints-resize-corner))
           
@@ -1953,7 +1942,6 @@ module browser threading seems wrong.
               (set! newest-frame #f))
             (when logging
               (stop-logging))
-            (remove-logging-pref-callback)
             (remove-show-status-line-callback)
             (send interactions-text on-close))
           
