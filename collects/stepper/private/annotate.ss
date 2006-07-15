@@ -1055,14 +1055,16 @@
           [(require module-name) exp]
           ; the 'dynamic-require' form is used by the actual expander 
           [(let-values ([(done-already?) . rest1])
-                (#%app dynamic-wind
-                 void
-                 (lambda () . rest2)
-                 (lambda () . rest3)))
+             (#%app dynamic-wind
+                    void
+                    (lambda () . rest2)
+                    (lambda () . rest3)))
            exp]
-          [else (begin
-                  (fprintf (current-error-port) "~v\n" (syntax-object->datum exp))
-                  (error `annotate/top-level "unexpected top-level expression: ~a\n" (syntax-object->datum exp)))])))
+          [else
+           #;
+           (error `annotate/top-level "unexpected top-level expression: ~a\n"
+                  (syntax-object->datum exp))
+           (annotate/module-top-level exp)])))
     
     (define/contract annotate/top-level/acl2
       (syntax? . -> . syntax?)

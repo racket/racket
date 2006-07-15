@@ -16,14 +16,6 @@
            "private/shared.ss"
            "private/model-settings.ss")
 
-  ;; mflatt: MINOR HACK - work around temporary
-  ;;         print-convert problems
-  (define (stepper-print-convert v)
-    (or (and (procedure? v)
-	     (object-name v))
-	(print-convert v)))
-    
-
   ; hidden invariant: this list should be a sublist of the language-level dialog (i.e., same order):
   (define stepper-works-for
     (list (string-constant beginning-student)
@@ -468,25 +460,25 @@
                        (send (get-definitions-text) get-next-settings)]
                       [lang (drscheme:language-configuration:language-settings-language lang-settings)]
                       [settings (drscheme:language-configuration:language-settings-settings lang-settings)])
-                 (drscheme:eval:expand-program
-                  (drscheme:language:make-text/pos (get-definitions-text) 
-                                                   0
-                                                   (send (get-definitions-text)
-                                                         last-position)) 
-                  lang-settings
-                  #f
-                  (lambda ()
-                    (init)
-                    (error-value->string-handler
-                     (lambda (val len)
-                       (let ([sp (open-output-string)])
-                         (send lang render-value val settings sp)
-                         (let ([str (get-output-string sp)])
-                           (if ((string-length str) . <= . len)
-                               str
-                               (string-append (substring str 0 (max 0 (- len 3))) "...")))))))
-                  void ; kill
-                  iter)))
+              (drscheme:eval:expand-program
+               (drscheme:language:make-text/pos (get-definitions-text) 
+                                                0
+                                                (send (get-definitions-text)
+                                                      last-position)) 
+               lang-settings
+               #f
+               (lambda ()
+                 (init)
+                 (error-value->string-handler
+                  (lambda (val len)
+                    (let ([sp (open-output-string)])
+                      (send lang render-value val settings sp)
+                      (let ([str (get-output-string sp)])
+                        (if ((string-length str) . <= . len)
+                          str
+                          (string-append (substring str 0 (max 0 (- len 3))) "...")))))))
+               void ; kill
+               iter)))
           
           ;; STEPPER BUTTON
           
@@ -571,23 +563,41 @@
       
       ;; COPIED FROM drscheme/private/language.ss
       ;; simple-module-based-language-convert-value : TST settings -> TST
-      (define (simple-module-based-language-convert-value value simple-settings)
-	(case (drscheme:language:simple-settings-printing-style simple-settings)
+      (define (simple-module-based-language-convert-value value settings)
+        (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
+          (if (or (is-a? expr snip%)
+                  ;; FIXME: internal in language.ss (to-snip-value? expr)
+                  )
+	    expr
+	    (sh expr basic-convert sub-convert)))
+        ;; mflatt: MINOR HACK - work around temporary
+        ;;         print-convert problems
+        (define (stepper-print-convert v)
+          (or (and (procedure? v) (object-name v))
+              (print-convert v)))
+
+	(case (drscheme:language:simple-settings-printing-style settings)
 	  [(write) value]
+          [(current-print) value]
 	  [(constructor)
 	   (parameterize ([constructor-style-printing #t]
-			  [show-sharing (drscheme:language:simple-settings-show-sharing simple-settings)])
-			 (stepper-print-convert value))]
+			  [show-sharing (drscheme:language:simple-settings-show-sharing settings)]
+                          [current-print-convert-hook (leave-snips-alone-hook (current-print-convert-hook))])
+             (stepper-print-convert value))]
 	  [(quasiquote)
 	   (parameterize ([constructor-style-printing #f]
-			  [show-sharing (drscheme:language:simple-settings-show-sharing simple-settings)])
-			 (stepper-print-convert value))]))
+			  [show-sharing (drscheme:language:simple-settings-show-sharing settings)]
+                          [current-print-convert-hook (leave-snips-alone-hook (current-print-convert-hook))])
+             (stepper-print-convert value))]
+          [else (error "Internal stepper error: time to resync with simple-module-based-language-convert-value")]))
       
       ;; set-print-settings ; settings ( -> TST) -> TST
       (define (set-print-settings language simple-settings thunk)
-        (unless (method-in-interface? 'set-printing-parameters (object-interface language))
-          (error 'stepper-tool "language object does not contain set-printing-parameters method"))
-        (send language set-printing-parameters simple-settings thunk))
+        (if (method-in-interface? 'set-printing-parameters (object-interface language))
+          (send language set-printing-parameters simple-settings thunk)
+          ;; assume that the current print-convert context is fine
+          ;; (error 'stepper-tool "language object does not contain set-printing-parameters method")
+          (thunk)))
       
       ;; apply the mixins dynamically to the drscheme unit frame and definitions text:
       (drscheme:get/extend:extend-unit-frame stepper-unit-frame-mixin)
