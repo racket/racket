@@ -196,8 +196,8 @@
                            (length (cdr (syntax->list (syntax terms)))))
                           (or (and (render-settings-constructor-style-printing? render-settings)
                                    (if (render-settings-abbreviate-cons-as-list? render-settings)
-                                       (eq? fun-val (find-special-value 'list '(3)))    
-                                       (and (eq? fun-val (find-special-value 'cons '(3 empty)))
+                                       (eq? fun-val special-list-value)
+                                       (and (eq? fun-val special-cons-value)
                                             (second-arg-is-list? mark-list))))
                               ;(model-settings:special-function? 'vector fun-val)
                               (and (eq? fun-val void)
@@ -209,14 +209,16 @@
   ;; like 'list' should not be shown as steps, because the before and after steps will be the same.
   ;; it might be easier simply to discover and discard these at display time.
   (define (find-special-value name valid-args)
-    #f
-    #;(let* ([expanded-application (expand (cons name valid-args))]
+    (let* ([expanded-application (expand (cons name valid-args))]
            [stepper-safe-expanded (skipto/auto expanded-application 'discard (lambda (x) x))]
            [just-the-fn (kernel:kernel-syntax-case stepper-safe-expanded #f
                           [(#%app fn . rest)
                            #`fn]
                           [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])      
       (eval just-the-fn)))
+
+  (define special-list-value (find-special-value 'list '(3)))
+  (define special-cons-value (find-special-value 'cons '(3 empty)))
   
   (define (second-arg-is-list? mark-list)
     (let ([arg-val (lookup-binding mark-list (get-arg-var 2))])
