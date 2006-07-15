@@ -853,7 +853,17 @@
   (kill? "终止？")
   
   ;;; version checker
-  (version:update-menu-item "检查更新...")
+  (version:update-menu-item   "检查更新...")
+  (version:update-check       "检查更新") ; dialog title, with the next line
+  (version:connecting-server  "连接PLT版本服务器")
+  (version:results-title      "PLT版本检查")
+  (version:do-periodic-checks "自动定期检查PLT Scheme版本更新")
+  (version:take-me-there      "下载") ; ...to the download website
+  ;; the next one can appear alone, or followed by a comma and the one after that
+  (version:plt-up-to-date     "您现在使用的已经是当前版的PLT")
+  (version:but-newer-alpha    "但是还有一个更新的alpha版本")
+  ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+  (version:now-available-at   "可以从这里获取：")
   
   ;; special menu
   (special-menu "特殊符号(&P)")
