@@ -4,7 +4,8 @@
 	   (lib "contract.ss")
            (lib "list.ss")
            (lib "etc.ss")
-           (lib "match.ss"))
+           (lib "match.ss")
+           (lib "26.ss" "srfi"))
 
   ; CONTRACTS
   
@@ -24,16 +25,22 @@
    ;[binding-set-varref-set-intersect (-> binding-set? varref-set? binding-set?)]
    ;[binding-set-union (-> (listof binding-set?) binding-set?)]
    ;[varref-set-union (-> (listof varref-set?) varref-set?)]
-   [skipto-annotate (-> (listof procedure?) syntax? (-> syntax? syntax?) syntax?)]
-   [skipto-reconstruct (-> (listof procedure?) syntax? (-> syntax? any/c) any/c)]
-   [in-closure-table (-> any/c boolean?)]
-   [sublist (-> number? number? list? list?)]
-   [attach-info (-> syntax? syntax? syntax?)]
-   [transfer-info (-> syntax? syntax? syntax?)]
-   [arglist->ilist (-> arglist? any)]
-   [arglist-flatten (-> arglist? (listof identifier?))])
+   #;[skipto/auto (syntax? (symbols 'rebuild 'discard) (syntax? . -> . syntax?) . -> . syntax?)]
+   #;[in-closure-table (-> any/c boolean?)]
+   #;[sublist (-> number? number? list? list?)]
+   #;[attach-info (-> syntax? syntax? syntax?)]
+   #;[transfer-info (-> syntax? syntax? syntax?)]
+   #;[arglist->ilist (-> arglist? any)]
+   #;[arglist-flatten (-> arglist? (listof identifier?))])
   
   (provide
+   skipto/auto
+   in-closure-table
+   sublist
+   attach-info
+   transfer-info
+   arglist->ilist
+   arglist-flatten
    binding-set-union
    binding-set-pair-union
    varref-set-union
@@ -384,16 +391,29 @@
                [up (cadr (assq down (cadr (assq traversal up-mappings))))])
           (up val (update (cdr fn-list) (down val) fn traversal)))))
  
-  (define (skipto-annotate fn-list stx annotater)
-    (update fn-list stx annotater 'rebuild))
-
-    ; test cases
-;  (equal? (syntax-object->datum (skipto-annotate (list syntax-e car syntax-e cdr cdr car) #'((a b c) (d e f) (g h i)) (lambda (dc) #'foo)))
-;          '((a b foo) (d e f) (g h i)))
-
   
-  (define (skipto-reconstruct fn-list stx reconstructer)
-    (update fn-list stx reconstructer 'discard))
+  ;; skipto/auto : syntax-object? (symbols 'rebuild 'discard) (syntax-object? . -> . syntax-object?)
+  ;; "skips over" part of a tree to find a subtree indicated by the stepper-skipto property.  If the
+  ;; traversal argument is 'rebuild, the result of transformation is embedded again in the same tree.
+  ;; if the traversal argument is 'discard, the result of the transformation is the result of this 
+  ;; function
+  (define (skipto/auto stx traversal transformer)
+    (cond [(syntax-property stx 'stepper-skipto) 
+           =>
+           (cut update <> stx (cut skipto/auto <> traversal transformer) traversal)]
+          [else (transformer stx)]))
+  
+  
+  ;  small test case: 
+  ;(equal? (syntax-object->datum
+  ;         (skipto/auto (syntax-property #`(a #,(syntax-property #`(b c)
+  ;                                                               'stepper-skipto
+  ;                                                               (list syntax-e cdr car)))
+  ;                                       'stepper-skipto
+  ;                                       (list syntax-e cdr car))
+  ;                      'discard
+  ;                      (lambda (x) x)))
+  ;        'c)
   
   
   ; BINDING-/VARREF-SET FUNCTIONS

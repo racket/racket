@@ -205,12 +205,18 @@
                               (struct-constructor-procedure? fun-val))))]
                  [else #f])))))
   
+  ;; find-special-value finds the value associated with the given name.  Applications of functions
+  ;; like 'list' should not be shown as steps, because the before and after steps will be the same.
+  ;; it might be easier simply to discover and discard these at display time.
   (define (find-special-value name valid-args)
-    (let ([expanded (kernel:kernel-syntax-case (expand (cons name valid-args)) #f
-                      [(#%app fn . rest)
-                       #`fn]
-                      [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])
-      (eval expanded)))
+    #f
+    #;(let* ([expanded-application (expand (cons name valid-args))]
+           [stepper-safe-expanded (skipto/auto expanded-application 'discard (lambda (x) x))]
+           [just-the-fn (kernel:kernel-syntax-case stepper-safe-expanded #f
+                          [(#%app fn . rest)
+                           #`fn]
+                          [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])      
+      (eval just-the-fn)))
   
   (define (second-arg-is-list? mark-list)
     (let ([arg-val (lookup-binding mark-list (get-arg-var 2))])
@@ -287,12 +293,10 @@
   (define/contract recon-source-expr 
      (-> syntax? mark-list? binding-set? binding-set? render-settings? syntax?)
      (lambda (expr mark-list dont-lookup use-lifted-names render-settings)
-       (if (syntax-property expr 'stepper-skipto)
-          (skipto-reconstruct
-           (syntax-property expr 'stepper-skipto)
-           expr
-           (lambda (stx)
-             (recon-source-expr stx mark-list dont-lookup use-lifted-names render-settings)))
+       (skipto/auto
+        expr
+        'discard
+        (lambda (expr)
           (if (syntax-property expr 'stepper-prim-name)
               (syntax-property expr 'stepper-prim-name)
               (let* ([recur (lambda (expr) (recon-source-expr expr mark-list dont-lookup use-lifted-names render-settings))]
@@ -424,7 +428,7 @@
                               
                               [else
                                (error 'recon-source "no matching clause for syntax: ~a" expr)])])
-                (attach-info recon expr))))))
+                (attach-info recon expr)))))))
   
   ;; reconstruct-set!-var
   
@@ -502,28 +506,24 @@
                              (syntax->list #`vars-stx)
                              lifting-indices)])
              (vector (reconstruct-completed-define exp vars (vals-getter) render-settings) #f))])
-        (let skipto-loop ([exp exp])
+        (let ([exp (skipto/auto exp 'discard (lambda (exp) exp))])
           (cond 
-            [(syntax-property exp 'stepper-skipto) =>
-                                                   (lambda (skipto)
-                                                     (skipto-reconstruct skipto exp
-                                                                         skipto-loop))]
             [(syntax-property exp 'stepper-define-struct-hint)
              ;; the hint contains the original syntax
              (vector (syntax-property exp 'stepper-define-struct-hint) #t)]
             [else
              (vector
-                (kernel:kernel-syntax-case exp #f
-                  [(define-values vars-stx body)
-                   (reconstruct-completed-define exp (syntax->list #`vars-stx) (vals-getter) render-settings)]
-                  [else
-                   (let* ([recon-vals (map (lambda (val)
-                                             (recon-value val render-settings))
-                                           (vals-getter))])
-                     (if (= (length recon-vals) 1)
-                         (attach-info (car recon-vals) exp)
-                         (attach-info #`(values #,@recon-vals) exp)))])
-                #f)]))))
+              (kernel:kernel-syntax-case exp #f
+                [(define-values vars-stx body)
+                 (reconstruct-completed-define exp (syntax->list #`vars-stx) (vals-getter) render-settings)]
+                [else
+                 (let* ([recon-vals (map (lambda (val)
+                                           (recon-value val render-settings))
+                                         (vals-getter))])
+                   (if (= (length recon-vals) 1)
+                       (attach-info (car recon-vals) exp)
+                       (attach-info #`(values #,@recon-vals) exp)))])
+              #f)]))))
   
   ;; an abstraction lifted from reconstruct-completed
   (define (reconstruct-completed-define exp vars vals render-settings)
@@ -541,19 +541,16 @@
   
   ; : (-> syntax? syntax? syntax?)
   (define (reconstruct-top-level source reconstructed)
-    (cond 
-      [(syntax-property source 'stepper-skipto) =>
-       (lambda (skipto)
-         (skipto-reconstruct skipto source
-                             (lambda (expr)
-                               (reconstruct-top-level expr reconstructed))))]
-      [else
+    (skipto/auto
+     source
+     'discard
+     (lambda (source)
        (kernel:kernel-syntax-case source #f
-          [(define-values vars-stx body)
-           (attach-info #`(define-values vars-stx #,reconstructed)
-                        source)]
-          [else
-           reconstructed])]))
+         [(define-values vars-stx body)
+          (attach-info #`(define-values vars-stx #,reconstructed)
+                       source)]
+         [else
+          reconstructed]))))
   
                                                                                                                 
                                                                                                                 
