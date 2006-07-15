@@ -598,7 +598,7 @@
                            [(list-box-dclick) (do-enter)]))]))
 
       (define text
-        (new text-field% [parent this] [label #f]
+        (new text-field% [parent this] [label "Filename:"]
           [init-value (cond [(path? filename) (path->string filename)]
                             [(string? filename) filename]
                             [else ""])]
