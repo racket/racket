@@ -39,7 +39,9 @@
    
    [final-mark-list? (-> mark-list? boolean?)]
    [skip-step? (-> break-kind? (or/c mark-list? false/c) render-settings? boolean?)]
-   [step-was-app? (-> mark-list? boolean?)])
+   [step-was-app? (-> mark-list? boolean?)]
+   
+   [reset-special-values (-> any)])
   
   (define nothing-so-far (gensym "nothing-so-far-"))
 
@@ -217,8 +219,14 @@
                           [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])      
       (eval just-the-fn)))
 
-  (define special-list-value (find-special-value 'list '(3)))
-  (define special-cons-value (find-special-value 'cons '(3 empty)))
+  ;; these are delayed so that they use the userspace expander.  I'm sure
+  ;; there's a more robust & elegant way to do this.
+  (define special-list-value #f)
+  (define special-cons-value #f)
+  
+  (define (reset-special-values)
+    (set! special-list-value (find-special-value 'list '(3)))
+    (set! special-cons-value (find-special-value 'cons '(3 empty))))
   
   (define (second-arg-is-list? mark-list)
     (let ([arg-val (lookup-binding mark-list (get-arg-var 2))])

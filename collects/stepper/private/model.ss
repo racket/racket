@@ -298,6 +298,7 @@
        #;(void)
        )
      (lambda (expanded continue-thunk) ; iter
+       (r:reset-special-values)
        (if (eof-object? expanded)
            (begin
              (receive-result (make-finished-stepping)))
