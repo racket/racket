@@ -35,7 +35,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="unicows.lib delayimp.lib"
+				AdditionalDependencies="unicows.lib delayimp.lib user32.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
@@ -104,7 +104,7 @@ cd ..\..\worksp\mzscheme
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="unicows.lib delayimp.lib"
+				AdditionalDependencies="unicows.lib delayimp.lib user32.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
