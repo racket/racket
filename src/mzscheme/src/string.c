@@ -1104,7 +1104,7 @@ do_byte_string_to_char_string(const char *who,
 		NULL, 0, 
 		(perm > -1) ? 0xD800 : 0);
   
-  if (perm > 0) {
+  if (perm > -1) {
     for (i = 0; i < ulen; i++) {
       if (v[i] == 0xD800)
 	v[i] = perm;
