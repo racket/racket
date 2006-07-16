@@ -5,7 +5,7 @@
            
            "private/planet-shared.ss"
            "private/linkage.ss"
-
+           (lib "url.ss" "net")
            (lib "pack.ss" "setup")
            (lib "contract.ss")
            (lib "file.ss")

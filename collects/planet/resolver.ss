@@ -164,6 +164,7 @@ an appropriate subdirectory.
            get-package-from-cache
            get-package-from-server
            download-package
+           pkg->download-url
            install-pkg
            get-planet-module-path/pkg)
   
@@ -500,6 +501,12 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
     (let ((parsed (regexp-match #rx"^HTTP/[^ ]* ([^ ]*)" header)))
       (and parsed (cadr parsed))))
   
+  ;; pkg->download-url : FULL-PKG-SPEC -> url
+  ;; gets the download url for the given package
+  (define (pkg->download-url pkg)
+    (copy-struct url (string->url (HTTP-DOWNLOAD-SERVLET-URL)) (url-query (pkg->servlet-args pkg))))
+      
+  
   ;; download-package/http : FULL-PKG-SPEC -> RESPONSE
   ;; a drop-in replacement for download-package that uses HTTP rather than the planet protocol.
   ;; The HTTP protocol does not allow any kind of complicated negotiation, but it appears that
@@ -511,8 +518,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                 "Download failed too many times (possibly due to an unreliable network connection)"
                 (current-continuation-marks))))
         
-      (let* ((args              (pkg->servlet-args pkg))
-             (target            (copy-struct url (string->url (HTTP-DOWNLOAD-SERVLET-URL)) (url-query args)))
+      (let* ((target            (pkg->download-url pkg))
              (ip                (get-impure-port target))
              (head              (purify-port ip))
              (response-code/str (get-http-response-code head))
