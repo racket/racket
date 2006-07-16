@@ -5387,7 +5387,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       idx = kernel_symbol;
       one_exn = me->kernel_exclusion;
       me = kernel->me;
-      is_kern = !prefix && !unpack_kern && !ename && !has_context;
+      is_kern = !prefix && !unpack_kern && !ename && !has_context && !onlys;
     } else
       break;
   }
