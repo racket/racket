@@ -22,7 +22,7 @@
 
 (define-values (paddle1-pos ball-pos ball-vel)
   (letrec ([paddle1-pos (make-posn
-                         (clip (+ 100
+                         (clip (+ 150
                                   (integral (hold
                                              (merge-e
                                               (key-strokes
@@ -40,7 +40,7 @@
                                               ((when-e (<= (posn-x paddle1-pos)  30)) . -=> . 0))
                                              0)))
                                30 170)
-                         (clip (+ 100
+                         (clip (+ 150
                                   (integral (hold
                                              (merge-e
                                               (key-strokes
@@ -106,6 +106,6 @@
   (make-circle paddle2-pos paddle-radius "black")
   (make-graph-string (make-posn 30 30) (number->string p2-score) "black")
   (make-graph-string (make-posn 350 30) (number->string p1-score) "black")
-  (make-graph-string (make-posn 120 30) (number->string (posn-len ball-vel)) "black")
+  ;(make-graph-string (make-posn 120 30) (number->string (posn-len ball-vel)) "black")
   (make-line (make-posn 0 150) (make-posn 0 250) "red")
   (make-line (make-posn 399 150) (make-posn 399 250) "red")))

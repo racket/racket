@@ -496,7 +496,9 @@
                                  breakpoints
                                  (lambda (pos status)
                                    ; possible efficiency problem for large files with many breakpoints
-                                   (when (and (>= pos 0) (not (memq pos break-posns)))
+                                   (when (and (>= pos (syntax-position top-e))
+                                              (< pos (+ (syntax-position top-e) (syntax-span top-e)))
+                                              (not (memq pos break-posns)))
                                      (hash-table-remove! breakpoints pos))))
                                 (for-each (lambda (posn)
                                             (hash-table-put!
