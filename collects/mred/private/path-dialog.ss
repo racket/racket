@@ -297,9 +297,9 @@
             (unless (null? items)
               (let ([j (+ i (string-length (caar items)))])
                 (when (cdar items)
-                  (send edit change-style path-up-delta i j)
+                  (unless (zero? i) (send edit change-style path-up-delta i j))
                   (send edit set-clickback i
-                        (if (eq? i 0) j (add1 j)) ; inclucde the sep
+                        (if (zero? i) j (add1 j)) ; inclucde the sep
                         (lambda _ (enter-text (cdar items)) (do-enter))))
                 (loop j (cdr items)))))
           (send dir-text lock))
@@ -430,7 +430,7 @@
                  [selections (send path-list get-selections)]
                  [many?   (and multi? (equal? "" sel)
                                (<= 1 (length selections)))])
-            (cond [(and isdir? (not (equal? "" sel)))
+            (cond [(and isdir? (or (not (equal? "" sel)) (root? sel0)))
                    ;; chose a directory -- go there
                    (set-dir path) (send* text* (erase) (select-all)) (set-ok?)]
                   [(and /? isfile?)
