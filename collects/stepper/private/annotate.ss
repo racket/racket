@@ -1069,7 +1069,6 @@
     (define/contract annotate/top-level/acl2
       (syntax? . -> . syntax?)
       (lambda (exp)
-        (>>> exp)
         (syntax-case exp (begin define-values #%app)
           [(begin contract-thingy 
                   (begin body (begin)))
@@ -1146,7 +1145,6 @@
                   #;(error `annotate/module-top-level "unexpected module-top-level expression to annotate: ~a\n" (syntax-object->datum exp))])])))
     
     ; body of local
-    #;(printf "input: ~a\n" exp)
     (let* ([annotated-exp (cond 
                             [(string=? language-level-name "ACL2 Beginner (beta 8)")
                              (annotate/top-level/acl2 main-exp)]

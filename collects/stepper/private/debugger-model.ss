@@ -55,6 +55,8 @@
       
       
       (define (step-through-expression expanded expand-next-expression)
+        (with-output-to-file "/dev/stderr"
+          (printf "about-to-annotate\n"))
         (let* ([annotated (annotate expanded breakpoints breakpoint-origin break)])
           ; (fprintf (current-error-port) "annotated: ~v\n" (syntax-object->datum annotated))
           (let ([expression-result

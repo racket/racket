@@ -217,7 +217,7 @@
                           [(#%app fn . rest)
                            #`fn]
                           [else (error 'find-special-name "couldn't find expanded name for ~a" name)])])      
-      (eval just-the-fn)))
+      (eval (syntax-recertify just-the-fn expanded-application (current-code-inspector) #f))))
 
   ;; these are delayed so that they use the userspace expander.  I'm sure
   ;; there's a more robust & elegant way to do this.
