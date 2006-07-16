@@ -491,24 +491,29 @@
 ;; ----------------------------------------
 ;; Conversion wrappers
 
-(define (try-eip-seq encoding bytes try-map)
-  (let* ([p (open-input-bytes bytes)]
-	 [p2 (reencode-input-port p encoding #".!")])
-    (for-each (lambda (one-try)
-		(let ([p (if (car one-try)
-			     p2
-			     p)]
-		      [len (cadr one-try)]
-		      [expect (caddr one-try)])
-		  (test expect read-bytes len p)))
-	      try-map)))
+(define (try-eip-seq encoding only-if-avail? bytes try-map)
+  (when (or (not only-if-avail?)
+            (let ([c (bytes-open-converter "UTF-8" encoding)])
+              (and c
+                   (bytes-close-converter c)
+                   #t)))
+    (let* ([p (open-input-bytes bytes)]
+           [p2 (reencode-input-port p encoding #".!")])
+      (for-each (lambda (one-try)
+                  (let ([p (if (car one-try)
+                               p2
+                               p)]
+                        [len (cadr one-try)]
+                        [expect (caddr one-try)])
+                    (test expect read-bytes len p)))
+                try-map))))
 
-(try-eip-seq "UTF-8" #"apple" `((#t 3 #"app") (#f 2 #"le") (#t 4 ,eof)))
-(try-eip-seq "UTF-8" #"ap\303\251ple" `((#t 3 #"ap\303") (#f 2 #"pl") (#t 4 #"\251e") (#t 5 ,eof)))
-(try-eip-seq "ISO-8859-1" #"ap\303\251ple" `((#t 3 #"ap\303") (#f 2 #"\251p") (#t 4 #"\203le") (#t 5 ,eof)))
-(try-eip-seq "UTF-8" #"ap\251ple" `((#t 2 #"ap") (#f 2 #"\251p") (#t 4 #"le") (#t 5 ,eof)))
-(try-eip-seq "UTF-8" #"ap\251ple" `((#t 3 #"ap.") (#f 1 #"p") (#t 4 #"!le") (#t 5 ,eof)))
-(try-eip-seq "UTF-8" #"ap\251ple" `((#t 4 #"ap.!") (#f 1 #"l") (#t 4 #"pe") (#t 5 ,eof)))
+(try-eip-seq "UTF-8" #f #"apple" `((#t 3 #"app") (#f 2 #"le") (#t 4 ,eof)))
+(try-eip-seq "UTF-8" #f #"ap\303\251ple" `((#t 3 #"ap\303") (#f 2 #"pl") (#t 4 #"\251e") (#t 5 ,eof)))
+(try-eip-seq "ISO-8859-1" #t #"ap\303\251ple" `((#t 3 #"ap\303") (#f 2 #"\251p") (#t 4 #"\203le") (#t 5 ,eof)))
+(try-eip-seq "UTF-8" #f #"ap\251ple" `((#t 2 #"ap") (#f 2 #"\251p") (#t 4 #"le") (#t 5 ,eof)))
+(try-eip-seq "UTF-8" #f #"ap\251ple" `((#t 3 #"ap.") (#f 1 #"p") (#t 4 #"!le") (#t 5 ,eof)))
+(try-eip-seq "UTF-8" #f #"ap\251ple" `((#t 4 #"ap.!") (#f 1 #"l") (#t 4 #"pe") (#t 5 ,eof)))
 
 (let-values ([(in out) (make-pipe-with-specials)])
   (display "ok" out)
