@@ -16,14 +16,14 @@
   ;; os-dependent stuff
   (define win? (eq? 'windows (system-type)))
   (define path-separator        (if win? "\\" "/"))
-  (define up-dir-name           (string-append ".." path-separator))
-  (define path-separator-re-str (if win? "/\\" "/"))
-  (define (make-re . strs)
-    (let ([l (map (lambda (s) (if (eq? / s) path-separator-re-str s)) strs)])
+  (define path-separator-rx-str (if win? "/\\" "/"))
+  (define (make-rx . strs)
+    (let ([l (map (lambda (s) (if (eq? / s) path-separator-rx-str s)) strs)])
       (regexp (apply string-append l))))
-  (define end-separators-re    (make-re "["/"]+$"))
-  (define initial-/dir-part-re (make-re "^["/"]*([^"/"]+)"))
-  (define initial-dir/-part-re (make-re "^.*?["/"]"))
+  (define end-separators-rx    (make-rx "["/"]+$"))
+  (define initial-/dir-part-rx (make-rx "^["/"]*([^"/"]+)"))
+  (define initial-dir/-part-rx (make-rx "^.*?["/"]"))
+  (define isfilter-rx #rx"[*?]")
 
   (define default-filters (if win? '(("Any" "*.*")) '(("Any" "*"))))
 
@@ -46,6 +46,78 @@
       (map (lambda (hide-dots?)
              (map (lambda (glob) (glob->regexp glob hide-dots?)) globs))
            '(#t #f))))
+
+  (define-struct pname (path string isdir? okstring? nulstring))
+  (define (path->pname path isdir?)
+    (let* ([name (regexp-replace end-separators-rx (path->string path) "")]
+           [name/ (if isdir? (string-append name path-separator) name)]
+           [goodstr?  (equal? path (string->path name))]
+           [no-globs? (not (regexp-match-positions isfilter-rx name))])
+      (make-pname path name/ (and isdir? #t) ; must be a strict boolean
+                  ;; most paths are `ok' strings, the ones that are not are
+                  ;; * paths where the string name does not correspond to the
+                  ;;   path, eg, a sequence of bytes that interprets badly when
+                  ;;   using UTF-8
+                  ;; * paths that contain `*' and `?', since they will be
+                  ;;   considered as filters
+                  ;; in these cases, the string is shown in the path-list gui,
+                  ;; but cannot be entered in the filename field
+                  (and goodstr? no-globs?)
+                  ;; nulstring is usually the same as string, except when
+                  ;; okstring? is #f -- in this case bad characters will be
+                  ;; "\0"s instead of "?"s, globbing chars are also turned to
+                  ;; "\0"s -- useful for completion, marking the place where
+                  ;; things become untextual
+                  ;; (note: use "\u01" due to a bug with "\0" for error char)
+                  (let* ([bad #\u01]
+                         [nulstr (if goodstr?
+                                   name/
+                                   (let ([s (bytes->string/locale
+                                             (path->bytes path) bad)])
+                                     (if isdir?
+                                       (string-append s path-separator)
+                                       s)))]
+                         [nulstr (if no-globs?
+                                   nulstr
+                                   (regexp-replace* isfilter-rx nulstr
+                                                    (string bad)))])
+                    nulstr))))
+  (define up-dir-pname (path->pname (string->path "..") #t))
+  ;; compare two pnames, use the strings according to the locael, dirs come 1st
+  (define (pname<? p1 p2)
+    (let ([d1 (pname-isdir? p1)] [d2 (pname-isdir? p2)])
+      (if (eq? d1 d2)
+        (string-locale<? (pname-string p1) (pname-string p2))
+        d1))) ; directories come first
+
+  (define (prefix? s1 s2 . proper?)
+    (and ((if (and (pair? proper?) (car proper?)) < <=)
+          (string-length s1) (string-length s2))
+         (do ([i (sub1 (string-length s1)) (sub1 i)])
+             [(or (< i 0) (not (eq? (string-ref s1 i) (string-ref s2 i))))
+              (< i 0)])))
+
+  ;; find a completion for str in the strs list
+  ;; * no strings   => #f
+  ;; * single match => (cons matching-string #f)
+  ;; * else         => (cons matching-prefix alternatives)
+  ;; the first elt of a cons is often longer that the input string
+  (define (find-completion str strs)
+    (let ([strs (filter (lambda (p) (prefix? str p)) strs)])
+      (cond [(null? strs) #f]
+            [(null? (cdr strs)) (cons (car strs) #f)]
+            [else (let ([m (apply min (map string-length strs))])
+                    (do ([i (string-length str) (add1 i)])
+                        [(or (>= i m)
+                             (not (let ([ch (string-ref (car strs) i)])
+                                    (andmap (lambda (s)
+                                              (eq? ch (string-ref s i)))
+                                            (cdr strs)))))
+                         (cons (substring (car strs) 0 i) strs)]))])))
+  ;; like the above, but removes a suffix that indicates nonstring stuff
+  (define (find-completion* str strs)
+    (let ([r (find-completion str strs)])
+      (and r (cons (regexp-replace #rx"\u01.*$" (car r) "") (cdr r)))))
 
   ;; ==========================================================================
   (define path-dialog%
@@ -114,7 +186,8 @@
 
       (define result #f)
       (define dir    #f)
-      (define paths  '())
+      (define pnames '())
+      (define pnames-nulstrings '()) ; cache nulstrings of pnames
 
       ;; ----------------------------------------------------------------------
       ;; Utilities
@@ -154,88 +227,90 @@
           (values (if dir? "" (path->string name))
                   (path->string (if dir? path base)))))
 
-      (define (prefix? s1 s2 . proper?)
-        (and ((if (and (pair? proper?) (car proper?)) < <=)
-              (string-length s1) (string-length s2))
-             (do ([i (sub1 (string-length s1)) (sub1 i)])
-                 [(or (< i 0) (not (eq? (string-ref s1 i) (string-ref s2 i))))
-                  (< i 0)])))
-
       ;; returns a list of strings, dirs first, all with a "/" suffix
       (define (sorted-dirlist dir)
         (define dotted? (send show-dotted get-value))
         (parameterize ([current-directory dir])
           (let loop ([paths (with-handlers ([void (lambda (x) '())])
                               (directory-list))]
-                     [dirs '()] [files '()])
+                     [pnames '()])
             (if (null? paths)
-              (let ([ps (append! (sort! dirs string-locale<?)
-                                 (sort! files string-locale<?))])
-                (if (root? dir) ps (cons up-dir-name ps)))
+              (let ([ps (sort! pnames pname<?)])
+                (if (root? dir) ps (cons up-dir-pname ps)))
               (let* ([path   (car paths)]
-                     [name   (path->string (car paths))]
                      [paths  (cdr paths)]
-                     [isdir? (directory-exists? path)])
-                (cond [(and (not dotted?)
-                            (or (not globs) ; globs used for no-dots in files
-                                isdir?)
-                            (eq? #\. (string-ref name 0)))
-                       (loop paths dirs files)]
-                      [(directory-exists? path)
-                       (loop paths
-                             (if (or (not show-dir?) (show-dir? name))
-                               (cons (string-append name path-separator) dirs)
-                               dirs)
-                             files)]
-                      [else (loop
-                             paths dirs
-                             (if (and (or (not globs)
-                                          (ormap (lambda (glob)
-                                                   (regexp-match-positions
-                                                    glob name))
-                                                 ((if dotted? cadr car) globs)))
-                                      (or (not show-file?)
-                                          (show-file? name)))
-                               (cons name files) files))]))))))
-
-      (define (find-completion str strs)
-        (let ([strs (filter (lambda (p) (prefix? str p)) strs)])
-          (cond [(null? strs) #f]
-                [(null? (cdr strs)) (cons (car strs) #f)]
-                [else (let ([m (apply min (map string-length strs))])
-                        (do ([i (string-length str) (add1 i)])
-                            [(or (>= i m)
-                                 (not (let ([ch (string-ref (car strs) i)])
-                                        (andmap (lambda (s)
-                                                  (eq? ch (string-ref s i)))
-                                                (cdr strs)))))
-                             (cons (substring (car strs) 0 i) strs)]))])))
+                     [isdir? (directory-exists? path)]
+                     [pname  (path->pname path isdir?)]
+                     [name   (pname-string pname)])
+                (loop paths
+                      (cond [(and (not dotted?)
+                                  ;; globs used for no-dots in files
+                                  (or (not globs) isdir?)
+                                  (eq? #\. (string-ref name 0)))
+                             pnames]
+                            [(if isdir?
+                               (or (not show-dir?) (show-dir? name))
+                               (and (or (not globs)
+                                        (ormap (lambda (glob)
+                                                 (regexp-match-positions
+                                                  glob name))
+                                               ((if dotted? cadr car)
+                                                globs)))
+                                    (or (not show-file?)
+                                        (show-file? name))))
+                             (cons pname pnames)]
+                            [else pnames])))))))
 
       ;; ----------------------------------------------------------------------
       ;; GUI Utilities & Handlers
 
+      ;; may be set if there is a value that is non-textual (a pname entry
+      ;; without an okstring, a directly clicked path)
+      (define nonstring-path #f)
+
+      (define set-path-list-pnames
+        (case-lambda
+          [() (set-path-list-pnames pnames)]
+          [(pnames)
+           (send path-list set (map pname-string pnames))
+           (let loop ([pnames pnames] [i 0])
+             (unless (null? pnames)
+               (send path-list set-data i (car pnames))
+               (loop (cdr pnames) (add1 i))))]))
+
       (define (set-dir newdir)
         (wx:begin-busy-cursor)
         (set! dir (simplify-path* (expand-path newdir)))
-        (let ([dir (path->string dir)] [edit (send dir-text get-editor)])
+        ;; get a list of upward paths, display it with clickbacks
+        (let* ([sep (cons path-separator #f)]
+               [items ; a list of (cons name path)
+                (let loop ([dir dir] [r '()])
+                  (let-values ([(base name _) (split-path dir)])
+                    (let ([n (cons (path->string name) dir)])
+                      (if (path? base)
+                        (loop base (list* n sep r))
+                        (cons n r)))))]
+               [edit (send dir-text get-editor)])
           (send dir-text unlock)
-          (send dir-text set-value dir)
-          (let loop ([i 0])
-            (let ([m (regexp-match-positions initial-/dir-part-re dir i)])
-              (when m
-                (send edit change-style path-up-delta (caadr m) (cdadr m))
-                (send edit set-clickback (caar m) (cdar m)
-                      (lambda _
-                        (enter-text (substring dir 0 (cdar m)))
-                        (do-enter)))
-                (loop (cdar m)))))
+          (send dir-text set-value (apply string-append (map car items)))
+          (let loop ([i 0] [items items])
+            (unless (null? items)
+              (let ([j (+ i (string-length (caar items)))])
+                (when (cdar items)
+                  (send edit change-style path-up-delta i j)
+                  (send edit set-clickback i
+                        (if (eq? i 0) j (add1 j)) ; inclucde the sep
+                        (lambda _ (enter-text (cdar items)) (do-enter))))
+                (loop j (cdr items)))))
           (send dir-text lock))
         (clear-path-list-state)
         (if (directory-exists? dir)
-          (begin (set! paths (sorted-dirlist dir))
-                 (send path-list set paths)
+          (begin (set! pnames (sorted-dirlist dir))
+                 (set! pnames-nulstrings (map pname-nulstring pnames))
+                 (set-path-list-pnames)
                  (send path-list enable #t))
-          (begin (set! paths '())
+          (begin (set! pnames '())
+                 (set! pnames-nulstrings '())
                  (send path-list set (list "Bad Directory:" dir))
                  (send path-list enable #f)))
         (wx:end-busy-cursor))
@@ -250,21 +325,27 @@
                (or (not ok?) (ok? path)))))
 
       (define (set-ok?)
-        ;; deal with button enabling disabling etc
-        (let* ([value   (send text get-value)]
-               [path    (build-path* dir value)]
-               [empty?  (equal? "" value)]
+        ;; deal with button enabling/disabling etc
+        (define-values (value path)
+          (if nonstring-path
+            (values (path->string nonstring-path) nonstring-path)
+            (let ([val (send text get-value)])
+              (values val (build-path* dir val)))))
+        (let* ([empty? (equal? "" value)]
                [selections (send path-list get-selections)])
           ;; turn off other selections if there is a value
           (when (and multi? (not empty?))
-            (for-each
-             (lambda (i)
-               (let ([s (send path-list get-string i)])
-                 (send path-list select i
-                       (and value (prefix? value s) ; optimize: save on replaces
-                            (equal? value (regexp-replace
-                                           end-separators-re s ""))))))
-             selections)
+            (let ([on? (if nonstring-path
+                         (lambda (i)
+                           (equal? nonstring-path
+                                   (pname-path (send path-list get-data i))))
+                         (lambda (i)
+                           (let ([s (send path-list get-string i)])
+                             (and (prefix? value s) ; optimize: save on replaces
+                                  (equal? value (regexp-replace
+                                                 end-separators-rx s ""))))))])
+            (for-each (lambda (i) (send path-list select i (on? i)))
+                      selections))
             (set! selections (send path-list get-selections)))
           (let* ([seln    (length selections)]
                  [isdir?  (directory-exists? path)]
@@ -296,21 +377,25 @@
           (when (and multi? (not dir?) (pair? sel) (pair? (cdr sel)))
             ;; make sure no dirs are chosen when files are
             (let ([dirs (filter (lambda (i)
-                                  (regexp-match end-separators-re
-                                                (send path-list get-string i)))
+                                  (pname-isdir? (send path-list get-data i)))
                                 sel)])
               (unless (and (equal? dirs sel) (= 1 (length dirs)))
                 (for-each (lambda (i) (send path-list select i #f))
                           dirs)
                 (set! sel (remq* dirs sel)))))
           (cond [(and (pair? sel) (null? (cdr sel)))
-                 (let* ([new (send path-list get-string (car sel))]
-                        [new (regexp-replace end-separators-re new "")])
-                   ;; `multi?' is problematic on Windows since it needs the
-                   ;; focus for the mouse wheel to move
+                 (let* ([pname (send path-list get-data (car sel))]
+                        [new (cond [(not (pname-okstring? pname))
+                                    (pname-path pname)]
+                                   [(pname-isdir? pname)
+                                    (regexp-replace end-separators-rx
+                                                    (pname-string pname) "")]
+                                   [else (pname-string pname)])])
                    (enter-text new enter-text-no-focus?))]
                 [multi? (enter-text "" enter-text-no-focus?)])))
       ;; uncomment the following to keep the focus on the text
+      ;;   (`multi?' is problematic on Windows since it needs the focus for the
+      ;;   mouse wheel to move)
       (define enter-text-no-focus? #t) ; (or win? multi?))
 
       (define (create-directory path) ; return #f on failure
@@ -327,44 +412,46 @@
 
       (define (do-enter*)
         (let ([t (send text get-value)])
-          (if (and file-filter (regexp-match #rx"[*?]" t))
+          (if (and file-filter (regexp-match isfilter-rx t))
             (begin (send text set-value "") (set-filter t))
             (do-enter))))
       (define (do-enter)
         (set-ok?)
         (when (send ok-button is-enabled?)
-          (let* ([sel0    (send text get-value)]
-                 [sel     (regexp-replace end-separators-re sel0 "")]
-                 [/?      (not (equal? sel0 sel))]
-                 [sel/    (string-append sel path-separator)]
-                 [path    (build-path* dir sel)]
-                 [isfile? (and (not /?) (member sel paths))]
-                 [isdir?  (and (member sel/ paths))]
+          (let* ([sel0 (if nonstring-path
+                         (path->string nonstring-path)
+                         (send text get-value))]
+                 [sel  (regexp-replace end-separators-rx sel0 "")]
+                 [/?   (not (equal? sel0 sel))]
+                 [sel/ (string-append sel path-separator)]
+                 [path (build-path* dir (or nonstring-path sel))]
+                 [isfile? (and (not /?) (file-exists? path))]
+                 [isdir?  (directory-exists? path)]
                  [selections (send path-list get-selections)]
                  [many?   (and multi? (equal? "" sel)
                                (<= 1 (length selections)))])
-            (unless (or isfile? isdir? many?)
-              ;; not in list, but maybe on disk (disk changed, hidden)
-              (cond [(and (not /?) (file-exists? path)) (set! isfile? #t)]
-                    [(directory-exists? path) (set! isdir? #t)]))
             (cond [(and isdir? (not (equal? "" sel)))
                    ;; chose a directory -- go there
                    (set-dir path) (send* text* (erase) (select-all)) (set-ok?)]
-                  [(and /? (or (member sel paths) (file-exists? path)))
+                  [(and /? isfile?)
                    (error-popup "bad input: '~a' is a file" sel)]
                   [(and /? (not isdir?))
                    (error-popup "bad input: no '~a' directory~a" sel
                                 (if create-button
                                   " (use the NewDir button)" ""))]
                   [many? (return (map (lambda (i)
-                                        (let ([s (send path-list get-string i)])
-                                          (build-path* dir s)))
+                                        (let ([s (send path-list get-data i)])
+                                          (build-path* dir (pname-path s))))
                                       selections))]
                   [multi? (return (list path))]
                   [else (return path)]))))
 
       (define (enter-text str . no-focus?)
-        (send text set-value str)
+        ;; str can actually be a path if selected an entry with a non-okstring,
+        ;; or a path that is set directly (eg, from the top path navigation
+        ;; thing)
+        (set! nonstring-path (and (path? str) str))
+        (send text set-value (if nonstring-path "" str))
         (unless (and (pair? no-focus?) (car no-focus?)) (send text focus))
         (send text* select-all)
         (set-ok?))
@@ -435,7 +522,7 @@
           (when change?
             ;; if entered an existing directory, go there
             (let loop ()
-              (let ([m (regexp-match-positions initial-dir/-part-re value)])
+              (let ([m (regexp-match-positions initial-dir/-part-rx value)])
                 (when m
                   (let* ([pfx (substring value 0 (cdar m))]
                          [pfx (build-path* dir pfx)])
@@ -469,7 +556,7 @@
                  (set! change? #f)]
                 [;; a b c d
                  ;; a b c   => removed text
-                 (prefix? value last-text-value #t)
+                 (and last-text-completed? (prefix? value last-text-value #t))
                  ;; => disable pending completions if any
                  (send completion-timer stop)
                  (restore-path-list-state)
@@ -504,7 +591,7 @@
                       (send path-list get-selections)))))
       (define (restore-path-list-state)
         (when saved-path-list-state
-          (send path-list set paths)
+          (set-path-list-pnames)
           (for-each (lambda (i) (send path-list select i))
                     (cadr saved-path-list-state))
           (send path-list
@@ -534,17 +621,20 @@
                  (set! running? #f)
                  (let* ([new (send text get-value)]
                         [found (and (not (equal? "" new))
-                                    (find-completion new paths))]
+                                    (find-completion* new pnames-nulstrings))]
                         [temp-paths? #f])
                    (when found
                      (let* ([options (cdr found)]
                             [found   (regexp-replace
-                                      end-separators-re (car found) "")]
+                                      end-separators-rx (car found) "")]
                             [start   (string-length new)]
                             [end     (string-length found)])
                        (when options
                          (save-path-list-state)
-                         (send path-list set options)
+                         (set-path-list-pnames
+                          (filter (lambda (p)
+                                    (member (pname-nulstring p) options))
+                                  pnames))
                          (set! temp-paths? #t))
                        (unless (= start end)
                          (send text set-value found)
@@ -575,7 +665,7 @@
                                     (define l (path->string r))
                                     (make-object menu-item% l m
                                                  (lambda _
-                                                   (enter-text l)
+                                                   (enter-text r)
                                                    (do-enter))))
                                   (filesystem-root-list))))
                     (lock))])
