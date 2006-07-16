@@ -16,7 +16,7 @@
 
 (define (get-test-file)
   (define name "NormalizationTest.txt")
-  (define base "http://www.unicode.org/Public/UNIDATA/")
+  (define base "http://www.unicode.org/Public/4.1.0/ucd/")
   (define (existing)
     (let loop ([dirs (list (current-load-relative-directory)
                            (current-directory))])
