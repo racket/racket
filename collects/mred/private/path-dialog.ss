@@ -452,6 +452,7 @@
         ;; thing)
         (set! nonstring-path (and (path? str) str))
         (send text set-value (if nonstring-path "" str))
+        (reset-last-text-state)
         (unless (and (pair? no-focus?) (car no-focus?)) (send text focus))
         (send text* select-all)
         (set-ok?))
@@ -507,6 +508,12 @@
       (define last-text-end   0)
       (define last-text-completed? #f) ; is the last region a completion?
 
+      (define (reset-last-text-state)
+        (set! last-text-value "")
+        (set! last-text-start 0)
+        (set! last-text-end   0)
+        (set! last-text-completed? #f))
+
       (define (text-callback . key)
         (send completion-timer wait)
         (let* ([value   (send text get-value)]
@@ -519,6 +526,7 @@
             (set! last-text-start start)
             (set! last-text-end   end)
             (set! last-text-completed? #f))
+          (set! nonstring-path #f)
           (when change?
             ;; if entered an existing directory, go there
             (let loop ()
@@ -528,9 +536,7 @@
                          [pfx (build-path* dir pfx)])
                     (when (directory-exists? pfx)
                       (set-dir pfx)
-                      (set! last-text-value "")
-                      (set! last-text-start 0)
-                      (set! last-text-end   0)
+                      (reset-last-text-state)
                       (set! value (substring value (cdar m)))
                       (set! start (string-length value))
                       (set! end   start)
