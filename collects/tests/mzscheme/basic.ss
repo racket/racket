@@ -1811,6 +1811,11 @@
 (let ()
   (define-struct ax (b c)) ; opaque
   (define-struct a (b c) (make-inspector))
+
+  (define save (let ([x null])
+                 (case-lambda 
+                  [() x]
+                  [(a) (set! x (cons a x)) a])))
 	 
   (define an-ax (make-ax 1 2))
 
@@ -1832,11 +1837,7 @@
 		 [l (list 1 2 3)]
 		 [v (vector 5 6 7)]
 		 [a (make-a 1 (make-a 2 3))]
-		 [b (box (list 1 2 3))]
-		 [save (let ([x null])
-			 (case-lambda 
-			  [() x]
-			  [(a) (set! x (cons a x)) a]))])
+		 [b (box (list 1 2 3))])
 
 	     (test 0 hash-table-count h1)
 
@@ -1865,6 +1866,15 @@
 		     (puts1) 
 		     (test 6 hash-table-count h1)
 		     (puts2))))
+
+             (when reorder?
+               ;; Add 1000 things and take them back out in an effort to 
+               ;; trigger GCs that somehow affect hashing:
+               (let loop ([i 0.0])
+                 (unless (= i 1000.0)
+                   (hash-table-put! h1 i #t)
+                   (loop (add1 i))
+                   (hash-table-remove! h1 i))))
 
 	     (test 12 hash-table-count h1)
 	     (test 'list hash-table-get h1 l)
@@ -1908,22 +1918,26 @@
 	     (let ([c 0])
 	       (hash-table-for-each h1 (lambda (k v) (set! c (add1 c))))
 	       (test 11 'count c))
-	     (save) ; prevents gcing of the ht-registered values
 	     ;; return the hash table:
 	     h1))])
 
     (let ([check-tables-equal
-	   (lambda (t1 t2)
+	   (lambda (mode t1 t2)
 	     (test #t equal? t1 t2)
 	     (test (equal-hash-code t1) equal-hash-code t2)
 	     (let ([meta-ht (make-hash-table 'equal)])
-	       (hash-table-put! meta-ht t1 'the-table)
-	       (test 'the-table hash-table-get meta-ht t2 (lambda () #f))))])
+	       (hash-table-put! meta-ht t1 mode)
+	       (test mode hash-table-get meta-ht t2 (lambda () #f)))
+             (test (hash-table-count t1) hash-table-count t2))])
 
-      (check-tables-equal (check-hash-tables null #f)
+      (check-tables-equal 'the-norm-table
+                          (check-hash-tables null #f)
 			  (check-hash-tables null #t))
-      (check-tables-equal (check-hash-tables (list 'weak) #f)
-			  (check-hash-tables (list 'weak) #t)))))
+      (check-tables-equal 'the-weak-table
+                          (check-hash-tables (list 'weak) #f)
+			  (check-hash-tables (list 'weak) #t)))
+
+    (save))) ; prevents gcing of the ht-registered values
 
 (test #f hash-table? 5)
 (test #t hash-table? (make-hash-table))
