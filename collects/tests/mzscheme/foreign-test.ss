@@ -6,8 +6,7 @@
 (require (lib "foreign.ss"))
 (unsafe!)
 
-(let ([big/little
-       (if (system-big-endian?) (lambda (x y) x) (lambda (x y) y))]
+(let ([big/little (if (system-big-endian?) (lambda (x y) x) (lambda (x y) y))]
       [p (malloc _int32)])
   (ptr-set! p _int32 0)
   (test 0 ptr-ref p _int32)
@@ -18,17 +17,41 @@
   (test (big/little 2 3) ptr-ref p _int8 1)
   (test (big/little 3 2) ptr-ref p _int8 2)
   (test (big/little 4 1) ptr-ref p _int8 3))
+(flush-output)
+
+(when (eq? 'windows (system-type))
+  (let* ([concat string-append]
+         [studio  "c:/Program Files/Microsoft Visual Studio 8"]
+         [scommon (concat studio "/Common7")]
+         [vc      (concat studio "/VC")])
+    (putenv "PATH"    (concat (getenv "PATH")
+                              ";" vc "/bin"
+                              ";" scommon "/IDE"
+                              ";" scommon "/Tools"
+                              ";" scommon "/Tools/bin"))
+    (putenv "INCLUDE" (concat ";" vc "/include"
+                              ";" vc "/atlmfc/include"
+                              ";" vc "/PlatformSDK/Include"))
+    (putenv "LIB"     (concat ";" vc "/lib"
+                              ";" vc "/atlmfc/lib"
+                              ";" vc "/PlatformSDK/lib"))))
 
 (require (lib "compile.ss" "dynext") (lib "link.ss" "dynext") (lib "etc.ss"))
 (let ([c  (build-path (this-expression-source-directory) "foreign-test.c")]
       [o  (build-path (current-directory) "foreign-test.o")]
-      [so (build-path (current-directory) "foreign-test.so")])
+      [so (build-path (current-directory)
+                      (string-append "foreign-test."
+                                     (case (system-type)
+                                       [(unix)    "so"]
+                                       [(macosx)  "dylib"]
+                                       [(windows) "dll"])))])
   (when (file-exists? o) (delete-file o))
   (when (file-exists? so) (delete-file so))
-  (compile-extension #t c o '())
-  (link-extension #t (list o) so))
+  (parameterize ([current-standard-link-libraries '()])
+    (compile-extension #t c o '())
+    (link-extension #t (list o) so)))
 
-(let* ([lib (ffi-lib "./foreign-test.so")]
+(let* ([lib (ffi-lib "./foreign-test")]
        [ffi (lambda (name type) (get-ffi-obj name lib type))]
        [test* (lambda (expected name type proc)
                 (test expected name (proc (ffi name type))))]
