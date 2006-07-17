@@ -95,56 +95,50 @@
                   (if fragment (sa "#" (uri-encode fragment)) ""))))))
 
       ;; url->default-port : url -> num
-      (define url->default-port
-        (lambda (url)
-          (let ((scheme (url-scheme url)))
-            (cond
-             ((not scheme) 80)
-             ((string=? scheme "http") 80)
-             (else
-              (url-error "Scheme ~a not supported" (url-scheme url)))))))
+      (define (url->default-port url)
+        (let ([scheme (url-scheme url)])
+          (cond [(not scheme) 80]
+                [(string=? scheme "http") 80]
+                [else (url-error "Scheme ~a not supported" (url-scheme url))])))
 
       ;; make-ports : url -> in-port x out-port
-      (define make-ports
-        (lambda (url proxy)
-          (let ((port-number (if proxy
-                                 (caddr proxy)
-                                 (or (url-port url)
-                                     (url->default-port url))))
-                (host (if proxy
-                          (cadr proxy)
-                          (url-host url))))
-            (tcp-connect host port-number))))
+      (define (make-ports url proxy)
+        (let ([port-number (if proxy
+                             (caddr proxy)
+                             (or (url-port url) (url->default-port url)))]
+              [host (if proxy
+                      (cadr proxy)
+                      (url-host url))])
+          (tcp-connect host port-number)))
 
       ;; http://getpost-impure-port : bool x url x union (str, #f) x list (str) -> in-port
-      (define http://getpost-impure-port
-        (lambda (get? url post-data strings)
-          (let*-values (((proxy) (assoc (url-scheme url) (current-proxy-servers)))
-                        ((server->client client->server)
-                         (make-ports url proxy)))
-            (let ((access-string
-                   (url->string
-                    (if proxy
-                        url
-                        (make-url #f #f #f #f 
-                                  (url-path-absolute? url)
-                                  (url-path url)
-                                  (url-query url)
-                                  (url-fragment url))))))
-              (for-each (lambda (s)
-                          (display (string-append s "\r\n") client->server))
-                        (cons (format "~a ~a HTTP/1.0" (if get? "GET" "POST") access-string)
-                              (cons (format "Host: ~a" (url-host url))
-                                    (if post-data
-                                        (cons
-                                         (format "Content-Length: ~a" (bytes-length post-data))
-                                         strings)
-                                        strings)))))
-            (display "\r\n" client->server)
-            (when post-data
-              (display post-data client->server))
-	    (tcp-abandon-port client->server) ; flushes
-            server->client)))
+      (define (http://getpost-impure-port get? url post-data strings)
+        (let*-values
+            ([(proxy) (assoc (url-scheme url) (current-proxy-servers))]
+             [(server->client client->server) (make-ports url proxy)]
+             [(access-string) (url->string
+                               (if proxy
+                                 url
+                                 (make-url #f #f #f #f
+                                           (url-path-absolute? url)
+                                           (url-path url)
+                                           (url-query url)
+                                           (url-fragment url))))])
+          (define (println . xs)
+            (for-each (lambda (x) (display x client->server)) xs)
+            (display "\r\n" client->server))
+          (println (if get? "GET " "POST ") access-string " HTTP/1.0")
+          (println "Host: " (url-host url)
+                   (let ([p (url-port url)])
+                     (if (equal? p (url->default-port url))
+                       "" (format ":~a" p))))
+          (when post-data (println "Content-Length: " (bytes-length post-data)))
+          (for-each println strings)
+          (println)
+          (when post-data (display post-data client->server))
+          (flush-output client->server)
+          (tcp-abandon-port client->server)
+          server->client))
 
       (define (file://->path url)
         ;; remove all ""s
