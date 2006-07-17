@@ -20,6 +20,11 @@
   
   (provide tool@)
   
+  (define (robust-syntax-source stx)
+    (if (syntax? stx)
+        (syntax-source stx)
+        #f))
+  
   ; QUESTIONS/IDEAS
   ; what is the right way to deal with macros?
   ; how can the three tool classes communicate with each other safely
@@ -444,8 +449,8 @@
               (if (or (compiled-expression? (if (syntax? orig-exp)
                                                 (syntax-e orig-exp)
                                                 orig-exp))
-                      (not (syntax-source orig-exp))
-                      (not (eq? (syntax-source orig-exp)
+                      (not (robust-syntax-source orig-exp))
+                      (not (eq? (robust-syntax-source orig-exp)
                                 (send (get-tab) get-defs))))
                   (oe orig-exp)
                   (let loop ([exp (if (syntax? orig-exp)
@@ -482,8 +487,8 @@
                                               break-after
                                               (lambda (type bound binding)
                                                 ;(display-results (list bound))
-                                                (when (eq? (syntax-source bound)
-                                                           (syntax-source exp))
+                                                (when (eq? (robust-syntax-source bound)
+                                                           (robust-syntax-source exp))
                                                   (let loop ([i 0])
                                                     (when (< i (syntax-span bound))
                                                       (vector-set! pos-vec (+ i (syntax-position bound)) binding)

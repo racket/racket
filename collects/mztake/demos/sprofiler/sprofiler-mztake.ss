@@ -1,6 +1,7 @@
 (require (lib "mztake.ss" "mztake" )
          (lib "match.ss")
-         (lib "base-gm.ss" "frtime"))
+         (lib "base-gm.ss" "frtime")
+         (only mzscheme hash-table-map))
 
 (set-main! "picture.ss")
 
@@ -19,6 +20,9 @@
 
 (set-running-e! (merge-e (clicks . -=> . false)
                          (clicks . -=> . true)))
+
+(define (hash-pairs ht)
+  (hash-table-map ht (lambda (k v) (list k v))))
 
 (define (show-profile)
   (sort (hash-pairs pings) (lambda (a b) (> (second a) (second b)))))
