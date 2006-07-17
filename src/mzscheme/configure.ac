@@ -24,47 +24,50 @@ AC_INIT([PLT Scheme])
 AC_CONFIG_SRCDIR(mzscheme/src/bignum.c)
 AC_CONFIG_HEADERS([mzscheme/mzconfig.h])
 
-AC_ARG_ENABLE(mred, [  --enable-mred           compile MrEd as well as MzScheme (enabled by default)], , enable_mred=yes )
+AC_ARG_ENABLE(mred,    [  --enable-mred           compile MrEd as well as MzScheme (enabled by default)], , enable_mred=yes )
 
-AC_ARG_ENABLE(gl, [  --enable-gl             use OpenGL when available (enabled by default)])
+AC_ARG_ENABLE(gl,      [  --enable-gl             use OpenGL when available (enabled by default)])
 AC_ARG_ENABLE(xrender, [  --enable-xrender        use Xrender when available (enabled by default)])
-AC_ARG_ENABLE(xft, [  --enable-xft            use Xft when available (enabled by default)])
-AC_ARG_ENABLE(cairo, [  --enable-cairo          use Cairo when available (enabled by default)])
-AC_ARG_ENABLE(libpng, [  --enable-libpng         use libpng instead of building (enabled by default)])
+AC_ARG_ENABLE(xft,     [  --enable-xft            use Xft when available (enabled by default)])
+AC_ARG_ENABLE(cairo,   [  --enable-cairo          use Cairo when available (enabled by default)])
+AC_ARG_ENABLE(libpng,  [  --enable-libpng         use libpng instead of building (enabled by default)])
 AC_ARG_ENABLE(libjpeg, [  --enable-libjpeg        use libjpeg instead of building (enabled by default)])
 
-AC_ARG_ENABLE(shared, [  --enable-shared         create shared libraries])
-AC_ARG_ENABLE(dynlib, [  --enable-dynlib         same as --enable-shared])
-AC_ARG_ENABLE(shared, [  --enable-origtree       install with original directory structure])
+AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries])
+AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
+AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of bundled libtool], LIBTOOLPROG="$enableval", enable_lt=no)
+
+AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original directory structure])
 
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 AC_ARG_ENABLE(llvm,    [  --enable-llvm           compile llvm support (disabled by default)], , enable_llvm=no)
 
-AC_ARG_ENABLE(sgc, [  --enable-sgc            use Senora GC instead of the Boehm GC])
-AC_ARG_ENABLE(sgcdebug, [  --enable-sgcdebug       use Senora GC for debugging])
+AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
+AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
 AC_ARG_ENABLE(account, [  --enable-account        3m: use memory-accounting GC (enabled by default)], , enable_account=yes)
 AC_ARG_ENABLE(compact, [  --enable-compact        3m: use compact GC (no accounting)])
 AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps])
 
-AC_ARG_ENABLE(float, [  --enable-float          include support for single-precision floats])
+AC_ARG_ENABLE(float,   [  --enable-float          include support for single-precision floats])
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   compile to use single-precision by default])
 
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link MrEd with pthreads (sometimes needed for GL)])
 
-AC_ARG_ENABLE(oskit, [  --enable-oskit          compile OSKit-based MzScheme kernel])
+AC_ARG_ENABLE(oskit,   [  --enable-oskit          compile OSKit-based MzScheme kernel])
 AC_ARG_ENABLE(smalloskit, [  --enable-smalloskit     compile small OSKit-based MzScheme kernel])
 
-AC_ARG_ENABLE(wbuild, [  --enable-wbuild         compile and use wbuild for .w sources])
-AC_ARG_ENABLE(perl, [  --enable-perl           use perl to regenerate certain sources])
+AC_ARG_ENABLE(wbuild,  [  --enable-wbuild         compile and use wbuild for .w sources])
+AC_ARG_ENABLE(perl,    [  --enable-perl           use perl to regenerate certain sources])
 
-AC_ARG_ENABLE(gprof, [  --enable-gprof          compile for profiling with gprof (gcc only)])
-AC_ARG_ENABLE(gcov, [  --enable-gcov           compile to gather gcov statistics (gcc3 only)])
+AC_ARG_ENABLE(gprof,   [  --enable-gprof          compile for profiling with gprof (gcc only)])
+AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statistics (gcc3 only)])
 
-AC_ARG_ENABLE(noopt, [  --enable-noopt          drop -O C flags])
+AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags])
 
-AC_ARG_ENABLE(xonx, [  --enable-xonx           compile X11 (not Quartz) MrEd for Mac OS X])
-AC_ARG_ENABLE(libfw, [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
-AC_ARG_ENABLE(libfw, [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
+AC_ARG_ENABLE(xonx,    [  --enable-xonx           compile X11 (not Quartz) MrEd for Mac OS X])
+AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
+AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
+
 
 ###### Get OS Type #######
 
@@ -81,52 +84,6 @@ fi
 
 OS=`$UNAME -s`
 
-###### Get data sizes and direction #######
-
-AC_CHECK_SIZEOF(char)
-AC_CHECK_SIZEOF(short)
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
-
-[ msg="for stack direction" ]
-AC_MSG_CHECKING($msg)
-AC_TRY_RUN(
-   int grows_down_p(int n, void *cmp) {
-     if (!cmp)
-       return grows_down_p(10, &cmp);
-     else if (!n)
-       return ((unsigned long)&cmp < (unsigned long)cmp);
-     else
-       return grows_down_p(n - 1, cmp);
-   }
-   int main() {
-      return grows_down_p();
-   }, stack_direction=up, stack_direction=down, stack_direction=unknown)
-AC_MSG_RESULT($stack_direction) 
-
-if test "${stack_direction}" = "unknown" ; then
-  echo configure: cannot determine stack direction
-  exit 1
-fi
-
-if test "${stack_direction}" = "up" ; then
-  AC_DEFINE(STACK_DIRECTION,1,[Stack direction up])
-fi
-if test "${stack_direction}" = "down" ; then
-  AC_DEFINE(STACK_DIRECTION,-1,[Stack direction down])
-fi
-
-AC_C_BIGENDIAN(endianness=big, endianness=little, endiannes=unknown)
-if test "${endianness}" = "unknown" ; then
-  echo configure: cannot determine endianness
-  exit 1
-fi
-
-if test "${endianness}" = "big" ; then
-  AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
-fi
-
 ###### Some flags imply other flags #######
 
 if test "${enable_smalloskit}" = "yes" ; then
@@ -139,6 +96,15 @@ fi
 
 if test "${enable_dynlib}" = "no" ; then
   enable_shared=no
+fi
+if test "${enable_shared}" != "yes" ; then
+  enable_lt=no
+fi
+if test "${enable_lt}" = "yes" ; then
+  echo "ERROR: no program given for libtool!"
+  echo " Supply a program for --enable-lt, something like this:"
+  echo "   --enable-lt=/usr/bin/libtool"
+  exit 1
 fi
 
 enable_quartz=no
@@ -238,6 +204,63 @@ if test "${enable_mred}" = "no" ; then
   enable_gl=no
   enable_pthread=no
 fi
+
+###### Tell user what flags we have #######
+
+show_explicitly_disabled()
+{
+  if test "$1" = "no" ; then
+    echo "=== $2 disabled"
+  fi
+}
+
+show_explicitly_enabled()
+{
+  if test "$1" = "yes" ; then
+    echo "=== $2 enabled"
+  fi
+}
+
+show_explicitly_enabled "${enable_xonx}" "X-on-X"
+show_explicitly_enabled "${enable_shared}" "Shared libraries"
+
+show_explicitly_disabled "${enable_mred}" MrEd
+show_explicitly_disabled "${enable_gl}" OpenGL
+show_explicitly_disabled "${enable_xrender}" Xrender
+show_explicitly_disabled "${enable_cairo}" Cairo
+show_explicitly_disabled "${enable_libpng}" "Use-existing-libpng"
+show_explicitly_disabled "${enable_libjpeg}" "Use-existing-libjpeg"
+
+if test "$LIBTOOLPROG" != "" ; then
+  echo "=== Libtool program: $LIBTOOLPROG"
+fi
+show_explicitly_enabled "${enable_orig}" "Original install tree"
+
+show_explicitly_disabled "${enable_foreign}" Foreign
+show_explicitly_enabled "${enable_llvm}" LLVM
+
+show_explicitly_enabled "${enable_sgc}" SGC
+show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
+show_explicitly_enabled "${enable_compact}" "Compact 3m GC"
+show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces"
+
+show_explicitly_enabled "${enable_float}" "Single-precision floats"
+show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats"
+
+show_explicitly_enabled "${enable_pthread}" "pthreads"
+show_explicitly_enabled "${enable_oskit}" "OSKit"
+show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
+
+show_explicitly_enabled "${enable_wbuild}" "wbuild"
+show_explicitly_enabled "${enable_perl}" "Perl"
+
+show_explicitly_enabled "${enable_gprof}" "gprof"
+show_explicitly_enabled "${enable_gcov}" "gcov"
+
+show_explicitly_enabled "${enable_noopt}" "No-optimization"
+
+show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
+show_explicitly_enabled "${enable_libfw}" "Frameworks-to-user"
 
 ###### Some defaults #######
 
@@ -721,6 +744,52 @@ if test "${enable_memtrace}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DNEWGC_MEMORY_TRACE"
 fi
 
+###### Get data sizes, stack direction, and endianness #######
+
+AC_CHECK_SIZEOF(char)
+AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
+
+[ msg="for stack direction" ]
+AC_MSG_CHECKING($msg)
+AC_TRY_RUN(
+   int grows_down_p(int n, void *cmp) {
+     if (!cmp)
+       return grows_down_p(10, &cmp);
+     else if (!n)
+       return ((unsigned long)&cmp < (unsigned long)cmp);
+     else
+       return grows_down_p(n - 1, cmp);
+   }
+   int main() {
+      return grows_down_p();
+   }, stack_direction=up, stack_direction=down, stack_direction=unknown)
+AC_MSG_RESULT($stack_direction) 
+
+if test "${stack_direction}" = "unknown" ; then
+  echo configure: cannot determine stack direction
+  exit 1
+fi
+
+if test "${stack_direction}" = "up" ; then
+  AC_DEFINE(STACK_DIRECTION,1,[Stack direction up])
+fi
+if test "${stack_direction}" = "down" ; then
+  AC_DEFINE(STACK_DIRECTION,-1,[Stack direction down])
+fi
+
+AC_C_BIGENDIAN(endianness=big, endianness=little, endiannes=unknown)
+if test "${endianness}" = "unknown" ; then
+  echo configure: cannot determine endianness
+  exit 1
+fi
+
+if test "${endianness}" = "big" ; then
+  AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
+fi
+
 ############## Solaris grunge ################
 
 if test "$check_gcc_dash_e" = "yes" ; then
@@ -1050,8 +1119,10 @@ if test "${enable_shared}" = "yes" ; then
     absprefix="${prefix}"
   fi
 
-  (cd lt; sh ${abssrcdir}/lt/configure --enable-shared --disable-static)
-  LTDIR=`pwd`/lt
+  if test "${LIBTOOLPROG}" = "" ; then  
+    (cd lt; sh ${abssrcdir}/lt/configure --enable-shared --disable-static)
+    LIBTOOLPROG=`pwd`/lt/libtool
+  fi
 
   if test "${need_gcc_static_libgcc}" = "yes" ; then
     need_gcc_static_libgcc=""
@@ -1071,21 +1142,21 @@ if test "${enable_shared}" = "yes" ; then
     plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/mzscheme/src/schvers.h | cut -d '"' -f 2`
   fi
 
-  AR="${LTDIR}/libtool --mode=link $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
-  STATIC_AR="${LTDIR}/libtool --mode=link $CC -o"
+  AR="${LIBTOOLPROG} --mode=link $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${absprefix}/lib -o"
+  STATIC_AR="${LIBTOOLPROG} --mode=link $CC -o"
   ARFLAGS=""
   RANLIB=":"
-  MZLINKER="${LTDIR}/libtool --mode=link $CC${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
-  MREDLINKER="${LTDIR}/libtool --mode=link $CXX${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
+  MZLINKER="${LIBTOOLPROG} --mode=link $CC${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
+  MREDLINKER="${LIBTOOLPROG} --mode=link $CXX${need_gcc_static_libgcc} -rpath ${absprefix}/lib"
   PLAIN_CC="$CC"
-  CC="${LTDIR}/libtool --mode=compile $CC"
-  CXX="${LTDIR}/libtool --mode=compile $CXX"
-  AS="${LTDIR}/libtool --mode=compile $AS"
+  CC="${LIBTOOLPROG} --mode=compile $CC"
+  CXX="${LIBTOOLPROG} --mode=compile $CXX"
+  AS="${LIBTOOLPROG} --mode=compile $AS"
   LIBSFX=la
   WXLIBS=WXLIBSDYN
-  ICP="${LTDIR}/libtool --mode=install cp"
+  ICP="${LIBTOOLPROG} --mode=install cp"
   MRLIBINSTALL="install-lib"
-  LIBFINISH="${LTDIR}/libtool --mode=finish"
+  LIBFINISH="${LIBTOOLPROG} --mode=finish"
   LTO="lo"
   LTA="la"
   FOREIGN_CONVENIENCE="_convenience"
