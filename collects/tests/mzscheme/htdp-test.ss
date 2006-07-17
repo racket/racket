@@ -1,9 +1,22 @@
 
+(define (strip-context v)
+  ;; Just to be sure, remove all top-level context from the syntax object
+  (cond
+   [(syntax? v)
+    (datum->syntax-object
+     #f
+     (strip-context (syntax-e v))
+     v
+     v)]
+   [(pair? v) (cons (strip-context (car v))
+                    (strip-context (cdr v)))]
+   [else v]))
+      
 (define body-accum null)
 (define-syntax (htdp-top stx)
   (syntax-case stx (quote)
     [(_ expr)
-     #'(set! body-accum (append body-accum (list #'expr)))]))
+     #'(set! body-accum (append body-accum (list (strip-context #'expr))))]))
 (define (htdp-top-pop w)
   (set! body-accum (let loop ([body-accum body-accum])
 		     (if (null? (cdr body-accum))
@@ -16,7 +29,7 @@
    [(stx rx)
     (error-test #`(module m #,current-htdp-lang
 		    #,@body-accum
-		    #,stx)
+		    #,(strip-context stx))
 		(lambda (x)
 		  (and (exn:fail:syntax? x)
 		       (regexp-match rx (exn-message x)))))]))
@@ -39,7 +52,7 @@
 	       (eval
 		#`(module #,name #,current-htdp-lang
 		    #,@body-accum
-		    expr))
+		    #,(strip-context #'expr)))
 	       (dynamic-require name #f))]
     [_ 
      (printf "~s\n" (syntax-object->datum stx))
@@ -86,7 +99,7 @@
 	 (all-except #,current-htdp-lang #%module-begin)
          #f
 	 #,@body-accum
-	 #,stx))
+	 #,(strip-context stx)))
     (unless stx-err?
       (if exn?
 	  (err/rt-test (eval #`(require #,name)) exn?)
@@ -104,5 +117,5 @@
 	 (all-except #,current-htdp-lang #%module-begin)
          the-answer
 	 #,@body-accum
-	 (define the-answer #,stx)))
+	 (define the-answer #,(strip-context stx))))
     (dynamic-require name 'the-answer)))
