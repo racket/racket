@@ -174,6 +174,10 @@
       'color-list
       (image=? (color-list->image (list blue blue blue blue) 1 4 0 0)
                (rectangle 1 4 'solid 'blue)))
+(test #t
+      'color-list
+      (image=? (color-list->image (list 'blue 'blue 'blue 'blue) 2 2 0 0)
+               (rectangle 2 2 'solid 'blue)))
 
 (test #t
       'alpha-color-list1

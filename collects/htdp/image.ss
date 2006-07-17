@@ -64,7 +64,7 @@ plt/collects/tests/mzscheme/image-test.ss
   ;; ----------------------------------------
            
   (define (color-list? l)
-      (and (list? l) (andmap color? l)))
+      (and (list? l) (andmap image-color? l)))
   (define (alpha-color-list? l)
     (and (list? l) (andmap alpha-color? l)))
 
@@ -797,16 +797,19 @@ converting from the computer's coordinates, we get:
 	(error (format "cannot make ~a x ~a image" w h)))
       (let ([is (make-bytes (* 4 w h) 0)]
             [mask-is (make-bytes (* 4 w h) 0)]
-	    [cols (list->vector cl)])
+	    [cols (list->vector (map (λ (x) 
+                                       (or (make-color% x)
+                                           (error 'color-list->image "color ~e is unknown" x)))
+                                     cl))])
 	(let yloop ([y 0][pos 0])
 	  (unless (= y h)
 	    (let xloop ([x 0][pos pos])
 	      (if (= x w)
 		  (yloop (add1 y) pos)
 		  (let* ([col (vector-ref cols (+ x (* y w)))]
-                         [r (pk color-red col)]
-                         [g (pk color-green col)]
-                         [b (pk color-blue col)])
+                         [r (pk (send col red))]
+                         [g (pk (send col green))]
+                         [b (pk (send col blue))])
 		    (bytes-set! is (+ 1 pos) r)
 		    (bytes-set! is (+ 2 pos) g)
 		    (bytes-set! is (+ 3 pos) b)
@@ -821,7 +824,7 @@ converting from the computer's coordinates, we get:
       (send mask-dc set-bitmap #f)
       (bitmaps->cache-image-snip bm mask-bm px py)))
   
-  (define (pk sel col) (min 255 (max 0 (sel col))))
+  (define (pk col) (min 255 (max 0 col)))
   
   (define (alpha-color-list->image cl w h px py)
     (check 'alpha-color-list->image alpha-color-list? cl "list-of-alpha-colors" "first")
