@@ -464,6 +464,15 @@ void wxWindow::ScreenToClient(int *x, int *y)
   pt.y = *y;
   ::ScreenToClient(hWnd, &pt);
 
+  if (pt.x < -10000)
+    pt.x = 10000;
+  if (pt.x > 10000)
+    pt.x = 10000;
+  if (pt.y < -10000)
+    pt.y = 10000;
+  if (pt.y > 10000)
+    pt.y = 10000;
+
   *x = pt.x;
   *y = pt.y;
 }
@@ -477,6 +486,15 @@ void wxWindow::ClientToScreen(int *x, int *y)
   pt.x = *x;
   pt.y = *y;
   ::ClientToScreen(hWnd, &pt);
+
+  if (pt.x < -10000)
+    pt.x = 10000;
+  if (pt.x > 10000)
+    pt.x = 10000;
+  if (pt.y < -10000)
+    pt.y = 10000;
+  if (pt.y > 10000)
+    pt.y = 10000;
 
   *x = pt.x;
   *y = pt.y;

@@ -273,9 +273,11 @@ void wxFrame::GetPosition(int *x, int *y)
   RECT rect;
   wxWindow *parent;
   POINT point;
+  HWND hwnd;
 
   parent = GetParent();
 
+  hwnd = GetHWND();
   if (::IsIconic(hwnd)) {
     WINDOWPLACEMENT wp;
     wp.length = sizeof(wp);
@@ -283,7 +285,7 @@ void wxFrame::GetPosition(int *x, int *y)
     point.x = wp.rcNormalPosition.left;
     point.y = wp.rcNormalPosition.top;
   } else {
-    GetWindowRect(GetHWND(), &rect);
+    GetWindowRect(hwnd, &rect);
     point.x = rect.left;
     point.y = rect.top;
   }
