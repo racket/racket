@@ -1,4 +1,13 @@
 ------------------------------------------------------------------------
+VERSION 351				  [Tue Jul 18 14:11:29 EDT 2006]
+
+ * The libraries for ProfessorJ are now organized as four packages: 
+   draw, idraw, geometry, and colors. 
+
+ * Fixed small problems with master.ss and image.ss teachpacks and their
+   docs. 
+
+------------------------------------------------------------------------
 VERSION 350				  [Fri Jun 16 20:37:38 EDT 2006]
 
  * The draw package (ProfJ) spawns a new Canvas per new Canvas. 
