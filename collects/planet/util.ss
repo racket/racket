@@ -69,14 +69,15 @@
   ;; remove-infodomain-entries : path -> void
   (define (remove-infodomain-entries path)
     (let* ([pathbytes (path->bytes path)]
-           [cache-file (build-path (PLANET-DIR) "cache.ss")]
-           [cache-lines (with-input-from-file cache-file read)])
-      (with-output-to-file cache-file
-       (lambda ()
-         (if (pair? cache-lines)
-             (write (filter (lambda (line) (not (and (pair? line) (equal? (car line) pathbytes)))) cache-lines))
-             (printf "\n")))
-        'truncate/replace)))
+           [cache-file (build-path (PLANET-DIR) "cache.ss")])
+      (when (file-exists? cache-file)
+        (let ([cache-lines (with-input-from-file cache-file read)])
+          (with-output-to-file cache-file
+            (lambda ()
+              (if (pair? cache-lines)
+                  (write (filter (lambda (line) (not (and (pair? line) (equal? (car line) pathbytes)))) cache-lines))
+                  (printf "\n")))
+            'truncate/replace)))))
   
   ;; listof X * listof X -> nonempty listof X
   ;; returns de-prefixed version of l2 if l1 is a proper prefix of l2; 
