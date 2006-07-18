@@ -21,9 +21,7 @@
   (provide tool@)
   
   (define (robust-syntax-source stx)
-    (if (syntax? stx)
-        (syntax-source stx)
-        #f))
+    (and (syntax? stx) (syntax-source stx)))
   
   ; QUESTIONS/IDEAS
   ; what is the right way to deal with macros?
@@ -277,17 +275,22 @@
                                       (invalidate-bitmap-cache)))
                                   (let ([pc (send (get-tab) get-pc)])
                                     (if (and pc (= pos pc))
-                                        (let ([stat (send (get-tab) get-break-status)]
-                                              [f (get-top-level-window)])
+                                        (let* ([stat (send (get-tab) get-break-status)]
+                                               [f (get-top-level-window)]
+                                               [rendered-value (if (= 2 (length stat))
+                                                                   (render (cadr stat))
+                                                                   (format "~a" (cons 'values 
+                                                                                      (map (lambda (v) (render v)) (rest stat)))))])
                                           (when (cons? stat)
-                                            (send (make-object menu-item%
-                                                    (clean-status
-                                                     (if (= 2 (length stat))
-                                                         (format "value = ~a" (render (cadr stat)))
-                                                         (format "~a" (cons 'values 
-									    (map (lambda (v) (render v)) (rest stat))))))
+                                            #;(send (make-object menu-item%
+                                                    (clean-status (format "expr -> ~a" rendered-value))
                                                     menu
-                                                    void) enable #f))
+                                                    void) enable #f)
+                                            (make-object menu-item%
+                                              "Print return value to console"
+                                              menu
+                                              (lambda _ (send (get-tab) print-to-console (format "return val = ~a"
+                                                                                                 rendered-value)))))
                                           (when (not (eq? stat 'break))
                                             (make-object menu-item%
                                               (if (cons? stat)
@@ -335,12 +338,12 @@
                                                     [val (mark-binding-value
                                                           binding)]
                                                     [menu (make-object popup-menu% #f)])
-                                               (send (make-object menu-item%
-                                                       (clean-status
-                                                        (format "~a = ~a" id-sym val))
-                                                       menu
-                                                       (lambda (item evt)
-                                                         (printf "~a" val))) enable #f)
+                                               (make-object menu-item%
+                                                 (clean-status
+                                                  (format "Print value of ~a to console" id-sym))
+                                                 menu
+                                                 (lambda (item evt)
+                                                   (send (get-tab) print-to-console (format "~a = ~a" id-sym val))))
                                                (make-object menu-item%
                                                  (format "(set! ~a ...)" id-sym)
                                                  menu
@@ -501,7 +504,8 @@
                                  breakpoints
                                  (lambda (pos status)
                                    ; possible efficiency problem for large files with many breakpoints
-                                   (when (and (>= pos (syntax-position top-e))
+                                   (when (and (syntax-position top-e)
+                                              (>= pos (syntax-position top-e))
                                               (< pos (+ (syntax-position top-e) (syntax-span top-e)))
                                               (not (memq pos break-posns)))
                                      (hash-table-remove! breakpoints pos))))
@@ -638,6 +642,11 @@
 						s)
 					  (channel-put result-ch (get-output-string s)))))
 	      (channel-get result-ch)))
+          
+	  (define/public (print-to-console v)
+	    ;; ==drscheme eventspace thread==
+	    ;; only when a user thread is suspended
+            (channel-put in-user-ch (lambda () (fprintf (current-error-port) " ### DEBUGGER: ~a~n" v))))
           
 	  (define/public (suspend-gui frames status)
 	    (set! want-suspend-on-break? #f)
