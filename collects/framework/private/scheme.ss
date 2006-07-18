@@ -1266,7 +1266,7 @@
                                      (ormap
                                       (λ (x)
                                         (text-between-equal? x text backward-match before-whitespace-pos))
-                                      '("cond" "field" "provide/contract")))
+                                      '("case-lambda" "cond" "field" "provide/contract")))
                           (change-to 2 #\())]))]
                   [(not (zero? before-whitespace-pos))
                    ;; this is the first thing in the sequence

@@ -122,6 +122,7 @@
      (build-open-bracket-spec "(provide/contract " 18 #\[)
      (build-open-bracket-spec "(kond " 5 #\()
      (build-open-bracket-spec "(cond " 5 #\[)
+     (build-open-bracket-spec "(case-lambda " 13 #\[)
      (build-open-bracket-spec "(let ([]" 8 #\[)
      (build-open-bracket-spec "(let ({}" 8 #\{)
      (build-open-bracket-spec "()" 2 #\()

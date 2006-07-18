@@ -27,43 +27,6 @@
   ;; tests : (listof test)
   (define tests
     (list 
-
-     ;; the next two tests are new, complex ones that need to
-     ;; move to the bottom of the test file, when the rest of these
-     ;; tests are cleaned up.
-     ;; right now, there is a bug that causes lots of tests to fail for a stupid reason
-     
-     (build-test "(module m mzscheme (define-syntax rename #f) (require (rename mzscheme ++ +)))"
-                 '(("("                         default-color)
-                   ("module"                    imported-identifier)
-                   (" m mzscheme ("             default-color)
-                   ("define-syntax"             imported-identifier)
-                   (" "                         default-color)
-                   ("rename"                    lexically-bound-identifier)
-                   (" #f) ("                    default-color)
-                   ("require"                   imported-identifier)
-                   (" (rename mzscheme ++ +)))" default-color))
-
-                 (list '((10 18) (20 33) (46 53))
-                       '((54 76) (20 33) (46 53))))
-     
-     (build-test "(module m mzscheme (define-syntax rename #f) (define f 1) (provide (rename f g)))"
-                 '(("("               default-color)
-                   ("module"          imported-identifier)
-                   (" m mzscheme ("   default-color)
-                   ("define-syntax"   imported-identifier)
-                   (" "               default-color)
-                   ("rename"          lexically-bound-identifier)
-                   (" #f) ("          default-color)
-                   ("define"          imported-identifier)
-                   (" "               default-color)
-                   ("f"               lexically-bound-identifier)
-                   (" 1) ("           default-color)
-                   ("provide"         imported-identifier)
-                   (" (rename f g)))" default-color))
-                 (list '((10 18) (20 33) (46 52) (59 66))
-                       '((53 54) (75 76))))
-     
      (build-test "12345"
                 '(("12345" constant)))
      (build-test "'abcdef"
@@ -639,6 +602,45 @@
                   ("))"                                           default-color))
                 (list '((10 45) (47 52))
                       '((62 63) (64 65) (68 69))))
+     
+     
+     ;; the next two tests are new, complex ones that need to
+     ;; move to the bottom of the test file, when the rest of these
+     ;; tests are cleaned up.
+     ;; right now, there is a bug that causes lots of tests to fail for a stupid reason
+     
+     (build-test "(module m mzscheme (define-syntax rename #f) (require (rename mzscheme ++ +)))"
+                 '(("("                         default-color)
+                   ("module"                    imported-identifier)
+                   (" m mzscheme ("             default-color)
+                   ("define-syntax"             imported-identifier)
+                   (" "                         default-color)
+                   ("rename"                    lexically-bound-identifier)
+                   (" #f) ("                    default-color)
+                   ("require"                   imported-identifier)
+                   (" (rename mzscheme ++ +)))" default-color))
+                 
+                 (list '((10 18) (20 33) (46 53))
+                       '((54 76) (20 33) (46 53))))
+     
+     (build-test "(module m mzscheme (define-syntax rename #f) (define f 1) (provide (rename f g)))"
+                 '(("("               default-color)
+                   ("module"          imported-identifier)
+                   (" m mzscheme ("   default-color)
+                   ("define-syntax"   imported-identifier)
+                   (" "               default-color)
+                   ("rename"          lexically-bound-identifier)
+                   (" #f) ("          default-color)
+                   ("define"          imported-identifier)
+                   (" "               default-color)
+                   ("f"               lexically-bound-identifier)
+                   (" 1) ("           default-color)
+                   ("provide"         imported-identifier)
+                   (" (rename "       default-color)
+                   ("f"               lexically-bound-identifier)
+                   (" g)))"           default-color))
+                 (list '((10 18) (20 33) (46 52) (59 66))
+                       '((53 54) (75 76))))
      
      (make-dir-test "(module m mzscheme (require \"~a/list.ss\") foldl foldl)"
                     '(("("             default-color)
