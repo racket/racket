@@ -27,7 +27,7 @@
   (define (template caption lines) 
     `(TABLE ((CELLPADDING "0")
 	     (CELLSPACING "0"))
-	    (B ,(color-with "blue" caption))
+	    (B ,(with-color "blue" caption))
 	    (P)
 	    (PRE ((STYLE "font-family:monospace"))
             ; use <BR>'s instead of newlines, for Opera

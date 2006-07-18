@@ -13,7 +13,7 @@
       (report-errors-to-browser send/finish))
 
     (define (standout-text s)
-      (color-with "forestgreen" `(B ,s)))
+      (with-color "forestgreen" `(B ,s)))
 
     `(HTML
       (HEAD ,hd-css ,@hd-links (TITLE "Scheme Languages"))

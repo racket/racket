@@ -13,10 +13,10 @@
               ,@hd-links 
               (TITLE "Missing PLT manual")) 
         (body ((bgcolor "white")) 
-              ,(color-with "red" `(h1 "Documentation missing"))
+              ,(with-color "red" `(h1 "Documentation missing"))
               (P)
               "You tried to access documentation for "
-              ,(color-with "blue" `(B ,label)) ". "
+              ,(with-color "blue" `(B ,label)) ". "
               "The documentation is not installed on this "
               "machine, probably because it is not part of the "
               "standard DrScheme distribution."

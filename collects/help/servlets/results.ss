@@ -60,7 +60,7 @@ is stored in a module top-level and that's namespace-specific.
           (unless max-reached
             (set! max-reached #t)	    
             (set! search-responses
-                  (cons `(B ,(color-with 
+                  (cons `(B ,(with-color 
                               "red"
                               (string-constant plt:hd:search-stopped-too-many-matches)))
                         search-responses)))
@@ -236,11 +236,11 @@ is stored in a module top-level and that's namespace-specific.
              (h1 "Search Results")
              (h2
               ,@(if lang-name
-                    (list "Language: " (color-with "firebrick" lang-name) '(br))
+                    (list "Language: " (with-color "firebrick" lang-name) '(br))
                     '())
               ,@(let ([single-key
                        (lambda (sf)
-                         (color-with "firebrick" (format " \"~a\"" sf)))])
+                         (with-color "firebrick" (format " \"~a\"" sf)))])
                   (cond
                     [(null? string-finds) '()]
                     [(null? (cdr string-finds))

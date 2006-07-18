@@ -3,32 +3,31 @@
            "private/headelts.ss"
            "../private/manuals.ss"
            (lib "servlet.ss" "web-server"))
-  
+
   (provide interface-version timeout start)
   (define interface-version 'v1)
   (define timeout +inf.0)
-  
+
   (define (start initial-request)
     (report-errors-to-browser send/finish)
-    
-    `(HTML 
+
+    `(HTML
       (TITLE "Program Design")
       (HEAD ,hd-css
             ,@hd-links)
-      (BODY 
+      (BODY
        (H1  "Program Design")
        ,(color-highlight `(H2  "For Students"))
-       "The textbook " (I  "How to Design Programs") 
+       "The textbook " (I  "How to Design Programs")
        " provides an introduction to programming using the DrScheme environment. "
-       "The book is not distributed with DrScheme, but it is available online at " 
-       (PRE  
-        "   " (A ((HREF "http://www.htdp.org/")
-                  (TARGET "_top")) "http://www.htdp.org/"))  
+       "The book is not distributed with DrScheme, but it is available online at "
+       (PRE
+        "   " (A ((HREF "http://www.htdp.org/") (TARGET "_top"))
+                 "http://www.htdp.org/"))
        (P)
        "Help Desk provides the following interactive support for the textbook:"
-       (UL  
-        (LI  (B  (A ((HREF ,(get-manual-index "teachpack")))
-                    "Teachpack documentation"))))
+       (UL
+        (LI (B (A ((HREF "/servlets/teachpacks.ss")) "Teachpack documentation"))))
        (P)
        ,(color-highlight
          `(H2  "For Experienced Programmers"))
