@@ -128,7 +128,8 @@
   (define (master/proc cg)
     (check-proc 'master cg 4 'first 'arguments)
     (set! check-guess cg)
-    (send frame show #t))
+    (send frame show #t)
+    #t)
   
   #| ------------------------------------------------------------------------
   Setting up the buttons |#
