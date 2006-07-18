@@ -37,7 +37,7 @@
           (make-sec "Libraries" #rx"SRFI|MzLib|Framework|PLT Miscellaneous|Teachpack|Swindle" '())
           (make-sec "Writing extensions" #rx"Tools|Inside|Foreign" '())
           (make-sec "Other" #rx"" '())))
-    
+
   ; manual is doc collection subdirectory, e.g. "mred"
   (define (main-manual-page manual)
     (let* ([entry (assoc (string->path manual) known-docs)]
@@ -48,14 +48,14 @@
           (let ([href (get-help-url doc-dir)])
             `(A ((HREF ,href)) ,name))
           name)))
-  
+
   ; string string string -> xexpr
   ; man is manual name
   ; ndx is index into the manual
   ; txt is the link text
-  ;; warning: if the index file isn't present, this page
   (define (manual-entry man ndx txt)
     (with-handlers ([exn:fail?
+                     ;; warning: if the index file isn't present, this page
                      (lambda (x)
                        `(font ((color "red")) ,txt " [" ,(exn-message x) "]"))])
       `(A ((HREF ,(finddoc-page man ndx))) ,txt)))
