@@ -483,7 +483,7 @@
                 [else (error "internal error")])))
       (opt-lambda (glob [hide-dots? #t] [case-sens? def-case-sens])
         (let ([len    (string-length glob)]
-              [->case (if case-sens? values ->case-insens)])
+              [->case (if case-sens? list ->case-insens)])
           (let loop ([r '()] [i 0])
             (if (< i len)
               (let ([c (string-ref glob i)])
@@ -519,7 +519,7 @@
                                          ;; doing this only for single chars,
                                          ;; which means that backslash-quoted
                                          ;; chars are left alone
-                                         `(#\\ ,c) (list (->case c)))]
+                                         `(#\\ ,c) (->case c))]
                                       [(eq? 'any c) '(#\. #\*)]
                                       [(eq? 'char c) '(#\.)]
                                       ;; results of dot tweaking: no alphabetics
