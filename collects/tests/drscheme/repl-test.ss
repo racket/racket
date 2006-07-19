@@ -66,6 +66,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
   
   (define test-data
     (list
+     
      ;; basic tests
      (make-test "1"
                 "1"
@@ -502,8 +503,6 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
                 void
                 void)
-     
-     
      
      ;; error escape handler test
      (make-test

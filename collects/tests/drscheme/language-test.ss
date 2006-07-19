@@ -1081,7 +1081,7 @@ the settings above should match r5rs
       (clear-definitions drs)
       (for-each fw:test:keystroke
                 (string->list
-                 "(define (f n)\n(cond ((zero? n) '())\n(else (cons n (f (- n 1))))))\n(f 200)"))
+                 "(define (f n)\n(cond ((zero? n) null)\n(else (cons n (f (- n 1))))))\n(f 200)"))
       (test "Constructor" #f #f
             (case-lambda
              [(x) (not (member #\newline (string->list x)))]
@@ -1223,11 +1223,11 @@ the settings above should match r5rs
     (let ([drs (wait-for-drscheme-frame)])
       (fw:test:menu-select "Language" "Clear All Teachpacks"))
 
-    (go mred)
-    (go mzscheme)
     (go beginner)
     (go beginner/abbrev)
     (go intermediate)
     (go intermediate/lambda)
     (go advanced)
-    (go r5rs)))
+    (go r5rs)
+    (go mred)
+    (go mzscheme)))

@@ -17,6 +17,7 @@
                                         [define (get-editor%) ,class]
                                         (super-instantiate ()))
                            ())])
+                  (send (send f get-editor) set-max-undo-history 10)
                   (send f show #t)
                   (send f get-label)))])
          (wait-for-frame label)
@@ -26,6 +27,7 @@
           `(begin 
              ;; remove the `a' to avoid save dialog boxes (and test them, I suppose)
              (send (send (get-top-level-focus-window) get-editor) undo) 
+             (send (send (get-top-level-focus-window) get-editor) undo)
 
              (send (send (get-top-level-focus-window) get-editor) lock #t)
              (send (send (get-top-level-focus-window) get-editor) lock #f)))
@@ -33,17 +35,18 @@
           `(send (get-top-level-focus-window) close))
          (send-sexp-to-mred `(map (lambda (x) (send x get-label)) (get-top-level-windows)))))))
   
-  
+  #|
   (test-creation 'frame:text%
                  '(text:basic-mixin (editor:basic-mixin text%))
                  'text:basic-mixin-creation)
   (test-creation 'frame:text%
                  'text:basic%
                  'text:basic-creation)
-  
+  |#
   (test-creation 'frame:text%
                  '(editor:file-mixin text:keymap%)
                  'editor:file-mixin-creation)
+  
   (test-creation 'frame:text%
                  'text:file%
                  'text:file-creation)

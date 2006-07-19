@@ -61,7 +61,7 @@
 	(fw:preferences:set 'framework:file-dialogs 'common)
 	(open-dialog)
 	(let ([dlg (wait-for-new-frame drs)])
-	  (send (find-labelled-window "Full pathname") focus)
+	  (send (find-labelled-window "Filename:") focus)
 	  (fw:test:keystroke #\a (list (case (system-type)
 					 [(windows) 'control]
 					 [(macosx macos) 'meta]

@@ -116,13 +116,13 @@
            (wait-for-frame frame-name)
            (send-sexp-to-mred
             `(test:menu-select "File" "Open..."))
-           (wait-for-frame "Get file")
+           (wait-for-frame "Open File")
            (call-with-output-file tmp-file
              (lambda (port)
                (display test-file-contents port))
              'truncate)
            (send-sexp-to-mred
-            `(begin (send (find-labelled-window "Full pathname") focus)
+            `(begin (send (find-labelled-window "Filename:") focus)
                     ,(case (system-type)
                        [(macos macosx) `(test:keystroke #\a '(meta))]
                        [(unix) `(test:keystroke #\a '(meta))]

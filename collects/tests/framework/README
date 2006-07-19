@@ -61,32 +61,15 @@ signal failures when there aren't any.
 
   | This tests the misc (non-scheme) keybindings
 
-- searching: |# search.ss #|
-
-  | This tests the seaching frame.
-
-- info: |# info-frame.ss #|
-
-  | This tests the info frame. (ie that toolbar on the bottom of the
-                                screen)
-
 - group tests: |# group-test.ss #|
 
   | make sure that mred:the-frame-group records frames correctly.
   | fake user input expected.
 
-- scheme mode |# scheme.ss #|
-
-  | Make sure that Scheme things work in scheme mode.
-
 - saving tests:
 
   | These tests will make sure that the usual checks against a user
   | losing their work are in place.
-
-  - autosaving: |# autosave.ss #|
-  - closing: |# close.ss #|
-  - quitting: |# quit.ss #|
 
 - interactive tests
 
