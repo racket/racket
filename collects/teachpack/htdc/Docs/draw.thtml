@@ -21,7 +21,7 @@ import geometry.*;
  | abstract World onTick()           |       | boolean drawRect(Posn,int,int,Color)  |
  | abstract World onKeyEvent(String) |       | boolean drawLine(Posn,Posn,Color)     |
  | abstract boolean draw()           |       | boolean drawString(Posn,String)       |
- | abstract boolean erase(           |       | boolean clearCircle(Posn,int,Color)   |
+ | abstract boolean erase()          |       | boolean clearCircle(Posn,int,Color)   |
  +-----------------------------------+       | boolean clearDisk(Posn,int,Color)     |
                                              | boolean clearRect(Posn,int,int,Color) |
                                              | boolean clearLine(Posn,Posn,Color)    |
