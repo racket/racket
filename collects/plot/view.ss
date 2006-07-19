@@ -8,7 +8,8 @@
    (lib "math.ss")
    ;(lib "4.ss" "srfi")
    )
-  
+
+  ;; including suggested fix from Doug Williams
   
   ; macro for creating a field in a class with a getter and a setter
   (define-syntax (fields-with-accessors stx) 
@@ -282,6 +283,11 @@
        (az 45)
        (z-label "Z-Axis"))
       
+      ; set-labels : string string string -> nothing
+      ; sets the x, y and title lables
+      (define (set-labels x-label y-label title)
+        (pl-set-labels x-label y-label title))
+      
       ; define the 3d world
       (define (world3d x y z xmin xmax ymin ymax zmin zmax alt az)
         (pl-world-3d x y z xmin xmax ymin ymax zmin zmax alt az))
@@ -304,7 +310,9 @@
         (pl-mesh3dc x y z lines? colored? contours? sides? levels))
       
       (inherit start-plot set-plot-environment finish-plot get-x-min 
-               get-x-max get-y-min get-y-max get-renderer get-x-label get-y-label)
+               get-x-max get-y-min get-y-max get-renderer get-x-label get-y-label
+               get-title)
+      
       (define (plot)
         (start-plot)
         (set-plot-environment -1 1 -1 1 0 -2)
@@ -313,6 +321,7 @@
          "bnstu" (get-x-label) 0 0
          "bnstu" (get-y-label) 0 0
          "bnstu" z-label 0 0)
+        (set-labels "" "" (get-title))
         (with-handlers ((exn? (lambda (ex) (finish-plot) (raise ex))))
           ((get-renderer) this))
         (finish-plot)
