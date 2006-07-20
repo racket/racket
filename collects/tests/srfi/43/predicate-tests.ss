@@ -1,41 +1,41 @@
 (module predicate-tests mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1)))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
   (require (lib "predicates.ss" "srfi" "43"))
 
   (provide predicate-tests)
 
   (define predicate-tests
-    (make-test-suite
+    (test-suite
      "All tests for predicate"
-     (make-test-case
+     (test-case
       "vector-empty?"
-      (assert-false
+      (check-false
        (vector-empty? '#(a)))
-      (assert-false
+      (check-false
        (vector-empty? '#(())))
-      (assert-false
+      (check-false
        (vector-empty? '#(#())))
-      (assert-true
+      (check-true
        (vector-empty? '#())))
 
-     (make-test-case
+     (test-case
       "vector="
-      (assert-true
+      (check-true
        (vector= eq? '#(a b c d) '#(a b c d)))
-      (assert-false
+      (check-false
        (vector= eq? '#(a b c d) '#(a b d c)))
-      (assert-false
+      (check-false
        (vector= = '#(1 2 3 4 5) '#(1 2 3 4)))
-      (assert-true
+      (check-true
        (vector= = '#(1 2 3 4) '#(1 2 3 4) '#(1 2 3 4)))
-      (assert-true
+      (check-true
        (vector= eq?))
-      (assert-true
+      (check-true
        (vector= eq? '#(a)))
-      (assert-false
+      (check-false
        (vector= eq? '#(a b c d) '#(a b c d) '#(a b d c)))
-      (assert-false
+      (check-false
        (vector= eq? '#(a b c d e) '#(a b c d) '#(a b c d))))
      ))
   )

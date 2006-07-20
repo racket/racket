@@ -1,105 +1,105 @@
 (module searching-tests mzscheme
   
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1)))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
   (require (lib "searching.ss" "srfi" "43"))
   
   (provide searching-tests)
   
   (define searching-tests
-    (make-test-suite
+    (test-suite
      "All tests for searching"
-     (make-test-case
+     (test-case
       "vector-index"
-      (assert =
+      (check =
               (vector-index even? '#(3 1 4 1 5 9))
               2)
-      (assert =
+      (check =
               (vector-index < '#(3 1 4 1 5 9 2 5 6) '#(2 7 1 8 2))
               1)
-      (assert-false
+      (check-false
        (vector-index = '#(3 1 4 1 5 9 2 5 6) '#(2 7 1 8 2))))
      
-     (make-test-case
+     (test-case
       "vector-index-right"
-      (assert =
+      (check =
               (vector-index-right even? '#(3 1 4 1 5 9))
               2)
-      (assert =
+      (check =
               (vector-index-right < '#(3 1 4 1 5 9 2 5 6) '#(2 7 1 8 2))
               3)
-      (assert-false
+      (check-false
        (vector-index-right = '#(3 1 4 1 5 9 2 5 6) '#(2 7 1 8 2))))
      
-     (make-test-case
+     (test-case
       "vector-skip"
-      (assert =
+      (check =
               (vector-skip odd? '#(3 1 4 1 5 9))
               2)
-      (assert =
+      (check =
               (vector-skip > '#(3 1 4 1 5 9 2 5 6) '#(2 7 1 8 2))
               1)
-      (assert-false
+      (check-false
        (vector-skip = '#(2 7 1 8 2 8) '#(2 7 1 8 2))))
      
-     (make-test-case
+     (test-case
       "vector-skip-right"
-      (assert =
+      (check =
               (vector-skip-right odd? '#(3 1 4 1 5 9))
               2)
-      (assert =
+      (check =
               (vector-skip-right > '#(3 1 4 1 5 9 2 5 6) '#(2 7 1 8 2))
               3)
-      (assert-false
+      (check-false
        (vector-skip-right = '#(2 7 1 8 2 8) '#(2 7 1 8 2))))
      
-     (make-test-case
+     (test-case
       "vector-binary-search"
-      (assert =
+      (check =
               (vector-binary-search '#(0 3 4 6 8 9) 0 -)
               0)
-      (assert =
+      (check =
               (vector-binary-search '#(0 3 4 6 8 9) 3 -)
               1)
-      (assert =
+      (check =
               (vector-binary-search '#(0 3 4 6 8 9) 4 -)
               2)
-      (assert =
+      (check =
               (vector-binary-search '#(0 3 4 6 8 9) 6 -)
               3)
-      (assert =
+      (check =
               (vector-binary-search '#(0 3 4 6 8 9) 8 -)
               4)
-      (assert =
+      (check =
               (vector-binary-search '#(0 3 4 6 8 9) 9 -)
               5)
-      (assert-false
+      (check-false
        (vector-binary-search '#(0 3 4 6 8 9) 5 -))
-      (assert-false
+      (check-false
        (vector-binary-search '#(0 3 4 6 8 9) -2 -))
-      (assert-false
+      (check-false
        (vector-binary-search '#(0 3 4 6 8 9) 11 -))
-      (assert-false
+      (check-false
        (vector-binary-search '#(0 3 4 6 8 9) 1 -)))
      
-     (make-test-case
+     (test-case
       "vector-any"
-      (assert-false
+      (check-false
        (vector-any zero? '#(1 2 3 4)))
-      (assert-true
+      (check-true
        (vector-any zero? '#(2 0 1)))
-      (assert =
+      (check =
               (vector-any / '#(1 1) '#(1 0))
               1)
-      (assert-false
+      (check-false
        (vector-any (lambda x #t) '#())))
      
-     (make-test-case
+     (test-case
       "vector-every"
-      (assert-false
+      (check-false
        (vector-every zero? '#(0 0 7)))
-      (assert-true
+      (check-true
        (vector-every (lambda x #f) '#()))
-      (assert =
+      (check =
               (vector-every - '#(1 1) '#(1 0))
               1))
      ))

@@ -28,8 +28,10 @@
 (require (lib "57.ss" "srfi"))
 (require (lib "59.ss" "srfi"))
 (require (lib "60.ss" "srfi"))
+(require (lib "66.ss" "srfi"))
 (require (lib "67.ss" "srfi"))
 (require (lib "69.ss" "srfi"))
+(require (lib "74.ss" "srfi"))
 
 (require (lib "list.ss" "srfi" "1"))
 (require (lib "time.ss" "srfi" "19"))
@@ -56,5 +58,7 @@
 (require (lib "records.ss" "srfi" "57"))
 (require (lib "vicinity.ss" "srfi" "59"))
 (require (lib "60.ss" "srfi" "60"))
+(require (lib "66.ss" "srfi" "66"))
 (require (lib "compare.ss" "srfi" "67"))
 (require (lib "hash.ss" "srfi" "69"))
+(require (lib "74.ss" "srfi" "74"))

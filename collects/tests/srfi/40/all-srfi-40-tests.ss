@@ -1,6 +1,6 @@
 (module all-srfi-40-tests mzscheme
   
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "40.ss" "srfi"))
   (provide all-srfi-40-tests)
   
@@ -26,63 +26,63 @@
               (finite-stream->list (stream-cdr s)))))
   
   (define all-srfi-40-tests
-    (make-test-suite 
+    (test-suite 
      "All tests for SRFI 40"
-     (make-test-case
+     (test-case
       "stream?"
-      (assert-true
+      (check-true
        (stream? stream-null))
-      (assert-true
+      (check-true
        (stream? (stream-cons 'a stream-null)))
-      (assert-false
+      (check-false
        (stream? 3)))
-     (make-test-case
+     (test-case
       "stream-null?"
-      (assert-true
+      (check-true
        (stream-null? stream-null))
-      (assert-false
+      (check-false
        (stream-null? (stream-cons 'a stream-null)))
-      (assert-false
+      (check-false
        (stream-null? 3)))
-     (make-test-case
+     (test-case
       "stream-pair?"
-      (assert-false
+      (check-false
        (stream-pair? stream-null))
-      (assert-true
+      (check-true
        (stream-pair? (stream-cons 'a stream-null)))
-      (assert-false
+      (check-false
        (stream-pair? 3)))
-     (make-test-case
+     (test-case
       "stream"
-      (assert-true
+      (check-true
        (stream-null? (stream)))
-      (assert-equal? (finite-stream->list (stream 'a (+ 3 4) 'c))
+      (check-equal? (finite-stream->list (stream 'a (+ 3 4) 'c))
                      '(a 7 c)))
-     (make-test-case
+     (test-case
       "stream-unfoldn"
-      (assert-equal? (finite-stream->list (take5 from0))
+      (check-equal? (finite-stream->list (take5 from0))
                      '(0 1 2 3 4)))
-     (make-test-case
+     (test-case
       "stream-for-each"
-      (assert-equal?
+      (check-equal?
        (let ((l '()))
          (stream-for-each (lambda (n) (set! l (cons n l)))
                           (take5 from0))
          l)
        '(4 3 2 1 0)))
-     (make-test-case
+     (test-case
       "stream-map"
-      (assert-equal? (finite-stream->list (take5 (stream-map (lambda (x) (+ x x)) from0)))
+      (check-equal? (finite-stream->list (take5 (stream-map (lambda (x) (+ x x)) from0)))
                      '(0 2 4 6 8))
-      (assert-equal? (finite-stream->list (stream-map + (stream 1 2 3) (stream 4 5 6)))
+      (check-equal? (finite-stream->list (stream-map + (stream 1 2 3) (stream 4 5 6)))
                      '(5 7 9))
-      (assert-equal? (finite-stream->list
+      (check-equal? (finite-stream->list
                       (stream-map (lambda (x) (expt x x))
                                   (stream 1 2 3 4 5)))
                      '(1 4 27 256 3125)))
-     (make-test-case
+     (test-case
       "stream-filter"
-      (assert-true
+      (check-true
        (stream-null? (stream-filter odd? stream-null)))
-      (assert-equal? (finite-stream->list (take5 (stream-filter odd? from0)))
+      (check-equal? (finite-stream->list (take5 (stream-filter odd? from0)))
                      '(1 3 5 7 9))))))

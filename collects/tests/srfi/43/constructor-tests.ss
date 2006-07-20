@@ -1,42 +1,42 @@
 (module constructor-tests mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1)))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
   (require (lib "constructors.ss" "srfi" "43"))
 
   (provide constructor-tests)
 
   (define constructor-tests
-    (make-test-suite
+    (test-suite
      "All tests for constructor"
-     (make-test-case
+     (test-case
       "vector-unfold"
-      (assert-equal?
+      (check-equal?
        (vector-unfold values 10)
        #(0 1 2 3 4 5 6 7 8 9)
        "No seed")
-      (assert-equal?
+      (check-equal?
        (vector-unfold (lambda (i x) (values x (- x 1))) 10 0)
        #(0 -1 -2 -3 -4 -5 -6 -7 -8 -9)
        "Single seed")
-      (assert-equal?
+      (check-equal?
        (vector-unfold (lambda (i a b) (values (/ a b) a b)) 4 5 5)
        #(1 1 1 1)
        "Two seeds"))
 
-     (make-test-case
+     (test-case
       "vector-unfold-right"
-      (assert-equal?
+      (check-equal?
        (vector-unfold-right values 10)
        #(0 1 2 3 4 5 6 7 8 9)
        "No seed")
-      (assert-equal?
+      (check-equal?
        (vector-unfold-right
         (lambda (i x) (values x (- x 1)))
         10
         0)
        #(-9 -8 -7 -6 -5 -4 -3 -2 -1 0)
        "Single seed")
-      (assert-equal?
+      (check-equal?
        (vector-unfold-right
         (lambda (i a b) (values (/ a b) a b))
         4
@@ -45,66 +45,66 @@
        #(1 1 1 1)
        "Two seeds"))
 
-     (make-test-case
+     (test-case
       "vector-copy"
-      (assert-equal?
+      (check-equal?
        (vector-copy '#(a b c d e f g h i))
        #(a b c d e f g h i))
-      (assert-equal?
+      (check-equal?
        (vector-copy '#(a b c d e f g h i) 6)
        #(g h i))
-      (assert-equal?
+      (check-equal?
        (vector-copy '#(a b c d e f g h i) 3 6)
        #(d e f))
-      (assert-equal?
+      (check-equal?
        (vector-copy '#(a b c d e f g h i) 6 12 'x)
        #(g h i x x x)))
 
-     (make-test-case
+     (test-case
       "vector-reverse-copy"
-      (assert-equal?
+      (check-equal?
        (vector-reverse-copy '#(5 4 3 2 1 0) 1 5)
        #(1 2 3 4))
-      (assert-equal?
+      (check-equal?
        (vector-reverse-copy '#(5 4 3 2 1 0) 2)
        #(0 1 2 3))
-      (assert-equal?
+      (check-equal?
        (vector-reverse-copy '#(5 4 3 2 1 0))
        #(0 1 2 3 4 5)))
 
-     (make-test-case
+     (test-case
       "vector-append"
-      (assert-equal?
+      (check-equal?
        (vector-append '#(x) '#(y))
        #(x y))
-      (assert-equal?
+      (check-equal?
        (vector-append '#(a) '#(b c d))
        #(a b c d))
-      (assert-equal?
+      (check-equal?
        (vector-append '#(a #(b)) '#(#(c)))
        #(a #(b) #(c)))
-      (assert-equal?
+      (check-equal?
        (vector-append '#(1 2) '#(3) '#(4 5 6 7))
        #(1 2 3 4 5 6 7))
-      (assert-equal?
+      (check-equal?
        (vector-append)
        #()))
 
-     (make-test-case
+     (test-case
       "vector-concatenate"
-      (assert-equal?
+      (check-equal?
        (vector-concatenate '(#(x) #(y)))
        #(x y))
-      (assert-equal?
+      (check-equal?
        (vector-concatenate '(#(a) #(b c d)))
        #(a b c d))
-      (assert-equal?
+      (check-equal?
        (vector-concatenate '(#(a #(b)) #(#(c))))
        #(a #(b) #(c)))
-      (assert-equal?
+      (check-equal?
        (vector-concatenate '(#(1 2) #(3) #(4 5 6 7)))
        #(1 2 3 4 5 6 7))
-      (assert-equal?
+      (check-equal?
        (vector-concatenate '())
        #()))
      ))
