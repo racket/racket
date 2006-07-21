@@ -229,6 +229,8 @@
 	     (let ([v (make-X 3 def-val)])
 	       (check-error-message set-name (eval `(lambda (x) (,set-name ,v -1 ,set-val))))
 	       (check-error-message set-name (eval `(lambda (x) (,set-name ,v 3 ,set-val))))
+               (unless (integer? set-val)
+                 (check-error-message set-name (eval `(lambda (x) (,set-name ,v 0 12)))))
 	       (for-each (lambda (i)
 			   (tri-exact (void) set-name (lambda () v) i set-val
 				      (lambda ()

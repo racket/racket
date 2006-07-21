@@ -4405,6 +4405,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	    jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
 	    break;
 	  case 1:
+            (void)jit_bmsi_l(reffail, JIT_R2, 0x1);
 	    jit_ldxi_s(JIT_R2, JIT_R2, &((Scheme_Object *)0x0)->type);
 	    (void)jit_bnei_i(reffail, JIT_R2, scheme_char_type);
 	    jit_ldr_p(JIT_R2, JIT_RUNSTACK);
