@@ -3792,7 +3792,8 @@ display_write(char *name,
 			       SCHEME_CHAR_STR_VAL(v), 0, SCHEME_CHAR_STRLEN_VAL(v));
       } else if (SCHEME_SYMBOLP(v)) {
 	scheme_put_byte_string(name, port,
-			       SCHEME_SYM_VAL(v), 0, SCHEME_SYM_LEN(v),
+                               (char *)v, ((char *)(SCHEME_SYM_VAL(v))) - ((char *)v), 
+                               SCHEME_SYM_LEN(v),
 			       0);
       } else 
 	scheme_internal_display(v, port);
