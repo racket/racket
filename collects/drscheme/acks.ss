@@ -8,7 +8,7 @@
   
   (define (get-general-acks)
     (string-append
-     "The following individuals contributed directly to the implementation"
+     "The following individuals contributed to the implementation"
      " of DrScheme and associated tools: "
      "Ian Barland, "
      "Eli Barzilay, "
