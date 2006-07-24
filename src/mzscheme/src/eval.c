@@ -6381,7 +6381,7 @@ static Scheme_Object *
 do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme_Object **argv)
 {
   Scheme_Comp_Env *env;
-  Scheme_Object *l, *local_mark, *renaming = NULL;
+  Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l;
   int cnt, pos, kind;
   int bad_sub_env = 0;
 
@@ -6440,26 +6440,28 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
 
   local_mark = scheme_current_thread->current_local_mark;
   
-  cnt = scheme_stx_proper_list_length(argv[2]);
-  if (cnt > 0)
-    scheme_add_local_syntax(cnt, env);
-  pos = 0;
+  if (SCHEME_TRUEP(argv[2])) {
+    cnt = scheme_stx_proper_list_length(argv[2]);
+    if (cnt > 0)
+      scheme_add_local_syntax(cnt, env);
+    pos = 0;
 
-  for (l = argv[2]; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-    Scheme_Object *i;
+    for (l = argv[2]; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      Scheme_Object *i;
     
-    i = SCHEME_CAR(l);
-    if (!SCHEME_STX_SYMBOLP(i)) {
+      i = SCHEME_CAR(l);
+      if (!SCHEME_STX_SYMBOLP(i)) {
+        scheme_wrong_type(name, "list of identifier syntax", 2, argc, argv);
+        return NULL;
+      }
+    
+      if (cnt > 0)
+        scheme_set_local_syntax(pos++, i, stop_expander, env);
+    }
+    if (!SCHEME_NULLP(l)) {
       scheme_wrong_type(name, "list of identifier syntax", 2, argc, argv);
       return NULL;
     }
-    
-    if (cnt > 0)
-      scheme_set_local_syntax(pos++, i, stop_expander, env);
-  }
-  if (!SCHEME_NULLP(l)) {
-    scheme_wrong_type(name, "list of identifier syntax", 2, argc, argv);
-    return NULL;
   }
 
   /* Report errors related to 3rd argument, finally */
@@ -6478,12 +6480,13 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
       }
     }
   }
-      
 
   l = argv[0];
 
   if (!SCHEME_STXP(l))
     l = scheme_datum_to_syntax(l, scheme_false, scheme_false, 1, 0);
+
+  orig_l = l;
 
   if (local_mark) {
     /* Since we have an expression from local context,
@@ -6496,9 +6499,22 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
   if (renaming)
     l = scheme_add_rename(l, renaming);
 
-  /* Expand the expression. depth = -2 means expand all the way, but
-     preserve letrec-syntax. */
-  l = _expand(l, env, -2, 0, 0, catch_lifts, 0, scheme_current_thread->current_local_certs);
+  if (SCHEME_FALSEP(argv[2])) {
+    Scheme_Object *xl, *gval;
+    Scheme_Compile_Expand_Info drec[1];
+    memset(drec, 0, sizeof(drec));
+    drec[0].value_name = scheme_false; /* or scheme_current_thread->current_local_name ? */
+    drec[0].certs = scheme_current_thread->current_local_certs;
+    drec[0].depth = -2;
+    xl = scheme_check_immediate_macro(l, env, drec, 0, 0, &gval, NULL, NULL);
+    if (SAME_OBJ(xl, l))
+      return orig_l;
+    l = xl;
+  } else {
+    /* Expand the expression. depth = -2 means expand all the way, but
+       preserve letrec-syntax. */
+    l = _expand(l, env, -2, 0, 0, catch_lifts, 0, scheme_current_thread->current_local_certs);
+  }
 
   if (renaming)
     l = scheme_add_rename(l, renaming);
