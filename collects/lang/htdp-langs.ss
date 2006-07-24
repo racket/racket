@@ -124,7 +124,7 @@ tracing todo:
           (inherit get-allow-sharing? get-use-function-output-syntax? 
                    get-accept-quasiquote? get-read-accept-dot)
           (define/override (config-panel parent)
-            (sharing/not-config-panel (get-allow-sharing?) parent))
+            (sharing/not-config-panel (get-allow-sharing?) (get-accept-quasiquote?) parent))
           
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-namespace (current-namespace)]
@@ -180,9 +180,9 @@ tracing todo:
           
           (super-instantiate ())))
       
-      ;; sharing/not-config-panel :  boolean parent -> (case-> (-> settings) (settings -> void))
+      ;; sharing/not-config-panel :  boolean boolean parent -> (case-> (-> settings) (settings -> void))
       ;; constructs the config-panel for a language without a sharing option.
-      (define (sharing/not-config-panel allow-sharing-config? _parent)
+      (define (sharing/not-config-panel allow-sharing-config? accept-quasiquote? _parent)
         (let* ([parent (make-object vertical-panel% _parent)]
                
                [input-panel (instantiate group-box-panel% ()
@@ -201,9 +201,12 @@ tracing todo:
                                  void)]
                [output-style (make-object radio-box%
                                (string-constant output-style-label)
-                               (list (string-constant constructor-printing-style)
-                                     (string-constant quasiquote-printing-style)
-                                     (string-constant write-printing-style))
+                               (if accept-quasiquote?
+                                   (list (string-constant constructor-printing-style)
+                                         (string-constant quasiquote-printing-style)
+                                         (string-constant write-printing-style))
+                                   (list (string-constant constructor-printing-style)
+                                         (string-constant write-printing-style)))
                                output-panel
                                void)]
                [fraction-style
@@ -239,10 +242,14 @@ tracing todo:
             [()
              (make-htdp-lang-settings
               (send case-sensitive get-value)
-              (case (send output-style get-selection)
-                [(0) 'constructor]
-                [(1) 'quasiquote]
-                [(2) 'write])
+              (if accept-quasiquote?
+                  (case (send output-style get-selection)
+                    [(0) 'constructor]
+                    [(1) 'quasiquote]
+                    [(2) 'write])
+                  (case (send output-style get-selection)
+                    [(0) 'constructor]
+                    [(1) 'write]))
               (case (send fraction-style get-selection)
                 [(0) 'mixed-fraction]
                 [(1) 'repeating-decimal])
@@ -253,11 +260,17 @@ tracing todo:
             [(settings)
              (send case-sensitive set-value (drscheme:language:simple-settings-case-sensitive settings))
              (send output-style set-selection
-                   (case (drscheme:language:simple-settings-printing-style settings)
-                     [(constructor) 0]
-                     [(quasiquote) 1]
-                     [(write) 2]
-                     [(print) 2]))
+                   (if accept-quasiquote?
+                       (case (drscheme:language:simple-settings-printing-style settings)
+                         [(constructor) 0]
+                         [(quasiquote) 1]
+                         [(write) 2]
+                         [(print) 2])
+                       (case (drscheme:language:simple-settings-printing-style settings)
+                         [(constructor) 0]
+                         [(quasiquote) 0]
+                         [(write) 1]
+                         [(print) 1])))
              (send fraction-style set-selection
                    (case (drscheme:language:simple-settings-fraction-style settings)
                      [(mixed-fraction) 0]
