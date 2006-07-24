@@ -748,18 +748,18 @@
                              (send dc draw-polygon points dx dy))
                            (when (named-link? from-link)
                              (let*-values ([(text-len h d v) (send dc get-text-extent (link-label from-link))]
-                                           [(x) (/ (+ from-x to-x) 2)]
-                                           [(y) (/ (+ from-y to-y) 2)]
-                                           [(theta) (- (angle (- to-pt from-pt)))] 
-                                           [(flip?) #f #;(negative? (- to-x from-x))]
-                                           [(text-angle) 
-                                            (if flip?
-                                                (+ theta pi)
-                                                theta)]
-                                           [(x)   
-                                            (- x (* h (cos (if flip? (+ (- theta) pi) (- theta)))))]
-                                           [(y) 
-                                            (- y (* h (sin (if flip? (+ (- theta) pi) (- theta)))))]
+                                           [(theta) (angle (- to-pt from-pt))] 
+                                           [(cx cy) (values (/ (+ from-x to-x) 2)
+                                                            (/ (+ from-y to-y) 2))]
+                                           
+                                           ;; ax, ay is the location of the beginning of the string
+                                           ;; offset from cx,cy by enough to make the string centered
+                                           ;; (but it doesn't seem to be quite right; i'm not sure why)
+                                           [(ax ay) (values (- cx (* 1/2 text-len (cos theta)))
+                                                            (- cy (* 1/2 text-len (sin theta))))]
+                                           
+                                           [(x y) (values (- ax (* h (cos theta)))
+                                                          (- ay (* h (sin theta))))]
                                            [(sqr) (λ (x) (* x x))])
                                (when (> (sqrt (+ (sqr (- to-x from-x)) (sqr (- to-y from-y)))) text-len)
                                  (send dc draw-text (link-label from-link)
@@ -767,7 +767,7 @@
                                        (+ dy y)
                                        #f
                                        0
-                                       text-angle))
+                                       (- theta)))
                                  ))]))))))))
           (define (named-link? l) (link-label l))
           
