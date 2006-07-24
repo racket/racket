@@ -48,7 +48,6 @@
            (with-handlers ([void (lambda (e) (err error-message e))]) expr)]))
       ;; Get server information, carefully
       (define version-info
-        '((stable "310") (recent "310")) #;
         (parameterize ([current-input-port
                         (try (url->port (format "~a?~a" version-url (version)))
                              "could not connect to website")])
