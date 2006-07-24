@@ -6451,7 +6451,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
     
       i = SCHEME_CAR(l);
       if (!SCHEME_STX_SYMBOLP(i)) {
-        scheme_wrong_type(name, "list of identifier syntax", 2, argc, argv);
+        scheme_wrong_type(name, "#f or list of identifier syntax", 2, argc, argv);
         return NULL;
       }
     
@@ -6459,7 +6459,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
         scheme_set_local_syntax(pos++, i, stop_expander, env);
     }
     if (!SCHEME_NULLP(l)) {
-      scheme_wrong_type(name, "list of identifier syntax", 2, argc, argv);
+      scheme_wrong_type(name, "#f or list of identifier syntax", 2, argc, argv);
       return NULL;
     }
   }
