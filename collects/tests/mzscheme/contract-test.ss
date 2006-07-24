@@ -1398,7 +1398,16 @@
                'neg)
      'x))
   
-  (test 1 'or/c-not-error-early 
+  (test/pos-blame
+   'or/c13
+   '(contract (or/c not) #t 'pos 'neg))
+  
+  (test/spec-passed
+   'or/c14
+   '(contract (or/c not) #f 'pos 'neg))
+  
+  (test 1 
+        'or/c-not-error-early 
         (begin (or/c (-> integer? integer?) (-> boolean? boolean?))
                1))
   (error-test #'(contract (or/c (-> integer? integer?) (-> boolean? boolean?))
@@ -3794,10 +3803,22 @@
   (test-name '(or/c integer? boolean?)
              (or/c (flat-contract integer?)
                    (flat-contract boolean?)))
+  (test-name '(or/c integer? boolean?)
+             (or/c integer? boolean?))
   (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
              (or/c (-> (>=/c 5) (>=/c 5)) boolean?))
   (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
+  (test-name '(or/c (-> (>=/c 5) (>=/c 5))
+                    (-> (<=/c 5) (<=/c 5) (<=/c 5)))
+             (or/c (-> (>=/c 5) (>=/c 5))
+                   (-> (<=/c 5) (<=/c 5) (<=/c 5))))
+  (test-name '(or/c boolean?
+                    (-> (>=/c 5) (>=/c 5))
+                    (-> (<=/c 5) (<=/c 5) (<=/c 5)))
+             (or/c boolean?
+                   (-> (>=/c 5) (>=/c 5))
+                   (-> (<=/c 5) (<=/c 5) (<=/c 5))))
   
   (test-name 'any/c (and/c))
   (test-name '(and/c any/c) (and/c any/c))
