@@ -74,12 +74,13 @@
                         (custodian-shutdown-all installer-cust))]
                      [installer-cust (make-custodian)])
               (send done enable #f)
+              (send canvas allow-tab-exit #t)
               ((current-text-keymap-initializer) (send text get-keymap))
               (send text lock #t)
-              
+
               ;; still do this even tho we aren't in the eventspace main thread
               (thread (lambda () (send dlg show #t)))
-              
+
               (parameterize ([current-custodian installer-cust])
                 (parameterize ([current-eventspace (make-eventspace)])
                   (queue-callback
