@@ -47,26 +47,24 @@
     (finddoc-page-help manual index-key #t))
 
   (define ht (make-hash-table))
-  
+
   ;; returns either a string (failure) or
   ;; (list docdir index-key filename anchor title)
   (define (lookup manual index-key label)
-    (let ([key (string->symbol manual)]
-	  [docdir (find-doc-directory manual)])
-      (let ([l (hash-table-get
-		ht
-		key
-		(lambda ()
-		  (let ([f (build-path docdir "hdindex")])
-                    (if (file-exists? f)
-                        (let ([l (with-input-from-file f read)])
-                          (hash-table-put! ht key l)
-                          l)
-                        (error 'finddoc "manual index ~s not installed" manual)))))])
-	(let ([m (assoc index-key l)])
-	  (if m 
-	      (cons docdir m)
-	      (error 'finddoc "index key ~s not found in manual ~s" index-key manual))))))
+    (let* ([key (string->symbol manual)]
+           [docdir (find-doc-directory manual)]
+           [l (hash-table-get ht key
+                (lambda ()
+                  (let ([f (and docdir (build-path docdir "hdindex"))])
+                    (if (and f (file-exists? f))
+                      (let ([l (with-input-from-file f read)])
+                        (hash-table-put! ht key l)
+                        l)
+                      (error 'finddoc "manual index ~s not installed" manual)))))]
+           [m (assoc index-key l)])
+      (if m
+        (cons docdir m)
+        (error 'finddoc "index key ~s not found in manual ~s" index-key manual))))
   
   ;; finds the full path of the doc directory, if one exists
   ;; input is just the short name of the directory (as a path)
