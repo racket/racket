@@ -15,10 +15,8 @@
   (define-syntax (match stx)
     (syntax-case stx ()
       [(_ exp . clauses)       
-       (if (identifier? #'exp)
-           (gen-match #'exp '() #'clauses stx)
-           (with-syntax ([body (gen-match #'x '() #'clauses stx)])
-             #`(let ((x exp)) body)))]))
+       (with-syntax ([body (gen-match #'x '() #'clauses stx)])
+         #`(let ([x exp]) body))]))
   
   (define-syntax (match-lambda stx)
     (syntax-case stx ()
