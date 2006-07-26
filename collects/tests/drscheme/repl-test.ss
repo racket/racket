@@ -55,6 +55,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
   
   (define test-data
     (list
+    
      ;; basic tests
      (make-test "1"
                 "1"
@@ -518,10 +519,10 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
      ;; this test depends on the state of the 'framework:fraction-snip-style preference
      ;; make sure this preference is set to the default when running this test.
      (make-test 'fraction-sum
-                "{number 5/6 \"5/6\" improper}"
-                "{number 5/6 \"5/6\" improper}"
-                "{number 5/6 \"5/6\" improper}"
-                "{number 5/6 \"5/6\" improper}"
+                #rx"{number 5/6 \"5/6\" (improper|mixed)}"
+                #rx"{number 5/6 \"5/6\" (improper|mixed)}"
+                #rx"{number 5/6 \"5/6\" (improper|mixed)}"
+                #rx"{number 5/6 \"5/6\" (improper|mixed)}"
                 'interactions
 		#f
                 void
@@ -643,14 +644,25 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
                 void
                 void)
-     
-     (make-test "(define x 1)\n(begin (set! x (call/cc (lambda (x) x)))\n(x 3))"
+
+     (make-test "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
 		"procedure application: expected procedure, given: 3; arguments were: 3"
                 "procedure application: expected procedure, given: 3; arguments were: 3"
                 "{bug09.gif} procedure application: expected procedure, given: 3; arguments were: 3"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::62: procedure application: expected procedure, given: 3; arguments were: 3"
-		(cons (make-loc 3 7 61) (make-loc 3 12 66))
+                "{bug09.gif} {file.gif} repl-test-tmp.ss::74: procedure application: expected procedure, given: 3; arguments were: 3"
+		(cons (make-loc 3 19 73) (make-loc 3 24 78))
 		#f
+                void
+                void)
+     
+     ;; top-level & continuation interaction test
+     (make-test "(begin (define k (call/cc (λ (x) x)))\n(define x 'wrong))\n(set! x 'right)\n(k 1)\nx"
+                "right"
+                "right"
+                "right"
+                "right"
+                'interactions
+                #f
                 void
                 void)
      
@@ -998,7 +1010,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       (delete-file tmp-load-filename))
     (save-drscheme-window-as tmp-load-filename)
     
-    (run-test-in-language-level #t)
+    ;(run-test-in-language-level #t)
     (run-test-in-language-level #f)
     (kill-tests)
     (callcc-test)
