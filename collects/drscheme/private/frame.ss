@@ -32,39 +32,45 @@
       (define basics-mixin
         (mixin (frame:standard-menus<%>) (basics<%>)
           (inherit get-edit-target-window get-edit-target-object get-menu-bar)
-          [define/private get-menu-bindings
-            (λ ()
-              (let ([name-ht (make-hash-table)])
-                (let loop ([menu-container (get-menu-bar)])
-                  (for-each
-                   (λ (item)
-                     (when (is-a? item selectable-menu-item<%>)
-                       (let ([short-cut (send item get-shortcut)])
-                         (when short-cut
-                           (let ([keyname
-                                  (string->symbol
-                                   (keymap:canonicalize-keybinding-string
-                                    (string-append
-                                     (case (system-type)
-                                       [(windows) "c:"]
-                                       [(macosx macos) "d:"]
-                                       [(unix)
-                                        (case (send item get-x-shortcut-prefix)
-                                          [(meta) "m:"]
-                                          [(alt) "a:"]
-                                          [(ctl) "c:"]
-                                          [(ctl-m) "c:m;"])]
-                                       [else ""])
-                                     (case short-cut
-                                       [(#\;) "semicolon"]
-                                       [(#\:) "colon"]
-                                       [(#\space) "space"]
-                                       [else (string short-cut)]))))])
-                             (hash-table-put! name-ht keyname (send item get-plain-label))))))
-                     (when (is-a? item menu-item-container<%>)
-                       (loop item)))
-                   (send menu-container get-items)))
-                name-ht))]
+          (define/private (get-menu-bindings)
+            (let ([name-ht (make-hash-table)])
+              (let loop ([menu-container (get-menu-bar)])
+                (for-each
+                 (λ (item)
+                   (when (is-a? item selectable-menu-item<%>)
+                     (let ([short-cut (send item get-shortcut)])
+                       (when short-cut
+                         (let ([keyname
+                                (string->symbol
+                                 (keymap:canonicalize-keybinding-string
+                                  (string-append
+                                   (menu-item->prefix-string item)
+                                   (case short-cut
+                                     [(#\;) "semicolon"]
+                                     [(#\:) "colon"]
+                                     [(#\space) "space"]
+                                     [else
+                                      (string short-cut)]))))])
+                           (hash-table-put! name-ht keyname (send item get-plain-label))))))
+                   (when (is-a? item menu-item-container<%>)
+                     (loop item)))
+                 (send menu-container get-items)))
+              name-ht))
+          
+          (define/private (menu-item->prefix-string item)
+            (apply
+             string-append
+             (map (λ (prefix)
+                    (case prefix
+                      [(alt) (if (eq? (system-type) 'windows)
+                                 "m:"
+                                 "a:")]
+                      [(cmd) "d:"]
+                      [(meta) "m:"]
+                      [(ctl) "c:"]
+                      [(shift) "s:"]
+                      [(opt) "a:"]))
+                  (send item get-shortcut-prefix))))
           
           [define/private copy-hash-table
             (λ (ht)
@@ -86,18 +92,18 @@
               (if (can-show-keybindings?)
                   (let ([edit-object (get-edit-target-object)])
                     (let ([keymap (send edit-object get-keymap)])
-                      (let*-values ([(menu-names) (get-menu-bindings)])
-                        (let* ([table (send keymap get-map-function-table)]
-                               [bindings (hash-table-map table list)]
-                               [w/menus 
-                                (append (hash-table-map menu-names list)
-                                        (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
-                                                bindings))]
-                               [structured-list
-                                (mzlib:list:sort
-                                 w/menus
-                                 (λ (x y) (string-ci<=? (cadr x) (cadr y))))])
-                          (show-keybindings-to-user structured-list this)))))
+                      (let* ([menu-names (get-menu-bindings)]
+                             [table (send keymap get-map-function-table)]
+                             [bindings (hash-table-map table list)]
+                             [w/menus 
+                              (append (hash-table-map menu-names list)
+                                      (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
+                                              bindings))]
+                             [structured-list
+                              (mzlib:list:sort
+                               w/menus
+                               (λ (x y) (string-ci<=? (cadr x) (cadr y))))])
+                        (show-keybindings-to-user structured-list this))))
                   (bell)))]
           
           (define/private (bound-by-menu? binding menu-table)
