@@ -252,6 +252,7 @@ typedef _uc		jit_insn;
 #define	 _qOs_Mrm_sL(OP	 ,MO,R,M	    ,L	)  (	   _qOs	    (  OP,L,R,M),_qMrm(MO,R,M	    ),_sL(L)	  )
 #define	  _O_r_X(    OP	    ,R	,MD,MB,MI,MS	)  (	    _O	    (  OP  ),_r_X(   R	,MD,MB,MI,MS)		  )
 #define	 _qO_r_X(    OP	    ,R	,MD,MB,MI,MS	)  (	   _qO	    (  OP,R,0,MS),_qr_X(R,MD,MB,MI,MS)		  )
+#define	 _qO_r_XB(   OP	    ,R	,MD,MB,MI,MS	)  (	   _qO	    (  OP,R,0,MB),_qr_X(R,MD,MB,MI,MS)		  )
 #define	 _OO_r_X(    OP	    ,R	,MD,MB,MI,MS	)  (	   _OO	    (  OP  ),_r_X(   R	,MD,MB,MI,MS)		  )
 #define	  _O_r_X_B(  OP	    ,R	,MD,MB,MI,MS,B	)  (	    _O	    (  OP  ),_r_X(   R	,MD,MB,MI,MS) ,_jit_B(B)	  )
 #define	  _O_r_X_W(  OP	    ,R	,MD,MB,MI,MS,W	)  (	    _O	    (  OP  ),_r_X(   R	,MD,MB,MI,MS) ,_jit_W(W)	  )
@@ -645,6 +646,7 @@ typedef _uc		jit_insn;
 
 #define MOVQmr(MD, MB, MI, MS, RD)	_qO_r_X		(0x8b		     ,_r8(RD)		,MD,MB,MI,MS		)
 #define MOVQrm(RS, MD, MB, MI, MS)	_qO_r_X		(0x89		     ,_r8(RS)		,MD,MB,MI,MS		)
+#define MOVQrQm(RS, MD, MB, MI, MS)	_qO_r_XB      	(0x89		     ,_r8(RS)		,MD,MB,MI,MS		)
 #define MOVQir(IM,  R)			_qOr_Q	        (0xb8,_r8(R)			,IM	)
 
 #define MOVQrr(RS, RD)			_qO_Mrm		(0x89		,_b11,_r8(RS),_r8(RD)				)

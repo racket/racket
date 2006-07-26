@@ -105,13 +105,21 @@ struct jit_local_state {
 #define jit_bra_r(s1, s2, op)		(CMPLrr(s2, s1), op, _jit.x.pc)
 #define jit_bra_qr(s1, s2, op)		(CMPQrr(s2, s1), op, _jit.x.pc)
 #define jit_bra_i(rs, is, op)		(CMPLir(is, rs), op, _jit.x.pc)
-#define jit_bra_l(rs, is, op)		(CMPQir(is, rs), op, _jit.x.pc)
+#define _jit_bra_l(rs, is, op)		(CMPQir(is, rs), op, _jit.x.pc)
+
+#ifdef JIT_X86_64
+# define jit_bra_l(rs, is, op) (_u32P((long)(is)) \
+                                ? _jit_bra_l(rs, is, op) \
+                                : (jit_movi_l(JIT_REXTMP, is), jit_bra_qr(JIT_REXTMP, rs, op)))
+#else
+# define jit_bra_l(rs, is, op) _jit_bra_l(rs, is, op)
+#endif
 
 /* When CMP with 0 can be replaced with TEST */
 #define jit_bra_i0(rs, is, op, op0)					\
 	( (is) == 0 ? (TESTLrr(rs, rs), op0, _jit.x.pc) : (CMPLir(is, rs), op, _jit.x.pc))
 #define jit_bra_l0(rs, is, op, op0)					\
-	( (is) == 0 ? (TESTQrr(rs, rs), op0, _jit.x.pc) : (CMPQir(is, rs), op, _jit.x.pc))
+	( (is) == 0 ? (TESTQrr(rs, rs), op0, _jit.x.pc) : jit_bra_l(rs, is, op))
 
 /* Used to implement ldc, stc, ... */
 #define jit_check8(rs)		( (rs) <= _EBX )
@@ -553,15 +561,24 @@ static int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_stxr_i(d1, d2, rs)		MOVLrm((rs), 0,    (d1), (d2), 1)
 #define jit_stxi_i(id, rd, rs)		MOVLrm((rs), (id), (rd), 0,    0)
 
-#define jit_ldi_l(d, is)		MOVQmr((is), 0,    0,    0,  (d))
+#define _jit_ldi_l(d, is)		MOVQmr((is), 0,    0,    0,  (d))
 #define jit_ldr_l(d, rs)		MOVQmr(0,    (rs), 0,    0,  (d))
 #define jit_ldxr_l(d, s1, s2)		MOVQmr(0,    (s1), (s2), 1,  (d))
 #define jit_ldxi_l(d, rs, is)		MOVQmr((is), (rs), 0,    0,  (d))
 
-#define jit_sti_l(id, rs)		MOVQrm((rs), (id), 0,    0,    0)
+#define _jit_sti_l(id, rs)		MOVQrm((rs), (id), 0,    0,    0)
 #define jit_str_l(rd, rs)		MOVQrm((rs), 0,    (rd), 0,    0)
 #define jit_stxr_l(d1, d2, rs)		MOVQrm((rs), 0,    (d1), (d2), 1)
 #define jit_stxi_l(id, rd, rs)		MOVQrm((rs), (id), (rd), 0,    0)
+
+#ifdef JIT_X86_64
+# define jit_ldi_l(d, is) (_u32P((long)(is)) ? _jit_ldi_l(d, is) : (jit_movi_l(d, is), jit_ldr_l(d, d)))
+# define jit_sti_l(id, rs) (_u32P((long)(id)) ? _jit_sti_l(id, rs) : (jit_movi_l(JIT_REXTMP, id), MOVQrQm(rs, 0, JIT_REXTMP, 0, 0)))
+#else
+# define jit_ldi_l(d, is) _jit_ldi_l(d, is)
+# define jit_sti_l(id, rs) _jit_sti_l(id, rs)
+#endif
+
 
 /* Extra */
 #define jit_nop()			NOP_()
