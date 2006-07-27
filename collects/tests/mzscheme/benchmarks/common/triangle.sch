@@ -1,0 +1,84 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; File:         triangle.sch
+; Description:  TRIANGLE benchmark
+; Author:       Richard Gabriel
+; Created:      12-Apr-85
+; Modified:     12-Apr-85 10:30:32 (Bob Shaw)
+;               11-Aug-87 (Will Clinger)
+;               22-Jan-88 (Will Clinger)
+; Language:     Scheme
+; Status:       Public Domain
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; TRIANG -- Board game benchmark.
+
+(define *board* (make-vector 16 1))
+(define *sequence* (make-vector 14 0))
+(define *a* (make-vector 37))
+(for-each (lambda (i x) (vector-set! *a* i x))
+          '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+            21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36)
+          '(1 2 4 3 5 6 1 3 6 2 5 4 11 12
+            13 7 8 4 4 7 11 8 12 13 6 10
+            15 9 14 13 13 14 15 9 10
+             6 6))
+(define *b* (make-vector 37))
+(for-each (lambda (i x) (vector-set! *b* i x))
+          '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+            21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36)
+          '(2 4 7 5 8 9 3 6 10 5 9 8
+            12 13 14 8 9 5 2 4 7 5 8
+            9 3 6 10 5 9 8 12 13 14
+            8 9 5 5))
+(define *c* (make-vector 37))
+(for-each (lambda (i x) (vector-set! *c* i x))
+          '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+            21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36)
+          '(4 7 11 8 12 13 6 10 15 9 14 13
+            13 14 15 9 10 6 1 2 4 3 5 6 1
+            3 6 2 5 4 11 12 13 7 8 4 4))
+(define *answer* '())
+(define *final* '())
+(vector-set! *board* 5 0)
+ 
+(define (last-position)
+  (do ((i 1 (+ i 1)))
+      ((or (= i 16) (= 1 (vector-ref *board* i)))
+       (if (= i 16) 0 i))))
+ 
+(define (try i depth)
+  (cond ((= depth 14)
+         (let ((lp (last-position)))
+           (if (not (member lp *final*))
+             (set! *final* (cons lp *final*))))
+         (set! *answer*
+               (cons (cdr (vector->list *sequence*)) *answer*))
+         #t)
+        ((and (= 1 (vector-ref *board* (vector-ref *a* i)))
+              (= 1 (vector-ref *board* (vector-ref *b* i)))
+              (= 0 (vector-ref *board* (vector-ref *c* i))))
+         (vector-set! *board* (vector-ref *a* i) 0)
+         (vector-set! *board* (vector-ref *b* i) 0)
+         (vector-set! *board* (vector-ref *c* i) 1)
+         (vector-set! *sequence* depth i)
+         (do ((j 0 (+ j 1))
+              (depth (+ depth 1)))
+             ((or (= j 36) (try j depth)) #f))
+         (vector-set! *board* (vector-ref *a* i) 1)
+         (vector-set! *board* (vector-ref *b* i) 1)
+         (vector-set! *board* (vector-ref *c* i) 0) '())
+        (else #f)))
+ 
+(define (gogogo i)
+  (let ((*answer* '())
+        (*final* '()))
+    (try i 1)))
+ 
+;;; call:  (gogogo 22))
+ 
+(time (let loop ([n 10000])
+        (if (zero? n)
+            'done
+            (begin
+              (gogogo 22)
+              (loop (sub1 n))))))
