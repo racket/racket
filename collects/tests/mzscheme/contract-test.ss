@@ -4243,7 +4243,7 @@
   ;; (at the end, becuase they are slow w/out .zo files)
   ;;
   
-    (test/spec-passed
+  (test/spec-passed
    'provide/contract1
    '(let ()
       (eval '(module contract-test-suite1 mzscheme
@@ -4415,6 +4415,19 @@
                (copy-struct s 
                             (make-s 1 2)
                             [s-a 3])))
+      (eval '(require n))))
+  
+  (test/spec-passed
+   'provide/contract11
+   '(parameterize ([current-namespace (make-namespace)])
+      (eval '(module m mzscheme
+               (require (lib "contract.ss"))
+               (define x 1)
+               (provide/contract [rename x y integer?]
+                                 [rename x z integer?])))
+      (eval '(module n mzscheme
+               (require m)
+               (+ y z)))
       (eval '(require n))))
   
   ;; this test is broken, not sure why
