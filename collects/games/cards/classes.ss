@@ -21,7 +21,7 @@
 	       invalidate-bitmap-cache
 	       find-next-selected-snip find-first-snip find-snip
 	       set-before set-after
-	       add-selected is-selected? no-selected
+	       add-selected is-selected? no-selected set-selected
 	       get-snip-location move-to
 	       dc-location-to-editor-location
 	       set-selection-visible)
@@ -328,7 +328,11 @@
 			  (not (send click-base user-can-move)))
 		 (no-selected)))
 	     (when (and click click-base)
-	       (do-on-single-click click-base))))]
+	       (do-on-single-click click-base)))
+           (when click-base
+             ; For double-clicks to be detected, the clicked card
+             ; must be selected:
+             (set-selected click-base)))]
 	[on-double-click
 	 (lambda (s e)
 	   (cond
