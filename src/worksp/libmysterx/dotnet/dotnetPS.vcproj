@@ -24,10 +24,10 @@
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Checking for required files"
-				CommandLine="if exist dlldata.c goto :END
-echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.
-Exit 1
-:END
+				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;
+echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;
+Exit 1&#x0D;&#x0A;
+:END&#x0D;&#x0A;
 "
 			/>
 			<Tool
@@ -98,10 +98,10 @@ Exit 1
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Checking for required files"
-				CommandLine="if exist dlldata.c goto :END
-echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.
-Exit 1
-:END
+				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;
+echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;
+Exit 1&#x0D;&#x0A;
+:END&#x0D;&#x0A;
 "
 			/>
 			<Tool
@@ -172,10 +172,10 @@ Exit 1
 			<Tool
 				Name="VCPreBuildEventTool"
 				Description="Checking for required files"
-				CommandLine="if exist dlldata.c goto :END
-echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.
-Exit 1
-:END
+				CommandLine="if exist dlldata.c goto :END&#x0D;&#x0A;
+echo Error: MIDL will not generate DLLDATA.C unless you have at least 1 interface in the main project.&#x0D;&#x0A;
+Exit 1&#x0D;&#x0A;
+:END&#x0D;&#x0A;
 "
 			/>
 			<Tool
