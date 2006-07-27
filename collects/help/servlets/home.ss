@@ -12,11 +12,12 @@
   (define items
     `(("Help Desk" "How to get help" "/servlets/howtouse.ss")
       ("Software" "How to run programs" "/servlets/howtoscheme.ss"
-       ("Tour" ,(get-manual-index "tour"))
+       ,(lambda () `("Tour" ,(get-manual-index "tour")))
        ("Languages" "/servlets/scheme/what.ss")
        ("Manuals" "/servlets/manuals.ss")
        ("Release" "/servlets/releaseinfo.ss")
-       ,(manual-entry "drscheme" "frequently asked questions" "FAQ"))
+       ,(lambda ()
+          (manual-entry "drscheme" "frequently asked questions" "FAQ")))
       ("Program Design" "Learning to program in Scheme" "/servlets/howtoprogram.ss"
        ("Teachpacks" "/servlets/teachpacks.ss")
        ("Why DrScheme?" "/servlets/research/why.ss"))
@@ -26,21 +27,20 @@
        ("Mailing Lists" "/servlets/resources/maillist.ss"))))
 
   (define (item i)
+    (define (item->xexpr item)
+      (cond [(and (pair? item) (symbol? (car item))) item]
+            [(procedure? item) (item->xexpr (item))]
+            [else `(A ([HREF ,(cadr item)]) ,(car item))]))
     (let ([title (car i)] [subtitle (cadr i)] [url (caddr i)] [subs (cdddr i)])
       `(LI (B (A ([HREF ,url]) ,title)) ": " ,subtitle
-           ,@(if (null? subs)
-               '()
-               `((BR) nbsp nbsp nbsp nbsp nbsp nbsp
-                 (FONT ([SIZE "-2"])
-                   ,@(apply append
-                            (map (lambda (s)
-                                   (let ([s (if (and (pair? s) (symbol? (car s)))
-                                              s
-                                              `(A ([HREF ,(cadr s)]) ,(car s)))])
-                                     `(,s ", ")))
-                                 subs))
-                      "...")))
-           (BR) (BR))))
+         ,@(if (null? subs)
+             '()
+             `((BR) nbsp nbsp nbsp nbsp nbsp nbsp
+               (FONT ([SIZE "-2"])
+                 ,@(apply append
+                          (map (lambda (s) `(,(item->xexpr s) ", ")) subs))
+                 "...")))
+         (BR) (BR))))
 
   (define (start initial-request)
     (report-errors-to-browser send/finish)
