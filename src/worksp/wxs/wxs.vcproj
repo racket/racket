@@ -1,109 +1,156 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="wxs"
-	SccProjectName=""
-	SccLocalPath="">
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\mzscheme\include,..\..\mred\wxme,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__"
 				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderThrough="wx.h"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\$(ProjectName).lib"
-				SuppressStartupBanner="TRUE"/>
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\mzscheme\include,..\..\mred\wxme,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				PrecompiledHeaderThrough="wx.h"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\$(ProjectName).lib"
-				SuppressStartupBanner="TRUE"/>
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -111,189 +158,250 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
+			>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_BMAP.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_BMAP.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_BUTN.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_BUTN.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_CHCE.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_CHCE.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_CKBX.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_CKBX.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_CNVS.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_CNVS.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_DC.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_DC.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_EVNT.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_EVNT.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_FRAM.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_FRAM.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_GAGE.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_GAGE.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_GDI.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_GDI.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_GLOB.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_GLOB.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_ITEM.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_ITEM.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_LBOX.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_LBOX.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MADM.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_MADM.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MEDE.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_MEDE.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MEDI.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_MEDI.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MENU.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_MENU.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MIO.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_MIO.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MISC.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_MISC.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MPB.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_MPB.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_OBJ.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_OBJ.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_PANL.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_PANL.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_RADO.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_RADO.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_SLID.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_SLID.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_SNIP.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_SNIP.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_STYL.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_STYL.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_TABC.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_TABC.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_WIN.cxx">
+				RelativePath="..\..\mred\Wxs\WXS_WIN.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXSCHEME.cxx">
+				RelativePath="..\..\mred\Wxs\WXSCHEME.cxx"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;fi;fd">
+			Filter="h;hpp;hxx;hm;inl;fi;fd"
+			>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_bmap.h">
+				RelativePath="..\..\mred\Wxs\wxs_bmap.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_butn.h">
+				RelativePath="..\..\mred\Wxs\wxs_butn.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_chce.h">
+				RelativePath="..\..\mred\Wxs\wxs_chce.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_ckbx.h">
+				RelativePath="..\..\mred\Wxs\wxs_ckbx.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_cnvs.h">
+				RelativePath="..\..\mred\Wxs\wxs_cnvs.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_dc.h">
+				RelativePath="..\..\mred\Wxs\wxs_dc.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_evnt.h">
+				RelativePath="..\..\mred\Wxs\wxs_evnt.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_fram.h">
+				RelativePath="..\..\mred\Wxs\wxs_fram.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_gage.h">
+				RelativePath="..\..\mred\Wxs\wxs_gage.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_gdi.h">
+				RelativePath="..\..\mred\Wxs\wxs_gdi.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_glob.h">
+				RelativePath="..\..\mred\Wxs\wxs_glob.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_item.h">
+				RelativePath="..\..\mred\Wxs\wxs_item.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_lbox.h">
+				RelativePath="..\..\mred\Wxs\wxs_lbox.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_madm.h">
+				RelativePath="..\..\mred\Wxs\wxs_madm.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_mede.h">
+				RelativePath="..\..\mred\Wxs\wxs_mede.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_medi.h">
+				RelativePath="..\..\mred\Wxs\wxs_medi.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_menu.h">
+				RelativePath="..\..\mred\Wxs\wxs_menu.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_mio.h">
+				RelativePath="..\..\mred\Wxs\wxs_mio.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_misc.h">
+				RelativePath="..\..\mred\Wxs\wxs_misc.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_mpb.h">
+				RelativePath="..\..\mred\Wxs\wxs_mpb.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_obj.h">
+				RelativePath="..\..\mred\Wxs\wxs_obj.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_panl.h">
+				RelativePath="..\..\mred\Wxs\wxs_panl.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_rado.h">
+				RelativePath="..\..\mred\Wxs\wxs_rado.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_slid.h">
+				RelativePath="..\..\mred\Wxs\wxs_slid.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_snip.h">
+				RelativePath="..\..\mred\Wxs\wxs_snip.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_styl.h">
+				RelativePath="..\..\mred\Wxs\wxs_styl.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_text.h">
+				RelativePath="..\..\mred\Wxs\wxs_text.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_win.h">
+				RelativePath="..\..\mred\Wxs\wxs_win.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxscheme.h">
+				RelativePath="..\..\mred\Wxs\wxscheme.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe">
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
+			>
 		</Filter>
 	</Files>
 	<Globals>

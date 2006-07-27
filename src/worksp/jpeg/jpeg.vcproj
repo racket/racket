@@ -1,110 +1,157 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="jpeg"
-	SccProjectName=""
-	SccLocalPath="">
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\jpeg,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,_DEBUG,_LIB"
 				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(ProjectName).lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Culture="1033"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName).lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\jpeg,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,NDEBUG,_LIB"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				CompileAs="0"/>
+				SuppressStartupBanner="true"
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(ProjectName).lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Culture="1033"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName).lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -112,161 +159,213 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\cdjpeg.c">
+				RelativePath="..\..\wxcommon\jpeg\cdjpeg.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcapimin.c">
+				RelativePath="..\..\wxcommon\jpeg\jcapimin.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcapistd.c">
+				RelativePath="..\..\wxcommon\jpeg\jcapistd.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jccoefct.c">
+				RelativePath="..\..\wxcommon\jpeg\jccoefct.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jccolor.c">
+				RelativePath="..\..\wxcommon\jpeg\jccolor.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcdctmgr.c">
+				RelativePath="..\..\wxcommon\jpeg\jcdctmgr.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jchuff.c">
+				RelativePath="..\..\wxcommon\jpeg\jchuff.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcinit.c">
+				RelativePath="..\..\wxcommon\jpeg\jcinit.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcmainct.c">
+				RelativePath="..\..\wxcommon\jpeg\jcmainct.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcmarker.c">
+				RelativePath="..\..\wxcommon\jpeg\jcmarker.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcmaster.c">
+				RelativePath="..\..\wxcommon\jpeg\jcmaster.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcomapi.c">
+				RelativePath="..\..\wxcommon\jpeg\jcomapi.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcparam.c">
+				RelativePath="..\..\wxcommon\jpeg\jcparam.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcphuff.c">
+				RelativePath="..\..\wxcommon\jpeg\jcphuff.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcprepct.c">
+				RelativePath="..\..\wxcommon\jpeg\jcprepct.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jcsample.c">
+				RelativePath="..\..\wxcommon\jpeg\jcsample.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jctrans.c">
+				RelativePath="..\..\wxcommon\jpeg\jctrans.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdapimin.c">
+				RelativePath="..\..\wxcommon\jpeg\jdapimin.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdapistd.c">
+				RelativePath="..\..\wxcommon\jpeg\jdapistd.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdatadst.c">
+				RelativePath="..\..\wxcommon\jpeg\jdatadst.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdatasrc.c">
+				RelativePath="..\..\wxcommon\jpeg\jdatasrc.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdcoefct.c">
+				RelativePath="..\..\wxcommon\jpeg\jdcoefct.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdcolor.c">
+				RelativePath="..\..\wxcommon\jpeg\jdcolor.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jddctmgr.c">
+				RelativePath="..\..\wxcommon\jpeg\jddctmgr.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdhuff.c">
+				RelativePath="..\..\wxcommon\jpeg\jdhuff.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdinput.c">
+				RelativePath="..\..\wxcommon\jpeg\jdinput.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdmainct.c">
+				RelativePath="..\..\wxcommon\jpeg\jdmainct.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdmarker.c">
+				RelativePath="..\..\wxcommon\jpeg\jdmarker.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdmaster.c">
+				RelativePath="..\..\wxcommon\jpeg\jdmaster.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdmerge.c">
+				RelativePath="..\..\wxcommon\jpeg\jdmerge.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdphuff.c">
+				RelativePath="..\..\wxcommon\jpeg\jdphuff.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdpostct.c">
+				RelativePath="..\..\wxcommon\jpeg\jdpostct.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdsample.c">
+				RelativePath="..\..\wxcommon\jpeg\jdsample.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jdtrans.c">
+				RelativePath="..\..\wxcommon\jpeg\jdtrans.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jerror.c">
+				RelativePath="..\..\wxcommon\jpeg\jerror.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jfdctflt.c">
+				RelativePath="..\..\wxcommon\jpeg\jfdctflt.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jfdctfst.c">
+				RelativePath="..\..\wxcommon\jpeg\jfdctfst.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jfdctint.c">
+				RelativePath="..\..\wxcommon\jpeg\jfdctint.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jidctflt.c">
+				RelativePath="..\..\wxcommon\jpeg\jidctflt.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jidctfst.c">
+				RelativePath="..\..\wxcommon\jpeg\jidctfst.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jidctint.c">
+				RelativePath="..\..\wxcommon\jpeg\jidctint.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jidctred.c">
+				RelativePath="..\..\wxcommon\jpeg\jidctred.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jmemmgr.c">
+				RelativePath="..\..\wxcommon\jpeg\jmemmgr.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jmemnobs.c">
+				RelativePath="..\..\wxcommon\jpeg\jmemnobs.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jpegtran.c">
+				RelativePath="..\..\wxcommon\jpeg\jpegtran.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jquant1.c">
+				RelativePath="..\..\wxcommon\jpeg\jquant1.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jquant2.c">
+				RelativePath="..\..\wxcommon\jpeg\jquant2.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\jutils.c">
+				RelativePath="..\..\wxcommon\jpeg\jutils.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\rdswitch.c">
+				RelativePath="..\..\wxcommon\jpeg\rdswitch.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\jpeg\transupp.c">
+				RelativePath="..\..\wxcommon\jpeg\transupp.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 		</Filter>
 	</Files>
 	<Globals>

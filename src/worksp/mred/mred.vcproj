@@ -1,83 +1,131 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="MrEd"
-	SccProjectName=""
-	SccLocalPath="">
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\mzscheme\include,..\..\mred\wxme,..\..\mzscheme\utils,..\..\wxwindow\contrib\fafa"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="..\..\wxwindow\include\msw;..\..\wxwindow\contrib\fafa"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libmredxxxxxxx.dll"
 				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				IgnoreDefaultLibraryNames="libcd.lib"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
-				SubSystem="2"/>
+				SubSystem="2"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-				AdditionalIncludeDirectories="..\..\wxwindow\include\msw;..\..\wxwindow\contrib\fafa"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -85,46 +133,59 @@
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="..\..\wxwindow\include\msw;..\..\wxwindow\contrib\fafa"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libmredxxxxxxx.dll"
 				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				IgnoreDefaultLibraryNames="libcd.lib"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
-				SubSystem="2"/>
+				SubSystem="2"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
-				AdditionalIncludeDirectories="..\..\wxwindow\include\msw;..\..\wxwindow\contrib\fafa"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -132,83 +193,109 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
+			>
 			<File
-				RelativePath=".\Mred.rc">
+				RelativePath=".\Mred.rc"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\mrmain.cxx">
+				RelativePath="..\..\mred\mrmain.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\mzscheme\uniplt.c">
+				RelativePath="..\mzscheme\uniplt.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;fi;fd">
+			Filter="h;hpp;hxx;hm;inl;fi;fd"
+			>
 			<File
-				RelativePath="..\..\mred\wxme\edjr.h">
+				RelativePath="..\..\mred\wxme\edjr.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\mred.h">
+				RelativePath="..\..\mred\mred.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\Wx_cgrec.h">
+				RelativePath="..\..\mred\Wxme\Wx_cgrec.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\Wx_keym.h">
+				RelativePath="..\..\mred\Wxme\Wx_keym.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\Wx_medad.h">
+				RelativePath="..\..\mred\Wxme\Wx_medad.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\wxme\wx_media.h">
+				RelativePath="..\..\mred\wxme\wx_media.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\wxme\wx_medio.h">
+				RelativePath="..\..\mred\wxme\wx_medio.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\wx_mline.h">
+				RelativePath="..\..\mred\Wxme\wx_mline.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\wx_mpriv.h">
+				RelativePath="..\..\mred\Wxme\wx_mpriv.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\Wx_snip.h">
+				RelativePath="..\..\mred\Wxme\Wx_snip.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\wxme\wx_style.h">
+				RelativePath="..\..\mred\wxme\wx_style.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mzscheme\utils\xcglue.h">
+				RelativePath="..\..\mzscheme\utils\xcglue.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe">
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
+			>
 			<File
-				RelativePath=".\BULLSEYE.CUR">
+				RelativePath=".\BULLSEYE.CUR"
+				>
 			</File>
 			<File
-				RelativePath=".\child.ico">
+				RelativePath=".\child.ico"
+				>
 			</File>
 			<File
-				RelativePath=".\fafa.ico">
+				RelativePath=".\fafa.ico"
+				>
 			</File>
 			<File
-				RelativePath=".\HAND.CUR">
+				RelativePath=".\HAND.CUR"
+				>
 			</File>
 			<File
-				RelativePath=".\mdi.ico">
+				RelativePath=".\mdi.ico"
+				>
 			</File>
 			<File
-				RelativePath=".\mred.ico">
+				RelativePath=".\mred.ico"
+				>
 			</File>
 			<File
-				RelativePath=".\std.ico">
+				RelativePath=".\std.ico"
+				>
 			</File>
 			<File
-				RelativePath=".\WATCH1.CUR">
+				RelativePath=".\WATCH1.CUR"
+				>
 			</File>
 		</Filter>
 	</Files>

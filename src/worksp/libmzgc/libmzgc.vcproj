@@ -1,23 +1,42 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="libmzgc"
-	SccProjectName=""
-	SccLocalPath="">
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
@@ -27,98 +46,140 @@
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="Unicows.lib User32.lib"
 				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
-				SuppressStartupBanner="TRUE"
-				GenerateDebugInformation="TRUE"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"/>
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\MzScheme\Gc\Include,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
+				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="Unicows.lib User32.lib"
 				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
-				SuppressStartupBanner="TRUE"
-				GenerateDebugInformation="TRUE"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"/>
+				SuppressStartupBanner="true"
+				GenerateDebugInformation="true"
+				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCWebDeploymentTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -126,69 +187,90 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Allchblk.c">
+				RelativePath="..\..\Mzscheme\Gc\Allchblk.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Alloc.c">
+				RelativePath="..\..\Mzscheme\Gc\Alloc.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Blacklst.c">
+				RelativePath="..\..\Mzscheme\Gc\Blacklst.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Dyn_load.c">
+				RelativePath="..\..\Mzscheme\Gc\Dyn_load.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Finalize.c">
+				RelativePath="..\..\Mzscheme\Gc\Finalize.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Headers.c">
+				RelativePath="..\..\Mzscheme\Gc\Headers.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Mach_dep.c">
+				RelativePath="..\..\Mzscheme\Gc\Mach_dep.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Malloc.c">
+				RelativePath="..\..\Mzscheme\Gc\Malloc.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Mallocx.c">
+				RelativePath="..\..\Mzscheme\Gc\Mallocx.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Mark.c">
+				RelativePath="..\..\Mzscheme\Gc\Mark.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Mark_rts.c">
+				RelativePath="..\..\Mzscheme\Gc\Mark_rts.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Misc.c">
+				RelativePath="..\..\Mzscheme\Gc\Misc.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\New_hblk.c">
+				RelativePath="..\..\Mzscheme\Gc\New_hblk.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Obj_map.c">
+				RelativePath="..\..\Mzscheme\Gc\Obj_map.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Os_dep.c">
+				RelativePath="..\..\Mzscheme\Gc\Os_dep.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Reclaim.c">
+				RelativePath="..\..\Mzscheme\Gc\Reclaim.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Stubborn.c">
+				RelativePath="..\..\Mzscheme\Gc\Stubborn.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\win32_threads.c">
+				RelativePath="..\..\Mzscheme\Gc\win32_threads.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+			>
 		</Filter>
 	</Files>
 	<Globals>

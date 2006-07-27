@@ -1,109 +1,156 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="wxme"
-	SccProjectName=""
-	SccLocalPath="">
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\mzscheme\include,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxcommon\jpeg,..\jpeg,..\..\wxcommon\zlib,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__"
 				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(ProjectName).lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Culture="1033"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName).lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\mzscheme\include,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxcommon\jpeg,..\jpeg,..\..\wxcommon\zlib,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(OutDir)\$(ProjectName).lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Culture="1033"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
-				Name="VCXMLDataGeneratorTool"/>
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName).lib"
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -111,56 +158,73 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_CGREC.cxx">
+				RelativePath="..\..\mred\Wxme\WX_CGREC.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_KEYM.cxx">
+				RelativePath="..\..\mred\Wxme\WX_KEYM.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_MBUF.cxx">
+				RelativePath="..\..\mred\Wxme\WX_MBUF.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_MEDAD.cxx">
+				RelativePath="..\..\mred\Wxme\WX_MEDAD.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_MEDIA.cxx">
+				RelativePath="..\..\mred\Wxme\WX_MEDIA.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_MEDIO.cxx">
+				RelativePath="..\..\mred\Wxme\WX_MEDIO.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_MLINE.cxx">
+				RelativePath="..\..\mred\Wxme\WX_MLINE.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_MPBRD.cxx">
+				RelativePath="..\..\mred\Wxme\WX_MPBRD.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_MPRIV.cxx">
+				RelativePath="..\..\mred\Wxme\WX_MPRIV.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_MSNIP.cxx">
+				RelativePath="..\..\mred\Wxme\WX_MSNIP.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_SNIP.cxx">
+				RelativePath="..\..\mred\Wxme\WX_SNIP.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_STYLE.cxx">
+				RelativePath="..\..\mred\Wxme\WX_STYLE.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\wxGC.cxx">
+				RelativePath="..\..\wxcommon\wxGC.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxcommon\wxJPEG.cxx">
+				RelativePath="..\..\wxcommon\wxJPEG.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\mzscheme\utils\xcglue.c">
+				RelativePath="..\..\mzscheme\utils\xcglue.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl"
+			>
 		</Filter>
 	</Files>
 	<Globals>

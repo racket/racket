@@ -1,107 +1,154 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.10"
+	Version="8.00"
 	Name="wxutils"
-	SccProjectName=""
-	SccLocalPath="">
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxwindow\contrib\wxxpm\libxpm.34b\lib,..\..\wxWindow\contrib\fafa"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,$(NOINHERIT)"
 				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\$(ProjectName).lib"
-				SuppressStartupBanner="TRUE"/>
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			ATLMinimizesCRunTimeLibraryUsage="false"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				GlobalOptimizations="TRUE"
 				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxwindow\contrib\wxxpm\libxpm.34b\lib,..\..\wxWindow\contrib\fafa"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,$(NOINHERIT)"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
+				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
-				CompileAs="0"/>
+				CompileAs="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				Culture="1033"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\$(ProjectName).lib"
-				SuppressStartupBanner="TRUE"/>
+				SuppressStartupBanner="true"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
 	<References>
@@ -109,117 +156,154 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90">
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
+			>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Fafa\Button.c">
+				RelativePath="..\..\Wxwindow\Contrib\Fafa\Button.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Fafa\Check.c">
+				RelativePath="..\..\Wxwindow\Contrib\Fafa\Check.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Fafa\Cont.c">
+				RelativePath="..\..\Wxwindow\Contrib\Fafa\Cont.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crbuffri.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crbuffri.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crdatfri.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crdatfri.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Create.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Create.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crifrbuf.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crifrbuf.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crifrdat.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Crifrdat.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Data.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Data.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Fafa\Dialog.c">
+				RelativePath="..\..\Wxwindow\Contrib\Fafa\Dialog.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Utils\Dib\DIB.cxx">
+				RelativePath="..\..\Wxwindow\Utils\Dib\DIB.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Fafa\Draw.c">
+				RelativePath="..\..\Wxwindow\Contrib\Fafa\Draw.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Fafa\Dumfafa.c">
+				RelativePath="..\..\Wxwindow\Contrib\Fafa\Dumfafa.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Fafa\Fafa.c">
+				RelativePath="..\..\Wxwindow\Contrib\Fafa\Fafa.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Hashtab.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Hashtab.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Misc.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Misc.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Parse.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Parse.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Rdftodat.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Rdftodat.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Rdftoi.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Rdftoi.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Rgb.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Rgb.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Scan.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Scan.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Simx.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Simx.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Fafa\Static.c">
+				RelativePath="..\..\Wxwindow\Contrib\Fafa\Static.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Wrffrdat.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Wrffrdat.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Wrffri.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Wrffri.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Wrffrp.c">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\Wrffrp.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Src\Msw\wximgxbm.cxx">
+				RelativePath="..\..\Wxwindow\Src\Msw\wximgxbm.cxx"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Gauge\Zyz3d.c">
+				RelativePath="..\..\Wxwindow\Contrib\Gauge\Zyz3d.c"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Gauge\Zyzgauge.c">
+				RelativePath="..\..\Wxwindow\Contrib\Gauge\Zyzgauge.c"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;fi;fd">
+			Filter="h;hpp;hxx;hm;inl;fi;fd"
+			>
 			<File
-				RelativePath="..\..\wxwindow\utils\dib\dib.h">
+				RelativePath="..\..\wxwindow\utils\dib\dib.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxWindow\contrib\fafa\fafa.h">
+				RelativePath="..\..\wxWindow\contrib\fafa\fafa.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\simx.h">
+				RelativePath="..\..\Wxwindow\Contrib\Wxxpm\Libxpm.34b\Lib\simx.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\Wxwindow\Contrib\Gauge\zyz3d.h">
+				RelativePath="..\..\Wxwindow\Contrib\Gauge\zyz3d.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\wxwindow\contrib\gauge\zyzgauge.h">
+				RelativePath="..\..\wxwindow\contrib\gauge\zyzgauge.h"
+				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe">
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
+			>
 		</Filter>
 	</Files>
 	<Globals>
