@@ -6733,7 +6733,7 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
 	if (sc->done)
 	  return scheme_void;
 
-	if (!kill(sp->pid, SCHEME_TRUEP(argv[1]) ? SIGINT : SIGKILL))
+	if (!kill(sp->pid, SCHEME_TRUEP(argv[1]) ? SIGKILL : SIGINT))
 	  return scheme_void;
 
 	if (errno != EINTR)
