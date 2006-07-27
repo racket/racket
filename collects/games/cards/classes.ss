@@ -329,6 +329,7 @@
 		 (no-selected)))
 	     (when (and click click-base)
 	       (do-on-single-click click-base)))
+           #;
            (when click-base
              ; For double-clicks to be detected, the clicked card
              ; must be selected:
