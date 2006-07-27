@@ -1,4 +1,5 @@
-Microsoft Visual Studio Solution File, Format Version 8.00
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MzScheme", "mzscheme.vcproj", "{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188} = {2D99E176-BCA5-4B8E-B25C-1B2D7179C188}
@@ -11,30 +12,27 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmzsch", "..\libmzsch\lib
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmzgc", "..\libmzgc\libmzgc.vcproj", "{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
 EndProject
 Global
-	GlobalSection(SolutionConfiguration) = preSolution
-		Debug = Debug
-		Release = Release
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ProjectConfiguration) = postSolution
-		{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}.Debug.ActiveCfg = Debug|Win32
-		{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}.Debug.Build.0 = Debug|Win32
-		{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}.Release.ActiveCfg = Release|Win32
-		{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}.Release.Build.0 = Release|Win32
-		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}.Debug.ActiveCfg = Debug|Win32
-		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}.Debug.Build.0 = Debug|Win32
-		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}.Release.ActiveCfg = Release|Win32
-		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}.Release.Build.0 = Release|Win32
-		{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}.Debug.ActiveCfg = Debug|Win32
-		{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}.Debug.Build.0 = Debug|Win32
-		{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}.Release.ActiveCfg = Release|Win32
-		{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}.Release.Build.0 = Release|Win32
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}.Debug|Win32.Build.0 = Debug|Win32
+		{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}.Release|Win32.ActiveCfg = Release|Win32
+		{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}.Release|Win32.Build.0 = Release|Win32
+		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}.Debug|Win32.Build.0 = Debug|Win32
+		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}.Release|Win32.ActiveCfg = Release|Win32
+		{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}.Release|Win32.Build.0 = Release|Win32
+		{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}.Debug|Win32.Build.0 = Debug|Win32
+		{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}.Release|Win32.ActiveCfg = Release|Win32
+		{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-	EndGlobalSection
-	GlobalSection(ExtensibilityAddIns) = postSolution
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

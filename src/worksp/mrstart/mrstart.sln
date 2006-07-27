@@ -1,18 +1,16 @@
-Microsoft Visual Studio Solution File, Format Version 8.00
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MrStart", "mrstart.vcproj", "{138CC248-8A45-436E-A4A6-E7570D7C2C0F}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
 EndProject
 Global
-	GlobalSection(SolutionConfiguration) = preSolution
-		Release = Release
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Win32 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ProjectConfiguration) = postSolution
-		{138CC248-8A45-436E-A4A6-E7570D7C2C0F}.Release.ActiveCfg = Release|Win32
-		{138CC248-8A45-436E-A4A6-E7570D7C2C0F}.Release.Build.0 = Release|Win32
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{138CC248-8A45-436E-A4A6-E7570D7C2C0F}.Release|Win32.ActiveCfg = Release|Win32
+		{138CC248-8A45-436E-A4A6-E7570D7C2C0F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-	EndGlobalSection
-	GlobalSection(ExtensibilityAddIns) = postSolution
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
