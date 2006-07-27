@@ -1,3 +1,6 @@
+Version 352, July 2006
+Minor bug fixes
+
 Version 351, July 2006
 Changed hash-table-get to accept a non-prcedure third argument as
  a default value (instead of requiring a thunk)
