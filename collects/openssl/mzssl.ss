@@ -134,7 +134,7 @@
 
   (define-ssl SSL_CTX_set_verify (_SSL_CTX* _int _pointer -> _void))
   (define-ssl SSL_CTX_use_certificate_chain_file (_SSL_CTX* _bytes -> _int))
-  (define-ssl SSL_CTX_load_verify_locations (_SSL_CTX* _bytes -> _int))
+  (define-ssl SSL_CTX_load_verify_locations (_SSL_CTX* _bytes _pointer -> _int))
   (define-ssl SSL_CTX_set_client_CA_list (_SSL_CTX* _X509_NAME* -> _int))
   (define-ssl SSL_CTX_use_RSAPrivateKey_file (_SSL_CTX* _bytes _int -> _int))
   (define-ssl SSL_CTX_use_PrivateKey_file (_SSL_CTX* _bytes _int -> _int))
@@ -358,7 +358,7 @@
 
   (define (ssl-load-verify-root-certificates! ssl-context-or-listener pathname)
     (ssl-load-... 'ssl-load-verify-root-certificates! 
-		  SSL_CTX_load_verify_locations
+		  (lambda (a b) (SSL_CTX_load_verify_locations a b 0))
 		  ssl-context-or-listener pathname))
 
   (define (ssl-load-suggested-certificate-authorities! ssl-listener pathname)
