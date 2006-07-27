@@ -172,11 +172,10 @@ TODO
       ;; the highlight must be set after the error message, because inserting into the text resets
       ;;     the highlighting.
       (define (drscheme-error-display-handler msg exn)
-        (let* ([cut-stack (if (and (exn? exn)
-                                   (main-user-eventspace-thread?))
-                              (cut-out-top-of-stack exn)
-                              '())]
-               [srclocs-stack (filter values (map cdr cut-stack))]
+        (let* ([srclocs-stack 
+                (if (exn? exn)
+                    (filter values (map cdr (continuation-mark-set->context (exn-continuation-marks exn))))
+                    '())]
                [stack 
                 (filter
                  values
@@ -192,16 +191,6 @@ TODO
                              (if (null? stack)
                                  '()
                                  (list (car srclocs-stack))))])
-          
-          ;; for use in debugging the stack trace stuff
-          #;
-          (when (exn? exn)
-            (print-struct #t)
-            (for-each 
-             (λ (frame) (printf " ~s\n" frame))
-             (continuation-mark-set->context (exn-continuation-marks exn)))
-            (printf "\n"))
-            
           (unless (null? stack)
             (drscheme:debug:print-bug-to-stderr msg stack))
           (for-each drscheme:debug:display-srcloc-in-error src-locs)
@@ -220,79 +209,27 @@ TODO
                          src-locs 
                          (filter (λ (x) (is-a? (car x) text%)) stack)))))))))
       
-      (define (main-user-eventspace-thread?)
-        (let ([rep (current-rep)])
-          (and rep
-               (eq? (eventspace-handler-thread (send rep get-user-eventspace))
-                    (current-thread)))))
-      
-      (define (cut-out-top-of-stack exn)
-        (let ([initial-stack  (continuation-mark-set->context (exn-continuation-marks exn))])
-          (let loop ([stack (reverse initial-stack)]
-                     [hit-2? #f])
-            (cond
-              [(null? stack) 
-               (unless (exn:break? exn)
-                 ;; give break exn's a free pass on this one.
-                 ;; sometimes they get raised in a funny place. 
-                 ;; (see call-with-break-parameterization below)
-                 (fprintf (current-error-port) "ACK! didn't find drscheme's stackframe when filtering\n"))
-               initial-stack]
-              [else 
-               (let ([top (car stack)])
-                 (cond
-                   [(is-cut? top 'cut-stacktrace-above-here1)
-                    (if hit-2?
-                        (reverse (cdr stack))
-                        (begin
-                          (fprintf (current-error-port) "ACK! found 1 without 2\n")
-                          initial-stack))]
-                   [(is-cut? top 'cut-stacktrace-above-here2)
-                    (if hit-2?
-                        (reverse (cdr stack))
-                        (loop (cdr stack) #t))]
-                   [else
-                    (loop (cdr stack) hit-2?)]))]))))
-      
-      ;; is-cut? : any symbol -> boolean
-      ;; determines if this stack entry is really 
-      (define (is-cut? top sym)
-        (and (pair? top)
-             (let* ([fn-name (car top)]
-                    [srcloc (cdr top)]
-                    [source (and srcloc (srcloc-source srcloc))])
-               (and (eq? fn-name sym) 
-                    (path? source)
-                    (let loop ([path source]
-                               [pieces '(#"rep.ss" #"private" #"drscheme" #"collects")])
-                      (cond
-                        [(null? pieces) #t]
-                        [else
-                         (let-values ([(base name dir?) (split-path path)])
-                           (and (equal? (path->bytes name) (car pieces))
-                                (loop base (cdr pieces))))]))))))
-        
-        ;; drscheme-error-value->string-handler : TST number -> string
-        (define (drscheme-error-value->string-handler x n)
-          (let ([port (open-output-string)])
-            
-            ;; using a string port here means no snips allowed,
-            ;; even though this string may eventually end up
-            ;; displayed in a place where snips are allowed.
-            (print x port)
-            
-            (let* ([long-string (get-output-string port)])
-              (close-output-port port)
-              (if (<= (string-length long-string) n)
-                  long-string
-                  (let ([short-string (substring long-string 0 n)]
-                        [trim 3])
-                    (unless (n . <= . trim)
-                      (let loop ([i trim])
-                        (unless (i . <= . 0)
-                          (string-set! short-string (- n i) #\.)
-                          (loop (sub1 i)))))
-                    short-string)))))
+      ;; drscheme-error-value->string-handler : TST number -> string
+      (define (drscheme-error-value->string-handler x n)
+        (let ([port (open-output-string)])
+          
+          ;; using a string port here means no snips allowed,
+          ;; even though this string may eventually end up
+          ;; displayed in a place where snips are allowed.
+          (print x port)
+          
+          (let* ([long-string (get-output-string port)])
+            (close-output-port port)
+            (if (<= (string-length long-string) n)
+                long-string
+                (let ([short-string (substring long-string 0 n)]
+                      [trim 3])
+                  (unless (n . <= . trim)
+                    (let loop ([i trim])
+                      (unless (i . <= . 0)
+                        (string-set! short-string (- n i) #\.)
+                        (loop (sub1 i)))))
+                  short-string)))))
 
       (define drs-bindings-keymap (make-object keymap:aug-keymap%))
       
@@ -1023,8 +960,7 @@ TODO
              (λ () ; =User=, =Handler=, =No-Breaks=
                (let* ([settings (current-language-settings)]
                       [lang (drscheme:language-configuration:language-settings-language settings)]
-                      [settings (drscheme:language-configuration:language-settings-settings settings)]
-                      [dummy-value (box #f)])
+                      [settings (drscheme:language-configuration:language-settings-settings settings)])
                  (set! get-sexp/syntax/eof 
                        (if complete-program?
                            (send lang front-end/complete-program port settings user-teachpack-cache)
@@ -1045,33 +981,19 @@ TODO
                         (current-error-escape-k (λ () 
                                                   (set! cleanup? #t)
                                                   (k (void)))))
-                      
                       (λ () 
                         (let loop ()
-                          (let ([sexp/syntax/eof 
-                                 ;; this named thunk & application helps drscheme know to cut 
-                                 ;; off part of the stack trace. (too bad not all of it ...)
-                                 ((rec cut-stacktrace-above-here1
-                                    (λ ()
-                                      (begin0 (get-sexp/syntax/eof)
-                                              (void)))))])
+                          (let ([sexp/syntax/eof (get-sexp/syntax/eof)])
                             (unless (eof-object? sexp/syntax/eof)
                               (call-with-break-parameterization
                                (get-user-break-parameterization)
-                               ;; a break exn may be raised right at this point,
-                               ;; in which case the stack won't be in a trimmable state
-                               ;; so we don't complain (above) when we find an untrimmable 
-                               ;; break exn.
                                (λ ()
                                  (call-with-values
-                                  (rec cut-stacktrace-above-here1
-                                    (λ ()
-                                      (begin0 (eval-syntax sexp/syntax/eof)
-                                              (void))))
+                                  (λ ()
+                                    (eval-syntax sexp/syntax/eof))
                                   (λ x (display-results x)))))
                               (loop))))
                         (set! cleanup? #t))
-                      
                       (λ () 
                         (current-error-escape-k saved-error-escape-k)
                         (when cleanup?
@@ -1152,11 +1074,10 @@ TODO
                      (current-error-escape-k (λ () 
 					       (set! cleanup? #t)
 					       (k (void)))))
-                   (rec cut-stacktrace-above-here2
-                     (λ () 
-                       (thunk) 
-                       ; Breaks must be off!
-                       (set! cleanup? #t)))
+		  (λ () 
+                     (thunk) 
+                     ; Breaks must be off!
+                     (set! cleanup? #t))
                    (λ () 
                      (current-error-escape-k saved-error-escape-k)
                      (when cleanup?
@@ -1391,12 +1312,12 @@ TODO
                                    (break-enabled break-ok?)
                                    (unless ub?
                                      (set! user-break-enabled 'user)))
-                                 (λ ()
-                                   (primitive-dispatch-handler eventspace))
-                                 (λ ()
-                                   (unless ub?
-                                     (set! user-break-enabled (break-enabled)))
-                                   (break-enabled #f))))
+                                   (λ ()
+                                     (primitive-dispatch-handler eventspace))
+                                   (λ ()
+                                     (unless ub?
+                                       (set! user-break-enabled (break-enabled)))
+                                     (break-enabled #f))))
                               ; Cleanup after dispatch
                               (λ ()
                                 ;; in principle, the line below might cause

@@ -13,7 +13,7 @@
       ("profj" "libs" "java" "util")))
   (define textbook-pls
     (list (list '("htdch-icon.png" "profj")
-                "How to Design Classes"
+                "How to Design Class Hierarchies"
                 (string-constant experimental-languages)
                 "ProfessorJ"
                 "Beginner"))))

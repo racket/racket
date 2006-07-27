@@ -189,17 +189,14 @@ profile todo:
                            [(begin expr ...)
                             ;; Found a `begin', so expand/eval each contained 
                             ;; expression one at a time 
-                            (let ([exprs (syntax->list #'(expr ...))]
-                                  [last-one (list (void))])
-                              (let i-loop ()
-                                (cond
-                                  [(null? exprs) 
-                                   (apply values last-one)]
-                                  [else 
-                                   (let ([exp (car exprs)])
-                                     (set! exprs (cdr exprs))
-                                     (set! last-one (call-with-values (λ () (loop exp)) list))
-                                     (i-loop))])))]
+                            (let i-loop ([exprs (syntax->list #'(expr ...))]
+                                         [last-one (list (void))])
+                              (cond
+                                [(null? exprs) (apply values last-one)]
+                                [else (i-loop (cdr exprs)
+                                              (call-with-values
+                                               (λ () (loop (car exprs)))
+                                               list))]))]
                            [_else 
                             ;; Not `begin', so proceed with normal expand and eval 
                             (let* ([annotated (annotate-top (expand-syntax top-e) #f)])
