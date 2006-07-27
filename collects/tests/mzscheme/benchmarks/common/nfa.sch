@@ -38,11 +38,11 @@
   (or (state0 (string->list input))
       'fail))
 
-(time (let ([input (string-append (make-string 133 #\a) "bc")])
-        (let loop ([n 10000])
+(time (let ((input (string-append (make-string 133 #\a) "bc")))
+        (let loop ((n 10000))
           (unless (zero? n)
             (recursive-nfa input)
-            (loop (sub1 n))))))
+            (loop (- n 1))))))
 
 
 
