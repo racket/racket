@@ -118,6 +118,8 @@ void (*GC_fixup_xtagged)(void *obj);
 
 #include "my_qsort.c"
 
+static void *park[2];
+
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
@@ -460,6 +462,11 @@ inline static void *allocate(size_t sizeb, int type)
       } else {
 	void *retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
 
+        if (type == PAGE_ATOMIC)
+          *((void **)retval) = NULL; /* init objhead */
+        else
+          bzero(retval, sizeb);
+
 	info = (struct objhead *)retval;
 	info->type = type;
 	info->size = sizew;
@@ -486,8 +493,6 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
 {
   unsigned long newsize;
 
-  return GC_malloc_one_tagged(sizeb);
-
   sizeb += WORD_SIZE;
   sizeb = ALIGN_BYTES_SIZE(sizeb);
   newsize = gen0_alloc_page->size + sizeb;
@@ -498,6 +503,8 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
     void *retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
     struct objhead *info = (struct objhead *)retval;
 
+    bzero(retval, sizeb);
+
     /* info->type = type; */ /* We know that the type field is already 0 */
     info->size = (sizeb >> gcLOG_WORD_SIZE);
     gen0_alloc_page->size = newsize;
@@ -505,6 +512,48 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
     
     return PTR(NUM(retval) + WORD_SIZE);
   }
+}
+
+void *GC_malloc_pair(void *car, void *cdr)
+{
+  size_t sizeb;
+  unsigned long newsize;
+  void *retval;
+
+  sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object))) + WORD_SIZE);
+  newsize = gen0_alloc_page->size + sizeb;
+
+  if(newsize > GEN0_PAGE_SIZE) {
+    park[0] = car;
+    park[1] = cdr;
+    retval = GC_malloc_one_tagged(sizeb - WORD_SIZE);
+    car = park[0];
+    cdr = park[1];
+    park[0] = NULL;
+    park[1] = NULL;
+  } else {
+    struct objhead *info;
+
+    retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
+    info = (struct objhead *)retval;
+
+    ((void **)retval)[0] = 0;
+    ((void **)retval)[1] = 0;
+    bzero(retval, sizeb); /* <-- */
+
+    /* info->type = type; */ /* We know that the type field is already 0 */
+    info->size = (sizeb >> gcLOG_WORD_SIZE);
+    gen0_alloc_page->size = newsize;
+    gen0_current_size += sizeb;
+
+    retval = PTR(NUM(retval) + WORD_SIZE);
+  }
+    
+  ((short *)retval)[0] = scheme_pair_type;
+  ((void **)retval)[1] = car;
+  ((void **)retval)[2] = cdr;
+  
+  return retval;
 }
 
 long GC_malloc_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW); }
@@ -541,11 +590,11 @@ inline static void resize_gen0(unsigned long new_size)
       
       break;
     } else {
-      void **start = PPTR(work) + HEADER_SIZEW;
-      void **end = PPTR(NUM(work) + work->size);
-
+      /* We used to zero out the memory here, but its
+         better to zero out on allocation, instead:
+         better locality, and we don't have to zero
+         for atomic allocations. */
       alloced_size += GEN0_PAGE_SIZE;
-      while(start < end) *start++ = NULL;
       work->size = HEADER_SIZEB;
       prev = work;
       work = work->next;
@@ -785,7 +834,6 @@ static void *get_backtrace(struct mpage *page, void *ptr)
 /*****************************************************************************/
 void **GC_variable_stack;
 static unsigned long stack_base;
-static void *park[2];
 
 void **GC_get_variable_stack()
 { 
@@ -1026,7 +1074,7 @@ void GC_finalization_weak_ptr(void **p, int offset)
 
   park[0] = p; wfnl = GC_malloc_atomic(sizeof(struct weak_finalizer));
   p = park[0]; park[0] = NULL;
-  wfnl->p = p; wfnl->offset = offset * sizeof(void*);
+  wfnl->p = p; wfnl->offset = offset * sizeof(void*); wfnl->saved = NULL;
   wfnl->next = weak_finalizers; weak_finalizers = wfnl;
 }
 
@@ -1724,7 +1772,7 @@ void designate_modified(void *p)
 
 #include "sighand.c"
 
-void GC_init_type_tags(int count, int weakbox, int ephemeron, int weakarray)
+void GC_init_type_tags(int count, int pair, int weakbox, int ephemeron, int weakarray)
 {
   static int initialized = 0;
 
@@ -2593,6 +2641,20 @@ static void gc_overmem_abort()
   GCERR((GCOUTF, "ERROR: out of memory during collection!\n"));
 }
 
+#if 0
+extern double scheme_get_inexact_milliseconds(void);
+# define TIME_DECLS() double start, task_start
+# define TIME_INIT() start = task_start = scheme_get_inexact_milliseconds(); fprintf(stderr, "GC (%d):\n", gc_full)
+# define TIME_STEP(task) fprintf(stderr, "  %s: %lf\n", task, scheme_get_inexact_milliseconds() - task_start); \
+                         task_start = scheme_get_inexact_milliseconds()
+# define TIME_DONE() fprintf(stderr, " Total: %lf\n", scheme_get_inexact_milliseconds() - start)
+#else
+# define TIME_DECLS() /**/
+# define TIME_INIT() /**/
+# define TIME_STEP(task) /**/
+# define TIME_DONE() /**/
+#endif
+
 static void garbage_collect(int force_full)
 {
   static unsigned long number = 0;
@@ -2600,6 +2662,7 @@ static void garbage_collect(int force_full)
   static unsigned int running_finalizers = 0;
   static unsigned long last_full_mem_use = (20 * 1024 * 1024);
   unsigned long old_mem_use = memory_in_use;
+  TIME_DECLS();
 
   /* determine if this should be a full collection or not */
   gc_full = force_full || !generations_available 
@@ -2616,21 +2679,32 @@ static void garbage_collect(int force_full)
   in_unsafe_allocation_mode = 1;
   unsafe_allocation_abort = gc_overmem_abort;
 
+  TIME_INIT();
+
   /* inform the system (if it wants us to) that we're starting collection */
   if(GC_collect_start_callback)
     GC_collect_start_callback();
+
+  TIME_STEP("started");
 
   prepare_pages_for_collection();
   /* at this point, the page map should only include pages that contain
      collectable objects */
 
+  TIME_STEP("prepared");
+
   /* mark and repair the roots for collection */
   mark_backpointers();
+  TIME_STEP("backpointered");
   mark_finalizer_structs();
   mark_weak_finalizer_structs();
+  TIME_STEP("pre-rooted");
   mark_roots();
   mark_immobiles();
+  TIME_STEP("rooted");
   GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base);
+
+  TIME_STEP("stacked");
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
@@ -2652,12 +2726,18 @@ static void garbage_collect(int force_full)
      removed */
   clear_stack_pages();  
 #endif
+  
+  TIME_STEP("marked");
 
   zero_weak_boxes(); 
   zero_weak_arrays();
   zero_remaining_ephemerons();
 
+  TIME_STEP("zeroed");
+
   if(gc_full) do_heap_compact();
+
+  TIME_STEP("compacted");
 
   /* do some cleanup structures that either change state based on the
      heap state after collection or that become useless based on changes
@@ -2665,20 +2745,28 @@ static void garbage_collect(int force_full)
   clean_up_thread_list();
   clean_up_owner_table();
   clean_up_account_hooks();
+  TIME_STEP("cleaned");
   repair_finalizer_structs();
   repair_weak_finalizer_structs();
   repair_roots();
   repair_immobiles();
   GC_fixup_variable_stack(GC_variable_stack, 0, gc_stack_base);
+  TIME_STEP("reparied roots");
   repair_heap();
+  TIME_STEP("repaired");
   clean_up_heap();
+  TIME_STEP("cleaned heap");
   reset_nursery();
+  TIME_STEP("reset nursurey");
   do_btc_accounting();
+  TIME_STEP("accounted");
   if (generations_available)
     protect_old_pages();
   if (gc_full)
     flush_freed_pages();
   reset_finalizer_tree();
+
+  TIME_STEP("reset");
 
   /* new we do want the allocator freaking if we go over half */
   in_unsafe_allocation_mode = 0;
@@ -2700,6 +2788,10 @@ static void garbage_collect(int force_full)
   /* inform the system (if it wants us to) that we're done with collection */
   if(GC_collect_start_callback)
     GC_collect_end_callback();
+
+  TIME_STEP("ended");
+
+  TIME_DONE();
 
   /* run any queued finalizers, EXCEPT in the case where this collection was
      triggered by the execution of a finalizer. The outside world needs this

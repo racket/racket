@@ -267,7 +267,7 @@ static int main_after_dlls(int argc, MAIN_char **MAIN_argv)
 
 #if defined(MZ_PRECISE_GC)
   stack_start = (void *)&__gc_var_stack__;
-  GC_init_type_tags(_scheme_last_type_, scheme_weak_box_type, scheme_ephemeron_type, scheme_rt_weak_array);
+  GC_init_type_tags(_scheme_last_type_, scheme_pair_type, scheme_weak_box_type, scheme_ephemeron_type, scheme_rt_weak_array);
 #endif
 
   scheme_set_stack_base(stack_start, 1);

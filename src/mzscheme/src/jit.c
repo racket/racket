@@ -1129,6 +1129,21 @@ static int is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
   return (type > _scheme_values_types_);
 }
 
+static int is_constant_and_avoids_r1(Scheme_Object *obj)
+{
+  Scheme_Type t = SCHEME_TYPE(obj);
+
+  if (SAME_TYPE(t, scheme_toplevel_type)) {
+    return ((SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_CONST)
+            ? 1
+            : 0);
+  } else if (SAME_TYPE(t, scheme_local_type)) {
+    return 1;
+  } else
+    return (t >= _scheme_compiled_values_types_);
+}
+
+
 /*========================================================================*/
 /*                         application codegen                            */
 /*========================================================================*/
@@ -2541,6 +2556,71 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   return 0;
 }
 
+static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, int order_matters)
+{
+  int simple1, simple2;
+  
+  simple1 = is_constant_and_avoids_r1(rand1);
+  simple2 = is_constant_and_avoids_r1(rand2);
+
+  if (!simple1) {
+    if (simple2) {
+      mz_runstack_skipped(jitter, 2);
+
+      generate_non_tail(rand1, jitter, 0, 1);
+      CHECK_LIMIT();
+      jit_movr_p(JIT_R1, JIT_R0);
+
+      generate(rand2, jitter, 0, 0);
+      CHECK_LIMIT();
+
+      if (order_matters) {
+        /* Swap arguments: */
+        jit_movr_p(JIT_R2, JIT_R0);
+        jit_movr_p(JIT_R0, JIT_R1);
+        jit_movr_p(JIT_R1, JIT_R2);
+      }
+
+      mz_runstack_unskipped(jitter, 2);
+    } else {
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      mz_runstack_pushed(jitter, 1);
+      mz_runstack_skipped(jitter, 1);
+
+      generate_non_tail(rand1, jitter, 0, 1);
+      CHECK_LIMIT();
+      jit_str_p(JIT_RUNSTACK, JIT_R0);
+
+      generate_non_tail(rand2, jitter, 0, 1);
+      CHECK_LIMIT();
+
+      jit_movr_p(JIT_R1, JIT_R0);
+      jit_ldr_p(JIT_R0, JIT_RUNSTACK);
+
+      mz_runstack_unskipped(jitter, 1);
+      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      mz_runstack_popped(jitter, 1);
+    }
+  } else {
+    mz_runstack_skipped(jitter, 2);
+
+    if (simple2) {
+      generate(rand2, jitter, 0, 0);
+    } else {
+      generate_non_tail(rand2, jitter, 0, 1);
+    }
+    CHECK_LIMIT();
+    jit_movr_p(JIT_R1, JIT_R0);
+
+    generate(rand1, jitter, 0, 0);
+    CHECK_LIMIT();
+
+    mz_runstack_unskipped(jitter, 2);
+  }
+
+  return 1;
+}
+
 static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, int is_tail, int multi_ok, 
 				   jit_insn **for_branch, int branch_short)
 {
@@ -2608,22 +2688,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       __END_SHORT_JUMPS__(branch_short);
     } else {
       /* Two complex expressions: */
-      mz_runstack_skipped(jitter, 1);
-
-      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
-      mz_runstack_pushed(jitter, 1);
-      
-      generate_non_tail(a2, jitter, 0, 1);
-      CHECK_LIMIT();
-      jit_str_p(JIT_RUNSTACK, JIT_R0);
-      generate_non_tail(a1, jitter, 0, 1);
-      CHECK_LIMIT();
-      jit_ldr_p(JIT_R1, JIT_RUNSTACK);
-
-      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
-      mz_runstack_popped(jitter, 1);
-      
-      mz_runstack_unskipped(jitter, 1);
+      generate_two_args(a1, a2, jitter, 0);
       
       __START_SHORT_JUMPS__(branch_short);
       
@@ -2689,7 +2754,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       else
 	which = 2;
 
-      LOG_IT(("inlined vector-ref\n"));
+      LOG_IT(("inlined vector-/string-/bytes-ref\n"));
 
       simple = (SCHEME_INTP(app->rand2)
 		&& (SCHEME_INT_VAL(app->rand2) >= 0));
@@ -2748,6 +2813,24 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	mz_runstack_unskipped(jitter, 2);
       else
 	mz_runstack_unskipped(jitter, 1);
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "cons")) {
+      LOG_IT(("inlined cons\n"));
+
+      generate_two_args(app->rand1, app->rand2, jitter, 1);
+      CHECK_LIMIT();
+
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+      mz_prepare(2);
+      jit_pusharg_p(JIT_R1);
+      jit_pusharg_p(JIT_R0);
+#ifdef MZ_PRECISE_GC
+      (void)mz_finish(GC_malloc_pair);
+#else
+      (void)mz_finish(scheme_make_pair);
+#endif
+      jit_retval(JIT_R0);
 
       return 1;
     }
@@ -3186,6 +3269,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
   case scheme_toplevel_type:
     {
       int pos;
+      /* Other parts of the JIT rely on this code not modifying R1 */
       START_JIT_DATA();
       LOG_IT(("top-level\n"));
       /* Load global array: */
@@ -3207,7 +3291,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
     }
   case scheme_local_type:
     {
-      /* Other parts of thie JIT rely on this code modifying R0, only */
+      /* Other parts of the JIT rely on this code modifying R0, only */
       int pos;
       START_JIT_DATA();
       LOG_IT(("local\n"));
@@ -3899,7 +3983,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       Scheme_Type type = SCHEME_TYPE(obj);
       START_JIT_DATA();
 
-      /* Other parts of thie JIT rely on this code modifying R0, only */
+      /* Other parts of the JIT rely on this code modifying R0, only */
 
       LOG_IT(("const\n"));
 

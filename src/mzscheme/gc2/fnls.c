@@ -86,6 +86,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
   park[1] = data;
 
   fnl = (Fnl *)GC_malloc_atomic(sizeof(Fnl));
+  memset(fnl, 0, sizeof(Fnl));
 
   p = park[0];
   park[0] = NULL;

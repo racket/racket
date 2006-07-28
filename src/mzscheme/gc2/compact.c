@@ -89,8 +89,8 @@ typedef short Type_Tag;
 /* Debugging and performance tools: */
 #define TIME 0
 #define SEARCH 0
-#define CHECKS 1
-#define CHECK_STACK_PTRS 1
+#define CHECKS 0
+#define CHECK_STACK_PTRS 0
 #define NOISY 0
 #define MARK_STATS 0
 #define ALLOC_GC_PHASE 0
@@ -159,6 +159,7 @@ void **GC_get_variable_stack() { return GC_variable_stack; }
 void GC_set_variable_stack(void **p) { GC_variable_stack = p; }
 
 /********************* Type tags *********************/
+Type_Tag pair_tag = 42; /* set by client */
 Type_Tag weak_box_tag = 42; /* set by client */
 Type_Tag ephemeron_tag = 42; /* set by client */
 Type_Tag weak_array_tag  = 42; /* set by client */
@@ -466,8 +467,9 @@ void GC_set_stack_base(void *base)
   stack_base = (unsigned long)base;
 }
 
-void GC_init_type_tags(int count, int weakbox, int ephemeron, int weakarray)
+void GC_init_type_tags(int count, int pair, int weakbox, int ephemeron, int weakarray)
 {
+  pair_tag = pair;
   weak_box_tag = weakbox;
   ephemeron_tag = ephemeron;
   weak_array_tag = weakarray;
@@ -3843,6 +3845,23 @@ void *GC_malloc_one_tagged(size_t size_in_bytes)
 void *GC_malloc_one_small_tagged(size_t size_in_bytes)
 {
   return GC_malloc_one_tagged(size_in_bytes);
+}
+
+void *GC_malloc_pair(void *a, void *b)
+{
+  void *p;
+
+  park[0] = a;
+  park[1] = b;
+  p = GC_malloc_one_tagged(3 << LOG_WORD_SIZE);
+  a = park[0];
+  b = park[1];
+
+  ((Type_Tag *)p)[0] = pair_tag;
+  ((void **)p)[1] = a;
+  ((void **)p)[2] = b;
+
+  return p;
 }
 
 #ifndef gcINLINE

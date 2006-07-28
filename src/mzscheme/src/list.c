@@ -130,11 +130,9 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("pair?", p, env);
 
-  scheme_add_global_constant ("cons",
-			      scheme_make_prim_w_arity(cons_prim,
-						       "cons",
-						       2, 2),
-			      env);
+  p = scheme_make_prim_w_arity(cons_prim, "cons", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant ("cons", p, env);
 
   p = scheme_make_noncm_prim(scheme_checked_car, "car", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -530,7 +528,9 @@ scheme_init_list (Scheme_Env *env)
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
+#ifndef MZ_PRECISE_GC
   Scheme_Object *cons;
+#endif
 
 #if 0
   if (!car || !cdr
@@ -541,11 +541,15 @@ Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
     *(long *)0x0 = 1;
 #endif
 
+#ifdef MZ_PRECISE_GC
+  return GC_malloc_pair(car, cdr);
+#else
   cons = scheme_alloc_object();
   cons->type = scheme_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
   return cons;
+#endif
 }
 
 Scheme_Object *scheme_make_raw_pair(Scheme_Object *car, Scheme_Object *cdr)
@@ -823,53 +827,43 @@ list_p_prim (int argc, Scheme_Object *argv[])
   return scheme_false;
 }
 
-static Scheme_Object *
-list_exec (int argc, Scheme_Object *argv[], int star, int immut)
-{
-  int i;
-  Scheme_Object *l;
+#define NORMAL_LIST_INIT() l = scheme_null
+#define STAR_LIST_INIT() --argc; l = argv[argc]
+#ifndef MZ_PRECISE_GC
+# define GC_malloc_pair scheme_make_pair
+#endif
 
-  if (star) {
-    --argc;
-    l = argv[argc];
-  } else
-    l = scheme_null;
-
-  if (immut) {
-    for (i = argc ; i--; ) {
-      l = scheme_make_immutable_pair(argv[i], l);
-    }
-  } else {
-    for (i = argc ; i--; ) {
-      l = scheme_make_pair(argv[i], l);
-    }
-  }
-
-  return l;
-}
+#define LIST_BODY(INIT, scheme_make_pair)        \
+  int i;                                         \
+  Scheme_Object *l;                              \
+  INIT;                                          \
+  for (i = argc ; i--; ) {                       \
+    l = scheme_make_pair(argv[i], l);            \
+  }                                              \
+  return l
 
 static Scheme_Object *
 list_prim (int argc, Scheme_Object *argv[])
 {
-  return list_exec(argc, argv, 0, 0);
+  LIST_BODY(NORMAL_LIST_INIT(), GC_malloc_pair);
 }
 
 static Scheme_Object *
 list_immutable_prim (int argc, Scheme_Object *argv[])
 {
-  return list_exec(argc, argv, 0, 1);
+  LIST_BODY(NORMAL_LIST_INIT(), scheme_make_immutable_pair);
 }
 
 static Scheme_Object *
 list_star_prim (int argc, Scheme_Object *argv[])
 {
-  return list_exec(argc, argv, 1, 0);
+  LIST_BODY(STAR_LIST_INIT(), GC_malloc_pair);
 }
 
 static Scheme_Object *
 list_star_immutable_prim (int argc, Scheme_Object *argv[])
 {
-  return list_exec(argc, argv, 1, 1);
+  LIST_BODY(STAR_LIST_INIT(), scheme_make_immutable_pair);
 }
 
 static Scheme_Object *
