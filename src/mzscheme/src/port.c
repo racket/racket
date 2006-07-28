@@ -123,7 +123,8 @@ static void init_thread_memory();
 typedef struct Win_FD_Input_Thread {
   /* This is malloced for use in a Win32 thread */
   HANDLE fd;
-  volatile int avail, err, eof, checking;
+  volatile int avail, err, checking;
+  HANDLE eof;
   unsigned char *buffer;
   HANDLE checking_sema, ready_sema, you_clean_up_sema;
 } Win_FD_Input_Thread;
@@ -4760,6 +4761,10 @@ static long fd_get_string(Scheme_Input_Port *port,
 	   Extract data made available by the reader thread. */
 	if (fip->th->eof) {
 	  bc = 0;
+	  if (fip->th->eof != INVALID_HANDLE_VALUE) {
+	    ReleaseSemaphore(fip->th->eof, 1, NULL);
+	    fip->th->eof = NULL;
+	  }
 	} else if (fip->th->err) {
 	  bc = -1;
 	  errno = fip->th->err;
@@ -4857,6 +4862,11 @@ fd_close_input(Scheme_Input_Port *port)
     /* -1 for checking means "shut down" */
     fip->th->checking = -1;
     ReleaseSemaphore(fip->th->checking_sema, 1, NULL);
+
+    if (fip->th->eof && (fip->th->eof != INVALID_HANDLE_VALUE)) {
+      ReleaseSemaphore(fip->th->eof, 1, NULL);
+      fip->th->eof = NULL;
+    }
 
     /* Try to get out of cleaning up the records (since they can't be
        cleaned until the thread is also done: */
@@ -5020,7 +5030,7 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
     th->fd = (HANDLE)fd;
     th->avail = 0;
     th->err = 0;
-    th->eof = 0;
+    th->eof = NULL;
     th->checking = 0;
     
     sm = CreateSemaphore(NULL, 0, 1, NULL);
@@ -5048,6 +5058,8 @@ START_XFORM_SKIP;
 static long WindowsFDReader(Win_FD_Input_Thread *th)
 {
   DWORD toget, got;
+  int perma_eof = 0;
+  HANDLE eof_wait = NULL;
 
   if (GetFileType((HANDLE)th->fd) == FILE_TYPE_PIPE) {
     /* Reading from a pipe will return early when data is available. */
@@ -5057,7 +5069,7 @@ static long WindowsFDReader(Win_FD_Input_Thread *th)
     toget = 1;
   }
 
-  while (!th->eof && !th->err) {
+  while (!perma_eof && !th->err) {
     /* Wait until we're supposed to look for input: */
     WaitForSingleObject(th->checking_sema, INFINITE);
 
@@ -5066,19 +5078,28 @@ static long WindowsFDReader(Win_FD_Input_Thread *th)
 
     if (ReadFile(th->fd, th->buffer, toget, &got, NULL)) {
       th->avail = got;
-      if (!got)
-	th->eof = 1;
+      if (!got) {
+	/* We interpret a send of 0 bytes as a mid-stream EOF. */
+	eof_wait = CreateSemaphore(NULL, 0, 1, NULL);
+	th->eof = eof_wait;
+      }
     } else {
       int err;
       err = GetLastError();
-      if (err == ERROR_BROKEN_PIPE)
-	th->eof = 1;
-      else
+      if (err == ERROR_BROKEN_PIPE) {
+	th->eof = INVALID_HANDLE_VALUE;
+	perma_eof = 1;
+      } else
 	th->err = err;
     }
 
     /* Notify main program that we found something: */
     ReleaseSemaphore(th->ready_sema, 1, NULL);
+
+    if (eof_wait) {
+      WaitForSingleObject(eof_wait, INFINITE);
+      eof_wait = NULL;
+    }
   }
 
   /* We have to clean up if the main program has abandoned us: */
