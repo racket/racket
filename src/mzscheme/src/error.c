@@ -49,6 +49,7 @@ static Scheme_Object *raise_user_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_syntax_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_type_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *error_escape_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_value_string_handler(int, Scheme_Object *[]);
@@ -70,6 +71,8 @@ static Scheme_Object *def_err_val_proc;
 static Scheme_Object *def_error_esc_proc;
 static Scheme_Object *default_display_handler, *emergency_display_handler;
 Scheme_Object *scheme_def_exit_proc;
+
+Scheme_Object *scheme_raise_arity_error_proc;
 
 static char *init_buf(long *len, long *blen);
 static char *prepared_buf;
@@ -473,6 +476,8 @@ void scheme_init_error(Scheme_Env *env)
   if (!scheme_console_output)
     scheme_console_output = default_output;
 
+  REGISTER_SO(scheme_raise_arity_error_proc);
+
   scheme_add_global_constant("error",
 			     scheme_make_prim_w_arity(error,
 						      "error",
@@ -497,6 +502,12 @@ void scheme_init_error(Scheme_Env *env)
 			     scheme_make_prim_w_arity(raise_mismatch_error,
 						      "raise-mismatch-error",
 						      3, 3),
+			     env);
+  scheme_raise_arity_error_proc = scheme_make_prim_w_arity(raise_arity_error,
+                                                           "raise-arity-error",
+                                                           2, -1);
+  scheme_add_global_constant("raise-arity-error",
+			     scheme_raise_arity_error_proc,
 			     env);
   scheme_add_global_constant("error-display-handler",
 			     scheme_register_parameter(error_display_handler,
@@ -839,6 +850,8 @@ static char *make_arity_expect_string(const char *name, int namelen,
 				      int minc, int maxc,
 				      int argc, Scheme_Object **argv,
 				      long *_len, int is_method)
+/* minc == -1 => name is really a case-lambda, native closure, or proc-struct.
+   minc == -2 => use generic "no matching clause" message */
 {
   long len, pos, slen;
   int xargc, xminc, xmaxc;
@@ -928,7 +941,8 @@ static char *make_arity_expect_string(const char *name, int namelen,
 
 void scheme_wrong_count_m(const char *name, int minc, int maxc,
 			  int argc, Scheme_Object **argv, int is_method)
-     /* minc == -1 => name is really a case-lambda, native closure, or proc-struct */
+/* minc == -1 => name is really a case-lambda, native closure, or proc-struct.
+   minc == -2 => use generic "no matching clause" message */
 {
   char *s;
   long len;
@@ -1936,6 +1950,76 @@ static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[])
   scheme_arg_mismatch(scheme_symbol_val(argv[0]),
 		      SCHEME_BYTE_STR_VAL(s),
 		      argv[2]);
+
+  return NULL;
+}
+
+static int is_arity_at_least(Scheme_Object *v)
+{
+  return (SCHEME_STRUCTP(v)
+          && scheme_is_struct_instance(scheme_arity_at_least, v)
+          && scheme_nonneg_exact_p(((Scheme_Structure *)v)->slots[0]));
+}
+
+static int is_arity_list(Scheme_Object *l)
+{
+  int c;
+  Scheme_Object *a;
+
+  c = scheme_proper_list_length(l);
+  if (c < 0) return 0;
+  while (!SCHEME_NULLP(l)) {
+    a = SCHEME_CAR(l);
+    if (!scheme_nonneg_exact_p(a)
+        && !scheme_nonneg_exact_p(a))
+      return 0;
+    l = SCHEME_CDR(l);
+  }
+
+  return 1;
+}
+
+static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object **args;
+  const char *name;
+  int minc, maxc;
+
+  if (!SCHEME_SYMBOLP(argv[0]) && !SCHEME_PROCP(argv[0]))
+    scheme_wrong_type("raise-arity-error", "symbol or procedure", 0, argc, argv);
+  if (!scheme_nonneg_exact_p(argv[1]) 
+      && !is_arity_at_least(argv[1])
+      && !is_arity_list(argv[1]))
+    scheme_wrong_type("raise-mismatch-error", "arity (integer, arity-at-least, or list)", 1, argc, argv);
+
+  args = MALLOC_N(Scheme_Object*, argc - 2);
+  memcpy(args, argv + 2, sizeof(Scheme_Object*) * (argc - 2));
+
+  if (SCHEME_SYMBOLP(argv[0]))
+    name = scheme_symbol_val(argv[0]);
+  else {
+    int len;
+    name = scheme_get_proc_name(argv[0], &len, 1);
+  }
+
+  if (SCHEME_INTP(argv[1])) {
+    minc = maxc = SCHEME_INT_VAL(argv[1]);
+  } else if (is_arity_at_least(argv[1])) {
+    Scheme_Object *v;
+    v = ((Scheme_Structure *)argv[1])->slots[0];
+    if (SCHEME_INTP(v)) {
+      minc = SCHEME_INT_VAL(v);
+      maxc = -1;
+    } else {
+      minc = -2;
+      maxc = 0;
+    }
+  } else {
+    minc = -2;
+    maxc = 0;
+  }
+
+  scheme_wrong_count_m(name, minc, maxc, argc - 2, args, 0);
 
   return NULL;
 }

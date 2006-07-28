@@ -435,7 +435,7 @@ static int unclosed_proc_MARK(void *p) {
   gcMARK(d->code);
   gcMARK(d->closure_map);
 #ifdef MZ_USE_JIT
-  gcMARK(d->native_code);
+  gcMARK(d->u.native_code);
   gcMARK(d->context);
 #endif
 
@@ -450,7 +450,7 @@ static int unclosed_proc_FIXUP(void *p) {
   gcFIXUP(d->code);
   gcFIXUP(d->closure_map);
 #ifdef MZ_USE_JIT
-  gcFIXUP(d->native_code);
+  gcFIXUP(d->u.native_code);
   gcFIXUP(d->context);
 #endif
 
@@ -780,7 +780,9 @@ static int closed_prim_proc_FIXUP(void *p) {
 
 static int scm_closure_SIZE(void *p) {
   Scheme_Closure *c = (Scheme_Closure *)p;
-  int closure_size = ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size;
+  int closure_size = (c->code 
+                      ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
+                      : 0);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
@@ -789,7 +791,9 @@ static int scm_closure_SIZE(void *p) {
 
 static int scm_closure_MARK(void *p) {
   Scheme_Closure *c = (Scheme_Closure *)p;
-  int closure_size = ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size;
+  int closure_size = (c->code 
+                      ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
+                      : 0);
 
 
   int i = closure_size;
@@ -804,7 +808,9 @@ static int scm_closure_MARK(void *p) {
 
 static int scm_closure_FIXUP(void *p) {
   Scheme_Closure *c = (Scheme_Closure *)p;
-  int closure_size = ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size;
+  int closure_size = (c->code 
+                      ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
+                      : 0);
 
 
   int i = closure_size;
@@ -2431,6 +2437,8 @@ static int mark_resolve_info_MARK(void *p) {
   gcMARK(i->new_pos);
   gcMARK(i->old_stx_pos);
   gcMARK(i->flags);
+  gcMARK(i->lifts);
+  gcMARK(i->lifted);
   gcMARK(i->next);
 
   return
@@ -2445,6 +2453,8 @@ static int mark_resolve_info_FIXUP(void *p) {
   gcFIXUP(i->new_pos);
   gcFIXUP(i->old_stx_pos);
   gcFIXUP(i->flags);
+  gcFIXUP(i->lifts);
+  gcFIXUP(i->lifted);
   gcFIXUP(i->next);
 
   return
@@ -4517,6 +4527,7 @@ static int mark_jit_state_SIZE(void *p) {
 static int mark_jit_state_MARK(void *p) {
   mz_jit_state *j = (mz_jit_state *)p;
   gcMARK(j->mappings);
+  gcMARK(j->self_data);
   return
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }
@@ -4524,6 +4535,7 @@ static int mark_jit_state_MARK(void *p) {
 static int mark_jit_state_FIXUP(void *p) {
   mz_jit_state *j = (mz_jit_state *)p;
   gcFIXUP(j->mappings);
+  gcFIXUP(j->self_data);
   return
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }

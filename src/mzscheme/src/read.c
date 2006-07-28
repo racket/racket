@@ -4232,6 +4232,22 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	port->symtab[l] = v;
       }
       break;
+    case CPT_CLOSURE:
+      {
+        Scheme_Closure *cl;
+        l = read_compact_number(port);
+        cl = scheme_malloc_empty_closure();
+        port->symtab[l] = (Scheme_Object *)cl;
+        v = read_compact(port, 0);
+        if (!SAME_TYPE(SCHEME_TYPE(v), scheme_closure_type)
+            || ((Scheme_Closure *)v)->code->closure_size) {
+          scheme_ill_formed_code(port);
+          return NULL;
+        }
+        cl->code = ((Scheme_Closure *)v)->code;
+        v = (Scheme_Object *)cl;
+        break;
+      }
     case CPT_SMALL_LOCAL_START:
     case CPT_SMALL_LOCAL_UNBOX_START:
       {
@@ -4670,9 +4686,11 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
     Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)result;
 
     scheme_validate_code(rp, top->code,
+                         scheme_make_hash_table(SCHEME_hash_ptr),
 			 top->max_let_depth,
 			 top->prefix->num_toplevels,
-			 top->prefix->num_stxes);
+			 top->prefix->num_stxes,
+			 top->prefix->num_lifts);
     /* If no exception, the the resulting code is ok. */
   } else
     scheme_ill_formed_code(rp);
@@ -5283,6 +5301,9 @@ static Scheme_Object *copy_to_protect(Scheme_Object *v, Scheme_Object *src, Sche
 
 static Scheme_Object *copy_to_protect_placeholders(Scheme_Object *v, Scheme_Object *src, Scheme_Hash_Table **oht)
 {
+  /* This function turns any cycles in the data into placeholder-based
+     cycles, and it generally copies the data to avoid mutation (which can
+     introduce cycles before placeholders are later resolved). */
   Scheme_Hash_Table *ht;
   ht = scheme_make_hash_table(SCHEME_hash_ptr);
   return copy_to_protect(v, src, ht, oht);

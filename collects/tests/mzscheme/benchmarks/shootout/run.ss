@@ -8,7 +8,7 @@
       ("cheapconcurrency.ss")
       ("echo.ss" . "150000")
       ("except.ss" . "2500000")
-      ("fannkuch.ss")
+      ("fannkuch.ss" . "10")
       ("fasta.ss")
       ("fibo.ss" . "32")
       ("hash.ss" . "100000")

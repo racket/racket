@@ -1670,9 +1670,23 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  if (SCHEME_TYPE(obj) == scheme_closure_type) {
 	    Scheme_Closure *closure = (Scheme_Closure *)obj;
 	    if (ZERO_SIZED_CLOSUREP(closure)) {
-	      /* Print original `lambda' code: */
-	      compact = print((Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(closure), notdisplay, compact, ht, symtab, rnht, pp);
-	      done = 1;
+	      /* Print original `lambda' code. Closure conversion can cause
+                 an empty closure to be duplicated in the code tree, so hash it. */
+              Scheme_Object *idx;
+              idx = scheme_hash_get(symtab, obj);
+              if (idx) {
+                print_compact(pp, CPT_SYMREF);
+                print_compact_number(pp, SCHEME_INT_VAL(idx));
+              } else {
+                idx = scheme_make_integer(symtab->count);
+                scheme_hash_set(symtab, obj, idx);
+                print_compact(pp, CPT_CLOSURE);
+                print_compact_number(pp, SCHEME_INT_VAL(idx));
+
+                print((Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(closure), notdisplay, compact, ht, symtab, rnht, pp);
+              }
+              compact = 1;
+              done = 1;
 	    }
 	  } else if (SCHEME_TYPE(obj) == scheme_case_closure_type) {
 	    obj = scheme_unclose_case_lambda(obj, 0);

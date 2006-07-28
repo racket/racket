@@ -7110,7 +7110,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       }
     }
 
-    /* Set real CWD - and hope no other thread changes it! */
+    /* Set real CWD before spawn: */
     tcd = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
     scheme_os_setcwd(SCHEME_BYTE_STR_VAL(tcd), 0);
 

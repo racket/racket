@@ -1710,7 +1710,7 @@ int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
 /* administration / initialization                                           */
 /*****************************************************************************/
 
-static int generations_available = 0;
+static int generations_available = 1;
 
 void designate_modified(void *p)
 {
@@ -2608,7 +2608,6 @@ static void garbage_collect(int force_full)
 /* 	 gc_full, force_full, !generations_available, */
 /* 	 (since_last_full > 100), (memory_in_use > (2 * last_full_mem_use))); */
   
-
   number++; 
   INIT_DEBUG_FILE(); DUMP_HEAP();
 

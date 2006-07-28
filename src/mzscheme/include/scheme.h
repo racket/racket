@@ -747,7 +747,7 @@ typedef struct Scheme_Hash_Table
   Scheme_Inclhash_Object iso;
   int size; /* power of 2 */
   int count;
-    Scheme_Object **keys;
+  Scheme_Object **keys;
   Scheme_Object **vals;
   void (*make_hash_indices)(void *v, long *h1, long *h2);
   int (*compare)(void *v1, void *v2);

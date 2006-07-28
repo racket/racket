@@ -24,6 +24,7 @@
 
 /* globals */
 Scheme_Object *scheme_arity_at_least, *scheme_date;
+Scheme_Object *scheme_make_arity_at_least;
 Scheme_Object *scheme_source_property;
 
 /* locals */
@@ -169,6 +170,7 @@ scheme_init_struct (Scheme_Env *env)
 
   /* Add arity structure */
   REGISTER_SO(scheme_arity_at_least);
+  REGISTER_SO(scheme_make_arity_at_least);
   scheme_arity_at_least = scheme_make_struct_type_from_string("arity-at-least", NULL, 1, NULL, NULL, 0);
   as_names = scheme_make_struct_names_from_array("arity-at-least",
 						 1, arity_fields,
@@ -176,6 +178,7 @@ scheme_init_struct (Scheme_Env *env)
 						 &as_count);
   as_values = scheme_make_struct_values(scheme_arity_at_least, as_names, as_count, 
 					BUILTIN_STRUCT_FLAGS);
+  scheme_make_arity_at_least = as_values[1];
   for (i = 0; i < as_count - 1; i++) {
     scheme_add_global_constant(scheme_symbol_val(as_names[i]), as_values[i],
 			       env);

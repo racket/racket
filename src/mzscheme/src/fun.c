@@ -677,10 +677,10 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   data = (Scheme_Closure_Data *)code;
   
 #ifdef MZ_USE_JIT
-  if (data->native_code) {
+  if (data->u.native_code) {
     Scheme_Object *nc;
 
-    nc = scheme_make_native_closure(data->native_code);
+    nc = scheme_make_native_closure(data->u.native_code);
 
     if (close) {
       runstack = MZ_RUNSTACK;
@@ -722,31 +722,53 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   return (Scheme_Object *)closure;
 }
 
+Scheme_Closure *scheme_malloc_empty_closure()
+{
+  Scheme_Closure *cl;
+
+  cl = (Scheme_Closure *)scheme_malloc_tagged(sizeof(Scheme_Closure) - sizeof(Scheme_Object *));
+  cl->so.type = scheme_closure_type;
+
+  return cl;
+}
+
 Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
   /* If lr is supplied as a letrec binding this closure, it may be used
      for JIT compilation. */
 {
 #ifdef MZ_USE_JIT
-  Scheme_Closure_Data *data = (Scheme_Closure_Data *)code;
-  
-  if (!data->native_code) {
+  Scheme_Closure_Data *data = (Scheme_Closure_Data *)code, *data2;
+
+  /* We need to cache clones to support multiple references
+     to a zero-sized closure in bytecode. We need either a clone
+     or native code, and context determines which field is releveant,
+     so we put the two possibilities in a union `u'. */
+
+  if (!context)
+    data2 = data->u.jit_clone;
+  else
+    data2 = NULL;
+
+  if (!data2) {
     Scheme_Native_Closure_Data *ndata;
     
-    data  = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
-    memcpy(data, code, sizeof(Scheme_Closure_Data));
+    data2 = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
+    memcpy(data2, code, sizeof(Scheme_Closure_Data));
 
-    data->context = context;
+    data2->context = context;
 
-    ndata = scheme_generate_lambda(data, 1, NULL);
-    data->native_code = ndata;
+    ndata = scheme_generate_lambda(data2, 1, NULL);
+    data2->u.native_code = ndata;
+
+    if (!context)
+      data->u.jit_clone = data2;
+  }      
     
-    /* If it's zero-sized, then create closure now */
-    if (!data->closure_size) {
-      return scheme_make_native_closure(ndata);
-    }
+  /* If it's zero-sized, then create closure now */
+  if (!data2->closure_size)
+    return scheme_make_native_closure(data2->u.native_code);
 
-    return (Scheme_Object *)data;
-  }
+  return (Scheme_Object *)data2;
 #endif
 
   return code;
@@ -800,11 +822,6 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
   data->closure_size = (cl->base_closure_size
 			+ (cl->has_tl ? 1 : 0));
 
-  info->max_let_depth += data->num_params + data->closure_size;
-  data->max_let_depth = info->max_let_depth;
-
-  info->max_let_depth = 0; /* So it doesn't propagate outward */
-
   scheme_optimize_info_done(info);
 
   return (Scheme_Object *)data;
@@ -839,6 +856,17 @@ Scheme_Object *scheme_clone_closure_compilation(Scheme_Object *_data, Optimize_I
   return (Scheme_Object *)data2;
 }
 
+Scheme_Object *scheme_shift_closure_compilation(Scheme_Object *_data, int delta, int after_depth)
+{
+  Scheme_Object *expr;
+  Scheme_Closure_Data *data = (Scheme_Closure_Data *)_data;
+
+  expr = scheme_optimize_shift(data->code, delta, after_depth + data->num_params);
+  data->code = expr;
+
+  return _data;
+}
+
 int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign)
 {
   int i;
@@ -861,47 +889,225 @@ int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign)
   return cl->body_size;
 }
 
+int scheme_closure_has_top_level(Scheme_Closure_Data *data)
+{
+  Closure_Info *cl;
+
+  cl = (Closure_Info *)data->closure_map;
+
+  return cl->has_tl;
+}
+
 int scheme_closure_argument_flags(Scheme_Closure_Data *data, int i)
 {
   return ((Closure_Info *)data->closure_map)->local_flags[i];
 }
 
+XFORM_NONGCING static int boxmap_size(int n)
+{
+  return (n + (BITS_PER_MZSHORT - 1)) / BITS_PER_MZSHORT;
+}
+
+static mzshort *allocate_boxmap(int n)
+{
+  mzshort *boxmap;
+  int size;
+
+  size = boxmap_size(n);
+  boxmap = MALLOC_N_ATOMIC(mzshort, size);
+  memset(boxmap, 0, size * sizeof(mzshort));
+
+  return boxmap;
+}
+
+XFORM_NONGCING static void boxmap_set(mzshort *boxmap, int j)
+{
+  boxmap[j / BITS_PER_MZSHORT] |= ((mzshort)1 << (j & (BITS_PER_MZSHORT - 1)));
+}
+
+XFORM_NONGCING static int boxmap_get(mzshort *boxmap, int j)
+{
+  if (boxmap[j / BITS_PER_MZSHORT] & ((mzshort)1 << (j & (BITS_PER_MZSHORT - 1))))
+    return 1;
+  else
+    return 0;
+}
+
 Scheme_Object *
-scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info)
+scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info, 
+                                   int can_lift, int convert, int just_compute_lift,
+                                   Scheme_Object *precomputed_lift)
 {
   Scheme_Closure_Data *data;
-  int i, closure_size, offset, np, orig_first_flag;
+  int i, closure_size, offset, np, num_params;
+  int has_tl, convert_size, need_lift;
   mzshort *oldpos, *closure_map;
   Closure_Info *cl;
   Resolve_Info *new_info;
+  Scheme_Object *lifted, *result, *lifteds = NULL;
+  Scheme_Hash_Table *captured = NULL;
+  mzshort *convert_map, *convert_boxes = NULL;
 
   data = (Scheme_Closure_Data *)_data;
   cl = (Closure_Info *)data->closure_map;
-  data->iso.so.type = scheme_unclosed_procedure_type;
+  if (!just_compute_lift)
+    data->iso.so.type = scheme_unclosed_procedure_type;
 
-  /* Set local_flags: */
-  orig_first_flag = (data->num_params ? cl->local_flags[0] : 0);
-  for (i = 0; i < data->num_params; i++) {
-    if (cl->local_flags[i] & SCHEME_WAS_SET_BANGED)
-      cl->local_flags[i] = SCHEME_INFO_BOXED;
-    else
-      cl->local_flags[i] = 0;
+  if (convert || can_lift) {
+    if (!scheme_resolving_in_procedure(info)) {
+      convert = 0;
+      can_lift = 0;
+    }
   }
+
+  /* We have to perform a small bit of constant propagation here.
+     Procedures closed only over top-level bindings are lifted during
+     this pass. Some of the captured bindings from this phase may
+     refer to a lifted procedure. In that case, we can replace the
+     lexical reference with a direct reference to the top-level
+     binding, which means that we can drop the binding from the
+     closure. */
 
   closure_size = data->closure_size;
   closure_map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * closure_size);
 
+  has_tl = cl->has_tl;
+
   /* Locals in closure are first: */
   oldpos = cl->base_closure_map;
-  for (i = cl->base_closure_size; i--; ) {
-    int li;
-    li = scheme_resolve_info_lookup(info, oldpos[i], NULL);
-    closure_map[i] = li;
+  offset = 0;
+  for (i = 0; i < cl->base_closure_size; i++) {
+    int li, flags;
+    li = scheme_resolve_info_lookup(info, oldpos[i], &flags, &lifted, 0);
+    if (lifted) {
+      /* Drop lifted binding from closure. */
+      if (SAME_TYPE(SCHEME_TYPE(lifted), scheme_toplevel_type)
+          || SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_toplevel_type))
+        has_tl = 1;
+      /* If the lifted binding is for a converted closure,
+         we may need to add more bindings to this closure. */
+      if (SCHEME_RPAIRP(lifted)) {
+        lifteds = scheme_make_raw_pair(lifted, lifteds);
+      }
+    } else {
+      closure_map[offset] = li;
+      if (convert && (flags & SCHEME_INFO_BOXED)) {
+        /* The only problem with a boxed variable is that
+           it's more difficult to validate. We have to track
+           which arguments are boxes. And the resulting procedure
+           must be used only in application positions. */
+        if (!convert_boxes)
+          convert_boxes = allocate_boxmap(cl->base_closure_size);
+        boxmap_set(convert_boxes, offset);
+      }
+      offset++;
+    }
+  }
+
+  /* Add bindings introduced by closure conversion. The `captured'
+     table maps old positions to new positions. */
+  while (lifteds) {
+    int j, cnt, boxed;
+    Scheme_Object *vec, *loc;
+
+    if (!captured) {
+      captured = scheme_make_hash_table(SCHEME_hash_ptr);
+      for (i = 0; i < offset; i++) {
+        int cp;
+        cp = i;
+        if (convert_boxes && boxmap_get(convert_boxes, i))
+          cp = -(cp + 1);
+        scheme_hash_set(captured, scheme_make_integer(closure_map[i]), scheme_make_integer(cp));
+      }
+    }
+
+    lifted = SCHEME_CAR(lifteds);
+    vec = SCHEME_CDR(lifted);
+    cnt = SCHEME_VEC_SIZE(vec);
+    --cnt;
+    for (j = 0; j < cnt; j++) {
+      loc = SCHEME_VEC_ELS(vec)[j+1];
+      if (SCHEME_BOXP(loc)) {
+        loc = SCHEME_BOX_VAL(loc);
+        boxed = 1;
+      } else
+        boxed = 0;
+      i = SCHEME_LOCAL_POS(loc);
+      if (!scheme_hash_get(captured, scheme_make_integer(i))) {
+        /* Need to capture an extra binding: */
+        int cp;
+        cp = captured->count;
+        if (boxed)
+          cp = -(cp + 1);
+        scheme_hash_set(captured, scheme_make_integer(i), scheme_make_integer(cp));
+      }
+    }
+
+    lifteds = SCHEME_CDR(lifteds);
+  }
+
+  if (captured && (captured->count > offset)) {
+    /* We need to extend the closure map.  All the info
+       is in captured, so just build it from scratch. */
+    int old_pos, j;
+    closure_map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * (captured->count + (has_tl ? 1 : 0)));
+    offset = captured->count;
+    convert_boxes = NULL;
+    for (j = captured->size; j--; ) {
+      if (captured->vals[j]) {
+        int cp;
+        cp = SCHEME_INT_VAL(captured->vals[j]);
+        old_pos = SCHEME_INT_VAL(captured->keys[j]);
+        if (cp < 0) {
+          /* Boxed */
+          cp = -(cp + 1);
+          if (!convert_boxes)
+            convert_boxes = allocate_boxmap(offset);
+          boxmap_set(convert_boxes, cp);
+        }
+        closure_map[cp] = old_pos;
+      }
+    }
+  }
+
+  if (convert
+      && (offset || !has_tl) /* either need args, or treat as convert becasue it's fully closed */
+      ) {
+    /* Take over closure_map to be the convert map, instead. */
+    int new_boxes_size;
+
+    convert_map = closure_map;
+    convert_size = offset;
+
+    if (convert_boxes)
+      new_boxes_size = boxmap_size(convert_size + data->num_params);
+    else
+      new_boxes_size = 0;
+
+    if (has_tl || convert_boxes) {
+      int sz;
+      sz = ((has_tl ? sizeof(mzshort) : 0) + new_boxes_size * sizeof(mzshort));
+      closure_map = (mzshort *)scheme_malloc_atomic(sz);
+      memset(closure_map, 0, sz);
+      if (convert_boxes) {
+        int bsz;
+        bsz = boxmap_size(convert_size);
+        memcpy(closure_map XFORM_OK_PLUS (has_tl ? 1 : 0), 
+               convert_boxes, 
+               bsz * sizeof(mzshort));
+      }
+    } else
+      closure_map = NULL;
+    offset = 0;
+  } else {
+    convert = 0;
+    convert_map = NULL;
+    convert_size = 0;
+    convert_boxes = NULL;
   }
 
   /* Then the pointer to globals, if any: */
-  offset = cl->base_closure_size;
-  if (cl->has_tl) {
+  if (has_tl) {
     /* GLOBAL ASSUMPTION: jit.c assumes that the array
        of globals is the last item in the closure; grep
        for "GLOBAL ASSUMPTION" in jit.c */
@@ -911,68 +1117,211 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info)
     offset++;
   }
 
-  /* Set up mappng from old locations on the stack (as if bodies were
-     evaluated immediately) to new locations (where closures
-     effectively shift and compact values on the stack): */
+  /* Reset closure_size, in case a lifted variable was removed: */
+  closure_size = offset;
+  if (!just_compute_lift) {
+    data->closure_size = closure_size;
+    if (convert && convert_boxes)
+      SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_HAS_REF_ARGS;
+  }
 
-  np = data->num_params;
+  /* Set up environment mapping, initialized for arguments: */
+
+  np = num_params = data->num_params;
   if ((data->num_params == 1)
       && (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
-      && !(orig_first_flag & SCHEME_WAS_USED)) {
+      && !(cl->local_flags[0] & SCHEME_WAS_USED)) {
     /* (lambda args E) where args is not in E => drop the argument */
     new_info = scheme_resolve_info_extend(info, 0, 1, cl->base_closure_size);
-    data->num_params = 0;
+    num_params = 0;
+    if (!just_compute_lift)
+      data->num_params = 0;
   } else {
     new_info = scheme_resolve_info_extend(info, data->num_params, data->num_params,
 					  cl->base_closure_size + data->num_params);
     for (i = 0; i < data->num_params; i++) {
-      scheme_resolve_info_add_mapping(new_info, i, i + closure_size,
-				      cl->local_flags[i]);
+      scheme_resolve_info_add_mapping(new_info, i, i + closure_size + convert_size,
+                                      ((cl->local_flags[i] & SCHEME_WAS_SET_BANGED)
+                                       ? SCHEME_INFO_BOXED
+                                       : 0),
+                                      NULL);
     }
   }
+
+  /* Extend mapping to go from old locations on the stack (as if bodies were
+     evaluated immediately) to new locations (where closures
+     effectively shift and compact values on the stack). 
+
+     We don't have to include bindings added because an oiriginal
+     binding was lifted (i.e., the extra bindings in `captured'),
+     because they don't appear in the body. Instead, they are
+     introduced directly in resolved form through the `lifted' info.
+     That means, though, that we need to transform the `lifted'
+     mapping. */
+  if (has_tl && convert) {
+    /* Skip handle for globals */
+    offset = 1;
+  } else {
+    offset = 0;
+  }
   for (i = 0; i < cl->base_closure_size; i++) {
-    int p = oldpos[i];
+    int p = oldpos[i], flags;
 
     if (p < 0)
       p -= np;
     else
       p += np;
 
-    scheme_resolve_info_add_mapping(new_info, p, i,
-				    scheme_resolve_info_flags(info, oldpos[i]));
+    flags = scheme_resolve_info_flags(info, oldpos[i], &lifted);
+
+    if (lifted && SCHEME_RPAIRP(lifted)) {
+      /* Convert from a vector of local references to an array of
+         positions. */
+      Scheme_Object *vec, *loc, **ca;
+      mzshort *cmap, *boxmap = NULL;
+      int sz, j, cp;
+
+      vec = SCHEME_CDR(lifted);
+      sz = SCHEME_VEC_SIZE(vec);
+      --sz;
+      cmap = MALLOC_N_ATOMIC(mzshort, sz);
+      for (j = 0; j < sz; j++) {
+        loc = SCHEME_VEC_ELS(vec)[j+1];
+        if (SCHEME_BOXP(loc)) {
+          if (!boxmap)
+            boxmap = allocate_boxmap(sz);
+          boxmap_set(boxmap, j);
+          loc = SCHEME_BOX_VAL(loc);
+        }
+        loc = scheme_hash_get(captured, scheme_make_integer(SCHEME_LOCAL_POS(loc)));
+        cp = SCHEME_INT_VAL(loc);
+        if (cp < 0)
+          cp = -(cp + 1);
+        cmap[j] = cp + (has_tl && convert ? 1 : 0);
+      }
+
+      ca = MALLOC_N(Scheme_Object *, 4);
+      ca[0] = scheme_make_integer(sz);
+      ca[1] = (Scheme_Object *)cmap;
+      ca[2] = SCHEME_VEC_ELS(vec)[0];
+      ca[3] = (Scheme_Object *)boxmap;
+      
+      lifted = scheme_make_raw_pair(SCHEME_CAR(lifted), (Scheme_Object *)ca);
+    }
+
+    scheme_resolve_info_add_mapping(new_info, p, lifted ? 0 : offset++, flags, lifted);
   }
-  if (cl->has_tl)
-    scheme_resolve_info_set_toplevel_pos(new_info, cl->base_closure_size);
+  if (has_tl) {
+    if (convert)
+      offset = 0; /* other closure elements converted to arguments */
+    else
+      offset = closure_size - 1;
+    scheme_resolve_info_set_toplevel_pos(new_info, offset);
+  }
 
-  data->closure_map = closure_map;
+  if (!just_compute_lift)
+    data->closure_map = closure_map;
 
-  {
+  new_info->in_proc = 1;
+
+  if (!just_compute_lift) {
     Scheme_Object *code;
     code = scheme_resolve_expr(data->code, new_info);
     data->code = code;
-  }
 
-  /* Add code to box set!ed argument variables: */
-  for (i = 0; i < data->num_params; i++) {
-    if (cl->local_flags[i] & SCHEME_INFO_BOXED) {
-      int j = i + closure_size;
-      Scheme_Object *code;
+    data->max_let_depth = (new_info->max_let_depth
+                           + num_params
+                           + closure_size
+                           + convert_size);
 
-      code = scheme_make_syntax_resolved(BOXENV_EXPD,
-					 scheme_make_pair(scheme_make_integer(j),
-							  data->code));
-      data->code = code;
+    /* Add code to box set!ed argument variables: */
+    for (i = 0; i < num_params; i++) {
+      if (cl->local_flags[i] & SCHEME_WAS_SET_BANGED) {
+        int j = i + closure_size + convert_size;
+        Scheme_Object *bcode;
+        
+        bcode = scheme_make_syntax_resolved(BOXENV_EXPD,
+                                            scheme_make_pair(scheme_make_integer(j),
+                                                             data->code));
+        data->code = bcode;
+      }
     }
+    
+    if (SCHEME_TYPE(data->code) > _scheme_compiled_values_types_)
+      SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_FOLDABLE;
   }
 
-  if (SCHEME_TYPE(data->code) > _scheme_compiled_values_types_)
-    SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_FOLDABLE;
+  if ((closure_size == 1)
+      && can_lift
+      && has_tl
+      && info->lifts) {
+    need_lift = 1;
+  } else
+    need_lift = 0;
+
+  if (convert) {
+    num_params += convert_size;
+    if (!just_compute_lift)
+      data->num_params = num_params;
+  }
 
   /* If the closure is empty, create the closure now */
-  if (!data->closure_size)
-    return scheme_make_closure(NULL, (Scheme_Object *)data, 1);
-  else
-    return (Scheme_Object *)data;
+  if (!closure_size) {
+    if (precomputed_lift) {
+      result = SCHEME_CAR(precomputed_lift);
+      ((Scheme_Closure *)result)->code = data;
+    } else
+      result = scheme_make_closure(NULL, (Scheme_Object *)data, 0);
+  } else
+      result = (Scheme_Object *)data;
+  
+  if (need_lift) {
+    if (just_compute_lift) {
+      if (just_compute_lift > 1)
+        result = scheme_resolve_invent_toplevel(info);
+      else
+        result = scheme_resolve_generate_stub_lift();
+    } else {
+      Scheme_Object *tl, *defn_tl;
+      if (precomputed_lift) {
+        tl = precomputed_lift;
+        if (SCHEME_RPAIRP(tl))
+          tl = SCHEME_CAR(tl);
+      } else {
+        tl = scheme_resolve_invent_toplevel(info);
+      }
+      defn_tl = scheme_resolve_invented_toplevel_to_defn(info, tl);
+      scheme_resolve_lift_definition(info, defn_tl, result);
+      if (has_tl)
+        closure_map[0] = 0; /* globals for closure creation will be at 0 after lifting */
+      result = tl;
+    }
+  }
+  
+  if (convert) {
+    Scheme_Object **ca, *arity;
+
+    if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)) {
+      arity = scheme_box(scheme_make_integer(num_params - convert_size - 1));
+    } else {
+      arity = scheme_make_integer(num_params - convert_size);
+    }
+
+    ca = MALLOC_N(Scheme_Object *, 4);
+    ca[0] = scheme_make_integer(convert_size);
+    ca[1] = (Scheme_Object *)convert_map;
+    ca[2] = arity;
+    ca[3] = (Scheme_Object *)convert_boxes;
+
+    if (precomputed_lift) {
+      SCHEME_CAR(precomputed_lift) = result;
+      SCHEME_CDR(precomputed_lift) = (Scheme_Object *)ca;
+      result = precomputed_lift;
+    } else 
+      result = scheme_make_raw_pair(result, (Scheme_Object *)ca);
+  }
+
+  return result;
 }
 
 Scheme_Object *scheme_source_to_name(Scheme_Object *code)
@@ -4950,7 +5299,8 @@ scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 {
   Scheme_Closure_Data *data;
-  Scheme_Object *name;
+  Scheme_Object *name, *l;
+  int svec_size;
 
   data = (Scheme_Closure_Data *)obj;
 
@@ -4972,13 +5322,24 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
     name = scheme_null;
   }
 
+  svec_size = data->closure_size;
+  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+    svec_size += (data->num_params + BITS_PER_MZSHORT - 1) / BITS_PER_MZSHORT;
+  }
+
+  l = CONS(scheme_make_svector(svec_size,
+                               data->closure_map),
+           scheme_protect_quote(data->code));
+
+  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS)
+    l = CONS(scheme_make_integer(data->closure_size),
+             l);
+
   return CONS(scheme_make_integer(SCHEME_CLOSURE_DATA_FLAGS(data)),
 	      CONS(scheme_make_integer(data->num_params),
 		   CONS(scheme_make_integer(data->max_let_depth),
 			CONS(name,
-			     CONS(scheme_make_svector(data->closure_size,
-						      data->closure_map),
-				  scheme_protect_quote(data->code))))));
+			     l))));
 }
 
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
@@ -5016,13 +5377,23 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
   if (!SCHEME_PAIRP(obj)) return NULL;
   v = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
-  /* v is an svector */
+
+  /* v is an svector or an integer... */
+  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+    if (!SCHEME_INTP(v)) return NULL;
+    data->closure_size = SCHEME_INT_VAL(v);
+    
+    if (!SCHEME_PAIRP(obj)) return NULL;
+    v = SCHEME_CAR(obj);
+    obj = SCHEME_CDR(obj);
+  }
 
   data->code = obj;
 
   if (!SAME_TYPE(scheme_svector_type, SCHEME_TYPE(v))) return NULL;
 
-  data->closure_size = SCHEME_SVEC_LEN(v);
+  if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS))
+    data->closure_size = SCHEME_SVEC_LEN(v);
   data->closure_map = SCHEME_SVEC_VEC(v);
 
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_FOLDABLE)
@@ -5031,7 +5402,7 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
   if (SCHEME_TYPE(data->code) > _scheme_values_types_)
     SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_FOLDABLE;
 
- /* If the closure is empty, create the closure now */
+  /* If the closure is empty, create the closure now */
   if (!data->closure_size)
     return scheme_make_closure(NULL, (Scheme_Object *)data, 0);
   else

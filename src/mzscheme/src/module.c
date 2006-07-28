@@ -78,10 +78,12 @@ static Scheme_Object *module_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *top_level_require_optimize(Scheme_Object *data, Optimize_Info *info);
 static Scheme_Object *top_level_require_resolve(Scheme_Object *data, Resolve_Info *info);
 
-static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes);
-static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, char *stack, int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes);
+static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht, 
+                            int depth, int letlimit, int delta, 
+			    int num_toplevels, int num_stxes, int num_lifts);
+static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht,
+                                       int depth, int letlimit, int delta, 
+				       int num_toplevels, int num_stxes, int num_lifts);
 
 static Scheme_Object *write_module(Scheme_Object *obj);
 static Scheme_Object *read_module(Scheme_Object *obj);
@@ -202,12 +204,12 @@ void scheme_init_module(Scheme_Env *env)
 			 module_optimize,
 			 module_resolve, module_validate, 
 			 module_execute, module_jit, 
-			 NULL, -1);
+			 NULL, NULL, -1);
   scheme_register_syntax(REQUIRE_EXPD, 
 			 top_level_require_optimize,
 			 top_level_require_resolve, top_level_require_validate, 
 			 top_level_require_execute, top_level_require_jit, 
-			 NULL, 2);
+			 NULL, NULL, 2);
 
   scheme_add_global_keyword("module", 
 			    scheme_make_compiled_syntax(module_syntax, 
@@ -3145,9 +3147,9 @@ static Scheme_Object *module_jit(Scheme_Object *data)
   return (Scheme_Object *)m;
 }
 
-static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack, 
+static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht,
 			    int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes)
+			    int num_toplevels, int num_stxes, int num_lifts)
 {
   Scheme_Module *m;
   Scheme_Object *l;
@@ -3161,8 +3163,8 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack,
     scheme_ill_formed_code(port);
 
   for (l = m->body; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-    scheme_validate_code(port, SCHEME_CAR(l), m->max_let_depth,
-			 m->prefix->num_toplevels, m->prefix->num_stxes);
+    scheme_validate_code(port, SCHEME_CAR(l), ht, m->max_let_depth,
+			 m->prefix->num_toplevels, m->prefix->num_stxes, m->prefix->num_lifts);
   }
   if (!SCHEME_NULLP(l))
     scheme_ill_formed_code(port);
@@ -3176,17 +3178,13 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *e, *b, *vars, *start_simltaneous_b;
   Scheme_Hash_Table *consts = NULL, *ready_table = NULL;
-  int max_let_depth = 0, cont;
+  int cont;
 
   start_simltaneous_b = m->body;
   for (b = m->body; !SCHEME_NULLP(b); b = SCHEME_CDR(b)) {
     /* Optimize this expression: */
     e = scheme_optimize_expr(SCHEME_CAR(b), info);
     SCHEME_CAR(b) = e;
-
-    if (info->max_let_depth > max_let_depth)
-      max_let_depth = info->max_let_depth;
-    info->max_let_depth = 0;
 
     if (info->enforce_const) {
       /* If this expression/definition can't have any side effect
@@ -3287,10 +3285,6 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	  /* Re-optimize this expression: */
 	  e = scheme_optimize_expr(SCHEME_CAR(start_simltaneous_b), info);
 	  SCHEME_CAR(start_simltaneous_b) = e;
-
-	  if (info->max_let_depth > max_let_depth)
-	    max_let_depth = info->max_let_depth;
-	  info->max_let_depth = 0;
 	  
 	  if (SAME_OBJ(start_simltaneous_b, b))
 	    break;
@@ -3303,8 +3297,6 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
     }
   }
 
-  m->max_let_depth = max_let_depth;
-
   /* Exp-time body was optimized during compilation */
 
   return scheme_make_syntax_compiled(MODULE_EXPD, data);
@@ -3314,7 +3306,7 @@ static Scheme_Object *
 module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
 {
   Scheme_Module *m = (Scheme_Module *)data;
-  Scheme_Object *b;
+  Scheme_Object *b, *lift_vec;
   Resolve_Prefix *rp;
   Resolve_Info *rslv;
 
@@ -3328,12 +3320,20 @@ module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
   rslv = scheme_resolve_info_create(rp);
   rslv->enforce_const = old_rslv->enforce_const;
   rslv->in_module = 1;
+  scheme_enable_expression_resolve_lifts(rslv);
 
   for (b = m->body; !SCHEME_NULLP(b); b = SCHEME_CDR(b)) {
     Scheme_Object *e;
     e = scheme_resolve_expr(SCHEME_CAR(b), rslv);
     SCHEME_CAR(b) = e;
   }
+
+  m->max_let_depth = rslv->max_let_depth;
+
+  lift_vec = rslv->lifts;
+  b = scheme_append(SCHEME_VEC_ELS(lift_vec)[0], m->body);
+  m->body = b;
+  rp->num_lifts = SCHEME_INT_VAL(SCHEME_VEC_ELS(lift_vec)[1]);
 
   /* Exp-time body was resolved during compilation */
 
@@ -4128,19 +4128,21 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  }
 	  m = scheme_compile_expr_lift_to_let(code, eenv, &mrec, 0);
 
-	  oi = scheme_optimize_info_create(eenv);
+	  oi = scheme_optimize_info_create();
 	  m = scheme_optimize_expr(m, oi);
 	  
 	  /* Simplify only in compile mode; it is too slow in expand mode. */
 	  rp = scheme_resolve_prefix(1, eenv->prefix, rec[drec].comp);
 	  ri = scheme_resolve_info_create(rp);
+          scheme_enable_expression_resolve_lifts(ri);
 	  m = scheme_resolve_expr(m, ri);
+          m = scheme_merge_expression_resolve_lifts(m, rp, ri);
 
 	  /* Add code with names and lexical depth to exp-time body: */
 	  vec = scheme_make_vector(5, NULL);
 	  SCHEME_VEC_ELS(vec)[0] = names;
 	  SCHEME_VEC_ELS(vec)[1] = m;
-	  SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(oi->max_let_depth);
+	  SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(ri->max_let_depth);
 	  SCHEME_VEC_ELS(vec)[3] = (Scheme_Object *)rp;
 	  SCHEME_VEC_ELS(vec)[4] = (for_stx ? scheme_true : scheme_false);
 	  exp_body = scheme_make_pair(vec, exp_body);
@@ -4148,7 +4150,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  if (ri->use_jit)
 	    m = scheme_jit_expr(m);
 	
-	  eval_defmacro(names, count, m, eenv->genv, rhs_env, rp, oi->max_let_depth, 0, 
+	  eval_defmacro(names, count, m, eenv->genv, rhs_env, rp, ri->max_let_depth, 0, 
 			(for_stx ? env->genv->exp_env->toplevel : env->genv->syntax), for_stx,
 			rec[drec].certs);
 
@@ -5798,9 +5800,9 @@ top_level_require_jit(Scheme_Object *data)
   return data;
 }
 
-static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, char *stack, 
+static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht,
 				       int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes)
+				       int num_toplevels, int num_stxes, int num_lifts)
 {
 }
 

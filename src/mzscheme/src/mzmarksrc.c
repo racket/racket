@@ -160,7 +160,7 @@ unclosed_proc {
   gcMARK(d->code);
   gcMARK(d->closure_map);
 #ifdef MZ_USE_JIT
-  gcMARK(d->native_code);
+  gcMARK(d->u.native_code);
   gcMARK(d->context);
 #endif
 
@@ -290,7 +290,9 @@ closed_prim_proc {
 
 scm_closure {
   Scheme_Closure *c = (Scheme_Closure *)p;
-  int closure_size = ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size;
+  int closure_size = (c->code 
+                      ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
+                      : 0);
 
  mark:
 
@@ -960,6 +962,8 @@ mark_resolve_info {
   gcMARK(i->new_pos);
   gcMARK(i->old_stx_pos);
   gcMARK(i->flags);
+  gcMARK(i->lifts);
+  gcMARK(i->lifted);
   gcMARK(i->next);
 
  size:
@@ -1825,6 +1829,7 @@ mark_jit_state {
  mark:
   mz_jit_state *j = (mz_jit_state *)p;
   gcMARK(j->mappings);
+  gcMARK(j->self_data);
  size:
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }

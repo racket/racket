@@ -120,9 +120,10 @@ static int builtin_ref_counter = 0;
 
 static int env_uid_counter;
 
-#define ARBITRARY_USE 1
-#define CONSTRAINED_USE 2
-#define WAS_SET_BANGED 4
+#define ARBITRARY_USE     0x1
+#define CONSTRAINED_USE   0x2
+#define WAS_SET_BANGED    0x4
+#define ONE_ARBITRARY_USE 0x8
 /* See also SCHEME_USE_COUNT_MASK */
 
 typedef struct Compile_Data {
@@ -1194,16 +1195,6 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env)
   return SAME_OBJ(se, env);
 }
 
-int scheme_used_app_only(Scheme_Comp_Env *env, int which)
-{
-  Compile_Data *data = COMPILE_DATA(env);
-
-  if (data->use[which] & ARBITRARY_USE)
-    return 0;
-  else
-    return 1;
-}
-
 int scheme_used_ever(Scheme_Comp_Env *env, int which)
 {
   Compile_Data *data = COMPILE_DATA(env);
@@ -1488,8 +1479,10 @@ Scheme_Object *scheme_make_local(Scheme_Type type, int pos)
 
   k = type - scheme_local_type;
 
-  if (pos < MAX_CONST_LOCAL_POS)
-    return scheme_local[pos][k];
+  if (pos < MAX_CONST_LOCAL_POS) {
+    if (pos >= 0)
+      return scheme_local[pos][k];
+  }
 
   v = scheme_hash_get(locals_ht[k], scheme_make_integer(pos));
   if (v)
@@ -1526,7 +1519,7 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
   
   u |= (((flags & (SCHEME_APP_POS | SCHEME_SETTING | SCHEME_REFERENCING))
 	 ? CONSTRAINED_USE
-	 : ARBITRARY_USE)
+	 : ((u & (ARBITRARY_USE | ONE_ARBITRARY_USE)) ? ARBITRARY_USE : ONE_ARBITRARY_USE))
 	| ((flags & (SCHEME_SETTING | SCHEME_REFERENCING | SCHEME_LINKING_REF))
 	   ? WAS_SET_BANGED
 	   : 0));
@@ -2509,8 +2502,15 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
     int old;
     old = v[i];
     v[i] = 0;
-    if (old & (ARBITRARY_USE | CONSTRAINED_USE))
+    if (old & (ARBITRARY_USE | ONE_ARBITRARY_USE | CONSTRAINED_USE)) {
       v[i] |= SCHEME_WAS_USED;
+      if (!(old & (ARBITRARY_USE | WAS_SET_BANGED))) {
+        if (old & ONE_ARBITRARY_USE)
+          v[i] |= SCHEME_WAS_APPLIED_EXCEPT_ONCE;
+        else
+          v[i] |= SCHEME_WAS_ONLY_APPLIED;
+      }
+    }
     if (old & WAS_SET_BANGED)
       v[i] |= SCHEME_WAS_SET_BANGED;
     v[i] |= (old & SCHEME_USE_COUNT_MASK);
@@ -2890,7 +2890,6 @@ int scheme_optimize_info_get_shift(Optimize_Info *info, int pos)
 
 void scheme_optimize_info_done(Optimize_Info *info)
 {
-  info->next->max_let_depth += info->max_let_depth;
   info->next->size += info->size;
 }
 
@@ -2994,6 +2993,7 @@ Resolve_Info *scheme_resolve_info_extend(Resolve_Info *info, int size, int oldsi
   naya->count = mapc;
   naya->pos = 0;
   naya->toplevel_pos = -1;
+  naya->lifts = info->lifts;
 
   if (mapc) {
     int i, *ia;
@@ -3017,7 +3017,7 @@ Resolve_Info *scheme_resolve_info_extend(Resolve_Info *info, int size, int oldsi
   return naya;
 }
 
-void scheme_resolve_info_add_mapping(Resolve_Info *info, int oldp, int newp, int flags)
+void scheme_resolve_info_add_mapping(Resolve_Info *info, int oldp, int newp, int flags, Scheme_Object *lifted)
 {
   if (info->pos == info->count) {
     scheme_signal_error("internal error: add_mapping: "
@@ -3027,8 +3027,35 @@ void scheme_resolve_info_add_mapping(Resolve_Info *info, int oldp, int newp, int
   info->old_pos[info->pos] = oldp;
   info->new_pos[info->pos] = newp;
   info->flags[info->pos] = flags;
+  if (lifted) {
+    if (!info->lifted) {
+      Scheme_Object **lifteds;
+      lifteds = MALLOC_N(Scheme_Object*, info->count);
+      info->lifted = lifteds;
+    }
+    info->lifted[info->pos] = lifted;
+  }
   
   info->pos++;
+}
+
+void scheme_resolve_info_adjust_mapping(Resolve_Info *info, int oldp, int newp, int flags, Scheme_Object *lifted)
+{
+  int i;
+
+  for (i = info->pos; i--; ) {
+    if (info->old_pos[i] == oldp) {
+      info->new_pos[i] = newp;
+      info->flags[i] = flags;
+      if (lifted) {
+        info->lifted[i] = lifted;
+      }
+      return;
+    }
+  }
+      
+  scheme_signal_error("internal error: adjust_mapping: "
+                      "couldn't find: %d", oldp);
 }
 
 void scheme_resolve_info_set_toplevel_pos(Resolve_Info *info, int pos)
@@ -3036,9 +3063,13 @@ void scheme_resolve_info_set_toplevel_pos(Resolve_Info *info, int pos)
   info->toplevel_pos = pos;
 }
 
-static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags)
+static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_Object **_lifted, int convert_shift)
 {
+  Resolve_Info *orig_info = info;
   int i, offset = 0, orig = pos;
+
+  if (_lifted)
+    *_lifted = NULL;
 
   while (info) {
     for (i = info->pos; i--; ) {
@@ -3046,8 +3077,69 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags)
       if (pos == oldp) {
 	if (flags)
 	  *flags = info->flags[i];
-	return info->new_pos[i] + offset;
+        if (info->lifted && (info->lifted[i])) {
+          int skip, shifted;
+          Scheme_Object *lifted, *tl, **ca;
+
+          if (!_lifted)
+            scheme_signal_error("unexpected lifted binding");
+
+          lifted = info->lifted[i];
+
+          if (SCHEME_RPAIRP(lifted)) {
+            tl = SCHEME_CAR(lifted);
+            ca = (Scheme_Object **)SCHEME_CDR(lifted);
+            if (convert_shift)
+              shifted = SCHEME_INT_VAL(ca[0]) + convert_shift - 1;
+            else
+              shifted = 0;
+          } else {
+            tl = lifted;
+            shifted = 0;
+            ca = NULL;
+          }
+
+          if (SAME_TYPE(SCHEME_TYPE(tl), scheme_toplevel_type)) {
+            skip = scheme_resolve_toplevel_pos(orig_info);
+            tl = make_toplevel(skip + shifted, 
+                               SCHEME_TOPLEVEL_POS(tl),
+                               1,
+                               SCHEME_TOPLEVEL_CONST);
+          }
+
+          if (SCHEME_RPAIRP(lifted)) {
+            int sz, i;
+            mzshort *posmap, *boxmap;
+            Scheme_Object *vec, *loc;
+            sz = SCHEME_INT_VAL(ca[0]);
+            posmap = (mzshort *)ca[1];
+            boxmap = (mzshort *)ca[3];
+            vec = scheme_make_vector(sz + 1, NULL);
+            for (i = 0; i < sz; i++) {
+              loc = scheme_make_local(scheme_local_type,
+                                      posmap[i] + offset + shifted);
+              if (boxmap) {
+                if (boxmap[i / BITS_PER_MZSHORT] & ((mzshort)1 << (i & (BITS_PER_MZSHORT - 1))))
+                  loc = scheme_box(loc);
+              }
+              SCHEME_VEC_ELS(vec)[i+1] = loc;
+            }
+            SCHEME_VEC_ELS(vec)[0] = ca[2];
+            lifted = scheme_make_raw_pair(tl, vec);
+          } else
+            lifted = tl;
+          
+          *_lifted = lifted;
+           
+           return 0;
+        } else
+          return info->new_pos[i] + offset;
       }
+    }
+
+    if (info->in_proc) {
+      scheme_signal_error("internal error: scheme_resolve_info_lookup: "
+                          "searching past procedure");
     }
 
     pos -= info->oldsize;
@@ -3061,18 +3153,23 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags)
   return 0;
 }
 
-int scheme_resolve_info_flags(Resolve_Info *info, int pos)
+Scheme_Object *scheme_resolve_generate_stub_lift()
+{
+  return make_toplevel(0, 0, 1, SCHEME_TOPLEVEL_CONST);
+}
+
+int scheme_resolve_info_flags(Resolve_Info *info, int pos, Scheme_Object **lifted)
 {
   int flags;
 
-  resolve_info_lookup(info, pos, &flags);
+  resolve_info_lookup(info, pos, &flags, lifted, 0);
 
   return flags;
 }
 
-int scheme_resolve_info_lookup(Resolve_Info *info, int pos, int *flags)
+int scheme_resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_Object **lifted, int convert_shift)
 {
-  return resolve_info_lookup(info, pos, flags);
+  return resolve_info_lookup(info, pos, flags, lifted, convert_shift);
 }
 
 int scheme_resolve_toplevel_pos(Resolve_Info *info)
@@ -3080,6 +3177,10 @@ int scheme_resolve_toplevel_pos(Resolve_Info *info)
   int pos = 0;
 
   while (info && (info->toplevel_pos < 0)) {
+    if (info->in_proc) {
+      scheme_signal_error("internal error: scheme_resolve_toplevel_pos: "
+                          "searching past procedure");
+    }
     pos += info->size;
     info = info->next;
   }
@@ -3088,6 +3189,19 @@ int scheme_resolve_toplevel_pos(Resolve_Info *info)
     return pos;
   else
     return info->toplevel_pos + pos;
+}
+
+int scheme_resolve_is_toplevel_available(Resolve_Info *info)
+{
+  while (info) {
+    if (info->toplevel_pos >= 0)
+      return 1;
+    if (info->in_proc)
+      return 0;
+    info = info->next;
+  }
+
+  return 0;
 }
 
 int scheme_resolve_quote_syntax_pos(Resolve_Info *info)
@@ -3106,6 +3220,55 @@ Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr)
 		       1,
 		       SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_FLAGS_MASK);
 }
+
+Scheme_Object *scheme_shift_toplevel(Scheme_Object *expr, int delta)
+{
+  return make_toplevel(SCHEME_TOPLEVEL_DEPTH(expr) + delta,
+		       SCHEME_TOPLEVEL_POS(expr),
+		       1,
+		       SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_FLAGS_MASK);
+}
+
+Scheme_Object *scheme_resolve_invent_toplevel(Resolve_Info *info)
+{
+  int skip, pos;
+  Scheme_Object *count;
+
+  skip = scheme_resolve_toplevel_pos(info);
+
+  count = SCHEME_VEC_ELS(info->lifts)[1];
+  pos = (SCHEME_INT_VAL(count)
+         + info->prefix->num_toplevels 
+         + info->prefix->num_stxes
+         + (info->prefix->num_stxes ? 1 : 0));
+  count = scheme_make_integer(SCHEME_INT_VAL(count) + 1);
+  SCHEME_VEC_ELS(info->lifts)[1] = count;
+
+  return make_toplevel(skip,
+		       pos,
+		       1,
+                       SCHEME_TOPLEVEL_CONST);
+}
+
+Scheme_Object *scheme_resolve_invented_toplevel_to_defn(Resolve_Info *info, Scheme_Object *tl)
+{
+  return make_toplevel(0,
+                       SCHEME_TOPLEVEL_POS(tl),
+                       1,
+                       SCHEME_TOPLEVEL_CONST);
+}
+
+int scheme_resolving_in_procedure(Resolve_Info *info)
+{
+  while (info) {
+    if (info->in_proc)
+      return 1;
+    info = info->next;
+  }
+  return 0;
+}
+
+
 
 /*========================================================================*/
 /*                             run-time "stack"                           */
@@ -4048,7 +4211,7 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
     SCHEME_VEC_ELS(sv)[i] = rp->stxes[i];
   }
 
-  return scheme_make_pair(tv, sv);
+  return scheme_make_pair(scheme_make_integer(rp->num_lifts), scheme_make_pair(tv, sv));
 }
 
 static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
@@ -4059,6 +4222,12 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
 
   if (!SCHEME_PAIRP(obj)) return NULL;
 
+  i = SCHEME_INT_VAL(SCHEME_CAR(obj));
+  if (i < 0) return NULL;
+
+  obj = SCHEME_CDR(obj);
+  if (!SCHEME_PAIRP(obj)) return NULL;
+
   tv = SCHEME_CAR(obj);
   sv = SCHEME_CDR(obj);
 
@@ -4066,6 +4235,7 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   rp->so.type = scheme_resolve_prefix_type;
   rp->num_toplevels = SCHEME_VEC_SIZE(tv);
   rp->num_stxes = SCHEME_VEC_SIZE(sv);
+  rp->num_lifts = i;
 
   i = rp->num_toplevels;
   a = MALLOC_N(Scheme_Object *, i);

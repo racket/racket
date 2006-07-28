@@ -1,3 +1,10 @@
+Version 352.2
+Added raise-arity-error
+Changed bytecode compiler to perform more closure conversion
+ and lifting
+Changed local-expand; #f stop list means expand only immediate
+
+
 Version 352, July 2006
 Minor bug fixes
 
