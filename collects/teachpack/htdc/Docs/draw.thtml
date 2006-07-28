@@ -40,18 +40,27 @@ this canvas, and finally starts the clock at a rate of one tick per
 <code>speed</code> seconds. If it succeeds with all of its actions, the method
 produces <code>true</code>. 
 
-<p>A <code>World</code> is associated with one default <code>Canvas</code>,
-called <code>theCanvas</code>. If a <code>World</code> needs additional
-canvases for its graphical presentation, its concrete subclasses must add
-those.</p>
+<p><strong>Note:</strong> <code>width</code> and <code>height</code> must be
+  positive <code>int</code>s, <code>speed</code> must be a positive
+  <code>double</code>.
+</p>
+
+<p>The canvas in <code>World</code> is called
+  <code>theCanvas</code>. References to a "canvas" in conjunction with the
+  <code>World</code> class denote this default canvas.
+</p>
 </li>
 
 <li><code>endOfTime</code>, stops the clock and, if it succeeds, produces
-<code>true</code>. 
+ <code>true</code>. After the end of time, events no longer trigger calls
+ to <code>onTick</code> or <code>onKeyEvent</code> (see below). The canvas
+ remains visible. 
 </li>
 
 <li><code>endOfWorld</code>, stops the clock and, if it succeeds, produces the
-last <code>World</code>. 
+ last <code>World</code>. After the end of the world,  events no longer trigger calls
+ to <code>onTick</code> or <code>onKeyEvent</code> (see below). The canvas
+ remains visible. 
 </li>
 </ul>
 The methods may fail due to the unavailability of the physical devices,
@@ -65,11 +74,11 @@ purpose is to create a <code>World</code> whose differences with
 the clock to tick. 
 </li>
 
-<li><code>onKeyEvent(key)</code>, which is invoked for every keyboard event. Its
-purposes is to create a <code>World</code> whose differences with
-<code>this</code> one represent what happens due to the user's use of the
-keyboard. The latter is represented with the string-valued argument
-<code>key</code>.  
+<li><code>onKeyEvent(key)</code>, which is invoked for every keyboard event
+  associated with the canvas. Its purposes is to create a
+  <code>World</code> whose differences with <code>this</code> one represent
+  what happens due to the user's use of the keyboard. The latter is
+  represented with the string-valued argument <code>key</code>.
 </li>
 
 <li><code>draw()</code>, which is invoked <em>after</em> one of the two event
@@ -80,6 +89,8 @@ graphically on its canvas. If it succeeds, its result is <code>true.</code>
 <li><code>erase()</code>, which is invoked <em>after</em> one of the two event
 handlers has been called. Its purpose is to erase <code>this World</code>'s
 canvas, as much as needed. If it succeeds, its result is <code>true.</code>
+  Simple erase methods just draw a white rectangle of appropriate width and
+  height located at the origin. 
 </li>
 </ul>
 A program may, in principle, start several instances of (subclasses of)
@@ -94,10 +105,14 @@ screen's borders. A program can use the following methods on instances of
 <code>Canvas:</code>
 <ul>
 <li><code>show()</code>, which displays the canvas. 
-If it succeeds, it produces <code>true</code>.</li>
+  If it succeeds, it produces <code>true</code>. Invoking the method a second
+  time without calling <code>close</code> before has no effect. 
+</li>
 
 <li><code>close()</code>, which destroys the canvas. 
-If it succeeds, it produces <code>true</code>.</li>
+If it succeeds, it produces <code>true</code>. Invoking <code>show</code>
+  again, displays an empty canvas of the same size. 
+</li>
 
 <li><code>drawCircle(p,r,c)</code>, which draws a circle on <code>this
 Canvas</code> at <code>p</code> with radius <code>r</code> and color

@@ -251,6 +251,7 @@
         [stop-tick 
          (lambda ()
 	   (send the-time stop)
+	   (set! on-char-proc #f)
 	   the-world)]
         [init-world (lambda (w) (set! the-world w))])
       ;; --- end timing stuff

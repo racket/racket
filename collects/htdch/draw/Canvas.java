@@ -18,8 +18,22 @@ public class Canvas {
     // I need to figure out how to accomplish these two things, especially stop,
     // directly at the Scheme level w/o going thru the Java layer.
      
-  public native boolean show();
-  public native boolean close();
+    private boolean showing = false; 
+    public boolean show() { 
+	if (!showing) {
+	    xshow();
+	    showing = true; 
+	}
+	return true; 
+    }
+    public boolean close() { 
+	xclose(); 
+	showing = false; 
+	return true; 
+    }
+	    
+  public native boolean xshow();
+  public native boolean xclose();
   public native boolean drawCircle(Posn p, int r, Color c);
   public native boolean drawDisk(Posn p, int r, Color c);
   public native boolean drawRect(Posn p, int width, int height, Color c);

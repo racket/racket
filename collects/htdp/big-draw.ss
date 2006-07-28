@@ -209,14 +209,17 @@
       (setter vp* pm* %clear-string (make-%string 'clear-string (clear-string vp*))) 
       ;; --- 
       (set! %end-of-time
+	(let () #;([vp* vp*][pm* pm*])
             (lambda () 
               [(stop-tick vp*)]
               [(stop-tick pm*)] 
-              #t))
+              #t)))
       (hash-table-put! h '%end-of-time %end-of-time)
       ;; ---
       (set! %stop
-            (let ([a (lambda () (close-viewport @vp) (close-viewport @pm))])
+            (let* ([vp* vp*]
+		   [pm* pm*]
+		   [a (lambda () (close-viewport vp*) (close-viewport pm*))])
               (lambda ()
                 [(stop-tick vp*)]
                 [(stop-tick pm*)]

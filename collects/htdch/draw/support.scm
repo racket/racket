@@ -16,8 +16,8 @@
      bigBangO-double-native))
   
   (define-signature canvas-native^
-    (show-native
-     close-native
+    (xshow-native
+     xclose-native
      stop-native
      copy-native
      drawCircle-geometry.Posn-int-colors.Color-native
@@ -88,7 +88,7 @@
 			       (lower (cdr s))))))))
 	  (list->string (lower (string->list s)))))
   
-      (define (show-native this accs gets privates)
+      (define (xshow-native this accs gets privates)
 	;; Kathy: it looks like I am working around a bug here. 
 	;; I really wanted to write ([hash-table-get privates 'width] this)
 	;; but that didn't work at all. 'width is not a key for privates, 
@@ -100,8 +100,9 @@
 	(start-and-export x y privates)
 	void-or-true)
   
-      (define (close-native this accs gets privates)
-	(wrap-start-check ([hash-table-get privates '%stop])))
+      (define (xclose-native this accs gets privates)
+	(wrap-start-check ([hash-table-get privates '%stop]))
+	void-or-true)
   
       (define (stop-native this accs gets privates)
 	(wrap-start-check ([hash-table-get privates '%end-of-time])))
