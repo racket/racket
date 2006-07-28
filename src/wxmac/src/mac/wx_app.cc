@@ -729,6 +729,7 @@ void wxApp::doMacKeyUpDown(Bool down)
     case 83:
     case 84:
     case 85:
+    case 86:
     case 87:
     case 88:
     case 89:
