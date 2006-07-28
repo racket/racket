@@ -1081,7 +1081,7 @@ the settings above should match r5rs
       (clear-definitions drs)
       (for-each fw:test:keystroke
                 (string->list
-                 "(define (f n)\n(cond ((zero? n) null)\n(else (cons n (f (- n 1))))))\n(f 200)"))
+                 "(define (f n)\n(cond ((zero? n) (list))\n(else (cons n (f (- n 1))))))\n(f 200)"))
       (test "Constructor" #f #f
             (case-lambda
              [(x) (not (member #\newline (string->list x)))]
