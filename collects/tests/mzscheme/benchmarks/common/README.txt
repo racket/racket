@@ -5,4 +5,8 @@ Bechmarks obtained from
 Files that end in ".sch" are supposed to be standard Scheme plus `time'.
 Files that end in ".ss" are MzScheme wrapper modules.
 
+To build <benchmark>.sch with Gambit or Bigloo:
+  mzscheme -qr mk-gambit.ss <banchmark>
+  mzscheme -qr mk-bigloo.ss <banchmark>
+
 Unpack "dynamic-input.txt.gz" if you want to run the "dynamic" benchmark.
