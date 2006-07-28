@@ -93,11 +93,10 @@ void scheme_init_char (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("char?", p, env);
 
-  scheme_add_global_constant("char=?", 
-			     scheme_make_folding_prim(char_eq, 
-						      "char=?", 
-						      2, -1, 1), 
-			     env);
+  p = scheme_make_folding_prim(char_eq, "char=?", 2, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("char=?", p, env);
+
   scheme_add_global_constant("char<?", 
 			     scheme_make_folding_prim(char_lt, 
 						      "char<?", 

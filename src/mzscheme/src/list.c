@@ -1170,7 +1170,7 @@ name (int argc, Scheme_Object *argv[]) \
 }
 
 GEN_MEM(memv, memv, scheme_eqv)
-GEN_MEM(memq, memq, scheme_eq)
+GEN_MEM(memq, memq, SAME_OBJ)
 GEN_MEM(member, member, scheme_equal)
 
 #define GEN_ASS(name, scheme_name, comp) \
@@ -1219,7 +1219,7 @@ name (int argc, Scheme_Object *argv[]) \
 }
 
 GEN_ASS(assv, assv, scheme_eqv)
-GEN_ASS(assq, assq, scheme_eq)
+GEN_ASS(assq, assq, SAME_OBJ)
 GEN_ASS(assoc, assoc, scheme_equal)
 
 #define LISTFUNC2(name, C, D) \

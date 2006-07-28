@@ -2557,6 +2557,8 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 }
 
 static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, int order_matters)
+/* Results go into R0 and R1. If !order_matters, and if only the
+   second is simple, then the arguments will be in reverse order. */
 {
   int simple1, simple2;
   
@@ -2617,6 +2619,76 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 
     mz_runstack_unskipped(jitter, 2);
   }
+
+  return 1;
+}
+
+static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
+                                jit_insn **for_branch, int branch_short)
+{
+  Scheme_Object *r1, *r2, *rator = app->rator;
+  GC_CAN_IGNORE jit_insn *reffail = NULL, *ref;
+  int direct = 0;
+
+  LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
+
+  r1 = app->rand1;
+  r2 = app->rand2;
+  generate_two_args(r1, r2, jitter, 1);
+
+  __START_SHORT_JUMPS__(branch_short);
+
+  if (!SCHEME_CHARP(r1)) {
+    GC_CAN_IGNORE jit_insn *pref;
+    pref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+    reffail = _jit.x.pc;
+    jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
+    (void)jit_jmpi(call_original_binary_rev_arith_code);
+    mz_patch_branch(pref);
+    jit_ldxi_s(JIT_R2, JIT_R0, (int)&((Scheme_Object *)0x0)->type);
+    (void)jit_bnei_i(reffail, JIT_R2, scheme_char_type);
+  } else {
+    if (!direct)
+      direct = (SCHEME_CHAR_VAL(r1) < 256);
+  }
+  if (!SCHEME_CHARP(r2)) {
+    if (!reffail) {
+      GC_CAN_IGNORE jit_insn *pref;
+      pref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
+      reffail = _jit.x.pc;
+      jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
+      (void)jit_jmpi(call_original_binary_rev_arith_code);
+      mz_patch_branch(pref);
+    } else {
+      (void)jit_bmsi_ul(reffail, JIT_R1, 0x1);
+    }
+    jit_ldxi_s(JIT_R2, JIT_R1, (int)&((Scheme_Object *)0x0)->type);
+    (void)jit_bnei_i(reffail, JIT_R2, scheme_char_type);
+  } else {
+    if (!direct)
+      direct = (SCHEME_CHAR_VAL(r2) < 256);
+  }
+
+  if (!direct) {
+    /* Extract character value */
+    jit_ldxi_i(JIT_R0, JIT_R0, (int)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
+    jit_ldxi_i(JIT_R1, JIT_R1, (int)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
+    ref = jit_bner_i(jit_forward(), JIT_R0, JIT_R1);
+  } else {
+    ref = jit_bner_p(jit_forward(), JIT_R0, JIT_R1);
+  }
+  if (for_branch) {
+    for_branch[0] = ref;
+  } else {
+    GC_CAN_IGNORE jit_insn *ref2;
+    (void)jit_movi_p(JIT_R0, scheme_true);
+    ref2 = jit_jmpi(jit_forward());
+    mz_patch_branch(ref);
+    (void)jit_movi_p(JIT_R0, scheme_false);
+    mz_patch_ucbranch(ref2);
+  }
+    
+  __END_SHORT_JUMPS__(branch_short);
 
   return 1;
 }
@@ -2721,6 +2793,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     return 1;
   } else if (IS_NAMED_PRIM(rator, ">")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 2, 0, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "char=?")) {
+    generate_binary_char(jitter, app, for_branch, branch_short);
     return 1;
   } else if (!for_branch) {
     if (IS_NAMED_PRIM(rator, "+")) {
