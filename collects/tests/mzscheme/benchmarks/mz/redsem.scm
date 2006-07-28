@@ -3,4 +3,5 @@
 (printf "Now\n")
 (time (begin 
 	(run-tests) (run-tests) (run-tests) (run-tests) (run-tests)
+	(run-tests) (run-tests) (run-tests) (run-tests) (run-tests)
 	))
