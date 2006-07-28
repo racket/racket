@@ -118,20 +118,25 @@
                    (custodian-shutdown-all instance-custodian)))
                (parameterize ([exit-handler the-exit-handler])
                  (define instance-id ((manager-create-instance manager) data the-exit-handler))
-                 (thread-cell-set! current-servlet-instance-id instance-id)
-                 (with-handlers ([(lambda (x) #t)
-                                  (make-servlet-exception-handler data)])
-                   ;; Two possibilities:
-                   ;; - module servlet. start : Request -> Void handles
-                   ;;   output-response via send/finish, etc.
-                   ;; - unit/sig or simple xexpr servlet. These must produce a
-                   ;;   response, which is then output by the server.
-                   ;; Here, we do not know if the servlet was a module,
-                   ;; unit/sig, or Xexpr; we do know whether it produces a
-                   ;; response.
-                   (define r ((servlet-handler the-servlet) req))
-                   (when (response? r)
-                     (send/back r))))))))
+                 (parameterize ([exit-handler (lambda x
+                                                ((manager-instance-unlock! manager) instance-id)
+                                                (the-exit-handler x))])
+                   (thread-cell-set! current-servlet-instance-id instance-id)
+                   ((manager-instance-lock! manager) instance-id)
+                   (with-handlers ([(lambda (x) #t)
+                                    (make-servlet-exception-handler data)])
+                     ;; Two possibilities:
+                     ;; - module servlet. start : Request -> Void handles
+                     ;;   output-response via send/finish, etc.
+                     ;; - unit/sig or simple xexpr servlet. These must produce a
+                     ;;   response, which is then output by the server.
+                     ;; Here, we do not know if the servlet was a module,
+                     ;; unit/sig, or Xexpr; we do know whether it produces a
+                     ;; response.
+                     (define r ((servlet-handler the-servlet) req))
+                     (when (response? r)
+                       (send/back r)))                 
+                   ((manager-instance-unlock! manager) instance-id)))))))
         (thread-cell-set! current-servlet last-servlet)
         (thread-cell-set! current-servlet-instance-id last-servlet-instance-id)
         (semaphore-post servlet-mutex)))
@@ -215,6 +220,7 @@
                               req)
                             (request-method req)))])
           (define data ((manager-instance-lookup-data manager) instance-id))
+          ((manager-instance-lock! manager) instance-id)
           ; We don't use call-with-semaphore or dynamic-wind because we
           ; always call a continuation. The exit-handler above ensures that
           ; the post is done.
@@ -227,6 +233,7 @@
               conn req (lambda () (suspend #t))))
             (k req))
           (semaphore-post (servlet-instance-data-mutex data))))
+      ((manager-instance-unlock! manager) instance-id)
       (thread-cell-set! current-servlet-instance-id last-servlet-instance-id)
       (thread-cell-set! current-servlet last-servlet))
     

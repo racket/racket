@@ -30,12 +30,12 @@
     (define instances (make-hash-table))
     (define next-instance-id (make-counter))    
     
-    (define-struct instance (data k-table))  
+    (define-struct instance (data k-table use-count))  
     (define (create-instance data expire-fn)
       (define instance-id (next-instance-id))
       (hash-table-put! instances
                        instance-id
-                       (make-instance data (create-k-table)))
+                       (make-instance data (create-k-table) 0))
       instance-id)
     (define (adjust-timeout! instance-id secs)
       (void))
@@ -51,6 +51,15 @@
                                   instance-expiration-handler)))))
       instance)
     
+    (define (instance-lock! instance-id)
+      (define instance (instance-lookup instance-id))
+      (set-instance-use-count! instance
+                               (add1 (instance-use-count instance))))      
+    (define (instance-unlock! instance-id)
+      (define instance (instance-lookup instance-id))
+      (set-instance-use-count! instance
+                               (sub1 (instance-use-count instance))))      
+    
     ;; Continuation table
     (define-struct k-table (next-id-fn htable))
     (define (create-k-table)
@@ -62,7 +71,7 @@
     
     (define (clear-continuations! instance-id)
       (match (instance-lookup instance-id)
-        [(struct instance (data (and k-table (struct k-table (next-id-fn htable)))))
+        [(struct instance (data (and k-table (struct k-table (next-id-fn htable))) locked?))
          (hash-table-for-each
           htable
           (match-lambda*
@@ -72,7 +81,7 @@
     
     (define (continuation-store! instance-id k expiration-handler)
       (match (instance-lookup instance-id)
-        [(struct instance (data (struct k-table (next-id-fn htable))))
+        [(struct instance (data (struct k-table (next-id-fn htable)) _))
          (define k-id (next-id-fn))
          (define salt (random 100000000))
          (hash-table-put! htable
@@ -81,7 +90,7 @@
          (list k-id salt)]))
     (define (continuation-lookup instance-id a-k-id a-salt)
       (match (instance-lookup instance-id)
-        [(struct instance (data (struct k-table (next-id-fn htable))))
+        [(struct instance (data (struct k-table (next-id-fn htable)) _))
          (match
              (hash-table-get htable a-k-id
                              (lambda ()
@@ -108,6 +117,8 @@
       (make-LRU-manager create-instance 
                         adjust-timeout!
                         instance-lookup-data
+                        instance-lock!
+                        instance-unlock!
                         clear-continuations!
                         continuation-store!
                         continuation-lookup
@@ -124,7 +135,7 @@
         (hash-table-for-each
          instances
          (match-lambda*
-           [(list instance-id (struct instance (_ (struct k-table (next-id-fn htable)))))
+           [(list instance-id (struct instance (_ (struct k-table (next-id-fn htable)) use-count)))
             (define empty? (box #t))
             (hash-table-for-each
              htable
@@ -136,7 +147,9 @@
                     (begin (set-box! empty? #f)
                            (hash-table-put! htable k-id
                                             (list s k eh (sub1 count)))))]))
-            (when (unbox empty?)
+            (when (and (unbox empty?)
+                       ; XXX race condition
+                       (zero? use-count))
               (set-box! removed (add1 (unbox removed)))
               (hash-table-remove! instances instance-id))])))
       (unless (zero? (unbox removed))

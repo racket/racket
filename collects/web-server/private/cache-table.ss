@@ -1,6 +1,6 @@
 (module cache-table mzscheme
   (require (lib "contract.ss"))
- 
+  
   (define-struct cache-table (hash semaphore))
   
   (define (new-cache-table)
@@ -15,22 +15,22 @@
        (set-cache-table-hash! ct (make-hash-table)))))
   
   (define (cache-table-lookup! ct entry-id entry-thunk)
-    (let ([ht (cache-table-hash ct)]
-          [sema (cache-table-semaphore ct)])
-      ; Fast lookup
-      (hash-table-get
-       ht entry-id
-       (lambda ()
-         ; Now lock for relookup and computation
-         (call-with-semaphore
-          sema
-          (lambda ()
-            (hash-table-get
-             ht entry-id
-             (lambda ()
-               (let ([entry (entry-thunk)])
-                 (hash-table-put! ht entry-id entry)
-                 entry)))))))))
+    (define ht (cache-table-hash ct))
+    (define sema (cache-table-semaphore ct))
+    ; Fast lookup
+    (hash-table-get
+     ht entry-id
+     (lambda ()
+       ; Now lock for relookup and computation
+       (call-with-semaphore
+        sema
+        (lambda ()
+          (hash-table-get
+           ht entry-id
+           (lambda ()
+             (define entry (entry-thunk))
+             (hash-table-put! ht entry-id entry)
+             entry)))))))
   
   (provide/contract
    [rename new-cache-table make-cache-table
