@@ -3,7 +3,7 @@ Bechmarks obtained from
  http://www.ccs.neu.edu/home/will/GC/sourcecode.html
 
 Files that end in ".sch" are supposed to be standard Scheme plus `time'.
-Files that end in ".ss" are MzScheme wrapper modules.
+Files that end in ".ss" are MzScheme wrapper modules or helper scripts.
 
 To build <benchmark>.sch with Gambit, Bigloo, or Chicken:
   mzscheme -qr mk-gambit.ss <banchmark>
