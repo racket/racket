@@ -958,6 +958,8 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       convert = 0;
       can_lift = 0;
     }
+    if (!info->lifts)
+      can_lift = 0;
   }
 
   /* We have to perform a small bit of constant propagation here.
@@ -972,6 +974,8 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   closure_map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * closure_size);
 
   has_tl = cl->has_tl;
+  if (has_tl && !can_lift)
+    convert = 0;
 
   /* Locals in closure are first: */
   oldpos = cl->base_closure_map;
@@ -982,8 +986,11 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     if (lifted) {
       /* Drop lifted binding from closure. */
       if (SAME_TYPE(SCHEME_TYPE(lifted), scheme_toplevel_type)
-          || SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_toplevel_type))
+          || SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_toplevel_type)) {
         has_tl = 1;
+        if (!can_lift)
+          convert = 0;
+      }
       /* If the lifted binding is for a converted closure,
          we may need to add more bindings to this closure. */
       if (SCHEME_RPAIRP(lifted)) {
