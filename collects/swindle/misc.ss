@@ -1842,8 +1842,9 @@
 ;;>> (dotimes (i n) body ...)
 ;;>   Loop `n' times, evaluating the body when `i' is bound to 0,1,...,n-1.
 (defsubst* (dotimes [i n] body0 body ...)
-  (let loop ([i 0])
-    (when (< i n) body0 body ... (loop (add1 i)))))
+  (let ([n* n])
+    (let loop ([i 0])
+      (when (< i n*) body0 body ... (loop (add1 i))))))
 
 ;;>> (dolist (x list) body ...)
 ;;>   Loop with `x' bound to elements of `list'.
