@@ -1379,7 +1379,11 @@ module browser threading seems wrong.
                 string))
           
           (define/private (get-save-diamond-prefix)
-            (let ([candidate-prefixes '("◆ " "* ")])
+            (let ([candidate-prefixes (list 
+                                       (case (system-type)
+                                         [(windows) "• "]
+                                         [else "◆ "])
+                                       "* ")])
               (ormap
                (lambda (candidate)
                  (and (andmap (λ (x) (send normal-control-font screen-glyph-exists? x #t))
