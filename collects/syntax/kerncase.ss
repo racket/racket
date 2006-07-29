@@ -32,7 +32,6 @@
 	    define-values-for-syntax
 	    set!
 	    let-values
-	    let*-values
 	    letrec-values
 	    lambda
 	    case-lambda
