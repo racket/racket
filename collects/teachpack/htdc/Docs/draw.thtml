@@ -36,7 +36,7 @@ import geometry.*;
 <li><code>bigBang(width,height,speed)</code>, which initializes the world,
 associates it with a <code>width</code> x <code>height</code> <a
 href="#canvas"><code>Canvas</code></a>, displays
-this canvas, and finally starts the clock at a rate of one tick per
+this canvas, enables keyevents, and finally starts the clock at a rate of one tick per
 <code>speed</code> seconds. If it succeeds with all of its actions, the method
 produces <code>true</code>. 
 
@@ -86,11 +86,11 @@ handlers has been called. Its purpose is to present <code>this World </code>
 graphically on its canvas. If it succeeds, its result is <code>true.</code>
 </li>
 
-<li><code>erase()</code>, which is invoked <em>after</em> one of the two event
-handlers has been called. Its purpose is to erase <code>this World</code>'s
-canvas, as much as needed. If it succeeds, its result is <code>true.</code>
-  Simple erase methods just draw a white rectangle of appropriate width and
-  height located at the origin. 
+<li><code>erase()</code>, which is invoked <em>before</em> one of the two event
+ handlers has been called. Its purpose is to erase <code>this World</code>'s
+ canvas, as much as needed. If it succeeds, its result is <code>true.</code>
+ Simple erase methods just draw a white rectangle of appropriate width and
+ height located at the origin. 
 </li>
 </ul>
 A program may, in principle, start several instances of (subclasses of)
@@ -104,14 +104,18 @@ height. The canvas is a rectangle, whose borders are parallel to the computer
 screen's borders. A program can use the following methods on instances of
 <code>Canvas:</code>
 <ul>
-<li><code>show()</code>, which displays the canvas. 
-  If it succeeds, it produces <code>true</code>. Invoking the method a second
-  time without calling <code>close</code> before has no effect. 
+
+<li><code>show()</code>, which initializes the canvas to a white area,
+  enables the drawing methods, and finally displays the canvas. If it
+  succeeds, it produces <code>true</code>. Invoking the method a second
+  time without calling <code>close</code> before has no effect.  
 </li>
 
-<li><code>close()</code>, which destroys the canvas. 
-If it succeeds, it produces <code>true</code>. Invoking <code>show</code>
-  again, displays an empty canvas of the same size. 
+<li><code>close()</code>, which hides the canvas. If it succeeds, it produces <code>true</code>. 
+
+<p>Closing the Canvas using the display controls does not fully hide the
+canvas; it is still necessary to invoke <code>close</code> before
+<code>show</code> is re-enabled.</p> 
 </li>
 
 <li><code>drawCircle(p,r,c)</code>, which draws a circle on <code>this
