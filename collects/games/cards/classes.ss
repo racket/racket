@@ -21,7 +21,7 @@
 	       invalidate-bitmap-cache
 	       find-next-selected-snip find-first-snip find-snip
 	       set-before set-after
-	       add-selected is-selected? no-selected set-selected
+	       add-selected is-selected? no-selected set-selected remove-selected
 	       get-snip-location move-to
 	       dc-location-to-editor-location
 	       set-selection-visible)
@@ -121,6 +121,21 @@
 	 (lambda (region)
 	   (let-values ([(sx sy sw sh) (get-region-box region)])
 	     (invalidate-bitmap-cache sx sy sw sh)))])
+      (public
+        [only-front-selected
+         (lambda ()
+ 	   (let loop ([s (find-next-selected-snip #f)][ok (find-first-snip)])
+	     (when s
+               (if (eq? s ok)
+                   (loop (find-next-selected-snip s)
+                         (send ok next))
+                   (let loop ([s s][l (list s)])
+                     (let ([next (find-next-selected-snip s)])
+                       (if next
+                           (loop next (cons s l))
+                           (for-each (lambda (s)
+                                       (remove-selected s))
+                                     l))))))))])
       (override
 	[on-paint
 	 (lambda (before? dc l t r b dx dy caret)
@@ -225,7 +240,7 @@
 	   (inner (void) after-interactive-move e)
 	   (for-each-selected (lambda (snip) (send snip back-to-original-location this)))
 	   (let ([cards (get-reverse-selected-list)])
-	     (no-selected) ; in case overlap changed
+	     (only-front-selected) ; in case overlap changed
 	     (for-each
 	      (lambda (region)
 		(when (region-hilite? region)
@@ -328,12 +343,7 @@
 			  (not (send click-base user-can-move)))
 		 (no-selected)))
 	     (when (and click click-base)
-	       (do-on-single-click click-base)))
-           #;
-           (when click-base
-             ; For double-clicks to be detected, the clicked card
-             ; must be selected:
-             (set-selected click-base)))]
+	       (do-on-single-click click-base))))]
 	[on-double-click
 	 (lambda (s e)
 	   (cond
@@ -515,7 +525,7 @@
 	[stack-cards
 	 (lambda (cards)
 	   (unless (null? cards)
-	     (send pb no-selected) ; in case overlap changes
+	     (send pb only-front-selected) ; in case overlap changes
 	     (begin-card-sequence)
 	     (let loop ([l (cdr cards)][behind (car cards)])
 	       (unless (null? l)
@@ -658,7 +668,7 @@
 					    (/ (- (current-milliseconds) start) 1000))))
 			   (loop (add1 n))))))))
 	     ;; In case overlap changed:
-	     (send pb no-selected)))]
+	     (send pb only-front-selected)))]
 	[position-cards-in-region
 	 (lambda (cards r set)
 	   (let-values ([(x y w h) (send pb get-region-box r)]
