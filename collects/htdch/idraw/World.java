@@ -26,8 +26,8 @@ public abstract class World {
 
  // --------------------------------------------------------    
 
- public native boolean endOfTime();
- public native World endOfWorld();
+ public native boolean endOfTime(String s);
+ public native World endOfWorld(String s);
  public abstract void onTick();
  public abstract void onKeyEvent(String ke); 
  public abstract void draw();

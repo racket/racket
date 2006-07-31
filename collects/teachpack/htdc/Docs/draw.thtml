@@ -14,8 +14,8 @@ import geometry.*;
  | Canvas theCanvas                  |------>| Canvas                                |
  +-----------------------------------+       +---------------------------------------+
  | boolean bigBang(int,int,double)   |       +---------------------------------------+
- | boolean endOfTime()               |       | boolean show()                        |
- | World endOfWorld()                |       | boolean close()                       |
+ | boolean endOfTime(String)         |       | boolean show()                        |
+ | World endOfWorld(String)          |       | boolean close()                       |
  |                                   |       | boolean drawCircle(Posn,int,Color)    |
  |                                   |       | boolean drawDisk(Posn,int,Color)      |
  | abstract World onTick()           |       | boolean drawRect(Posn,int,int,Color)  |
@@ -51,13 +51,13 @@ produces <code>true</code>.
 </p>
 </li>
 
-<li><code>endOfTime</code>, stops the clock and, if it succeeds, produces
+<li><code>endOfTime</code>, displays the given message, stops the clock and, if it succeeds, produces
  <code>true</code>. After the end of time, events no longer trigger calls
  to <code>onTick</code> or <code>onKeyEvent</code> (see below). The canvas
  remains visible. 
 </li>
 
-<li><code>endOfWorld</code>, stops the clock and, if it succeeds, produces the
+<li><code>endOfWorld</code>, displays the given message, stops the clock and, if it succeeds, produces the
  last <code>World</code>. After the end of the world,  events no longer trigger calls
  to <code>onTick</code> or <code>onKeyEvent</code> (see below). The canvas
  remains visible. 
