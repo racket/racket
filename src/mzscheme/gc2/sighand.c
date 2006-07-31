@@ -34,8 +34,8 @@ void fault_handler(int sn, struct sigcontext sc)
    /* x86 */
    designate_modified((void *)sc.cr2);
 #  endif
-   signal(SIGSEGV, (void (*)(int))fault_handler);
-#  define NEED_SIGSEGV
+#  define NEED_SIGACTION
+#  define USE_SIGACTON_SIGNAL_KIND SIGSEGV
 }
 # endif
 #endif
@@ -47,7 +47,8 @@ void fault_handler(int sn, int code, struct sigcontext *sc, char *addr)
 {
   designate_modified(addr);
 }
-# define NEED_SIGBUS
+#  define NEED_SIGACTION
+#  define USE_SIGACTON_SIGNAL_KIND SIGBUS
 #endif
 
 /* ========== Solaris signal handler ========== */
@@ -89,12 +90,6 @@ typedef LONG (WINAPI*gcPVECTORED_EXCEPTION_HANDLER)(LPEXCEPTION_POINTERS e);
 
 static void initialize_signal_handler()
 {
-# ifdef NEED_SIGSEGV
-  signal(SIGSEGV, (void (*)(int))fault_handler);
-# endif
-# ifdef NEED_SIGBUS
-  signal(SIGBUS, (void (*)(int))fault_handler);
-# endif
 # ifdef NEED_OSX_MACH_HANDLER
   macosx_init_exception_handler();
 # endif
@@ -104,6 +99,8 @@ static void initialize_signal_handler()
     memset(&act, sizeof(sigaction), 0);
     act.sa_sigaction = fault_handler;
     sigemptyset(&act.sa_mask);
+    sigaddset(&act.sa_mask, SIGCHLD); /* needed by MzScheme, since SIGCHLD handling 
+                                         may trigger a write barrier */
     act.sa_flags = SA_SIGINFO;
     sigaction(USE_SIGACTON_SIGNAL_KIND, &act, &oact);
   }

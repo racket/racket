@@ -2519,6 +2519,7 @@ static int mark_comp_info_MARK(void *p) {
   
   gcMARK(i->value_name);
   gcMARK(i->certs);
+  gcMARK(i->observer);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compile_Info));
@@ -2529,6 +2530,7 @@ static int mark_comp_info_FIXUP(void *p) {
   
   gcFIXUP(i->value_name);
   gcFIXUP(i->certs);
+  gcFIXUP(i->observer);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compile_Info));
