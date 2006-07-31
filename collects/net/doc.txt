@@ -1265,6 +1265,12 @@ TYPES ----------------------------------------------------------------
   (the first one terminates the last field, and the second terminates
   the header).
 
+  OR
+
+  A byte-string that is an RFC-822-compliant header. Format is as
+  prior paragraph.  Only specifically noted functions below
+  work with byte-string headers.
+
 PROCEDURES -----------------------------------------------------------
 
 > empty-header
@@ -1276,6 +1282,8 @@ PROCEDURES -----------------------------------------------------------
 
   If the format of `candidate-header-string' matches RFC 822, void is
   returned, otherwise an exception is raised.
+
+  This function works when called with a byte-string.
 
 > (extract-field field-string header) -> string or #f
 
@@ -1290,11 +1298,17 @@ PROCEDURES -----------------------------------------------------------
     (extract-field "TO" (insert-field "to" "me@localhost" empty-header))
     ; => "me@localhost"
 
+  This function works when called with byte-strings for both field-string
+  and header.
+
 > (extract-all-fields header) -> (list (cons string string))
 
   Returns an association-list version of the header; the case of the
   field names is preserved, as well as the order and duplicate uses of
   a field name.
+
+  This function works with a byte-string header. In this case, it returns
+  a value of the form (list (cons bytes bytes)).
 
 > (remove-field field-string header) -> header
 
@@ -1303,6 +1317,9 @@ PROCEDURES -----------------------------------------------------------
   times). If the field is not in `header', then the return value is
   `header'.
 
+  This function works when called with byte-strings for both
+  field-string and header
+
 > (insert-field field-string value-string header) -> header
 
   Creates a new header by prefixing the given header with the given
@@ -1310,12 +1327,18 @@ PROCEDURES -----------------------------------------------------------
   CRLF, but a multi-line value (perhaps created with
   `data-lines->data') may contain separator CRLFs.
 
+  This function works when all arguments are byte-strings.
+
 > (replace-field field-string value-string header) -> header
 
   Replaces or inserts the given field. If value-string is #f, then
   the field is simply removed.
 
+  This function works when all arguments are byte-strings.
+
 > (append-headers a-header another-header) -> header
+
+  This function works when both arguments are byte-strings.
 
 > (standard-message-header from-string to-list-of-strings cc-list-of-strings bcc-list-of-strings subject-string) -> header
 
