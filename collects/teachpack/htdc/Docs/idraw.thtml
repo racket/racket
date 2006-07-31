@@ -16,8 +16,8 @@ import geometry.*;
   | Canvas theCanvas                |------>| Canvas                             |
   +---------------------------------+       +------------------------------------+
   | void bigBang(int,int,double)    |       +------------------------------------+
-  | World endOfTime()               |       | void show()                        |
-  | World endOfWorld()              |       | void close()                       |
+  | World endOfTime(String)         |       | void show()                        |
+  | World endOfWorld(String)        |       | void close()                       |
   | abstract void onTick()          |       | void drawCircle(Posn,int,Color)    |
   | abstract void onKeyEvent(String)|       | void drawDisk(Posn,int,Color)      |
   | abstract void draw()            |       | void drawRect(Posn,int,int,Color)  |
