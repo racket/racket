@@ -211,6 +211,11 @@
     (un-exact (- (expt 2 30)) 'bitwise-not (sub1 (expt 2 30)))
     (un-exact (- -1 (expt 2 32)) 'bitwise-not (expt 2 32))
 
+    (bin-exact #t 'char=? #\a #\a)
+    (bin-exact #t 'char=? #\u1034 #\u1034)
+    (bin-exact #f 'char=? #\a #\b)
+    (bin-exact #f 'char=? #\u1034 #\a)
+
     (bin-exact 'a 'vector-ref #(a b c) 0)
     (bin-exact 'b 'vector-ref #(a b c) 1)
     (bin-exact 'c 'vector-ref #(a b c) 2)

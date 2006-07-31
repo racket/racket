@@ -265,14 +265,13 @@
 (test 10 syntax-property (expand s) 'testing)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check tracking of primitive expanders
+;; Check tracking of (formerly) primitive expanders
 
 (test '(let) (tree-map syntax-e) (syntax-property (expand #'(let ([x 10]) x)) 'origin))
-(test '(let let*) (tree-map syntax-e) (syntax-property (expand #'(let* ([x 10]) x)) 'origin))
+(test '(let*-values let*) (tree-map syntax-e) (syntax-property (expand #'(let* ([x 10]) x)) 'origin))
 (test '(let) (tree-map syntax-e) (syntax-property (expand #'(let loop ([x 10]) x)) 'origin))
 (test '(letrec) (tree-map syntax-e) (syntax-property (expand #'(letrec ([x 10]) x)) 'origin))
 (test '(let*-values) (tree-map syntax-e) (syntax-property (expand #'(let*-values ([(x) 10]) x)) 'origin))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Symbol Keys
@@ -637,7 +636,7 @@
        (lambda (expr)
 	 (let ([e (expand expr)])
 	   (syntax-case e ()
-	     [(lv () beg)
+	     [(lv (bind ...) beg)
 	      (let ([db (syntax-property #'beg 'disappeared-binding)])
 		(syntax-case #'beg ()
 		  [(bg e)
@@ -652,7 +651,10 @@
 				     (bound-identifier=? (car db) (car o))))
 			   db o))]))])))])
   (check-expr #'(let () (letrec-syntaxes+values ([(x) (lambda (stx) #'(quote y))]) () x)))
-  (check-expr #'(let () (define-syntax (x stx) #'(quote y)) x)))
+  (check-expr #'(let-values () (define-syntax (x stx) #'(quote y)) x))
+  (check-expr #'(let-values ([(y) 2]) (define-syntax (x stx) #'(quote y)) x))
+  (check-expr #'(let () (define-syntax (x stx) #'(quote y)) x))
+  (check-expr #'(let ([z 45]) (define-syntax (x stx) #'(quote y)) x)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; protected identifiers

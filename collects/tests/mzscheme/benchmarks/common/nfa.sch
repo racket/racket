@@ -40,9 +40,11 @@
 
 (time (let ((input (string-append (make-string 133 #\a) "bc")))
         (let loop ((n 10000))
-          (unless (zero? n)
-            (recursive-nfa input)
-            (loop (- n 1))))))
+          (if (zero? n)
+              'done
+              (begin
+                (recursive-nfa input)
+                (loop (- n 1)))))))
 
 
 

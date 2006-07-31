@@ -56,7 +56,8 @@
                                         (loop5 (+ i5 1) result)
                                         (loop6 (+ i6 1) (+ result 1)))))))))))))))
 
-(display (time (loops 18))) (newline)
-(display (time (func-loops 18))) (newline)
+(define cnt 18)
+(display (time (loops cnt))) (newline)
+(display (time (func-loops cnt))) (newline)
 
 

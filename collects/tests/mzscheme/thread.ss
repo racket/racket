@@ -1219,6 +1219,30 @@
 		 (thread (lambda () (k null)))
 		 (sync r-ch))))))))
 
+;; --------------------
+;; Check BEGIN_ESCAPABLE:
+
+(let ([try
+       (lambda (break? kill?)
+         (let ([t (parameterize ([current-directory (or (current-load-relative-directory)
+                                                        (current-directory))])
+                    (thread (lambda () 
+                              (with-handlers ([exn:break? void])
+                                (let loop () (directory-list) (loop))) 
+                              (when kill?
+                                (let loop () (sleep 0.01) (loop))))))])
+           (sleep SLEEP-TIME)
+           (when break?
+             (break-thread t)
+             (when kill?
+               (sleep SLEEP-TIME)))
+           (when kill?
+             (kill-thread t))
+           (thread-wait t)))])
+  (try #t #f)
+  (try #f #t)
+  (try #t #t))
+
 ; --------------------
 
 (report-errs)
