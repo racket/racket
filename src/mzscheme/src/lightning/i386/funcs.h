@@ -56,11 +56,11 @@ jit_flush_code(void *dest, void *end)
      jit_flush_code as an mprotect.  */
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   static unsigned long prev_page = 0, prev_length = 0;
-  long page, length;
+  unsigned long page, length;
 # ifdef PAGESIZE
   const long page_size = PAGESIZE;
 # else
-  static long page_size = -1;
+  static unsigned long page_size = -1;
   if (page_size == -1) {
 #  ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
     SYSTEM_INFO info;

@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="wxs"
+	ProjectGUID="{B9FC613A-B427-4DB5-B1E3-7673D384ECE3}"
 	>
 	<Platforms>
 		<Platform
@@ -40,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\mzscheme\include,..\..\mred\wxme,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__"
+				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderThrough="wx.h"
@@ -110,7 +111,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\mzscheme\include,..\..\mred\wxme,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__"
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"

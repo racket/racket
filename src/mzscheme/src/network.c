@@ -1473,7 +1473,7 @@ static long tcp_write_string(Scheme_Output_Port *port,
     if (data->b.out_bufmode < 2) {
       if (data->b.out_bufmax + len < TCP_BUFFER_SIZE) {
 	memcpy(data->b.out_buffer + data->b.out_bufmax, s + offset, len);
-	data->b.out_bufmax += len;
+	data->b.out_bufmax += (short)len;
 	if (data->b.out_bufmode == 1) {
 	  /* Check for newline */
 	  int i;

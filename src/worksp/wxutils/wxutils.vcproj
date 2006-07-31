@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="wxutils"
+	ProjectGUID="{31231DD7-4B8F-4E46-A747-81E41AFE04B5}"
 	>
 	<Platforms>
 		<Platform
@@ -40,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxwindow\contrib\wxxpm\libxpm.34b\lib,..\..\wxWindow\contrib\fafa"
-				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,_CRT_SECURE_NO_DEPRECATE,$(NOINHERIT)"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -109,7 +110,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxwindow\contrib\wxxpm\libxpm.34b\lib,..\..\wxWindow\contrib\fafa"
-				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,_CRT_SECURE_NO_DEPRECATE,$(NOINHERIT)"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"

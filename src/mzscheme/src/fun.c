@@ -29,6 +29,7 @@
    overflow and continuation-jump limits. */
 
 #include "schpriv.h"
+#include "schexpobs.h"
 
 /* The implementations of the time primitives, such as
    `current-seconds', vary a lot from platform to platform. */
@@ -2138,13 +2139,16 @@ Scheme_Object *
 scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 		   Scheme_Object *rator, Scheme_Object *code,
 		   Scheme_Comp_Env *env, Scheme_Object *boundname,
-		   Scheme_Object *certs, int for_set)
+                   Scheme_Compile_Expand_Info *rec, int drec,
+		   int for_set)
 {
   Scheme_Object *orig_code = code;
+  Scheme_Object *certs;
+  certs = rec[drec].certs;
 
  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_id_macro_type)) {
    Scheme_Object *mark;
-
+   
    rator = SCHEME_PTR1_VAL(rator);
    /* rator is now an identifier */
 
@@ -2184,11 +2188,15 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
    mark = scheme_new_mark();
    code = scheme_add_remove_mark(code, mark);
 
+   SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(rec[drec].observer, code);
+
    scheme_on_next_top(env, mark, boundname, certs, 
 		      menv, menv ? menv->link_midx : env->genv->link_midx);
 
    rands_vec[0] = code;
    code = scheme_apply(rator, 1, rands_vec);
+
+   SCHEME_EXPAND_OBSERVE_MACRO_POST_X(rec[drec].observer, code);
 
    if (!SCHEME_STXP(code)) {
      scheme_raise_exn(MZEXN_FAIL_CONTRACT,

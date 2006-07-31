@@ -258,7 +258,7 @@ void wxRadioButton::Paint(void)
 	str = wxCFString(labelString);
 	
 	DrawThemeTextBox(str, kThemeSystemFont, kThemeStateActive,
-			 0, &r, teJustLeft, NULL);
+			 0, &r, teJustLeft, 0);
 
 	CFRelease(str);
       }
@@ -276,7 +276,7 @@ void wxRadioButton::Paint(void)
 	  state.value = bitmapState ? kThemeButtonOn : kThemeButtonOff;
 	  state.adornment = ((trackState & 0x2) ? kThemeAdornmentFocus : kThemeAdornmentNone);
 	  
-	  DrawThemeButton(&r, kThemeRadioButton, &state, NULL, NULL /* erase */, NULL, NULL);
+	  DrawThemeButton(&r, kThemeRadioButton, &state, NULL, NULL /* erase */, NULL, 0);
 	}
       }
     }

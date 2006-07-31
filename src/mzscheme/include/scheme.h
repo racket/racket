@@ -1041,6 +1041,7 @@ typedef void (*Scheme_Kill_Action_Func)(void *);
       savebuf = scheme_current_thread->error_buf; \
       scheme_current_thread->error_buf = &newbuf; \
       if (scheme_setjmp(newbuf)) { \
+        scheme_pop_kill_action(); \
         func(data); \
         scheme_longjmp(*savebuf, 1); \
       } else {
@@ -1145,6 +1146,8 @@ enum {
 
   MZCONFIG_THREAD_SET,
   MZCONFIG_THREAD_INIT_STACK_SIZE,
+
+  MZCONFIG_EXPAND_OBSERVE,
 
   __MZCONFIG_BUILTIN_COUNT__
 };

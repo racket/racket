@@ -3244,7 +3244,7 @@ static int u_strcmp(mzchar *s, const char *_t)
   int i;
   unsigned char *t = (unsigned char *)_t;
 
-  for (i = 0; s[i] && (scheme_tolower(s[i]) == scheme_tolower(((unsigned char *)t)[i])); i++) {
+  for (i = 0; s[i] && (scheme_tolower(s[i]) == scheme_tolower((mzchar)((unsigned char *)t)[i])); i++) {
   }
   if (s[i] || t[i])
     return 1;
@@ -5014,7 +5014,7 @@ static Scheme_Object *make_readtable(int argc, Scheme_Object **argv)
       } else {
 	scheme_hash_set(t->mapping, scheme_make_integer(ch), val);
 	if (ch < 128)
-	  t->fast_mapping[ch] = SCHEME_INT_VAL(SCHEME_CAR(val));
+	  t->fast_mapping[ch] = (char)SCHEME_INT_VAL(SCHEME_CAR(val));
       }
     }
   }

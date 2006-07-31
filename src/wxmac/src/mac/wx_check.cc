@@ -322,7 +322,7 @@ void wxCheckBox::Paint(void)
 	state.value = bitmapState ? kThemeButtonOn : kThemeButtonOff;
 	state.adornment = ((trackState & 0x2) ? kThemeAdornmentFocus : kThemeAdornmentNone);
 	
-	DrawThemeButton(&r, kThemeCheckBox, &state, NULL, NULL /* erase */, NULL, NULL);
+	DrawThemeButton(&r, kThemeCheckBox, &state, NULL, NULL /* erase */, NULL, 0);
       }
     }
   }

@@ -118,10 +118,16 @@ public:
   inline void *operator new(size_t size);
   inline void *operator new(size_t size, GCPlacement gcp);
   inline void operator delete(void *obj);
+#ifdef _MSC_VER
+  inline void operator delete(void *obj, GCPlacement gcp);
+#endif
 #ifdef OPERATOR_NEW_ARRAY
   inline void *operator new[](size_t size);
   inline void *operator new[](size_t size, GCPlacement gcp);
   inline void operator delete[](void *obj);
+# ifdef _MSC_VER
+  inline void operator delete[](void *obj, GCPlacement gcp);
+# endif
 #endif
 
 #ifdef MZ_PRECISE_GC
@@ -223,6 +229,13 @@ inline void gc::operator delete(void * /*obj*/)
 {
 }
 
+#ifdef _MSC_VER
+inline void gc::operator delete(void *, GCPlacement gcp)
+{
+}
+#endif
+
+
 #ifdef OPERATOR_NEW_ARRAY
 inline void *gc::operator new[](size_t size) {
 #if defined(USE_SENORA_GC) || defined(MZ_PRECISE_GC)
@@ -239,6 +252,12 @@ inline void *gc::operator new[](size_t size, GCPlacement gcp) {
 inline void gc::operator delete[](void *obj) {
   gc::operator delete(obj);
 }
+
+# ifdef _MSC_VER
+inline void gc::operator delete[](void *obj, GCPlacement gcp) {
+  gc::operator delete(obj, gcp);
+}
+# endif
 #endif
 
 
@@ -263,5 +282,14 @@ inline void *operator new[](size_t size, GCPlacement gcp)
 }
 #endif
 
+#ifdef _MSC_VER
+inline void operator delete(void *, GCPlacement)
+{
+}
+
+inline void operator delete[](void *, GCPlacement)
+{
+}
+#endif
 
 #endif /* WXGC_CPP_H */

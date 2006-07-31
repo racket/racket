@@ -28,6 +28,7 @@
 
 #include "schpriv.h"
 #include "schminc.h"
+#include "schexpobs.h"
 
 #if defined(UNIX_LIMIT_STACK) || defined(UNIX_LIMIT_FDSET_SIZE)
 # include <signal.h>
@@ -341,6 +342,7 @@ Scheme_Env *scheme_basic_env()
 		   (Scheme_Object *)env); 
   scheme_init_memtrace(env);
   scheme_init_parameterization(env);
+  scheme_init_expand_observe(env);
 
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign(env);
@@ -3898,6 +3900,7 @@ local_lift_expr(int argc, Scheme_Object *argv[])
   Scheme_Comp_Env *env, *orig_env;
   Scheme_Object *id, *local_mark, *expr, *data, *vec, *id_sym;
   Scheme_Lift_Capture_Proc cp;  
+  Scheme_Object *orig_expr;
 
   expr = argv[0];
   if (!SCHEME_STXP(expr))
@@ -3936,6 +3939,7 @@ local_lift_expr(int argc, Scheme_Object *argv[])
 			 NULL, 1);
 
   expr = scheme_stx_activate_certs(expr);
+  orig_expr = expr;
 
   expr = cp(data, &id, expr, orig_env);
 
@@ -3943,6 +3947,8 @@ local_lift_expr(int argc, Scheme_Object *argv[])
   SCHEME_VEC_ELS(vec)[0] = expr;
 
   id = scheme_add_remove_mark(id, local_mark);
+
+  SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(scheme_get_expand_observe(), id, orig_expr);
 
   return id;
 }
@@ -3952,6 +3958,7 @@ local_lift_end_statement(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
   Scheme_Object *local_mark, *expr, *pr;
+  Scheme_Object *orig_expr;
 
   expr = argv[0];
   if (!SCHEME_STXP(expr))
@@ -3977,9 +3984,12 @@ local_lift_end_statement(int argc, Scheme_Object *argv[])
                      " a run-time expression in a module declaration");
   
   expr = scheme_add_remove_mark(expr, local_mark);
+  orig_expr = expr;
 
   pr = scheme_make_pair(expr, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3]);
   SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[3] = pr;
+
+  SCHEME_EXPAND_OBSERVE_LIFT_STATEMENT(scheme_get_expand_observe(), orig_expr);
   
   return scheme_void;
 }

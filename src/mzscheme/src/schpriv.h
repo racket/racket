@@ -1514,6 +1514,7 @@ typedef struct Scheme_Compile_Expand_Info
   int comp;
   Scheme_Object *value_name;
   Scheme_Object *certs;
+  Scheme_Object *observer;
   char dont_mark_local_use;
   char resolve_module_ids;
   int depth;
@@ -1687,7 +1688,8 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 Scheme_Object *scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 				  Scheme_Object *f, Scheme_Object *code,
 				  Scheme_Comp_Env *env, Scheme_Object *boundname,
-				  Scheme_Object *certs, int for_set);
+                                  Scheme_Compile_Expand_Info *rec, int drec,
+                                  int for_set);
 
 Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, 
 					      Scheme_Comp_Env *env, Scheme_Object *certs);
@@ -1735,10 +1737,11 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 					     Scheme_Compile_Info *rec, int drec);
 
-Scheme_Object *scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
-				    Scheme_Env *exp_env, Scheme_Object *insp, Scheme_Object *certs,
-				    Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
-				    int *_pos, Scheme_Object *names_to_disappear);
+void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
+                          Scheme_Env *exp_env, Scheme_Object *insp, 
+                          Scheme_Compile_Expand_Info *rec, int drec,
+                          Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
+                          int *_pos);
 int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 
 /* Resolving & linking */

@@ -128,7 +128,7 @@ static int check_dos_slashslash_qm(const char *next, int len, int *drive_end,
 				   int *clean_start, int *add_sep);
 #endif
 
-#define is_drive_letter(c) ((c > 0) && (c < 128) && scheme_isalpha(c))
+#define is_drive_letter(c) ((c > 0) && (c < 128) && isalpha(c))
 
 /* local */
 static Scheme_Object *path_p(int argc, Scheme_Object **argv);

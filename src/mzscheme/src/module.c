@@ -25,6 +25,7 @@
 
 #include "schpriv.h"
 #include "schmach.h"
+#include "schexpobs.h"
 
 /* globals */
 Scheme_Object *scheme_sys_wraps0;
@@ -78,10 +79,12 @@ static Scheme_Object *module_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *top_level_require_optimize(Scheme_Object *data, Optimize_Info *info);
 static Scheme_Object *top_level_require_resolve(Scheme_Object *data, Resolve_Info *info);
 
-static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht, 
+static void module_validate(Scheme_Object *data, Mz_CPort *port, 
+                            char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
                             int depth, int letlimit, int delta, 
 			    int num_toplevels, int num_stxes, int num_lifts);
-static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht,
+static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
+                                       char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
                                        int depth, int letlimit, int delta, 
 				       int num_toplevels, int num_stxes, int num_lifts);
 
@@ -3147,7 +3150,8 @@ static Scheme_Object *module_jit(Scheme_Object *data)
   return (Scheme_Object *)m;
 }
 
-static void module_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht,
+static void module_validate(Scheme_Object *data, Mz_CPort *port, 
+                            char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
 			    int depth, int letlimit, int delta, 
 			    int num_toplevels, int num_stxes, int num_lifts)
 {
@@ -3471,7 +3475,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     empty_self_modidx = scheme_make_modidx(scheme_false, scheme_false, scheme_false);
     empty_self_symbol = scheme_make_symbol("expanded module"); /* uninterned */
   }
-
+  
   /* phase shift to replace self_modidx of previous expansion (if any): */
   fm = scheme_stx_phase_shift(fm, 0, empty_self_modidx, self_modidx, NULL);
 
@@ -3480,7 +3484,12 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   fm = scheme_add_rename(fm, tt_rn);
 
   if (!check_mb) {
+    
+    SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
+
     fm = scheme_check_immediate_macro(fm, benv, rec, drec, 0, &mbval, NULL, NULL);
+
+    SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
 
     /* If expansion is not the primitive `#%module-begin', add local one: */
     if (!SAME_OBJ(mbval, modbeg_syntax)) {
@@ -3592,6 +3601,7 @@ module_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *re
 static Scheme_Object *
 module_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  SCHEME_EXPAND_OBSERVE_PRIM_MODULE(erec[drec].observer);
   if (erec[drec].depth > 0)
     erec[drec].depth++;
 
@@ -3750,6 +3760,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   int all_simple_renames = 1, et_all_simple_renames = 1, tt_all_simple_renames = 1;
   int maybe_has_lifts = 0;
   Scheme_Object *redef_modname;
+  Scheme_Object *observer;
 
   if (!(env->flags & SCHEME_MODULE_FRAME))
     scheme_wrong_syntax(NULL, NULL, form, "illegal use (not a module body)");
@@ -3906,6 +3917,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
   maybe_has_lifts = 0;
   
+  /* Pass 1 */
+
+  observer = rec[drec].observer;
+
   /* Partially expand all expressions, and process definitions, requires,
      and provides. Also, flatten top-level `begin' expressions: */
   for (fm = SCHEME_STX_CDR(form); !SCHEME_STX_NULLP(fm); ) {
@@ -3914,6 +3929,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
     while (1) {
       Scheme_Object *fst;
+
+      SCHEME_EXPAND_OBSERVE_NEXT(observer);
 
       e = SCHEME_STX_CAR(fm);
 
@@ -3929,6 +3946,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	erec1.depth = -1;
 	erec1.value_name = scheme_false;
 	erec1.certs = rec[drec].certs;
+        erec1.observer = rec[drec].observer;
 	e = scheme_expand_expr(e, xenv, &erec1, 0);	
       }
 
@@ -3944,6 +3962,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_et_rn);
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_tt_rn);
 	fm = scheme_append(fst, scheme_make_pair(e, fm));
+        SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer, fst);
       } else {
 	/* No lifts added... */
 	if (SCHEME_STX_PAIRP(e))
@@ -3957,9 +3976,11 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  e = scheme_add_rename(e, post_ex_et_rn);
 	  e = scheme_add_rename(e, post_ex_tt_rn);
 	  fm = scheme_flatten_begin(e, fm);
+	  SCHEME_EXPAND_OBSERVE_SPLICE(observer, fm);
 	  if (SCHEME_STX_NULLP(fm)) {
             fm = scheme_frame_get_end_statement_lifts(xenv);
             fm = scheme_reverse(fm);
+            SCHEME_EXPAND_OBSERVE_LIFT_END_LOOP(observer, fm);
             maybe_has_lifts = 0;
             if (SCHEME_NULLP(fm)) {
               e = NULL;
@@ -3988,6 +4009,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	if (scheme_stx_module_eq(scheme_define_values_stx, fst, 0)) {
 	  /************ define-values *************/
 	  Scheme_Object *vars, *val;
+
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(observer);
 
 	  /* Create top-level vars */
 	  scheme_define_parse(e, &vars, &val, 0, env);
@@ -4033,7 +4057,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    
 	    vars = SCHEME_STX_CDR(vars);
 	  }
-	
+          
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  normal = 1;
 	} else if (scheme_stx_module_eq(scheme_define_syntaxes_stx, fst, 0)
 		   || scheme_stx_module_eq(define_for_syntaxes_stx, fst, 0)) {
@@ -4049,6 +4074,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  int for_stx;
 
 	  for_stx = scheme_stx_module_eq(define_for_syntaxes_stx, fst, 0);
+
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(observer);
 
 	  scheme_define_parse(e, &names, &code, 1, env);
 
@@ -4117,6 +4145,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  mrec.resolve_module_ids = 0;
 	  mrec.value_name = NULL;
 	  mrec.certs = rec[drec].certs;
+          mrec.observer = NULL;
 
 	  if (!rec[drec].comp) {
 	    Scheme_Expand_Info erec1;
@@ -4124,6 +4153,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    erec1.depth = -1;
 	    erec1.value_name = boundname;
 	    erec1.certs = rec[drec].certs;
+            erec1.observer = rec[drec].observer;
+	    SCHEME_EXPAND_OBSERVE_PHASE_UP(observer);
 	    code = scheme_expand_expr_lift_to_let(code, eenv, &erec1, 0);
 	  }
 	  m = scheme_compile_expr_lift_to_let(code, eenv, &mrec, 0);
@@ -4163,10 +4194,15 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 				 scheme_make_pair(m, scheme_make_pair(code, scheme_null)));
 	    e = scheme_datum_to_syntax(m, e, e, 0, 2);
 	  }
+          
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  normal = 0;
 	} else if (scheme_stx_module_eq(require_stx, fst, 0)) {	
 	  /************ require *************/
 	  Scheme_Object *imods;
+          
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE(observer);
 
 	  /* Add requires to renaming: */
 	  imods = parse_requires(e, self_modidx, env->genv, 
@@ -4179,10 +4215,15 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  if (rec[drec].comp)
 	    e = NULL;
+
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  normal = 0;
 	} else if (scheme_stx_module_eq(require_for_syntax_stx, fst, 0)) {	
 	  /************ require-for-syntax *************/
 	  Scheme_Object *imods;
+
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_SYNTAX(observer);
 
 	  scheme_prepare_exp_env(env->genv);
 
@@ -4201,10 +4242,15 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  if (rec[drec].comp)
 	    e = NULL;
+
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  normal = 0;
 	} else if (scheme_stx_module_eq(require_for_template_stx, fst, 0)) {	
 	  /************ require-for-template *************/
 	  Scheme_Object *imods;
+
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_TEMPLATE(observer);
 
 	  scheme_prepare_template_env(env->genv);
 
@@ -4223,12 +4269,17 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  if (rec[drec].comp)
 	    e = NULL;
+
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  normal = 0;
 	} else if (scheme_stx_module_eq(provide_stx, fst, 0)) {
 	  /************ provide *************/
 	  /* Add provides to table: */
 	  Scheme_Object *l;
 	  int protect_cnt = 0;
+
+          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+          SCHEME_EXPAND_OBSERVE_PRIM_PROVIDE(observer);
 
 	  if (scheme_stx_proper_list_length(e) < 0)
 	    scheme_wrong_syntax(NULL, e, form, "bad syntax (" IMPROPER_LIST_FORM ")");
@@ -4478,9 +4529,12 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  if (rec[drec].comp)
 	    e = NULL;
+
+          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
 	  normal = 0;
-	} else
+	} else {
 	  normal = 1;
+        }
       } else
 	normal = 1;
     } else
@@ -4501,11 +4555,15 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     if (SCHEME_STX_NULLP(fm) && maybe_has_lifts) {
       fm = scheme_frame_get_end_statement_lifts(xenv);
       fm = scheme_reverse(fm);
+      SCHEME_EXPAND_OBSERVE_LIFT_END_LOOP(observer, fm);
       maybe_has_lifts = 0;
     }
   }
   /* first =  a list of (cons semi-expanded-expression normal?) */
 
+  /* Phase 2 */
+  SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);
+  
   if (rec[drec].comp) {
     /* Module manages its own prefix. That's how we get
        multiple instantiation of a module with "dynamic linking". */
@@ -4528,6 +4586,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     e = SCHEME_CAR(p);
     normal = SCHEME_TRUEP(SCHEME_CDR(e));
     e = SCHEME_CAR(e);
+    
+    SCHEME_EXPAND_OBSERVE_NEXT(observer);
+
     if (normal) {
       l = (maybe_has_lifts 
            ? scheme_frame_get_end_statement_lifts(cenv) 
@@ -4567,6 +4628,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	} else {
 	  first = p;
 	}
+	SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer, first);
       }
     } else {
       SCHEME_CAR(p) = e;
@@ -4577,6 +4639,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     /* If we're out of declarations, check for lifted-to-end: */
     if (SCHEME_NULLP(p) && maybe_has_lifts) {
       p = scheme_frame_get_end_statement_lifts(cenv);
+      SCHEME_EXPAND_OBSERVE_LIFT_END_LOOP(observer, scheme_reverse(p));
       p = scheme_reverse(p);
       for (ll = p; SCHEME_PAIRP(ll); ll = SCHEME_CDR(ll)) {
         e = scheme_make_pair(SCHEME_CAR(ll), scheme_true);
@@ -5117,6 +5180,7 @@ module_begin_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_In
 static Scheme_Object *
 module_begin_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  SCHEME_EXPAND_OBSERVE_PRIM_MODULE_BEGIN(erec[drec].observer);
   return do_module_begin(form, env, erec, drec);
 }
 
@@ -5800,7 +5864,8 @@ top_level_require_jit(Scheme_Object *data)
   return data;
 }
 
-static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Scheme_Hash_Table *ht,
+static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
+                                       char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
 				       int depth, int letlimit, int delta, 
 				       int num_toplevels, int num_stxes, int num_lifts)
 {
@@ -5882,6 +5947,7 @@ require_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *r
 static Scheme_Object *
 require_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE(erec[drec].observer);
   return do_require(form, env, erec, drec, 0);
 }
 
@@ -5894,6 +5960,7 @@ require_for_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Comp
 static Scheme_Object *
 require_for_syntax_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_SYNTAX(erec[drec].observer);
   return do_require(form, env, erec, drec, 1);
 }
 
@@ -5906,6 +5973,7 @@ require_for_template_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Co
 static Scheme_Object *
 require_for_template_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE_FOR_TEMPLATE(erec[drec].observer);
   return do_require(form, env, erec, drec, -1);
 }
 
@@ -5923,6 +5991,7 @@ provide_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *r
 static Scheme_Object *
 provide_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  SCHEME_EXPAND_OBSERVE_PRIM_PROVIDE(erec[drec].observer);
   scheme_wrong_syntax(NULL, NULL, form, "not in module body");
   return NULL;
 }

@@ -205,7 +205,6 @@ LRESULT APIENTRY wxEndSessionWatcherWndProc(HWND hWnd, UINT message, WPARAM wPar
 
 static long DoEndSessionWin(void *data)
 {
-  HWND win;
   MSG msg;
 
   qes_win = CreateWindowW(L"wxEndSessionWatcher", L"EndSession Watcher", WS_POPUP,

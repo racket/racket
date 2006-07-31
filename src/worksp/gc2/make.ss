@@ -55,6 +55,8 @@
     "type"
     "vector"))
 
+(define common-cpp-defs " /D _CRT_SECURE_NO_DEPRECATE ")
+
 (define (try src deps dest objdest includes use-precomp extra-compile-flags expand-extra-flags msvc-pch indirect?)
   (when (or (not re:only) (regexp-match re:only dest))
     (unless (and (file-exists? dest)
@@ -90,7 +92,10 @@
 				   (list
 				    "--depends"
 				    "--cpp"
-				    (format "cl.exe /MT /E ~a ~a" expand-extra-flags includes)
+				    (format "cl.exe /MT /E ~a ~a ~a" 
+					    common-cpp-defs
+					    expand-extra-flags 
+					    includes)
 				    "-o"
 				    dest
 				    src)))
@@ -101,6 +106,7 @@
     (when objdest
       (compile dest objdest null (string-append
 				  extra-compile-flags
+				  common-cpp-defs
 				  (if msvc-pch
 				      (format " /Fp~a" msvc-pch)
 				      ""))))))

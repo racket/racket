@@ -253,8 +253,7 @@ void wxSlider::Paint(void)
       wxDrawUnicodeText(t, 0, -1, 0);
     } else {
       str = wxCFString(t);
-      DrawThemeTextBox(str, kThemeSystemFont, kThemeStateActive,
-		       0, &r, teJustCenter, NULL);
+      DrawThemeTextBox(str, kThemeSystemFont, kThemeStateActive, 0, &r, teJustCenter, 0);
       CFRelease(str);
     }
   }

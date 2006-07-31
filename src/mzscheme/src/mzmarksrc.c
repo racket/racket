@@ -998,6 +998,7 @@ mark_comp_info {
   
   gcMARK(i->value_name);
   gcMARK(i->certs);
+  gcMARK(i->observer);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Compile_Info));

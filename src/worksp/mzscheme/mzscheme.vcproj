@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="MzScheme"
+	ProjectGUID="{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}"
 	>
 	<Platforms>
 		<Platform
@@ -41,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,GC_DLL"
+				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -94,17 +95,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;
-if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;
-echo Error: did not find $(TargetPath)&#x0D;&#x0A;
-exit 1&#x0D;&#x0A;
-:MzOK&#x0D;&#x0A;
-&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\mzscheme ..&#x0D;&#x0A;
-if errorlevel 1 exit 1&#x0D;&#x0A;
-cd ..\..\mzscheme\dynsrc&#x0D;&#x0A;
-mkmzdynd.bat&#x0D;&#x0A;
-cd ..\..\worksp\mzscheme&#x0D;&#x0A;
-"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\mzscheme ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\mzscheme\dynsrc&#x0D;&#x0A;mkmzdynd.bat&#x0D;&#x0A;cd ..\..\worksp\mzscheme&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -138,7 +129,7 @@ cd ..\..\worksp\mzscheme&#x0D;&#x0A;
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="..,..\..\mzscheme\include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE,GC_DLL"
+				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -193,17 +184,7 @@ cd ..\..\worksp\mzscheme&#x0D;&#x0A;
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;
-if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;
-echo Error: did not find $(TargetPath)&#x0D;&#x0A;
-exit 1&#x0D;&#x0A;
-:MzOK&#x0D;&#x0A;
-&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\mzscheme ..&#x0D;&#x0A;
-if errorlevel 1 exit 1&#x0D;&#x0A;
-cd ..\..\mzscheme\dynsrc&#x0D;&#x0A;
-mkmzdyn.bat&#x0D;&#x0A;
-cd ..\..\worksp\mzscheme&#x0D;&#x0A;
-"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -qr ..\..\mzscheme\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\mzscheme ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\mzscheme\dynsrc&#x0D;&#x0A;mkmzdyn.bat&#x0D;&#x0A;cd ..\..\worksp\mzscheme&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
