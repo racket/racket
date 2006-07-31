@@ -1350,7 +1350,7 @@
                        (ormap (lambda (v) (eq? (tok-n v) 'virtual)) e))  ; can't drop virtual methods!
                    (if palm?
                        (add-segment-label name e)
-                       e)
+		       (clean-proto e))
                    null))]
             [(struct-decl? e)
              (if (braces? (caddr e))
@@ -1572,6 +1572,19 @@
               [(eq? (tok-n (car e)) (car l))
                (loop (cdr e) (cdr l))]
               [else #f])))
+
+	(define (clean-proto e)
+	  ;; Strip __declspec(deprecated(...))
+	  (if (and (eq? '__declspec (tok-n (car e)))
+		   (parens? (cadr e))
+		   (let ([l (seq->list (seq-in (cadr e)))])
+		     (and (= 2 (length l))
+			  (eq? 'deprecated (tok-n (car l)))
+			  (parens? (cadr l)))))
+	      ;; Drop __declspec
+	      (cddr e)
+	      ;; Nothing to drop
+	      e))
         
         ;; e has been determined to be a function prototype.
         ;; Remember the information needed to convert calls
