@@ -1128,9 +1128,10 @@
       ;;
       
       (define to-snips null)
-      (define-struct to-snip (predicate? >value))
-      (define (add-snip-value predicate constructor)
-        (set! to-snips (cons (make-to-snip predicate constructor) to-snips)))
+      (define-struct to-snip (predicate? >value setup-thunk))
+      (define add-snip-value
+        (opt-lambda (predicate constructor [setup-thunk void])
+          (set! to-snips (cons (make-to-snip predicate constructor setup-thunk) to-snips))))
       
       (define (value->snip v)
         (ormap (λ (to-snip) (and ((to-snip-predicate? to-snip) v)
@@ -1138,6 +1139,8 @@
                to-snips))
       (define (to-snip-value? v)
         (ormap (λ (to-snip) ((to-snip-predicate? to-snip) v)) to-snips))
+      (define (setup-setup-values) 
+        (for-each (λ (t) ((to-snip-setup-thunk t))) to-snips))
       
       
       (define capabilities '())

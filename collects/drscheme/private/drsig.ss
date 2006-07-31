@@ -229,6 +229,7 @@
      simple-module-based-language-config-panel
      
      add-snip-value
+     setup-setup-values
 
      register-capability
      capability-registered?

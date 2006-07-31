@@ -966,15 +966,19 @@
   
   
   (drscheme:language:add-snip-value
-   (-> (-> any/c boolean?)
-       (-> any/c (is-a?/c snip%))
-       void?)
-   (test-value convert-value)
+   (opt-> ((-> any/c boolean?)
+           (-> any/c (is-a?/c snip%)))
+          ((-> any/c))
+          void?)
+   (test-value convert-value (setup-thunk void))
    "Registers a handler to convert values into snips as they are printed in the REPL."
    ""
-   "The \\var{test-snip} argument is called to determine if this handler can convert the value"
-   "and the \\var{convert-value} argument is called to build a snip."
-   "Both functions are called on the user's thread and with the user's settings.")
+   "The \\var{test-snip} argument is called to determine if this handler can convert the value "
+   "and the \\var{convert-value} argument is called to build a snip. "
+   "The (optional) \\var{setup-thunk} is called just after the user's namespace and other "
+   "setings are built, but before any of the user's code is evaluated."
+   ""
+   "All three functions are called on the user's thread and with the user's settings.")
   
   (drscheme:language:extend-language-interface
    (interface?

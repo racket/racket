@@ -33,6 +33,27 @@ TODO
            (lib "default-lexer.ss" "syntax-color"))
   
   (provide rep@)
+
+  (define-syntax stacktrace-name (string->uninterned-symbol "this-is-the-funny-name"))
+  
+  ;; this macro wraps its argument expression in some code in a non-tail manner
+  ;; so that a new name gets put onto the mzscheme stack. DrScheme's exception
+  ;; handlers trims the stack starting at this point to avoid showing drscheme's
+  ;; internals on the stack in the REPL.
+  (define-syntax (with-stacktrace-name stx)
+    (syntax-case stx ()
+      [(_ e)
+       (with-syntax ([my-funny-name (syntax-local-value #'stacktrace-name)])
+         (syntax
+          (let ([my-funny-name (λ () (begin0 e (random 1)))]) 
+            ((if (zero? (random 1)) 
+                 my-funny-name
+                 values)))))]))
+  
+  (define stacktrace-runtime-name
+    (let-syntax ([m (λ (x) (with-syntax ([x (syntax-local-value #'stacktrace-name)])
+                             (syntax 'x)))])
+      (m)))
   
   (define rep@
     (unit/sig drscheme:rep^
@@ -227,9 +248,8 @@ TODO
                     (current-thread)))))
       
       (define (cut-out-top-of-stack exn)
-        (let ([initial-stack  (continuation-mark-set->context (exn-continuation-marks exn))])
-          (let loop ([stack (reverse initial-stack)]
-                     [hit-2? #f])
+        (let ([initial-stack (continuation-mark-set->context (exn-continuation-marks exn))])
+          (let loop ([stack initial-stack])
             (cond
               [(null? stack) 
                (unless (exn:break? exn)
@@ -241,27 +261,17 @@ TODO
               [else 
                (let ([top (car stack)])
                  (cond
-                   [(is-cut? top 'cut-stacktrace-above-here1)
-                    (if hit-2?
-                        (reverse (cdr stack))
-                        (begin
-                          (fprintf (current-error-port) "ACK! found 1 without 2\n")
-                          initial-stack))]
-                   [(is-cut? top 'cut-stacktrace-above-here2)
-                    (if hit-2?
-                        (reverse (cdr stack))
-                        (loop (cdr stack) #t))]
-                   [else
-                    (loop (cdr stack) hit-2?)]))]))))
+                   [(cut-here? top) null]
+                   [else (cons top (loop (cdr stack)))]))]))))
       
       ;; is-cut? : any symbol -> boolean
       ;; determines if this stack entry is really 
-      (define (is-cut? top sym)
+      (define (cut-here? top)
         (and (pair? top)
              (let* ([fn-name (car top)]
                     [srcloc (cdr top)]
                     [source (and srcloc (srcloc-source srcloc))])
-               (and (eq? fn-name sym) 
+               (and (eq? fn-name stacktrace-runtime-name) 
                     (path? source)
                     (let loop ([path source]
                                [pieces '(#"rep.ss" #"private" #"drscheme" #"collects")])
@@ -1048,13 +1058,7 @@ TODO
                       
                       (λ () 
                         (let loop ()
-                          (let ([sexp/syntax/eof 
-                                 ;; this named thunk & application helps drscheme know to cut 
-                                 ;; off part of the stack trace. (too bad not all of it ...)
-                                 ((rec cut-stacktrace-above-here1
-                                    (λ ()
-                                      (begin0 (get-sexp/syntax/eof)
-                                              (void)))))])
+                          (let ([sexp/syntax/eof (with-stacktrace-name (get-sexp/syntax/eof))])
                             (unless (eof-object? sexp/syntax/eof)
                               (call-with-break-parameterization
                                (get-user-break-parameterization)
@@ -1064,10 +1068,8 @@ TODO
                                ;; break exn.
                                (λ ()
                                  (call-with-values
-                                  (rec cut-stacktrace-above-here1
-                                    (λ ()
-                                      (begin0 (eval-syntax sexp/syntax/eof)
-                                              (void))))
+                                  (λ ()
+                                    (with-stacktrace-name (eval-syntax sexp/syntax/eof)))
                                   (λ x (display-results x)))))
                               (loop))))
                         (set! cleanup? #t))
@@ -1209,6 +1211,21 @@ TODO
                     (drscheme:language-configuration:language-settings-settings user-language-settings)
                     (let ([run-on-user-thread (lambda (t) (queue-user/wait t))])
                       run-on-user-thread))
+              
+              ;; setup the special repl values
+              (let ([raised-exn? #f]
+                    [exn #f])
+                (queue-user/wait
+                 (λ () ; =User=, =No-Breaks=
+                   (with-handlers ((void (λ (x) 
+                                           (set! exn x)
+                                           (set! raised-exn? #t))))
+                     (drscheme:language:setup-setup-values))))
+                (when raised-exn?
+                  (fprintf 
+                   (current-error-port)
+                   "copied exn raised when setting up snip values (thunk passed as third argume to drscheme:language:add-snip-value)\n")
+                  (raise exn)))
               
               ;; installs the teachpacks
               ;; must happen after language is initialized.
