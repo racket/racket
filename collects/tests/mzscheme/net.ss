@@ -417,6 +417,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; a few tests of head.ss -- JBC, 2006-07-31
+;;
+
+(require (lib "head.ss" "net"))
+
+(test (void) validate-header "From: me@here.net\r\n\r\n")
+(test (void) validate-header #"From: me@here.net\r\n\r\n")
+(test (void) validate-header "From: a\r\nTo: b\r\nResent-to: qrv@erocg\r\n\r\n")
+(test (void) validate-header #"From: a\r\nTo: b\r\nResent-to: qrv@erocg\r\n\r\n")
+(err/rt-test (validate-header "From: a\r\nTo: b\r\nMissingTrailingrn: qrv@erocg\r\n") exn:fail?)
+(err/rt-test (validate-header #"From: a\r\nTo: b\r\nMissingTrailingrn: qrv@erocg\r\n") exn:fail?)
+(err/rt-test (validate-header "From: a\r\nnocolon inthisline\r\n\r\n") exn:fail?)
+(err/rt-test (validate-header #"From: a\r\nnocolon inthisline\r\n\r\n") exn:fail?)
+(err/rt-test (validate-header "From: a\r\nMissingReturn: och\n\r\n" exn:fail?))
+(err/rt-test (validate-header #"From: a\r\nMissingReturn: och\n\r\n" exn:fail?))
+(err/rt-test (validate-header "From: a\r\nSpacein Fieldname: och\r\n\r\n" exn:fail?))
+(err/rt-test (validate-header #"From: a\r\nSpacein Fieldname: och\r\n\r\n" exn:fail?))
+
+(define test-header "From: abc\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\n\r\n")
+(define test-header/bytes #"From: abc\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\n\r\n")
+
+(test "abc" extract-field "From" test-header)
+(test #"abc" extract-field #"From" test-header/bytes)
+(test "field is\r\n continued" extract-field "To" test-header)
+(test #"field is\r\n continued" extract-field #"To" test-header/bytes)
+(test "zoo\r\n continued" extract-field "Another" test-header)
+(test #"zoo\r\n continued" extract-field #"Another" test-header/bytes)
+
+(test "From: def\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\n\r\n"
+      replace-field "From" "def" test-header)
+(test #"From: def\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\n\r\n"
+      replace-field #"From" #"def" test-header/bytes)
+(test "To: field is\r\n continued\r\nAnother: zoo\r\n continued\r\n\r\n"
+      replace-field "From" #f test-header)
+(test #"To: field is\r\n continued\r\nAnother: zoo\r\n continued\r\n\r\n"
+      replace-field #"From" #f test-header/bytes)
+
+(test "From: abc\r\nTo: qrs\r\nAnother: zoo\r\n continued\r\n\r\n"
+      replace-field "To" "qrs" test-header)
+(test #"From: abc\r\nTo: qrs\r\nAnother: zoo\r\n continued\r\n\r\n"
+      replace-field #"To" #"qrs" test-header/bytes)
+(test "From: abc\r\nTo: field is\r\n continued\r\nAnother: abc\r\n def\r\n\r\n"
+      replace-field "Another" "abc\r\n def" test-header)
+(test #"From: abc\r\nTo: field is\r\n continued\r\nAnother: abc\r\n def\r\n\r\n"
+      replace-field #"Another" #"abc\r\n def" test-header/bytes)
+
+(test "From: abc\r\nAnother: zoo\r\n continued\r\n\r\n"
+      replace-field "To" #f test-header)
+(test #"From: abc\r\nAnother: zoo\r\n continued\r\n\r\n"
+      replace-field #"To" #f test-header/bytes)
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; other net tests
 ;;
 
