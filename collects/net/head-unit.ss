@@ -10,117 +10,233 @@
   (define net:head@
     (unit/sig net:head^
       (import)
+      
+      ;; NB: I've done a copied-code adaptation of a number of these definitions into 
+      ;; "bytes-compatible" versions.  Finishing the rest will require some kind of interface
+      ;; decision---that is, when you don't supply a header, should the resulting operation
+      ;; be string-centric or bytes-centric?  Easiest just to stop here.
+      ;; -- JBC 2006-07-31
 
-      (define empty-header (string #\return #\newline))
+      (define CRLF (string #\return #\newline))
+      (define CRLF/bytes #"\r\n")
+      
+      (define empty-header CRLF)
+      (define empty-header/bytes CRLF/bytes)
 
       (define re:field-start (regexp "^[^ \t\n\r\v:\001-\032\"]*:"))
+      (define re:field-start/bytes #rx#"^[^ \t\n\r\v:\001-\032\"]*:")
+      
       (define re:continue (regexp "^[ \t\v]"))
+      (define re:continue/bytes #rx#"^[ \t\v]")
+      
       
       (define (validate-header s)
-	(let ([m (regexp-match #rx"[^\000-\377]" s)])
-	  (when m
-	    (error 'validate-header "non-Latin-1 character in string: ~a" (car m))))
-	(let ([len (string-length s)])
-	  (let loop ([offset 0])
-	    (cond
-	     [(and (= (+ offset 2) len)
-		   (string=? empty-header (substring s offset len)))
-	      (void)] ; validated
-	     [(= offset len) (error 'validate-header "missing ending CRLF")]
-	     [(or (regexp-match re:field-start s offset)
-		  (regexp-match re:continue s offset))
-	      (let ([m (regexp-match-positions #rx"\r\n" s offset)])
-		(if m
-		    (loop (cdar m))
-		    (error 'validate-header "missing ending CRLF")))]
-	     [else (error 'validate-header "ill-formed header at ~s" 
-			  (substring s offset (string-length s)))]))))
+        (if (bytes? s)
+            ;; legal char check not needed per rfc 2822, IIUC.
+            (let ([len (bytes-length s)])
+              (let loop ([offset 0])
+                (cond
+                  [(and (= (+ offset 2) len)
+                        (bytes=? CRLF/bytes (subbytes s offset len)))
+                   (void)] ; validated
+                  [(= offset len) (error 'validate-header/bytes "missing ending CRLF")]
+                  [(or (regexp-match re:field-start/bytes s offset)
+                       (regexp-match re:continue/bytes s offset))
+                   (let ([m (regexp-match-positions #rx#"\r\n" s offset)])
+                     (if m
+                         (loop (cdar m))
+                         (error 'validate-header/bytes "missing ending CRLF")))]
+                  [else (error 'validate-header/bytes "ill-formed header at ~s" 
+                               (subbytes s offset (string-length s)))])))
+            ;; otherwise it should be a string:
+            (begin
+              (let ([m (regexp-match #rx"[^\000-\377]" s)])
+                (when m
+                  (error 'validate-header "non-Latin-1 character in string: ~v" (car m))))
+              (let ([len (string-length s)])
+                (let loop ([offset 0])
+                  (cond
+                    [(and (= (+ offset 2) len)
+                          (string=? CRLF (substring s offset len)))
+                     (void)] ; validated
+                    [(= offset len) (error 'validate-header "missing ending CRLF")]
+                    [(or (regexp-match re:field-start s offset)
+                         (regexp-match re:continue s offset))
+                     (let ([m (regexp-match-positions #rx"\r\n" s offset)])
+                       (if m
+                           (loop (cdar m))
+                           (error 'validate-header "missing ending CRLF")))]
+                    [else (error 'validate-header "ill-formed header at ~s" 
+                                 (substring s offset (string-length s)))]))))))
       
       (define (make-field-start-regexp field)
-	(format "(^|[\r][\n])(~a: *)" (regexp-quote field #f)))
+	(regexp (format "(^|[\r][\n])(~a: *)" (regexp-quote field #f))))
 
+      (define (make-field-start-regexp/bytes field)
+	(byte-regexp (bytes-append #"(^|[\r][\n])("(regexp-quote field #f) #": *)")))
+
+      
       (define (extract-field field header)
-	(let ([m (regexp-match-positions 
-		  (make-field-start-regexp field)
-		  header)])
-	  (and m
-	       (let ([s (substring header 
-				   (cdaddr m)
-				   (string-length header))])
-		 (let ([m (regexp-match-positions #rx"[\r][\n][^: \r\n\"]*:" s)])
-		   (if m
-		       (substring s 0 (caar m))
-		       ;; Rest of header is this field, but strip trailing CRLFCRLF:
-		       (regexp-replace #rx"\r\n\r\n$"
-				       s
-				       "")))))))
+        (if (bytes? header)
+            (let ([m (regexp-match-positions
+                      (make-field-start-regexp/bytes field)
+                      header)])
+              (and m
+                   (let ([s (subbytes header 
+                                      (cdaddr m)
+                                      (bytes-length header))])
+                     (let ([m (regexp-match-positions #rx#"[\r][\n][^: \r\n\"]*:" s)])
+                       (if m
+                           (subbytes s 0 (caar m))
+                           ;; Rest of header is this field, but strip trailing CRLFCRLF:
+                           (regexp-replace #rx#"\r\n\r\n$"
+                                           s
+                                           ""))))))
+            ;; otherwise header & field should be strings:
+            (let ([m (regexp-match-positions 
+                      (make-field-start-regexp field)
+                      header)])
+              (and m
+                   (let ([s (substring header 
+                                       (cdaddr m)
+                                       (string-length header))])
+                     (let ([m (regexp-match-positions #rx"[\r][\n][^: \r\n\"]*:" s)])
+                       (if m
+                           (substring s 0 (caar m))
+                           ;; Rest of header is this field, but strip trailing CRLFCRLF:
+                           (regexp-replace #rx"\r\n\r\n$"
+                                           s
+                                           ""))))))))
+      
 
       (define (replace-field field data header)
-	(let ([m (regexp-match-positions 
-		  (make-field-start-regexp field)
-		  header)])
-	  (if m
-	      (let ([pre (substring header
-				    0
-				    (caaddr m))]
-		    [s (substring header 
-				  (cdaddr m)
-				  (string-length header))])
-		(let ([m (regexp-match-positions #rx"[\r][\n][^: \r\n\"]*:" s)])
-		  (if m
-		      (string-append pre 
-				     (let ([rest 
-					    (substring s (+ 2 (caar m)) 
-						       (string-length s))])
-				       (if data
-					   (insert-field field data rest)
-					   rest)))
-		      (if data
-			  (insert-field field data pre)
-			  pre))))
-	      (if data
-		  (insert-field field data header)
-		  header))))
-
+        (if (bytes? header)
+            (let ([m (regexp-match-positions 
+                      (make-field-start-regexp/bytes field)
+                      header)])
+              (if m
+                  (let ([pre (subbytes header
+                                       0
+                                       (caaddr m))]
+                        [s (subbytes header 
+                                     (cdaddr m)
+                                     (bytes-length header))])
+                    (let* ([m (regexp-match-positions #rx#"[\r][\n][^: \r\n\"]*:" s)]
+                           [rest (if m
+                                     (subbytes s (+ 2 (caar m)) 
+                                               (bytes-length s))
+                                     empty-header/bytes)])
+                      (bytes-append pre
+                                    (if data
+                                        (insert-field field data rest)
+                                        rest))))
+                  (if data
+                      (insert-field field data header)
+                      header)))
+            ;; otherwise header & field & data should be strings:
+            (let ([m (regexp-match-positions 
+                      (make-field-start-regexp field)
+                      header)])
+              (if m
+                  (let ([pre (substring header
+                                        0
+                                        (caaddr m))]
+                        [s (substring header 
+                                      (cdaddr m)
+                                      (string-length header))])
+                    (let* ([m (regexp-match-positions #rx"[\r][\n][^: \r\n\"]*:" s)]
+                           [rest (if m
+                                     (substring s (+ 2 (caar m)) 
+                                               (string-length s))
+                                     empty-header)])
+                      (string-append pre
+                                     (if data
+                                         (insert-field field data rest)
+                                         rest))))
+                  (if data
+                      (insert-field field data header)
+                      header)))))
+      
       (define (remove-field field header)
 	(replace-field field #f header))
-	
-
+      
       (define (insert-field field data header)
-	(let ([field (format "~a: ~a\r\n"
-			     field
-			     data)])
-	  (string-append field header)))
-
+        (if (bytes? header)
+            (let ([field (bytes-append field #": "data #"\r\n")])
+              (bytes-append field header))
+            ;; otherwise field, data, & header should be strings:
+            (let ([field (format "~a: ~a\r\n"
+                                 field
+                                 data)])
+              (string-append field header))))
+      
+      
+      ;; NB: I stopped adding "bytes" versions of functions here; anybody want to finish?
+      ;; JBC, 2006-07-31
+      
       (define (append-headers a b)
-	(let ([alen (string-length a)])
-	  (if (> alen 1)
-	      (string-append (substring a 0 (- alen 2)) b)
-	      (error 'append-headers "first argument is not a header: ~a" a))))
+        (if (bytes? a)
+            (let ([alen (bytes-length a)])
+              (if (> alen 1)
+                  (string-append (substring a 0 (- alen 2)) b)
+                  (error 'append-headers "first argument is not a header: ~a" a)))
+            ;; otherwise, a & b should be strings:
+            (let ([alen (string-length a)])
+              (if (> alen 1)
+                  (string-append (substring a 0 (- alen 2)) b)
+                  (error 'append-headers "first argument is not a header: ~a" a)))))
       
       (define (extract-all-fields header)
-	(let ([re #rx"(^|[\r][\n])(([^\r\n:\"]*): *)"])
-	  (let loop ([start 0])
-	    (let ([m (regexp-match-positions re header start)])
-	      (if m
-		  (let ([start (cdaddr m)]
-			[field-name (substring header (caaddr (cdr m)) (cdaddr (cdr m)))])
-		    (let ([m2 (regexp-match-positions 
-			       #rx"\r\n[^: \r\n\"]*:"
-			       header
-			       start)])
-		      (if m2
-			  (cons (cons field-name
-				      (substring header start (caar m2)))
-				(loop (caar m2)))
-			  ;; Rest of header is this field, but strip trailing CRLFCRLF:
-			  (list
-			   (cons field-name
-				 (regexp-replace (format "~a~a~a~a$" #\return #\linefeed #\return #\linefeed)
-						 (substring header start (string-length header))
-						 ""))))))
-		  ;; malformed header:
-		  null)))))
+        (if (bytes? header)
+            (let ([re #rx#"(^|[\r][\n])(([^\r\n:\"]*): *)"])
+              (let loop ([start 0])
+                (let ([m (regexp-match-positions re header start)])
+                  (if m
+                      (let ([start (cdaddr m)]
+                            [field-name (subbytes header (caaddr (cdr m)) (cdaddr (cdr m)))])
+                        (let ([m2 (regexp-match-positions 
+                                   #rx#"\r\n[^: \r\n\"]*:"
+                                   header
+                                   start)])
+                          (if m2
+                              (cons (cons field-name
+                                          (subbytes header start (caar m2)))
+                                    (loop (caar m2)))
+                              ;; Rest of header is this field, but strip trailing CRLFCRLF:
+                              (list
+                               (cons field-name
+                                     (regexp-replace #rx#"\r\n\r\n$"
+                                                     (subbytes header start (bytes-length header))
+                                                     ""))))))
+                      ;; malformed header:
+                      null))))  
+            ;; otherwise, header should be a string:
+            (let ([re #rx"(^|[\r][\n])(([^\r\n:\"]*): *)"])
+              (let loop ([start 0])
+                (let ([m (regexp-match-positions re header start)])
+                  (if m
+                      (let ([start (cdaddr m)]
+                            [field-name (substring header (caaddr (cdr m)) (cdaddr (cdr m)))])
+                        (let ([m2 (regexp-match-positions 
+                                   #rx"\r\n[^: \r\n\"]*:"
+                                   header
+                                   start)])
+                          (if m2
+                              (cons (cons field-name
+                                          (substring header start (caar m2)))
+                                    (loop (caar m2)))
+                              ;; Rest of header is this field, but strip trailing CRLFCRLF:
+                              (list
+                               (cons field-name
+                                     (regexp-replace #rx"\r\n\r\n$"
+                                                     (substring header start (string-length header))
+                                                     ""))))))
+                      ;; malformed header:
+                      null))))))
+      
+      ;; It's slightly less obvious how to generalize the functions that don't accept a header
+      ;; as input;  for lack of an obvious solution (and free time), I'm stopping the string->bytes
+      ;; translation here.  -- JBC, 2006-07-31
       
       (define (standard-message-header from tos ccs bccs subject)
 	(let ([h (insert-field
@@ -128,7 +244,7 @@
 		  (insert-field 
 		   "Date" (parameterize ([date-display-format 'rfc2822])
 			    (date->string (seconds->date (current-seconds)) #t))
-		   empty-header))])
+		   CRLF))])
 	  ;; NOTE: bccs don't go into the header; that's why
 	  ;; they're "blind"
 	  (let ([h (if (null? ccs)
