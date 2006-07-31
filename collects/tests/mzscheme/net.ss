@@ -458,17 +458,38 @@
       replace-field "To" "qrs" test-header)
 (test #"From: abc\r\nTo: qrs\r\nAnother: zoo\r\n continued\r\n\r\n"
       replace-field #"To" #"qrs" test-header/bytes)
-(test "From: abc\r\nTo: field is\r\n continued\r\nAnother: abc\r\n def\r\n\r\n"
-      replace-field "Another" "abc\r\n def" test-header)
-(test #"From: abc\r\nTo: field is\r\n continued\r\nAnother: abc\r\n def\r\n\r\n"
-      replace-field #"Another" #"abc\r\n def" test-header/bytes)
-
 (test "From: abc\r\nAnother: zoo\r\n continued\r\n\r\n"
       replace-field "To" #f test-header)
 (test #"From: abc\r\nAnother: zoo\r\n continued\r\n\r\n"
       replace-field #"To" #f test-header/bytes)
 
+(test "From: abc\r\nTo: field is\r\n continued\r\nAnother: abc\r\n def\r\n\r\n"
+      replace-field "Another" "abc\r\n def" test-header)
+(test #"From: abc\r\nTo: field is\r\n continued\r\nAnother: abc\r\n def\r\n\r\n"
+      replace-field #"Another" #"abc\r\n def" test-header/bytes)
+(test "From: abc\r\nTo: field is\r\n continued\r\n\r\n"
+      replace-field "Another" #f test-header)
+(test #"From: abc\r\nTo: field is\r\n continued\r\n\r\n"
+      replace-field #"Another" #f test-header/bytes)
 
+(test "From: abc\r\nAnother: zoo\r\n continued\r\n\r\n"
+      remove-field "To" test-header)
+(test #"From: abc\r\nAnother: zoo\r\n continued\r\n\r\n"
+      remove-field #"To" test-header/bytes)
+
+(test `(("From" . "abc")
+       ("To" . "field is\r\n continued")
+       ("Another" . "zoo\r\n continued"))
+      extract-all-fields test-header)
+(test `((#"From" . #"abc")
+       (#"To" . #"field is\r\n continued")
+       (#"Another" . #"zoo\r\n continued"))
+      extract-all-fields test-header/bytes)
+
+(test "From: abc\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\nAthird: data\r\n\r\n"
+      append-headers test-header "Athird: data\r\n\r\n")
+(test #"From: abc\r\nTo: field is\r\n continued\r\nAnother: zoo\r\n continued\r\nAthird: data\r\n\r\n"
+      append-headers test-header/bytes #"Athird: data\r\n\r\n")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
