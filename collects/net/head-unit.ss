@@ -171,14 +171,11 @@
               (string-append field header))))
       
       
-      ;; NB: I stopped adding "bytes" versions of functions here; anybody want to finish?
-      ;; JBC, 2006-07-31
-      
       (define (append-headers a b)
         (if (bytes? a)
             (let ([alen (bytes-length a)])
               (if (> alen 1)
-                  (string-append (substring a 0 (- alen 2)) b)
+                  (bytes-append (subbytes a 0 (- alen 2)) b)
                   (error 'append-headers "first argument is not a header: ~a" a)))
             ;; otherwise, a & b should be strings:
             (let ([alen (string-length a)])
