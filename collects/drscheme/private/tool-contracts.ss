@@ -970,7 +970,8 @@
            (-> any/c (is-a?/c snip%)))
           ((-> any/c))
           void?)
-   (test-value convert-value (setup-thunk void))
+   ((test-value convert-value)
+    ((setup-thunk void)))
    "Registers a handler to convert values into snips as they are printed in the REPL."
    ""
    "The \\var{test-snip} argument is called to determine if this handler can convert the value "
