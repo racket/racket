@@ -14,30 +14,12 @@
 /* ========== Linux signal handler ========== */
 #if defined(linux)
 # include <signal.h>
-# include <linux/version.h>
-# if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
-/* New linux */
 void fault_handler(int sn, struct siginfo *si, void *ctx)
 {
   designate_modified(si->si_addr);
 #  define NEED_SIGACTION
 #  define USE_SIGACTON_SIGNAL_KIND SIGSEGV
 }
-#else
-/* Old linux */
-void fault_handler(int sn, struct sigcontext sc)
-{
-#  if (defined(powerpc) || defined(__powerpc__))
-   /* PowerPC */
-   designate_modified((void *)sc.regs->dar);
-#  else
-   /* x86 */
-   designate_modified((void *)sc.cr2);
-#  endif
-#  define NEED_SIGACTION
-#  define USE_SIGACTON_SIGNAL_KIND SIGSEGV
-}
-# endif
 #endif
 
 /* ========== FreeBSD signal handler ========== */
