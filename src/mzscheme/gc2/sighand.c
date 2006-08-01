@@ -43,9 +43,9 @@ void fault_handler(int sn, struct sigcontext sc)
 /* ========== FreeBSD signal handler ========== */
 #if defined(__FreeBSD__)
 # include <signal.h>
-void fault_handler(int sn, int code, struct sigcontext *sc, char *addr)
+void fault_handler(int sn, siginfo_t *si, ucontext_t *ctx)
 {
-  designate_modified(addr);
+  designate_modified(si->si_addr);
 }
 #  define NEED_SIGACTION
 #  define USE_SIGACTON_SIGNAL_KIND SIGBUS
