@@ -593,7 +593,6 @@ inline static void resize_gen0(unsigned long new_size)
          better to zero out on allocation, instead:
          better locality, and we don't have to zero
          for atomic allocations. */
-      bzero(PPTR(work) + HEADER_SIZEW, work->size - gcWORDS_TO_BYTES(HEADER_SIZEW)); /* REMOVEME */
       alloced_size += GEN0_PAGE_SIZE;
       work->size = HEADER_SIZEB;
       prev = work;

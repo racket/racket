@@ -99,8 +99,9 @@ static void initialize_signal_handler()
     memset(&act, sizeof(sigaction), 0);
     act.sa_sigaction = fault_handler;
     sigemptyset(&act.sa_mask);
-    sigaddset(&act.sa_mask, SIGCHLD); /* needed by MzScheme, since SIGCHLD handling 
-                                         may trigger a write barrier */
+    /* In MzScheme, SIGCHLD or SIGINT handling may trigger a write barrier: */
+    sigaddset(&act.sa_mask, SIGINT);
+    sigaddset(&act.sa_mask, SIGCHLD);
     act.sa_flags = SA_SIGINFO;
     sigaction(USE_SIGACTON_SIGNAL_KIND, &act, &oact);
   }
