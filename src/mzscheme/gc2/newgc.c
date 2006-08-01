@@ -493,6 +493,8 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
 {
   unsigned long newsize;
 
+  return GC_malloc_one_tagged(sizeb);
+
   sizeb += WORD_SIZE;
   sizeb = ALIGN_BYTES_SIZE(sizeb);
   newsize = gen0_alloc_page->size + sizeb;
@@ -537,9 +539,8 @@ void *GC_malloc_pair(void *car, void *cdr)
     retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
     info = (struct objhead *)retval;
 
-    ((void **)retval)[0] = 0;
-    ((void **)retval)[1] = 0;
-    bzero(retval, sizeb); /* <-- */
+    ((void **)retval)[0] = NULL; /* objhead */
+    ((void **)retval)[1] = 0;    /* tag word */
 
     /* info->type = type; */ /* We know that the type field is already 0 */
     info->size = (sizeb >> gcLOG_WORD_SIZE);

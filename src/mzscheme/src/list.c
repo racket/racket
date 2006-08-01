@@ -528,7 +528,7 @@ scheme_init_list (Scheme_Env *env)
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
-#ifndef MZ_PRECISE_GC
+#ifndef __MZ_PRECISE_GC
   Scheme_Object *cons;
 #endif
 
@@ -541,7 +541,7 @@ Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
     *(long *)0x0 = 1;
 #endif
 
-#ifdef MZ_PRECISE_GC
+#ifdef __MZ_PRECISE_GC
   return GC_malloc_pair(car, cdr);
 #else
   cons = scheme_alloc_object();
