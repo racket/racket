@@ -2900,7 +2900,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       mz_prepare(2);
       jit_pusharg_p(JIT_R1);
       jit_pusharg_p(JIT_R0);
-#ifdef __MZ_PRECISE_GC
+#ifdef MZ_PRECISE_GC
       (void)mz_finish(GC_malloc_pair);
 #else
       (void)mz_finish(scheme_make_pair);

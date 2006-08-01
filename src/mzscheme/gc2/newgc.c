@@ -493,8 +493,6 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
 {
   unsigned long newsize;
 
-  return GC_malloc_one_tagged(sizeb);
-
   sizeb += WORD_SIZE;
   sizeb = ALIGN_BYTES_SIZE(sizeb);
   newsize = gen0_alloc_page->size + sizeb;
@@ -566,10 +564,10 @@ inline static void resize_gen0(unsigned long new_size)
   struct mpage *work = gen0_pages, *prev = NULL;
   unsigned long alloced_size = 0;
   
-  /* fist make sure the big pages pointer is clean */
+  /* first, make sure the big pages pointer is clean */
   gen0_big_pages = NULL; 
 
-  /* then, clear out any parts of gen0 we're keeping, and deallocated any
+  /* then, reset any parts of gen0 we're keeping, and deallocate any
      parts we're throwing out */
   while(work) {
     if(alloced_size > new_size) {
@@ -591,10 +589,11 @@ inline static void resize_gen0(unsigned long new_size)
       
       break;
     } else {
-      /* We used to zero out the memory here, but its
+      /* We used to zero out the memory here, but it's
          better to zero out on allocation, instead:
          better locality, and we don't have to zero
          for atomic allocations. */
+      bzero(PPTR(work) + HEADER_SIZEW, work->size - gcWORDS_TO_BYTES(HEADER_SIZEW)); /* REMOVEME */
       alloced_size += GEN0_PAGE_SIZE;
       work->size = HEADER_SIZEB;
       prev = work;
