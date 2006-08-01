@@ -178,7 +178,7 @@ tracing todo:
              (lambda ()
                (super render-value value settings port))))
           
-          (super-instantiate ())))
+          (super-new)))
       
       ;; sharing/not-config-panel :  boolean boolean parent -> (case-> (-> settings) (settings -> void))
       ;; constructs the config-panel for a language without a sharing option.
@@ -441,6 +441,11 @@ tracing todo:
                            (set! done-already? #t)
                            (current-namespace (module->namespace '#%htdp)))))))]
                   [(done) eof]))))
+
+          (define/augment (capability-value key)
+            (case key
+              [(drscheme:special:insert-lambda) #f]
+              [else (drscheme:language:get-capability-default key)]))
 
           (super-new)))
 
