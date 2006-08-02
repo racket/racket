@@ -54,8 +54,10 @@ transcript.
 ;; used for quiet testing (quiet.ss) to really show something
 (defvar real-error-port #f)
 (define (eprintf* fmt . args)
-  (let ([msg (apply format fmt args)])
-    (display msg (or real-error-port (current-error-port)))))
+  (let ([msg (apply format fmt args)]
+        [err (or real-error-port (current-error-port))])
+    (display msg err)
+    (flush-output err)))
 
 (define (Section . args)
   (eprintf* "Section~s\n" args)
