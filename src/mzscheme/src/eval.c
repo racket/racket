@@ -3224,6 +3224,9 @@ void scheme_merge_compile_recs(Scheme_Compile_Info *src, int drec,
 void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
 			    Scheme_Compile_Info *lam, int dlrec)
 {
+#ifdef MZTAG_REQUIRED
+  lam[dlrec].type = scheme_rt_compile_info;
+#endif
   lam[dlrec].comp = 1;
   lam[dlrec].dont_mark_local_use = src[drec].dont_mark_local_use;
   lam[dlrec].resolve_module_ids = src[drec].resolve_module_ids;

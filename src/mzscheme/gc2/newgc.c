@@ -640,7 +640,7 @@ inline static void reset_nursery(void)
 /*     else */
 /*       new_gen0_size = gen0_max_size + MAX_GEN0_GROW_SHRINK; */
 /*   } */
-  
+
   resize_gen0(new_gen0_size);
 }
 
@@ -1542,7 +1542,7 @@ inline static void mark_normal_obj(struct mpage *page, void *ptr)
     case PAGE_TARRAY: {
       struct objhead *info = (struct objhead *)((char*)ptr - WORD_SIZE);
       unsigned short tag = *(unsigned short*)ptr;
-      void **temp = ptr, **end = temp + (info->size - 1);
+      void **temp = ptr, **end = PPTR(info) + (info->size - 1);
       
       while(temp < end) temp += mark_table[tag](temp);
       break;
@@ -2442,10 +2442,8 @@ inline static void do_heap_compact(void)
 	  work = work->prev;
 	}
       } else {
-	/* Much as I'd like to free pages here, so that we can just have the
-	   relevant pages cached, that causes problems. Specifically, if a
-	   weak whatever has a pointer into this page, we *cannot* reuse it
-	   yet, as we need that information to fix those bits later. */
+        if (npage == work)
+          npage = npage->prev;
 	work = work->prev;
       }
     }
@@ -2521,12 +2519,12 @@ static void repair_heap(void)
 		struct objhead *info = (struct objhead *)start;
 		size_t size = info->size;
 		if(info->mark) {
-		  void **tempend = start++ + size;
+		  void **tempend = (start++) + size;
 		  while(start < tempend) gcFIXUP(*start++);
 		  info->mark = 0;
 		} else { 
 		  info->dead = 1;
-		  start += info->size;
+		  start += size;
 		}
 	      }
 	      break;
@@ -2535,15 +2533,15 @@ static void repair_heap(void)
 		struct objhead *info = (struct objhead *)start;
 		size_t size = info->size;
 		if(info->mark) {
-		  void **tempend = start++ + (size - 1);
+		  void **tempend = (++start) + (size - 1);
 		  unsigned short tag = *(unsigned short*)start;
 		  while(start < tempend)
 		    start += fixup_table[tag](start);
 		  info->mark = 0;
-		  start = PPTR(info) + info->size;
+		  start = PPTR(info) + size;
 		} else {
 		  info->dead = 1;
-		  start += info->size;
+		  start += size;
 		}
 	      }
 	      break;
@@ -2587,7 +2585,7 @@ static void clean_up_heap(void)
 	  struct mpage *next = work->next;
 	  
 	  if(prev) prev->next = next; else pages[i] = next;
-	  if(work->next) work->next->prev = prev;
+	  if(next) work->next->prev = prev;
 	  pagemap_remove(work);
 	  free_backtrace(work);
 	  free_pages(work, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE);
