@@ -1797,10 +1797,12 @@ static Scheme_Ephemeron *ephemerons, *done_ephemerons; /* not registered as a ro
 extern void *GC_base(void *d);
 # define GC_is_marked(p) GC_base(p)
 # define GC_did_mark_stack_overflow() 0
+# define GC_mark_overflow_recover(ptr) /**/
 #else
 extern MZ_DLLIMPORT void *GC_base(void *);
 extern MZ_DLLIMPORT int GC_is_marked(void *);
 extern MZ_DLLIMPORT int GC_did_mark_stack_overflow(void);
+extern MZ_DLLIMPORT void GC_mark_overflow_recover(void *p);
 #endif
 extern MZ_DLLIMPORT void GC_push_all_stack(void *, void *);
 extern MZ_DLLIMPORT void GC_flush_mark_stack(void);
@@ -1842,7 +1844,7 @@ Scheme_Object *scheme_ephemeron_value(Scheme_Object *o)
 
 #ifndef MZ_PRECISE_GC
 
-static void set_ephemerons(Scheme_Ephemeron *ae, Scheme_Ephemeron *be, Scheme_Ephemeron *ce, Scheme_Ephemeron *de)
+static void set_ephemerons(Scheme_Ephemeron *ae, Scheme_Ephemeron *be)
 {
   if (be) {
     Scheme_Ephemeron *e;
@@ -1851,12 +1853,7 @@ static void set_ephemerons(Scheme_Ephemeron *ae, Scheme_Ephemeron *be, Scheme_Ep
     ae = be;
   }
 
-  if (ce)
-    set_ephemerons(ae, ce, de, NULL);
-  else if (de)
-    set_ephemerons(ae, de, NULL, NULL);
-  else
-    ephemerons = ae;
+  ephemerons = ae;
 }
 
 static int mark_ephemerons()
@@ -1891,15 +1888,11 @@ static int mark_ephemerons()
 	  ever_done = 1;
 	  GC_push_all_stack(&e->val, &e->val + 1);
 	  if (GC_did_mark_stack_overflow()) {
-	    /* printf("mark stack overflow\n"); */
-	    set_ephemerons(ae, be, done_ephemerons, e);
-	    return 0;
+            GC_mark_overflow_recover(e->val);
 	  } else {
 	    GC_flush_mark_stack();
 	    if (GC_did_mark_stack_overflow()) {
-	      /* printf("mark stack overflow (late)\n"); */
-	      set_ephemerons(ae, be, done_ephemerons, e);
-	      return 0;
+              GC_mark_overflow_recover(e->val);
 	    }
 	  }
 	  /* Done with this one: */
@@ -1914,7 +1907,7 @@ static int mark_ephemerons()
     }
 
     /* Combine ae & be back into ephemerons list: */
-    set_ephemerons(ae, be, NULL, NULL);
+    set_ephemerons(ae, be);
   } while (did_one);
 
   return ever_done;

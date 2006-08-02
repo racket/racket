@@ -604,7 +604,11 @@ void GC_mark_from_mark_stack(void)
 {
   MARK_FROM_MARK_STACK();
 }
-
+void GC_mark_overflow_recover(void *p)
+{
+  GC_set_mark_bit(p);
+  while (!GC_mark_some((ptr_t)0));
+}
 
 /*
  * Mark objects pointed to by the regions described by
