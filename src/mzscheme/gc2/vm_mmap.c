@@ -146,16 +146,15 @@ typedef unsigned long size_type;
 
 static size_type determine_max_heap_size(void) 
 {
-  struct rlimit *rlim = malloc(sizeof(struct rlimit));
-  size_type retval = 0;
+  struct rlimit rlim;
 
 # ifdef OS_X
-  getrlimit(RLIMIT_RSS, rlim);
+  getrlimit(RLIMIT_RSS, &rlim);
 # else  
-  getrlimit(RLIMIT_DATA, rlim);
+  getrlimit(RLIMIT_DATA, &rlim);
 # endif
-  retval = rlim->rlim_cur; free(rlim);
-  return (retval == RLIM_INFINITY) ? (1024 * 1024 * 1024) : retval;
+
+  return (rlim.rlim_cur == RLIM_INFINITY) ? (1024 * 1024 * 1024) : rlim.rlim_cur;
 }
 
 #endif

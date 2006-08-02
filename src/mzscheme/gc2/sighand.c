@@ -25,7 +25,7 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
 /* ========== FreeBSD signal handler ========== */
 #if defined(__FreeBSD__)
 # include <signal.h>
-void fault_handler(int sn, siginfo_t *si, ucontext_t *ctx)
+void fault_handler(int sn, siginfo_t *si, void *ctx)
 {
   designate_modified(si->si_addr);
 }
