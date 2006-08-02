@@ -809,7 +809,8 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
     
   for (; SCHEME_PAIRP(vars); vars = SCHEME_CDR(vars)) {
     scheme_validate_toplevel(SCHEME_CAR(vars), port, stack, ht, tls, depth, delta, 
-                             num_toplevels, num_stxes, num_lifts);
+                             num_toplevels, num_stxes, num_lifts,
+                             1);
   }
   
   if (!SCHEME_NULLP(vars))
@@ -1361,7 +1362,8 @@ static void set_validate(Scheme_Object *data, Mz_CPort *port,
                        num_toplevels, num_stxes, num_lifts,
                        NULL, 0);
   scheme_validate_toplevel(tl, port, stack, ht, tls, depth, delta, 
-                           num_toplevels, num_stxes, num_lifts);
+                           num_toplevels, num_stxes, num_lifts,
+                           0);
 }
 
 static Scheme_Object *
@@ -1678,7 +1680,8 @@ static void ref_validate(Scheme_Object *tl, Mz_CPort *port,
                          int num_toplevels, int num_stxes, int num_lifts)
 {
   scheme_validate_toplevel(tl,  port, stack, ht, tls, depth, delta, 
-                           num_toplevels, num_stxes, num_lifts);
+                           num_toplevels, num_stxes, num_lifts,
+                           0);
 }
 
 static Scheme_Object *
@@ -4232,7 +4235,9 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
       scheme_ill_formed_code(port);
   }
 
-  scheme_validate_toplevel(dummy, port, stack, ht, tls, depth, delta, num_toplevels, num_stxes, num_lifts);
+  scheme_validate_toplevel(dummy, port, stack, ht, tls, depth, delta, 
+                           num_toplevels, num_stxes, num_lifts,
+                           0);
   
   if (!for_stx) {
     scheme_validate_code(port, val, ht, sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts);

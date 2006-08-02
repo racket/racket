@@ -2017,7 +2017,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 			      char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
                               int depth, int delta,
-			      int num_toplevels, int num_stxes, int num_lifts);
+			      int num_toplevels, int num_stxes, int num_lifts,
+                              int skip_refs_check);
 void scheme_validate_boxenv(int pos, Mz_CPort *port,
 			    char *stack, int depth, int delta);
 

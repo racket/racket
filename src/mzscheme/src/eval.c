@@ -3642,84 +3642,83 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 
   SCHEME_EXPAND_OBSERVE_ENTER_CHECK(rec[drec].observer, first);
 
- check_top:
-  *current_val = NULL;
-
-  if (SCHEME_STX_PAIRP(first)) {
-    name = SCHEME_STX_CAR(first);
-    need_cert = 1;
-  } else {
-    name = first;
-    need_cert = 0;
-  }
-
-  if (!SCHEME_STX_SYMBOLP(name)) {
-    SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
-    return first;
-  }
-
   while (1) {
+    *current_val = NULL;
 
-    if (need_cert) {
-      /* While resolving name, we need certs from `first' */
-      scheme_init_expand_recs(rec, drec, &erec1, 1);
-      scheme_rec_add_certs(&erec1, 0, first);
-      certs = erec1.certs;
-    } else
-      certs = rec[drec].certs;
-
-    val = scheme_lookup_binding(name, env, 
-				SCHEME_NULL_FOR_UNBOUND
-				+ SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
-				+ ((rec[drec].comp && rec[drec].dont_mark_local_use) 
-				   ? SCHEME_DONT_MARK_USE 
-				   : 0)
-				+ ((rec[drec].comp && rec[drec].resolve_module_ids)
-				   ? SCHEME_RESOLVE_MODIDS
-				   : 0),
-				certs, env->in_modidx,
-				&menv, NULL);
-    
-    if (SCHEME_STX_PAIRP(first))
-      *current_val = val;
-
-    if (!val) {
-      SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
-      return first;
-    } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
-      if (SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(val)), scheme_id_macro_type)) {
-	/* It's a rename. Look up the target name and try again. */
-	name = scheme_stx_cert(SCHEME_PTR_VAL(SCHEME_PTR_VAL(val)), scheme_false, menv, name, NULL, 1);
-	menv = NULL;
-	SCHEME_USE_FUEL(1);
-      } else {
-	/* It's a normal macro; expand once. Also, extend env to indicate
-	   an internal-define position, if necessary. */
-	if (!xenv) {
-	  if (internel_def_pos) {
-	    xenv = scheme_new_compilation_frame(0, SCHEME_INTDEF_FRAME, env, NULL);
-	    if (ctx)
-	      xenv->intdef_name = ctx;
-	    if (_xenv)
-	      *_xenv = xenv;
-	  } else
-	    xenv = env;
-	}
-	{
-	  scheme_init_expand_recs(rec, drec, &erec1, 1);
-	  erec1.depth = 1;
-	  erec1.value_name = rec[drec].value_name;
-	  first = scheme_expand_expr(first, xenv, &erec1, 0);
-	}
-	break; /* break to outer loop */
-      }
+    if (SCHEME_STX_PAIRP(first)) {
+      name = SCHEME_STX_CAR(first);
+      need_cert = 1;
     } else {
+      name = first;
+      need_cert = 0;
+    }
+
+    if (!SCHEME_STX_SYMBOLP(name)) {
       SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
       return first;
     }
-  }
 
-  goto check_top;
+    while (1) {
+
+      if (need_cert) {
+        /* While resolving name, we need certs from `first' */
+        scheme_init_expand_recs(rec, drec, &erec1, 1);
+        scheme_rec_add_certs(&erec1, 0, first);
+        certs = erec1.certs;
+      } else
+        certs = rec[drec].certs;
+
+      val = scheme_lookup_binding(name, env, 
+                                  SCHEME_NULL_FOR_UNBOUND
+                                  + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
+                                  + ((rec[drec].comp && rec[drec].dont_mark_local_use) 
+                                     ? SCHEME_DONT_MARK_USE 
+                                     : 0)
+                                  + ((rec[drec].comp && rec[drec].resolve_module_ids)
+                                     ? SCHEME_RESOLVE_MODIDS
+                                     : 0),
+                                  certs, env->in_modidx,
+                                  &menv, NULL);
+    
+      if (SCHEME_STX_PAIRP(first))
+        *current_val = val;
+
+      if (!val) {
+        SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
+        return first;
+      } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
+        if (SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(val)), scheme_id_macro_type)) {
+          /* It's a rename. Look up the target name and try again. */
+          name = scheme_stx_cert(SCHEME_PTR_VAL(SCHEME_PTR_VAL(val)), scheme_false, menv, name, NULL, 1);
+          menv = NULL;
+          SCHEME_USE_FUEL(1);
+        } else {
+          /* It's a normal macro; expand once. Also, extend env to indicate
+             an internal-define position, if necessary. */
+          if (!xenv) {
+            if (internel_def_pos) {
+              xenv = scheme_new_compilation_frame(0, SCHEME_INTDEF_FRAME, env, NULL);
+              if (ctx)
+                xenv->intdef_name = ctx;
+              if (_xenv)
+                *_xenv = xenv;
+            } else
+              xenv = env;
+          }
+          {
+            scheme_init_expand_recs(rec, drec, &erec1, 1);
+            erec1.depth = 1;
+            erec1.value_name = rec[drec].value_name;
+            first = scheme_expand_expr(first, xenv, &erec1, 0);
+          }
+          break; /* break to outer loop */
+        }
+      } else {
+        SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
+        return first;
+      }
+    }
+  }
 }
 
 static Scheme_Object *
@@ -7951,7 +7950,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 			      char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
                               int depth, int delta, 
-			      int num_toplevels, int num_stxes, int num_lifts)
+			      int num_toplevels, int num_stxes, int num_lifts,
+                              int skip_refs_check)
 {
   if (!SAME_TYPE(scheme_toplevel_type, SCHEME_TYPE(expr)))
     scheme_ill_formed_code(port);
@@ -7959,7 +7959,7 @@ void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
   scheme_validate_expr(port, expr, stack, ht, tls, 
                        depth, delta, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0);
+                       NULL, skip_refs_check ? 1 : 0);
 }
 
 void scheme_validate_boxenv(int p, Mz_CPort *port, char *stack, int depth, int delta)
