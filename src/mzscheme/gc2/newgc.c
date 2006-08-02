@@ -2533,7 +2533,7 @@ static void repair_heap(void)
 		struct objhead *info = (struct objhead *)start;
 		size_t size = info->size;
 		if(info->mark) {
-		  void **tempend = (++start) + (size - 1);
+		  void **tempend = (start++) + (size - 1);
 		  unsigned short tag = *(unsigned short*)start;
 		  while(start < tempend)
 		    start += fixup_table[tag](start);
