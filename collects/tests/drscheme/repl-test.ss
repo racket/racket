@@ -2,9 +2,6 @@
 
 add this test:
 
-(require (lib "pretty.ss"))
-(pretty-print-print-hook (lambda x (car)))
-(list 1 2 3)
 
 There shouldn't be any error (but add in a bug that triggers one to be sure!)
 
@@ -53,9 +50,12 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                        teardown ;; : -> void
                        ))
   
+  (define (to-strings . args)
+    (apply string-append (map (λ (x) (format "~s\n" x)) args)))
+  
   (define test-data
     (list
-    
+
      ;; basic tests
      (make-test "1"
                 "1"
@@ -696,7 +696,64 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 (cons (make-loc 0 26 26) (make-loc 0 27 27))
                 #f
                 void
-                void)))
+                void)
+
+     
+     ;; setup of the namespaces for pict printing (from slideshow)
+     
+     (make-test "(require (lib \"utils.ss\" \"texpict\"))(disk 3)"
+                "{unknown snip: #<struct:object:pict-value-snip%>}\n"
+                "{unknown snip: #<struct:object:pict-value-snip%>}\n"
+                "{unknown snip: #<struct:object:pict-value-snip%>}\n"
+                "{unknown snip: #<struct:object:pict-value-snip%>}\n"
+                'interactions
+                #f
+                void
+                void)
+     
+     (make-test (to-strings
+                 '(require (lib "utils.ss" "texpict"))
+                 '(let ()
+                    (current-namespace (make-namespace))
+                    (namespace-set-variable-value! 'd (disk 3)))
+                 'd)
+                "{unknown snip: #<struct:object:pict-value-snip%>}\n"
+                "{unknown snip: #<struct:object:pict-value-snip%>}\n"
+                "{unknown snip: #<struct:object:pict-value-snip%>}\n"
+                "{unknown snip: #<struct:object:pict-value-snip%>}\n"
+                'interactions
+                #f
+                void
+                void)
+     (make-test (to-strings
+                 '(let ([on (current-namespace)]
+                        [n ((current-module-name-resolver) '(lib "mred.ss" "mred") #f #f)])
+                    (current-namespace (make-namespace))
+                    (namespace-attach-module on n))
+                 '(require (lib "utils.ss" "texpict"))
+                 '(disk 3))
+                "#<struct:pict>"
+                "#<struct:pict>"
+                "#<struct:pict>"
+                "#<struct:pict>"
+                'interactions
+                #f
+                void
+                void)
+     
+     (make-test (string-append
+                 "(require (lib \"pretty.ss\"))"
+                 "(pretty-print-print-hook (lambda x (car)))"
+                 "(list 1 2 3)")
+                "(1 2 3)"
+                "(1 2 3)"
+                "(1 2 3)"
+                "(1 2 3)"
+                'interactions
+                #f
+                void
+                void)
+     ))
   
   (define backtrace-image-string "{bug09.gif}")
   (define file-image-string "{file.gif}")
@@ -1010,7 +1067,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       (delete-file tmp-load-filename))
     (save-drscheme-window-as tmp-load-filename)
     
-    ;(run-test-in-language-level #t)
+    (run-test-in-language-level #t)
     (run-test-in-language-level #f)
     (kill-tests)
     (callcc-test)

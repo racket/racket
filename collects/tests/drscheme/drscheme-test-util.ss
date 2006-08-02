@@ -441,6 +441,7 @@
               
               (send interactions-text split-snip start)
               (send interactions-text split-snip end)
+              
               (let loop ([snip (send interactions-text find-snip end 'before)]
                          [strings null])
                 (cond
@@ -479,7 +480,10 @@
                                           (send snip get-fraction-view))
                                   strings))]
                      
-                     [else (error 'find-output "{unknown snip: ~e}~n" snip)])]))))))]))
+                     [else
+                      (loop (send snip previous)
+                            (cons (format "{unknown snip: ~e}~n" snip)
+                                  strings))])]))))))]))
   
   ;; run-one/sync : (-> A) -> A
   ;; runs the thunk `f' as a test action, and
@@ -487,14 +491,17 @@
   ;; exceptions.
   (define (run-one/sync f)
     (let ([s (make-semaphore 0)]
+          [raised-exn? #f]
           [exn #f]
           [anss #f])
       (fw:test:run-one
        (lambda ()
-         (with-handlers ([exn:fail? (lambda (exn) (set! exn exn))])
+         (with-handlers ([exn:fail? (lambda (-exn)
+                                      (set! raised-exn? #t)
+                                      (set! exn -exn))])
            (call-with-values f (lambda x (set! anss x))))
          (semaphore-post s)))
       (semaphore-wait s)
-      (if anss
-          (apply values anss)
-          (raise exn)))))
+      (if raised-exn?
+          (raise exn)
+          (apply values anss)))))
