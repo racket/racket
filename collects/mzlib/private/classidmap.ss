@@ -213,13 +213,33 @@
 	stx))
      stx))
 
-  (define init-error-map
-    (make-set!-transformer
+  (define (make-init-error-map localized-id)
+    (mk-set!-trans
+     localized-id
      (lambda (stx)
        (raise-syntax-error 
 	'class
 	"cannot use non-field init variable in a method"
 	stx))))
+
+  (define (make-init-redirect set!-stx #%app-stx local-id localized-id)
+    (mk-set!-trans
+     localized-id
+     (lambda (stx)
+       (syntax-case stx ()
+	 [(set! id expr)
+	  (module-identifier=? (syntax set!) set!-stx)
+          (with-syntax ([local-id local-id])
+            (syntax/loc stx (set! local-id expr)))]
+	 [(id . args)
+          (with-syntax ([local-id local-id]
+                        [#%app #%app-stx])
+            (syntax/loc stx (#%app local-id . args)))]
+	 [_else (datum->syntax-object
+                 local-id
+                 (syntax-e local-id)
+                 stx
+                 stx)]))))
 
   (define super-error-map
     (lambda (stx)
@@ -290,7 +310,7 @@
   (provide (protect make-this-map make-field-map make-method-map 
 		    make-direct-method-map 
 		    make-rename-super-map make-rename-inner-map
-		    init-error-map super-error-map 
+		    make-init-error-map make-init-redirect super-error-map 
 		    make-with-method-map
 		    flatten-args
 		    make-private-name localize

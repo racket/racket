@@ -1236,6 +1236,51 @@
     (test '(x-d 3 (d a-val 3 #f)) 'send-b+ (send o x-d 3))
     (void)))
 
+
+;; ----------------------------------------
+;;  Localizing init names:
+
+(let ()
+  (define-local-member-name the-local-name)
+  (define counter%
+    (class object%
+      (super-new)
+      (init [the-local-name 0])
+      (define private-field the-local-name)
+      (define/public (increment)
+        (new counter% [the-local-name (+ private-field 1)]))
+      (define/public (value)
+        private-field)))
+  (test 14 'send-increment (send (send (new counter% [the-local-name 13]) increment) value)))
+
+
+(let ()
+  (define-local-member-name the-local-name)
+  (define counter%
+    (class object%
+      (super-new)
+      (init [(my-local-name the-local-name) 0])
+      (define private-field my-local-name)
+      (define/public (increment)
+        (new counter% [the-local-name (+ private-field 1)]))
+      (define/public (value)
+        private-field)))
+  (test 9 'send-increment (send (send (new counter% [the-local-name 8]) increment) value)))
+
+;; Make sure redirect works for assignment and application:
+(let ()
+  (define-local-member-name the-local-name)
+  (define c%
+    (class object%
+      (super-new)
+      (init the-local-name)
+      (define fld (list the-local-name
+                        (the-local-name 3)
+                        (set! the-local-name 12)
+                        the-local-name))
+      (define/public (get-fld) fld)))
+  (test (list add1 4 (void) 12) 'send-fld (send (new c% [the-local-name add1]) get-fld)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

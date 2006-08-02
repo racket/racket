@@ -414,7 +414,10 @@
 				    (bound-identifier-mapping-get
 				     localized-map
 				     id
-				     (lambda () id)))])
+				     (lambda ()
+                                       ;; If internal & external names are distinguished,
+                                       ;; we need to fall back to localize:
+                                       (localize id))))])
 	    
 	    ;; ----- Expand definitions -----
 	    (let ([defn-and-exprs (expand-all-forms stx defn-and-exprs def-ctx bind-local-id)]
@@ -979,7 +982,9 @@
 							       (if (null? l)
 								   null
 								   (cons pos (loop (add1 pos) (cdr l)))))]
-				      [(plain-init-name ...) (definify plain-init-names)])
+				      [(plain-init-name ...) (definify plain-init-names)]
+                                      [(plain-init-name-localized ...) (map lookup-localize plain-init-names)]
+				      [(local-plain-init-name ...) (generate-temporaries plain-init-names)])
 			  (let ([mappings
 				 ;; make-XXX-map is supplied by private/classidmap.ss
 				 (with-syntax ([the-obj the-obj]
@@ -1047,17 +1052,12 @@
 							       (quote-syntax pubment-name-localized)
 							       (quote pubment-temp))
 				       ...)])))]
-				[extra-init-mappings
-				 (with-syntax ([(init-error-map ...)
-						(map (lambda (x)
-						       (syntax init-error-map))
-						     plain-inits)])
-				   (syntax 
-				    ([(plain-init-name ...)
-				      (values
-				       init-error-map
-				       ...)])))])
-			    
+				[extra-init-mappings (syntax 
+                                                      ([(plain-init-name ...)
+                                                        (values
+                                                         (make-init-error-map (quote-syntax plain-init-name-localized))
+                                                         ...)]))])
+                          
 			    (let ([find-method 
 				   (lambda (methods)
 				     (lambda (name)
@@ -1106,8 +1106,8 @@
 							       normal-plain-init-fields))]
 					    [inherit-field-names (map lookup-localize (map cdr inherit-fields))]
 					    [init-names (map (lambda (norm)
-							       (lookup-localize
-								(norm-init/field-eid norm)))
+                                                               (lookup-localize
+                                                                (norm-init/field-eid norm)))
 							     normal-inits)]
 					    [init-mode init-mode]
 					    [(private-method ...) (map (find-method private-methods) (map car privates))]
@@ -1281,10 +1281,15 @@
 								 code
 								 (cons code
 								       (cdr (syntax-e stx)))))))])
-						      (letrec-syntaxes+values () ([(plain-init-name) undefined]
-										  ...)
-							(void) ; in case the body is empty
-							. exprs))))))))))))
+						      (letrec-syntaxes+values
+                                                          ([(plain-init-name) (make-init-redirect 
+                                                                               (quote-syntax set!)
+                                                                               (quote-syntax #%app)
+                                                                               (quote-syntax local-plain-init-name)
+                                                                               (quote-syntax plain-init-name-localized))] ...)
+                                                          ([(local-plain-init-name) undefined] ...)
+                                                          (void) ; in case the body is empty
+                                                          . exprs))))))))))))
 				     ;; Not primitive:
 				     #f))))))))))))))))
 
