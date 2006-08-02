@@ -225,11 +225,13 @@ show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_mred}" MrEd
-show_explicitly_disabled "${enable_gl}" OpenGL
-show_explicitly_disabled "${enable_xrender}" Xrender
-show_explicitly_disabled "${enable_cairo}" Cairo
-show_explicitly_disabled "${enable_libpng}" "Use-existing-libpng"
-show_explicitly_disabled "${enable_libjpeg}" "Use-existing-libjpeg"
+if test "${enable_mred}" != "no" ; then
+  show_explicitly_disabled "${enable_gl}" OpenGL
+  show_explicitly_disabled "${enable_xrender}" Xrender
+  show_explicitly_disabled "${enable_cairo}" Cairo
+  show_explicitly_disabled "${enable_libpng}" "Use-existing-libpng"
+  show_explicitly_disabled "${enable_libjpeg}" "Use-existing-libjpeg"
+fi
 
 if test "$LIBTOOLPROG" != "" ; then
   echo "=== Libtool program: $LIBTOOLPROG"

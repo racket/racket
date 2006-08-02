@@ -1739,6 +1739,10 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
 
   v = k();
 
+  /* IMPORTANT: no GCs from here to return, since v
+     may refer to multiple values, and we don't want the
+     multiple-value array cleared. */
+
   p = scheme_current_thread;
 
   p->current_local_env = save_current_local_env;

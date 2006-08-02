@@ -508,8 +508,11 @@ static void box_multiple_array_element(int pos)
   Scheme_Object **naya, **a;
   int i;
 
-  naya = MALLOC_N(Scheme_Object *, p->ku.multiple.count);
   a = p->ku.multiple.array;
+  if (SAME_OBJ(a, p->values_buffer))
+    p->values_buffer = NULL;
+
+  naya = MALLOC_N(Scheme_Object *, p->ku.multiple.count);
   
   for (i = p->ku.multiple.count; i--; ) {
     naya[i] = a[i];

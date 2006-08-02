@@ -684,6 +684,9 @@ define_execute(Scheme_Object *vars, Scheme_Object *vals, int defmacro,
 	
       return scheme_void;
     }
+
+    if (SAME_OBJ(scheme_current_thread->ku.multiple.array, scheme_current_thread->values_buffer))
+      scheme_current_thread->values_buffer = NULL;
   } else if (SCHEME_PAIRP(vars) && SCHEME_NULLP(SCHEME_CDR(vars))) {
     if (dm_env) {
       b = scheme_global_keyword_bucket(SCHEME_CAR(vars), dm_env);
@@ -2278,8 +2281,12 @@ bangboxvalue_execute(Scheme_Object *data)
       Scheme_Object **naya, **a;
       int i;
 
-      naya = MALLOC_N(Scheme_Object *, p->ku.multiple.count);
       a = p->ku.multiple.array;
+
+      if (SAME_OBJ(a, p->values_buffer))
+        p->values_buffer = NULL;
+
+      naya = MALLOC_N(Scheme_Object *, p->ku.multiple.count);
 
       for (i = p->ku.multiple.count; i--; ) {
 	naya[i] = a[i];
@@ -4571,15 +4578,21 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
 
   a = eval_letmacro_rhs(a, rhs_env, ri->max_let_depth, rp, eenv->genv->phase, certs);
 
-  if (SAME_OBJ(a, SCHEME_MULTIPLE_VALUES))
+  if (SAME_OBJ(a, SCHEME_MULTIPLE_VALUES)) {
     vc = scheme_current_thread->ku.multiple.count;
-  else
+    results = scheme_current_thread->ku.multiple.array;
+    scheme_current_thread->ku.multiple.array = NULL;
+    if (SAME_OBJ(results, scheme_current_thread->values_buffer))
+      scheme_current_thread->values_buffer = NULL;
+  } else {
     vc = 1;
+    results = NULL;
+  }
 
   for (nc = 0, l = names; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
     nc++;
   }
-  
+
   if (vc != nc) {
     Scheme_Object *name;
     const char *symname;
@@ -4593,17 +4606,12 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
     
     scheme_wrong_return_arity(where,
 			      nc, vc,
-			      (vc == 1) ? (Scheme_Object **)a : scheme_current_thread->ku.multiple.array,
+			      (vc == 1) ? (Scheme_Object **)a : results, 
 			      "%s%s%s",
 			      name ? "defining \"" : "0 names",
 			      symname,
 			      name ? ((nc == 1) ? "\"" : "\", ...") : "");
   }
-
-  results = scheme_current_thread->ku.multiple.array;
-  scheme_current_thread->ku.multiple.array = NULL;
-  if (SAME_OBJ(results, scheme_current_thread->values_buffer))
-    scheme_current_thread->values_buffer = NULL;
 
   i = *_pos;
   for (j = 0, l = names; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l), j++) {

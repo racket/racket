@@ -7373,6 +7373,8 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 
 void scheme_pop_prefix(Scheme_Object **rs)
 {
+  /* This function must not allocate, since a relevant multiple-values
+     result may be in the thread record (and we don't want it zerod) */
   MZ_RUNSTACK = rs;
 }
 
