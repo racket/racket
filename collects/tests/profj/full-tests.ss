@@ -4,6 +4,31 @@
   
   (prepare-for-tests "Full")
 
+  (interact-test
+   "class allPublic {
+      public int x() { return 3; }
+    }
+    class onePrivate {
+      private int x() { return new allPublic().x(); }
+      public int y() { return x(); }
+    }
+    "
+   'full
+   '("new onePrivate().y()") '(3) "Private method calling public method of same name")
+  
+  (execute-test
+   "class withPrivate {
+      withPublic f;
+
+      private int with() { return this.f.with(); }
+    }
+
+    class withPublic {
+      withPrivate r = new withPrivate();
+
+      public int with() { return 3; }
+    }" 'full #f "Potential conflict of names for private method")
+  
   (execute-test 
    "class hasCharArray {  
      char[] b = new char[]{'a'};
@@ -247,7 +272,7 @@
 
                  class Aia implements Gaa {
                    Aia() { }
-                   int foo(int x) { return 3; }
+                   public int foo(int x) { return 3; }
                  }" 'full #f "Extending an interface while overriding a method")
   
   (execute-test 

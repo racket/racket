@@ -231,6 +231,24 @@
     (and (signature-equals? m1 m2)
          (type=? (method-record-rtype m1) (method-record-rtype m2))))
     
+  ;;equal-greater-access? (list symbol) (list symbol) -> boolean
+  (define (equal-greater-access? mods-l mods-r)
+    (let ([eq-gt? 
+           (lambda (acc-l acc-r)
+             (case acc-l
+               [(public) (memq acc-r '(package protected public))]
+               [(protected) (memq acc-r '(package protected))]
+               [(package) (memq acc-r '(package))]
+               [else #f]))])
+      (eq-gt? (extract-access mods-l) (extract-access mods-r))))
+  
+  (define (extract-access mods)
+    (cond
+      [(memq 'public mods) 'public]
+      [(memq 'protected mods) 'protected]
+      [(memq 'private mods) 'private]
+      [else 'package]))          
+  
   ;; type-spec-to-type: type-spec (U #f (list string) symbol type-records -> type
   (define (type-spec-to-type ts container-class level type-recs)
     (let* ((ts-name (type-spec-name ts))

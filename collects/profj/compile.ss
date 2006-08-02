@@ -8,7 +8,7 @@
            compilation-unit-code compilation-unit-contains set-compilation-unit-code!
            read-record write-record
            set-syntax-location create-type-record
-           )
+           compile-to-ast)
   
   (define (set-syntax-location so) (syntax-location so))
   
@@ -155,6 +155,19 @@
     (remove-from-packages ast type-recs)
     (order-cus (translate-program ast type-recs)
                type-recs))
+  
+  (define (compile-to-ast port location type-recs file? level)
+    (packages null)
+    (check-list null)
+    (to-file file?)
+    (let ((ast (parse port location level)))
+      (remember-main ast)
+      (load-lang type-recs)
+      (set-importer! type-recs find-implicit-import)
+      (build-info ast level type-recs #f)
+      (unless (null? (check-list))
+        (check-defs (car (check-list)) level type-recs))
+      (remove-from-packages ast type-recs)))             
   
   ;compile-java-internal: port location type-records bool level-> (list compilation-unit)
   (define (compile-java-internal port location type-recs file? level)

@@ -557,9 +557,9 @@
                  (let*-values (((old-methods) (class-record-methods super-record))
                                ((f m i)
                                 (if (memq 'strictfp test-mods)
-                                    (process-members members old-methods cname type-recs level #f
+                                    (process-members members old-methods cname type-recs level #f #f
                                                      (find-strictfp modifiers))
-                                    (process-members members old-methods cname type-recs level #f)))
+                                    (process-members members old-methods cname type-recs level #f #f)))
                                ((ctor?) (has-ctor? m)))
                                       
                    (unless ctor?
@@ -766,7 +766,7 @@
                  
                  (let-values (((f m i) (process-members members (apply append 
                                                                        (map class-record-methods super-records))
-                                                        iname type-recs level #f)))
+                                                        iname type-recs level #t #f)))
                    
                    (valid-field-names? f members m level type-recs)
                    (valid-method-sigs? m members level type-recs)
@@ -839,7 +839,7 @@
                                                    
                  (let*-values (((old-methods) (class-record-methods super-record))
                                ((f m i)
-                                (process-members members old-methods tname type-recs level #t))
+                                (process-members members old-methods tname type-recs level #f #t))
                                ((ctor?) (has-ctor? m)))
                    
                    (if ctor?
@@ -1108,6 +1108,7 @@
                                    (method-record-atypes (car methods))))))
              (method-member? method (cdr methods) level))))
   
+  ;identical-method-member? method-record (listof method-record) -> method-record
   (define (identical-method-member? method methods)
     (and (not (null? methods))
          (or (and (equal? (method-record-name method)
@@ -1116,7 +1117,8 @@
                   (= (length (method-record-atypes method))
                      (length (method-record-atypes (car methods))))
                   (andmap type=? (method-record-atypes method)
-                          (method-record-atypes (car methods))))
+                          (method-record-atypes (car methods)))
+                  (car methods))
              (identical-method-member? method (cdr methods)))))
  
   ;valid-inherited-methods?: (list class-record) (list name) symbol type-records -> bool
@@ -1292,15 +1294,27 @@
   ;implements-all? (list method-record) (list method) name symbol -> bool
   (define (implements-all? inherit-methods methods name level)
     (or (null? inherit-methods)
-        (and (not (identical-method-member? (car inherit-methods) methods))
-             (method-error 'not-implement 
-                           (make-id (method-record-name (car inherit-methods)) #f)
-                           (method-record-atypes (car inherit-methods))
-                           (method-record-rtype (car inherit-methods))
-                           (id-string (name-id name))
-                           (id-src (name-id name))
-                           #f))
-        (implements-all? (cdr inherit-methods) methods name level)))
+        (let* ([current-method (car inherit-methods)]
+               [id-name (make-id (method-record-name current-method) #f)] 
+               [implementing-method (identical-method-member? current-method methods)])
+          (or (and (not implementing-method)
+                   (method-error 'not-implement 
+                                 id-name
+                                 (method-record-atypes current-method)
+                                 (method-record-rtype current-method)
+                                 (id-string (name-id name))
+                                 (id-src (name-id name))
+                                 #f))
+              (and (memq level '(advanced full))
+                   (not (equal-greater-access? (method-record-modifiers implementing-method)
+                                               (method-record-modifiers current-method)))
+                   (implements-error id-name
+                                     (method-record-atypes current-method)
+                                     (method-record-modifiers implementing-method)
+                                     (method-record-modifiers current-method)
+                                     (id-string (name-id name))
+                                     (id-src (name-id name))))
+              (implements-all? (cdr inherit-methods) methods name level)))))
   
   (define (no-abstract-methods methods members level type-recs)
     (or (null? methods)
@@ -1319,9 +1333,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;Methods to process fields and methods
   
-  ;; process-members: (list members) (list method-record) (list string) type-records symbol boolean-> 
+  ;; process-members: (list members) (list method-record) (list string) type-records symbol boolean boolean-> 
   ;;                     (values (list field-record) (list method-record) (list inner-record))
-  (define (process-members members inherited-methods cname type-recs level test? . args)
+  (define (process-members members inherited-methods cname type-recs level iface? test? . args)
     (let loop ((members members)
                (fields null)
                (methods null)
@@ -1337,8 +1351,8 @@
          (loop (cdr members)
                fields
                (cons (if (null? args)
-                         (process-method (car members) inherited-methods cname type-recs level test?)
-                         (process-method (car members) inherited-methods cname type-recs level test? (car args)))
+                         (process-method (car members) inherited-methods cname type-recs level iface? test?)
+                         (process-method (car members) inherited-methods cname type-recs level iface? test? (car args)))
                          methods)
                inners))
         ((def? (car members))
@@ -1361,14 +1375,19 @@
                        (if (class-name) (cons (class-name) (cdr cname)) cname)
                        (field-type field)))
                   
-  ;; process-method: method (list method-record) (list string) type-records symbol boolean -> method-record  
-  (define (process-method method inherited-methods cname type-recs level test? . args)
+  ;; process-method: method (list method-record) (list string) type-records symbol boolean boolean -> method-record  
+  (define (process-method method inherited-methods cname type-recs level iface? test? . args)
     (let* ((name (id-string (method-name method)))
            (parms (map (lambda (p)
                          (set-field-type! p (type-spec-to-type (field-type-spec p) cname level type-recs))
                          (field-type p))
                        (method-parms method)))
-           (mods (if (null? args) (method-modifiers method) (cons (car args) (method-modifiers method))))
+           (mods 
+            (cond
+              [(not (null? args)) (cons (car args) (method-modifiers method))]
+              [(and iface? (not (memq 'public (map modifier-kind (method-modifiers method)))))
+               (cons (make-modifier 'public #f) (method-modifiers method))]
+              [else (method-modifiers method)]))
            (ret (type-spec-to-type (method-type method) cname level type-recs))
            (throws (filter (lambda (n)
                              (not (or (is-eq-subclass? n runtime-exn-type type-recs))))
@@ -1768,6 +1787,18 @@
                       m-full-name class r-name (type->ext-name ctor?))))
            m-name src))))
 
+  ;implements-error: id (list type) (list symbol) (list symbol) string src -> void
+  (define (implements-error name parms current-mods parent-mods class src)
+    (let ([m-name (method-name->ext-name (id-string name) parms)]
+          [current-access (extract-access current-mods)]
+          [parent-access (extract-access parent-mods)])      
+      (raise-error
+       'implements
+       (format "Method ~a must be at least ~a to implement the ~a method from ~a; ~a access is not sufficient."
+               m-name (if (eq? parent-access 'package) 'default parent-access) m-name
+               class (if (eq? current-access 'package) 'default current-access))
+       m-name src)))
+  
   ;testcase-not-in-test: string string src -> void
   (define (testcase-not-in-test name class src)
     (raise-error
@@ -1892,10 +1923,10 @@
                            m-name (car class) (if (list? parent) (car parent) parent))
                           (format "Method ~a from ~a cannot be overridden in ~a" name parent (car class))))
                      ((static)
-                      (format "Method ~a in ~a attempts to override static method from ~a, which is not allowed"
+                      (format "Method ~a in ~a attempts to override static method from ~a, which is not allowed."
                               m-name (car class) parent))
                      ((public) 
-                      (format "Method ~a in ~a must be public to override public method from ~a, ~a is not public" 
+                      (format "Method ~a in ~a must be public to override public method from ~a, ~a is not public." 
                               m-name (car class) parent name))
                      ((protected) 
                       (format 

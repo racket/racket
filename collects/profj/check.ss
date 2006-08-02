@@ -1734,7 +1734,10 @@
                   (illegal-field-access 'private (string->symbol fname) level (car field-class) src)))
                 
                 (when (and protected? 
-                           (not (or (equal? c-class field-class)
+                           (not (or (and (equal? c-class '("scheme-interactions"))
+                                         (equal? (send type-recs get-interactions-package)
+                                               (cdr field-class)))
+                                    (equal? c-class field-class)
                                     (is-subclass? c-class (make-ref-type (car field-class) (cdr field-class)) type-recs)
                                     (package-members? c-class field-class type-recs))))
                   (illegal-field-access 'protected (string->symbol fname) level (car field-class) src))

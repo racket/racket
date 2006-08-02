@@ -7,6 +7,17 @@
   ;;Execution tests without errors
   
   (execute-test
+   "interface mustbepublic {
+      int a();
+      int b();
+    }
+    class musthavepublic implements mustbepublic {
+      public int a() { return 3; }
+      public int b() { return 5; }
+    }" 'advanced #f "public implementation of an interface"
+   )
+  
+  (execute-test
    "class OneC { }
     class TwoC extends OneC { }
     class ThreeC extends TwoC { }
@@ -125,6 +136,12 @@
   
   ;;Execution tests with errors
 
+  (execute-test
+   "interface a { int a(); }
+    class b implements a{ int a() { return 3; } }"
+   'advanced #t "Interface implement without public"
+   )
+  
   (execute-test
    "class X {
      final int x = 4;
@@ -306,6 +323,40 @@ class WeeklyPlanner{
   ;;Interaction tests, mix of right and error
   
   (interact-test
+   "interface topping { }
+    interface cheese extends topping { }
+    interface sausage extends topping { }
+    interface parm extends cheese { }
+    interface base { }
+    interface red extends base { }
+    interface bbq extends red { }
+    interface marinara extends red { }
+
+    class Traditional implements parm, marinara { }
+    class Traditional2 extends Traditional { }
+    class Odd implements bbq, cheese, sausage { }
+
+    class OverloadTest {
+      int meth( topping t, base b ) { return 1; } 
+      int meth( cheese t, base b) { return 2; } 
+      int meth( cheese t, marinara b) { return 3; } 
+      int meth( topping t, red b) { return 4; } 
+      int meth( Traditional2 t, red b) { return 5; } 
+   }" 'advanced
+      '("OverloadTest t = new OverloadTest();"
+        "t.meth(new Traditional(), new Odd()) //ambiguous"
+        "t.meth(new Traditional(), new Traditional())  // 3" 
+        "t.meth(new Traditional2(), new Traditional()) //ambiguous"
+        "t.meth(new Odd(), new Odd()) //ambiguous"
+        "t.meth(new Odd(), (red) new Odd()) //ambiguous"
+        "t.meth(new Odd(), (base) new Odd()) // 2"
+        "t.meth((topping) new Odd(), (base) new Odd()) // 1"
+        "t.meth(new Traditional2(), new Odd()) // 5"
+        "t.meth((topping) new Odd(), new Traditional()) // 4")
+      '((void) error 3 error error error 2 1 5 4)
+      "Overloading resolution with interfaces and interface inheritance")
+  
+  (interact-test
    'advanced
    '("int a = 'a';" "a" "int b;" "b = 'a';")
    '((void) 97 (void) 97) "Conversion of char to int")
@@ -443,6 +494,12 @@ class WeeklyPlanner{
    (list "String[] a = {new String(\"hi\"),new String(\"i\")};")
    (list '(void))
    "Test of array init")
+  
+  (interact-test 
+   'advanced
+   (list "null instanceof Object")
+   (list #f)
+   "Test of instanceof and null")
   
   (report-test-results)
   
