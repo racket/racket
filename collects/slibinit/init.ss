@@ -73,7 +73,8 @@
             (path->string (collection-path "slib")))
           ;; look for slib in a few common places
           (ormap (lambda (dir)
-                   (and (directory-exists? dir) (path->string dir)))
+                   (and (directory-exists? dir) 
+                        (if (path? dir) (path->string dir) dir)))
                  '("/usr/share/slib"
                    ;; this is for RH/Fedora that uses umb-scheme for slib
                    "/usr/share/umb-scheme/slib"))
