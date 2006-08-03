@@ -7514,6 +7514,15 @@ int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
   return 0;
 }
 
+static int argument_to_arity_error(Scheme_Object *app_rator, int proc_with_refs_ok)
+{
+  /* Since `raise-arity-error' doesn't actually apply its argument,
+     it's ok to pass any procedure. In particular, the compiler generates
+     calls to converted procedures. */
+  return ((proc_with_refs_ok == 2)
+          && SAME_OBJ(app_rator, scheme_raise_arity_error_proc));
+}
+
 void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr, 
                           char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
 			  int depth, int letlimit, int delta, 
@@ -7585,7 +7594,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 	  || (num_stxes && (p == num_toplevels)))
 	scheme_ill_formed_code(port);
       
-      if (proc_with_refs_ok != 1) {
+      if ((proc_with_refs_ok != 1) 
+          && !argument_to_arity_error(app_rator, proc_with_refs_ok)) {
         if (p >= (num_toplevels + num_stxes + (num_stxes ? 1 : 0))) {
           /* It's a lift. Check that the lift is defined, and that it
              doesn't want reference arguments. */
@@ -7778,7 +7788,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       char *new_stack;
 
       if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
-        if (proc_with_refs_ok != 1)
+        if ((proc_with_refs_ok != 1)
+            && !argument_to_arity_error(app_rator, proc_with_refs_ok))
           scheme_ill_formed_code(port);
       }
       

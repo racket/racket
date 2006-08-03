@@ -402,4 +402,31 @@
 	      (f y))
 	   '11)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check bytecode verification of lifted functions
+
+(let ([check
+       (lambda (expr)
+         (let-values ([(r w) (make-pipe)])
+           (write (compile expr) w)
+           (parameterize ([read-accept-compiled #t])
+             (read r))))])
+  (check '(module m mzscheme
+            (provide f)
+            (define (f x)
+              (let loop ([n 0])
+                (set! x (+ n 1)) ; close over mutated variable
+                (loop n #f)
+                (loop n)))))
+  (check '(module m mzscheme
+            (provide f)
+            (define s (make-string 10))
+            (define (f x)
+              (let loop ([n 0])
+                (set! x (+ n 1)) ; close over mutated variable
+                (loop n s) ; and refer to global
+                (loop n))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
