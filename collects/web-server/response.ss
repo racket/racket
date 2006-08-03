@@ -122,7 +122,7 @@
                                  (lambda ()
                                    (apply f conn args)
                                    (flush-output (connection-o-port conn))))))))
-      
+  
   
   ;; **************************************************
   ;; output-response: connection response -> void
@@ -177,7 +177,7 @@
   
   (define ext:output-response
     (ext:wrap output-response))
-
+  
   ;; response/full->size: response/full -> number
   ;; compute the size for a response/full
   (define (response/full->size resp/f)
@@ -204,7 +204,7 @@
   
   (define ext:output-file
     (ext:wrap output-file))
-
+  
   ;; **************************************************
   ;; output-response/method: connection response/full symbol -> void
   ;; If it is a head request output headers only, otherwise output as usual
@@ -218,7 +218,7 @@
   
   (define ext:output-response/method
     (ext:wrap output-response/method))
-
+  
   ;; **************************************************
   ;; output-headers/response: connection response (listof (listof string)) -> void
   ;; Write the headers for a response to an output port
@@ -278,10 +278,6 @@
   
   ;; Turn an exn:invalid-xexpr into a response.
   (define (xexpr-exn->response exn x)
-    ;;; Does it matter what number I use for pretty-print-size-hook?
-    (pretty-print-size-hook (lambda (v display? op) 20))
-    (pretty-print-print-hook (pretty-print-hook/web-errors
-                              (exn:invalid-xexpr-code exn)))
     (make-response/full
      500 "Servlet Error"
      (current-seconds)
@@ -295,27 +291,22 @@
        "<pre>" (exn-message exn) "</pre>"
        "<h2>The Full Xexpr Is</h2>"
        "<pre>"
-       (let ((o (open-output-string)))
-         (pretty-print x o)
+       (let ([o (open-output-string)])
+         (parameterize ([current-output-port o])
+           (pretty-print-invalid-xexpr exn x))
          (get-output-string o))
        "</pre>"))))
   
-  ;; Format everything normally, except for the erroneous data.
-  (define (pretty-print-hook/web-errors err)
-    (letrec ((f-aux (lambda (v)
-                      (cond
-                        ((equal? v err)
-                         (format
-                          (string-append
-                           "<span style='font-weight: bold; "
-                           "color: red; background-color: white;'>"
-                           "~a</span>") v))
-                        ((list? v) (string-append "("
-                                                  (string-join (map f-aux v)
-                                                               " ")
-                                                  ")"))
-                        (else (format "~a" v))))))
-      (lambda (v display? op)
-        ((if display? display write) (f-aux v) op))))
-  
-  )
+  (define (pretty-print-invalid-xexpr exn xexpr)
+    (define code (exn:invalid-xexpr-code exn))
+    (parameterize ([pretty-print-size-hook (lambda (v display? out)
+                                             (and (equal? v code)
+                                                  (string-length (format (if display? "~a" "~v") v))))]
+                   [pretty-print-print-hook (lambda (v display? out)
+                                              (fprintf out
+                                                       (string-append
+                                                        "<font color=\"red\">"
+                                                        (if display? "~a" "~v")
+                                                        "</font>")
+                                                       v))])
+      (pretty-print xexpr))))
