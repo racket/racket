@@ -2638,6 +2638,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
   r1 = app->rand1;
   r2 = app->rand2;
   generate_two_args(r1, r2, jitter, 1);
+  CHECK_LIMIT();
 
   __START_SHORT_JUMPS__(branch_short);
 
@@ -2650,6 +2651,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
     mz_patch_branch(pref);
     jit_ldxi_s(JIT_R2, JIT_R0, (int)&((Scheme_Object *)0x0)->type);
     (void)jit_bnei_i(reffail, JIT_R2, scheme_char_type);
+    CHECK_LIMIT();
   } else {
     if (!direct)
       direct = (SCHEME_CHAR_VAL(r1) < 256);
@@ -2667,6 +2669,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
     }
     jit_ldxi_s(JIT_R2, JIT_R1, (int)&((Scheme_Object *)0x0)->type);
     (void)jit_bnei_i(reffail, JIT_R2, scheme_char_type);
+    CHECK_LIMIT();
   } else {
     if (!direct)
       direct = (SCHEME_CHAR_VAL(r2) < 256);
@@ -2680,6 +2683,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
   } else {
     ref = jit_bner_p(jit_forward(), JIT_R0, JIT_R1);
   }
+  CHECK_LIMIT();
   if (for_branch) {
     for_branch[0] = ref;
   } else {
