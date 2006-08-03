@@ -25,7 +25,7 @@
               (cond
                 [(not (keyword? v))
                  (match:syntax-err stx-v "Argument must be a keyword")]
-                [(not (member v '(#:macro #:plt-match #:match)))
+                [(not (member v '(#:expression #:plt-match #:match)))
                  (match:syntax-err stx-v "Keyword argument is not a correct keyword")]
                 [else                
                  (loop (cddr args)
@@ -39,7 +39,7 @@
          (with-syntax
              ([match-xform (lookup #:match parsed-args)]
               [plt-match-xform (lookup #:plt-match parsed-args)]
-              [std-xform (or (lookup #:macro parsed-args)
+              [std-xform (or (lookup #:expression parsed-args)
                              #'(lambda (stx)
                                  (match:syntax-err stx "This match expander must be used inside match")))])
            (if (identifier? #'std-xform)
