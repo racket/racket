@@ -47,7 +47,7 @@
       (lambda (k-url)
         `(html (head ,head-attributes
                      (meta ([http-equiv "Pragma"] [content "no-cache"])) ; don't cache in netscape
-                     (meta ([http-equiv "expires"] [content "-1"])) ; don't cache in IE
+                     (meta ([http-equiv "Expires"] [content "-1"])) ; don't cache in IE
                      ; one site said to use -1, another said to use 0.
                      (title . ,title))
                (body ,body-attributes
@@ -67,7 +67,7 @@
       (make-response/full (redirection-status-code perm/temp)
                           (redirection-status-message perm/temp)
                           (current-seconds) #"text/html"
-                          `((location . ,uri)) (list (redirect-page uri)))))
+                          `((Location . ,uri)) (list (redirect-page uri)))))
   
   ; : str -> str
   (define (redirect-page url)

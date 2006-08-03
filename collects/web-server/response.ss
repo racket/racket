@@ -78,7 +78,7 @@
               `("Date: " ,(seconds->gmt-string (current-seconds)))
               `("Last-Modified: " ,(seconds->gmt-string seconds))
               `("Server: PLT Scheme")
-              `("Content-type: " ,mime)
+              `("Content-Type: " ,mime)
               (if (connection-close? conn)
                   (cons `("Connection: close") extras)
                   extras)))
@@ -192,7 +192,7 @@
   ;; output-file: connection path symbol bytes -> void
   (define (output-file conn file-path method mime-type)
     (output-headers conn 200 "Okay"
-                    `(("Content-length: " ,(file-size file-path)))
+                    `(("Content-Length: " ,(file-size file-path)))
                     (file-or-directory-modify-seconds file-path)
                     mime-type)
     (when (eq? method 'get)
@@ -211,7 +211,7 @@
   (define (output-response/method conn resp meth)
     (cond
       [(eqv? meth 'head)
-       (output-headers/response conn resp `(("Content-length: "
+       (output-headers/response conn resp `(("Content-Length: "
                                              ,(response/full->size resp))))]
       [else
        (output-response conn resp)]))
@@ -235,7 +235,7 @@
   ;; Write a normal response to an output port
   (define (output-response/basic conn resp size responder)
     (output-headers/response conn resp
-                             `(("Content-length: " ,size)
+                             `(("Content-Length: " ,size)
                                . ,(extras->strings resp)))
     (responder (connection-o-port conn)))
   
