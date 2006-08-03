@@ -1027,6 +1027,7 @@ GC_API void (*GC_collect_end_callback)(void);
 GC_API void (*GC_out_of_memory)(void);
 GC_API int GC_did_mark_stack_overflow(void);
 GC_API void GC_mark_from_mark_stack(void);
+GC_API void GC_mark_overflow_recover(void *p);
 GC_API void GC_flush_mark_stack(void);
 GC_API long GC_get_memory_use(void);
 GC_API void GC_pre_init(void);
