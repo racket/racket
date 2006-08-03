@@ -157,7 +157,7 @@
 		 (let ([introducer (make-syntax-introducer)]
 		       [certifier (match-expander-certifier expander)])
 		   (render-test-list 
-		    (introducer (transformer (introducer #'(expander args ...))))
+		    (introducer (transformer (introducer p)))
 		    ae 
 		    (lambda (id)
 		      (certifier (cert id) #f introducer))
@@ -253,7 +253,7 @@
           ((pregexp reg-exp pat)
            (regexp-matcher ae stx #'(app (lambda (x) (pregexp-match-with-error reg-exp x)) pat) cert))
           
-          ;; app patterns just apply their operation.  I'm not sure why they exist.
+          ;; app patterns just apply their operation. 
           ((app op pat)
            (render-test-list #'pat #`(#,(cert #'op) #,ae) cert stx))
           

@@ -122,16 +122,16 @@
   ;; FIXME: match-helper and match-error should each be split
   ;; into a compile-time part and a run-time part.
 
-  (require-for-syntax "private/convert-pat.ss"
-                      "private/match-helper.ss")
+  (require-for-syntax "private/match/convert-pat.ss"
+                      "private/match/match-helper.ss")
   
   (require-for-template mzscheme)
   
-  (require  (prefix plt: "private/match-internal-func.ss")
-	    "private/match-expander.ss"
-	    "private/match-helper.ss"
-	    "private/match-error.ss"
-	    "private/test-no-order.ss")
+  (require  (prefix plt: "private/match/match-internal-func.ss")
+	    "private/match/match-expander.ss"
+	    "private/match/match-helper.ss"
+	    "private/match/match-error.ss"
+	    "private/match/test-no-order.ss")
   
   
   (define-syntax match-definer

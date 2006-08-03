@@ -144,11 +144,11 @@
    match-equality-test
    define-match-expander) 
   
-  (require "private/match-internal-func.ss"
-           "private/match-expander.ss"
-           "private/match-helper.ss"
-           "private/match-error.ss"
-	   "private/test-no-order.ss")
+  (require "private/match/match-internal-func.ss"
+           "private/match/match-expander.ss"
+           "private/match/match-helper.ss"
+           "private/match/match-error.ss"
+	   "private/match/test-no-order.ss")
   
   )
 
