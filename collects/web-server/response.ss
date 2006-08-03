@@ -58,7 +58,10 @@
   ;;    simply turned into a non-chunked one.
   
   (define TEXT/HTML-MIME-TYPE #"text/html")
-  
+  (define (data-length x)
+    (if (string? x)
+        (data-length (string->bytes/utf-8 x))
+        (bytes-length x)))
   
   ;;**************************************************
   ;; output-headers: connection number string (listof (listof String))
@@ -142,10 +145,7 @@
         conn
         (make-response/basic 200 "Okay" (current-seconds) (car resp) '())
         (apply + (map
-                  (lambda (c)
-                    (if (string? c)
-                        (string-length c)
-                        (bytes-length c)))
+                  data-length
                   (cdr resp)))
         (lambda (o-port)
           (for-each
@@ -170,7 +170,7 @@
                                  (current-seconds)
                                  TEXT/HTML-MIME-TYPE
                                  '())
-            (add1 (string-length str))
+            (add1 (data-length str))
             (lambda (o-port)
               (display str o-port)
               (newline o-port)))))]))
@@ -182,10 +182,7 @@
   ;; compute the size for a response/full
   (define (response/full->size resp/f)
     (apply + (map
-              (lambda (c)
-                (if (string? c)
-                    (string-length c)
-                    (bytes-length c)))
+              data-length
               (response/full-body resp/f))))
   
   ;; **************************************************
@@ -257,12 +254,7 @@
          ((response/incremental-generator resp/inc)
           (lambda chunks
             (fprintf o-port "~x\r\n"
-                     (foldl
-                      (lambda (c acc)
-                        (if (string? c)
-                            (+ (string-length c) acc)
-                            (+ (bytes-length c) acc)))
-                      0 chunks))
+                     (apply + 0 (map data-length chunks)))                     
             (for-each (lambda (chunk) (display chunk o-port)) chunks)
             (fprintf o-port "\r\n")))
          ; one \r\n ends the last (empty) chunk and the second \r\n ends the (non-existant) trailers
