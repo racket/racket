@@ -25,6 +25,7 @@
       (if linked-pkg
           (success-k linked-pkg)
           (failure-k 
+           void
            (λ (pkg) (add-linkage! module-specifier pkg-specifier pkg))
            (λ (x) x)))))
   

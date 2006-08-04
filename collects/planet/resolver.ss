@@ -298,13 +298,14 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
          (cond
            [(string? result)
             (raise-syntax-error 'require (string->immutable-string result) stx)]
-           [(pkg-promise? result)
-            (let ([pkg (pkg-promise->pkg result)])
-              (values (apply build-path (pkg-path pkg) (append path (list file-name))) pkg))]))]
+           [(pkg? result)
+            (values (apply build-path (pkg-path result) (append path (list file-name))) result)]))]
       [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~e" (cdr spec)) stx)]))
-  
-  
-  ;; PKG-GETTER ::= module-path pspec (pkg -> A) ((pkg -> void) ((string | #f) -> string | #f) -> A) -> A
+
+  ;; PKG-GETTER ::= module-path pspec 
+  ;;                (pkg -> A)
+  ;;                ((uninstalled-pkg -> void) (pkg -> void) ((string | #f) -> string | #f) -> A) 
+  ;;            -> A
   ;;
   ;; a pkg-getter is a function that tries to fetch a package; it is written in a quasi-cps style;
   ;; the first argument is what it calls to succeed, and the second argument is what it calls when it
@@ -319,7 +320,8 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ;; or returns a descriptive error message string if that's not possible
   (define (get-package module-path pspec)
     (let loop ([getters (*package-search-chain*)]
-               [updaters '()]
+               [pre-install-updaters '()]
+               [post-install-updaters '()]
                [error-reporters '()])
       (cond
         [(null? getters)
@@ -338,11 +340,15 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
           module-path 
           pspec
           (λ (pkg) 
-            (for-each (λ (u) (u pkg)) updaters)
-            pkg)
-          (λ (updater error-reporter)
+            (when (uninstalled-pkg? pkg)
+              (for-each (λ (u) (u pkg)) pre-install-updaters))
+            (let ([installed-pkg (pkg-promise->pkg pkg)])
+              (for-each (λ (u) (u installed-pkg)) post-install-updaters)
+              installed-pkg))
+          (λ (pre-updater post-updater error-reporter)
             (loop (cdr getters)
-                  (cons updater updaters)
+                  (cons pre-updater pre-install-updaters)
+                  (cons post-updater post-install-updaters)
                   (cons error-reporter error-reporters))))])))
   
   ; pkg-spec->full-pkg-spec : PKG-SPEC syntax -> FULL-PKG-SPEC
@@ -388,7 +394,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; get/installed-cache : pkg-getter
   (define (get/installed-cache module-spec pkg-spec success-k failure-k)
     (let ([p (lookup-package pkg-spec)])
-      (if p (success-k p) (failure-k void (λ (x) x)))))
+      (if p (success-k p) (failure-k void void (λ (x) x)))))
   
   ; get-package-from-cache : FULL-PKG-SPEC -> PKG | #f
   (define (get-package-from-cache pkg-spec) 
@@ -411,11 +417,8 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
             (pkg-maj p)
             (pkg-min p)))
           (failure-k
-           (λ (pkg-promise)
-             (cond
-               [(uninstalled-pkg? pkg-promise)
-                (save-to-uninstalled-pkg-cache! pkg-promise)]
-               [else (void)]))
+           save-to-uninstalled-pkg-cache!
+           void
            (λ (x) x)))))
   
   ;; save-to-uninstalled-pkg-cache! : uninstalled-pkg -> void
@@ -448,7 +451,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
         [(pkg-promise? p) (success-k p)]
         [(string? p)
          ; replace any existing error message with the server download error message
-         (failure-k void (λ (_) p))])))
+         (failure-k void void (λ (_) p))])))
   
   ; get-package-from-server : FULL-PKG-SPEC -> PKG-PROMISE | #f | string[error message]
   ; downloads the given package file from the PLaneT server and installs it in the 
