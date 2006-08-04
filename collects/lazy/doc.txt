@@ -1,0 +1,6 @@
+This collection implements Lazy Scheme.
+
+It is available as a language level and as a module that can be used
+to write lazy code.
+
+[Proper documentation will be added.]
