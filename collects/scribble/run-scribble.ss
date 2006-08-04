@@ -22,15 +22,14 @@
           [else (error* "unknown format ~e (use -L for a list of formats)"
                         format)]))
 
+  (provide render-file)
   (define (render-file input output format)
     (unless (file-exists? input)
       (error* "cannot find input file: ~e" input))
     (let* ([contents (dynamic-require `(file ,input) 'contents)]
            [renderer (format->renderer format)]
            [render   (lambda () (renderer contents))])
-      (if (equal? output "-")
-        (render)
-        (with-output-to-file output render 'truncate))))
+      (if output (with-output-to-file output render 'truncate) (render))))
 
   (provide main)
   (define (main args)
@@ -55,7 +54,8 @@
                            => (lambda (m) (string->symbol (cadr m)))]
                           [else default-format])]
                [output (or *output-name (path-replace-suffix
-                                         input-file (symbol->string fmt)))])
+                                         input-file (symbol->string fmt)))]
+               [output (and (not (equal? "-" output)) output)])
           (render-file input-file output fmt))]))
 
   (main (cons (symbol->string exe-name)

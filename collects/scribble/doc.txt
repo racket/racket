@@ -7,14 +7,35 @@ example, the reader can be used in any situation that requires lots of
 free-form text, or you can use the rendering portion directly to
 generate documents.
 
+
+Running Scribble
+----------------
+
+To process a Scribble document, use the `scribble' command-line utility
+(use `scribble -h' to see usage information).  This is implemented by
+the "run-scribble.ss" module, which can be used directly:
+
+> (render-file input output format)
+
+Renders the given `input' file to the `output' file using the given
+format specification.  The input and output files are used as is (no
+suffixes are added).  The `output' argument can be #f, which will render
+the input to the current output port.  `format' is a symbol that
+specifies the kind of output rendering (use the `scribble' commad to
+find the list of available formatters).
+
+A Scribble document is a MzScheme module file, which provides a `content'
+binding.
+
+
 The Scribble Reader
-------------------
+-------------------
 
 *** Introduction
 
 The @-reader is designed to be a convenient facility for using free-form
 text in Scheme code.  "@" is chosen as one of the least-used characters
-in Scheme code (the options are: "&" (969 uses in the collects
+in Scheme code (reasonable options are: "&" (969 uses in the collects
 hierarchy), "|" (1676), "@" (2105) "^" (2257) "$" (2259)).
 
 To use this file, you can use MzScheme's #reader form:
