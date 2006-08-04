@@ -11,6 +11,17 @@
 /*                      platform-specific handlers                            */
 /******************************************************************************/
 
+/* ========== Linux signal handler ========== */
+#if defined(linux)
+# include <signal.h>
+void fault_handler(int sn, struct siginfo *si, void *ctx)
+{
+  designate_modified(si->si_addr);
+#  define NEED_SIGACTION
+#  define USE_SIGACTON_SIGNAL_KIND SIGSEGV
+}
+#endif
+
 /* ========== FreeBSD signal handler ========== */
 #if defined(__FreeBSD__)
 # include <signal.h>
@@ -55,10 +66,14 @@ typedef LONG (WINAPI*gcPVECTORED_EXCEPTION_HANDLER)(LPEXCEPTION_POINTERS e);
 # define NEED_OSX_MACH_HANDLER
 #endif
 
-/* ========== Generic Unix handler ========== */
+/* ========== Generic Unix signal handler ========== */
+/* There's little guarantee that this will work, since
+   Unix variants differ in the types of the arguments.
+   When a platform doesn't match, make a special case
+   for it, like all the others above. */
 #if !defined(NEED_SIGACTION) && !defined(NEED_SIGWIN) && !defined(NEED_OSX_MACH_HANDLER)
 # include <signal.h>
-void fault_handler(int sn, struct siginfo *si, void *ctx)
+void fault_handler(int sn, siginfo_t *si, void *ctx)
 {
   designate_modified(si->si_addr);
 #  define NEED_SIGACTION
