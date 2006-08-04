@@ -1683,6 +1683,7 @@ mark_readtable {
   gcMARK(t->mapping);
   gcMARK(t->fast_mapping);
   gcMARK(t->symbol_parser);
+  gcMARK(t->names);
  size:
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }

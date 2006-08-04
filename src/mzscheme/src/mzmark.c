@@ -4170,6 +4170,7 @@ static int mark_readtable_MARK(void *p) {
   gcMARK(t->mapping);
   gcMARK(t->fast_mapping);
   gcMARK(t->symbol_parser);
+  gcMARK(t->names);
   return
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }
@@ -4179,6 +4180,7 @@ static int mark_readtable_FIXUP(void *p) {
   gcFIXUP(t->mapping);
   gcFIXUP(t->fast_mapping);
   gcFIXUP(t->symbol_parser);
+  gcFIXUP(t->names);
   return
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }
