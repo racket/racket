@@ -450,7 +450,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
          ; replace any existing error message with the server download error message
          (failure-k void (λ (_) p))])))
   
-  ; get-package-from-server : FULL-PKG-SPEC -> PKG-PROMISE | #f
+  ; get-package-from-server : FULL-PKG-SPEC -> PKG-PROMISE | #f | string[error message]
   ; downloads the given package file from the PLaneT server and installs it in the 
   ; uninstalled-packages cache, then returns a promise for it   
   (define (get-package-from-server pkg)
@@ -459,7 +459,8 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
        (let ([upkg (make-uninstalled-pkg path pkg maj min)])
          (save-to-uninstalled-pkg-cache! upkg)
          upkg)]
-      [(#f str) #f]))
+      [(#f str) (string-append "PLaneT could not find the requested package: " str)]
+      [(? string? s) (string-append "PLaneT could not download the requested package: " s)]))
   
   (define (download-package pkg) 
     ((if (USE-HTTP-DOWNLOADS?) 

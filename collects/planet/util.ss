@@ -69,7 +69,8 @@
                 (clean-planet-package path (list owner name '() maj min))))
              (erase-metadata p)
              (delete-directory/files path)
-             (trim-directory (CACHE-DIR) path)))))
+             (trim-directory (CACHE-DIR) path)
+             #t))))
   
   ;; erase-metadata : pkg -> void
   ;; clears out any references to the given package in planet's metadata files
