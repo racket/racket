@@ -167,7 +167,8 @@ an appropriate subdirectory.
            pkg->download-url
            pkg-promise->pkg
            install-pkg
-           get-planet-module-path/pkg)
+           get-planet-module-path/pkg
+           install?)
   
   (define install? (make-parameter #t)) ;; if #f, will not install packages and instead give an error
   
@@ -496,6 +497,14 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; install-pkg : FULL-PKG-SPEC path[file] Nat Nat -> PKG
   ; install the given pkg to the planet cache and return a PKG representing the installed file
   (define (install-pkg pkg path maj min)
+    (unless (install?)
+      (raise (make-exn:fail 
+              (string->immutable-string
+               (format
+                "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
+                (list (car (pkg-spec-path pkg)) (pkg-spec-name pkg) maj min)))
+              (current-continuation-marks))))
+                
     (let* ((owner (car (pkg-spec-path pkg)))
            (extra-path (cdr (pkg-spec-path pkg)))
            (the-dir 
