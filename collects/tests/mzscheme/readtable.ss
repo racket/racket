@@ -298,5 +298,38 @@
 	  (test 'z read (open-input-string "z#acd")))))))
 	
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Map other chars to parens
+
+(let ([try (lambda (open close other-open other-close)
+             (let ([readstr (lambda (s)
+                              (read (open-input-string s)))])
+               (parameterize ([current-readtable
+                               (make-readtable #f
+                                               #\< open #f
+                                               #\> close #f)])
+                 (test '((2) 1 3) readstr (format "<1 . ~a2> . 3~a" open close)))
+               (parameterize ([current-readtable
+                               (make-readtable #f
+                                               open #\a #f
+                                               close #\a #f
+                                               #\< open #f
+                                               #\! #\. #f
+                                               #\> close #f)])
+                 (test '(1 . 2) readstr "<1 . 2>")
+                 (test '(1 . 2) readstr "<1 ! 2>")
+                 (test (string->symbol (format "~a1" open))
+                       readstr (format "~a1 ! 2~a" open close))
+                 (test '(2 1 3) readstr "<1 ! 2 ! 3>")
+                 (test '((2) 1 3) readstr "<1 ! <2> ! 3>")
+                 (test '((2) 1 3) readstr (format "<1 ! ~a2~a ! 3>"
+                                                  other-open other-close))
+                 (err/rt-test (readstr "#<1 2 3>") exn:fail:read?)
+                 (err/rt-test (readstr (format "<1 2 3~a" other-close)) exn:fail:read?)
+                 (test '#(1 2 3 3) readstr "#4<1 2 3>"))))])
+  (try #\( #\) #\[ #\])
+  (try #\[ #\] #\( #\))
+  (try #\{ #\} #\[ #\]))
+  
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
