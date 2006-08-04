@@ -62,6 +62,13 @@ PLANNED FEATURES:
        ""
        "Remove the specified package from the local cache"
        (set! actions (cons (lambda () (remove owner pkg maj min)) actions)))
+      (("-e" "--erase")
+       owner pkg maj min
+       ""
+       "Erase the specified package, removing it as -r does and "
+       "eliminating the package's distribution file from the "
+       "uninstalled-package cache"
+       (set! actions (cons (lambda () (erase owner pkg maj min)) actions)))
       (("-U" "--unlink-all")
        ""
        "Clear the linkage table, unlinking all packages and allowing upgrades"
@@ -107,13 +114,13 @@ PLANNED FEATURES:
   (define (fail s . args) 
     (raise (make-exn:fail (string->immutable-string (apply format s args)) (current-continuation-marks))))
   
-  (define (download/install owner pkg majstr minstr)
+  (define (download/install owner name majstr minstr)
     (let* ([maj (read-from-string majstr)]
            [min (read-from-string minstr)]
-           [full-pkg-spec (pkg-spec->full-pkg-spec (list owner pkg maj min) #f)])
+           [full-pkg-spec (pkg-spec->full-pkg-spec (list owner name maj min) #f)])
       (when (get-package-from-cache full-pkg-spec)
         (fail "No package installed (cache already contains a matching package)"))
-      (unless (get-package-from-server full-pkg-spec)
+      (unless (download/install-pkg owner name maj min)
         (fail "Could not find matching package"))))
   
   (define (download/no-install owner pkg majstr minstr)
@@ -159,6 +166,14 @@ PLANNED FEATURES:
       (unless (and (integer? maj) (integer? min) (> maj 0) (>= min 0))
         (fail "Invalid major/minor version"))
       (unless (remove-pkg owner pkg maj min)
+        (fail "Could not find package"))))
+  
+  (define (erase owner pkg majstr minstr)
+    (let ((maj (string->number majstr))
+          (min (string->number minstr)))
+      (unless (and (integer? maj) (integer? min) (> maj 0) (>= min 0))
+        (fail "Invalid major/minor version"))
+      (unless (erase-pkg owner pkg maj min)
         (fail "Could not find package"))))
         
   (define (show-installed-packages)

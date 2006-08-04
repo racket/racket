@@ -15,10 +15,35 @@ Various common pieces of code that both the client and server need to access
            "../config.ss")
   
   (provide (all-defined))
+ 
+  
+  ; ==========================================================================================
+  ; DATA
+  ; defines common data used by the PLaneT system
+  ; ==========================================================================================
   
   ; exn:i/o:protocol: exception indicating that a protocol error occured
   (define-struct (exn:i/o:protocol exn:fail:network) ())
+
+  ; FULL-PKG-SPEC : struct pkg-spec
+  (define-struct pkg-spec 
+    (name           ; string
+     maj            ; (Nat | #f)
+     minor-lo       ; (Nat | #f)
+     minor-hi       ; (Nat | #f)
+     path           ; (listof string)
+     stx            ; (syntax | #f)
+     core-version   ; string
+     )
+    (make-inspector))
+  ; PKG : string (listof string) Nat Nat path
+  (define-struct pkg (name route maj min path))
+  ; UNINSTALLED-PKG : path FULL-PKG-SPEC Nat Nat
+  (define-struct uninstalled-pkg (path spec maj min))
+  ; PKG-PROMISE : PKG | UNINSTALLED-PKG
   
+  (define (pkg-promise? p) (or (pkg? p) (uninstalled-pkg? p)))
+
   ; ==========================================================================================
   ; CACHE LOGIC
   ; Handles checking the cache for an appropriate module
@@ -41,18 +66,21 @@ Various common pieces of code that both the client and server need to access
   (define (legal-language? l)
     (and (language-version->repository l) #t))
   
-  ; lookup-package : FULL-PKG-SPEC -> PKG | #f
+  ; lookup-package : FULL-PKG-SPEC [path (optional)] -> PKG | #f
   ; returns the directory pointing to the appropriate package in the cache, the user's hardlink table,
   ; or #f if the given package isn't in the cache or the hardlink table
-  (define (lookup-package pkg)
-    (let* ((at (build-assoc-table pkg)))
-      (get-best-match at pkg)))
+  (define lookup-package
+    (case-lambda 
+      [(pkg) (lookup-package pkg (CACHE-DIR))]
+      [(pkg dir)
+       (let* ((at (build-assoc-table pkg dir)))
+         (get-best-match at pkg))]))
   
-  ; build-assoc-table : FULL-PKG-SPEC -> assoc-table
+  ; build-assoc-table : FULL-PKG-SPEC path -> assoc-table
   ; returns a version-number -> directory association table for the given package
-  (define (build-assoc-table pkg)
+  (define (build-assoc-table pkg dir) 
     (add-to-table 
-     (dir->assoc-table pkg)
+     (pkg->assoc-table pkg dir)
      (hard-links pkg)))
   
   ;; assoc-table ::= (listof (list n n path))
@@ -69,10 +97,11 @@ Various common pieces of code that both the client and server need to access
                 #f))
           #f)))
   
-  ; dir->assoc-table : FULL-PKG-SPEC -> assoc-table
-  ; returns the on-disk packages for the given planet dir
-  (define (dir->assoc-table pkg)
-    (define path (build-path (apply build-path (CACHE-DIR) (pkg-spec-path pkg)) (pkg-spec-name pkg)))
+  ; pkg->assoc-table : FULL-PKG-SPEC path -> assoc-table
+  ; returns the on-disk packages for the given planet package in the
+  ; on-disk table rooted at the given directory
+  (define (pkg->assoc-table pkg dir)
+    (define path (build-path (apply build-path dir (pkg-spec-path pkg)) (pkg-spec-name pkg)))
     
     (define (tree-stuff->row-or-false p majs mins)
       (let ((maj (string->number majs))
@@ -291,11 +320,7 @@ Various common pieces of code that both the client and server need to access
                  (assoc-table-row->min best-row)
                  (assoc-table-row->dir best-row)))))))
   
-  ; FULL-PKG-SPEC : (make-pkg-spec string (Nat | #f) (Nat | #f) (Nat | #f) (listof string) (syntax | #f)) string
-  (define-struct pkg-spec (name maj minor-lo minor-hi path stx core-version) (make-inspector))
-  ; PKG : string (listof string) Nat Nat path
-  (define-struct pkg (name route maj min path))
-    
+   
   ;; get-installed-package : string string nat nat -> PKG | #f
   ;; gets the package associated with this package specification, if any
   (define (get-installed-package owner name maj min)

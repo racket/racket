@@ -165,6 +165,7 @@ an appropriate subdirectory.
            get-package-from-server
            download-package
            pkg->download-url
+           pkg-promise->pkg
            install-pkg
            get-planet-module-path/pkg)
   
@@ -293,20 +294,56 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
        
        (match-let*
            ([pspec (pkg-spec->full-pkg-spec pkg-spec stx)]
-            [pkg (or (get-linkage module-path pspec)
-                     (add-linkage! module-path pspec
-                                   (or
-                                    (get-package-from-cache pspec)
-                                    (get-package-from-server pspec)
-                                    (raise-syntax-error #f (format "Could not find package matching ~s" 
-                                                                   (list (pkg-spec-name pspec)
-                                                                         (pkg-spec-maj pspec)
-                                                                         (list (pkg-spec-minor-lo pspec)
-                                                                               (pkg-spec-minor-hi pspec))
-                                                                         (pkg-spec-path pspec)))
-                                                        stx))))])
-         (values (apply build-path (pkg-path pkg) (append path (list file-name))) pkg))]
+            [result (get-package module-path pspec)])
+         (cond
+           [(string? result)
+            (raise-syntax-error 'require (string->immutable-string result) stx)]
+           [(pkg-promise? result)
+            (let ([pkg (pkg-promise->pkg result)])
+              (values (apply build-path (pkg-path pkg) (append path (list file-name))) pkg))]))]
       [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~e" (cdr spec)) stx)]))
+  
+  
+  ;; PKG-GETTER ::= module-path pspec (pkg -> A) ((pkg -> void) ((string | #f) -> string | #f) -> A) -> A
+  ;;
+  ;; a pkg-getter is a function that tries to fetch a package; it is written in a quasi-cps style;
+  ;; the first argument is what it calls to succeed, and the second argument is what it calls when it
+  ;; fails. In the second case, it must provide two things: a function to take action if a match
+  ;; is found eventually, and a function that gets to mess with the error message if the entire message 
+  ;; eventually fails.
+  
+  
+  
+  ;; get-package : module-path FULL-PKG-SPEC -> (PKG | string)
+  ;; gets the package specified by pspec requested by the module in the given module path,
+  ;; or returns a descriptive error message string if that's not possible
+  (define (get-package module-path pspec)
+    (let loop ([getters (*package-search-chain*)]
+               [updaters '()]
+               [error-reporters '()])
+      (cond
+        [(null? getters)
+         ; we have failed to fetch the package, generate an appropriate error message and bail
+         (let ([msg (foldl (λ (f str) (f str)) #f error-reporters)])
+           (or msg 
+               (format "Could not find package matching ~s" 
+                       (list (pkg-spec-name pspec)
+                             (pkg-spec-maj pspec)
+                             (list (pkg-spec-minor-lo pspec)
+                                   (pkg-spec-minor-hi pspec))
+                             (pkg-spec-path pspec)))))]
+        [else
+         ; try the next error reporter. recursive call is in the failure continuation
+         ((car getters)
+          module-path 
+          pspec
+          (λ (pkg) 
+            (for-each (λ (u) (u pkg)) updaters)
+            pkg)
+          (λ (updater error-reporter)
+            (loop (cdr getters)
+                  (cons updater updaters)
+                  (cons error-reporter error-reporters))))])))
   
   ; pkg-spec->full-pkg-spec : PKG-SPEC syntax -> FULL-PKG-SPEC
   (define (pkg-spec->full-pkg-spec spec stx)
@@ -344,33 +381,85 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   
   ; ==========================================================================================
   ; PHASE 2: CACHE SEARCH
-  ; If there's no linkage, there might still be an appropriate cached module.
+  ; If there's no linkage, there might still be an appropriate cached module
+  ; (either installed or uninstalled)
   ; ==========================================================================================
+  
+  ; get/installed-cache : pkg-getter
+  (define (get/installed-cache module-spec pkg-spec success-k failure-k)
+    (let ([p (lookup-package pkg-spec)])
+      (if p (success-k p) (failure-k void (λ (x) x)))))
   
   ; get-package-from-cache : FULL-PKG-SPEC -> PKG | #f
   (define (get-package-from-cache pkg-spec) 
     (lookup-package pkg-spec))
   
+  ; get/uninstalled-cache : pkg-getter
+  ; note: this does not yet work with minimum-required-version specifiers
+  ; if you install a package and then use an older mzscheme
+  (define (get/uninstalled-cache module-spec pkg-spec success-k failure-k)
+    (let ([p (lookup-package pkg-spec (UNINSTALLED-PACKAGE-CACHE))])
+      (if (and p (file-exists? (build-path (pkg-path p) (pkg-spec-name pkg-spec))))
+          (success-k 
+           ; note: it's a little sloppy that lookup-pkg returns PKG structures, since
+           ; it doesn't actually know whether or not the package is installed. hence
+           ; I have to convert what appears to be an installed package into an
+           ; uninstalled package
+           (make-uninstalled-pkg 
+            (build-path (pkg-path p) (pkg-spec-name pkg-spec))
+            pkg-spec
+            (pkg-maj p)
+            (pkg-min p)))
+          (failure-k
+           (λ (pkg-promise)
+             (cond
+               [(uninstalled-pkg? pkg-promise)
+                (save-to-uninstalled-pkg-cache! pkg-promise)]
+               [else (void)]))
+           (λ (x) x)))))
+  
+  ;; save-to-uninstalled-pkg-cache! : uninstalled-pkg -> void
+  ;; copies the given uninstalled package into the uninstalled-package cache.
+  ;; replaces any old file that might be there
+  (define (save-to-uninstalled-pkg-cache! uninst-p)
+    (let* ([pspec (uninstalled-pkg-spec uninst-p)]
+           [owner (car (pkg-spec-path pspec))]
+           [name (pkg-spec-name pspec)]
+           [maj (uninstalled-pkg-maj uninst-p)]
+           [min (uninstalled-pkg-min uninst-p)]
+           [dir (build-path (UNINSTALLED-PACKAGE-CACHE) 
+                            owner 
+                            name
+                            (number->string maj)
+                            (number->string min))]
+           [full-pkg-path (build-path dir name)])
+      (make-directory* dir)
+      (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
+      (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path)))
+
   ; ==========================================================================================
   ; PHASE 3: SERVER RETRIEVAL
   ; Ask the PLaneT server for an appropriate package if we don't have one locally.
   ; ==========================================================================================
   
-  ; get-package-from-server : FULL-PKG-SPEC -> PKG | #f
-  ; downloads and installs the given package from the PLaneT server and installs it in the cache,
-  ; then returns a path to it 
+  (define (get/server module-spec pkg-spec success-k failure-k)
+    (let ([p (get-package-from-server pkg-spec)])
+      (cond
+        [(pkg-promise? p) (success-k p)]
+        [(string? p)
+         ; replace any existing error message with the server download error message
+         (failure-k void (λ (_) p))])))
+  
+  ; get-package-from-server : FULL-PKG-SPEC -> PKG-PROMISE | #f
+  ; downloads the given package file from the PLaneT server and installs it in the 
+  ; uninstalled-packages cache, then returns a promise for it   
   (define (get-package-from-server pkg)
-    (with-handlers
-        (#;[exn:fail? (lambda (e) 
-                      (raise (make-exn:fail
-                              (string->immutable-string
-                               (format 
-                                "Error downloading module from PLaneT server: ~a"
-                                (exn-message e)))
-                              (exn-continuation-marks e))))])
-      (match (download-package pkg)
-        [(#t path maj min) (install-pkg pkg path maj min)]
-        [(#f str) #f])))
+    (match (download-package pkg)
+      [(#t path maj min) 
+       (let ([upkg (make-uninstalled-pkg path pkg maj min)])
+         (save-to-uninstalled-pkg-cache! upkg)
+         upkg)]
+      [(#f str) #f]))
   
   (define (download-package pkg) 
     ((if (USE-HTTP-DOWNLOADS?) 
@@ -386,6 +475,19 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                 (date-hour date)
                 (date-minute date)
                 (date-second date)))))
+  
+  
+  ; pkg-promise->pkg : pkg-promise -> pkg
+  ; "forces" the given pkg-promise (i.e., installs the package if it isn't installed yet)
+  (define (pkg-promise->pkg p)
+    (cond
+      [(pkg? p) p]
+      [(uninstalled-pkg? p)
+       (install-pkg (uninstalled-pkg-spec p)
+                    (uninstalled-pkg-path p)
+                    (uninstalled-pkg-maj p)
+                    (uninstalled-pkg-min p))]))
+                
   
   ; install-pkg : FULL-PKG-SPEC path[file] Nat Nat -> PKG
   ; install the given pkg to the planet cache and return a PKG representing the installed file
@@ -422,7 +524,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; didn't exist and the string is the server's informative message.
   ; raises an exception if some protocol failure occurs in the download process
   (define (download-package/planet pkg)
-    
+
     (define-values (ip op) (tcp-connect (PLANET-SERVER-NAME) (PLANET-SERVER-PORT)))
     
     (define (close-ports)
@@ -505,70 +607,67 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ;; gets the download url for the given package
   (define (pkg->download-url pkg)
     (copy-struct url (string->url (HTTP-DOWNLOAD-SERVLET-URL)) (url-query (pkg->servlet-args pkg))))
-      
-  
+
   ;; download-package/http : FULL-PKG-SPEC -> RESPONSE
   ;; a drop-in replacement for download-package that uses HTTP rather than the planet protocol.
   ;; The HTTP protocol does not allow any kind of complicated negotiation, but it appears that
   ;; many more users can make HTTP requests than requests from nonstandard protocols.
   (define (download-package/http pkg)
-    (let loop ([attempts 1])
-      (when (> attempts 5)
-        (raise (make-exn:i/o:protocol 
-                "Download failed too many times (possibly due to an unreliable network connection)"
-                (current-continuation-marks))))
+    (let/ec return
+      (let loop ([attempts 1])
+        (when (> attempts 5)
+          (return "Download failed too many times (possibly due to an unreliable network connection)"))
         
-      (let* ((target            (pkg->download-url pkg))
-             (ip                (get-impure-port target))
-             (head              (purify-port ip))
-             (response-code/str (get-http-response-code head))
-             (response-code     (string->number response-code/str)))
-        
-        (define (abort msg)
-          (close-input-port ip)
-          (raise (make-exn:i/o:protocol (string->immutable-string msg)
-                                        (current-continuation-marks))))
-      
-        (case response-code
-          [(#f)  (abort (format "Server returned invalid HTTP response code ~s" response-code/str))]
-          [(200)
-           (let ((maj/str (extract-field "Package-Major-Version" head))
-                 (min/str (extract-field "Package-Minor-Version" head))
-                 (content-length/str (extract-field "Content-Length" head)))
-             (unless (and maj/str min/str content-length/str
-                          (nat? (string->number maj/str))
-                          (nat? (string->number min/str))
-                          (nat? (string->number content-length/str)))
-               (printf "~a" head)
-               (abort "Server did not include valid major and minor version information"))
-             (let* ((filename (make-temporary-file "planettmp~a.plt"))
-                    (maj      (string->number maj/str))
-                    (min      (string->number min/str))
-                    (content-length (string->number content-length/str)))
-               (let ([op (open-output-file filename 'truncate/replace)])
-                 (copy-port ip op)
-                 (close-input-port ip)
-                 (close-output-port op)
-                 (if (= (file-size filename) content-length)
-                     (list #t filename maj min)
-                     (loop (add1 attempts))))))]
-          [(404)
-           (begin0
-             (list #f (format "Server had no matching package: ~a" (read-line ip)))
-             (close-input-port ip))]
-          [(400)
-           (abort (format "Internal error (malformed request): ~a" (read-line ip)))]
-          [(500)
-           (abort (format "Server internal error: ~a"
-                          (apply string-append
-                                 (let loop ()
-                                   (let ((line (read-line ip)))
-                                     (cond
-                                       [(eof-object? line) '()]
-                                       [else (list* line "\n" (loop))]))))))]
-          [else
-           (abort (format "Internal error (unknown HTTP response code ~a)" response-code))]))))
-    
+        (with-handlers ([exn:fail:network? (λ (e) (return (exn-message e)))])
+          (let* ((target            (pkg->download-url pkg))
+                 (ip                (get-impure-port target))
+                 (head              (purify-port ip))
+                 (response-code/str (get-http-response-code head))
+                 (response-code     (string->number response-code/str)))
+            
+            (define (abort msg)
+              (close-input-port ip)
+              (return msg))
+            
+            (case response-code
+              [(#f)  (abort (format "Server returned invalid HTTP response code ~s" response-code/str))]
+              [(200)
+               (let ((maj/str (extract-field "Package-Major-Version" head))
+                     (min/str (extract-field "Package-Minor-Version" head))
+                     (content-length/str (extract-field "Content-Length" head)))
+                 (unless (and maj/str min/str content-length/str
+                              (nat? (string->number maj/str))
+                              (nat? (string->number min/str))
+                              (nat? (string->number content-length/str)))
+                   (abort "Server did not include valid major and minor version information"))
+                 (let* ((filename (make-temporary-file "planettmp~a.plt"))
+                        (maj      (string->number maj/str))
+                        (min      (string->number min/str))
+                        (content-length (string->number content-length/str)))
+                   (let ([op (open-output-file filename 'truncate/replace)])
+                     (copy-port ip op)
+                     (close-input-port ip)
+                     (close-output-port op)
+                     (if (= (file-size filename) content-length)
+                         (list #t filename maj min)
+                         (loop (add1 attempts))))))]
+              [(404)
+               (begin0
+                 (list #f (format "Server had no matching package: ~a" (read-line ip)))
+                 (close-input-port ip))]
+              [(400)
+               (abort (format "Internal error (malformed request): ~a" (read-line ip)))]
+              [(500)
+               (abort (format "Server internal error: ~a"
+                              (apply string-append
+                                     (let loop ()
+                                       (let ((line (read-line ip)))
+                                         (cond
+                                           [(eof-object? line) '()]
+                                           [else (list* line "\n" (loop))]))))))]
+              [else
+               (abort (format "Internal error (unknown HTTP response code ~a)" response-code))]))))))
+  
   ; ==========================================================================================
   ; MODULE MANAGEMENT
   ; Handles interaction with the module system
@@ -583,6 +682,15 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
        module-path
        stx
        load?)))
+  
+  (define *package-search-chain* 
+    (make-parameter 
+     (list
+      get/linkage
+      get/installed-cache
+      get/uninstalled-cache
+      get/server)))
+  
   
   ; ============================================================
   ; UTILITY
@@ -604,6 +712,4 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
           [else
            (let ((dirs (make-directory*/paths base)))
              (make-directory dir)
-             (cons dir dirs))]))))
-  
-  )
+             (cons dir dirs))])))))

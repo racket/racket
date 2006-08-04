@@ -6,7 +6,8 @@
            (lib "match.ss")
            (prefix srfi1: (lib "1.ss" "srfi")))
 
-  (provide get-linkage 
+  (provide get/linkage
+           get-linkage 
            add-linkage!
            remove-linkage-to!
            
@@ -16,6 +17,17 @@
   ; PHASE 1: LINKAGE
   ; The first check is to see if there is a valid linkage for the module.
   ; ==========================================================================================
+
+  ;; get/linkage : pkg-getter [see ../resolver.ss]
+  ;; getter for the linkage table
+  (define (get/linkage module-specifier pkg-specifier success-k failure-k)
+    (let ([linked-pkg (get-linkage module-specifier pkg-specifier)])
+      (if linked-pkg
+          (success-k linked-pkg)
+          (failure-k 
+           (λ (pkg) (add-linkage! module-specifier pkg-specifier pkg))
+           (λ (x) x)))))
+  
   
   ;; NOTE :: right now we have a nasty situation with the linkage-table: it doesn't associate
   ;; keys to packages, which it seems it should. Instead it associates keys to the arguments
@@ -92,6 +104,8 @@
           (pkg-maj pkg)
           (pkg-min pkg)
           (path->bytes (pkg-path pkg))))
+
+
   
   ; get-linkage : symbol FULL-PKG-SPEC -> PKG | #f
   ; returns the already-linked module location, or #f if there is none
