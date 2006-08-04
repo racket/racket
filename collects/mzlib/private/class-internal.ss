@@ -1615,7 +1615,7 @@
 			 augride-normal-names
 			 inherit-names
 
-			 init-args           ; list of symbols in order
+			 init-args           ; list of symbols in order, or #f
 			 init-mode           ; 'normal, 'stop, or 'list
 			 
 			 make-methods        ; takes field and method accessors
@@ -2350,43 +2350,53 @@
 
   (define (continue-make-object o c by-pos-args named-args explict-named-args?)
     (let ([by-pos-only? (not (class-init-args c))])
-      ;; Primitive class with by-pos arguments?
-      (when by-pos-only?
-	(unless (null? named-args)
-	  (if explict-named-args?
-	      (obj-error 
-	       'instantiate
-	       "class has only by-position initializers, but given by-name arguments:~a~a" 
-	       (make-named-arg-string named-args)
-	       (for-class (class-name c)))
-	      ;; If args were implicit from subclass, should report as unused:
-	      (unused-args-error o named-args))))
-      ;; Merge by-pos into named args:
-      (let* ([named-args (if (not by-pos-only?)
-			     ;; Normal merge
-			     (do-merge by-pos-args (class-init-args c) c named-args by-pos-args c)
-			     ;; Non-merge for by-position initializers:
-			     by-pos-args)]
-	     [leftovers (if (not by-pos-only?)
-			    (get-leftovers named-args (class-init-args c))
-			    null)])
-	;; In 'list mode, make sure no by-name arguments are left over
-	(when (eq? 'list (class-init-mode c))
-	  (unless (or (null? leftovers)
-		      (not (ormap car leftovers)))
-	    (unused-args-error o (filter car leftovers))))
-	(unless (and (eq? c object%)
-		     (null? named-args))
-	  (let ([inited? (box (class-no-super-init? c))])
-	    ;; ----- Execute the class body -----
-	    ((class-init c)
-	     o 
-	     continue-make-super
-	     c inited? leftovers ; merely passed through to continue-make-super
-	     named-args)
-	    (unless (unbox inited?)
-	      (obj-error 'instantiate "superclass initialization not invoked by initialization~a"
-			 (for-class (class-name c)))))))))
+      ;; When a superclass has #f for init-args (meaning "by-pos args with no names"),
+      ;; some propagated named args may have #f keys; move them to by-position args.
+      (let-values ([(by-pos-args named-args)
+                    (if by-pos-only?
+                        (let ([l (filter (lambda (x) (not (car x))) named-args)])
+                          (if (pair? l)
+                              (values (append by-pos-args (map cdr l))
+                                      (filter car named-args))
+                              (values by-pos-args named-args)))
+                        (values by-pos-args named-args))])
+        ;; Primitive class with by-pos arguments?
+        (when by-pos-only?
+          (unless (null? named-args)
+            (if explict-named-args?
+                (obj-error 
+                 'instantiate
+                 "class has only by-position initializers, but given by-name arguments:~a~a" 
+                 (make-named-arg-string named-args)
+                 (for-class (class-name c)))
+                ;; If args were implicit from subclass, should report as unused:
+                (unused-args-error o named-args))))
+        ;; Merge by-pos into named args:
+        (let* ([named-args (if (not by-pos-only?)
+                               ;; Normal merge
+                               (do-merge by-pos-args (class-init-args c) c named-args by-pos-args c)
+                               ;; Non-merge for by-position initializers
+                               by-pos-args)]
+               [leftovers (if (not by-pos-only?)
+                              (get-leftovers named-args (class-init-args c))
+                              null)])
+          ;; In 'list mode, make sure no by-name arguments are left over
+          (when (eq? 'list (class-init-mode c))
+            (unless (or (null? leftovers)
+                        (not (ormap car leftovers)))
+              (unused-args-error o (filter car leftovers))))
+          (unless (and (eq? c object%)
+                       (null? named-args))
+            (let ([inited? (box (class-no-super-init? c))])
+              ;; ----- Execute the class body -----
+              ((class-init c)
+               o 
+               continue-make-super
+               c inited? leftovers ; merely passed through to continue-make-super
+               named-args)
+              (unless (unbox inited?)
+                (obj-error 'instantiate "superclass initialization not invoked by initialization~a"
+                           (for-class (class-name c))))))))))
 
   (define (continue-make-super o c inited? leftovers by-pos-args new-named-args)
     (when (unbox inited?)
@@ -2415,8 +2425,12 @@
 			(positive? (class-pos ic))
 			(vector-ref (class-supers ic) (sub1 (class-pos ic))))])
 	(cond
-	 [(and super (class-init-args super))
-	  (do-merge al (class-init-args super) super named-args by-pos-args c)]
+	 [super 
+          (if (class-init-args super)
+              (do-merge al (class-init-args super) super named-args by-pos-args c)
+              ;; Like 'list mode:
+              (append (map (lambda (x) (cons #f x)) al)
+                      named-args))]
 	 [(eq? 'list (class-init-mode ic))
 	  ;; All unconsumed named-args must have #f
 	  ;;  "name"s, otherwise an error is raised in
@@ -3013,7 +3027,7 @@
 			(map (lambda (s)
 			       (if (symbol? s) s (car s)))
 			     init-arg-names))
-		   'stop
+                   'stop
 		   
 		   (lambda ignored
 		     (values
