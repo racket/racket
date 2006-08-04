@@ -226,25 +226,31 @@
         
         (define (hand-off-and-block step-text step-kind)
           (let ([new-semaphore (make-semaphore)])
-            (parameterize ([current-eventspace drscheme-eventspace])
-              (queue-callback
-               (lambda ()
-                 (async-channel-put view-channel (list step-text new-semaphore step-kind))
-                 (when stepper-is-waiting?
-                   (let ([try-get (async-channel-try-get view-channel)])
-                     (unless try-get
-                       (error 'check-for-stepper-waiting "queue is empty, even though a step was just added."))
-                     (add-view-triple try-get)
-                     (if (right-kind-of-step? (caddr try-get))
-                         ; got the desired step; show the user:
-                         (begin 
-                           (set! stepper-is-waiting? #f)
-                           (update-view/existing (- (length view-history) 1)))
-                         ; nope, keep running:
-                         (begin
-                           (en/dis-able-buttons)
-                           (semaphore-post new-semaphore)))))))
-              (semaphore-wait new-semaphore))))
+            (run-on-drscheme-side
+             (lambda ()
+               (async-channel-put view-channel (list step-text new-semaphore step-kind))
+               (when stepper-is-waiting?
+                 (let ([try-get (async-channel-try-get view-channel)])
+                   (unless try-get
+                     (error 'check-for-stepper-waiting "queue is empty, even though a step was just added."))
+                   (add-view-triple try-get)
+                   (if (right-kind-of-step? (caddr try-get))
+                       ; got the desired step; show the user:
+                       (begin 
+                         (set! stepper-is-waiting? #f)
+                         (update-view/existing (- (length view-history) 1)))
+                       ; nope, keep running:
+                       (begin
+                         (en/dis-able-buttons)
+                         (semaphore-post new-semaphore)))))))
+            (semaphore-wait new-semaphore)))
+        
+        ;; run-on-drscheme-side : runs a thunk in the drscheme eventspace.
+        ;; Passed to 'go' so that display-break-stuff can work.  This would be
+        ;; cleaner with two-way provides.
+        (define (run-on-drscheme-side thunk)
+          (parameterize ([current-eventspace drscheme-eventspace])
+            (queue-callback thunk)))
         
         ; right-kind-of-step? : (boolean? . -> . boolean?)
         ; is this step the kind of step that the gui is waiting for?
@@ -430,7 +436,8 @@
                   (not (member language-level-name
                                (list (string-constant intermediate-student/lambda)
                                      (string-constant advanced-student))))
-                  language-level-name)
+                  language-level-name
+                  run-on-drscheme-side)
         (send s-frame show #t)
         
         s-frame)

@@ -156,7 +156,8 @@
        (or 
         ;; don't stop for a double-break on a let that is the expansion of a 'begin'
         (let ([expr (mark-source (car mark-list))])
-          (eq? (syntax-property expr 'stepper-hint) 'comes-from-begin))
+          (or (eq? (syntax-property expr 'stepper-hint) 'comes-from-begin)
+              (syntax-property expr 'stepper-skip-double-break)))
         (not (render-settings-lifting? render-settings)))]
       [(expr-finished-break define-struct-break late-let-break) #f]))
   

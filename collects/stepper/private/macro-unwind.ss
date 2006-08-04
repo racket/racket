@@ -65,64 +65,44 @@
               stx (syntax-pair-map (syntax-e stx) inner) stx stx)
              stx))
 
+         (define (fall-through stx)
+           (kernel:kernel-syntax-case stx #f
+             [id
+              (identifier? stx)
+              (or (syntax-property stx 'stepper-lifted-name)
+                  stx)]
+             [(define-values dc ...)
+              (unwind-define stx)]
+             [(#%app exp ...)
+              (recur-on-pieces #'(exp ...))]
+             [(#%datum . datum)
+              #'datum]
+             [(let-values . rest)
+              (unwind-mz-let stx)]
+             [(letrec-values . rest)
+              (unwind-mz-let stx)]
+             [(set! var rhs)
+              (with-syntax ([unwound-var (or (syntax-property
+                                              #`var 'stepper-lifted-name)
+                                             #`var)]
+                            [unwound-body (inner #`rhs)])
+                #`(set! unwound-var unwound-body))]
+             [else (recur-on-pieces stx)]))
+
          (define (inner stx)
-           (define (fall-through)
-             (kernel:kernel-syntax-case stx #f
-               [id
-                (identifier? stx)
-                (or (syntax-property stx 'stepper-lifted-name)
-                    stx)]
-               [(define-values dc ...)
-                (unwind-define stx)]
-               [(#%app exp ...)
-                (recur-on-pieces #'(exp ...))]
-               [(#%datum . datum)
-                #'datum]
-               [(let-values . rest)
-                (unwind-mz-let stx)]
-               [(letrec-values . rest)
-                (unwind-mz-let stx)]
-               [(set! var rhs)
-                (with-syntax ([unwound-var (or (syntax-property
-                                                #`var 'stepper-lifted-name)
-                                               #`var)]
-                              [unwound-body (inner #`rhs)])
-                  #`(set! unwound-var unwound-body))]
-               [else
-                (recur-on-pieces stx)]))
-
            (transfer-info
-            (if (syntax-property stx 'user-stepper-hint)
-                (case (syntax-property stx 'user-stepper-hint)
-
-                  [(comes-from-cond)
-                   (unwind-cond stx
-                                (syntax-property stx 'user-source)
-                                (syntax-property stx 'user-position))]
-
-                  [(comes-from-and)
-                   (unwind-and/or stx
-                                  (syntax-property stx 'user-source)
-                                  (syntax-property stx 'user-position)
-                                  'and)]
-
-                  [(comes-from-or)
-                   (unwind-and/or stx
-                                  (syntax-property stx 'user-source)
-                                  (syntax-property stx 'user-position)
-                                  'or)]
-
-                  [(comes-from-local)
-                   (unwind-local stx)]
-
-                  [(comes-from-recur)
-                   (unwind-recur stx)]
-
-                  [(comes-from-begin)
-                   (unwind-begin stx)]
-
-                  (else (fall-through)))
-                (fall-through))
+            (let ([hint (syntax-property stx 'user-stepper-hint)])
+              (if (procedure? hint)
+                (hint stx recur-on-pieces)
+                (let ([process (case hint
+                                 [(comes-from-cond)  unwind-cond]
+                                 [(comes-from-and)   (unwind-and/or 'and)]
+                                 [(comes-from-or)    (unwind-and/or 'or)]
+                                 [(comes-from-local) unwind-local]
+                                 [(comes-from-recur) unwind-recur]
+                                 [(comes-from-begin) unwind-begin]
+                                 [else fall-through])])
+                  (process stx))))
             stx))
 
          (define (transfer-highlight from to)
@@ -254,33 +234,35 @@
                          [result (inner result-stx)])
              #`(new-test result)))
 
-         (define (unwind-cond stx user-source user-position)
-           (with-syntax
-               ([clauses
-                 (let loop ([stx stx])
-                   (if (and (eq? user-source
-                                 (syntax-property stx 'user-source))
-                            (eq? user-position
-                                 (syntax-property stx 'user-position)))
-                     (syntax-case stx (if begin #%app)
-                       ;; the else clause disappears when it's a
-                       ;; language-inserted else clause
-                       [(if test result)
-                        (list (unwind-cond-clause stx #`test #`result))]
-                       [(if test result else-clause)
-                        (cons (unwind-cond-clause stx #`test #`result)
-                              (loop (syntax else-clause)))]
-                       ;; else clause appears momentarily in 'before,' even
-                       ;; though it's a 'skip-completely'
-                       [(begin . rest) null]
-                       [else-stx
-                        (error 'unwind-cond
-                               "expected an if, got: ~e"
-                               (syntax-object->datum (syntax else-stx)))])
-                     (error 'unwind-cond
-                            "expected a cond clause expansion, got: ~e"
-                            (syntax-object->datum stx))))])
-             (syntax (cond . clauses))))
+         (define (unwind-cond stx)
+           (let ([user-source   (syntax-property stx 'user-source)]
+                 [user-position (syntax-property stx 'user-position)])
+             (with-syntax
+                 ([clauses
+                   (let loop ([stx stx])
+                     (if (and (eq? user-source
+                                   (syntax-property stx 'user-source))
+                              (eq? user-position
+                                   (syntax-property stx 'user-position)))
+                       (syntax-case stx (if begin #%app)
+                         ;; the else clause disappears when it's a
+                         ;; language-inserted else clause
+                         [(if test result)
+                          (list (unwind-cond-clause stx #`test #`result))]
+                         [(if test result else-clause)
+                          (cons (unwind-cond-clause stx #`test #`result)
+                                (loop (syntax else-clause)))]
+                         ;; else clause appears momentarily in 'before,' even
+                         ;; though it's a 'skip-completely'
+                         [(begin . rest) null]
+                         [else-stx
+                          (error 'unwind-cond
+                                 "expected an if, got: ~e"
+                                 (syntax-object->datum (syntax else-stx)))])
+                       (error 'unwind-cond
+                              "expected a cond clause expansion, got: ~e"
+                              (syntax-object->datum stx))))])
+               (syntax (cond . clauses)))))
 
          (define (unwind-begin stx)
            (syntax-case stx (let-values)
@@ -289,10 +271,10 @@
                              (map inner (syntax->list #`(body ...)))])
                 #`(begin new-body ...))]))
 
-         (define (unwind-and/or stx user-source user-position label)
-           (let ([clause-padder (case label
-                                  [(and) #`true]
-                                  [(or) #`false])])
+         (define ((unwind-and/or label) stx user-source user-position)
+           (let ([user-source   (syntax-property stx 'user-source)]
+                 [user-position (syntax-property stx 'user-position)]
+                 [clause-padder (case label [(and) #`true] [(or) #`false])])
              (with-syntax
                  ([clauses
                    (append

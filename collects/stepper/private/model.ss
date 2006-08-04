@@ -42,7 +42,10 @@
            "shared.ss"
            "marks.ss"
            "model-settings.ss"
-           "macro-unwind.ss")
+           "macro-unwind.ss"
+           
+           ;; for breakpoint display
+           "display-break-stuff.ss")
   
   
   (define program-expander-contract
@@ -57,14 +60,13 @@
                          (or/c render-settings? false/c) ; render-settings
                          boolean?                        ; track-inferred-names?
                          string?                         ; language-level-name
+                         (procedure? . -> . void?)       ; run-on-drscheme-side
                          . -> .
                          void?)])
   
   ; go starts a stepper instance
   ; see provide stmt for contract 
-  (define (go program-expander receive-result render-settings track-inferred-names? language-level-name)
-    
-    
+  (define (go program-expander receive-result render-settings track-inferred-names? language-level-name run-on-drscheme-side)
     
     ;; finished-exps: (listof (list/c syntax-object? (or/c number? false?)( -> any)))
     ;;  because of mutation, these cannot be fixed renderings, but must be re-rendered at each step.
@@ -78,8 +80,6 @@
     (define held-exp-list no-sexp)
     (define held-step-was-app? #f)
     (define held-finished-list null)
-    
-    (define basic-eval (current-eval))
     
     ;; highlight-mutated-expressions : 
     ;; ((listof (list/c syntax? syntax?)) (listof (list/c syntax? syntax?)) . -> . (list/c (listof syntax?) (listof syntax?)))
@@ -126,52 +126,36 @@
           
           [else (list (syntax-property left 'stepper-highlight)
                       (syntax-property right 'stepper-highlight))]))
+
     
-    ;; REDIVIDE MAKES NO SENSE IN THE NEW INTERFACE.  THIS WILL BE DELETED AFTER BEING PARTED OUT.
-    ; redivide takes a list of sexps and divides them into the 'before', 'during', and 'after' lists,
-    ; where the before and after sets are maximal-length lists where none of the s-expressions contain
-    ; a highlight-placeholder
-    ; (->* ((listof syntax)) (list/c syntax syntax syntax))
-    #;(define (redivide exprs)
-        (letrec ([contains-highlight
-                  (lambda (expr)
-                    (or (syntax-property expr 'stepper-highlight)
-                        (syntax-case expr ()
-                          [(a . rest) (or (contains-highlight #`a) (contains-highlight #`rest))]
-                          [else #f])))])
-          (let* ([list-length (length exprs)]
-                 [split-point-a (- list-length (length (or (memf contains-highlight exprs) null)))]
-                 [split-point-b (length (or (memf contains-highlight (reverse exprs)) null))])
-            (if (<= split-point-b split-point-a)
-                (error 'redivide-exprs "s-expressions did not contain the highlight-placeholder: ~v" (map syntax-object->hilite-datum exprs))
-                (values (sublist 0 split-point-a exprs) ; before
-                        (sublist split-point-a split-point-b exprs) ; during
-                        (sublist split-point-b list-length exprs)))))) ; after
-    
-    
-    ;         (redivide `(3 4 (+ (define ,highlight-placeholder) 13) 5 6))
-    ;         (values `(3 4) `((+ (define ,highlight-placeholder) 13)) `(5 6))
-    ;         
-    ;         (redivide `(,highlight-placeholder 5 6))
-    ;         (values `() `(,highlight-placeholder) `(5 6))
-    ;         
-    ;         (redivide `(4 5 ,highlight-placeholder ,highlight-placeholder))
-    ;         (values `(4 5) `(,highlight-placeholder ,highlight-placeholder) `())
-    ;         
-    ;         (printf "will be errors:~n")
-    ;         (equal? (redivide `(1 2 3 4))
-    ;                 error-value)
-    ;         
-    ;         (redivide `(1 2 ,highlight-placeholder 3 ,highlight-placeholder 4 5))
-    ;         (values `(1 2) `(,highlight-placeholder 3 ,highlight-placeholder) `(4 5))
-    
-    (define (>>> x)
-      (fprintf (current-output-port) ">>> ~v\n" x)
-      x)
+    ;; mutated on receipt of a break, used in displaying breakpoint stuff.
+    (define steps-received 0)
     
     (define break 
       (opt-lambda (mark-set break-kind [returned-value-list #f])
-        
+
+        (set! steps-received (+ steps-received 1))
+        ;; have to be careful else this won't be looked up right away:
+        (when (getenv "PLTSTEPPERUNSAFE")
+          (let ([steps-received/current steps-received])
+            (run-on-drscheme-side
+             (lambda ()
+               (display-break-stuff steps-received/current mark-set break-kind returned-value-list)))))
+
+        ;; bizarrely, this causes something in the test tool startup to fail with
+        ;; current-eventspace: expects argument of type <eventspace>; given #f
+
+        ;; === context ===
+        ;; /Users/clements/plt/collects/drscheme/private/rep.ss:1183:10: queue-user/wait method in ...cheme/private/rep.ss:480:8
+        ;; /Users/clements/plt/collects/drscheme/private/rep.ss:1094:10: init-evaluation-thread method in ...cheme/private/rep.ss:480:8
+        ;; /Users/clements/plt/collects/drscheme/private/rep.ss:1346:10: reset-console method in ...cheme/private/rep.ss:480:8
+        ;; /Users/clements/plt/collects/mztake/debug-tool.ss:510:10: reset-console method in ...mztake/debug-tool.ss:428:8
+        ;; /Users/clements/plt/collects/test-suite/tool.ss:162:10: reset-console method in ...s/test-suite/tool.ss:137:8
+        ;; /Users/clements/plt/collects/drscheme/private/rep.ss:1413:10: initialize-console method in ...cheme/private/rep.ss:480:8
+        ;; /Users/clements/plt/collects/drscheme/private/unit.ss:3200:6: create-new-drscheme-frame
+        ;; /Users/clements/plt/collects/drscheme/private/main.ss:372:6: make-basic
+
+        ;; ... okay, the error was transient.  wonder what caused it?
         
         (let* ([mark-list (and mark-set (extract-mark-list mark-set))])
           
@@ -182,18 +166,6 @@
                        [#(exp #f) (first-of-one (unwind-no-highlight exp))]
                        [#(exp #t) exp])]) 
                  finished-exps))
-          
-          ;; TO BE SCRAPPED
-          #;(define (double-redivide finished-exps new-exprs-before new-exprs-after)
-              (let*-values ([(before current after) (redivide new-exprs-before)]
-                            [(before-2 current-2 after-2) (redivide new-exprs-after)])
-                (unless (equal? (map syntax-object->hilite-datum before) 
-                                (map syntax-object->hilite-datum before-2))
-                  (error 'double-redivide "reconstructed before defs are not equal."))
-                (unless (equal? (map syntax-object->hilite-datum after) 
-                                (map syntax-object->hilite-datum after-2))
-                  (error 'double-redivide "reconstructed after defs are not equal."))
-                (values (append finished-exps before) current current-2 after)))
           
           #;(printf "break called with break-kind: ~a ..." break-kind)
           (if (r:skip-step? break-kind mark-list render-settings)

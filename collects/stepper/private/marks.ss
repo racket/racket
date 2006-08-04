@@ -109,11 +109,11 @@
   (define (display-mark mark)
     (apply
      string-append
-     (format "source: ~a~n" (syntax-object->datum (mark-source mark)))
-     (format "label: ~a~n" (mark-label mark))
-     (format "bindings:~n")
+     (format "source: ~a\n" (syntax-object->datum (mark-source mark)))
+     (format "label: ~a\n" (mark-label mark))
+     (format "bindings:\n")
      (map (lambda (binding)
-                 (format " ~a : ~a~n" (syntax-e (mark-binding-binding binding))
+                 (format " ~a : ~a\n" (syntax-e (mark-binding-binding binding))
                          (mark-binding-value binding)))
                (mark-bindings mark))))
   

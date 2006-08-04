@@ -306,8 +306,8 @@
             [(and (syntax? ilist) (pair? (syntax-e ilist)))
              (loop (syntax-e ilist))]
             [(null? ilist) null])))
-  
-  ; arglist-flatten : produces a list containing the elements of the ilist
+
+  ;; arglist-flatten : produces a list containing the elements of the ilist
 
   (define (arglist-flatten arglist)
     (let loop ([ilist arglist])
@@ -320,19 +320,22 @@
             [(and (syntax? ilist)
                   (pair? (syntax-e ilist)))
              (loop (syntax-e ilist))])))
-  
-  ; zip : (listof 'a) (listof 'b) (listof 'c) ... -> (listof (list 'a 'b 'c ...))
-  ; zip reshuffles lists of items into a list of item-lists.  Look at the contract, okay?
-  
+
+  ;; zip : (listof 'a) (listof 'b) (listof 'c) ...
+  ;;       -> (listof (list 'a 'b 'c ...))
+  ;; zip reshuffles lists of items into a list of item-lists.  Look at the
+  ;; contract, okay?
+
   (define zip
     (lambda args
       (apply map list args)))
-  
-  (define let-counter (syntax-property #'let-counter 'stepper-binding-type 'stepper-temp))
-  
- 
+
+  (define let-counter
+    (syntax-property #'let-counter 'stepper-binding-type 'stepper-temp))
+
+
   ; syntax-pair-map (using the def'ns of the MzScheme docs):
-  
+
   (define (syntax-pair-map pair fn)
     (cons (fn (car pair))
           (cond [(syntax? (cdr pair))
@@ -341,41 +344,42 @@
                  (syntax-pair-map (cdr pair) fn)]
                 [(null? (cdr pair))
                  null])))
-  
+
   (define (make-queue)
     (box null))
-  
+
   (define (queue-push queue new)
     (set-box! queue (append (unbox queue) (list new))))
 
   (define (queue-pop queue)
     (if (null? (unbox queue))
-        (error 'queue-pop "no elements in queue")
-        (let ([first (car (unbox queue))])
-          (set-box! queue (cdr (unbox queue)))
-          first)))
-  
+      (error 'queue-pop "no elements in queue")
+      (let ([first (car (unbox queue))])
+        (set-box! queue (cdr (unbox queue)))
+        first)))
+
   (define (queue-length queue)
     (length (unbox queue)))
-  
+
   (define (rebuild-stx new old)
     (syntax-recertify (datum->syntax-object old new old old)
                       old
                       (current-code-inspector)
                       #f))
-  
+
   (define break-kind?
-    (symbols 'normal-break 'normal-break/values 'result-exp-break 'result-value-break 
-             'double-break 'late-let-break 'expr-finished-break 'define-struct-break))
+    (symbols 'normal-break 'normal-break/values 'result-exp-break
+             'result-value-break 'double-break 'late-let-break
+             'expr-finished-break 'define-struct-break))
 
   ; functional update package
 
   (define (swap-args 2-arg-fun)
     (lambda (x y)
       (2-arg-fun y x)))
-  
+
   (define second-arg (lambda (dc y) y))
-  
+
   (define up-mappings
     `((rebuild ((,car ,(lambda (stx new) (cons new (cdr stx))))
                 (,cdr ,(lambda (stx new) (cons (car stx) new)))
@@ -383,28 +387,29 @@
       (discard ((,car ,second-arg)
                 (,cdr ,second-arg)
                 (,syntax-e ,second-arg)))))
-  
+
   (define (update fn-list val fn traversal)
     (if (null? fn-list)
         (fn val)
         (let* ([down (car fn-list)]
                [up (cadr (assq down (cadr (assq traversal up-mappings))))])
           (up val (update (cdr fn-list) (down val) fn traversal)))))
- 
-  
-  ;; skipto/auto : syntax-object? (symbols 'rebuild 'discard) (syntax-object? . -> . syntax-object?)
-  ;; "skips over" part of a tree to find a subtree indicated by the stepper-skipto property.  If the
-  ;; traversal argument is 'rebuild, the result of transformation is embedded again in the same tree.
-  ;; if the traversal argument is 'discard, the result of the transformation is the result of this 
-  ;; function
+
+  ;; skipto/auto : syntax-object?
+  ;;               (symbols 'rebuild 'discard)
+  ;;               (syntax-object? . -> . syntax-object?)
+  ;; "skips over" part of a tree to find a subtree indicated by the
+  ;; stepper-skipto property.  If the traversal argument is 'rebuild, the
+  ;; result of transformation is embedded again in the same tree.  if the
+  ;; traversal argument is 'discard, the result of the transformation is the
+  ;; result of this function
   (define (skipto/auto stx traversal transformer)
-    (cond [(syntax-property stx 'stepper-skipto) 
+    (cond [(syntax-property stx 'stepper-skipto)
            =>
            (cut update <> stx (cut skipto/auto <> traversal transformer) traversal)]
           [else (transformer stx)]))
-  
-  
-  ;  small test case: 
+
+  ;  small test case:
   ;(equal? (syntax-object->datum
   ;         (skipto/auto (syntax-property #`(a #,(syntax-property #`(b c)
   ;                                                               'stepper-skipto
@@ -414,65 +419,63 @@
   ;                      'discard
   ;                      (lambda (x) x)))
   ;        'c)
-  
-  
+
+
   ; BINDING-/VARREF-SET FUNCTIONS
-  
+
   ; note: a BINDING-SET which is not 'all may be used as a VARREF-SET.
   ; this is because they both consist of syntax objects, and a binding
   ; answers true to bound-identifier=? with itself, just like a varref
   ; in the scope of that binding would.
-  
+
   ; binding-set-union: (listof BINDING-SET) -> BINDING-SET
   ; varref-set-union: (listof VARREF-SET) -> VARREF-SET
-  
+
   (define profiling-table (make-hash-table 'equal))
   (define (reset-profiling-table)
     (set! profiling-table (make-hash-table 'equal)))
-  
-  
-  (define (get-set-pair-union-stats) (hash-table-map profiling-table (lambda (k v) (list k (unbox v)))))
-  
-  
-  ; test cases :
-  ; (profiling-table-incr 1 2)
-  ; (profiling-table-incr 2 3)
-  ; (profiling-table-incr 2 1)
-  ; (profiling-table-incr 1 2)
-  ; (profiling-table-incr 2 1)
-  ;
-  ; (equal? (get-set-pair-union-stats)
-  ;         `(((2 . 3) 1) ((2 . 1) 2) ((1 . 2) 2)))
-    
-  ; until this remove* goes into list.ss?
-  
+
+  (define (get-set-pair-union-stats)
+    (hash-table-map profiling-table (lambda (k v) (list k (unbox v)))))
+
+  ;; test cases :
+  ;; (profiling-table-incr 1 2)
+  ;; (profiling-table-incr 2 3)
+  ;; (profiling-table-incr 2 1)
+  ;; (profiling-table-incr 1 2)
+  ;; (profiling-table-incr 2 1)
+  ;;
+  ;; (equal? (get-set-pair-union-stats)
+  ;;         `(((2 . 3) 1) ((2 . 1) 2) ((1 . 2) 2)))
+
+  ;; until this remove* goes into list.ss?
+
   (define (set-pair-union a-set b-set comparator)
     (cond [(null? b-set) a-set]
           [(null? a-set) b-set]
           [else (append (remove* a-set b-set comparator) a-set)]))
-  
+
   (define (varref-set-pair-union a-set b-set)
     (set-pair-union a-set b-set free-identifier=?))
-  
+
   (define (binding-set-pair-union a-set b-set)
     (cond [(eq? a-set 'all) 'all]
           [(eq? b-set 'all) 'all]
           [else (set-pair-union a-set b-set eq?)]))
-  
+
   (define (pair-union->many-union fn)
     (lambda (args)
       (foldl fn null args)))
-  
+
   (define binding-set-union
     (pair-union->many-union binding-set-pair-union))
-  
+
   (define varref-set-union
     (pair-union->many-union varref-set-pair-union))
-      
 
   ; binding-set-varref-set-intersect : BINDING-SET VARREF-SET -> BINDING-SET
   ; return the subset of varrefs that appear in the bindings
-  
+
   (define (binding-set-varref-set-intersect bindings varrefs)
     (cond [(eq? bindings 'all) varrefs]
           [else (filter (lambda (varref)
@@ -480,30 +483,31 @@
                                    (bound-identifier=? binding varref))
                                  bindings))
                         varrefs)]))
-  
+
   ; varref-set-remove-bindings : VARREF-SET (BINDING-SET - 'all) -> VARREF-SET
   ; remove bindings from varrefs
-  
+
   (define (varref-set-remove-bindings varrefs bindings)
     (cond [(eq? bindings 'all)
            (error 'varref-set-remove-bindings "binding-set 'all passed as second argument, first argument was: ~s" varrefs)]
           [else (remove* bindings varrefs bound-identifier=?)]))
-  
-  ; sublist returns the list beginning with element <begin> and ending just before element <end>.
-  ; (-> number? number? list? list?)
-  (define (sublist begin end lst) 
-    (if (= end 0) 
+
+  ;; sublist returns the list beginning with element <begin> and ending just
+  ;; before element <end>.
+  ;; (-> number? number? list? list?)
+  (define (sublist begin end lst)
+    (if (= end 0)
         null
         (if (= begin 0)
             (cons (car lst)
                   (sublist 0 (- end 1) (cdr lst)))
             (sublist (- begin 1) (- end 1) (cdr lst)))))
-  
-  
+
   ; attach-info : SYNTAX-OBJECT SYNTAX-OBJECT -> SYNTAX-OBJECT
-  ; attach-info attaches to a generated piece of syntax the origin & source information of another.
-  ; we do this so that macro unwinding can tell what reconstructed syntax came from what original syntax
-  
+  ; attach-info attaches to a generated piece of syntax the origin & source
+  ; information of another.  we do this so that macro unwinding can tell what
+  ; reconstructed syntax came from what original syntax
+
   (define labels-to-attach
     `((user-origin origin)
       (user-stepper-hint stepper-hint)
@@ -512,14 +516,16 @@
       (user-stepper-proc-define-name stepper-proc-define-name)
       (user-stepper-and/or-clauses-consumed stepper-and/or-clauses-consumed)
       (user-stepper-offset-index stepper-offset-index)
-      (stepper-xml-hint stepper-xml-hint)))  ; I find it mildly worrisome that this breaks the pattern
-                                             ;  by failing to preface the identifier with 'user-'.  JBC, 2005-08
-  
-  ; take info from source expressions to reconstructed expressions 
-  ;  (from native property names to 'user-' style property names)
-  
+      ;; I find it mildly worrisome that this breaks the pattern
+      ;;  by failing to preface the identifier with 'user-'.  JBC, 2005-08
+      (stepper-xml-hint stepper-xml-hint)))
+
+  ;; take info from source expressions to reconstructed expressions
+  ;;  (from native property names to 'user-' style property names)
+
   (define (attach-info to-exp from-exp)
-    (if (syntax-property from-exp 'stepper-offset-index) (>>> (syntax-property from-exp 'stepper-offset-index)))
+    (if (syntax-property from-exp 'stepper-offset-index)
+      (>>> (syntax-property from-exp 'stepper-offset-index)))
     (let* ([attached (foldl (lambda (labels stx)
                               (match labels
                                 [`(,new-label ,old-label)
@@ -529,15 +535,16 @@
            [attached (syntax-property attached 'user-source (syntax-source from-exp))]
            [attached (syntax-property attached 'user-position (syntax-position from-exp))])
       attached))
-  
-  ; transfer info from reconstructed expressions to other reconstructed expressions 
-  ;  (from 'user-' style names to 'user-' style names)
-  
+
+  ;; transfer info from reconstructed expressions to other reconstructed
+  ;; expressions
+  ;;  (from 'user-' style names to 'user-' style names)
+
   (define (transfer-info to-stx from-exp)
     (let* ([attached (foldl (lambda (labels stx)
                               (match labels
-                              [`(,new-label ,old-label)
-                                (syntax-property stx new-label (syntax-property from-exp new-label))]))
+                                [`(,new-label ,old-label)
+                                 (syntax-property stx new-label (syntax-property from-exp new-label))]))
                             to-stx
                             labels-to-attach)]
            [attached (syntax-property attached 'user-source (syntax-property from-exp 'user-source))]
@@ -545,7 +552,7 @@
            [attached (syntax-property attached 'stepper-highlight (or (syntax-property from-exp 'stepper-highlight)
                                                                       (syntax-property attached 'stepper-highlight)))])
       attached))
-  
+
   (define (values-map fn . lsts)
   (apply values (apply map list
                        (apply map (lambda args (call-with-values (lambda () (apply fn args)) list))
