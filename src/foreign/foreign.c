@@ -1071,29 +1071,30 @@ END_XFORM_SKIP;
  * memory location -- deal with it via a C2SCHEME macro wrapper that is used
  * for both the function definition and calls */
 #ifdef SCHEME_BIG_ENDIAN
-#define C2SCHEME(typ,src,argsloc) c_to_scheme(typ,src,argsloc)
+#define C2SCHEME(typ,src,delta,argsloc) c_to_scheme(typ,src,delta,argsloc)
 #define REF_CTYPE(ctype) (((sizeof(ctype)<sizeof(int)) && args_loc) \
-  ? ((ctype)(((int*)src)[0])) : (((ctype *)src)[0]))
+  ? ((ctype)(((int*)W_OFFSET(src,delta))[0])) : (((ctype *)W_OFFSET(src,delta))[0]))
 #else
-#define C2SCHEME(typ,src,argsloc) c_to_scheme(typ,src)
-#define REF_CTYPE(ctype) (((ctype *)src)[0])
+#define C2SCHEME(typ,src,delta,argsloc) c_to_scheme(typ,src,delta)
+#define REF_CTYPE(ctype) (((ctype *)W_OFFSET(src,delta))[0])
 #endif
+#define W_OFFSET(src, delta) ((char *)(src)+(delta))
 
-static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src, int args_loc)
+static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src, int delta, int args_loc)
 {
   Scheme_Object *res, *base;
   if (!SCHEME_CTYPEP(type))
     scheme_wrong_type("C->Scheme", "C-type", 0, 1, &type);
   base = CTYPE_BASETYPE(type);
   if (base != NULL) {
-    res = C2SCHEME(base, src, args_loc);
+    res = C2SCHEME(base, src, delta, args_loc);
     if (SCHEME_FALSEP(CTYPE_USER_C2S(type)))
       return res;
     else
       return _scheme_apply(CTYPE_USER_C2S(type), 1, (Scheme_Object**)(&res));
   } else if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
     /* No need for the REF_CTYPE trick for pointers */
-    return (Scheme_Object*)src;
+    return (Scheme_Object*)W_OFFSET(src, delta);
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void: return scheme_void;
     case FOREIGN_int8: return scheme_make_integer(REF_CTYPE(Tsint8));
@@ -1120,7 +1121,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src, int args_loc)
     case FOREIGN_pointer: return scheme_make_foreign_cpointer(REF_CTYPE(void*));
     case FOREIGN_scheme: return REF_CTYPE(Scheme_Object*);
     case FOREIGN_fpointer: return scheme_void;
-    case FOREIGN_struct: return scheme_make_foreign_cpointer(src);
+    case FOREIGN_struct: return scheme_make_foreign_cpointer(W_OFFSET(src, delta));
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
   return NULL; /* shush the compiler */
@@ -1762,6 +1763,8 @@ static Scheme_Object *abs_sym;
 static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
 {
   int size=0; void *ptr; Scheme_Object *base;
+  long delta = 0;
+
   if (!SCHEME_FFIANYPTRP(argv[0]))
     scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
   ptr = SCHEME_FFIANYPTR_VAL(argv[0]);
@@ -1786,13 +1789,13 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
       scheme_wrong_type(MYNAME, "integer", 3, argc, argv);
-    ptr = (char*)ptr XFORM_OK_PLUS SCHEME_INT_VAL(argv[3]);
+    delta = SCHEME_INT_VAL(argv[3]);
   } else if (argc > 2) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
-    ptr = (char*)ptr XFORM_OK_PLUS (size * SCHEME_INT_VAL(argv[2]));
+    delta = (size * SCHEME_INT_VAL(argv[2]));
   }
-  return C2SCHEME(argv[1], ptr, 0);
+  return C2SCHEME(argv[1], ptr, delta, 0);
 }
 
 /* (ptr-set! cpointer type [['abs] n] value) -> void */
@@ -2032,7 +2035,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     }
     break;
   }
-  return C2SCHEME(otype, p, 1);
+  return C2SCHEME(otype, p, 0, 1);
 }
 
 /* see below */
@@ -2121,7 +2124,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
   else
     argv = scheme_malloc(argc * sizeof(Scheme_Object*));
   for (i=0, p=data->itypes; i<argc; i++, p=SCHEME_CDR(p)) {
-    v = C2SCHEME(SCHEME_CAR(p), args[i], 0);
+    v = C2SCHEME(SCHEME_CAR(p), args[i], 0, 0);
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);
