@@ -1078,7 +1078,7 @@ END_XFORM_SKIP;
 #define C2SCHEME(typ,src,delta,argsloc) c_to_scheme(typ,src,delta)
 #define REF_CTYPE(ctype) (((ctype *)W_OFFSET(src,delta))[0])
 #endif
-#define W_OFFSET(src, delta) ((char *)(src)+(delta))
+#define W_OFFSET(src, delta) ((char *)(src) XFORM_OK_PLUS (delta))
 
 static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src, int delta, int args_loc)
 {
@@ -1135,16 +1135,16 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src, int delta, int ar
  * the function is different: in the relevant cases zero an int and offset the
  * ptr */
 #ifdef SCHEME_BIG_ENDIAN
-#define SCHEME2C(typ,dst,val,basep,retloc) scheme_to_c(typ,dst,val,basep,retloc)
+#define SCHEME2C(typ,dst,delta,val,basep,retloc) scheme_to_c(typ,dst,delta,val,basep,retloc)
 #else
-#define SCHEME2C(typ,dst,val,basep,retloc) scheme_to_c(typ,dst,val,basep)
+#define SCHEME2C(typ,dst,delta,val,basep,retloc) scheme_to_c(typ,dst,delta,val,basep)
 #endif
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
  * NULL, then any pointer value (any pointer or a struct) is returned, and the
  * basetype_p is set to the corrsponding number tag.  If basetype_p is NULL,
  * then a struct value will be *copied* into dst. */
-static void* SCHEME2C(Scheme_Object *type, void *dst,
+static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
                       Scheme_Object *val, long *basetype_p,
                       int ret_loc)
 {
@@ -1158,12 +1158,12 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
   if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
     /* No need for the SET_CTYPE trick for pointers */
     if (SCHEME_FFICALLBACKP(val))
-      ((void**)dst)[0] = ((ffi_callback_struct*)val)->callback;
+      ((void**)W_OFFSET(dst,delta))[0] = ((ffi_callback_struct*)val)->callback;
     else if (SCHEME_CPTRP(val))
-      ((void**)dst)[0] = SCHEME_CPTR_VAL(val);
+      ((void**)W_OFFSET(dst,delta))[0] = SCHEME_CPTR_VAL(val);
     else if (SCHEME_FFIOBJP(val))
-      ((void**)dst)[0] = ((ffi_obj_struct*)val)->obj;
-    else /* ((void**)dst)[0] = val; */
+      ((void**)W_OFFSET(dst,delta))[0] = ((ffi_obj_struct*)val)->obj;
+    else /* ((void**)W_OFFSET(dst,delta))[0] = val; */
          scheme_wrong_type("Scheme->C", "cpointer", 0, 1, &val);
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void:
@@ -1171,14 +1171,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_int8:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Tsint8)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(Tsint8));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(Tsint8));
       }
 #endif
       if (SCHEME_INTP(val)) {
         Tsint8 tmp;
         tmp = (Tsint8)(SCHEME_INT_VAL(val));
-        (((Tsint8*)dst)[0]) = tmp; return NULL;
+        (((Tsint8*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","int8",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1186,14 +1186,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_uint8:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Tuint8)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(Tuint8));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(Tuint8));
       }
 #endif
       if (SCHEME_INTP(val)) {
         Tuint8 tmp;
         tmp = (Tuint8)(SCHEME_UINT_VAL(val));
-        (((Tuint8*)dst)[0]) = tmp; return NULL;
+        (((Tuint8*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","uint8",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1201,14 +1201,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_int16:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Tsint16)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(Tsint16));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(Tsint16));
       }
 #endif
       if (SCHEME_INTP(val)) {
         Tsint16 tmp;
         tmp = (Tsint16)(SCHEME_INT_VAL(val));
-        (((Tsint16*)dst)[0]) = tmp; return NULL;
+        (((Tsint16*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","int16",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1216,41 +1216,41 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_uint16:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Tuint16)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(Tuint16));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(Tuint16));
       }
 #endif
       if (SCHEME_INTP(val)) {
         Tuint16 tmp;
         tmp = (Tuint16)(SCHEME_UINT_VAL(val));
-        (((Tuint16*)dst)[0]) = tmp; return NULL;
+        (((Tuint16*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","uint16",0,1,&(val));
         return NULL; /* shush the compiler */
       }
     case FOREIGN_int32:
-      if (!(scheme_get_realint_val(val,&(((Tsint32*)dst)[0])))) scheme_wrong_type("Scheme->C","int32",0,1,&(val));
+      if (!(scheme_get_realint_val(val,&(((Tsint32*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","int32",0,1,&(val));
       return NULL;
     case FOREIGN_uint32:
-      if (!(scheme_get_unsigned_realint_val(val,&(((Tuint32*)dst)[0])))) scheme_wrong_type("Scheme->C","uint32",0,1,&(val));
+      if (!(scheme_get_unsigned_realint_val(val,&(((Tuint32*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","uint32",0,1,&(val));
       return NULL;
     case FOREIGN_int64:
-      if (!(scheme_get_long_long_val(val,&(((Tsint64*)dst)[0])))) scheme_wrong_type("Scheme->C","int64",0,1,&(val));
+      if (!(scheme_get_long_long_val(val,&(((Tsint64*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","int64",0,1,&(val));
       return NULL;
     case FOREIGN_uint64:
-      if (!(scheme_get_unsigned_long_long_val(val,&(((Tuint64*)dst)[0])))) scheme_wrong_type("Scheme->C","uint64",0,1,&(val));
+      if (!(scheme_get_unsigned_long_long_val(val,&(((Tuint64*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","uint64",0,1,&(val));
       return NULL;
     case FOREIGN_fixint:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Tsint32)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(Tsint32));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(Tsint32));
       }
 #endif
       if (SCHEME_INTP(val)) {
         Tsint32 tmp;
         tmp = (Tsint32)(SCHEME_INT_VAL(val));
-        (((Tsint32*)dst)[0]) = tmp; return NULL;
+        (((Tsint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","fixint",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1258,14 +1258,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_ufixint:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Tuint32)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(Tuint32));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(Tuint32));
       }
 #endif
       if (SCHEME_INTP(val)) {
         Tuint32 tmp;
         tmp = (Tuint32)(SCHEME_UINT_VAL(val));
-        (((Tuint32*)dst)[0]) = tmp; return NULL;
+        (((Tuint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","ufixint",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1273,14 +1273,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_fixnum:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(long)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(long));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(long));
       }
 #endif
       if (SCHEME_INTP(val)) {
         long tmp;
         tmp = (long)(SCHEME_INT_VAL(val));
-        (((long*)dst)[0]) = tmp; return NULL;
+        (((long*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","fixnum",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1288,14 +1288,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_ufixnum:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(unsigned long)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(unsigned long));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(unsigned long));
       }
 #endif
       if (SCHEME_INTP(val)) {
         unsigned long tmp;
         tmp = (unsigned long)(SCHEME_UINT_VAL(val));
-        (((unsigned long*)dst)[0]) = tmp; return NULL;
+        (((unsigned long*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","ufixnum",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1303,14 +1303,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_float:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(float)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(float));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(float));
       }
 #endif
       if (SCHEME_FLTP(val)) {
         float tmp;
         tmp = (float)(SCHEME_FLT_VAL(val));
-        (((float*)dst)[0]) = tmp; return NULL;
+        (((float*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","float",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1318,14 +1318,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_double:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(double)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(double));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(double));
       }
 #endif
       if (SCHEME_DBLP(val)) {
         double tmp;
         tmp = (double)(SCHEME_DBL_VAL(val));
-        (((double*)dst)[0]) = tmp; return NULL;
+        (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","double",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1333,14 +1333,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_doubleS:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(double)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(double));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(double));
       }
 #endif
       if (SCHEME_REALP(val)) {
         double tmp;
         tmp = (double)(scheme_real_to_double(val));
-        (((double*)dst)[0]) = tmp; return NULL;
+        (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","double*",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1348,14 +1348,14 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_bool:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(int)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(int));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(int));
       }
 #endif
       if (1) {
         int tmp;
         tmp = (int)(SCHEME_TRUEP(val));
-        (((int*)dst)[0]) = tmp; return NULL;
+        (((int*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","bool",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1363,15 +1363,15 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_string_ucs_4:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(mzchar*)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(mzchar*));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(mzchar*));
       }
 #endif
       if (SCHEME_CHAR_STRINGP(val)) {
         mzchar* tmp;
         tmp = (mzchar*)(SCHEME_CHAR_STR_VAL(val));
         if (basetype_p == NULL || tmp == NULL) {
-          (((mzchar**)dst)[0]) = tmp; return NULL;
+          (((mzchar**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
         } else {
           *basetype_p = FOREIGN_string_ucs_4; return tmp;
         }
@@ -1382,15 +1382,15 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_string_utf_16:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(unsigned short*)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(unsigned short*));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(unsigned short*));
       }
 #endif
       if (SCHEME_CHAR_STRINGP(val)) {
         unsigned short* tmp;
         tmp = (unsigned short*)(ucs4_string_to_utf16_pointer(val));
         if (basetype_p == NULL || tmp == NULL) {
-          (((unsigned short**)dst)[0]) = tmp; return NULL;
+          (((unsigned short**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
         } else {
           *basetype_p = FOREIGN_string_utf_16; return tmp;
         }
@@ -1401,15 +1401,15 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_bytes:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(char*)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(char*));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(char*));
       }
 #endif
       if (SCHEME_FALSEP(val)||SCHEME_BYTE_STRINGP(val)) {
         char* tmp;
         tmp = (char*)(SCHEME_FALSEP(val)?NULL:SCHEME_BYTE_STR_VAL(val));
         if (basetype_p == NULL || tmp == NULL) {
-          (((char**)dst)[0]) = tmp; return NULL;
+          (((char**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
         } else {
           *basetype_p = FOREIGN_bytes; return tmp;
         }
@@ -1420,15 +1420,15 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_path:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(char*)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(char*));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(char*));
       }
 #endif
       if (SCHEME_FALSEP(val)||SCHEME_PATH_STRINGP(val)) {
         char* tmp;
         tmp = (char*)(SCHEME_FALSEP(val)?NULL:SCHEME_PATH_VAL(TO_PATH(val)));
         if (basetype_p == NULL || tmp == NULL) {
-          (((char**)dst)[0]) = tmp; return NULL;
+          (((char**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
         } else {
           *basetype_p = FOREIGN_path; return tmp;
         }
@@ -1439,15 +1439,15 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_symbol:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(char*)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(char*));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(char*));
       }
 #endif
       if (SCHEME_SYMBOLP(val)) {
         char* tmp;
         tmp = (char*)(SCHEME_SYM_VAL(val));
         if (basetype_p == NULL || tmp == NULL) {
-          (((char**)dst)[0]) = tmp; return NULL;
+          (((char**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
         } else {
           *basetype_p = FOREIGN_symbol; return tmp;
         }
@@ -1458,15 +1458,15 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_pointer:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(void*)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(void*));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(void*));
       }
 #endif
       if (SCHEME_FFIANYPTRP(val)) {
         void* tmp;
         tmp = (void*)(SCHEME_FFIANYPTR_VAL(val));
         if (basetype_p == NULL || tmp == NULL) {
-          (((void**)dst)[0]) = tmp; return NULL;
+          (((void**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
         } else {
           *basetype_p = FOREIGN_pointer; return tmp;
         }
@@ -1477,15 +1477,15 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
     case FOREIGN_scheme:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Scheme_Object*)<sizeof(int) && ret_loc) {
-        ((int*)dst)[0] = 0;
-        dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof(Scheme_Object*));
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(Scheme_Object*));
       }
 #endif
       if (1) {
         Scheme_Object* tmp;
         tmp = (Scheme_Object*)(val);
         if (basetype_p == NULL || tmp == NULL) {
-          (((Scheme_Object**)dst)[0]) = tmp; return NULL;
+          (((Scheme_Object**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
         } else {
           *basetype_p = FOREIGN_scheme; return tmp;
         }
@@ -1501,7 +1501,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
       if (basetype_p == NULL) {
         void* p = SCHEME_FFIANYPTR_VAL(val);
         if (p == NULL) scheme_signal_error("FFI pointer value was NULL.");
-        memcpy(dst, p, CTYPE_PRIMTYPE(type)->size);
+        memcpy(W_OFFSET(dst, delta), p, CTYPE_PRIMTYPE(type)->size);
         return NULL;
       } else {
         *basetype_p = FOREIGN_struct;
@@ -1808,6 +1808,7 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
 static Scheme_Object *foreign_ptr_set(int argc, Scheme_Object *argv[])
 {
   int size=0; void *ptr;
+  long delta = 0;
   Scheme_Object *val = argv[argc-1], *base;
   if (!SCHEME_FFIANYPTRP(argv[0]))
     scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
@@ -1839,13 +1840,13 @@ static Scheme_Object *foreign_ptr_set(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
       scheme_wrong_type(MYNAME, "integer", 3, argc, argv);
-    ptr = (char*)ptr XFORM_OK_PLUS SCHEME_INT_VAL(argv[3]);
+    delta = SCHEME_INT_VAL(argv[3]);
   } else if (argc > 3) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
-    ptr = (char*)ptr XFORM_OK_PLUS (size * SCHEME_INT_VAL(argv[2]));
+    delta = (size * SCHEME_INT_VAL(argv[2]));
   }
-  SCHEME2C(argv[1], ptr, val, NULL, 0);
+  SCHEME2C(argv[1], ptr, delta, val, NULL, 0);
   return scheme_void;
 }
 
@@ -1981,7 +1982,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   /* iterate on input values and types */
   for (i=0; i<nargs; i++, itypes=SCHEME_CDR(itypes)) {
     /* convert argv[i] according to current itype */
-    p = SCHEME2C(SCHEME_CAR(itypes), &(ivals[i]), argv[i], &basetype, 0);
+    p = SCHEME2C(SCHEME_CAR(itypes), &(ivals[i]), 0, argv[i], &basetype, 0);
     if (p != NULL) {
       avalues[i] = p;
       ivals[i].x_fixnum = basetype; /* remember the base type */
@@ -2128,7 +2129,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);
-  SCHEME2C(data->otype, resultp, p, NULL, 1);
+  SCHEME2C(data->otype, resultp, 0, p, NULL, 1);
 }
 
 /* see ffi-callback below */

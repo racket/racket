@@ -906,7 +906,7 @@ void free_libffi_type(void *ignored, void *p)
 #define C2SCHEME(typ,src,delta,argsloc) c_to_scheme(typ,src,delta)
 #define REF_CTYPE(ctype) (((ctype *)W_OFFSET(src,delta))[0])
 #endif
-#define W_OFFSET(src, delta) ((char *)(src)+(delta))
+#define W_OFFSET(src, delta) ((char *)(src) XFORM_OK_PLUS (delta))
 
 static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src, int delta, int args_loc)
 {
@@ -944,16 +944,16 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src, int delta, int ar
  * the function is different: in the relevant cases zero an int and offset the
  * ptr */
 #ifdef SCHEME_BIG_ENDIAN
-#define SCHEME2C(typ,dst,val,basep,retloc) scheme_to_c(typ,dst,val,basep,retloc)
+#define SCHEME2C(typ,dst,delta,val,basep,retloc) scheme_to_c(typ,dst,delta,val,basep,retloc)
 #else
-#define SCHEME2C(typ,dst,val,basep,retloc) scheme_to_c(typ,dst,val,basep)
+#define SCHEME2C(typ,dst,delta,val,basep,retloc) scheme_to_c(typ,dst,delta,val,basep)
 #endif
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
  * NULL, then any pointer value (any pointer or a struct) is returned, and the
  * basetype_p is set to the corrsponding number tag.  If basetype_p is NULL,
  * then a struct value will be *copied* into dst. */
-static void* SCHEME2C(Scheme_Object *type, void *dst,
+static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
                       Scheme_Object *val, long *basetype_p,
                       int ret_loc)
 {
@@ -967,12 +967,12 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
   if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
     /* No need for the SET_CTYPE trick for pointers */
     if (SCHEME_FFICALLBACKP(val))
-      ((void**)dst)[0] = ((ffi_callback_struct*)val)->callback;
+      ((void**)W_OFFSET(dst,delta))[0] = ((ffi_callback_struct*)val)->callback;
     else if (SCHEME_CPTRP(val))
-      ((void**)dst)[0] = SCHEME_CPTR_VAL(val);
+      ((void**)W_OFFSET(dst,delta))[0] = SCHEME_CPTR_VAL(val);
     else if (SCHEME_FFIOBJP(val))
-      ((void**)dst)[0] = ((ffi_obj_struct*)val)->obj;
-    else /* ((void**)dst)[0] = val; */
+      ((void**)W_OFFSET(dst,delta))[0] = ((ffi_obj_struct*)val)->obj;
+    else /* ((void**)W_OFFSET(dst,delta))[0] = val; */
          scheme_wrong_type("Scheme->C", "cpointer", 0, 1, &val);
   } else switch (CTYPE_PRIMLABEL(type)) {
     {:(for-each-type
@@ -980,15 +980,15 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
           (list "scheme_wrong_type(\"Scheme->C\",\""type"\",0,1,&("obj"));"))
         (~ "case FOREIGN_"cname":")
         (if ctype
-          (let* ([x (list "((("ctype"*)dst)[0])")]
+          (let* ([x (list "((("ctype"*)W_OFFSET(dst,delta))[0])")]
                  [f (lambda (p)
                       (if (procedure? p) (p "val" x) (list p"(val)")))])
             (if s->c
               (begin
                 (display "#ifdef SCHEME_BIG_ENDIAN\n")
                 (~ "  if (sizeof("ctype")<sizeof(int) && ret_loc) {" \\
-                   "    ((int*)dst)[0] = 0;" \\
-                   "    dst = dst XFORM_OK_PLUS (sizeof(int)-sizeof("ctype"));"
+                   "    ((int*)W_OFFSET(dst,delta))[0] = 0;" \\
+                   "    delta += (sizeof(int)-sizeof("ctype"));"
                    \\
                    "  }")
                 (display "#endif\n")
@@ -1017,7 +1017,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
       if (basetype_p == NULL) {
         void* p = SCHEME_FFIANYPTR_VAL(val);
         if (p == NULL) scheme_signal_error("FFI pointer value was NULL.");
-        memcpy(dst, p, CTYPE_PRIMTYPE(type)->size);
+        memcpy(W_OFFSET(dst, delta), p, CTYPE_PRIMTYPE(type)->size);
         return NULL;
       } else {
         *basetype_p = FOREIGN_struct;
@@ -1302,6 +1302,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
 {:(cdefine ptr-set! 3 5):}
 {
   int size=0; void *ptr;
+  long delta = 0;
   Scheme_Object *val = argv[argc-1], *base;
   if (!SCHEME_FFIANYPTRP(argv[0]))
     scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
@@ -1333,13 +1334,13 @@ static void* SCHEME2C(Scheme_Object *type, void *dst,
       scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
       scheme_wrong_type(MYNAME, "integer", 3, argc, argv);
-    ptr = (char*)ptr XFORM_OK_PLUS SCHEME_INT_VAL(argv[3]);
+    delta = SCHEME_INT_VAL(argv[3]);
   } else if (argc > 3) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
-    ptr = (char*)ptr XFORM_OK_PLUS (size * SCHEME_INT_VAL(argv[2]));
+    delta = (size * SCHEME_INT_VAL(argv[2]));
   }
-  SCHEME2C(argv[1], ptr, val, NULL, 0);
+  SCHEME2C(argv[1], ptr, delta, val, NULL, 0);
   return scheme_void;
 }
 
@@ -1473,7 +1474,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   /* iterate on input values and types */
   for (i=0; i<nargs; i++, itypes=SCHEME_CDR(itypes)) {
     /* convert argv[i] according to current itype */
-    p = SCHEME2C(SCHEME_CAR(itypes), &(ivals[i]), argv[i], &basetype, 0);
+    p = SCHEME2C(SCHEME_CAR(itypes), &(ivals[i]), 0, argv[i], &basetype, 0);
     if (p != NULL) {
       avalues[i] = p;
       ivals[i].x_fixnum = basetype; /* remember the base type */
@@ -1618,7 +1619,7 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);
-  SCHEME2C(data->otype, resultp, p, NULL, 1);
+  SCHEME2C(data->otype, resultp, 0, p, NULL, 1);
 }
 
 /* see ffi-callback below */
