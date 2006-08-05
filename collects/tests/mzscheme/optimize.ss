@@ -402,6 +402,13 @@
 	      (f y))
 	   '11)
 
+(test-comp '(module m mzscheme
+              (define (f x) (+ x 1))
+              (f 8))
+	   '(module m mzscheme
+              (define (f x) (+ x 1))
+              9))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 
@@ -426,6 +433,16 @@
                 (set! x (+ n 1)) ; close over mutated variable
                 (loop n s) ; and refer to global
                 (loop n))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Make sure "mutated?" flag isn't confused with "ready" flag:
+(module bad-order mzscheme  
+  (define (f) (printf "~a\n" i))
+  (f)
+  (define i 9)
+  (set! i 10))
+(err/rt-test (dynamic-require 'bad-order #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -3220,7 +3220,7 @@ Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr)
   return make_toplevel(skip + SCHEME_TOPLEVEL_DEPTH(expr), /* depth is 0 (normal) or 1 (exp-time) */
 		       SCHEME_TOPLEVEL_POS(expr),
 		       1,
-		       SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_FLAGS_MASK);
+		       SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_CONST);
 }
 
 Scheme_Object *scheme_shift_toplevel(Scheme_Object *expr, int delta)
