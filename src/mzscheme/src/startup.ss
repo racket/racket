@@ -995,6 +995,7 @@
 
 (module #%sc #%kernel
   (require #%stx #%small-scheme)
+  (require-for-template (only #%kernel set!))
 
   ;; Checks whether s is "..."
   (-define (...? s)
@@ -1808,7 +1809,32 @@
      [else #t]))
 
   ;; Structure for communicating first-order pattern variable information:
-  (define-struct syntax-mapping (depth valvar))
+  (define-values (struct:syntax-mapping -make-syntax-mapping -syntax-mapping? syntax-mapping-ref syntax-mapping-set!)
+    (make-struct-type 'syntax-mapping #f 2 0 #f null (current-inspector)
+                      (lambda (self stx)
+                        (if (identifier? stx)
+                            (raise-syntax-error
+                             #f
+                             "pattern variable cannot be used outside of a template"
+                             stx)
+                            (raise-syntax-error
+                             #f
+                             "pattern variable cannot be used outside of a template"
+                             stx
+                             (if (module-template-identifier=? (quote-syntax set!) (stx-car stx))
+                                 (stx-car (stx-cdr stx))
+                                 (stx-car stx)))))))
+  (-define -syntax-mapping-depth (make-struct-field-accessor syntax-mapping-ref 0))
+  (-define -syntax-mapping-valvar (make-struct-field-accessor syntax-mapping-ref 1))
+  (-define (make-syntax-mapping depth valvar)
+    (make-set!-transformer (-make-syntax-mapping depth valvar)))
+  (-define (syntax-mapping? v)
+    (and (set!-transformer? v)
+         (-syntax-mapping? (set!-transformer-procedure v))))
+  (-define (syntax-mapping-depth v)
+    (-syntax-mapping-depth (set!-transformer-procedure v)))
+  (-define (syntax-mapping-valvar v)
+    (-syntax-mapping-valvar (set!-transformer-procedure v)))
 
   (provide (protect make-match&env get-match-vars make-pexpand
 		    make-syntax-mapping syntax-mapping?
