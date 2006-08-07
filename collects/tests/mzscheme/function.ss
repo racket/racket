@@ -95,4 +95,13 @@
 	       (cons (random 1000) (loop (sub1 n)))))])
   (test (quicksort s <) mergesort s <))
 
+(test 3 (rec f (λ (x) 3)) 3)
+(test 3 (rec f (λ (x) x)) 3)
+(test 2 (rec f (λ (x) (if (= x 3) (f 2) x))) 3)
+(test 3 (rec (f x) 3) 3)
+(test 3 (rec (f x) x) 3)
+(test 2 (rec (f x) (if (= x 3) (f 2) x)) 3)
+(test 2 (rec (f x . y) (car y)) 1 2 3)
+(test (list 2) (rec (f . x) (if (= (car x) 3) (f 2) x)) 3)
+
 (report-errs)

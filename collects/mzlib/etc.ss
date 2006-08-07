@@ -236,18 +236,30 @@
      [(_ x body1 body ...)
       (raise-syntax-error #f "not a definition sequence" stx (syntax x))]))
 
- ;; recur is another name for 'let' in a named let
- (define-syntax (recur stx)
-   (syntax-case stx ()
-     [(_ . rest) (syntax/loc stx (let . rest))]))
-
- ;; define a recursive value
- (define-syntax (rec stx)
-   (syntax-case stx ()
-     [(_ name expr)
-      (begin (unless (identifier? (syntax name))
-               (raise-syntax-error #f "not an identifier" stx (syntax name)))
-             (syntax/loc stx (letrec ([name expr]) name)))]))
+  ;; recur is another name for 'let' in a named let
+  (define-syntax (recur stx)
+    (syntax-case stx ()
+      [(_ . rest) (syntax/loc stx (let . rest))]))
+  
+  ;; define a recursive value
+  ;; implementation by Jens Axel Soegaard
+  (define-syntax (rec stx)
+    (syntax-case stx ()
+      [(rec id expr)
+       (identifier? #'id)
+       #`(letrec ((id expr))
+           #,(syntax-property #'expr 'inferred-name (syntax-e #'id)))]
+      [(rec (name id ...) body ...)
+       (andmap identifier? (syntax->list #'(name id ...)))
+       #`(letrec ((name (lambda (id ...) body ...)))
+           #,(syntax-property #'name 'inferred-name (syntax-e #'name)))]
+      [(rec (name id ... . did) body ...)
+       (andmap identifier? (syntax->list #'(name id ...)))
+       #`(letrec ((name (lambda (id ... . did) body ...)))
+           #,(syntax-property #'name 'inferred-name (syntax-e #'name)))]
+      [_
+       (raise-syntax-error
+        #f "expects either a variable followed by an expresion, or a (possibly dotted) sequence of variables followed by a body" stx)]))
 
  (define-syntax (evcase stx)
    (syntax-case stx ()
