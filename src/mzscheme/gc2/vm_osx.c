@@ -25,7 +25,10 @@
 #include <unistd.h>
 #include <mach/mach.h>
 #include <mach/mach_error.h>
-#ifdef __POWERPC__
+#if defined(__POWERPC__) && 0
+# define PPC_HAND_ROLLED_THREAD
+#endif
+#ifdef PPC_HAND_ROLLED_THREAD
 # include <architecture/ppc/cframe.h>
 #else
 # include <pthread.h>
@@ -305,7 +308,9 @@ static void macosx_init_exception_handler()
     abort();
   }
 
-#ifdef __POWERPC__
+#ifdef PPC_HAND_ROLLED_THREAD 
+  /* Old hand-rolled thread creation. pthread_create is fine for our
+     purposes. */
  {
    /* set up the subthread */
    mach_port_t exc_thread;
