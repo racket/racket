@@ -50,7 +50,11 @@
                     ((stream-ify exprs iter))))])
           (let/ec escape
             (parameterize ([error-escape-handler (lambda () (escape (void)))])
-              (go program-expander receive-result render-settings track-inferred-names?)))
+              (go program-expander receive-result render-settings track-inferred-names?
+                  ;; language level name:
+                  "bogus language level"
+                  ;; run-in-drscheme thunk:
+                  (lambda (thunk) (thunk)))))
           (error-display-handler current-error-display-handler))))
   
   (define (test-sequence namespace-spec teachpack-specs render-settings track-inferred-names? exp-str expected-steps)
@@ -98,6 +102,10 @@
   
   (define test-both-ints (make-multi-level-test-sequence (list test-intermediate-sequence
                                                                test-intermediate/lambda-sequence)))
+  
+  (define test-lazy-sequence (lang-level-test-sequence `(lib "lazy.ss" "lazy")
+                                                  fake-mz-render-settings
+                                                  #f))
   
   ; mutate these to values you want to examine in the repl:
   (define bell-jar-specimen-1 #f)
@@ -1407,11 +1415,21 @@
       `(error "begin: expected a sequence of expressions after `begin', but nothing's there")))
   
   
+  ;; LAZY.SS:
+  
+  (t lazy
+     (test-lazy-sequence 
+      "(+ 3 4)"
+      `((finished-stepping)
+        (before-after ((hilite (+ 3 4)))
+                      ((hilite 7)))
+        (finished-stepping))))
+  
   
   #;(t teachpack-callbacks
      (test-teachpack-sequence " (define (f2c x) x) (convert-gui f2c)" `() ; placeholder
                                ))
   
-  #;(run-tests '(begin-onlyvalues))
-  (run-all-tests)
+  (run-tests '(lazy))
+  #;(run-all-tests)
   )
