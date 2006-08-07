@@ -113,8 +113,7 @@
        (cond
          [(and (basic? basic-credentials)
                (match-authentication
-                (base64-decode (subbytes basic-credentials 6 (bytes-length basic-credentials))))
-               )
+                (base64-decode (subbytes basic-credentials 6 (bytes-length basic-credentials)))))
           => (lambda (user-pass)
                (cons (cadr user-pass) (caddr user-pass)))]
          [else #f])]))
@@ -130,7 +129,7 @@
   (provide/contract
    [get-host (url? (listof header?) . -> . symbol?)]
    ; XXX contract maybe
-   [extract-user-pass ((listof header?) . -> . (or/c false/c (cons/c string? string?)))]
+   [extract-user-pass ((listof header?) . -> . (or/c false/c (cons/c bytes? bytes?)))]
    [build-suspender (((listof xexpr?) (listof xexpr?))
                      ((listof (list/c symbol? string?)) (listof (list/c symbol? string?)))
                      . opt-> .
