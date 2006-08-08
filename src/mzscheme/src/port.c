@@ -7949,6 +7949,67 @@ void scheme_start_itimer_thread(long usec)
 
 #endif
 
+#ifdef USE_PTHREAD_THREAD_TIMER
+
+#include <pthread.h>
+
+static int itimer = 0, itimer_continue = 0;
+static pthread_mutex_t itimer_mutex;
+static pthread_cond_t itimer_cond;
+static volatile long itimer_delay;
+
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
+static void *run_itimer(void *p)
+{
+  while (1) {
+    usleep(itimer_delay);
+    scheme_fuel_counter = 0;
+    
+    pthread_mutex_lock(&itimer_mutex);
+    if (itimer_continue) {
+      itimer_continue = 0;
+    } else {
+      itimer_continue = -1;
+      pthread_cond_wait(&itimer_cond, &itimer_mutex);
+    }
+    pthread_mutex_unlock(&itimer_mutex);
+  }
+}
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
+
+void scheme_start_itimer_thread(long usec)
+{
+  itimer_delay = usec;
+
+  if (!itimer) {
+    pthread_t t;
+    pthread_mutex_init(&itimer_mutex, NULL);
+    pthread_cond_init(&itimer_cond, NULL);
+    pthread_create(&t, NULL, run_itimer,  NULL);
+    itimer = 1;
+  } else {
+    pthread_mutex_lock(&itimer_mutex);
+    if (!itimer_continue) {
+      /* itimer thread is currently running working */
+      itimer_continue = 1;
+    } else if (itimer_continue < 0) {
+      /* itimer thread is waiting on cond */
+      itimer_continue = 0;
+      pthread_cond_signal(&itimer_cond);
+    } else {
+      /* itimer thread is working, and we've already
+         asked it to continue */
+    }
+    pthread_mutex_unlock(&itimer_mutex);
+  }
+}
+
+#endif
+
 /*========================================================================*/
 /*                       memory debugging help                            */
 /*========================================================================*/

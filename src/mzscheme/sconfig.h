@@ -631,6 +631,9 @@
 # define SYSTEM_TYPE_NAME "macosx"
 #endif
 
+# undef USE_ITIMER
+# define USE_PTHREAD_THREAD_TIMER
+
 # define USE_MAP_ANON
 
 # define USE_CARBON_FP_PREDS
@@ -1043,6 +1046,12 @@
  /* USE_ITIMER uses setitimer() to implement thread pre-emption (for
     MzScheme-implemented threads). Define MZ_THREAD_QUANTUM_USEC to
     set the base time in usec allocated to each thread. */
+
+ /* USE_WIN32_THREAD_TIMER uses a background Windows thread to implement
+    tread pre-emption. */
+
+ /* USE_PTHREAD_THREAD_TIMER uses a background pthread to implement
+    tread pre-emption. */
 
  /* SIGSET_IS_SIGNAL uses signal() in place of sigset() for Unix. This 
     flag is often paired with SIGSET_NEEDS_REINSTALL for traditional

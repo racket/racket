@@ -3722,6 +3722,8 @@ void scheme_thread_block(float sleep_time)
   if (do_atomic)
     missed_context_switch = 1;
 
+  MZTHREADELEM(p, fuel_counter) = p->engine_weight;
+
 #ifdef USE_ITIMER
   {
     struct itimerval t, old;
@@ -3739,14 +3741,12 @@ void scheme_thread_block(float sleep_time)
     setitimer(ITIMER_PROF, &t, &old);
   }
 #endif
-#ifdef USE_WIN32_THREAD_TIMER
+#if defined(USE_WIN32_THREAD_TIMER) || defined(USE_PTHREAD_THREAD_TIMER)
   scheme_start_itimer_thread(MZ_THREAD_QUANTUM_USEC);
 #endif
 
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
-
-  MZTHREADELEM(p, fuel_counter) = p->engine_weight;
 }
 
 void scheme_making_progress()

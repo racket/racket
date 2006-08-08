@@ -73,7 +73,7 @@
 # undef USE_ITIMER
 #endif
 
-#if defined(USE_ITIMER) || defined(USE_WIN32_THREAD_TIMER)
+#if defined(USE_ITIMER) || defined(USE_WIN32_THREAD_TIMER) || defined(USE_PTHREAD_THREAD_TIMER)
 # define FUEL_AUTODECEREMENTS
 #endif
 
