@@ -1,0 +1,150 @@
+
+(module tool mzscheme
+  (require "model/trace.ss"
+           (prefix view: "view/gui.ss"))
+  (require (lib "class.ss")
+           (lib "list.ss")
+           (lib "unitsig.ss")
+           (lib "mred.ss" "mred")
+           (lib "framework.ss" "framework")
+           (lib "tool.ss" "drscheme")
+           (lib "bitmap-label.ss" "mrlib")
+           (lib "string-constant.ss" "string-constants"))
+
+  (provide tool@)
+  
+  (define tool@
+    (unit/sig drscheme:tool-exports^
+      (import drscheme:tool^)
+      
+      (define (phase1) (void))
+      (define (phase2) (void))
+      
+      (define drscheme-eventspace (current-eventspace))
+
+      (define-local-member-name check-language)
+      
+      (define (macro-debugger-unit-frame-mixin %)
+        (class %
+          (super-new)
+          (inherit get-button-panel
+                   get-interactions-text
+                   get-definitions-text)
+
+          (define macro-debug-panel
+            (new vertical-pane% (parent (get-button-panel))))
+          (define macro-debug-button
+            (new button%
+                 (label (make-bitmap-label 
+                         "Macro Stepper"
+                         (build-path (collection-path "skipper") 
+                                     "icon-small.png")))
+                 (parent macro-debug-panel)
+                 (callback (lambda (button event) (execute #t)))))
+
+          (define/override (execute-callback)
+            (execute #f))
+
+          (define/private (execute debugging?)
+            (send (get-interactions-text) enable-macro-debugging debugging?)
+            (super execute-callback))
+
+          ;; Hide button for inappropriate languages
+
+          (define/augment (on-tab-change old new)
+	    (check-language)
+	    (inner (void) on-tab-change old new))
+
+          (define/public (check-language)
+	    (if (debugger-works-for?
+                 (extract-language-level 
+                  (send (get-definitions-text) get-next-settings)))
+		(unless (send macro-debug-button is-shown?)
+		  (send macro-debug-panel
+                        add-child macro-debug-button))
+		(when (send macro-debug-button is-shown?)
+                  (send macro-debug-panel
+                        delete-child macro-debug-button))))
+
+          (send (get-button-panel) change-children
+                (lambda (_)
+                  (cons macro-debug-panel
+                        (remq macro-debug-panel _))))
+          (check-language)
+          ))
+
+      (define (macro-debugger-definitions-text-mixin %)
+        (class %
+          (super-new)
+          (inherit get-top-level-window)
+
+          (define/augment (after-set-next-settings s)
+	    (send (get-top-level-window) check-language)
+	    (inner (void) after-set-next-settings s))))
+
+      (define (macro-debugger-interactions-text-mixin %)
+        (class %
+          (super-new)
+          (inherit run-in-evaluation-thread)
+
+          (define debugging? #f)
+          (define/public (enable-macro-debugging ?)
+            (set! debugging? ?))
+
+          (define/override (reset-console)
+            (super reset-console)
+            (run-in-evaluation-thread
+             (lambda ()
+               (current-eval (make-eval-handler (current-eval))))))
+          
+          (define/private (make-eval-handler original-eval-handler)
+            (if debugging?
+                (let ([stepper (delay (view:make-macro-stepper))])
+                  (lambda (expr)
+                    (if (compiled-expression? 
+                         (if (syntax? expr) (syntax-e expr) expr))
+                        (original-eval-handler expr)
+                        (let-values ([(e-expr deriv) (trace/result expr)])
+                          (show-deriv deriv stepper)
+                          (if (syntax? e-expr)
+                              (original-eval-handler e-expr)
+                              (raise e-expr))))))
+                original-eval-handler))
+
+          (define/private (show-deriv deriv stepper-promise)
+            (parameterize ([current-eventspace drscheme-eventspace])
+              (queue-callback
+               (lambda () (send (force stepper-promise) add-deriv deriv)))))
+          ))
+
+      ;; Borrowed from mztake/debug-tool.ss
+
+      (define (extract-language-level settings)
+	(let* ([language
+                (drscheme:language-configuration:language-settings-language
+                 settings)])
+	  (send language get-language-position)))
+
+      (define (debugger-works-for? lang)
+        (let ([main-group (car lang)]
+              [second (and (pair? (cdr lang)) (cadr lang))]
+              [third (and (pair? (cdr lang)) (pair? (cddr lang)) (caddr lang))])
+          (and (equal? main-group (string-constant professional-languages))
+               (or (member second 
+                           (list (string-constant r5rs-lang-name)
+                                 "Swindle"))
+                   (member third
+                           (list (string-constant mzscheme-w/debug)
+                                 (string-constant mred-w/debug)
+                                 (string-constant pretty-big-scheme)))))))
+
+      ;; Macro debugger code
+
+      (drscheme:get/extend:extend-unit-frame
+       macro-debugger-unit-frame-mixin)
+      (drscheme:get/extend:extend-interactions-text 
+       macro-debugger-interactions-text-mixin)
+      (drscheme:get/extend:extend-definitions-text
+       macro-debugger-definitions-text-mixin)
+
+      )))
