@@ -24,7 +24,7 @@
         (hash-table-get ranges obj (lambda _ null)))
       
       (define/public (all-ranges)
-        (quicksort 
+        (sort 
          (apply append 
                 (hash-table-map
                  ranges
