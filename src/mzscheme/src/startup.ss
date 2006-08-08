@@ -3862,6 +3862,7 @@
   (require #%stxmz-body)
   (require #%qqstx)
   (require #%define)
+  (require #%expobs) ; so it's attached
 
   (provide (all-from #%more-scheme)
 	   (all-from-except #%misc make-standard-module-name-resolver)

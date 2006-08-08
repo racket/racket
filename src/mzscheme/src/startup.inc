@@ -3387,6 +3387,7 @@
 "(require #%stxmz-body)"
 "(require #%qqstx)"
 "(require #%define)"
+"(require #%expobs) "
 "(provide(all-from #%more-scheme)"
 "(all-from-except #%misc make-standard-module-name-resolver)"
 "(all-from-except #%stxcase-scheme -define -define-syntax)"
