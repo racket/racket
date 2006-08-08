@@ -4,6 +4,20 @@
   
   (prepare-for-tests "Full")
 
+  (execute-test
+   "import java.util.*;
+    class Random { }"
+   'full #f "Hiding an import * name with a local class"
+   )
+  
+  (interact-test
+   "import java.util.*;
+    class Random {
+      int getInt() { return 3; }
+   }"
+   'full '("new Random().getInt()") '(3)
+   "Using the local Random and not the imported one")
+  
   (interact-test
    "class allPublic {
       public int x() { return 3; }
@@ -92,7 +106,7 @@
     (interact-test
      "interface I { int m( int x); }
       class C implements I {
-        int m(int x) { return x; }
+        public int m(int x) { return x; }
         boolean n(boolean y) { return !y; }
         dynamic q(I x) { return x; }
       }" 'full
@@ -246,12 +260,12 @@
   (execute-test 
    "interface Bt { int largestNum(); }
 
-    class Leaf implements Bt { int largestNum() {  return 1 ;} }
+    class Leaf implements Bt { public int largestNum() {  return 1 ;} }
 
     class Heap implements Bt {
      Bt left;	
      Bt right; 	
-     int largestNum(){
+     public int largestNum(){
      if(this.left instanceof Heap &&
         this.right instanceof Heap)
        return this.right.largestNum();

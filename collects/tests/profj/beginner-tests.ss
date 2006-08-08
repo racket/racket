@@ -316,6 +316,16 @@
     class B implements A { B () { } }"
    language #t "Implementing a class")
   
+  (execute-test
+   "import java.util.Random;
+    class Random { }"
+   language #t "Renaming an imported class")
+  
+  (execute-test
+   "import geometry.*;
+    class Posn { }"
+   language #t "Renaming an imported class with a star")
+  
   ;;Interaction tests: Mix of pass and fail
   
   (interact-test

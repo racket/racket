@@ -134,8 +134,10 @@
         (add-my-package type-recs pname (package-defs prog) current-loc level))
       
       ;Add import information
-      (for-each (lambda (imp) (process-import type-recs imp level)) (package-imports prog))
-
+      (let ([cur-def-names (map def-name defs)])
+        (for-each (lambda (imp) (process-import type-recs imp cur-def-names level)) 
+                  (package-imports prog)))
+      
       ;Build jinfo information for each def in this file
       (for-each (lambda (def) (process-class/iface def pname type-recs (null? args) #t level)) defs)
 
@@ -201,25 +203,43 @@
   ;-----------------------------------------------------------------------------------
   ;Import processing/General loading
 
-  ;;process-import: type-records import symbol -> void
-  (define (process-import type-recs imp level)
+  ;;process-import: type-records import (listof id) symbol -> void
+  (define (process-import type-recs imp def-names level)
     (let* ((star? (import-star imp))
            (file (import-file imp))
            (name (id-string (name-id (import-name imp))))
-           (name-path (map id-string (name-path (import-name imp))))
-           (path (if star? (append name-path (list name)) name-path))
+           (string-path (map id-string (name-path (import-name imp))))
+           (path (if star? (append string-path (list name)) string-path))
            (err (lambda () (import-error (import-name imp) (import-src imp)))))
-      (if star?
-          (let ((classes (send type-recs get-package-contents path (lambda () #f))))
-            (if classes
-                (for-each (lambda (class) (send type-recs add-to-env class path file)) classes)
-                (let* ((dir (find-directory path err))
-                       (classes (get-class-list dir)))
-                  (for-each (lambda (class) 
-                              (import-class class path dir file type-recs level (import-src imp) #t))
-                            classes)
-                  (send type-recs add-package-contents path classes))))
-          (import-class name path (find-directory path err) file type-recs level (import-src imp) #t))))
+      (cond
+        [star?
+         (let ([classes (send type-recs get-package-contents path (lambda () #f))]
+               [check-dup-import
+                (lambda (importer)
+                  (lambda (class)
+                    (let ([dup? (memf (lambda (e) (equal? class (id-string e))) def-names)])
+                      (if dup?
+                          (unless (eq? level 'full)
+                            (import-dup-error 'star (id-string (car dup?)) (reverse path) (id-src (car dup?))))
+                          (importer class)))))])
+           (cond
+             [classes
+              (for-each (check-dup-import 
+                         (lambda (class) (send type-recs add-to-env class path file))) classes)]
+             [else
+              (let* ([dir (find-directory path err)]
+                     [class-list (get-class-list dir)]
+                     [package-contents null])
+                (for-each (check-dup-import
+                           (lambda (class)
+                             (import-class class path dir file type-recs level (import-src imp) #t)
+                             (set! package-contents (cons class package-contents))))
+                          class-list)
+                (send type-recs add-package-contents path package-contents))]))]
+        [else
+         (when (member name (map id-string def-names))
+           (import-dup-error 'no-star name (reverse path) (import-src imp)))
+         (import-class name path (find-directory path err) file type-recs level (import-src imp) #t)])))
   
   ;import-class: string (list string) dir-path location type-records symbol src bool-> void
   (define (import-class class path in-dir loc type-recs level caller-src add-to-env)
@@ -506,7 +526,8 @@
       (send type-recs set-location! (def-file class))
       (let ((build-record
              (lambda ()
-               (when put-in-table? (send type-recs add-to-records cname 'in-progress))
+               (when put-in-table? 
+                 (send type-recs add-to-records cname 'in-progress))
                (let* ((super (if (null? (header-extends info)) null (car (header-extends info))))
                       (super-name (if (null? super)
                                       '("Object" "java" "lang")
@@ -1969,6 +1990,18 @@
     (raise-error 'import
                  (format "Import ~a not found." (path->ext (name->path imp)))
                  'import src))
+  
+  ;import-dup-error: symbol string [list id] src -> void
+  (define (import-dup-error kind name path src)
+    (raise-error 'import
+                 (case kind
+                   [(star) (format "~a cannot be used to name a class or interface, as it conflicts with an import from ~a."
+                                   name (path->ext path))]
+                   [(no-star)
+                    (format "Class or interface ~a~a cannot be imported, as it conflicts with a class or interface in this file."
+                            name (if (null? path) "" (format " from ~a" (path->ext path))))])
+                 (string->symbol name)
+                 src))
 
   ;file-error: symbol (list string) src symbol -> void
   (define (file-error kind path src level)

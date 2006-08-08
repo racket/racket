@@ -81,11 +81,11 @@
   ;divide-int: int int -> int
   (define (divide-int left right)
     (when (zero? right)
-      (create-java-exception ArithmeticException
-                             "Illegal division by zero"
-                             (lambda (exn msg)
-                               (send exn ArithmeticException-constructor-java.lang.String msg))
-                             (current-continuation-marks)))
+      (raise (create-java-exception ArithmeticException
+                                    "Illegal division by zero"
+                                    (lambda (exn msg)
+                                      (send exn ArithmeticException-constructor-java.lang.String msg))
+                                    (current-continuation-marks))))
     (quotient left right))
   
   ;divide-float: float float -> float
@@ -247,10 +247,9 @@
              (fail? #f))
       (set! test 
             (with-handlers ((exn? 
-                             (lambda (e) (if catch? 
-                                             (begin (set! fail? #t)
-                                                    (list exception e))
-                                             (raise e)))))
+                             (lambda (e) 
+                               (set! fail? #t)
+                               (list exception catch? e))))
               (test)))
       (let ([res (if fail? #f (java-equal? test act null null))]
             [values-list (append (list act test) (if (null? within?) (list range) null))])
@@ -313,10 +312,12 @@
   (define (compose-message test-obj check-kind info values mutate-message)
     (letrec ((test-format (construct-info-msg info))
              (exception-raised? #f)
+             (exception-not-error? #f)
              (formatted-values (map (lambda (v) 
                                       (if (and (pair? v) (eq? (car v) exception))
                                           (begin (set! exception-raised? #t)
-                                                 (send test-obj format-value (cadr v)))
+                                                 (set! exception-not-error? (cadr v))
+                                                 (send test-obj format-value (caddr v)))
                                           (send test-obj format-value v))) values))
              (expected-format
               (case check-kind
@@ -331,9 +332,13 @@
                  (append (if (= (length formatted-values) 3)
                              (list ", within " (third formatted-values))
                              null)
-                         (if exception-raised?
-                             (list ", instead a " (second formatted-values) " exception occurred")
-                             (list ", instead found " (second formatted-values)))))
+                         (cond
+                           [(and exception-raised? (not exception-not-error?))
+                            (list ", instead a " (second formatted-values) " exception occurred")]
+                           [(and exception-raised? exception-not-error?)
+                            (list", instead an error occured")]
+                           [else
+                            (list ", instead found " (second formatted-values))])))
                 ((check-catch)
                  (if (= (length formatted-values) 1)
                      (list ", instead no exceptions occured")
