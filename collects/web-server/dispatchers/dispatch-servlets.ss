@@ -15,6 +15,7 @@
            "../managers/manager.ss"
            "../managers/timeouts.ss"
            "../managers/lru.ss"
+           "../managers/none.ss"
            "../private/url.ss"
            "../private/servlet.ss"
            "../private/cache-table.ss")  
@@ -76,69 +77,71 @@
                        (lambda (the-exn)
                          (output-response/method conn (responders-servlet-loading uri the-exn) (request-method req)))])
         (define servlet-mutex (make-semaphore 0))
-        (define last-servlet (thread-cell-ref current-servlet))
-        (define last-servlet-instance-id (thread-cell-ref current-servlet-instance-id))
-        (let/cc suspend
-          ; Create the session frame
-          (with-frame
-           (define instance-custodian (make-servlet-custodian))
-           (define servlet-path 
-             (with-handlers
-                 ([void (lambda (e)
-                          (raise (make-exn:fail:filesystem:exists:servlet
-                                  (exn-message e)
-                                  (exn-continuation-marks e))))])
-               (url-path->path
-                servlet-root
-                (url-path->string (url-path uri)))))
-           (parameterize ([current-directory (get-servlet-base-dir servlet-path)]
-                          [current-custodian instance-custodian]
-                          [exit-handler
-                           (lambda _
-                             (kill-connection! conn)
-                             (custodian-shutdown-all instance-custodian))])
-             ;; any resources (e.g. threads) created when the
-             ;; servlet is loaded should be within the dynamic
-             ;; extent of the servlet custodian
-             (define the-servlet (cached-load servlet-path))
-             (thread-cell-set! current-servlet the-servlet)
-             (parameterize ([current-namespace (servlet-namespace the-servlet)])
-               (define manager (servlet-manager the-servlet))
-               (define data
-                 (make-servlet-instance-data
-                  servlet-mutex
-                  (make-execution-context
-                   conn req (lambda () (suspend #t)))))
-               (define the-exit-handler
-                 (lambda _
-                   (kill-connection!
-                    (execution-context-connection
-                     (servlet-instance-data-context
-                      data)))
-                   (custodian-shutdown-all instance-custodian)))
-               (parameterize ([exit-handler the-exit-handler])
-                 (define instance-id ((manager-create-instance manager) data the-exit-handler))
-                 (parameterize ([exit-handler (lambda x
-                                                ((manager-instance-unlock! manager) instance-id)
-                                                (the-exit-handler x))])
-                   (thread-cell-set! current-servlet-instance-id instance-id)
-                   ((manager-instance-lock! manager) instance-id)
-                   (with-handlers ([(lambda (x) #t)
-                                    (make-servlet-exception-handler data)])
-                     ;; Two possibilities:
-                     ;; - module servlet. start : Request -> Void handles
-                     ;;   output-response via send/finish, etc.
-                     ;; - unit/sig or simple xexpr servlet. These must produce a
-                     ;;   response, which is then output by the server.
-                     ;; Here, we do not know if the servlet was a module,
-                     ;; unit/sig, or Xexpr; we do know whether it produces a
-                     ;; response.
-                     (define r ((servlet-handler the-servlet) req))
-                     (when (response? r)
-                       (send/back r)))                 
-                   ((manager-instance-unlock! manager) instance-id)))))))
-        (thread-cell-set! current-servlet last-servlet)
-        (thread-cell-set! current-servlet-instance-id last-servlet-instance-id)
+        (define response
+          (let/cc suspend
+            ; Create the session frame
+            (with-frame
+             (define instance-custodian (make-servlet-custodian))
+             (define servlet-path 
+               (with-handlers
+                   ([void (lambda (e)
+                            (raise (make-exn:fail:filesystem:exists:servlet
+                                    (exn-message e)
+                                    (exn-continuation-marks e))))])
+                 (url-path->path
+                  servlet-root
+                  (url-path->string (url-path uri)))))
+             (parameterize ([current-directory (get-servlet-base-dir servlet-path)]
+                            [current-custodian instance-custodian]
+                            [exit-handler
+                             (lambda _
+                               (kill-connection! conn)
+                               (custodian-shutdown-all instance-custodian))])
+               ;; any resources (e.g. threads) created when the
+               ;; servlet is loaded should be within the dynamic
+               ;; extent of the servlet custodian
+               (define the-servlet (cached-load servlet-path))
+               (thread-cell-set! current-servlet the-servlet)
+               (parameterize ([current-namespace (servlet-namespace the-servlet)])
+                 (define manager (servlet-manager the-servlet))
+                 (define ctxt                   
+                   (make-execution-context
+                    conn req suspend))
+                 (define data
+                   (make-servlet-instance-data
+                    servlet-mutex))
+                 (define the-exit-handler
+                   (lambda _
+                     (kill-connection!
+                      (execution-context-connection
+                       (thread-cell-ref current-execution-context)))
+                     (custodian-shutdown-all instance-custodian)))
+                 (thread-cell-set! current-execution-context ctxt)
+                 (parameterize ([exit-handler the-exit-handler])
+                   (define instance-id ((manager-create-instance manager) data the-exit-handler))
+                   (parameterize ([exit-handler (lambda x
+                                                  ((manager-instance-unlock! manager) instance-id)
+                                                  (the-exit-handler x))])
+                     (thread-cell-set! current-servlet-instance-id instance-id)
+                     ((manager-instance-lock! manager) instance-id)
+                     (with-handlers ([(lambda (x) #t)
+                                      (make-servlet-exception-handler data)])
+                       ;; Two possibilities:
+                       ;; - module servlet. start : Request -> Void handles
+                       ;;   output-response via send/finish, etc.
+                       ;; - unit/sig or simple xexpr servlet. These must produce a
+                       ;;   response, which is then output by the server.
+                       ;; Here, we do not know if the servlet was a module,
+                       ;; unit/sig, or Xexpr; we do know whether it produces a
+                       ;; response.
+                       (define r ((servlet-handler the-servlet) req))
+                       (when (response? r)
+                         (send/back r)))                 
+                     ((manager-instance-unlock! manager) instance-id))))))))
+        (output-response conn response)
+        (thread-cell-set! current-execution-context #f)
+        (thread-cell-set! current-servlet #f)
+        (thread-cell-set! current-servlet-instance-id #f)
         (semaphore-post servlet-mutex)))
     
     ;; default-server-instance-expiration-handler : (request -> response)
@@ -160,18 +163,13 @@
     ;;   requests won't be blocked.
     ;; * This fixes PR# 7066
     (define ((make-servlet-exception-handler inst-data) the-exn)
-      (define context (servlet-instance-data-context inst-data))
+      (define context (thread-cell-ref current-execution-context))
       (define request (execution-context-request context))
       (define resp 
         (responders-servlet
          (request-uri request)
          the-exn))
-      ;; Don't handle twice
-      (with-handlers ([exn:fail? (lambda (exn) (void))])
-        (output-response/method
-         (execution-context-connection context)
-         resp (request-method request)))
-      ((execution-context-suspend context)))
+      ((execution-context-suspend context) resp))
     
     ;; path -> path
     ;; The actual servlet's parent directory.
@@ -191,8 +189,6 @@
         (url-path->path
          servlet-root
          (url-path->string (url-path uri))))
-      (define last-servlet (thread-cell-ref current-servlet))
-      (define last-servlet-instance-id (thread-cell-ref current-servlet-instance-id))
       (define the-servlet (cached-load servlet-path))
       (define manager (servlet-manager the-servlet))
       (thread-cell-set! current-servlet the-servlet)
@@ -225,17 +221,18 @@
           ; always call a continuation. The exit-handler above ensures that
           ; the post is done.
           (semaphore-wait (servlet-instance-data-mutex data))
-          (let/cc suspend
-            (define k ((manager-continuation-lookup manager) instance-id k-id salt))
-            (set-servlet-instance-data-context!
-             data
-             (make-execution-context
-              conn req (lambda () (suspend #t))))
-            (k req))
+          (let ([response
+                 (let/cc suspend
+                   (define k ((manager-continuation-lookup manager) instance-id k-id salt))
+                   (thread-cell-set! current-execution-context
+                                     (make-execution-context
+                                      conn req suspend))
+                   (k req))])
+            (output-response conn response))
           (semaphore-post (servlet-instance-data-mutex data))))
       ((manager-instance-unlock! manager) instance-id)
-      (thread-cell-set! current-servlet-instance-id last-servlet-instance-id)
-      (thread-cell-set! current-servlet last-servlet))
+      (thread-cell-set! current-servlet-instance-id #f)
+      (thread-cell-set! current-servlet #f))
     
     ;; ************************************************************
     ;; ************************************************************
@@ -281,11 +278,13 @@
         (lambda (initial-request)
           (invoke-unit/sig servlet servlet^)))
       (define (v0.response->v1.lambda response-path response)
-        (letrec ([go (lambda ()
-                       (begin
-                         (set! go (lambda () (load/use-compiled a-path)))
-                         response))])
-          (lambda (initial-request) (go))))
+        (define go
+          (box
+           (lambda ()
+             (set-box! go (lambda () (load/use-compiled a-path)))
+             response)))
+        (lambda (initial-request)
+          ((unbox go))))
       (define (v1.module->v1.lambda timeout start)
         (lambda (initial-request)
           (adjust-timeout! timeout)

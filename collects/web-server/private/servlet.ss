@@ -7,11 +7,12 @@
   
   (define-struct (exn:fail:servlet:instance exn:fail) ())
   (define-struct servlet (custodian namespace manager handler))
-  (define-struct servlet-instance-data (mutex context))  
+  (define-struct servlet-instance-data (mutex))  
   (define-struct execution-context (connection request suspend))
   
   (define current-servlet (make-thread-cell #f))
   (define current-servlet-instance-id (make-thread-cell #f))
+  (define current-execution-context (make-thread-cell #f))
   
   (define (get-current-servlet-instance-id)
     (define instance-id (thread-cell-ref current-servlet-instance-id))
@@ -40,8 +41,7 @@
             [manager manager?]
             [handler (request? . -> . servlet-response?)])]
    [struct servlet-instance-data
-           ([mutex semaphore?]
-            [context execution-context?])]
+           ([mutex semaphore?])]
    [struct execution-context 
            ([connection connection?]
             [request request?]
@@ -50,6 +50,8 @@
    [current-servlet thread-cell?]
    ; XXX contract maybe
    [current-servlet-instance-id thread-cell?]
+   ; XXX contract maybe
+   [current-execution-context thread-cell?]
    [get-current-servlet-instance-id (-> number?)]
    [current-servlet-manager (-> manager?)]
    [current-servlet-instance-data (-> servlet-instance-data?)]))

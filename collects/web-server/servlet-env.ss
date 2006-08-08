@@ -35,7 +35,6 @@
             (lambda (initial-request)
               (let ([v (servlet-expr initial-request)])
                 (set! final-value v)
-                ;(set! final-conn (execution-context-connection (servlet-instance-context (current-servlet-instance))))
                 (semaphore-post sema)
                 (if (response? v)
                     v

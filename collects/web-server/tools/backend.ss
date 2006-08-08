@@ -3,24 +3,25 @@
            (lib "timer.ss" "web-server")
            (lib "response.ss" "web-server")
            (lib "connection-manager.ss" "web-server"))
-
+  
   (provide start-servlet resume-servlet)
-
+  
   ;; make-servlet-custodian: -> custodian
   (define make-servlet-custodian
     (let ([cust (current-custodian)])
       (lambda () (make-custodian cust))))
-
+  
   ;; start-servlet: connection request hash-table number (number->void request -> response) -> void
   ;; start a new instance of a servlet
   (define (start-servlet conn req instance-table instance-timeout svt)
-    (let ([sema (make-semaphore 0)])
+    (define sema (make-semaphore 0))
+    (define response
       (let/cc suspend
         (let* ([servlet-custodian (make-servlet-custodian)]
                [inst (create-new-instance!
                       instance-table servlet-custodian
                       (make-execution-context
-                       conn req (lambda () (suspend #t)))
+                       conn req suspend)
                       sema)]
                [servlet-exit-handler (make-servlet-exit-handler inst instance-table)]
                [time-bomb (start-timer instance-timeout
@@ -34,9 +35,10 @@
                               (reset-timer! time-bomb secs))
                             req)])
                 (when (response? r)
-                  (send/back r)))))))
-      (semaphore-post sema)))
-
+                  (send/back r))))))))
+    (output-respose conn response)
+    (semaphore-post sema))
+  
   ;; make-servlet-exit-handler: servlet-instance -> alpha -> void
   ;; exit handler for a servlet
   (define (make-servlet-exit-handler inst instance-table)
@@ -46,7 +48,7 @@
        (execution-context-connection
         (servlet-instance-context inst)))
       (custodian-shutdown-all (servlet-instance-custodian inst))))
-
+  
   ;; make-servlet-exception-handler: host -> exn -> void
   ;; This exception handler traps all unhandled servlet exceptions
   (define (make-servlet-exception-handler inst)
@@ -61,27 +63,29 @@
                  (p ,(exn-message the-exn))))
          (request-method req))
         ((execution-context-suspend ctxt)))))
-
+  
   ;; resume-servlet: connection request continuation-reference hash-table -> void
   ;; pull the continuation out of the table and apply it
   (define (resume-servlet conn req k-ref instance-table)
-    (let* ([inst (hash-table-get instance-table (car k-ref)
+    (define inst (hash-table-get instance-table (car k-ref)
                                  (lambda ()
                                    (raise
                                     (make-exn:servlet:instance
-                                     "" (current-continuation-marks)))))]
-           [k-table
-            (servlet-instance-k-table inst)])
+                                     "" (current-continuation-marks))))))
+    (define k-table
+      (servlet-instance-k-table inst))
+    (define response
       (let/cc suspend
         (set-servlet-instance-context!
          inst
          (make-execution-context
-          conn req (lambda () (suspend #t))))
+          conn req suspend))
         (semaphore-wait (servlet-instance-mutex inst))
         ((hash-table-get k-table (cadr k-ref)
                          (lambda ()
                            (raise
                             (make-exn:servlet:continuation
                              "" (current-continuation-marks)))))
-         req))
-      (semaphore-post (servlet-instance-mutex inst)))))
+         req)))
+    (output-response conn response)
+    (semaphore-post (servlet-instance-mutex inst))))
