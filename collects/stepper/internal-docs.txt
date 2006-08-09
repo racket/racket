@@ -5,15 +5,15 @@ The Stepper's use of syntax-property:
 In order to make macro-unwinding possible, the stepper adds
 syntax-properties to elaborated code which then informs the
 reconstruction process about how certain macros were originally
-formed.  
+formed.
 
 In fact, the truth is slightly more complicated, because there are
 two rounds of macro-expansion for a program written in a teaching
-language.  First, the program is expanded according to the 
+language.  First, the program is expanded according to the
 macro definitions contained in the "lang" collection.  Then, the
 code is expanded according to the macro definitions built into
 mzscheme.  So, for instance, a beginner 'cond' expands into a
-mzscheme 'cond' which expands into a nested series of 'if's.  
+mzscheme 'cond' which expands into a nested series of 'if's.
 
 Correspondingly, the stepper's addition of syntax properties is broken
 into two parts; those added for the beginner macros, and those added
@@ -25,14 +25,14 @@ main annotation.  This procedure is called 'top-level-rewrite'.
 
 Therefore, the stepper's syntax-property additions occur in two
 textual locations: collects/lang/private/teach.ss, and
-collects/stepper/private/annotate.ss (with a few stray ones 
+collects/stepper/private/annotate.ss (with a few stray ones
 in collects/lang/private/teachhelp.ss).
 
 Also, in order to be visible to the reconstructor, these properties
 must be explicitly transferred from the annotated source code syntax
 to the reconstructed syntax. This is accomplished by the 'attach-info'
 procedure in reconstruct.ss.  Note that in the process, these properties
-are given names that have "user-" prepended to them.  This now seems 
+are given names that have "user-" prepended to them.  This now seems
 like a strange decision.
 
 Finally, the astute reader may wonder why I need to add things like
@@ -53,21 +53,21 @@ stepper-skip-completely :
  just to make sure that other marks get properly obliterated.
 
  Note that skipping an expression can turn a sensible expression into
- a nonsensical one.  This is where the 'expressions are lists of 
+ a nonsensical one.  This is where the 'expressions are lists of
  subexpressions' abstraction and the 'expressions are one of A...Z'
- abstraction part ways. 
+ abstraction part ways.
 
  Uses:
  - applied to the check of the test-variable in the expansion of the
-   'or' macro. 
- - applied to the expansion of the primitives defined with 
+   'or' macro.
+ - applied to the expansion of the primitives defined with
    'define-primitive'.
  - applied to the 'make-generative-lambda' inserted by teach.ss
- 
-stepper-hint : 
+
+stepper-hint :
  this is the most generally applied syntax property.  In general, it
  informs the reconstructor what macro this source expression came
- from. 
+ from.
 
  See notes below about 'being careful with stepper-hint'.
 
@@ -87,16 +87,16 @@ stepper-hint :
 		        box (inside an xml box)
  [ 'comes-from-recur ] : expression was expanded from a 'recur'
 
-stepper-define-type: 
+stepper-define-type:
  this is attached to the right-hand sides of defines to indicate what
- kind of define they came from. 
+ kind of define they came from.
 
  [ 'shortened-proc-define ] : this lambda arose from the expansion
-    of (define (id arg ...) body).  N.B.: anything tagged with this 
+    of (define (id arg ...) body).  N.B.: anything tagged with this
     property must also have a 'stepper-proc-define-name
     property.
 
- [ 'lambda-define ] : this lambda arose from the expansion of 
+ [ 'lambda-define ] : this lambda arose from the expansion of
     (define id (lambda (
 
 
@@ -108,7 +108,7 @@ stepper-define-type:
     the define itself evaporates into an internal define which is then
     expanded in a mzscheme-native expansion into a letrec.
 
- Question 2: won't the right-hand side change, losing the mark?  
+ Question 2: won't the right-hand side change, losing the mark?
  A: yes it will, but not for definitions of lambdas.  Since there
     are three cases we need to distinguish, and two of them are
     definitions of lambdas, we can distinguish the third case
@@ -117,12 +117,12 @@ stepper-define-type:
  Question 3: what if, through reduction, a different expression
   than the original one shows up ... which _does_ have one of the
   two stepper-define-type marks?
- A: to prevent this, there's another syntax-property, 
+ A: to prevent this, there's another syntax-property,
     'stepper-proc-define-name, which indicates the identifier to which
     this procedure was originally bound.  In the absence of set!,
     this solves the problem.
 
-stepper-xml-hint : indicates whether this expression came from an 
+stepper-xml-hint : indicates whether this expression came from an
 xml-box.  The protocol is as follows:
 
  [ 'from-xml-box ] : attached to the outer application that wraps
@@ -145,7 +145,7 @@ stepper-xml-value-hint : like the stepper-xml-hint, used to indicate
    evaluation get stomped by the stepper-xml-hint values attached to the
    source.
 
- [ 'from-xml-box ] : this value is the result of evaluating an xml 
+ [ 'from-xml-box ] : this value is the result of evaluating an xml
    box.
 
 stepper-proc-define-name : stores the name to which a procedure
@@ -159,12 +159,12 @@ stepper-orig-name: attached to an uninterned symbol used by
 
   (Not transferred.)
 
-stepper-prim-name: 
+stepper-prim-name:
  this is attached to the expansion of primitives introduced with the
  'define-primitive' form. Its value indicates what name to give to
- the source term at reconstruction time. 
+ the source term at reconstruction time.
 
-stepper-binding-type : 
+stepper-binding-type :
  this is actually unrelated to macro expansion. It differentiates
  between the various kinds of lexical bindings. (Not transferred.)
 
@@ -172,15 +172,15 @@ stepper-binding-type :
  [ 'let-bound ] : this variable's binding was in a let/*/rec
  [ 'lambda-bound ] : this variable's binding was in a lambda
 
-stepper-and/or-clauses-consumed : 
+stepper-and/or-clauses-consumed :
  indicates the number of clauses to the left of the one associated
  with a given 'if' in the expansion of an 'and' or 'or'.
  This allows the stepper to reconstruct a partially evaluated
- 'and' or 'or' with the right number of 'true's or 'false's 
+ 'and' or 'or' with the right number of 'true's or 'false's
  in front.
  (Transferred.)
 
-stepper-skipto : 
+stepper-skipto :
  this instructs the annotator to look inside the current expression
  along a given path for the expression to be annotated.  In
  particular, the value bound to stepper-skipto must be a list whose
@@ -192,9 +192,9 @@ Some uses:
 
 Where it's used: the stepper-skipto label is used by the 2nd-pass
 macro-labeler and the annotator.  Both are in annotate.ss.  In addition
-to skipping inward, a stepper hint 
+to skipping inward, a stepper hint
 
-stepper-else : 
+stepper-else :
  [ #t ] : Initially applied to the 'true' that the cond macro
   replaces a beginner's 'else' with, it is later transferred
   to the 'if' wrapping that 'true'.  This is because there is no
@@ -218,8 +218,8 @@ stepper-test-suite-hint :
 stepper-highlight :
   this expression will be highlighted.
   (Not currently tranferred...?)
-  
-  
+
+
 STEPPER-HINT COLLISIONS
 
  The major concern with the stepper-hint is that two of them may
@@ -230,18 +230,18 @@ STEPPER-HINT COLLISIONS
  the result of a macro expansion. (For instance, the 'if' that is
  the result of the expansion of 'and'.)
 
- 1) except in the circumstances listed below, the expressions with tags 
+ 1) except in the circumstances listed below, the expressions with tags
  attached to them are not themselves macro invocations.
 
  Q.E.D.
 
  exceptions:
- 
-1) the beginner cond expands into the mzscheme cond, which is 
+
+1) the beginner cond expands into the mzscheme cond, which is
 then annotated by the top-level-rewrite. In this case, the expansion
 of the beginner cond does not add any stepper-hint properties, so no
 collision can occur.
 
-2) the intermediate let* expands into the beginner let; both add a 
+2) the intermediate let* expands into the beginner let; both add a
 stepper-hint.  To resolve this, the expansion of let allows an existing
 stepper-hint to stand.

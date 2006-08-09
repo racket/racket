@@ -269,10 +269,14 @@
             [(waiting-for-application)
              (or (eq? step-kind 'user-application)
                  (eq? step-kind 'finished-stepping))]
-            [(#f) (error 'right-kind-of-step "this code should be unreachable with stepper-is-waiting? set to #f")]
-            [else (error 'right-kind-of-step "unknown value for stepper-is-waiting?: ~a" stepper-is-waiting?)]))
+            [(#f) (error 'right-kind-of-step
+                         "this code should be unreachable with stepper-is-waiting? set to #f")]
+            [else (error 'right-kind-of-step
+                         "unknown value for stepper-is-waiting?: ~a"
+                         stepper-is-waiting?)]))
 
-        ;; add-view-triple : set the release-semaphore to be the new one, add the view to the list.
+        ;; add-view-triple : set the release-semaphore to be the new one, add
+        ;; the view to the list.
         (define (add-view-triple view-triple)
           (set! release-for-next-step (cadr view-triple))
           (set! view-history (append view-history
@@ -308,7 +312,9 @@
             (if (< new-view (length view-history))
               (update-view/existing new-view)
               (begin
-                (semaphore-post release-for-next-step) ; each step has its own semaphore, so releasing one twice is no problem.
+                ;; each step has its own semaphore, so releasing one twice is
+                ;; no problem.
+                (semaphore-post release-for-next-step)
                 (when stepper-is-waiting?
                   (error 'try-to-get-view "try-to-get-view should not be reachable when already waiting for new step"))
                 (let ([try-get (async-channel-try-get view-channel)])
@@ -407,7 +413,8 @@
             (send e end-edit-sequence))
           (en/dis-able-buttons))
 
-        ;; en/dis-able-buttons : set enable & disable the stepper buttons, based on view-controller state
+        ;; en/dis-able-buttons : set enable & disable the stepper buttons,
+        ;; based on view-controller state
         (define (en/dis-able-buttons)
           (let* ([can-go-back? (> view 0)])
             (send previous-button enable can-go-back?)
