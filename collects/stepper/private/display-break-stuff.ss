@@ -1,38 +1,67 @@
 (module display-break-stuff mzscheme
-  
-  (require (lib "mred.ss" "mred")
-           (lib "class.ss")
-           "marks.ss")
 
-    
+  (require (lib "mred.ss" "mred") (lib "class.ss") "marks.ss")
+
   (provide display-break-stuff)
-  
-  ;; display-break-stuff : show the information associated with a breakpoint.  Useful for 
-  ;; people building steppers for new languages
-  (define (display-break-stuff break-number mark-set break-kind returned-value-list)
-    (define f (instantiate frame% () [label "breakpoint information"] [width 300] [height 500]))
-    (define ec (instantiate editor-canvas% () [parent f]))
-    (define t (instantiate text% ()))
-    (send ec set-editor t)
-    (send f show #t)
-    (send t insert (format "breakpoint number: ~v\n\n" break-number))
-    (send t insert (format "break-kind: ~v \n\n" break-kind))
-    (send t insert "marks:\n")
-    (if mark-set
-        (map (display-breakpoint-mark t) (extract-mark-list mark-set))
-        (send t insert " no mark-set!\n"))
-    (send t insert "\nreturned-value-list:\n")
-    (send t insert (format " ~v\n" returned-value-list)))
-  
-  (define ((display-breakpoint-mark t) mark)
-    (let* ([em (expose-mark mark)]
-           [source (car em)]
-           [label (cadr em)]
-           [binding-set (caddr em)])
-      (send t insert "\n")
-      (send t insert (format " label: ~v\n" label))
-      ;; we really want one of those nice collapsible syntax-viewer thingies here:
-      (send t insert (format " source : ~v\n" (syntax-object->datum source)))
-      ;; here too, though this isn't a syntax object.
-      (send t insert (format " bindings: ~v\n" binding-set))))
+
+  (define f
+    (new frame%
+      [label (format "Breakpoints Inspector")]
+      [width 400] [height 500]))
+  (define sel (new choice% [label "Breakpoint#"] [choices '()] [parent f]
+                   [callback (lambda (c e) (show-sel))] [stretchable-width #t]))
+  (define ec  (new editor-canvas% [parent f]))
+  (define t   (new text%))
+  (send ec set-editor t)
+
+  (define selections '())
+  (define (add-sel num mset bkind retvals)
+    (set! selections (cons (list num mset bkind retvals) selections))
+    (let ([num (number->string num)])
+      (send sel append num)
+      (send sel set-string-selection num)
+      (show-sel)))
+
+  (define (show-sel)
+    (let* ([num (string->number (send sel get-string-selection))]
+           [bpt (assq num selections)])
+      (send* t (lock #f) (erase))
+      (if (not bpt)
+        (send* t (insert (format "Breakpoint #~a not found!\n" num)))
+        (let-values ([(mset bkind retvals) (apply values (cdr bpt))])
+          (send* t
+            (insert (format "Breakpoint #~a:\n" num))
+            (insert (format "  break-kind: ~v\n" bkind))
+            (insert "marks:\n"))
+          (if mset
+            (for-each
+             (lambda (mark)
+               (let* ([em (expose-mark mark)]
+                      [source (car em)]
+                      [label (cadr em)]
+                      [binding-set (caddr em)])
+                 (send* t
+                   (insert (format "  label: ~v\n" label))
+                   ;; we really want one of those nice collapsible
+                   ;; syntax-viewer thingies here:
+                   (insert (format "  source : ~v\n"
+                                   (syntax-object->datum source)))
+                   ;; here too, though this isn't a syntax object.
+                   (insert (format "  bindings: ~v\n" binding-set)))))
+             (extract-mark-list mset))
+            (send t insert "  nothing!\n"))
+          (send t insert "returned-value-list:\n")
+          (if retvals
+            (for-each (lambda (v) (send t insert (format "  ~v\n" v)))
+                      retvals)
+            (send t insert "  nothing!\n"))))
+      (send* t (lock #t))))
+
+  ;; display-break-stuff : show the information associated with a breakpoint.
+  ;; Useful for people building steppers for new languages
+  (define (display-break-stuff break-number mark-set break-kind
+                               returned-value-list)
+    (add-sel break-number mark-set break-kind returned-value-list)
+    (send f show #t))
+
   )
