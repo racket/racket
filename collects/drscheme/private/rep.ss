@@ -901,7 +901,7 @@ TODO
           (define/public (get-user-eventspace) (weak-box-value user-eventspace-box))
           (define/public (get-user-thread) (weak-box-value user-thread-box))
           (define/public (get-user-namespace) (weak-box-value user-namespace-box))
-          (define/public (get-user-break-parameterization) user-break-parameterization)
+          (define/pubment (get-user-break-parameterization) user-break-parameterization) ;; final method
           
           (field (in-evaluation? #f) ; a heursitic for making the Break button send a break
                  (should-collect-garbage? #f)
@@ -1061,7 +1061,7 @@ TODO
                           (let ([sexp/syntax/eof (with-stacktrace-name (get-sexp/syntax/eof))])
                             (unless (eof-object? sexp/syntax/eof)
                               (call-with-break-parameterization
-                               (get-user-break-parameterization)
+                               user-break-parameterization
                                ;; a break exn may be raised right at this point,
                                ;; in which case the stack won't be in a trimmable state
                                ;; so we don't complain (above) when we find an untrimmable 
@@ -1378,12 +1378,17 @@ TODO
                      ;  the kernel never queues an event in the user's eventspace.
                      (cond
                        [(eq? eventspace (get-user-eventspace))
-                        ; =User=, =Handler=, =No-Breaks=
+                        ; =User=, =Handler=
                         
                         ; We must distinguish between "top-level" events and
                         ;  those within `yield' in the user's program.
                         (cond
                           [(not in-evaluation?)
+                           ;; at this point, we must not be in a nested dispatch, so we can
+                           ;; just disable breaks and rely on call-with-break-parameterization
+                           ;; to restore them to the user's setting.
+                           (break-enabled #f) 
+                           ; =No-Breaks=
                            (send context reset-offer-kill)
                            (send context set-breakables (get-user-thread) (get-user-custodian))
                            (protect-user-evaluation
