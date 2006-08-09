@@ -54,6 +54,11 @@ TODO
     (let-syntax ([m (λ (x) (with-syntax ([x (syntax-local-value #'stacktrace-name)])
                              (syntax 'x)))])
       (m)))
+
+  (define no-breaks-break-parameterization
+    (parameterize-break 
+     #f
+     (current-break-parameterization)))
   
   (define rep@
     (unit/sig drscheme:rep^
@@ -903,7 +908,7 @@ TODO
           (define/public (get-user-namespace) (weak-box-value user-namespace-box))
           (define/pubment (get-user-break-parameterization) user-break-parameterization) ;; final method
           
-          (field (in-evaluation? #f) ; a heursitic for making the Break button send a break
+          (field (in-evaluation? #f)
                  (should-collect-garbage? #f)
                  (ask-about-kill? #f))
           (define/public (get-in-evaluation?) in-evaluation?)
@@ -1152,11 +1157,10 @@ TODO
                      (current-error-escape-k (λ () 
 					       (set! cleanup? #t)
 					       (k (void)))))
-                   (rec cut-stacktrace-above-here2
-                     (λ () 
-                       (thunk) 
-                       ; Breaks must be off!
-                       (set! cleanup? #t)))
+                   (λ () 
+                     (thunk) 
+                     ; Breaks must be off!
+                     (set! cleanup? #t))
                    (λ () 
                      (current-error-escape-k saved-error-escape-k)
                      (when cleanup?
@@ -1387,23 +1391,26 @@ TODO
                            ;; at this point, we must not be in a nested dispatch, so we can
                            ;; just disable breaks and rely on call-with-break-parameterization
                            ;; to restore them to the user's setting.
-                           (break-enabled #f) 
-                           ; =No-Breaks=
-                           (send context reset-offer-kill)
-                           (send context set-breakables (get-user-thread) (get-user-custodian))
-                           (protect-user-evaluation
-                            ; Run the dispatch:
-                            (λ () ; =User=, =Handler=, =No-Breaks=
-                              (call-with-break-parameterization
-                               user-break-parameterization
-                               (λ () (primitive-dispatch-handler eventspace))))
-                            ; Cleanup after dispatch
+                           
+                           (call-with-break-parameterization
+                            no-breaks-break-parameterization
                             (λ ()
-                              ;; in principle, the line below might cause
-                              ;; a "race conditions" in the GUI. That is, there might
-                              ;; be many little events that the user won't quite
-                              ;; be able to break.
-                              (send context set-breakables #f #f)))]
+                              ; =No-Breaks=
+                              (send context reset-offer-kill)
+                              (send context set-breakables (get-user-thread) (get-user-custodian))
+                              (protect-user-evaluation
+                               ; Run the dispatch:
+                               (λ () ; =User=, =Handler=, =No-Breaks=
+                                 (call-with-break-parameterization
+                                  user-break-parameterization
+                                  (λ () (primitive-dispatch-handler eventspace))))
+                               ; Cleanup after dispatch
+                               (λ ()
+                                 ;; in principle, the line below might cause
+                                 ;; a "race conditions" in the GUI. That is, there might
+                                 ;; be many little events that the user won't quite
+                                 ;; be able to break.
+                                 (send context set-breakables #f #f)))))]
                           [else
                            ; Nested dispatch; don't adjust interface
                            (primitive-dispatch-handler eventspace)])]
