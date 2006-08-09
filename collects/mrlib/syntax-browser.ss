@@ -67,9 +67,6 @@ needed to really make this work:
       (define info-text (make-object text%))
       (define info-port (make-text-port info-text))
       
-      ;; assume that there aren't any eq? sub structures, only eq? flat stuff (symbols, etc)
-      ;; this is guaranteed by syntax-object->datum/ht
-      
       ;; range-start-ht : hash-table[obj -o> number]
       (define range-start-ht (make-hash-table))
 
@@ -117,6 +114,17 @@ needed to really make this work:
                       [(null? val) '()]
                       [else
                        (loop val enclosing-stx)]))
+                  (pop!))]
+               [(vector? val) 
+                (push!)
+                (record val enclosing-stx)
+                (begin0
+                  (let lst-loop ([val (vector->list val)])
+                    (cond
+                      [(pair? val) 
+                       (cons (loop (car val) #f)
+                             (lst-loop (cdr val)))]
+                      [(null? val) '()]))
                   (pop!))]
                [else
                 (push!)
@@ -506,25 +514,6 @@ needed to really make this work:
          (send up-click-bitmap get-width)
          (send down-click-bitmap get-width)))
   (define arrow-snip-cursor (make-object cursor% 'arrow))
-  
-  ;; syntax-object->datum/ht : stx -> (values any hash-table[any -o> syntax])
-  ;; the resulting hash-table maps from the each sub-object's to it's syntax.
-  (define (syntax-object->datum/ht stx)
-    (let ([ht (make-hash-table)])
-      (values (let loop ([obj stx])
-                (cond
-                  [(syntax? obj)
-                   (let ([lp-datum (loop (syntax-e obj))])
-                     (hash-table-put! ht lp-datum obj)
-                     lp-datum)]
-                  [(pair? obj) 
-                   (cons (loop (car obj))
-                         (loop (cdr obj)))]
-                  [(vector? obj) 
-                   (list->vector (map loop (vector->list obj)))]
-                  [else 
-                   obj]))
-              ht)))
   
   (define (syntax-properties stx)
     (let ([is-property? (λ (prop) (syntax-property stx prop))])

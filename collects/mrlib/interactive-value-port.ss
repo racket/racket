@@ -45,6 +45,7 @@
                    [pretty-print-size-hook
                     (λ (value display? port)
                       (cond
+                        [(not (port-writes-special? port)) #f]
                         [(is-a? value snip%) 1]
                         ;[(use-number-snip? value) 1]
                         [(syntax? value) 1]
