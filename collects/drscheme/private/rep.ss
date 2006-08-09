@@ -1107,8 +1107,6 @@ TODO
               (custodian-shutdown-all user-custodian))
 	    (set! user-custodian #f))
           
-          (field (user-break-enabled #t))
-          
           (field (eval-thread-thunks null)
                  (eval-thread-state-sema 'not-yet-state-sema)
                  (eval-thread-queue-sema 'not-yet-thread-sema)
@@ -1183,7 +1181,6 @@ TODO
             (set! user-break-parameterization (parameterize-break 
                                                #t 
                                                (current-break-parameterization)))
-            (set! user-break-enabled #t)
             (set! eval-thread-thunks null)
             (set! eval-thread-state-sema (make-semaphore 1))
             (set! eval-thread-queue-sema (make-semaphore 0))
@@ -1372,7 +1369,6 @@ TODO
               (current-error-port (get-err-port))
               (current-value-port (get-value-port))
               (current-input-port (get-in-box-port))
-              (break-enabled #t)
               (let* ([primitive-dispatch-handler (event-dispatch-handler)])
                 (event-dispatch-handler
                  (rec drscheme-event-dispatch-handler ; <= a name for #<...> printout
@@ -1384,51 +1380,28 @@ TODO
                        [(eq? eventspace (get-user-eventspace))
                         ; =User=, =Handler=, =No-Breaks=
                         
-                        (let* ([ub? (eq? user-break-enabled 'user)]
-                               [break-ok? (if ub?
-                                              (break-enabled)
-                                              user-break-enabled)])
-                          (break-enabled #f)
-                          
-                          ; We must distinguish between "top-level" events and
-                          ;  those within `yield' in the user's program.
-                          
-                          (cond
-                            [(not in-evaluation?)
-                             (send context reset-offer-kill)
-                             (send context set-breakables (get-user-thread) (get-user-custodian))
-                             
-                             (protect-user-evaluation
-                              ; Run the dispatch:
-                              (λ () ; =User=, =Handler=, =No-Breaks=
-                                ; This procedure is responsible for adjusting breaks to
-                                ;  match the user's expectations:
-                                (dynamic-wind
-                                 (λ () 
-                                   (break-enabled break-ok?)
-                                   (unless ub?
-                                     (set! user-break-enabled 'user)))
-                                 (λ ()
-                                   (primitive-dispatch-handler eventspace))
-                                 (λ ()
-                                   (unless ub?
-                                     (set! user-break-enabled (break-enabled)))
-                                   (break-enabled #f))))
-                              ; Cleanup after dispatch
-                              (λ ()
-                                ;; in principle, the line below might cause
-                                ;; a "race conditions" in the GUI. That is, there might
-                                ;; be many little events that the user won't quite
-                                ;; be able to break.
-                                (send context set-breakables #f #f)))
-                             
-                             ; Restore break:
-                             (when ub?
-                               (break-enabled break-ok?))]
-                            [else
-                             ; Nested dispatch; don't adjust interface, and restore break:
-                             (break-enabled break-ok?)
-                             (primitive-dispatch-handler eventspace)]))]
+                        ; We must distinguish between "top-level" events and
+                        ;  those within `yield' in the user's program.
+                        (cond
+                          [(not in-evaluation?)
+                           (send context reset-offer-kill)
+                           (send context set-breakables (get-user-thread) (get-user-custodian))
+                           (protect-user-evaluation
+                            ; Run the dispatch:
+                            (λ () ; =User=, =Handler=, =No-Breaks=
+                              (call-with-break-parameterization
+                               user-break-parameterization
+                               (λ () (primitive-dispatch-handler eventspace))))
+                            ; Cleanup after dispatch
+                            (λ ()
+                              ;; in principle, the line below might cause
+                              ;; a "race conditions" in the GUI. That is, there might
+                              ;; be many little events that the user won't quite
+                              ;; be able to break.
+                              (send context set-breakables #f #f)))]
+                          [else
+                           ; Nested dispatch; don't adjust interface
+                           (primitive-dispatch-handler eventspace)])]
                        [else 
                         ; =User=, =Non-Handler=, =No-Breaks=
                         (primitive-dispatch-handler eventspace)])))))))

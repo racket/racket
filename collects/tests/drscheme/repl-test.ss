@@ -98,10 +98,10 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 void)
      
      (make-test "("
-                "{bug09.gif} read: expected a ')'"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: read: expected a ')'"
-                "read: expected a ')'"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: read: expected a ')'"
+                "{bug09.gif} read: expected a `)'"
+                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: read: expected a `)'"
+                "read: expected a `)'"
+                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: read: expected a `)'"
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
 		#f
                 void
@@ -399,10 +399,10 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
      
      ;; error in the middle
      (make-test "1 2 ( 3 4"
-                "1\n2\n{bug09.gif} read: expected a ')'"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: read: expected a ')'"
-                "1\n2\nread: expected a ')'"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: read: expected a ')'"
+                "1\n2\n{bug09.gif} read: expected a `)'"
+                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: read: expected a `)'"
+                "1\n2\nread: expected a `)'"
+                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: read: expected a `)'"
 		(cons (make-loc 0 4 4) (make-loc 0 9 9))
 		#f
                 void
