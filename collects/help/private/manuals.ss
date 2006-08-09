@@ -124,65 +124,64 @@
          "<html>"
          (xexpr->string `(HEAD ,hd-css ,@hd-links (TITLE "PLT Manuals")))
          "<body>"
-         
-         (append 
-          
+
+         (append
+
           (list "<H1>Installed Manuals</H1>")
           (if (repos-or-nightly-build?)
-              (list 
+              (list
                "<b>Subversion:</b> <a mzscheme=\""
-               (to-string/escape-quotes 
+               (to-string/escape-quotes
                 `((dynamic-require '(lib "refresh-manuals.ss" "help") 'refresh-manuals)))
                "\">"
                (string-constant plt:hd:refresh-all-manuals)
                "</a> &nbsp; &nbsp;"
                (format "<a href=\"~a\">flush index and keyword cache</a><br>" flush-manuals-url))
               '())
-
           (build-known-manuals names+paths)
 
           (list "<h3>Doc.txt</h3><ul>")
           (map
            (lambda (collection-doc-file name)
-             (format "<LI> <A HREF=\"/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection\">~a collection</A>"
-                     ; escape colons and other junk
-                     (uri-encode
-                      (path->string
-                       (build-path (car collection-doc-file) 
-                                   (cadr collection-doc-file))))
-                     name name name))
+             (let ([path (build-path (car collection-doc-file)
+                                     (cadr collection-doc-file))])
+               (format "<LI> ~a"
+                       (if (file-exists? path)
+                         (format "<A HREF=\"/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection\">~a collection</A>"
+                                 ;; escape colons and other junk
+                                 (uri-encode (path->string path))
+                                 name name name)
+                         (format "<FONT COLOR=\"RED\">~a collection: specified doc.txt file (~a) not found</FONT>"
+                                 name path)))))
            collections-doc-files
            collection-names)
           (list "</UL>")
+
           (let ([uninstalled (get-uninstalled docs)])
-            (cond
-              [(null? uninstalled)
-               (list "")]
-              [else
- (list*
-                "<H3>Uninstalled Manuals</H3>"
+            (if (null? uninstalled)
+              `("")
+              `("<H3>Uninstalled Manuals</H3>"
                 "<UL>"
-                (append
-                 (map
-                  (lambda (doc-pair)
-                    (let* ([manual (car doc-pair)]
-                           [name (cdr doc-pair)]
-                           [manual-path (find-doc-directory manual)])
-                      (string-append
-                       "<LI> Download and install <A mzscheme=\""
-                       (to-string/escape-quotes 
-                        `((dynamic-require '(lib "refresh-manuals.ss" "help") 'refresh-manuals)
-                          (list (cons (bytes->path ,(path->bytes manual))
-                                      ,name))))
-                       (format "\">~a</A>~a"
-                               name
-                               (if (and manual-path
-                                        (or (file-exists? (build-path manual-path "hdindex"))
-                                            (file-exists? (build-path manual-path "keywords"))))
-                                   " (index installed)"
-                                   "")))))
-                  uninstalled)
-                 (list "</UL>")))]))
+                ,@(map
+                   (lambda (doc-pair)
+                     (let* ([manual (car doc-pair)]
+                            [name (cdr doc-pair)]
+                            [manual-path (find-doc-directory manual)])
+                       (string-append
+                        "<LI> Download and install <A mzscheme=\""
+                        (to-string/escape-quotes 
+                         `((dynamic-require '(lib "refresh-manuals.ss" "help") 'refresh-manuals)
+                           (list (cons (bytes->path ,(path->bytes manual))
+                                       ,name))))
+                        (format "\">~a</A>~a"
+                                name
+                                (if (and manual-path
+                                         (or (file-exists? (build-path manual-path "hdindex"))
+                                             (file-exists? (build-path manual-path "keywords"))))
+                                  " (index installed)"
+                                  "")))))
+                   uninstalled)
+                "</UL>")))
           (list "</body></html>"))))))
   
   ;; break-between : regexp
