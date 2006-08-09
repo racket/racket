@@ -580,7 +580,7 @@
   
   (test/neg-blame
    '->r5
-   '((contract (->r ([x number?]) (<=/c x)) (lambda (x) (+ x 1)) 'pos 'neg) #f))
+   '((contract (->r ([x number?]) any) (lambda (x) (+ x 1)) 'pos 'neg) #f))
   
   (test/pos-blame
    '->r6
@@ -620,7 +620,7 @@
   
   (test/neg-blame
    '->r15
-   '((contract (->r ([x number?]) rest any/c (<=/c x)) (lambda (x . y) (+ x 1)) 'pos 'neg) #f))
+   '((contract (->r ([x number?]) rest any/c any) (lambda (x . y) (+ x 1)) 'pos 'neg) #f))
   
   (test/pos-blame
    '->r16
@@ -887,7 +887,7 @@
   
   (test/neg-blame
    '->r5
-   '((contract (->r ([x number?]) (<=/c x)) (lambda (x) (+ x 1)) 'pos 'neg) #f))
+   '((contract (->r ([x number?]) any) (lambda (x) (+ x 1)) 'pos 'neg) #f))
   
   (test/pos-blame
    '->r6
@@ -927,7 +927,7 @@
   
   (test/neg-blame
    '->r15
-   '((contract (->r ([x number?]) rest any/c (<=/c x)) (lambda (x . y) (+ x 1)) 'pos 'neg) #f))
+   '((contract (->r ([x number?]) rest any/c any) (lambda (x . y) (+ x 1)) 'pos 'neg) #f))
   
   (test/pos-blame
    '->r16
