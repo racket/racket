@@ -67,10 +67,6 @@ static iconv_open_proc_t iconv_open;
 static iconv_close_proc_t iconv_close;
 static locale_charset_proc_t locale_charset; /* Not used, currently */
 #define mzCHK_PROC(x) x
-static char *nl_langinfo(int which)
-{
-  return "UTF-8";
-}
 static int get_iconv_errno(void)
 {
   int *a;
@@ -144,8 +140,6 @@ static void init_iconv() { }
 # define mzLOCALE_IS_UTF_8(s) !mzCHK_PROC(iconv_open)
 #endif
 
-#define mz_iconv_nl_langinfo() ""
-
 #define mzICONV_KIND 0
 #define mzUTF8_KIND 1
 #define mzUTF8_TO_UTF16_KIND 2
@@ -168,6 +162,42 @@ typedef struct Scheme_Converter {
    when reset_locale() has been called. */
 static int locale_on;
 static const mzchar *current_locale_name = (mzchar *)"xxxx\0\0\0\0";
+static void reset_locale(void);
+
+#ifdef USE_ICONV_DLL
+static char *nl_langinfo(int which)
+{
+  int i;
+
+  reset_locale();
+  if (!current_locale_name)
+    current_locale_name = (mzchar *)"\0\0\0\0";
+
+  for (i = 0; current_locale_name[i]; i++) {
+    if (current_locale_name[i] == '.') {
+      if (current_locale_name[i + 1]) {
+	int len, j = 0;
+	char *enc;
+	i++;
+	len = scheme_char_strlen(current_locale_name) - i;
+	enc = (char *)scheme_malloc_atomic(len + 1);
+	while (current_locale_name[i]) {
+	  if (current_locale_name[i] > 127)
+	    return "UTF-8";
+	  enc[j++] = current_locale_name[i++];
+	}
+	enc[j] = 0;
+	return enc;
+      }
+    }
+  }
+
+  return "UTF-8";
+}
+# define mz_iconv_nl_langinfo() nl_langinfo(0)
+#else
+# define mz_iconv_nl_langinfo() ""
+#endif
 
 static const char * const STRING_IS_NOT_UTF_8 = "string is not a well-formed UTF-8 encoding: ";
 
@@ -263,7 +293,6 @@ static Scheme_Object *byte_converter_p(int argc, Scheme_Object *argv[]);
 static void register_traversers(void);
 #endif
 
-static void reset_locale(void);
 static int mz_char_strcmp(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale, int size_shortcut);
 static int mz_char_strcmp_ci(const char *who, const mzchar *str1, int l1, const mzchar *str2, int l2, int locale, int size_shortcut);
 static int mz_strcmp(const char *who, unsigned char *str1, int l1, unsigned char *str2, int l2);
