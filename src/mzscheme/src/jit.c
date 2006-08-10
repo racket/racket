@@ -2153,6 +2153,18 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 	jit_ori_l(JIT_R0, JIT_R2, 0x1);
 
 	mz_patch_ucbranch(refc);
+      } else if (arith == 9) {
+        /* min */
+        jit_insn *refc;
+        refc = jit_bltr_l(jit_forward(), JIT_R0, JIT_R1);
+        jit_movr_l(JIT_R0, JIT_R1);
+        mz_patch_branch(refc);
+      } else if (arith == 10) {
+        /* max */
+        jit_insn *refc;
+        refc = jit_bgtr_l(jit_forward(), JIT_R0, JIT_R1);
+        jit_movr_l(JIT_R0, JIT_R1);
+        mz_patch_branch(refc);
       }
     } else {
       /* Non-constant arg is in JIT_R0 */
@@ -2201,7 +2213,19 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 	} else if (arith == 7) {
 	  jit_notr_ul(JIT_R0, JIT_R0);
 	  jit_ori_ul(JIT_R0, JIT_R0, 0x1);
-	}
+	} else if (arith == 9) {
+          /* min */
+          jit_insn *refc;
+          refc = jit_blti_l(jit_forward(), JIT_R0, scheme_make_integer(v));
+          jit_movi_l(JIT_R0, scheme_make_integer(v));
+          mz_patch_branch(refc);
+        } else if (arith == 10) {
+          /* max */
+          jit_insn *refc;
+          refc = jit_bgti_l(jit_forward(), JIT_R0, scheme_make_integer(v));
+          jit_movi_l(JIT_R0, scheme_make_integer(v));
+          mz_patch_branch(refc);
+        }
       }
     }
     jit_patch_movi(ref, (_jit.x.pc));
@@ -2810,6 +2834,12 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "-")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, -1, 0, 0, NULL, 1);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "min")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 9, 0, 0, NULL, 1);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "max")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 10, 0, 0, NULL, 1);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "bitwise-and")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 3, 0, 0, NULL, 1);

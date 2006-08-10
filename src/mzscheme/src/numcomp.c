@@ -72,16 +72,13 @@ void scheme_init_numcomp(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("negative?", p, env);
 
-  scheme_add_global_constant("max", 
-			     scheme_make_folding_prim(sch_max,
-						      "max",
-						      1, -1, 1),
-			     env);
-  scheme_add_global_constant("min", 
-			     scheme_make_folding_prim(sch_min,
-						      "min",
-						      1, -1, 1),
-			     env);
+  p = scheme_make_folding_prim(sch_max, "max", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("max", p, env);
+
+  p = scheme_make_folding_prim(sch_min, "min", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("min", p, env);
 }
 
 /* Prototype needed for 3m conversion: */
