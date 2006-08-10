@@ -2730,14 +2730,14 @@ static int record_stack_source = 0;
 #else
 # define X_source(p) /* */
 #endif
-#define gcX(p) gcMARK(p)
+#define gcX(a) gcMARK(*a)
 #include "var_stack.c"
 #undef GC_X_variable_stack
 #undef gcX
 #undef X_source
 
 #define GC_X_variable_stack GC_fixup_variable_stack
-#define gcX(p) gcFIXUP(p)
+#define gcX(a) gcFIXUP(*a)
 #define X_source(p) /* */
 #include "var_stack.c"
 #undef GC_X_variable_stack
@@ -2757,7 +2757,8 @@ static void check_ptr(void **a)
 
   page = find_page(p);
   if (page) {
-    if (page->type == MTYPE_TAGGED) {
+    if ((page->type == MTYPE_TAGGED)
+        && !(page->flags & MFLAG_BIGBLOCK)) {
       Type_Tag tag;
 
       tag = *(Type_Tag *)p;
@@ -2769,7 +2770,7 @@ static void check_ptr(void **a)
 	      && (tag != gc_on_free_list_tag))) {
 	GCPRINT(GCOUTF, "bad tag: %d at %lx, references from %lx\n", tag, (long)p, (long)a);
 	GCFLUSHOUT();
-	CRASH(7);
+	CRASH(70);
       }
 
     }
@@ -2782,63 +2783,24 @@ static void check_ptr(void **a)
 }
 # endif
 
+
+#define GC_X_variable_stack GC_do_check_variable_stack
+#define gcX(a) check_ptr(a)
+#define X_source(p) /* */
+#include "var_stack.c"
+#undef GC_X_variable_stack
+#undef gcX
+#undef X_source
+
 void GC_check_variable_stack()
 {
-  void **limit, **var_stack;
 # if CHECK_STACK_PTRS
-  long size, count;
-  void ***p, **a;
+  GC_do_check_variable_stack(GC_variable_stack,
+                             0,
+                             (void **)(GC_get_thread_stack_base
+                                       ? GC_get_thread_stack_base()
+                                       : stack_base));
 # endif
-
-  limit = (void **)(GC_get_thread_stack_base
-		    ? GC_get_thread_stack_base()
-		    : stack_base);
-
-  var_stack = GC_variable_stack;
-
-  while (var_stack) {
-    if (var_stack == limit)
-      return;
-
-# ifdef XXXXXXXXX
-    if (*var_stack && ((unsigned long)*var_stack <= (unsigned long)var_stack))
-      CRASH(33);
-# endif
-       
-    size = *(long *)(var_stack + 1);
-
-    if (var_stack + size + 2 == limit)
-      return;
-
-# if CHECK_STACK_PTRS
-    size = *(long *)(var_stack + 1);
-
-    oo_var_stack = o_var_stack;
-    o_var_stack = var_stack;
-
-    p = (void ***)(var_stack + 2);
-    
-    while (size--) {
-      a = *p;
-      if (!a) {
-	/* Array */
-	count = ((long *)p)[2];
-	a = ((void ***)p)[1];
-	p += 2;
-	size -= 2;
-	while (count--) {
-	  check_ptr(a);
-	  a++;
-	}
-      } else {
-	check_ptr(a);
-      }
-      p++;
-    }
-#endif
-
-    var_stack = *var_stack;
-  }
 }
 #endif
 

@@ -448,6 +448,9 @@ static struct protoent *proto;
 # define mz_gai_strerror gai_strerror
 #else
 # define mzAI_PASSIVE 0
+# ifdef MZ_XFORM
+START_XFORM_SKIP;
+# endif
 static int mz_getaddrinfo(const char *nodename, const char *servname,
 			  const struct mz_addrinfo *hints, struct mz_addrinfo **res)
 {
@@ -501,6 +504,9 @@ const char *mz_gai_strerror(int ecode)
 {
   return hstrerror(ecode);
 }
+# ifdef MZ_XFORM
+END_XFORM_SKIP;
+# endif
 #endif
 
 #if defined(USE_WINSOCK_TCP) || defined(PTHREADS_OK_FOR_GHBN)

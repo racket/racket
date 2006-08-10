@@ -1277,11 +1277,16 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   if (!closure_size) {
     if (precomputed_lift) {
       result = SCHEME_CAR(precomputed_lift);
-      ((Scheme_Closure *)result)->code = data;
-    } else
-      result = scheme_make_closure(NULL, (Scheme_Object *)data, 0);
+      if (!just_compute_lift)
+        ((Scheme_Closure *)result)->code = data;
+    } else {
+      if (just_compute_lift)
+        result = (Scheme_Object *)scheme_malloc_empty_closure();
+      else
+        result = scheme_make_closure(NULL, (Scheme_Object *)data, 0);
+    }
   } else
-      result = (Scheme_Object *)data;
+    result = (Scheme_Object *)data;
   
   if (need_lift) {
     if (just_compute_lift) {

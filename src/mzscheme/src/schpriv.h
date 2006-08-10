@@ -300,7 +300,7 @@ void scheme_forget_subthread(struct Scheme_Thread_Memory *);
 void scheme_suspend_remembered_threads(void);
 void scheme_resume_remembered_threads(void);
 #endif
-#ifdef USE_WIN32_THREAD_TIMER
+#if defined(USE_WIN32_THREAD_TIMER) || defined(USE_PTHREAD_THREAD_TIMER)
 void scheme_start_itimer_thread(long usec);
 #endif
 

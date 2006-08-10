@@ -861,7 +861,7 @@ unsigned long GC_get_stack_base()
 #include "stack_comp.c"
 
 #define GC_X_variable_stack GC_mark_variable_stack
-#define gcX(p) gcMARK(p)
+#define gcX(a) gcMARK(*a)
 #define X_source(p) set_backtrace_source(p, BT_STACK)
 #include "var_stack.c"
 #undef GC_X_variable_stack
@@ -869,7 +869,7 @@ unsigned long GC_get_stack_base()
 #undef X_source
 
 #define GC_X_variable_stack GC_fixup_variable_stack
-#define gcX(p) gcFIXUP(p)
+#define gcX(a) gcFIXUP(*a)
 #define X_source(p) /* */
 #include "var_stack.c"
 #undef GC_X_variable_stack

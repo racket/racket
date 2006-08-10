@@ -1169,7 +1169,6 @@ void MrEdMacSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep)
   } else {
     EventRecord e;
 
-#ifdef OS_X
     if (!cb_socket_ready) {
       /* ARGH: We set up a pipe for the purpose of breaking the Carbon
 	 event manager out of its loop. When the watcher thread sees
@@ -1218,21 +1217,17 @@ void MrEdMacSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep)
     if (!StartFDWatcher(mzsleep, secs, fds)) {
       secs = 0;
     }
-#endif
 
     going++;
 
-#ifdef OS_X
     if (need_post) /* useless check in principle, but an optimization
 		      in the case that the select() succeeds before
 		      we even start */
-#endif
       if (WNE(&e, secs ? secs : kEventDurationForever))
 	QueueTransferredEvent(&e);
 
     --going;
 
-#ifdef OS_X
     /* Shut down the watcher thread */
     EndFDWatcher();
     if (cb_socket_ready) {
@@ -1240,7 +1235,6 @@ void MrEdMacSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep)
       char buf[1];
       read(ready_sock, buf, 1);
     }
-#endif
   }
 }
 
