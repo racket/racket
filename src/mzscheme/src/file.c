@@ -4805,7 +4805,7 @@ wchar_t *scheme_get_dll_path(wchar_t *s)
     len1 = wc_strlen(dlldir);
     len2 = wc_strlen(s);
     p = (wchar_t *)scheme_malloc_atomic((len1 + len2 + 2) * sizeof(wchar_t));
-    memcpy(p, dlldir, len1);
+    memcpy(p, dlldir, len1 * sizeof(wchar_t));
     if (p[len1 - 1] != '\\') {
       p[len1++] = '\\';
     }
