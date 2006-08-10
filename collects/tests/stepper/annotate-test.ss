@@ -665,8 +665,8 @@
                      (test 'let-bound syntax-property (strip-return-value-wrap (syntax a-var-1)) 'stepper-binding-type)
                      (test 'lambda-bound syntax-property (syntax b-var-0) 'stepper-binding-type)
                      )])))
-                        
-        
+
+
         ))
 
 (for-each (lambda (test-case)
@@ -674,7 +674,7 @@
           test-cases)
 
 ;(namespace-annotate-expr '(or 3 4 5) beginner-namespace)
-  
+
 (syntax-case (namespace-rewrite-expr '(lambda (a) a) mz-namespace) (lambda)
   [(lambda (a-var-0) a-var-1)
    (begin

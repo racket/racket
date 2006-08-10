@@ -5,283 +5,308 @@
            (lib "match.ss")
            (lib "sexp-diff.ss" "tests" "utils")
            "module-elaborator.ss"
-           ; for xml testing:
-           #;(lib "class.ss")
-           #;(all-except (lib "xml-snipclass.ss" "xml") snip-class)
-           #;(all-except (lib "scheme-snipclass.ss" "xml") snip-class)
-           #;(lib "mred.ss" "mred"))
-  
+           ;; for xml testing:
+           ;; (lib "class.ss")
+           ;; (all-except (lib "xml-snipclass.ss" "xml") snip-class)
+           ;; (all-except (lib "scheme-snipclass.ss" "xml") snip-class)
+           ;; (lib "mred.ss" "mred")
+           )
+
   (define test-directory (find-system-path 'temp-dir))
-  
+
   (define (stream-ify expr-list iter)
     (lambda ()
       (if (null? expr-list)
-          (iter eof void)
-          (iter (expand (car expr-list)) (stream-ify (cdr expr-list) iter)))))
- 
-  
+        (iter eof void)
+        (iter (expand (car expr-list)) (stream-ify (cdr expr-list) iter)))))
+
   (define (test-sequence-core namespace-spec teachpack-specs render-settings track-inferred-names? in-port expected-steps)
     (let* ([current-error-display-handler (error-display-handler)]) 
-        (let* ([all-steps
-                (append expected-steps 
-                        '((finished-stepping)))]
-               [receive-result
-                (lambda (result)
-                  (if (null? all-steps)
-                      (fprintf (current-error-port) "test-sequence: ran out of expected steps. Given result: ~v\n" result)
-                      (begin
-                        (unless (compare-steps result (car all-steps))
-                          (fprintf (current-error-port) "test-sequence: steps do not match.\ngiven: ~v\nexpected: ~v\n" result (car all-steps)))
+      (let* ([all-steps
+              (append expected-steps '((finished-stepping)))]
+             [receive-result
+              (lambda (result)
+                (if (null? all-steps)
+                  (fprintf (current-error-port) "test-sequence: ran out of expected steps. Given result: ~v\n" result)
+                  (begin
+                    (unless (compare-steps result (car all-steps))
+                      (fprintf (current-error-port) "test-sequence: steps do not match.\ngiven: ~v\nexpected: ~v\n" result (car all-steps)))
 
-                        ; uncomment for testing:
-                         #;(when (compare-steps result (car all-steps))
-                           (printf "test-sequence: steps match for expected result: ~v\n"(car all-steps)))
+                    ;; uncomment for testing:
+                    #;
+                    (when (compare-steps result (car all-steps))
+                      (printf "test-sequence: steps match for expected result: ~v\n"(car all-steps)))
 
-                        (set! all-steps (cdr all-steps)))))]
-               [program-expander
-                (lambda (init iter)
-                  (init)
-                  (let* ([exps (let read-loop ()
-                                     (let ([expr (read-syntax "test-input" in-port)])
-                                       (if (eof-object? expr)
-                                           null
-                                           (cons expr (read-loop)))))]
-                         [exprs (wrap-in-module exps namespace-spec teachpack-specs)])
-                    ((stream-ify exprs iter))))])
-          (let/ec escape
-            (parameterize ([error-escape-handler (lambda () (escape (void)))])
-              (go program-expander receive-result render-settings track-inferred-names?
-                  ;; language level name:
-                  "bogus language level"
-                  ;; run-in-drscheme thunk:
-                  (lambda (thunk) (thunk)))))
-          (error-display-handler current-error-display-handler))))
-  
+                    (set! all-steps (cdr all-steps)))))]
+             [program-expander
+              (lambda (init iter)
+                (init)
+                (let* ([exps (let read-loop ()
+                               (let ([expr (read-syntax "test-input" in-port)])
+                                 (if (eof-object? expr)
+                                   null
+                                   (cons expr (read-loop)))))]
+                       [exprs (wrap-in-module exps namespace-spec teachpack-specs)])
+                  ((stream-ify exprs iter))))])
+        (let/ec escape
+          (parameterize ([error-escape-handler (lambda () (escape (void)))])
+            (go program-expander receive-result render-settings track-inferred-names?
+                ;; language level name:
+                "bogus language level"
+                ;; run-in-drscheme thunk:
+                (lambda (thunk) (thunk)))))
+        (error-display-handler current-error-display-handler))))
+
   (define (test-sequence namespace-spec teachpack-specs render-settings track-inferred-names? exp-str expected-steps)
     (let ([filename (build-path test-directory "stepper-test")])
       (call-with-output-file filename
-        (lambda (port)
-          (fprintf port "~a" exp-str))
+        (lambda (port) (fprintf port "~a" exp-str))
         'truncate)
       (printf "testing string: ~v\n" exp-str)
       (letrec ([port (open-input-file filename)])
-        (test-sequence-core namespace-spec teachpack-specs render-settings track-inferred-names? port expected-steps))))
+        (test-sequence-core namespace-spec teachpack-specs render-settings
+                            track-inferred-names? port expected-steps))))
 
-  
   (define (lang-level-test-sequence namespace-spec rs track-inferred-names?)
     (lambda args
       (apply test-sequence namespace-spec `() rs track-inferred-names? args)))
-  
+
   (define (make-multi-level-test-sequence level-fns)
     (lambda args
       (for-each (lambda (fn) (apply fn args)) level-fns)))
-  
-  (define test-mz-sequence (lang-level-test-sequence 'mzscheme fake-mz-render-settings #f))
-  (define test-beginner-sequence (lang-level-test-sequence `(lib "htdp-beginner.ss" "lang") fake-beginner-render-settings #t))
-  (define test-beginner-wla-sequence (lang-level-test-sequence `(lib "htdp-beginner-abbr.ss" "lang") fake-beginner-wla-render-settings #t))
-  (define test-intermediate-sequence (lang-level-test-sequence `(lib "htdp-intermediate.ss" "lang") fake-intermediate-render-settings #t))
-  (define test-intermediate/lambda-sequence (lang-level-test-sequence `(lib "htdp-intermediate-lambda.ss" "lang")
-                                                                      fake-intermediate/lambda-render-settings
-                                                                      #f))
-  (define test-advanced-sequence (lang-level-test-sequence `(lib "htdp-advanced.ss" "lang")
-                                                           fake-advanced-render-settings
-                                                           #f))
-  
-  (define test-upto-int/lam (make-multi-level-test-sequence (list test-beginner-sequence
-                                                                  test-beginner-wla-sequence
-                                                                  test-intermediate-sequence
-                                                                  test-intermediate/lambda-sequence)))
-  
-  (define test-upto-int (make-multi-level-test-sequence (list test-beginner-sequence
-                                                              test-beginner-wla-sequence
-                                                              test-intermediate-sequence)))
-  
-  (define test-bwla-to-int/lam (make-multi-level-test-sequence (list test-beginner-wla-sequence
-                                                                     test-intermediate-sequence
-                                                                     test-intermediate/lambda-sequence)))
-  
-  (define test-both-ints (make-multi-level-test-sequence (list test-intermediate-sequence
-                                                               test-intermediate/lambda-sequence)))
-  
-  (define test-lazy-sequence (lang-level-test-sequence `(lib "lazy.ss" "lazy")
-                                                  fake-mz-render-settings
-                                                  #f))
-  
-  ; mutate these to values you want to examine in the repl:
+
+  (define test-mz-sequence
+    (lang-level-test-sequence 'mzscheme fake-mz-render-settings #f))
+  (define test-beginner-sequence
+    (lang-level-test-sequence `(lib "htdp-beginner.ss" "lang")
+                              fake-beginner-render-settings #t))
+  (define test-beginner-wla-sequence
+    (lang-level-test-sequence `(lib "htdp-beginner-abbr.ss" "lang")
+                              fake-beginner-wla-render-settings #t))
+  (define test-intermediate-sequence
+    (lang-level-test-sequence `(lib "htdp-intermediate.ss" "lang")
+                              fake-intermediate-render-settings #t))
+  (define test-intermediate/lambda-sequence
+    (lang-level-test-sequence `(lib "htdp-intermediate-lambda.ss" "lang")
+                              fake-intermediate/lambda-render-settings #f))
+  (define test-advanced-sequence
+    (lang-level-test-sequence `(lib "htdp-advanced.ss" "lang")
+                              fake-advanced-render-settings #f))
+
+  (define test-upto-int/lam
+    (make-multi-level-test-sequence
+     (list test-beginner-sequence
+           test-beginner-wla-sequence
+           test-intermediate-sequence
+           test-intermediate/lambda-sequence)))
+
+  (define test-upto-int
+    (make-multi-level-test-sequence
+     (list test-beginner-sequence
+           test-beginner-wla-sequence
+           test-intermediate-sequence)))
+
+  (define test-bwla-to-int/lam
+    (make-multi-level-test-sequence
+     (list test-beginner-wla-sequence
+           test-intermediate-sequence
+           test-intermediate/lambda-sequence)))
+
+  (define test-both-ints
+    (make-multi-level-test-sequence
+     (list test-intermediate-sequence
+           test-intermediate/lambda-sequence)))
+
+  (define test-lazy-sequence
+    (lang-level-test-sequence `(lib "lazy.ss" "lazy")
+                              fake-mz-render-settings #f))
+
+  ;; mutate these to values you want to examine in the repl:
   (define bell-jar-specimen-1 #f)
   (define bell-jar-specimen-2 #f)
-  
-  ;; so->d/finished : call (syntax-object->hilite-datum stx #t).  For finished steps,
-  ;; we want to ignore the highlight but not the xml boxes (and other future stuff?)
+
+  ;; so->d/finished : call (syntax-object->hilite-datum stx #t).  For finished
+  ;; steps, we want to ignore the highlight but not the xml boxes (and other
+  ;; future stuff?)
   (define (so->d/finished stx)
     (syntax-object->hilite-datum stx #t))
-  
-  ; (-> step-result? sexp? boolean?)
+
+  ;; (-> step-result? sexp? boolean?)
   (define (compare-steps actual expected)
     (match expected
       [`(before-after ,before ,after)
        (and (before-after-result? actual)
             (andmap (lambda (fn expected) 
                       (unless (list? (fn actual))
-                        (fprintf (current-error-port) "not a list: ~v\n" (syntax-object->hilite-datum (fn actual))))
-                      (noisy-equal? (map syntax-object->hilite-datum (fn actual)) expected))
-                    (list before-after-result-pre-exps before-after-result-post-exps)
+                        (fprintf (current-error-port) "not a list: ~v\n"
+                                 (syntax-object->hilite-datum (fn actual))))
+                      (noisy-equal? (map syntax-object->hilite-datum
+                                         (fn actual))
+                                    expected))
+                    (list before-after-result-pre-exps
+                          before-after-result-post-exps)
                     (list before after)))]
       [`(error ,err-msg)
        (and (error-result? actual)
             (equal? err-msg (error-result-err-msg actual)))]
       [`(before-error ,before ,err-msg)
        (and (before-error-result? actual)
-            (and (noisy-equal? (map syntax-object->hilite-datum (before-error-result-pre-exps actual)) before)
+            (and (noisy-equal? (map syntax-object->hilite-datum
+                                    (before-error-result-pre-exps actual))
+                               before)
                  (equal? err-msg (before-error-result-err-msg actual))))]
       [`(finished-stepping) (finished-stepping? actual)]
       [else
-       (begin (fprintf (current-error-port) "compare-steps: unexpected expected step type: ~v\n" expected)
+       (begin (fprintf (current-error-port)
+                       "compare-steps: unexpected expected step type: ~v\n"
+                       expected)
               #f)]))
-  
-  ; noisy-equal? : (any any . -> . boolean)
-  ; like equal?, but prints a noisy error message
+
+  ;; noisy-equal? : (any any . -> . boolean)
+  ;; like equal?, but prints a noisy error message
   (define (noisy-equal? a b)
     (if (equal? a b)
-        #t
-        (begin (fprintf (current-error-port) "~e is not equal? to ~e\nhere's the diff: ~e\n" a b (sexp-diff a b))
-               #f)))
-   
-  ; (-> (listof sexp) (listof sexp) boolean?)
+      #t
+      (begin (fprintf (current-error-port)
+                      "~e is not equal? to ~e\nhere's the diff: ~e\n"
+                      a b (sexp-diff a b))
+             #f)))
+
+  ;; (-> (listof sexp) (listof sexp) boolean?)
   (define (compare-finished finished-exps expected-exps)
-    (and 
-     (>= (length finished-exps) (length expected-exps))
-     (andmap (lambda (x y) (if (equal? x y)
-                               #t
-                               (begin (fprintf (current-error-port) "~e is not equal? to ~e\nhere's the diff: ~e\n" x y (sexp-diff x y))
-                                      #f)))
-             (list-tail finished-exps (- (length finished-exps) (length expected-exps)))
-             expected-exps)))
-  
+    (and (>= (length finished-exps) (length expected-exps))
+         (andmap (lambda (x y)
+                   (if (equal? x y)
+                     #t
+                     (begin
+                       (fprintf (current-error-port)
+                                "~e is not equal? to ~e\nhere's the diff: ~e\n"
+                                x y (sexp-diff x y))
+                       #f)))
+                 (list-tail finished-exps (- (length finished-exps) (length expected-exps)))
+                 expected-exps)))
+
   (define list-of-tests null)
-  
+
   (define (add-test name thunk)
     (when (assq name list-of-tests)
       (error 'add-test "name ~v is already in the list of tests" name))
     (set! list-of-tests (append list-of-tests (list (list name thunk)))))
-  
+
   (define-syntax (t stx)
     (syntax-case stx ()
       [(_ name test)
        (syntax/loc stx (add-test `name (lambda () test)))]))
-  
+
   (define (run-all-tests)
     (for-each (lambda (test-pair)
                 (printf "running test: ~v\n" (car test-pair))
                 ((cadr test-pair)))
               list-of-tests))
-  
+
   (define (run-test name)
     (printf "running test: ~v\n" name)
     ((cadr (assq name list-of-tests))))
-  
+
   (define (run-tests names)
     (map run-test names))
-  
+
   (t mz1
-     (test-mz-sequence "(for-each (lambda (x) x) '(1 2 3))"
-                       `((before-after ((hilite (for-each (lambda (x) x) `(1 2 3)))) ((... (hilite 1) ...)))
-                         (before-after (...) ((... (hilite 2) ...)))
-                         (before-after (...) ((... (hilite 3) ...)))
-                         (before-after (...) ((hilite (void))))
-                         (finished-stepping))))
-  
+     (test-mz-sequence
+      "(for-each (lambda (x) x) '(1 2 3))"
+      `((before-after ((hilite (for-each (lambda (x) x) `(1 2 3))))
+                      ((... (hilite 1) ...)))
+        (before-after (...) ((... (hilite 2) ...)))
+        (before-after (...) ((... (hilite 3) ...)))
+        (before-after (...) ((hilite (void))))
+        (finished-stepping))))
+
   ;; new test case language:
   ;; an expected is (listof step)
-  ;; a step is one of 
+  ;; a step is one of
   ;; (before-after exps exps)
   ;; (before-error exps str)
   ;; (error str)
   ;; (finished)
-  ;; an exps is a list of s-expressions with certain non-hygienic extensions:  
+  ;; an exps is a list of s-expressions with certain non-hygienic extensions:
   ;;  - (hilite X) denotes the s-expression X, only highlighted
   ;;  - any        denotes any s-expression (matches everything)
-  ;;  ... in principle, these could collide with programs that use the identifiers
-  ;;     'hilite' and 'any', but since I'm writing the test cases, I can alpha-rename
-  ;;     manually to avoid collisions.
-  
-  
+  ;;  ... in principle, these could collide with programs that use the
+  ;;      identifiers 'hilite' and 'any', but since I'm writing the test cases,
+  ;;      I can alpha-rename manually to avoid collisions.
+
   (t mz-app
      (test-mz-sequence "(+ 3 4)"
-                       `((before-after ((hilite (+ 3 4))) ((hilite 7)))
-                         (finished-stepping))))
-  
+       `((before-after ((hilite (+ 3 4))) ((hilite 7)))
+         (finished-stepping))))
 
-  
   (t mz-app2
      (test-mz-sequence "((lambda (x) (+ x 3)) 4)"
-		       `((before-after ((hilite ((lambda (x) (+ x 3)) 4)))
-                                       ((hilite (+ 4 3))))
-                         (before-after ((hilite (+ 4 3)))
-                                       ((hilite 7)))
-                         (finished-stepping))))
-  
+       `((before-after ((hilite ((lambda (x) (+ x 3)) 4)))
+                       ((hilite (+ 4 3))))
+         (before-after ((hilite (+ 4 3)))
+                       ((hilite 7)))
+         (finished-stepping))))
+
   (t mz-if
      (test-mz-sequence "(if 3 4 5)"
-                    `((before-after ((hilite (if 3 4 5))) ((hilite 4)))
-		      (finished-stepping))))
+       `((before-after ((hilite (if 3 4 5))) ((hilite 4)))
+         (finished-stepping))))
 
   (t simple-if
      (test-upto-int/lam "(if true false true)"
-                        `((before-after ((hilite (if true false true)))
-                                        ((hilite false)))
-                          (finished-stepping))))
-  
+       `((before-after ((hilite (if true false true)))
+                       ((hilite false)))
+         (finished-stepping))))
+
   (t if-bool
      (test-upto-int/lam "(if (if true false true) false true)"
-                     `((before-after ((if (hilite (if true false true)) false true))
-                                     ((if (hilite false) false true)))
-                       (before-after ((hilite (if false false true))) ((hilite true)))
-                       (finished-stepping))))
+       `((before-after ((if (hilite (if true false true)) false true))
+                       ((if (hilite false) false true)))
+         (before-after ((hilite (if false false true))) ((hilite true)))
+         (finished-stepping))))
 
   (t direct-app
      (test-mz-sequence "((lambda (x) x) 3)"
-		       `((before-after ((hilite ((lambda (x) x) 3))) ((hilite 3)))
-			 (finished-stepping))))
-  
-  
- ;   (test-mz-sequence "((lambda (x) x) (begin (+ 3 4) (+ 4 5)))"
+       `((before-after ((hilite ((lambda (x) x) 3))) ((hilite 3)))
+         (finished-stepping))))
+
+;   (test-mz-sequence "((lambda (x) x) (begin (+ 3 4) (+ 4 5)))"
 ;		      `((before-after ((begin (hilite (+ 3 4)) (+ 4 5)))
 ;				      ((begin (hilite 7) (+ 4 5))))
 ;			(before-after ((hilite (begin 7 (+ 4 5)))) ((hilite (+ 4 5))))
 ;                        (before-after ((hilite (+ 4 5))) ((hilite 9)))
 ;			(finished-stepping)))
-  
+
   (t curried
      (test-mz-sequence "((lambda (a) (lambda (b) (+ a b))) 14)"
-                       `((before-after ((hilite ((lambda (a) (lambda (b) (+ a b))) 14))) 
-				       ((hilite (lambda (b) (+ 14 b)))))
-                         (finished-stepping))))
-  
+       `((before-after ((hilite ((lambda (a) (lambda (b) (+ a b))) 14))) 
+                       ((hilite (lambda (b) (+ 14 b)))))
+         (finished-stepping))))
+
   (t case-lambda
      (test-mz-sequence "((case-lambda ((a) 3) ((b c) (+ b c))) 5 6)"
-                    `((before-after ((hilite ((case-lambda ((a) 3) ((b c) (+ b c))) 5 6))) ((hilite (+ 5 6))))
-                      (before-after ((hilite (+ 5 6))) ((hilite 11)))
-		      (finished-stepping))))
-  
+       `((before-after ((hilite ((case-lambda ((a) 3) ((b c) (+ b c))) 5 6))) ((hilite (+ 5 6))))
+         (before-after ((hilite (+ 5 6))) ((hilite 11)))
+         (finished-stepping))))
+
   (t 2armed-if
      (test-mz-sequence "(if 3 4)"
-		       `((before-after ((hilite (if 3 4))) ((hilite 4)))
-			 (finished-stepping))))
+       `((before-after ((hilite (if 3 4))) ((hilite 4)))
+         (finished-stepping))))
 
-   
   ;(test-mz-sequence "((call-with-current-continuation call-with-current-continuation) (call-with-current-continuation call-with-current-continuation))"
   ;                  `((before-after (((hilite ,h-p) (call-with-current-continuation call-with-current-continuation))) ((call-with-current-continuation call-with-current-continuation))
   ;                    (((hilite ,h-p) (call-with-current-continuation call-with-current-continuation))) ((lambda args ...)))
   ;                    (before-after (((lambda args ...) (hilite ,h-p))) ((call-with-current-continuation call-with-current-continuation))
   ;                    (((lambda args ...) (hilite ,h-p))) ((lambda args ...)))))
-  
+
   ;(test-mz-sequence '(begin (define g 3) g)
   ;                  `((before-after ((hilite ,h-p)) (g)
   ;                    ((hilite ,h-p)) 3)))
-  
+
   ;(syntax-object->datum (cadr (annotate-expr test2 'mzscheme 0 (lambda (x) x))))
-  
+
   (t top-def
      (test-upto-int/lam "(define a (+ 3 4))"
                         `((before-after ((define a (hilite (+ 3 4)))) ((define a (hilite 7))))
@@ -292,7 +317,7 @@
                         `((before-after ((define a 6) (hilite a))
                                         ((define a 6) (hilite 6)))
                           (finished-stepping))))
-  
+
   (t app
      (test-upto-int/lam "(+ 4 129)" 
                      `((before-after ((hilite (+ 4 129))) ((hilite 133)))
@@ -302,7 +327,7 @@
   (test-upto-int/lam "(if true 3 4)"
                      `((before-after ((hilite (if true 3 4))) ((hilite 3)))
                        (finished-stepping))))
-  
+
   (t top-app
   (test-upto-int "(define (a3 x) (if true x x)) (a3 false)"
                  (let ([d1 `(define (a3 x) (if true x x))])
