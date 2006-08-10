@@ -2240,7 +2240,7 @@ read_list(Scheme_Object *port,
     if (effective_ch == closer) {
       if (shape == mz_shape_hash_elem) {
 	scheme_read_err(port, stxsrc, startline, startcol, start, SPAN(port, start), ch, indentation,
-			"read: expected hash pair (with key and value separated by %s) before '%c'",
+			"read: expected hash pair (with key and value separated by %s) before `%c'",
                         dot_name(params),
 			ch);
 	return NULL;

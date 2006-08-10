@@ -4075,11 +4075,14 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
 
   if (!iconv_ready) init_iconv();
 
+  if (!*to_e || !*from_e)
+    reset_locale();
+
   if ((!strcmp(from_e, "UTF-8")
        || !strcmp(from_e, "UTF-8-permissive")
-       || (!*from_e && mzLOCALE_IS_UTF_8(from_e)))
+       || (!*from_e && mzLOCALE_IS_UTF_8(current_locale_name)))
       && (!strcmp(to_e, "UTF-8")
-	  || (!*to_e && mzLOCALE_IS_UTF_8(to_e)))) {
+	  || (!*to_e && mzLOCALE_IS_UTF_8(current_locale_name)))) {
     /* Use the built-in UTF-8<->UTF-8 converter: */
     kind = mzUTF8_KIND;
     if (!strcmp(from_e, "UTF-8-permissive"))
