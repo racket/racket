@@ -7,6 +7,9 @@
 
 #ifdef _WIN32
 
+/* VirtualProtect can be used only on pages allocated at the same
+   time, so we can't collapse ranges. */
+
 # define initialize_protect_page_ranges(b, s) /* */
 # define add_protect_page_range(s, l, a, w) protect_pages(s, l, w)
 # define flush_protect_page_ranges(w) /* */

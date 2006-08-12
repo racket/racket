@@ -22,11 +22,45 @@
 # define CHECK_USED_AGAINST_MAX(x) /* empty */
 #endif
 
+/* Cache doesn't seem to help in Windows: */
+#define CACHE_SLOTS 0
+
+#if CACHE_SLOTS
+typedef struct {
+  size_t len;
+  void *page;
+} alloc_cache_entry;
+
+/* First dimension is age: */
+static alloc_cache_entry cache[2][CACHE_SLOTS];
+#endif
+
 static void *malloc_pages(size_t len, size_t alignment)
 {
   CHECK_USED_AGAINST_MAX(len);
-  ACTUALLY_ALLOCATING_PAGES(len);
   LOGICALLY_ALLOCATING_PAGES(len);
+
+#if CACHE_SLOTS
+ {
+   int i, j;
+   
+   for (j = 0; j < 2; j++) {
+     for (i = 0; i < CACHE_SLOTS; i++) {
+       if (cache[j][i].len == len) {
+	 if (cache[j][i].page) {
+	   void *result = cache[j][i].page;
+	   cache[j][i].page = *(void **)result;
+	   memset(result, 0, len);
+	   return result;
+	 }
+	 break;
+       }
+     }
+   }
+ }
+#endif
+
+  ACTUALLY_ALLOCATING_PAGES(len);
 
   return (void *)VirtualAlloc(NULL, len, 
 			      MEM_COMMIT | MEM_RESERVE, 
@@ -35,14 +69,49 @@ static void *malloc_pages(size_t len, size_t alignment)
 
 static void free_pages(void *p, size_t len)
 {
-  VirtualFree(p, 0, MEM_RELEASE);
-
   LOGICALLY_FREEING_PAGES(len);
+
+#if CACHE_SLOTS
+  {
+    int i;
+   
+    for (i = 0; i < CACHE_SLOTS; i++) {
+      if (!cache[0][i].len)
+	cache[0][i].len = len;
+      if (cache[0][i].len == len) {
+	*(void **)p = cache[0][i].page;
+	cache[0][i].page = p;
+	return;
+      }
+    }
+  }
+#endif
+
   ACTUALLY_FREEING_PAGES(len);
+
+  VirtualFree(p, 0, MEM_RELEASE);
 }
 
 static void flush_freed_pages(void)
 {
+#if CACHE_SLOTS
+  int i;
+  void *p, *next;
+
+  for (i = 0; i < CACHE_SLOTS; i++) {
+    if (cache[1][i].len) {
+      for (p = cache[1][i].page; p; p = next) {
+	next = *(void **)p;
+	ACTUALLY_FREEING_PAGES(cache[i].len);
+	VirtualFree(p, 0, MEM_RELEASE);
+      }
+    }
+    cache[1][i].len = cache[0][i].len;
+    cache[1][i].page = cache[0][i].page;
+    cache[0][i].len = 0;
+    cache[0][i].page = NULL;
+  }
+#endif
 }
 
 static void protect_pages(void *p, size_t len, int writeable)
@@ -56,8 +125,11 @@ typedef unsigned long size_type;
 
 static size_type determine_max_heap_size(void)
 {
+  /* FIXME: should use QueryInformationJobObject() */
+#if 0
   GCPRINT(GCOUTF, 
 	  "Don't know how to get heap size for Windows: assuming 1GB\n");
+#endif
   return (1 * 1024 * 1024 * 1024);
 }
 #endif
