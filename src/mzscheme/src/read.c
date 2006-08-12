@@ -4004,6 +4004,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
     switch(cpt_branch[ch]) {
     case CPT_ESCAPE:
+    case CPT_HASHED_ESCAPE:
       {
 	int len;
 	Scheme_Object *ep;
@@ -4041,6 +4042,12 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	params.table = NULL;
 
 	v = read_inner(ep, NULL, port->ht, scheme_null, &params, 0);
+
+        if (ch == CPT_HASHED_ESCAPE) {
+          l = read_compact_number(port);
+          RANGE_CHECK(l, < port->symtab_size);
+          port->symtab[l] = v;
+        }
       }
       break;
     case CPT_SYMBOL:
@@ -4099,6 +4106,10 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       RANGE_CHECK_GETS(l);
       s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
       v = scheme_make_immutable_sized_byte_string(s, l, l < BLK_BUF_SIZE);
+      
+      l = read_compact_number(port);
+      RANGE_CHECK(l, < port->symtab_size);
+      port->symtab[l] = v;
       break;
     case CPT_CHAR_STRING:
       {
@@ -4112,6 +4123,10 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	scheme_utf8_decode_all((const unsigned char *)s, el, us, 0);
 	us[l] = 0;
 	v = scheme_make_immutable_sized_char_string(us, l, 0);
+
+        l = read_compact_number(port);
+        RANGE_CHECK(l, < port->symtab_size);
+        port->symtab[l] = v;
       }
       break;
     case CPT_CHAR:

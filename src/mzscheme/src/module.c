@@ -3206,7 +3206,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	n = scheme_list_length(vars);
 	cont = scheme_omittable_expr(e, n);
       
-	if ((n == 1) && scheme_compiled_propagate_ok(e)) {
+	if ((n == 1) && scheme_compiled_propagate_ok(e, info)) {
 	  Scheme_Toplevel *tl;
 
 	  tl = (Scheme_Toplevel *)SCHEME_CAR(vars);

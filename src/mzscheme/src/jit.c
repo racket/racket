@@ -3117,6 +3117,26 @@ static int generate_closure(Scheme_Closure_Data *data,
   code = data->u.native_code;
 
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+#ifdef JIT_PRECISE_GC
+  if (data->closure_size < 100) {
+    int sz;
+    sz = (sizeof(Scheme_Native_Closure)
+          + ((data->closure_size - 1) * sizeof(Scheme_Object *)));
+    jit_movi_l(JIT_R0, sz);
+    mz_prepare(1);
+    jit_pusharg_l(JIT_R0);
+    (void)mz_finish(GC_malloc_one_small_dirty_tagged);
+    jit_retval(JIT_R0);
+    retptr = mz_retain(code);
+    jit_movi_l(JIT_R1, scheme_native_closure_type); /* FIXME - this is little-endian */
+    jit_str_l(JIT_R0, JIT_R1); 
+    mz_load_retained(jitter, JIT_R1, retptr);
+    jit_stxi_p((long)&((Scheme_Native_Closure *)0x0)->code, JIT_R0, JIT_R1);
+    return 1;
+  }
+#endif
+
   mz_prepare(1);
   retptr = mz_retain(code);
 #ifdef JIT_PRECISE_GC

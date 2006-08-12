@@ -203,7 +203,7 @@ static void register_traversers(void);
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
-#define MAX_PROC_INLINE_SIZE 32
+#define MAX_PROC_INLINE_SIZE 256
 
 /**********************************************************************/
 /*                          initialization                            */
@@ -2396,7 +2396,7 @@ static int is_liftable(Scheme_Object *o, int bind_count, int fuel)
   return 0;
 }
 
-int scheme_compiled_propagate_ok(Scheme_Object *value)
+int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 {
   if (scheme_compiled_duplicate_ok(value))
     return 1;
@@ -2406,6 +2406,16 @@ int scheme_compiled_propagate_ok(Scheme_Object *value)
     sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 1);
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_toplevel_type)) {
+    if (info->top_level_consts) {
+      int pos;
+      pos = SCHEME_TOPLEVEL_POS(value);
+      value = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+      if (value)
+        return 1;
+    }
   }
 
   return 0;
@@ -2432,7 +2442,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
       lhs = SCHEME_TYPE(clv->value);
       if ((lhs == scheme_compiled_unclosed_procedure_type)
 	  || (lhs > _scheme_compiled_values_types_)) {
-	if (for_inline) {
+        if (for_inline) {
 	  /* Just drop the inline-introduced let */
 	  return scheme_optimize_expr(clv->value, info);
 	} else {
@@ -2488,6 +2498,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
     value = scheme_optimize_expr(pre_body->value, rhs_info);
 
     pre_body->value = value;
+  
     if ((pre_body->count == 1)
 	&& !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
 
@@ -2506,7 +2517,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 	}
       }
 
-      if (value && (scheme_compiled_propagate_ok(value))) {
+      if (value && (scheme_compiled_propagate_ok(value, body_info))) {
 	scheme_optimize_propagate(body_info, pos, value);
 	did_set_value = 1;
       }

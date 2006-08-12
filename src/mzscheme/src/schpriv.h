@@ -1787,7 +1787,7 @@ Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, in
 Scheme_Object *scheme_optimize_lets_for_test(Scheme_Object *form, Optimize_Info *info);
 
 int scheme_compiled_duplicate_ok(Scheme_Object *o);
-int scheme_compiled_propagate_ok(Scheme_Object *o);
+int scheme_compiled_propagate_ok(Scheme_Object *o, Optimize_Info *info);
 
 Scheme_Object *scheme_resolve_expr(Scheme_Object *, Resolve_Info *);
 Scheme_Object *scheme_resolve_list(Scheme_Object *, Resolve_Info *);

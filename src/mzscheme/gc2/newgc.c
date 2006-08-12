@@ -514,6 +514,30 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
   }
 }
 
+void *GC_malloc_one_small_dirty_tagged(size_t sizeb)
+{
+  unsigned long newsize;
+
+  sizeb += WORD_SIZE;
+  sizeb = ALIGN_BYTES_SIZE(sizeb);
+  newsize = gen0_alloc_page->size + sizeb;
+
+  if(newsize > GEN0_PAGE_SIZE) {
+    return GC_malloc_one_tagged(sizeb - WORD_SIZE);
+  } else {
+    void *retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
+    struct objhead *info = (struct objhead *)retval;
+
+    *(void **)info = NULL; /* client promises the initialize the rest */
+
+    info->size = (sizeb >> gcLOG_WORD_SIZE);
+    gen0_alloc_page->size = newsize;
+    gen0_current_size += sizeb;
+    
+    return PTR(NUM(retval) + WORD_SIZE);
+  }
+}
+
 void *GC_malloc_pair(void *car, void *cdr)
 {
   size_t sizeb;

@@ -2013,30 +2013,36 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   return scheme_optimize_lets((Scheme_Object *)lh, info, 1);
 }
 
+#if 0
+# define LOG_INLINE(x) x
+#else
+# define LOG_INLINE(x) /*empty*/
+#endif
+
 Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
 				   Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3)
 {
-  int offset;
+  int offset = 0;
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
     le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset);
-  } else if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_toplevel_type)) {
+    if (!le)
+      return NULL;
+  }
+
+  while (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_toplevel_type)) {
     if (info->top_level_consts) {
       int pos;
       pos = SCHEME_TOPLEVEL_POS(le);
       le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
-      if (le && !SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type))
-	le = NULL;
+      if (!le)
+	return NULL;
     } else
-      le = NULL;
-    offset = 0;
-  } else {
-    le = NULL;
-    offset = 0;
+      return NULL;
   }
 
-  if (le) {
+  if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
     Scheme_Closure_Data *data = (Scheme_Closure_Data *)le;
     int sz;
       
@@ -2045,9 +2051,15 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       if ((sz >= 0) && (sz <= (info->inline_fuel * (argc + 2)))) {
 	le = scheme_optimize_clone(data->code, info, offset, argc);
 	if (le) {
-	  /* fprintf(stderr, "Inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"); */
+	  LOG_INLINE(fprintf(stderr, "Inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
 	  return apply_inlined(le, data, info, argc, app, app2, app3);
-	}
+	} else {
+          LOG_INLINE(fprintf(stderr, "No inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
+        }
+      } else {
+        LOG_INLINE(fprintf(stderr, "No fuel %s %d*%d/%d\n", data->name ? scheme_write_to_string(data->name, NULL) : "???", 
+                           sz, info->inline_fuel * (argc + 2),
+                           info->inline_fuel));
       }
     }
   }
@@ -2271,7 +2283,14 @@ int scheme_compiled_duplicate_ok(Scheme_Object *fb)
 	  || SCHEME_FALSEP(fb)
 	  || SCHEME_SYMBOLP(fb)
 	  || SCHEME_INTP(fb)
+	  || SCHEME_NULLP(fb)
 	  || SAME_TYPE(SCHEME_TYPE(fb), scheme_local_type)
+          /* Values that are hashed by the printer to avoid
+             duplication: */
+	  || SCHEME_CHAR_STRINGP(fb) 
+          || SCHEME_BYTE_STRINGP(fb)
+          || SAME_TYPE(SCHEME_TYPE(fb), scheme_regexp_type)
+          || SCHEME_NUMBERP(fb)
 	  || SCHEME_PRIMP(fb));
 }
 
@@ -2414,8 +2433,11 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
       pos = SCHEME_LOCAL_POS(expr);
 
       val = scheme_optimize_info_lookup(info, pos, NULL);
-      if (val)
+      if (val) {
+        if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type))
+          return scheme_optimize_expr(val, info);
 	return val;
+      }
 
       delta = scheme_optimize_info_get_shift(info, pos);
       if (delta)
@@ -2450,8 +2472,16 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
     if (info->top_level_consts) {
       int pos;
       Scheme_Object *c;
-      pos = SCHEME_TOPLEVEL_POS(expr);
-      c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+
+      while (1) {
+        pos = SCHEME_TOPLEVEL_POS(expr);
+        c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+        if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_toplevel_type))
+          expr = c;
+        else
+          break;
+      }
+
       if (c) {
 	if (scheme_compiled_duplicate_ok(c))
 	  return c;

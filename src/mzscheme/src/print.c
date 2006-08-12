@@ -1093,16 +1093,39 @@ print_substring(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Tab
 }
 
 static void print_escaped(PrintParams *pp, int notdisplay, 
-			  Scheme_Object *obj, Scheme_Hash_Table *ht)
+			  Scheme_Object *obj, Scheme_Hash_Table *ht,
+                          Scheme_Hash_Table *symtab)
 {
   char *r;
   long len;
+  Scheme_Object *idx;
+
+  if (symtab) {
+    idx = scheme_hash_get(symtab, obj);
+    if (idx) {
+      int l;
+      print_compact(pp, CPT_SYMREF);
+      l = SCHEME_INT_VAL(idx);
+      print_compact_number(pp, l);
+      return;
+    }
+  }
 
   print_substring(obj, notdisplay, 0, ht, NULL, NULL, pp, &r, &len);
 
-  print_compact(pp, CPT_ESCAPE);
+  if (symtab)
+    print_compact(pp, CPT_HASHED_ESCAPE);
+  else
+    print_compact(pp, CPT_ESCAPE);
   print_compact_number(pp, len);
   print_this_string(pp, r, 0, len);
+
+  if (symtab) {
+    int l = symtab->count;
+    idx = scheme_make_integer(l);
+    scheme_hash_set(symtab, obj, idx);	
+    print_compact_number(pp, l);
+  }
 }
 
 static void cannot_print(PrintParams *pp, int notdisplay, 
@@ -1234,7 +1257,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     if (val) {
       if (val != 1) {
 	if (compact) {
-	  print_escaped(pp, notdisplay, obj, ht);
+	  print_escaped(pp, notdisplay, obj, ht, NULL);
 	  return 1;
 	} else {
 	  if (val > 0) {
@@ -1355,11 +1378,23 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       if (compact) {
 	int l;
+        Scheme_Object *idx;
 
-	print_compact(pp, CPT_BYTE_STRING);
-	l = SCHEME_BYTE_STRTAG_VAL(obj);
-	print_compact_number(pp, l);
-	print_this_string(pp, SCHEME_BYTE_STR_VAL(obj), 0, l);
+	idx = scheme_hash_get(symtab, obj);
+        if (idx) {
+          print_compact(pp, CPT_SYMREF);
+          l = SCHEME_INT_VAL(idx);
+          print_compact_number(pp, l);
+        } else {
+          print_compact(pp, CPT_BYTE_STRING);
+          l = SCHEME_BYTE_STRTAG_VAL(obj);
+          print_compact_number(pp, l);
+          print_this_string(pp, SCHEME_BYTE_STR_VAL(obj), 0, l);
+
+          idx = scheme_make_integer(symtab->count);
+          scheme_hash_set(symtab, obj, idx);
+          print_compact_number(pp, SCHEME_INT_VAL(idx));
+        }
       } else {
 	if (notdisplay) {
 	  always_scheme(pp, 0);
@@ -1374,8 +1409,27 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (SCHEME_CHAR_STRINGP(obj))
     {
-      do_print_string(compact, notdisplay, pp, 
-		      SCHEME_CHAR_STR_VAL(obj), 0, SCHEME_CHAR_STRTAG_VAL(obj));
+      Scheme_Object *idx;
+      int l;
+
+      if (compact)
+        idx = scheme_hash_get(symtab, obj);
+      else
+        idx = NULL;
+
+      if (idx) {
+        print_compact(pp, CPT_SYMREF);
+        l = SCHEME_INT_VAL(idx);
+        print_compact_number(pp, l);
+      } else {
+        do_print_string(compact, notdisplay, pp, 
+                        SCHEME_CHAR_STR_VAL(obj), 0, SCHEME_CHAR_STRTAG_VAL(obj));
+        if (compact) {
+          idx = scheme_make_integer(symtab->count);
+          scheme_hash_set(symtab, obj, idx);
+          print_compact_number(pp, SCHEME_INT_VAL(idx));
+        }
+      }
       closed = 1;
     }
   else if (SCHEME_CHARP(obj))
@@ -1416,7 +1470,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SCHEME_NUMBERP(obj))
     {
       if (compact) {
-	print_escaped(pp, notdisplay, obj, ht);
+	print_escaped(pp, notdisplay, obj, ht, symtab);
 	closed = 1;
       } else {
 	if (SCHEME_COMPLEXP(obj))
@@ -1768,7 +1822,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_regexp_type))
     {
        if (compact) {
-	 print_escaped(pp, notdisplay, obj, ht);
+	 print_escaped(pp, notdisplay, obj, ht, symtab);
        } else {
 	 Scheme_Object *src;
 	 src = scheme_regexp_source(obj);

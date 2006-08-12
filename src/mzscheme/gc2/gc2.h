@@ -131,6 +131,12 @@ GC2_EXTERN void *GC_malloc_one_small_tagged(size_t);
    Like GC_malloc_one_tagged, but the size must be less than 1kb,
    it must not be zero, and it must be a multiple of the word size. */
 
+GC2_EXTERN void *GC_malloc_one_small_dirty_tagged(size_t);
+/* 
+   Like GC_malloc_one_small_tagged, but the memory is not
+   zeroed. The client must set all words in the allocated
+   object before a GC can occur. */
+
 GC2_EXTERN void *GC_malloc_pair(void *car, void *cdr);
 /* 
    Like GC_malloc_one_tagged, but even more streamline. */

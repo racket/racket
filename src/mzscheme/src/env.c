@@ -2735,7 +2735,7 @@ void scheme_optimize_info_used_top(Optimize_Info *info)
 void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value)
 {
   Scheme_Object *p;
-  
+
   p = scheme_make_vector(3, NULL);
   SCHEME_VEC_ELS(p)[0] = info->consts;
   SCHEME_VEC_ELS(p)[1] = scheme_make_integer(pos);
@@ -2818,8 +2818,11 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 	else {
 	  *closure_offset = delta;
 	}
+      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_toplevel_type)) {
+        /* Ok */
       } else if (closure_offset) {
-	return NULL;
+        /* Inlining can deal procdures and top-levels, but not other things. */
+        return NULL;
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_local_type)) {
 	int pos;
 
