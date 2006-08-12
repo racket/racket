@@ -254,25 +254,41 @@
  */
 |#
 
+  ;; We can't read the bytes outright, because we may
+  ;; look ahead. Assume that we need no more than 32 bytes
+  ;; look ahead, and peek in 4096-byte blocks.
+  (define MAX-LOOKAHEAD 32)
+  (define BUFFER-SIZE 4096)
+  (define buffer (make-bytes BUFFER-SIZE))
+  (define buf-max 0) ; number of bytes in buffer
+  (define buf-pos 0) ; index into buffer = number of used peeked bytes
+
   (define bb 0) ; /* bit buffer */
   (define bk 0) ; /* bits in bit buffer */
-  (define peeked 0)
   
   (define (NEEDBITS n)
     (when (< bk n)
       (READBITS n)))
   (define (READBITS n)
-    (let ([v (peek-byte input-port peeked)])
-      (if (eof-object? v)
-	  (error 'inflate "unexpected end of file")
-	  (begin
-	    (set! bb (+ bb (arithmetic-shift v bk)))
-	    ;; assume that lookahead never needs more than 32 bytes:
-	    (if (peeked . < . 32)
-		(set! peeked (add1 peeked))
-		(read-byte input-port)))))
-    (set! bk (+ bk 8))
-    (NEEDBITS n))
+    (if (= buf-pos buf-max)
+        (if (and (buf-max . < . BUFFER-SIZE)
+                 (positive? buf-max))
+            (error 'inflate "unexpected end of file")
+            (begin
+              (when (positive? buf-max)
+                (read-bytes! buffer input-port 0 (- buf-max MAX-LOOKAHEAD))
+                ; (bytes-copy! buffer 0 buffer (- buf-max MAX-LOOKAHEAD) buf-max) 
+                (set! buf-pos MAX-LOOKAHEAD))
+              (let ([got (peek-bytes! buffer buf-pos input-port buf-pos BUFFER-SIZE)])
+                (if (eof-object? got)
+                    (error 'inflate "unexpected end of file")
+                    (set! buf-max (+ buf-pos got))))
+              (READBITS n)))
+        (let ([v (bytes-ref buffer buf-pos)])
+          (set! buf-pos (add1 buf-pos))
+          (set! bb (+ bb (arithmetic-shift v bk)))
+          (set! bk (+ bk 8))
+          (NEEDBITS n))))
   (define (DUMPBITS n)
     (set! bb (arithmetic-shift bb (- n)))
     (set! bk (- bk n)))
@@ -691,7 +707,7 @@
   (define (inflate_dynamic)
     ; /* decompress an inflated type 2 (dynamic Huffman codes) block. */
 
-    (let/ec return
+    (begin ; let/ec return
 
       ; /* read in table lengths */
       ; (define junk1 (begin (NEEDBITS 5) (printf "~s ~s~n" bb bk)))
@@ -743,7 +759,7 @@
 				  (lambda (j l)
 				    (when (> (+ i j) n)
 				      (error 'inflate "bad hop")
-				      (return #f))
+                                      #;(return #f))
 				    (let loop ([j j])
 				      (unless (zero? j)
 					(vector-set! ll i l)
@@ -826,12 +842,9 @@
 		(let loop ()
 		  (when (>= bk 8)
 		    (set! bk (- bk 8))
-		    (set! peeked (sub1 peeked))
+		    (set! buf-pos (sub1 buf-pos))
 		    (loop)))
-		(let loop ([peeked peeked])
-		  (when (positive? peeked)
-		    (read-byte input-port)
-		    (loop (sub1 peeked))))
+                (read-bytes! buffer input-port buf-pos)
 		(flush-output wp)
 		#t = (void)))
 	  #f))))
