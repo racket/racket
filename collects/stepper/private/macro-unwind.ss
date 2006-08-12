@@ -271,7 +271,7 @@
                              (map inner (syntax->list #`(body ...)))])
                 #`(begin new-body ...))]))
 
-         (define ((unwind-and/or label) stx user-source user-position)
+         (define ((unwind-and/or label) stx)
            (let ([user-source   (syntax-property stx 'user-source)]
                  [user-position (syntax-property stx 'user-position)]
                  [clause-padder (case label [(and) #`true] [(or) #`false])])
