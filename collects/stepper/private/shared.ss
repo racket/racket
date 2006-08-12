@@ -524,8 +524,8 @@
   ;;  (from native property names to 'user-' style property names)
 
   (define (attach-info to-exp from-exp)
-    (if (syntax-property from-exp 'stepper-offset-index)
-      (>>> (syntax-property from-exp 'stepper-offset-index)))
+    ;; (if (syntax-property from-exp 'stepper-offset-index)
+    ;;   (>>> (syntax-property from-exp 'stepper-offset-index)))
     (let* ([attached (foldl (lambda (labels stx)
                               (match labels
                                 [`(,new-label ,old-label)
