@@ -1484,18 +1484,18 @@ exec mred -u "$0" "$@"
 
   ;; LAZY.SS:
 
-  (t lazy test-lazy-sequence
+  (t lazy1 test-lazy-sequence
      (+ 3 4)
      :: {(+ 3 4)} -> {7})
 
-  (t lazy test-lazy-sequence
+  (t lazy2 test-lazy-sequence
      (+ (+ 3 4) 5)
      :: (+ {(+ 3 4)} 5)
      -> (+ {7} 5)
      :: {(+ 7 5)}
      -> {12})
 
-  (t lazy test-lazy-sequence
+  (t lazy3 test-lazy-sequence
      ((lambda (x y) (* x x)) (+ 1 2) (+ 3 4))
      :: {((lambda (x y) (* x x)) (+ 1 2) (+ 3 4))}
      -> {(* (+ 1 2) (+ 1 2))}
