@@ -1,7 +1,7 @@
 ;; A modification of Dave Herman's zip module
 
 (module zip mzscheme
-  (require (lib "deflate.ss") (lib "file.ss"))
+  (require (lib "deflate.ss") (lib "file.ss") (lib "etc.ss"))
 
   ;; ===========================================================================
   ;; DATA DEFINITIONS
@@ -246,19 +246,19 @@
   ;; zip-write : (listof relative-path) ->
   ;; writes a zip file to current-output-port
   (provide zip->output)
-  (define (zip->output files . out)
-    (parameterize ([current-output-port
-                    (if (pair? out) (car out) (current-output-port))])
-      (let* ([seekable? (seekable-port? (current-output-port))]
-             [headers ; note: MzScheme's `map' is always left-to-right
-              (map (lambda (file)
-                     (zip-one-entry (build-metadata file) seekable?))
-                   files)])
+  (define zip->output 
+    (opt-lambda (files [out (current-output-port)])
+      (parameterize ([current-output-port out])
+        (let* ([seekable? (seekable-port? (current-output-port))]
+               [headers ; note: MzScheme's `map' is always left-to-right
+                (map (lambda (file)
+                       (zip-one-entry (build-metadata file) seekable?))
+                     files)])
+          (when (zip-verbose)
+            (fprintf (current-error-port) "zip: writing headers...\n"))
+          (write-central-directory headers))
         (when (zip-verbose)
-          (fprintf (current-error-port) "zip: writing headers...\n"))
-        (write-central-directory headers))
-      (when (zip-verbose)
-        (fprintf (current-error-port) "zip: done.\n"))))
+          (fprintf (current-error-port) "zip: done.\n")))))
 
   ;; zip : output-file paths ->
   (provide zip)
