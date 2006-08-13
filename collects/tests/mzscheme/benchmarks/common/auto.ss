@@ -25,7 +25,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define (mk-larceny bm)
     (parameterize ([current-input-port (open-input-string
                                         (format "(compile-file \"~a.sch\")\n"
-                                                bm))])
+                                                bm))]
+		   [current-output-port (open-output-bytes)])
       (system "larceny")))
 
   (define (mk-mzc bm)
@@ -64,6 +65,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define (extract-mzscheme-times bm str)
     (let ([m (regexp-match #rx#"cpu time: ([0-9]+) real time: ([0-9]+) gc time: ([0-9]+)" str)])
       (map bytes->number (cdr m))))
+
+  (define (extract-larceny-times bm str)
+    (let ([m (regexp-match #rx#"Elapsed time...: ([0-9]+) ms.*Elapsed GC time: ([0-9]+) ms" str)])
+      (list (bytes->number (cadr m))
+	    #f
+	    (bytes->number (caddr m)))))
 
   (define (extract-chicken-times bm str)
     (let ([m (regexp-match #rx#"([0-9.]+) seconds.*[^0-9.]([0-9.]+) seconds" str)])
@@ -125,7 +132,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-gambit-exe
                 extract-gambit-times
                 '(nucleic2))
-     (make-impl 'larcency
+     (make-impl 'larceny
                 mk-larceny
                 run-larceny
                 extract-larceny-times
