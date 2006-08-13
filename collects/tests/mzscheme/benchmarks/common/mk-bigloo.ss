@@ -11,7 +11,7 @@
     (newline))
   'truncate/replace)
 
-(when (system (format "bigloo -o ~a -O6 ~a.scm"
+(when (system (format "bigloo -w -o ~a -O6 ~a.scm"
                       name name))
   (delete-file (format "~a.scm" name))
   (delete-file (format "~a.o" name)))

@@ -20,6 +20,4 @@
  
 ;;; call: (tak 18 12 6)
  
-(time (tak 18 12 2))
-
-
+(time (tak 18 12 (if (with-input-from-file "input.txt" read) 2 0)))

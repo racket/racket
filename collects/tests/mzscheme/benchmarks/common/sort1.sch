@@ -128,6 +128,10 @@
 
     sort))
 
+(define *rand* 21)
+(define (random m)
+  (set! *rand* (remainder (* *rand* 17) m))
+  *rand*)
 
 (define (rgen n m)
   (let loop ((n n) (l '()))
