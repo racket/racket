@@ -2670,7 +2670,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
     GC_CAN_IGNORE jit_insn *pref;
     pref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
     reffail = _jit.x.pc;
-    jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
+    (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
     (void)jit_jmpi(call_original_binary_rev_arith_code);
     mz_patch_branch(pref);
     jit_ldxi_s(JIT_R2, JIT_R0, (int)&((Scheme_Object *)0x0)->type);
@@ -2685,7 +2685,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
       GC_CAN_IGNORE jit_insn *pref;
       pref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
       reffail = _jit.x.pc;
-      jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
+      (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
       (void)jit_jmpi(call_original_binary_rev_arith_code);
       mz_patch_branch(pref);
     } else {
@@ -3097,6 +3097,10 @@ int generate_inlined_test(mz_jit_state *jitter, Scheme_Object *obj, int branch_s
 /*                           lambda codegen                               */
 /*========================================================================*/
 
+#ifdef JIT_PRECISE_GC
+static Scheme_Object example_so = { scheme_native_closure_type, 0 };
+#endif
+
 static void ensure_closure_native(Scheme_Closure_Data *data, 
 				  Scheme_Native_Closure_Data *case_lam)
 {
@@ -3121,6 +3125,7 @@ static int generate_closure(Scheme_Closure_Data *data,
 #ifdef JIT_PRECISE_GC
   if (data->closure_size < 100) {
     int sz;
+    long init_word;
     sz = (sizeof(Scheme_Native_Closure)
           + ((data->closure_size - 1) * sizeof(Scheme_Object *)));
     jit_movi_l(JIT_R0, sz);
@@ -3129,7 +3134,8 @@ static int generate_closure(Scheme_Closure_Data *data,
     (void)mz_finish(GC_malloc_one_small_dirty_tagged);
     jit_retval(JIT_R0);
     retptr = mz_retain(code);
-    jit_movi_l(JIT_R1, scheme_native_closure_type); /* FIXME - this is little-endian */
+    init_word = *(long *)&example_so;
+    jit_movi_l(JIT_R1, init_word);
     jit_str_l(JIT_R0, JIT_R1); 
     mz_load_retained(jitter, JIT_R1, retptr);
     jit_stxi_p((long)&((Scheme_Native_Closure *)0x0)->code, JIT_R0, JIT_R1);
