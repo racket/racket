@@ -7,7 +7,7 @@
                name))
  (when (system (format "gcc -o ~a -O2 -D___SINGLE_HOST ~a.c ~a_.c -lgambc -lm -ldl~a"
                 name name name
-                (if (file-exists? "/usr/lib/libtuil.a")
+                (if (file-exists? "/usr/lib/libutil.a")
                     " -lutil" 
                     "")))
    (delete-file (format "~a.c" name))  
