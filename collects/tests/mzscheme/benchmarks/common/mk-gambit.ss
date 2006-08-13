@@ -5,7 +5,7 @@
 
 (when (system (format "gsc -prelude '(include \"gambit-prelude.sch\")' ~a.sch"
                name))
- (when (system (format "gcc -o ~a -O2 -D___SINGLE_HOST ~a.c ~a_.c -lgambc"
+ (when (system (format "gcc -o ~a -O2 -D___SINGLE_HOST ~a.c ~a_.c -lgambc -lm -ldl -lutil"
                 name name name))
   (delete-file (format "~a.c" name))  
   (delete-file (format "~a_.c" name))))

@@ -76,7 +76,7 @@
  
 ;;; call:  (gogogo 22))
  
-(time (let loop ([n 10000])
+(time (let loop ((n 10000))
         (if (zero? n)
             'done
             (begin
