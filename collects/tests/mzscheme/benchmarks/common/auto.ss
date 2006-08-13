@@ -5,7 +5,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
 (module auto mzscheme
   (require (lib "process.ss")
-           (lib "cmdline.ss"))
+           (lib "cmdline.ss")
+           (lib "list.ss"))
 
   (define (bytes->number b)
     (string->number (bytes->string/latin-1 b)))
@@ -21,6 +22,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (parameterize ([current-namespace (make-namespace)])
       (load (format "~a.ss" bm))))
 
+  (define (mk-larceny bm)
+    (parameterize ([current-input-port (open-input-string
+                                        (format "(compile-file \"~a.sch\")\n"
+                                                bm))])
+      (system "larceny")))
+
   (define (mk-mzc bm)
     (system (format "mzc ~a.ss" bm)))
 
@@ -32,6 +39,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define (run-gambit-exe bm)
     (system (format "~a -:d-" bm)))
+
+  (define (run-larceny bm)
+    (parameterize ([current-input-port (open-input-string
+                                        (format "(load \"~a.fasl\")\n"
+                                                bm))])
+      (system "larceny")))
 
   (define (extract-times bm str)
     str)
@@ -91,7 +104,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                   (system (format "mzscheme -mvqe '(load-extension \"~a.dylib\")'" bm)))
                 extract-mzscheme-times
                 '())
-     (make-impl 'mzscheme-no-jit
+     (make-impl 'mzscheme-j
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzscheme -jqu ~a.ss" bm)))
@@ -111,7 +124,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (run-mk "mk-gambit.ss")
                 run-gambit-exe
                 extract-gambit-times
-                '(nucleic2))))
+                '(nucleic2))
+     (make-impl 'larcency
+                mk-larceny
+                run-larceny
+                extract-larceny-times
+                '())))
+
+  (define obsolte-impls '(mzscheme mzscheme-j))
 
   (define benchmarks
     '(conform
@@ -149,11 +169,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
             (let ([end (current-inexact-milliseconds)])
               (let loop ([n num-iterations])
                 (unless (zero? n)
-                  (let ([out (open-output-bytes)]
-                        [in (open-input-bytes #"0\n")])
+                  (let ([out (open-output-bytes)])
                     (unless (parameterize ([current-output-port out]
-                                           [current-error-port out]
-                                           [current-input-port in])
+                                           [current-error-port out])
                               ((impl-run i) bm))
                       (error 'auto "~a\nrun failed ~a" (get-output-bytes out) bm))
                     (printf "[~a ~a ~s ~a]\n"
@@ -201,4 +219,5 @@ exec mzscheme -qu "$0" ${1+"$@"}
               (or run-benchmarks
                   benchmarks)))
        (or run-implementations
-           (map impl-name impls))))
+           (remq* obsolte-impls
+                  (map impl-name impls)))))
