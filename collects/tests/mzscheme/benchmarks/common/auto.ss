@@ -6,7 +6,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
 (module auto mzscheme
   (require (lib "process.ss")
            (lib "cmdline.ss")
-           (lib "list.ss"))
+           (lib "list.ss")
+           (lib "compile.ss"))
 
   (define (bytes->number b)
     (string->number (bytes->string/latin-1 b)))
@@ -21,6 +22,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
     ;; To get compilation time:
     (parameterize ([current-namespace (make-namespace)])
       (load (format "~a.ss" bm))))
+
+  (define (mk-mzscheme-tl bm)
+    ;; To get compilation time:
+    (parameterize ([current-namespace (make-namespace)])
+      (namespace-require 'mzscheme)
+      (namespace-transformer-require 'mzscheme)
+      (eval '(define null #f)) ; for dynamic.sch
+      (compile-file (format "~a.sch" bm))))
 
   (define (mk-larceny bm)
     (parameterize ([current-input-port (open-input-string
@@ -119,6 +128,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
                   (system (format "mzscheme -jqu ~a.ss" bm)))
                 extract-mzscheme-times
                 '())
+     (make-impl 'mzscheme3m-tl
+                mk-mzscheme-tl
+                (lambda (bm)
+                  (system (format "mzscheme3m -qr compiled/~a.zo" bm)))
+                extract-mzscheme-times
+                '(nucleic2))
      (make-impl 'chicken
                 (run-mk "mk-chicken.ss")
                 run-exe
@@ -140,7 +155,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 extract-larceny-times
                 '())))
 
-  (define obsolte-impls '(mzscheme mzscheme-j mzc))
+  (define obsolte-impls '(mzscheme mzscheme-j mzscheme3m-tl mzc))
 
   (define benchmarks
     '(conform
