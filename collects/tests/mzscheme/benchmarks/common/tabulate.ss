@@ -59,33 +59,65 @@
         (let ([s (format "~a00" (exact->inexact r))])
           (car (regexp-match #rx"^[0-9]*[.].." s)))))
 
+  (define (small s)
+    `(font ((color "gray")
+            (size "-2"))
+           ,s))
+
+  (define (lookup-color impl)
+    (let loop ([impls sorted-impls][odd? #f])
+      (if (eq? (car impls) impl)
+          (if odd?
+              "#EEEEFF"
+              "#DDFFDD")
+          (loop (cdr impls) (not odd?)))))
+
   (empty-tag-shorthand html-empty-tags)
   (write-xml/content 
    (xexpr->xml 
-    `(html
-      (head (title "Benchmark Results"))
-      (body
-       (table
-        (tr (td nbsp) 
-            (td nbsp)
-            ,@(map (lambda (impl)
-                     `(td (b ,(symbol->string impl)) nbsp))
-                   sorted-impls))
-        ,@(map (lambda (bm-run)
-                 (let ([fastest (apply min (map (lambda (run)
-                                                  (or (caadr run) 1000000000))
+    `(table
+      (tr (td nbsp) 
+          (td ((colspan "2") (align "right")) "Fastest")
+          ,@(map (lambda (impl)
+                   `(td ((colspan "2") (align "right")) (b ,(symbol->string impl)) nbsp))
+                 sorted-impls))
+      ,@(map (lambda (bm-run)
+               (let ([fastest (apply min (map (lambda (run)
+                                                (or (caadr run) 1000000000))
+                                              (cdr bm-run)))]
+                     [c-fastest (apply min (map (lambda (run)
+                                                  (let ([v (caddr run)])
+                                                    (if (zero? v) 
+                                                        1000000000
+                                                        v)))
                                                 (cdr bm-run)))])
-                   `(tr (td (a ((href ,(format "~a.sch" (car bm-run))))
-                               ,(symbol->string (car bm-run))))
-                        (td ((align "right"))
-                            nbsp
-                            ,(format "~a ms" fastest) nbsp nbsp nbsp)
-                        ,@(map (lambda (impl)
-                                 (let* ([a (assq impl (cdr bm-run))]
-                                        [n (and a (caadr a))])
-                                   `(td ,(if n
-                                             (ratio->string (/ n fastest))
-                                             "-"))))
-                               sorted-impls))))
-               sorted-runs))))))
+                 `(tr (td (a ((href ,(format "~a.sch" (car bm-run))))
+                             ,(symbol->string (car bm-run))))
+                      (td ((align "right"))
+                          nbsp
+                          ,(small (number->string c-fastest)) 
+                          nbsp)
+                      (td ((align "right"))
+                          ,(format "~a ms" fastest)
+                          nbsp nbsp)
+                      ,@(apply
+                         append
+                         (map (lambda (impl)
+                                (let* ([a (assq impl (cdr bm-run))]
+                                       [n (and a (caadr a))])
+                                  `((td ((align "right")
+                                         (bgcolor ,(lookup-color impl)))
+                                        ,(if n
+                                             (small (ratio->string (/ (caddr a) c-fastest)))
+                                             '"-")
+                                        nbsp)
+                                    (td ((bgcolor ,(lookup-color impl)))
+                                        ,(if n
+                                             (if (= n fastest)
+                                                 '(font ((color "blue")) (b "1"))
+                                                 (ratio->string (/ n fastest)))
+                                             "-")
+                                        nbsp))))
+                              sorted-impls)))))
+             sorted-runs))))
   (newline))

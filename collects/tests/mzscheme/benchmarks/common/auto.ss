@@ -30,7 +30,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (system "larceny")))
 
   (define (mk-mzc bm)
-    (system (format "mzc ~a.ss" bm)))
+    (parameterize ([current-output-port (open-output-bytes)])
+      (system (format "mzc ~a.ss" bm))))
 
   (define (run-exe bm)
     (system (symbol->string bm)))
@@ -108,9 +109,10 @@ exec mzscheme -qu "$0" ${1+"$@"}
      (make-impl 'mzc
                 mk-mzc
                 (lambda (bm)
-                  (system (format "mzscheme -mvqe '(load-extension \"~a.dylib\")'" bm)))
+                  (system (format "mzscheme -mvqee '(load-extension \"~a.dylib\")' '(require ~a)'" 
+                                  bm bm)))
                 extract-mzscheme-times
-                '())
+                '(conform nucleic2 takr))
      (make-impl 'mzscheme-j
                 mk-mzscheme
                 (lambda (bm)
@@ -138,7 +140,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 extract-larceny-times
                 '())))
 
-  (define obsolte-impls '(mzscheme mzscheme-j))
+  (define obsolte-impls '(mzscheme mzscheme-j mzc))
 
   (define benchmarks
     '(conform
