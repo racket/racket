@@ -207,11 +207,13 @@
                   (syntax->list #'(?svars* ...))
                   "Rename bound variables"]
           [Expr (?srhs ...) srhss]
-          [#:bind (([?vvars** ?vrhs**] ...) . ?body**) vrenames]
-          [#:walk (syntax/skeleton e1 (?lsv ([?svars* ?srhs*] ...) ([?vars** ?vrhs**] ...) . ?body**))
-                  (syntax->list #'(?vvars* ...))
-                  (syntax->list #'(?vvars** ...))
-                  "Rename bound variables"]
+          ;; If vrenames is #f, no var bindings to rename
+          [#:if vrenames
+                [#:bind (([?vvars** ?vrhs**] ...) . ?body**) vrenames]
+                [#:walk (syntax/skeleton e1 (?lsv ([?svars* ?srhs*] ...) ([?vars** ?vrhs**] ...) . ?body**))
+                        (syntax->list #'(?vvars* ...))
+                        (syntax->list #'(?vvars** ...))
+                        "Rename bound variables"]]
           [Expr (?vrhs ...) vrhss]
           [Block ?body body]
           => (lambda (mid)

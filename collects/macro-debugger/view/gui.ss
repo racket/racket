@@ -233,6 +233,7 @@
       ;; Updates the terms in the syntax browser to the current step
       (define/private (update)
         (define text (send sbview get-text))
+        (define position-of-interest 0)
         (send text begin-edit-sequence)
         (send sbview erase-all)
         (when (pair? derivs-prefix)
@@ -244,6 +245,7 @@
                             (send sbview add-text "Error\n"))))
                     (reverse derivs-prefix))
           (send sbview add-separator))
+        (set! position-of-interest (send text last-position))
         (when steps
           (let ([step (cursor:current steps)])
             (unless step
@@ -282,7 +284,11 @@
                       (send sbview add-syntax (lift/deriv-e1 suffix-deriv)))
                     (cdr derivs)))
         (send text end-edit-sequence)
-        (send text scroll-to-position 0)
+        (send text scroll-to-position
+              position-of-interest
+              #f
+              (send text last-position)
+              'start)
         (enable/disable-buttons))
       
       (define/private (enable/disable-buttons)
@@ -309,8 +315,8 @@
                            (send sbview erase-all))])
           (let ([ds (map car derivs-prefix)])
             (let ([sds (map (lambda (d) (synthesize d)) ds)])
-              (set! derivs-prefix (map cons ds sds))))
-          (refresh)))
+              (set! derivs-prefix (map cons ds sds)))))
+        (refresh))
 
       ;; refresh : -> void
       ;; Resynth current derivation,
@@ -318,21 +324,29 @@
       ;; Show first step
       (define/private (refresh)
         (if (pair? derivs)
-            (let ([deriv (car derivs)])
-              (with-handlers ([(lambda (e) (catch-errors?))
-                               (lambda (e)
-                                 (message-box 
-                                  "Error"
-                                  "Internal error in macro stepper (reductions)")
-                                 (send sbview erase-all))])
-                (let ([d (synthesize deriv)])
-                  (set! synth-deriv d)
-                  (set! steps (cursor:new (reductions d)))))
-              (navigate-to-start))
+            (refresh/nontrivial)
             (begin (set! synth-deriv #f)
                    (set! steps #f)
                    (update))))
 
+      ;; refresh/nontrivial : -> void
+      (define/private (refresh/nontrivial)
+        (let ([deriv (car derivs)])
+          (with-handlers ([(lambda (e) (catch-errors?))
+                           (lambda (e)
+                             (message-box 
+                              "Error"
+                              "Internal error in macro stepper (reductions)")
+                             (set! synth-deriv #f)
+                             (set! steps (cursor:new null)))])
+            (let ([d (synthesize deriv)])
+              (let ([s (cursor:new (reductions d))])
+                (set! synth-deriv d)
+                (set! steps s)))))
+        #;(navigate-to-start)
+        (update))
+
+      ;; synthesize : Derivation -> Derivation
       (define/private (synthesize deriv)
         (let ([show-macro? (get-show-macro?)])
           (if show-macro?
@@ -377,16 +391,23 @@
       (define stx-name #f)
       (define stx-module #f)
 
-      (define pane
-        (new vertical-pane%
+      (define super-pane
+        (new horizontal-pane%
              (parent parent)
-             (stretchable-height #f)
+             (stretchable-height #f)))
+      (define left-pane
+        (new vertical-pane%
+             (parent super-pane)
+             (stretchable-width #f)
              (alignment '(left top))))
-      
+      (define right-pane
+        (new vertical-pane%
+             (parent super-pane)))
+
       (define enable-ctl
         (new check-box% 
              (label "Enable macro hiding?")
-             (parent pane)
+             (parent left-pane)
              (value enabled?) 
              (callback
               (lambda _
@@ -395,17 +416,27 @@
 
       (define kernel-ctl
         (new check-box%
-             (label "Hide mzscheme primitives")
-             (parent pane)
+             (label "Hide mzscheme syntax")
+             (parent left-pane)
              (value (hiding-policy-opaque-kernel policy))
              (callback (lambda _
                          (if (send kernel-ctl get-value)
                              (policy-hide-kernel policy)
                              (policy-unhide-kernel policy))
                          (refresh)))))
+      (define libs-ctl
+        (new check-box%
+             (label "Hide library syntax")
+             (parent left-pane)
+             (value (hiding-policy-opaque-libs policy))
+             (callback (lambda _
+                         (if (send libs-ctl get-value)
+                             (policy-hide-libs policy)
+                             (policy-unhide-libs policy))
+                         (refresh)))))
 
       (define look-pane
-        (new horizontal-pane% (parent pane) (stretchable-height #f)))
+        (new horizontal-pane% (parent right-pane) (stretchable-height #f)))
       (define look-ctl
         (new list-box% (parent look-pane) (label "") (choices null)))
       (define delete-ctl
@@ -416,12 +447,12 @@
                 (refresh)))))
 
       (define add-pane
-        (new horizontal-pane% (parent pane) (stretchable-height #f)))
+        (new horizontal-pane% (parent right-pane) (stretchable-height #f)))
       (define add-text
         (new text-field%
              (label "")
              (parent add-pane)
-             (enabled #f)
+             #;(enabled #f)
              (stretchable-width #t)))
       (define add-editor (send add-text get-editor))
       (define add-hide-module-button
@@ -434,6 +465,8 @@
         (new button% (parent add-pane) (label "Show macro") (enabled #f)
              (callback (lambda _ (add-show-identifier) (refresh)))))
 
+      (send add-editor lock #t)
+      
       ;; Methods
 
       ;; enable-hiding : boolean -> void
@@ -456,6 +489,7 @@
       ;; set-syntax : syntax/#f -> void
       (define/public (set-syntax lstx)
         (set! stx lstx)
+        (send add-editor lock #f)
         (send add-editor erase)
         (unless (identifier? stx)
           (send add-hide-module-button enable #f))
@@ -470,10 +504,12 @@
                   (set! stx-name (syntax-e stx))
                   (set! stx-module #f)))
             (update-add-text)))
+        (send add-editor lock #t)
         (send add-show-id-button enable (identifier? lstx))
         (send add-hide-id-button enable (identifier? lstx)))
 
       (define/private (update-add-text)
+        (send add-editor lock #f)
         (if stx-module
             (send add-editor insert
                   (format "'~s' from module ~a"
@@ -481,7 +517,8 @@
                           (mpi->string stx-module)))
             (send add-editor insert
                   (format "lexically-bound ~s"
-                          stx-name))))
+                          stx-name)))
+        (send add-editor lock #t))
 
       (define/private (add-hide-module)
         (when stx-module

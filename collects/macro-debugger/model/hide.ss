@@ -191,11 +191,11 @@
                (letrec-syntaxes+values ([SVARS SRHS] ...) ([VVARS VRHS] ...) . BODY)
                ([for-derivs (SRHS ...) srhss]
                 [for-derivs (VRHS ...) vrhss]
-                [for-bderiv BODY body])
-               #:with (lambda (new-e2)
-                        (syntax-case #'BODY ()
-                          [(e) #'e]
-                          [(e ...) #'(begin e ...)])))]
+                [for-bderiv BODY body]))]
+;               #:with (lambda (new-e2)
+;                        (syntax-case #'BODY ()
+;                          [(e) #'e]
+;                          [(e ...) #'(begin e ...)])))]
 
         [(AnyQ p:#%datum (e1 e2 rs tagged-stx))
          (cond [(or (eq? tagged-stx e1) (show-macro? #'#%datum))
@@ -448,7 +448,7 @@
          (let ([new-table (table-restrict/lsv1 e1 srenames)])
            (parameterize ((subterms-table new-table))
              (append (apply append (map for-deriv srhss))
-                     (let ([new-table (table-restrict/lsv2 e1 srenames)])
+                     (let ([new-table (table-restrict/lsv2 e1 vrenames)])
                        (parameterize ((subterms-table new-table))
                          (append (apply append (map for-deriv vrhss))
                                  (for-bderiv body)))))))]
@@ -1099,9 +1099,12 @@
       (table-restrict/rename (cons #'?formals #'?body) rename)))
 
   (define (table-restrict/lsv1 stx rename) 
-    (with-syntax ([(?lsv ?sbindings ?vbindings ?body) stx])
+    (with-syntax ([(?lsv ?sbindings ?vbindings . ?body) stx])
       (table-restrict/rename (cons #'?sbindings (cons #'?vbindings #'?body)) rename)))
 
   (define (table-restrict/lsv2 stx rename)
-    (error 'unimplemented))
+    (if rename
+        (with-syntax ([(?lsv ?sbindings ?vbindings . ?body) stx])
+          (table-restrict/rename (cons #'?vbindings #'?body) rename))
+        (subterms-table)))
   )

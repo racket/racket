@@ -1,7 +1,7 @@
 
 (module browse-deriv mzscheme
   (require (lib "class.ss")
-           (lib "match.ss")
+           (lib "plt-match.ss")
            (lib "unitsig.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
@@ -28,22 +28,34 @@
     (unit/sig node^
       (import)
       
-      ;; Node = (union Derivation MRule PRule)
+      ;; Node = (union Derivation Transformation)
 
       ;; node-children
       (define (node-children node)
         (match node
-          [($ pderiv e1 e2 prule)
-           (node-children prule)]
-          [($ mderiv e1 e2 mrule next)
-           (list mrule next)]
-          
-          [($ mrule e1 e2 rs me1 me2 locals)
-           ;; FIXME
+          [(AnyQ mrule (e1 e2 tx next))
+           (list tx next)]
+          [(AnyQ transformation (e1 e2 rs me1 me2 locals))
            null]
-          [($ prule e1 e2 rs)
-           ;; FIXME
-           null]))
+          [(AnyQ p:define-syntaxes (e1 e2 rs rhs))
+           (list rhs)]
+          [(AnyQ p:define-values (e1 e2 rs rhs))
+           (list rhs)]
+          [(AnyQ p:if (e1 e2 rs full? test then else))
+           (if full?
+               (list test then else)
+               (list test then))]
+          [(AnyQ p:wcm (e1 e2 rs key value body))
+           (list key value body)]
+          [(AnyQ p:set! (e1 e2 rs id-rs rhs))
+           (list rhs)]
+          [(AnyQ p:set!-macro (e1 e2 rs deriv))
+           (list deriv)]
+          [(AnyQ p:begin (e1 e2 rs (AnyQ lderiv (es1 es2 derivs))))
+           derivs]
+          [(AnyQ p:begin0 (e1 e2 rs first (AnyQ lderiv (es1 es2 derivs))))
+           (cons first derivs)]))
+
       
       ;; node-summary-string
       (define (node-summary-string node)

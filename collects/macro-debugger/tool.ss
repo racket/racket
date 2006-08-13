@@ -12,7 +12,7 @@
            (lib "string-constant.ss" "string-constants"))
 
   (provide tool@)
-  
+
   (define tool@
     (unit/sig drscheme:tool-exports^
       (import drscheme:tool^)
@@ -95,21 +95,34 @@
             (super reset-console)
             (run-in-evaluation-thread
              (lambda ()
-               (current-eval (make-eval-handler (current-eval))))))
-          
-          (define/private (make-eval-handler original-eval-handler)
-            (if debugging?
-                (let ([stepper (delay (view:make-macro-stepper))])
-                  (lambda (expr)
-                    (if (compiled-expression? 
-                         (if (syntax? expr) (syntax-e expr) expr))
-                        (original-eval-handler expr)
-                        (let-values ([(e-expr deriv) (trace/result expr)])
-                          (show-deriv deriv stepper)
-                          (if (syntax? e-expr)
-                              (original-eval-handler e-expr)
-                              (raise e-expr))))))
-                original-eval-handler))
+               (let-values ([(e mnr) (make-handlers (current-eval) (current-module-name-resolver))])
+                 (current-eval e)
+                 (current-module-name-resolver mnr)))))
+
+          (define/private (make-handlers original-eval-handler original-module-name-resolver)
+            (let ([stepper (delay (view:make-macro-stepper))]
+                  [debugging? debugging?])
+              (values
+               (lambda (expr)
+                 (if debugging?
+                     (let-values ([(e-expr deriv) (trace/result expr)])
+                       (show-deriv deriv stepper)
+                       (if (syntax? e-expr)
+                           (original-eval-handler e-expr)
+                           (raise e-expr)))
+                     (original-eval-handler expr)))
+               (lambda args
+                 (let ([eo (current-expand-observe)]
+                       [saved-debugging? debugging?])
+                   (dynamic-wind
+                       (lambda ()
+                         (set! debugging? #f)
+                         (when eo (current-expand-observe void)))
+                       (lambda ()
+                         (apply original-module-name-resolver args))
+                       (lambda ()
+                         (set! debugging? saved-debugging?)
+                         (when eo (current-expand-observe eo)))))))))
 
           (define/private (show-deriv deriv stepper-promise)
             (parameterize ([current-eventspace drscheme-eventspace])

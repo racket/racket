@@ -347,8 +347,6 @@
        [(prim-letrec-values ! renames-let (? NextEEs 'rhss) next-group (? EB 'body))
         (make-p:letrec-values e1 e2 rs $3 $4 $6)])
       
-      ;; Might have to deal with let*-values
-      
       (PrimLetrecSyntaxes+Values
        (#:args e1 e2 rs)
        [(prim-letrec-syntaxes+values (! 'bad-syntax) renames-letrec-syntaxes

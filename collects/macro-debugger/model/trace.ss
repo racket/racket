@@ -13,6 +13,7 @@
            trace
            trace/result
            trace+reductions
+           current-expand-observe
            (all-from "reductions.ss"))
 
   (define current-expand-observe
