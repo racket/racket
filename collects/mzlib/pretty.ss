@@ -674,7 +674,9 @@
 		  obj pport #t
 		  #f #f
 		  (lambda ()
-		    (out "#hash")
+		    (out (if (hash-table? obj 'equal)
+                             "#hash"
+                             "#hasheq"))
 		    (wr-lst (hash-table-map obj cons) #f depth)))
 		 (parameterize ([print-hash-table #f])
 		   ((if display? orig-display orig-write) obj pport)))]
@@ -775,7 +777,9 @@
 			   (out "#")
 			   (pp-list (vector->list (struct->vector obj)) extra pp-expr #f depth)]
 			  [(hash-table? obj)
-			   (out "#hash")
+			   (out (if (hash-table? obj 'equal)
+                                    "#hash"
+                                    "#hasheq"))
 			   (pp-list (hash-table-map obj cons) extra pp-expr #f depth)]
 			  [(box? obj)
 			   (out "#&") 
