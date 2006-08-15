@@ -2432,6 +2432,10 @@ static FILE *mrerr = NULL;
 
 #endif /* WINDOW_STDIO */
 
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+
 #if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
 static void MrEdSchemeMessages(char *msg, ...)
 {
@@ -2511,8 +2515,8 @@ static void MrEdSchemeMessages(char *msg, ...)
     ulen = scheme_utf8_decode_as_prefix((unsigned char *)s, d, l,
 					NULL, 0, -1,
 					&ipos, 0, '?');
-    utf8_leftover_count = (l - ipos);
-    memcpy(utf8_leftover, s + d + ipos, utf8_leftover_count);
+    utf8_leftover_count = (l - (ipos - d));
+    memcpy(utf8_leftover, s + ipos, utf8_leftover_count);
     
     us = (wxchar *)scheme_malloc_atomic(sizeof(wxchar) * ulen);
     scheme_utf8_decode_as_prefix((unsigned char *)s, d, l,
