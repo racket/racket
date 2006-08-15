@@ -57,6 +57,8 @@
           (define/override (config-panel parent)
             (module-language-config-panel parent))
           
+          (define/override (get-language-id) "plt:module")
+          
           (define/override (default-settings)
             (let ([super-defaults (super default-settings)])
               (apply make-module-language-settings

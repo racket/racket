@@ -63,10 +63,21 @@
                (error 'drscheme:language:add-language "expected language ~e to implement ~e, forgot to use drscheme:language:get-default-mixin ?" language i<%>)))
            (drscheme:language:get-language-extensions))
           
+          (ensure-no-duplicate-ids language languages)
           (set! languages 
                 (if front? 
                     (cons language languages)
                     (append languages (list language))))))
+      
+      (define (ensure-no-duplicate-ids l1 languages)
+        (for-each
+         (λ (l2)
+           (when (equal? (send l1 get-language-id)
+                         (send l2 get-language-id))
+             (error 'drscheme:language-configuration:add-language
+                    "found two languages with the id ~s"
+                    (send l1 get-language-id))))
+         languages))
       
       ;; get-languages : -> (listof languages)
       (define (get-languages) 
@@ -1220,6 +1231,7 @@
                                                    (platform-independent-string->path lang-module))
                                                   `(lib ,@lang-module)))
                                       (language-position lang-position)
+                                      (language-id (format "plt:lang-from-module: ~s" lang-module))
                                       (language-numbers lang-numbers)
                                       (one-line-summary one-line-summary)
                                       (language-url url)
@@ -1359,7 +1371,7 @@
                              (use-namespace-require/copy?)))))
                       (super-instantiate ()))))]
                [make-simple
-                (λ (module position numbers mred-launcher? one-line-summary extra-mixin)
+                (λ (module id position numbers mred-launcher? one-line-summary extra-mixin)
                   (let ([%
                          (extra-mixin
                           ((extras-mixin mred-launcher? one-line-summary)
@@ -1369,10 +1381,12 @@
                               drscheme:language:simple-module-based-language%)))))])
                     (instantiate % ()
                       (module module)
+                      (language-id id)
                       (language-position position)
                       (language-numbers numbers))))])
           (add-language
            (make-simple '(lib "plt-mzscheme.ss" "lang") 
+                        "plt:mz"
                         (list (string-constant professional-languages)
                               (string-constant plt)
                               (string-constant mzscheme-w/debug))
@@ -1382,6 +1396,7 @@
                         (λ (x) x)))
           (add-language
            (make-simple '(lib "plt-mred.ss" "lang")
+                        "plt:mred"
                         (list (string-constant professional-languages)
                               (string-constant plt)
                               (string-constant mred-w/debug))
@@ -1391,6 +1406,7 @@
                         (λ (x) x)))
           (add-language
            (make-simple '(lib "plt-pretty-big.ss" "lang")
+                        "plt:pretty-big"
                         (list (string-constant professional-languages)
                               (string-constant plt)
                               (string-constant pretty-big-scheme))
@@ -1400,6 +1416,7 @@
                         (λ (x) x)))
           (add-language
            (make-simple '(lib "plt-mzscheme.ss" "lang")
+                        "plt:expander"
                         (list (string-constant professional-languages)
                               (string-constant plt)
                               (string-constant expander))
@@ -1409,6 +1426,7 @@
                         add-expand-to-front-end))
           (add-language
            (make-simple '(lib "lang.ss" "r5rs")
+                        "plt:r5rs"
                         (list (string-constant professional-languages)
                               (string-constant r5rs-lang-name))
                         (list -1000 -1000)
@@ -1418,6 +1436,7 @@
           
           (add-language
            (make-simple 'mzscheme
+                        "plt:no-language-chosen"
                         (list (string-constant initial-language-category)
                               (string-constant no-language-chosen))
                         (list 10000 1000)

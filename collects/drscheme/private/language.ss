@@ -61,6 +61,7 @@
           
           get-language-position
           get-language-name
+          get-language-id
           get-style-delta
           get-language-numbers
           get-one-line-summary
@@ -89,6 +90,7 @@
           render-value
           
           get-language-position 
+          get-language-id
           get-language-numbers
           get-one-line-summary
           get-language-url))
@@ -97,6 +99,7 @@
 	(interface ()
           get-module
           get-language-position
+          get-language-id
           get-language-numbers
           get-one-line-summary
           get-language-url
@@ -131,9 +134,14 @@
 					   (read-syntax src port))])
                                   (if (eof-object? v)
 				      v
-				      (namespace-syntax-introduce v))))))
+				      (namespace-syntax-introduce v)))))
+                      (language-id (if (pair? language-position)
+                                       (car (last-pair language-position))
+                                       (error 'simple-module-based-language<%>
+                                              "expected non-empty list of strings, got ~e" language-position))))
           (define/public (get-module) module)
 	  (define/public (get-language-position) language-position)
+          (define/public (get-language-id) language-id)
           (define/public (get-language-numbers) language-numbers)
           (define/public (get-one-line-summary) one-line-summary)
           (define/public (get-language-url) language-url)

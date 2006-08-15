@@ -317,18 +317,22 @@
        (λ (x)
 	 (let ([lang (drscheme:language-configuration:language-settings-language x)]
 	       [settings (drscheme:language-configuration:language-settings-settings x)])
-	   (list (send lang get-language-position)
+	   (list (send lang get-language-id)
 		 (send lang marshall-settings settings))))
        (λ (x)
-	 (and (list? x)
+      	 (and (list? x)
 	      (= 2 (length x))
-	      (let* ([lang-position (first x)]
+	      (let* ([lang-id (first x)]
 		     [marshalled-settings (second x)]
 		     [lang (ormap
 			    (λ (x)
-			      (and (equal? lang-position
-					   (send x get-language-position))
-				   x))
+                              (and (or (equal? (send x get-language-id) lang-id)
+                                       
+                                       ;; this second branch of the `or' corresdponds
+                                       ;; to preferences saved from earlier versions of
+                                       ;; drscheme, for a sort of backwards compatibility
+                                       (equal? (send x get-language-position) lang-id))
+                                   x))
 			    (drscheme:language-configuration:get-languages))])
 		(and lang
 		     (let ([settings (send lang unmarshall-settings marshalled-settings)])

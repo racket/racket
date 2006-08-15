@@ -50,6 +50,7 @@
       (define lang%
         (class* object% (drscheme:language:language<%>)
           (define/public (capability-value s) (drscheme:language:get-capability-default s))
+          (define/public (get-language-id) "plt:algol60")
           (define/public (first-opened) (void))
           (define/public (config-panel parent)
             (case-lambda

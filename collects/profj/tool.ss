@@ -587,8 +587,9 @@
               
           (define/public (get-comment-character) (values "//" #\*))
           (define/public (get-style-delta) #f)
+          (define/public (get-language-id) (format "plt:~a" name)) ;; name is assume to be constant (ie, not a string-constant that can be translated)
           (define/public (get-language-position) 
-            (cons (string-constant experimental-languages) (list "ProfessorJ" name) ))
+            (cons (string-constant experimental-languages) (list "ProfessorJ" name)))
           (define/public (get-language-numbers) (list 1000 10 number))
           (define/public (get-language-name) (string-append "ProfessorJ: " name))
           (define/public (get-language-url) #f)

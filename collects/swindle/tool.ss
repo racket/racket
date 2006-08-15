@@ -21,6 +21,7 @@
                  (class* object%
                          (drscheme:language:simple-module-based-language<%>)
                    (define/public (get-language-numbers) '(-1000 2000 0))
+                   (define/public (get-language-id) (format "plt:~a" l-name)) ;; assumed to always be the same, (ie, not translated)
                    (define/public (get-language-position)
                      (list (string-constant professional-languages)
                            "Swindle" l-entry-name))
