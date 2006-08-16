@@ -1,4 +1,5 @@
 
+;; Imperative body:
 (define (loops n)
   (let ((result 0))
     (let loop1 ((i1 1)) 
@@ -34,7 +35,7 @@
             (loop1 (+ i1 1)))))
     result))
 
-
+;; Functional body:
 (define (func-loops n)
   (let loop1 ((i1 1)(result 0))
       (if (> i1 n)
@@ -56,8 +57,8 @@
                                         (loop5 (+ i5 1) result)
                                         (loop6 (+ i6 1) (+ result 1)))))))))))))))
 
-(define cnt 18)
-(display (time (loops cnt))) (newline)
-(display (time (func-loops cnt))) (newline)
-
+(define cnt (if (with-input-from-file "input.txt" read) 18 1))
+(time (list
+        (loops cnt)
+        (func-loops cnt)))
 

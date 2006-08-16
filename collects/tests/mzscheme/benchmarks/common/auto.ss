@@ -7,7 +7,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (require (lib "process.ss")
            (lib "cmdline.ss")
            (lib "list.ss")
-           (lib "compile.ss"))
+           (lib "compile.ss")
+           (lib "file.ss" "dynext"))
 
   (define (bytes->number b)
     (string->number (bytes->string/latin-1 b)))
@@ -18,10 +19,16 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (parameterize ([current-command-line-arguments (vector (symbol->string bm))])
       (load script)))
 
+  (define (clean-up-bin bm)
+    (delete-file (symbol->string bm)))
+
   (define (mk-mzscheme bm)
     ;; To get compilation time:
     (parameterize ([current-namespace (make-namespace)])
       (load (format "~a.ss" bm))))
+
+  (define (clean-up-nothing bm)
+    (void))
 
   (define (mk-mzscheme-tl bm)
     ;; To get compilation time:
@@ -31,6 +38,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (eval '(define null #f)) ; for dynamic.sch
       (compile-file (format "~a.sch" bm))))
 
+  (define (clean-up-zo bm)
+    (delete-file (build-path "compiled" (format "~a.zo" bm))))
+
   (define (mk-larceny bm)
     (parameterize ([current-input-port (open-input-string
                                         (format "(compile-file \"~a.sch\")\n"
@@ -38,9 +48,15 @@ exec mzscheme -qu "$0" ${1+"$@"}
 		   [current-output-port (open-output-bytes)])
       (system "larceny")))
 
+  (define (clean-up-fasl bm)
+    (delete-file (build-path "compiled" (format "~a.fasl"))))
+
   (define (mk-mzc bm)
     (parameterize ([current-output-port (open-output-bytes)])
       (system (format "mzc ~a.ss" bm))))
+
+  (define (clean-up-extension bm)
+    (delete-file (append-extension-suffix (symbol->string bm))))
 
   (define (run-exe bm)
     (system (symbol->string bm)))
@@ -99,7 +115,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
             [sys (ms->milliseconds (cadddr m))])
         (list (+ user sys) real #f))))
 
-  (define-struct impl (name make run extract-result skips))
+  (define-struct impl (name make run extract-result clean-up skips))
 
   (define impls
     (list
@@ -108,51 +124,61 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (lambda (bm)
                   (system (format "mzscheme -qu ~a.ss" bm)))
                 extract-mzscheme-times
+                clean-up-nothing
                 '())
      (make-impl 'mzscheme3m
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzscheme3m -qu ~a.ss" bm)))
                 extract-mzscheme-times
+                clean-up-nothing
                 '())
      (make-impl 'mzc
                 mk-mzc
                 (lambda (bm)
-                  (system (format "mzscheme -mvqee '(load-extension \"~a.dylib\")' '(require ~a)'" 
-                                  bm bm)))
+                  (system (format "mzscheme -mvqee '(load-extension \"~a\")' '(require ~a)'" 
+                                  (append-extension-suffix (symbol->string bm))
+                                  bm)))
                 extract-mzscheme-times
-                '(conform nucleic2 takr))
+                clean-up-extension
+                '(takr))
      (make-impl 'mzscheme-j
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzscheme -jqu ~a.ss" bm)))
                 extract-mzscheme-times
+                clean-up-nothing
                 '())
      (make-impl 'mzscheme3m-tl
                 mk-mzscheme-tl
                 (lambda (bm)
                   (system (format "mzscheme3m -qr compiled/~a.zo" bm)))
                 extract-mzscheme-times
+                clean-up-zo
                 '(nucleic2))
      (make-impl 'chicken
                 (run-mk "mk-chicken.ss")
                 run-exe
                 extract-chicken-times
+                clean-up-bin
                 '(nucleic2))
      (make-impl 'bigloo
                 (run-mk "mk-bigloo.ss")
                 run-exe/time
                 extract-time-times
+                clean-up-bin
                 '(cpstack ctak puzzle triangle))
      (make-impl 'gambit
                 (run-mk "mk-gambit.ss")
                 run-gambit-exe
                 extract-gambit-times
+                clean-up-bin
                 '(nucleic2))
      (make-impl 'larceny
                 mk-larceny
                 run-larceny
                 extract-larceny-times
+                clean-up-fasl
                 '())))
 
   (define obsolte-impls '(mzscheme mzscheme-j mzscheme3m-tl mzc))
@@ -169,6 +195,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       earley
       fft
       nboyer
+      nestedloop
       nfa
       nucleic2
       puzzle
@@ -203,10 +230,24 @@ exec mzscheme -qu "$0" ${1+"$@"}
                             bm
                             ((impl-extract-result i) bm (get-output-bytes out))
                             (inexact->exact (round (- end start)))))
-                  (loop (sub1 n)))))))))
+                  (loop (sub1 n)))))))
+      ((impl-clean-up i) bm)))
+
+  (define no-implementations (map (lambda (s)
+                                    (cons (string->symbol (format "no-~a" s))
+                                          s))
+                                  (map impl-name impls)))
+  (define no-benchmarks (map (lambda (s)
+                               (cons (string->symbol (format "no-~a" s))
+                                     s))
+                             benchmarks))
 
   (define run-benchmarks #f)
   (define run-implementations #f)
+
+  (define default-benchmarks benchmarks)
+  (define default-implementations (remq* obsolte-impls
+                                         (map impl-name impls)))
 
   (define args
     (command-line
@@ -229,10 +270,20 @@ exec mzscheme -qu "$0" ${1+"$@"}
                   (set! run-implementations
                         (append (or run-implementations null)
                                 (list s)))]
+                 [(assq s no-implementations)
+                  => (lambda (a)
+                       (set! run-implementations
+                             (remq (cdr a)
+                                   (or run-implementations default-implementations))))]
                  [(memq s benchmarks)
                   (set! run-benchmarks
                         (append (or run-benchmarks null)
                                 (list s)))]
+                 [(assq s no-benchmarks)
+                  => (lambda (a)
+                       (set! run-benchmarks
+                             (remq (cdr a)
+                                   (or run-benchmarks default-benchmarks))))]
                  [else
                   (error 'auto "mysterious argument: ~a" arg)])))
             args)
@@ -243,5 +294,4 @@ exec mzscheme -qu "$0" ${1+"$@"}
               (or run-benchmarks
                   benchmarks)))
        (or run-implementations
-           (remq* obsolte-impls
-                  (map impl-name impls)))))
+           default-implementations)))
