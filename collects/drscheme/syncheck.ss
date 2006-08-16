@@ -18,6 +18,7 @@ If the namespace does not, they are colored the unbound color.
 (module syncheck mzscheme
   (require (lib "string-constant.ss" "string-constants")
            (lib "unitsig.ss")
+           (lib "contract.ss")
            (lib "tool.ss" "drscheme")
            (lib "class.ss")
            (lib "list.ss")
@@ -62,7 +63,9 @@ If the namespace does not, they are colored the unbound color.
     
     hide-error-report
     get-error-report-text
-    get-error-report-visible?)
+    get-error-report-visible?
+          
+    update-button-visibility/settings)
   
   (define tool@
     (unit/sig drscheme:tool-exports^
@@ -162,7 +165,7 @@ If the namespace does not, they are colored the unbound color.
           
 	  (super-new)))
       
-      (define make-graphics-text%
+      (define make-syncheck-text%
         (λ (super%)
           (let* ([cursor-arrow (make-object cursor% 'arrow)])
             (class* super% (syncheck-text<%>)
@@ -170,6 +173,7 @@ If the namespace does not, they are colored the unbound color.
                        position-location
                        get-canvas last-position dc-location-to-editor-location
                        find-position begin-edit-sequence end-edit-sequence)
+              
               
               
               ;; arrow-vectors : 
@@ -773,6 +777,11 @@ If the namespace does not, they are colored the unbound color.
                   (when (is-a? frame syncheck-frame<%>)
                     (send frame syncheck:button-callback id-from-def))))
               
+              (define/augment (after-set-next-settings settings)
+                (let ([frame (get-top-level-window)])
+                  (when frame
+                    (send frame update-button-visibility/settings settings))))
+              
               (super-new)))))
       
       (define syncheck-bitmap
@@ -858,7 +867,19 @@ If the namespace does not, they are colored the unbound color.
             (if (send new-tab get-error-report-visible?)
                 (show-error-report)
                 (hide-error-report))
-            (send report-error-canvas set-editor (send new-tab get-error-report-text)))
+            (send report-error-canvas set-editor (send new-tab get-error-report-text))
+            (update-button-visibility/tab new-tab))
+          
+          (define/private (update-button-visibility/tab tab)
+            (update-button-visibility/settings (send (send tab get-defs) get-next-settings)))
+          (define/public (update-button-visibility/settings settings)
+            (let* ([lang (drscheme:language-configuration:language-settings-language settings)]
+                   [visible? (send lang capability-value 'drscheme:check-syntax-button)])
+              (send check-syntax-button-parent-panel change-children
+                    (λ (l)
+                      (if visible?
+                          (list check-syntax-button)
+                          '())))))
           
           (define/augment (enable-evaluation)
             (send check-syntax-button enable #t)
@@ -1105,16 +1126,21 @@ If the namespace does not, they are colored the unbound color.
           
           (super-new)
           
+          (define check-syntax-button-parent-panel 
+            (new horizontal-panel%
+                 [parent (get-button-panel)]
+                 [stretchable-width #f]
+                 [stretchable-height #f]))
           (define check-syntax-button
             (new button%
                  (label (syncheck-bitmap this))
-                 (parent (get-button-panel))
+                 (parent check-syntax-button-parent-panel)
                  (callback (λ (button evt) (syncheck:button-callback)))))
           (define/public (syncheck:get-button) check-syntax-button)
           (send (get-button-panel) change-children
                 (λ (l)
-                  (cons check-syntax-button
-                        (remove check-syntax-button l))))))
+                  (cons check-syntax-button-parent-panel
+                        (remove check-syntax-button-parent-panel l))))))
       
       (define report-error-style (make-object style-delta% 'change-style 'slant))
       (send report-error-style set-delta-foreground "red")
@@ -2236,6 +2262,7 @@ If the namespace does not, they are colored the unbound color.
       (add-check-syntax-key-bindings (drscheme:rep:get-drs-bindings-keymap))
       (fw:color-prefs:add-to-preferences-panel (string-constant check-syntax)
                                                syncheck-add-to-preferences-panel)
-      (drscheme:get/extend:extend-definitions-text make-graphics-text%)
+      (drscheme:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)
+      (drscheme:get/extend:extend-definitions-text make-syncheck-text%)
       (drscheme:get/extend:extend-unit-frame unit-frame-mixin #f)
       (drscheme:get/extend:extend-tab tab-mixin))))

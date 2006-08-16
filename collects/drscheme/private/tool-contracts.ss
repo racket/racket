@@ -909,6 +909,8 @@
    ""
    "By default, these capabilities are registered as DrScheme starts up:"
    "\\begin{itemize}"
+   "\\item \\scheme|(drscheme:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)|"
+   "--- controls the visiblity of the check syntax button"
    "\\item \\scheme|(drscheme:language:register-capability 'drscheme:language-menu-title (flat-contract string?) (string-constant scheme-menu-name))|"
    " --- controls the name of the menu just to the right of the language menu (defaultly named ``Scheme'')"
    "\\item \\scheme|(drscheme:language:register-capability 'drscheme:define-popup (or/c (cons/c string? string?) false/c) (cons \"(define\" \"(define ...)\"))|"
