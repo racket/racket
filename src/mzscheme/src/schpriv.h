@@ -1003,6 +1003,7 @@ typedef struct Scheme_Overflow {
     || defined(MACOS_FIND_STACK_BOUNDS) || defined(ASSUME_FIXED_STACK_SIZE) \
     || defined(BEOS_FIND_STACK_BOUNDS) || defined(OSKIT_FIXED_STACK_BOUNDS) \
     || defined(PALM_FIND_STACK_BOUNDS)
+# define USE_STACK_BOUNDARY_VAR
 extern unsigned long scheme_stack_boundary;
 #endif
 

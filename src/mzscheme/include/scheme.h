@@ -1615,9 +1615,8 @@ MZ_EXTERN int (*scheme_actual_main)(int argc, char **argv);
 MZ_EXTERN void scheme_set_actual_main(int (*m)(int argc, char **argv));
 
 /* GC registration: */
-#ifdef GC_MIGHT_USE_REGISTERED_STATICS
 MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
-#endif
+MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
 
 MZ_EXTERN void scheme_register_static(void *ptr, long size);
 #if defined(MUST_REGISTER_GLOBALS) || defined(GC_MIGHT_USE_REGISTERED_STATICS)

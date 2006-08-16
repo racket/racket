@@ -238,10 +238,7 @@ static Scheme_Object *scheme_compile_expand_expr(Scheme_Object *form, Scheme_Com
 
 typedef void (*DW_PrePost_Proc)(void *);
 
-#if defined(UNIX_FIND_STACK_BOUNDS) || defined(WINDOWS_FIND_STACK_BOUNDS) \
-    || defined(MACOS_FIND_STACK_BOUNDS) || defined(ASSUME_FIXED_STACK_SIZE) \
-    || defined(BEOS_FIND_STACK_BOUNDS) || defined(OSKIT_FIXED_STACK_BOUNDS) \
-    || defined(PALM_FIND_STACK_BOUNDS)
+#ifdef USE_STACK_BOUNDARY_VAR
 unsigned long scheme_stack_boundary;
 #endif
 
@@ -577,62 +574,66 @@ void scheme_init_stack_check()
   }
 #endif
 
-#ifdef ASSUME_FIXED_STACK_SIZE
-  scheme_stack_boundary = scheme_get_stack_base();
-  if (stack_grows_up)
-    scheme_stack_boundary += (FIXED_STACK_SIZE - STACK_SAFETY_MARGIN);
-  else
-    scheme_stack_boundary += (STACK_SAFETY_MARGIN - FIXED_STACK_SIZE);
-#endif
-
-#ifdef WINDOWS_FIND_STACK_BOUNDS
-  scheme_stack_boundary = scheme_get_stack_base();
-  scheme_stack_boundary += (STACK_SAFETY_MARGIN - 0x100000);
-#endif
-
-#ifdef MACOS_FIND_STACK_BOUNDS
-  scheme_stack_boundary = (unsigned long)&v +  STACK_SAFETY_MARGIN - StackSpace();
-#endif
-
-#ifdef PALMOS_FIND_STACK_BOUNDS
-  {
-    Ptr s, e;
-    SysGetStackInfo(Ptr &s, &e);
-    scheme_stack_boundary = (unsigned long)e + STACK_SAFETY_MARGIN;
-  }
-#endif
-
-#ifdef BEOS_FIND_STACK_BOUNDS
-  {
-    thread_info info;
-    get_thread_info(find_thread(NULL), &info);
-    scheme_stack_boundary = (unsigned long)info.stack_base + STACK_SAFETY_MARGIN;
-  }
-#endif
-
-#ifdef OSKIT_FIXED_STACK_BOUNDS
-  scheme_stack_boundary = (unsigned long)base_stack_start + STACK_SAFETY_MARGIN;
-#endif
-
-#ifdef UNIX_FIND_STACK_BOUNDS
-  getrlimit(RLIMIT_STACK, &rl);
-
-  {
-    unsigned long bnd, lim;
-    bnd = (unsigned long)scheme_get_stack_base();
-
-    lim = (unsigned long)rl.rlim_cur;
-# ifdef UNIX_STACK_MAXIMUM
-    if (lim > UNIX_STACK_MAXIMUM)
-      lim = UNIX_STACK_MAXIMUM;
+#ifdef USE_STACK_BOUNDARY_VAR
+  if (!scheme_stack_boundary) {
+# ifdef ASSUME_FIXED_STACK_SIZE
+    scheme_stack_boundary = scheme_get_stack_base();
+    if (stack_grows_up)
+      scheme_stack_boundary += (FIXED_STACK_SIZE - STACK_SAFETY_MARGIN);
+    else
+      scheme_stack_boundary += (STACK_SAFETY_MARGIN - FIXED_STACK_SIZE);
 # endif
 
-    if (stack_grows_up)
-      bnd += (lim - STACK_SAFETY_MARGIN);
-    else
-      bnd += (STACK_SAFETY_MARGIN - lim);
+# ifdef WINDOWS_FIND_STACK_BOUNDS
+    scheme_stack_boundary = scheme_get_stack_base();
+    scheme_stack_boundary += (STACK_SAFETY_MARGIN - 0x100000);
+# endif
 
-    scheme_stack_boundary = bnd;
+# ifdef MACOS_FIND_STACK_BOUNDS
+    scheme_stack_boundary = (unsigned long)&v +  STACK_SAFETY_MARGIN - StackSpace();
+# endif
+
+# ifdef PALMOS_FIND_STACK_BOUNDS
+    {
+      Ptr s, e;
+      SysGetStackInfo(Ptr &s, &e);
+      scheme_stack_boundary = (unsigned long)e + STACK_SAFETY_MARGIN;
+    }
+# endif
+
+# ifdef BEOS_FIND_STACK_BOUNDS
+    {
+      thread_info info;
+      get_thread_info(find_thread(NULL), &info);
+      scheme_stack_boundary = (unsigned long)info.stack_base + STACK_SAFETY_MARGIN;
+    }
+# endif
+
+# ifdef OSKIT_FIXED_STACK_BOUNDS
+    scheme_stack_boundary = (unsigned long)base_stack_start + STACK_SAFETY_MARGIN;
+# endif
+
+# ifdef UNIX_FIND_STACK_BOUNDS
+    getrlimit(RLIMIT_STACK, &rl);
+  
+    {
+      unsigned long bnd, lim;
+      bnd = (unsigned long)scheme_get_stack_base();
+
+      lim = (unsigned long)rl.rlim_cur;
+#  ifdef UNIX_STACK_MAXIMUM
+      if (lim > UNIX_STACK_MAXIMUM)
+        lim = UNIX_STACK_MAXIMUM;
+#  endif
+
+      if (stack_grows_up)
+        bnd += (lim - STACK_SAFETY_MARGIN);
+      else
+        bnd += (STACK_SAFETY_MARGIN - lim);
+
+      scheme_stack_boundary = bnd;
+    }
+# endif
   }
 #endif
 }

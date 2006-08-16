@@ -79,6 +79,17 @@ void scheme_set_stack_base(void *base, int no_auto_statics)
   use_registered_statics = no_auto_statics;
 }
 
+void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)
+{
+  scheme_set_stack_base(base, no_auto_statics);
+
+#ifdef USE_STACK_BOUNDARY_VAR
+  if (deepest) {
+    scheme_stack_boundary = (unsigned long)deepest;
+  }
+#endif
+}
+
 extern unsigned long scheme_get_stack_base()
 {
 #if !defined(MZ_PRECISE_GC) && !defined(USE_SENORA_GC)
