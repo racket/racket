@@ -4585,6 +4585,15 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	    if (SCHEME_MARKP(a)) {
 	      kfirst = unmarshal_mark(a, rns);
 	    } else {
+              Scheme_Object *bdg = NULL;
+
+              if (SCHEME_VECTORP(a)) {
+                if (SCHEME_VEC_SIZE(a) != 2) return_NULL;
+                bdg = SCHEME_VEC_ELS(a)[1];
+                if (!SCHEME_SYMBOLP(bdg)) return_NULL;
+                a = SCHEME_VEC_ELS(a)[0];
+              }
+
 	      for (; SCHEME_PAIRP(a); a = SCHEME_CDR(a)) {
 		kp = CONS(unmarshal_mark(SCHEME_CAR(a), rns), scheme_null);
 		if (!klast)
@@ -4593,7 +4602,19 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 		  SCHEME_CDR(klast) = kp;
 		klast = kp;
 	      }
-	      if (!SCHEME_NULLP(a)) return_NULL;
+	      if (!SCHEME_NULLP(a)) {
+                if (bdg && SCHEME_MARKP(a) && SCHEME_NULLP(kfirst))
+                  kfirst = unmarshal_mark(a, rns);
+                else
+                  return_NULL;
+              }
+
+              if (bdg) {
+                a = scheme_make_vector(2, NULL);
+                SCHEME_VEC_ELS(a)[0] = kfirst;
+                SCHEME_VEC_ELS(a)[1] = bdg;
+                kfirst = a;
+              }
 	    }
 
 	    ll = CONS(CONS(kfirst, kkey), ll);
