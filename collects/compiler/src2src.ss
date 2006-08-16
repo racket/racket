@@ -1388,7 +1388,7 @@
 
   (define module%
     (class exp% 
-      (init-field body et-body name init-req req-prov tables)
+      (init-field body et-body name init-req req-prov tables src-module-begin-stx)
       (super-instantiate ())
       (inherit-field src-stx)
       
@@ -1543,13 +1543,17 @@
 		      [(body ...) (map get-sexpr body)]
 		      [(et-body ...) (map get-sexpr et-body)]
 		      [(req-prov ...) (map get-sexpr req-prov)])
-	  (recertify
-	   (syntax/loc src-stx
-	     (module name init-req
-	       (#%plain-module-begin
-		req-prov ...
-		body ...
-		et-body ...))))))
+          (with-syntax ([body 
+                         (syntax-recertify #'(#%plain-module-begin
+                                              req-prov ...
+                                              body ...
+                                              et-body ...)
+                                           src-module-begin-stx
+                                           recert-insp
+                                           #f)])
+            (recertify
+             (syntax/loc src-stx
+               (module name init-req body))))))
       (define/override (body-sexpr)
 	(list (sexpr)))))
 
@@ -1808,7 +1812,10 @@
              (syntax name)
              (syntax init-require)
              req-prov
-             tables stx))]
+             tables 
+             (syntax-case stx ()
+               [(m n ir mb) #'mb])
+             stx))]
         
 	[(require . i) (make-object require/provide% stx)]
 	[(require-for-syntax . i) (make-object require/provide% stx)]
@@ -1833,7 +1840,7 @@
     (opt-lambda (e [for-mzc? #f])
       (let ([p (parse-top e null #f #f (create-tables))])
 	(send p set-mutability)
-	(send p reorganize)
+        (send p reorganize)
 	(send p set-known-values)
 	(let ([p (send p simplify (make-context 'all null))])
 	  (let ([v (get-sexpr (if for-mzc?
