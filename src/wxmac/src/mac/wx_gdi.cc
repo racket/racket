@@ -27,6 +27,12 @@
 # include "wx_image.h"
 #endif
 #include "../../../wxcommon/wxGLConfig.h"
+#ifdef __i386__ 
+# include <CoreServices/CoreServices.h>
+# define wxBIGEND_SHORT(x) EndianS16_NtoB(x)
+#else
+# define wxBIGEND_SHORT(x) x
+#endif
 
 extern int write_JPEG_file(char * filename, wxBitmap *bm, int quality_val);
 
@@ -621,14 +627,14 @@ wxCursor::wxCursor(wxBitmap *mask, wxBitmap *bm, int hotSpotX, int hotSpotY)
 	c->Get(&r, &g, &b);
 
         if (!r && !g && !b) {
-	  cMacCustomCursor->data[j] += bit;
+	  cMacCustomCursor->data[j] += wxBIGEND_SHORT(bit);
         }
         
         mask_dc->GetPixel(i, j, c);
         c->Get(&r, &g, &b);
         
         if (!r && !g && !b) {
-	  cMacCustomCursor->mask[j] += bit;
+	  cMacCustomCursor->mask[j] += wxBIGEND_SHORT(bit);
         }
       }
       bit = bit >> 1;
