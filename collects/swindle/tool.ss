@@ -12,21 +12,19 @@
   (provide tool@)
   (define tool@
     (unit/sig drscheme:tool-exports^ (import drscheme:tool^)
-      (define swindle-url "http://www.barzilay.org/Swindle/")
       ;; Swindle languages
-      (define (swindle-language
-               l-name l-module l-entry-name l-one-line l-sensitive? l-url l-num)
+      (define (swindle-language module* name* entry-name* num* one-line* url*)
         (class (drscheme:language:module-based-language->language-mixin
                 (drscheme:language:simple-module-based-language->module-based-language-mixin
                  (class* object%
                          (drscheme:language:simple-module-based-language<%>)
-                   (define/public (get-language-numbers) `(-1000 2000 ,l-num))
+                   (define/public (get-language-numbers) `(-1000 2000 ,num*))
                    (define/public (get-language-position)
                      (list (string-constant professional-languages)
-                           "Swindle" l-entry-name))
-                   (define/public (get-module) l-module)
-                   (define/public (get-one-line-summary) l-one-line)
-                   (define/public (get-language-url) l-url)
+                           "Swindle" entry-name*))
+                   (define/public (get-module) module*)
+                   (define/public (get-one-line-summary) one-line*)
+                   (define/public (get-language-url) url*)
                    (define/public (get-reader)
                      (lambda (src port)
                        (let ([v (read-syntax src port)])
@@ -37,8 +35,8 @@
           (define/override (use-namespace-require/copy?) #t)
           (define/override (default-settings)
             (drscheme:language:make-simple-settings
-             l-sensitive? 'current-print 'mixed-fraction-e #f #t 'debug))
-          (define/override (get-language-name) l-name)
+             #t 'current-print 'mixed-fraction-e #f #t 'debug))
+          (define/override (get-language-name) name*)
           (define/override (config-panel parent)
             (let* ([make-panel
                     (lambda (msg contents)
@@ -66,14 +64,12 @@
                             (make-object message% (format "Swindle") p)
                             (make-object message% (format "Setup") p)
                             p)]
-                   [input
+                   [input-sensitive?
                     (make-panel (string-constant input-syntax)
-                                (if l-sensitive?
-                                  "always case-sensitive"
-                                  (lambda (p)
-                                    (make-object check-box%
-                                      (string-constant case-sensitive-label)
-                                      p void))))]
+                                (lambda (p)
+                                  (make-object check-box%
+                                    (string-constant case-sensitive-label)
+                                    p void)))]
                    [debugging
                     (make-panel
                      (string-constant dynamic-properties)
@@ -92,17 +88,16 @@
               (case-lambda
                [()
                 (drscheme:language:make-simple-settings
-                 (or l-sensitive? (send input get-value))
+                 (send input-sensitive? get-value)
                  'current-print 'mixed-fraction-e #f #t
                  (case (send debugging get-selection)
                    [(0) 'none]
                    [(1) 'debug]
                    [(2) 'debug/profile]))]
                [(settings)
-                (unless l-sensitive?
-                  (send input set-value
-                        (drscheme:language:simple-settings-case-sensitive
-                         settings)))
+                (send input-sensitive? set-value
+                      (drscheme:language:simple-settings-case-sensitive
+                       settings))
                 (send debugging set-selection
                       (case (drscheme:language:simple-settings-annotations
                              settings)
@@ -114,28 +109,26 @@
                            [current-inspector (make-inspector)])
               ((current-print) value)))
           (super-instantiate ())))
-      (define (add-swindle-language
-               name module entry-name one-line sensitive? url num)
+      (define (add-swindle-language name module entry-name num one-line url)
         (drscheme:language-configuration:add-language
-         (make-object ((drscheme:language:get-default-mixin)
-                       (swindle-language
-                        name
-                        `(lib ,(string-append module ".ss") "swindle")
-                        entry-name one-line sensitive? url
-                        num)))))
+         (make-object
+          ((drscheme:language:get-default-mixin)
+           (swindle-language `(lib ,(string-append module ".ss") "swindle")
+                             name entry-name num one-line url)))))
       (define phase1 void)
       (define (phase2)
         (for-each (lambda (args)
-                    (apply add-swindle-language args))
-                  '(("Swindle" "swindle" "Full Swindle"
-                     "Full Swindle extensions" #t #f 0)
-                    ("Swindle w/o CLOS" "turbo" "Swindle without CLOS"
-                     "Swindle without the object system" #t #f 1)
-                    ("Swindle Syntax" "base" "Basic syntax only"
-                     "Basic Swindle syntax: keyword-arguments etc" #t #f 2)
-                    ("HTML Swindle" "html" "HTML Swindle"
-                     "Swindle's HTML extension" #t #f 3)))
+                    (apply add-swindle-language `(,@args #f)))
+                  '(("Swindle" "swindle" "Full Swindle" 0
+                     "Full Swindle extensions")
+                    ("Swindle w/o CLOS" "turbo" "Swindle without CLOS" 1
+                     "Swindle without the object system")
+                    ("Swindle Syntax" "base" "Basic syntax only" 2
+                     "Basic Swindle syntax: keyword-arguments etc")
+                    ("HTML Swindle" "html" "HTML Swindle" 3
+                     "Swindle's HTML extension")))
         (parameterize ([current-directory (collection-path "swindle")])
+          (define counter 100)
           (define (do-customize file)
             (when (regexp-match #rx"\\.ss$" file)
               (with-input-from-file file
@@ -161,8 +154,9 @@
                         (unless one-line
                           (set! one-line
                                 (string-append "Customized Swindle: " name)))
-                        (unless url (set! url swindle-url))
+                        (set! counter (add1 counter))
                         (add-swindle-language
-                         name file dname one-line #f url 50))))))))
-          (for-each do-customize (map path->string (directory-list)))))
+                         name file dname counter one-line url))))))))
+          (for-each do-customize
+                    (sort (map path->string (directory-list)) string<?))))
       )))
