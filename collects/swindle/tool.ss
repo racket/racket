@@ -15,13 +15,12 @@
       (define swindle-url "http://www.barzilay.org/Swindle/")
       ;; Swindle languages
       (define (swindle-language
-               l-name l-module l-entry-name l-one-line l-sensitive? l-url)
+               l-name l-module l-entry-name l-one-line l-sensitive? l-url l-num)
         (class (drscheme:language:module-based-language->language-mixin
                 (drscheme:language:simple-module-based-language->module-based-language-mixin
                  (class* object%
                          (drscheme:language:simple-module-based-language<%>)
-                   (define/public (get-language-numbers) '(-1000 2000 0))
-                   (define/public (get-language-id) (format "plt:~a" l-name)) ;; assumed to always be the same, (ie, not translated)
+                   (define/public (get-language-numbers) `(-1000 2000 ,l-num))
                    (define/public (get-language-position)
                      (list (string-constant professional-languages)
                            "Swindle" l-entry-name))
@@ -116,25 +115,26 @@
               ((current-print) value)))
           (super-instantiate ())))
       (define (add-swindle-language
-               name module entry-name one-line sensitive? url)
+               name module entry-name one-line sensitive? url num)
         (drscheme:language-configuration:add-language
          (make-object ((drscheme:language:get-default-mixin)
                        (swindle-language
                         name
                         `(lib ,(string-append module ".ss") "swindle")
-                        entry-name one-line sensitive? url)))))
+                        entry-name one-line sensitive? url
+                        num)))))
       (define phase1 void)
       (define (phase2)
         (for-each (lambda (args)
-                    (apply add-swindle-language `(,@args #f)))
+                    (apply add-swindle-language args))
                   '(("Swindle" "swindle" "Full Swindle"
-                     "Full Swindle extensions" #t)
+                     "Full Swindle extensions" #t #f 0)
                     ("Swindle w/o CLOS" "turbo" "Swindle without CLOS"
-                     "Swindle without the object system" #t)
+                     "Swindle without the object system" #t #f 1)
                     ("Swindle Syntax" "base" "Basic syntax only"
-                     "Basic Swindle syntax: keyword-arguments etc" #t)
+                     "Basic Swindle syntax: keyword-arguments etc" #t #f 2)
                     ("HTML Swindle" "html" "HTML Swindle"
-                     "Swindle's HTML extension" #t)))
+                     "Swindle's HTML extension" #t #f 3)))
         (parameterize ([current-directory (collection-path "swindle")])
           (define (do-customize file)
             (when (regexp-match #rx"\\.ss$" file)
@@ -163,6 +163,6 @@
                                 (string-append "Customized Swindle: " name)))
                         (unless url (set! url swindle-url))
                         (add-swindle-language
-                         name file dname one-line #f url))))))))
+                         name file dname one-line #f url 50))))))))
           (for-each do-customize (map path->string (directory-list)))))
       )))

@@ -63,20 +63,22 @@
                (error 'drscheme:language:add-language "expected language ~e to implement ~e, forgot to use drscheme:language:get-default-mixin ?" language i<%>)))
            (drscheme:language:get-language-extensions))
           
-          (ensure-no-duplicate-ids language languages)
+          (ensure-no-duplicate-numbers language languages)
           (set! languages 
                 (if front? 
                     (cons language languages)
                     (append languages (list language))))))
       
-      (define (ensure-no-duplicate-ids l1 languages)
+      (define (ensure-no-duplicate-numbers l1 languages)
         (for-each
          (λ (l2)
-           (when (equal? (send l1 get-language-id)
-                         (send l2 get-language-id))
+           (when (equal? (send l1 get-language-numbers)
+                         (send l2 get-language-numbers))
              (error 'drscheme:language-configuration:add-language
-                    "found two languages with the id ~s"
-                    (send l1 get-language-id))))
+                    "found two languages with the same result from get-language-numbers: ~s, ~s and ~s"
+                    (send l1 get-language-numbers)
+                    (send l1 get-language-position)
+                    (send l2 get-language-position))))
          languages))
       
       ;; get-languages : -> (listof languages)

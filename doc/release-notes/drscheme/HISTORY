@@ -1,4 +1,13 @@
 ------------------------------
+        Version 353
+------------------------------
+
+  . the get-language-numbers method in
+    drscheme:language:language<%> now requires its results
+    to be completely unique, wrt to other languages (until
+    now, the last number didn't have to be unique)
+
+------------------------------
         Version 351
 ------------------------------
 

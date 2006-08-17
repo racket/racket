@@ -714,7 +714,6 @@ pict snip :
                     [(syntax? sv) (rewrite-syntax sv)]
                     [else sv])))))
           (define/override (get-language-name) "Slideshow")
-          (define/override (get-language-id) "plt:slideshow")
           (super-new (module '(lib "plt-mred.ss" "lang"))
                      (language-position (list (string-constant experimental-languages)
                                               "Slideshow"))

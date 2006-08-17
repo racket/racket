@@ -40,7 +40,6 @@
 	    '(1000 -400))
 	  (define/public (get-language-position)
 	    (list (string-constant experimental-languages) "FrTime"))
-          (define/public (get-language-id) "plt:frtime-big")
 	  (define/public (get-module)
 	    '(lib "frtime-big.ss" "frtime"))
 	  (define/public (get-one-line-summary)
