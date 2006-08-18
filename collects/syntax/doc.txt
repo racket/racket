@@ -59,6 +59,11 @@ _kerncase.ss_: matching fully-expanded expressions
   comparisons or transformer-phase comparisons. The `clause's are
   the same as in `syntax-case*'.
 
+> (kernel-syntax-case* stx-expr trans?-expr (extras ...) clause ...) -
+  a syntactic form like `kernel-syntax-case', except that it takes an
+  additional list of extra literals that are used as well as the
+  primitive MzScheme forms.
+
 > (kernel-form-identifier-list syntax) - returns a list of identifiers
   for the names of the primitive MzScheme forms for expressions, with
   the lexical context of `syntax'. This function is useful for
