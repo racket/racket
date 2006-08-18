@@ -261,11 +261,10 @@
   ;;  
   
   (define (flat-proj ctc)
-    (let ([predicate ((flat-get ctc) ctc)]
-          [name ((name-get ctc) ctc)])
+    (let ([pred? ((flat-get ctc) ctc)])
       (λ (pos neg src-info orig-str)
         (λ (val)
-          (if (predicate val)
+          (if (pred? val)
               val
               (raise-contract-error
                val
@@ -273,7 +272,7 @@
                pos
                orig-str
                "expected <~a>, given: ~e"
-               name
+               ((name-get ctc) ctc)
                val))))))
   
   (define (double-any-curried-proj ctc) double-any-curred-proj2)
