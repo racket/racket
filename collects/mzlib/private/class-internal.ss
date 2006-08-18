@@ -40,6 +40,7 @@
 			 pubment overment augment
 			 public-final override-final augment-final
 			 rename-super rename-inner inherit inherit-field
+                         inherit/super inherit/inner
 			 inspect)
 
   (define-syntax provide-class-define-like-keyword
@@ -142,6 +143,8 @@
 		  (quote-syntax augment)
 		  (quote-syntax rename-super)
 		  (quote-syntax inherit)
+		  (quote-syntax inherit/super)
+		  (quote-syntax inherit/inner)
 		  (quote-syntax rename-inner)
 		  (quote-syntax super)
 		  (quote-syntax inner)
@@ -436,7 +439,7 @@
 						  private public override augride
 						  public-final override-final augment-final
 						  pubment overment augment
-						  rename-super inherit rename-inner
+						  rename-super inherit inherit/super inherit/inner rename-inner
 						  inspect)
 			    [(form orig idp ...)
 			     (and (identifier? (syntax form))
@@ -510,6 +513,8 @@
 								   overment
 								   augment
 								   inherit
+                                                                   inherit/super
+                                                                   inherit/inner
 								   inherit-field)))))
 			     (let ([form (syntax-e (syntax form))])
 			       (for-each
@@ -544,6 +549,10 @@
 			     (bad "ill-formed augment clause" stx)]
 			    [(inherit . rest)
 			     (bad "ill-formed inherit clause" stx)]
+			    [(inherit/super . rest)
+			     (bad "ill-formed inherit/super clause" stx)]
+			    [(inherit/inner . rest)
+			     (bad "ill-formed inherit/inner clause" stx)]
 			    [(inherit-field . rest)
 			     (bad "ill-formed inherit-field clause" stx)]
 			    [(kw idp ...)
@@ -581,6 +590,8 @@
 							       augment
 							       rename-super
 							       inherit
+                                                               inherit/super
+                                                               inherit/inner
 							       rename-inner)))
 				      defn-and-exprs
 				      cons)]
@@ -638,6 +649,10 @@
 			     (flatten pair (extract* (list (quote-syntax rename-super)) decls))]
 			    [(inherits)
 			     (flatten pair (extract* (list (quote-syntax inherit)) decls))]
+			    [(inherit/supers)
+			     (flatten pair (extract* (list (quote-syntax inherit/super)) decls))]
+			    [(inherit/inners)
+			     (flatten pair (extract* (list (quote-syntax inherit/inner)) decls))]
 			    [(rename-inners)
 			     (flatten pair (extract* (list (quote-syntax rename-inner)) decls))])
 		
@@ -689,6 +704,8 @@
 		       [inherit-field-names (map car inherit-fields)]
 		       [plain-init-names (map norm-init/field-iid normal-plain-inits)]
 		       [inherit-names (map car inherits)]
+		       [inherit/super-names (map car inherit/supers)]
+		       [inherit/inner-names (map car inherit/inners)]
 		       [rename-super-names (map car rename-supers)]
 		       [rename-inner-names (map car rename-inners)]
 		       [local-public-dynamic-names (map car (append publics overrides augrides
@@ -703,6 +720,8 @@
 					   inherit-field-names
 					   plain-init-names
 					   inherit-names
+                                           inherit/super-names
+                                           inherit/inner-names
 					   rename-super-names
 					   rename-inner-names
 					   (kernel-form-identifier-list
@@ -790,6 +809,8 @@
 					  inherit-field-names
 					  plain-init-names
 					  inherit-names
+                                          inherit/super-names
+                                          inherit/inner-names
 					  rename-super-names
 					  rename-inner-names))])
 			(when dup
@@ -914,12 +935,14 @@
 			     (lambda (id-stx)
 			       (datum->syntax-object (quote-syntax here)
 						     (gensym (syntax-e id-stx))))]
-			    [rename-super-extras (append overments overrides override-finals)]
-			    [rename-inner-extras (append pubments overments augments)]
+			    [rename-super-extras (append overments overrides override-finals inherit/supers)]
+			    [rename-inner-extras (append pubments overments augments inherit/inners)]
 			    [all-rename-inners (append (map car rename-inners)
 						       (generate-temporaries (map car pubments))
 						       (generate-temporaries (map car overments))
-						       (generate-temporaries (map car augments)))]
+						       (generate-temporaries (map car augments))
+						       (generate-temporaries (map car inherit/inners)))]
+                            [all-inherits (append inherits inherit/supers inherit/inners)]
 			    [definify (lambda (l)
 					(map bind-local-id l)
 					l)])
@@ -948,16 +971,16 @@
 								mk-method-temp
 								(map car public-finals))]
 				      [(method-name ...) (append local-public-dynamic-names
-								 (map car inherits))]
+								 (map car all-inherits))]
 				      [(method-name-localized ...) (map lookup-localize
 									(append local-public-dynamic-names
-										(map car inherits)))]
+										(map car all-inherits)))]
 				      [(method-accessor ...) (generate-temporaries
 							      (map car
 								   (append publics overrides augrides
 									   overments augments
 									   override-finals augment-finals
-									   inherits)))]
+									   all-inherits)))]
 				      [(inherit-field-accessor ...) (generate-temporaries
 								     (map (lambda (id)
 									    (format "get-~a"
@@ -968,7 +991,7 @@
 									   (format "set-~a!"
 										   (syntax-e id)))
 									 inherit-field-names))]
-				      [(inherit-name ...) (definify (map car inherits))]
+				      [(inherit-name ...) (definify (map car all-inherits))]
 				      [(inherit-field-name ...) (definify inherit-field-names)]
 				      [(inherit-field-name-localized ...) (map lookup-localize inherit-field-names)]
 				      [(local-field ...) (definify
@@ -1093,7 +1116,7 @@
 					    [(rename-super-extra-name ...) (map lookup-localize-cdr rename-super-extras)]
 					    [(rename-inner-name ...) (map lookup-localize-cdr rename-inners)]
 					    [(rename-inner-extra-name ...) (map lookup-localize-cdr rename-inner-extras)]
-					    [inherit-names (map lookup-localize-cdr inherits)]
+					    [inherit-names (map lookup-localize-cdr all-inherits)]
 					    [num-fields (datum->syntax-object
 							 (quote-syntax here)
 							 (+ (length private-field-names)
@@ -1194,7 +1217,7 @@
 						    #f
 						    (string-append
 						     "identifier for super call does not have an override, "
-						     "override-final, or overment declaration")
+						     "override-final, overment, or inherit/super declaration")
 						    stx
 						    #'id)]
 						  [_else
@@ -1220,7 +1243,7 @@
 						    #f
 						    (string-append
 						     "identifier for inner call does not have a pubment, augment, "
-						     "or overment declaration")
+						     "overment, or inherit/inner declaration")
 						    stx
 						    #'id)]
 						  [(_)
