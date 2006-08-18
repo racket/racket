@@ -105,7 +105,7 @@
                     (let ([frame (frame-frame frame)])
                       (make-object menu-item% 
                         (regexp-replace*
-                         "&"
+                         #rx"&"
                          (gui-utils:trim-string (get-name frame) 200)
                          "&&")
                         menu

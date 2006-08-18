@@ -709,7 +709,10 @@ module browser threading seems wrong.
                                 (make-object (if checked?
                                                  menu:can-restore-checkable-menu-item%
                                                  menu:can-restore-menu-item%)
-                                  (gui-utils:trim-string (defn-name defn) 200)
+                                  (regexp-replace*
+                                   #rx"&"
+                                   (gui-utils:trim-string (defn-name defn) 200)
+                                   "&&")
                                   menu
                                   (λ (x y)
                                     (reset)
