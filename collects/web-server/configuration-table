@@ -6,13 +6,20 @@
      (default-indices "index.html" "index.htm")
      (log-format parenthesized-default)
      (messages
-       (servlet-message "servlet-error.html")
-       (authentication-message "forbidden.html")
-       (servlets-refreshed "servlet-refresh.html")
-       (passwords-refreshed "passwords-refresh.html")
-       (file-not-found-message "not-found.html")
-       (protocol-message "protocol-error.html")
-       (collect-garbage "collect-garbage.html"))
+       (servlet-message
+         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/servlet-error.html")
+       (authentication-message
+         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/forbidden.html")
+       (servlets-refreshed
+         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/servlet-refresh.html")
+       (passwords-refreshed
+         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/passwords-refresh.html")
+       (file-not-found-message
+         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/not-found.html")
+       (protocol-message
+         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/protocol-error.html")
+       (collect-garbage
+         "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/conf/collect-garbage.html"))
      (timeouts
        (default-servlet-timeout 30)
        (password-connection-timeout 300)
@@ -21,10 +28,16 @@
        (file-base-connection-timeout 30))
      (paths
       (configuration-root "conf")
-      (host-root "default-web-root")
-      (log-file-path "log")
-      (file-root "htdocs")
-      (servlet-root ".")
-      (mime-types "mime.types")
-      (password-authentication "passwords"))))
+      (host-root
+        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root")
+      (log-file-path
+        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/log")
+      (file-root
+        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/htdocs")
+      (servlet-root
+        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/.")
+      (mime-types
+        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/mime.types")
+      (password-authentication
+        "/Users/jay/Development/plt/src/plt/trunk/collects/web-server/default-web-root/passwords"))))
  (virtual-host-table))

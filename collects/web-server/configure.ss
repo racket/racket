@@ -395,6 +395,7 @@
                     (paths-log paths)
                     (paths-htdocs paths)
                     (paths-servlet paths)
+                    (paths-mime-types paths)
                     (paths-passwords paths)))
       
       ; string->num : str -> nat
@@ -428,6 +429,8 @@
                             'path-htdocs (build-path-unless-absolute host-root (paths-htdocs paths)))
               ,(make-tr-str "Servlet root"
                             'path-servlet (build-path-unless-absolute host-root (paths-servlet paths)))
+              ,(make-tr-str "MIME Types"
+                            'path-mime-types (build-path-unless-absolute host-root (paths-mime-types paths)))
               ,(make-tr-str "Password File"
                             'path-password (build-path-unless-absolute host-root (paths-passwords paths)))
               (tr (td ([colspan "2"])
@@ -481,8 +484,9 @@
            (let ([old-paths (host-table-paths old)])
              (apply make-paths
                     (paths-conf old-paths)
-                    ((un-build-path web-base) (build-path (paths-host-base old-paths)))
-                    (map eb-host-root '(path-log path-htdocs path-servlet path-password)))))))
+                    ((un-build-path web-base)
+                     (build-path (paths-host-base old-paths)))
+                    (map eb-host-root '(path-log path-htdocs path-servlet path-mime-types path-password)))))))
       
       ; un-build-path : path -> path -> string
       ; (GregP) Theory: this should return a string not a path so that the result can be
