@@ -48,14 +48,17 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (delete-file (build-path "compiled" (format "~a.zo" bm))))
 
   (define (mk-larceny bm)
-    (parameterize ([current-input-port (open-input-string
-                                        (format "(compile-file \"~a.sch\")\n"
-                                                bm))]
+    (parameterize ([current-input-port 
+		    (open-input-string
+		     (format (string-append
+			      "(compiler-switches 'fast-safe)\n"
+			      "(compile-file \"~a.sch\")\n")
+			     bm))]
 		   [current-output-port (open-output-bytes)])
       (system "larceny")))
 
   (define (clean-up-fasl bm)
-    (delete-file (build-path "compiled" (format "~a.fasl" bm))))
+    (delete-file (format "~a.fasl" bm)))
 
   (define (mk-mzc bm)
     (parameterize ([current-output-port (open-output-bytes)])
