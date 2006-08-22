@@ -8,7 +8,10 @@ exec mzscheme -qu "$0" ${1+"$@"}
            (lib "cmdline.ss")
            (lib "list.ss")
            (lib "compile.ss")
+           (lib "inflate.ss")
            (lib "file.ss" "dynext"))
+
+  ;; Implementaton-specific control functions ------------------------------
 
   (define (bytes->number b)
     (string->number (bytes->string/latin-1 b)))
@@ -21,6 +24,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define (clean-up-bin bm)
     (delete-file (symbol->string bm)))
+
+  (define (clean-up-o1 bm)
+    (delete-file (format "~a.o1" bm)))
 
   (define (mk-mzscheme bm)
     ;; To get compilation time:
@@ -65,7 +71,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (system (format "time ~a" bm)))
 
   (define (run-gambit-exe bm)
-    (system (format "~a -:d-" bm)))
+    (system (format "gsi -:d-,m10000 ~a.o1" bm)))
 
   (define (run-larceny bm)
     (parameterize ([current-input-port (open-input-string
@@ -114,6 +120,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
             [user (ms->milliseconds (caddr m))]
             [sys (ms->milliseconds (cadddr m))])
         (list (+ user sys) real #f))))
+
+  ;; Table of implementatons and benchmarks ------------------------------
 
   (define-struct impl (name make run extract-result clean-up skips))
 
@@ -172,7 +180,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (run-mk "mk-gambit.ss")
                 run-gambit-exe
                 extract-gambit-times
-                clean-up-bin
+                clean-up-o1
                 '(nucleic2))
      (make-impl 'larceny
                 mk-larceny
@@ -214,7 +222,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                            i))
                     impls)])
       (if (memq bm (impl-skips i))
-          (printf "[~a ~a ~s 0]\n" impl bm '(#f #f #f))
+          (printf "[~a ~a ~s #f]\n" impl bm '(#f #f #f))
           (let ([start (current-inexact-milliseconds)])
             ((impl-make i) bm)
             (let ([end (current-inexact-milliseconds)])
@@ -230,8 +238,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
                             bm
                             ((impl-extract-result i) bm (get-output-bytes out))
                             (inexact->exact (round (- end start)))))
-                  (loop (sub1 n)))))))
-      ((impl-clean-up i) bm)))
+                  (loop (sub1 n)))))
+            ((impl-clean-up i) bm)))
+      (flush-output)))
 
   (define no-implementations (map (lambda (s)
                                     (cons (string->symbol (format "no-~a" s))
@@ -249,11 +258,25 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define default-implementations (remq* obsolte-impls
                                          (map impl-name impls)))
 
+  ;; Extract command-line arguments --------------------
+
   (define args
     (command-line
      "auto"
      (current-command-line-arguments)
      (once-each
+      [("--show") "show implementations and benchmarks"
+       (printf "Implementations:\n")
+       (for-each (lambda (impl)
+                   (printf " ~a\n" impl))
+                 default-implementations)
+       (for-each (lambda (impl)
+                   (printf " ~a [skipped by default]\n" impl))
+                 obsolte-impls)
+       (printf "Benchmarks:\n")
+       (for-each (lambda (bm)
+                   (printf " ~a\n" bm))
+                 benchmarks)]
       [("-n" "--iters") n "set number of run iterations"
        (let ([v (string->number n)])
          (unless (and (number? v)
@@ -262,6 +285,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
            (error 'auto "bad interation count: ~a" n))
          (set! num-iterations v))])
      (args impl-or-benchmark impl-or-benchmark)))
+
+  ;; Process arguments ------------------------------
 
   (for-each (lambda (arg)
               (let ([s (string->symbol arg)])
@@ -288,10 +313,24 @@ exec mzscheme -qu "$0" ${1+"$@"}
                   (error 'auto "mysterious argument: ~a" arg)])))
             args)
 
+  (define actual-benchmarks-to-run 
+    (or run-benchmarks
+        benchmarks))
+
+  (define actual-implementations-to-run 
+    (or run-implementations
+        default-implementations))
+  
+  ;; Benchmark-specific setup --------------------
+
+  (when (memq 'dynamic actual-benchmarks-to-run )
+    (unless (file-exists? "dynamic-input.txt")
+      (gunzip "dynamic-input.txt.gz")))
+
+  ;; Run benchmarks -------------------------------
+
   (map (lambda (impl)
          (map (lambda (bm)
                 (run-benchmark impl bm))
-              (or run-benchmarks
-                  benchmarks)))
-       (or run-implementations
-           default-implementations)))
+              actual-benchmarks-to-run ))
+       actual-implementations-to-run))

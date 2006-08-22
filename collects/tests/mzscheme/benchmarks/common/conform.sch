@@ -612,8 +612,12 @@
 ;(go)
 ;(exit)
 
-(define (conform-benchmark . rest)
-  (time (go)))
+(time (let loop ((n 10))
+        (if (zero? n)
+            'done
+            (begin
+              (go)
+              (loop (- n 1))))))
 
-(conform-benchmark)
+
 

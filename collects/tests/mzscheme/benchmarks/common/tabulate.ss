@@ -1,7 +1,24 @@
+#!/bin/sh
+#|
+exec mzscheme -qu "$0" ${1+"$@"}
+|#
 
 (module tabulate mzscheme
   (require (lib "list.ss")
-           (lib "xml.ss" "xml"))
+           (lib "xml.ss" "xml")
+           (lib "cmdline.ss"))
+
+  (define base-link-filename (make-parameter #f))
+  (define full-page-mode (make-parameter #f))
+
+  (command-line
+   "tabulate"
+   (current-command-line-arguments)
+   (once-each
+    [("--multi") name "generate multiple pages for different views of data"
+     (base-link-filename name)]
+    [("--index") "generate full page with an index.html link"
+     (full-page-mode #t)]))
   
   (define bm-table (make-hash-table))
   (define impls (make-hash-table))
@@ -72,52 +89,108 @@
               "#DDFFDD")
           (loop (cdr impls) (not odd?)))))
 
-  (empty-tag-shorthand html-empty-tags)
-  (write-xml/content 
-   (xexpr->xml 
-    `(table
-      (tr (td nbsp) 
-          (td ((colspan "2") (align "right")) "Fastest")
-          ,@(map (lambda (impl)
-                   `(td ((colspan "2") (align "right")) (b ,(symbol->string impl)) nbsp))
-                 sorted-impls))
-      ,@(map (lambda (bm-run)
-               (let ([fastest (apply min (map (lambda (run)
-                                                (or (caadr run) 1000000000))
-                                              (cdr bm-run)))]
-                     [c-fastest (apply min (map (lambda (run)
-                                                  (let ([v (caddr run)])
-                                                    (if (zero? v) 
-                                                        1000000000
-                                                        v)))
-                                                (cdr bm-run)))])
-                 `(tr (td (a ((href ,(format "~a.sch" (car bm-run))))
-                             ,(symbol->string (car bm-run))))
-                      (td ((align "right"))
-                          nbsp
-                          ,(small (number->string c-fastest)) 
-                          nbsp)
-                      (td ((align "right"))
-                          ,(format "~a ms" fastest)
-                          nbsp nbsp)
-                      ,@(apply
-                         append
-                         (map (lambda (impl)
-                                (let* ([a (assq impl (cdr bm-run))]
-                                       [n (and a (caadr a))])
-                                  `((td ((align "right")
-                                         (bgcolor ,(lookup-color impl)))
-                                        ,(if n
-                                             (small (ratio->string (/ (caddr a) c-fastest)))
-                                             '"-")
-                                        nbsp)
-                                    (td ((bgcolor ,(lookup-color impl)))
-                                        ,(if n
-                                             (if (= n fastest)
-                                                 '(font ((color "blue")) (b "1"))
-                                                 (ratio->string (/ n fastest)))
-                                             "-")
-                                        nbsp))))
-                              sorted-impls)))))
-             sorted-runs))))
-  (newline))
+  (define (wrap-page relative-to p)
+    (if (full-page-mode)
+        (let ([title (format "~a normalized to ~a"
+                             (or (base-link-filename)
+                                 "results")
+                             (or relative-to
+                                 "fastest"))])
+          `(html
+            (head (title ,title)
+                  (body
+                   (h1 ,title) 
+                   (p "See also " (a ((href "index.html"))
+                                     "about the benchmarks")
+                      ".")
+                   (p ,p)))))
+        p))
+
+  (define (generate-page relative-to)
+    (empty-tag-shorthand html-empty-tags)
+    (write-xml/content 
+     (xexpr->xml
+      (wrap-page
+       relative-to
+       `(table
+         (tr (td nbsp) 
+             (td ((colspan "2") (align "right")) 
+                 ,(if (and (base-link-filename)
+                           relative-to)
+                      `(a ((href ,(format "~a.html" (base-link-filename))))
+                          "fastest")
+                      "fastest"))
+             ,@(map (lambda (impl)
+                      `(td ((colspan "2") (align "right")) 
+                           (b ,(let ([s (symbol->string impl)])
+                                 (if (and (base-link-filename)
+                                          (not (eq? impl relative-to)))
+                                     `(a ((href ,(format "~a-~a.html"
+                                                         (base-link-filename)
+                                                         impl)))
+                                         ,s)
+                                     s)))
+                           nbsp))
+                    sorted-impls))
+         ,@(map (lambda (bm-run)
+                  (let ([fastest (apply min (map (lambda (run)
+                                                   (or (caadr run) 1000000000))
+                                                 (cdr bm-run)))]
+                        [c-fastest (apply min (map (lambda (run)
+                                                     (let ([v (caddr run)])
+                                                       (or (and v (positive? v) v)
+                                                           1000000000)))
+                                                   (cdr bm-run)))])
+                    (let-values ([(base c-base)
+                                  (if relative-to
+                                      (let ([a (assq relative-to (cdr bm-run))])
+                                        (if a
+                                            (values (caadr a) (caddr a))
+                                            (values #f #f)))
+                                      (values fastest c-fastest))])
+                      `(tr (td (a ((href ,(format (string-append "http://svn.plt-scheme.org/plt/trunk/collects/"
+                                                                 "tests/mzscheme/benchmarks/common/~a.sch")
+                                                  (car bm-run))))
+                                  ,(symbol->string (car bm-run))))
+                           (td ((align "right"))
+                               nbsp
+                               ,(small (number->string c-fastest)) 
+                               nbsp)
+                           (td ((align "right"))
+                               ,(format "~a ms" fastest)
+                               nbsp nbsp)
+                           ,@(apply
+                              append
+                              (map (lambda (impl)
+                                     (let* ([a (assq impl (cdr bm-run))]
+                                            [n (and a (caadr a))])
+                                       `((td ((align "right")
+                                              (bgcolor ,(lookup-color impl)))
+                                             ,(if (and n c-base (positive? c-base))
+                                                  (small (ratio->string (/ (caddr a) c-base)))
+                                                  '"-")
+                                             nbsp)
+                                         (td ((bgcolor ,(lookup-color impl)))
+                                             ,(if (and n base)
+                                                  (if (= n base)
+                                                      '(font ((color "forestgreen")) (b "1"))
+                                                      (ratio->string (/ n base)))
+                                                  "-")
+                                             nbsp))))
+                                   sorted-impls))))))
+                sorted-runs)))))
+    (newline))
+
+  (if (base-link-filename)
+      (for-each (lambda (impl)
+                  (with-output-to-file (if impl
+                                           (format "~a-~a.html" 
+                                                   (base-link-filename)
+                                                   impl)
+                                           (format "~a.html"
+                                                   (base-link-filename)))
+                    (lambda () (generate-page impl))
+                    'truncate))
+                (cons #f sorted-impls))
+      (generate-page #f)))
+

@@ -60,5 +60,11 @@
                                   (set-car! a i))))))))))))
  
 ;;; call:  (destructive 600 50)
- 
-(time (destructive 600 500))
+
+(let ((input (with-input-from-file "input.txt" read)))
+  (time (let loop ((n 10) (v 0))
+          (if (zero? n)
+              'v
+              (loop (- n 1)
+                    (destructive (if input 600 0) 500))))))
+

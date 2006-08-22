@@ -37,5 +37,7 @@
                      (cdr y)))))
  
 ;;; call: (mas 18l 12l 6l)
- 
-(time (mas 18l 12l 6l))
+
+
+(let ((v (if (with-input-from-file "input.txt" read) 6l '())))
+  (time (mas 18l 12l v)))

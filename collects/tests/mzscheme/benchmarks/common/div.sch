@@ -47,5 +47,11 @@
 ;;; for the iterative test call: (test-1 *ll*)
 ;;; for the recursive test call: (test-2 *ll*)
  
-(time (cons (test-1 *ll*)
-            (test-2 *ll*)))
+(let ((input (with-input-from-file "input.txt" read)))
+  (time (let loop ((n 10) (v 0))
+          (if (zero? n)
+              v
+              (loop (- n 1)
+                    (cons
+                     (test-1 (if input *ll* '()))
+                     (test-2 (if input *ll* '()))))))))

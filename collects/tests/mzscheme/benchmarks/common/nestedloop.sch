@@ -57,8 +57,8 @@
                                         (loop5 (+ i5 1) result)
                                         (loop6 (+ i6 1) (+ result 1)))))))))))))))
 
-(define cnt (if (with-input-from-file "input.txt" read) 18 1))
-(time (list
-        (loops cnt)
-        (func-loops cnt)))
+(let ((cnt (if (with-input-from-file "input.txt" read) 18 1)))
+  (time (list
+         (loops cnt)
+         (func-loops cnt))))
 
