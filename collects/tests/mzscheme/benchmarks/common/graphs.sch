@@ -8,14 +8,6 @@
 ;     389625 vectors with 2551590 elements
 ;   56653504 closures (not counting top level and known procedures)
 
-(define (graphs-benchmark . rest)
-  (let ((N (if (null? rest) 7 (car rest))))
-    (time
-     (fold-over-rdg N
-                    2 
-                    cons
-                    '()))))
-
 ; End of new code.
 
 ;;; ==== std.ss ====
@@ -23,12 +15,12 @@
 ; (define-syntax assert
 ;     (syntax-rules ()
 ; 	((assert test info-rest ...)
-; 	    #F)))
+; 	    #f)))
 ; 
 ; (define-syntax deny
 ;     (syntax-rules ()
 ; 	((deny test info-rest ...)
-; 	    #F)))
+; 	    #f)))
 ; 
 ; (define-syntax when
 ;     (syntax-rules ()
@@ -292,14 +284,14 @@
 ; Make-minimal? returns a procedure which tests if a labelling
 ; of the verticies is such that the matrix is minimal.
 ; If it is, then the procedure returns the result of folding over
-; the elements of the automoriphism group.  If not, it returns #F.
+; the elements of the automoriphism group.  If not, it returns #f.
 ; The folding is done by calling folder via
 ;	(folder perm state accross)
 ; If the folder wants to continue, it should call accross via
 ;	(accross new-state)
 ; If it just wants the entire minimal? procedure to return something,
 ; it should return that.
-; The ordering used is lexicographic (with #T > #F) and entries
+; The ordering used is lexicographic (with #t > #f) and entries
 ; are examined in the following order:
 ;	1->0, 0->1
 ;
@@ -335,15 +327,16 @@
 		    (lambda (perm-x x state deeper accross)
 			(case (cmp-next-vertex graph perm x perm-x)
 			    ((less)
-				#F)
+				#f)
 			    ((equal)
 				(vector-set! perm x perm-x)
 				(deeper (+ x 1)
 				    state))
 			    ((more)
 				(accross state))
-			    (else
-				(assert #F))))
+			    ;(else
+                            ; (assert #f))
+                            ))
 		    0
 		    (lambda (leaf-depth state accross)
 			'(assert (eqv? leaf-depth size)
@@ -416,7 +409,7 @@
 		(edge?
 		    (proc->vector size
 			(lambda (from)
-			    (make-vector size #F))))
+			    (make-vector size #f))))
 		(edges
 		    (make-vector size '()))
 		(out-degrees
@@ -426,31 +419,32 @@
 		(non-root-minimal?
 		    (let ((cont
 				(lambda (perm state accross)
-				    '(assert (eq? state #T)
+				    '(assert (eq? state #t)
 					state)
-				    (accross #T))))
+				    (accross #t))))
 			(lambda (size)
 			    (minimal-folder size
 				edge?
 				cont
-				#T))))
+				#t))))
 		(root-minimal?
 		    (let ((cont
 				(lambda (perm state accross)
-				    '(assert (eq? state #T)
+				    '(assert (eq? state #t)
 					state)
 				    (case (cmp-next-vertex edge? perm root root)
 					((less)
-					    #F)
+					    #f)
 					((equal more)
-					    (accross #T))
-					(else
-					    (assert #F))))))
+					    (accross #t))
+					;(else
+					;    (assert #f))
+                                        ))))
 			(lambda ()
 			    (minimal-folder root
 				edge?
 				cont
-				#T)))))
+				#t)))))
 	    (let -*-
 		((vertex
 			0)
@@ -468,7 +462,7 @@
 					    v
 					    (vector-ref out-degrees v)
 					    (vector-ref edges v))))
-				#T))
+				#t))
 			(let ((reach?
 				    (make-reach? root edges))
 				(from-root
@@ -486,7 +480,7 @@
 					state))
 				(cond ((not (or (= v root)
 						(= outs max-out)))
-					(vector-set! from-root v #T)
+					(vector-set! from-root v #t)
 					(let ((state
 						    (-*- (+ v 1)
 							(+ outs 1)
@@ -494,7 +488,7 @@
 							(cons (vector-ref reach? v)
 							    efrr)
 							state)))
-					    (vector-set! from-root v #F)
+					    (vector-set! from-root v #f)
 					    (-*- (+ v 1)
 						outs
 						efr
@@ -546,7 +540,7 @@
 							    sv
 							    (cons vertex
 								(vector-ref edges sv)))
-							(vector-set! from-sv vertex #T)
+							(vector-set! from-sv vertex #t)
 							(vector-set! out-degrees sv (+ sv-out 1))
 							(let* ((state
 								    ; sv->vertex, no vertex->sv
@@ -557,7 +551,7 @@
 								    (if (= outs max-out)
 									state
 									(begin
-									    (vector-set! from-vertex sv #T)
+									    (vector-set! from-vertex sv #t)
 									    (vector-set! edges
 										vertex
 										(cons sv
@@ -570,10 +564,10 @@
 										(vector-set! edges
 										    vertex
 										    (cdr (vector-ref edges vertex)))
-										(vector-set! from-vertex sv #F)
+										(vector-set! from-vertex sv #f)
 										state)))))
 							    (vector-set! out-degrees sv sv-out)
-							    (vector-set! from-sv vertex #F)
+							    (vector-set! from-sv vertex #f)
 							    (vector-set! edges
 								sv
 								(cdr (vector-ref edges sv)))
@@ -585,13 +579,13 @@
 						    vertex
 						    (cons sv
 							(vector-ref edges vertex)))
-						(vector-set! from-vertex sv #T)
+						(vector-set! from-vertex sv #t)
 						(let ((state
 							    ; no sv->vertex, vertex->sv
 							    (-**- (+ sv 1)
 								(+ outs 1)
 								state)))
-						    (vector-set! from-vertex sv #F)
+						    (vector-set! from-vertex sv #f)
 						    (vector-set! edges
 							vertex
 							(cdr (vector-ref edges vertex)))
@@ -605,11 +599,11 @@
 		    (proc->vector size
 			(lambda (v)
 			    (let ((from-v
-					(make-vector size #F)))
-				(vector-set! from-v v #T)
+					(make-vector size #f)))
+				(vector-set! from-v v #t)
 				(for-each
 				    (lambda (x)
-					(vector-set! from-v x #T))
+					(vector-set! from-v x #t))
 				    (vector-ref vertex->out v))
 				from-v)))))
 	    (gnatural-for-each size
@@ -626,7 +620,7 @@
 					    (lambda (t)
 						(if (vector-ref from-m t)
                                                    (begin ; [wdc - was when]
-						    (vector-set! from-f t #T)))))))))))))
+						    (vector-set! from-f t #t)))))))))))))
 	    res)))
 
 
@@ -642,4 +636,13 @@
 ;      cons
 ;      '())))
 
-(graphs-benchmark 6)
+(let ((input (with-input-from-file "input.txt" read)))
+  (time
+   (let loop ((n 3) (v 0))
+     (if (zero? n)
+         v
+         (loop (- n 1)
+               (fold-over-rdg (if input 6 0)
+                              2 
+                              cons
+                              '()))))))

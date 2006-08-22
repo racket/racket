@@ -202,6 +202,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       dynamic
       earley
       fft
+      graphs
       nboyer
       nestedloop
       nfa
