@@ -1565,6 +1565,12 @@
   (define (generate-member-key)
     (make-member-key (generate-local-member-name (gensym 'member))))
 
+  (define (member-name-key=? a b)
+    (if (and (member-key? a)
+             (member-key? b))
+        (eq? (member-key-id a) (member-key-id b))
+        (eq? a b)))
+
   ;;--------------------------------------------------------------------
   ;;  class implementation
   ;;--------------------------------------------------------------------
@@ -2664,18 +2670,27 @@
 			 obj))
 		      (let-values ([(mth ths) (find-method/who 'make-generic obj name)])
                         mth)))
-		  (let ([pos (hash-table-get (class-method-ht class) name
-					     (lambda ()
-					       (obj-error 'make-generic "no such method: ~a~a"
-							  name
-							  (for-class (class-name class)))))])
-		    (lambda (obj)
-		      (unless ((class-object? class) obj)
-			(raise-type-error 
-			 (string->symbol (format "generic:~a~a" name (for-class (class-name class))))
-			 (format "instance~a" (for-class (class-name class)))
-			 obj))
-		      (vector-ref (class-methods (object-ref obj)) pos))))))])
+		  (let* ([pos (hash-table-get (class-method-ht class) name
+                                              (lambda ()
+                                                (obj-error 'make-generic "no such method: ~a~a"
+                                                           name
+                                                           (for-class (class-name class)))))]
+                         [instance? (class-object? class)]
+                         [dynamic-generic
+                          (lambda (obj)
+                            (unless (instance? obj)
+                              (raise-type-error 
+                               (string->symbol (format "generic:~a~a" name (for-class (class-name class))))
+                               (format "instance~a" (for-class (class-name class)))
+                               obj))
+                            (vector-ref (class-methods (object-ref obj)) pos))])
+                    (if (eq? 'final (vector-ref (class-meth-flags class) pos))
+                        (let ([method (vector-ref (class-methods class) pos)])
+                          (lambda (obj)
+                            (unless (instance? obj)
+                              (dynamic-generic obj))
+                            method))
+                        dynamic-generic)))))])
       make-generic))
 
   (define-syntax send-generic
@@ -3396,7 +3411,7 @@
 	   define/override define/overment
 	   define/augride define/augment
 	   define/public-final define/override-final define/augment-final
-	   define-local-member-name define-member-name member-name-key generate-member-key
+	   define-local-member-name define-member-name member-name-key generate-member-key member-name-key=?
 	   (rename generic/form generic) (rename make-generic/proc make-generic) send-generic
 	   is-a? subclass? implementation? interface-extension?
 	   object-interface object-info object->vector
