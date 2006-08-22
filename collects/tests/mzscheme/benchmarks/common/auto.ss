@@ -55,7 +55,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (system "larceny")))
 
   (define (clean-up-fasl bm)
-    (delete-file (build-path "compiled" (format "~a.fasl"))))
+    (delete-file (build-path "compiled" (format "~a.fasl" bm))))
 
   (define (mk-mzc bm)
     (parameterize ([current-output-port (open-output-bytes)])
