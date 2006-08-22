@@ -5,5 +5,4 @@
   (define-syntax (module-begin stx)
     (let ([name (syntax-property stx 'enclosing-module-name)])
       #`(#%plain-module-begin 
-         (require "map.ss")
          (include #,(format "~a.sch" name))))))

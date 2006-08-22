@@ -46,7 +46,7 @@
  
 (define (run)
   (do ((i 0 (+ i 1)))
-      ((= i 10000))
+      ((= i 50000))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))

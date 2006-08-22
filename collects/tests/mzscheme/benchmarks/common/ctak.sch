@@ -52,4 +52,10 @@
 
 ;;; call: (ctak 18 12 6)
 
-(time (ctak 18 12 6))
+(let ((input (with-input-from-file "input.txt" read)))
+  (time (let loop ((n 8) (v 0))
+          (if (zero? n)
+              v
+              (loop (- n 1)
+                    (ctak 18 12 (if input 6 0)))))))
+
