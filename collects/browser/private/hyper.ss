@@ -592,6 +592,7 @@ A test case:
       (define space-page-keymap (make-object keymap%))
       (add-text-keymap-functions space-page-keymap)
       (send space-page-keymap map-function "space" "next-page")
+      (send space-page-keymap map-function "s:space" "previous-page")
       
       (define hyper-keymap (make-object keymap%))
       (send hyper-keymap add-function "rewind" 
