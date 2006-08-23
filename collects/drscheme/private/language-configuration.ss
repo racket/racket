@@ -1460,6 +1460,12 @@
           (define/override (front-end/complete-program input settings teachpack-cache)
             (not-a-language-message)
             (λ () eof))
+          
+          (define/augment (capability-value v)
+            (case v
+              [(drscheme:check-syntax-button) #f]
+              [else (drscheme:language:get-capability-default v)]))
+          
           (super-new)))
       
       ;; used for identification only
