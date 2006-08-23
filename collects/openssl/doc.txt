@@ -21,10 +21,10 @@ _mzssl.ss_ library
 
 The variables below are provided the by "mzssl.ss" library.
 
-> ssl-available? 
+> ssl-available?
 
 A boolean value which says whether the system openssl library was
-successfully loaded. Calling `ssl-connect', etc.  when this value is
+successfully loaded. Calling `ssl-connect', etc when this value is
 #f (library not loaded) will raise an error.
 
 > ssl-load-failure-reason
@@ -56,7 +56,7 @@ the server. See also `ports->ssl-ports'.
 
 > (ssl-connect/enable-break hostname port-k [client-context-or-protocol-symbol])
 
-Like `ssl-connect', but breaking is enabled while trying to connect. 
+Like `ssl-connect', but breaking is enabled while trying to connect.
 
 
 > (ssl-make-client-context [protocol-symbol])
@@ -146,17 +146,17 @@ otherwise.
 
 Returns two values --- an input port and an output port --- that
 implement the SSL protocol over the given input and output port. (The
-given ports should be connected to another process that runs the SLL
+given ports should be connected to another process that runs the SSL
 protocol.)
 
-The `mod-symbol' argument can be 'connect or 'accept, and it defaults
-to `accept. The mode determines how the SSL protocol is initialized
-over the ports, either as a client or as a server. As with
-`ssl-listen', in 'accept mode supply a `context' that has been
-initialized with `ssl-load-certificate-chain!' and
-`ssl-load-private-key!' to avoid a _no shared cipher_ error.
+The `mode-symbol' argument can be 'connect or 'accept (defaults to
+'accept). The mode determines how the SSL protocol is initialized over
+the ports, either as a client or as a server. As with `ssl-listen', in
+'accept mode supply a `context' that has been initialized with
+`ssl-load-certificate-chain!' and `ssl-load-private-key!' to avoid a
+_no shared cipher_ error.
 
-The `context' argument should be a client context for 'connect more or
+The `context' argument should be a client context for 'connect mode or
 a server context for 'accept mode. If it is not supplied, a context is
 created using the protocol specified by a `protocol-symbol' argument.
 
