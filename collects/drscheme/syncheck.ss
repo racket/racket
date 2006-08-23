@@ -1140,7 +1140,8 @@ If the namespace does not, they are colored the unbound color.
           (send (get-button-panel) change-children
                 (λ (l)
                   (cons check-syntax-button-parent-panel
-                        (remove check-syntax-button-parent-panel l))))))
+                        (remove check-syntax-button-parent-panel l))))
+          (update-button-visibility/tab (get-current-tab))))
       
       (define report-error-style (make-object style-delta% 'change-style 'slant))
       (send report-error-style set-delta-foreground "red")
