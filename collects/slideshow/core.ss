@@ -184,7 +184,7 @@
 					   (cond
 					    [(null? l) (list (reverse current-line))]
 					    [(pict? (car l))
-					     (loop (cdr l) (cons (car l) (current-line)))]
+					     (loop (cdr l) (cons (car l) current-line))]
 					    [else (let ([m (regexp-match #rx"^(.*?)(?:\n|\r\n|\r)[ \t]*(.*)$" (car l))])
 						    (if m
 							(cons
