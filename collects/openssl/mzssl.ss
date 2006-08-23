@@ -16,7 +16,6 @@
 (module mzssl mzscheme
   (require (lib "foreign.ss")
 	   (lib "port.ss")
-	   (lib "etc.ss")
 	   (lib "kw.ss"))
 
   (provide ssl-available?
@@ -27,7 +26,7 @@
 	   ssl-client-context?
 	   ssl-server-context?
 	   ssl-context?
-	   
+
 	   ssl-load-certificate-chain!
 	   ssl-load-private-key!
 	   ssl-load-verify-root-certificates!
@@ -99,7 +98,7 @@
     (syntax-rules ()
       [(_ id t)
        (define-fun-syntax id (syntax-id-rules () [_ t]))]))
-  
+
   (typedef _BIO_METHOD* _pointer)
   (typedef _BIO* _pointer)
   (typedef _SSL_METHOD* _pointer)
@@ -299,23 +298,22 @@
 		 (string-append also-expect "'sslv2-or-v3, 'sslv2, 'sslv3, or 'tls")
 		 e)))])))
 
-  (define make-context
-    (opt-lambda (who protocol-symbol also-expected client?)
-      (let ([meth (encrypt->method who also-expected protocol-symbol client?)])
-	(atomically ; so we reliably register the finalizer
-	 (let ([ctx (SSL_CTX_new meth)])
-	   (check-valid ctx who "context creation")
-	   (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
-	   (register-finalizer ctx (lambda (v) (SSL_CTX_free v)))
-	   ((if client? make-ssl-client-context make-ssl-server-context) ctx))))))
+  (define (make-context who protocol-symbol also-expected client?)
+    (let ([meth (encrypt->method who also-expected protocol-symbol client?)])
+      (atomically ; so we reliably register the finalizer
+       (let ([ctx (SSL_CTX_new meth)])
+         (check-valid ctx who "context creation")
+         (SSL_CTX_set_mode ctx SSL_MODE_ENABLE_PARTIAL_WRITE)
+         (register-finalizer ctx (lambda (v) (SSL_CTX_free v)))
+         ((if client? make-ssl-client-context make-ssl-server-context) ctx)))))
 
-  (define ssl-make-client-context
-    (opt-lambda ([protocol-symbol default-encrypt])
-      (make-context 'ssl-make-client-context protocol-symbol "" #t)))
+  (define/kw (ssl-make-client-context
+              #:optional [protocol-symbol default-encrypt])
+    (make-context 'ssl-make-client-context protocol-symbol "" #t))
 
-  (define ssl-make-server-context
-    (opt-lambda ([protocol-symbol default-encrypt])
-      (make-context 'ssl-make-server-context protocol-symbol "" #f)))
+  (define/kw (ssl-make-server-context
+              #:optional [protocol-symbol default-encrypt])
+    (make-context 'ssl-make-server-context protocol-symbol "" #f))
 
   (define (get-context who context-or-encrypt-method client?)
     (if (ssl-context? context-or-encrypt-method)
@@ -372,18 +370,15 @@
 			    1))))
 		  ssl-listener pathname))
 
-  (define ssl-load-private-key!
-    (opt-lambda (ssl-context-or-listener pathname [rsa? #t] [asn1? #f])
-      (ssl-load-... 'ssl-load-private-key! 
-		    (lambda (ctx path)
-		      ((if rsa?
-			   SSL_CTX_use_RSAPrivateKey_file
-			   SSL_CTX_use_PrivateKey_file)
-		       ctx path
-		       (if asn1?
-			   SSL_FILETYPE_ASN1
-			   SSL_FILETYPE_PEM)))
-		    ssl-context-or-listener pathname)))
+  (define/kw (ssl-load-private-key! ssl-context-or-listener pathname
+                                    #:optional [rsa? #t] [asn1? #f])
+    (ssl-load-...
+     'ssl-load-private-key!
+     (lambda (ctx path)
+       ((if rsa? SSL_CTX_use_RSAPrivateKey_file SSL_CTX_use_PrivateKey_file)
+        ctx path
+        (if asn1? SSL_FILETYPE_ASN1 SSL_FILETYPE_PEM)))
+     ssl-context-or-listener pathname))
 
   (define (ssl-set-verify! ssl-context-or-listener on?)
     (let ([ctx (get-context/listener 'ssl-set-verify!
@@ -927,19 +922,21 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL listen
 
-  (define ssl-listen
-    (opt-lambda (port-k [queue-k 5] [reuse? #f] [hostname-or-#f #f] [protocol-symbol-or-context default-encrypt])
-      (let ([ctx (cond
-		  [(ssl-server-context? protocol-symbol-or-context) protocol-symbol-or-context]
-		  [else (make-context 'ssl-listen protocol-symbol-or-context "server context, " #f)])])
-	(let ([l (tcp-listen port-k queue-k reuse? hostname-or-#f)])
-	  (make-ssl-listener l ctx)))))
+  (define/kw (ssl-listen port-k
+                         #:optional [queue-k 5] [reuse? #f] [hostname-or-#f #f]
+                                    [protocol-symbol-or-context default-encrypt])
+    (let ([ctx (if (ssl-server-context? protocol-symbol-or-context)
+                 protocol-symbol-or-context
+                 (make-context 'ssl-listen protocol-symbol-or-context
+                               "server context, " #f))]
+          [l (tcp-listen port-k queue-k reuse? hostname-or-#f)])
+      (make-ssl-listener l ctx)))
 
   (define (ssl-close l)
     (unless (ssl-listener? l)
       (raise-type-error 'ssl-close "SSL listener" l))
     (tcp-close (ssl-listener-l l)))
-  
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SSL accept
 
@@ -975,15 +972,23 @@
 			      (raise exn))])
 	(wrap-ports who i o client-context-or-protocol-symbol 'connect #t #f))))
 
-  (define ssl-connect 
-    (opt-lambda (hostname port-k [client-context-or-protocol-symbol default-encrypt])
-      (do-ssl-connect 'ssl-connect tcp-connect hostname port-k 
-		      client-context-or-protocol-symbol)))
+  (define/kw (ssl-connect
+              hostname port-k
+              #:optional [client-context-or-protocol-symbol default-encrypt])
+    (do-ssl-connect 'ssl-connect
+                    tcp-connect
+                    hostname
+                    port-k
+                    client-context-or-protocol-symbol))
 
-  (define ssl-connect/enable-break
-    (opt-lambda (hostname port-k [client-context-or-protocol-symbol default-encrypt])
-      (do-ssl-connect 'ssl-connect/enable-break tcp-connect/enable-break hostname port-k
-		      client-context-or-protocol-symbol)))
+  (define/kw (ssl-connect/enable-break
+              hostname port-k
+              #:optional [client-context-or-protocol-symbol default-encrypt])
+    (do-ssl-connect 'ssl-connect/enable-break
+                    tcp-connect/enable-break
+                    hostname
+                    port-k
+                    client-context-or-protocol-symbol))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Initialization
