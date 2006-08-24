@@ -2432,10 +2432,6 @@ static FILE *mrerr = NULL;
 
 #endif /* WINDOW_STDIO */
 
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
-
 #if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
 static void MrEdSchemeMessages(char *msg, ...)
 {
