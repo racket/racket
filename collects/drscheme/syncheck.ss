@@ -780,7 +780,8 @@ If the namespace does not, they are colored the unbound color.
               (define/augment (after-set-next-settings settings)
                 (let ([frame (get-top-level-window)])
                   (when frame
-                    (send frame update-button-visibility/settings settings))))
+                    (send frame update-button-visibility/settings settings)))
+                (inner (void) after-set-next-settings settings))
               
               (super-new)))))
       
