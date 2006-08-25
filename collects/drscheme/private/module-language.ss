@@ -3,8 +3,6 @@
   (provide module-language@)
   (require (lib "unitsig.ss")
            (lib "class.ss")
-           (lib "list.ss")
-           (lib "file.ss")
            (lib "mred.ss" "mred")
            (lib "embed.ss" "compiler")
            (lib "launcher.ss" "launcher")
@@ -144,10 +142,7 @@
                           'module-language
                           "the definitions window must contain a module")
                          (let-values ([(name new-module)
-                                       (transform-module
-                                        filename
-                                        (expand super-result)
-                                        super-result)])
+                                       (transform-module filename super-result super-result)])
                            (set! module-name name)
                            new-module)))]
                   [(= 3 iteration-number)
@@ -397,11 +392,11 @@
       
       ;; transform-module : (union #f string) syntax syntax -> (values symbol[name-of-module] syntax[module])
       ;; in addition to exporting everything, the result module's name
-      ;; is the fully expanded name, with a directory prefix, 
+      ;; is the fully path-expanded name with a directory prefix, 
       ;; if the file has been saved
       (define (transform-module filename stx unexpanded-stx)
-        (syntax-case stx (module #%plain-module-begin)
-          [(module name lang (#%plain-module-begin bodies ...))
+        (syntax-case stx (module)
+          [(module name lang bodies ...)
            (let ([v-name (syntax name)])
              (when filename
                (check-filename-matches filename
