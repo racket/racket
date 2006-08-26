@@ -178,7 +178,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-exe/time
                 extract-time-times
                 clean-up-bin
-                '(cpstack ctak puzzle triangle))
+                '(cpstack ctak maze puzzle triangle))
      (make-impl 'gambit
                 (run-mk "mk-gambit.ss")
                 run-gambit-exe
@@ -190,7 +190,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-larceny
                 extract-larceny-times
                 clean-up-fasl
-                '())))
+                '(maze))))
 
   (define obsolte-impls '(mzscheme mzscheme-j mzscheme3m-tl mzc))
 
@@ -206,12 +206,18 @@ exec mzscheme -qu "$0" ${1+"$@"}
       earley
       fft
       graphs
+      lattice
+      maze
+      mazefun
       nboyer
       nestedloop
       nfa
       nucleic2
+      paraffins
+      peval
       puzzle
       sboyer
+      scheme
       sort1
       tak
       takl

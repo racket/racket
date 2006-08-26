@@ -34,6 +34,7 @@ All benchmarks must be run from the directory containing this file.
 Most bechmarks were obtained from
  http://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/lang/scheme/code/bench/gabriel/
  http://www.ccs.neu.edu/home/will/GC/sourcecode.html
+ Marc Feeley (who has all of them and more)
 
 Files that end in ".sch" are supposed to be standard Scheme plus `time'.
 Files that end in ".ss" are MzScheme wrapper modules or helper scripts.

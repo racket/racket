@@ -1,0 +1,2 @@
+
+(module mazefun "wrap.ss")

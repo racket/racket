@@ -1,0 +1,2 @@
+
+(module nqueens "wrap.ss")
