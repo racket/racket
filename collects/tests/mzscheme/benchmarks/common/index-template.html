@@ -1,0 +1,50 @@
+<html>
+<head><title>Some Scheme Benchmarks</title></head>
+<body>
+
+<H1>About the Benchmarks</H1>
+
+<p>The pages linked below show some benchmark results on a collection of fairly standard
+   (mostly Gabriel) Scheme benchmarks.</p>
+
+<p>Tables show relative performance, with the actual time for the fastest
+   run shown on the left. So, by default, <font color=forestgreen><b>1</b></font> 
+   is the fastest, but select any implementation to normalize the table with
+   respect to that implementation's speed.</p>
+
+<p><font color="gray" size="-1">Small gray numbers are (relative) compile times.</font></p>
+
+<p>Run times are averaged over three runs. All reported times are CPU time (system plus user).
+   Where available, the times are based on the output of the implementation's <tt>time</tt> 
+   syntactic form, otherwise <tt>/usr/bin/time</tt> is used.</p>
+
+<p>Compiler configuration:
+<ul>
+<li> Bigloo (2.8b): <tt>-06</tt></il>
+<li> Chicken (2 build 3): <tt>-no-trace -no-lambda-info -optimize-level 3 -block -lambda-lift</tt></il>
+<li> Gambit (4.0 beta 17): <tt>(declare (block) (standard-bindings) (extended-bindings) (safe) (interrupts-enabled))</tt>, 
+     installed with <tt>--enable-single-host</tt>, compiled with <tt>-dynamic</tt>, compiled and run with <tt>-:m10000</tt></li>
+<li> Larceny (0.92b): default mode &mdash; but should use <tt>(benchmark-block-mode #t)</tt> when it works</li>
+<li> MzScheme (352.4): in <tt>module</tt></li>
+</ul>
+These configurations are all "safe mode", but they allow the compiler
+to assume that built-in Scheme functions are not redefined and (except
+in the case of Larceny) that no top-level defintion is ever
+changed. Such assumptions correspond to putting the benchmark in an
+R6RS library (we expect).</P>
+
+<p>In general, we attempt to use the various implementations in a compentent way,
+   but not in a sophisticated way (which might involve, for example, tweaking an
+   inlining parameter).</p>
+
+<p>For further details, consult the benchmark source and infrastructure, which is
+   available form the PLT SVN repository:</p>
+
+<p align=center>
+   <a href="http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/common/">http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/common/</a></P>
+
+<H1>Benchmark Results</H1>
+
+<ul>
+<li> <a href=machine1.html>machine1</a>
+</ul>
