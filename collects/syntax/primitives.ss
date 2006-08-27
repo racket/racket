@@ -32,7 +32,9 @@
 	call-with-semaphore/enable-break
 	hash-table-get
 	write-image-to-file
-	syntax-local-value))
+	syntax-local-value
+        eval eval-syntax
+        andmap ormap for-each))
 
    (provide procedure-calling-prims
 	    internal-tail-chain-prims))
