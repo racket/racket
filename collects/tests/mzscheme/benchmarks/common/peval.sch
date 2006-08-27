@@ -343,7 +343,6 @@
         ((eq? (caar env) 'lambda)
          (if (memq var (cadar env)) (car env) (binding-frame var (cdr env))))
         (else
-         (/ 0)
          '(fatal-error "ill-formed environment"))))
 
 (define (bound-expr var frame)
@@ -352,7 +351,6 @@
         ((eq? (car frame) 'lambda)
          not-constant)
         (else
-         (/ 0)
          '(fatal-error "ill-formed frame"))))
 
 (define (add-binding val frame name)

@@ -16,7 +16,7 @@
   name)
 
 (define (scheme-error msg . args)
-  (/ 0))
+  'error)
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
