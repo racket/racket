@@ -3365,9 +3365,10 @@
            
            ;; Build the class expression first, to give it a good src location:
            (with-syntax ([class-expr
-                          (syntax/loc stx
-                            (class* super% (to-ids ...)
-                              clauses ...))])
+                          (with-syntax ([orig-stx stx])
+                            (syntax/loc stx
+                              (class/derived orig-stx [#f super% (to-ids ...) #f]
+                                clauses ...)))])
              
              ;; Now build mixin proc, again to give it a good src location:
              (with-syntax ([mixin-expr
