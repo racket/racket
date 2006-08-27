@@ -178,7 +178,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-exe/time
                 extract-time-times
                 clean-up-bin
-                '(cpstack ctak maze puzzle triangle))
+                '(ctak maze puzzle triangle))
      (make-impl 'gambit
                 (run-mk "mk-gambit.ss")
                 run-gambit-exe
@@ -212,6 +212,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       nboyer
       nestedloop
       nfa
+      nqueens
       nucleic2
       paraffins
       peval
