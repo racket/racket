@@ -72,6 +72,7 @@ int scheme_defining_primitives; /* set to 1 during start-up */
 Scheme_Object scheme_void[1]; /* the void constant */
 Scheme_Object *scheme_values_func; /* the function bound to `values' */
 Scheme_Object *scheme_void_proc;
+Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 
 Scheme_Object *scheme_tail_call_waiting;
 
@@ -221,11 +222,14 @@ scheme_init_fun (Scheme_Env *env)
 						      "ormap",
 						      2, -1),
 			     env);
+
+  REGISTER_SO(scheme_call_with_values_proc);
+  scheme_call_with_values_proc = scheme_make_prim_w_arity2(call_with_values,
+                                                           "call-with-values",
+                                                           2, 2,
+                                                           0, -1);
   scheme_add_global_constant("call-with-values",
-			     scheme_make_prim_w_arity2(call_with_values,
-						       "call-with-values",
-						       2, 2,
-						       0, -1),
+			     scheme_call_with_values_proc,
 			     env);
 
   REGISTER_SO(scheme_values_func);
@@ -796,6 +800,9 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
 
   data = (Scheme_Closure_Data *)_data;
 
+  info->single_result = 1;
+  info->preserves_marks = 1;
+
   info = scheme_optimize_info_add_frame(info, data->num_params, data->num_params,
 					SCHEME_LAMBDA_FRAME);
 
@@ -806,6 +813,16 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
   }
 
   code = scheme_optimize_expr(data->code, info);
+
+  if (info->single_result)
+    SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_SINGLE_RESULT;
+  else if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_SINGLE_RESULT)
+    SCHEME_CLOSURE_DATA_FLAGS(data) -= CLOS_SINGLE_RESULT;
+
+  if (info->preserves_marks)
+    SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_PRESERVES_MARKS;
+  else if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_PRESERVES_MARKS)
+    SCHEME_CLOSURE_DATA_FLAGS(data) -= CLOS_PRESERVES_MARKS;
 
   data->code = code;
 
@@ -828,7 +845,7 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
   return (Scheme_Object *)data;
 }
 
-Scheme_Object *scheme_clone_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int delta, int closure_depth)
+Scheme_Object *scheme_clone_closure_compilation(int dup_ok, Scheme_Object *_data, Optimize_Info *info, int delta, int closure_depth)
 {
   Scheme_Closure_Data *data, *data2;
   Scheme_Object *body;
@@ -837,7 +854,7 @@ Scheme_Object *scheme_clone_closure_compilation(Scheme_Object *_data, Optimize_I
 
   data = (Scheme_Closure_Data *)_data;
   
-  body = scheme_optimize_clone(data->code, info, delta, closure_depth + data->num_params);
+  body = scheme_optimize_clone(dup_ok, data->code, info, delta, closure_depth + data->num_params);
   if (!body) return NULL;
 
   data2 = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
@@ -1951,6 +1968,10 @@ scheme_apply_multi_no_eb(Scheme_Object *rator, int num_rands, Scheme_Object **ra
 Scheme_Object *
 scheme_tail_apply (Scheme_Object *rator, int num_rands, Scheme_Object **rands)
 {
+  /* NOTE: apply_values_execute (in syntax.c) and
+     tail_call_with_values_from_multiple_result (in jit.c)
+     assume that this function won't allocate when 
+     num_rands <= p->tail_buffer_size. */
   int i;
   Scheme_Thread *p = scheme_current_thread;
 
@@ -2984,173 +3005,37 @@ apply(int argc, Scheme_Object *argv[])
   return SCHEME_TAIL_CALL_WAITING;
 }
 
-static Scheme_Object *
-do_map(int argc, Scheme_Object *argv[], char *name, int make_result,
-       int and_mode, int or_mode)
-     /* common code for `map', `for-each', `andmap' and `ormap' */
-{
-# define NUM_QUICK_ARGS 3
-# define NUM_QUICK_RES  5
-  int i, size = 0, l, pos;
-  int can_multi;
-  Scheme_Object *quick1[NUM_QUICK_ARGS], *quick2[NUM_QUICK_ARGS];
-  Scheme_Object *quick3[NUM_QUICK_RES], **working, **args, **resarray;
-  Scheme_Object *v, *retval;
-  int cc;
+#define DO_MAP map
+#define MAP_NAME "map"
+#define MAP_MODE
+#include "schmap.inc"
+#undef MAP_MODE
+#undef MAP_NAME
+#undef DO_MAP
 
-  can_multi = (!make_result && !and_mode && !or_mode);
+#define DO_MAP for_each
+#define MAP_NAME "for-each"
+#define FOR_EACH_MODE
+#include "schmap.inc"
+#undef FOR_EACH_MODE
+#undef MAP_NAME
+#undef DO_MAP
 
-  if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type(name, "procedure", 0, argc, argv);
+#define DO_MAP andmap
+#define MAP_NAME "andmap"
+#define AND_MODE
+#include "schmap.inc"
+#undef AND_MODE
+#undef MAP_NAME
+#undef DO_MAP
 
-  for (i = 1; i < argc; i++) {
-    if (!SCHEME_LISTP (argv[i]))
-      scheme_wrong_type(name, "list", i, argc, argv);
-
-    l = scheme_proper_list_length(argv[i]);
-
-    if (l < 0)
-      scheme_wrong_type(name, "proper list", i, argc, argv);
-
-    if (i == 1)
-      size = l;
-    else if (size != l) {
-      char *argstr;
-      long alen;
-
-      argstr = scheme_make_args_string("", -1, argc, argv, &alen);
-
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "%s: all lists must have same size%t",
-		       name, argstr, alen);
-      return NULL;
-    }
-  }
-
-  if (SCHEME_FALSEP(scheme_get_or_check_arity(argv[0], argc - 1))) {
-    char *s;
-    long aelen;
-
-    s = scheme_make_arity_expect_string(argv[0], argc - 1, NULL, &aelen);
-
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: arity mismatch for %t", name,
-		     s, aelen);
-    return NULL;
-  }
-
-  if (argc <= (NUM_QUICK_ARGS + 1)) {
-    args = quick1;
-    working = quick2;
-  } else {
-    args = MALLOC_N(Scheme_Object *, argc - 1);
-    working = MALLOC_N(Scheme_Object *, argc - 1);
-  }
-
-  if (size <= NUM_QUICK_RES) {
-    resarray = quick3;
-  } else {
-    if (make_result)
-      resarray = MALLOC_N(Scheme_Object *, size);
-    else
-      resarray = NULL;
-  }
-
-  /* Copy argc into working array */
-  for (i = 1; i < argc; i++) {
-    working[i-1] = argv[i];
-  }
-
-  --argc;
-
-  if (and_mode)
-    retval = scheme_true;
-  else if (or_mode)
-    retval = scheme_false;
-  else
-    retval = scheme_void;
-
-  pos = 0;
-  while (pos < size) {
-    /* collect args to apply */
-    for (i = 0; i < argc ; i++) {
-      if (!SCHEME_PAIRP(working[i])) {
-	/* There was a mutation! */
-	scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			 "%s: argument list mutated",
-			 name);
-	return NULL;
-      }
-      args[i] = SCHEME_CAR(working[i]);
-      working[i] = SCHEME_CDR(working[i]);
-    }
-
-    cc = scheme_cont_capture_count;
-
-    if (can_multi)
-      v = _scheme_apply_multi(argv[0], argc, args);
-    else
-      v = _scheme_apply(argv[0], argc, args);
-
-    if (cc != scheme_cont_capture_count) {
-      /* Copy arrays to avoid messing with other continuations */
-      if (make_result && (size > NUM_QUICK_RES)) {
-	Scheme_Object **naya;
-	naya = MALLOC_N(Scheme_Object *, size);
-	memcpy(naya, resarray, pos * sizeof(Scheme_Object *));
-	resarray = naya;
-      }
-      if (argc > NUM_QUICK_ARGS) {
-	Scheme_Object **naya;
-	args = MALLOC_N(Scheme_Object *, argc);
-	naya = MALLOC_N(Scheme_Object *, argc);
-	memcpy(naya, working, argc * sizeof(Scheme_Object *));
-	working = naya;
-      }
-    }
-
-    if (make_result) {
-      resarray[pos] = v;
-    } else if (and_mode) {
-      if (SCHEME_FALSEP(v))
-	return scheme_false;
-      retval = v;
-    } else if (or_mode) {
-      if (SCHEME_TRUEP(v))
-	return v;
-    }
-    pos++;
-  }
-
-  if (make_result)
-    retval = scheme_build_list(size, resarray);
-
-  return retval;
-}
-
-static Scheme_Object *
-map (int argc, Scheme_Object *argv[])
-{
-  return do_map(argc, argv, "map", 1, 0, 0);
-}
-
-static Scheme_Object *
-for_each (int argc, Scheme_Object *argv[])
-{
-  return do_map(argc, argv, "for-each", 0, 0, 0);
-}
-
-static Scheme_Object *
-andmap(int argc, Scheme_Object *argv[])
-{
-  return do_map(argc, argv, "andmap", 0, 1, 0);
-}
-
-static Scheme_Object *
-ormap(int argc, Scheme_Object *argv[])
-{
-  return do_map(argc, argv, "ormap", 0, 0, 1);
-}
+#define DO_MAP ormap
+#define MAP_NAME "ormap"
+#define OR_MODE
+#include "schmap.inc"
+#undef OR_MODE
+#undef MAP_NAME
+#undef DO_MAP
 
 static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[])
 {

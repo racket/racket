@@ -357,9 +357,9 @@ static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
 
     if (c->cont) {
 #ifdef STACK_GROWS_UP
-      top_delta = ((unsigned long)c->stack_from 
-		   - ((unsigned long)c->cont->buf.stack_from
-		      + c->cont->buf.stack_size));
+      top_delta = (((unsigned long)c->cont->buf.stack_from
+		    + c->cont->buf.stack_size)
+		   - (unsigned long)c->stack_from);
 #else
       bottom_delta = ((unsigned long)c->stack_from 
 		      + c->stack_size

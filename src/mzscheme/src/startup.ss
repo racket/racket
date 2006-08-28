@@ -2943,8 +2943,7 @@
 		 [(_ () expr1 expr ...) (syntax/loc stx (let () expr1 expr ...))]
 		 [(_ ([pred handler] ...) expr1 expr ...)
 		  (quasisyntax/loc stx
-		    (let ([l (list (cons pred handler) ...)]
-			  [body (lambda () expr1 expr ...)])
+		    (let ([l (list (cons pred handler) ...)])
 		      ;; Capture current break parameterization, so we can use it to
 		      ;;  evaluate the body
 		      (let ([bpz (continuation-mark-set-first #f break-enabled-key)])
@@ -2988,7 +2987,7 @@
 								     ((cdar l) e))))]
 							[else
 							 (loop (cdr l))])))))])
-				  (call-with-values body
+				  (call-with-values (lambda () expr1 expr ...)
 				    (lambda args (lambda () (apply values args)))))))))))))])))])
       (values (wh #t) (wh #f))))
 

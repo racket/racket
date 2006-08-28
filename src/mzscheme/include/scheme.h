@@ -984,7 +984,7 @@ typedef struct Scheme_Thread {
     struct {
       Scheme_Object *tail_rator;
       Scheme_Object **tail_rands;
-      int tail_num_rands;
+      long tail_num_rands;
     } apply;
     struct {
       Scheme_Object **array;

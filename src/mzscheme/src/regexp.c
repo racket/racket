@@ -2178,7 +2178,7 @@ static unsigned char *add_range(unsigned char *r, int *_j, RoomState *rs,
   return add_byte_range(lo, hi, count, r, _j, rs, did_alt, 0);
 }
 
-static int translate(unsigned char *s, int len, unsigned char **result)
+static int translate(unsigned char *s, int len, char **result)
 {
   int j;
   RoomState rs;
@@ -2468,7 +2468,7 @@ static int translate(unsigned char *s, int len, unsigned char **result)
   }
 
   r[j] = 0;
-  *result = r;
+  *result = (char *)r;
   return j;
 }
 
@@ -2497,7 +2497,7 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int argc, Sch
   slen = SCHEME_BYTE_STRTAG_VAL(bs);
 
   if (!is_byte) {
-    slen = translate((unsigned char *)s, slen, (unsigned char **)&s);
+    slen = translate((unsigned char *)s, slen, &s);
 #if 0
     /* Debugging, to see the translated regexp: */
     {

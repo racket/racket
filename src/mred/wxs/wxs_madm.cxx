@@ -217,6 +217,10 @@ typedef void *(*CAPOFunc)(void*);
 
 
 
+// No OnScroll, because it's handled more primitively to better support 
+//  interactive scrolling on Mac OS X and Windows
+// @ v "on-scroll" : void OnScroll(wxScrollEvent!); : JMPDECL/SETJMP/RESETJMP
+
 
 
 

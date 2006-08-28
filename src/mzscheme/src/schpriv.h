@@ -217,6 +217,7 @@ void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
 
 extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_void_proc;
+extern Scheme_Object *scheme_call_with_values_proc;
 
 extern Scheme_Object *scheme_define_values_syntax, *scheme_define_syntaxes_syntax;
 extern Scheme_Object *scheme_lambda_syntax;
@@ -1505,9 +1506,11 @@ typedef struct Scheme_Comp_Env
 
 #define CLOS_HAS_REST 1
 #define CLOS_HAS_REF_ARGS 2
-#define CLOS_ONLY_LOCALS 4
+#define CLOS_PRESERVES_MARKS 4
 #define CLOS_FOLDABLE 8
 #define CLOS_IS_METHOD 16
+#define CLOS_SINGLE_RESULT 32
+#define CLOS_RESULT_TENTATIVE 64
 
 typedef struct Scheme_Compile_Expand_Info
 {
@@ -1574,6 +1577,9 @@ typedef struct Optimize_Info
   char letrec_not_twice, enforce_const;
   Scheme_Hash_Table *top_level_consts;
 
+  /* Set by expression optimization: */
+  int single_result, preserves_marks; /* negative means "tentative", due to fixpoint in progress */
+
   char **stat_dists; /* (pos, depth) => used? */
   int *sd_depths;
   int used_toplevel;
@@ -1581,7 +1587,7 @@ typedef struct Optimize_Info
 } Optimize_Info;
 
 typedef struct Scheme_Object *(*Scheme_Syntax_Optimizer)(Scheme_Object *data, Optimize_Info *info);
-typedef struct Scheme_Object *(*Scheme_Syntax_Cloner)(Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
+typedef struct Scheme_Object *(*Scheme_Syntax_Cloner)(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 typedef struct Scheme_Object *(*Scheme_Syntax_Shifter)(Scheme_Object *data, int delta, int after_depth);
 
 typedef struct CPort Mz_CPort;
@@ -1629,7 +1635,7 @@ typedef struct {
 #define ZERO_SIZED_CLOSUREP(closure) !(closure->code->closure_size)
 
 typedef struct Scheme_Native_Closure_Data {
-  MZTAG_IF_REQUIRED
+  Scheme_Inclhash_Object iso; /* type tag only set when needed, but flags always needed */
   Scheme_Closed_Prim *code;
   union {
     void *tail_code;                       /* For non-case-lambda */
@@ -1757,7 +1763,8 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 #define REQUIRE_EXPD       8
 #define DEFINE_FOR_SYNTAX_EXPD 9
 #define REF_EXPD           10
-#define _COUNT_EXPD_       11
+#define APPVALS_EXPD       11
+#define _COUNT_EXPD_       12
 
 #define scheme_register_syntax(i, fo, fr, fv, fe, fj, cl, sh, pa)        \
      (scheme_syntax_optimizers[i] = fo, \
@@ -1783,9 +1790,12 @@ Scheme_Object *scheme_make_syntax_resolved(int idx, Scheme_Object *data);
 Scheme_Object *scheme_make_syntax_compiled(int idx, Scheme_Object *data);
 
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *);
-Scheme_Object *scheme_optimize_list(Scheme_Object *, Optimize_Info *);
 Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline);
 Scheme_Object *scheme_optimize_lets_for_test(Scheme_Object *form, Optimize_Info *info);
+
+Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e, 
+                                            Optimize_Info *info,
+                                            int e_single_result);
 
 int scheme_compiled_duplicate_ok(Scheme_Object *o);
 int scheme_compiled_propagate_ok(Scheme_Object *o, Optimize_Info *info);
@@ -1820,9 +1830,9 @@ void scheme_optimize_mutated(Optimize_Info *info, int pos);
 Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_mutated);
 int scheme_optimize_is_used(Optimize_Info *info, int pos);
 
-Scheme_Object *scheme_optimize_clone(Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
+Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_depth);
-Scheme_Object *scheme_clone_closure_compilation(Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
+Scheme_Object *scheme_clone_closure_compilation(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_shift_closure_compilation(Scheme_Object *obj, int delta, int after_depth);
 
 int scheme_closure_body_size(Scheme_Closure_Data *closure_data, int check_assign);
@@ -2512,6 +2522,10 @@ void scheme_count_generic(Scheme_Object *o, long *s, long *e, Scheme_Hash_Table 
 
 Scheme_Object *scheme_checked_car(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cdr(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_caar(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_cadr(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_cdar(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_cddr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_vector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_vector_set(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_string_ref(int argc, Scheme_Object *argv[]);

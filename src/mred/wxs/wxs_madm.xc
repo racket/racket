@@ -72,6 +72,10 @@ typedef void *(*CAPOFunc)(void*);
 
 @ v "on-scroll-on-change" : void OnScrollOnChange();
 
+// No OnScroll, because it's handled more primitively to better support 
+//  interactive scrolling on Mac OS X and Windows
+// @ v "on-scroll" : void OnScroll(wxScrollEvent!); : JMPDECL/SETJMP/RESETJMP
+
 @ "is-focus-on?" : bool IsFocusOn();
 
 @ "force-display-focus" : void ForceDisplayFocus(bool);

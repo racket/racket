@@ -875,6 +875,8 @@ Optional Features:
   --enable-float          include support for single-precision floats
   --enable-floatinstead   compile to use single-precision by default
   --enable-pthread        link MrEd with pthreads (sometimes needed for GL)
+  --enable-stackup        assume "up" if stack direction cannot be determined
+  --enable-bigendian      assume "big" if endianness cannot be determined
   --enable-oskit          compile OSKit-based MzScheme kernel
   --enable-smalloskit     compile small OSKit-based MzScheme kernel
   --enable-wbuild         compile and use wbuild for .w sources
@@ -1465,6 +1467,16 @@ fi;
 # Check whether --enable-pthread or --disable-pthread was given.
 if test "${enable_pthread+set}" = set; then
   enableval="$enable_pthread"
+
+fi;
+# Check whether --enable-stackup or --disable-stackup was given.
+if test "${enable_stackup+set}" = set; then
+  enableval="$enable_stackup"
+
+fi;
+# Check whether --enable-bigendian or --disable-bigendian was given.
+if test "${enable_bigendian+set}" = set; then
+  enableval="$enable_bigendian"
 
 fi;
 
@@ -8323,7 +8335,7 @@ int grows_down_p(int n, void *cmp) {
        return grows_down_p(n - 1, cmp);
    }
    int main() {
-      return grows_down_p();
+      return grows_down_p(0, 0);
    }
 _ACEOF
 rm -f conftest$ac_exeext
@@ -8352,8 +8364,11 @@ echo "$as_me:$LINENO: result: $stack_direction" >&5
 echo "${ECHO_T}$stack_direction" >&6
 
 if test "${stack_direction}" = "unknown" ; then
-  echo configure: cannot determine stack direction
-  exit 1
+  if test "${enable_stackup}" = "yes" ; then
+    stack_direction=up
+  else
+    echo configure: warning: cannot determine stack direction, assuming down
+  fi
 fi
 
 if test "${stack_direction}" = "up" ; then
@@ -8590,12 +8605,15 @@ case $ac_cv_c_bigendian in
   no)
     endianness=little ;;
   *)
-    endiannes=unknown ;;
+    endianness=unknown ;;
 esac
 
 if test "${endianness}" = "unknown" ; then
-  echo configure: cannot determine endianness
-  exit 1
+  if test "${enable_bigendian}" = "yes" ; then
+    endianness=big
+  else
+    echo configure: warning: cannot determine endianness, assuming little
+  fi
 fi
 
 if test "${endianness}" = "big" ; then

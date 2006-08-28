@@ -53,10 +53,6 @@ static Scheme_Object *member (int argc, Scheme_Object *argv[]);
 static Scheme_Object *assv (int argc, Scheme_Object *argv[]);
 static Scheme_Object *assq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *assoc (int argc, Scheme_Object *argv[]);
-static Scheme_Object *caar_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *cadr_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *cdar_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *cddr_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *caaar_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *caadr_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cadar_prim (int argc, Scheme_Object *argv[]);
@@ -257,26 +253,23 @@ scheme_init_list (Scheme_Env *env)
 						     "assoc",
 						     2, 2),
 			      env);
-  scheme_add_global_constant ("caar",
-			      scheme_make_noncm_prim(caar_prim,
-						     "caar",
-						     1, 1),
-			      env);
-  scheme_add_global_constant ("cadr",
-			      scheme_make_noncm_prim(cadr_prim,
-						     "cadr",
-						     1, 1),
-			      env);
-  scheme_add_global_constant ("cdar",
-			      scheme_make_noncm_prim(cdar_prim,
-						     "cdar",
-						     1, 1),
-			      env);
-  scheme_add_global_constant ("cddr",
-			      scheme_make_noncm_prim(cddr_prim,
-						     "cddr",
-						     1, 1),
-			      env);
+
+  p = scheme_make_noncm_prim(scheme_checked_caar, "caar", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("caar", p, env);
+
+  p = scheme_make_noncm_prim(scheme_checked_cadr, "cadr", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cadr", p, env);
+
+  p = scheme_make_noncm_prim(scheme_checked_cdar, "cdar", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cdar", p, env);
+
+  p = scheme_make_noncm_prim(scheme_checked_cddr, "cddr", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("cddr", p, env);
+
   scheme_add_global_constant ("caaar",
 			      scheme_make_noncm_prim(caaar_prim,
 						     "caaar",
@@ -1223,8 +1216,8 @@ GEN_ASS(assq, assq, SAME_OBJ)
 GEN_ASS(assoc, assoc, scheme_equal)
 
 #define LISTFUNC2(name, C, D) \
-static Scheme_Object * \
-name ## _prim (int argc, Scheme_Object *argv[]) \
+Scheme_Object * \
+scheme_checked_ ## name (int argc, Scheme_Object *argv[]) \
 { \
   if (!(SCHEME_PAIRP(argv[0]) \
 	&& SCHEME_PAIRP(D(argv[0])))) \

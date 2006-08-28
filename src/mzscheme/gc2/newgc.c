@@ -315,14 +315,15 @@ static struct mpage *page_map[1 << USEFUL_ADDR_BITS];
    entire nursery on every GC. The latter is useful because it simplifies
    the allocation process (which is also a speed hack, come to think of it) 
 
-   gen0_pages is the list of very large nursery pages. gen0_alloc_page is
+   gen0_pages is the list of very large nursery pages. GC_gen0_alloc_page is
    the member of this list we are currently allocating on. The size count
    helps us trigger collection quickly when we're running out of space; see
    the test in allocate_big. 
 */
 static struct mpage *gen0_pages = NULL;
-static struct mpage *gen0_alloc_page = NULL;
+static struct mpage *GC_gen0_alloc_page = NULL;
 static struct mpage *gen0_big_pages = NULL;
+static unsigned long GC_gen0_alloc_page_size = 0;
 static unsigned long gen0_current_size = 0;
 static unsigned long gen0_max_size = 0;
 
@@ -439,20 +440,24 @@ inline static void *allocate(size_t sizeb, int type)
 
       sizeb = gcWORDS_TO_BYTES(sizew);
     alloc_retry:
-      newsize = gen0_alloc_page->size + sizeb;
+      newsize = GC_gen0_alloc_page_size + sizeb;
 
       if(newsize > GEN0_PAGE_SIZE) {
-	if(gen0_alloc_page->next) 
-	  gen0_alloc_page = gen0_alloc_page->next; 
-	else if (avoid_collection) {
+        gen0_current_size += (GC_gen0_alloc_page_size - HEADER_SIZEB);
+        GC_gen0_alloc_page->size = GC_gen0_alloc_page_size;
+	if(GC_gen0_alloc_page->next) { 
+	  GC_gen0_alloc_page = GC_gen0_alloc_page->next;
+          GC_gen0_alloc_page_size = GC_gen0_alloc_page->size;
+	} else if (avoid_collection) {
 	  struct mpage *work;
 
 	  work = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
 	  work->size = GEN0_PAGE_SIZE;
 	  work->big_page = 1;
-	  gen0_alloc_page->prev = work;
-	  work->next = gen0_alloc_page;
-	  gen0_alloc_page = work;
+	  GC_gen0_alloc_page->prev = work;
+	  work->next = GC_gen0_alloc_page;
+	  GC_gen0_alloc_page = work;
+          GC_gen0_alloc_page_size = GC_gen0_alloc_page->size;
 	  pagemap_add(work);
 	  work->size = HEADER_SIZEB;
 	  work->big_page = 0;
@@ -460,7 +465,7 @@ inline static void *allocate(size_t sizeb, int type)
 	  garbage_collect(0);
 	goto alloc_retry;
       } else {
-	void *retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
+	void *retval = PTR(NUM(GC_gen0_alloc_page) + GC_gen0_alloc_page_size);
 
         if (type == PAGE_ATOMIC)
           *((void **)retval) = NULL; /* init objhead */
@@ -470,8 +475,7 @@ inline static void *allocate(size_t sizeb, int type)
 	info = (struct objhead *)retval;
 	info->type = type;
 	info->size = sizew;
-	gen0_alloc_page->size = newsize;
-	gen0_current_size += sizeb;
+	GC_gen0_alloc_page_size = newsize;
 
 	return PTR(NUM(retval) + WORD_SIZE);
       }
@@ -495,20 +499,19 @@ void *GC_malloc_one_small_tagged(size_t sizeb)
 
   sizeb += WORD_SIZE;
   sizeb = ALIGN_BYTES_SIZE(sizeb);
-  newsize = gen0_alloc_page->size + sizeb;
+  newsize = GC_gen0_alloc_page_size + sizeb;
 
   if(newsize > GEN0_PAGE_SIZE) {
     return GC_malloc_one_tagged(sizeb - WORD_SIZE);
   } else {
-    void *retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
+    void *retval = PTR(NUM(GC_gen0_alloc_page) + GC_gen0_alloc_page_size);
     struct objhead *info = (struct objhead *)retval;
 
     bzero(retval, sizeb);
 
     /* info->type = type; */ /* We know that the type field is already 0 */
     info->size = (sizeb >> gcLOG_WORD_SIZE);
-    gen0_alloc_page->size = newsize;
-    gen0_current_size += sizeb;
+    GC_gen0_alloc_page_size = newsize;
     
     return PTR(NUM(retval) + WORD_SIZE);
   }
@@ -520,19 +523,18 @@ void *GC_malloc_one_small_dirty_tagged(size_t sizeb)
 
   sizeb += WORD_SIZE;
   sizeb = ALIGN_BYTES_SIZE(sizeb);
-  newsize = gen0_alloc_page->size + sizeb;
+  newsize = GC_gen0_alloc_page_size + sizeb;
 
   if(newsize > GEN0_PAGE_SIZE) {
     return GC_malloc_one_tagged(sizeb - WORD_SIZE);
   } else {
-    void *retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
+    void *retval = PTR(NUM(GC_gen0_alloc_page) + GC_gen0_alloc_page_size);
     struct objhead *info = (struct objhead *)retval;
 
     *(void **)info = NULL; /* client promises the initialize the rest */
 
     info->size = (sizeb >> gcLOG_WORD_SIZE);
-    gen0_alloc_page->size = newsize;
-    gen0_current_size += sizeb;
+    GC_gen0_alloc_page_size = newsize;
     
     return PTR(NUM(retval) + WORD_SIZE);
   }
@@ -545,7 +547,7 @@ void *GC_malloc_pair(void *car, void *cdr)
   void *retval;
 
   sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object))) + WORD_SIZE);
-  newsize = gen0_alloc_page->size + sizeb;
+  newsize = GC_gen0_alloc_page_size + sizeb;
 
   if(newsize > GEN0_PAGE_SIZE) {
     park[0] = car;
@@ -558,7 +560,7 @@ void *GC_malloc_pair(void *car, void *cdr)
   } else {
     struct objhead *info;
 
-    retval = PTR(NUM(gen0_alloc_page) + gen0_alloc_page->size);
+    retval = PTR(NUM(GC_gen0_alloc_page) + GC_gen0_alloc_page_size);
     info = (struct objhead *)retval;
 
     ((void **)retval)[0] = NULL; /* objhead */
@@ -566,8 +568,7 @@ void *GC_malloc_pair(void *car, void *cdr)
 
     /* info->type = type; */ /* We know that the type field is already 0 */
     info->size = (sizeb >> gcLOG_WORD_SIZE);
-    gen0_alloc_page->size = newsize;
-    gen0_current_size += sizeb;
+    GC_gen0_alloc_page_size = newsize;
 
     retval = PTR(NUM(retval) + WORD_SIZE);
   }
@@ -640,7 +641,8 @@ inline static void resize_gen0(unsigned long new_size)
   }
 
   /* we're going to allocate onto the first page now */
-  gen0_alloc_page = gen0_pages;
+  GC_gen0_alloc_page = gen0_pages;
+  GC_gen0_alloc_page_size = GC_gen0_alloc_page->size;
 
   /* set the two size variables */
   gen0_max_size = alloced_size;
@@ -1848,7 +1850,7 @@ long GC_get_memory_use(void *o)
       retval = custodian_usage(arg);
     }
   } else {
-    retval = gen0_current_size + memory_in_use;
+    retval = gen0_current_size + (GC_gen0_alloc_page_size - HEADER_SIZEB) + memory_in_use;
   }
 
   return retval;
@@ -2216,7 +2218,8 @@ void GC_dump_with_traces(int flags,
   GCPRINT(GCOUTF, "End MzScheme3m\n");
 
   GCWARN((GCOUTF, "Generation 0: %li of %li bytes used\n",
-	  gen0_current_size, gen0_max_size));
+	  gen0_current_size +  (GC_gen0_alloc_page_size - HEADER_SIZEB), 
+          gen0_max_size));
   
   for(i = 0; i < PAGE_TYPES; i++) {
     unsigned long total_use = 0, count = 0;

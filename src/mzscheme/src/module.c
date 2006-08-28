@@ -3176,11 +3176,41 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
   /* FIXME: validate exp-time code */
 }
 
+static int set_code_closure_flags(Scheme_Object *clones,
+                                  int set_flags, int mask_flags)
+{
+  Scheme_Object *clone, *orig, *first;
+  Scheme_Closure_Data *data;
+  int flags = CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS;
+
+  /* The first in a clone pair is the one that is consulted for
+     references. The second one is the original, and its the one whose
+     flags are updated by optimization. So consult the original, and set
+     flags in both. */
+
+  while (clones) {
+    first = SCHEME_CAR(clones);
+    clone = SCHEME_CAR(first);
+    orig = SCHEME_CDR(first);
+
+    data = (Scheme_Closure_Data *)orig;
+    flags = (flags & SCHEME_CLOSURE_DATA_FLAGS(data));
+    SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+    data = (Scheme_Closure_Data *)clone;
+    SCHEME_CLOSURE_DATA_FLAGS(data) = set_flags | (SCHEME_CLOSURE_DATA_FLAGS(data) & mask_flags);
+
+    clones = SCHEME_CDR(clones);
+  }
+
+  return flags;
+}
+
 static Scheme_Object *
 module_optimize(Scheme_Object *data, Optimize_Info *info)
 {
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *e, *b, *vars, *start_simltaneous_b;
+  Scheme_Object *cl_first = NULL, *cl_last = NULL;
   Scheme_Hash_Table *consts = NULL, *ready_table = NULL;
   int cont;
 
@@ -3215,7 +3245,16 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	    Scheme_Object *e2;
 
 	    if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
-	      e2 = scheme_optimize_clone(e, info, 0, 0);
+	      e2 = scheme_optimize_clone(1, e, info, 0, 0);
+              if (e2) {
+                Scheme_Object *pr;
+                pr = scheme_make_raw_pair(scheme_make_raw_pair(e2, e), NULL);
+                if (cl_last)
+                  SCHEME_CDR(cl_last) = pr;
+                else
+                  cl_first = pr;
+                cl_last = pr;
+              }
 	    } else {
 	      e2 = e;
 	    }
@@ -3272,6 +3311,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
     if (!cont) {
       /* If we have new constants, re-optimize to inline: */
       if (consts) {
+        int flags;
+
 	if (!info->top_level_consts) {
 	  info->top_level_consts = consts;
 	} else {
@@ -3285,8 +3326,16 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	  }
 	}
 
+        /* Same as in letrec: assume CLOS_SINGLE_RESULT and
+           CLOS_PRESERVES_MARKS for all, but then assume not for all
+           if any turn out not (i.e., approximate fix point). */
+        (void)set_code_closure_flags(cl_first, 
+                                     CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS | CLOS_RESULT_TENTATIVE, 
+                                     0xFFFF);
+
 	while (1) {
-	  /* Re-optimize this expression: */
+	  /* Re-optimize this expression. We can optimize anything without
+             shift-cloning, since there are no local variables in scope. */
 	  e = scheme_optimize_expr(SCHEME_CAR(start_simltaneous_b), info);
 	  SCHEME_CAR(start_simltaneous_b) = e;
 	  
@@ -3294,8 +3343,14 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	    break;
 	  start_simltaneous_b = SCHEME_CDR(start_simltaneous_b);
 	}
+
+        flags = set_code_closure_flags(cl_first, 0, 0xFFFF);
+        (void)set_code_closure_flags(cl_first,
+                                     (flags & (CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS)), 
+                                     ~(CLOS_SINGLE_RESULT | CLOS_PRESERVES_MARKS | CLOS_RESULT_TENTATIVE));
       }
       
+      cl_last = cl_first = NULL;
       consts = NULL;
       start_simltaneous_b = SCHEME_CDR(b);
     }

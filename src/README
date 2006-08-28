@@ -122,7 +122,9 @@ the Unix instructions below, but note the following:
     For cross compilation, set the compiler variables to a compiler
     for the target platform compiler, but also set CC_FOR_BUILD to a
     compiler for the host platform (for building binaries to execute
-    during the build process).
+    during the build process). If the target machine's stack grows up,
+    you'll have to supply --enable-stackup; if the target machine is
+    big-endian, you may have to supply --enable-bigendian.
 
     If you re-run `configure' after running `make', then products of
     the `make' may be incorrect due to changes in the compiler command
