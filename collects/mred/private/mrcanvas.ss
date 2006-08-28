@@ -27,7 +27,7 @@
   (define canvas<%>
     (interface (subwindow<%>)
       min-client-width min-client-height
-      on-char on-event on-paint on-scroll on-tab-in
+      on-char on-event on-paint on-tab-in
       warp-pointer get-dc
       set-canvas-background get-canvas-background
       set-resize-corner))
@@ -43,7 +43,6 @@
 	[on-char (lambda (e) (send wx do-on-char e))]
 	[on-event (lambda (e) (send wx do-on-event e))]
 	[on-paint (lambda () (when wx (send wx do-on-paint)))]
-	[on-scroll (lambda (e) (send wx do-on-scroll e))]
 	[on-tab-in (lambda () (void))]
 	
 	[min-client-width (param (lambda () wx) min-client-width)]
@@ -98,6 +97,7 @@
 	  (check-callback cwho paint-callback)
 	  (check-label-string/false cwho label)))
       (public
+        [on-scroll (lambda (e) (send wx do-on-scroll e))]
 	[swap-gl-buffers (lambda () (send (send (send wx get-dc) get-gl-context) swap-buffers))]
 	[with-gl-context (lambda (thunk) 
 			   (send (send (send wx get-dc) get-gl-context) call-as-current thunk))]

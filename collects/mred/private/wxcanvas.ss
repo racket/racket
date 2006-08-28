@@ -33,6 +33,7 @@
 		       (if mred
 			   (as-exit (lambda () (send mred on-event e)))
 			   (as-exit (lambda () (super on-event e)))))))]
+        ;; only called for canvas%, not editor-canvas%:
 	[on-scroll (entry-point
 		    (lambda (e)
 		      (let ([mred (get-mred)])
