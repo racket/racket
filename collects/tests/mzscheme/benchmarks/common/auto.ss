@@ -178,7 +178,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-exe/time
                 extract-time-times
                 clean-up-bin
-                '(ctak maze puzzle triangle))
+                '(cpstack maze puzzle triangle))
      (make-impl 'gambit
                 (run-mk "mk-gambit.ss")
                 run-gambit-exe
