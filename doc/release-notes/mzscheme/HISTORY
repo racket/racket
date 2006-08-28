@@ -1,3 +1,12 @@
+Version 352.5
+for-each, ormap, and andmap now tail-apply the given function
+ for the last call
+
+Version 352.4
+class.ss: added inherit/inner and inherit/super, to eventually
+ replace rename-super and rename-inner;
+ added member-name-key=?
+
 Version 352.2
 Added raise-arity-error
 Changed bytecode compiler to perform more closure conversion
