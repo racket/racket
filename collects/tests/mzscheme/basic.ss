@@ -1,15 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(test "bbb" regexp-replace* "a" "aaa" "b")
-
-(define (test-weird-offset regexp-match regexp-match-positions)
-  (test #f regexp-match "e" (open-input-string ""))
-  (test #f regexp-match "e" (open-input-string "") (expt 2 100))
-  (test #f regexp-match "e" (open-input-string "") (expt 2 100) (expt 2 101))
-  (test '((3 . 4)) regexp-match-positions "e" (open-input-string "eaae") 2 (expt 2 101)))
-(test-weird-offset regexp-match regexp-match-positions)
-
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test '() 'null null)
 (test '() 'null ())
@@ -1368,7 +1360,7 @@
 (map-tests andmap)
 (map-tests ormap)
 
-(test (void) for-each (lambda (x) (values 1 2)) '(1 2))
+(test-values '(1 2) (lambda () (for-each (lambda (x) (values 1 2)) '(1 2))))
 (err/rt-test (map (lambda (x) (values 1 2)) '(1 2)) arity?)
 
 (test #t andmap add1 null)
@@ -1383,8 +1375,8 @@
 (err/rt-test (ormap (lambda (x) (values 1 2)) '(1 2)) arity?)
 (err/rt-test (andmap (lambda (x) (values 1 2)) '(1 2)) arity?)
 
-(err/rt-test (ormap (lambda (x) (values 1 2)) '(1)) arity?)
-(err/rt-test (andmap (lambda (x) (values 1 2)) '(1)) arity?)
+(test-values '(1 2) (lambda () (ormap (lambda (x) (values 1 2)) '(1))))
+(test-values '(1 2) (lambda () (andmap (lambda (x) (values 1 2)) '(1))))
 
 (test -3 call-with-current-continuation
 		(lambda (exit)
