@@ -238,7 +238,8 @@
                                    "&&")
                                   200))
                           (callback (λ (x y) (open-recent-list-item recent-list-item))))))
-                    recently-opened-files)))
+                    recently-opened-files)
+          (void)))
 
       ;; open-recent-list-item : recent-list-item -> void
       (define (open-recent-list-item recent-list-item)
