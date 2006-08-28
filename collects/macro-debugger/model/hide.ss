@@ -20,6 +20,19 @@
     (parameterize ((macro-policy show-macro?))
       (hide deriv)))
 
+  ;; current-hiding-warning-handler : (parameter-of (symbol string -> void))
+  (define current-hiding-warning-handler
+    (make-parameter
+     (lambda (tag message) (printf "~a: ~a~n" tag message))))
+
+  (define (warn tag message) ((current-hiding-warning-handler) tag message))
+
+  ;; machinery for reporting things that macro hiding can't handle
+  (define-struct nonlinearity (message paths))
+  (define-struct localactions ())
+
+
+
 ;   +@   ++           -                    
 ;   *@+  ++           @-                   
 ;   *@@  ++  -+@+-  -+@+++   -+@+-   -+@@+ 
@@ -90,7 +103,7 @@
         [(AnyQ p:variable (e1 e2 rs))
          (values d e2)]
         [(AnyQ p:module (e1 e2 rs body))
-         (>>Prim d #t (make-p:module body)
+         (>>Prim d e1 #t (make-p:module body)
                  (module name lang . _BODY)
                  (module name lang BODY)
                  ([for-deriv BODY body]))]
@@ -148,22 +161,25 @@
               ([for-deriv FIRST first]
                [for-lderiv LDERIV lderiv]))]
         [(AnyQ p:#%app (e1 e2 rs tagged-stx ld))
-         (>>P d (make-p:#%app tagged-stx ld)
-              (#%app . LDERIV)
-              ([for-lderiv LDERIV ld])
-              #:with2
-              (lambda (pr* stx*)
-                (if (or (eq? tagged-stx e1) (show-macro? #'#%app))
-                    (values pr* stx*)
+         (if (or (eq? e1 tagged-stx) (show-macro? #'#%app))
+             ;; If explicitly tagged, simple
+             (>>Prim d tagged-stx #t (make-p:#%app tagged-stx ld)
+                  (#%app . LDERIV) (#%app . LDERIV)
+                  ([for-lderiv LDERIV ld]))
+             ;; If implicitly tagged:
+             (>>P d (make-p:#%app tagged-stx ld)
+                  LDERIV
+                  ([for-lderiv LDERIV ld])
+                  #:with2
+                  (lambda (pr* stx*)
                     (match pr*
                       [(struct p:#%app (_ _ rs tagged-stx (IntQ lderiv (es1 es2 derivs*))))
-                       (let ([stx* (and stx* (stx-cdr stx*))])
-                         (values (make-p:synth e1 stx* rs
-                                               (map (lambda (n d)
-                                                      (make-s:subterm (list (make-ref n)) d))
-                                                    (iota (length derivs*))
-                                                    derivs*))
-                                 stx*))]
+                       (values (make-p:synth e1 stx* rs
+                                             (map (lambda (n d)
+                                                    (make-s:subterm (list (make-ref n)) d))
+                                                  (iota (length derivs*))
+                                                  derivs*))
+                               stx*)]
                       [(struct p:#%app (_ _ rs tagged-stx (struct error-wrap (exn _ _))))
                        (values (make-error-wrap exn #f (make-p:synth e1 #f rs null))
                                #f)]))))]
@@ -223,13 +239,27 @@
         ;; Macros
 
         [(AnyQ mrule (e1 e2 tx next))
-         (if (show-transformation? tx)
-             ;; FIXME: Not handling local expansions now
-             (recv [(next e2) (for-deriv next)]
-                   (values (rewrap d (make-mrule e1 e2 tx next))
-                           e2))
-             (seek/deriv d))]
-        
+         (let ([show-k
+                (lambda ()
+                  (recv [(next e2) (for-deriv next)]
+                        (values (rewrap d (make-mrule e1 e2 tx next))
+                                e2)))])
+           (if (show-transformation? tx)
+               (show-k)
+               (with-handlers ([nonlinearity?
+                                (lambda (nl)
+                                  (warn 'nonlinearity
+                                        (format "~a: ~s"
+                                                (nonlinearity-message nl)
+                                                (nonlinearity-paths nl)))
+                                  (show-k))]
+                               [localactions?
+                                (lambda (nl)
+                                  (warn 'localactions
+                                        "opaque macro called local-expand or lifted expression")
+                                  (show-k))])
+                 (seek/deriv d))))]
+
         ;; Lift
 
         [($$ lift-deriv (e1 e2 first lifted-stx second))
@@ -442,7 +472,7 @@
         [(AnyQ p:letrec-values (e1 e2 rs renames rhss body))
          (let ([new-table (table-restrict/let e1 renames)])
            (parameterize ((subterms-table new-table))
-             (append (apply append (map for-deriv new-table))
+             (append (apply append (map for-deriv rhss))
                      (for-bderiv body))))]
         [(AnyQ p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body))
          (let ([new-table (table-restrict/lsv1 e1 srenames)])
@@ -483,13 +513,27 @@
         [(struct transformation (e1 e2 rs me1 me2 locals))
          ;; FIXME: We'll need to use e1/e2/me1/me2 to synth locals, perhaps
          ;; FIXME: and we'll also need to account for *that* marking, too...
+         (unless (null? locals)
+           (raise (make-localactions)))
          (parameterize ((subterms-table (table-restrict/rename e1 me1)))
            (let ([sss (map for-local locals)])
              (values (apply append sss)
                      (table-restrict/rename me2 e2))))]))
 
+    ;; for-local : LocalAction -> (list-of Subterm)
     (define (for-local local)
-      '...)
+      (match local
+        [(IntQ local-expansion (e1 e2 me1 me2 deriv))
+         (parameterize ((subterms-table (table-restrict/rename e1 me1)))
+           (let ([ss (for-deriv deriv)])
+             ;; 
+             '(for-each (lambda (s) (s:subterm-deriv s))
+                        ss)
+             '(table-restrict/rename me2 e2)
+             ss))]
+        ;; Also need to handle local-bind
+        ;; ...
+        [else null]))
 
     ;; for-lderiv : ListDerivation -> (list-of Subterm)
     (define (for-lderiv ld)
@@ -534,18 +578,20 @@
                  (or (> (length null-paths) 1)
                      (pair? tail-paths)
                      (pair? ref-paths)))
-        (error 'check-nonlinear-paths "self path plus others: ~s" paths))
+        (raise (make-nonlinearity "self path plus others" paths)))
       (when (pair? tail-paths)
         (when (> (length tail-paths) 1)
-          (error 'check-nonlinear-paths "multiple tail paths"))
+          (raise (make-nonlinearity "multiple tail paths" paths)))
         (let ([n (tail-n (car (car tail-paths)))])
           (for-each (lambda (p)
                       (when (> (ref-n (car p)) n)
-                        (error 'check-nonlinear-paths "ref path after tail path")))
+                        (raise (make-nonlinearity
+                                "ref path after tail path"
+                                paths))))
                     ref-paths)))
       (let ([ref-path-partitions (partition&cdr-ref-paths ref-paths)])
         (for-each check-nonlinear-paths ref-path-partitions))))
-  
+
   ;; partition&cdr-ref-paths : (list-of Path) -> (list-of (list-of Path))
   (define (partition&cdr-ref-paths paths)
     (let ([t (make-hash-table 'equal)]

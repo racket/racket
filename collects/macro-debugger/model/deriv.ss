@@ -6,11 +6,10 @@
 
   ;; NO CONTRACTS
   
-;  (provide (all-from "deriv-c.ss"))
-
-
+  (provide (all-from "deriv-c.ss"))
   ;; CONTRACTS
 
+#;  (begin
   (define (stx-list-like? x)
     (or (syntax? x)
         (null? x)
@@ -58,11 +57,17 @@
             [resolves resolves/c]
             [me1 syntax?]
             [me2 syntax/f]
-            [locals (listof (or/c local-expansion? local-lift? local-lift-end?))]))
+            [locals (listof (or/c local-expansion? local-lift? local-lift-end? local-bind?))]))
    (struct (prule deriv)
            ([e1 syntax?]
             [e2 syntax/f]
             [resolves resolves/c]))
+   (struct (p:#%app prule)
+           ([e1 syntax?]
+            [e2 syntax/f]
+            [resolves resolves/c]
+            [tagged-stx syntax?]
+            [lderiv (anyq (maybe lderiv?))]))
 
    (struct lderiv
            ([es1 syntaxes/c]
@@ -87,6 +92,7 @@
            (struct local-expansion (e1 e2 me1 me2 deriv))
            (struct local-lift (expr id))
            (struct local-lift-end (decl))
+           (struct local-bind (deriv))
 
            ;(struct prule (resolves))
            (struct p:variable ())
@@ -98,7 +104,7 @@
            (struct p:set!-macro (deriv))
            (struct p:begin (lderiv))
            (struct p:begin0 (first lderiv))
-           (struct p:#%app (tagged-stx lderiv))
+           ;(struct p:#%app (tagged-stx lderiv))
            (struct p:lambda (renames body))
            (struct p:case-lambda (renames+bodies))
            (struct p:let-values (renames body))
@@ -307,5 +313,5 @@
   #;
   (define (wf-exn-deriv? x)
     #f)
-  
+  )
   )

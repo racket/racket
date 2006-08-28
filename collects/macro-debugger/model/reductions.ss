@@ -6,9 +6,7 @@
            "context.ss"
            "deriv.ss"
            "reductions-engine.ss")
-  (provide reductions
-           (struct step (redex contractum e1 e2 note lctx))
-           (struct misstep (redex e1 exn)))
+  (provide reductions)
 
   ;; Setup for reduction-engines
 
@@ -106,45 +104,21 @@
           [! exni]
           [#:bind (?formals* . ?body*) renames]
           [#:pattern (?lambda ?formals . ?body)]
-          [#:walk (syntax/skeleton e1 (?lambda ?formals* . ?body*))
-                  #'?formals #'?formals*
-                  "Rename formal parameters"]
-          [Block ?body body])
-       #;
-       (R e1 _1
-          [! exni]
-          => 
-          (lambda (stx)
-            (with-syntax ([(?lambda ?formals . ?body) stx]
-                          [(?formals* . ?body*) renames])
-              (let ([mid (syntax/skeleton e1 (?lambda ?formals* . ?body*))])
-                (append 
-                 (if (stx-pair? #'?formals)
-                     (list (walk/foci/E #'?formals #'?formals* e1 mid
-                                        "Rename formal parameters"))
-                     null)
-                 (R mid (LAMBDA FORMALS . BODY)
-                    [Block BODY body]))))))
-       #;(with-syntax ([(?lambda ?formals . ?body) e1]
-                       [(?formals* . ?body*) renames])
-           (let ([mid (syntax/skeleton e1 (?lambda ?formals* . ?body*))])
-             (append
-              (if (stx-pair? #'?formals)
-                  (list (walk/foci/E #'?formals #'?formals* e1 mid
-                                     "Rename formal parameters"))
-                  null)
-              (R mid (LAMBDA FORMALS . BODY)
-                 [Block BODY body]))))]
+          [#:rename (syntax/skeleton e1 (?lambda ?formals* . ?body*))
+                         #'?formals #'?formals*
+                         "Rename formal parameters"]
+          [Block ?body body])]
       [(struct p:case-lambda (e1 e2 rs renames+bodies))
        #;
        (R e1 _
           [! exni]
           [#:pattern (?case-lambda [?formals . ?body] ...)]
           [#:bind [(?formals* . ?body*) ...] (map car renames+bodies)]
-          [#:walk (syntax/skeleton e1 (?case-lambda [?formals* . ?body*] ...))
-                  (syntax->list #'(?formals ...))
-                  (syntax->list #'(?formals* ...))
-                  "Rename formal parameters"]
+          [#:rename
+           (syntax/skeleton e1 (?case-lambda [?formals* . ?body*] ...))
+           (syntax->list #'(?formals ...))
+           (syntax->list #'(?formals* ...))
+           "Rename formal parameters"]
           [Block (?body ...) (map cdr renames+bodies)])
        (with-syntax ([(?case-lambda [?formals . ?body] ...) e1]
                      [((?formals* . ?body*) ...) (map car renames+bodies)])
@@ -159,88 +133,55 @@
           [! exni]
           [#:pattern (?let-values ([?vars ?rhs] ...) . ?body)]
           [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
-          [#:walk (syntax/skeleton e1 (?let-values ([?vars* ?rhs*] ...) . ?body*))
-                  (syntax->list #'(?vars ...))
-                  (syntax->list #'(?vars* ...))
-                  "Rename bound variables"]
+          [#:rename
+           (syntax/skeleton e1 (?let-values ([?vars* ?rhs*] ...) . ?body*))
+           (syntax->list #'(?vars ...))
+           (syntax->list #'(?vars* ...))
+           "Rename bound variables"]
           [Expr (?rhs ...) rhss]
-          [Block ?body body])
-       #;
-       (with-syntax ([(?let-values ([?vars ?rhs] ...) . ?body) e1]
-                     [(([?vars* ?rhs*] ...) . ?body*) renames])
-         (let ([mid (syntax/skeleton e1 (?let-values ([?vars* ?rhs*] ...) . ?body*))])
-           (cons (walk/foci/E (syntax->list #'(?vars ...))
-                              (syntax->list #'(?vars* ...))
-                              e1 mid "Rename let-bound variables")
-                 (R mid (LET-VALUES ([VARS RHS] ...) . BODY)
-                    [Expr (RHS ...) rhss]
-                    [Block BODY body]))))]
+          [Block ?body body])]
       [(AnyQ p:letrec-values (e1 e2 rs renames rhss body) exni)
        (R e1 _
           [! exni]
           [#:pattern (?letrec-values ([?vars ?rhs] ...) . ?body)]
           [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
-          [#:walk (syntax/skeleton e1 (?letrec-values ([?vars* ?rhs*] ...) . ?body*))
-                  (syntax->list #'(?vars ...))
-                  (syntax->list #'(?vars* ...))
-                  "Rename bound variables"]
+          [#:rename
+           (syntax/skeleton e1 (?letrec-values ([?vars* ?rhs*] ...) . ?body*))
+           (syntax->list #'(?vars ...))
+           (syntax->list #'(?vars* ...))
+           "Rename bound variables"]
           [Expr (?rhs ...) rhss]
-          [Block ?body body])
-       #;
-       (with-syntax ([(?letrec-values ([?vars ?rhs] ...) . ?body) e1]
-                     [(([?vars* ?rhs*] ...) . ?body*) renames])
-         (let ([mid (syntax/skeleton e1 (?letrec-values ([?vars* ?rhs*] ...) . ?body*))])
-           (cons (walk/foci/E (syntax->list #'(?vars ...))
-                              (syntax->list #'(?vars* ...))
-                              e1 mid "Rename letrec-bound variables")
-                 (R mid (LETREC-VALUES ([VARS RHS] ...) . BODY)
-                    [Expr (RHS ...) rhss]
-                    [Block BODY body]))))]
-
-      [(AnyQ p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body) exni)
+          [Block ?body body])]
+      [(AnyQ p:letrec-syntaxes+values
+             (e1 e2 rs srenames srhss vrenames vrhss body) exni)
        (R e1 _
           [! exni]
           [#:pattern (?lsv ([?svars ?srhs] ...) ([?vvars ?vrhs] ...) . ?body)]
           [#:bind (([?svars* ?srhs*] ...) ([?vvars* ?vrhs] ...) . ?body*) srenames]
-          [#:walk (syntax/skeleton e1 (?lsv ([?svars* ?srhs*] ...) ([?vvars* ?vrhs*] ...) . ?body*))
-                  (syntax->list #'(?svars ...))
-                  (syntax->list #'(?svars* ...))
-                  "Rename bound variables"]
+          [#:rename
+           (syntax/skeleton e1
+                            (?lsv ([?svars* ?srhs*] ...) ([?vvars* ?vrhs*] ...)
+                              . ?body*))
+           (syntax->list #'(?svars ...))
+           (syntax->list #'(?svars* ...))
+           "Rename bound variables"]
           [Expr (?srhs ...) srhss]
           ;; If vrenames is #f, no var bindings to rename
           [#:if vrenames
                 [#:bind (([?vvars** ?vrhs**] ...) . ?body**) vrenames]
-                [#:walk (syntax/skeleton e1 (?lsv ([?svars* ?srhs*] ...) ([?vars** ?vrhs**] ...) . ?body**))
-                        (syntax->list #'(?vvars* ...))
-                        (syntax->list #'(?vvars** ...))
-                        "Rename bound variables"]]
+                [#:rename
+                 (syntax/skeleton e1 (?lsv ([?svars* ?srhs*] ...)
+                                           ([?vars** ?vrhs**] ...)
+                                        . ?body**))
+                 (syntax->list #'(?vvars* ...))
+                 (syntax->list #'(?vvars** ...))
+                 "Rename bound variables"]]
           [Expr (?vrhs ...) vrhss]
           [Block ?body body]
           => (lambda (mid)
                (if (eq? mid e2)
                    null
-                   (list (walk mid e2 "Remove syntax bindings")))))
-       #;
-       (with-syntax ([(?lsv ([?svars ?srhs] ...) ([?vvars ?vrhs] ...) . ?body) e1]
-                     [(([?svars* ?srhs*] ...) ?vpart* . ?body*) srenames])
-         (with-syntax ([(([?vvars* ?vrhs*] ...) . ?body**) 
-                        (or vrenames #'(?vpart* . ?body*))])
-           (let ([mid (syntax/skeleton
-                       e1
-                       (?lsv ([?svars* ?srhs*] ...) ([?vvars* ?vrhs] ...) . ?body**))])
-             (cons 
-              (walk/foci/E (syntax->list #'(?svars ... ?vvars ...))
-                           (syntax->list #'(?svars* ... ?vvars* ...))
-                           e1 mid "Rename local variables")
-              (R mid (LETREC-SYNTAXES+VALUES ([SVARS SRHS] ...) ([VVARS VRHS] ...) . BODY)
-                 [Expr (SRHS ...) srhss]
-                 [Expr (VRHS ...) vrhss]
-                 [Block BODY body]
-                 => (lambda (mid)
-                      (if (eq? mid e2)
-                          null
-                          (list (walk mid e2 "Finish letrec-syntaxes+values")))))))))]
-
+                   (list (walk mid e2 "Remove syntax bindings")))))]
       ;; The auto-tagged atomic primitives
       [(AnyQ p:#%datum (e1 e2 rs tagged-stx) exni)
        (append (if (eq? e1 tagged-stx)
@@ -298,15 +239,6 @@
 
       ;; Error
 
-;      [(struct error-wrap (exn tag (? prule? prule)))
-;       ;; Let's take the attitude that all primitive syntax errors
-;       ;; occur "at the beginning"
-;       (list (make-misstep (deriv-e1 prule) (E (deriv-e1 prule)) exn))]
-;      
-;      #;
-;      [($$ interrupted-wrap (tag prule))
-;       (reductions prule orig-stx)]
-
       ;; Macros
       [(IntQ mrule (e1 e2 transformation next))
        (append (reductions-transformation transformation)
@@ -343,12 +275,14 @@
   ;; reductions-local : LocalAction -> ReductionSequence
   (define (reductions-local local)
     (match local
-      [(IntQ local-expansion (e1 e2 me1 me2 deriv))
+      [(struct local-expansion (e1 e2 me1 me2 deriv))
        (reductions deriv)]
       [(struct local-lift (expr id))
        (list (walk expr id "Macro lifted expression to top-level"))]
       [(struct local-lift-end (decl))
-       (list (walk decl decl "Declaration lifted to end of module"))]))
+       (list (walk decl decl "Declaration lifted to end of module"))]
+      [(struct local-bind (deriv))
+       (reductions deriv)]))
 
   ;; list-reductions : ListDerivation -> ReductionSequence
   (define (list-reductions ld)

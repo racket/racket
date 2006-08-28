@@ -27,17 +27,18 @@
 
       ;; Internals
 
-      (define start-anchor (new snip%))
-      (define end-anchor (new snip%))
+      (define start-anchor (new anchor-snip%))
+      (define end-anchor (new anchor-snip%))
       (send text insert start-anchor)
       (send text insert end-anchor)
 
       (define output-port (make-text-port text end-anchor))
 
       (define base-style
-        (let ([sd (make-object style-delta% 'change-family 'modern)])
-          (when (current-syntax-font-size)
-            (send sd set-delta 'change-size (current-syntax-font-size)))
+        (send (send text get-style-list) find-named-style "Standard")
+        #;(let ([sd (make-object style-delta% 'change-family 'modern)])
+            (when (current-syntax-font-size)
+              (send sd set-delta 'change-size (current-syntax-font-size)))
           sd))
 
       (define/private (get-start-position)
@@ -93,8 +94,8 @@
     (make-output-port #f
                       always-evt
                       (lambda (s start end flush? enable-break?)
-                        (send text insert 
-                              (substring (bytes->string/utf-8 s) start end)
+                        (send text insert
+                              (bytes->string/utf-8 s #f start end)
                               (send text get-snip-position end-anchor))
                         (- end start))
                       void
@@ -103,4 +104,9 @@
                               (send text get-snip-position end-anchor))
                         #t)))
 
+  (define anchor-snip%
+    (class snip%
+      (define/override (copy)
+        (make-object string-snip% ""))
+      (super-instantiate ())))
   )

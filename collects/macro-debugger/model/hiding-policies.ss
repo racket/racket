@@ -67,28 +67,29 @@
                               opaque-kernel
                               opaque-libs
                               transparent-identifiers))
-       (let ([binding (identifier-binding id)])
-         (if (list? binding)
-             (let-values ([(srcmod srcname nommod nomname _) (apply values binding)])
-               (inline ([opaque-srcmod (hash-table-get opaque-modules srcmod /false)]
-                        [opaque-nommod (hash-table-get opaque-modules nommod /false)]
-                        ;; FIXME
-                        [in-kernel?
-                         (and (symbol? srcmod)
-                              (eq? #\# (string-ref (symbol->string srcmod) 0)))]
-                        [in-lib-module?
-                         (lib-module? srcmod)]
-                        [not-opaque-id
-                         (not (module-identifier-mapping-get opaque-identifiers id /false))]
-                        [transparent-id
-                         (module-identifier-mapping-get transparent-identifiers id /false)])
-                       (or transparent-id
-                           (and (not opaque-srcmod)
-                                (not opaque-nommod)
-                                (not (and in-kernel? opaque-kernel))
-                                (not (and in-lib-module? opaque-libs))
-                                not-opaque-id))))
-             #f))]))
+       (inline ([not-opaque-id
+                 (not (module-identifier-mapping-get opaque-identifiers id /false))]
+                [transparent-id
+                 (module-identifier-mapping-get transparent-identifiers id /false)])
+         (let ([binding (identifier-binding id)])
+           (if (list? binding)
+               (let-values ([(srcmod srcname nommod nomname _) (apply values binding)])
+                 (inline ([opaque-srcmod (hash-table-get opaque-modules srcmod /false)]
+                          [opaque-nommod (hash-table-get opaque-modules nommod /false)]
+                          ;; FIXME
+                          [in-kernel?
+                           (and (symbol? srcmod)
+                                (eq? #\# (string-ref (symbol->string srcmod) 0)))]
+                          [in-lib-module?
+                           (lib-module? srcmod)])
+                   (or transparent-id
+                       (and (not opaque-srcmod)
+                            (not opaque-nommod)
+                            (not (and in-kernel? opaque-kernel))
+                            (not (and in-lib-module? opaque-libs))
+                            not-opaque-id))))
+               (or transparent-id
+                   not-opaque-id))))]))
 
   (define (lib-module? mpi)
     (and (module-path-index? mpi)

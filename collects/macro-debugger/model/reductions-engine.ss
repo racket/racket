@@ -1,19 +1,10 @@
 
 (module reductions-engine mzscheme
   (require "deriv.ss"
-           "stx-util.ss")
-  (provide (all-defined))
-  
-  ;; A ReductionSequence is a (list-of Reduction)
-  
-  ;; A Reduction is one of 
-  ;;   - (make-step Syntaxes Syntaxes Syntax Syntax BigContext)
-  ;;   - (make-misstep Syntax Syntax Exception)
-  (define-struct step (redex contractum e1 e2 note lctx) #f)
-  ;(define-struct lift-step (expr id note lctxt) #t)
-  (define-struct misstep (redex e1 exn) #f)
-  
-  ;; -------------------------
+           "stx-util.ss"
+           "steps.ss")
+  (provide (all-defined)
+           (all-from "steps.ss"))
   
   ;; A Context is (syntax -> syntax)
   ;; A BigContext is (list-of (cons Syntaxes Syntax))
@@ -84,6 +75,14 @@
                          (values form2 foci1 foci2 description))])
            (cons (walk/foci/E foci1-var foci2-var f form2-var description-var)
                  (R** form2-var p . more)))]
+      [(R** f p [#:rename form2 foci1 foci2 description] . more)
+       #'(let-values ([(form2-var foci1-var foci2-var description-var)
+                       (with-syntax ([p f])
+                         (values form2 foci1 foci2 description))])
+           (cons (walk-rename/foci/E foci1-var foci2-var
+                                     f form2-var
+                                     description-var)
+                 (R** form2-var p . more)))]
       [(R** f p [#:walk form2 description] . more)
        #'(let-values ([(form2-var description-var)
                        (with-syntax ([p f])
@@ -129,7 +128,8 @@
       ;; Implementation for (hole ...) sequences
       [(R** form-var pattern
             [f0 get-e1 get-e2 (hole0 :::) fill0s] . more)
-       (module-identifier=? #'::: (quote-syntax ...))
+       (and (identifier? #':::)
+            (module-identifier=? #'::: (quote-syntax ...)))
        #'(let ([ctx0 (CC (hole0 :::) form-var pattern)])
            (let ([e1s (with-syntax ([pattern form-var]) (syntax->list #'(hole0 :::)))])
              (let loop ([fills fill0s] [prefix null] [suffix e1s])
@@ -173,15 +173,19 @@
   (define walk
     (case-lambda
       [(e1 e2) (walk e1 e2 #f)]
-      [(e1 e2 note) (make-step e1 e2 (E e1) (E e2) note (big-context))]))
+      [(e1 e2 note) (make-rewrite-step e1 e2 (E e1) (E e2) note (big-context))]))
   
   ;; walk/foci/E : syntax(s) syntax(s) syntax syntax string -> Reduction
   (define (walk/foci/E focus1 focus2 e1 e2 note)
     (walk/foci focus1 focus2 (E e1) (E e2) note))
-  
+
+  ;; walk-rename/foci/E : syntax(s) syntax(s) syntax syntax string -> Reduction
+  (define (walk-rename/foci/E focus1 focus2 e1 e2 note)
+    (make-rename-step focus1 focus2 (E e1) (E e2) note (big-context)))
+
   ;; walk/foci : syntax(s) syntax(s) syntax syntax string -> Reduction
   (define (walk/foci focus1 focus2 Ee1 Ee2 note)
-    (make-step focus1 focus2 Ee1 Ee2 note (big-context)))
+    (make-rewrite-step focus1 focus2 Ee1 Ee2 note (big-context)))
 
   ;; stumble : syntax exception -> Reduction
   (define (stumble stx exn)

@@ -125,13 +125,16 @@
        [((? LocalAction) (? LocalActions)) (cons $1 $2)])
 
       (LocalAction
+       (#:no-wrap)
        [(enter-local local-pre (? EE) local-post exit-local)
         (make-local-expansion $1 $5 $2 $4 $3)]
        [(lift)
         (make-local-lift (car $1) (cdr $1))]
        [(lift-statement)
-        (make-local-lift-end $1)])
-      
+        (make-local-lift-end $1)]
+       [(phase-up (? EE/Lifts))
+        (make-local-bind $2)])
+
       ;; Multiple calls to local-expand
       ;; EEs Answer = (listof Derivation)
       (EEs
@@ -236,7 +239,7 @@
       (ModulePass1/Prim
        [(enter-prim prim-define-values ! exit-prim)
         (make-p:define-values $1 $4 null #f)]
-       [(enter-prim prim-define-syntaxes ! phase-up (? EE) exit-prim)
+       [(enter-prim prim-define-syntaxes ! phase-up (? EE/Lifts) exit-prim)
         (make-p:define-syntaxes $1 $6 null $5)]
        [(enter-prim prim-require ! exit-prim)
         (make-p:require $1 $4 null)]

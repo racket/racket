@@ -15,6 +15,7 @@
            "../model/trace.ss"
            "../model/hide.ss"
            "../model/hiding-policies.ss"
+           "../model/steps.ss"
            "cursor.ss"
            "util.ss")
 
@@ -22,7 +23,7 @@
 
   ;; Configuration
 
-  (define catch-errors? (make-parameter #t))
+  (define catch-errors? (make-parameter #f))
 
   ;; Macro Stepper
 
@@ -32,6 +33,8 @@
 
   (define macro-stepper-frame%
     (class base-frame%
+      (init policy
+            macro-hiding?)
       (inherit get-menu%
                get-menu-item%
                get-menu-bar
@@ -42,6 +45,9 @@
       (super-new (label "Macro stepper")
                  (width (sb:pref:width))
                  (height (sb:pref:height)))
+
+      (define/override (on-size w h)
+        (send widget update/preserve-view))
 
       (override/return-false file-menu:create-new?
                              file-menu:create-open?
@@ -96,7 +102,9 @@
         (new macro-stepper-widget%
              (register-syntax-action (mk-register-action syntax-menu))
              (register-stepper-action (mk-register-action stepper-menu))
-             (parent (send this get-area-container))))
+             (parent (send this get-area-container))
+             (policy policy)
+             (macro-hiding? macro-hiding?)))
 
       (define/public (get-widget) widget)
       (frame:reorder-menus this)
@@ -108,6 +116,8 @@
       (init-field parent)
       (init-field register-syntax-action)
       (init-field register-stepper-action)
+      (init policy)
+      (init macro-hiding?)
 
       ;; derivs : (list-of Derivation)
       (define derivs null)
@@ -157,7 +167,11 @@
       (define control-pane
         (new vertical-panel% (parent area) (stretchable-height #f)))
       (define macro-hiding-prefs
-        (new macro-hiding-prefs-widget% (parent control-pane) (stepper this)))
+        (new macro-hiding-prefs-widget%
+             (policy policy)
+             (parent control-pane)
+             (stepper this)
+             (enabled? macro-hiding?)))
       (send sbc add-selection-listener
             (lambda (stx) (send macro-hiding-prefs set-syntax stx)))
 
@@ -228,6 +242,15 @@
         (send sbview add-text "  ")
         (send sbview add-text text)
         (send sbview add-text "\n\n"))
+
+      ;; update/preserve-view : -> void
+      (define/public (update/preserve-view)
+        (define text (send sbview get-text))
+        (define start-box (box 0))
+        (define end-box (box 0))
+        (send text get-visible-position-range start-box end-box)
+        (update)
+        (send text scroll-to-position (unbox start-box) #f (unbox end-box)))
 
       ;; update : -> void
       ;; Updates the terms in the syntax browser to the current step
@@ -340,7 +363,7 @@
                              (set! synth-deriv #f)
                              (set! steps (cursor:new null)))])
             (let ([d (synthesize deriv)])
-              (let ([s (cursor:new (reductions d))])
+              (let ([s (cursor:new (reduce d))])
                 (set! synth-deriv d)
                 (set! steps s)))))
         #;(navigate-to-start)
@@ -352,8 +375,13 @@
           (if show-macro?
               (with-handlers ([(lambda (e) (catch-errors?))
                                (lambda (e) (no-synthesize deriv))])
-                (let-values ([(d s) (hide/policy deriv show-macro?)])
-                  d))
+                (parameterize ((current-hiding-warning-handler
+                                (let ([warnings (delay (new warnings-frame%))])
+                                  (lambda (tag message)
+                                    (send (force warnings)
+                                          add-warning tag)))))
+                  (let-values ([(d s) (hide/policy deriv show-macro?)])
+                    d)))
               deriv)))
 
       (define/private (no-synthesize deriv)
@@ -365,6 +393,13 @@
         (send macro-hiding-prefs enable-hiding #f)
         (synthesize deriv))
 
+      ;; reduce : Derivation -> ReductionSequence
+      (define/private (reduce d)
+        (if (get-show-macro?)
+            (filter (lambda (x) (not (rename-step? x)))
+                    (reductions d))
+            (reductions d)))
+      
       (define/private (foci x) (if (list? x) x (list x)))
 
       ;; Hiding policy
@@ -383,10 +418,9 @@
     (class object%
       (init parent)
       (init-field stepper)
-      (init-field (policy (new-hiding-policy)))
-          ;; (new-standard-hiding-policy)))
+      (init-field policy)
+      (init-field (enabled? #f))
 
-      (define enabled? #f)
       (define stx #f)
       (define stx-name #f)
       (define stx-module #f)
@@ -510,14 +544,8 @@
 
       (define/private (update-add-text)
         (send add-editor lock #f)
-        (if stx-module
-            (send add-editor insert
-                  (format "'~s' from module ~a"
-                          stx-name
-                          (mpi->string stx-module)))
-            (send add-editor insert
-                  (format "lexically-bound ~s"
-                          stx-name)))
+        (when (identifier? stx)
+          (send add-editor insert (identifier-text "" stx)))
         (send add-editor lock #t))
 
       (define/private (add-hide-module)
@@ -545,6 +573,22 @@
                   (send look-ctl get-selections))
         (update-list-view))
 
+      (define/private (identifier-text prefix id)
+        (let ([b (identifier-binding id)])
+          (cond [(pair? b)
+                 (let ([name (cadr b)]
+                       [mod (car b)])
+                   (format "~a'~s' from module ~a"
+                           prefix
+                           name
+                           (mpi->string mod)))]
+                [(eq? b 'lexical)
+                 (format "~alexically bound '~s'"
+                         prefix
+                         (syntax-e id))]
+                [(not b)
+                 (format "~aglobal or unbound '~s'" prefix (syntax-e id))])))
+
       (define/private (update-list-view)
         (let ([opaque-modules
                (hash-table-map (hiding-policy-opaque-modules policy)
@@ -563,20 +607,10 @@
             (cons (format "hide from module ~a" (mpi->string s))
                   (cons 'module s)))
           (define (*i prefix tag id)
-            (cons (let ([b (identifier-binding id)])
-                    (if (pair? b)
-                        (let ([name (cadr b)]
-                              [mod (car b)])
-                          (format "~a '~s' from module ~a"
-                                  prefix
-                                  name
-                                  (mpi->string mod)))
-                        (format "~a lexically bound macro '~s'"
-                                prefix
-                                (syntax-e id))))
+            (cons (identifier-text prefix id)
                   (cons tag id)))
-          (define (oid id) (*i "hide" 'identifier id))
-          (define (tid id) (*i "show" 'show-identifier id))
+          (define (oid id) (*i "hide " 'identifier id))
+          (define (tid id) (*i "show " 'show-identifier id))
           (let ([choices
                  (sort (append (map om opaque-modules)
                                (map oid opaque-ids)
@@ -589,14 +623,48 @@
 
       (super-new)))
 
+  ;; warnings-frame%
+  (define warnings-frame%
+    (class frame%
+      (super-new (label "Macro stepper warnings") (width 400) (height 300))
+
+      (define text (new text% (auto-wrap #t)))
+      (define ec (new editor-canvas% (parent this) (editor text)))
+      (send text lock #t)
+
+      (define/private (add-text . strs)
+        (send text lock #f)
+        (for-each (lambda (s) (send text insert s)) strs)
+        (send text insert "\n\n")
+        (send text lock #t))
+
+      (define/public (add-warning tag)
+        (case tag
+          ((nonlinearity)
+           (add-text
+            "An opaque macro duplicated one of its subterms. "
+            "Macro hiding requires opaque macros to use their subterms linearly. "
+            "The macro stepper is showing the expansion of that macro use."))
+          ((localactions)
+           (add-text
+            "An opaque macro called local-expand, syntax-local-lift-expression, "
+            "etc. Macro hiding cannot currently handle local actions. "
+            "The macro stepper is showing the expansion of that macro use."))))
+      (send this show #t)))
 
   ;; Main entry points
 
-  (define (make-macro-stepper)
-    (let ([f (new macro-stepper-frame%)])
-      (send f show #t)
-      (send f get-widget)))
-  
+  (define make-macro-stepper
+    (case-lambda
+      [(policy hiding?)
+       (let ([f (new macro-stepper-frame% (policy policy) (macro-hiding? hiding?))])
+         (send f show #t)
+         (send f get-widget))]
+      [(policy)
+       (make-macro-stepper policy #t)]
+      [()
+       (make-macro-stepper (new-hiding-policy) #f)]))
+
   (define (go . stxs)
     (let ([stepper (make-macro-stepper)])
       (let loop ([stxs stxs])

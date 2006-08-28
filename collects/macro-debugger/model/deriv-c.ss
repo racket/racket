@@ -23,6 +23,7 @@
   (define-struct local-expansion (e1 e2 me1 me2 deriv) #f)
   (define-struct local-lift (expr id) #f)
   (define-struct local-lift-end (decl) #f)
+  (define-struct local-bind (deriv) #f)
   
   ;; A PRule is one of ...
   (define-struct (prule deriv) (resolves) #f)
@@ -107,7 +108,7 @@
   ;; A BlockRename is (cons syntax syntax)
   ;; It always applies only to the current block element
 
-  (define-struct brule (renames))
+  (define-struct brule (renames) #f)
   (define-struct (b:defvals brule) (head) #f)
   (define-struct (b:defstx brule) (deriv rhs) #f)
   (define-struct (b:splice brule) (head tail) #f)
@@ -136,7 +137,7 @@
   ;;   - (make-mod:cons Derivation)
   ;;   - (make-mod:lift Derivation syntaxes)
 
-  (define-struct modrule ())
+  (define-struct modrule () #f)
   (define-struct (mod:cons modrule) (head) #f)
   (define-struct (mod:prim modrule) (head prim) #f)
   (define-struct (mod:skip modrule) () #f)

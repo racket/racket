@@ -3,8 +3,6 @@
            "partition.ss")
   (provide (all-defined))
   
-  ;; Fixme: null object still confusable.
-  
   ;; Problem: If stx1 and stx2 are two distinguishable syntax objects, it
   ;; still may be the case that (syntax-e stx1) and (syntax-e stx2) are 
   ;; indistinguishable.
@@ -14,6 +12,10 @@
   ;;   - stx is identifier : map it to an uninterned symbol w/ same rep
   ;;     (Symbols are useful: see pretty-print's style table)
   ;;   - else : map it to a syntax-dummy object
+
+  ;; NOTE: Nulls are only wrapped when *not* list-terminators.  
+  ;; If they were always wrapped, the pretty-printer would screw up
+  ;; list printing (I think).
   
   (define-struct syntax-dummy (val))
   
@@ -45,37 +47,45 @@
     (let/ec escape
       (let ([flat=>stx (make-hash-table)]
             [stx=>flat (make-hash-table)])
-        (values (let loop ([obj stx])
-                  (cond
-                    [(hash-table-get stx=>flat obj (lambda _ #f))
-                     => (lambda (datum) datum)]
-                    [(and partition (identifier? obj))
-                     (let ([lp-datum (make-identifier-proxy obj)])
-                       (when (and limit (> (send partition count) limit))
-                         (call-with-values (lambda () (table stx partition #f #t))
-                                           escape))
-                       (hash-table-put! flat=>stx lp-datum obj)
-                       (hash-table-put! stx=>flat obj lp-datum)
-                       lp-datum)]
-                    [(syntax? obj)
-                     (void (send partition get-partition obj))
-                     (let ([lp-datum (loop (syntax-e obj))])
-                       (hash-table-put! flat=>stx lp-datum obj)
-                       (hash-table-put! stx=>flat obj lp-datum)
-                       lp-datum)]
-                    [(pair? obj) 
-                     (cons (loop (car obj))
-                           (loop (cdr obj)))]
-                    [(vector? obj) 
-                     (list->vector (map loop (vector->list obj)))]
-                    [(symbol? obj)
-                     #;(make-syntax-dummy obj)
-                       (string->uninterned-symbol (symbol->string obj))]
-                    [(number? obj)
-                     (make-syntax-dummy obj)]
-                    #;[(null? obj)
-                       (make-syntax-dummy obj)]
-                      [else obj]))
+        (define (loop obj)
+          (cond [(hash-table-get stx=>flat obj (lambda _ #f))
+                 => (lambda (datum) datum)]
+                [(and partition (identifier? obj))
+                 (let ([lp-datum (make-identifier-proxy obj)])
+                   (when (and limit (> (send partition count) limit))
+                     (call-with-values (lambda () (table stx partition #f #t))
+                       escape))
+                   (hash-table-put! flat=>stx lp-datum obj)
+                   (hash-table-put! stx=>flat obj lp-datum)
+                   lp-datum)]
+                [(syntax? obj)
+                 (void (send partition get-partition obj))
+                 (let ([lp-datum (loop (syntax-e obj))])
+                   (hash-table-put! flat=>stx lp-datum obj)
+                   (hash-table-put! stx=>flat obj lp-datum)
+                   lp-datum)]
+                [(pair? obj)
+                 (pairloop obj)]
+                [(vector? obj) 
+                 (list->vector (map loop (vector->list obj)))]
+                [(symbol? obj)
+                 ;(make-syntax-dummy obj)
+                 (string->uninterned-symbol (symbol->string obj))]
+                [(number? obj)
+                 (make-syntax-dummy obj)]
+                [(box? obj)
+                 (box (loop (unbox obj)))]
+                [(null? obj)
+                 (make-syntax-dummy obj)]
+                [else obj]))
+        (define (pairloop obj)
+          (cond [(pair? obj)
+                 (cons (loop (car obj))
+                       (pairloop (cdr obj)))]
+                [(null? obj)
+                 null]
+                [else (loop obj)]))
+        (values (loop stx)
                 flat=>stx
                 stx=>flat))))
   )

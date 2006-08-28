@@ -16,6 +16,8 @@
            syntax-widget%
            syntax-browser-frame%)
 
+  (define browser-text% (editor:standard-style-list-mixin text:basic%))
+
   ;; syntax-widget%
   ;; A syntax-widget creates its own syntax-controller.
   (define syntax-widget%
@@ -24,17 +26,17 @@
 
       (define -main-panel (new vertical-panel% (parent parent)))
       (define -split-panel (new panel:horizontal-dragable% (parent -main-panel)))
-      (define -text (new text%))
+      (define -text (new browser-text%))
       (define -ecanvas (new editor-canvas% (parent -split-panel) (editor -text)))
       (define -props-panel (new horizontal-panel% (parent -split-panel)))
       (define props (new properties-view% (parent -props-panel)))
       (define -saved-panel-percentages #f)
+      (define canvas-width #f)
 
       (define controller
         (new syntax-controller%
              (properties-controller this)))
 
-      #;(send -text hide-caret #t)
       (send -text lock #t)
       (send -split-panel set-percentages 
             (let ([pp (pref:props-percentage)]) (list (- 1 pp) pp)))
@@ -110,17 +112,24 @@
 
       (define/private (internal-add-syntax stx hi-stxs hi-color)
         (with-unlock -text
-          (let ([current-position (send -text last-position)])
-            (let* ([new-ts (new typesetter-for-text%
-                                (controller controller)
-                                (syntax stx)
-                                (text -text))]
-                   [new-colorer (send new-ts get-colorer)])
-              (send* -text
-                (insert "\n")
-                (scroll-to-position current-position))
-              (unless (null? hi-stxs)
-                (send new-colorer highlight-syntaxes hi-stxs hi-color))))))
+          (parameterize ((current-default-columns (calculate-columns)))
+            (let ([current-position (send -text last-position)])
+              (let* ([new-ts (new typesetter-for-text%
+                                  (controller controller)
+                                  (syntax stx)
+                                  (text -text))]
+                     [new-colorer (send new-ts get-colorer)])
+                (send* -text
+                  (insert "\n")
+                  (scroll-to-position current-position))
+                (unless (null? hi-stxs)
+                  (send new-colorer highlight-syntaxes hi-stxs hi-color)))))))
+
+      (define/private (calculate-columns)
+        (define style-list (send -text get-style-list))
+        (define standard (send style-list find-named-style "Standard"))
+        (define char-width (send standard get-text-width (send -ecanvas get-dc)))
+        (inexact->exact (floor (/ (send -ecanvas get-width) char-width))))
 
       (super-new)))
 

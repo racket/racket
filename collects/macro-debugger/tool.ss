@@ -1,7 +1,9 @@
 
 (module tool mzscheme
   (require "model/trace.ss"
-           (prefix view: "view/gui.ss"))
+           "model/hiding-policies.ss"
+           (prefix view: "view/gui.ss")
+           (prefix prefs: "syntax-browser/prefs.ss"))
   (require (lib "class.ss")
            (lib "list.ss")
            (lib "unitsig.ss")
@@ -23,6 +25,7 @@
       (define drscheme-eventspace (current-eventspace))
 
       (define-local-member-name check-language)
+      (define-local-member-name get-debug-button)
       
       (define (macro-debugger-unit-frame-mixin %)
         (class %
@@ -48,6 +51,8 @@
           (define/private (execute debugging?)
             (send (get-interactions-text) enable-macro-debugging debugging?)
             (super execute-callback))
+
+          (define/public (get-debug-button) macro-debug-button)
 
           ;; Hide button for inappropriate languages
 
@@ -75,12 +80,22 @@
 
       (define (macro-debugger-definitions-text-mixin %)
         (class %
-          (super-new)
           (inherit get-top-level-window)
-
           (define/augment (after-set-next-settings s)
 	    (send (get-top-level-window) check-language)
-	    (inner (void) after-set-next-settings s))))
+	    (inner (void) after-set-next-settings s))
+          (super-new)))
+
+      (define (macro-debugger-tab-mixin %)
+        (class %
+          (inherit get-frame)
+          (define/override (enable-evaluation)
+            (super enable-evaluation)
+            (send (send (get-frame) get-debug-button) enable #t))
+          (define/override (disable-evaluation)
+            (super disable-evaluation)
+            (send (send (get-frame) get-debug-button) enable #f))
+          (super-new)))
 
       (define (macro-debugger-interactions-text-mixin %)
         (class %
@@ -95,20 +110,23 @@
             (super reset-console)
             (run-in-evaluation-thread
              (lambda ()
-               (let-values ([(e mnr) (make-handlers (current-eval) (current-module-name-resolver))])
+               (let-values ([(e mnr) 
+                             (make-handlers (current-eval)
+                                            (current-module-name-resolver))])
                  (current-eval e)
                  (current-module-name-resolver mnr)))))
 
           (define/private (make-handlers original-eval-handler original-module-name-resolver)
-            (let ([stepper (delay (view:make-macro-stepper))]
+            (let ([stepper (delay (view:make-macro-stepper (new-standard-hiding-policy)))]
                   [debugging? debugging?])
               (values
                (lambda (expr)
-                 (if debugging?
+                 (if (and debugging? (and (syntax? expr) (syntax-source expr)))
                      (let-values ([(e-expr deriv) (trace/result expr)])
                        (show-deriv deriv stepper)
                        (if (syntax? e-expr)
-                           (original-eval-handler e-expr)
+                           (parameterize ((current-eval original-eval-handler))
+                             (original-eval-handler e-expr))
                            (raise e-expr)))
                      (original-eval-handler expr)))
                (lambda args
@@ -145,12 +163,13 @@
           (and (equal? main-group (string-constant professional-languages))
                (or (member second 
                            (list (string-constant r5rs-lang-name)
+                                 "(module ...)"
                                  "Swindle"))
                    (member third
                            (list (string-constant mzscheme-w/debug)
                                  (string-constant mred-w/debug)
                                  (string-constant pretty-big-scheme)))))))
-
+      
       ;; Macro debugger code
 
       (drscheme:get/extend:extend-unit-frame
@@ -159,5 +178,7 @@
        macro-debugger-interactions-text-mixin)
       (drscheme:get/extend:extend-definitions-text
        macro-debugger-definitions-text-mixin)
+      (drscheme:get/extend:extend-tab
+       macro-debugger-tab-mixin)
 
       )))
