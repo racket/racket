@@ -10,7 +10,9 @@
 <p>Tables show relative performance, with the actual time for the fastest
    run shown on the left. So, by default, <font color=forestgreen><b>1</b></font> 
    is the fastest, but select any implementation to normalize the table with
-   respect to that implementation's speed.</p>
+   respect to that implementation's speed. A <tt>--</tt> appears when a benchmark
+   didn't run in an implementation (and you should assume a benchmark problem,
+   rather than an implementation problem).</p>
 
 <p><font color="gray" size="-1">Small gray numbers are (relative) compile times.</font></p>
 
@@ -34,10 +36,11 @@ changed. Such assumptions correspond to putting the benchmark in an
 R6RS library (we expect).</P>
 
 <p>In general, we attempt to use the various implementations in a compentent way,
-   but not in a sophisticated way (which might involve, for example, tweaking an
-   inlining parameter or specifying fixnum arithmetic).</p>
+   but not in a sophisticated way. For example, we do not tweak
+   inlining parameters or specify fixnum arithmetic (where appropriate),
+   which could produce significant improvements from some compilers.</p>
 
-<p>For a larger set of benchmarks and a more sophisticated use of compilers,
+<p>For a larger set of benchmarks and a more sophisticated use of the compilers,
    see Marc Feeley's page:
    <a href="http://www.iro.umontreal.ca/~gambit/bench.html">http://www.iro.umontreal.ca/~gambit/bench.html</a>.
 
@@ -47,7 +50,7 @@ R6RS library (we expect).</P>
 <p align=center>
    <a href="http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/common/">http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/common/</a></P>
 
-<H1>Benchmark Results</H1>
+<H1>Results</H1>
 
 <ul>
 <li> <a href=machine1.html>machine1</a> ...
