@@ -20,12 +20,12 @@
 
 <p>Compiler configuration:
 <ul>
-<li> Bigloo (2.8b): <tt>-06</tt></il>
+<li> Bigloo (2.8b): <tt>-06 -copt -O3 -copt -fomit-frame-pointer</tt></il>
 <li> Chicken (2 build 3): <tt>-no-trace -no-lambda-info -optimize-level 3 -block -lambda-lift</tt></il>
 <li> Gambit (4.0 beta 17): <tt>(declare (block) (standard-bindings) (extended-bindings) (safe) (interrupts-enabled))</tt>, 
      installed with <tt>--enable-single-host</tt>, compiled with <tt>-dynamic</tt>, compiled and run with <tt>-:m10000</tt></li>
 <li> Larceny (0.92b): default mode &mdash; but should use <tt>(benchmark-block-mode #t)</tt> when it works</li>
-<li> MzScheme (352.4): in <tt>module</tt></li>
+<li> MzScheme (352.5): in <tt>module</tt></li>
 </ul>
 These configurations are all "safe mode", but they allow the compiler
 to assume that built-in Scheme functions are not redefined and (except
@@ -35,10 +35,14 @@ R6RS library (we expect).</P>
 
 <p>In general, we attempt to use the various implementations in a compentent way,
    but not in a sophisticated way (which might involve, for example, tweaking an
-   inlining parameter).</p>
+   inlining parameter or specifying fixnum arithmetic).</p>
 
-<p>For further details, consult the benchmark source and infrastructure, which is
-   available form the PLT SVN repository:</p>
+<p>For a larger set of benchmarks and a more sophisticated use of compilers,
+   see Marc Feeley's page:
+   <a href="http://www.iro.umontreal.ca/~gambit/bench.html">http://www.iro.umontreal.ca/~gambit/bench.html</a>.
+
+<p>For further details on the benchmarks here, see the benchmark source and
+   infrastructure, which is available form the PLT SVN repository:</p>
 
 <p align=center>
    <a href="http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/common/">http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/common/</a></P>
@@ -46,5 +50,5 @@ R6RS library (we expect).</P>
 <H1>Benchmark Results</H1>
 
 <ul>
-<li> <a href=machine1.html>machine1</a>
+<li> <a href=machine1.html>machine1</a> ...
 </ul>
