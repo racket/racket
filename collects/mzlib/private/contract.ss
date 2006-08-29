@@ -82,8 +82,7 @@ add struct contracts for immutable structs?
   (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
     (make-set!-transformer
      (λ (stx)
-       (with-syntax ([neg-stx (datum->syntax-object stx 'here)]
-		     [contract-id contract-id]
+       (with-syntax ([contract-id contract-id]
 		     [id id]
 		     [pos-module-source pos-module-source])
 	 (syntax-case stx (set!)
@@ -92,24 +91,24 @@ add struct contracts for immutable structs?
 			   "cannot set! provide/contract identifier"
 			   stx
 			   (syntax _))]
-	   [(_ arg ...)
+	   [(name arg ...)
 	    (syntax 
 	     ((begin-lifted
                 (-contract contract-id
                            id
                            pos-module-source
-                           (module-source-as-symbol #'neg-stx)
+                           (module-source-as-symbol #'name)
                            (quote-syntax _)))
 	      arg
 	      ...))]
-	   [_
-	    (identifier? (syntax _))
+	   [name
+	    (identifier? (syntax name))
 	    (syntax 
 	     (begin-lifted
                (-contract contract-id
                           id  
                           pos-module-source 
-                          (module-source-as-symbol #'neg-stx)
+                          (module-source-as-symbol #'name)
                           (quote-syntax _))))])))))
   
   ;; (define/contract id contract expr)
@@ -561,7 +560,7 @@ add struct contracts for immutable structs?
                          [pos-module-source (a:mangle-id provide-stx 
                                                          "provide/contract-pos-module-source"
                                                          (or user-rename-id id))]
-                         [pos-stx (datum->syntax-object provide-stx 'here)]
+                         [pos-stx (datum->syntax-object id 'here)]
                          [id id]
                          [ctrct (syntax-property ctrct 'inferred-name id)]
                          [external-name (or user-rename-id id)]
