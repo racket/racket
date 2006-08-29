@@ -2343,7 +2343,7 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
        If we can shift-clone it, then it will be back in the right
        coordinates. */
     
-    cloned = scheme_optimize_clone(1, e, info, 0, 0);
+    cloned = NULL; /* scheme_optimize_clone(1, e, info, 0, 0); */
     if (cloned) {
       app2->rator = f_is_proc;
       app2->rand = cloned;
