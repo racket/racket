@@ -47,6 +47,7 @@
    (set-union ((set? set?) ((symbols 'new 'first 'second)) . opt-> . set?))
    (set-intersection ((set? set?) ((symbols 'new 'first 'second)) . opt-> . set?))
    (set-difference ((set? set?) ((symbols 'new 'first 'second)) . opt-> . set?))
+   (set-subset? (set? set? . -> . boolean?))
    )
   
   ; (opt 'equal) -> set
@@ -336,5 +337,11 @@
            (set-set-cardinality! set2 (set-cardinality new-set))
            (set-set-table! set2 (set-table new-set))
            set2]))))
+  
+  ; set set -> boolean
+  (define (set-subset? set1 set2)
+    (andmap (lambda (value)
+              (set-in? set2 value))
+            (set-table set1)))
   
   )

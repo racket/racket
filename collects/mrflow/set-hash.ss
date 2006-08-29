@@ -44,6 +44,7 @@
    (set-union ((set? set?) ((symbols 'new 'first 'second)) . opt-> . set?))
    (set-intersection ((set? set?) ((symbols 'new 'first 'second)) . opt-> . set?))
    (set-difference ((set? set?) ((symbols 'new 'first 'second)) . opt-> . set?))
+   (set-subset? (set? set? . -> . boolean?))
    )
   
   ; (opt 'equal) -> set
@@ -241,5 +242,14 @@
              (set-set-table! set2 (set-table new-set))
              (set-set-cardinality! set2 (set-cardinality new-set))
              set2])))))
+  
+  ; set set -> boolean
+  (define (set-subset? set1 set2)
+    (let/ec k
+      (hash-table-for-each (set-table set1)
+                           (lambda (value dummy)
+                             (unless (set-in? set2 value)
+                               (k #f))))
+      #t))
   
   )

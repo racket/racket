@@ -46,6 +46,7 @@
    (assoc-set-union ((assoc-set? assoc-set? (any/c any/c . -> . any)) ((symbols 'new 'first 'second)) . opt-> . assoc-set?))
    (assoc-set-intersection ((assoc-set? assoc-set? (any/c any/c . -> . any)) ((symbols 'new 'first 'second)) . opt-> . assoc-set?))
    (assoc-set-difference ((assoc-set? assoc-set?) ((symbols 'new 'first 'second)) . opt-> . assoc-set?))
+   (assoc-set-subset? (assoc-set? assoc-set? . -> . boolean?))
    )
   
   ; (opt 'equal) -> assoc-set
@@ -260,4 +261,14 @@
             ;[else (argexn:raise-arg-mismatch-exn "assoc-set-difference" '(union new first second) which-set)]
             )))))
   
-  )
+  ; assoc-set assoc-set -> boolean
+  ; compares keys only
+  (define (assoc-set-subset? assoc-set1 assoc-set2)
+    (let/ec k
+      (hash-table-for-each (assoc-set-table assoc-set1)
+                           (lambda (key value)
+                             (unless (assoc-set-in? assoc-set2 key)
+                               (k #f))))
+      #t))
+  
+ )

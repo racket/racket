@@ -48,6 +48,7 @@
    (assoc-set-union ((assoc-set? assoc-set? (any/c any/c . -> . any)) ((symbols 'new 'first 'second)) . opt-> . assoc-set?))
    (assoc-set-intersection ((assoc-set? assoc-set? (any/c any/c . -> . any)) ((symbols 'new 'first 'second)) . opt-> . assoc-set?))
    (assoc-set-difference ((assoc-set? assoc-set?) ((symbols 'new 'first 'second)) . opt-> . assoc-set?))
+   (assoc-set-subset? (assoc-set? assoc-set? . -> . boolean?))
    )
   
   ; (opt 'equal) -> assoc-set
@@ -356,5 +357,12 @@
            (set-assoc-set-cardinality! assoc-set2 (assoc-set-cardinality new-assoc-set))
            (set-assoc-set-table! assoc-set2 (assoc-set-table new-assoc-set))
            assoc-set2]))))
+  
+  ; assoc-set assoc-set -> boolean
+  ; compares keys only
+  (define (assoc-set-subset? assoc-set1 assoc-set2)
+    (andmap (lambda (key value)
+              (assoc-set-in? assoc-set2 key))
+            (assoc-set-table assoc-set1)))
   
   )
