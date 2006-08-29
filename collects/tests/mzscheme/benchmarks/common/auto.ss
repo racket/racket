@@ -9,6 +9,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
            (lib "list.ss")
            (lib "compile.ss")
            (lib "inflate.ss")
+           (lib "date.ss")
            (lib "file.ss" "dynext"))
 
   ;; Implementaton-specific control functions ------------------------------
@@ -233,7 +234,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                            i))
                     impls)])
       (if (memq bm (impl-skips i))
-          (printf "[~a ~a ~s #f]\n" impl bm '(#f #f #f))
+          (rprintf "[~a ~a ~s #f]\n" impl bm '(#f #f #f))
           (let ([start (current-inexact-milliseconds)])
             ((impl-make i) bm)
             (let ([end (current-inexact-milliseconds)])
@@ -244,7 +245,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                            [current-error-port out])
                               ((impl-run i) bm))
                       (error 'auto "~a\nrun failed ~a" (get-output-bytes out) bm))
-                    (printf "[~a ~a ~s ~a]\n"
+                    (rprintf "[~a ~a ~s ~a]\n"
                             impl
                             bm
                             ((impl-extract-result i) bm (get-output-bytes out))
@@ -252,6 +253,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
                   (loop (sub1 n)))))
             ((impl-clean-up i) bm)))
       (flush-output)))
+
+  (define (rprintf . args)
+    (apply printf args)
+    (when (current-output-file)
+      (with-output-to-file (current-output-file)
+        (lambda ()
+          (apply printf args))
+        'append)))
 
   (define no-implementations (map (lambda (s)
                                     (cons (string->symbol (format "no-~a" s))
@@ -268,6 +277,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define default-benchmarks benchmarks)
   (define default-implementations (remq* obsolte-impls
                                          (map impl-name impls)))
+
+  (define current-output-file (make-parameter #f))
 
   ;; Extract command-line arguments --------------------
 
@@ -288,6 +299,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
        (for-each (lambda (bm)
                    (printf " ~a\n" bm))
                  benchmarks)]
+      [("-o" "--out") filename "append output to <filename>"
+       (current-output-file filename)]
       [("-n" "--iters") n "set number of run iterations"
        (let ([v (string->number n)])
          (unless (and (number? v)
@@ -339,6 +352,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (gunzip "dynamic-input.txt.gz")))
 
   ;; Run benchmarks -------------------------------
+
+  (rprintf "; ~a\n" (date->string (seconds->date (current-seconds)) #t))
 
   (map (lambda (impl)
          (map (lambda (bm)

@@ -22,7 +22,9 @@ Naming no implementation/benchmark causes a standard of them to be run
 implementation/benchmak starts with "no-", the default set is used
 minus the "no-"-specified implementation/benchmark.
 
-The output is series of lines of the form
+The output is a comment line
+  ; <date and time>
+and then a series of lines of the form
   [<impl> <benchmark> (<cpu-msec> <real-msec> <gc-msec>) <compile-msec>]
 where #f means that the information is unavailable, or that the
 benchmark wasn't run due to an implementation limitation. The
