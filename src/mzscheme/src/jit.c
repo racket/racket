@@ -2483,13 +2483,13 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           /* min */
           jit_insn *refc;
           refc = jit_blti_l(jit_forward(), JIT_R0, (long)scheme_make_integer(v));
-          jit_movi_p(JIT_R0, scheme_make_integer(v));
+          jit_movi_l(JIT_R0, (long)scheme_make_integer(v));
           mz_patch_branch(refc);
         } else if (arith == 10) {
           /* max */
           jit_insn *refc;
           refc = jit_bgti_l(jit_forward(), JIT_R0, (long)scheme_make_integer(v));
-          jit_movi_p(JIT_R0, scheme_make_integer(v));
+          jit_movi_l(JIT_R0, (long)scheme_make_integer(v));
           mz_patch_branch(refc);
         }
       }
