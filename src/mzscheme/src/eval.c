@@ -2332,7 +2332,7 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
   if (f_is_proc && (e_single_result > 0)) {
     /* Just make it an application (N M): */
     Scheme_App2_Rec *app2;
-    Scheme_Object *cloned;
+    Scheme_Object *cloned, *f_cloned;
 
     app2 = MALLOC_ONE_TAGGED(Scheme_App2_Rec);
     app2->iso.so.type = scheme_application2_type;
@@ -2343,16 +2343,26 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
        If we can shift-clone it, then it will be back in the right
        coordinates. */
     
-    cloned = NULL; /* scheme_optimize_clone(1, e, info, 0, 0); */
+    cloned = scheme_optimize_clone(1, e, info, 0, 0);
     if (cloned) {
-      app2->rator = f_is_proc;
-      app2->rand = cloned;
-      return optimize_application2((Scheme_Object *)app2, info);
-    } else {
-      app2->rator = f;
-      app2->rand = e;
-      return (Scheme_Object *)app2;
+      if (SAME_TYPE(SCHEME_TYPE(f_is_proc), scheme_compiled_unclosed_procedure_type))
+        f_cloned = scheme_optimize_clone(1, f_is_proc, info, 0, 0);
+      else {
+        /* Otherwise, no clone is needed; in the case of a lexical
+           variable, we already reversed it. */
+        f_cloned = f_is_proc;
+      }
+
+      if (f_cloned) {
+        app2->rator = f_cloned;
+        app2->rand = cloned;
+        return optimize_application2((Scheme_Object *)app2, info);
+      }
     }
+     
+    app2->rator = f;
+    app2->rand = e;
+    return (Scheme_Object *)app2;
   }
 
   return scheme_make_syntax_compiled(APPVALS_EXPD, cons(f, e));

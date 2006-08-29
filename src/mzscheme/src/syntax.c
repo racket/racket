@@ -2659,6 +2659,9 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
       Scheme_Type lhs;
       lhs = SCHEME_TYPE(clv->value);
       if ((lhs == scheme_compiled_unclosed_procedure_type)
+          || (lhs == scheme_local_type)
+          || (lhs == scheme_compiled_toplevel_type)
+          || (lhs == scheme_compiled_quote_syntax_type)
 	  || (lhs > _scheme_compiled_values_types_)) {
         if (for_inline) {
 	  /* Just drop the inline-introduced let */
