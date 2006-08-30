@@ -1814,7 +1814,7 @@ static Scheme_Object *apply_values_execute(Scheme_Object *data)
   
   f = SCHEME_CAR(data);
 
-  f = _scheme_eval_linked_expr_multi(f);
+  f = _scheme_eval_linked_expr(f);
   if (!SCHEME_PROCP(f)) {
     Scheme_Object *a[1];
     a[0] = f;
