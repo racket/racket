@@ -5,7 +5,7 @@
            ;(lib "math.ss")
            (lib "class.ss")
            (lib "unitsig.ss")
-           ;(lib "contract.ss")
+           (lib "contract.ss")
            (lib "mred.ss" "mred")
            (prefix drscheme:arrow: (lib "arrow.ss" "drscheme"))
            (lib "tool.ss" "drscheme")
@@ -278,11 +278,11 @@
                                         (let* ([stat (send (get-tab) get-break-status)]
                                                [f (get-top-level-window)]
                                                [rendered-value (if (cons? stat)
-                                                                   (if (= 2 (length stat))
-                                                                       (render (cadr stat))
-                                                                       (format "~a" (cons 'values 
-                                                                                          (map (lambda (v) (render v)) (rest stat)))))
-                                                                   "")])
+								   (if (= 2 (length stat))
+                                                               		(render (cadr stat))
+                                                              		(format "~a" (cons 'values 
+                                                                                      (map (lambda (v) (render v)) (rest stat)))))
+								   "")])
                                           (when (cons? stat)
                                             #;(send (make-object menu-item%
                                                     (clean-status (format "expr -> ~a" rendered-value))
@@ -879,12 +879,16 @@
 	    (inner (void) on-tab-change old new))
 
 	  (define/public (check-current-language-for-debugger)
-	    (if (debugger-does-not-work-for? (extract-language-level 
-					      (send (get-definitions-text) get-next-settings)))
-		(when (send debug-button is-shown?)
-		  (send (send debug-button get-parent) delete-child debug-button))
-		(unless (send debug-button is-shown?)
-		  (send (send debug-button get-parent) add-child debug-button))))
+            (let* ([settings (send (get-definitions-text) get-next-settings)]
+                   [lang (drscheme:language-configuration:language-settings-language settings)]
+                   [visible? (and (send lang capability-value 'mztake:debug-button)
+                                (not (debugger-does-not-work-for?
+                                      (extract-language-level settings))))])
+              (if visible?
+                  (unless (send debug-button is-shown?)
+                    (send (send debug-button get-parent) add-child debug-button))
+                  (when (send debug-button is-shown?)
+                    (send (send debug-button get-parent) delete-child debug-button)))))
           
           (send (get-button-panel) change-children
                 (lambda (_)
@@ -893,6 +897,7 @@
 
 	  ; hide debug button if it's not supported for the initial language:
 	  (check-current-language-for-debugger)))
+      (drscheme:language:register-capability 'mztake:debug-button (flat-contract boolean?) #t)
       (drscheme:get/extend:extend-definitions-text debug-definitions-text-mixin)
       (drscheme:get/extend:extend-interactions-text debug-interactions-text-mixin)
       (drscheme:get/extend:extend-unit-frame debug-unit-frame-mixin)
