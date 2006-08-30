@@ -5,11 +5,12 @@
   
 
   
-  ;; (define-match-expander id transformer-for-plt-match
-  ;;                           [transformer-for-match]
-  ;;                           [transformer-outside-of-match])
-  ;; if only three args, the third is assumed to be the transformer-outside-of-match
-  ;; I wish I had keyword macro args
+  ;; (define-match-expander id [#:plt-match transformer-for-plt-match]
+  ;;                           [#:match transformer-for-match]
+  ;;                           [#:expression transformer-outside-of-match])
+  
+  ;; There is also a legacy syntax, as follows:
+  ;; (define-match-expander id transformer-for-plt-match [[transformer-for-match] transformer-outside-of-match])
   
   (define-syntax (define-match-expander stx)
     (define (lookup v alist)
@@ -52,37 +53,16 @@
                                                             [nm #'std-xform]))
                                                         (syntax-local-certifier)))
                #'(define-syntax id (make-match-expander plt-match-xform match-xform std-xform (syntax-local-certifier))))))]
+
+      ;; implement legacy syntax
       [(_ id plt-match-xform match-xform std-xform)
-       (if (identifier? (syntax std-xform))
-           #`(define-syntax id (make-match-expander plt-match-xform
-						    match-xform
-                                                    (lambda (stx)
-                                                      (syntax-case stx (set!)
-                                                        #;[(set! id v) #'(set! std-xform v)]
-                                                        [(nm args (... ...)) #'(std-xform args (... ...))]
-                                                        [nm #'std-xform]))
-                                                    (syntax-local-certifier)))
-           #'(define-syntax id (make-match-expander plt-match-xform match-xform std-xform (syntax-local-certifier))))]
+       #'(define-match-expander id #:plt-match plt-match-xform #:match match-xform #:expression std-xform)]
       [(_ id plt-match-xform std-xform)
-       (if (identifier? (syntax std-xform))
-           #`(define-syntax id (make-match-expander plt-match-xform
-                                                    #f
-                                                    (lambda (stx)
-                                                      (syntax-case stx (set!)
-                                                        #;[(set! id v) #'(set! std-xform v)]
-                                                        [(nm args (... ...)) #'(std-xform args (... ...))]
-                                                        [nm #'std-xform]))
-						    (syntax-local-certifier)))
-           #'(define-syntax id (make-match-expander plt-match-xform #f std-xform (syntax-local-certifier))))]      
+       #'(define-match-expander id #:plt-match plt-match-xform #:expression std-xform)]
       [(_ id plt-match-xform) 
-       #'(define-syntax id 
-           (make-match-expander 
-            plt-match-xform 
-            #f
-            (lambda (stx) 
-              (match:syntax-err stx "This match expander must be used inside match"))
-	    (syntax-local-certifier)))]
+       #'(define-match-expander id #:plt-match plt-match-xform)]
       
+      ;; error checking
       [_ (match:syntax-err stx "Invalid use of define-match-expander")]
       ))
   

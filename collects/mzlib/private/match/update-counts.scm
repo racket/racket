@@ -5,7 +5,8 @@
   (provide update-counts)
   
   (require "test-structure.scm"
-	   "match-helper.ss")
+	   "match-helper.ss"
+           (lib "list.ss"))
   
   ;;!(function test-filter
   ;;          (form (test-filter test-list) -> test-list)
@@ -13,7 +14,10 @@
   ;; This function filters out tests that do not need to be to have
   ;; their counts updated for reordering purposes.  These are the
   ;; more complex patterns such as or-patterns or ddk patterns.
-  (define test-filter
+  
+  (define (test-filter tlist)
+    (filter (lambda (t) (not (= -1 (test-times-used t)))) tlist))
+  #;(define test-filter
     (lambda (tlist)
       (if (null? tlist)
           '()
@@ -54,13 +58,29 @@
                (logical-equal? item cur))
              lst)))
   
-  (define logical-equal?  
+  (define (logical-equal? a b)
+    (or (equal? a b) #t
+        (and 
+         ;; error checking
+         (list? a) 
+         (list? b)
+         (list? (cdr a))
+         (list? (cdr b))
+         (null? (cddr a))
+         (null? (cddr b))
+         ;; end error checking
+         (eq? (car a) 'list?)
+         (eq? (car b) 'null?)
+         (equal? (cadr a) (cadr b)))))
+  ;; this implements the above code
+  
+  #;(define logical-equal?  
     (lambda x
       (if (pair? x)
           (let ((exp8163 (cdr x)))
             (if (and (pair? exp8163) (null? (cdr exp8163)))
                 (if (equal? (car exp8163) (car x))
-                    ((lambda (a) #t) (car x))
+                    #t
                     (let ((exp8164 (car x)))
                       (if (and (pair? exp8164) (equal? (car exp8164) 'list?))
                           (let ((exp8165 (cdr exp8164)))
@@ -167,7 +187,7 @@
           (if (null? tml)
               '()
               (begin
-                (map (lambda (t)
+                (for-each (lambda (t)
                        (set-test-times-used! t 1)
                        (set-test-used-set! 
                         t 

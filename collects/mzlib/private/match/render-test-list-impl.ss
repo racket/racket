@@ -223,8 +223,7 @@
           (`quasi-pat
             (render-test-list (parse-quasi #'quasi-pat) ae cert stx))
           
-          
-          ;; check for predicate patterns
+	  ;; check for predicate patterns
           ;; could we check to see if a predicate is a procedure here?
           ((? pred?)
            (list (reg-test 
@@ -233,8 +232,8 @@
                   ae (lambda (exp) #`(#,(cert #'pred?) #,exp)))))
           
           ;; predicate patterns with binders are redundant with and patterns
-          ((? pred? pats ...)
-           (render-test-list #'(and (? pred?) pats ...) ae cert stx))
+          [(? pred? pats ...)
+           (render-test-list #'(and (? pred?) pats ...) ae cert stx)]
           
           ;; syntax checking
           ((? anything ...)
@@ -264,15 +263,8 @@
             (if (zero? (length (syntax-e #'op)))
                 "an operation pattern must have a procedure following the app"
                 "there should be one pattern following the operator")))
-          ((and . pats)
-           (let loop
-             ((p #'pats))
-             (syntax-case p ()
-               ;; empty and always succeeds
-               [() '()] ;(ks seensofar boundvars let-bound))
-               [(pat . rest)
-                (append (render-test-list #'pat ae cert stx)
-                        (loop #'rest))])))
+          [(and . pats) (map-append (lambda (pat) (render-test-list pat ae cert stx))
+                                    (syntax->list #'pats))]
           
           ((or . pats)
            (list (make-act

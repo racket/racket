@@ -36,10 +36,9 @@
                    kf
                    ks
                    cert
-                   [stx (syntax '())]
-		   [opt #f])
+                   [stx (syntax '())])
         (next-outer-helper p ae sf bv let-bound 
-                           (lambda (x) kf) (lambda (a b) ks) cert stx opt))
+                           (lambda (x) kf) (lambda (a b) ks) cert stx))
       
       ;;!(function next-outer-helper
       ;;          (form (next-outer p ae sf bv let-bound kf-func ks-func syntax bool)
@@ -63,8 +62,7 @@
                    kf-func
                    ks-func
                    cert
-                   [stx (syntax '())]
-		   [opt #f])
+                   [stx (syntax '())])
         ;; right now this does not bind new variables
         (let ((rendered-list (render-test-list p ae cert stx)))
           ;; no need to reorder lists although I suspect that it may be

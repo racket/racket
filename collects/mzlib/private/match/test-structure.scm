@@ -115,6 +115,8 @@
   (define (shape-test? test)
     (test-shape test))
   
+  
   (define (negate-test? test)
-    (test-closest-shape-tst test))
+     (test-closest-shape-tst test))
+  
   )

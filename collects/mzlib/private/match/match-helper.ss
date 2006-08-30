@@ -55,9 +55,9 @@
   ;;                (values pred accessors mutators parental-chain))
   ;;          (contract (syntax-object)
   ;;                     ->
-  ;;                     (values (any -> bool) list list)))
-  ;; This function takes a syntax-object that is the name of a structure
-  ;; as well as a failure thunk.  It returns three values.  The first is
+  ;;                     (values (any -> bool) list list list)))
+  ;; This function takes a syntax-object that is the name of a structure.
+  ;; It returns four values.  The first is
   ;; a predicate for the structure.  The second is a list of accessors
   ;; in the same order as the fields of the structure declaration.  The
   ;; third is a list of mutators for the structure also in the same
@@ -82,6 +82,8 @@
         (values (reverse accs)
                 (reverse muts))))
     
+    ;; this produces a list of all the super-types of this struct
+    ;; ending when it reaches the top of the hierarchy, or a struct that we can't access
     (define (get-lineage struct-name)
       (let ([super (list-ref 
                     (local-val struct-name)
@@ -89,20 +91,18 @@
         (cond [(equal? super #t) '()] ;; no super type exists
               [(equal? super #f) '()] ;; super type is unknown
               [else (cons super (get-lineage super))])))
+    
     (define info-on-struct (local-val struct-name))
     
-    (define (get-info info-on-struct)
-      (let-values ([(accs muts)
-                    (handle-acc/mut-lists 
-                     (list-ref info-on-struct accessors-index)
-                     (list-ref info-on-struct mutators-index))])
-        (values accs muts
-                (list-ref info-on-struct pred-index))))
+    (define (ref-info i) (list-ref info-on-struct i))
     
     (unless (struct-declaration-info? info-on-struct) (failure-thunk))
     
-    (let-values ([(accessors mutators pred) (get-info info-on-struct)]      
-                 [(parental-chain) (get-lineage struct-name)])
+    (let*-values ([(acc-list) (ref-info accessors-index)]
+                  [(mut-list) (ref-info mutators-index)]
+                  [(pred) (ref-info pred-index)]
+                  [(accessors mutators) (handle-acc/mut-lists acc-list mut-list)]      
+                  [(parental-chain) (get-lineage struct-name)])
       (values pred accessors mutators (cons struct-name parental-chain)))
     )
   
@@ -466,5 +466,19 @@
   (define convert-patterns? (make-parameter #f))
   
   (define match-equality-test (make-parameter equal?))
+  
+  ;; a helper for timing testing
+  
+  (define-values (print-time initer)
+    (let* ((t (current-milliseconds))
+           (orig t))
+      (values
+       (lambda (msg)
+         (void)
+	 #;(let ((t* (current-milliseconds)))
+           (printf "~a: (total: ~a real: ~a diff: ~a)~n" msg (- t* orig) t* (- t* t))
+           (set! t t*)))
+       (lambda () (void)#;(set! t (current-milliseconds)) #;(set! orig t)))))
+
   
   )

@@ -52,46 +52,47 @@
           (,@pat
              (q-error (syntax ,@pat) "unquote-splicing not nested in list"))
           ((x . y) 
-           (let* ((list-type 'list)
-                  (result
+           (let* ([list-type 'list]
+                  [result
                    (let loop 
                      ((l (syntax-e (syntax (x . y)))))
                      ;(write l)(newline)
-                     (cond ((null? l) '())
-                           ((and (stx-pair? (car l))
+                     (cond [(null? l) '()]
+                           [(and (stx-pair? (car l))
                                  (equal? (car (syntax-object->datum (car l))) 
                                          'unquote-splicing))
-                            (let ((first-car  
+                            (let ([first-car  
                                    (syntax-case (car l) 
                                      (unquote-splicing quasiquote)
-                                     (,@`p  ;; have to parse forward here
+                                     [,@`p  ;; have to parse forward here
                                         (let ((pq (parse-q (syntax p))))
                                           (if (stx-list? pq)
                                               (cdr (syntax->list pq))
                                               (q-error (syntax ,@`p)
-                                                       "unquote-splicing not followed by list"))))
-                                     (,@p
-                                        (if (stx-list? (syntax p))
+                                                       "unquote-splicing not followed by list")))]
+                                     [,@p
+                                        (if (and (stx-list? (syntax p))
+                                                 (eq? (syntax-e (car (syntax->list #'p))) 'list))
                                             (cdr (syntax->list (syntax p)))
                                             (begin ; (write (syntax-e (syntax p))) 
                                               (q-error (syntax ,@p)
-                                                       "unquote-splicing not followed by list")))))))
+                                                       "unquote-splicing not followed by list")))])])
                               (syntax-case (cdr l) (unquote unquote-splicing)
-                                (,@p (q-error (syntax ,@p) 
-                                              "unquote-splicing can not follow dot notation"))
-                                (,p  
+                                [,@p (q-error (syntax ,@p) 
+                                              "unquote-splicing can not follow dot notation")]
+                                [,p  
                                   (let ((res (parse-q (syntax ,p))))
                                     (set! list-type 'list-rest)
-                                    `(,@first-car ,res)))
-                                (p (or (stx-pair? (syntax p))
+                                    `(,@first-car ,res))]
+                                [p (or (stx-pair? (syntax p))
                                        (stx-null? (syntax p)))
                                    (append first-car 
-                                           (loop (syntax-e (syntax p)))))
-                                (p ;; must be an atom
-                                 (let ((res (parse-q (syntax p))))
+                                           (loop (syntax-e (syntax p))))]
+                                [p ;; must be an atom
+                                 (let ([res (parse-q (syntax p))])
                                    (set! list-type 'list-rest)
-                                   `(,@first-car ,res))))))
-                           (else 
+                                   `(,@first-car ,res))]))]
+                           [else 
                             (syntax-case (cdr l) (unquote unquote-splicing)
                               (,@p (q-error (syntax p) 
                                             "unquote-splicing can not follow dot notation"))
@@ -107,7 +108,7 @@
                                (begin 
                                  (set! list-type 'list-rest)
                                  (list (parse-q (car l)) 
-                                       (parse-q (syntax p)))))))))))
+                                       (parse-q (syntax p))))))]))])             
              (quasisyntax/loc stx (#,list-type #,@result))))
           (p
            (vector? (syntax-object->datum (syntax p)))

@@ -55,7 +55,7 @@
        #'(letrec ([name (match-lambda* ((list pat ...) . body))])                             
            (name exp ...))]        
       [(_ ([pat exp] ...) . body)
-       #'((match-lambda* ((list pat ...) . body)) exp ...)]))
+       #'(match (list exp ...) [(list pat ...) . body])]))
   
   (define-syntax (match-let* stx)
     (syntax-case stx ()
