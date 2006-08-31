@@ -2004,7 +2004,8 @@ Scheme_Object *scheme_get_stop_expander(void);
 void scheme_define_parse(Scheme_Object *form,
 			 Scheme_Object **vars, Scheme_Object **val,
 			 int defmacro,
-			 Scheme_Comp_Env *env);
+			 Scheme_Comp_Env *env,
+                         int no_toplevel_check);
 
 void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo);
 

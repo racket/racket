@@ -2011,10 +2011,15 @@ Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, int rev_m
     Scheme_Env *menv;
 
     chain = env->modchain;
-    if (rev_mod_phase) {
+    if (rev_mod_phase && chain) {
       chain = (SCHEME_VEC_ELS(chain))[2];
       if (SCHEME_FALSEP(chain))
 	return NULL;
+    }
+
+    if (!chain) {
+      scheme_signal_error("internal error: missing chain for module instances");
+      return NULL;
     }
 
     menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(chain), name);
@@ -3791,6 +3796,20 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_id, 
   return scheme_make_lifted_defn(scheme_sys_wraps(env), _id, expr, _env);
 }
 
+static void flush_definitions(Scheme_Env *genv)
+{
+  if (genv->syntax) {
+    Scheme_Bucket_Table *t;
+    t = scheme_make_bucket_table(7, SCHEME_hash_ptr);
+    genv->syntax = t;
+  }
+  if (genv->toplevel) {
+    Scheme_Bucket_Table *t;
+    t = scheme_make_bucket_table(7, SCHEME_hash_ptr);
+    genv->toplevel = t;
+  }
+}
+
 static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env, 
 				      Scheme_Compile_Expand_Info *rec, int drec)
 {
@@ -3916,10 +3935,12 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   et_rn = env->genv->et_rename;
   tt_rn = env->genv->tt_rename;
 
-  /* rename tables no longer needed; NULL them out */
-  env->genv->rename = NULL;
-  env->genv->et_rename = NULL;
-  env->genv->tt_rename = NULL;
+  if (rec[drec].comp || (rec[drec].depth != -2)) {
+    /* rename tables no longer needed; NULL them out */
+    env->genv->rename = NULL;
+    env->genv->et_rename = NULL;
+    env->genv->tt_rename = NULL;
+  }
 
   {
     Scheme_Object *v;
@@ -4069,7 +4090,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
           SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(observer);
 
 	  /* Create top-level vars */
-	  scheme_define_parse(e, &vars, &val, 0, env);
+	  scheme_define_parse(e, &vars, &val, 0, env, 1);
 
 	  while (SCHEME_STX_PAIRP(vars)) {
 	    Scheme_Object *name, *orig_name;
@@ -4133,7 +4154,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
           SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(observer);
 
-	  scheme_define_parse(e, &names, &code, 1, env);
+	  scheme_define_parse(e, &names, &code, 1, env, 1);
 
 	  if (SCHEME_STX_PAIRP(names) && SCHEME_STX_NULLP(SCHEME_STX_CDR(names)))
 	    boundname = SCHEME_STX_CAR(names);
@@ -4708,11 +4729,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       }
     }
   }
-  /* first =  a list of expanded/compiled expressions */
+  /* first = a list of expanded/compiled expressions */
 
   et_mn = env->genv->exp_env->marked_names;
 
-  scheme_clean_dead_env(env->genv);
+  if (rec[drec].comp || (rec[drec].depth != -2)) {
+    scheme_clean_dead_env(env->genv);
+  }
 
   /* If compiling, drop expressions that are constants: */
   if (rec[drec].comp) {
@@ -5221,6 +5244,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
     return (Scheme_Object *)env->genv->module;
   } else {
+    if (rec[drec].depth == -2) {
+      /* This was a local expand. Flush definitions, because the body expand may start over. */
+      flush_definitions(env->genv);
+      if (env->genv->exp_env)
+        flush_definitions(env->genv->exp_env);
+    }
+
     p = SCHEME_STX_CAR(form);
     return scheme_datum_to_syntax(cons(p, first), form, form, 0, 2);
   }

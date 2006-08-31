@@ -921,13 +921,14 @@ void scheme_resolve_lift_definition(Resolve_Info *info, Scheme_Object *var, Sche
 void scheme_define_parse(Scheme_Object *form, 
 			 Scheme_Object **var, Scheme_Object **_stk_val,
 			 int defmacro,
-			 Scheme_Comp_Env *env)
+			 Scheme_Comp_Env *env,
+                         int no_toplevel_check)
 {
   Scheme_Object *vars, *rest;
   int len;
   DupCheckRecord r;
 
-  if (!scheme_is_toplevel(env))
+  if (!no_toplevel_check && !scheme_is_toplevel(env))
     scheme_wrong_syntax(NULL, NULL, form, "illegal use (not at top-level)");
 
   len = check_form(form, form);
@@ -998,7 +999,7 @@ define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
 {
   Scheme_Object *var, *val, *targets, *variables;
   
-  scheme_define_parse(form, &var, &val, 0, env);
+  scheme_define_parse(form, &var, &val, 0, env, 0);
   variables = var;
   
   targets = defn_targets_syntax(var, env, rec, drec);
@@ -1027,7 +1028,7 @@ define_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_In
 
   SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(erec[drec].observer);
 
-  scheme_define_parse(form, &var, &val, 0, env);
+  scheme_define_parse(form, &var, &val, 0, env, 0);
 
   env = scheme_no_defines(env);
 
@@ -4629,7 +4630,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   scheme_default_compile_rec(rec, drec);
   scheme_rec_add_certs(rec, drec, form);
       
-  scheme_define_parse(form, &names, &code, 1, env);
+  scheme_define_parse(form, &names, &code, 1, env, 0);
 
   scheme_prepare_exp_env(env->genv);
 
@@ -4684,7 +4685,7 @@ define_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_
 
   scheme_prepare_exp_env(env->genv);
 
-  scheme_define_parse(form, &names, &code, 1, env);
+  scheme_define_parse(form, &names, &code, 1, env, 0);
   
   env = scheme_new_expand_env(env->genv->exp_env, env->insp, 0);
 
