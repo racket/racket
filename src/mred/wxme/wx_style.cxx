@@ -568,7 +568,7 @@ wxStyle::~wxStyle()
 }
 
 void wxStyle::Update(wxStyle *basic, wxStyle *target, 
-		     Bool propogate, Bool topLevel)
+		     Bool propogate, Bool topLevel, Bool send_notify)
 {
   int size;
   int fontid;
@@ -721,17 +721,20 @@ void wxStyle::Update(wxStyle *basic, wxStyle *target,
   target->pen = wxThePenList->FindOrCreatePen(foreground, 0, wxSOLID);
   target->brush = wxTheBrushList->FindOrCreateBrush(background, wxSOLID);
 
-  if (propogate)
+  if (propogate) {
     for (node = children->First(); node; node = node->Next()) {
       wxStyle *stl;
       stl = (wxStyle *)node->Data(); 
       stl->Update(NULL, NULL, TRUE, FALSE);
     }
+  }
 
-  if (styleList) {
-    styleList->StyleWasChanged(target);
-    if (topLevel)
-      styleList->StyleWasChanged(NULL);
+  if (send_notify) {
+    if (styleList) {
+      styleList->StyleWasChanged(target);
+      if (topLevel)
+        styleList->StyleWasChanged(NULL);
+    }
   }
 }
 
@@ -1077,7 +1080,7 @@ wxStyle *wxStyleList::FindOrCreateStyle(wxStyle *baseStyle,
   style->baseStyle = baseStyle;
   baseStyle->children->Append(style);
 
-  style->Update();
+  style->Update(NULL, NULL, FALSE, FALSE, FALSE); /* No need to propagate/notify, because we just created it. */
 
   Append(style);
 

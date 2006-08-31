@@ -154,7 +154,7 @@ class wxStyle : public wxObject
   wxList *children;
 
   void Update(wxStyle *basic = NULL, wxStyle *target = NULL, 
-	      Bool propogate = TRUE, Bool topLevel = TRUE);
+	      Bool propogate = TRUE, Bool topLevel = TRUE, Bool send_notify = TRUE);
 
   void ResetTextMetrics(wxDC *dc);
 
