@@ -4,7 +4,7 @@
            "contract-guts.ss"
            "class-internal.ss")
   
-  (require-for-syntax "contract-helpers.scm"
+  (require-for-syntax "contract-helpers.ss"
                       (lib "list.ss")
                       (lib "stx.ss" "syntax")
                       (lib "name.ss" "syntax"))

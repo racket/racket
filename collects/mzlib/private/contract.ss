@@ -26,8 +26,8 @@ add struct contracts for immutable structs?
            "contract-arrow.ss"
            "contract-guts.ss")
   
-  (require "contract-helpers.scm")
-  (require-for-syntax (prefix a: "contract-helpers.scm"))
+  (require "contract-helpers.ss")
+  (require-for-syntax (prefix a: "contract-helpers.ss"))
 
   
   

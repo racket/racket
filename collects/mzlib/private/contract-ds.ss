@@ -14,7 +14,7 @@ it around flattened out.
 (module contract-ds mzscheme
   (require "contract-guts.ss")
   (require-for-syntax "contract-ds-helpers.ss"
-                      "contract-helpers.scm")
+                      "contract-helpers.ss")
   
   (provide define-contract-struct)
   

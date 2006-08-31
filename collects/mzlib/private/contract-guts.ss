@@ -1,9 +1,9 @@
 (module contract-guts mzscheme
-  (require "contract-helpers.scm"
+  (require "contract-helpers.ss"
            (lib "pretty.ss")
            (lib "list.ss"))
 
-  (require-for-syntax "contract-helpers.scm")
+  (require-for-syntax "contract-helpers.ss")
   
   (provide raise-contract-error
            contract-violation->string
