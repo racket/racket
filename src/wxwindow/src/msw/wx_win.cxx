@@ -432,10 +432,12 @@ void wxWindow::GetPosition(int *x, int *y)
   HWND hParentWnd = 0;
   RECT rect;
   POINT point;
+  wxWindow *par;
 
   hWnd = GetHWND();
-  if (GetParent())
-    hParentWnd = GetParent()->GetHWND();
+  par = GetParent();
+  if (par)
+    hParentWnd = par->GetHWND();
   
   GetWindowRect(hWnd, &rect);
 

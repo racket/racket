@@ -2065,9 +2065,11 @@ Bool wxDC::StartDoc(char *message)
   docinfo.lpszOutput = filename;
   docinfo.lpszDatatype = NULL;
   docinfo.fwType = 0;
-  if (cdc)
-    flag = (SP_ERROR != ::StartDoc(cdc, &docinfo));
-  else
+  if (cdc) {
+    int res;
+    res = ::StartDoc(cdc, &docinfo);
+    flag = (SP_ERROR != res);
+  } else
     flag = FALSE;
 
   return flag;

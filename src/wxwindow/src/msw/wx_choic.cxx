@@ -413,10 +413,12 @@ Bool wxChoice::Show(Bool show)
 {
   HWND wnd = (HWND)ms_handle;
   int cshow;
+  wxChildList *childs;
 
   SetShown(show);
 
-  window_parent->GetChildren()->Show(this, show);
+  childs = window_parent->GetChildren();
+  childs->Show(this, show);
 
   if (show)
     cshow = SW_SHOW;

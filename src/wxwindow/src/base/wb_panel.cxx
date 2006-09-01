@@ -46,12 +46,14 @@ wxbPanel::~wxbPanel(void)
 wxObject* wxbPanel::GetChild(int number)
 {
   wxChildNode *node;
+  wxChildList *childs;
 
   // Return a pointer to the Nth object in the Panel
   if (!children)
     return(NULL);
 
-  node = GetChildren()->First();
+  childs = GetChildren();
+  node = childs->First();
   while (node && number--) {
     node = node->Next();
   }

@@ -682,10 +682,12 @@ Bool wxRadioBox::Show(Bool show)
 {
   int cshow;
   int i;
+  wxChildList *childs;
 
   SetShown(show);
 
-  window_parent->GetChildren()->Show(this, show);
+  childs = window_parent->GetChildren();
+  childs->Show(this, show);
 
   if (show)
     cshow = SW_SHOW;
@@ -706,8 +708,9 @@ void wxRadioBox::Enable(int item, Bool enable)
 {
   if (item >= 0 && item < no_items) {
     buttonEnabled[item] = enable;
-    if (!IsGray())
+    if (!IsGray()) {
       ::EnableWindow(radioButtons[item], enable);
+    }
   }
 }
 
@@ -723,10 +726,11 @@ void wxRadioBox::ChangeToGray(Bool gray)
   wxWindow::ChangeToGray(gray);
 
   for (i = 0; i < no_items; i++) {
-    if (gray)
+    if (gray) {
       ::EnableWindow(radioButtons[i], FALSE);
-    else
+    } else {
       ::EnableWindow(radioButtons[i], buttonEnabled[i]);
+    }
   }
 }
 
