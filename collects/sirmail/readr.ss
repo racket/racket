@@ -145,9 +145,19 @@
       ;; mailboxes holds the list of messages reflected in the top list
       ;; in the GUI. When modifying this value (usually indirectly), use
       ;; `header-chganging-action'. Mutate the variable, but not the list!
-      (define mailbox (let ([l (with-handlers ([void (lambda (x) null)])
-				 (with-input-from-file (build-path mailbox-dir "mailbox")
-				   read))])
+      (define mailbox (let* ([mailbox-file (build-path mailbox-dir "mailbox")]
+                             [l (with-handlers ([void (lambda (x)
+                                                        (message-box "SirMail"
+                                                                     (format
+                                                                      "error reading mailbox ~s, ~a\n"
+                                                                      mailbox-file
+                                                                      (exn-message x)))
+                                                        null)])
+                                  (with-input-from-file mailbox-file
+                                    read))])
+                        (when (eof-object? l)
+                          (message-box "SirMail" (format "mailbox ~s was eof\n" mailbox-file))
+                          (set! l '()))
 			;; If the file's list start with an integer, that's
 			;;  the uidvalidity value. Otherwise, for backward
 			;;  compatibility, we allow the case that it wasn't
