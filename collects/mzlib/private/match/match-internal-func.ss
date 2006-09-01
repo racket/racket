@@ -1,16 +1,16 @@
 (module match-internal-func mzscheme
-
+  
   (provide (all-defined))
   
   (require-for-syntax "gen-match.ss"                      
                       "match-helper.ss"
                       "match-error.ss") 
-
+  
   (require (lib "etc.ss")           
            (lib "list.ss")
            "match-expander.ss"
            "match-error.ss")
-
+  
   
   (define-syntax (match stx)
     (syntax-case stx ()
@@ -22,7 +22,7 @@
     (syntax-case stx ()
       [(k . clauses)
        #'(lambda (exp) (match exp . clauses))]))
-
+  
   (define-syntax (match-lambda* stx)
     (syntax-case stx ()
       [(k . clauses)
@@ -65,57 +65,57 @@
       ((_ ([pat exp] rest ...) body ...)
        (if (pattern-var? (syntax pat))
            #'(let ([pat exp])
-                 (match-let* (rest ...) body ...))
+               (match-let* (rest ...) body ...))
            #'(match exp [pat (match-let* (rest ...) body ...)]))
        )))
   
   (define-syntax (match-letrec stx)
-      (syntax-case stx ()
-        [(_ (clauses ...)) (match:syntax-err stx "bad syntax (empty body)")]
-        [(_ ([pat exp] ...) . body)
-         (andmap pattern-var?
-                 (syntax->list #'(pat ...)))
-         #'(letrec ([pat exp] ...) . body)]
-        [(_ ([pat exp] ...) . body)         
-           (let* ((**match-bound-vars** '())
-                  (compiled-match 
-                   (gen-match #'the-exp
-                              '()
-                              #'(((list pat ...) never-used))
-                              stx
-                              (lambda (sf bv)
-                                (set! **match-bound-vars** bv)
-                                #`(begin
-                                    #,@(map (lambda (x) #`(set! #,(car x) #,(cdr x)))
-                                          (reverse bv))
-                                    . body )))))
-             #`(letrec (#,@(map
-                            (lambda (x) #`(#,(car x) #f))
-                            (reverse **match-bound-vars**))
-                           (the-exp (list exp ...)))
-                 #,compiled-match))]))
+    (syntax-case stx ()
+      [(_ (clauses ...)) (match:syntax-err stx "bad syntax (empty body)")]
+      [(_ ([pat exp] ...) . body)
+       (andmap pattern-var?
+               (syntax->list #'(pat ...)))
+       #'(letrec ([pat exp] ...) . body)]
+      [(_ ([pat exp] ...) . body)         
+       (let* ((**match-bound-vars** '())
+              (compiled-match 
+               (gen-match #'the-exp
+                          '()
+                          #'(((list pat ...) never-used))
+                          stx
+                          (lambda (sf bv)
+                            (set! **match-bound-vars** bv)
+                            #`(begin
+                                #,@(map (lambda (x) #`(set! #,(car x) #,(cdr x)))
+                                        (reverse bv))
+                                . body )))))
+         #`(letrec (#,@(map
+                        (lambda (x) #`(#,(car x) #f))
+                        (reverse **match-bound-vars**))
+                       (the-exp (list exp ...)))
+             #,compiled-match))]))
   
   (define-syntax (match-define stx)
     (syntax-case stx ()
-        [(_ pat exp)
-         (identifier? #'pat)
-         #'(define pat exp)]
-        [(_ pat exp)
-         (let* ((**match-bound-vars** '())
-                  (compiled-match
-                   (gen-match #'the-exp
-                              '()
-                              #'((pat never-used))
-                              stx
-                              (lambda (sf bv)
-                                (set! **match-bound-vars** bv)
-                                #`(begin
-                                    #,@(map (lambda (x)
-                                              #`(set! #,(car x) #,(cdr x)))
-                                            (reverse bv)))))))
-             #`(begin #,@(map
-                          (lambda (x) #`(define #,(car x) #f))
-                          (reverse **match-bound-vars**))
-                      (let ((the-exp exp))
-                        #,compiled-match)))]))    
+      [(_ pat exp)
+       (identifier? #'pat)
+       #'(define pat exp)]
+      [(_ pat exp)
+       (let* ([**match-bound-vars** '()]
+              [compiled-match
+               (gen-match #'the-exp
+                          '()
+                          #'((pat never-used))
+                          stx
+                          (lambda (sf bv)
+                            (set! **match-bound-vars** bv)
+                            #`(begin
+                                #,@(map (lambda (x)
+                                          #`(set! #,(car x) #,(cdr x)))
+                                        (reverse bv)))))])
+         #`(begin #,@(map
+                      (lambda (x) #`(define #,(car x) #f))
+                      (reverse **match-bound-vars**))
+                  (let ((the-exp exp))
+                    #,compiled-match)))]))    
   )
