@@ -19,11 +19,7 @@
 			(lib "etc.ss")
 			"match-error.ss")
   
-  
-  
-  ;;!(function mark-patlist
-  ;;          (form (mark-patlist clauses) -> marked-clause-list)
-  ;;          (contract list -> list))
+  ;; mark-patlist : listof[x] -> listof[(cons x #f)]
   ;; This function takes each clause from the match expression and
   ;; pairs it with the dummy value #f.  This value will be set! when
   ;; the pattern matcher compiles a possible successful match for
@@ -61,13 +57,13 @@
   ;; are in essense partially evaluated tests.  The cdr of the
   ;; result is a function which takes a failure function and a list
   ;; of let-bound expressions and returns a success-function.
-  (define (test-list-with-success-func exp car-patlist stx success-func)
-    (define-values (pat body fail-sym) (parse-clause (car car-patlist)))
+  (define (test-list-with-success-func exp pat/mark stx success-func)
+    (define-values (pat body fail-sym) (parse-clause (car pat/mark)))
     (define (success fail let-bound)
       (if (not success-func)
           (lambda (sf bv)
             ;; mark this pattern as reached
-            (set-cdr! car-patlist #t)
+            (set-cdr! pat/mark #t)
             (with-syntax ([fail-var fail-sym]
                           [(bound-vars ...) (map car bv)]
                           [(args ...) (map (lambda (b) (subst-bindings (cdr b) let-bound)) bv)]
@@ -80,7 +76,7 @@
                   #'(let ([bound-vars args] ...) . body))))
           (lambda (sf bv)
             ;; mark this pattern as reached
-            (set-cdr! car-patlist #t)
+            (set-cdr! pat/mark #t)
             (let ((bv (map
                        (lambda (bind)
                          (cons (car bind)
@@ -120,38 +116,38 @@
   ;; about a match (namely the bound match variables) is at the bottom
   ;; of the recursion tree. The success function must take two arguments
   ;; and it should return a syntax object.
-  (define/opt (gen-match exp patlist stx [success-func #f]) 
-    (when (stx-null? patlist)
-      (match:syntax-err stx "null clause list"))
-    (let* (;; We set up the list of
-           ;; clauses so that one can mark that they have been "reached".
-           [marked-clauses (mark-patlist patlist)]
-           [failure-func #'(match-failure)]
-           ;; iterate through list and render each pattern to a list of partially compiled tests
-           ;; and success functions.
-           ;; These are partially compiled
-           ;; because the test structures containa a function that needs to
-           ;; be coupled with the other functions of the other test
-           ;; structures before actual compilation results. 
-           [rendered-list (map (lambda (clause) (test-list-with-success-func 
-                                                 exp clause stx success-func)) 
-                               marked-clauses)]
-           [_ (begin 
-                (update-counts rendered-list)
-                (tag-negate-tests rendered-list)
-                (update-binding-counts rendered-list))]
-           ;; couple the partially compiled tests together into the final result.
-           [compiled-exp 
-            ((meta-couple (reorder-all-lists rendered-list)
-                          (lambda (sf bv) failure-func)
-                          '()
-                          '())
-             '() '())]
-           ;; Also wrap the final compilation in syntax which binds the
-           ;; match-failure function.
-           [compiled-match
-            #`(let ([match-failure (lambda () #,(quasisyntax/loc stx (match:error #,exp)))])
-                #,compiled-exp)])
+  (define/opt (gen-match exp patlist stx [success-func #f])
+    (begin-with-definitions
+      (when (stx-null? patlist)
+        (match:syntax-err stx "null clause list"))
+      ;; We set up the list of
+      ;; clauses so that one can mark that they have been "reached".
+      (define marked-clauses (mark-patlist patlist))
+      (define failure-func #'(match-failure))
+      ;; iterate through list and render each pattern to a list of partially compiled tests
+      ;; and success functions.
+      ;; These are partially compiled
+      ;; because the test structures containa a function that needs to
+      ;; be coupled with the other functions of the other test
+      ;; structures before actual compilation results. 
+      (define rendered-list (map (lambda (clause) (test-list-with-success-func 
+                                                   exp clause stx success-func)) 
+                                 marked-clauses))
+      (update-counts rendered-list)
+      (tag-negate-tests rendered-list)
+      (update-binding-counts rendered-list)
+      ;; couple the partially compiled tests together into the final result.
+      (define compiled-exp 
+        ((meta-couple (reorder-all-lists rendered-list)
+                      (lambda (sf bv) failure-func)
+                      '()
+                      '())
+         '() '()))
+      ;; Also wrap the final compilation in syntax which binds the
+      ;; match-failure function.
+      (define compiled-match
+        #`(let ([match-failure (lambda () #,(quasisyntax/loc stx (match:error #,exp)))])
+            #,compiled-exp))
       (unreachable marked-clauses stx)
       compiled-match))
   )

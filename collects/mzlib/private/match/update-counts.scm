@@ -6,6 +6,7 @@
   
   (require "test-structure.scm"
 	   "match-helper.ss"
+           (lib "etc.ss")
            (lib "list.ss"))
   
   ;;!(function test-filter
@@ -17,14 +18,6 @@
   
   (define (test-filter tlist)
     (filter (lambda (t) (not (= -1 (test-times-used t)))) tlist))
-  #;(define test-filter
-    (lambda (tlist)
-      (if (null? tlist)
-          '()
-          (if (= -1 (test-times-used (car tlist)))
-              (test-filter (cdr tlist))
-              (cons (car tlist)
-                    (test-filter (cdr tlist)))))))
   
   
   ;; !(function inverse-in
@@ -33,30 +26,26 @@
   ;; This function checks to see if any of the members of the test-list
   ;; would be eliminated by the function if the test was in the test so far 
   ;; list.  This is the opposite of what the in function does.
-  (define inverse-in
-    (lambda (test test-list)
-      (or (pos-inverse-in test test-list)
-          (neg-inverse-in test test-list))))
+  (define (inverse-in test test-list)
+    (or (pos-inverse-in test test-list)
+        (neg-inverse-in test test-list)))
   
-  (define pos-inverse-in
-    (lambda (test test-list)
-      (let ((test-with-implied (cons test (implied test))))
-        (ormap (lambda (t) (in t test-with-implied))
-               test-list)
-        )))
+  (define (pos-inverse-in test test-list)
+    (let ([test-with-implied (cons test (implied test))])
+      (ormap (lambda (t) (in t test-with-implied))
+             test-list)))
+        
   
-  (define neg-inverse-in
-    (lambda (test test-list)
-      (let ((test-with-implied (cons test (implied test))))
-        (ormap (lambda (t) (in `(not ,t) test-with-implied))
-               test-list)
-        )))
+  (define (neg-inverse-in test test-list)
+    (let ([test-with-implied (cons test (implied test))])
+      (ormap (lambda (t) (in `(not ,t) test-with-implied))
+             test-list)))
+      
   
-  (define logical-member
-    (lambda (item lst)
-      (ormap (lambda (cur)
-               (logical-equal? item cur))
-             lst)))
+  (define (logical-member item lst)
+    (ormap (lambda (cur)
+             (logical-equal? item cur))
+           lst))
   
   (define (logical-equal? a b)
     (or (equal? a b) #t
@@ -72,132 +61,87 @@
          (eq? (car a) 'list?)
          (eq? (car b) 'null?)
          (equal? (cadr a) (cadr b)))))
-  ;; this implements the above code
   
-  #;(define logical-equal?  
-    (lambda x
-      (if (pair? x)
-          (let ((exp8163 (cdr x)))
-            (if (and (pair? exp8163) (null? (cdr exp8163)))
-                (if (equal? (car exp8163) (car x))
-                    #t
-                    (let ((exp8164 (car x)))
-                      (if (and (pair? exp8164) (equal? (car exp8164) 'list?))
-                          (let ((exp8165 (cdr exp8164)))
-                            (if (and (pair? exp8165) (null? (cdr exp8165)))
-                                (let ((exp8166 (car exp8163)))
-                                  (if (and (pair? exp8166) (equal? (car exp8166) 'null?))
-                                      (let ((exp8167 (cdr exp8166)))
-                                        (if (and (pair? exp8167)
-                                                 (null? (cdr exp8167))
-                                                 (equal? (car exp8167) (car exp8165)))
-                                            ((lambda (x) #t) (car exp8165))
-                                            ((lambda (else) #f) x)))
-                                      ((lambda (else) #f) x)))
-                                ((lambda (else) #f) x)))
-                          ((lambda (else) #f) x))))
-                ((lambda (else) #f) x)))
-          ((lambda (else) #f) x))))
-  
-  (define truncate-list 
-    (lambda (pos used-set-neg)
-      (cond ((null? used-set-neg)
-             '())
-            ((>= pos (car used-set-neg))
-             (list pos))
-            (else
-             (cons (car used-set-neg)
-                   (truncate-list pos (cdr used-set-neg)))))))
-  
-  (define truncate-list-neg 
-    (lambda (pos used-set-neg)
-      (cond ((null? used-set-neg)
-             '())
-            ((>= pos (car used-set-neg))
-             '())
-            (else
-             (cons (car used-set-neg)
-                   (truncate-list-neg pos (cdr used-set-neg)))))))
+  ;; truncate-list : int listof[int] -> listof[int] 
+  ;; truncate-list-neg : int listof[int] -> listof[int] 
+  ;; truncate-list removes all elements of a list after the element at least as large as p
+  ;; truncate-list-neg removes the found element as well
+  (define-values (truncate-list truncate-list-neg)
+    (let ([mk (lambda (pos-f) 
+                (define (f p l)
+                   (cond [(null? l)
+                         '()]
+                        [(>= p (car l))
+                         (pos-f p)]
+                        [else
+                         (cons (car l)
+                               (f p (cdr l)))]))
+                f)])
+      (values (mk list) (mk (lambda (x) '())))))
   
   
   
-  ;;!(function update-count
-  ;;          (form (update-count test tests-rest pos) -> void)
-  ;;          (contract (test-struct list integer) -> void))
+  ;; update-count : test listof[test] int -> void
   ;; This function updates the test-times-used and test-used-set
   ;; fields of the test structs.  These fields are essential to
   ;; determining the order of the tests.
-  (define update-count 
-    (lambda (test tests-rest pos mem-table)
-      (let loop ((l tests-rest)
-                 (p (add1 pos)))
+  (define (update-count test tests-rest pos mem-table)
+      (let loop ([l tests-rest]
+                 [p (add1 pos)])
         (if (null? l)
-            (begin
-              ;; memoize
-              (hash-table-get mem-table (test-tst test) 
-                              (lambda () 
-                                (hash-table-put! 
-                                 mem-table 
-                                 (test-tst test) (list (test-used-set test)
-                                                       (test-used-set-neg test)))))
-              )
-            (let ((entry-pair 
+            (hash-table-get mem-table (test-tst test) 
+                            (lambda () 
+                              (hash-table-put! 
+                               mem-table 
+                               (test-tst test) 
+                               (list (test-used-set test)
+                                     (test-used-set-neg test)))))            
+            (let ([entry-pair 
                    (hash-table-get mem-table (test-tst test)
                                    (lambda ()
-                                     (when (
-                                            ;member
-                                            logical-member
-                                            ;inverse-in
-                                            (test-tst test) (car l))
+                                     (when (logical-member (test-tst test) (car l))
                                        (set-test-times-used! test (add1 (test-times-used test)))
                                        (set-test-used-set! test (cons p (test-used-set test)))
-                                       (set-test-equal-set! test (cons p (test-equal-set test)))
-                                       )
+                                       (set-test-equal-set! test (cons p (test-equal-set test))))                                       
                                      (when (neg-inverse-in (test-tst test) (car l))
                                        (set-test-used-set-neg! test (cons p (test-used-set-neg test))))
-                                     (loop (cdr l) (add1 p))
-                                     ))))
+                                     (loop (cdr l) (add1 p))))])                                  
               (when (and (list? entry-pair) (not (null? entry-pair)))
-                (let ((trun-used (truncate-list pos (car entry-pair))))
+                (let ([trun-used (truncate-list pos (car entry-pair))])
                   (set-test-used-set! test trun-used)
                   (set-test-equal-set! test trun-used)
                   (set-test-times-used! test (length trun-used))
-                  (set-test-used-set-neg! test (truncate-list-neg pos (cadr entry-pair)))))
-              )))))
+                  (set-test-used-set-neg! test (truncate-list-neg pos (cadr entry-pair)))))))))
+              
   
-  ;;!(function update-counts
-  ;;          (form (update-counts render-list) -> void)
-  ;;          (contract list -> void))
+  ;; update-counts : listof[(cons test any)] -> void
   ;; This function essentially calls update-count on every test in
   ;; all of the test lists.
-  (define update-counts 
-    (lambda (render-list)
-      (let* ((mem-table (make-hash-table 'equal))
-             (test-master-list (map test-filter 
-                                    (map car render-list)))
-             (test-so-far-lists ;; horrible name
+  (define (update-counts render-list)
+      (let* ([mem-table (make-hash-table 'equal)]
+             [test-master-list (map (compose test-filter car) render-list)]
+             [test-so-far-lists ;; horrible name
               (map
-               (lambda (tl)
-                 (let ((f (map test-tst (test-filter tl))))
-                   f))
-               test-master-list)))
-        (let loop ((tml test-master-list)
-                   (tsf test-so-far-lists)
-                   (pos 1))
+               (lambda (tl) (map test-tst (test-filter tl)))
+               test-master-list)])
+        (let loop ([tml test-master-list]
+                   [tsf test-so-far-lists]
+                   [pos 1])
           (if (null? tml)
-              '()
+              (void)
               (begin
-                (for-each (lambda (t)
-                       (set-test-times-used! t 1)
-                       (set-test-used-set! 
-                        t 
-                        (cons pos (test-used-set t)))
-                       (set-test-equal-set! 
-                        t 
-                        (cons pos (test-equal-set t)))
-                       (update-count t (cdr tsf) pos mem-table))
-                     (car tml))
-                (loop (cdr tml) (cdr tsf) (add1 pos))))))))
+                (for-each 
+                 (lambda (t)
+                   (set-test-times-used! t 1)
+                   (set-test-used-set! 
+                    t 
+                    (cons pos (test-used-set t)))
+                   (set-test-equal-set! 
+                    t 
+                    (cons pos (test-equal-set t)))
+                   (update-count t (cdr tsf) pos mem-table))
+                 (car tml))
+                (loop (cdr tml) (cdr tsf) (add1 pos)))))))
   )
 
 
