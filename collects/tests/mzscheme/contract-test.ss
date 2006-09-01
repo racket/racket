@@ -4042,6 +4042,12 @@
              [hd (<=/c n)]
              [tl (hd) (sorted-list/less-than hd)])))
     
+    ;; for some reason, the `n' makes it harder to optimize. without it, this test isn't as good a test
+    (define (closure-comparison-test n)
+      (couple/dc 
+       [hd any/c]
+       [tl (hd) any/c]))
+    
     (test #t contract-stronger? (couple/c any/c any/c) (couple/c any/c any/c))
     (test #f contract-stronger? (couple/c (>=/c 2) (>=/c 3)) (couple/c (>=/c 4) (>=/c 5)))
     (test #t contract-stronger? (couple/c (>=/c 4) (>=/c 5)) (couple/c (>=/c 2) (>=/c 3)))
@@ -4056,7 +4062,8 @@
     (test #t contract-stronger? (short-sorted-list/less-than 4) (short-sorted-list/less-than 5))
     (test #f contract-stronger? (short-sorted-list/less-than 5) (short-sorted-list/less-than 4))
     (test #t contract-stronger? (sorted-list/less-than 4) (sorted-list/less-than 5))
-    (test #f contract-stronger? (sorted-list/less-than 5) (sorted-list/less-than 4)))
+    (test #f contract-stronger? (sorted-list/less-than 5) (sorted-list/less-than 4))
+    (test #t contract-stronger? (closure-comparison-test 4) (closure-comparison-test 5)))
   
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
