@@ -45,7 +45,7 @@ which are then called when the contract's fields are explored
              ;; makes the procedure "big enough" so
              ;; that inlining doesn't consider it.
              (λ (e)
-               (let loop ([i 16])
+               (let loop ([i 30])
                  (cond
                    [(zero? i) e]
                    [else #`(values #,(loop (- i 1)))])))])
