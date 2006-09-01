@@ -3925,6 +3925,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           jit_str_p(JIT_RUNSTACK, JIT_R0);
           jit_movi_l(JIT_R0, 1);
           ref2 = jit_jmpi(jit_forward());
+          CHECK_LIMIT();
 
           /* Multiple-values case: ------------ */
           mz_patch_branch(ref);
@@ -3938,6 +3939,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           } else {
             jit_subr_ul(JIT_R0, JIT_RUNSTACK, JIT_R0); 
           }
+          CHECK_LIMIT();
           /* R0 is space left (in bytes), R2 is argc */
           jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
           if (is_tail) {
@@ -3998,6 +4000,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
             jitter->need_set_rs = 1;
             mz_patch_ucbranch(ref5);
           }
+          CHECK_LIMIT();
 
           END_JIT_DATA(81);
 
