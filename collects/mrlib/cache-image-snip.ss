@@ -147,7 +147,9 @@
                                       void
                                       (lambda (x) #f))])
           (if data
-              (argb->cache-image-snip (make-argb (first data) (second data)) (third data) (fourth data))
+              (argb->cache-image-snip (make-argb (first data) (second data))
+                                      (third data)
+                                      (fourth data))
               (make-null-cache-image-snip))))
       (super-new)))
   
@@ -634,9 +636,16 @@ for b3, we have:
               (* -255 m3))
            (- 255 m3))))
 
+  (define bitmap-size/c (and/c integer? exact? (between/c 1 10000)))
+  
   (provide/contract
-   [overlay-bitmap (argb? number? number? (is-a?/c bitmap%) (is-a?/c bitmap%) . -> . any)]
-   [build-bitmap (((is-a?/c dc<%>) . -> . any) number? number? . -> . (is-a?/c bitmap%))]
+   [overlay-bitmap (argb? (and/c integer? exact?)
+                          (and/c integer? exact?)
+                          (is-a?/c bitmap%)
+                          (is-a?/c bitmap%)
+                          . -> .
+                          any)]
+   [build-bitmap (((is-a?/c dc<%>) . -> . any) bitmap-size/c bitmap-size/c . -> . (is-a?/c bitmap%))]
    [flatten-bitmap ((is-a?/c bitmap%) . -> . (is-a?/c bitmap%))]
 
    [argb->cache-image-snip (argb? number? number? . -> . (is-a?/c cache-image-snip%))]
