@@ -86,11 +86,11 @@ add struct contracts for immutable structs?
 		     [id id]
 		     [pos-module-source pos-module-source])
 	 (syntax-case stx (set!)
-	   [(set! _ body) (raise-syntax-error
+	   [(set! id body) (raise-syntax-error
 			   #f 
 			   "cannot set! provide/contract identifier"
 			   stx
-			   (syntax _))]
+			   (syntax id))]
 	   [(name arg ...)
 	    (syntax 
 	     ((begin-lifted
@@ -98,7 +98,7 @@ add struct contracts for immutable structs?
                            id
                            pos-module-source
                            (module-source-as-symbol #'name)
-                           (quote-syntax _)))
+                           (quote-syntax name)))
 	      arg
 	      ...))]
 	   [name
@@ -109,7 +109,7 @@ add struct contracts for immutable structs?
                           id  
                           pos-module-source 
                           (module-source-as-symbol #'name)
-                          (quote-syntax _))))])))))
+                          (quote-syntax name))))])))))
   
   ;; (define/contract id contract expr)
   ;; defines `id' with `contract'; initially binding

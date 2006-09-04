@@ -4554,12 +4554,48 @@
    #'(parameterize ([current-namespace (make-namespace)])
        (eval '(module bug mzscheme
                 (require (lib "contract.ss"))
-                (define the-defined-variable 'five)
-                (provide/contract [the-defined-variable number?])))
+                (define the-defined-variable1 'five)
+                (provide/contract [the-defined-variable1 number?])))
        (eval '(require bug)))
    (λ (x)
      (and (exn? x)
-          (regexp-match #rx"on the-defined-variable" (exn-message x)))))
+          (regexp-match #rx"on the-defined-variable1" (exn-message x)))))
+  
+  (error-test
+   #'(parameterize ([current-namespace (make-namespace)])
+       (eval '(module bug mzscheme
+                (require (lib "contract.ss"))
+                (define the-defined-variable2 values)
+                (provide/contract [the-defined-variable2 (-> number? any)])))
+       (eval '(require bug))
+       (eval '(the-defined-variable2 #f)))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"on the-defined-variable2" (exn-message x)))))
+  
+  (error-test
+   #'(parameterize ([current-namespace (make-namespace)])
+       (eval '(module bug mzscheme
+                (require (lib "contract.ss"))
+                (define the-defined-variable3 (λ (x) #f))
+                (provide/contract [the-defined-variable3 (-> any/c number?)])))
+       (eval '(require bug))
+       (eval '(the-defined-variable3 #f)))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"on the-defined-variable3" (exn-message x)))))
+  
+  (error-test
+   #'(parameterize ([current-namespace (make-namespace)])
+       (eval '(module bug mzscheme
+                (require (lib "contract.ss"))
+                (define the-defined-variable4 (λ (x) #f))
+                (provide/contract [the-defined-variable4 (-> any/c number?)])))
+       (eval '(require bug))
+       (eval '((if #t the-defined-variable4) #f)))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"on the-defined-variable4" (exn-message x)))))
   
 
   
