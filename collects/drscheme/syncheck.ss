@@ -1410,7 +1410,7 @@ If the namespace does not, they are colored the unbound color.
                    ;; tops are used here because a binding free use of a set!'d variable
                    ;; is treated just the same as (#%top . x).
                    (if (identifier-binding (syntax var))
-                       (add-id (if high-level? high-varrefs varrefs) (syntax var))
+                       (add-id varrefs (syntax var))
                        (add-id tops (syntax var)))
                    
                    (loop (syntax e)))]
@@ -1446,6 +1446,12 @@ If the namespace does not, they are colored the unbound color.
                    (maybe-jump (syntax vars))
                    (loop (syntax b)))]
                 [(define-syntaxes names exp)
+                 (begin
+                   (annotate-raw-keyword sexp varrefs)
+                   (add-binders (syntax names) binders)
+                   (maybe-jump (syntax names))
+                   (level-loop (syntax exp) #t))]
+                [(define-values-for-syntaxes names exp)
                  (begin
                    (annotate-raw-keyword sexp varrefs)
                    (add-binders (syntax names) binders)
