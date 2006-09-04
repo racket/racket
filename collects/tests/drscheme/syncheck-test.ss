@@ -227,6 +227,19 @@
                   (" "             default-color)
                   ("1"             constant)
                   ("))"            default-color)))
+     
+     (build-test "(define-for-syntax (f x) x)"
+                '(("("                 default-color)
+                  ("define-for-syntax" imported-syntax)
+                  (" ("                default-color)
+                  ("f"                 lexically-bound-syntax)
+                  (" "                 default-color)
+                  ("x"                 lexically-bound-variable)
+                  (") "                default-color)
+                  ("x"                 lexically-bound-variable)
+                  ("))"                default-color))
+                (list '((22 23) (25 26))))
+     
      (build-test "(module m mzscheme)"
                 '(("("        default-color)
                   ("module"   imported-syntax)
