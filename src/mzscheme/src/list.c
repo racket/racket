@@ -1842,7 +1842,7 @@ static void set_ephemerons(Scheme_Ephemeron *ae, Scheme_Ephemeron *be)
   if (be) {
     Scheme_Ephemeron *e;
     for (e = be; e->next; e = e->next) { }
-    be->next = ae;
+    e->next = ae;
     ae = be;
   }
 
