@@ -53,11 +53,14 @@
        #'(>>Prim pr e1 restamp? cons+vars inp outp clauses #:with values)]
       [(>>Prim pr e1 restamp? cons+vars inp outp clauses #:with transform)
        #'(>>Prim pr e1 restamp? cons+vars inp outp clauses
-                 #:with2 (lambda (prvar stx) (values prvar (transform stx))))]
+                 #:with transform #:with2 values)]
+      [(>>Prim pr given-e1 restamp? cons+vars inp outp clauses #:with2 transform)
+       #'(>>Prim pr given-e1 restamp? cons+vars inp outp clauses #:with values #:with2 transform)]
       [(>>Prim pr given-e1 restamp? (constructor var ...)
                in-pattern
                out-pattern
                ([recur hole fill/bind] ...)
+               #:with stransform
                #:with2 transform)
        (let ([restamp? (syntax-e #'restamp?)])
          (with-syntax ([(s-tmp ...) (generate-temporaries #'(fill/bind ...))])
@@ -65,14 +68,16 @@
                (let-values ([(fill/bind s-tmp)
                              (let ([fbvar fill/bind])
                                (if fbvar (recur fbvar) (values fbvar #f)))] ...)
-                 (let ([new-e2 (if (or (interrupted-wrap? prule-var) (error-wrap? prule-var))
-                                   #f
-                                   (with-syntax ([in-pattern given-e1])
-                                     (with-syntax ([hole s-tmp] ...)
-                                       #,(if restamp?
-                                             #'(syntax/restamp out-pattern #'out-pattern
-                                                               (deriv-e2 prule-var))
-                                             #'#'out-pattern))))])
+                 (let ([new-e2
+                        (stransform
+                         (if (or (interrupted-wrap? prule-var) (error-wrap? prule-var))
+                             #f
+                             (with-syntax ([in-pattern given-e1])
+                               (with-syntax ([hole s-tmp] ...)
+                                 #,(if restamp?
+                                       #'(syntax/restamp out-pattern #'out-pattern
+                                                         (deriv-e2 prule-var))
+                                       #'#'out-pattern)))))])
                    (let ([new-pr
                           (match prule-var
                             [(AnyQ prule (e1 _ rs))
@@ -80,7 +85,7 @@
                      (let-values ([(new-pr new-e2) (transform new-pr new-e2)])
                        (values (rewrap prule-var new-pr)
                                new-e2))))))))]))
-  
+
   (define-syntax >>Seek
     (syntax-rules (!)
       [(>>Seek) null]

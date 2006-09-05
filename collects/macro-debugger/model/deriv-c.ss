@@ -50,7 +50,6 @@
   (define-struct (p:lambda prule) (renames body) #f)
   (define-struct (p:case-lambda prule) (renames+bodies) #f)
   (define-struct (p:let-values prule) (renames rhss body) #f)
-  (define-struct (p:let*-values prule) (inner) #f)
   (define-struct (p:letrec-values prule) (renames rhss body) #f)
   (define-struct (p:letrec-syntaxes+values prule) (srenames srhss vrenames vrhss body) #f)
   

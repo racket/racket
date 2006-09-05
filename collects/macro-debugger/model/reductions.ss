@@ -179,9 +179,7 @@
           [Expr (?vrhs ...) vrhss]
           [Block ?body body]
           => (lambda (mid)
-               (if (eq? mid e2)
-                   null
-                   (list (walk mid e2 "Remove syntax bindings")))))]
+               (list (walk mid e2 "Remove syntax bindings"))))]
       ;; The auto-tagged atomic primitives
       [(AnyQ p:#%datum (e1 e2 rs tagged-stx) exni)
        (append (if (eq? e1 tagged-stx)

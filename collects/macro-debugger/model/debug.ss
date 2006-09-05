@@ -51,8 +51,6 @@
          (apply append (map loop (map cdr (or rbs null))))]
         [(AnyQ p:let-values (_ _ _ _ rhss body))
          (append (loops rhss) (loop body))]
-        [(AnyQ p:let*-values (_ _ _ inner))
-         (loop inner)]
         [(AnyQ p:letrec-values (_ _ _ _ rhss body))
          (append (loops rhss) (loop body))]
         [(AnyQ p:letrec-syntaxes+values (_ _ _ _ srhss _ vrhss body))

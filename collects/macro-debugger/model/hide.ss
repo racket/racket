@@ -208,11 +208,6 @@
                ([for-derivs (SRHS ...) srhss]
                 [for-derivs (VRHS ...) vrhss]
                 [for-bderiv BODY body]))]
-;               #:with (lambda (new-e2)
-;                        (syntax-case #'BODY ()
-;                          [(e) #'e]
-;                          [(e ...) #'(begin e ...)])))]
-
         [(AnyQ p:#%datum (e1 e2 rs tagged-stx))
          (cond [(or (eq? tagged-stx e1) (show-macro? #'#%datum))
                 (values d e2)]
@@ -454,7 +449,7 @@
                  (for-bderiv body))]
         [(AnyQ p:case-lambda (e1 e2 rs renames+bodies))
          ;; Like lambda
-         (with-syntax ([(?case-lambda [?clause ...]) e1])
+         (with-syntax ([(?case-lambda ?clause ...) e1])
            (apply append
                   (map (lambda (rename+body clause-stx)
                          (let ([new-table (table-restrict/case-lambda clause-stx (car rename+body))])
@@ -467,8 +462,6 @@
                  (let ([new-table (table-restrict/let e1 renames)])
                    (parameterize ((subterms-table new-table))
                      (for-bderiv body))))]
-        [(AnyQ p:let*-values (e1 e2 rs inner))
-         (for-deriv inner)]
         [(AnyQ p:letrec-values (e1 e2 rs renames rhss body))
          (let ([new-table (table-restrict/let e1 renames)])
            (parameterize ((subterms-table new-table))

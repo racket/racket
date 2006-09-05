@@ -3,6 +3,7 @@
   (require "yacc-ext.ss"
            "yacc-interrupted.ss"
            "deriv.ss"
+           "deriv-util.ss"
            "deriv-tokens.ss")
   (provide parse-derivation)
   
@@ -340,11 +341,12 @@
        (#:args e1 e2 rs)
        ;; let*-values with bindings is "macro-like"
        [(prim-let*-values ! (? EE))
-        (make-p:let*-values e1 e2 rs $3)]
+        (let ([next-e1 (lift/deriv-e1 $3)])
+          (make-mrule e1 e2 (make-transformation e1 next-e1 rs e1 next-e1 null) $3))]
        ;; No bindings... model as "let"
        [(prim-let*-values NoError renames-let (? NextEEs 'rhss) next-group (? EB 'body))
         (make-p:let-values e1 e2 rs $3 $4 $6)])
-      
+
       (PrimLetrecValues
        (#:args e1 e2 rs)
        [(prim-letrec-values ! renames-let (? NextEEs 'rhss) next-group (? EB 'body))

@@ -108,7 +108,6 @@
            (struct p:lambda (renames body))
            (struct p:case-lambda (renames+bodies))
            (struct p:let-values (renames body))
-           (struct p:let*-values (inner))
            (struct p:letrec-values (renames rhss body))
            (struct p:letrec-syntaxes+values (srenames srhss vrenames vrhss body))
            (struct p:module (body))

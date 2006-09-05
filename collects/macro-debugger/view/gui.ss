@@ -49,6 +49,10 @@
       (define/override (on-size w h)
         (send widget update/preserve-view))
 
+      (define/augment (on-close)
+        (send widget shutdown)
+        (inner (void) on-close))
+
       (override/return-false file-menu:create-new?
                              file-menu:create-open?
                              file-menu:create-open-recent?
@@ -129,6 +133,8 @@
       (define derivs-prefix null)
 
       (define steps #f)
+
+      (define warnings-frame #f)
 
       (define/public (add-deriv d)
         (set! derivs (append derivs (list d)))
@@ -376,10 +382,10 @@
               (with-handlers ([(lambda (e) (catch-errors?))
                                (lambda (e) (no-synthesize deriv))])
                 (parameterize ((current-hiding-warning-handler
-                                (let ([warnings (delay (new warnings-frame%))])
-                                  (lambda (tag message)
-                                    (send (force warnings)
-                                          add-warning tag)))))
+                                (lambda (tag message)
+                                  (unless warnings-frame
+                                    (set! warnings-frame (new warnings-frame%)))
+                                  (send warnings-frame add-warning tag))))
                   (let-values ([(d s) (hide/policy deriv show-macro?)])
                     d)))
               deriv)))
@@ -407,7 +413,12 @@
       (define/private (get-show-macro?)
         (let ([policy (send macro-hiding-prefs get-policy)])
           (and policy (lambda (id) (policy-show-macro? policy id)))))
-      
+
+      ;; --
+
+      (define/public (shutdown)
+        (when warnings-frame (send warnings-frame show #f)))
+
       ;; Initialization
       
       (super-new)
@@ -632,6 +643,22 @@
       (define ec (new editor-canvas% (parent this) (editor text)))
       (send text lock #t)
 
+      (define -nonlinearity-text #f)
+      (define -localactions-text #f)
+
+      (define/private (add-nonlinearity-text)
+        (unless -nonlinearity-text
+          (set! -nonlinearity-text #t)
+          (add-text "An opaque macro duplicated one of its subterms. "
+                    "Macro hiding requires opaque macros to use their subterms linearly. "
+                    "The macro stepper is showing the expansion of that macro use.")))
+      (define/private (add-localactions-text)
+        (unless -localactions-text
+          (set! -localactions-text #t)
+          (add-text "An opaque macro called local-expand, syntax-local-lift-expression, "
+                    "etc. Macro hiding cannot currently handle local actions. "
+                    "The macro stepper is showing the expansion of that macro use.")))
+
       (define/private (add-text . strs)
         (send text lock #f)
         (for-each (lambda (s) (send text insert s)) strs)
@@ -641,15 +668,10 @@
       (define/public (add-warning tag)
         (case tag
           ((nonlinearity)
-           (add-text
-            "An opaque macro duplicated one of its subterms. "
-            "Macro hiding requires opaque macros to use their subterms linearly. "
-            "The macro stepper is showing the expansion of that macro use."))
+           (add-nonlinearity-text))
           ((localactions)
-           (add-text
-            "An opaque macro called local-expand, syntax-local-lift-expression, "
-            "etc. Macro hiding cannot currently handle local actions. "
-            "The macro stepper is showing the expansion of that macro use."))))
+           (add-nonlinearity-text))))
+
       (send this show #t)))
 
   ;; Main entry points
