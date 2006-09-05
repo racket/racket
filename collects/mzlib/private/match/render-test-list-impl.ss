@@ -166,12 +166,6 @@
           ;; underscore is reserved to match nothing
           (_ '()) ;(ks sf bv let-bound))
           
-          ;; plain identifiers expand into (var) patterns
-          (pt
-           (and (pattern-var? (syntax pt))
-                (not (stx-dot-dot-k? (syntax pt))))
-           (render-test-list #'(var pt) ae cert stx))
-          
           ;; for variable patterns, we do bindings, and check if we've seen this variable before
           ((var pt)
            (identifier? (syntax pt))
@@ -194,9 +188,7 @@
                                       (ks sf (cons (cons (syntax pt) ae) bv))]))))))
           
           ;; Recognize the empty list
-          ((list) (emit-null ae))
-          ('() (emit-null ae))
-          
+          ((list) (emit-null ae))          
           
           ;; This recognizes constants such strings
           [pt
@@ -220,9 +212,6 @@
                       ,(syntax-object->datum p))
              ae (lambda (exp) #`(equal? #,exp #,p)))))
           
-          (`quasi-pat
-            (render-test-list (parse-quasi #'quasi-pat) ae cert stx))
-          
 	  ;; check for predicate patterns
           ;; could we check to see if a predicate is a procedure here?
           ((? pred?)
@@ -230,10 +219,6 @@
                   `(,(syntax-object->datum #'pred?)
                      ,(syntax-object->datum ae))
                   ae (lambda (exp) #`(#,(cert #'pred?) #,exp)))))
-          
-          ;; predicate patterns with binders are redundant with and patterns
-          [(? pred? pats ...)
-           (render-test-list #'(and (? pred?) pats ...) ae cert stx)]
           
           ;; syntax checking
           ((? anything ...)
