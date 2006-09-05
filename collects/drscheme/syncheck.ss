@@ -1328,7 +1328,7 @@ If the namespace does not, they are colored the unbound color.
               (syntax-case* sexp (lambda case-lambda if begin begin0 let-values letrec-values set!
                                    quote quote-syntax with-continuation-mark 
                                    #%app #%datum #%top #%plain-module-begin
-                                   define-values define-syntaxes module
+                                   define-values define-syntaxes define-values-for-syntaxes module
                                    require require-for-syntax provide)
                 (if high-level? module-transformer-identifier=? module-identifier=?)
                 [(lambda args bodies ...)
