@@ -59,7 +59,7 @@
              lst)))
   
   (define (logical-equal? a b)
-    (or (equal? a b) #t
+    (or (equal? a b)
         (and 
          ;; error checking
          (list? a) 
