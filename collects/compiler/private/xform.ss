@@ -3289,53 +3289,61 @@
                                 (and (not non-returning?)
                                      (or (pair? pushed-vars)
                                          (live-var-info-nonempty-calls? live-vars)))])
-                          (loop rest-
-                                (let ([call (if (and (null? (cdr func))
-                                                     (hash-table-get non-gcing-functions (tok-n (car func)) (lambda () #f)))
-                                                ;; Call without pointer pushes
-                                                (make-parens
-                                                 "(" #f #f ")"
-                                                 (list->seq (append func (list args))))
-                                                ;; Call with pointer pushes
-						(begin
-						  (set! saw-gcing-call (car e-))
-						  (make-call
-						   "func call"
-						   #f #f
-						   func
-						   args
-						   pushed-vars
-						   (live-var-info-tag orig-live-vars)
-						   this-nonempty?)))])
-                                  (cons (if (null? setups)
-                                            call
-                                            (make-callstage-parens
-                                             "(" #f #f ")"
-                                             (list->seq
-                                              (append
-                                               (apply append setups)
-                                               (list call)))))
-                                        result))
-                                (make-live-var-info (live-var-info-tag live-vars)
-                                                    ;; maxlive is either size for this push or old maxlive:
-                                                    (max (total-push-size (live-var-info-vars orig-live-vars))
-                                                         (live-var-info-maxlive live-vars))
-                                                    ;; note: maxpush calculated at block level
-                                                    (live-var-info-maxpush live-vars)
-                                                    (live-var-info-vars live-vars)
-                                                    (live-var-info-new-vars live-vars)
-                                                    ;; Add newly-pushed variable to pushed set:
-                                                    (let* ([old-pushed (live-var-info-pushed-vars live-vars)]
-                                                           [new-pushed (filter (lambda (x) (not (assq (car x) old-pushed))) pushed-vars)])
-                                                      (append new-pushed old-pushed))
-                                                    (add1 (live-var-info-num-calls live-vars))
-                                                    (+ (if non-returning? 1 0)
-                                                       (live-var-info-num-noreturn-calls live-vars))
-                                                    (or this-nonempty?
-                                                        (live-var-info-nonempty-calls? live-vars)))
-                                (or converted-sub?
-                                    (null? rest-)
-                                    (not (memq (tok-n (car rest-)) '(return else))))))))))]
+			  (let ([non-gcing-call?
+				 (and (null? (cdr func))
+				      (hash-table-get non-gcing-functions (tok-n (car func)) (lambda () #f)))])
+			    (loop rest-
+				  (let ([call (if non-gcing-call?
+						  ;; Call without pointer pushes
+						  (make-parens
+						   "(" #f #f ")"
+						   (list->seq (append func (list args))))
+						  ;; Call with pointer pushes
+						  (begin
+						    (set! saw-gcing-call (car e-))
+						    (make-call
+						     "func call"
+						     #f #f
+						     func
+						     args
+						     pushed-vars
+						     (live-var-info-tag orig-live-vars)
+						     this-nonempty?)))])
+				    (cons (if (null? setups)
+					      call
+					      (make-callstage-parens
+					       "(" #f #f ")"
+					       (list->seq
+						(append
+						 (apply append setups)
+						 (list call)))))
+					  result))
+				  (make-live-var-info (live-var-info-tag live-vars)
+						      ;; maxlive is either size for this push or old maxlive:
+						      (max (if non-gcing-call?
+							       0
+							       (total-push-size (live-var-info-vars orig-live-vars)))
+							   (live-var-info-maxlive live-vars))
+						      ;; note: maxpush calculated at block level
+						      (live-var-info-maxpush live-vars)
+						      (live-var-info-vars live-vars)
+						      (live-var-info-new-vars live-vars)
+						      ;; Add newly-pushed variable to pushed set:
+						      (let* ([old-pushed (live-var-info-pushed-vars live-vars)]
+							     [new-pushed (if non-gcing-call?
+									     null
+									     (filter (lambda (x) (not (assq (car x) old-pushed))) 
+										     pushed-vars))])
+							(append new-pushed old-pushed))
+						      (+ (if non-gcing-call? 0 1)
+							 (live-var-info-num-calls live-vars))
+						      (+ (if non-returning? 1 0)
+							 (live-var-info-num-noreturn-calls live-vars))
+						      (or (and this-nonempty? (not non-gcing-call?))
+							  (live-var-info-nonempty-calls? live-vars)))
+				  (or converted-sub?
+				      (null? rest-)
+				      (not (memq (tok-n (car rest-)) '(return else)))))))))))]
                 [(eq? 'goto (tok-n (car e-)))
                  ;; Goto - assume all vars are live
                  (loop (cdr e-) (cons (car e-) result) 
