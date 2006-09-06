@@ -65,5 +65,14 @@
                         modes
                         help-desk)])
       (export
+       (unit debug drscheme:debug)
+       (unit unit drscheme:unit)
+       (unit rep drscheme:rep)
+       (unit frame drscheme:frame)
+       (unit get/extend drscheme:get/extend)
+       (unit language-configuration drscheme:language-configuration)
+       (unit language drscheme:language)
+       (unit help-desk drscheme:help-desk)
+       (unit eval drscheme:eval)
        (unit teachpack drscheme:teachpack)
-       (unit language-configuration drscheme:language-configuration)))))
+       (unit modes drscheme:modes)))))

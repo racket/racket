@@ -275,4 +275,4 @@
                        (parent f))])
           (send f show #t)))))
   
-  (dynamic-require '(lib "start.ss" "drscheme" "private") #f))
+  (dynamic-require '(lib "tool-lib.ss" "drscheme") #f))

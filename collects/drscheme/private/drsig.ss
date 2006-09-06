@@ -27,8 +27,7 @@
            drscheme:font^
            drscheme:modes^
            drscheme:tool-exports^
-           drscheme:tool^
-	   drscheme^)
+           drscheme:tool^)
 
   (define-signature drscheme:modes^
     (add-mode
@@ -278,8 +277,4 @@
      (unit drscheme:help-desk : drscheme:help-desk^)
      (unit drscheme:eval : drscheme:eval^)
      (unit drscheme:teachpack : drscheme:teachpack^)
-     (unit drscheme:modes : drscheme:modes^)))
-
-  (define-signature drscheme^
-    ((unit drscheme:teachpack : drscheme:teachpack^)
-     (unit drscheme:language-configuration : drscheme:language-configuration/internal^))))
+     (unit drscheme:modes : drscheme:modes^))))
