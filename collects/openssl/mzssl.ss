@@ -356,7 +356,7 @@
 
   (define (ssl-load-verify-root-certificates! ssl-context-or-listener pathname)
     (ssl-load-... 'ssl-load-verify-root-certificates! 
-		  (lambda (a b) (SSL_CTX_load_verify_locations a b 0))
+		  (lambda (a b) (SSL_CTX_load_verify_locations a b #f))
 		  ssl-context-or-listener pathname))
 
   (define (ssl-load-suggested-certificate-authorities! ssl-listener pathname)
