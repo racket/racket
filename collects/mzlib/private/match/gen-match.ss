@@ -13,6 +13,7 @@
            "render-helpers.ss"
            "reorder-tests.scm"
            "tag-negate-tests.scm"
+	   "simplify-patterns.ss"
            "convert-pat.ss")
   
   (require-for-template mzscheme
@@ -85,7 +86,10 @@
                                 let-bound)))
                        bv)))
               (success-func sf bv)))))
-    (define test-list (render-test-list pat exp (lambda (x) x) stx))
+    (define test-list 
+      (let* ([cert (lambda (x) x)]
+	     [simplified-pat (simplify pat cert)])
+	(render-test-list simplified-pat exp cert stx)))
     (cons test-list success))
   
   ;; gen-match : syntax list list syntax success-func -> syntax

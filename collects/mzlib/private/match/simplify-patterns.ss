@@ -27,10 +27,21 @@
   
   (provide simplify)
   
+  
   ;; simplifies patterns by removing syntactic sugar and expanding match-expanders
   ;; simplify : syntax certifier-> syntax
-  (define (simplify stx cert)
+  (define (simplify stx cert)    
+    
+    ;; convert and check sub patterns for hash-table patterns
+    (define (convert-hash-table-pat pat)
+      (syntax-case pat ()
+        [(p1 p2) #`(#,(simplify/i #'p1) #,(simplify/i #'p2))]
+        [i (and (identifier? #'i) (not (stx-dot-dot-k? #'i))) #'(var i)]
+        [_ (match:syntax-err pat "hash table subpattern must contain either two patterns or an identifier")]))
+
+    ;; simple one-arg version, just passes the cert along
     (define (simplify/i stx) (simplify stx cert))
+    
     (syntax-case*
         stx
       (_ list quote quasiquote vector box ? app and or not struct set! var
@@ -65,54 +76,69 @@
       [(quote data) stx]
       
       ;; transform quasi-patterns into regular patterns
-      [`quasi-pat (simplify (parse-quasi #'quasi-pat))]
+      [`quasi-pat (simplify/i (parse-quasi #'quasi-pat))]
       
       ;; predicate patterns with binders are redundant with and patterns
       [(? pred pat . pats) (simplify/i (syntax/loc stx (and (? pred) pat . pats)))]
       [(? pred) (quasisyntax/loc stx (? #,(cert #'pred)))]
+      [(? . anything)
+           (match:syntax-err
+            stx
+            (if (null? (syntax-e #'anything))
+                "a predicate pattern must have a predicate following the ?"
+                "syntax error in predicate pattern"))]
       
       ;; regexp patterns - FIXME: abstract here
-      [(regexp re) (simplify (syntax/loc stx (and (? string?) (? (lambda (x) (regexp-match re x))))))]
-      [(pregexp re) (simplify (syntax/loc stx (and (? string?) (? (lambda (x) (pregexp-match-with-error re x))))))]
-      [(regexp re pat) (simplify (syntax/loc stx (and (? string?) (app (lambda (x) (regexp-match re x)) pat))))]
-      [(pregexp re pat) (simplify (syntax/loc stx (and (? string?) (app (lambda (x) (pregexp-match-with-error re x)) pat))))]
+      [(regexp re) (simplify/i (syntax/loc stx (and (? string?) (? (lambda (x) (regexp-match re x))))))]
+      [(pregexp re) (simplify/i (syntax/loc stx (and (? string?) (? (lambda (x) (pregexp-match-with-error re x))))))]
+      [(regexp re pat) (simplify/i (syntax/loc stx (and (? string?) (app (lambda (x) (regexp-match re x)) pat))))]
+      [(pregexp re pat) (simplify/i (syntax/loc stx (and (? string?) (app (lambda (x) (pregexp-match-with-error re x)) pat))))]
       [(regexp . re) (match:syntax-err stx "regexp pattern must have one or two subpatterns")]
       [(pregexp . re) (match:syntax-err stx "pregexp pattern must have one or two subpatterns")]
      
       
       ;; cons is just list-rest with 2 arguments
-      [(cons p1 p2) (simplify (syntax/loc stx (list-rest p1 p2)))]
+      [(cons p1 p2) (simplify/i (syntax/loc stx (list-rest p1 p2)))]
       [(cons . rest) (match:syntax-err stx "cons pattern must have exactly two subpatterns")]
       
       ;; aggregates
-      [(kw pats ...)
+      [(kw pats ...)       
        (memq (syntax-e #'kw) '(list vector list-rest list-no-order and or not))
-       (quasisyntax/loc stx (kw #,@(syntax-map simplify #'(pats ...))))]
+       (with-syntax ([(pats* ...) (syntax-map simplify/i #'(pats ...))])
+	 (syntax/loc stx (kw pats* ...)))]
       [(kw pats ... . rest)
        (match:syntax-err stx (format "~a pattern must have a proper list of subpatterns" (syntax-e #'kw)))]
       
       ;; hash table patterns have their own syntax
-      [(hash-table (pat1 pat2) ...)
-       (with-syntax ([(pat1* ...) (syntax-map simplify #'(pat1 ...))]
-                     [(pat2* ...) (syntax-map simplify #'(pat2 ...))])
-         (syntax/loc stx (hash-table (pat1* pat2*) ...)))]
-      [(hash-table (pat1 pat2) ... ooo)
+      [(hash-table pats ... ooo)
        (stx-dot-dot-k? #'ooo)
-       (with-syntax ([(pat1* ...) (syntax-map simplify #'(pat1 ...))]
-                     [(pat2* ...) (syntax-map simplify #'(pat2 ...))])
-         (syntax/loc stx (hash-table (pat1* pat2*) ... ooo)))]      
+       (with-syntax 
+           ([(pats* ...) (syntax-map convert-hash-table-pat #'(pats ...))])
+         (syntax/loc stx (hash-table pats* ... ooo)))]
+      [(hash-table pats ...)
+       (with-syntax 
+           ([(pats* ...) (syntax-map convert-hash-table-pat #'(pats ...))])
+         (syntax/loc stx (hash-table pats* ...)))]
       [(hash-table . rest) (match:syntax-err stx "syntax error in hash table pattern")]
       
       ;; struct patterns
-      [(struct st (pats ...)) (with-syntax ([(pats* ...) (syntax-map simplify #'(pats ...))]
+      [(struct st (pats ...)) (with-syntax ([(pats* ...) (syntax-map simplify/i #'(pats ...))]
                                             [st* (cert #'st)])
                                 (syntax/loc stx (struct st* (pats* ...))))]
-      [(struct . rest) (match:syntax-err stx "syntax error in struct pattern")]
+      [(struct . rest)
+       (match:syntax-err
+	stx
+	(if (null? (syntax-e #'rest))
+	    (format "~a~n~a~n~a"
+		    "a structure pattern must have the name "
+		    "of a defined structure followed by a list of patterns "
+		    "to match each field of that structure")
+	    "syntax error in structure pattern"))]
       
-      [(box pat) (quasisyntax/loc stx (box #,(simplify #'pat)))]
+      [(box pat) (quasisyntax/loc stx (box #,(simplify/i #'pat)))]
       [(box . rest) (match:syntax-err stx "syntax error in box pattern")]
       
-      [(app e pat) (quasisyntax/loc stx (app #,(cert #'e) #,(simplify #'pat)))]
+      [(app e pat) (quasisyntax/loc stx (app #,(cert #'e) #,(simplify/i #'pat)))]
       [(app . rest) (match:syntax-err stx "syntax error in app pattern")]
       
       [(set! id)
@@ -125,9 +151,13 @@
        stx]
       [(get! . rest) (match:syntax-err stx "get! pattern must have one identifier")]
       
-      [(var . rest) (match:internal-err stx "var pattern found before simplification!")]
+      [(var id) 
+       (identifier? #'id)
+       stx]
+      [(var . rest)
+       (match:syntax-err stx "var pattern must have one identifier")]
       
-      [_ stx])
+      [__ stx])
     
     
     )

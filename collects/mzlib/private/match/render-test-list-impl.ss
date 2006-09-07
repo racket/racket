@@ -220,34 +220,10 @@
                      ,(syntax-object->datum ae))
                   ae (lambda (exp) #`(#,(cert #'pred?) #,exp)))))
           
-          ;; syntax checking
-          ((? anything ...)
-           (match:syntax-err
-            p
-            (if (zero? (length (syntax-e #'(anything ...))))
-                "a predicate pattern must have a predicate following the ?"
-                "syntax error in predicate pattern")))
-          
-          ((regexp reg-exp)
-           (regexp-matcher ae stx #'(? (lambda (x) (regexp-match reg-exp x))) cert))
-          ((pregexp reg-exp) 
-           (regexp-matcher ae stx #'(? (lambda (x) (pregexp-match-with-error reg-exp x))) cert))
-          ((regexp reg-exp pat)
-           (regexp-matcher ae stx #'(app (lambda (x) (regexp-match reg-exp x)) pat) cert))
-          ((pregexp reg-exp pat)
-           (regexp-matcher ae stx #'(app (lambda (x) (pregexp-match-with-error reg-exp x)) pat) cert))
-          
           ;; app patterns just apply their operation. 
           ((app op pat)
            (render-test-list #'pat #`(#,(cert #'op) #,ae) cert stx))
           
-          ;; syntax checking
-          ((app . op)
-           (match:syntax-err
-            p
-            (if (zero? (length (syntax-e #'op)))
-                "an operation pattern must have a procedure following the app"
-                "there should be one pattern following the operator")))
           [(and . pats) (map-append (lambda (pat) (render-test-list pat ae cert stx))
                                     (syntax->list #'pats))]
           
@@ -270,9 +246,6 @@
                     (lambda (sf bv)
                       ;; swap success and fail
                       (next-outer #'pat ae sf bv let-bound ks kf cert))))))
-          
-          ;; (cons a b) == (list-rest a b)
-          [(cons p1 p2) (render-test-list #'(list-rest p1 p2) ae cert stx)]
           
           ;; could try to catch syntax local value error and rethrow syntax error      
           ((list-no-order pats ...)
@@ -340,26 +313,18 @@
           
           ((hash-table pats ...)
            ;; must check the structure
-           (proper-hash-table-pattern? (syntax->list (syntax (pats ...))))
+           #;(proper-hash-table-pattern? (syntax->list (syntax (pats ...))))
            (list
             (shape-test
              `(hash-table? ,(syntax-object->datum ae))
              ae (lambda (exp) #`(hash-table? #,exp)))
             
-            (let ((mod-pat
+            (let ([mod-pat
                    (lambda (pat)
-                     (syntax-case pat ()
-                       ((key value) (syntax (list key value)))
-                       (ddk
-                        (stx-dot-dot-k? (syntax ddk))
-                        (syntax ddk))
-                       (id
-                        (and (pattern-var? (syntax id))
-                             (not (stx-dot-dot-k? (syntax id))))
-                        (syntax id))
-                       (p (match:syntax-err
-                           (syntax/loc stx p)
-                           "poorly formed hash-table pattern"))))))
+                     (syntax-case* pat (var) stx-equal?
+                       [(var id) pat]
+                       [(keypat valpat) (syntax/loc pat (list keypat valpat))]
+                       [_ pat]))])
               (make-act
                'hash-table-pat
                ae
@@ -370,7 +335,7 @@
                                 (hash-table-map #,(subst-bindings ae
                                                                   let-bound)
                                                 (lambda (k v) (list k v)))))
-                         #,(next-outer #`(list-no-order #,@(map mod-pat (syntax->list (syntax (pats ...)))))
+                         #,(next-outer #`(list-no-order #,@(syntax-map mod-pat #'(pats ...)))
                                        #`#,hash-name
                                        sf
                                        ;; these tests have to be true
@@ -384,11 +349,6 @@
                                        kf
                                        ks
 				       cert)))))))))
-          
-          ((hash-table . pats)
-           (match:syntax-err
-            p
-            "improperly formed hash table pattern"))
           
           ((struct struct-name (fields ...))
            (identifier? (syntax struct-name))
