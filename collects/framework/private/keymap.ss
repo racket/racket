@@ -23,27 +23,50 @@
 
       (define user-keybindings-files (make-hash-table 'equal))
       
-      (define (add-user-keybindings-file path)
+      (define (add-user-keybindings-file spec)
         (hash-table-get 
          user-keybindings-files
-         path
+         spec
          (λ ()
-           (let ([sexp (and (file-exists? path)
-                            (call-with-input-file path read))])
+           (let* ([path (spec->path spec)]
+                  [sexp (and (file-exists? path)
+                             (call-with-input-file path read))])
              (match sexp
                [`(module ,name (lib "keybinding-lang.ss" "framework") ,@(x ...)) 
-                 (let ([km (dynamic-require path '#%keymap)])
-                   (hash-table-put! user-keybindings-files path km)
+                 (let ([km (dynamic-require spec '#%keymap)])
+                   (hash-table-put! user-keybindings-files spec km)
                    (send global chain-to-keymap km #t))]
                [else (error 'add-user-keybindings-file 
                             (string-constant user-defined-keybinding-malformed-file)
                             (path->string path))])))))
       
-      (define (remove-user-keybindings-file path)
+      (define (spec->path p)
+        (cond
+          [(path? p) p]
+          [else
+           (let* ([mod-name ((current-module-name-resolver) p #f #f)]
+                  [str (symbol->string mod-name)]
+                  [pth (substring str 1 (string-length str))])
+             (let-values ([(base name _) (split-path pth)])
+               (let ([filenames
+                      (sort
+                       (filter (λ (x) (substring? (path->string name) x))
+                               (map path->string (directory-list base)))
+                       (λ (x y) (> (string-length x) (string-length y))))])
+                 (when (null? filenames)
+                   (error 'spec->path "could not convert ~s, found no filenames for ~s" p mod-name))
+                 (build-path base (car filenames)))))]))
+      
+      (define (substring? s1 s2)
+        (and (<= (string-length s1) 
+                 (string-length s2))
+             (string=? s1 (substring s2 0 (string-length s1)))))
+               
+      (define (remove-user-keybindings-file spec)
         (let/ec k
-          (let ([km (hash-table-get user-keybindings-files path (λ () (k (void))))])
+          (let ([km (hash-table-get user-keybindings-files spec (λ () (k (void))))])
             (send global remove-chained-keymap km)
-            (hash-table-remove! user-keybindings-files path))))
+            (hash-table-remove! user-keybindings-files spec))))
       
       (define (remove-chained-keymap ed keymap-to-remove)
         (let ([ed-keymap (send ed get-keymap)])

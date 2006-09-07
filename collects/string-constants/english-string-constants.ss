@@ -621,9 +621,16 @@ please adhere to these guidelines:
  (keybindings-sort-by-name "Sort by Name")
  (keybindings-sort-by-key "Sort by Key")
  (keybindings-add-user-defined-keybindings "Add User-defined Keybindings...")
+ (keybindings-add-user-defined-keybindings/planet "Add User-defined Keybindings from PLaneT...")
  (keybindings-menu-remove "Remove ~a")
  (keybindings-choose-user-defined-file "Please choose a file containing keybindings.")
-
+ (keybindings-planet-malformed-spec "The PLaneT spec is malformed: ~a") ; the string will be what the user typed in
+ (keybindings-type-planet-spec "Please enter a PLaneT require spec (without the `require')")
+  
+ ; first ~a will be a string naming the file or planet package where the keybindings come from;
+ ; second ~a will be an error message
+ (keybindings-error-installing-file "Error when installing the keybindings ~a:\n\n~a")
+  
  (user-defined-keybinding-error "Error running keybinding ~a\n\n~a")
  (user-defined-keybinding-malformed-file "The file ~a does not contain a module written in the (lib \"keybinding-lang.ss\" \"framework\") language.")  
   

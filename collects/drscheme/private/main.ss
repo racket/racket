@@ -66,14 +66,19 @@
       (preferences:set-default 'drscheme:show-interactions-on-execute #t boolean?)
       (preferences:set-default 'drscheme:open-in-tabs #f boolean?)
       (preferences:set-default 'drscheme:toolbar-shown #t boolean?)
-      (preferences:set-default 'drscheme:user-defined-keybindings '() (λ (x) (and (list? x) (andmap path? x))))
+      (preferences:set-default 'drscheme:user-defined-keybindings
+                               '()
+                               (λ (x) (and (list? x) 
+                                           (andmap (λ (x) (or (path? x) (drscheme:frame:planet-spec? x)))
+                                                   x))))
+
       (preferences:set-un/marshall 
        'drscheme:user-defined-keybindings
-       (λ (in) (map path->bytes in))
-       (λ (ex) (if (and (list? ex)
-                             (andmap bytes? ex))
-                        (map bytes->path ex)
-                        '())))
+       (λ (in) (map (λ (x) (if (path? x) (path->bytes x) x))
+                    in))
+       (λ (ex) (if (list? ex)
+                   (map (λ (x) (if (bytes? x) (bytes->path x) x)) ex)
+                   '())))
       
       (let ([number-between-zero-and-one?
              (λ (x) (and (number? x) (<= 0 x 1)))])
@@ -364,12 +369,8 @@
       (autosave:restore-autosave-files/gui)
      
       ;; install user's keybindings
-      (with-handlers ([exn? 
-                       (λ (exn)
-                         (message-box (string-constant drscheme)
-                                      (exn-message exn)))])
-        (for-each keymap:add-user-keybindings-file 
-                  (preferences:get 'drscheme:user-defined-keybindings)))
+      (for-each drscheme:frame:add-keybindings-item 
+                (preferences:get 'drscheme:user-defined-keybindings))
       
       ;; the initial window doesn't set the 
       ;; unit object's state correctly, yet.

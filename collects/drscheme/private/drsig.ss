@@ -148,7 +148,9 @@
      mixin
      basics-mixin
      basics<%>
-     create-root-menubar))
+     create-root-menubar
+     add-keybindings-item
+     planet-spec?))
   
   (define-signature drscheme:program^
     (frame%))

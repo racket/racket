@@ -966,18 +966,22 @@
     "method.")
 
    (keymap:remove-user-keybindings-file
-    (-> path? any)
+    (-> any/c any)
     (user-keybindings-path)
     "Removes the keymap previously added by"
     "@flink keymap:add-user-keybindings-file %"
     ".")
    (keymap:add-user-keybindings-file
-    (-> path? any)
-    (user-keybindings-path)
-    "Chains the keymap defined by \\var{user-keybindings-path} to "
+    (-> any/c any)
+    (user-keybindings-path-or-require-spec)
+    "Chains the keymap defined by \\var{user-keybindings-path-or-require-spec} to "
     "the global keymap, returned by "
     "@flink keymap:get-global %"
-    ".")
+    "."
+    ""
+    "If \\var{user-keybindings-path-or-require-spec} is a path, the module is loaded"
+    "directly from that path. Otherwise, \\var{user-keybindings-path-or-require-spec}"
+    "is treated like an argument to \\scheme|require|.")
    (keymap:add-to-right-button-menu
     (case->
      (((is-a?/c popup-menu%) (is-a?/c editor<%>) (is-a?/c event%) . -> . void?) . -> . void?)

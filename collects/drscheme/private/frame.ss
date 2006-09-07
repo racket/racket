@@ -3,6 +3,7 @@
   (require (lib "name-message.ss" "mrlib")
            (lib "string-constant.ss" "string-constants")
            (lib "unitsig.ss")
+           (lib "match.ss")
            (lib "class.ss")
            (lib "string.ss")
            (lib "list.ss")
@@ -28,6 +29,8 @@
       (rename [-mixin mixin])
       
       (define basics<%> (interface (frame:standard-menus<%>)))
+      
+      (define last-keybindings-planet-attempt "")
       
       (define basics-mixin
         (mixin (frame:standard-menus<%>) (basics<%>)
@@ -187,37 +190,85 @@
                            (let ([filename (get-file (string-constant keybindings-choose-user-defined-file)
                                                      this)])
                              (when filename
-                               (add-keybindings-file filename))))))
+                               (add-keybindings-item/update-prefs filename))))))
+                   (new menu-item%
+                        (parent keybindings-menu)
+                        (label (string-constant keybindings-add-user-defined-keybindings/planet))
+                        (callback
+                         (λ (x y)
+                           (let ([planet-spec (get-text-from-user (string-constant drscheme)
+                                                                  (string-constant keybindings-type-planet-spec)
+                                                                  this
+                                                                  last-keybindings-planet-attempt)])
+                             (when planet-spec
+                               (set! last-keybindings-planet-attempt planet-spec))
+                             (cond
+                               [(planet-string-spec? planet-spec)
+                                =>
+                                (λ (planet-sexp-spec)
+                                  (add-keybindings-item/update-prefs planet-sexp-spec))]
+                               [else
+                                (message-box (string-constant drscheme)
+                                             (format (string-constant keybindings-planet-malformed-spec)
+                                                     planet-spec))])))))
                    (let ([ud (preferences:get 'drscheme:user-defined-keybindings)])
                      (unless (null? ud)
                        (new separator-menu-item% (parent keybindings-menu))
-                       (for-each (λ (path)
+                       (for-each (λ (item)
                                    (new menu-item%
                                         (label (format (string-constant keybindings-menu-remove)
-                                                       (path->string path)))
+                                                       (if (path? item)
+                                                           (path->string item)
+                                                           (format "~s" item))))
                                         (parent keybindings-menu)
                                         (callback
-                                         (λ (x y) (remove-keybindings-file path)))))
+                                         (λ (x y) (remove-keybindings-item item)))))
                                  ud)))))))
             (unless (current-eventspace-has-standard-menus?)
               (make-object separator-menu-item% menu)))
           
           (super-new)))
 
-      (define (add-keybindings-file path)
+      (define (add-keybindings-item/update-prefs item)
+        (when (add-keybindings-item item)
+          (preferences:set 'drscheme:user-defined-keybindings
+                           (cons item
+                                 (preferences:get 'drscheme:user-defined-keybindings)))))
+      
+      (define (planet-string-spec? p)
+        (let ([sexp
+               (with-handlers ([exn:fail:read? (λ (x) #f)])
+                 (read (open-input-string p)))])
+          (and sexp
+               (planet-spec? sexp)
+               sexp)))
+      
+      (define (planet-spec? p)
+        (match p
+          [`(planet ,(? string?) (,(? string?) ,(? string?) ,(? number?))) #t]
+          [`(planet ,(? string?) (,(? string?) ,(? string?) ,(? number?) ,(? number?))) #t]
+          [else #f]))
+      
+      ;; add-keybindings-item : keybindings-item[path or planet spec] -> boolean
+      ;; boolean indicates if the addition happened sucessfully
+      (define (add-keybindings-item item)
         (with-handlers ([exn? (λ (x)
                                 (message-box (string-constant drscheme)
-                                             (exn-message x)))])
-          (keymap:add-user-keybindings-file path)
-          (preferences:set 'drscheme:user-defined-keybindings
-                           (cons path
-                                 (preferences:get 'drscheme:user-defined-keybindings)))))
-      (define (remove-keybindings-file path)
-        (keymap:remove-user-keybindings-file path)
+                                             (format (string-constant keybindings-error-installing-file)
+                                                     (if (path? item)
+                                                         (path->string item)
+                                                         (format "~s" item))
+                                                     (exn-message x)))
+                                #f)])
+          (keymap:add-user-keybindings-file item)
+          #t))
+      
+      (define (remove-keybindings-item item)
+        (keymap:remove-user-keybindings-file item)
         (preferences:set
          'drscheme:user-defined-keybindings
-         (remq path
-               (preferences:get 'drscheme:user-defined-keybindings))))
+         (remove item
+                 (preferences:get 'drscheme:user-defined-keybindings))))
       
       ;; install-plt-file : (union #f dialog% frame%) -> void
       ;; asks the user for a .plt file, either from the web or from
