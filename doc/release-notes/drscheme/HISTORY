@@ -2,6 +2,18 @@
         Version 353
 ------------------------------
 
+  . user-defined keybindings can now be loaded directly from
+    PLaneT, via a new menu item in the Edit menu.
+
+  . the keybindings now have access to the same stuff as the
+    tools, via the require line:
+
+      (require (lib "tool-lib.ss" "drscheme"))
+
+  . in the non-debug languages, drscheme now trims its own
+    stack frames from the top of the stack before showing
+    them in the REPL.
+
   . the get-language-numbers method in
     drscheme:language:language<%> now requires its results
     to be completely unique, wrt to other languages (until
