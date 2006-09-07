@@ -160,6 +160,7 @@ an appropriate subdirectory.
            "private/linkage.ss")
   
   (provide (rename resolver planet-module-name-resolver)
+           resolve-planet-path
            pkg-spec->full-pkg-spec
            get-package-from-cache
            get-package-from-server
@@ -277,8 +278,15 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; environment
   (define (planet-resolve spec module-path stx load?)
     (let-values ([(path pkg) (get-planet-module-path/pkg spec module-path stx)])
-      (add-pkg-to-diamond-registry! pkg)
+      (when load? (add-pkg-to-diamond-registry! pkg))
       (do-require path (pkg-path pkg) module-path stx load?)))
+  
+  ;; resolve-planet-path : planet-require-spec -> path
+  ;; retrieves the path to the given file in the planet package. downloads and installs
+  ;; the package if necessary
+  (define (resolve-planet-path spec)
+    (let-values ([(path pkg) (get-planet-module-path/pkg spec #f #f)])
+      path))
   
   ;; get-planet-module-path/pkg :PLANET-REQUEST symbol syntax[PLANET-REQUEST] -> path PKG
   ;; returns the matching package and the file path to the specific request

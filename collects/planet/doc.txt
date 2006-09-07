@@ -196,6 +196,13 @@ first removes the old link and then adds the new one.
 
 Removes any hard link that may be associated with the given package.
 
+> (resolve-planet-path quoted-planet-require-spec) -> path
+
+Returns the file system path to the file specified by the given quoted 
+planet require specification. This function downloads and installs the
+specified package if necessary, but does not verify that the actual
+file within it actually exists. 
+
 _The PLaneT search order_
 -------------------------
 

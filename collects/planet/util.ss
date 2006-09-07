@@ -23,7 +23,9 @@
    get-installed-planet-archives
    get-hard-linked-packages
    remove-pkg
-   unlink-all)
+   unlink-all
+   
+   resolve-planet-path)
   
   (provide/contract
    [download/install-pkg
