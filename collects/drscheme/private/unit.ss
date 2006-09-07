@@ -2813,58 +2813,17 @@ module browser threading seems wrong.
                                  (define-values (tw th td ta) (send bdc get-text-extent str the-font))
                                  (define tmp-color (make-object color%))
                                  
-                                 
-                                 (define chars #f)
-                                 (define (compute-chars)
-                                   (unless chars
-                                     (let* ([bdc (make-object bitmap-dc% (make-object bitmap% 20 20 #t))]
-                                            [index-char
-                                             (lambda (s)
-                                               (send bdc clear)
-                                               (let-values ([(w h a d) (send bdc get-text-extent s)])
-                                                 (send bdc draw-text s 0 0)
-                                                 (let loop ([x w])
-                                                   (if (zero? x)
-                                                       0
-                                                       (+ (let loop ([y h])
-                                                            (if (zero? y)
-                                                                0
-                                                                (begin
-                                                                  (send bdc get-pixel (- x 1) (- y 1) tmp-color)
-                                                                  (+ (if (= (send tmp-color red) 255) 0 1)
-                                                                     (loop (- y 1))))))
-                                                          (loop (- x 1)))))))])
-                                       (send bdc set-font the-font)
-                                       (let* ([all-chars '(#\@ #\# #\+ #\- #\: #\$ #\& #\* #\space)]
-                                              [prs
-                                               (sort
-                                                (map (lambda (c) (cons c (index-char (string c))))
-                                                     all-chars)
-                                                (lambda (x y) (> (cdr x) (cdr y))))]
-                                              [biggest (cdr (car prs))]
-                                              [smallest (cdr (car (last-pair prs)))]
-                                              [normalized
-                                               (map (lambda (x)
-                                                      (cons (car x)
-                                                            (- 255 (floor (* (/ (- (cdr x) smallest)
-                                                                                (- biggest smallest))
-                                                                             255)))))
-                                                    prs)])
-                                         (set! chars normalized)))))
                                  (define (get-char x y)
                                    (send bdc get-pixel x y tmp-color)
                                    (let ([red (send tmp-color red)])
-                                     (or (ormap (lambda (pr)
-                                                  (if (<= red (cdr pr))
-                                                      (car pr)
-                                                      #f))
-                                                chars)
+                                     (if (= red 0)
+                                         comment-character
                                          #\space)))
                                  (define bitmap
                                    (make-object bitmap% 
                                      (inexact->exact tw)
                                      (inexact->exact th) 
-                                     #f))
+                                     #t))
                                  
                                  (define (fetch-line y)
                                    (let loop ([x (send bitmap get-width)]
@@ -2872,8 +2831,6 @@ module browser threading seems wrong.
                                      (cond
                                        [(zero? x) (apply string chars)]
                                        [else (loop (- x 1) (cons (get-char (- x 1) y) chars))])))
-                                 
-                                 (compute-chars)
                                  
                                  (send bdc set-bitmap bitmap)
                                  (send bdc clear)
