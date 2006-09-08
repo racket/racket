@@ -536,8 +536,13 @@
   (keybindings-sort-by-name "按名称排序")
   (keybindings-sort-by-key "按键名排序")
   (keybindings-add-user-defined-keybindings "添加自定义热键绑定...")
+  (keybindings-add-user-defined-keybindings/planet "从PLaneT添加自定义热键绑定...")
   (keybindings-menu-remove "取消~a")
   (keybindings-choose-user-defined-file "请选择一个包含热键绑定的文件")
+  
+  ; first ~a will be a string naming the file or planet package where the keybindings come from;
+  ; second ~a will be an error message
+  (keybindings-error-installing-file "安装热键绑定~a时出错:\n\n~a")
   
   (user-defined-keybinding-error "热键绑定出错~a\n\n~a")
   (user-defined-keybinding-malformed-file "文件~a并不是一个按照(lib \"keybinding-lang.ss\" \"framework\")语言编写的module.")  
