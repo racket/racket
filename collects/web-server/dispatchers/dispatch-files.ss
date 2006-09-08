@@ -3,11 +3,15 @@
            (lib "xml.ss" "xml")
            (lib "kw.ss")
            (lib "list.ss")
+           (lib "plt-match.ss")
            (lib "contract.ss"))
+  (require (lib "pretty.ss"))         
   (require "dispatch.ss"
            "../configuration.ss"
            "../util.ss"
            "../mime-types.ss"
+           "../private/request.ss"
+           "../servlet-helpers.ss"
            "../response.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?])
@@ -35,7 +39,25 @@
                         (translate-escapes (url-path->string (url-path uri)))))
       (cond
         [(file-exists? path)
-         (output-file conn path method (get-mime-type path))]
+         (match (headers-assq #"Range" (request-headers/raw req))
+           [#f
+            (output-file conn path method (get-mime-type path))]
+           [range
+            (match (bytes->string/utf-8 (header-value range))
+              [(regexp "^bytes=(.*)-(.*)$" (list s start end))
+               (define startn
+                 (if (string=? "" start)
+                     0
+                     (string->number start)))
+               (define endn
+                 (if (string=? "" end)
+                     +inf.0
+                     (string->number end)))               
+               (output-file/partial conn path method (get-mime-type path)
+                                    startn endn)]
+              [r
+               ; XXX: Unhandled range: r
+               (output-file conn path method (get-mime-type path))])])]
         [(directory-exists? path)
          (let loop ([dir-defaults indices])
            (cond
