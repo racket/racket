@@ -1,5 +1,6 @@
 (module configuration mzscheme
   (require (lib "unitsig.ss")
+           (lib "list.ss")
            (lib "contract.ss"))
   (require "configuration-structures.ss"
            "configuration-table-structs.ss"
@@ -19,6 +20,10 @@
   ; load-configuration : path -> configuration
   (define (load-configuration table-file-name)
     (complete-configuration (directory-part table-file-name) (get-configuration table-file-name)))
+  
+  ; load-configration-sexpr : sexp -> configuration
+  (define (load-configration-sexpr sexpr)
+    (build-configuration (parse-configuration-table sexpr) empty))
   
   ; load-developer-configuration : path -> configuration
   (define (load-developer-configuration table-file-name)
@@ -281,6 +286,7 @@
    [build-developer-configuration/vhosts (list? . -> . configuration?)]
    [default-configuration-table-path path?]
    [update-configuration (configuration? (listof (cons/c symbol? any/c)) . -> . configuration?)]
+   [load-configration-sexpr (list? . -> . configuration?)]
    [load-configuration (path? . -> . configuration?)]
    [load-developer-configuration (path? . -> . configuration?)])  
   (provide/contract
