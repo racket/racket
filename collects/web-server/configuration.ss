@@ -169,7 +169,7 @@
   (define (servlet-loading-responder url exn)
     (make-response/full 500 "Servlet didn't load"
                         (current-seconds)
-                        #"text/plain" ;TEXT/HTML-MIME-TYPE
+                        #"text/plain; charset=utf-8" ;TEXT/HTML-MIME-TYPE
                         '() ; check
                         (list "Servlet didn't load.\n"
                               (exn->string exn))))

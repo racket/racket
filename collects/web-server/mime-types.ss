@@ -14,7 +14,7 @@
   ;; 2. Assuming that 7-bit ASCII is correct for mime-type
   (define (make-get-mime-type a-path)
     (let ([MIME-TYPE-TABLE (make-hash-table)]
-          [DEFAULT-MIME-TYPE #"text/plain"]
+          [DEFAULT-MIME-TYPE #"text/plain; charset=utf-8"]
           [file-suffix-regexp (byte-regexp #".*\\.([^\\.]*$)")])
       (with-input-from-file a-path
         (lambda ()
