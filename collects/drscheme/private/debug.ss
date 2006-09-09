@@ -745,6 +745,7 @@ profile todo:
           
           (inherit get-top-level-window)
           (define/augment (after-many-evals)
+            (printf "updating test coverage\n")
             (when test-coverage-info
               (send (get-context) show-test-coverage-annotations
                     test-coverage-info

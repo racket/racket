@@ -873,7 +873,7 @@
            (make-object message%
              (string-constant overwrite)
              (get-info-panel))]
-          [define position-canvas (make-object editor-canvas% (get-info-panel) #f '(no-hscroll no-vscroll))]
+          [define position-canvas (make-object click-pref-editor-canvas% (get-info-panel) #f '(no-hscroll no-vscroll))]
           [define position-edit (make-object text%)]
           
           
@@ -911,6 +911,31 @@
           (editor-position-changed)
           (send position-edit hide-caret #t)
           (send position-edit lock #t)))
+      
+      (define click-pref-editor-canvas%
+        (class editor-canvas%
+          (inherit popup-menu)
+          (define/override (on-event evt)
+            (cond
+              [(send evt button-down? 'right)
+               (let ([menu (new popup-menu%)]
+                     [line-numbers? (preferences:get 'framework:display-line-numbers)])
+                 (new checkable-menu-item%
+                      [parent menu]
+                      [label (string-constant show-line-and-column-numbers)]
+                      [callback (λ (x y) (preferences:set 'framework:display-line-numbers #t))]
+                      [checked line-numbers?])
+                 (new checkable-menu-item%
+                      [parent menu]
+                      [label (string-constant show-character-offsets)]
+                      [callback (λ (x y) (preferences:set 'framework:display-line-numbers #f))]
+                      [checked (not line-numbers?)])
+                 (popup-menu menu 
+                             (+ 1 (send evt get-x))
+                             (+ 1 (send evt get-y))))]
+              [else
+               (super on-event evt)]))
+          (super-new)))
       
       (define pasteboard-info<%> (interface (info<%>)))
       (define pasteboard-info-mixin

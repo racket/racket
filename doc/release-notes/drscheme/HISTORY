@@ -2,6 +2,11 @@
         Version 353
 ------------------------------
 
+  . right clicking on the line/column offset display in the
+    bottom part of drscheme's window lets you toggle between
+    character offsets (from the beginning of the buffer) and
+    line/column counts.   
+
   . user-defined keybindings can now be loaded directly from
     PLaneT, via a new menu item in the Edit menu.
 
