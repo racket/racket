@@ -503,38 +503,30 @@
               (set! rest-panel r-root)
               r-root))
           
-          [define info-canvas #f]
-          (public get-info-canvas set-info-canvas get-info-editor)
-          [define get-info-canvas
-           (λ ()
-             info-canvas)]
-          [define set-info-canvas
-           (λ (c)
-             (set! info-canvas c))]
-          [define get-info-editor
-           (λ ()
-             (and info-canvas
-                  (send info-canvas get-editor)))]
+          (define info-canvas #f)
+          (define/public (get-info-canvas) info-canvas)
+          (define/public (set-info-canvas c) (set! info-canvas c))
+          (define/public (get-info-editor)
+            (and info-canvas
+                 (send info-canvas get-editor)))
           
-          (public determine-width)
-          [define determine-width
-            (λ (string canvas edit)
-              (send edit set-autowrap-bitmap #f)
-              (send canvas call-as-primary-owner
-                    (λ ()
-                      (let ([lb (box 0)]
-                            [rb (box 0)])
-                        (send edit erase)
-                        (send edit insert string)
-                        (send edit position-location 
-                              (send edit last-position)
-                              rb)
-                        (send edit position-location 0 lb)
-                        (send canvas min-width 
-                              (+ magic-space (- (inexact->exact (floor (unbox rb)))
-                                                (inexact->exact (floor (unbox lb))))))))))]
+          (define/public (determine-width string canvas edit)
+            (send edit set-autowrap-bitmap #f)
+            (send canvas call-as-primary-owner
+                  (λ ()
+                    (let ([lb (box 0)]
+                          [rb (box 0)])
+                      (send edit erase)
+                      (send edit insert string)
+                      (send edit position-location 
+                            (send edit last-position)
+                            rb)
+                      (send edit position-location 0 lb)
+                      (send canvas min-width 
+                            (+ magic-space (- (inexact->exact (floor (unbox rb)))
+                                              (inexact->exact (floor (unbox lb))))))))))
           
-          [define outer-info-panel 'top-info-panel-uninitialized]
+          (define outer-info-panel 'top-info-panel-uninitialized)
           
           ;; this flag is specific to this frame
           ;; the true state of the info panel is
@@ -597,32 +589,25 @@
                 [else
                  (when (send lock-canvas is-shown?)
                    (send lock-canvas show #f))])))
-          
-          (public update-info)
-          [define update-info
-            (λ ()
-              (lock-status-changed))]
+
+          (define/public (update-info) (lock-status-changed))
           
 	  (super-new)
           (set! outer-info-panel (make-object horizontal-panel% super-root))
           (send outer-info-panel stretchable-height #f)
           
-          [define info-panel (make-object horizontal-panel% outer-info-panel)]
-          (make-object grow-box-spacer-pane% outer-info-panel)
-          (public get-info-panel)
-          [define get-info-panel
-            (λ ()
-              info-panel)]
-          (public update-memory-text)
-          [define update-memory-text
-            (λ ()
-              (when show-memory-text?
-                (send memory-text begin-edit-sequence)
-                (send memory-text lock #f)
-                (send memory-text erase)
-                (send memory-text insert (format-number (current-memory-use)))
-                (send memory-text lock #t)
-                (send memory-text end-edit-sequence)))]
+          (define info-panel (new horizontal-panel% [parent outer-info-panel]))
+          (new grow-box-spacer-pane% [parent outer-info-panel])
+          
+          (define/public (get-info-panel) info-panel)
+          (define/public (update-memory-text)
+            (when show-memory-text?
+              (send memory-text begin-edit-sequence)
+              (send memory-text lock #f)
+              (send memory-text erase)
+              (send memory-text insert (format-number (current-memory-use)))
+              (send memory-text lock #t)
+              (send memory-text end-edit-sequence)))
           
           (define/private (format-number n)
             (let loop ([n n])
@@ -700,22 +685,22 @@
       (define text-info-mixin
         (mixin (info<%>) (text-info<%>)
           (inherit get-info-editor)
-          [define remove-first
+          (define remove-first
             (preferences:add-callback
              'framework:col-offsets
              (λ (p v)
                (editor-position-changed-offset/numbers
                 v
                 (preferences:get 'framework:display-line-numbers))
-               #t))]
-          [define remove-second
+               #t)))
+          (define remove-second
             (preferences:add-callback
              'framework:display-line-numbers
              (λ (p v)
                (editor-position-changed-offset/numbers
                 (preferences:get 'framework:col-offsets)
                 v)
-               #t))]
+               #t)))
           (define/augment (on-close)
             (remove-first)
             (remove-second)
@@ -869,13 +854,20 @@
                     b
                     (string-constant auto-extend-selection)))
               (get-info-panel))]
-          [define overwrite-message 
-           (make-object message%
-             (string-constant overwrite)
-             (get-info-panel))]
-          [define position-canvas (make-object click-pref-editor-canvas% (get-info-panel) #f '(no-hscroll no-vscroll))]
-          [define position-edit (make-object text%)]
+          (define overwrite-message 
+            (new message%
+                 [label (string-constant overwrite)]
+                 [parent (get-info-panel)]))
           
+          (define position-parent (new click-pref-panel% 
+                                       [border 2]
+                                       [parent (get-info-panel)]
+                                       [stretchable-width #f]
+                                       [stretchable-height #f]))
+          (define position-canvas (new editor-canvas% 
+                                       [parent position-parent]
+                                       [style '(no-hscroll no-vscroll)]))
+          (define position-edit (new text%))
           
           (define macro-recording-message
             (instantiate message% ()
@@ -895,7 +887,7 @@
                       (move-front
                        overwrite-message
                        (move-front
-                        position-canvas
+                        position-parent
                         l)))))))
           (send macro-recording-message show #f)
           (send anchor-message show #f)
@@ -912,10 +904,10 @@
           (send position-edit hide-caret #t)
           (send position-edit lock #t)))
       
-      (define click-pref-editor-canvas%
-        (class editor-canvas%
+      (define click-pref-panel%
+        (class horizontal-panel%
           (inherit popup-menu)
-          (define/override (on-event evt)
+          (define/override (on-subwindow-event receiver evt)
             (cond
               [(send evt button-down? 'right)
                (let ([menu (new popup-menu%)]
@@ -932,9 +924,10 @@
                       [checked (not line-numbers?)])
                  (popup-menu menu 
                              (+ 1 (send evt get-x))
-                             (+ 1 (send evt get-y))))]
+                             (+ 1 (send evt get-y))))
+               #t]
               [else
-               (super on-event evt)]))
+               (super on-subwindow-event receiver evt)]))
           (super-new)))
       
       (define pasteboard-info<%> (interface (info<%>)))
