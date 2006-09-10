@@ -101,6 +101,110 @@
        #"?"
        #"+"))
 
+(map (lambda (p)
+       (let ([name (car p)]
+	     [predicate (cdr p)]
+	     [mk (lambda (name extra not? star?)
+		   (byte-pregexp
+		    (string->bytes/latin-1
+		     (format "[~a~a[:~a:]]~a" 
+			     (if not? "^" "")
+			     (if extra extra "")
+			     name
+			     (if star? "*" "")))))])
+	 (let ([try
+		(lambda (extra)
+		  (let ([b (mk name extra #f #f)]
+			[not-b (mk name extra #t #f)]
+			[b* (mk name extra #f #t)]
+			[not-b* (mk name extra #t #t)])
+		    (let loop ([c 0])
+		      (unless (= c 128)
+			(let ([in? (or (and extra
+					    (= c (char->integer extra)))
+				       (predicate (integer->char c)))])
+			  (test (if in? (list (bytes c)) #f)
+				regexp-match 
+				b
+				(bytes c))
+			  (test (if in? (list (bytes c c)) (list (bytes)))
+				regexp-match 
+				b*
+				(bytes c c))
+			  (test (if in? #f (list (bytes c)))
+				regexp-match 
+				not-b
+				(bytes c))
+			  (test (if in? (list (bytes)) (list (bytes c c)))
+				regexp-match 
+				not-b*
+				(bytes c c))
+			  (loop (add1 c)))))
+		    (test #f regexp-match b (bytes 128))
+		    (test (list (bytes)) regexp-match b* (bytes 128 128))
+		    (test (list (bytes 128)) regexp-match not-b (bytes 128))
+		    (test (list (bytes 128 128)) regexp-match not-b* (bytes 128 128))))])
+	   (try #f)
+	   (try #\377)
+	   (unless (predicate #\x)
+	     (try #\x))
+	   (unless (predicate #\space)
+	     (try #\space))
+	   (unless (predicate #\000)
+	     (try #\000))
+	   (unless (predicate #\002)
+	     (try #\002)))))
+     (list
+      (cons "alpha" char-alphabetic?)
+      (cons "alnum" (lambda (x)
+		      (or (char-alphabetic? x)
+			  (char-numeric? x))))
+      ))
+
+
+(test '("app\u039Be") regexp-match #px"(?i:app\u039Be)" "app\u039Be")
+(test '("app\u039Be") regexp-match #px"(?i:app\u03BBe)" "app\u039Be")
+(test #f regexp-match #px"app\u03BBe" "app\u039Be")
+(test #f regexp-match #px"(?i:(?-i:app\u03BBe))" "app\u039Be")
+(test '("app\u039Be") regexp-match #px"(?i:(?-i:app)\u03BBe)" "app\u039Be")
+(test '("app\u03BBe") regexp-match #px"(?i:app\u039Be)" "app\u03BBe")
+(test '("app\u03BBe") regexp-match #px"(?i:app[\u039B-\u039C]e)" "app\u03BBe")
+(test '("app\u039Be") regexp-match #px"(?i:app[\u03BB-\u03BC]e)" "app\u039Be")
+
+(let ([sigmas '(#\u03A3 #\u03C2 #\u03C3)]
+      [lambdas '(#\u039B #\u039B #\u03BB)])
+  (for-each (lambda (s1)
+	      (for-each
+	       (lambda (s2 l2)
+		 (let* ([r (list (format "_~a_" s1))]
+			[gen-sigma? (or (equal? s2 #\u03C2)
+					(not (equal? s1 #\u03C2)))]
+			[gr (and gen-sigma? r)])
+		   (if (equal? s1 s2)
+		       (test r regexp-match (format "_~a_" s2) (format "_~a_" s1))
+		       (test #f regexp-match (format "_~a_" s2) (format "_~a_" s1)))
+		   (test gr regexp-match (format "(?i:_~a_)" s2) (format "_~a_" s1))
+		   (test gr regexp-match (format "(?i:_[~a]_)" s2) (format "_~a_" s1))
+		   (test (and (not (equal? s1 s2)) r) regexp-match (format "_[^~a]_" s2) (format "_~a_" s1))
+		   (test (and (equal? s1 #\u03C2) (not (equal? s2 #\u03C2)) r)
+			 regexp-match (format "(?i:_[^~a]_)" s2) (format "_~a_" s1))
+		   (test gr regexp-match (format "(?i:_[x~a]_)" s2) (format "_~a_" s1))
+		   (test gr regexp-match (format "(?i:_[~a\x1888]_)" s2) (format "_~a_" s1))
+		   (test gr regexp-match (format "(?i:_[~a-~a]_)" s2 s2) (format "_~a_" s1))
+		   (test r regexp-match (format "_[~a-~a]_" (car sigmas) (caddr sigmas)) (format "_~a_" s1))
+		   (test (and (char<=? (car sigmas) s1 s2) r)
+			 regexp-match (format "_[~a-~a]_" (car sigmas) s2) (format "_~a_" s1))
+		   (test (and (char<=? s2 s1 (caddr sigmas)) r)
+			 regexp-match (format "_[~a-~a]_" s2 (caddr sigmas)) (format "_~a_" s1))
+		   (test (and (or gen-sigma? (equal? s2 #\u03C3)) r)
+			 regexp-match (format "(?i:_[~a-~a]_)" (car sigmas) s2) (format "_~a_" s1))
+		   (test (and (or gen-sigma? (equal? s2 #\u03A3)) r)
+			 regexp-match (format "(?i:_[~a-~a]_)" s2 (caddr sigmas)) (format "_~a_" s1))
+		   (test (and (or gen-sigma? (equal? s2 #\u03C3)) r)
+			 regexp-match (format "(?i:_[~a-~a]_)" l2 s2) (format "_~a_" s1))))
+	       sigmas lambdas))
+	    sigmas))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Most of the following tests are derived from "testinput" in 
 ;; CL-PPCRE, which probably is from Perl originally. 
@@ -108,8 +212,28 @@
 
 (map (lambda (t)
        (if (pair? t)
-	   (test (caddr t) regexp-match (byte-pregexp (car t)) (cadr t))
-	   (err/rt-test (byte-pregexp t))))
+	   (begin
+	     (test (caddr t) regexp-match (byte-pregexp (car t)) (cadr t))
+	     (test (caddr t) regexp-match (byte-pregexp (car t)) (bytes-append #"xxxxxxxxxx" (cadr t)) 10)
+	     (test (caddr t) regexp-match (byte-pregexp (car t)) (bytes-append (cadr t) #"xxxxxxxxxx") 0 (bytes-length (cadr t)))
+	     (test (caddr t) regexp-match (byte-pregexp (car t)) (open-input-bytes (cadr t)))
+	     (test (and (caddr t)
+			(map (lambda (v)
+			       (and v (bytes->string/latin-1 v)))
+			     (caddr t)))
+		   regexp-match 
+		   (pregexp (bytes->string/latin-1 (car t)))
+		   (bytes->string/latin-1 (cadr t)))
+	     (test (and (caddr t)
+			(map (lambda (v)
+			       (and v (string->bytes/utf-8 (bytes->string/latin-1 v))))
+			     (caddr t)))
+		   regexp-match 
+		   (pregexp (bytes->string/latin-1 (car t)))
+		   (open-input-string (bytes->string/latin-1 (cadr t)))))
+	   (begin
+	     (err/rt-test (byte-pregexp t))
+	     (err/rt-test (pregexp (bytes->string/latin-1 t))))))
      '(#"}"
        #"]"
        #"[a[:alph:]b]"
@@ -184,16 +308,7 @@
        (#"^(b+|a){1,2}c" #"aaac" #f)
        (#"^(b+|a){1,2}c" #"abbbbbbbbbbbac" #f)
        (#"^(b+|a){1,2}?bc" #"bbc" (#"bbc" #"b"))
-       (#"^(b*|ba){1,2}?bc" #"babc" (#"babc" #"ba"))
-       (#"^(b*|ba){1,2}?bc" #"bbabc" (#"bbabc" #"ba"))
-       (#"^(b*|ba){1,2}?bc" #"bababc" (#"bababc" #"ba"))
-       (#"^(b*|ba){1,2}?bc" #"bababbc" #f)
-       (#"^(b*|ba){1,2}?bc" #"babababc" #f)
-       (#"^(ba|b*){1,2}?bc" #"babc" (#"babc" #"ba"))
-       (#"^(ba|b*){1,2}?bc" #"bbabc" (#"bbabc" #"ba"))
-       (#"^(ba|b*){1,2}?bc" #"bababc" (#"bababc" #"ba"))
-       (#"^(ba|b*){1,2}?bc" #"bababbc" #f)
-       (#"^(ba|b*){1,2}?bc" #"babababc" #f)
+       #"^(b*|ba){1,2}?bc"
        (#"^[ab\\]cde]" #"athing" (#"a"))
        (#"^[ab\\]cde]" #"bthing" (#"b"))
        (#"^[ab\\]cde]" #"]thing" (#"]"))
@@ -416,17 +531,8 @@
        (#"^(a|)\\1?b" #"aab" (#"aab" #"a"))
        (#"^(a|)\\1?b" #"b" (#"b" #""))
        (#"^(a|)\\1?b" #"acb" #f)
-       (#"^(a|)\\1{2}b" #"aaab" (#"aaab" #"a"))
-       (#"^(a|)\\1{2}b" #"b" (#"b" #""))
-       (#"^(a|)\\1{2}b" #"ab" #f)
-       (#"^(a|)\\1{2}b" #"aab" #f)
-       (#"^(a|)\\1{2}b" #"aaaab" #f)
-       (#"^(a|)\\1{2,3}b" #"aaab" (#"aaab" #"a"))
-       (#"^(a|)\\1{2,3}b" #"aaaab" (#"aaaab" #"a"))
-       (#"^(a|)\\1{2,3}b" #"b" (#"b" #""))
-       (#"^(a|)\\1{2,3}b" #"ab" #f)
-       (#"^(a|)\\1{2,3}b" #"aab" #f)
-       (#"^(a|)\\1{2,3}b" #"aaaaab" #f)
+       #"^(a|)\\1{2}b"
+       #"^(a|)\\1{2,3}b"
        (#"ab{1,3}bc" #"abbbbc" (#"abbbbc"))
        (#"ab{1,3}bc" #"abbbc" (#"abbbc"))
        (#"ab{1,3}bc" #"abbc" (#"abbc"))
@@ -623,8 +729,7 @@
        (#"(A|B)*CD" #"CD " (#"CD" #f))
        (#"(AB)*?\\1" #"ABABAB" (#"ABAB" #"AB"))
        (#"(AB)*\\1" #"ABABAB" (#"ABABAB" #"AB"))
-       (#"((a{0,5}){0,5}){0,5}[c]" #"aaaaaaaaaac" (#"aaaaaaaaaac" #"" #""))
-       (#"((a{0,5}){0,5}){0,5}[c]" #"aaaaaaaaaa" #f)
+       #"((a{0,5}){0,5}){0,5}[c]"
        #"((a{0,5}){0,5})*[c]"
        #"((a{0,5}){0,5})*[c]"
        #"(\\b)*a"
@@ -725,17 +830,9 @@
        (#"a(?i:b)" #"ab" (#"ab"))
        (#"a(?i:b)" #"aB" (#"aB"))
        (#"a(?i:b)" #"Ab" #f)
-       (#"a(?<=a){3000}a" #"" #f)
-       (#"a(?<=a){3000}a" #"" #f)
-       (#"a(?<=a){3000}a" #"" #f)
-       (#"a(?!=a){3000}a" #"" #f)
-       (#"a(?!=a){3000}a" #"" #f)
-       (#"a(?!=a){3000}a" #"" #f)
-       (#"a(){3000}a" #"" #f)
-       (#"a(){3000}a" #"" #f)
-       (#"a(){3000}a" #"" #f)
-       (#"a(?:){3000}a" #"" #f)
-       (#"a(?:){3000}a" #"" #f)
+       #"a(?<=a){3000}a"
+       #"a(){3000}a"
+       #"a(?:){3000}a"
        #"a(?<=a)*a"
        #"a(?!=a)*a"
        #"a()*a"
@@ -745,15 +842,10 @@
        #"a(?<=(a))*?\\1"
        #"(?=(a)\\1)*aa"
        (#"^((a|b){2,5}){2}$" #"aaabbbbb" (#"aaabbbbb" #"bbb" #"b"))
-       (#"^(b*|ba){1,2}bc" #"bc" (#"bc" #""))
-       (#"^(b*|ba){1,2}bc" #"abc" #f)
-       (#"^(b*|ba){1,2}bc" #"babc" (#"babc" #"ba"))
-       (#"^(b*|ba){1,2}bc" #"babbc" (#"babbc" #"b"))
-       (#"^(b*|ba){1,2}bc" #"bababc" (#"bababc" #"ba"))
+       #"^(b*|ba){1,2}bc"
        (#"^a{4,5}(?:c|a)c$" #"aaac" #f)
        (#"^a{4,5}(?:c|a)c$" #"aaaac" #f)
-       (#"^(a|){4,5}(?:c|a)c$" #"aaac" (#"aaac" #""))
-       (#"^(a|){4,5}(?:c|a)c$" #"aaaac" (#"aaaac" #""))
+       #"^(a|){4,5}(?:c|a)c$"
        (#"(?m:^).abc$" #"exabc" #f)
        (#"(?m:^)abc" #"c" #f)
        (#"^abc" #"c" #f)
@@ -1240,7 +1332,7 @@
        (#"(?:..)*a" #"aba" (#"aba"))
        (#"(?:..)*?a" #"aba" (#"a"))
        (#"^(?:b|a(?=(.)))*\\1" #"abc" (#"ab" #"b"))
-       (#"^(){3,5}" #"abc" (#"" #""))
+       #"^(){3,5}"
        (#"^(a+)*ax" #"aax" (#"aax" #"a"))
        (#"^((a|b)+)*ax" #"aax" (#"aax" #"a" #"a"))
        (#"^((a|bc)+)*ax" #"aax" (#"aax" #"a" #"a"))
@@ -1376,7 +1468,27 @@
        (#"'[ab]'" #"'ab'" #f)
        (#"ab(?=.*q)cd" #"abcdxklqj" (#"abcd"))
        (#"a(?!.*$)b" #"ab" #f)
-       (#".{2}[a-z]" #"Axi" (#"Axi"))))
+       (#".{2}[a-z]" #"Axi" (#"Axi"))
+       (#"^12.34" #"12\n34" (#"12\n34"))
+       (#"(?m:^12.34)" #"12\n34" #f)
+       (#"(?s:^12.34)" #"12\n34" (#"12\n34"))
+       (#"(?m:^12.34)" #"12x34" (#"12x34"))
+       (#"(?s:^12.34)" #"12x34" (#"12x34"))
+       (#"^a" #"a\nb\nc" (#"a"))
+       (#"^a$" #"a\nb\nc" #f)
+       (#"(?m:^a)" #"a\nb\nc" (#"a"))
+       (#"(?m:^a$)" #"a\nb\nc" (#"a"))
+       (#"^b" #"a\nb\nc" #f)
+       (#"b$" #"a\nb\nc" #f)
+       (#"^b$" #"a\nb\nc" #f)
+       (#"(?m:^b)" #"a\nb\nc" (#"b"))
+       (#"(?m:b$)" #"a\nb\nc" (#"b"))
+       (#"(?m:^b$)" #"a\nb\nc" (#"b"))
+       (#"(?m:a[^a]^b)" #"a\nb\nc" (#"a\nb"))
+       (#"(?m:a[^a]^b$)" #"a\nb\nc" (#"a\nb"))
+       (#"(?m:a$[^a]^b$)" #"a\nb\nc" (#"a\nb"))
+       (#"(?m:a[^a]^b[^a]^c)" #"a\nb\nc" (#"a\nb\nc"))
+       (#"(?m:^a$[^a]^b$[^a]^c$)" #"a\nb\nc" (#"a\nb\nc"))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
