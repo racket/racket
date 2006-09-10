@@ -1,6 +1,6 @@
 ;; Implements the @-reader macro for embedding text in Scheme code.
 (module reader mzscheme
-  (require (lib "string.ss") (lib "readerr.ss" "syntax"))
+  (require (lib "string.ss") (lib "kw.ss") (lib "readerr.ss" "syntax"))
 
   (define cmd-char #\@)
 
@@ -283,13 +283,13 @@
     (port-count-lines! (current-input-port))
     (current-readtable at-readtable))
 
-  (define (*read inp)
+  (define/kw (*read #:optional [inp (current-input-port)])
     (parameterize ([current-readtable at-readtable])
       (read inp)))
 
-  (define (*read-syntax src port)
+  (define/kw (*read-syntax #:optional src [port (current-input-port)])
     (parameterize ([current-readtable at-readtable])
-      (read-syntax src port)))
+      (read-syntax (or src (object-name port)) port)))
 
   (provide (rename *read read) (rename *read-syntax read-syntax))
 
