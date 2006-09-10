@@ -1070,7 +1070,7 @@
                     (make-ctype _pointer TAG-ptr
                       (lambda (x)
                         (error
-                         '_cvector
+                         '_TAG
                          "cannot automatically convert a C pointer to a ~a"
                          TAGname))))
                   (define-fun-syntax _TAG
