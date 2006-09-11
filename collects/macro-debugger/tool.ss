@@ -13,6 +13,19 @@
            (lib "bitmap-label.ss" "mrlib")
            (lib "string-constant.ss" "string-constants"))
 
+  (define view-base/tool@
+    (unit/sig view:view-base^
+        (import)
+      (define base-frame%
+        (frame:standard-menus-mixin frame:basic%))))
+
+  (define-values/invoke-unit/sig view:view^
+    (compound-unit/sig
+      (import)
+      (link (BASE : view:view-base^ (view-base/tool@))
+            (VIEW : view:view^ (view:view@ BASE)))
+      (export (open VIEW))))
+
   (provide tool@)
 
   (define tool@
@@ -117,7 +130,7 @@
                  (current-module-name-resolver mnr)))))
 
           (define/private (make-handlers original-eval-handler original-module-name-resolver)
-            (let ([stepper (delay (view:make-macro-stepper (new-standard-hiding-policy)))]
+            (let ([stepper (delay (make-macro-stepper (new-standard-hiding-policy)))]
                   [debugging? debugging?])
               (values
                (lambda (expr)

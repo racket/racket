@@ -1,6 +1,7 @@
 
 (module expand mzscheme
-  (require "view/gui.ss")
+  (require (lib "unitsig.ss"))
+  (require "view/view.ss")
   (provide expand/step)
 
   (define (expand/step stx)
