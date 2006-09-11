@@ -29,7 +29,7 @@
   (define current-expand-observe
     (dynamic-require '#%expobs 'current-expand-observe))
   
-  (define (observe-step pre post)
+  (define (observe-step pre mpre mpost post)
     (define (call-obs ev . args) 
       (let ([obs (current-expand-observe)])
         (if obs 
@@ -53,8 +53,8 @@
     (call-obs 'local-pre pre)
     (call-obs 'visit pre)
     (call-obs 'macro-enter pre)
-    (call-obs 'macro-pre pre)
-    (call-obs 'macro-post post)
+    (call-obs 'macro-pre mpre)
+    (call-obs 'macro-post mpost)
     (call-obs 'macro-exit post)
     (call-obs 'visit post)
     (call-obs 'enter-prim post)
@@ -101,9 +101,11 @@
                              "This expander only works with the match.ss library."))
          (let* ([introducer (make-syntax-introducer)]
                 [certifier (match-expander-certifier expander)]
-                [result (introducer (transformer (introducer stx)))]
+                [mstx (introducer stx)]
+                [mresult (transformer mstx)]
+                [result (introducer mresult)]
                 [cert* (lambda (id) (certifier (cert id) #f introducer))])
-           (observe-step stx result)
+           (observe-step stx mstx mresult result)
            (simplify result cert*)))]
       
       ;; label variable patterns
