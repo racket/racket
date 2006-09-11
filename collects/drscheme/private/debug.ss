@@ -745,7 +745,6 @@ profile todo:
           
           (inherit get-top-level-window)
           (define/augment (after-many-evals)
-            (printf "updating test coverage\n")
             (when test-coverage-info
               (send (get-context) show-test-coverage-annotations
                     test-coverage-info
@@ -840,6 +839,7 @@ profile todo:
             (set! ask-about-reset? ask?)
             (let* ([edit-sequence-ht (make-hash-table)]
                    [locked-ht (make-hash-table)]
+                   [already-frozen-ht (make-hash-table)]
                    [actions-ht (make-hash-table 'equal)]
                    [on/syntaxes (hash-table-map ht (λ (_ pr) pr))]
 
@@ -931,11 +931,13 @@ profile todo:
                     (internal-clear-test-coverage-display)
                     (set! internal-clear-test-coverage-display #f))
                   
-                  ;; freeze the colorers (possibly re-freeze them)
+                  ;; freeze the colorers, but avoid a second freeze (so we can avoid a second thaw)
                   (hash-table-for-each
                    edit-sequence-ht
                    (λ (src _)
-                     (send src freeze-colorer)))
+                     (if (send src is-frozen?)
+                         (hash-table-put! already-frozen-ht src #t)
+                         (send src freeze-colorer))))
                   
                   ;; set new annotations
                   (for-each
@@ -986,10 +988,11 @@ profile todo:
                           (hash-table-for-each
                            edit-sequence-ht
                            (λ (txt _) 
-                             (let ([locked? (send txt is-locked?)])
-                               (when locked? (send txt lock #f))
-                               (send txt thaw-colorer)
-                               (when locked? (send txt lock #t)))
+                             (unless (hash-table-get already-frozen-ht txt #f)
+                               (let ([locked? (send txt is-locked?)])
+                                 (when locked? (send txt lock #f))
+                                 (send txt thaw-colorer)
+                                 (when locked? (send txt lock #t))))
                              (send txt end-edit-sequence)))))))))
 
           (inherit get-defs)

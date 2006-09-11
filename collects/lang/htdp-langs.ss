@@ -445,7 +445,9 @@ tracing todo:
           (define/augment (capability-value key)
             (case key
               [(drscheme:special:insert-lambda) #f]
-              [else (drscheme:language:get-capability-default key)]))
+              [else (inner (drscheme:language:get-capability-default key) 
+                           capability-value
+                           key)]))
 
           (super-new)))
 

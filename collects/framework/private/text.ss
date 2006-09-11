@@ -380,7 +380,7 @@ WARNING: printf is rebound in the body of the unit to always
           (define/augment (after-set-position)
             (hide-caret (= (get-start-position) (get-end-position)))
 	    (inner (void) after-set-position))
-          (super-instantiate ())))
+          (super-new)))
 
       (define nbsp->space<%> (interface ((class->interface text%))))
       (define nbsp->space-mixin

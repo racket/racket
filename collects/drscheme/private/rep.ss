@@ -871,11 +871,10 @@ TODO
               (set! prompt-position (get-unread-start-point))
               (reset-region prompt-position 'end)))
           
-          (define/augment after-delete
-            (lambda (x y)
-              (unless inserting-prompt?
-                (reset-highlighting))
-              (inner (void) after-delete x y)))
+          (define/augment (after-delete x y)
+            (unless inserting-prompt?
+              (reset-highlighting))
+            (inner (void) after-delete x y))
           
           (define/override get-keymaps
             (λ ()

@@ -9,6 +9,8 @@
            (lib "default-lexer.ss" "syntax-color")
            "sig.ss")
            
+  (define original-output-port (current-output-port))
+  (define (oprintf . args) (apply fprintf original-output-port args))
   
   (provide color@)
     
