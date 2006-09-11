@@ -279,7 +279,7 @@
           (let ([step (cursor:current steps)])
             (unless step
               (send sbview add-text "Normal form\n")
-              (send sbview add-syntax (deriv-e2 synth-deriv)))
+              (send sbview add-syntax (lift/deriv-e2 synth-deriv)))
             (when (step? step)
               (when (pair? (step-lctx step))
                 (for-each (lambda (bc)
@@ -687,12 +687,9 @@
       [()
        (make-macro-stepper (new-hiding-policy) #f)]))
 
-  (define (go . stxs)
+  (define (go stx)
     (let ([stepper (make-macro-stepper)])
-      (let loop ([stxs stxs])
-        (when (pair? stxs)
-          (send stepper add-deriv (trace (car stxs)))
-          (loop (cdr stxs))))))
+      (send stepper add-deriv (trace stx))))
 
   (define (go/deriv deriv)
     (let* ([f (new macro-stepper-frame%)]

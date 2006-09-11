@@ -43,15 +43,14 @@
   (define set-cursor-suffix! set-cursor-suffixp!)
   
   (define (cursor:new items)
-    (if (pair? items)
-        (make-cursor null items)
-        ; A convenient lie
-        (make-cursor null (list #f))))
-  
+    (make-cursor null items))
+
   (define (cursor:current c)
     (let ([suffix (cursor-suffix c)])
-      (car suffix)))
-  
+      (if (pair? suffix)
+          (car suffix)
+          #f)))
+
   (define (cursor:move-to-start c)
     (when (cursor:can-move-previous? c)
       (cursor:move-previous c)
@@ -77,7 +76,7 @@
         (set-cursor-prefix! c old-suffix-cell))))
   
   (define (cursor:can-move-next? c)
-    (pair? (cdr (cursor-suffix c))))
+    (pair? (cursor-suffix c)))
   
   (define (cursor:can-move-previous? c)
     (pair? (cursor-prefix c)))
