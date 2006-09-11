@@ -699,7 +699,7 @@
               ((nonlinearity)
                (add-nonlinearity-text))
               ((localactions)
-               (add-nonlinearity-text))))
+               (add-localactions-text))))
 
           (send this show #t)))
 
