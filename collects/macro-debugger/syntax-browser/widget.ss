@@ -36,6 +36,17 @@
         (new syntax-controller%
              (properties-controller this)))
 
+      ;; FIXME: Why doesn't this work?
+      #;
+      (when (current-syntax-font-size)
+        (let* ([style-list (send -text get-style-list)]
+               [standard (send style-list find-named-style "Standard")])
+          (send style-list replace-named-style "Standard"
+                (send style-list find-or-create-style
+                      standard
+                      (make-object style-delta% 'change-size
+                                   (current-syntax-font-size))))))
+
       (send -text lock #t)
       (send -split-panel set-percentages 
             (let ([pp (pref:props-percentage)]) (list (- 1 pp) pp)))
@@ -125,9 +136,8 @@
                   (send new-colorer highlight-syntaxes hi-stxs hi-color)))))))
 
       (define/private (calculate-columns)
-        (define style-list (send -text get-style-list))
-        (define standard (send style-list find-named-style "Standard"))
-        (define char-width (send standard get-text-width (send -ecanvas get-dc)))
+        (define style (code-style -text))
+        (define char-width (send style get-text-width (send -ecanvas get-dc)))
         (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))
         (sub1 (inexact->exact (floor (/ canvas-w char-width)))))
 

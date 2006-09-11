@@ -9,7 +9,8 @@
            "interfaces.ss"
            "util.ss")
 
-  (provide typesetter-for-text%)
+  (provide typesetter-for-text%
+           code-style)
 
   ;; typesetter-for-text%
   (define typesetter-for-text%
@@ -33,13 +34,6 @@
       (send text insert end-anchor)
 
       (define output-port (make-text-port text end-anchor))
-
-      (define base-style
-        (send (send text get-style-list) find-named-style "Standard")
-        #;(let ([sd (make-object style-delta% 'change-family 'modern)])
-            (when (current-syntax-font-size)
-              (send sd set-delta 'change-size (current-syntax-font-size)))
-          sd))
 
       (define/private (get-start-position)
         (send text get-snip-position start-anchor))
@@ -70,7 +64,7 @@
         (let ([end (get-end-position)])
           (send text delete (sub1 end) end))
         (send text change-style
-              base-style
+              (code-style text)
               (get-start-position)
               (get-end-position))
         (send colorer apply-styles)
@@ -103,6 +97,17 @@
                         (send text insert special
                               (send text get-snip-position end-anchor))
                         #t)))
+
+  ;; code-style : text<%> -> style<%>
+  (define (code-style text)
+    (let* ([style-list (send text get-style-list)]
+           [style (send style-list find-named-style "Standard")]
+           [font-size (current-syntax-font-size)])
+      (if font-size
+          (send style-list find-or-create-style
+                style
+                (make-object style-delta% 'change-size font-size))
+          style)))
 
   (define anchor-snip%
     (class snip%
