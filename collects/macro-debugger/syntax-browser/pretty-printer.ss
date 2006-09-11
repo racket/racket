@@ -68,9 +68,13 @@
           (let* ([ids identifier-list]
                  [syms (map (lambda (x) (stx=>flat x)) ids)]
                  [like-syms (map syntax-e ids)])
-            (pretty-print-extend-style-table (pretty-print-current-style-table)
+            (pretty-print-extend-style-table (pp-better-style-table)
                                              syms
                                              like-syms)))
+        (define (pp-better-style-table)
+          (pretty-print-extend-style-table (pretty-print-current-style-table)
+                                           (map car extended-style-list)
+                                           (map cdr extended-style-list)))
         
         (parameterize 
             ([pretty-print-pre-print-hook pp-pre-hook]
@@ -101,4 +105,7 @@
       (recompute-tables)
       (super-new)))
 
+  (define extended-style-list
+    '((define-values          . define)
+      (define-syntaxes        . define-syntax)))
   )
