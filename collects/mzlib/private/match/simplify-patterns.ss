@@ -25,12 +25,53 @@
 			"test-no-order.ss"
                         "match-helper.ss")
   
+
+  (define current-expand-observe
+    (dynamic-require '#%expobs 'current-expand-observe))
+  
+  (define (observe-step pre post)
+    (define (call-obs ev . args) 
+      (let ([obs (current-expand-observe)])
+        (if obs 
+            (let ([evn (case ev
+                         [(visit) 0]
+                         [(enter-prim) 6]
+                         [(prim-stop) 100]
+                         [(exit-prim) 7]
+                         [(return) 2]
+                         [(macro-enter) 8]
+                         [(macro-exit) 9]
+                         [(macro-pre) 21]
+                         [(macro-post) 22]
+                         [(local-enter) 130]
+                         [(local-exit) 131]
+                         [(local-pre) 132]
+                         [(local-post) 133])])
+              (apply obs evn args)))))
+    
+    (call-obs 'local-enter pre)
+    (call-obs 'local-pre pre)
+    (call-obs 'visit pre)
+    (call-obs 'macro-enter pre)
+    (call-obs 'macro-pre pre)
+    (call-obs 'macro-post post)
+    (call-obs 'macro-exit post)
+    (call-obs 'visit post)
+    (call-obs 'enter-prim post)
+    (call-obs 'prim-stop #f)
+    (call-obs 'exit-prim post)
+    (call-obs 'return post)
+    (call-obs 'local-post post)
+    (call-obs 'local-exit post)
+    )
+
   (provide simplify)
   
   
   ;; simplifies patterns by removing syntactic sugar and expanding match-expanders
   ;; simplify : syntax certifier-> syntax
   (define (simplify stx cert)    
+
     
     ;; convert and check sub patterns for hash-table patterns
     (define (convert-hash-table-pat pat)
@@ -62,6 +103,7 @@
                 [certifier (match-expander-certifier expander)]
                 [result (introducer (transformer (introducer stx)))]
                 [cert* (lambda (id) (certifier (cert id) #f introducer))])
+           (observe-step stx result)
            (simplify result cert*)))]
       
       ;; label variable patterns
