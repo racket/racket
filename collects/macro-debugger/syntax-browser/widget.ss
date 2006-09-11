@@ -31,7 +31,6 @@
       (define -props-panel (new horizontal-panel% (parent -split-panel)))
       (define props (new properties-view% (parent -props-panel)))
       (define -saved-panel-percentages #f)
-      (define canvas-width #f)
 
       (define controller
         (new syntax-controller%
@@ -129,7 +128,8 @@
         (define style-list (send -text get-style-list))
         (define standard (send style-list find-named-style "Standard"))
         (define char-width (send standard get-text-width (send -ecanvas get-dc)))
-        (inexact->exact (floor (/ (send -ecanvas get-width) char-width))))
+        (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))
+        (sub1 (inexact->exact (floor (/ canvas-w char-width)))))
 
       (super-new)))
 
