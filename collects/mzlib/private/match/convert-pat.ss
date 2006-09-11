@@ -1,7 +1,8 @@
 (module convert-pat mzscheme
   (require "match-error.ss"
            "match-helper.ss"
-           "match-expander-struct.ss")
+           "match-expander-struct.ss"
+           "observe-step.ss")
 
   (require-for-template mzscheme
 			"match-error.ss")
@@ -84,13 +85,15 @@
 		[xformer (match-expander-match-xform expander)])
 	   (if (not xformer)
 	       (match:syntax-err #'expander
-				 "This expander only works with plt-match.")
-	       (let ([introducer (make-syntax-introducer)]
-		     [certifier (match-expander-certifier expander)])
-		 (convert-pat/cert
-		  (introducer (xformer (introducer stx)))
-		  (lambda (id)
-		    (certifier (cert id) #f introducer))))))]
+				 "This expander only works with plt-match.ss.")
+	       (let* ([introducer (make-syntax-introducer)]
+                      [certifier (match-expander-certifier expander)]
+                      [mstx (introducer stx)]
+                      [mresult (xformer mstx)]
+                      [result (introducer mresult)]
+                      [cert* (lambda (id) (certifier (cert id) #f introducer))])
+                 (observe-step stx mstx mresult result)
+                 (convert-pat/cert result cert*))))]
 	[p
 	 (dot-dot-k? (syntax-object->datum #'p))
 	 stx]
