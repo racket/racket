@@ -167,6 +167,21 @@
                   (#%app . LDERIV) (#%app . LDERIV)
                   ([for-lderiv LDERIV ld]))
              ;; If implicitly tagged:
+             (let-values ([(ld* es2*) (for-lderiv ld)])
+               (match ld*
+                 [(IntQ lderiv (es1 es2 derivs*))
+                  (let ([stx* (and e2 es2 (datum->syntax-object e2 es2 e2 e2))])
+                    (values
+                     (rewrap d (make-p:synth e1 stx* rs
+                                             (map (lambda (n d)
+                                                    (make-s:subterm (list (make-ref n)) d))
+                                                  (iota (length derivs*))
+                                                  derivs*)))
+                     stx*))]
+                 [(struct error-wrap (exn _ _))
+                  (values (make-error-wrap exn #f (make-p:synth e1 #f rs null))
+                          #f)]))
+             #;
              (>>P d (make-p:#%app tagged-stx ld)
                   LDERIV
                   ([for-lderiv LDERIV ld])
@@ -932,9 +947,10 @@
 
   ;; module-begin->lderiv : PRule -> ListDerivation
   (define (module-begin->lderiv pr)
-    (let ([forms (stx-cdr (deriv-e1 pr))]
-          [pass1 (p:#%module-begin-pass1 pr)]
-          [pass2 (p:#%module-begin-pass2 pr)])
+    (let-values ([(forms pass1 pass2)
+                  (match pr
+                    [(AnyQ p:#%module-begin (e1 _ _ pass1 pass2))
+                     (values (stx-cdr e1) pass1 pass2)])])
       ;; loop : number -> (list-of Derivation)
       (define (loop count)
         ;(printf "** MB->L (~s)~n" count)
