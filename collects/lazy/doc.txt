@@ -1,6 +1,53 @@
-This collection implements Lazy Scheme.
+This collection implements _Lazy Scheme_.
 
 It is available as a language level and as a module that can be used
-to write lazy code.
+to write lazy code.  Code that uses the "lazy.ss" as a module
+language:
 
-[Proper documentation will be added.]
+  (module foo (lib "lazy.ss" "lazy")
+    ...)
+
+is lazy code, which is implemented using standard promises: function
+applications are delayed, and promises are automatically forced.  The
+language provides bindings that are equivalent to most of MzScheme and
+the list library.  Primitives are strict in the expected places;
+struct constructors are lazy; `if', `and', `or' etc are plain (lazy)
+functions.
+
+Mixing lazy and strict code is simple: you just write the lazy code in
+the lazy language, and the rest as usual.  The lazy language treats
+imported functions (that were not defined in the lazy language) as
+strict, and on the strict side you only need to force (possibly
+recursively) through promises.
+
+There are a few additional bindings, the important ones are special
+forms that force strict behavior -- there are severals of these that
+are useful in forcing different parts of a value in different ways:
+
+> (! expr)
+  evaluates `expr' strictly (the result is always forced (over and
+  over until it gets a non-promise value)).
+
+> (!! expr)
+  similar to `!', but recursively forces a structure (eg, lists).
+
+> (!!! expr)
+  similar to `!!', but also wraps procedures that it finds so their
+  outputs are forced (so they are usable in a astrict world).
+
+> (!list expr)
+  forces the `expr' which is expected to be a list, and forces the
+  cdrs recursively to expose a proper list structure.
+
+> (!!list expr)
+  similar to `!list', but also forces (using `!') the elements of the
+  list.
+
+There are a few side-effect bindings that are provided as is.  For
+example, `read' and `printf' do the obvious thing -- but note that the
+language is a call-by-need, and you need to be aware when promises are
+forced.  There are also bindings for `begin' (delays a computation
+that forces all sub-expressions), `when', `unless', etc.  These are,
+however, less reliable and might change (or be dropped) in the future.
+
+[More documentation will be added.]
