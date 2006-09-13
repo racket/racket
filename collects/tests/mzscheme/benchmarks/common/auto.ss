@@ -5,7 +5,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
 (module auto mzscheme
   (require (lib "process.ss")
-           (lib "cmdline.ss")
+           "../utils/auto-drive.ss"
            (lib "list.ss")
            (lib "compile.ss")
            (lib "inflate.ss")
@@ -226,8 +226,6 @@ exec mzscheme -qu "$0" ${1+"$@"}
       takr
       triangle))
 
-  (define num-iterations 3)
-
   (define (run-benchmark impl bm)
     (let ([i (ormap (lambda (i)
                       (and (eq? impl (impl-name i))
@@ -254,96 +252,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
             ((impl-clean-up i) bm)))
       (flush-output)))
 
-  (define (rprintf . args)
-    (apply printf args)
-    (when (current-output-file)
-      (with-output-to-file (current-output-file)
-        (lambda ()
-          (apply printf args))
-        'append)))
-
-  (define no-implementations (map (lambda (s)
-                                    (cons (string->symbol (format "no-~a" s))
-                                          s))
-                                  (map impl-name impls)))
-  (define no-benchmarks (map (lambda (s)
-                               (cons (string->symbol (format "no-~a" s))
-                                     s))
-                             benchmarks))
-
-  (define run-benchmarks #f)
-  (define run-implementations #f)
-
-  (define default-benchmarks benchmarks)
-  (define default-implementations (remq* obsolte-impls
-                                         (map impl-name impls)))
-
-  (define current-output-file (make-parameter #f))
-
   ;; Extract command-line arguments --------------------
 
-  (define args
-    (command-line
-     "auto"
-     (current-command-line-arguments)
-     (once-each
-      [("--show") "show implementations and benchmarks"
-       (printf "Implementations:\n")
-       (for-each (lambda (impl)
-                   (printf " ~a\n" impl))
-                 default-implementations)
-       (for-each (lambda (impl)
-                   (printf " ~a [skipped by default]\n" impl))
-                 obsolte-impls)
-       (printf "Benchmarks:\n")
-       (for-each (lambda (bm)
-                   (printf " ~a\n" bm))
-                 benchmarks)]
-      [("-o" "--out") filename "append output to <filename>"
-       (current-output-file filename)]
-      [("-n" "--iters") n "set number of run iterations"
-       (let ([v (string->number n)])
-         (unless (and (number? v)
-                      (exact? v)
-                      (positive? v))
-           (error 'auto "bad interation count: ~a" n))
-         (set! num-iterations v))])
-     (args impl-or-benchmark impl-or-benchmark)))
-
-  ;; Process arguments ------------------------------
-
-  (for-each (lambda (arg)
-              (let ([s (string->symbol arg)])
-                (cond
-                 [(memq s (map impl-name impls))
-                  (set! run-implementations
-                        (append (or run-implementations null)
-                                (list s)))]
-                 [(assq s no-implementations)
-                  => (lambda (a)
-                       (set! run-implementations
-                             (remq (cdr a)
-                                   (or run-implementations default-implementations))))]
-                 [(memq s benchmarks)
-                  (set! run-benchmarks
-                        (append (or run-benchmarks null)
-                                (list s)))]
-                 [(assq s no-benchmarks)
-                  => (lambda (a)
-                       (set! run-benchmarks
-                             (remq (cdr a)
-                                   (or run-benchmarks default-benchmarks))))]
-                 [else
-                  (error 'auto "mysterious argument: ~a" arg)])))
-            args)
-
-  (define actual-benchmarks-to-run 
-    (or run-benchmarks
-        benchmarks))
-
-  (define actual-implementations-to-run 
-    (or run-implementations
-        default-implementations))
+  (define-values (actual-benchmarks-to-run 
+                  actual-implementations-to-run 
+                  num-iterations)
+    (process-command-line benchmarks
+                          (map impl-name impls) obsolte-impls
+                          3))
   
   ;; Benchmark-specific setup --------------------
 
