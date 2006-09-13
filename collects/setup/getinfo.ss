@@ -164,9 +164,15 @@
         (sort unsorted compare-directories))))
   
   (define (compare-directories a b)
-    (let-values ([(base1 name1 dir?1) (split-path a)]
-                 [(base2 name2 dir?2) (split-path b)])
-      (bytes<? (path->bytes name1) (path->bytes name2))))
+    (bytes<? (dir->sort-key a) (dir->sort-key b)))
+  
+  ;; dir->sort-key : path -> bytes
+  ;; extracts the name of the directory, dropping any "."s it finds at the ends.
+  (define (dir->sort-key path)
+    (let-values ([(base name dir?) (split-path path)])
+      (cond
+        [(eq? name 'same) (dir->sort-key base)]
+        [else (path->bytes name)])))
   
   (provide/contract
    (get-info ((listof path-or-string?) . -> . (or/c info? boolean?)))
