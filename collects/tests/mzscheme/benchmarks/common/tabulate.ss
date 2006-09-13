@@ -106,6 +106,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
                    (p ,p)))))
         p))
 
+  (define forever 1000000000)
+
   (define (generate-page relative-to)
     (empty-tag-shorthand html-empty-tags)
     (write-xml/content 
@@ -134,12 +136,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
                     sorted-impls))
          ,@(map (lambda (bm-run)
                   (let ([fastest (apply min (map (lambda (run)
-                                                   (or (caadr run) 1000000000))
+                                                   (or (caadr run) forever))
                                                  (cdr bm-run)))]
                         [c-fastest (apply min (map (lambda (run)
                                                      (let ([v (caddr run)])
                                                        (or (and v (positive? v) v)
-                                                           1000000000)))
+                                                           forever)))
                                                    (cdr bm-run)))])
                     (let-values ([(base c-base)
                                   (if relative-to
@@ -154,7 +156,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                   ,(symbol->string (car bm-run))))
                            (td ((align "right"))
                                nbsp
-                               ,(small (number->string c-fastest)) 
+                               ,(small (if (= c-fastest forever)
+                                           " "
+                                           (number->string c-fastest)))
                                nbsp)
                            (td ((align "right"))
                                ,(format "~a ms" fastest)
@@ -166,7 +170,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                             [n (and a (caadr a))])
                                        `((td ((align "right")
                                               (bgcolor ,(lookup-color impl)))
-                                             ,(if (and n c-base (positive? c-base))
+                                             ,(if (and (caddr a) c-base (positive? c-base))
                                                   (small (ratio->string (/ (caddr a) c-base)))
                                                   '"-")
                                              nbsp)
@@ -174,7 +178,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                              ,(if (and n base)
                                                   (let ([s (if (= n base)
                                                                "1"
-                                                               (ratio->string (/ n base)))])
+                                                               (if (zero? base)
+                                                                   "*"
+                                                                   (ratio->string (/ n base))))])
                                                     (if (= n fastest)
                                                         `(font ((color "forestgreen")) (b ,s))
                                                         s))
