@@ -8,7 +8,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
            (lib "port.ss")
            (lib "list.ss")
            (lib "date.ss")
-           "../utils/auto-drive.ss")
+           "../common/cmdline.ss")
 
   (define (test-mzscheme input rx iterations)
     (let ([rx (byte-pregexp rx)])

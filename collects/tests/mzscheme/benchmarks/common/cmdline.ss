@@ -1,5 +1,5 @@
 
-(module auto-drive mzscheme
+(module cmdline mzscheme
   (require (lib "process.ss")
            (lib "cmdline.ss")
            (lib "list.ss")

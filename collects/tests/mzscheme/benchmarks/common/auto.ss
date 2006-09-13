@@ -5,7 +5,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
 (module auto mzscheme
   (require (lib "process.ss")
-           "../utils/auto-drive.ss"
+           "cmdline.ss"
            (lib "list.ss")
            (lib "compile.ss")
            (lib "inflate.ss")
