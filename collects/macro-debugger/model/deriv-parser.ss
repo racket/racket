@@ -77,6 +77,20 @@
         (let ([initial (deriv-e1 $1)]
               [final (and (deriv? $3) (deriv-e2 $3))])
           (make-lift-deriv initial final $1 $2 $3))])
+
+
+      ;; Expand/LetLifts
+      ;; Expand/LetLifts Answer = Derivation (I)
+      ;; Used for expand_lift_to_let (rhs of define-syntaxes, mostly)
+      (EE/LetLifts
+       (#:no-wrap)
+       [((? EE)) $1]
+       [((? EE/LetLifts+)) $1])
+      (EE/LetLifts+
+       [(EE lift/let-loop (? EE/LetLifts))
+        (let ([initial (deriv-e1 $1)]
+              [final (and (deriv? $3) (deriv-e2 $3))])
+          (make-lift/let-deriv initial final $1 $2 $3))])
       
       ;; Evaluation
       (Eval
@@ -133,7 +147,7 @@
         (make-local-lift (car $1) (cdr $1))]
        [(lift-statement)
         (make-local-lift-end $1)]
-       [(phase-up (? EE/Lifts))
+       [(phase-up (? EE/LetLifts))
         (make-local-bind $2)])
 
       ;; Multiple calls to local-expand
@@ -240,7 +254,7 @@
       (ModulePass1/Prim
        [(enter-prim prim-define-values ! exit-prim)
         (make-p:define-values $1 $4 null #f)]
-       [(enter-prim prim-define-syntaxes ! phase-up (? EE/Lifts) exit-prim)
+       [(enter-prim prim-define-syntaxes ! phase-up (? EE/LetLifts) exit-prim)
         (make-p:define-syntaxes $1 $6 null $5)]
        [(enter-prim prim-require ! exit-prim)
         (make-p:require $1 $4 null)]
@@ -276,7 +290,7 @@
       ;; Definitions
       (PrimDefineSyntaxes
        (#:args e1 e2 rs)
-       [(prim-define-syntaxes ! (? EE/Lifts))
+       [(prim-define-syntaxes ! (? EE/LetLifts))
         (make-p:define-syntaxes e1 e2 rs $3)])
       
       (PrimDefineValues
@@ -447,7 +461,7 @@
 
       ;; BindSyntaxes Answer = Derivation
       (BindSyntaxes
-       [(phase-up (? EE/Lifts) Eval) $2])
+       [(phase-up (? EE/LetLifts) Eval) $2])
       
       ;; NextBindSyntaxess Answer = (list-of Derivation)
       (NextBindSyntaxess

@@ -105,8 +105,8 @@
           [#:bind (?formals* . ?body*) renames]
           [#:pattern (?lambda ?formals . ?body)]
           [#:rename (syntax/skeleton e1 (?lambda ?formals* . ?body*))
-                         #'?formals #'?formals*
-                         "Rename formal parameters"]
+                    #'?formals #'?formals*
+                    "Rename formal parameters"]
           [Block ?body body])]
       [(struct p:case-lambda (e1 e2 rs renames+bodies))
        #;
@@ -221,7 +221,7 @@
                   (if exn
                       (list (stumble term exn))
                       null))]
-               [(pair? subterms)
+               [(s:subterm? (car subterms))
                 (let* ([subterm0 (car subterms)]
                        [path0 (s:subterm-path subterm0)]
                        [deriv0 (s:subterm-deriv subterm0)])
@@ -229,7 +229,15 @@
                     (append (with-context ctx
                               (reductions deriv0))
                             (loop (path-replace term path0 (deriv-e2 deriv0))
-                                  (cdr subterms)))))]))]
+                                  (cdr subterms)))))]
+               [(s:rename? (car subterms))
+                (let* ([subterm0 (car subterms)])
+                  ;; FIXME: add renaming steps?
+                  ;; FIXME: if so, coalesce?
+                  (loop (path-replace term
+                                      (s:rename-path subterm0)
+                                      (s:rename-after subterm0))
+                        (cdr subterms)))]))]
 
       ;; FIXME
       [(IntQ p:rename (e1 e2 rs rename inner))

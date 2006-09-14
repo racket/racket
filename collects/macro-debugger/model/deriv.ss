@@ -51,6 +51,12 @@
             [first deriv?]
             [lift-stx syntax?]
             [second (anyq deriv?)]))
+   (struct (lift/let-deriv deriv)
+           ([e1 syntax?]
+            [e2 syntax/f]
+            [first deriv?]
+            [lift-stx syntax?]
+            [second (anyq deriv?)]))
    (struct transformation
            ([e1 syntax?]
             [e2 syntax/f]
@@ -86,6 +92,7 @@
   (provide ;(struct deriv (e1 e2))
            ;(struct mrule (transformation next))
            ;(struct lift-deriv (first lift-stx second))
+           ;(struct lift/let-deriv (first lift-stx second))
            
            ;(struct transformation (e1 e2 resolves me1 me2 locals))
 
@@ -127,6 +134,7 @@
 
            (struct p:synth (subterms))
            (struct s:subterm (path deriv))
+           (struct s:rename (path before after))
 
            ;(struct lderiv (es1 es2 derivs))
            (struct bderiv (es1 es2 pass1 trans pass2))

@@ -30,6 +30,7 @@
      EOF                  ; .
      syntax-error         ; exn
      lift-loop            ; syntax
+     lift/let-loop        ; syntax
      lift-end-loop        ; syntax
      lift                 ; (cons syntax id)
      lift-statement       ; syntax
@@ -128,6 +129,7 @@
       (133 . ,token-local-post)
       (134 . ,token-lift-statement)
       (135 . ,token-lift-end-loop)
+      (136 . ,token-lift/let-loop)
       ))
   
   (define (tokenize sig-n val pos)

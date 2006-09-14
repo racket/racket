@@ -6,9 +6,11 @@
   ;;   - a PRule
   ;;   - (make-mrule syntax syntax Transformation Derivation)
   ;;   - (make-lift-deriv syntax syntax Derivation syntax Derivation)
+  ;;   - (make-lift/let-deriv syntax syntax Derivation syntax Derivation)
   (define-struct deriv (e1 e2) #f)
   (define-struct (mrule deriv) (transformation next) #f)
   (define-struct (lift-deriv deriv) (first lift-stx second) #f)
+  (define-struct (lift/let-deriv deriv) (first lift-stx second) #f)
 
   ;; A Transformation is
   ;;   (make-transformation syntax syntax (listof identifier) syntax syntax (listof LocalAction))
@@ -85,9 +87,9 @@
 
   ;; A Subterm is one of
   ;;   - (make-s:subterm Path Derivation)
+  ;;   - (make-s:rename Path Syntax Syntax)
   (define-struct s:subterm (path deriv) #f)
-
-
+  (define-struct s:rename (path before after) #f)
 
   ;; A ListDerivation is (make-lderiv Syntaxes Syntaxes (listof Derivation))
   (define-struct lderiv (es1 es2 derivs) #f)

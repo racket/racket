@@ -12,10 +12,11 @@
   #;
   (provide hide/policy
            hide
-           seek/syntax
-           macro-policy)
+           #;seek/syntax
+           macro-policy
+           current-hiding-warning-handler)
 
-  ;; hide : Derivation (identifier -> boolean) -> (values Derivation syntax)
+  ;; hide/policy : Derivation (identifier -> boolean) -> (values Derivation syntax)
   (define (hide/policy deriv show-macro?)
     (parameterize ((macro-policy show-macro?))
       (hide deriv)))
@@ -200,29 +201,43 @@
                                #f)]))))]
         [(AnyQ p:lambda (e1 e2 rs renames body))
          (>>P d (make-p:lambda renames body)
-              (lambda formals . BODY)
-              ([for-bderiv BODY body]))]
-        
+              (lambda FORMALS . BODY)
+              ([for-rename (FORMALS . _B) renames]
+               [for-bderiv BODY body]))]
+
         [(AnyQ p:case-lambda (e1 e2 rs renames+bodies))
-         (>>P d (make-p:case-lambda renames+bodies)
-              (case-lambda [formals . BODY] ...)
-              ([for-cdr-bderivs (BODY ...) renames+bodies]))]
+         (let ([var-renames (map car renames+bodies)])
+           (>>P d (make-p:case-lambda renames+bodies)
+                (case-lambda [FORMALS . BODY] ...)
+                ([for-renames (FORMALS ...) var-renames]
+                 [for-cdr-bderivs (BODY ...) renames+bodies])))]
 
         [(AnyQ p:let-values (e1 e2 rs renames rhss body))
-         (>>P d (make-p:let-values renames rhss body)
-              (let-values ([VARS RHS] ...) . BODY)
-              ([for-derivs (RHS ...) rhss] [for-bderiv BODY body]))]
+         (let ([var-renames (map stx-car (stx-car renames))])
+           (>>P d (make-p:let-values renames rhss body)
+                (let-values ([VARS RHS] ...) . BODY)
+                ([for-renames (VARS ...) var-renames]
+                 [for-derivs (RHS ...) rhss] 
+                 [for-bderiv BODY body])))]
+
         [(AnyQ p:letrec-values (e1 e2 rs renames rhss body))
-         (>>P d (make-p:letrec-values renames rhss body)
-              (letrec-values ([VARS RHS] ...) . BODY)
-              ([for-derivs (RHS ...) rhss] [for-bderiv BODY body]))]
+         (let ([var-renames (map stx-car (stx-car renames))])
+           (>>P d (make-p:letrec-values renames rhss body)
+                (letrec-values ([VARS RHS] ...) . BODY)
+                ([for-renames (VARS ...) var-renames]
+                 [for-derivs (RHS ...) rhss]
+                 [for-bderiv BODY body])))]
 
         [(AnyQ p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body))
-         (>>Pn d (make-p:letrec-syntaxes+values srenames srhss vrenames vrhss body)
-               (letrec-syntaxes+values ([SVARS SRHS] ...) ([VVARS VRHS] ...) . BODY)
-               ([for-derivs (SRHS ...) srhss]
-                [for-derivs (VRHS ...) vrhss]
-                [for-bderiv BODY body]))]
+         (let ([svar-renames (map stx-car (stx-car srenames))]
+               [vvar-renames (map stx-car (stx-car vrenames))])
+           (>>Pn d (make-p:letrec-syntaxes+values srenames srhss vrenames vrhss body)
+                 (letrec-syntaxes+values ([SVARS SRHS] ...) ([VVARS VRHS] ...) . BODY)
+                 ([for-renames (SVARS ...) svar-renames]
+                  [for-renames (VVARS ...) vvar-renames]
+                  [for-derivs (SRHS ...) srhss]
+                  [for-derivs (VRHS ...) vrhss]
+                  [for-bderiv BODY body])))]
         [(AnyQ p:#%datum (e1 e2 rs tagged-stx))
          (cond [(or (eq? tagged-stx e1) (show-macro? #'#%datum))
                 (values d e2)]
@@ -278,6 +293,14 @@
         ;; Errors
 
         [#f (values #f #f)]))
+
+    ;; for-rename : Rename -> (values Rename syntax)
+    (define (for-rename rename)
+      (values rename rename))
+
+    ;; for-renames : (list-of Rename) -> (values (list-of Rename) syntaxes)
+    (define (for-renames renames)
+      (values renames renames))
 
     ;; for-derivs : (list-of Derivation) -> (values (list-of Derivation) (list-of syntax))
     (define (for-derivs derivs)
@@ -342,6 +365,7 @@
   ;; Does track the syntax through renaming, however.
   ;; Returns the whole derivation followed by the subterm derivation.
   ;; If there is no subderivation for that syntax, returns #f.
+  #;
   (define (seek/syntax stx deriv)
     (let ([subterms (gather-one-subterm (deriv-e1 deriv) stx)])
       (parameterize ((subterms-table subterms))
@@ -379,14 +403,14 @@
 
   ;; create-synth-deriv : syntax (list-of Subterm) -> Derivation
   (define (create-synth-deriv e1 subterm-derivs)
+    (define (error? x) (and (s:subterm? x) (not (s:subterm-path x))))
     (let ([errors
-           (map s:subterm-deriv
-                (filter (lambda (x) (not (s:subterm-path x))) subterm-derivs))]
-          [subterm-derivs (filter s:subterm-path subterm-derivs)])
+           (map s:subterm-deriv (filter error? subterm-derivs))]
+          [subterms (filter (lambda (x) (not (error? x))) subterm-derivs)])
       ;(printf "subterm paths:~n~s~n" (map s:subterm-path subterm-derivs))
       ;(printf "subterms:~n~s~n" subterm-derivs)
-      (let ([e2 (substitute-subterms e1 subterm-derivs)])
-        (let ([d (make-p:synth e1 e2 null subterm-derivs)])
+      (let ([e2 (substitute-subterms e1 subterms)])
+        (let ([d (make-p:synth e1 e2 null subterms)])
           (if (pair? errors)
               (make-error-wrap (error-wrap-exn (car errors))
                                (error-wrap-tag (car errors))
@@ -455,48 +479,48 @@
                  (for-lderiv lderiv))]
         [(AnyQ p:#%app (e1 e2 rs tagges-stx lderiv))
          (>>Seek (for-lderiv lderiv))]
-        [(AnyQ p:lambda (e1 e2 rs renames body))
+        [(AnyQ p:lambda (e1 e2 rs renames body) exni)
          ;; 1 Make a new table
          ;;   Can narrow table to things that only occur in the renames
          ;; 2 Search body
          ;; 3 Make a "renaming" step... FIXME, how to represent?
-         (>>Seek [#:table (table-restrict/lambda e1 renames)]
+         (>>Seek [! exni]
+                 [#:rename (do-rename/lambda e1 renames)]
                  (for-bderiv body))]
         [(AnyQ p:case-lambda (e1 e2 rs renames+bodies))
-         ;; Like lambda
          (with-syntax ([(?case-lambda ?clause ...) e1])
-           (apply append
-                  (map (lambda (rename+body clause-stx)
-                         (let ([new-table (table-restrict/case-lambda clause-stx (car rename+body))])
-                           (parameterize ((subterms-table new-table))
-                             (for-bderiv (cdr rename+body)))))
-                       renames+bodies
-                       (syntax->list #'(?clause ...)))))]
+           (let ()
+             (define (handle-clause clause-stx rename body)
+               (>>Seek [#:rename (do-rename/case-lambda clause-stx rename)]
+                       (for-bderiv body)))
+             (let loop ([clauses (syntax->list #'(?clause ...))]
+                        [renames+bodies renames+bodies])
+               (if (pair? renames+bodies)
+                   (append (handle-clause (car clauses)
+                                          (caar renames+bodies)
+                                          (cdar renames+bodies))
+                           (loop (cdr clauses) (cdr renames+bodies)))
+                   null))))]
         [(AnyQ p:let-values (e1 e2 rs renames rhss body))
-         (append (apply append (map for-deriv rhss))
-                 (let ([new-table (table-restrict/let e1 renames)])
-                   (parameterize ((subterms-table new-table))
-                     (for-bderiv body))))]
+         (>>Seek [#:append (map for-deriv rhss)]
+                 [#:rename (do-rename/let e1 renames)]
+                 (for-bderiv body))]
         [(AnyQ p:letrec-values (e1 e2 rs renames rhss body))
-         (let ([new-table (table-restrict/let e1 renames)])
-           (parameterize ((subterms-table new-table))
-             (append (apply append (map for-deriv rhss))
-                     (for-bderiv body))))]
+         (>>Seek [#:rename (do-rename/let e1 renames)]
+                 [#:append (map for-deriv rhss)]
+                 (for-bderiv body))]
         [(AnyQ p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body))
-         (let ([new-table (table-restrict/lsv1 e1 srenames)])
-           (parameterize ((subterms-table new-table))
-             (append (apply append (map for-deriv srhss))
-                     (let ([new-table (table-restrict/lsv2 e1 vrenames)])
-                       (parameterize ((subterms-table new-table))
-                         (append (apply append (map for-deriv vrhss))
-                                 (for-bderiv body)))))))]
+         (>>Seek [#:rename (do-rename/lsv1 e1 srenames)]
+                 [#:append (map for-deriv srhss)]
+                 [#:rename (do-rename/lsv2 srenames vrenames)]
+                 [#:append (map for-deriv vrhss)]
+                 (for-bderiv body))]
         [(AnyQ p::STOP (e1 e2 rs))
          null]
         ;; synth (should synth be idempotent?... heh, no point for now)
         [(AnyQ p:rename (e1 e2 rs rename inner))
-         (let ([new-table (table-restrict/rename (car rename) (cdr rename))])
-           (parameterize ((subterms-table new-table))
-             (for-deriv inner)))]
+         (>>Seek [#:rename (do-rename (car rename) (cdr rename))]
+                 (for-deriv inner))]
 
         ;; Macros
 
@@ -523,22 +547,31 @@
          ;; FIXME: and we'll also need to account for *that* marking, too...
          (unless (null? locals)
            (raise (make-localactions)))
-         (parameterize ((subterms-table (table-restrict/rename e1 me1)))
-           (let ([sss (map for-local locals)])
-             (values (apply append sss)
-                     (table-restrict/rename me2 e2))))]))
+         ;(let* ([table-at-end #f]
+         ;       [subterms
+         ;        (>>Seek [#:rename (do-rename e1 me1)]
+         ;                [#:append (map for-local locals)]
+         ;                [#:rename (do-rename me2 e2)]
+         ;                (begin (set! table-at-end (subterms-table))
+         ;                       null))])
+         ;  (values subterms table-at-end))
+         (let-values ([(rename-subterms1 table1) (do-rename e1 me1)])
+           (parameterize ((subterms-table table1))
+             (let ([sss (map for-local locals)])
+               (let-values ([(rename-subterms2 table2) (do-rename me2 e2)])
+                 ;; FIXME: Including these seems to produce evil results
+                 ;; ie, parts of the hidden macro use appear as marked
+                 ;;     when they shouldn't
+                 (values (append #;rename-subterms1
+                                 (apply append sss)
+                                 #;rename-subterms2)
+                         table2)))))]))
 
     ;; for-local : LocalAction -> (list-of Subterm)
     (define (for-local local)
       (match local
         [(IntQ local-expansion (e1 e2 me1 me2 deriv))
-         (parameterize ((subterms-table (table-restrict/rename e1 me1)))
-           (let ([ss (for-deriv deriv)])
-             ;; 
-             '(for-each (lambda (s) (s:subterm-deriv s))
-                        ss)
-             '(table-restrict/rename me2 e2)
-             ss))]
+         (error 'unimplemented)]
         ;; Also need to handle local-bind
         ;; ...
         [else null]))
@@ -561,13 +594,13 @@
 
 
   ;; check-nonlinear-subterms : (list-of Subterm) -> void
-  ;; FIXME: How to handle nonlinear subterms?
-  ;;   Option 1: escape and recover by making the macro transparent (include explanation?)
-  ;;   Option 2: return special composite *thing* and somehow display both parts?
+  ;; FIXME: No checking on renamings... need to add
   ;; Note: Make sure subterm contexts are *disjoint*, not just *distinct*
   (define (check-nonlinear-subterms subterm-derivs)
-    (check-nonlinear-paths (map s:subterm-path subterm-derivs)))
-  
+    (check-nonlinear-paths
+     (map s:subterm-path
+          (filter s:subterm? subterm-derivs))))
+
   ;; check-nonlinear-paths : (list-of Path) -> void
   ;; FIXME: This is overly conservative for now, but probably 
   ;; okay given the way I construct paths.
@@ -612,19 +645,27 @@
       (hash-table-map t (lambda (k v) v))))
 
   ;; substitute-subterms : Syntax (list-of Subterm) -> Syntax
-  ;; List of subterm contexts is guaranteed to be disjoint.
+  ;; - s:subterm contexts guaranteed to be disjoint.
+  ;; - s:renames replace syntax with syntax of same structure
   ;; FIXME: Could do this more efficiently using the structure of contexts...
   (define (substitute-subterms stx subterm-derivs)
     (cond [(null? subterm-derivs)
            stx]
-          [else
+          [(s:subterm? (car subterm-derivs))
            (let* ([subterm0 (car subterm-derivs)]
                   [path0 (s:subterm-path subterm0)]
                   [deriv0 (s:subterm-deriv subterm0)])
-             (substitute-subterms (if path0
-                                      (path-replace stx path0 (deriv-e2 deriv0))
-                                      stx)
-                                  (cdr subterm-derivs)))]))
+             (substitute-subterms
+              (if path0 (path-replace stx path0 (deriv-e2 deriv0)) stx)
+              (cdr subterm-derivs)))]
+          [(s:rename? (car subterm-derivs))
+           (let ([subterm0 (car subterm-derivs)])
+             (substitute-subterms
+              (path-replace stx
+                            (s:rename-path subterm0)
+                            (s:rename-after subterm0))
+              (cdr subterm-derivs)))]
+          [else (error 'substitute-subterms)]))
 
   ;; gather-one-subterm : syntax syntax -> SubtermTable
   (define (gather-one-subterm whole part)
@@ -1120,46 +1161,55 @@
   (define (table-get table stx)
     (hash-table-get table stx (lambda () null)))
 
-  ;; table-restrict/rename : syntax syntax -> Table
-  (define (table-restrict/rename stx rename)
+  ;; do-rename : syntax syntax -> (values (list-of Subterm) Table)
+  (define (do-rename stx rename)
     (let ([t (make-hash-table)]
           [old (subterms-table)])
-      ;; loop : syntax syntax -> void
-      (define (loop stx rename)
+      ;; loop : syntax syntax -> (list-of Subterm)
+      ;; Puts things into the new table, too
+      ;; If active? is #f, always returns null
+      (define (loop stx rename active?)
         (cond [(and (syntax? stx) (syntax? rename))
                (let ([paths (table-get old stx)])
-                 (when (pair? paths)
-                   (hash-table-put! t rename paths)))
-               (loop (syntax-e stx) (syntax-e rename))]
+                 (if (pair? paths)
+                     (begin (hash-table-put! t rename paths)
+                            (loop (syntax-e stx) (syntax-e rename) #f)
+                            (if active?
+                                (map (lambda (p) (make-s:rename p stx rename))
+                                     paths)
+                                null))
+                     (loop (syntax-e stx) (syntax-e rename) active?)))]
               [(syntax? rename)
-               (loop stx (syntax-e rename))]
+               (loop stx (syntax-e rename) active?)]
               [(and (pair? stx) (pair? rename))
-               (loop (car stx) (car rename))
-               (loop (cdr stx) (cdr rename))]
+               (append
+                (loop (car stx) (car rename) active?)
+                (loop (cdr stx) (cdr rename) active?))]
               [else
-               (void)]))
-      (loop stx rename)
-      t))
+               null]))
+      (let ([subterms (loop stx rename #t)])
+        (values subterms t))))
 
-  (define (table-restrict/lambda stx rename)
+  (define (do-rename/lambda stx rename)
     (with-syntax ([(?lambda ?formals . ?body) stx])
-      (table-restrict/rename (cons #'?formals #'?body) rename)))
+      (do-rename (cons #'?formals #'?body) rename)))
 
-  (define (table-restrict/let stx rename)
+  (define (do-rename/let stx rename)
     (with-syntax ([(?let ?bindings . ?body) stx])
-      (table-restrict/rename (cons #'?bindings #'?body) rename)))
+      (do-rename (cons #'?bindings #'?body) rename)))
 
-  (define (table-restrict/case-lambda stx rename)
+  (define (do-rename/case-lambda stx rename)
     (with-syntax ([(?formals . ?body) stx])
-      (table-restrict/rename (cons #'?formals #'?body) rename)))
+      (do-rename (cons #'?formals #'?body) rename)))
 
-  (define (table-restrict/lsv1 stx rename) 
+  (define (do-rename/lsv1 stx rename) 
     (with-syntax ([(?lsv ?sbindings ?vbindings . ?body) stx])
-      (table-restrict/rename (cons #'?sbindings (cons #'?vbindings #'?body)) rename)))
+      (do-rename (cons #'?sbindings (cons #'?vbindings #'?body)) rename)))
 
-  (define (table-restrict/lsv2 stx rename)
+  (define (do-rename/lsv2 old-rename rename)
     (if rename
-        (with-syntax ([(?lsv ?sbindings ?vbindings . ?body) stx])
-          (table-restrict/rename (cons #'?vbindings #'?body) rename))
-        (subterms-table)))
+        (with-syntax ([(?sbindings ?vbindings . ?body) old-rename])
+          (do-rename (cons #'?vbindings #'?body) rename))
+        (values null
+                (subterms-table))))
   )

@@ -87,14 +87,22 @@
                                new-e2))))))))]))
 
   (define-syntax >>Seek
-    (syntax-rules (!)
+    (syntax-rules (! =>)
       [(>>Seek) null]
       [(>>Seek [! tag exni] . more)
        (if (and (pair? exni) (eq? tag (car exni)))
            null
            (>>Seek . more))]
+      [(>>Seek [! exni] . more)
+       (if (pair? exni) null (>>Seek . more))]
+      [(>>Seek [#:append expr] . more)
+       (append (apply append expr) (>>Seek . more))]
       [(>>Seek [#:table t] . more)
        (parameterize ((subterms-table t)) (>>Seek . more))]
+      [(>>Seek [#:rename expr] . more)
+       (let-values ([(subterms new-table) expr])
+         (parameterize ((subterms-table new-table))
+           (append subterms (>>Seek . more))))]
       [(>>Seek expr . more)
        (append expr (>>Seek . more))]))
 
