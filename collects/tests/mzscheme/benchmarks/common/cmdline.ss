@@ -64,30 +64,42 @@
 
     ;; Process arguments ------------------------------
 
-    (for-each (lambda (arg)
-                (let ([s (string->symbol arg)])
-                  (cond
-                   [(memq s implementations)
-                    (set! run-implementations
-                          (append (or run-implementations null)
-                                  (list s)))]
-                   [(assq s no-implementations)
-                    => (lambda (a)
-                         (set! run-implementations
-                               (remq (cdr a)
-                                     (or run-implementations default-implementations))))]
-                   [(memq s benchmarks)
-                    (set! run-benchmarks
-                          (append (or run-benchmarks null)
-                                  (list s)))]
-                   [(assq s no-benchmarks)
-                    => (lambda (a)
-                         (set! run-benchmarks
-                               (remq (cdr a)
-                                     (or run-benchmarks default-benchmarks))))]
-                   [else
-                    (error 'auto "mysterious argument: ~a" arg)])))
-              args)
+    (let loop ([args args])
+      (unless (null? args)
+        (let ([arg (car args)])
+          (let ([s (string->symbol arg)])
+            (cond
+             [(memq s implementations)
+              (set! run-implementations
+                    (append (or run-implementations null)
+                            (list s)))
+              (loop (cdr args))]
+             [(assq s no-implementations)
+              => (lambda (a)
+                   (set! run-implementations
+                         (remq (cdr a)
+                               (or run-implementations default-implementations)))
+                   (loop (cdr args)))]
+             [(memq s benchmarks)
+              =>
+              (lambda (l)
+                (let* ([...? (and (pair? (cdr args))
+                                  (equal? (cadr args) "..."))]
+                       [new (if ...?
+                                l
+                                (list s))])
+                  (set! run-benchmarks
+                        (append (or run-benchmarks null)
+                                new))
+                  (loop ((if ...? cddr cdr) args))))]
+             [(assq s no-benchmarks)
+              => (lambda (a)
+                   (set! run-benchmarks
+                         (remq (cdr a)
+                               (or run-benchmarks default-benchmarks)))
+                   (loop (cdr args)))]
+             [else
+              (error 'auto "mysterious argument: ~a" arg)])))))
 
     (values (or run-benchmarks
                 benchmarks)
