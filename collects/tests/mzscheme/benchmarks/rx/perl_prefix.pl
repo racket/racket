@@ -1,10 +1,8 @@
 
 use Time::HiRes qw(time);
 
-sub test ($$$$) {
-  local ($x, $pattern, $pstr, $times) = @_;
-
-  # print "Trying $pattern $times iterations on " . length($x) . " bytes:\n";
+sub test ($$$) {
+  local ($x, $pattern, $times) = @_;
 
   $start = time;
   for ($i = 0; $i < $times; $i++) {

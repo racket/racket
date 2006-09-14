@@ -10,11 +10,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define base-link-filename (make-parameter #f))
   (define full-page-mode (make-parameter #f))
+  (define include-links (make-parameter #f))
 
   (command-line
    "tabulate"
    (current-command-line-arguments)
    (once-each
+    [("--no-links") "suppress benchmark links to SVN"
+     (include-links #f)]
     [("--multi") name "generate multiple pages for different views of data"
      (base-link-filename name)]
     [("--index") "generate full page with an index.html link"
@@ -150,10 +153,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                             (values (caadr a) (caddr a))
                                             (values #f #f)))
                                       (values fastest c-fastest))])
-                      `(tr (td (a ((href ,(format (string-append "http://svn.plt-scheme.org/plt/trunk/collects/"
-                                                                 "tests/mzscheme/benchmarks/common/~a.sch")
-                                                  (car bm-run))))
-                                  ,(symbol->string (car bm-run))))
+                      `(tr (td ,(if (include-links)
+				    `(a ((href ,(format (string-append "http://svn.plt-scheme.org/plt/trunk/collects/"
+								       "tests/mzscheme/benchmarks/common/~a.sch")
+							(car bm-run))))
+					,(symbol->string (car bm-run)))
+				    (symbol->string (car bm-run))))
                            (td ((align "right"))
                                nbsp
                                ,(small (if (= c-fastest forever)
@@ -168,12 +173,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
                               (map (lambda (impl)
                                      (let* ([a (assq impl (cdr bm-run))]
                                             [n (and a (caadr a))])
-                                       `((td ((align "right")
-                                              (bgcolor ,(lookup-color impl)))
-                                             ,(if (and (caddr a) c-base (positive? c-base))
-                                                  (small (ratio->string (/ (caddr a) c-base)))
-                                                  '"-")
-                                             nbsp)
+                                       `(,(if (= c-fastest forever)
+					      `(td)
+					      `(td ((align "right")
+						    (bgcolor ,(lookup-color impl)))
+						   ,(if (and (caddr a) c-base (positive? c-base))
+							(small (ratio->string (/ (caddr a) c-base)))
+							'"-")
+						   nbsp))
                                          (td ((bgcolor ,(lookup-color impl)))
                                              ,(if (and n base)
                                                   (let ([s (if (= n base)
