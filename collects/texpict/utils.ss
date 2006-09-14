@@ -41,10 +41,6 @@
 	   desktop-machine
 	   standard-fish
            
-	   pin-line
-	   pin-arrow-line
-           pin-arrows-line
-
 	   add-line
 	   add-arrow-line
 	   add-arrows-line
@@ -64,6 +60,25 @@
            clip
 
 	   hyperlinkize)
+  
+  (provide/contract 
+   [pin-line (opt-> (pict?
+                     pict? (-> pict? pict? (values number? number?))
+                     pict? (-> pict? pict? (values number? number?)))
+                    (number? string? boolean?)
+                    pict?)]
+   [pin-arrow-line (opt-> (number? pict?
+                           pict? (-> pict? pict? (values number? number?))
+                           pict? (-> pict? pict? (values number? number?)))
+                          (number? string? boolean? boolean?)
+                          pict?)]
+   [pin-arrows-line (opt-> (number? pict?
+                           pict? (-> pict? pict? (values number? number?))
+                           pict? (-> pict? pict? (values number? number?)))
+                          (number? string? boolean? boolean?)
+                          pict?)])
+
+
 
   (define (re-pict box naya)
     (let ([w (pict-width box)]
