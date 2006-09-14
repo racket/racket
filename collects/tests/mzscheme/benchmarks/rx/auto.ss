@@ -12,6 +12,19 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define (test-mzscheme input rx iterations)
     (let ([rx (byte-pregexp rx)])
+      (collect-garbage)
+      (let ([start (current-inexact-milliseconds)])
+        (let loop ([n iterations])
+          (unless (zero? n)
+            (regexp-match-positions rx input)
+            (loop (sub1 n))))
+        (- (current-inexact-milliseconds) start))))
+
+  (define (test-mzunicode input rx iterations)
+    ;; Note: input is left as bytes, to avoid overhead of UTF-8
+    ;;  conversion.
+    (let ([rx (pregexp (bytes->string/latin-1 rx))])
+      (collect-garbage)
       (let ([start (current-inexact-milliseconds)])
         (let loop ([n iterations])
           (unless (zero? n)
@@ -99,8 +112,10 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define inputs
     (add-index
      (list
-      (list 'overhead (make-bytes 10 (char->integer #\x))  #"." 100000 '())
-      (list 'overhead (make-bytes 10 (char->integer #\x))  #"." 1000000 '())
+      (list 'overhead #"x"  #"." 100000 '())
+      (list 'overhead #"x"  #"." 1000000 '())
+      (list 'overhead #"x"  #"y" 100000 '())
+      (list 'overhead #"x"  #"y" 1000000 '())
       (list 'simple #"track1.title:TBlah blah blah" #"([^.]*)\\.([^:]*):[T ]+(.*)" 100000 '())
       (list 'far (bytes-append (make-bytes 10000 (char->integer #\a)) #"z") #"z" 10000 '())
       (list 'farzq (bytes-append (make-bytes 1000 (char->integer #\a)) #"z") #"[zq]" 10000 '())
@@ -137,16 +152,16 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x*|a)\\1x$" 1000 '())
       (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x*|a)\\1x" 1000 '())
       (list 'stress-any (make-bytes 1000 (char->integer #\x))  #"(?s:.*)" 100000 '())
-      (list 'stress-any (make-bytes 10000 (char->integer #\x))  #"(?s:.*)" 100000 '())
-      (list 'stress-any (make-bytes 100000 (char->integer #\x))  #"(?s:.*)" 100000 '())
+      (list 'stress-any (make-bytes 10000 (char->integer #\x))  #"(?s:.*)" 100000 '(mzunicode))
+      (list 'stress-any (make-bytes 100000 (char->integer #\x))  #"(?s:.*)" 100000 '(mzunicode))
       (list 'stress-nonlf (make-bytes 100 (char->integer #\x))  #"(?m:.*)" 100000 '())
-      (list 'stress-nonlf (make-bytes 1000 (char->integer #\x))  #"(?m:.*)" 100000 '())
-      (list 'stress-nonlf (make-bytes 10000 (char->integer #\x))  #"(?m:.*)" 100000 '())
-      (list 'stress-nonlf (make-bytes 100000 (char->integer #\x))  #"(?m:.*)" 10000 '())
+      (list 'stress-nonlf (make-bytes 1000 (char->integer #\x))  #"(?m:.*)" 100000 '(mzunicode))
+      (list 'stress-nonlf (make-bytes 10000 (char->integer #\x))  #"(?m:.*)" 100000 '(mzunicode))
+      (list 'stress-nonlf (make-bytes 100000 (char->integer #\x))  #"(?m:.*)" 10000 '(mzunicode))
       (list 'stress-anysave (make-bytes 100 (char->integer #\x))  #"(?s:(.)*)" 100000 '())
-      (list 'stress-anysave (make-bytes 1000 (char->integer #\x))  #"(?s:(.)*)" 100000 '(pcre python))
-      (list 'stress-anysave (make-bytes 10000 (char->integer #\x))  #"(?s:(.)*)" 10000 '(pcre python))
-      (list 'stress-anysave (make-bytes 100000 (char->integer #\x))  #"(?s:(.)*)" 1000 '(pcre python))
+      (list 'stress-anysave (make-bytes 1000 (char->integer #\x))  #"(?s:(.)*)" 100000 '(pcre python mzunicode))
+      (list 'stress-anysave (make-bytes 10000 (char->integer #\x))  #"(?s:(.)*)" 10000 '(pcre python mzunicode))
+      (list 'stress-anysave (make-bytes 100000 (char->integer #\x))  #"(?s:(.)*)" 1000 '(pcre python mzunicode))
       (list 'stress-xs (make-bytes 100 (char->integer #\x))  #"x*" 100000 '())
       (list 'stress-xs (make-bytes 1000 (char->integer #\x))  #"x*" 100000 '())
       (list 'stress-xs (make-bytes 10000 (char->integer #\x))  #"x*" 10000 '())
@@ -196,7 +211,10 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (list (list 'mzscheme test-mzscheme)
           (list 'perl test-perl)
           (list 'python test-python)
-          (list 'pcre test-pcre)))
+          (list 'pcre test-pcre)
+	  (list 'mzunicode test-mzunicode)))
+
+  (define non-defaults (list 'mzunicode))
 
   ;; Extract command-line arguments --------------------
 
@@ -204,7 +222,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                   actual-implementations-to-run 
                   num-iterations)
     (process-command-line benchmark-names
-                          (map car testers) null
+                          (map car testers) non-defaults
                           1))
   
   ;; Run benchmarks -------------------------------
