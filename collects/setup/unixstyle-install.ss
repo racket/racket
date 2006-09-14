@@ -6,18 +6,18 @@
 ;; of `make install').  There is no good cmdline interface, since it is
 ;; internal, and should be as independent as possible (it moves the collection
 ;; tree).  Expects these arguments:
-;; * An operation verb:
+;; * An operation name:
 ;;   - `move': move a relative installation from `pltdir' to an absolute
 ;;     installation in the given paths (used by the shell installers)
 ;;     (interactive, undo-on-error, create-uninstaller)
 ;;   - `copy': similar to `move', but copies instead of moving
 ;;   - `make-install-copytree': copies some toplevel directories, skips .svn
-;;     and compiled subdirs, and rewrite config.ss, but no uninstaller (used by
-;;     `make install') (requres an additional `origtree' argument)
+;;     and compiled subdirs, and rewrites config.ss, but no uninstaller (used
+;;     by `make install') (requires an additional `origtree' argument)
 ;;   - `make-install-destdir-fix': fixes paths in binaries, laucnhers, and
 ;;     config.ss (used by `make install' to fix a DESTDIR) (requires exactly
 ;;     the same args as `make-install-copytree' (prefixed) and requires a
-;;     proper DESTDIR setting)
+;;     DESTDIR setting)
 ;; * pltdir: The source plt directory
 ;; * Path names that should be moved/copied (bin, collects, doc, lib, ...)
 
@@ -223,11 +223,13 @@
                  (mv temp file)))]
             [(regexp-match #rx#"^#!/bin/sh" magic)
              (fix-script file)]
-            [else (error (format "unknown binary type: ~a" file))])))
+            [else (error (format "unknown executable: ~a" file))])))
 
-  (define (fix-executables . x)
-    (parameterize ([current-directory (if (pair? x) (car x) (dir: 'bin))])
-      (for-each (lambda (f) (when (file-exists? f) (fix-executable f))) (ls))))
+  (define (fix-executables bindir . binfiles)
+    (parameterize ([current-directory bindir])
+      (let ([binfiles (if (pair? binfiles) (car binfiles) (ls))])
+        (for-each (lambda (f) (when (file-exists? f) (fix-executable f)))
+                  binfiles))))
 
   ;; remove and record all empty dirs
   (define (remove-empty-dirs dir)
@@ -400,6 +402,7 @@
     (when (ormap (lambda (p) (regexp-match #rx"[.]so" p)) (ls "lib"))
       (error "Cannot handle distribution of shared-libraries (yet)"))
     (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
+      (define binfiles (ls "bin")) ; see below
       (do-tree "bin"      'bin)
       (do-tree "collects" 'collects)
       (do-tree "doc"      'doc)
@@ -418,7 +421,8 @@
       ;; nothing should be left now if this was a move
       (when (and move? (not (null? (ls))))
         (error (format "leftovers in source tree: ~s" (ls))))
-      (fix-executables)
+      ;; we need to know which files need fixing
+      (fix-executables (dir: 'bin) binfiles)
       (write-uninstaller)
       (write-config))
     (when move?
@@ -440,23 +444,26 @@
       (unless origtree? (write-config #f)))) ; don't recompile
 
   (define (make-install-destdir-fix)
-    (define destdir (getenv "DESTDIR"))
-    (define destdirlen (and destdir (string-length destdir)))
+    (define destdir
+      (or (getenv "DESTDIR")
+          (error "missing DESTDIR value for make-install-destdir-fix")))
+    (define destdirlen (string-length destdir))
     (define origtree? (equal? "yes" (get-arg)))
+    ;; grab paths before we change them
+    (define bindir      (dir: 'bin))
+    (define collectsdir (dir: 'collects))
     (define (remove-dest p)
       (let ([pfx (and (< destdirlen (string-length p))
                       (substring p 0 destdirlen))])
         (if (equal? pfx destdir)
-          (regexp-replace #rx"^/+" (substring p destdirlen) "/")
+          (regexp-replace #rx"^/*" (substring p destdirlen) "/")
           (error (format "expecting a DESTDIR prefix of ~s in ~s" destdir p)))))
-    (unless destdir
-      (error "missing DESTDIR value for make-install-destdir-fix"))
-    (let (;; grab paths before we change them
-          [bindir      (dir: 'bin)]
-          [collectsdir (dir: 'collects)])
-      (set! dirs (map (lambda (d) (list (car d) (remove-dest (cadr d)))) dirs))
-      (fix-executables bindir)
-      (unless origtree? (write-config collectsdir))))
+    (set! dirs (map (lambda (d) (list (car d) (remove-dest (cadr d)))) dirs))
+    ;; no need to send an explicit binfiles argument -- this function is used
+    ;; only when DESTDIR is present, so we're installing to a directory that
+    ;; has only our binaries
+    (fix-executables bindir)
+    (unless origtree? (write-config collectsdir)))
 
   ;; --------------------------------------------------------------------------
 
@@ -465,6 +472,6 @@
     [(copy) (move/copy-distribution #f)]
     [(make-install-copytree)    (make-install-copytree)]
     [(make-install-destdir-fix) (make-install-destdir-fix)]
-    [else   (error (format "unknown verb: ~e" op))])
+    [else   (error (format "unknown operation: ~e" op))])
 
   )
