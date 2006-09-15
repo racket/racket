@@ -595,6 +595,10 @@ Other constructors:
    Adds a line or line-with-arrows onto a pict, using
    one of the sub-pict-finding functions (e.g., `lt-find')
    to extract the source and destination of the line.
+
+   The defaults for line-w, color-string, and lines-under?
+   are #f, and the default for solid-head? is #t.
+
       [MrEd only, in utils.ss]
 
 >  (hyperlinkize pict) -> pict
