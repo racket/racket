@@ -98,8 +98,8 @@
 	 (dot-dot-k? (syntax-object->datum #'p))
 	 stx]
 	[_ stx]
-	[() #'(list)]
-	['() #'(list)]
+	[() (syntax/loc stx (list))]
+	['() (syntax/loc stx (list))]
 	['item stx]
 	[p
 	 (let ((old-pat (syntax-e #'p)))
@@ -108,40 +108,43 @@
 	       (char? old-pat)
 	       (number? old-pat)))
 	 stx]
-	[(? pred) #`(? #,(cert #'pred))]
+	[(? pred) (quasisyntax/loc stx (? #,(cert #'pred)))]
 	[(? pred . a)
 	 (with-syntax ([pred (cert #'pred)]
 		       [pats (syntax-map convert-pat #'a)])
-	   #'(? pred . pats))]
-	[`pat #``#,(convert-quasi #'pat)]
-	[(= op pat) #`(app #,(cert #'op) #,(convert-pat #'pat))]
+	   (syntax/loc stx (? pred . pats)))]
+	[`pat (quasisyntax/loc stx `#,(convert-quasi #'pat))]
+	[(= op pat) (quasisyntax/loc stx (app #,(cert #'op) #,(convert-pat #'pat)))]
 	[(and . pats)
 	 (with-syntax ([new-pats (syntax-map convert-pat #'pats)])
-	   #'(and . new-pats))]
+	   (syntax/loc stx (and . new-pats)))]
 	[(or . pats)
 	 (with-syntax ([new-pats (syntax-map convert-pat #'pats)])
-	   #'(or . new-pats))]
-	[(not pat) #`(not #,(convert-pat #'pat))]
+	   (syntax/loc stx (or . new-pats)))]
+	[(not . pats)
+         (with-syntax ([new-pats (syntax-map convert-pat #'pats)])
+	   (syntax/loc stx (not . new-pats)))]
 	[($ struct-name . fields)
 	 (with-syntax ([struct-name (cert #'struct-name)]
 		       [new-fields (syntax-map convert-pat #'fields)])
-	   #'(struct struct-name new-fields))]
+	   (syntax/loc stx (struct struct-name new-fields)))]
 	[(get! id) (with-syntax ([id (cert #'id)])
-		     #'(get! id))]
+		     (syntax/loc stx (get! id)))]
 	[(set! id) (with-syntax ([id (cert #'id)])
-		     #'(set! id))]
+		     (syntax/loc stx (set! id)))]
 	[(quote p) stx]
-	[(car-pat . cdr-pat)
-	 (let ([l (imp-list? (syntax-e stx) stx)])
-	   (if l #`(list-rest #,@(map convert-pat l))
-	       #`(list #,@(map convert-pat (syntax-e stx)))))]
+	;; FIXME
+	[(elems ...) (quasisyntax/loc stx (list . #,(syntax-map convert-pat stx)))]
+	[(e elems ... . rest)
+	 (quasisyntax/loc stx (list-rest #,@(syntax-map convert-pat #'(e elems ...)) 
+					 #,(convert-pat #'rest)))]
 	[pt
 	 (vector? (syntax-e stx))
 	 (with-syntax ([new-pats (map convert-pat (vector->list (syntax-e stx)))])
-	   #'(vector . new-pats))]
+	   (syntax/loc stx (vector . new-pats)))]
 	[pt
 	 (box? (syntax-e stx))
-	 #`(box #,(convert-pat (unbox (syntax-e stx))))]
+	 (quasisyntax/loc stx (box #,(convert-pat (unbox (syntax-e stx)))))]
 	[pt
 	 (identifier? stx)
 	 (cert stx)]
