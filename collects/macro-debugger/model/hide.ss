@@ -206,7 +206,7 @@
                [for-bderiv BODY body]))]
 
         [(AnyQ p:case-lambda (e1 e2 rs renames+bodies))
-         (let ([var-renames (map car renames+bodies)])
+         (let ([var-renames (map caar renames+bodies)])
            (>>P d (make-p:case-lambda renames+bodies)
                 (case-lambda [FORMALS . BODY] ...)
                 ([for-renames (FORMALS ...) var-renames]
@@ -221,7 +221,7 @@
                  [for-bderiv BODY body])))]
 
         [(AnyQ p:letrec-values (e1 e2 rs renames rhss body))
-         (let ([var-renames (map stx-car (stx-car renames))])
+         (let ([var-renames (if renames (map stx-car (stx-car renames)) null)])
            (>>P d (make-p:letrec-values renames rhss body)
                 (letrec-values ([VARS RHS] ...) . BODY)
                 ([for-renames (VARS ...) var-renames]
@@ -229,8 +229,8 @@
                  [for-bderiv BODY body])))]
 
         [(AnyQ p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body))
-         (let ([svar-renames (map stx-car (stx-car srenames))]
-               [vvar-renames (map stx-car (stx-car vrenames))])
+         (let ([svar-renames (if srenames (map stx-car (stx-car srenames)) null)]
+               [vvar-renames (if vrenames (map stx-car (stx-car vrenames)) null)])
            (>>Pn d (make-p:letrec-syntaxes+values srenames srhss vrenames vrhss body)
                  (letrec-syntaxes+values ([SVARS SRHS] ...) ([VVARS VRHS] ...) . BODY)
                  ([for-renames (SVARS ...) svar-renames]
@@ -502,8 +502,8 @@
                            (loop (cdr clauses) (cdr renames+bodies)))
                    null))))]
         [(AnyQ p:let-values (e1 e2 rs renames rhss body))
-         (>>Seek [#:append (map for-deriv rhss)]
-                 [#:rename (do-rename/let e1 renames)]
+         (>>Seek [#:rename (do-rename/let e1 renames)]
+                 [#:append (map for-deriv rhss)]
                  (for-bderiv body))]
         [(AnyQ p:letrec-values (e1 e2 rs renames rhss body))
          (>>Seek [#:rename (do-rename/let e1 renames)]
@@ -1181,6 +1181,8 @@
                      (loop (syntax-e stx) (syntax-e rename) active?)))]
               [(syntax? rename)
                (loop stx (syntax-e rename) active?)]
+              [(syntax? stx)
+               (loop (syntax-e stx) rename active?)]
               [(and (pair? stx) (pair? rename))
                (append
                 (loop (car stx) (car rename) active?)

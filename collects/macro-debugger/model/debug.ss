@@ -3,6 +3,7 @@
   (require (lib "plt-match.ss"))
   (require "trace.ss"
            "deriv-util.ss"
+           "hide.ss"
            "hiding-policies.ss"
            "deriv.ss")
 
@@ -10,6 +11,7 @@
            (all-from "deriv.ss")
            (all-from "deriv-util.ss")
            (all-from "hiding-policies.ss")
+           (all-from "hide.ss")
            (all-from (lib "plt-match.ss"))
            find-deriv)
 
