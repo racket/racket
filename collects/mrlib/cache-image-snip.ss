@@ -203,6 +203,7 @@
     (let* ([bm (make-object bitmap% w h)]
            [bdc (make-object bitmap-dc% bm)])
       (send bdc clear)
+      ; (send bdc set-smoothing 'aligned) ; causes image-inside? to fail in test suite.
       (draw bdc)
       (send bdc set-bitmap #f)
       bm))
