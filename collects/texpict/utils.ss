@@ -65,17 +65,25 @@
    [pin-line (opt-> (pict?
                      pict? (-> pict? pict? (values number? number?))
                      pict? (-> pict? pict? (values number? number?)))
-                    (number? string? boolean?)
+                    ((union false/c number?)
+                     (union false/c string?)
+                     boolean?)
                     pict?)]
    [pin-arrow-line (opt-> (number? pict?
                            pict? (-> pict? pict? (values number? number?))
                            pict? (-> pict? pict? (values number? number?)))
-                          (number? string? boolean? boolean?)
+                          ((union false/c number?) 
+                           (union false/c string?)
+                           boolean?
+                           boolean?)
                           pict?)]
    [pin-arrows-line (opt-> (number? pict?
                            pict? (-> pict? pict? (values number? number?))
                            pict? (-> pict? pict? (values number? number?)))
-                          (number? string? boolean? boolean?)
+                          ((union false/c number?)
+                           (union false/c string?)
+                           boolean?
+                           boolean?)
                           pict?)])
 
 
