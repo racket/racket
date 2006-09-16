@@ -606,17 +606,19 @@
                      (let loop ([timed-out? #f])
                        (cond
                         [(sync/timeout 3 session-thread)
-                         (LOG "session killed ~awhile ~s"
-                              (if timed-out? "(timeout) " "")
-                              (unbox status-box))
-                         (write+flush
-                          w (format "handin terminated due to ~a (program doesn't terminate?)~a"
-                                    (if timed-out? "time limit" "excessive memory use")
-                                    (if (unbox status-box)
-                                      (format " while ~a" (unbox status-box))
-                                      "")))
-                         (close-output-port w)
-                         (channel-put session-channel 'done)]
+                         (let* ([status (unbox status-box)]
+                                [status (if status
+                                          (format " while ~a" status)
+                                          "")])
+                           (LOG "session killed ~a~a"
+                                (if timed-out? "(timeout) " "(memory)")
+                                status)
+                           (write+flush
+                            w (format "handin terminated due to ~a (program doesn't terminate?)~a"
+                                      (if timed-out? "time limit" "excessive memory use")
+                                      status))
+                           (close-output-port w)
+                           (channel-put session-channel 'done))]
                         [(let ([t timeout]) ; grab value to avoid races
                            (and t ((current-inexact-milliseconds) . > . t)))
                          ;; Shutdown here to get the handin-terminated error
