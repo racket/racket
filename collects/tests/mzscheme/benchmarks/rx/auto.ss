@@ -158,7 +158,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (list 'backref #"cataract cataract23" #"(?i:(cat(?:a(?:ract|tonic)|erpillar))) \\1(?:)23" 100000 '(mzold))
       (list 'digits #"From abcd  Mon Sep  1 12:33:02 1997" #"^From\\s+\\S+\\s+([a-zA-Z]{3}\\s+){2}\\d{1,2}\\s+\\d\\d:\\d\\d" 100000 '(mzold))
       (list 'digits #"From abcd  Sep 01 12:33:02 1997" #"^From\\s+\\S+\\s+([a-zA-Z]{3}\\s+){2}\\d{1,2}\\s+\\d\\d:\\d\\d"  100000 '(mzold))
-      (list 'lines (bytes-append (make-bytes 100 (char->integer #\x)) #"\na\nb\nc\nxxxxxxxx") #"(?m:^a(?:$)[^a]^b(?:$)[^a]^c(?:$))" 10000 '(mzold))
+      (list 'lines (bytes-append (make-bytes 100 (char->integer #\x)) #"\na\nb\nc\nxxxxxxxx") #"(?m:^a(?:$)[^a]^b(?:$)[^a]^c(?:$))" 100000 '(mzold))
       (list 'lookahead #"foobar is foolish see?" #"foo(?!bar).*" 100000 '(mzold))
       (list 'lookahead #"foobar crowbar etc" #"(?:(?!foo)...|^.{0,2})bar.*" 100000 '(mzold))
       (list 'lookbehind #"foobar is foolish see?" #"(?<=foo)lish.*" 100000 '(mzold))

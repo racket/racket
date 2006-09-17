@@ -29,7 +29,7 @@
       (#"W" #"(a|t)") (#"Y" #"(c|t)")))
 
   ;; -------------------------------
-  
+
   (define (ci-byte-regexp s)
     (byte-regexp (ci-pattern s)))
   (define (ci-pattern s)
