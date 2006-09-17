@@ -294,6 +294,8 @@
  (show-status-line "Status-Zeile anzeigen")
  (count-columns-from-one "Spaltennummern fangen mit 1 an")
  (display-line-numbers "Zeilennummern in Puffern anzeigen, keine Puffer-Indizes")
+ (show-line-and-column-numbers "Zeilen- und Spaltennummern anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
+ (show-character-offsets "Zeichen-Offsets anzeigen") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Tastenbelegung für Menüs")
  (automatically-to-ps "Automatisch in PostScript-Datei drucken")
  (option-as-meta "Option-Taste als Mera behandeln") ;; macos/macos x only
@@ -517,12 +519,19 @@
  (keybindings-sort-by-name "Nach Name sortieren")
  (keybindings-sort-by-key "Nach Taste sortieren")
  (keybindings-add-user-defined-keybindings "Benutzerdefinierte Tastenbelegungen hinzufügen...")
+ (keybindings-add-user-defined-keybindings/planet "Benutzerdefinierte Tastenbelegungen aus PLaneT hinzufügen...")
  (keybindings-menu-remove "~a entfernen")
  (keybindings-choose-user-defined-file "Bitte eine Datei mit den Tastenbelegungen auswählen.")
 
  (user-defined-keybinding-error "Fehler beim Ausführen der Tastenbelegung ~a\n\n~a")
  (user-defined-keybinding-malformed-file "Die Datei ~a enthält kein Modul, das in der Sprache (lib \"keybinding-lang.ss\" \"framework\") geschrieben ist.")  
-
+ (keybindings-planet-malformed-spec "Die PLaneT-Spezifikation ist fehlerhaft: ~a") ; the string will be what the user typed in
+ (keybindings-type-planet-spec "Bitte PLaneT-require-Spezifikation eingeben (ohne das `require')")
+  
+ ; first ~a will be a string naming the file or planet package where the keybindings come from;
+ ; second ~a will be an error message
+ (keybindings-error-installing-file "Fehler beim Installieren der Tastenbelegungen ~a:\n\n~a")
+  
  ;; menu items in the "special" menu
  (insert-text-box-item "Text-Kasten einfügen")
  (insert-image-item "Bild einfügen...")
