@@ -29,7 +29,9 @@ tracing todo:
            
            ;; this module is shared between the drscheme's namespace (so loaded here) 
            ;; and the user's namespace in the teaching languages
-           "private/set-result.ss")
+           "private/set-result.ss"
+           
+           (lib "stepper-language-interface.ss" "stepper"))
   
   (provide tool@)
   
@@ -449,6 +451,13 @@ tracing todo:
                            capability-value
                            key)]))
 
+          (super-new)))
+      
+      (define (stepper-settings-language %)
+        (class* % (stepper-language<%>)
+          (init-field stepper:enable-let-lifting)
+          (inherit [dontcare stepper:enable-let-lifting?])
+          (define/override (stepper:enable-let-lifting?) stepper:enable-let-lifting)
           (super-new)))
 
       ;; rewrite-module : syntax -> syntax
@@ -921,12 +930,13 @@ tracing todo:
       ;; phase2 : -> void
       (define (phase2)
         (define htdp-language%
-          ((drscheme:language:get-default-mixin)
-           (language-extension
-            (drscheme:language:module-based-language->language-mixin
-             (module-based-language-extension
-              (drscheme:language:simple-module-based-language->module-based-language-mixin
-               simple-htdp-language%))))))
+          (stepper-settings-language
+           ((drscheme:language:get-default-mixin)
+            (language-extension
+             (drscheme:language:module-based-language->language-mixin
+              (module-based-language-extension
+               (drscheme:language:simple-module-based-language->module-based-language-mixin
+                simple-htdp-language%)))))))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -941,7 +951,8 @@ tracing todo:
            (language-numbers '(-500 -500 5))
            (sharing-printing #t)
            (abbreviate-cons-as-list #t)
-           (allow-sharing? #t)))
+           (allow-sharing? #t)
+           (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -965,7 +976,8 @@ tracing todo:
            (language-numbers '(-500 -500 4))
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
-           (allow-sharing? #f)))
+           (allow-sharing? #f)
+           (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -981,7 +993,8 @@ tracing todo:
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
-           (use-function-output-syntax? #t)))
+           (use-function-output-syntax? #t)
+           (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -996,7 +1009,8 @@ tracing todo:
            (language-numbers '(-500 -500 2))
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
-           (allow-sharing? #f)))
+           (allow-sharing? #f)
+           (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
          (instantiate htdp-language% ()
@@ -1012,7 +1026,8 @@ tracing todo:
            (sharing-printing #f)
            (abbreviate-cons-as-list #f)
            (allow-sharing? #f)
-           (accept-quasiquote? #f)))
+           (accept-quasiquote? #f)
+           (stepper:enable-let-lifting #t)))
         
         (drscheme:get/extend:extend-unit-frame frame-tracing-mixin)
         (drscheme:get/extend:extend-tab tab-tracing-mixin)))))
