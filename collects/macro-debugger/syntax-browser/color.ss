@@ -8,8 +8,9 @@
   (provide syntax-text-colorer%)
   
   (define colors 
-    (list "black" "darkred" "red"
-          "green" "mediumforestgreen" "darkgreen" 
+    (list "black" "red" "blue"
+          "mediumforestgreen" "darkgreen" 
+          "darkred"
           "cornflowerblue" "royalblue" "steelblue" "darkslategray" "darkblue"
           "indigo" "purple" 
           "orange" "salmon" "darkgoldenrod" "olive"))

@@ -61,7 +61,10 @@
         (class base-frame%
           (init policy
                 macro-hiding?)
-          (init (show-hiding-panel? #t))
+          (init (show-hiding-panel? #t)
+                (identifier=? #f)
+                (width (sb:pref:width))
+                (height (sb:pref:height)))
           (inherit get-menu%
                    get-menu-item%
                    get-menu-bar
@@ -70,9 +73,9 @@
                    get-help-menu)
           
           (super-new (label "Macro stepper")
-                     (width (sb:pref:width))
-                     (height (sb:pref:height)))
-          
+                     (width width)
+                     (height height))
+
           (define/override (on-size w h)
             (send widget update/preserve-view))
           
@@ -137,8 +140,16 @@
                  (policy policy)
                  (macro-hiding? macro-hiding?)
                  (show-hiding-panel? show-hiding-panel?)))
-
           (define/public (get-widget) widget)
+
+          (begin
+            (when identifier=?
+              (let ([p (assoc identifier=? (sb:identifier=-choices))])
+                (when p
+                  (send (send widget get-controller)
+                        on-update-identifier=?
+                        (cdr p))))))
+          
           (frame:reorder-menus this)
           ))
 
@@ -311,7 +322,7 @@
                 (unless step
                   (let ([result (lift/deriv-e2 synth-deriv)])
                     (when result
-                      (send sbview add-text "Normal form\n")
+                      (send sbview add-text "Expansion finished\n")
                       (send sbview add-syntax (lift/deriv-e2 synth-deriv)))
                     (unless result
                       (send sbview add-text "Error\n"))))

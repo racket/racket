@@ -84,6 +84,8 @@
                        (pairloop (cdr obj)))]
                 [(null? obj)
                  null]
+                [(and (syntax? obj) (null? (syntax-e obj)))
+                 null]
                 [else (loop obj)]))
         (values (loop stx)
                 flat=>stx
