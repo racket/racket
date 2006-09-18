@@ -59,7 +59,7 @@
   ;;    must be compliant with http 1.0. In this case the chunked response is
   ;;    simply turned into a non-chunked one.
   
-  (define TEXT/HTML-MIME-TYPE #"text/html")
+  (define TEXT/HTML-MIME-TYPE #"text/html; charset=utf-8")
   (define (data-length x)
     (if (string? x)
         (data-length (string->bytes/utf-8 x))
