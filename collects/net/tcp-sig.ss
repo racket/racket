@@ -5,6 +5,7 @@
   (define-signature net:tcp^
     (tcp-abandon-port
      tcp-accept
+     tcp-accept/enable-break
      tcp-accept-ready?
      tcp-addresses
      tcp-close

@@ -8,6 +8,7 @@
   
   (define raw:tcp-abandon-port tcp-abandon-port)
   (define raw:tcp-accept tcp-accept) 
+  (define raw:tcp-accept/enable-break tcp-accept/enable-break) 
   (define raw:tcp-accept-ready? tcp-accept-ready?)
   (define raw:tcp-addresses tcp-addresses)
   (define raw:tcp-close tcp-close)
@@ -41,6 +42,20 @@
              (let ([in-out (async-channel-get (pipe-listener-channel tcp-listener))])
                (values (car in-out) (cdr in-out)))]
             [else (raw:tcp-accept tcp-listener)]))
+        
+        ; : listener -> iport oport
+        (define (tcp-accept/enable-break tcp-listener)
+          (cond
+            [(pipe-listener? tcp-listener)
+             ; XXX put this into async-channel.ss as async-channel-get/enable-break
+             (sync/enable-break
+              (handle-evt
+               (pipe-listener-channel tcp-listener)
+               (lambda (in-out)
+                 (values (car in-out) (cdr in-out)))))]
+            #;(let ([in-out (async-channel-get (pipe-listener-channel tcp-listener))])
+                (values (car in-out) (cdr in-out)))
+              [else (raw:tcp-accept/enable-break tcp-listener)]))
         
         ; : tcp-listener -> iport oport
         ; FIX - check channel queue size

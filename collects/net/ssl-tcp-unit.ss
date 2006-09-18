@@ -28,6 +28,7 @@
 	    (close-output-port p)))
 
       (define tcp-accept ssl-accept)
+      (define tcp-accept/enable-break ssl-accept/enable-break)
 
       ;; accept-ready? doesn't really work for SSL:
       (define (tcp-accept-ready? p)

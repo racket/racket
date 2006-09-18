@@ -8,6 +8,7 @@
   
   (define raw:tcp-abandon-port tcp-abandon-port)
   (define raw:tcp-accept tcp-accept) 
+  (define raw:tcp-accept/enable-break tcp-accept/enable-break) 
   (define raw:tcp-accept-ready? tcp-accept-ready?)
   (define raw:tcp-addresses tcp-addresses)
   (define raw:tcp-close tcp-close)
@@ -22,6 +23,7 @@
       
       (define tcp-abandon-port raw:tcp-abandon-port)
       (define tcp-accept raw:tcp-accept) 
+      (define tcp-accept/enable-break raw:tcp-accept/enable-break)
       (define tcp-accept-ready? raw:tcp-accept-ready?)
       (define tcp-addresses raw:tcp-addresses)
       (define tcp-close raw:tcp-close)
