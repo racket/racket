@@ -9,10 +9,10 @@
            (lib "contract.ss")
            (only (lib "configuration.ss" "web-server")
                  default-configuration-table-path)
-           (lib "configuration-table-structs.ss" "web-server")
-           (lib "parse-table.ss" "web-server")
-           (lib "configuration-util.ss" "web-server")
-           (all-except (lib "util.ss" "web-server") translate-escapes))
+           (lib "configuration-table-structs.ss" "web-server" "private")
+           (lib "parse-table.ss" "web-server" "private")
+           (lib "configuration-util.ss" "web-server" "private")
+           (all-except (lib "util.ss" "web-server" "private") translate-escapes))
   (provide/contract
    [servlet unit/sig?]
    ; XXX contract

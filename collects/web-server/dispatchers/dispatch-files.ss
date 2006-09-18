@@ -8,10 +8,10 @@
   (require (lib "pretty.ss"))         
   (require "dispatch.ss"
            "../configuration.ss"
-           "../util.ss"
-           "../mime-types.ss"
+           "../private/util.ss"
+           "../private/mime-types.ss"
            "../private/request.ss"
-           "../servlet-helpers.ss"
+           "../private/servlet-helpers.ss"
            "../response.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?])

@@ -1,6 +1,6 @@
 (module dispatch mzscheme
   (require (lib "contract.ss"))
-  (require "../connection-structs.ss"
+  (require "../private/connection-structs.ss"
            "../request-structs.ss"
            "../response-structs.ss")
   

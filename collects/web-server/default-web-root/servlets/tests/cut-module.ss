@@ -1,9 +1,7 @@
 ; purpose: to test send/suspend, send/forward, send/back, and send/finish
 (module cut-module mzscheme
   (provide interface-version timeout start)
-  (require (lib "servlet.ss" "web-server")
-           (lib "servlet-helpers.ss" "web-server")
-           (lib "servlet-sig.ss" "web-server"))
+  (require (lib "servlet.ss" "web-server"))
   
   (define interface-version 'v1)
   

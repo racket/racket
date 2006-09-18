@@ -5,9 +5,9 @@
            (lib "pretty.ss")
            (lib "xml.ss" "xml")
            (lib "string.ss" "srfi" "13")
-           "connection-manager.ss"
+           "private/connection-manager.ss"
            "response-structs.ss"
-           "util.ss")
+           "private/util.ss")
   (provide (all-from "response-structs.ss"))
   
   ;; Weak contracts for output-response because the response? is checked inside

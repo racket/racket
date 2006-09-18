@@ -6,7 +6,7 @@
            (lib "plt-match.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
-           "../servlet-helpers.ss")  
+           "../private/servlet-helpers.ss")  
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide ; XXX contract kw

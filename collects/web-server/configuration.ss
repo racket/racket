@@ -2,12 +2,12 @@
   (require (lib "unitsig.ss")
            (lib "list.ss")
            (lib "contract.ss"))
-  (require "configuration-structures.ss"
-           "configuration-table-structs.ss"
-           "sig.ss"
-           "util.ss"
-           "parse-table.ss"
+  (require "private/configuration-structures.ss"
+           "private/configuration-table-structs.ss"
+           "private/util.ss"
+           "private/parse-table.ss"
            "private/cache-table.ss"
+           "sig.ss"
            "response.ss")
   
   (define default-configuration-table-path

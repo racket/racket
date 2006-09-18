@@ -5,11 +5,11 @@
            (lib "contract.ss")
            (lib "unitsig.ss")
            (lib "tcp-sig.ss" "net"))
-  (require "util.ss"
-           "web-server-unit.ss"
-           "sig.ss"
-           "configuration.ss"
-           "configuration-structures.ss")
+  (require "util.ss"           
+           "configuration-structures.ss"
+           "../web-server-unit.ss"
+           "../sig.ss"
+           "../configuration.ss")
 
   (define configuration@
     (parse-command-line

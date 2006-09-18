@@ -1,7 +1,7 @@
 (module dispatch-host mzscheme
   (require (lib "contract.ss"))
   (require "dispatch.ss"
-           "../servlet-helpers.ss")
+           "../private/servlet-helpers.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?]
    [make ((symbol? . -> . dispatcher?) . -> . dispatcher?)])

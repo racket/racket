@@ -1,7 +1,7 @@
 ; The main program of the "web-server-monitor" launcher. 
 (module monitor-launch mzscheme
-  (require "monitor-server.ss"
-           "util.ss"
+  (require "private/monitor-server.ss"
+           "private/util.ss"
            (lib "cmdline.ss"))
   
   ; handle-numeric-flag : sym -> str str -> (cons sym num)

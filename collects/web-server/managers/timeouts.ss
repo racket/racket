@@ -2,7 +2,7 @@
   (require (lib "plt-match.ss")
            (lib "contract.ss"))
   (require "manager.ss")
-  (require "../timer.ss"
+  (require "../private/timer.ss"
            "../servlet-structs.ss")
   (provide/contract
    [create-timeout-manager (expiration-handler? number? number? . -> . manager?)])

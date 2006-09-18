@@ -2,7 +2,7 @@
   (require (lib "contract.ss"))
   (require "../managers/manager.ss"
            "../servlet-structs.ss"
-           "../connection-structs.ss"
+           "connection-structs.ss"
            "../request-structs.ss")
   
   (define-struct (exn:fail:servlet:instance exn:fail) ())

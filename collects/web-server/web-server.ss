@@ -5,7 +5,7 @@
            "sig.ss"
            "web-server-unit.ss"
 	   "configuration.ss"
-           "configuration-structures.ss")
+           "private/configuration-structures.ss")
   (provide/contract
    [serve (case-> [configuration? . -> . (-> void?)]
                   [configuration? natural-number/c . -> . (-> void?)]

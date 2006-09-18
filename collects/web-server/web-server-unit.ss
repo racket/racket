@@ -3,10 +3,10 @@
            (lib "contract.ss")
            (lib "unitsig.ss"))
   (require "sig.ss"
-           "dispatch-server-unit.ss"
-           "dispatch-server-sig.ss"
-           "web-server-structs.ss"
-           "configuration-structures.ss"
+           "private/dispatch-server-unit.ss"
+           "private/dispatch-server-sig.ss"
+           "private/web-server-structs.ss"
+           "private/configuration-structures.ss"
            "private/cache-table.ss"
            (rename "private/request.ss" 
                    the-read-request read-request))

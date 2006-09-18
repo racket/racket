@@ -1,7 +1,7 @@
 (module gui-launch mzscheme
-  (require "launch.ss"
-	   (lib "class.ss")
+  (require (lib "class.ss")
 	   (lib "mred.ss" "mred"))
+  (require "private/launch.ss")
 
   (define shutdown (serve))
 

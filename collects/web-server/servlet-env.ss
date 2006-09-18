@@ -4,7 +4,7 @@
   (require "configuration.ss"
            "web-server.ss"
            "sig.ss"
-           "util.ss"
+           "private/util.ss"
            "response.ss"
            "managers/timeouts.ss"
            "private/servlet.ss"

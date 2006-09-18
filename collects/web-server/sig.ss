@@ -1,6 +1,6 @@
 (module sig mzscheme
   (require (lib "unitsig.ss"))
-  (require "dispatch-server-sig.ss")
+  (require "private/dispatch-server-sig.ss")
   (provide ; XXX contract signature
    web-server^ servlet^ web-config^ web-config/pervasive^ web-config/local^)
 

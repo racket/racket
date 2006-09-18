@@ -5,13 +5,13 @@
            (lib "unitsig.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
-           "../web-server-structs.ss"
-           "../connection-manager.ss"
+           "../private/web-server-structs.ss"
+           "../private/connection-manager.ss"
            "../response.ss"
            "../servlet.ss"
            "../sig.ss"
            "../configuration.ss"
-           (all-except "../util.ss" translate-escapes)
+           (all-except "../private/util.ss" translate-escapes)
            "../managers/manager.ss"
            "../managers/timeouts.ss"
            "../managers/lru.ss"

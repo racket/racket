@@ -6,12 +6,12 @@
            (lib "base64.ss" "net")
            (lib "url.ss" "net"))
   (require "util.ss"
-           "response.ss"
-           "request-structs.ss"
            "bindings.ss"
-           "servlet-structs.ss")
+           "../servlet-structs.ss"
+           "../request-structs.ss"
+           "../response.ss")
   (provide (all-from "bindings.ss")
-           (all-from "request-structs.ss"))  
+           (all-from "../request-structs.ss"))  
   
   (define (request-headers request)
     (map (match-lambda

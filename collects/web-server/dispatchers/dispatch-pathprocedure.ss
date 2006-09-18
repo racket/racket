@@ -1,7 +1,7 @@
 (module dispatch-pathprocedure mzscheme
   (require (lib "contract.ss"))
   (require "dispatch.ss"
-           "../util.ss"
+           "../private/util.ss"
            "../response.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?]

@@ -3,8 +3,8 @@
            (lib "plt-match.ss")
            (lib "url.ss" "net")
            (lib "list.ss"))
-  (require "../util.ss"
-           "../connection-manager.ss"
+  (require "util.ss"
+           "connection-manager.ss"
            "../request-structs.ss")
   
   (provide/contract

@@ -5,8 +5,8 @@
   (require "managers/manager.ss"
            "private/servlet.ss"
            "private/url.ss"
-           "servlet-helpers.ss"
-           "web-cells.ss"
+           "private/servlet-helpers.ss"
+           "private/web-cells.ss"
            "servlet-structs.ss")  
   
   ;; ************************************************************
@@ -41,8 +41,8 @@
    [send/suspend/callback (xexpr/callback? . -> . any/c)])
   
   (require "url.ss")
-  (provide (all-from "web-cells.ss")
-           (all-from "servlet-helpers.ss")
+  (provide (all-from "private/web-cells.ss")
+           (all-from "private/servlet-helpers.ss")
            (all-from "url.ss")
            (all-from "servlet-structs.ss"))
   

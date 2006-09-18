@@ -1,7 +1,6 @@
 (module suspended-module mzscheme
   (provide interface-version timeout start)
   (require (lib "servlet.ss" "web-server")
-           (lib "servlet-helpers.ss" "web-server")
            (lib "servlet-sig.ss" "web-server"))
   
   (define interface-version 'v1)

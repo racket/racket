@@ -2,10 +2,10 @@
   (require (lib "kw.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
-           (all-except "../util.ss" translate-escapes)
+           (all-except "../private/util.ss" translate-escapes)
            "../configuration.ss"
-           "../servlet-helpers.ss"
-           "../connection-manager.ss"
+           "../private/servlet-helpers.ss"
+           "../private/connection-manager.ss"
            "../response.ss")  
   (provide/contract
    [interface-version dispatcher-interface-version?])

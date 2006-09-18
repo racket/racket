@@ -6,7 +6,7 @@
            (lib "url.ss" "net")
            (lib "errortrace-lib.ss" "errortrace")
            (lib "uri-codec.ss" "net"))
-  (require "request-structs.ss")
+  (require "../request-structs.ss")
   
   ;; valid-port? : any/c -> boolean?
   (define (valid-port? p)

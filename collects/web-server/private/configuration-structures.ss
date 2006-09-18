@@ -2,8 +2,8 @@
   (require (lib "unitsig.ss")
            (lib "contract.ss")
            (lib "url.ss" "net"))
-  (require "response-structs.ss"
-           "configuration-table-structs.ss")
+  (require "configuration-table-structs.ss"
+           "../response-structs.ss")           
   
   ; configuration is now a unit.  See sig.ss
   ; XXX contract
