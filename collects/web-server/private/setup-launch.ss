@@ -2,10 +2,10 @@
   (require (lib "cmdline.ss")
            (lib "file.ss")
            (lib "struct.ss"))
-  (require "configuration.ss"
-           "private/configuration-table-structs.ss"
-           "private/util.ss"
-           "private/configuration-util.ss")
+  (require "../configuration.ss"
+           "configuration-table-structs.ss"
+           "util.ss"
+           "configuration-util.ss")
   
   (parse-command-line
    "web-server-setup"

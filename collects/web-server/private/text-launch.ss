@@ -1,4 +1,4 @@
 (module text-launch mzscheme
-  (require "private/launch.ss")
+  (require "launch.ss")
   (serve)
   (semaphore-wait (make-semaphore)))
