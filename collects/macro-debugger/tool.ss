@@ -53,7 +53,8 @@
             (new button%
                  (label (make-bitmap-label 
                          "Macro Stepper"
-                         (build-path (collection-path "skipper") 
+                         (build-path (collection-path "macro-debugger") 
+                                     "view"
                                      "icon-small.png")))
                  (parent macro-debug-panel)
                  (callback (lambda (button event) (execute #t)))))
