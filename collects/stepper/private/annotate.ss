@@ -7,7 +7,7 @@
            "marks.ss"
            "shared.ss"
            "my-macros.ss"
-           "xml-box.ss"
+           #;"xml-box.ss"
            (prefix beginner-defined: "beginner-defined.ss"))
 
   (define-syntax (where stx)
@@ -21,14 +21,17 @@
   ; PROVIDE
   (provide/contract
    [annotate
-    (-> syntax?                         ; syntax to annotate
-        (opt->* ((or/c continuation-mark-set? false/c) 
-                 break-kind?)
-                (list?)
-                (any/c))                 ; procedure for runtime break
-        boolean?                        ; track-inferred-name?
-        string?                         ; language-level-name : not a nice way to abstract.
-        syntax?)]                       ; results
+    (syntax?                         ; syntax to annotate
+     (((or/c continuation-mark-set? false/c) 
+       break-kind?)
+      (list?)
+      . opt->* .
+      (any/c))                       ; procedure for runtime break
+     boolean?                        ; track-inferred-name?
+     any/c                            ; language-level
+     ;;string?                         ; language-level-name : not a nice way to abstract.
+     . -> .
+     syntax?)]                       ; results
    #;[top-level-rewrite (-> syntax? syntax?)])
 
 ;  ;;                                              ;;;;                          ;
@@ -259,7 +262,7 @@
   ; c) a boolean indicating whether to store inferred names.
   ;
   
-  (define (annotate main-exp break track-inferred-names? language-level-name)
+  (define (annotate main-exp break track-inferred-names? language-level)
     #;(define _ (fprintf (current-error-port) "input to annotate: ~v\n" (syntax-object->datum main-exp)))
 
     (define binding-indexer
@@ -1146,7 +1149,7 @@
     
     ; body of local
     (let* ([annotated-exp (cond 
-                            [(string=? language-level-name "ACL2 Beginner (beta 8)")
+                            [(string=? (language-level->name language-level) "ACL2 Beginner (beta 8)")
                              (annotate/top-level/acl2 main-exp)]
                             [else 
                              (annotate/top-level main-exp)])])

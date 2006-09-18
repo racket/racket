@@ -40,12 +40,14 @@
   (require (lib "contract.ss")
            (lib "etc.ss")
            (lib "match.ss")
+           (lib "class.ss")
            (prefix a: "annotate.ss")
            (prefix r: "reconstruct.ss")
            "shared.ss"
            "marks.ss"
            "model-settings.ss"
            "macro-unwind.ss"
+           "lifting.ss"           
            ;; for breakpoint display
            "display-break-stuff.ss")
 
@@ -61,7 +63,7 @@
         (step-result? . -> . void?)     ; receive-result
         (or/c render-settings? false/c) ; render-settings
         boolean?                        ; track-inferred-names?
-        string?                         ; language-level-name
+        object? ;; FIXME: can do better: subclass of language%       ; the language level
         (procedure? . -> . void?)       ; run-on-drscheme-side
         . -> .
         void?)])
@@ -69,7 +71,7 @@
   ; go starts a stepper instance
   ; see provide stmt for contract
   (define (go program-expander receive-result render-settings
-              track-inferred-names? language-level-name run-on-drscheme-side)
+              track-inferred-names? language-level run-on-drscheme-side)
 
     ;; finished-exps:
     ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
@@ -184,7 +186,7 @@
                      (match (r:reconstruct-completed
                              (source-thunk) lifting-indices
                              getter render-settings)
-                       [#(exp #f) (first-of-one (unwind-no-highlight exp))]
+                       [#(exp #f) (unwind exp)]
                        [#(exp #t) exp])])
                  finished-exps))
 
@@ -208,10 +210,11 @@
                             "broken invariant: normal-break can't have returned values"))
                    (set! held-finished-list (reconstruct-all-completed))
                    (set! held-exp-list
-                         (unwind
-                          (r:reconstruct-left-side
-                           mark-list returned-value-list render-settings)
-                          #f))
+                         (map unwind
+                              (maybe-lift
+                               (r:reconstruct-left-side
+                                mark-list returned-value-list render-settings)
+                               #f)))
                    (set! held-step-was-app? (r:step-was-app? mark-list)))]
 
                 [(result-exp-break result-value-break)
@@ -221,10 +224,11 @@
 
                    (let* ([new-finished-list (reconstruct-all-completed)]
                           [reconstructed
-                           (unwind
-                            (r:reconstruct-right-side
-                             mark-list returned-value-list render-settings)
-                            #f)]
+                           (map unwind
+                                (maybe-lift
+                                 (r:reconstruct-right-side
+                                  mark-list returned-value-list render-settings)
+                                 #f))]
                           [result
                            (if (eq? held-exp-list no-sexp)
                              ;; in this case, there was no "before" step, due
@@ -234,6 +238,8 @@
                              ;; painful to do a better job, and the stepper
                              ;; makes no guarantees in this case.
                              (make-before-after-result
+                              ;; NB: this (... ...) IS UNRELATED TO 
+                              ;; THE MACRO IDIOM OF THE SAME NAME
                               (list #`(... ...))
                               (append new-finished-list reconstructed)
                               'normal)
@@ -269,8 +275,8 @@
                  (let* ([new-finished-list (reconstruct-all-completed)]
                         [reconstruct-result
                          (r:reconstruct-double-break mark-list render-settings)]
-                        [left-side (unwind (car reconstruct-result) #f)]
-                        [right-side (unwind (cadr reconstruct-result) #t)])
+                        [left-side (map unwind (maybe-lift (car reconstruct-result) #f))]
+                        [right-side (map unwind (maybe-lift (cadr reconstruct-result) #t))])
                    ;; add highlighting code as for other cases...
                    (receive-result
                     (make-before-after-result
@@ -291,11 +297,16 @@
                            returned-value-list)]
 
                 [else (error 'break "unknown label on break")]))))))
-
-
+    
+    (define maybe-lift
+      (if (send language-level stepper:enable-let-lifting?)
+          lift
+          ;; ... oh dear; model.ss should disable the double-break & late-let break when lifting is off.
+          (lambda (stx dont-care) (list stx))))
+    
     (define (step-through-expression expanded expand-next-expression)
       (let* ([annotated (a:annotate expanded break track-inferred-names?
-                                    language-level-name)])
+                                    language-level)])
         (eval-syntax annotated)
         (expand-next-expression)))
 

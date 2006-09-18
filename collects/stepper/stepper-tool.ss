@@ -14,7 +14,8 @@
            "private/my-macros.ss"
            (prefix x: "private/mred-extensions.ss")
            "private/shared.ss"
-           "private/model-settings.ss")
+           "private/model-settings.ss"
+           "stepper-language-interface.ss")
 
   ;; hidden invariant: this list should be a sublist of the language-level
   ;; dialog (i.e., same order):
@@ -33,7 +34,17 @@
       (import drscheme:tool^ (xml-snip% scheme-snip%))
 
       ;; tool magic here:
-      (define (phase1) (void))
+      (define (phase1)
+        
+        ;; experiment with extending the language... parameter-like fields for stepper parameters
+        (drscheme:language:extend-language-interface
+         stepper-language<%>
+         (lambda (superclass)
+           (class* superclass (stepper-language<%>)
+                   (public stepper:enable-let-lifting?)
+                   (define (stepper:enable-let-lifting?) #f)
+                   (super-instantiate ())))))
+      
       (define (phase2) (void))
 
       ;; this should be a preference
@@ -42,14 +53,17 @@
 
       (define drscheme-eventspace (current-eventspace))
 
-      (define (extract-language-level settings)
-        (let* ([language
-                (drscheme:language-configuration:language-settings-language
-                 settings)])
-          (car (last-pair (send language get-language-position)))))
-
-      (define (stepper-works-for? language-level)
-        (or (member language-level stepper-works-for)
+      (define (extract-language-level definitions-text)
+        (settings->language-level (definitions-text->settings definitions-text)))
+      
+      (define (definitions-text->settings definitions-text)
+        (send definitions-text get-next-settings))
+      
+      (define (settings->language-level settings)
+        (drscheme:language-configuration:language-settings-language settings))
+      
+      (define (stepper-works-for? language-level-name)
+        (or (member language-level-name stepper-works-for)
             (getenv "PLTSTEPPERUNSAFE")))
 
       ;; the stepper's frame:
@@ -140,13 +154,11 @@
       (define (view-controller-go drscheme-frame program-expander)
 
         ;; get the language-level name:
-        (define language-settings
-          (send (send drscheme-frame get-definitions-text) get-next-settings))
-        (define language
-          (drscheme:language-configuration:language-settings-language
-           language-settings))
+        (define language-settings (definitions-text->settings (send drscheme-frame get-definitions-text)))
+        (define language-level
+          (settings->language-level language-settings))
         (define language-level-name
-          (car (last-pair (send language get-language-position))))
+          (language-level->name language-level))
 
         ;; VALUE CONVERSION CODE:
 
@@ -157,7 +169,7 @@
         ;; render-to-string : TST -> string
         (define (render-to-string val)
           (let ([string-port (open-output-string)])
-            (send language render-value val simple-settings string-port)
+            (send language-level render-value val simple-settings string-port)
             (get-output-string string-port)))
 
         ;; WE REALLY WANT TO GET RID OF THIS STUFF (2005-07-01, JBC)
@@ -198,7 +210,7 @@
             [else (parameterize ([current-print-convert-hook
                                   (make-print-convert-hook simple-settings)])
                     (set-print-settings
-                     language
+                     language-level
                      simple-settings
                      (lambda ()
                        (simple-module-based-language-convert-value
@@ -295,7 +307,7 @@
         ;; is this an application step?
         (define (application-step? history-entry)
           (case (cadr history-entry)
-            [(user-application finished stepping) #t]
+            [(user-application finished-stepping) #t]
             [else #f]))
 
         ;; build gui object:
@@ -475,11 +487,12 @@
         ;; START THE MODEL
         (model:go
          program-expander-prime receive-result
-         (get-render-settings render-to-string render-to-sexp #t)
+         (get-render-settings render-to-string render-to-sexp 
+                              (send language-level stepper:enable-let-lifting?))
          (not (member language-level-name
                       (list (string-constant intermediate-student/lambda)
                             (string-constant advanced-student))))
-         language-level-name
+         language-level
          run-on-drscheme-side)
         (send s-frame show #t)
 
@@ -544,16 +557,16 @@
               (lambda (button evt)
                 (if stepper-frame
                   (send stepper-frame show #t)
-                  (let ([language-level
-                         (extract-language-level
-                          (send (get-definitions-text) get-next-settings))])
-                    (if (stepper-works-for? language-level)
+                  (let ([language-level-name
+                         (language-level->name
+                          (extract-language-level (get-definitions-text)))])
+                    (if (stepper-works-for? language-level-name)
                       (set! stepper-frame
                             (view-controller-go this program-expander))
                       (message-box
                        (string-constant stepper-name)
                        (format (string-constant stepper-language-level-message)
-                               language-level
+                               language-level-name
                                (car stepper-works-for)
                                (car (reverse stepper-works-for))))))))))
 
@@ -576,19 +589,19 @@
 
           (define/public (check-current-language-for-stepper)
             (if (stepper-works-for?
-                 (extract-language-level
-                  (send (get-definitions-text) get-next-settings)))
-              (unless (send stepper-button is-shown?)
-                (send (send stepper-button get-parent)
-                      add-child stepper-button))
-              (when (send stepper-button is-shown?)
-                (send (send stepper-button get-parent)
-                      delete-child stepper-button))))
+                 (language-level->name 
+                  (extract-language-level (get-definitions-text))))
+                (unless (send stepper-button is-shown?)
+                  (send (send stepper-button get-parent)
+                        add-child stepper-button))
+                (when (send stepper-button is-shown?)
+                  (send (send stepper-button get-parent)
+                        delete-child stepper-button))))
 
           ;; add the stepper button to the button panel:
           (let ([p (send stepper-button get-parent)])
             (send (get-button-panel) change-children (lx (cons p (remq p _)))))
-
+          
           ;; hide stepper button if it's not supported for the initial language:
           (check-current-language-for-stepper)))
 
@@ -668,4 +681,6 @@
       ;; definitions text:
       (drscheme:get/extend:extend-unit-frame stepper-unit-frame-mixin)
       (drscheme:get/extend:extend-definitions-text
-       stepper-definitions-text-mixin))))
+       stepper-definitions-text-mixin)
+      
+      )))

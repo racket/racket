@@ -5,7 +5,8 @@
            (lib "list.ss")
            (lib "etc.ss")
            (lib "match.ss")
-           (lib "26.ss" "srfi"))
+           (lib "26.ss" "srfi")
+           (lib "class.ss"))
 
   ; CONTRACTS
   
@@ -87,7 +88,7 @@
    get-set-pair-union-stats ; profiling info
    re-intern-identifier
    finished-xml-box-table
-   >>>)
+   language-level->name)
   
   ;; eli's debug operator:
   ;; (I'm sure his version is more elegant.)
@@ -671,7 +672,10 @@
             [`(xml-box ,@(xmlspec ...)) (send scheme-editor insert (construct-xml-box xmlspec))]
             [(? string? text) (send scheme-editor insert text)])
            spec)))))
-
+  
+  
+  (define (language-level->name language)
+    (car (last-pair (send language get-language-position))))
   )
   
 ; test cases
