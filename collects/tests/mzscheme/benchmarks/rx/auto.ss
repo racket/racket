@@ -10,8 +10,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
            (lib "date.ss")
            "../common/cmdline.ss")
 
-  ;; Needed for mzold, comment out otherwise:
-  #; 
+  ;; Needed for rxmzold, comment out otherwise:
   (begin
     (define pregexp regexp)
     (define byte-pregexp byte-regexp))
@@ -27,12 +26,6 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define (test-mzscheme input rx iterations)
     (test-mz input (byte-pregexp rx) iterations))
 
-  (define (test-mzscheme-j input rx iterations)
-    (test-mz input
-	     (parameterize ([eval-jit-enabled #f])
-	       (byte-pregexp rx))
-	     iterations))
-
   (define (test-mzunicode input rx iterations)
     ;; Note: input is left as bytes, to avoid overhead of UTF-8
     ;;  conversion.
@@ -40,13 +33,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
 	     (pregexp (bytes->string/latin-1 rx))
 	     iterations))
 
-  (define (test-mzunicode-j input rx iterations)
-    (test-mz input
-	     (parameterize ([eval-jit-enabled #f])
-	       (pregexp (bytes->string/latin-1 rx)))
-	     iterations))
-
-  (define (test-mzold input rx iterations)
+  (define (test-rxmzold input rx iterations)
     (let ([rx (if (regexp-match #rx#"[(][?]s:" rx)
 		  (subbytes rx 4 (- (bytes-length rx) 1))
 		  rx)])
@@ -122,12 +109,20 @@ exec mzscheme -qu "$0" ${1+"$@"}
 	    (cons (list* (if (and (= i 1) next-is-diff?)
 			     (caar l)
 			     (string->symbol (format "~a~a" (caar l) i)))
-			 (let ([n (format "0~a" j)])
-			   (substring n (- (string-length n) 2)))
+			 (let ([n (format "00~a" j)])
+			   (substring n (- (string-length n) 3)))
 			 (cdar l))
 		  (loop (if next-is-diff? 1 (add1 i))
 			(add1 j)
 			(cdr l)))))))
+
+  (define dna-str (bytes-append
+		   #"DYttctatagWcRttatYSagacttcaScaacaYtSaattcaaagtgctSaagctattaa"
+		   #"agggtaactcacgDKgttaMRgggattttMcgttattaVtccaNagaRgMaataaagaSt"
+		   #"agggtaactcacgDKgttaMRgggattttMcgttattaVtccaNagaRgMaataaagaSt"))
+  (define dna-up-str (string->bytes/latin-1
+		      (string-upcase
+		       (bytes->string/latin-1 dna-str))))
 
   (define inputs
     (add-index
@@ -139,57 +134,86 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (list 'simple #"track1.title:TBlah blah blah" #"([^.]*)\\.([^:]*):[T ]+(.*)" 100000 '())
       (list 'section #"<body><h2><index><_index>8.9.10 A <b><i>very<_i> good<_b> section<_h2><p>Hi.<_p><_body>"
 	    #"<h[2-9]>(<[^>]*>)*[0-9.]+(.*)<_h[2-9]>" 100000 '())
+      (list 'dna dna-str #"agggtaa[cgt]|[acg]ttaccct" 100000 '())
+      (list 'dna dna-str #"[aA][gG][gG][gG][tT][aA][aA][cCgGtT]|[aAcCgG][tT][tT][aA][cC][cC][cC][tT]" 100000 '())
+      (list 'dna dna-str #"(?i:agggtaa[cgt]|[acg]ttaccct)" 100000 '(rxmzold))
+      (list 'dna dna-up-str #"(?i:agggtaa[cgt]|[acg]ttaccct)" 100000 '(rxmzold))
       (list 'far (bytes-append (make-bytes 10000 (char->integer #\a)) #"z") #"z" 10000 '())
-      (list 'farzq (bytes-append (make-bytes 1000 (char->integer #\a)) #"z") #"[zq]" 10000 '())
+      (list 'farzq (bytes-append (make-bytes 1000 (char->integer #\a)) #"z") #"[zq]" 100000 '())
       (list 'farzqalt (bytes-append (make-bytes 1000 (char->integer #\a)) #"z") #"z|q" 100000 '(perl))
-      (list 'fard (bytes-append (make-bytes 1000 (char->integer #\a)) #"0") #"\\d" 10000 '())
-      (list 'farw (bytes-append (make-bytes 1000 (char->integer #\space)) #"_") #"\\w" 10000 '())
+      (list 'fard (bytes-append (make-bytes 1000 (char->integer #\a)) #"0") #"\\d" 100000 '())
+      (list 'farw (bytes-append (make-bytes 1000 (char->integer #\space)) #"_") #"\\w" 100000 '())
       (list 'farnz (bytes-append (make-bytes 10000 (char->integer #\a)) #"z") #"(?:)z" 1000 '())
+      (list 'farbol (bytes-append (make-bytes 100 (char->integer #\x)) #"\na") #"(?m:^a)" 100000 '(rxmzold))
+      (list 'farlook (bytes-append (make-bytes 100 (char->integer #\x)) #"a") #"(?=a)a" 100000 '(rxmzold))
+      (list 'farlooknot (bytes-append (make-bytes 100 (char->integer #\x)) #"a") #"(?!b)a" 100000 '(rxmzold))
+      (list 'farlookb (bytes-append (make-bytes 100 (char->integer #\x)) #"a") #"(?<=x)a" 100000 '(rxmzold))
+      (list 'farlookbnot (bytes-append (make-bytes 100 (char->integer #\x)) #"a") #"(?<!y)a" 100000 '(rxmzold))
+      (list 'farempty (bytes-append (make-bytes 100 (char->integer #\x)) #"a") #"()a" 100000 '())
+      (list 'farsub (bytes-append (make-bytes 100 (char->integer #\x)) #"a") #"(a)" 100000 '())
+      (list 'faraa (bytes-append (make-bytes 100 (char->integer #\x)) #"aa") #"(aa)" 100000 '())
+      (list 'farcut (bytes-append (make-bytes 100 (char->integer #\x)) #"ab") #"(?>a)b" 100000 '(rxmzold python))
+      (list 'fareol (bytes-append (make-bytes 100 (char->integer #\x)) #"\n") #"(?m:$[^x])" 100000 '(rxmzold))
+      (list 'past (bytes-append (make-bytes 10000 (char->integer #\a)) #"z") #"a*z" 10000 '())
+      (list 'pastab (bytes-append (make-bytes 1000 (char->integer #\a)) #"z") #"[ab]*z" 100000 '())
+      (list 'pastabalt (bytes-append (make-bytes 1000 (char->integer #\a)) #"z") #"(?:a|b)*z" 100000 '(perl))
+      (list 'pastd (bytes-append (make-bytes 1000 (char->integer #\0)) #"z") #"\\d*z" 100000 '())
+      (list 'pastw (bytes-append (make-bytes 1000 (char->integer #\_)) #":") #"\\w*:" 100000 '())
+      (list 'pastna (bytes-append (make-bytes 10000 (char->integer #\a)) #"z") #"(?:(?:)a)*z" 1000 '(python))
       (list 'backtrack (bytes-append (make-bytes 300 (char->integer #\a)) #"zay") #"a*y" 1000 '())
       (list 'backtrack (bytes-append (make-bytes 300 (char->integer #\a)) #"zay") #"a*?z" 10000 '())
       (list 'backtrack (bytes-append (make-bytes 300 (char->integer #\a)) #"zay") #"a*?y" 1000 '())
       (list 'alts #"cataract23" #"(cat(a(ract|tonic)|erpillar))2(3)" 100000 '())
       (list 'alts #"cataract23" #"(?:cat(?:a(?:ract|tonic)|erpillar))23" 100000 '())
       (list 'alts #"caterpillar23" #"(?:cat(?:a(?:ract|tonic)|erpillar))23" 100000 '())
-      (list 'alts #"cataract23" #"(?i:(?:cat(?:a(?:ract|tonic)|erpillar)))23" 100000 '(mzold))
-      (list 'backref #"cataract cataract23" #"(cat(a(ract|tonic)|erpillar)) \\1()2(3)" 100000 '(mzold))
-      (list 'backref #"cataract cataract23" #"(cat(?:a(?:ract|tonic)|erpillar)) \\1(?:)23" 100000 '(mzold))
-      (list 'backref #"caterpillar caterpillar23" #"(cat(?:a(?:ract|tonic)|erpillar)) \\1(?:)23" 100000 '(mzold))
-      (list 'backref #"cataract cataract23" #"(?i:(cat(?:a(?:ract|tonic)|erpillar))) \\1(?:)23" 100000 '(mzold))
-      (list 'digits #"From abcd  Mon Sep  1 12:33:02 1997" #"^From\\s+\\S+\\s+([a-zA-Z]{3}\\s+){2}\\d{1,2}\\s+\\d\\d:\\d\\d" 100000 '(mzold))
-      (list 'digits #"From abcd  Sep 01 12:33:02 1997" #"^From\\s+\\S+\\s+([a-zA-Z]{3}\\s+){2}\\d{1,2}\\s+\\d\\d:\\d\\d"  100000 '(mzold))
-      (list 'lines (bytes-append (make-bytes 100 (char->integer #\x)) #"\na\nb\nc\nxxxxxxxx") #"(?m:^a(?:$)[^a]^b(?:$)[^a]^c(?:$))" 100000 '(mzold))
-      (list 'lookahead #"foobar is foolish see?" #"foo(?!bar).*" 100000 '(mzold))
-      (list 'lookahead #"foobar crowbar etc" #"(?:(?!foo)...|^.{0,2})bar.*" 100000 '(mzold))
-      (list 'lookbehind #"foobar is foolish see?" #"(?<=foo)lish.*" 100000 '(mzold))
-      (list 'lookbehind #"foobar crowbar etc" #"(?<=bar ....)bar.*" 100000 '(mzold))
-      (list 'cond (bytes-append #"E" (make-bytes 100 (char->integer #\x))) #"^(E)?(?(1)xx|x)*$" 10000 '(python mzold))
-      (list 'cond (bytes-append #"E" (make-bytes 101 (char->integer #\x))) #"^(E)?(?(1)xx|x)*$" 10000 '(python mzold))
-      (list 'cond (make-bytes 101 (char->integer #\x)) #"^(E)?(?(1)xx|x)*$" 10000 '(python mzold))
-      (list 'cut #"now is the time for all good men to come to the aid of the party" #"^((?>\\w+)|(?>\\s+))*$" 30000 '(python mzold))
-      (list 'cut #"this is not a line with only words and spaces!" #"^((?>\\w+)|(?>\\s+))*$" 30000 '(python mzold))
+      (list 'alts #"cataract23" #"(?i:(?:cat(?:a(?:ract|tonic)|erpillar)))23" 100000 '(rxmzold))
+      (list 'backref #"cataract cataract23" #"(cat(a(ract|tonic)|erpillar)) \\1()2(3)" 100000 '(rxmzold))
+      (list 'backref #"cataract cataract23" #"(cat(?:a(?:ract|tonic)|erpillar)) \\1(?:)23" 100000 '(rxmzold))
+      (list 'backref #"caterpillar caterpillar23" #"(cat(?:a(?:ract|tonic)|erpillar)) \\1(?:)23" 100000 '(rxmzold))
+      (list 'backref #"cataract cataract23" #"(?i:(cat(?:a(?:ract|tonic)|erpillar))) \\1(?:)23" 100000 '(rxmzold))
+      (list 'digits #"From abcd  Mon Sep  1 12:33:02 1997" 
+	    #"^From\\s+\\S+\\s+([a-zA-Z]{3}\\s+){2}\\d{1,2}\\s+\\d\\d:\\d\\d" 100000 '(rxmzold))
+      (list 'digits #"From abcd  Sep 01 12:33:02 1997" 
+	    #"^From\\s+\\S+\\s+([a-zA-Z]{3}\\s+){2}\\d{1,2}\\s+\\d\\d:\\d\\d"  100000 '(rxmzold))
+      (list 'lines (bytes-append (make-bytes 100 (char->integer #\x)) #"\na\nb\nc\nxxxxxxxx") 
+	    #"(?m:^a(?:$)[^a]^b(?:$)[^a]^c(?:$))" 100000 '(rxmzold))
+      (list 'lines (bytes-append (make-bytes 100 (char->integer #\newline)) #"\na\nb\nc\nxxxxxxxx") 
+	    #"(?m:^a(?:$)[^a]^b(?:$)[^a]^c(?:$))" 100000 '(rxmzold))
+      (list 'lookahead #"foobar is foolish see?" #"foo(?!bar).*" 100000 '(rxmzold))
+      (list 'lookahead #"foobar crowbar etc" #"(?:(?!foo)...|^.{0,2})bar.*" 100000 '(rxmzold))
+      (list 'lookbehind #"foobar is foolish see?" #"(?<=foo)lish.*" 100000 '(rxmzold))
+      (list 'lookbehind #"foobar crowbar etc" #"(?<=bar ....)bar.*" 100000 '(rxmzold))
+      (list 'cond (bytes-append #"E" (make-bytes 100 (char->integer #\x))) #"^(E)?(?(1)xx|x)*$" 10000 '(python rxmzold))
+      (list 'cond (bytes-append #"E" (make-bytes 101 (char->integer #\x))) #"^(E)?(?(1)xx|x)*$" 10000 '(python rxmzold))
+      (list 'cond (make-bytes 101 (char->integer #\x)) #"^(E)?(?(1)xx|x)*$" 10000 '(python rxmzold))
+      (list 'cut #"now is the time for all good men to come to the aid of the party" 
+	    #"^((?>\\w+)|(?>\\s+))*$" 30000 '(python rxmzold))
+      (list 'cut #"this is not a line with only words and spaces!" #"^((?>\\w+)|(?>\\s+))*$" 30000 '(python rxmzold))
       (list 'escape #"yesBABthe AAABquickAAAB brown foxABB" #"yesB([^AB]+|A.)*B" 10000 '())
       (list 'escape #"noBABthe AAABquickAAAB brown foxAB" #"noB([^AB]+|A.)*B" 10 '())
       (list 'escape #"yesBABthe AAABquickAAAB brown foxABB" #"yesB(?:[^AB]+|A.)*B" 10000 '())
       (list 'escape #"noBABthe AAABquickAAAB brown foxAB" #"noB(?:[^AB]+|A.)*B" 10 '())
-      (list 'escape #"yesbabthe aaabquickaaab frown foxabb" #"(?i:yesB(?:[^AB]+|A.)*B)" 100000 '(mzold))
-      (list 'escape #"nobabthe aaabquickaaab frown foxab" #"(?i:noB(?:[^AB]+|A.)*B)" 10 '(mzold))
-      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x|a)\\1*x$" 1000 '(mzold))
-      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x*|a)\\1x$" 1000 '(mzold))
-      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x*?|a)\\1x$" 1000 '(mzold))
-      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x*|a)\\1x" 10000 '(mzold))
-      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x{499})\\1x" 10000 '(mzold))
+      (list 'escape #"yesbabthe aaabquickaaab frown foxabb" #"(?i:yesB(?:[^AB]+|A.)*B)" 100000 '(rxmzold))
+      (list 'escape #"nobabthe aaabquickaaab frown foxab" #"(?i:noB(?:[^AB]+|A.)*B)" 10 '(rxmzold))
+      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x|a)\\1*x$" 1000 '(rxmzold))
+      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x*|a)\\1x$" 1000 '(rxmzold))
+      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x*?|a)\\1x$" 1000 '(rxmzold))
+      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x*|a)\\1x" 10000 '(rxmzold))
+      (list 'stress-same (make-bytes 1000 (char->integer #\x)) #"^(x{499})\\1x" 10000 '(rxmzold))
       (list 'stress-any (make-bytes 1000 (char->integer #\x))  #"(?s:.*)" 100000 '())
-      (list 'stress-any (make-bytes 10000 (char->integer #\x))  #"(?s:.*)" 100000 '(mzunicode mzunicode-j))
-      (list 'stress-any (make-bytes 100000 (char->integer #\x))  #"(?s:.*)" 100000 '(mzunicode mzunicode-j))
-      (list 'stress-nonlf (make-bytes 100 (char->integer #\x))  #"(?m:.*)" 100000 '(mzold))
-      (list 'stress-nonlf (make-bytes 1000 (char->integer #\x))  #"(?m:.*)" 100000 '(mzunicode mzunicode-j mzold))
-      (list 'stress-nonlf (make-bytes 10000 (char->integer #\x))  #"(?m:.*)" 100000 '(mzunicode mzunicode-j mzold))
-      (list 'stress-nonlf (make-bytes 100000 (char->integer #\x))  #"(?m:.*)" 10000 '(mzunicode mzunicode-j mzold))
+      (list 'stress-any (make-bytes 10000 (char->integer #\x))  #"(?s:.*)" 100000 '(mzunicode))
+      (list 'stress-any (make-bytes 100000 (char->integer #\x))  #"(?s:.*)" 100000 '(mzunicode))
+      (list 'stress-nonlf (make-bytes 100 (char->integer #\x))  #"(?m:.*)" 100000 '(rxmzold))
+      (list 'stress-nonlf (make-bytes 1000 (char->integer #\x))  #"(?m:.*)" 100000 '(mzunicode rxmzold))
+      (list 'stress-nonlf (make-bytes 10000 (char->integer #\x))  #"(?m:.*)" 100000 '(mzunicode rxmzold))
+      (list 'stress-nonlf (make-bytes 100000 (char->integer #\x))  #"(?m:.*)" 10000 '(mzunicode rxmzold))
       (list 'stress-anysave (make-bytes 100 (char->integer #\x))  #"(?s:(.)*)" 100000 '())
-      (list 'stress-anysave (make-bytes 1000 (char->integer #\x))  #"(?s:(.)*)" 100000 '(pcre python mzunicode mzunicode-j mzold))
-      (list 'stress-anysave (make-bytes 10000 (char->integer #\x))  #"(?s:(.)*)" 100000 '(pcre python mzunicode mzunicode-j mzold))
-      (list 'stress-anysave (make-bytes 100000 (char->integer #\x))  #"(?s:(.)*)" 100000 '(pcre python mzunicode mzunicode-j mzold))
+      (list 'stress-anysave (make-bytes 1000 (char->integer #\x))  #"(?s:(.)*)" 100000
+	    '(pcre python mzunicode rxmzold))
+      (list 'stress-anysave (make-bytes 10000 (char->integer #\x))  #"(?s:(.)*)" 100000
+	    '(pcre python mzunicode rxmzold))
+      (list 'stress-anysave (make-bytes 100000 (char->integer #\x))  #"(?s:(.)*)" 100000
+	    '(pcre python mzunicode rxmzold))
       (list 'stress-xs (make-bytes 100 (char->integer #\x))  #"x*" 100000 '())
       (list 'stress-xs (make-bytes 1000 (char->integer #\x))  #"x*" 100000 '())
       (list 'stress-xs (make-bytes 10000 (char->integer #\x))  #"x*" 10000 '())
@@ -209,12 +233,12 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (list 'stress-yzorx (make-bytes 10000 (char->integer #\x))  #"(?:[yz]|x)*" 100 '(python))
       (list 'stress-yzorx (make-bytes 100000 (char->integer #\x))  #"(?:[yz]|x)*" 10 '(pcre python))
       (list 'stress-yzorxsave (make-bytes 100 (char->integer #\x))  #"([yz]|x)*" 10000 '())
-      (list 'stress-x2 (make-bytes 100 (char->integer #\x))  #"(?:x{2})*" 10000 '(mzold))
-      (list 'stress-x2 (make-bytes 1000 (char->integer #\x))  #"(?:x{2})*" 10000 '(python mzold))
-      (list 'stress-x2 (make-bytes 10000 (char->integer #\x))  #"(?:x{2})*" 100 '(python mzold))
-      (list 'stress-x2 (make-bytes 100000 (char->integer #\x))  #"(?:x{2})*" 100 '(pcre python mzold))
-      (list 'stress-x2saveall (make-bytes 100 (char->integer #\x))  #"(x{2})*" 10000 '(mzold))
-      (list 'stress-x2save (make-bytes 100 (char->integer #\x))  #"((x){2})*" 10000 '(mzold))
+      (list 'stress-x2 (make-bytes 100 (char->integer #\x))  #"(?:x{2})*" 10000 '(rxmzold))
+      (list 'stress-x2 (make-bytes 1000 (char->integer #\x))  #"(?:x{2})*" 10000 '(python rxmzold))
+      (list 'stress-x2 (make-bytes 10000 (char->integer #\x))  #"(?:x{2})*" 100 '(python rxmzold))
+      (list 'stress-x2 (make-bytes 100000 (char->integer #\x))  #"(?:x{2})*" 100 '(pcre python rxmzold))
+      (list 'stress-x2saveall (make-bytes 100 (char->integer #\x))  #"(x{2})*" 10000 '(rxmzold))
+      (list 'stress-x2save (make-bytes 100 (char->integer #\x))  #"((x){2})*" 10000 '(rxmzold))
       (list 'stress-foobarbaz (bytes-append (random-letters 100) #"FOOBARBAZ")  #"[a-z]*FOOBARBAZ" 100000 '())
       (list 'stress-foobarbaz (bytes-append (random-letters 1000) #"FOOBARBAZ")  #"[a-z]*FOOBARBAZ" 10000 '())
       (list 'stress-foobarbaz (bytes-append (random-letters 10000) #"FOOBARBAZ")  #"[a-z]*FOOBARBAZ" 1000 '())
@@ -225,13 +249,19 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (list 'stress-nopesave (bytes-append (random-letters 100) #"FOOBARBAZ")  #"([a-z])*FOOBARNOPE" 1000000 '(python))
       (list 'stress-altfoobarbaz (bytes-append (random-letters 100) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARBAZ" 10000 '())
       (list 'stress-altfoobarbaz (bytes-append (random-letters 1000) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARBAZ" 1000 '())
-      (list 'stress-altfoobarbaz (bytes-append (random-letters 10000) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARBAZ" 10 '(python))
-      (list 'stress-altnope (bytes-append (random-letters 100) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARNOPE" 1000000 '(python))
-      (list 'stress-altnope (bytes-append (random-letters 1000) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARNOPE" 100000 '(pcre python))
-      (list 'stress-altnope (bytes-append (random-letters 10000) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARNOPE" 10000 '(pcre python))
-      (list 'stress-nopeci (bytes-append (random-letters 100) #"FOOBARBAZ")  #"(?i:[a-z]*FOOBARNOPE)" 10000 '(mzold))
-      (list 'stress-nopeci (bytes-append (random-letters 1000) #"FOOBARBAZ")  #"(?i:[a-z]*FOOBARNOPE)" 1000 '(pcre perl python mzold))
-      (list 'stress-nopeci (bytes-append (random-letters 10000) #"FOOBARBAZ")  #"(?i:[a-z]*FOOBARNOPE)" 1000 '(pcre perl python mzold)))))
+      (list 'stress-altfoobarbaz (bytes-append (random-letters 10000) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARBAZ" 10
+	    '(python))
+      (list 'stress-altnope (bytes-append (random-letters 100) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARNOPE" 1000000 
+	    '(python))
+      (list 'stress-altnope (bytes-append (random-letters 1000) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARNOPE" 100000
+	    '(pcre python))
+      (list 'stress-altnope (bytes-append (random-letters 10000) #"FOOBARBAZ")  #"(?:[a-z]|ab)*FOOBARNOPE" 10000 
+	    '(pcre python))
+      (list 'stress-nopeci (bytes-append (random-letters 100) #"FOOBARBAZ")  #"(?i:[a-z]*FOOBARNOPE)" 10000 '(rxmzold))
+      (list 'stress-nopeci (bytes-append (random-letters 1000) #"FOOBARBAZ")  #"(?i:[a-z]*FOOBARNOPE)" 1000 
+	    '(pcre perl python rxmzold))
+      (list 'stress-nopeci (bytes-append (random-letters 10000) #"FOOBARBAZ")  #"(?i:[a-z]*FOOBARNOPE)" 1000
+	    '(pcre perl python rxmzold)))))
   
   (define benchmark-names (map car inputs))
   
@@ -240,15 +270,11 @@ exec mzscheme -qu "$0" ${1+"$@"}
           (list 'perl test-perl)
           (list 'python test-python)
           (list 'pcre test-pcre)
-	  (list 'mzscheme-j test-mzscheme-j)
 	  (list 'mzunicode test-mzunicode)
-	  (list 'mzunicode-j test-mzunicode-j)
-	  (list 'mzold test-mzold)))
+	  (list 'rxmzold test-rxmzold)))
 
-  (define non-defaults (list 'mzscheme-j
-			     'mzunicode
-			     'mzunicode-j
-			     'mzold))
+  (define non-defaults (list 'mzunicode
+			     'rxmzold))
 
   ;; Extract command-line arguments --------------------
 

@@ -1,0 +1,76 @@
+<html>
+<head><title>Some Scheme Benchmarks</title></head>
+<body>
+
+<H1>About the Benchmarks</H1>
+
+<p>The pages linked below show some benchmark results on a collection of
+   regexp benchmarks.</p>
+
+<p>Tables show relative performance, with the actual time for the fastest
+   run shown on the left. So, by default, <font color=forestgreen><b>1</b></font> 
+   is the fastest, but select any implementation to normalize the table with
+   respect to that implementation's speed. A <tt>--</tt> appears when a benchmark
+   didn't run in an implementation (either due to a missing feature, a very long
+   run time, or stack overflow).</p>
+
+<p>Run times are averaged over three runs. All reported times are CPU time (system plus user).
+   The times for MzScheme, Perl, and Python use the language's sime function to record the
+   times before and after a loop within the language; the PCRE times are based on calls
+   a timed MzScheme loop using calling PCRE via <tt>(lib "foreign.ss")</tt>.</p>
+
+<p>A benchmark name <tt><i>name</i>/<i>N</i>/<i>M</i></tt> means that the
+   input size was roughly 10<sup><i>N</i></sup> and roughly
+   10<sup><i>M</i></sup> iterations were used. The <tt><i>name</i></tt> part 
+   can be matched to actual patterns and inputs in the source (see link below).</p>
+
+<p>The <tt>stress-</tt> benchmarks were taken from the CL-PPCRE
+   benchmark suite. Most others were written to test specific regexp
+   features, although a few were taken from useful code.</p>
+
+<p>Versions and performance notes:
+<dl>
+
+<dt> MzScheme: 352.6</li>
+<dd> Many of the benchmarks serve as a performance test suite for MzScheme,
+     and the MzScheme implementor also produced the benchmarks, so MzScheme
+     should perform reasonably well!</dd>
+
+<dt> PCRE: 6.7 (compiled with defaults)</dt>
+<dd> PCRE doesn't seem to ignore empty patterns like <tt>(?:)</tt>,
+     which probably don't come up much in practice. Also, the default build
+     mode uses C recursion, so some of the stress tests fail due to
+     stack overflow; recompiling to use heap frames would presumably
+     fix the problem. </dd>
+
+<dt> Perl: 5.8.6</dt>
+<dd> Perl is especially clever on the even-numbered <tt>escape</tt> tests (where
+     the even-numbered ones are where the input doesn't match).
+     Perl lags significantly only on the <tt>stress-nopeci</tt> benchmarks, which
+     require lots of backtracking unless the implementation first
+     checks for the existence of a <i>case-insensitive</i> version of a 
+     literal string; MzScheme checks only because the CL-PPCRE benchmark
+     suite suggested the test.</dd>
+
+<dt> Python: 2.3.5 <b>(old version!)</b></dt>
+<dd>Conditionals were added to Python's regexp library in version 2.4.
+    The non-backtracking form <tt>(?&gt;...)</tt>
+    doesn't seem to be supported.</dd>
+
+<dt> RxMzOld = Mzscheme 352.5</dt>
+<dd> This was the last version of MzScheme with the old regexp system.</dd>
+
+</dl>
+</P>
+
+<p>For further details on the benchmarks here, see the benchmark source and
+   infrastructure, which is available form the PLT SVN repository:</p>
+
+<p align=center>
+   <a href="http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/rx/">http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/rx/</a></P>
+
+<H1>Results</H1>
+
+<ul>
+<li> <a href=machine1.html>machine1</a> Mac OS X, PowerPC, 1.5GHz, 500MB
+</ul>
