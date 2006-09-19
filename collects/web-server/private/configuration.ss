@@ -225,7 +225,7 @@
   (provide/contract
    [build-configuration (configuration-table? host-table? . -> . configuration?)]
    [complete-configuration (path? configuration-table? . -> . configuration?)]
-   [complete-developer-configuration (string? configuration-table? . -> . configuration?)])
+   [complete-developer-configuration (path? configuration-table? . -> . configuration?)])
   ; XXX contract
   (provide
    complete-developer-configuration/vhosts)
