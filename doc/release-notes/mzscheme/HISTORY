@@ -1,6 +1,17 @@
+Version 352.6
+Added case-insensitive mode, multi-line mode, lookahead, lookbehind, 
+ non-backtracking, and conditionals to regexp language
+Added pregexp, byte-pregexp, and #px..., which includes numeric
+ quantifiers, backreferences char classes, and Unicode predicates
+Added regexp-match?, pregexp?, and byte-pregexp?
+Improved [p]regexp performance
+
 Version 352.5
 for-each, ormap, and andmap now tail-apply the given function
  for the last call
+eval evaluates its argument in tail position
+Improved compilation of call-with-values and an immediate
+ lambda argument to avoid closure creation
 
 Version 352.4
 class.ss: added inherit/inner and inherit/super, to eventually
@@ -12,7 +23,6 @@ Added raise-arity-error
 Changed bytecode compiler to perform more closure conversion
  and lifting
 Changed local-expand; #f stop list means expand only immediate
-
 
 Version 352, July 2006
 Minor bug fixes
