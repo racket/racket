@@ -23,32 +23,20 @@
     (with-syntax ([new-pats (syntax-map convert-pat stx)])
       #'new-pats))
   
-    (define (imp-list? x stx)
+    (define (imp-list? stx)
+      (define datum (syntax-e stx))
       (define (keyword? x)
-        (member (syntax-object->datum x)
-                '(
-                  quote
-                  quasiquote
-                  ?
-                  =
-                  and
-                  or
-                  not
-                  $
-                  set!
-                  get!
-                  ;unquote
-                  ;unquote-splicing
-                  )))
+        (memq (syntax-object->datum x)
+              '(quote quasiquote ? = and or not $ set! get!)))
       (let/ec out
-        (let loop ((x x))
-          (cond ((null? x) (out #f))
-                ((or (not (pair? x))
+        (let loop ([x datum])
+          (cond [(null? x) (out #f)]
+                [(or (not (pair? x))
                      (and (list? x)
-                          (keyword? (car x)))) 
+                          (keyword? (car x))))
                  (list 
-                  (quasisyntax/loc stx #,x)))
-                (else (cons (car x) (loop (cdr x))))))))
+                  (quasisyntax/loc stx #,x))]
+                [else (cons (car x) (loop (cdr x)))]))))
   
     (define (convert-quasi stx)
       (syntax-case stx (unquote quasiquote unquote-splicing)
@@ -133,12 +121,11 @@
 	[(set! id) (with-syntax ([id (cert #'id)])
 		     (syntax/loc stx (set! id)))]
 	[(quote p) stx]
-	;; FIXME
-	[(elems ...) (quasisyntax/loc stx (list . #,(syntax-map convert-pat stx)))]
-	[(e elems ... . rest)
-	 (quasisyntax/loc stx (list-rest #,@(syntax-map convert-pat #'(e elems ...)) 
-					 #,(convert-pat #'rest)))]
-	[pt
+        [(car-pat . cdr-pat)
+         (let ([l (imp-list? stx)])
+           (if l (quasisyntax/loc stx (list-rest #,@(map convert-pat l)))
+               (quasisyntax/loc stx (list #,@(syntax-map convert-pat stx)))))]
+        [pt
 	 (vector? (syntax-e stx))
 	 (with-syntax ([new-pats (map convert-pat (vector->list (syntax-e stx)))])
 	   (syntax/loc stx (vector . new-pats)))]
