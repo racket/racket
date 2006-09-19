@@ -2,6 +2,7 @@
   
   (require (lib "class.ss")
            (lib "mred.ss" "mred")
+           (lib "framework.ss" "framework")
            (lib "Object.ss" "profj" "libs" "java" "lang")
            (lib "String.ss" "profj" "libs" "java" "lang")
            (lib "array.ss" "profj" "libs" "java" "lang"))
@@ -144,7 +145,7 @@
 
   (define (make-java-snip value style)
     (let* ((formatted-java (format-java-value value style))
-           (editor (new text%))
+           (editor (new (editor:standard-style-list-mixin text%)))
            (snip (new editor-snip% (editor editor)
                       (with-border? #f))))
       (when (> (total-length formatted-java) 28)

@@ -197,7 +197,7 @@
                 (if curr-win
                     curr-win
                     (make-object test-window%)))
-               (content (make-object text%)))
+               (content (make-object (editor:standard-style-list-mixin text%))))
           (fill-in content test-results)
           (send content lock #t)
           (send window update-editor content)
@@ -250,7 +250,7 @@
               (send editor insert "\n"))
             
             (if (testcase-ext?)
-                (send editor insert "Run the following tests:\n")
+                (send editor insert "Ran the following tests:\n")
                 (send editor insert "Tested the following Example classes:\n"))
             (for-each
              (lambda (test-info)
@@ -446,7 +446,11 @@
   
   ;make-link: text% (listof (U string snip%)) src -> void
   (define (make-link text msg dest)
-    (for-each (lambda (m) (send text insert m)) msg)
+    (for-each (lambda (m) 
+                (when (is-a? m snip%)
+                  (send m set-style (send (send text get-style-list)
+                                          find-named-style "Standard")))
+                (send text insert m)) msg)
     (let ((start (send text get-end-position)))
       (send text insert (format-src dest))
       (send text set-clickback 
@@ -460,8 +464,7 @@
         (send text change-style (make-object style-delta% 'change-underline #t)
               start end #f)
         (send c set-delta-foreground "royalblue")
-        (send text change-style c start end #f))
-      ))
+        (send text change-style c start end #f))))
     
   (define (open-and-highlight-in-file srcloc)
     (let* ([position (src-pos srcloc)]
@@ -477,10 +480,13 @@
   
   (define (make-covered-button covered dest partial?)
     (send dest insert " ")
-    (let* ((editor (new text%))
+    (let* ((editor (new (editor:standard-style-list-mixin text%)
+                        [auto-wrap #t]))
            (snip (new editor-snip% (editor editor)
                       (with-border? #t)))
            (start (send dest get-end-position)))
+      (send snip set-style
+            (send (send dest get-style-list) find-named-style "Standard"))
       (if partial?
           (send editor insert "Show covered expressions")
           (send editor insert "Show all covered expressions"))
