@@ -82,21 +82,13 @@ void scheme_init_numcomp(Scheme_Env *env)
 }
 
 /* Prototype needed for 3m conversion: */
-static
-#ifndef NO_INLINE_KEYWORD
-MSC_IZE(inline)
-#endif
-Scheme_Object *force_rat(Scheme_Object *n, Small_Rational *sr);
+static MZ_INLINE Scheme_Object *force_rat(Scheme_Object *n, Small_Rational *sr);
 
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif
 
-static
-#ifndef NO_INLINE_KEYWORD
-MSC_IZE(inline)
-#endif
-Scheme_Object *force_rat(Scheme_Object *n, Small_Rational *sr)
+static MZ_INLINE Scheme_Object *force_rat(Scheme_Object *n, Small_Rational *sr)
 {
   Scheme_Type t = SCHEME_TYPE(n);
   if (t == scheme_rational_type)

@@ -612,11 +612,7 @@ double scheme_real_to_double(Scheme_Object *r)
     return 0.0;
 }
 
-static
-#ifndef NO_INLINE_KEYWORD
-MSC_IZE(inline)
-#endif
-int minus_zero_p(double d)
+static MZ_INLINE int minus_zero_p(double d)
 {
   return (1 / d) < 0;
 }

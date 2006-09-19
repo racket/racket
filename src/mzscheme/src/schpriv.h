@@ -116,6 +116,12 @@ void scheme_clear_ephemerons(void);
 
 #define BITS_PER_MZSHORT (8 * sizeof(mzshort))
 
+#ifndef NO_INLINE_KEYWORD
+# define MZ_INLINE MSC_IZE(inline)
+#else
+# define MZ_INLINE /* empty */
+#endif
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
@@ -2545,7 +2551,9 @@ void scheme_reset_hash_table(Scheme_Hash_Table *ht, int *history);
 
 Scheme_Object *scheme_regexp_source(Scheme_Object *re);
 int scheme_regexp_is_byte(Scheme_Object *re);
-Scheme_Object *scheme_make_regexp(Scheme_Object *str, int byte, int * volatile result_is_err_string);
+Scheme_Object *scheme_make_regexp(Scheme_Object *str, int byte, int pcre, int * volatile result_is_err_string);
+int scheme_is_pregexp(Scheme_Object *o);
+void scheme_clear_rx_buffers(void);
 unsigned short * scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
 				      unsigned short *buf, int bufsize,
 				      long *ulen, int term_size);

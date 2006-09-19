@@ -302,9 +302,14 @@
 
   /************** x86/FreeBSD with gcc ****************/
 
-# if defined(__FreeBSD__) && defined(i386)
+# if defined(__FreeBSD__) && (defined(i386) || defined(__x86_64__))
 
+#if defined(i386)
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
+#endif
+#if defined(__x86_64__)
+# define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-freebsd"
+#endif
 
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
@@ -318,7 +323,6 @@
 # define USE_UNDERSCORE_SETJMP
 
 # define USE_IEEE_FP_PREDS
-# define FREEBSD_CONTROL_387
 # define POW_HANDLES_INF_CORRECTLY
 
 # define USE_DYNAMIC_FDSET_SIZE
@@ -329,8 +333,13 @@
 
 # define REGISTER_POOR_MACHINE
 
+#if defined(__x86_64__)
+# define MZ_USE_JIT_X86_64
+# define MZ_JIT_USE_MPROTECT
+#else
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
+#endif
 
 # define FLAGS_ALREADY_SET
 
@@ -1126,14 +1135,14 @@
     '387 with Microsoft-style _control87. DONT_IGNORE_PIPE_SIGNAL can
     be on or off. */
 
- /* FREEBSD_CONTROL_387 controls the floating-point processor under i386
-    FreeBSD */
-
  /* LINUX_CONTROL_387 controls the floating-point processor under i386
     Linux using __setfpucw(). libc 6.1 doesn't export __setfpucw() and
     it doesn't matter; for Linux 2.0 and up, the default FP behavior
     is the one we want. This flag might be needed for older versions
     of Linux. */
+
+ /* FREEBSD_CONTROL_387 controls the floating-point processor under i386
+    FreeBSD. As for Linux, this does not appear necessary anymore. */
 
  /* APLHA_CONTROL_FP controls the floating-point processor for Alpha
     OSF1 */

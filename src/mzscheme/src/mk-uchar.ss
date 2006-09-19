@@ -54,13 +54,22 @@
   (indirect cases (list up down title fold combining) 256))
 
 (define general-categories (make-hash-table 'equal))
-(hash-table-put! general-categories "Cn" 0)
 (define (combine-cat cat)
   (hash-table-get general-categories cat
 		  (lambda ()
 		    (let ([v (hash-table-count general-categories)])
 		      (hash-table-put! general-categories cat v)
 		      v))))
+;; So they're in order:
+(with-input-from-file "schgencat.h"
+  (lambda ()
+    (let loop ()
+      (let ([l (read-line)])
+	(unless (eof-object? l)
+	  (let ([m (regexp-match #rx"mzu_([A-Z][a-z])" l)])
+	    (when m
+	      (combine-cat (cadr m))))
+	  (loop))))))
 
 (define hexes (map char->integer (string->list "0123456789abcdefABCDEF")))
 

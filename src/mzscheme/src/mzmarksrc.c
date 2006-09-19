@@ -1708,6 +1708,7 @@ mark_regexp {
   regexp *r = (regexp *)p;
  mark:
   gcMARK(r->source);
+  gcMARK(r->regstart);
  size:
   gcBYTES_TO_WORDS((sizeof(regexp) + r->regsize));
 }
@@ -1720,7 +1721,9 @@ mark_regwork {
   gcMARK(r->port);
   gcMARK(r->unless_evt);
   gcMARK(r->startp);
+  gcMARK(r->maybep);
   gcMARK(r->endp);
+  gcMARK(r->counters);
   gcMARK(r->peekskip);
  size:
   gcBYTES_TO_WORDS(sizeof(Regwork));

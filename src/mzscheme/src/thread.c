@@ -1711,13 +1711,7 @@ static void check_current_custodian_allows(const char *who, Scheme_Thread *p)
 /*                             thread sets                                */
 /*========================================================================*/
 
-#define TSET_IL /* */
-#ifndef NO_INLINE_KEYWORD
-# ifndef DONT_INLINE_NZERO_TEST
-#  undef TSET_IL
-#  define TSET_IL MSC_IZE(inline)
-# endif
-#endif
+#define TSET_IL MZ_INLINE
 
 static Scheme_Thread_Set *create_thread_set(Scheme_Thread_Set *parent)
 {
@@ -5600,8 +5594,7 @@ Scheme_Object *scheme_get_thread_param(Scheme_Config *c, Scheme_Thread_Cell_Tabl
   cell = find_param_cell(c, scheme_make_integer(pos), 0);
   if (SCHEME_THREAD_CELLP(cell))
     return scheme_thread_cell_get(cell, cells);
-  return
-    cell;
+  return cell;
 }
 
 Scheme_Object *scheme_get_param(Scheme_Config *c, int pos)
@@ -6607,6 +6600,7 @@ static void get_ready_for_GC()
   scheme_clear_modidx_cache();
   scheme_clear_shift_cache();
   scheme_clear_cc_ok();
+  scheme_clear_rx_buffers();
 
 #ifdef RUNSTACK_IS_GLOBAL
   scheme_current_thread->runstack = MZ_RUNSTACK;

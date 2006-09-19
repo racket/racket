@@ -4231,6 +4231,7 @@ static int mark_regexp_SIZE(void *p) {
 static int mark_regexp_MARK(void *p) {
   regexp *r = (regexp *)p;
   gcMARK(r->source);
+  gcMARK(r->regstart);
   return
   gcBYTES_TO_WORDS((sizeof(regexp) + r->regsize));
 }
@@ -4238,6 +4239,7 @@ static int mark_regexp_MARK(void *p) {
 static int mark_regexp_FIXUP(void *p) {
   regexp *r = (regexp *)p;
   gcFIXUP(r->source);
+  gcFIXUP(r->regstart);
   return
   gcBYTES_TO_WORDS((sizeof(regexp) + r->regsize));
 }
@@ -4258,7 +4260,9 @@ static int mark_regwork_MARK(void *p) {
   gcMARK(r->port);
   gcMARK(r->unless_evt);
   gcMARK(r->startp);
+  gcMARK(r->maybep);
   gcMARK(r->endp);
+  gcMARK(r->counters);
   gcMARK(r->peekskip);
   return
   gcBYTES_TO_WORDS(sizeof(Regwork));
@@ -4271,7 +4275,9 @@ static int mark_regwork_FIXUP(void *p) {
   gcFIXUP(r->port);
   gcFIXUP(r->unless_evt);
   gcFIXUP(r->startp);
+  gcFIXUP(r->maybep);
   gcFIXUP(r->endp);
+  gcFIXUP(r->counters);
   gcFIXUP(r->peekskip);
   return
   gcBYTES_TO_WORDS(sizeof(Regwork));

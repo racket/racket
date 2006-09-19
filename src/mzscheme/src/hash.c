@@ -33,10 +33,7 @@ int scheme_hash_iteration_count;
 
 #ifdef MZ_PRECISE_GC
 static short keygen;
-XFORM_NONGCING static 
-#ifndef NO_INLINE_KEYWORD
-MSC_IZE(inline)
-#endif
+XFORM_NONGCING static MZ_INLINE
 long PTR_TO_LONG(Scheme_Object *o)
 {
   short v;
@@ -257,32 +254,115 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
   return val;
 }
 
+static Scheme_Object *do_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val)
+{
+  Scheme_Object *tkey, **keys;
+  hash_v_t h, h2, useme = 0;
+  unsigned long mask;
+  unsigned long lkey;
+  int set = 2;
+
+  mask = table->size - 1;
+
+  lkey = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
+  h = (lkey >> 2) & mask;
+  h2 = (lkey >> 3) & mask;
+
+  h2 |= 1;
+
+  keys = table->keys;
+  
+  scheme_hash_request_count++;
+  while ((tkey = keys[h])) {
+    if (SAME_PTR(tkey, key)) {
+      table->vals[h] = val;
+      if (!val) {
+	keys[h] = GONE;
+	--table->count;
+      }
+      return val;
+    } else if (SAME_PTR(tkey, GONE)) {
+      if (set > 1) {
+	useme = h;
+	set = 1;
+      }
+    } 
+    scheme_hash_iteration_count++;
+    h = (h + h2) & mask;
+  }
+
+  if (set == 1)
+    h = useme;
+  else if (table->mcount * FILL_FACTOR >= table->size) {
+    /* Use slow path to grow table: */
+    return do_hash(table, key, 2, val);
+  } else {
+    table->mcount++;
+  }
+
+  table->count++;
+  table->keys[h] = key;
+  table->vals[h] = val;
+
+  return val;
+}
+
+static Scheme_Object *do_hash_get(Scheme_Hash_Table *table, Scheme_Object *key)
+{
+  Scheme_Object *tkey, **keys;
+  hash_v_t h, h2;
+  unsigned long mask;
+  unsigned long lkey;
+
+  mask = table->size - 1;
+
+  lkey = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
+  h = (lkey >> 2) & mask;
+  h2 = (lkey >> 3) & mask;
+
+  h2 |= 1;
+
+  keys = table->keys;
+  
+  scheme_hash_request_count++;
+  while ((tkey = keys[h])) {
+    if (SAME_PTR(tkey, key)) {
+      return table->vals[h];
+    } 
+    scheme_hash_iteration_count++;
+    h = (h + h2) & mask;
+  }
+
+  return NULL;
+}
+
 void scheme_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val)
 {
   if (!table->vals) {
     Scheme_Object **ba;
-
+    
     table->size = 8;
-
+    
     ba = MALLOC_N(Scheme_Object *, table->size);
     table->vals = ba;
     ba = MALLOC_N(Scheme_Object *, table->size);
     table->keys = ba;
   }
 
-  do_hash(table, key, 2, val);
+  if (table->make_hash_indices)
+    do_hash(table, key, 2, val);
+  else
+    do_hash_set(table, key, val);
 }
 
 Scheme_Object *scheme_hash_get(Scheme_Hash_Table *table, Scheme_Object *key)
 {
-  Scheme_Object *val;
-
   if (!table->vals)
-    val = NULL;
+    return NULL;
+  else if (table->make_hash_indices)
+    return do_hash(table, key, 0, NULL);
   else
-    val = do_hash(table, key, 0, NULL);
-
-  return val;
+    return do_hash_get(table, key);
 }
 
 int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2)

@@ -2247,10 +2247,7 @@ long scheme_get_char_string(const char *who,
   }
 }
 
-static 
-#ifndef NO_INLINE_KEYWORD
-MSC_IZE(inline)
-#endif
+static MZ_INLINE
 long get_one_byte(const char *who,
 		  Scheme_Object *port,
 		  char *buffer, long offset,

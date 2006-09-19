@@ -1827,7 +1827,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	 Scheme_Object *src;
 	 src = scheme_regexp_source(obj);
 	 if (src) {
-	   print_utf8_string(pp, "#rx", 0, 3);
+	   if (scheme_is_pregexp(obj))
+	     print_utf8_string(pp, "#px", 0, 3);
+	   else
+	     print_utf8_string(pp, "#rx", 0, 3);
 	   print(src, 1, 0, ht,symtab, rnht, pp);
 	 } else if (compact || !pp->print_unreadable)
 	   cannot_print(pp, notdisplay, obj, ht, compact);

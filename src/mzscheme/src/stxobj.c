@@ -269,11 +269,7 @@ XFORM_NONGCING static void WRAP_POS_SET_FIRST(Wrap_Pos *w)
   }
 }
 
-XFORM_NONGCING static
-#ifndef NO_INLINE_KEYWORD
-MSC_IZE(inline)
-#endif
-void DO_WRAP_POS_INC(Wrap_Pos *w)
+XFORM_NONGCING static MZ_INLINE void DO_WRAP_POS_INC(Wrap_Pos *w)
 {
   Scheme_Object *a;
   if (w->is_limb && (w->pos + 1 < ((Wrap_Chunk *)SCHEME_CAR(w->l))->len)) {
@@ -4073,6 +4069,72 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 /*                           syntax->datum                                */
 /*========================================================================*/
 
+/* This code can convert a syntax object plus its wraps to something
+   writeable. In that case, the result is a <converted>:
+
+      <converted> = (vector <simple converted> <cert>)
+                  | <simple converted>
+      <simple converted> = <simple converted pair> | ...
+
+      <simple converted pair> = (cons (cons <int> (cons <converted> ... <converted>)) <wrap>)
+                              | (cons (cons <converted> ... null) <wrap>)
+                              | (cons (cons #t <s-exp>) <wrap>)
+                                 ; where <s-exp> has no boxes or vectors, and
+                                 ;  <wrap> is shared in all <s-exp> elements
+      <simple converted box> = (cons (box <converted>) <wrap>)
+      <simple converted vector> = (cons (vector <converted> ...) <wrap>)
+      <simple converted other> = (cons <s-exp> <wrap>)
+                                 ; where <s-exp> is not a pair, vector, or box
+*/
+
+static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_mark, int pair_ok)
+{
+  /* We only share wraps for things constucted with pairs and
+     atomic (w.r.t. syntax) values, where there are no certificates
+     on any of the sub-parts. */
+  Scheme_Object *v;
+
+  if (SCHEME_PAIRP(a)) {
+    v = SCHEME_CAR(a);
+
+    if (SCHEME_PAIRP(v)) {
+      if (pair_ok && SAME_OBJ(SCHEME_CAR(v), scheme_true)) {
+        /* A pair with shared wraps for its elements */
+        if (get_mark)
+          return SCHEME_CDR(a);
+        else
+          return SCHEME_CDR(v);
+      }
+    } else if (!SCHEME_BOXP(v) && !SCHEME_VECTORP(v)) {
+      /* It's atomic. */
+      if (get_mark)
+        return SCHEME_CDR(a);
+      else
+        return v;
+    }
+  }
+
+  return NULL;
+}
+
+static void lift_common_wraps(Scheme_Object *l, Scheme_Object *common_wraps, int cnt, int tail)
+{
+  Scheme_Object *a;
+
+  while (cnt--) {
+    a = SCHEME_CAR(l);
+    a = extract_for_common_wrap(a, 0, 1);
+    SCHEME_CAR(l) = a;
+    if (cnt)
+      l = SCHEME_CDR(l);
+  }
+  if (tail) {
+    a = SCHEME_CDR(l);
+    a = extract_for_common_wrap(a, 0, 0);
+    SCHEME_CDR(l) = a;
+  }
+}
+
 #ifdef DO_STACK_CHECK
 static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
 					    Scheme_Hash_Table **ht,
@@ -4100,7 +4162,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 					    Scheme_Hash_Table *rns)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
-  Scheme_Object *ph, *v, *result;
+  Scheme_Object *ph, *v, *result, *converted_wraps = NULL;
 
 #ifdef DO_STACK_CHECK
   {
@@ -4152,7 +4214,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   v = stx->val;
   
   if (SCHEME_PAIRP(v)) {
-    Scheme_Object *first = NULL, *last = NULL, *p;
+    Scheme_Object *first = NULL, *last = NULL, *p, *common_wraps = NULL;
     int cnt = 0;
     
     while (SCHEME_PAIRP(v)) {
@@ -4161,7 +4223,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       cnt++;
 
       a = syntax_to_datum_inner(SCHEME_CAR(v), ht, with_marks, rns);
-      
+
       p = CONS(a, scheme_null);
       
       if (last)
@@ -4170,12 +4232,35 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 	first = p;
       last = p;
       v = SCHEME_CDR(v);
+
+      if (with_marks) {
+        a = extract_for_common_wrap(a, 1, 1);
+        if (!common_wraps) {
+          if (a)
+            common_wraps = a;
+          else
+            common_wraps = scheme_false;
+        } else if (!a || !SAME_OBJ(common_wraps, a))
+          common_wraps = scheme_false;
+      }
     }
     if (!SCHEME_NULLP(v)) {
       v = syntax_to_datum_inner(v, ht, with_marks, rns);
       SCHEME_CDR(last) = v;
 
-      if (with_marks > 1) {
+      if (with_marks) {
+        v = extract_for_common_wrap(v, 1, 0);
+        if (v && SAME_OBJ(common_wraps, v)) {
+          converted_wraps = wraps_to_datum(stx->wraps, rns, 0);
+          if (SAME_OBJ(common_wraps, converted_wraps))
+            lift_common_wraps(first, common_wraps, cnt, 1);
+          else
+            common_wraps = scheme_false;
+        } else
+          common_wraps = scheme_false;
+      }
+
+      if ((with_marks > 1) && SCHEME_FALSEP(common_wraps)) {
 	/* v is likely a pair, and v's car might be a pair,
 	   which means that the datum->syntax part
 	   won't be able to detect that v is a "non-pair"
@@ -4183,8 +4268,18 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 	   length before the terminal to datum->syntax: */
 	first = scheme_make_pair(scheme_make_integer(cnt), first);
       }
+    } else if (with_marks && SCHEME_TRUEP(common_wraps)) {
+      converted_wraps = wraps_to_datum(stx->wraps, rns, 0);
+      if (SAME_OBJ(common_wraps, converted_wraps))
+        lift_common_wraps(first, common_wraps, cnt, 0);
+      else
+        common_wraps = scheme_false;
     }
-    
+
+    if (with_marks && SCHEME_TRUEP(common_wraps)) {
+      first = scheme_make_pair(scheme_true, first);
+    }
+
     result = first;
   } else if (SCHEME_BOXP(v)) {
     v = syntax_to_datum_inner(SCHEME_BOX_VAL(v), ht, with_marks, rns);
@@ -4209,7 +4304,9 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     result = v;
 
   if (with_marks > 1) {
-    result = CONS(result, wraps_to_datum(stx->wraps, rns, 0));
+    if (!converted_wraps)
+      converted_wraps = wraps_to_datum(stx->wraps, rns, 0);
+    result = CONS(result, converted_wraps);
     if (stx->certs) {
       Scheme_Object *cert_marks = scheme_null, *icert_marks = scheme_null;
       Scheme_Cert *certs;
@@ -4226,13 +4323,16 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 	icert_marks = scheme_make_pair(certs->mark, icert_marks);
 	certs = certs->next;
       }
-      
-      v = scheme_make_vector(2, NULL);
-      SCHEME_VEC_ELS(v)[0] = result;
-      if (SCHEME_PAIRP(icert_marks))
-	cert_marks = scheme_make_pair(cert_marks, icert_marks);
-      SCHEME_VEC_ELS(v)[1] = cert_marks;
-      result = v;
+
+      if (SCHEME_PAIRP(cert_marks)
+          || SCHEME_PAIRP(icert_marks)) {
+        v = scheme_make_vector(2, NULL);
+        SCHEME_VEC_ELS(v)[0] = result;
+        if (SCHEME_PAIRP(icert_marks))
+          cert_marks = scheme_make_pair(cert_marks, icert_marks);
+        SCHEME_VEC_ELS(v)[1] = cert_marks;
+        result = v;
+      }
     }
   }
 
@@ -4249,6 +4349,33 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
   Scheme_Object *v;
 
   v = syntax_to_datum_inner(stx, &ht, with_marks, rns);
+
+  if (with_marks > 1) {
+    if (SCHEME_PAIRP(v)
+        && SCHEME_SYMBOLP(SCHEME_CAR(v))
+        && SCHEME_INTP(SCHEME_CDR(v))) {
+      /* A symbol+wrap combination is likely to be used multiple
+         times. This is a relatively minor optimization in .zo size,
+         since v is already fairly compact, but it also avoids
+         allocating extra syntax objects at load time. */
+      Scheme_Hash_Table *reverse_map;
+      Scheme_Object *code;
+      
+      reverse_map = (Scheme_Hash_Table *)scheme_hash_get(rns, scheme_undefined);
+      if (reverse_map) {
+        code = scheme_hash_get(reverse_map, v);
+        if (code) {
+          return code;
+        } else {
+          code = scheme_make_integer(rns->count);
+          scheme_hash_set(rns, code, v);
+          scheme_hash_set(reverse_map, v, code);
+          v = scheme_make_vector(2, v);
+          SCHEME_VEC_ELS(v)[1] = code;
+        }
+      }
+    }
+  }
 
   if (ht)
     v = scheme_resolve_placeholders(v, 0);
@@ -4748,10 +4875,11 @@ static Scheme_Object *datum_to_syntax_k(void)
 
 static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o, 
 					    Scheme_Stx *stx_src,
-					    Scheme_Stx *stx_wraps, /* or rename table */
+					    Scheme_Stx *stx_wraps, /* or rename table, or boxed precomputed wrap */
 					    Scheme_Hash_Table *ht)
 {
   Scheme_Object *result, *ph = NULL, *wraps, *cert_marks = NULL;
+  int do_not_unpack_wraps = 0;
 
   if (SCHEME_STXP(o))
     return o;
@@ -4803,6 +4931,10 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       return_NULL;
     wraps = SCHEME_CDR(o);
     o = SCHEME_CAR(o);
+  } else if (SCHEME_BOXP(stx_wraps)) {
+    /* Shared wraps, to be used directly everywhere: */
+    wraps = SCHEME_BOX_VAL(stx_wraps);
+    do_not_unpack_wraps = 1;
   } else
     wraps = NULL;
 
@@ -4821,8 +4953,17 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       result = o;
     } else {
       int cnt = -1;
-      
-      if (wraps && SCHEME_INTP(SCHEME_CAR(o))) {
+      Scheme_Stx *sub_stx_wraps = stx_wraps;
+
+      if (wraps && !SCHEME_BOXP(stx_wraps) && SAME_OBJ(SCHEME_CAR(o), scheme_true)) {
+        /* Resolve wraps now, and then share it with
+           all nested objects (as indicated by a box
+           for stx_wraps). */
+        wraps = datum_to_wraps(wraps, (Scheme_Hash_Table *)stx_wraps);
+        do_not_unpack_wraps = 1;
+        sub_stx_wraps = (Scheme_Stx *)scheme_box(wraps);
+        o = SCHEME_CDR(o);
+      } else if (wraps && !SCHEME_BOXP(stx_wraps) && SCHEME_INTP(SCHEME_CAR(o))) {
 	/* First element is the number of items
 	   before a non-null terminal: */
 	cnt = SCHEME_INT_VAL(SCHEME_CAR(o));
@@ -4840,7 +4981,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 	  }
 	}
 
-	a = datum_to_syntax_inner(SCHEME_CAR(o), stx_src, stx_wraps, ht);
+	a = datum_to_syntax_inner(SCHEME_CAR(o), stx_src, sub_stx_wraps, ht);
 	if (!a) return_NULL;
       
 	p = scheme_make_immutable_pair(a, scheme_null);
@@ -4855,7 +4996,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 	--cnt;
       }
       if (!SCHEME_NULLP(o)) {
-	o = datum_to_syntax_inner(o, stx_src, stx_wraps, ht);
+	o = datum_to_syntax_inner(o, stx_src, sub_stx_wraps, ht);
 	if (!o) return_NULL;
 	SCHEME_CDR(last) = o;
       }
@@ -4891,9 +5032,11 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     result = scheme_make_stx(result, stx_src->srcloc, NULL);
 
   if (wraps) {
-    wraps = datum_to_wraps(wraps, (Scheme_Hash_Table *)stx_wraps);
-    if (!wraps)
-      return_NULL;
+    if (!do_not_unpack_wraps) {
+      wraps = datum_to_wraps(wraps, (Scheme_Hash_Table *)stx_wraps);
+      if (!wraps)
+        return_NULL;
+    }
     ((Scheme_Stx *)result)->wraps = wraps;
   } else if (SCHEME_FALSEP((Scheme_Object *)stx_wraps)) {
     /* wraps already nulled */
@@ -4941,7 +5084,7 @@ Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o,
 {
 
   Scheme_Hash_Table *ht;
-  Scheme_Object *v;
+  Scheme_Object *v, *code = NULL;
 
   if (!SCHEME_FALSEP(stx_src) && !SCHEME_STXP(stx_src))
     return o;
@@ -4954,12 +5097,29 @@ Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o,
   else
     ht = NULL;
 
+  if (SCHEME_HASHTP(stx_wraps)) {
+    /* If o is just a number, look it up in the table. */
+    if (SCHEME_INTP(o))
+      return scheme_hash_get((Scheme_Hash_Table *)stx_wraps, o);
+    /* If it's a vector where the second element is a number, we'll need to hash. */
+    if (SCHEME_VECTORP(o) 
+        && (SCHEME_VEC_SIZE(o) == 2)
+        && SCHEME_INTP(SCHEME_VEC_ELS(o)[1])) {
+      code = SCHEME_VEC_ELS(o)[1];
+      o = SCHEME_VEC_ELS(o)[0];
+    }
+  }
+
   v = datum_to_syntax_inner(o, 
 			    (Scheme_Stx *)stx_src, 
 			    (Scheme_Stx *)stx_wraps,
 			    ht);
 
   if (!v) return_NULL; /* only happens with bad wraps from a bad .zo */
+
+  if (code) {
+    scheme_hash_set((Scheme_Hash_Table *)stx_wraps, code, v);
+  }
 
   if (ht)
     v = scheme_resolve_placeholders(v, 1);

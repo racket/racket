@@ -1537,19 +1537,22 @@ int scheme_is_hash_table_equal(Scheme_Object *o)
 
 static Scheme_Object *hash_table_put(int argc, Scheme_Object *argv[])
 {
-  if (!(SCHEME_HASHTP(argv[0]) && SCHEME_MUTABLEP(argv[0])) && !SCHEME_BUCKTP(argv[0]))
-    scheme_wrong_type("hash-table-put!", "mutable hash-table", 0, argc, argv);
+  Scheme_Object *v = argv[0];
 
-  if (SCHEME_BUCKTP(argv[0])) {
-    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)argv[0];
+  if (SCHEME_BUCKTP(v)) {
+    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
     if (t->mutex) scheme_wait_sema(t->mutex,0);
     scheme_add_to_table(t, (char *)argv[1], (void *)argv[2], 0);
     if (t->mutex) scheme_post_sema(t->mutex);
-  } else{
-    Scheme_Hash_Table *t = (Scheme_Hash_Table *)argv[0];
-    if (t->mutex) scheme_wait_sema(t->mutex, 0);
+  } else if (!SCHEME_HASHTP(v) || !SCHEME_MUTABLEP(v)) {
+    scheme_wrong_type("hash-table-put!", "mutable hash-table", 0, argc, argv);
+  } else if (((Scheme_Hash_Table *)v)->mutex) {
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
+    scheme_wait_sema(t->mutex, 0);
     scheme_hash_set(t, argv[1], argv[2]);
-    if (t->mutex) scheme_post_sema(t->mutex);
+    scheme_post_sema(t->mutex);
+  } else {
+    scheme_hash_set((Scheme_Hash_Table *)v, argv[1], argv[2]);
   }
 
   return scheme_void;
@@ -1559,19 +1562,23 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v;
 
-  if (!(SCHEME_HASHTP(argv[0]) || SCHEME_BUCKTP(argv[0])))
-    scheme_wrong_type("hash-table-get", "hash-table", 0, argc, argv);
+  v = argv[0];
 
-  if (SCHEME_BUCKTP(argv[0])){
-    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)argv[0];
+  if (SCHEME_BUCKTP(v)) {
+    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
     if (t->mutex) scheme_wait_sema(t->mutex, 0);
     v = (Scheme_Object *)scheme_lookup_in_table(t, (char *)argv[1]);
     if (t->mutex) scheme_post_sema(t->mutex);
-  } else {
-    Scheme_Hash_Table *t = (Scheme_Hash_Table *)argv[0];
-    if (t->mutex) scheme_wait_sema(t->mutex, 0);
+  } else if (!SCHEME_HASHTP(v)) {
+    scheme_wrong_type("hash-table-get", "hash-table", 0, argc, argv);
+    return NULL;
+  } else if (((Scheme_Hash_Table *)v)->mutex) {
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
+    scheme_wait_sema(t->mutex, 0);
     v = scheme_hash_get(t, argv[1]);
-    if (t->mutex) scheme_post_sema(t->mutex);
+    scheme_post_sema(t->mutex);
+  } else {
+    v = scheme_hash_get((Scheme_Hash_Table *)v, argv[1]);
   }
 
   if (v)

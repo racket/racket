@@ -491,11 +491,7 @@ static void emit_indentation(mz_jit_state *jitter)
 /*                               run time                                 */
 /*========================================================================*/
 
-static 
-#ifndef NO_INLINE_KEYWORD
-MSC_IZE(inline) 
-#endif
-  Scheme_Object *do_make_native_closure(Scheme_Native_Closure_Data *code, int size)
+static MZ_INLINE Scheme_Object *do_make_native_closure(Scheme_Native_Closure_Data *code, int size)
 {
   Scheme_Native_Closure *o;
 

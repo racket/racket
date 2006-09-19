@@ -2,7 +2,7 @@
 (define re:start "^START ([a-z]+);")
 (define re:end "^END ([a-z]+);")
 
-(define re:form "^([a-zA-Z0-9_]+) {")
+(define re:form "^([a-zA-Z0-9_]+) [{]")
 
 (define re:mark "^ mark:")
 (define re:size "^ size:")

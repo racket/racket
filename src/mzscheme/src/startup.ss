@@ -1558,36 +1558,24 @@
 					     (ormap (lambda (i) (bound-identifier=? i r)) l))
 				  (hash-table-put! ht (syntax-e r) (cons r l)))))))])
       (if proto-r
-	  `(lambda (r src)
-	     ,(let ([main `(datum->syntax-object (quote-syntax ,(and dest
-								     ;; In case dest has significant structure...
-								     (datum->syntax-object
-								      dest
-								      'dest
-								      #f)))
-						 ,(apply-to-r l)
-						 src)])
+	  `(lambda (r)
+	     ,(let ([main (let ([build (apply-to-r l)])
+			    (if (and (pair? build)
+				     (eq? (car build) 'pattern-substitute))
+				build
+				(let ([small-dest ;; In case dest has significant structure...
+				       (and dest (datum->syntax-object
+						  dest
+						  'dest
+						  dest))])
+				  `(datum->syntax-object/shape (quote-syntax ,small-dest)
+							       ,build))))])
 		(if (multiple-ellipsis-vars? proto-r)
-		    `(let ([exnh #f])
-		       ((let/ec esc
-			  (dynamic-wind
-			   (lambda ()
-			     (set! exnh (current-exception-handler))
-			     (current-exception-handler
-			      (lambda (exn)
-				(esc
-				 (lambda ()
-				   (if (exn:break? exn)
-				       (raise exn)
-				       (ellipsis-count-error
-					(quote ,p)
-					;; This is a trick to minimize the syntax structure we keep:
-					(quote-syntax ,(datum->syntax-object #f '... p)))))))))
-			   (lambda ()
-			     (let ([v ,main])
-			       (lambda () v)))
-			   (lambda ()
-			     (current-exception-handler exnh))))))
+		    `(catch-ellipsis-error
+		      (lambda () ,main)
+		      (quote ,p)
+		      ;; This is a trick to minimize the syntax structure we keep:
+		      (quote-syntax ,(datum->syntax-object #f '... p)))
 		    main)))
 	  ;; Get list of unique vars:
 	  (apply append (hash-table-map ht (lambda (k v) v))))))
@@ -1619,32 +1607,86 @@
 		(eq? (car t) 'quote-syntax)
 		(eq? (cadr t) (stx-cdr p)))))
       `(quote-syntax ,p)]
-     [(syntax? stx)
-      ;; Keep context and location information
-      (let ([ctx (datum->syntax-object stx 'ctx stx)])
-	`(datum->syntax-object (quote-syntax ,ctx)
-			       ,(apply-cons #f h t p) 
-			       (quote-syntax ,ctx)))]
-     ;; (cons X null) => (list X)
+     [(and (pair? t)
+	   (eq? (car t) 'pattern-substitute))
+      ;; fold h into the existing pattern-substitute:
+      (cond
+       [(and (pair? h)
+	     (eq? (car h) 'quote-syntax)
+	     (eq? (cadr h) (stx-car p)))
+	;; Just extend constant part:
+	`(pattern-substitute
+	  (quote-syntax ,(let ([v (cons (cadr h) (cadadr t))])
+			   ;; We exploit the fact that we're
+			   ;;  building an S-expression to
+			   ;;  preserve the source's distinction
+			   ;;  between (x y) and (x . (y)).
+			   (if (syntax? stx)
+			       (datum->syntax-object stx
+						     v
+						     stx
+						     stx)
+			       v)))
+	  . ,(cddr t))]
+       [(and (pair? h)
+	     (eq? 'pattern-substitute (car h)))
+	;; Combine two pattern substitutions:
+	`(pattern-substitute (quote-syntax ,(let ([v (cons (cadadr h) (cadadr t))])
+					      (if (syntax? stx)
+						  (datum->syntax-object stx
+									v
+									stx
+									stx)
+						  v)))
+			     ,@(cddr h) ;; <-- WARNING: potential quadratic expansion
+			     . ,(cddr t))]
+       [else
+	;; General case: add a substitution:
+	(let* ([id (gensym)]
+	       [expr (cons id (cadadr t))]
+	       [expr (if (syntax? stx)
+			 (datum->syntax-object stx
+					       expr
+					       stx
+					       stx)
+			 expr)])
+	  `(pattern-substitute
+	    (quote-syntax ,expr)
+	    ,id ,h
+	    . ,(cddr t)))])]
      [(eq? t 'null)
-      `(list-immutable ,h)]
-     ;; (cons X (list[*] Y ...)) => (list[*] X Y ...)
+      (apply-cons stx h 
+		  `(pattern-substitute (quote-syntax ()))
+		  p)]
      [(and (pair? t)
-	   (memq (car t) '(list-immutable list*-immutable)))
-      `(,(car t) ,h ,@(cdr t))]
-     ;; (cons X (cons Y Z)) => (list* X Y Z)
-     [(and (pair? t)
-	   (eq? (car t) 'cons-immutable))
-      `(list*-immutable ,h ,@(cdr t))]
-     ;; (cons (car X) (cdr X)) => X
-     [(and (pair? h) (pair? t)
-	   (eq? (car h) 'car)
-	   (eq? (car t) 'cdr)
-	   (symbol? (cadr h))
-	   (eq? (cadr h) (cadr t)))
-      (cadr h)]
+	   (eq? (car t) 'quote-syntax)
+	   (stx-smaller-than? (car t) 10))
+      ;; Shift into `pattern-substitute' mode with an intitial constant.
+      ;; (Only do this for small constants, so we don't traverse
+      ;; big constants when looking for substitutions.)
+      (apply-cons stx h 
+		  `(pattern-substitute ,t)
+		  p)]
      [else
-      `(cons-immutable ,h ,t)]))
+      ;; Shift into `pattern-substitute' with an initial substitution:
+      (apply-cons stx h
+		  (let ([id (gensym)])
+		    `(pattern-substitute (quote-syntax ,id)
+					 ,id ,t))
+		  p)]))
+
+  (-define (stx-smaller-than? stx sz)
+    (sz . > . (stx-size stx (add1 sz))))
+
+  (-define (stx-size stx up-to)
+    (cond
+     [(up-to . < . 1) 0]
+     [(syntax? stx) (stx-size (syntax-e stx) up-to)]
+     [(pair? stx) (let ([s1 (stx-size (car stx) up-to)])
+		    (+ s1 (stx-size (cdr stx) (- up-to s1))))]
+     [(vector? stx) (stx-size (vector->list stx) up-to)]
+     [(box? stx) (add1 (stx-size (unbox stx) (sub1 up-to)))]
+     [else 1]))
 
   ;; Generates a list-ref expression; if use-tail-pos
   ;;  is not #f, then the argument list is really a list*
@@ -1845,15 +1887,137 @@
 ;; syntax-case and syntax
 
 (module #%stxcase #%kernel
-  (require #%stx #%small-scheme)
+  (require #%stx #%small-scheme #%paramz)
   (require-for-syntax #%stx #%small-scheme #%sc #%kernel)
 
-  (-define (ellipsis-count-error sexp sloc)
-    (raise-syntax-error
-     'syntax
-     "incompatible ellipsis match counts for template"
-     sexp
-     sloc))
+  (-define (datum->syntax-object/shape orig datum)
+     (if (syntax? datum)
+	 datum
+	 (let ([stx (datum->syntax-object orig datum orig)])
+	   (let ([shape (syntax-property stx 'paren-shape)])
+	     (if shape
+		 (syntax-property stx 'paren-shape shape)
+		 stx)))))
+
+  (-define (catch-ellipsis-error thunk sexp sloc)
+      ((let/ec esc
+	 (with-continuation-mark
+	     parameterization-key
+	     (extend-parameterization
+	      (continuation-mark-set-first #f parameterization-key)
+	      current-exception-handler
+	      (lambda (exn)
+		(esc
+		 (lambda ()
+		   (if (exn:break? exn)
+		       (raise exn)
+		       (raise-syntax-error
+			'syntax
+			"incompatible ellipsis match counts for template"
+			sexp
+			sloc))))))
+	   (let ([v (thunk)])
+	     (lambda () v))))))
+
+  (-define substitute-stop 'dummy)
+
+  ;; pattern-substitute optimizes a pattern substitution by
+  ;;  merging variables that look up the same simple mapping
+  (-define-syntax pattern-substitute
+    (lambda (stx)
+      (let ([pat (stx-car (stx-cdr stx))]
+	    [subs (stx->list (stx-cdr (stx-cdr stx)))])
+	(let ([ht-common (make-hash-table 'equal)]
+	      [ht-map (make-hash-table)])
+	  ;; Determine merges:
+	  (let loop ([subs subs])
+	    (unless (null? subs)
+	      (let ([id (syntax-e (car subs))]
+		    [expr (cadr subs)])
+		(when (or (identifier? expr)
+			  (and (stx-pair? expr)
+			       (memq (syntax-e (stx-car expr))
+				     '(car cadr caddr cadddr
+					   cdr cddr cdddr cddddr
+					   list-ref list-tail))
+			       (stx-pair? (stx-cdr expr))
+			       (identifier? (stx-car (stx-cdr expr)))))
+		  (let ([s-expr (syntax-object->datum expr)])
+		    (let ([new-id (hash-table-get ht-common s-expr #f)])
+		      (if new-id
+			  (hash-table-put! ht-map id new-id)
+			  (hash-table-put! ht-common s-expr id))))))
+	      (loop (cddr subs))))
+	  ;; Merge:
+	  (let ([new-pattern (if (zero? (hash-table-count ht-map))
+				 pat
+				 (let loop ([stx pat])
+				   (cond
+				    [(pair? stx)
+				     (let ([a (loop (car stx))]
+					   [b (loop (cdr stx))])
+				       (if (and (eq? a (car stx))
+						(eq? b (cdr stx)))
+					   stx
+					   (cons a b)))]
+				    [(symbol? stx)
+				     (let ([new-id (hash-table-get ht-map stx #f)])
+				       (or new-id stx))]
+				    [(syntax? stx) 
+				     (let ([new-e (loop (syntax-e stx))])
+				       (if (eq? (syntax-e stx) new-e)
+					   stx
+					   (datum->syntax-object stx new-e stx stx)))]
+				    [(vector? stx)
+				     (list->vector (map loop (vector->list stx)))]
+				    [(box? stx) (box (loop (unbox stx)))]
+				    [else stx])))])
+	    (datum->syntax-object (quote-syntax here)
+				  `(apply-pattern-substitute
+				    ,new-pattern
+				    (quote ,(let loop ([subs subs])
+					      (cond
+					       [(null? subs) null]
+					       [(hash-table-get ht-map (syntax-e (car subs)) #f)
+						;; Drop mapped id
+						(loop (cddr subs))]
+					       [else
+						(cons (car subs) (loop (cddr subs)))])))
+				    . ,(let loop ([subs subs])
+					 (cond
+					  [(null? subs) null]
+					  [(hash-table-get ht-map (syntax-e (car subs)) #f)
+					   ;; Drop mapped id
+					   (loop (cddr subs))]
+					  [else
+					   (cons (cadr subs) (loop (cddr subs)))])))
+				  stx))))))
+
+  (-define apply-pattern-substitute
+     (lambda (stx sub-ids . sub-vals)
+       (let loop ([stx stx])
+	 (cond
+	  [(pair? stx) (let ([a (loop (car stx))]
+			     [b (loop (cdr stx))])
+			 (if (and (eq? a (car stx))
+				  (eq? b (cdr stx)))
+			     stx
+			     (cons a b)))]
+	  [(symbol? stx)
+	   (let sloop ([sub-ids sub-ids][sub-vals sub-vals])
+	     (cond
+	      [(null? sub-ids) stx]
+	      [(eq? stx (car sub-ids)) (car sub-vals)]
+	      [else (sloop (cdr sub-ids) (cdr sub-vals))]))]
+	  [(syntax? stx) 
+	   (let ([new-e (loop (syntax-e stx))])
+	     (if (eq? (syntax-e stx) new-e)
+		 stx
+		 (datum->syntax-object/shape stx new-e)))]
+	  [(vector? stx)
+	   (list->vector (map loop (vector->list stx)))]
+	  [(box? stx) (box (loop (unbox stx)))]
+	  [else stx]))))
 
   (-define-syntax syntax-case**
     (lambda (x)
@@ -2142,9 +2306,7 @@
 				  [(zero? len) (quote-syntax ())]
 				  [(= len 1) (car r)]
 				  [else
-				   (cons (quote-syntax list*) r)]))
-			       (list (quote-syntax quote-syntax)
-				     (datum->syntax-object #f 'srctag x))))))))))
+				   (cons (quote-syntax list*) r)]))))))))))
        x)))
 
   (provide syntax-case** syntax))
@@ -3081,7 +3243,7 @@
 	     (or (relative-path? s)
 		 (absolute-path? s)))))
 
-  (define -re:suffix (byte-regexp #"([.][^.]*|)$"))  
+  (define -re:suffix #rx#"([.][^.]*|)$")
   (define (path-replace-suffix s sfx)
     (unless (path-string? s)
       (raise-type-error 'path-replace-suffix "path or valid-path string" 0 s sfx))
@@ -3472,9 +3634,9 @@
   (current-reader-guard (let ([default-reader-guard (lambda (path) path)])
 			  default-reader-guard))
 
-  (define -re:dir (byte-regexp #"(.+?)/+(.*)"))
-  (define -re:auto (byte-regexp #"^,"))
-  (define -re:ok-relpath (byte-regexp #"^[-a-zA-Z0-9_. ]+(/+[-a-zA-Z0-9_. ]+)*$"))
+  (define -re:dir #rx#"(.+?)/+(.*)")
+  (define -re:auto #rx#"^,")
+  (define -re:ok-relpath #rx#"^[-a-zA-Z0-9_. ]+(/+[-a-zA-Z0-9_. ]+)*$")
   (define -module-hash-table-table (make-hash-table 'weak)) ; weak map from namespace to module ht
   (define -path-cache (make-hash-table 'weak 'equal)) ; weak map from `lib' path + corrent-library-paths to symbols
   

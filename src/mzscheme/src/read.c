@@ -87,11 +87,7 @@ static Scheme_Object *print_honu(int, Scheme_Object *[]);
 #define RETURN_FOR_DELIM            0x4
 #define RETURN_FOR_COMMENT          0x8
 
-static
-#ifndef NO_INLINE_KEYWORD
-MSC_IZE(inline)
-#endif
-long SPAN(Scheme_Object *port, long pos) {
+static MZ_INLINE long SPAN(Scheme_Object *port, long pos) {
   long cpos;
   scheme_tell_all(port, NULL, NULL, &cpos);
   return cpos - pos + 1;
@@ -1254,7 +1250,9 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	  }
 	  break;
 	case 'r':
+	case 'p':
 	  if (!params->honu_mode) {
+	    int orig_ch = ch;
 	    int cnt = 0, is_byte = 0;
 	    char *expect;
 
@@ -1280,11 +1278,13 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 		if (stxsrc)
 		  str = SCHEME_STX_VAL(str);
 
-		str = scheme_make_regexp(str, is_byte, &is_err);
+		str = scheme_make_regexp(str, is_byte, (orig_ch == 'p'), &is_err);
 
 		if (is_err) {
 		  scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation,
-				  "read: bad regexp string: %s", (char *)str);
+				  "read: bad %sregexp string: %s", 
+				  (orig_ch == 'r') ? "" : "p",
+				  (char *)str);
 		  return NULL;
 		}
 
@@ -1293,7 +1293,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 		return str;
 	      }
-	    } else if (ch == 'e') {
+	    } else if ((orig_ch == 'r') && (ch == 'e')) {
 	      expect = "eader";
 	      cnt++;
 	      while (expect[cnt]) {
@@ -1336,8 +1336,8 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 	      scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos),
 			      ch, indentation,
-			      "read: bad syntax `#r%u'",
-			      a, cnt);
+			      "read: bad syntax `#%c%u'",
+			      orig_ch, a, cnt);
 	      return NULL;
 	    }
 	  }
