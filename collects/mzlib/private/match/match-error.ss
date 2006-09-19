@@ -67,6 +67,7 @@
    ;; this makes pregexp errors a little more friendly
   (define (pregexp-match-with-error regex str)
     (if (or (string? regex)
+            (regexp? regex)
             (and (pair? regex)
                  (equal? ':sub (car regex))))
         (pregexp-match regex str)
