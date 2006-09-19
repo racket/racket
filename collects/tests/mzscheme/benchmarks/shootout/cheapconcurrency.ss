@@ -14,7 +14,8 @@
   (let ([n (string->number 
 	    (vector-ref (current-command-line-arguments) 0))])
     (let* ([start-ch (make-channel)]
-	   [end-ch (generate start-ch 500)])
+	   [end-ch (parameterize ([current-thread-initial-stack-size 3])
+		     (generate start-ch 500))])
       (let loop ([n n][total 0])
 	(if (zero? n)
 	    (printf "~a\n" total)

@@ -1684,7 +1684,11 @@ regranges(int parse_flags, int at_start)
       if (parse_flags & PARSE_PCRE) {
 	if ((c >= '0') && (c <= '9'))
 	  break;
-	regcharclass(regparsestr[regparse], new_map);
+	if (((c >= 'a') && (c <= 'z'))
+	    || ((c >= 'A') && (c <= 'Z')))
+	  regcharclass(regparsestr[regparse], new_map);
+	else
+	  new_map[c] = 1;
       } else
 	new_map[c] = 1;
       regparse++;
@@ -1801,7 +1805,7 @@ regranges(int parse_flags, int at_start)
       return ret;
     } else if ((on_ranges == 1)
 	       ||  (off_ranges == 1)) {
-      int rs = 0, re = 0, on;
+      int rs = 255, re = 255, on;
 
       if (on_ranges == 1)
 	on = 1;

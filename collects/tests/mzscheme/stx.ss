@@ -194,6 +194,16 @@
 (test #t syntax-original? se)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; paren-shape:
+
+(let ([s (with-syntax ([a (quote-syntax [x y])])
+	   #'[a 10])])
+  (test #f syntax-property #'(x) 'paren-shape)
+  (test #\[ syntax-property #'[x] 'paren-shape)
+  (test #\[ syntax-property s 'paren-shape)
+  (test #\[ syntax-property (syntax-case s () [(b _) #'b]) 'paren-shape))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Two-step macro chain
 
 (define-syntax mcr5

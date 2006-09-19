@@ -3,6 +3,7 @@
 
 (load-relative "basic.ss")
 (load-relative "unicode.ss")
+(load-relative "rx.ss")
 (load-relative "read.ss")
 (load-relative "macro.ss")
 (load-relative "syntax.ss")
