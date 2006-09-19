@@ -1,11 +1,11 @@
-(module url mzscheme
+(module servlet-url mzscheme
   (require (lib "list.ss")
            (lib "etc.ss")
            (lib "contract.ss")
            (lib "url.ss" "net")
            (lib "struct.ss"))
-  (require "private/url.ss"
-           "request-structs.ss")
+  (require "url.ss"
+           "../request-structs.ss")
   
   (define-struct servlet-url (protocol host port
                                        servlets-root 

@@ -1,17 +1,17 @@
 (module servlet-env mzscheme
   (require (lib "sendurl.ss" "net")
            (lib "unitsig.ss"))
-  (require "configuration.ss"
-           "web-server.ss"
-           "sig.ss"
-           "private/util.ss"
-           "response.ss"
-           "managers/timeouts.ss"
-           "private/servlet.ss"
-           "private/cache-table.ss")
-  (require "servlet.ss")
+  (require "../configuration.ss"
+           "../web-server.ss"
+           "../sig.ss"
+           "../private/util.ss"
+           "../response.ss"
+           "../managers/timeouts.ss"
+           "../private/servlet.ss"
+           "../private/cache-table.ss")
+  (require "../servlet.ss")
   (provide (rename on-web:syntax on-web)
-           (all-from "servlet.ss"))
+           (all-from "../servlet.ss"))
   
   (define-syntax (on-web:syntax stx)
     (syntax-case stx ()

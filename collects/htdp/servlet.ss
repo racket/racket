@@ -1,12 +1,12 @@
 ; Author: Paul Graunke
 #cs(module servlet mzscheme
-     (require (lib "servlet-env.ss" "web-server")
+     (require (lib "servlet-env.ss" "web-server" "tools")
               (lib "error.ss" "htdp")
               (lib "xml.ss" "xml")
               (lib "list.ss")
               (lib "prim.ss" "lang")
               (lib "unitsig.ss"))
-     (provide (all-from-except (lib "servlet-env.ss" "web-server") build-suspender)
+     (provide (all-from-except (lib "servlet-env.ss" "web-server" "tools") build-suspender)
               (rename wrapped-build-suspender build-suspender))
      
      (define wrapped-build-suspender
