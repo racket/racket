@@ -137,7 +137,7 @@
 	(map
 	 (lambda (c)
 	   (cond 
-	    [(memq c '(#\$ #\| #\\ #\[ #\] #\. #\* #\? #\+ #\( #\) #\^))
+	    [(memq c '(#\$ #\| #\\ #\[ #\] #\. #\* #\? #\+ #\( #\) #\^ #\{ #\}))
 	     (list #\\ c)]
 	    [(and (not case-sens?)
 		  (not (char=? (char-upcase c) (char-downcase c))))

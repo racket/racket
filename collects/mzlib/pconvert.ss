@@ -125,6 +125,7 @@
                     'atomic]
                    [(and (not (struct? expr))  ;; struct names are the wrong thing, here
                          (not (regexp? expr))
+                         (not (byte-regexp? expr))
                          (not (procedure? expr))
                          (not (promise? expr))
                          (not (object? expr))
@@ -360,8 +361,12 @@
                                      (if (list? arity)
                                          `(case-lambda . ,(make-lambda-helper arity))
                                          `(lambda ,(make-lambda-helper arity) ...)))))]
-                               [(regexp? expr) `(regexp ,(or (object-name expr)
-                                                             '...))]
+                               [(regexp? expr) `(,(if (pregexp? expr) 'pregexp 'regexp)
+						 ,(or (object-name expr)
+						      '...))]
+                               [(byte-regexp? expr) `(,(if (byte-pregexp? expr) 'byte-pregexp 'byte-regexp)
+						      ,(or (object-name expr)
+							   '...))]
                                [(module-path-index? expr) 
                                 (let-values ([(left right) (module-path-index-split expr)])
                                   `(module-path-index-join ,(recur left) ,(recur right)))]
