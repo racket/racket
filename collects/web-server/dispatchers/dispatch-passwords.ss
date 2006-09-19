@@ -3,7 +3,7 @@
            (lib "contract.ss"))
   (require "dispatch.ss"
            (all-except "../private/util.ss" translate-escapes)
-           "../configuration.ss"
+           "../private/configuration.ss"
            "../private/servlet-helpers.ss"
            "../private/connection-manager.ss"
            "../response.ss")  

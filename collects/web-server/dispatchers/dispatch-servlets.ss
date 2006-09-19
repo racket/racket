@@ -10,7 +10,7 @@
            "../response.ss"
            "../servlet.ss"
            "../sig.ss"
-           "../configuration.ss"
+           "../private/configuration.ss"
            (all-except "../private/util.ss" translate-escapes)
            "../managers/manager.ss"
            "../managers/timeouts.ss"

@@ -7,7 +7,7 @@
            (lib "contract.ss"))
   (require (lib "pretty.ss"))         
   (require "dispatch.ss"
-           "../configuration.ss"
+           "../private/configuration.ss"
            "../private/util.ss"
            "../private/mime-types.ss"
            "../private/request.ss"
