@@ -6,7 +6,7 @@
            "../private/configuration.ss"
            "../private/servlet-helpers.ss"
            "../private/connection-manager.ss"
-           "../response.ss")  
+           "../private/response.ss")  
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide ; XXX contract kw

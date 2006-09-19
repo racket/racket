@@ -9,7 +9,7 @@
            "bindings.ss"
            "../servlet-structs.ss"
            "../request-structs.ss"
-           "../response.ss")
+           "../response-structs.ss")
   (provide (all-from "bindings.ss")
            (all-from "../request-structs.ss"))  
   

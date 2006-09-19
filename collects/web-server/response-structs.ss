@@ -2,6 +2,8 @@
   (require (lib "contract.ss")
            (lib "xml.ss" "xml"))
   
+  (define TEXT/HTML-MIME-TYPE #"text/html; charset=utf-8")
+  
   ;; **************************************************
   ;; (make-response/basic number string number string  (listof (cons symbol string)))
   (define-struct response/basic (code message seconds mime extras))
@@ -64,4 +66,5 @@
             [extras (listof (cons/c symbol? string?))]
             [generator ((() (listof (or/c bytes? string?)) . ->* . any) . ->
                                                                          . any)])]
-   [response? (any/c . -> . boolean?)]))
+   [response? (any/c . -> . boolean?)]
+   [TEXT/HTML-MIME-TYPE bytes?]))

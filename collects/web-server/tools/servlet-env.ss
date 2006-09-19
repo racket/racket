@@ -5,7 +5,7 @@
            "../web-server.ss"
            "../sig.ss"
            "../private/util.ss"
-           "../response.ss"
+           "../response-structs.ss"
            "../managers/timeouts.ss"
            "../private/servlet.ss"
            "../private/cache-table.ss")

@@ -6,7 +6,7 @@
            "util.ss"
            "cache-table.ss"
            "../sig.ss"
-           "../response.ss")
+           "../response-structs.ss")
         
   ; : str configuration-table/vhosts -> configuration
   (define (complete-developer-configuration/vhosts base table)

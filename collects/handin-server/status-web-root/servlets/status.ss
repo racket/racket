@@ -6,7 +6,7 @@
 	   (lib "date.ss")
 	   (lib "unitsig.ss")
 	   (lib "servlet-sig.ss" "web-server")
-	   (lib "response.ss" "web-server")
+	   (lib "response-structs.ss" "web-server")
 	   (lib "md5.ss" "handin-server")
 	   (lib "uri-codec.ss" "net"))
 

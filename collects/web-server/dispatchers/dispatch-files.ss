@@ -12,7 +12,8 @@
            "../private/mime-types.ss"
            "../private/request.ss"
            "../private/servlet-helpers.ss"
-           "../response.ss")
+           "../private/response.ss"
+           "../response-structs.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide ; XXX contract kw
