@@ -1,6 +1,8 @@
 
 (load-relative "loadtest.ss")
 
+(Section 'rx)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (test-regexp result pattern input)
@@ -1652,6 +1654,21 @@
 		    (unless (= n end)
 		      (loop (if uniform? end (+ n 1)))))))
 	      kcrl)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Check that rx doesn't parse as px:
+(test '(#"") regexp-match #px#"\\$" #"a$b")
+(test '(#"$") regexp-match #rx#"\\$" #"a$b")
+(test '(#"aa" #"a") regexp-match #px#"(a)\\1" #"aa")
+(test '(#"a1" #"a") regexp-match #rx#"(a)\\1" #"a1")
+(test '(#"a") regexp-match #px#"\\w" #"aw")
+(test '(#"w") regexp-match #rx#"\\w" #"aw")
+(test '(#"0") regexp-match #px#"\\d" #"0w")
+(test '(#"d") regexp-match #rx#"\\d" #"0d")
+(test '(#"0") regexp-match #px#"[\\d]" #"0w")
+(test '(#"d") regexp-match #rx#"[\\d]" #"0d")
+(test '(#"\\") regexp-match #rx#"[\\d]" #"0\\")
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1263,7 +1263,7 @@ regatom(int *flagp, int parse_flags, int at_start)
       if (regparse == regparse_end)
 	FAIL("trailing backslash in pattern");
       c = regparsestr[regparse++];
-      if (c == '$') {
+      if ((c == '$') && (parse_flags & PARSE_PCRE)) {
 	ret = regnode(NOTHING);
 	regmatchmin = regmatchmax = 0;
 	*flagp |= SIMPLE|SPNOTHING;
