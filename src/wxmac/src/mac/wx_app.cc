@@ -592,9 +592,10 @@ static Bool doPreOnChar(wxWindow *in_win, wxWindow *win, wxKeyEvent *evt)
 
 short wxMacDisableMods; /* If a modifier key is here, handle it specially */
 
-static Handle uchrHandle;
-static Handle KCHRHandle;
+static void *uchrPtr;
+static void *KCHRPtr;
 static UInt32 key_state;
+static int keyLayoutSet;
 static SInt16 lastKeyLayoutID;
 
 void wxApp::doMacKeyUpDown(Bool down)
@@ -779,22 +780,30 @@ void wxApp::doMacKeyUpDown(Bool down)
 	    }
 
 	    currentKeyLayoutID = GetScriptVariable(GetScriptManagerVariable(smKeyScript), smScriptKeys);
-	    if ((!uchrHandle && !KCHRHandle) || (currentKeyLayoutID != lastKeyLayoutID)) {
+	    if (!keyLayoutSet || (currentKeyLayoutID != lastKeyLayoutID)) {
+	      KeyboardLayoutRef kl;
 	      key_state = 0;
-	      KCHRHandle = GetResource('KCHR', currentKeyLayoutID);
-	      if (!KCHRHandle)
-		uchrHandle = GetResource('uchr', currentKeyLayoutID);
-	      else
-		uchrHandle = NULL;
+	      if (KLGetCurrentKeyboardLayout(&kl) == noErr) {
+		void *p;
+		if (KLGetKeyboardLayoutProperty(kl, kKLKCHRData, (const void **)&p) == noErr) {
+		  KCHRPtr = p;
+		} else
+		  KCHRPtr = NULL;
+		if (KLGetKeyboardLayoutProperty(kl, kKLuchrData, (const void **)&p) == noErr)
+		  uchrPtr = p;
+		else
+		  uchrPtr = NULL;
+	      }
 	      lastKeyLayoutID = currentKeyLayoutID;
+	      keyLayoutSet = 1;
 	    }
 
-	    if (!uchrHandle) {
-	      if (!KCHRHandle) {
+	    if (!uchrPtr) {
+	      if (!KCHRPtr) {
 		akey = '?';
 	      } else {
 		int trans;
-		trans = KeyTranslate(*KCHRHandle, akey | mods, &key_state);
+		trans = KeyTranslate(KCHRPtr, akey | mods, &key_state);
 		if (trans & 0xFF0000) {
 		  /* 2-byte result */
 		  cstr[0] = (trans & 0xFF0000) >> 16;
@@ -810,7 +819,7 @@ void wxApp::doMacKeyUpDown(Bool down)
 		from_str = 1;
 	      }
 	    } else {
-	      key_layout = (UCKeyboardLayout *)*uchrHandle;
+	      key_layout = (UCKeyboardLayout *)uchrPtr;
 
 	      status = UCKeyTranslate(key_layout,
 				      akey,
