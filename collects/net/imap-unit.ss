@@ -150,6 +150,8 @@
 	  (let ([l (read-bytes-line r eol)])
 	    (log "raw-reply: ~s~n" l)
 	    (cond
+	     [(eof-object? l)
+	      (error 'imap-send "unexpected end-of-file from server")]
 	     [(and id (starts-with? l id))
 	      (let ([reply (imap-read (skip l id) r)])
 		(log "response: ~a~n" reply)
