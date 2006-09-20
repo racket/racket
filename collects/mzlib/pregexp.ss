@@ -30,7 +30,7 @@
     (regexp-match (pattern->pregexp pattern) input start-k end-k output-port))
   
   (define/kw (pregexp-split pattern string #:optional [start 0] [end #f])
-    (pregexp-split (pattern->pregexp pattern) string start end))
+    (regexp-split (pattern->pregexp pattern) string start end))
 
   (define/kw (pregexp-replace pattern input insert)
     (regexp-replace (pattern->pregexp pattern) input insert))
