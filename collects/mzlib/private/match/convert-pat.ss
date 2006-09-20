@@ -3,7 +3,7 @@
            "match-helper.ss"
            "match-expander-struct.ss"
            "observe-step.ss")
-
+  
   (require-for-template mzscheme
 			"match-error.ss")
   
@@ -11,61 +11,61 @@
   
   ;; these functions convert the patterns from the old syntax 
   ;; to the new syntax
-    
+  
   (define (handle-clause stx)
     (syntax-case stx ()
       [(pat . rest) (quasisyntax/loc stx (#,(convert-pat #'pat) . rest))]))
   
   (define (handle-clauses stx) (syntax-map handle-clause stx))
   
- 
+  
   (define (convert-pats stx)
     (with-syntax ([new-pats (syntax-map convert-pat stx)])
       #'new-pats))
   
-    (define (imp-list? stx)
-      (define datum (syntax-e stx))
-      (define (keyword? x)
-        (memq (syntax-object->datum x)
-              '(quote quasiquote ? = and or not $ set! get!)))
-      (let/ec out
-        (let loop ([x datum])
-          (cond [(null? x) (out #f)]
-                [(or (not (pair? x))
-                     (and (list? x)
-                          (keyword? (car x))))
-                 (list 
-                  (quasisyntax/loc stx #,x))]
-                [else (cons (car x) (loop (cdr x)))]))))
+  (define (imp-list? stx)
+    (define datum (syntax-e stx))
+    (define (keyword? x)
+      (memq (syntax-object->datum x)
+            '(quote quasiquote ? = and or not $ set! get!)))
+    (let/ec out
+      (let loop ([x datum])
+        (cond [(null? x) (out #f)]
+              [(or (not (pair? x))
+                   (and (list? x)
+                        (keyword? (car x))))
+               (list 
+                (quasisyntax/loc stx #,x))]
+              [else (cons (car x) (loop (cdr x)))]))))
   
-    (define (convert-quasi stx)
-      (syntax-case stx (unquote quasiquote unquote-splicing)
-        [,pat #`,#,(convert-pat (syntax pat))]
-        [,@pat #`,@#,(convert-pat (syntax pat))]
-        ((x . y)
-         (quasisyntax/loc 
-             stx (#,(convert-quasi (syntax x)) . #,(convert-quasi (syntax y)))))
-        (pat
-         (vector? (syntax-e stx))
-         (quasisyntax/loc 
-             stx 
-           #,(list->vector (map convert-quasi 
-                                (vector->list (syntax-e stx))))))
-        (pat
-         (box? (syntax-e stx))
-         (quasisyntax/loc 
-             stx #,(box (convert-quasi (unbox (syntax-e stx))))))
-        (pat stx)))
-
+  (define (convert-quasi stx)
+    (syntax-case stx (unquote quasiquote unquote-splicing)
+      [,pat (quasisyntax/loc stx ,#,(convert-pat (syntax pat)))]
+      [,@pat (quasisyntax/loc stx ,@#,(convert-pat (syntax pat)))]
+      [(x . y)
+       (quasisyntax/loc 
+           stx (#,(convert-quasi (syntax x)) . #,(convert-quasi (syntax y))))]
+      [pat
+       (vector? (syntax-e stx))
+       (quasisyntax/loc 
+           stx 
+         #,(list->vector (map convert-quasi 
+                              (vector->list (syntax-e stx)))))]
+      [pat
+       (box? (syntax-e stx))
+       (quasisyntax/loc 
+           stx #,(box (convert-quasi (unbox (syntax-e stx)))))]
+      [pat stx]))
+  
   (define (convert-pat stx)
     (convert-pat/cert stx (lambda (x) x)))
-
+  
   (define (convert-pat/cert stx cert)
     (let ([convert-pat (lambda (x) (convert-pat/cert x cert))])
       (syntax-case* 
 	  stx
-	  (_ ? = and or not $ set! get! quasiquote 
-	     quote unquote unquote-splicing) stx-equal?
+        (_ ? = and or not $ set! get! quasiquote 
+           quote unquote unquote-splicing) stx-equal?
 	[(expander . args)
 	 (and (identifier? #'expander)
 	      (match-expander? (syntax-local-value (cert #'expander) (lambda () #f))))
@@ -89,13 +89,7 @@
 	[() (syntax/loc stx (list))]
 	['() (syntax/loc stx (list))]
 	['item stx]
-	[p
-	 (let ((old-pat (syntax-e #'p)))
-	   (or (string? old-pat)
-	       (boolean? old-pat)
-	       (char? old-pat)
-	       (number? old-pat)))
-	 stx]
+	[p (constant-data? (syntax-e stx)) stx]
 	[(? pred) (quasisyntax/loc stx (? #,(cert #'pred)))]
 	[(? pred . a)
 	 (with-syntax ([pred (cert #'pred)]
