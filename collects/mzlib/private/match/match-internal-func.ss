@@ -96,7 +96,7 @@
                                      (set! **match-bound-vars** bv)
                                      (with-syntax ([((vars . vals) ...) (reverse bv)])
                                        #'(begin (set! vars vals) ...))))]
-                       [(vars ...) (reverse **match-bound-vars**)])
+                       [(vars ...) (map car (reverse **match-bound-vars**))])
            #'(begin
                (define vars #f) ...
                (let ([the-exp exp])
