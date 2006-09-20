@@ -2515,7 +2515,11 @@
 					      (send t change-style url-delta s e)))
 				    (when (eq? (system-type) 'macosx)
                                       (when fn
-                                        (let ([full-fn (normalize-path (build-path "~/Desktop" fn))])
+                                        (let ([full-fn (if (and (path-string? fn)
+								(let-values ([(base name dir?) (split-path fn)])
+								  (not base)))
+							   (normalize-path (build-path "~/Desktop" fn))
+							   fn)])
 					  (insert " " set-standard-style)
                                           (insert "[save & open]"
                                                   (lambda (t s e)
