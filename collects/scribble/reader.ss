@@ -108,7 +108,7 @@
                     (set-box! level (add1 (unbox level)))
                     (make-stx (car m)))]
               [(regexp-match-peek-positions sub-start inp)
-               (read-syntax/recursive source-name inp)] ; include comment objs
+               (read-syntax source-name inp)] ; include comment objs
               [(regexp-match/fail-without-reading end-of-line inp)
                => (lambda (m)
                     (if (cadr m) ; backslashes?
