@@ -1668,6 +1668,12 @@
 (test '(#"d") regexp-match #rx#"[\\d]" #"0d")
 (test '(#"\\") regexp-match #rx#"[\\d]" #"0\\")
 
+;; Check $:
+(test '(#"$") regexp-match #px#"\\$" #"a$b")
+(test '(#"$") regexp-match #rx#"\\$" #"a$b")
+(test '(#"a$") regexp-match #px#"a\\$" #"a$b")
+(test '(#"a$") regexp-match #rx#"a\\$" #"a$b")
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
