@@ -476,6 +476,8 @@
 			     (set! did-one? #t)
 			     (printf "  making ~s~n" (path->string p)))])
 	   (map (lambda (file)
+		  (unless (file-exists? file)
+		    (error 'mzc "file does not exist: ~a" file))
 		  (set! did-one? #f)
 		  (let ([name (extract-base-filename/ss file 'mzc)])
 		    (printf "\"~a\":~n" file)
