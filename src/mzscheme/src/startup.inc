@@ -1608,7 +1608,7 @@
 "(if(syntax? datum)"
 " datum"
 "(let((stx(datum->syntax-object orig datum orig)))"
-"(let((shape(syntax-property stx 'paren-shape)))"
+"(let((shape(syntax-property orig 'paren-shape)))"
 "(if shape"
 "(syntax-property stx 'paren-shape shape)"
 " stx)))))"
