@@ -38,9 +38,8 @@
               (hash-table-put! t n s) s))))))
 
   (define (dispatcher char inp source-name line-num col-num position)
-    (define (next-syntax readtable . plain?)
-      (let ([read (if (and (pair? plain?) (car plain?))
-                    read-syntax read-syntax/recursive)])
+    (define/kw (next-syntax readtable #:optional plain?)
+      (let ([read (if plain? read-syntax read-syntax/recursive)])
         (parameterize ([current-readtable readtable])
           (let loop ()
             (let ([x (read source-name inp)])
