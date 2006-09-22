@@ -203,6 +203,10 @@
   (test #\[ syntax-property s 'paren-shape)
   (test #\[ syntax-property (syntax-case s () [(b _) #'b]) 'paren-shape))
 
+(let ([s (with-syntax ([(a ...) '(1 2 3)])
+	   #'[a ...])])
+  (test #\[ syntax-property s 'paren-shape))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Two-step macro chain
 

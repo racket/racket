@@ -1343,6 +1343,7 @@
 "(and dest(datum->syntax-object"
 " dest"
 " 'dest"
+" dest"
 " dest))))"
 " `(datum->syntax-object/shape(quote-syntax ,small-dest)"
 " ,build))))))"
