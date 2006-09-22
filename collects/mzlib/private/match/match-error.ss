@@ -64,14 +64,15 @@
    ;; this makes pregexp errors a little more friendly
   (define (pregexp-match-with-error regex str)
     (if (or (string? regex)
-            (and (pair? regex)
-                 (equal? ':sub (car regex))))
+	    (bytes? regex)
+	    (regexp? regex)
+	    (byte-regexp? regex))
         (pregexp-match regex str)
         (error 'match:pregex 
                (string-append 
-                "this pattern expects either a S-regexp or a U-regexp,"
-                " given " (format "~s" regex) "; "
-                "other argument was " (format "~s" str)))))
+                "this pattern expects either a string, byte string, regexp or byte regexp,"
+                " given " (format "~e" regex) "; "
+                "other argument was " (format "~e" str)))))
      
   
   )
