@@ -4,7 +4,8 @@
            (lib "kw.ss")
            (lib "list.ss")
            (lib "plt-match.ss")
-           (lib "contract.ss"))
+           (lib "contract.ss")
+           (lib "uri-codec.ss" "net"))
   (require (lib "pretty.ss"))         
   (require "dispatch.ss"
            "../private/configuration.ss"
@@ -37,7 +38,7 @@
       ;; to find the file, including searching for implicit index files, and serve it out
       (define path 
         (url-path->path htdocs-path
-                        (translate-escapes (url-path->string (url-path uri)))))
+                        (uri-decode (url-path->string (url-path uri)))))
       (cond
         [(file-exists? path)
          (match (headers-assq #"Range" (request-headers/raw req))

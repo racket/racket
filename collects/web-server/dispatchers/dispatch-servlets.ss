@@ -12,7 +12,7 @@
            "../servlet.ss"
            "../sig.ss"
            "../private/configuration.ss"
-           (all-except "../private/util.ss" translate-escapes)
+           "../private/util.ss"
            "../managers/manager.ss"
            "../managers/timeouts.ss"
            "../managers/lru.ss"

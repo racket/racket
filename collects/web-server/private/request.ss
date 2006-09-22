@@ -2,7 +2,8 @@
   (require (lib "contract.ss")
            (lib "plt-match.ss")
            (lib "url.ss" "net")
-           (lib "list.ss"))
+           (lib "list.ss")
+           (lib "uri-codec.ss" "net"))
   (require "util.ss"
            "connection-manager.ss"
            "../request-structs.ss")
@@ -187,11 +188,11 @@
                   (if (or (= amp-end len) (eq? (bytes-ref raw amp-end) (char->integer #\&)))
                       (list* (make-binding:form
                               (string->bytes/utf-8
-                               (translate-escapes
+                               (uri-decode
                                 (bytes->string/utf-8
                                  (subbytes raw start key-end))))
                               (string->bytes/utf-8
-                               (translate-escapes
+                               (uri-decode
                                 (bytes->string/utf-8
                                  (subbytes raw (add1 key-end) amp-end)))))
                             (loop (add1 amp-end)))

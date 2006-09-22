@@ -4,7 +4,8 @@
            (lib "plt-match.ss")
            (lib "xml.ss" "xml")
            (lib "base64.ss" "net")
-           (lib "url.ss" "net"))
+           (lib "url.ss" "net")
+           (lib "uri-codec.ss" "net"))
   (require "util.ss"
            "bindings.ss"
            "../servlet-structs.ss"
@@ -124,8 +125,10 @@
     (let ([rx (byte-regexp #"^Basic .*")])
       (lambda (a) (regexp-match rx a))))
   
+  
+  
   (provide ; all-from
-   translate-escapes)
+   (rename uri-decode translate-escapes))
   (provide/contract
    [get-host (url? (listof header?) . -> . symbol?)]
    ; XXX contract maybe

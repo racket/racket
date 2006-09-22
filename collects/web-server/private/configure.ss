@@ -12,7 +12,7 @@
            (lib "configuration-table-structs.ss" "web-server" "private")
            (lib "parse-table.ss" "web-server" "private")
            (lib "configuration-util.ss" "web-server" "private")
-           (all-except (lib "util.ss" "web-server" "private") translate-escapes))
+           (lib "util.ss" "web-server" "private"))
   (provide/contract
    [servlet unit/sig?]
    ; XXX contract

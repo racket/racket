@@ -2,9 +2,7 @@
   (require (lib "contract.ss")
            (lib "string.ss")
            (lib "list.ss")
-           (lib "plt-match.ss")
            (lib "url.ss" "net")
-           (lib "errortrace-lib.ss" "errortrace")
            (lib "uri-codec.ss" "net"))
   (require "../request-structs.ss")
   
@@ -33,7 +31,7 @@
   (define (decompose-request req)
     (let* ([uri (request-uri req)]
            [method (request-method req)]
-           [path (translate-escapes (url-path->string (url-path uri)))])
+           [path (uri-decode (url-path->string (url-path uri)))])
       (values uri method path)))
   
   ;; network-error: symbol string . values -> void
@@ -158,30 +156,10 @@
   ; hash-table-empty? : hash-table -> bool
   (define (hash-table-empty? table)
     (zero? (hash-table-count table)))
-  
-  ; This comes from Shriram's collection, and should be exported form there.
-  ; translate-escapes : String -> String
-  (define-struct servlet-error ())
-  (define-struct (invalid-%-suffix servlet-error) (chars))
-  (define-struct (incomplete-%-suffix invalid-%-suffix) ())
-  (define (translate-escapes init)
-    (define raw (uri-decode init))
-    (list->string
-     (let loop ([chars (string->list raw)])
-       (match chars
-         [(list)
-          (list)]
-         [(list-rest ic cs)
-          (define c
-            (cond
-              [(char=? ic #\+) #\space]
-              [else ic]))
-          (list* c (loop cs))]))))
-  
+    
   (provide/contract
    [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
    [extract-flag (symbol? (listof (cons/c symbol? any/c)) any/c . -> . any/c)]
-   [translate-escapes (string? . -> . string?)]
    [hash-table-empty? (any/c . -> . boolean?)]
    [valid-port? (any/c . -> . boolean?)]
    [decompose-request ((request?) . ->* . (url? symbol? string?))]
