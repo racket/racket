@@ -40,6 +40,7 @@
      control-event%
      control<%>
      current-eventspace
+     current-eventspace-has-menu-root?
      current-eventspace-has-standard-menus?
      current-ps-afm-file-paths
      current-ps-cmap-file-paths
@@ -134,11 +135,11 @@
      message-box/custom
      message+check-box/custom
      mouse-event%
-     ;; mred@
      mult-color<%>
      normal-control-font
      open-input-graphical-file
      open-input-text-editor
+     open-output-text-editor
      pane%
      panel%
      pasteboard%
