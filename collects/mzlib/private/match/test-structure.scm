@@ -31,7 +31,6 @@
   ;;            of bind-exp-stx
   ;; bind-count - is the number of times in the bind-exp is found in the
   ;;              test list in which this test is a member
-  ;; times-used-neg - ??? (this appears to never be used)
   ;; used-set-neg - ???
   ;; closest-shape-tst - ???
   ;; equal-set - ???
@@ -43,7 +42,6 @@
                        bind-exp-stx
                        bind-exp
                        bind-count
-                       times-used-neg
                        used-set-neg
                        closest-shape-tst
                        equal-set)
@@ -65,7 +63,7 @@
   ;; comp - the compilation function which will finish the compilation
   ;;        after tests have been reordered
   (define (make-shape-test test exp comp)
-    (make-test test comp #t 0 '() exp (syntax-object->datum exp) 1 0 '() #f '()))
+    (make-test test comp #t 0 '() exp (syntax-object->datum exp) 1 '() #f '()))
   
   ;;!(function make-reg-test
   ;;          (form (make-shape-test test exp comp) -> test-struct)
@@ -81,7 +79,7 @@
   ;; comp - the compilation function which will finish the compilation
   ;;        after tests have been reordered
   (define (make-reg-test test exp comp)
-    (make-test test comp #f 0 '() exp (syntax-object->datum exp) 1 0 '() #f '()))
+    (make-test test comp #f 0 '() exp (syntax-object->datum exp) 1 '() #f '()))
   
   ;;!(function make-act-test
   ;;          (form (make-shape-test test exp comp) -> test-struct)
@@ -99,7 +97,7 @@
   ;; comp - the compilation function which will finish the compilation
   ;;        after tests have been reordered
   (define (make-act act-name exp comp)
-    (make-test act-name comp #f -1 '() exp (syntax-object->datum exp) 1 -1 '() #f '()))
+    (make-test act-name comp #f -1 '() exp (syntax-object->datum exp) 1  '() #f '()))
   
   ;;!(function action-test?
   ;;          (form (action-test? test) -> bool)

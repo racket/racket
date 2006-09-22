@@ -72,7 +72,7 @@
                                                        "unquote-splicing not followed by list")))]
                                      [,@p
                                         (if (and (stx-list? (syntax p))
-                                                 (eq? (syntax-e (car (syntax->list #'p))) 'list))
+                                                 (memq (syntax-e (car (syntax->list #'p))) '(list list-rest)))
                                             (cdr (syntax->list (syntax p)))
                                             (begin ; (write (syntax-e (syntax p))) 
                                               (q-error (syntax ,@p)

@@ -38,6 +38,9 @@
                               obj
                               detail)))
   
+  (define (match:internal-err obj msg  . detail)
+    (apply raise-syntax-error '|internal match error| msg obj detail))
+  
   
   
   ;;!(function unreachable
