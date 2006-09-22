@@ -226,6 +226,8 @@
     (let skip-preamble ()
       (define line (read-bytes-line in 'return-linefeed))
       (cond
+        [(eof-object? line)
+         (network-error 'read-mime-multipart "Port prematurely closed.")]
         [(bytes=? line start-boundary)
          (let read-parts ()
            (define headers (read-headers in))
@@ -239,6 +241,8 @@
                               headers contents)))])
              (define line (read-bytes-line in 'return-linefeed))
              (cond
+               [(eof-object? line)
+                (network-error 'read-mime-multipart "Port prematurely closed.")]
                [(bytes=? line start-boundary)
                 (more-k empty)]
                [(bytes=? line end-boundary)
