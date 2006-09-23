@@ -66,8 +66,8 @@ exec mred -u "$0" "$@"
         (parameterize ([error-escape-handler (lambda () (escape (void)))])
           (go program-expander receive-result render-settings
               track-inferred-names?
-              ;; language level name:
-              "bogus language level"
+              ;; language level:
+              'testing
               ;; run-in-drscheme thunk:
               (lambda (thunk) (thunk)))))
       (error-display-handler current-error-display-handler)))
@@ -1485,8 +1485,11 @@ exec mred -u "$0" "$@"
   ;; LAZY.SS:
 
   (t lazy1 test-lazy-sequence
-     (+ 3 4)
-     :: {(+ 3 4)} -> {7})
+     (! (+ 3 4))
+     :: 3 -> 3
+     :: 3 -> 3
+     :: 3 -> 3
+     :: {(! (+ 3 4))} -> {7})
 
   (t lazy2 test-lazy-sequence
      (+ (+ 3 4) 5)
@@ -1510,8 +1513,8 @@ exec mred -u "$0" "$@"
       "(define (f2c x) x) (convert-gui f2c)" `() ; placeholder
       ))
 
-  ;; (run-tests '(lazy))
-  (run-all-tests)
+  (run-tests '(lam-let))
+  ;;(run-all-tests)
 
   )
 ;; Local variables:
