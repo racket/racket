@@ -27,7 +27,6 @@
 
 (stest '#11=(#11#) '(shared ([x `(,x)]) x))
 
-
 (define-struct s (a b))
 (shared ([x (make-s 17 x)])
   (begin
@@ -35,4 +34,8 @@
     (test 17 s-a x)
     (test #t eq? x (s-b x))))
 
-
+(define-struct shared-test-ds-no-fields ())
+(stest (make-shared-test-ds-no-fields)
+       '(shared ((-4- 11) 
+                 (-8- (make-shared-test-ds-no-fields)))
+          -8-))
