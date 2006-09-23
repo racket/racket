@@ -63,7 +63,7 @@
         (step-result? . -> . void?)     ; receive-result
         (or/c render-settings? false/c) ; render-settings
         boolean?                        ; track-inferred-names?
-        object? ;; FIXME: can do better: subclass of language%       ; the language level
+        (or/c object? (symbols 'testing))   ;; FIXME: can do better: subclass of language%       ; the language level
         (procedure? . -> . void?)       ; run-on-drscheme-side
         . -> .
         void?)])
@@ -299,7 +299,7 @@
                 [else (error 'break "unknown label on break")]))))))
     
     (define maybe-lift
-      (if (send language-level stepper:enable-let-lifting?)
+      (if (render-settings-lifting? render-settings)
           lift
           ;; ... oh dear; model.ss should disable the double-break & late-let break when lifting is off.
           (lambda (stx dont-care) (list stx))))
@@ -323,7 +323,7 @@
      (lambda ()
        ;; swap these to allow errors to escape (e.g., when debugging)
        (error-display-handler err-display-handler)
-       ;; (void)
+       ;;(void)
        )
      (lambda (expanded continue-thunk) ; iter
        (r:reset-special-values)

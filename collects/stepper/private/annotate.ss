@@ -28,8 +28,7 @@
       . opt->* .
       (any/c))                       ; procedure for runtime break
      boolean?                        ; track-inferred-name?
-     any/c                            ; language-level
-     ;;string?                         ; language-level-name : not a nice way to abstract.
+     (union any/c (symbols 'testing)); language-level
      . -> .
      syntax?)]                       ; results
    #;[top-level-rewrite (-> syntax? syntax?)])
@@ -1149,7 +1148,8 @@
     
     ; body of local
     (let* ([annotated-exp (cond 
-                            [(string=? (language-level->name language-level) "ACL2 Beginner (beta 8)")
+                            [(and (not (eq? language-level 'testing))
+                                  (string=? (language-level->name language-level) "ACL2 Beginner (beta 8)"))
                              (annotate/top-level/acl2 main-exp)]
                             [else 
                              (annotate/top-level main-exp)])])

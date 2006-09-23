@@ -90,13 +90,6 @@
    finished-xml-box-table
    language-level->name)
   
-  ;; eli's debug operator:
-  ;; (I'm sure his version is more elegant.)
-  (define (>>> x . extra)
-    (begin (fprintf (current-error-port) "~a >>> ~v\n" 
-                    (if extra (apply string-append extra) "")
-                    x)
-           x))
   
   ; A step-result is either:
   ; (make-before-after-result finished-exps exp redex reduct)
@@ -375,26 +368,60 @@
 
   ; functional update package
 
+  ;; a trace is one of
+  ;; (cons 'car trace)
+  ;; (cons 'cdr trace)
+  ;; (cons 'syntax-e trace)
+  ;; (cons 'both (list trace trace))
+  ;; null
+  
   (define (swap-args 2-arg-fun)
     (lambda (x y)
       (2-arg-fun y x)))
 
   (define second-arg (lambda (dc y) y))
-
-  (define up-mappings
-    `((rebuild ((,car ,(lambda (stx new) (cons new (cdr stx))))
-                (,cdr ,(lambda (stx new) (cons (car stx) new)))
-                (,syntax-e ,(swap-args rebuild-stx))))
-      (discard ((,car ,second-arg)
-                (,cdr ,second-arg)
-                (,syntax-e ,second-arg)))))
+  
+  (define (up-mapping traversal fn)
+    (case traversal
+      [(rebuild) (case fn 
+                   [(car) (lambda (stx new) (cons new (cdr stx)))]
+                   [(cdr) (lambda (stx new) (cons (car stx) new))]
+                   [(syntax-e) (swap-args rebuild-stx)]
+                   [(both-l both-r) (lambda (stx a b) (cons a b))]
+                   [else (error 'up-mapping "unexpected symbol in up-mapping (1)")])]
+      [(discard) (case fn
+                   [(car) second-arg]
+                   [(cdr) second-arg]
+                   [(syntax-e) second-arg]
+                   [(both-l) (lambda (stx a b) a)]
+                   [(both-r) (lambda (stx a b) b)]
+                   [else (error 'up-mapping "unexpected symbol in up-mapping (2)")])]))
+  
+  (define (down-mapping fn)
+    (case fn
+      [(car) car]
+      [(cdr) cdr]
+      [(syntax-e) syntax-e]
+      [else (error 'down-mapping "called on something other than 'car, 'cdr, & 'syntax-e: ~v" fn)]))
 
   (define (update fn-list val fn traversal)
     (if (null? fn-list)
         (fn val)
-        (let* ([down (car fn-list)]
-               [up (cadr (assq down (cadr (assq traversal up-mappings))))])
-          (up val (update (cdr fn-list) (down val) fn traversal)))))
+        (let ([up (up-mapping traversal (car fn-list))])
+          (case (car fn-list)
+            [(both-l both-r) (up val 
+                                 (update (cadr fn-list) (car val) fn traversal)
+                                 (update (caddr fn-list) (cdr val) fn traversal))]
+            [else (let ([down (down-mapping (car fn-list))])
+                    (up val (update (cdr fn-list) (down val) fn traversal)))]))))
+  
+  #;(display (equal? (update '(cdr cdr car both-l (car) (cdr))
+                           `(a . (b ((1) c . 2) d))
+                           (lambda (x) (+ x 1))
+                           'rebuild)
+                   `(a . (b ((2) c . 3) d))))
+  
+
 
   ;; skipto/auto : syntax-object?
   ;;               (symbols 'rebuild 'discard)
@@ -411,16 +438,16 @@
           [else (transformer stx)]))
 
   ;  small test case:
-  ;(equal? (syntax-object->datum
-  ;         (skipto/auto (syntax-property #`(a #,(syntax-property #`(b c)
-  ;                                                               'stepper-skipto
-  ;                                                               (list syntax-e cdr car)))
-  ;                                       'stepper-skipto
-  ;                                       (list syntax-e cdr car))
-  ;                      'discard
-  ;                      (lambda (x) x)))
-  ;        'c)
-
+  #;(display (equal? (syntax-object->datum
+                    (skipto/auto (syntax-property #`(a #,(syntax-property #`(b c)
+                                                                          'stepper-skipto
+                                                                          '(syntax-e cdr car)))
+                                                  'stepper-skipto
+                                                  '(syntax-e cdr car))
+                                 'discard
+                                 (lambda (x) x)))
+                   'c))
+  
 
   ; BINDING-/VARREF-SET FUNCTIONS
 
@@ -447,7 +474,7 @@
   ;; (profiling-table-incr 2 1)
   ;;
   ;; (equal? (get-set-pair-union-stats)
-  ;;         `(((2 . 3) 1) ((2 . 1) 2) ((1 . 2) 2)))
+  ;         `(((2 . 3) 1) ((2 . 1) 2) ((1 . 2) 2)))
 
   ;; until this remove* goes into list.ss?
 
