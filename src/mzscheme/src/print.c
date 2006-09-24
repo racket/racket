@@ -402,31 +402,21 @@ static int check_cycles(Scheme_Object *obj, Scheme_Hash_Table *ht, PrintParams *
 {
   Scheme_Type t;
 
-  t = SCHEME_TYPE(obj);
-
 #ifdef DO_STACK_CHECK
-#define CHECK_COUNT_START 50
   {
-    static int check_counter = CHECK_COUNT_START;
-
-    if (!--check_counter) {
-      check_counter = CHECK_COUNT_START;
-      SCHEME_USE_FUEL(CHECK_COUNT_START);
-      {
 #include "mzstkchk.h"
-	{
-	  pp = copy_print_params(pp);
-	  scheme_current_thread->ku.k.p1 = (void *)obj;
-	  scheme_current_thread->ku.k.p2 = (void *)ht;
-	  scheme_current_thread->ku.k.p3 = (void *)pp;
-	  return SCHEME_TRUEP(scheme_handle_stack_overflow(check_cycle_k));
-	}
-      }
+    {
+      pp = copy_print_params(pp);
+      scheme_current_thread->ku.k.p1 = (void *)obj;
+      scheme_current_thread->ku.k.p2 = (void *)ht;
+      scheme_current_thread->ku.k.p3 = (void *)pp;
+      return SCHEME_TRUEP(scheme_handle_stack_overflow(check_cycle_k));
     }
   }
-#else
-  SCHEME_USE_FUEL(1);
 #endif
+  SCHEME_USE_FUEL(1);
+
+  t = SCHEME_TYPE(obj);
 
   if (SCHEME_PAIRP(obj)
       || (pp->print_box && SCHEME_BOXP(obj))
