@@ -313,6 +313,14 @@
                       #:x 1 #:z))
   (t '(#:z) <= ((lambda/kw (#:key x #:allow-anything #:body r) r) #:x 1 #:z))
 
+  ;; #:body without #:keys forbids all keys
+  (let ([f1 (lambda/kw (#:body b) b)]
+        [f2 (lambda/kw (x #:body b) (cons x b))])
+    (t (f1 1 2) => '(1 2)
+       (f2 1 2) => '(1 2)
+       (f1 #:foo 1 1 2) => :rt-err:
+       (f2 1 #:foo 1 2) => :rt-err:))
+
   ;; make sure that internal definitions work
   (let ([f (lambda/kw (#:key x) (define xx x) xx)])
     (t #f <= (f)
@@ -349,7 +357,7 @@
      :st-err: <= (lambda/kw (x #:rest r1 #:rest r2) 1)
      :st-err: <= (lambda/kw (x #:rest) 1)
      :st-err: <= (lambda/kw (x #:rest r1 r2) 1)
-     :st-err: <= (lambda/kw (x #:body b) 1)
+     ;; :st-err: <= (lambda/kw (x #:body b) 1) ; valid!
      :st-err: <= (lambda/kw (x x) 1)
      :st-err: <= (lambda/kw (x #:optional [x 1]) 1)
      :st-err: <= (lambda/kw (x #:key [x 1]) 1)

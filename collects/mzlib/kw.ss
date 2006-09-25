@@ -225,7 +225,7 @@
                   [(memq k mode-keywords)
                    (cond
                     #; ;(*)
-                    ;; don't throw an error here, it still fine if used with
+                    ;; don't throw an error here, it is still fine if used with
                     ;; #:allow-other-keys (explicit or implicit), also below
                     [(and (null? keys) (null? flags))
                      (serror k-stx "cannot use without #:key/#:flag arguments")]
@@ -420,24 +420,31 @@
             #'(begin flag-tweaks keys-body)))))
     ;; ------------------------------------------------------------------------
     ;; more sanity tests (see commented code above -- search for "(*)")
-    (let ([r (or all-keys other-keys other-keys+body body rest)])
-      (when (and (not allow-other-keys?) (null? keys))
-        (when r
-          (serror r "cannot use without #:key, #:flag, or #:allow-other-keys"))
-        (when allow-duplicate-keys?
-          (serror #f (string-append "cannot allow duplicate keys without"
-                                    " #:key, #:flag, or #:allow-other-keys"))))
-      (when (and allow-other-keys? (null? keys) (not r))
-        (serror #f "cannout allow other keys without using them in some way")))
+    (when (null? keys)
+      (let ([r (or all-keys other-keys other-keys+body body rest)])
+        (if allow-other-keys?
+          ;; allow-other-keys?
+          (unless r
+            (serror #f "cannout allow other keys ~a"
+                    "without using them in some way"))
+          ;; (not allow-other-keys?)
+          (begin
+            ;; can use #:body with no keys to forbid all keywords
+            (when (and r (not (eq? r body)))
+              (serror r "cannot use without #:key, #:flag, or ~a"
+                      "#:allow-other-keys"))
+            (when allow-duplicate-keys?
+              (serror #f "cannot allow duplicate keys without ~a"
+                      "#:key, #:flag, or #:allow-other-keys"))))))
     ;; ------------------------------------------------------------------------
     ;; body generation starts here
     (cond
-     ;; no optionals or keys (or other-keys) => plain lambda
-     [(and (null? opts) (null? keys) (not allow-other-keys?))
+     ;; no optionals or keys (or body or other-keys) => plain lambda
+     [(and (null? opts) (null? keys) (not (or body allow-other-keys?)))
       (with-syntax ([vars (append! vars (or rest '()))] [expr expr])
         (syntax/loc stx (lambda vars expr)))]
      ;; no keys => make a case-lambda for optionals
-     [(and (null? keys) (not allow-other-keys?))
+     [(and (null? keys) (not (or body allow-other-keys?)))
       (let ([clauses (make-opt-clauses expr (or rest '()))])
         (with-syntax ([name name] [clauses clauses])
           (syntax/loc stx (letrec ([name (case-lambda . clauses)]) name))))]
