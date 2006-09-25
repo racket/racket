@@ -1,4 +1,3 @@
-#cs
 (module lazy mzscheme
 
   ;; ~ = lazy (or delayed)
@@ -43,7 +42,7 @@
 
   ;; --------------------------------------------------------------------------
   ;; Delay/force etc
-  
+
   (provide ~)
   (defsubst (~ x) (delay x))
 
@@ -258,26 +257,29 @@
   ;; `!apply': provided as `apply' (no need to provide `~!apply', since all
   ;;           function calls are delayed by `#%app')
 
-  (define-syntax (jbc! stx)
-      (syntax-case stx (!)
-        [(_ arg) (syntax-property #`(! arg) 'stepper-skipto '(syntax-e cdr syntax-e cdr car))]))
-  
+  (define-syntax (hidden-! stx)
+    (syntax-case stx (!)
+      [(_ arg) (syntax-property #'(! arg)
+                 'stepper-skipto '(syntax-e cdr syntax-e cdr car))]))
+
   (define-syntax (!*app stx)
     (syntax-case stx (~ ! !! !list !!list !values !!values)
       [(_ f x ...)
-       (let ([$$ (lambda (stx) (syntax-property stx 'stepper-skipto '(syntax-e cdr cdr both-l () (car))))]
-             [$ (lambda (stx) (syntax-property stx 'stepper-skipto '(syntax-e cdr syntax-e car)))])
+       (let ([$$ (lambda (stx)
+                   (syntax-property stx
+                     'stepper-skipto '(syntax-e cdr cdr both-l () (car))))]
+             [$  (lambda (stx)
+                   (syntax-property stx
+                     'stepper-skipto '(syntax-e cdr syntax-e car)))])
        (with-syntax ([(y ...) (generate-temporaries #'(x ...))])
-         (with-syntax ([(!y ...) (map (lambda (stx) (syntax-property stx 'stepper-skipto '(syntax-e cdr syntax-e cdr car)))
-                                      (syntax->list #`((! y) ...)))])
          ;; use syntax/loc for better errors etc
          (with-syntax ([lazy   (quasisyntax/loc stx (p y     ...))]
-                       [strict (quasisyntax/loc stx (p !y ...))])
+                       [strict (quasisyntax/loc stx (p (hidden-! y) ...))])
            (quasisyntax/loc stx
-              (let ([p f] [y x] ...)
-                #,($$ #`(if (lazy? p) lazy strict))))))))]))
+             (let ([p f] [y x] ...)
+               #,($$ #`(if (lazy? p) lazy strict)))))))]))
 
-  (defsubst (!app   f x ...) (!*app (jbc! f) x ...))
+  (defsubst (!app   f x ...) (!*app (hidden-! f) x ...))
   (defsubst (~!*app f x ...) (~ (!*app f x ...)))
   (defsubst (~!app  f x ...) (~ (!app f x ...)))
 
@@ -779,9 +781,10 @@
   ;; Initialize special evaluation hooks
 
   ;; taking this out so that stepper test cases will work correctly:
-  
-  #;(let ([prim-eval (current-eval)])
-      (current-eval (lambda (expr) (!! (prim-eval expr)))))
+
+  #;
+  (let ([prim-eval (current-eval)])
+    (current-eval (lambda (expr) (!! (prim-eval expr)))))
 
 )
 
