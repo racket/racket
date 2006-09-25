@@ -10,10 +10,11 @@ Normal use of readline
 The _rep.ss_ library installs a readline-based function for the
 prompt-and-read part of MzScheme's read-eval-print loop.
 
-I put the following in my ~/.mzschemerc so that MzScheme always starts
-with readline support:
+You can put the following in your ~/.mzschemerc so that MzScheme starts with
+readline support on xterms:
 
- (require (lib "rep.ss" "readline"))
+  (when (equal? "xterm" (getenv "TERM"))
+    (dynamic-require '(lib "rep.ss" "readline") #f))
 
 The readline history is stored across invocations in MzScheme's
 preferences file, assuming MzScheme exits normally.
@@ -24,8 +25,14 @@ Direct bindings for readline hackers
 
 The _readline.ss_ library provides two functions:
 
-> (readline prompt-string) - prints the given prompt string and reads
-  an S-expression.
+> (readline prompt-string)
+  prints the given prompt string and reads a line
 
-> (add-history s) - adds the given string to the readline history,
-  which is accessible to the user via the up-arrow key
+> (add-history s)
+  adds the given string to the readline history, which is accessible
+  to the user via the up-arrow key
+
+> (set-completion-function! proc)
+  sets readline's `rl_completion_entry_function' function according to
+  proc, which is expected to be a `string -> (list-of string)'
+  procedure

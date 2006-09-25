@@ -1,6 +1,4 @@
 
 (module readline mzscheme
-  (require "mzrl.ss") ;; should load .so form
-  
-  (provide readline add-history))
-
+  (require "mzrl.ss")
+  (provide readline add-history set-completion-function!))

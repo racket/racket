@@ -3,9 +3,8 @@
 (require (lib "foreign.ss")) (unsafe!)
 (provide readline add-history set-completion-function!)
 
-; libtermcap maybe needed
-(define libtermcap  (with-handlers ([exn:fail? void])
-		      (ffi-lib "libtermcap")))
+;; libtermcap maybe needed
+(define libtermcap  (with-handlers ([exn:fail? void]) (ffi-lib "libtermcap")))
 (define libreadline (ffi-lib "libreadline"))
 
 (define readline
@@ -28,8 +27,7 @@
       (if (zero? state)
         (begin (set! cur (func str)) (complete str 1))
         (and (pair? cur)
-             (begin0 (malloc (add1 (bytes-length (car cur)))
-                             (car cur) 'eternal)
+             (begin0 (malloc (add1 (bytes-length (car cur))) (car cur) 'raw)
                (set! cur (cdr cur))))))
     complete))
 
