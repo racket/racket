@@ -2517,7 +2517,8 @@
                                       (when fn
                                         (let ([full-fn (if (and (path-string? fn)
 								(let-values ([(base name dir?) (split-path fn)])
-								  (not (path? base))))
+								  (or (eq? base 'relative)
+                                                                      (path? base))))
 							   (path->string (normalize-path (build-path "~/Desktop" fn)))
 							   fn)])
 					  (insert " " set-standard-style)
