@@ -2515,20 +2515,15 @@
 					      (send t change-style url-delta s e)))
 				    (when (eq? (system-type) 'macosx)
                                       (when fn
-                                        (let ([full-fn (if (and (path-string? fn)
-								(let-values ([(base name dir?) (split-path fn)])
-								  (or (eq? base 'relative)
-                                                                      (path? base))))
-							   (path->string (normalize-path (build-path "~/Desktop" fn)))
-							   fn)])
+                                        (let ([safer-fn (normalize-path (string-append "~/Desktop/" (regexp-replace #rx"/" fn "-")))])
 					  (insert " " set-standard-style)
-                                          (insert "[save & open]"
+                                          (insert "[save to ~/Desktop/ & open]"
                                                   (lambda (t s e)
                                                     (send t set-clickback s e
                                                           (lambda (a b c)
-                                                            (to-file full-fn)
+                                                            (to-file safer-fn)
 							    (parameterize ([current-input-port (open-input-string "")])
-							      (system* "/usr/bin/open" full-fn)))
+							      (system* "/usr/bin/open" (path->string safer-fn))))
                                                           #f #f)
                                                     (send t change-style url-delta s e)))))))
                                   (insert "\n" set-standard-style)
