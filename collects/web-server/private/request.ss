@@ -188,11 +188,11 @@
                   (if (or (= amp-end len) (eq? (bytes-ref raw amp-end) (char->integer #\&)))
                       (list* (make-binding:form
                               (string->bytes/utf-8
-                               (uri-decode
+                               (form-urlencoded-decode
                                 (bytes->string/utf-8
                                  (subbytes raw start key-end))))
                               (string->bytes/utf-8
-                               (uri-decode
+                               (form-urlencoded-decode
                                 (bytes->string/utf-8
                                  (subbytes raw (add1 key-end) amp-end)))))
                             (loop (add1 amp-end)))
