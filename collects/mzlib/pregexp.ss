@@ -32,7 +32,7 @@
 
   (define/kw (pregexp-match-positions pattern input #:optional [start-k 0] [end-k #f] [output-port #f])
     (let ([pattern (pattern->pregexp 'pregexp-match-positions pattern)])
-      (regexp-match pattern input start-k end-k output-port)))
+      (regexp-match-positions pattern input start-k end-k output-port)))
   
   (define/kw (pregexp-split pattern string #:optional [start 0] [end #f])
     (let ([pattern (pattern->pregexp 'pregexp-split pattern)])
