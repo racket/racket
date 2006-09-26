@@ -38,14 +38,10 @@
 			       `(,ln "")
 			       `(,(spacify ln) (BR)))) lines)))))
     
-  (define eoregexp
-    "($|\\s|(\\.(\\s|$))|>)")
+  (define eoregexp-str "($|\\s|(\\.(\\s|$))|>)")
+  (define url-regexp-base (string-append "://([^\\s]*)" eoregexp-str))
 
-  (define trailing-regexp
-    (pregexp "[\\s>)(\"]"))
-
-  (define url-regexp-base
-    (string-append "://([^\\s]*)" eoregexp))
+  (define trailing-regexp (pregexp "[\\s>)(\"]"))
 
   (define (make-url-regexp ty)
     (pregexp 
@@ -54,17 +50,14 @@
       url-regexp-base)))
 
   (define http-regexp (make-url-regexp "http"))
-  (define cheap-http-regexp (regexp "http://"))
-  (define (http-format url)
-    `(A ((HREF ,url)) ,url))
+  (define (http-format url) `(A ((HREF ,url)) ,url))
   (define ftp-regexp (make-url-regexp "ftp"))
-  (define cheap-ftp-regexp (regexp "ftp://"))
   (define ftp-format http-format) 
 
   (define email-regexp
-    (let ([chars "[^\\s)(<>\"']"])
-      (pregexp (string-append chars "+" "@" chars "{3,}"))))
-  (define cheap-email-regexp (regexp "@"))
+    (let ([chars "[^\\s)(<>\"']"]
+          [no-comma-chars "[^\\s)(<>\"',]"])
+      (pregexp (string-append no-comma-chars chars "*" "@" chars "{3,}"))))
   (define (email-format addr)
     `(A ((HREF ,(string-append "mailto:" addr))) ,addr))
 
@@ -86,27 +79,18 @@
 	   (let regexp-loop ([regexps (list http-regexp
                                             ftp-regexp
                                             email-regexp)]
-                             [cheap-regexps 
-                              (list cheap-http-regexp
-                                    cheap-ftp-regexp
-                                    cheap-email-regexp)]
                              [formats (list http-format
                                             ftp-format
                                             email-format)])
 	     (if (null? regexps)
 		 (values #f #f)
 		 (let* ([curr-regexp (car regexps)]
-			[curr-cheap-regexp (car cheap-regexps)]
 			[curr-formatter (car formats)]
 			[match-indices
-			 (and (regexp-match-positions
-			       curr-cheap-regexp built-line)
-			      (pregexp-match-positions 
-			       curr-regexp built-line))])
+			 (pregexp-match-positions curr-regexp built-line)])
 		   (if match-indices
 		       (values match-indices curr-formatter)
-		       (regexp-loop (cdr regexps) (cdr cheap-regexps)
-				    (cdr formats))))))])
+		       (regexp-loop (cdr regexps) (cdr formats))))))])
 	 (if raw-indices
 	     (let* ([indices (car raw-indices)]
 		    [string-start (car indices)]
