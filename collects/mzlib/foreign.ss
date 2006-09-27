@@ -712,7 +712,7 @@
             new-type))))))
 (provide _string/eof _bytes/eof)
 (define _bytes/eof
-  (make-ctype string-type
+  (make-ctype _bytes
               (lambda (x) (and (not (eof-object? x)) x))
               (lambda (x) (or x eof))))
 (define-syntax _string/eof ; make it a syntax so it depends on the _string type
