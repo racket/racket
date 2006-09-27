@@ -710,8 +710,12 @@
                             (lambda (x) (or x eof)))])
             (hash-table-put! table string-type new-type)
             new-type))))))
-(provide _string/eof)
-(define-syntax _string/eof
+(provide _string/eof _bytes/eof)
+(define _bytes/eof
+  (make-ctype string-type
+              (lambda (x) (and (not (eof-object? x)) x))
+              (lambda (x) (or x eof))))
+(define-syntax _string/eof ; make it a syntax so it depends on the _string type
   (syntax-id-rules ()
     [(_ . xs) ((string-type->string/eof-type _string) . xs)]
     [_ (string-type->string/eof-type _string)]))
