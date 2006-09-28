@@ -1655,7 +1655,7 @@
 	    (syntax-property 
 	     (syntax/loc stx (time . exprs))
 	     'stepper-skipto
-	     '(syntax-e cdr car syntax-e car syntax-e cdr car syntax-e cdr syntax-e cdr car syntax-e cdr cdr car))]
+             '(syntax-e cdr car syntax-e car syntax-e cdr car syntax-e cdr syntax-e cdr car syntax-e cdr cdr syntax-e car))]
 	   [_else
 	    (bad-use-error 'time stx)]))))
 
