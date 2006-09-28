@@ -10,8 +10,8 @@ Normal use of readline
 The _rep.ss_ library installs a readline-based function for the
 prompt-and-read part of MzScheme's read-eval-print loop.
 
-You can put the following in your ~/.mzschemerc so that MzScheme starts with
-readline support on xterms:
+You can put the following in your ~/.mzschemerc so that MzScheme
+starts with readline support on xterms:
 
   (when (equal? "xterm" (getenv "TERM"))
     (dynamic-require '(lib "rep.ss" "readline") #f))
@@ -28,11 +28,20 @@ The _readline.ss_ library provides two functions:
 > (readline prompt-string)
   prints the given prompt string and reads a line
 
+> (readline-bytes prompt-bytes)
+  same as above, but using raw byte-strings for the prompt and
+  returning a byte string
+
 > (add-history s)
   adds the given string to the readline history, which is accessible
   to the user via the up-arrow key
 
-> (set-completion-function! proc)
+> (add-history-bytes s)
+  adds the given byte string to the readline history, which is
+  accessible to the user via the up-arrow key
+
+> (set-completion-function! proc [type])
   sets readline's `rl_completion_entry_function' function according to
   proc, which is expected to be a `string -> (list-of string)'
-  procedure
+  procedure; the `type' argument defaults to `_string' but you can use
+  it with `_bytes' instead
