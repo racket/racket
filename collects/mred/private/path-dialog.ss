@@ -430,7 +430,7 @@
                  [selections (send path-list get-selections)]
                  [many?   (and multi? (equal? "" sel)
                                (<= 1 (length selections)))])
-            (cond [(and isdir? (or (not (equal? "" sel)) (root? sel0)))
+            (cond [(and isdir? (not (equal? "" sel0)))
                    ;; chose a directory -- go there
                    (set-dir path) (send* text* (erase) (select-all)) (set-ok?)]
                   [(and /? isfile?)
