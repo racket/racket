@@ -2315,10 +2315,10 @@ regexec(const char *who,
 
       if ((spos - stringpos) + l <= stringlen) {
 	if (prog->flags & REGEXP_MUST_CI)
-	  pos = l_strchr_ci(string, spos, stringlen - (l - 1), 
+	  pos = l_strchr_ci(string, spos, stringlen - (spos - stringpos) - (l - 1), 
 			    (ITO(prog->program, (char *)prog) XFORM_OK_PLUS prog->regmust)[0]);
 	else
-	  pos = l_strchr(string, spos, stringlen - (l - 1), 
+	  pos = l_strchr(string, spos, stringlen - (spos - stringpos) - (l - 1), 
 			 (ITO(prog->program, (char *)prog) XFORM_OK_PLUS prog->regmust)[0]);
 	if (pos == -1)
 	  return 0; /* Not present. */
