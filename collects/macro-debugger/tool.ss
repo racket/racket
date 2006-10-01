@@ -131,7 +131,14 @@
                  (current-module-name-resolver mnr)))))
 
           (define/private (make-handlers original-eval-handler original-module-name-resolver)
-            (let ([stepper (delay (make-macro-stepper (new-standard-hiding-policy)))]
+            (let ([stepper
+                   (delay 
+                     (let ([frame (new macro-stepper-frame%
+                                       (policy (new-standard-hiding-policy))
+                                       (macro-hiding? #t)
+                                       (identifier=? "bound-identifier=?"))])
+                       (send frame show #t)
+                       (send frame get-widget)))]
                   [debugging? debugging?])
               (values
                (lambda (expr)

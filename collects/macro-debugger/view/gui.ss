@@ -62,7 +62,7 @@
           (init policy
                 macro-hiding?)
           (init (show-hiding-panel? #t)
-                (identifier=? #f)
+                (identifier=? "<nothing>")
                 (width (sb:pref:width))
                 (height (sb:pref:height)))
           (inherit get-menu%
@@ -114,28 +114,8 @@
                        (label label) (parent menu) (callback (lambda _ (callback))))
                   (new separator-menu-item% (parent menu)))))
           
-          (begin
-            (new (get-menu-item%) (label "Show properties") (parent syntax-menu)
-                 (callback (lambda _ (send (send widget get-view) show-props))))
-            (new (get-menu-item%) (label "Hide properties") (parent syntax-menu)
-                 (callback (lambda _ (send (send widget get-view) hide-props))))
-            (define id-menu
-              (new (get-menu%) (label "Identifier=?") (parent syntax-menu)))
-            (for-each (lambda (p)
-                        (new (get-menu-item%) (label (car p)) (parent id-menu)
-                             (callback (lambda _ 
-                                         (send (send widget get-controller)
-                                               on-update-identifier=?
-                                               (cdr p))))))
-                      (sb:identifier=-choices))
-            (new (get-menu-item%) (label "Clear selection") (parent syntax-menu)
-                 (callback
-                  (lambda _ (send (send widget get-controller) select-syntax #f)))))
-
           (define widget
             (new macro-stepper-widget%
-                 (register-syntax-action (mk-register-action syntax-menu))
-                 (register-stepper-action (mk-register-action stepper-menu))
                  (parent (send this get-area-container))
                  (policy policy)
                  (macro-hiding? macro-hiding?)
@@ -143,11 +123,40 @@
           (define/public (get-widget) widget)
 
           (begin
+            (new (get-menu-item%) (label "Show/hide syntax properties") (parent syntax-menu)
+                 (callback (lambda _ (send (send widget get-view) toggle-props))))
+            (define id-menu
+              (new (get-menu%) (label "Identifier=?") (parent syntax-menu)))
+            (for-each (lambda (p)
+                        (let ([this-choice
+                               (new checkable-menu-item%
+                                    (label (car p)) 
+                                    (parent id-menu)
+                                    (callback (lambda _ 
+                                                (send (send widget get-controller)
+                                                      on-update-identifier=?
+                                                      (car p)
+                                                      (cdr p)))))])
+                          (send (send widget get-controller)
+                                add-identifier=?-listener
+                                (lambda (new-name new-func)
+                                  (send this-choice check (eq? new-name (car p)))))))
+                      (sb:identifier=-choices))
+            (new (get-menu-item%) (label "Clear selection") (parent syntax-menu)
+                 (callback
+                  (lambda _ (send (send widget get-controller) select-syntax #f))))
+            (new (get-menu-item%)
+                 (label "Show/hide macro hiding configuration")
+                 (parent stepper-menu)
+                 (callback (lambda _ (send widget show/hide-macro-hiding-prefs)))))
+
+          (begin
             (when identifier=?
               (let ([p (assoc identifier=? (sb:identifier=-choices))])
                 (when p
                   (send (send widget get-controller)
                         on-update-identifier=?
+                        (car p)
                         (cdr p))))))
           
           (frame:reorder-menus this)
@@ -157,8 +166,6 @@
       (define macro-stepper-widget%
         (class* object% ()
           (init-field parent)
-          (init-field register-syntax-action)
-          (init-field register-stepper-action)
           (init policy)
           (init macro-hiding?)
           (init show-hiding-panel?)
@@ -243,10 +250,7 @@
             (new button% (label "Next term") (parent updown-navigator)
                  (callback (lambda (b e) (navigate-down)))))
 
-          (register-stepper-action "Show/hide macro hiding configuration"
-                                   (lambda () (show/hide-macro-hiding-prefs)))
-
-          (define/private (show/hide-macro-hiding-prefs)
+          (define/public (show/hide-macro-hiding-prefs)
             (send area change-children
                   (lambda (children)
                     (if (memq control-pane children)

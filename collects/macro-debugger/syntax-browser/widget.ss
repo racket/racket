@@ -77,6 +77,36 @@
                                      "")
                                  (send e get-time-stamp)))))
           ;; FIXME: Add option for "formatted" copy/paste?
+          
+          (new menu-item%
+               (label "Clear selection")
+               (parent context-menu)
+               (callback (lambda _ (send controller select-syntax #f))))
+
+          (new separator-menu-item% (parent context-menu))
+          
+          ;; properties
+          (new menu-item% 
+               (label "Show/hide syntax properties")
+               (parent context-menu)
+               (callback (lambda _ (toggle-props))))
+          
+          ;; primary selection
+          (let ([secondary (new menu% (label "identifier=?") (parent context-menu))])
+            (for-each
+             (lambda (name func)
+               (let ([this-choice
+                      (new checkable-menu-item%
+                           (label name)
+                           (parent secondary)
+                           (callback 
+                            (lambda (i e)
+                              (send controller on-update-identifier=? name func))))])
+                 (send controller add-identifier=?-listener
+                       (lambda (new-name new-id=?) 
+                         (send this-choice check (eq? name new-name))))))
+             (map car (identifier=-choices))
+             (map cdr (identifier=-choices))))
           context-menu))
       
       ;; syntax-properties-controller<%> methods
@@ -202,15 +232,16 @@
            (callback (lambda _ (toggle-props))))
 
       (define/private (on-update-identifier=?-choice)
-        (let ([id=? (get-identifier=?)])
-          (send (get-controller) on-update-identifier=? id=?)))
-
-      (define/private (get-identifier=?)
-        (cond [(assoc (send -choice get-string-selection) 
+        (cond [(assoc (send -choice get-string-selection)
                       -identifier=-choices)
-               => cdr]
-              [else #f]))))
-
+               => (lambda (p)
+                    (send (get-controller)
+                          on-update-identifier=? (car p) (cdr p)))]
+              [else #f]))
+      (send (get-controller) add-identifier=?-listener
+            (lambda (name func)
+              (send -choice set-selection
+                    (or (send -choice find-string name) 0))))))
 
   ;; syntax-browser-frame%
   (define syntax-browser-frame%
