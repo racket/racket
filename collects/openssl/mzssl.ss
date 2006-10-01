@@ -199,15 +199,19 @@
     (let* ([buffer (make-bytes 512)])
       (ERR_error_string_n id buffer (bytes-length buffer))
       (regexp-match #rx#"^[^\0]*" buffer)))
-  
+
   (define (check-valid v who what)
     (when (ptr-equal? v #f)
       (let ([id (ERR_get_error)])
 	(escape-atomic
 	 (lambda ()
-	   (error who "~a failed ~a" 
-		  what
-		  (get-error-message id)))))))
+	   (error who "~a failed ~a" what (get-error-message id)))))))
+
+  (define (error/network who fmt . args)
+    (raise (make-exn:fail:network
+            (string->immutable-string
+             (format "~a: ~a" who (apply format fmt args)))
+            (current-continuation-marks))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Atomic blocks
@@ -877,16 +881,16 @@
 		     [(= err SSL_ERROR_WANT_READ)
 		      (let ([n (pump-input-once mzssl (if out-blocked? o #t))])
 			(when (eof-object? n)
-			  (error who "~a failed (input terminated prematurely)"
-				 (if connect? "connect" "accept"))))
+			  (error/network who "~a failed (input terminated prematurely)"
+                                         (if connect? "connect" "accept"))))
 		      (loop)]
 		     [(= err SSL_ERROR_WANT_WRITE)
 		      (pump-output-once mzssl #t #f)
 		      (loop)]
 		     [else
-		      (error who "~a failed ~a" 
-			     (if connect? "connect" "accept")
-			     (get-error-message (ERR_get_error)))]))))))
+		      (error/network who "~a failed ~a"
+                                     (if connect? "connect" "accept")
+                                     (get-error-message (ERR_get_error)))]))))))
 	  ;; Connection complete; make ports
 	  (values (register (make-ssl-input-port mzssl) mzssl #t)
 		  (register (make-ssl-output-port mzssl) mzssl #f))))))
