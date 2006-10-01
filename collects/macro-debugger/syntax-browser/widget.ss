@@ -36,6 +36,14 @@
         (new syntax-controller%
              (properties-controller this)))
 
+      ;; Set up keymap
+      (let ([keymap (send -text get-keymap)])
+        (send keymap map-function "rightbutton" "popup-context-window")
+        (send keymap add-function "popup-context-window"
+              (lambda (editor event)
+                (do-popup-context-window editor event)))
+        )
+
       ;; FIXME: Why doesn't this work?
       #;
       (when (current-syntax-font-size)
@@ -52,6 +60,25 @@
             (let ([pp (pref:props-percentage)]) (list (- 1 pp) pp)))
       (toggle-props)
 
+      (define/private (do-popup-context-window editor event)
+        (define x (send event get-x))
+        (define y (send event get-y))
+        (define admin (send editor get-admin))
+        (send admin popup-menu context-menu x y))
+      
+      (define context-menu
+        (let ([context-menu (new popup-menu%)])
+          (new menu-item% (label "Copy") (parent context-menu)
+               (callback (lambda (i e)
+                           (define stx (send controller get-selected-syntax))
+                           (send the-clipboard set-clipboard-string
+                                 (if stx 
+                                     (format "~s" (syntax-object->datum stx))
+                                     "")
+                                 (send e get-time-stamp)))))
+          ;; FIXME: Add option for "formatted" copy/paste?
+          context-menu))
+      
       ;; syntax-properties-controller<%> methods
 
       (define/public (set-syntax stx)
