@@ -12,6 +12,8 @@
            >>Seek
            macro-policy
            subterms-table
+           lifts-available
+           lifts-retained
            )
   
 
@@ -21,6 +23,13 @@
   ;; subterms-table : parameter of hashtable[syntax => (list-of Path)]
   (define subterms-table (make-parameter #f))
 
+  ;; lifts-available : parameter of (listof (cons syntax Derivation))
+  (define lifts-available (make-parameter 'uninitialized))
+
+  ;; lifts-retained : parameter of (listof (cons syntax Derivation))
+  ;; Ordered reverse-chronologically, ie same order as definition sequence
+  (define lifts-retained (make-parameter 'uninitialized))
+  
   ;; Macros
 
   (define-syntax recv

@@ -181,24 +181,7 @@
                      stx*))]
                  [(struct error-wrap (exn _ _))
                   (values (make-error-wrap exn #f (make-p:synth e1 #f rs null))
-                          #f)]))
-             #;
-             (>>P d (make-p:#%app tagged-stx ld)
-                  LDERIV
-                  ([for-lderiv LDERIV ld])
-                  #:with2
-                  (lambda (pr* stx*)
-                    (match pr*
-                      [(struct p:#%app (_ _ rs tagged-stx (IntQ lderiv (es1 es2 derivs*))))
-                       (values (make-p:synth e1 stx* rs
-                                             (map (lambda (n d)
-                                                    (make-s:subterm (list (make-ref n)) d))
-                                                  (iota (length derivs*))
-                                                  derivs*))
-                               stx*)]
-                      [(struct p:#%app (_ _ rs tagged-stx (struct error-wrap (exn _ _))))
-                       (values (make-error-wrap exn #f (make-p:synth e1 #f rs null))
-                               #f)]))))]
+                          #f)])))]
         [(AnyQ p:lambda (e1 e2 rs renames body))
          (>>P d (make-p:lambda renames body)
               (lambda FORMALS . BODY)
@@ -213,7 +196,7 @@
                  [for-cdr-bderivs (BODY ...) renames+bodies])))]
 
         [(AnyQ p:let-values (e1 e2 rs renames rhss body))
-         (let ([var-renames (map stx-car (stx-car renames))])
+         (let ([var-renames (map stx-car (stx->list (stx-car renames)))])
            (>>P d (make-p:let-values renames rhss body)
                 (let-values ([VARS RHS] ...) . BODY)
                 ([for-renames (VARS ...) var-renames]
@@ -221,7 +204,7 @@
                  [for-bderiv BODY body])))]
 
         [(AnyQ p:letrec-values (e1 e2 rs renames rhss body))
-         (let ([var-renames (if renames (map stx-car (stx-car renames)) null)])
+         (let ([var-renames (if renames (map stx-car (stx->list (stx-car renames))) null)])
            (>>P d (make-p:letrec-values renames rhss body)
                 (letrec-values ([VARS RHS] ...) . BODY)
                 ([for-renames (VARS ...) var-renames]
@@ -229,8 +212,8 @@
                  [for-bderiv BODY body])))]
 
         [(AnyQ p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body))
-         (let ([svar-renames (if srenames (map stx-car (stx-car srenames)) null)]
-               [vvar-renames (if vrenames (map stx-car (stx-car vrenames)) null)])
+         (let ([svar-renames (if srenames (map stx-car (stx->list (stx-car srenames))) null)]
+               [vvar-renames (if vrenames (map stx-car (stx->list (stx-car vrenames))) null)])
            (>>Pn d (make-p:letrec-syntaxes+values srenames srhss vrenames vrhss body)
                  (letrec-syntaxes+values ([SVARS SRHS] ...) ([VVARS VRHS] ...) . BODY)
                  ([for-renames (SVARS ...) svar-renames]
@@ -266,7 +249,8 @@
         [(AnyQ mrule (e1 e2 tx next))
          (let ([show-k
                 (lambda ()
-                  (recv [(next e2) (for-deriv next)]
+                  (recv #;[(tx) (for-transformation tx)]
+                        [(next e2) (for-deriv next)]
                         (values (rewrap d (make-mrule e1 e2 tx next))
                                 e2)))])
            (if (show-transformation? tx)
@@ -286,14 +270,67 @@
                  (seek/deriv d))))]
 
         ;; Lift
-
-        [($$ lift-deriv (e1 e2 first lifted-stx second))
-         (error 'unimplemented)]
+        ;; Shaky invariant:
+        ;; Only normal lifts occur in first... no end-module-decl lifts.
+        ;; They occur in reverse order.
+        [(IntQ lift-deriv (e1 e2 first lifted-stx second) tag)
+         (error 'unimplemented "lifts are unimplemented")
+         #;
+         (let* ([second-derivs
+                 (match second
+                   [(IntQ p:begin (_ _ _ (IntQ lderiv (_ _ inners))))
+                    (reverse inners)])]
+                [lift-stxs
+                 (with-syntax ([(?begin form ...) lifted-stx])
+                   (cdr (reverse (syntax->list #'(form ...)))))]
+                [lift-derivs (cdr second-derivs)]
+                [begin-stx (stx-car lifted-stx)])
+           (let-values ([(first-d first-e2 retained-lifts)
+                         (parameterize ((lifts-available (map cons lift-stxs lift-derivs))
+                                        (lifts-retained null))
+                           (let-values ([(first-d first-e2) (for-deriv first)])
+                             (unless (null? (lifts-available))
+                               (printf "hide: lift-deriv: unused lift derivs!~n"))
+                             (values first-d first-e2 (lifts-retained))))])
+             ;; If all the lifts were hidden, then remove lift-deriv node
+             ;; Otherwise, recreate with the retained lifts
+             (if (null? retained-lifts)
+                 (values first-d first-e2)
+                 (let ()
+                   (define retained-stxs (map car retained-lifts))
+                   (define retained-derivs (map cdr retained-lifts))
+                   (define lifted-stx*
+                     (datum->syntax-object lifted-stx
+                                           `(,begin-stx ,@retained-stxs ,first-e2)
+                                           lifted-stx
+                                           lifted-stx))
+                   (define main-deriv (make-p:stop first-e2 first-e2 null))
+                   (define inner-derivs 
+                     (if tag retained-derivs (append retained-derivs main-deriv)))
+                   (define lderiv*
+                     (rewrap second
+                             (make-lderiv (map lift/deriv-e1 inner-derivs)
+                                          (map lift/deriv-e2 inner-derivs)
+                                          inner-derivs)))
+                   (define-values (ld*-d ld*-es2) (for-lderiv lderiv*))
+                   (define e2*
+                     (and ld*-es2 
+                          (datum->syntax-object e2 `(,begin-stx ,@ld*-es2) e2 e2)))
+                   (define second* 
+                     (rewrap second (make-p:begin lifted-stx* e2* null ld*-d)))
+                   (values (make-lift-deriv e1 e2* first-d lifted-stx* second*)
+                           e2*)))))]
 
         ;; Errors
 
         [#f (values #f #f)]))
 
+    ;; for-transformation : Transformation -> Transformation???
+    (define (for-transformation tx)
+      (match tx
+        [(IntQ transformation (e1 e2 rs me1 me2 locals))
+         (error 'unimplemented)]))
+    
     ;; for-rename : Rename -> (values Rename syntax)
     (define (for-rename rename)
       (values rename rename))
@@ -436,7 +473,7 @@
                   ;; Not good.
                   ;; FIXME: Better to delay check to here, or check whole table first?
                   ;; FIXME
-                  (error 'synth:subderivations "nonlinear subterms")]))]
+                  (raise (make-nonlinearity "nonlinearity in original term" paths))]))]
         [#f null]))
 
     ;; for-unlucky-deriv : Derivation -> (list-of Subterm)
@@ -665,7 +702,7 @@
                             (s:rename-path subterm0)
                             (s:rename-after subterm0))
               (cdr subterm-derivs)))]
-          [else (error 'substitute-subterms)]))
+          [else (error 'substitute-subterms "neither s:subterm nor s:rename")]))
 
   ;; gather-one-subterm : syntax syntax -> SubtermTable
   (define (gather-one-subterm whole part)
@@ -990,9 +1027,11 @@
   (define (module-begin->lderiv pr)
     (let-values ([(forms pass1 pass2)
                   (match pr
-                    [(AnyQ p:#%module-begin (e1 _ _ pass1 pass2))
+                    [(IntQ p:#%module-begin (e1 _ _ pass1 pass2))
                      (values (stx-cdr e1) pass1 pass2)])])
       ;; loop : number -> (list-of Derivation)
+      ;; NOTE: Definitely returns a list of <number> elements; 
+      ;; fills the end of the list with #f if necessary.
       (define (loop count)
         ;(printf "** MB->L (~s)~n" count)
         ;(printf "  forms: ~s~n" forms)
@@ -1024,10 +1063,14 @@
                    (let ([finish (car (loop 1))])
                      (cons (combine-lifts head finish inners)
                            (loop (sub1 count))))))]
-              ['() (error 'unexpected)])
+              ['()
+               (printf "module-begin->lderiv:loop: unexpected null~n")
+               (cons #f (loop (sub1 count)))])
             null))
 
       ;; loop2 : number -> (list-of Derivation)
+      ;; NOTE: Definitely returns a list of <number> elements; 
+      ;; fills the end of the list with #f if necessary.
       (define (loop2 count)
         ;(printf "** loop2 (~s)~n" count)
         ;(printf "  forms: ~s~n" forms)
@@ -1060,13 +1103,15 @@
                                               (append inners
                                                       (list (make-p:stop head-e2 head-e2 null))))))
                   (loop2 (sub1 count))))]
-              ['() (error 'unexpected)])
+              ['()
+               (printf "module-body->lderiv:loop2: unexpected null~n")
+               (cons #f (loop2 (sub1 count)))])
             null))
 
       (let* ([derivs (loop (stxs-improper-length forms))]
-             [es1 (map deriv-e1 derivs)]
-             [es2 (map deriv-e2 derivs)])
-        (make-lderiv es1 es2 derivs))))
+             [es1 (map lift/deriv-e1 derivs)]
+             [es2 (if (wrapped? pr) #f (map lift/deriv-e2 derivs))])
+        (rewrap pr (make-lderiv es1 es2 derivs)))))
 
   (define (stxs-improper-length stx)
     (let loop ([stx stx] [n 0])
@@ -1131,22 +1176,18 @@
 
   ;; lderiv->module-begin : ListDerivation -> PRule
   (define (lderiv->module-begin ld e1)
-    (let* ([inners (lderiv-derivs ld)]
-           [inners-es1 (lderiv-es1 ld)]
-           [inners-es2 (lderiv-es2 ld)])
-      (with-syntax ([(?module-begin . _) e1]
-                    [inners-es1* inners-es1]
-                    [inners-es2* inners-es2])
-        (make-p:#%module-begin
-         (syntax/skeleton e1 (?module-begin . inners-es1*))
-         (syntax/skeleton e1 (?module-begin . inners-es2*))
-         null ;; FIXME 
-         (map (lambda (d) (make-mod:cons d)) inners)
-         (map (lambda (x) (make-mod:skip)) inners)))))
-       
-
-
-  
+    (match ld
+      [(IntQ lderiv (inners-es1 inners-es2 inners))
+       (with-syntax ([(?module-begin . _) e1]
+                     [inners-es1* inners-es1]
+                     [inners-es2* inners-es2])
+         (rewrap ld
+                 (make-p:#%module-begin
+                  (syntax/skeleton e1 (?module-begin . inners-es1*))
+                  (syntax/skeleton e1 (?module-begin . inners-es2*))
+                  null ;; FIXME 
+                  (map (lambda (d) (make-mod:cons d)) inners)
+                  (map (lambda (x) (make-mod:skip)) inners))))]))
 
 
   ;; Subterm Table

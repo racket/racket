@@ -244,6 +244,7 @@
         (cons (make-mod:lift-end $1) $2)])
 
       (ModulePass1-Part
+       (#:no-wrap)
        [((? EE) (? ModulePass1/Prim))
         (make-mod:prim $1 $2)]
        [(EE splice)
@@ -277,6 +278,7 @@
         (cons (make-mod:lift-end $1) $2)])
 
       (ModulePass2-Part
+       (#:no-wrap)
        ;; not normal; already handled
        [()
         (make-mod:skip)]
