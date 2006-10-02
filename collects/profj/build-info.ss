@@ -1414,8 +1414,12 @@
                              (not (or (is-eq-subclass? n runtime-exn-type type-recs))))
                            ;(is-eq-subclass? n error-type type-recs))))
                            (map (lambda (t)
-                                  (let ((n (make-ref-type (id-string (name-id t))
-                                                          (map id-string (name-path t)))))
+                                  (let ((n (make-ref-type 
+                                            (id-string (name-id t))
+                                            (if (null? (name-path t))
+                                                (send type-recs lookup-path (id-string (name-id t)) 
+                                                      (lambda () null))
+                                                (map id-string (name-path t))))))
                                     (if (is-eq-subclass? n throw-type type-recs)
                                         n
                                         (throws-error (name-id t) (name-src t)))))

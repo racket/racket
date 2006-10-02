@@ -192,6 +192,14 @@
         (add-exns-to-env (cdr exns)
                          (add-exn-to-env (car exns) env))))
   
+  ;restore-exn-env: env env -> env
+  (define (restore-exn-env old-env new-env)
+    (make-environment (environment-types new-env)
+                      (environment-set-vars new-env)
+                      (environment-exns old-env)
+                      (environment-labels new-env)
+                      (environment-local-inners new-env)))
+  
   ;;lookup-exn: type env type-records symbol-> bool
   (define (lookup-exn type env type-recs level)
     (ormap (lambda (lookup)
@@ -1108,9 +1116,8 @@
          (throw-error 'not-throwable exp-type src))
         ((not (is-eq-subclass? exp-type runtime-exn-type type-recs))
          (unless (or interact? (lookup-exn exp-type env type-recs 'full))
-           (throw-error 'not-declared exp-type src)))
-        (else
-         (send type-recs add-req (make-req "Throwable" (list "java" "lang")))))
+           (throw-error 'not-declared exp-type src))))
+      (send type-recs add-req (make-req "Throwable" (list "java" "lang")))
       exp/env))
     
   ;check-return: statement expression type env (expression -> type/env) src bool symbol type-records -> type/env
@@ -2712,8 +2719,10 @@
                           (expr-src exp)
                           type-recs))
       ((check-catch? exp)
-       (check-test-catch (check-sub-expr (check-catch-test exp) env)
+       (check-test-catch (check-catch-test exp)
                          (check-catch-exn exp)
+                         check-sub-expr
+                         env
                          (expr-src exp)
                          type-recs))
       ((check-mutate? exp)
@@ -2776,14 +2785,16 @@
                            level
                            test-t actual-t ta-src)))))
   
-  ;check-test-catch: type/env type-spec src type-records -> type/env
-  (define (check-test-catch test-type type src type-recs)
-    (let ((catch-type (type-spec-to-type type #f 'full type-recs)))
+  ;check-test-catch: expr type-spec (expr env -> type-env) env src type-records -> type/env
+  (define (check-test-catch test type check-e env src type-recs)
+    (let ([catch-type (type-spec-to-type type #f 'full type-recs)])
       (unless (is-eq-subclass? catch-type throw-type type-recs)
         (check-catch-error catch-type (type-spec-src type)))
       (when (reference-type? catch-type)
         (send type-recs add-req (make-req (ref-type-class/iface catch-type) (ref-type-path catch-type))))
-      (make-type/env 'boolean (type/env-e test-type))))
+      (let* ([new-env (add-exn-to-env catch-type env)]
+             [test-type (check-e test new-env)])
+        (make-type/env 'boolean (restore-exn-env (type/env-e test-type) env)))))
       
   ;check-test-mutate: exp exp (exp env -> type/env) env src type-records -> type/env
   (define (check-test-mutate mutatee check check-sub-expr env src type-recs)

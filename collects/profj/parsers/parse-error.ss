@@ -341,14 +341,14 @@
                        (next-tok (get-tok next)))
                   (cond
                     ((class? next-tok) (parse-definition cur-tok next state getter))
-                    ((eof? next-tok) (parse-error "abstract should be followed by class definition" srt end))
+                    ((eof? next-tok) (parse-error "'abstract' should be followed by a class definition." srt end))
                     (else 
                      (if (close-to-keyword? next-tok 'class)
-                         (parse-error (format "expected 'class' after 'abstract', found ~a which is incorrectly spelled or capitalized"
+                         (parse-error (format "Expected 'class' after 'abstract', found ~a which is incorrectly spelled or capitalized."
                                               (token-value next-tok))
                                       srt
                                       (get-end next))
-                         (parse-error (format "abstract must be immediately followed by 'class' not ~a" (format-out next-tok))
+                         (parse-error (format "'abstract' must be immediately followed by 'class' not ~a." (format-out next-tok))
                                       srt
                                       (get-end next))))))))
            ((interface) 
@@ -409,27 +409,27 @@
             (let* ((next (getter))
                    (next-tok (get-tok next)))
               (cond
-                ((eof? next-tok) (parse-error (format "expected class body after ~a" (token-value tok)) srt end))
+                ((eof? next-tok) (parse-error (format "Expected class body after ~a" (token-value tok)) srt end))
                 ((and (extends? next-tok) (or (intermediate?) (advanced?)))
                  (parse-definition next (getter) 'extends getter))
                 ((implements? next-tok)
                  (parse-definition next (getter) 'implements getter))
                 ((o-brace? next-tok) (parse-definition cur-tok next 'class-body getter))
                 ((and (or (intermediate?) (advanced?)) (close-to-keyword? next-tok 'extends) )
-                 (parse-error (format "found ~a, which is similar to 'extends'" (token-value next-tok))
+                 (parse-error (format "Found ~a, which is similar to 'extends'" (token-value next-tok))
                               (get-start next) (get-end next)))
                 ((close-to-keyword? next-tok 'implements)
-                 (parse-error (format "found ~a, which is similar to 'implements'" (token-value next-tok))
+                 (parse-error (format "Found ~a, which is similar to 'implements'" (token-value next-tok))
                               (get-start next) (get-end next)))
                 ((open-separator? next-tok)
-                 (parse-error (format "expected { to begin class body, but found ~a" (format-out next-tok))
+                 (parse-error (format "Expected { to begin class body, but found ~a" (format-out next-tok))
                               (get-start next) (get-end next)))
                 ((c-brace? tok)
                  (parse-error (format "Class body must be opened with { before being closed, found ~a" out)
                               (get-start next) (get-end next)))
                 (else
                  (parse-error 
-                  (format "class name must be followed by ~a 'implements' or a { to start class body, found ~a"
+                  (format "Class name must be followed by ~a 'implements' or a { to start class body, found ~a"
                           (if (not (beginner?)) "'extends' clause or " "") 
                           (format-out next-tok)) srt (get-end next))))))
            (else 
@@ -446,15 +446,15 @@
                 ((eof? next-tok) (parse-error (format "Expected interface body after ~a" (token-value tok)) srt end))
                 ((extends? next-tok) 
                  (if (beginner?)
-                     (parse-error "Expected '{' to begin interface body, found 'extends' which is not allowed here" 
+                     (parse-error "Expected a '{' to begin interface body, found 'extends' which is not allowed here." 
                                   (get-start next) (get-end next))
                      (parse-definition next (getter) 'iface-extends getter)))
                 ((o-brace? next-tok) (parse-definition cur-tok next 'iface-body getter))
                 ((close-to-keyword? next-tok 'extends)
                  (if (beginner?)
-                     (parse-error (format "Expected '{' to begin interface body, ~a cannot appear here" (token-value next-tok))
+                     (parse-error (format "Expected a '{' to begin interface body, ~a cannot appear here" (token-value next-tok))
                                   (get-start next) (get-end next))
-                     (parse-error (format "found ~a, which is similar to 'extends'" (token-value next-tok)) 
+                     (parse-error (format "Found ~a, which is similar to 'extends'." (token-value next-tok)) 
                                   (get-start next) (get-end next))))
                 ((open-separator? next-tok)
                  (parse-error (format "Expected { to begin interface body, but found ~a" (format-out next-tok))
@@ -469,11 +469,11 @@
                                       (format-out next-tok)) srt (get-end next))))))
            (else
             (if (java-keyword? tok)
-                (parse-error (format "interface may not be called ~a, as this is a reserved term" tokN) srt end)
+                (parse-error (format "An interface may not be called ~a, as this is a reserved term." tokN) srt end)
                 (parse-error (format "Expected a name for this interface, given ~a" out) srt end)))))
         ((extends) 
          (cond
-           ((eof? tok) (parse-error "Expected parent class after extends" ps pe))
+           ((eof? tok) (parse-error "Expected parent class after extends." ps pe))
            ((id-token? tok)
             ;(if (beginner?)
             ;    (parse-definition cur-tok (getter) 'class-body getter)
@@ -812,7 +812,7 @@
                    (n-out (format-out n-tok))
                    (ne (get-end next)))
               (cond
-                ((eof? n-tok) (parse-error "Field has not completed, class body still requires a }" srt end))
+                ((eof? n-tok) (parse-error "Field declaration has not completed, and class body still requires a }" srt end))
                 ((semi-colon? n-tok) (parse-members next (getter) 'start getter #f just-method?))
                 ((comma? n-tok) (parse-members next (getter) 'field-list getter #f just-method?))
                 ((teaching-assignment-operator? n-tok)
@@ -966,10 +966,10 @@
                           ((eof? afterC-tok) (parse-error "Expected rest of parameter list, and class body requires a }"
                                                           (get-start afterID) (get-end afterID)))
                           ((c-paren? afterC-tok)
-                           (parse-error "Comma is unneeded before ) unless another variable is desired" 
+                           (parse-error "Comma is unneeded before ) unless another variable is declared." 
                                         (get-start afterID) (get-end afterC)))
                           ((comma? afterC-tok)
-                           (parse-error "Parameter list should not have ,, Only one is needed" 
+                           (parse-error "Parameter list should not have ,, Only one ',' is needed." 
                                         (get-start afterID) (get-end afterC)))
                           (else (parse-members afterID afterC 'ctor-parms getter #f just-method?)))))
                      ((or (prim-type? afterID-tok) (id-token? afterID-tok))
@@ -996,13 +996,13 @@
             (let* ((next (getter))
                    (next-tok (get-tok next)))
               (cond 
-                ((eof? next-tok) (parse-error "Expected remainder of array type" srt end))
+                ((eof? next-tok) (parse-error "Expected remainder of array type declaration." srt end))
                 ((c-bracket? next-tok) (parse-members next (getter) 'array-type getter #f just-method?))
                 (else
-                 (parse-error (format "Expected ']' to close array type, found ~a which is not allowed" 
+                 (parse-error (format "Expected ']' to close array type, found ~a which is not allowed." 
                                       (format-out next-tok))
                               srt (get-end next))))))
-           ((COMMA) (parse-error "Expected new paramter name after type, found ','" srt end))
+           ((COMMA) (parse-error "Expected new paramter name after type, found ','." srt end))
            ((IDENTIFIER) 
             (let* ((next (getter))
                    (next-tok (get-tok next)))

@@ -3,7 +3,6 @@
   (require (lib "compile.ss" "profj")
            (lib "parameters.ss" "profj")
            (lib "display-java.ss" "profj")
-           (lib "tool.ss" "profj")
            (lib "class.ss"))
 
   (define report-expected-error-messages (make-parameter #t))
@@ -14,6 +13,8 @@
   (define interaction-msgs (make-parameter null))
   (define execution-msgs (make-parameter null))
   (define file-msgs (make-parameter null))
+  (define missed-expected-errors (make-parameter 0))
+  (define expected-failed-tests (make-parameter null))
   (define expected-error-messages (make-parameter null))
 
   (provide java-values-equal?)
@@ -98,7 +99,10 @@
                                                      (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
                                                      (prefix c: (lib "contract.ss")))
                                             ,(compile-interactions st st type-recs level)))))
-                      (unless (java-equal? (eval val) new-val null null)
+                      (when (eq? val 'error)
+                        (missed-expected-errors (add1 (missed-expected-errors)))
+                        (expected-failed-tests (cons msg (expected-failed-tests))))
+                      (unless (and (not (eq? val 'error)) (java-equal? (eval val) new-val null null))
                         (interaction-errors (add1 (interaction-errors)))
                         (interaction-msgs (cons (format "Test ~a: ~a evaluated to ~a instead of ~a"
                                                         msg ent new-val val) (interaction-msgs))))))))
@@ -157,7 +161,11 @@
                  (execution-errors (add1 (execution-errors)))
                  (execution-msgs (cons
                                   (format "Test ~a : Exception-raised: ~a" msg (exn-message exn)) (execution-msgs))))))])
-        (eval-modules (compile-java 'port 'port level #f st st)))))
+        (eval-modules (compile-java 'port 'port level #f st st))
+        (when error?
+          (missed-expected-errors (add1 (missed-expected-errors)))
+          (expected-failed-tests (cons msg (expected-failed-tests))))
+        )))
   
   ;run-test: symbol string (U string (list string)) (U string (list string)) -> (U (list (list symbol bool string)) (list ...))
   (define (run-test level defn interact val)
@@ -215,7 +223,10 @@
     (execution-errors 0)
     (execution-msgs null)
     (file-errors 0)
-    (file-msgs null))
+    (file-msgs null)
+    (missed-expected-errors 0)
+    (expected-failed-tests null)
+    (expected-error-messages null))
   
   
   ;report-test-results: -> void
@@ -231,6 +242,10 @@
     (when (> (file-errors) 0)
       (printf "~a file errors occurred~n" (file-errors))
       (for-each (lambda (m) (printf "~a~n" m)) (file-msgs))
+      (newline))
+    (when (> (missed-expected-errors) 0)
+      (printf "Failed to receive errors for these ~a tests:~n" (missed-expected-errors))
+      (for-each (lambda (m) (printf "~a~n" m)) (expected-failed-tests))
       (newline))
     (when (report-expected-error-messages)
       (printf "Received these expected error messages:~n")

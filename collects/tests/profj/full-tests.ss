@@ -5,6 +5,30 @@
   (prepare-for-tests "Full")
 
   (execute-test
+   "class AnExceptionThrower {
+      int m() throws Throwable {
+        if (true)
+          throw new Throwable();
+        throw new Exception();
+      }
+    }" 'full #f "Throwable is a subclass of Throwable for purpose of throws clause")
+  
+  (execute-test
+   "class AnotherExceptionThrower {
+     int m() throws Exception {
+        throw new Exception();
+    }}" 'full #f "Throwable is imported when using throw")
+  
+  (interact-test
+   "class YAET {
+      int m() throws Exception {
+        throw new Exception();
+      }
+    }"
+   'full '("check new YAET().m() catch Exception" "check new YAET().m() catch Throwable")
+   '(#t #t) "Check properly catching exceptions")
+  
+  (execute-test
    "import java.util.*;
     class Random { }"
    'full #f "Hiding an import * name with a local class"
