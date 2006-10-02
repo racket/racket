@@ -7,12 +7,11 @@ To get the basic macros:
 
 > (events->callbacks field-name update-call)
 Generates a mixin for allowing an event stream to drive
-callbacks. When an event stream is given as the init
-value for field-name, that event stream is stored,
-and whenever an event occurs on that stream, 
-update-call is invoked on the value of the event. The
-one argument to the resulting mixin is the class being
-extended
+callbacks. When an event stream is given as the init value
+for field-name, that event stream is stored, and whenever an
+event occurs on that stream,  update-call is invoked on the
+value of the event. The one argument to the resulting mixin
+is the class being extended
 
 > (callbacks->args-evts stream-name callback)
 Generates a mixin that sends an event on stream-name when
@@ -23,8 +22,8 @@ gets the result of applying [stream-name]-event-processor
 to the stream of args-evts. The events on the stream are
 lists of the arguments to the callback. The default value 
 for [stream-name]-event-processor is given as the first
-argument to the mixin, and the class being extended is
-the second argument to the mixin.
+argument to the mixin, and the class being extended is the
+second argument to the mixin.
 
 FtA provides event-is-val, split-mouse-events/type, and
 split-key-events/type for use as initialization arguments.
@@ -37,32 +36,56 @@ the type of event occurence.
 
                                                     
 events->callbacks and callbacks->args-evts are the backbone
-of the transition between an object-oriented library and
-an event-stream based library. Some common utility macros
-are provided from:
+of the transition between an object-oriented library and an
+event-stream based library.
+
+
+
+
+AUXILIARY MACROS
+------------------
+
+Some common utility macros provided from:
 (lib "aux-mixin-macros.ss" "frtime" "demo" "gui")
                                                     
 > (behavior->callbacks field-name update-call)
-Generates a mixin for allowing a behavior to control a widget.
-The mixin has two arguments. The mixin's first argument is the
-default value for field-name, and the seconds argument is the
-class being mixed. Whenever a behavior is supplied as the value
-for field-name, the value-now of that behavior is used as the
-super-new argument for filed-name, and whenever there is a
-change in that behavior, update-call is invoked with the
-current value of the behavior.
+Generates a mixin for allowing a behavior to control a
+widget. The mixin has two arguments. The mixin's first
+argument is the default value for field-name, and the
+seconds argument is the class being mixed. Whenever a
+behavior is supplied as the value for field-name, the
+value-now of that behavior is used as the super-new argument
+for filed-name, and whenever there is a change in that
+behavior, update-call is invoked with the current value of
+the behavior.
 
 > (mixin-merge-e new-stream-name stream-getter1 stream-getter2)
-Generates a mixin that provides access to the merge-e
-of two event streams. The first argument is the name
-of the merged stream. The merged stream can be accessed
-by the public method (get-[new-stream-name]). The
-method stream-getter1 and stream-getter2 are assumed to
-be inherited public methods that return event streams.
+Generates a mixin that provides access to the merge-e of two
+event streams. The first argument is the name of the merged
+stream. The merged stream can be accessed by the public
+method (get-[new-stream-name]). The method stream-getter1
+and stream-getter2 are assumed to be inherited public
+methods that return event streams.
 
+> (embed-processor processed-member-name getter ...)
 
-For examples of how to use these macros, look at the file
-"instr.ss" in collects/frtime/demos/gui/demo.
+embed-processor is a macro for creating a mixin that embeds
+a signal processing step into the object. For example,
+mixin-merge-e is written in terms of  embed-processor as: 
+
+(embed-processor new-stream-name
+		(lambda (ev1 ev2)
+		(merge-e ev1 ev2))
+		stream-getter1
+		stream-getter2).
+		
+The mixin created has one argument, which is the class being
+mixed. embed-processor is in aux-mixin-macros.ss
+
+For examples of how to use behavior->callbacks,
+mixin-merge-e, events->callbacks, and callbacks->args-evts,
+consult the tutorial file "instr.ss" in 
+collects/frtime/demos/gui/demo.
 
 
 
@@ -85,36 +108,38 @@ Derived from callbacks->args-evts.
  stream-name: key-events
  
 > (add-callback-access value-extractor default-value super-class)
-value-extractor is a method of two arguments (a widget
-and a control event) that gets a value for the widget.
+value-extractor is a method of two arguments (a widget and a
+control event) that gets a value for the widget.
 default-value is the default value for the widget. Adds
 (get-value-e) and (get-value-b) to super-class, where
-get-value-e returns an event stream representing the
-value of the widget, and get-value-b returns a behavior
+get-value-e returns an event stream representing the value
+of the widget, and get-value-b returns a behavior
 representing the value of the widget.
 
 > (add-callback-access/loop value-extractor default-value super-class)
-does the work of add-callback-access, but also adds
-an initialization argument value-set, which is an
-event stream that sets the value of the widget at
-each event.
+does the work of add-callback-access, but also adds an
+initialization argument value-set, which is an event stream
+that sets the value of the widget at each event.
 
 > (add-focus-on-event super-class)
 Derived from events->callbacks.
  field-name: focus-when
  
 
+
 UTILITY
 -------
 
 > (standard-lift widget value-method value-default)
-standard-lift applys a common set of mixins to the
-widget. It applies add-mouse-access, add-focus-access,
-and it applys the result of behavior->callback for
-label and enable. It also applies add-callback-access
-with value-method as the value-extractor, and
-value-default as the default-value.
+
+standard-lift applys a common set of mixins to the widget.
+It applies add-mouse-access, add-focus-access, and it applys
+the result of behavior->callback for label, enabled,
+min-width, and min-height. It also applies
+add-callback-access with value-method as the
+value-extractor, and value-default as the default-value.
 Widgets that have been standard-lift'ed:
+
 ft-button%
 ft-radio-box%
 ft-choice%
@@ -122,9 +147,9 @@ ft-list-box%
 
 
 > (standard-lift/loop widget value-method value-default)
-standard-lift/loop is the same as standard-lift,
-except thatit applies add-callback-access/loop
-instead of add-callback-access.
+standard-lift/loop is the same as standard-lift, except
+thatit applies add-callback-access/loop instead of
+add-callback-access.
 Widgets that have been standard-lift/loop'ed:
 ft-check-box%
 ft-slider%

@@ -90,21 +90,34 @@
   (define (add-size-access super-class)
     ((callbacks->args-evts size-events on-size)
      (lambda (x) x)
-     super-class))
+     (class super-class
+       (super-new)
+       (define/public (get-size-as-list)
+         (list (send this get-width)
+               (send this get-height))))))
+  
+
   
   (define (add-size-b super-class)
-    ((mixin-hold size-b init-size-b get-size-events)
-     '(0 0)
+    ((mixin-hold size-b get-size-as-list get-size-events)
      (add-size-access super-class)))
+  
+
   
   (define (add-position-access super-class)
     ((callbacks->args-evts position-events on-move)
      (lambda (x) x)
-     super-class))
+     (class super-class
+       (super-new)
+       (define/public (get-position-as-list)
+         (list (send this get-x)
+               (send this get-y))))))
+  
   
   (define (add-position-b super-class)
-    ((mixin-hold position-b init-position-b get-position-events)
-     '(0 0)
+    ((mixin-hold position-b 
+                 get-position-as-list 
+                 get-position-events)
      (add-position-access super-class)))
   
   
@@ -132,7 +145,7 @@
                    (lambda (es) (map-e (lambda (e) (apply val-ext e)) es)))))))
 
   
-  (define add-value-b (mixin-hold value-b initial-value get-value-e))
+  (define add-value-b (mixin-hold value-b get-value get-value-e))
                        
             
   
@@ -157,6 +170,11 @@
   
  
 
+  (define (control-stretchability default widget)
+    (add-signal-controls
+     widget
+     (stretchable-width stretchable-width default)
+     (stretchable-height stretchable-width default)))
   
     ;; Standard mixin combinations
   (define (standard-lift widget)
@@ -172,14 +190,17 @@
            (enabled enable #t)
            (min-width min-width 0)
            (min-height min-height 0)
-           (stretchable-width stretchable-width #f)
-           (stretchable-height stretchable-height #f)
            ))))))))
   
-  (define (standard-input-lift accessor default val-ext)
+  (define (standard-container-lift widget)
+    (control-stretchability
+     #t
+     (standard-lift widget)))
+                                 
+  
+  (define (standard-input-lift accessor val-ext)
     (lambda (super-class)
       (add-value-b
-       default
        (accessor val-ext super-class))))
   
   
@@ -188,7 +209,7 @@
     ((behavior->callbacks shown show)
      #f
      (add-shown
-      (standard-lift frame%))))
+      (standard-container-lift frame%))))
       
   (define ft-message% 
     (standard-lift message%))
@@ -197,27 +218,27 @@
     (add-callback-access (lambda (w e) e) (add-void-set-value (standard-lift button%))))
   
   (define ft-check-box%
-    ((standard-input-lift add-callback-access/loop #f send-for-value)
+    ((standard-input-lift add-callback-access/loop send-for-value)
      (standard-lift check-box%)))
   
   (define ft-slider%
-    ((standard-input-lift add-callback-access/loop 0 send-for-value)
+    ((standard-input-lift add-callback-access/loop send-for-value)
      (standard-lift slider%))) ;ideally the default should be the minimum value
   
   (define ft-text-field%
-    ((standard-input-lift add-callback-access/loop "" send-for-value)
+    ((standard-input-lift add-callback-access/loop send-for-value)
      (standard-lift text-field%)))
 
   (define ft-radio-box%
-    ((standard-input-lift add-callback-access 0 send-for-selection)
+    ((standard-input-lift add-callback-access send-for-selection)
      (add-void-set-value (standard-lift radio-box%))))
   
   (define ft-choice%
-    ((standard-input-lift add-callback-access 0 send-for-selection)
+    ((standard-input-lift add-callback-access send-for-selection)
      (add-void-set-value (standard-lift choice%))))
   
   (define ft-list-box%
-    ((standard-input-lift add-callback-access 0 send-for-selection)
+    ((standard-input-lift add-callback-access send-for-selection)
      (add-void-set-value (standard-lift list-box%))))
   
   

@@ -52,18 +52,11 @@
   ; with the initial value being init-field-name
   (define-syntax (mixin-hold stx)
     (syntax-case stx ()
-      [(_ b-name init-name getter)
-       (with-syntax ([init-holder (string->symbol
-                                   (format "~a-holder" (syntax-e (syntax init-name))))]
-                     [get-init (string->symbol
-                                (format "get-~a" (syntax-e (syntax init-name))))])
-         #'(lambda (default-val super-class)
-             ((embed-processor b-name (lambda (es) (hold es (send this get-init))) getter)
-              (class super-class
-                (init (init-name default-val))
-                (define init-holder init-name)
-                (define/public (get-init) init-holder)
-                (super-new)))))]))
+      [(_ b-name get-init get-event-stream)
+       #'(embed-processor 
+          b-name 
+          (lambda (es) (hold es (send this get-init))) 
+          get-event-stream)]))
   
             
   
