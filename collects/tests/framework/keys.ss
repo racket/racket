@@ -115,6 +115,7 @@
                     (list '(right alt))
                     (list '(right alt))
                     (list '(right alt)))
+     (build-open-bracket-spec "" 0 #\()
      (build-open-bracket-spec "(f cond " 8 #\()
      (build-open-bracket-spec "(f let (" 8 #\()
      (build-open-bracket-spec "(let (" 6 #\[)
