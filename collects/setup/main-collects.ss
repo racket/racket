@@ -1,16 +1,16 @@
 (module main-collects mzscheme
   (require "dirs.ss")
-  
+
   (provide path->main-collects-relative
-	   main-collects-relative->path)
-  
+           main-collects-relative->path)
+
   ;; Historical note: this module is based on the old "plthome.ss"
 
   ;; The `path->main-collects-relative' and
   ;; `main-collects-relative->path' functions are used to store paths
   ;; that are relative to the main "collects" directory, such as in
   ;; .dep files.  This means that if the plt tree is moved, .dep files
-  ;; still work. It is generally fine if
+  ;; still work.  It is generally fine if
   ;; `path->main-collects-relative' misses some usages, as long as it
   ;; works when we prepare a distribution tree.  Otherwise, things
   ;; will continue to work fine and .dep files will just contain
@@ -18,27 +18,25 @@
   ;; either a pathname or a pair with a pathname in its cdr; the
   ;; `path->main-collects-relative' pathname will itself be a pair.
 
+  ;; we need to compare paths to find when something is in the plt
+  ;; tree -- this does some basic "normalization" that should work
+  ;; fine: getting rid of `.' and `..' (simplify-path) and collapsing
+  ;; `//' to `/' (expand-path).  Using `expand-path' also expands `~'
+  ;; and `~user', but this should not be a problem in practice.
   (define (simplify-bytes-path bytes)
-    (path->bytes (simplify-path (bytes->path bytes))))
-
+    (path->bytes (expand-path (simplify-path (bytes->path bytes)))))
+  ;; on Windows, turn backslashes to forward slashes
   (define simplify-path*
     (if (eq? 'windows (system-type))
-	(lambda (str)
-	  (regexp-replace* #rx#"\\\\" (simplify-bytes-path str) #"/"))
+	(lambda (bytes)
+          (simplify-bytes-path (regexp-replace* #rx#"\\\\" bytes #"/")))
 	simplify-bytes-path))
 
-  (define main-collects-dir-bytes
-    (delay (and (find-collects-dir)
-		(path->bytes (find-collects-dir)))))
-
   (define main-collects-dir/
-    (delay (and (force main-collects-dir-bytes)
-		(regexp-replace #rx#"/?$" 
-				(simplify-path* (force main-collects-dir-bytes))
-				#"/"))))
-  (define main-collects-dir/-len
-    (delay (and (force main-collects-dir/)
-		(bytes-length (force main-collects-dir/)))))
+    (delay (let ([dir (find-collects-dir)])
+             (and dir (regexp-replace #rx#"/*$"
+                                      (simplify-path* (path->bytes dir))
+                                      #"/")))))
 
   (define (maybe-cdr-op fname f)
     (lambda (x)
@@ -53,14 +51,15 @@
                        [else (error 'path->main-collects-relative
                                     "expecting a byte-string, got ~e" path)])]
            [path* (simplify-path* path)]
-	   [mcd-len (force main-collects-dir/-len)])
+           [main-collects-dir/ (force main-collects-dir/)]
+	   [mcd-len (bytes-length main-collects-dir/)])
       (cond [(and path*
 		  mcd-len
                   (> (bytes-length path*) mcd-len)
                   (equal? (subbytes path* 0 mcd-len)
-			  (force main-collects-dir/)))
+			  main-collects-dir/))
              (cons 'collects (subbytes path* mcd-len))]
-            [(equal? path* (force main-collects-dir/)) (cons 'collects #"")]
+            [(equal? path* main-collects-dir/) (cons 'collects #"")]
             [else path])))
 
   ;; main-collects-relative->path* : datum-containing-bytes-or-path -> path
@@ -77,6 +76,8 @@
           [(bytes? path) (bytes->path path)]
           [else path]))
 
-  (define path->main-collects-relative (maybe-cdr-op 'path->main-collects-relative path->main-collects-relative*))
-  (define main-collects-relative->path (maybe-cdr-op 'main-collects-relative->path main-collects-relative->path*))
+  (define path->main-collects-relative
+    (maybe-cdr-op 'path->main-collects-relative path->main-collects-relative*))
+  (define main-collects-relative->path
+    (maybe-cdr-op 'main-collects-relative->path main-collects-relative->path*))
   )
