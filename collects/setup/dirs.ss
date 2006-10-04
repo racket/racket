@@ -13,7 +13,7 @@
   ;; Note: (expand-path (simplify-path P #f)) is bogus, if P is
   ;; "./~foo" or "~foo/.."
   (define (system-path* what)
-    (simplify-path (expand-path (find-system-path what) #f)))
+    (simplify-path (expand-path (find-system-path what)) #f))
 
   ;; ----------------------------------------
   ;;  "collects"
