@@ -10,8 +10,10 @@
   ;; best to do some minor normalization.  This is similar to what
   ;; "main-collects.ss" does.  Again, this makes mzscheme expand paths
   ;; that begin with `~'.
+  ;; Note: (expand-path (simplify-path P #f)) is bogus, if P is
+  ;; "./~foo" or "~foo/.."
   (define (system-path* what)
-    (expand-path (simplify-path (find-system-path what) #f)))
+    (simplify-path (expand-path (find-system-path what) #f)))
 
   ;; ----------------------------------------
   ;;  "collects"
