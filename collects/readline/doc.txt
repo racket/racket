@@ -7,8 +7,9 @@ with the MzScheme read-eval-print-loop.
 Normal use of readline
 ----------------------
 
-The _rep.ss_ library installs a readline-based function for the
-prompt-and-read part of MzScheme's read-eval-print loop.
+The _rep.ss_ library installs a readline-based input port, and hooks
+the prompt-and-read part of MzScheme's read-eval-print loop to
+interact with it.
 
 You can put the following in your ~/.mzschemerc so that MzScheme
 starts with readline support on xterms:
@@ -16,8 +17,61 @@ starts with readline support on xterms:
   (when (equal? "xterm" (getenv "TERM"))
     (dynamic-require '(lib "rep.ss" "readline") #f))
 
+or start MzScheme with
+
+  mzscheme -L rep.ss readline
+
 The readline history is stored across invocations in MzScheme's
 preferences file, assuming MzScheme exits normally.
+
+
+Interacting with the readline-enabled input port
+------------------------------------------------
+
+The _pread.ss_ library provides customization, and support for
+prompt-reading after "rep.ss" installs the new input port.
+
+The reading facility that the new input port provides can be
+customized with these parameters:
+
+> show-all-prompts
+  If #f (the default), no prompt is shown until you write input that
+  is completely readable.  For example, when you type
+    (foo bar) (+ 1
+                 2)
+  you will see a single prompt in the beginning.  If this parameter is
+  set to #t, you will see the second prompt when reading the second
+  expression.
+
+> max-history
+  The number of history entries to save.  Defaults to 100.
+
+> keep-duplicates
+  If this is #f (the default), then lines that are equal to the
+  previous one are not added as new history items.
+
+> keep-blanks
+  If #f (the default), blank input lines are not kept in history.
+
+
+The new input port that you get when you require "rep.ss" is a custom
+port that uses readline for all inputs.  The problem is when you want
+to display a prompt and then read some input: readline will get
+confused if it's not used when the cursor is at the beginning of the
+line, which is why it has a `prompt' argument.  To use this prompt:
+
+  (parameterize ([readline-prompt some-byte-string])
+    ...code-that-reads...)
+
+This will make the first call to readline use the prompt, and
+subsequent calls will use an all-spaces prompt of the same length
+(this can happen if you're reading an s-expression).  The normal value
+of `readline-prompt' is #f for an empty prompt (and 'spaces after the
+prompt is used, which is why you should use `parameterize' to restore
+it to #f).
+
+(A proper solution would be to install a custom output port too which
+will keep track of text that is displayed without a trailing newline.)
 
 
 Direct bindings for readline hackers
@@ -45,3 +99,14 @@ The _readline.ss_ library provides two functions:
   proc, which is expected to be a `string -> (list-of string)'
   procedure; the `type' argument defaults to `_string' but you can use
   it with `_bytes' instead
+
+
+License Issues
+--------------
+
+GNU's readline library is covered by the GPL, and that applies to code
+that links with it.  PLT Scheme is LGPL, so this code is not used by
+default -- you should explicitly enable it if you want to.  Also, be
+aware that if you write code that uses this library, it will make your
+code link to the readline library when invoked -- with the usual GPL
+implications.
