@@ -35,13 +35,16 @@ The reading facility that the new input port provides can be
 customized with these parameters:
 
 > show-all-prompts
-  If #f (the default), no prompt is shown until you write input that
-  is completely readable.  For example, when you type
+  If #f, no prompt is shown until you write input that is completely
+  readable.  For example, when you type
     (foo bar) (+ 1
                  2)
-  you will see a single prompt in the beginning.  If this parameter is
-  set to #t, you will see the second prompt when reading the second
-  expression.
+  you will see a single prompt in the beginning.
+
+  The problem is that the first expression can be `(read-line)' which
+  normally consumes the rest of the text on the *same* line.  The
+  default value of this parameter is therefore #t, making it mimic
+  plain I/O interactions.
 
 > max-history
   The number of history entries to save.  Defaults to 100.

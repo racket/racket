@@ -2,7 +2,7 @@
   (require (lib "readline.ss" "readline") (lib "file.ss"))
 
   ;; configuration
-  (define show-all-prompts (make-parameter #f))
+  (define show-all-prompts (make-parameter #t))
   (define max-history      (make-parameter 100))
   (define keep-duplicates  (make-parameter #f))
   (define keep-blanks      (make-parameter #f))
