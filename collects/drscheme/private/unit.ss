@@ -2924,6 +2924,7 @@ module browser threading seems wrong.
                                   (i 0)
                                   (defs-shown? #t)
                                   (ints-shown? #t))))
+          (define/public-final (get-tabs) tabs)
           
           ;; current-tab : tab
           ;; corresponds to the tabs-panel's active button.
