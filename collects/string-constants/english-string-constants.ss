@@ -452,12 +452,15 @@ please adhere to these guidelines:
  (indenting-prefs-panel-label "Indenting")
  (indenting-prefs-extra-regexp "Extra regexp")
 
- (square-bracket-prefs-panel-label "Square bracket")
+ (square-bracket-prefs-panel-label "Square Bracket")
   
  ; filled with define, lambda, or begin
  (enter-new-keyword "Enter new ~a-like keyword:")
  (x-keyword "~a Keyword")
  (x-like-keywords "~a-like Keywords")
+
+ ; used in Square bracket panel
+ (skip-subexpressions "Number of sub-expressions to skip")
 
  (expected-a-symbol "expected a symbol, found: ~a")
  (already-used-keyword "\"~a\" is already a specially indented keyword")

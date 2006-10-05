@@ -29,6 +29,23 @@
                                '("case-lambda" "cond" "field" "provide/contract")
                                (λ (x) (and (list? x) (andmap string? x))))
       
+      
+      (preferences:set-default 'framework:square-bracket:cond/offset
+                               '(("case-lambda" 0)
+                                 ("cond" 0)
+                                 ("field" 0)
+                                 ("provide/contract" 0)
+                                 ("new" 1)
+                                 ("case" 1)
+                                 ("syntax-case" 2)
+                                 ("syntax-case*" 3))
+                               (λ (x) (and (list? x) (andmap (λ (x) (and (pair? x)
+                                                                         (string? (car x))
+                                                                         (pair? (cdr x))
+                                                                         (number? (cadr x))
+                                                                         (null? (cddr x))))
+                                                             x))))
+      
       (preferences:set-default 'framework:square-bracket:letrec
                                '("let" 
                                  "let*" "let-values" "let*-values"
