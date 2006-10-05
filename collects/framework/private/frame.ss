@@ -1379,12 +1379,18 @@
                                    [start-pos (send text paragraph-start-position para)]
                                    [end-pos (send text paragraph-end-position para)])
                               (send delegate-frame update-status-line 'plt:delegate
-                                    (send text get-text start-pos end-pos)))]
+                                    (at-most-200 (send text get-text start-pos end-pos))))]
                            [else
                             (send delegate-frame update-status-line 'plt:delegate #f)])))]
                     [(send evt leaving?)
                      (send delegate-frame update-status-line 'plt:delegate #f)])))))
           (super-instantiate ())))
+      
+      (define (at-most-200 s)
+        (cond
+          [(<= (string-length s) 200)
+           s]
+          [else (substring s 0 200)]))
       
       (define delegatee-text<%>
         (interface ()
