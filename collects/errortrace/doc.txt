@@ -155,6 +155,10 @@ Gets the current profile results and displays them.  It optionally
 shows paths information (if it is recorded) and sorts by either time
 or call counts.
 
+> (clear-profile-results)
+
+Clears accumulated profile results.
+
 Coverage
 --------
 
