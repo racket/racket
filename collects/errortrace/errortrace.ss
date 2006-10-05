@@ -15,6 +15,7 @@
            profile-paths-enabled
            get-profile-results
            output-profile-results
+           clear-profile-results
 
            execute-counts-enabled
            get-execute-counts

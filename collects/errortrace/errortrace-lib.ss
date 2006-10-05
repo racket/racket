@@ -33,6 +33,14 @@
 
   (define profile-info (make-hash-table))
 
+  (define (clear-profile-results)
+    (hash-table-for-each profile-info
+      (lambda (k v)
+        (set-box! (car v) #f)
+        (set-car! (cdr v) 0)
+        (set-car! (cddr v) 0)
+        (set-car! (cdr (cdddr v)) null))))
+
   (define (initialize-profile-point key name expr)
     (hash-table-put! profile-info key
                      (list (box #f) 0 0 (and name (syntax-e name)) expr null)))
@@ -340,6 +348,7 @@
            profile-paths-enabled
            get-profile-results
            output-profile-results
+           clear-profile-results
 
            execute-counts-enabled
            get-execute-counts
