@@ -61,8 +61,10 @@
       (toggle-props)
 
       (define/private (do-popup-context-window editor event)
-        (define x (send event get-x))
-        (define y (send event get-y))
+        (define-values (x y)
+          (send editor dc-location-to-editor-location
+                (send event get-x)
+                (send event get-y)))
         (define admin (send editor get-admin))
         (send admin popup-menu context-menu x y))
       

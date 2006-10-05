@@ -16,27 +16,13 @@
 
       ;; Properties display
       (define parent
-        (new frame% (label "Properties and Configuration") (height (pref:height))
+        (new frame% (label "Properties") (height (pref:height))
              (width (floor (* (pref:props-percentage) (pref:width))))))
-      (define choice (new choice% (label "identifer=?") (parent parent)
-                          (choices (map car (identifier=-choices)))
-                          (callback (lambda _ (on-update-identifier=?-choice)))))
-      (new message% (label " ") (parent parent))
       (define pv (new properties-view% (parent parent)))
 
       (define/private (show-properties)
         (unless (send parent is-shown?)
           (send parent show #t)))
-
-      (define/private (on-update-identifier=?-choice)
-        (let ([id=? (get-identifier=?)])
-          (send controller on-update-identifier=? id=?)))
-      
-      (define/private (get-identifier=?)
-        (cond [(assoc (send choice get-string-selection) 
-                      (identifier=-choices))
-               => cdr]
-              [else #f]))
 
       (define/public (set-syntax stx)
         (send pv set-syntax stx))

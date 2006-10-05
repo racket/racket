@@ -4,7 +4,7 @@
   (provide (all-defined))
 
   (define current-syntax-font-size (make-parameter #f #;16))
-  (define current-default-columns (make-parameter 40))
+  (define current-default-columns (make-parameter 60))
 
   (define-syntax pref:get/set
     (syntax-rules ()
