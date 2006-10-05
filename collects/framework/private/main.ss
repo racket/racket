@@ -21,6 +21,23 @@
       
       (application-preferences-handler (λ () (preferences:show-dialog)))
       
+      (preferences:set-default 'framework:square-bracket:case
+                               '("new" "case")
+                               (λ (x) (and (list? x) (andmap string? x))))
+      
+      (preferences:set-default 'framework:square-bracket:cond
+                               '("case-lambda" "cond" "field" "provide/contract")
+                               (λ (x) (and (list? x) (andmap string? x))))
+      
+      (preferences:set-default 'framework:square-bracket:letrec
+                               '("let" 
+                                 "let*" "let-values" "let*-values"
+                                 "let-syntax" "let-struct" "let-syntaxes"
+                                 "letrec"
+                                 "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
+                                 "parameterize")
+                               (λ (x) (and (list? x) (andmap string? x))))
+      
       (preferences:set-default 'framework:case-sensitive-search?
                                #f
                                boolean?)

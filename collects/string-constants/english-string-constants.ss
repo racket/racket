@@ -386,8 +386,8 @@ please adhere to these guidelines:
  (editor-prefs-panel-label "Editing")
  (general-prefs-panel-label "General")
  (highlight-parens "Highlight between matching parens")
- (fixup-open-parens "Automatically adjust opening parens")
-  (fixup-close-parens "Automatically adjust closing parens")
+ (fixup-open-brackets "Automatically adjust opening square brackets")
+ (fixup-close-parens "Automatically adjust closing parens")
  (flash-paren-match "Flash paren match")
  (auto-save-files "Auto-save files")
  (backup-files "Backup files")
@@ -452,6 +452,8 @@ please adhere to these guidelines:
  (indenting-prefs-panel-label "Indenting")
  (indenting-prefs-extra-regexp "Extra regexp")
 
+ (square-bracket-prefs-panel-label "Square bracket")
+  
  ; filled with define, lambda, or begin
  (enter-new-keyword "Enter new ~a-like keyword:")
  (x-keyword "~a Keyword")

@@ -660,7 +660,7 @@ for the last one, need a global "no more initialization can happen" flag.
                                    values values)
                        (make-check scheme-panel
                                    'framework:fixup-open-parens
-                                   (string-constant fixup-open-parens)
+                                   (string-constant fixup-open-brackets)
                                    values values)
                        (make-check scheme-panel
                                    'framework:paren-match
