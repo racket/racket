@@ -1952,8 +1952,8 @@
   ;;  * unused bits in value.
   ;;  */
   (if (> bi_valid (- Buf_size length))
-    (begin (set! bi_buf (bitwise-ior bi_buf (<< value bi_valid)))
-           (put_short bi_buf)
+    (begin (put_short (bitwise-and (bitwise-ior bi_buf (<< value bi_valid))
+                                   #xFFFF))
            (set! bi_buf (>> value (- Buf_size bi_valid)))
            (set! bi_valid (+ bi_valid (- length Buf_size))))
     (begin (set! bi_buf (bitwise-ior bi_buf (<< value bi_valid)))
@@ -2108,18 +2108,20 @@
 
     len))
 
+;; Assumes being called with c in 0..FF
 (define (put_byte c)
-  (bytes-set! outbuf outcnt (bitwise-and #xFF c))
+  (bytes-set! outbuf outcnt c)
   (set! outcnt (add1 outcnt))
   (when (= outcnt OUTBUFSIZ) (flush_outbuf)))
 
 ;; /* Output a 16 bit value, lsb first */
+;; Assumes being called with c in 0..FFFF
 (define (put_short w)
   (if (< outcnt (- OUTBUFSIZ 2))
     (begin (bytes-set! outbuf outcnt (bitwise-and #xFF w))
            (bytes-set! outbuf (add1 outcnt) (bitwise-and #xFF (>> w 8)))
            (set! outcnt (+ outcnt 2)))
-    (begin (put_byte w)
+    (begin (put_byte (bitwise-and #xFF w))
            (put_byte (>> w 8)))))
 
 ;; /* Output a 32 bit value to the bit stream, lsb first */
