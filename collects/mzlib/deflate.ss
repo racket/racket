@@ -5,67 +5,52 @@
  * terms of the GNU General Public License, see the file COPYING.
  */
 |#
-; Taken from the gzip source distribution
-; Translated directly from C (obviously) by Matthew, July 2000
+;; Taken from the gzip source distribution
+;; Translated directly from C (obviously) by Matthew, July 2000
 
 (module deflate mzscheme
 
-  (provide deflate 
-	  gzip-through-ports
-	  gzip)
+  (provide deflate gzip-through-ports gzip)
 
   (require "unit.ss")
 
-  (define-syntax INSERT_STRING 
-    (lambda (stx)
-      (syntax-case stx ()
-	[(_ s match_head UPDATE_HASH window-vec head-vec prev-vec ins_h)
-	 (syntax
-	  (begin
-	    (UPDATE_HASH (vector-ref window-vec (+ s MIN_MATCH-1)))
-	    (let ([mh (vector-ref head-vec (+ ins_h head-vec-delta))])
-	      (set! match_head mh)
-	      (vector-set! prev-vec (bitwise-and s  WMASK) mh))
-	    (vector-set! head-vec (+ head-vec-delta ins_h) s)))])))
+  (define-syntax INSERT_STRING
+    (syntax-rules ()
+      [(_ s match_head UPDATE_HASH window-vec head-vec prev-vec ins_h)
+       #'(begin (UPDATE_HASH (vector-ref window-vec (+ s MIN_MATCH-1)))
+                (let ([mh (vector-ref head-vec (+ ins_h head-vec-delta))])
+                  (set! match_head mh)
+                  (vector-set! prev-vec (bitwise-and s  WMASK) mh))
+                (vector-set! head-vec (+ head-vec-delta ins_h) s))]))
 
-  (define-syntax pqremove 
-    (lambda (stx)
-      (syntax-case stx ()
-	[(_ tree top heap heap_len SMALLEST)
-	 (syntax
-	  (begin
-	    (set! top (vector-ref heap SMALLEST))
-	    (vector-set! heap SMALLEST (vector-ref heap heap_len))
-	    (set! heap_len (sub1 heap_len))
-	    (pqdownheap tree SMALLEST)))])))
+  (define-syntax pqremove
+    (syntax-rules ()
+      [(_ tree top heap heap_len SMALLEST)
+       (begin (set! top (vector-ref heap SMALLEST))
+              (vector-set! heap SMALLEST (vector-ref heap heap_len))
+              (set! heap_len (sub1 heap_len))
+              (pqdownheap tree SMALLEST))]))
 
-  (define-syntax DEBUG
-    (lambda (stx)
-      (syntax (void))))
+  (define-syntax DEBUG (lambda (stx) #'(void)))
 
-  (define-syntax Assert
-    (lambda (stx)
-      (syntax (void))))
+  (define-syntax Assert (lambda (stx) #'(void)))
 
   (define-syntax for
-    (syntax-rules ()
-      [(for start < end next proc)
-       (let loop ([n start])
-	 (when (< n end)
-	   (proc n)
-	   (loop (next n))))]))
+    (syntax-rules (:= then do)
+      [(for n := start < end do body ...)
+       (for n := start then add1 < end do body ...)]
+      [(for n := start then next < end do body ...)
+       (let ([endval end])
+         (let loop ([n start])
+           (when (< n endval) body ... (loop (next n)))))]))
 
   (define-struct gzvector (vector offset))
   (define (gzvector-ref v o)
-    (vector-ref (gzvector-vector v)
-		(+ (gzvector-offset v) o)))
+    (vector-ref (gzvector-vector v) (+ (gzvector-offset v) o)))
   (define (gzvector-set! v o x)
-    (vector-set! (gzvector-vector v)
-		 (+ (gzvector-offset v) o)
-		 x))
+    (vector-set! (gzvector-vector v) (+ (gzvector-offset v) o) x))
   (define (gzvector+ v o)
-    (make-gzvector (gzvector-vector v)
-		   (+ (gzvector-offset v) o)))
+    (make-gzvector (gzvector-vector v) (+ (gzvector-offset v) o)))
 
   (define (gzvector<vec v1 v2)
     (< (gzvector-offset v1) (gzvector-offset v2)))
@@ -73,24 +58,21 @@
     (- (gzvector-offset v1) (gzvector-offset v2)))
 
   (define (gzvector-copy v1 v2 n)
-    (for 0 < n add1
-	 (lambda (m)
-	   (gzvector-set! v1 m (gzvector-ref v2 m)))))
-  
+    (let ([v1 (gzvector-vector v1)] [o1 (gzvector-offset v1)]
+          [v2 (gzvector-vector v2)] [o2 (gzvector-offset v2)])
+      (for m := 0 < n do
+        (vector-set! v1 (+ o1 m) (vector-ref v2 (+ o2 m))))))
+
   (define (gzvector-zero! v n)
-    (let ([v (gzvector-vector v)]
-	  [offset (gzvector-offset v)])
-      (for 0 < n add1
-	   (lambda (m)
-	     (vector-set! v (+ m offset) 0)))))
+    (let ([v (gzvector-vector v)] [o (gzvector-offset v)])
+      (for m := o < (+ n o) do (vector-set! v m 0))))
 
   (define (Trace stderr str . args)
     (apply fprintf (current-error-port) str args))
   (define Tracevv Trace)
   (define Tracev Trace)
   (define (Tracec test . args)
-    (when test
-      (apply Trace args)))
+    (when test (apply Trace args)))
   (define Tracecv Tracec)
   (define stderr 'sdterr)
 
@@ -218,12 +200,12 @@
  ;; The gzip code wasn't defined for threads (or even to be
  ;;  multiply invoked), so we pack it up into a unit to
  ;;  invoke each time we need it.
- 
+
  (define code
-   (unit 
+   (unit
      (import)
      (export)
-      
+
 
 ;; /* ===========================================================================
 ;;  * Local data used by the "longest match" routines.
@@ -257,7 +239,7 @@
 ;;  /* Heads of the hash chains or NIL. */
 
 (define window_size (* 2 WSIZE))
-;;  /* window size, 2*WSIZE 
+;;  /* window size, 2*WSIZE
 ;;   */
 (define window-vec (make-vector window_size 0))
 (define window (make-gzvector window-vec 0))
@@ -349,7 +331,7 @@
 ;;  *    previous key instead of complete recalculation each time.
 ;;  */
 (define (UPDATE_HASH c)
-  (set!  ins_h (bitwise-and (bitwise-xor (<< ins_h H_SHIFT) c) HASH_MASK)))
+  (set! ins_h (bitwise-and (bitwise-xor (<< ins_h H_SHIFT) c) HASH_MASK)))
 
 ;; /* ===========================================================================
 ;;  * Insert string s in the dictionary and set match_head to the previous head
@@ -368,7 +350,7 @@
   ;; int pack_level; /* 0: store, 1: best speed, 9: best compression */
 
   (when (or (< pack_level 1)
-	    (> pack_level 9))
+            (> pack_level 9))
     (error "bad pack level"))
 
   ;; /* Initialize the hash table. */
@@ -382,11 +364,11 @@
   (set! good_match (config-good_length (vector-ref configuration_table pack_level)))
   (set! nice_match (config-nice_length (vector-ref configuration_table pack_level)))
   (set! max_chain_length (config-max_chain (vector-ref configuration_table pack_level)))
-  
+
   (let ([flag (cond
-	       [(= pack_level 1) FAST]
-	       [(= pack_level 9) SLOW]
-	       [else 0])])
+               [(= pack_level 1) FAST]
+               [(= pack_level 9) SLOW]
+               [else 0])])
     ;; /* ??? reduce max_chain_length for binary files */
 
     (set! strstart 0)
@@ -395,27 +377,26 @@
     (set! lookahead (read_buf 0 (* 2 WSIZE)))
 
     (if (or (= lookahead 0) (= lookahead EOF-const))
-	(begin
-	  (set! eofile #t)
-	  (set! lookahead 0))
-	(begin
-	  (set! eofile #f)
-	  ;; /* Make sure that we always have enough lookahead. This is important
-	  ;;  * if input comes from a device such as a tty.
-	  ;;  */
-	  (let loop ()
-	    (when (and (< lookahead MIN_LOOKAHEAD)
-		       (not eofile))
-	      (fill_window)))
+        (begin
+          (set! eofile #t)
+          (set! lookahead 0))
+        (begin
+          (set! eofile #f)
+          ;; /* Make sure that we always have enough lookahead. This is important
+          ;;  * if input comes from a device such as a tty.
+          ;;  */
+          (let loop ()
+            (when (and (< lookahead MIN_LOOKAHEAD)
+                       (not eofile))
+              (fill_window)))
 
-	  (set! ins_h 0)
-	  (for 0 < MIN_MATCH-1 add1
-	       (lambda (j) (UPDATE_HASH (vector-ref window-vec j))))
-	  (DEBUG (Trace stderr "hash init: ~a~n" ins_h))
-	  ;; /* If lookahead < MIN_MATCH, ins_h is garbage, but this is
-	  ;;  * not important since only literal bytes will be emitted.
-	  ;;  */
-	  ))
+          (set! ins_h 0)
+          (for j := 0 < MIN_MATCH-1 do (UPDATE_HASH (vector-ref window-vec j)))
+          (DEBUG (Trace stderr "hash init: ~a\n" ins_h))
+          ;; /* If lookahead < MIN_MATCH, ins_h is garbage, but this is
+          ;;  * not important since only literal bytes will be emitted.
+          ;;  */
+          ))
 
     flag))
 
@@ -434,19 +415,19 @@
 
 (define longest_match
   (let ((cur_match 0)
-	(chain_length 0)
-	(scanpos 0)
-	(matchpos 0)
-	(len 0)
-	(best_len 0)
-	(limit NIL)
-	(strendpos 0)
-	(scan_end1 0)
-	(scan_end 0))
+        (chain_length 0)
+        (scanpos 0)
+        (matchpos 0)
+        (len 0)
+        (best_len 0)
+        (limit NIL)
+        (strendpos 0)
+        (scan_end1 0)
+        (scan_end 0))
 
     (define (longest_match _cur_match)
       ;; IPos cur_match; /* current match */
-      
+
       (set! cur_match _cur_match)
 
       (set! chain_length max_chain_length)   ;;   /* max hash chain length */
@@ -455,8 +436,8 @@
       (set! len 0) ;; /* length of current match */
       (set! best_len prev_length) ;; /* best match length so far */
       (set! limit (if (> strstart MAX_DIST)
-		      (- strstart MAX_DIST)
-		      NIL))
+                      (- strstart MAX_DIST)
+                      NIL))
       ;; /* Stop when cur_match becomes <= limit. To simplify the code,
       ;;  * we prevent matches with the string of window index 0.
       ;;  */
@@ -474,11 +455,11 @@
 
       ;; /* Do not waste too much time if we already have a good match: */
       (when (>= prev_length good_match)
-	(set! chain_length (>> chain_length 2)))
-      
+        (set! chain_length (>> chain_length 2)))
+
       (Assert
        (unless (<= strstart (- window_size MIN_LOOKAHEAD))
-	 (error "insufficient lookahead")))
+         (error "insufficient lookahead")))
 
       (longest_match-loop)
 
@@ -487,10 +468,10 @@
     (define (continue)
       (set! cur_match (vector-ref prev-vec (bitwise-and cur_match WMASK)))
       (when (and (> cur_match limit)
-		 (begin
-		   (set! chain_length (sub1 chain_length))
-		   (positive? chain_length)))
-	(longest_match-loop)))
+                 (begin
+                   (set! chain_length (sub1 chain_length))
+                   (positive? chain_length)))
+        (longest_match-loop)))
     (define (*++scan)
       (set! scanpos (add1 scanpos))
       (vector-ref window-vec scanpos))
@@ -500,17 +481,17 @@
 
     (define (match-eight)
       (when (and (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
-		 (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
-		 (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
-		 (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
-		   (< scanpos strendpos))
-	(match-eight)))
-    
+                 (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
+                 (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
+                 (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
+                   (< scanpos strendpos))
+        (match-eight)))
+
     (define (longest_match-loop)
 
       (Assert
        (unless (< cur_match strstart)
-	 (error "no future")))
+         (error "no future")))
 
       (set! matchpos cur_match)
 
@@ -519,45 +500,45 @@
       ;;  */
 
       (if (or (not (eq? (vector-ref window-vec (+ matchpos best_len)) scan_end))
-	      (not (eq? (vector-ref window-vec (+ matchpos best_len -1)) scan_end1))
-	      (not (eq? (vector-ref window-vec matchpos) (vector-ref window-vec scanpos)))
-	      (not (eq? (begin (set! matchpos (add1 matchpos))
-			       (vector-ref window-vec matchpos))
-		      (vector-ref window-vec (add1 scanpos)))))
-	  (continue)
+              (not (eq? (vector-ref window-vec (+ matchpos best_len -1)) scan_end1))
+              (not (eq? (vector-ref window-vec matchpos) (vector-ref window-vec scanpos)))
+              (not (eq? (begin (set! matchpos (add1 matchpos))
+                               (vector-ref window-vec matchpos))
+                      (vector-ref window-vec (add1 scanpos)))))
+          (continue)
 
-	  (begin
-	    ;; /* The check at best_len-1 can be removed because it will be made
-	    ;;  * again later. (This heuristic is not always a win.)
-	    ;;  * It is not necessary to compare scan[2] and match[2] since they
-	    ;;  * are always equal when the other bytes match, given that
-	    ;;  * the hash keys are equal and that HASH_BITS >= 8.
-	    ;;  */
-	    (set! scanpos (+ scanpos 2))
-	    (set! matchpos (+ matchpos 1))
+          (begin
+            ;; /* The check at best_len-1 can be removed because it will be made
+            ;;  * again later. (This heuristic is not always a win.)
+            ;;  * It is not necessary to compare scan[2] and match[2] since they
+            ;;  * are always equal when the other bytes match, given that
+            ;;  * the hash keys are equal and that HASH_BITS >= 8.
+            ;;  */
+            (set! scanpos (+ scanpos 2))
+            (set! matchpos (+ matchpos 1))
 
-	    ;; /* We check for insufficient lookahead only every 8th comparison;
-	    ;; * the 256th check will be made at strstart+258.
-	    ;; */
-	    (match-eight)
-	    
-	    (set! len (- MAX_MATCH (- strendpos scanpos)))
-	    (set! scanpos (+ strendpos (- MAX_MATCH)))
-	    (DEBUG (Trace stderr "Match: ~a~n" len))
+            ;; /* We check for insufficient lookahead only every 8th comparison;
+            ;; * the 256th check will be made at strstart+258.
+            ;; */
+            (match-eight)
 
-	    (when (begin
-		    (if (> len best_len)
-			(begin
-			  (set! match_start cur_match)
-			  (set! best_len len)
-			  (if (>= len nice_match)
-			      #f
-			      (begin
-				(set! scan_end1 (vector-ref window-vec (+ scanpos best_len -1)))
-				(set! scan_end (vector-ref window-vec (+ scanpos best_len)))
-				#t)))
-			#t))
-	      (continue)))))
+            (set! len (- MAX_MATCH (- strendpos scanpos)))
+            (set! scanpos (+ strendpos (- MAX_MATCH)))
+            (DEBUG (Trace stderr "Match: ~a\n" len))
+
+            (when (begin
+                    (if (> len best_len)
+                        (begin
+                          (set! match_start cur_match)
+                          (set! best_len len)
+                          (if (>= len nice_match)
+                              #f
+                              (begin
+                                (set! scan_end1 (vector-ref window-vec (+ scanpos best_len -1)))
+                                (set! scan_end (vector-ref window-vec (+ scanpos best_len)))
+                                #t)))
+                        #t))
+              (continue)))))
     longest_match))
 
 ;; /* ===========================================================================
@@ -589,33 +570,27 @@
 
     (set! block_start (- block_start WSIZE))
 
-    (for 0 < HASH_SIZE add1
-	 (lambda (n)
-	   (let ([m (vector-ref head-vec (+ n head-vec-delta))])
-	     (vector-set! head-vec (+ n head-vec-delta)
-			  (if (>= m WSIZE)
-			      (- m WSIZE)
-			      NIL)))))
+    (for n := 0 < HASH_SIZE do
+      (let ([m (vector-ref head-vec (+ n head-vec-delta))])
+        (vector-set! head-vec (+ n head-vec-delta)
+                     (if (>= m WSIZE) (- m WSIZE) NIL))))
 
-    (for 0 < WSIZE add1
-	 (lambda (n)
-	   (let ([m (vector-ref prev-vec n)])
-	     (vector-set! prev-vec n
-			  (if (>= m WSIZE)
-			      (- m WSIZE)
-			      NIL)))
-	   ;; /* If n is not on any hash chain, prev[n] is garbage but
-	   ;;  * its value will never be used.
-	   ;;  */
-	   ))
+    (for n := 0 < WSIZE do
+      (let ([m (vector-ref prev-vec n)])
+        (vector-set! prev-vec n
+                     (if (>= m WSIZE) (- m WSIZE) NIL)))
+      ;; /* If n is not on any hash chain, prev[n] is garbage but
+      ;;  * its value will never be used.
+      ;;  */
+      )
 
     (set! more (+ more WSIZE)))
 
   (when (not eofile)
     (let ([n (read_buf (+ strstart lookahead) more)])
       (if (or (= n 0) (= n EOF-const))
-	  (set! eofile #t)
-	  (set! lookahead (+ lookahead n))))))
+          (set! eofile #t)
+          (set! lookahead (+ lookahead n))))))
 
 ;; /* ===========================================================================
 ;;  * Flush the current block, with given end-of-file flag.
@@ -623,10 +598,10 @@
 ;;  */
 (define (FLUSH-BLOCK eof)
   (flush_block (if (>= block_start 0)
-		   (gzvector+ window block_start)
-		   null)
-	       (- strstart block_start) 
-	       eof))
+                   (gzvector+ window block_start)
+                   null)
+               (- strstart block_start)
+               eof))
 
 ;; /* ===========================================================================
 ;;  * Same as above, but achieves better compression. We use a lazy
@@ -644,9 +619,9 @@
   (let dloop ()
     (when (not (zero? lookahead))
       (DEBUG (Trace stderr
-		    "prep ~a ~a ~a ~a ~a ~a ~a ~a ~a ~a~n" hash_head prev_length match_length max_lazy_match strstart
-		    ins_h (+ strstart MIN_MATCH-1) (vector-ref window-vec (+ strstart MIN_MATCH-1))
-		    H_SHIFT HASH_MASK))
+                    "prep ~a ~a ~a ~a ~a ~a ~a ~a ~a ~a\n" hash_head prev_length match_length max_lazy_match strstart
+                    ins_h (+ strstart MIN_MATCH-1) (vector-ref window-vec (+ strstart MIN_MATCH-1))
+                    H_SHIFT HASH_MASK))
 
       ;; /* Insert the string window[strstart .. strstart+2] in the
       ;;  * dictionary, and set hash_head to the head of the hash chain:
@@ -654,8 +629,8 @@
       (INSERT_STRING strstart hash_head UPDATE_HASH window-vec head-vec prev-vec ins_h)
 
       (DEBUG (Trace stderr
-		    "inh ~a ~a ~a ~a ~a ~a ~a~n" hash_head prev_length match_length max_lazy_match strstart
-		    ins_h (vector-ref window-vec (+ strstart MIN_MATCH-1))))
+                    "inh ~a ~a ~a ~a ~a ~a ~a\n" hash_head prev_length match_length max_lazy_match strstart
+                    ins_h (vector-ref window-vec (+ strstart MIN_MATCH-1))))
 
       ;; /* Find the longest match, discarding those <= prev_length.
       ;;  */
@@ -664,93 +639,93 @@
       (set! match_length MIN_MATCH-1)
 
       (when (and (not (= hash_head NIL))
-		 (< prev_length max_lazy_match)
-		 (<= (- strstart hash_head) MAX_DIST))
-	;; /* To simplify the code, we prevent matches with the string
-	;;  * of window index 0 (in particular we have to avoid a match
-	;;  * of the string with itself at the start of the input file).
-	;;  */
-	(set! match_length (longest_match hash_head))
-	(DEBUG (Trace stderr "blip ~a~n" match_length))
-	;; /* longest_match() sets match_start */
-	(when (> match_length lookahead)
-	  (set! match_length lookahead))
+                 (< prev_length max_lazy_match)
+                 (<= (- strstart hash_head) MAX_DIST))
+        ;; /* To simplify the code, we prevent matches with the string
+        ;;  * of window index 0 (in particular we have to avoid a match
+        ;;  * of the string with itself at the start of the input file).
+        ;;  */
+        (set! match_length (longest_match hash_head))
+        (DEBUG (Trace stderr "blip ~a\n" match_length))
+        ;; /* longest_match() sets match_start */
+        (when (> match_length lookahead)
+          (set! match_length lookahead))
 
-	;; /* Ignore a length 3 match if it is too distant: */
-	(when (and (= match_length MIN_MATCH)
-		   (> (- strstart match_start) TOO_FAR))
-	  ;; /* If prev_match is also MIN_MATCH, match_start is garbage
-	  ;;  * but we will ignore the current match anyway.
-	  ;;  */
-	  (set! match_length (sub1 match_length))))
+        ;; /* Ignore a length 3 match if it is too distant: */
+        (when (and (= match_length MIN_MATCH)
+                   (> (- strstart match_start) TOO_FAR))
+          ;; /* If prev_match is also MIN_MATCH, match_start is garbage
+          ;;  * but we will ignore the current match anyway.
+          ;;  */
+          (set! match_length (sub1 match_length))))
 
       ;; /* If there was a match at the previous step and the current
       ;;  * match is not better, output the previous match:
       ;;  */
       (cond
        [(and (>= prev_length MIN_MATCH)
-	     (<= match_length prev_length))
-	(DEBUG (Trace stderr "x1~n"))
+             (<= match_length prev_length))
+        (DEBUG (Trace stderr "x1\n"))
 
-	(check_match (- strstart 1) prev_match prev_length)
+        (check_match (- strstart 1) prev_match prev_length)
 
-	(set! flush (ct_tally (- strstart 1 prev_match)
-			      (- prev_length MIN_MATCH)))
+        (set! flush (ct_tally (- strstart 1 prev_match)
+                              (- prev_length MIN_MATCH)))
 
-	;; /* Insert in hash table all strings up to the end of the match.
-	;;  * strstart-1 and strstart are already inserted.
-	;;  */
-	(set! lookahead (- lookahead (- prev_length 1)))
-	(set! prev_length (- prev_length 2))
-	(let loop ()
-	  (set! strstart (add1 strstart))
-	  (INSERT_STRING strstart hash_head UPDATE_HASH window-vec head-vec prev-vec ins_h)
-	  (DEBUG (Trace stderr
-			"inhx ~a ~a ~a ~a ~a ~a~n" hash_head prev_length max_lazy_match strstart
-			ins_h (vector-ref window-vec (+ strstart MIN_MATCH -1))))
-	  ;; /* strstart never exceeds WSIZE-MAX_MATCH, so there are
-	  ;;  * always MIN_MATCH bytes ahead. If lookahead < MIN_MATCH
-	  ;;  * these bytes are garbage, but it does not matter since the
-	  ;;  * next lookahead bytes will always be emitted as literals.
-	  ;;  */
-	  (set! prev_length (sub1 prev_length))
-	  (when (not (= prev_length 0))
-	    (loop)))
-	(set! match_available #f)
-	(set! match_length MIN_MATCH-1)
-	(set! strstart (add1 strstart))
-	(when flush
-	  (DEBUG (Trace stderr "flush~n"))
-	  (FLUSH-BLOCK 0)
-	  (DEBUG (Trace stderr "flush done~n"))
-	  (set! block_start strstart))]
+        ;; /* Insert in hash table all strings up to the end of the match.
+        ;;  * strstart-1 and strstart are already inserted.
+        ;;  */
+        (set! lookahead (- lookahead (- prev_length 1)))
+        (set! prev_length (- prev_length 2))
+        (let loop ()
+          (set! strstart (add1 strstart))
+          (INSERT_STRING strstart hash_head UPDATE_HASH window-vec head-vec prev-vec ins_h)
+          (DEBUG (Trace stderr
+                        "inhx ~a ~a ~a ~a ~a ~a\n" hash_head prev_length max_lazy_match strstart
+                        ins_h (vector-ref window-vec (+ strstart MIN_MATCH -1))))
+          ;; /* strstart never exceeds WSIZE-MAX_MATCH, so there are
+          ;;  * always MIN_MATCH bytes ahead. If lookahead < MIN_MATCH
+          ;;  * these bytes are garbage, but it does not matter since the
+          ;;  * next lookahead bytes will always be emitted as literals.
+          ;;  */
+          (set! prev_length (sub1 prev_length))
+          (when (not (= prev_length 0))
+            (loop)))
+        (set! match_available #f)
+        (set! match_length MIN_MATCH-1)
+        (set! strstart (add1 strstart))
+        (when flush
+          (DEBUG (Trace stderr "flush\n"))
+          (FLUSH-BLOCK 0)
+          (DEBUG (Trace stderr "flush done\n"))
+          (set! block_start strstart))]
 
        [match_available
-	(DEBUG (Trace stderr "x2~n"))
-	;; /* If there was no match at the previous position, output a
-	;;  * single literal. If there was a match but the current match
-	;;  * is longer, truncate the previous match to a single literal.
-	;;  */
-	;; (Tracevv stderr "~c" (integer->char (vector-ref window-vec (- strstart 1))))
-	(when (ct_tally 0 (vector-ref window-vec (- strstart 1)))
-	  (FLUSH-BLOCK 0)
-	  (set! block_start strstart))
-	(set! strstart (add1 strstart))
-	(set! lookahead (sub1 lookahead))]
+        (DEBUG (Trace stderr "x2\n"))
+        ;; /* If there was no match at the previous position, output a
+        ;;  * single literal. If there was a match but the current match
+        ;;  * is longer, truncate the previous match to a single literal.
+        ;;  */
+        ;; (Tracevv stderr "~c" (integer->char (vector-ref window-vec (- strstart 1))))
+        (when (ct_tally 0 (vector-ref window-vec (- strstart 1)))
+          (FLUSH-BLOCK 0)
+          (set! block_start strstart))
+        (set! strstart (add1 strstart))
+        (set! lookahead (sub1 lookahead))]
 
        [else
-	(DEBUG (Trace stderr "x3~n"))
-	;; /* There is no previous match to compare with, wait for
-	;;  * the next step to decide.
-	;;  */
-	(set! match_available #t)
-	(set! strstart (add1 strstart))
-	(set! lookahead (sub1 lookahead))])
+        (DEBUG (Trace stderr "x3\n"))
+        ;; /* There is no previous match to compare with, wait for
+        ;;  * the next step to decide.
+        ;;  */
+        (set! match_available #t)
+        (set! strstart (add1 strstart))
+        (set! lookahead (sub1 lookahead))])
 
-      (Assert 
+      (Assert
        (unless (and (<= strstart bytes_in)
-		    (<= lookahead bytes_in))
-	 (error "a bit too far")))
+                    (<= lookahead bytes_in))
+         (error "a bit too far")))
 
       ;; /* Make sure that we always have enough lookahead, except
       ;;  * at the end of the input file. We need MAX_MATCH bytes
@@ -758,11 +733,11 @@
       ;;   * string following the next match.
       ;;  */
       (let loop ()
-	(when (and (< lookahead MIN_LOOKAHEAD)
-		   (not eofile))
-	  (DEBUG (Trace stderr "fill~n"))
-	  (fill_window)
-	  (loop)))
+        (when (and (< lookahead MIN_LOOKAHEAD)
+                   (not eofile))
+          (DEBUG (Trace stderr "fill\n"))
+          (fill_window)
+          (loop)))
 
       (dloop)))
 
@@ -963,22 +938,22 @@
    max_code));    ;; /* largest code with non zero frequency */
 
 (define l_desc (make-tree_desc
-		dyn_ltree static_ltree extra_lbits
-		(+ LITERALS 1) L_CODES MAX_BITS 0))
+                dyn_ltree static_ltree extra_lbits
+                (+ LITERALS 1) L_CODES MAX_BITS 0))
 
 (define d_desc (make-tree_desc
-		dyn_dtree static_dtree extra_dbits
-		0 D_CODES MAX_BITS 0))
+                dyn_dtree static_dtree extra_dbits
+                0 D_CODES MAX_BITS 0))
 
 (define bl_desc (make-tree_desc
-		 bl_tree #f extra_blbits
-		 0 BL_CODES MAX_BL_BITS 0))
+                 bl_tree #f extra_blbits
+                 0 BL_CODES MAX_BL_BITS 0))
 
 
 (define bl_count (make-vector (+ MAX_BITS 1) 0))
 ;; /* number of codes at each bit length for an optimal tree */
 
-(define bl_order 
+(define bl_order
   (vector 16 17 18 0 8 7 9 6 10 5 11 4 12 3 13 2 14 1 15))
 ;; /* The lengths of the bit length codes are sent in order of decreasing
 ;;  * probability, to avoid transmitting the lengths for unused bit length codes.
@@ -1042,14 +1017,15 @@
 ;; (define block_start 0);       ;; /* window offset of current block */
 ;; (define strstart 0); ;; /* window offset of current string */
 
-(define (send_code c tree) (send_bits (ct_data-code (vector-ref tree c))
-				      (ct_data-len (vector-ref tree c))))
+(define (send_code c tree)
+  (send_bits (ct_data-code (vector-ref tree c))
+             (ct_data-len (vector-ref tree c))))
 ;; /* Send a code of the given tree. c and tree must not have side effects */
 
-(define (d_code dist) 
+(define (d_code dist)
   (if (< dist 256)
-      (vector-ref dist_code dist)
-      (vector-ref dist_code (+ 256 (>> dist 7)))))
+    (vector-ref dist_code dist)
+    (vector-ref dist_code (+ 256 (>> dist 7)))))
 ;; /* Mapping from a distance to a distance code. dist is the distance - 1 and
 ;;  * must not have side effects. dist_code[256] and dist_code[257] are never
 ;;  * used.
@@ -1067,19 +1043,17 @@
 
   (set! compressed_len 0)
   (set! input_len 0)
-  
+
   (unless (ct_data? (vector-ref static_dtree 0)) ;; /* ct_init already called? */
     ;; /* Initialize the mapping length (0..255) -> length code (0..28) */
     (set! length 0)
-    (for 0 < (- LENGTH_CODES 1) add1
-	 (lambda (code)
-	   (vector-set! base_length code length)
-	   (for 0 < (<< 1 (vector-ref extra_lbits code)) add1
-		(lambda (n)
-		  (vector-set! length_code length code)
-		  (set! length (add1 length))))))
-    
-    (Assert 
+    (for code := 0 < (- LENGTH_CODES 1) do
+      (vector-set! base_length code length)
+      (for n := 0 < (<< 1 (vector-ref extra_lbits code)) do
+        (vector-set! length_code length code)
+        (set! length (add1 length))))
+
+    (Assert
      (unless (= length 256)
        (error "ct_init: length != 256")))
 
@@ -1091,41 +1065,35 @@
 
     ;; /* Initialize the mapping dist (0..32K) -> dist code (0..29) */
     (set! dist 0)
-    (for 0 < 16 add1
-	 (lambda (code)
-	   (vector-set! base_dist code dist)
-	   (for 0 < (<< 1 (vector-ref extra_dbits code)) add1
-		(lambda (n)
-		  (vector-set! dist_code dist code)
-		  (set! dist (add1 dist))))))
+    (for code := 0 < 16 do
+      (vector-set! base_dist code dist)
+      (for n := 0 < (<< 1 (vector-ref extra_dbits code)) do
+        (vector-set! dist_code dist code)
+        (set! dist (add1 dist))))
 
     (Assert
      (unless (= dist 256)
        (error "ct_init: dist != 256")))
     (set! dist (>> dist 7)) ;; /* from now on, all distances are divided by 128 */
-    (for 16 < D_CODES add1
-	 (lambda (code)
-	   (vector-set! base_dist code (<< dist 7))
-	   (for 0 < (<< 1 (- (vector-ref extra_dbits code) 7)) add1
-		(lambda (n)
-		  (vector-set! dist_code (+ 256 dist) code)
-		  (set! dist (add1 dist))))))
+    (for code := 16 < D_CODES do
+      (vector-set! base_dist code (<< dist 7))
+      (for n := 0 < (<< 1 (- (vector-ref extra_dbits code) 7)) do
+        (vector-set! dist_code (+ 256 dist) code)
+        (set! dist (add1 dist))))
 
     (Assert
      (unless (= dist 256)
        (error "ct_init: 256+dist != 512")))
 
     ;; /* Construct the codes of the static literal tree */
-    (for 0 <= MAX_BITS add1
-	 (lambda (bits)
-	   (vector-set! bl_count bits 0)))
+    (for bits := 0 <= MAX_BITS do
+      (vector-set! bl_count bits 0))
 
     (let ([init-ltree
-	   (lambda (s e v)
-	     (for s <= e add1
-		  (lambda (n)
-		    (vector-set! static_ltree n (_make-ct_data #f 0 #f v))
-		    (vector-set! bl_count v (add1 (vector-ref bl_count v))))))])
+           (lambda (s e v)
+             (for n := s <= e do
+               (vector-set! static_ltree n (_make-ct_data #f 0 #f v))
+               (vector-set! bl_count v (add1 (vector-ref bl_count v)))))])
       (init-ltree 0 143 8)
       (init-ltree 144 255 9)
       (init-ltree 256 279 7)
@@ -1137,11 +1105,9 @@
     (gen_codes static_ltree (+ L_CODES 1))
 
     ;; /* The static distance tree is trivial: */
-    (for 0 < D_CODES add1
-	 (lambda (n)
-	   (vector-set! static_dtree n 
-			(_make-ct_data #f (bi_reverse n 5)
-				       #f 5))))
+    (for n := 0 < D_CODES do
+      (vector-set! static_dtree n
+                   (_make-ct_data #f (bi_reverse n 5) #f 5)))
 
     ;; /* Initialize the first block of the first file: */
     (init_block)))
@@ -1151,15 +1117,12 @@
 ;; */
 (define inited-once? #f)
 (define (init_block)
-  (for 0 < (if inited-once? L_CODES HEAP_SIZE) add1
-       (lambda (n)
-	 (vector-set! dyn_ltree n (_make-ct_data 0 #f 0 #f))))
-  (for 0 < (if inited-once? D_CODES (+ (* 2 D_CODES) 1)) add1
-       (lambda (n)
-	 (vector-set! dyn_dtree n (_make-ct_data 0 #f 0 #f))))
-  (for 0 < (if inited-once? BL_CODES (+ (* 2 BL_CODES) 1)) add1
-       (lambda (n)
-	 (vector-set! bl_tree n (_make-ct_data 0 #f 0 #f))))
+  (for n := 0 < (if inited-once? L_CODES HEAP_SIZE) do
+    (vector-set! dyn_ltree n (_make-ct_data 0 #f 0 #f)))
+  (for n := 0 < (if inited-once? D_CODES (+ (* 2 D_CODES) 1)) do
+    (vector-set! dyn_dtree n (_make-ct_data 0 #f 0 #f)))
+  (for n := 0 < (if inited-once? BL_CODES (+ (* 2 BL_CODES) 1)) do
+    (vector-set! bl_tree n (_make-ct_data 0 #f 0 #f)))
 
   (set! inited-once? #t)
 
@@ -1189,7 +1152,7 @@
 (define (smaller tree n m)
   (or (< (ct_data-freq (vector-ref tree n)) (ct_data-freq (vector-ref tree m)))
       (and (= (ct_data-freq (vector-ref tree n)) (ct_data-freq (vector-ref tree m)))
-	   (<= (vector-ref depth n) (vector-ref depth m)))))
+           (<= (vector-ref depth n) (vector-ref depth m)))))
 
 ;; /* ===========================================================================
 ;;  * Restore the heap property by moving down the tree starting at node k,
@@ -1205,22 +1168,22 @@
   (define j (<< k 1))  ;; /* left son of k */
   (let loop ([k k][j j])
     (if (<= j heap_len)
-	;; /* Set j to the smallest of the two sons: */
-	(let ([j (if (and (< j heap_len)
-			  (smaller tree 
-				   (vector-ref heap (+ j 1))
-				   (vector-ref heap j)))
-		     (add1 j)
-		     j)])
-	  ;; /* Exit if v is smaller than both sons */
-	  (if (smaller tree v (vector-ref heap j))
-	      (vector-set! heap k v)
-	      (begin
-		;; /* Exchange v with the smallest son */
-		(vector-set! heap k (vector-ref heap j))
-		;; /* And continue down the tree, setting j to the left son of k */
-		(loop j (<< j 1)))))
-	(vector-set! heap k v))))
+        ;; /* Set j to the smallest of the two sons: */
+        (let ([j (if (and (< j heap_len)
+                          (smaller tree
+                                   (vector-ref heap (+ j 1))
+                                   (vector-ref heap j)))
+                     (add1 j)
+                     j)])
+          ;; /* Exit if v is smaller than both sons */
+          (if (smaller tree v (vector-ref heap j))
+              (vector-set! heap k v)
+              (begin
+                ;; /* Exchange v with the smallest son */
+                (vector-set! heap k (vector-ref heap j))
+                ;; /* And continue down the tree, setting j to the left son of k */
+                (loop j (<< j 1)))))
+        (vector-set! heap k v))))
 
 ;; /* ===========================================================================
 ;;  * Compute the optimal bit lengths for a tree and update the total bit length
@@ -1248,49 +1211,47 @@
   (define overflow 0);   ;; /* number of elements with bit length too large */
   (define h 0)
 
-  (for 0 <= MAX_BITS add1
-       (lambda (bits)
-	 (vector-set! bl_count bits 0)))
+  (for bits := 0 <= MAX_BITS do
+    (vector-set! bl_count bits 0))
 
   ;; /* In a first pass, compute the optimal bit lengths (which may
   ;;  * overflow in the case of the bit length tree).
   ;;  */
   (set-ct_data-len! (vector-ref tree (vector-ref heap heap_max)) 0) ;; /* root of the heap */
 
-  (for (+ 1 heap_max) < HEAP_SIZE add1
-       (lambda (h)
-	 (set! n (vector-ref heap h))
-	 (set! bits (+ (ct_data-len (vector-ref tree (ct_data-dad (vector-ref tree n)))) 1))
-	 (when (> bits max_length) 
-	   (set! bits max_length)
-	   (set! overflow (add1 overflow)))
-	 (set-ct_data-len! (vector-ref tree n) bits)
-	 ;; /* We overwrite tree[n].Dad which is no longer needed */
-
-	 (unless (> n max_code)
-	   ;; /* leaf node */
-
-	   (vector-set! bl_count bits (add1 (vector-ref bl_count bits)))
-	   (set! xbits 0)
-	   (when (>= n base)
-	     (set! xbits (vector-ref extra (- n base))))
-	   (set! f (ct_data-freq (vector-ref tree n)))
-	   (set! opt_len (+ opt_len (* f (+ bits xbits))))
-	   (when stree
-	     (set! static_len (+ static_len (* f (+ (ct_data-len (vector-ref stree n)) xbits))))))))
+  (for h := (+ 1 heap_max) < HEAP_SIZE do
+    (set! n (vector-ref heap h))
+    (set! bits (+ (ct_data-len (vector-ref tree (ct_data-dad (vector-ref tree n)))) 1))
+    (when (> bits max_length)
+      (set! bits max_length)
+      (set! overflow (add1 overflow)))
+    (set-ct_data-len! (vector-ref tree n) bits)
+    ;; /* We overwrite tree[n].Dad which is no longer needed */
+    (unless (> n max_code)
+      ;; /* leaf node */
+      (vector-set! bl_count bits (add1 (vector-ref bl_count bits)))
+      (set! xbits 0)
+      (when (>= n base)
+        (set! xbits (vector-ref extra (- n base))))
+      (set! f (ct_data-freq (vector-ref tree n)))
+      (set! opt_len (+ opt_len (* f (+ bits xbits))))
+      (when stree
+        (set! static_len
+              (+ static_len
+                 (* f (+ (ct_data-len (vector-ref stree n)) xbits)))))))
 
   (unless (= overflow 0)
 
-    (DEBUG (Trace stderr "~nbit length overflow~n"))
+    (DEBUG (Trace stderr "\nbit length overflow\n"))
     ;; /* This happens for example on obj2 and pic of the Calgary corpus */
 
     ;; /* Find the first bit length which could increase: */
     (let loop ()
       (set! bits (- max_length 1))
       (let loop ()
-	(when (= (vector-ref bl_count bits) 0)
-	  (set! bits (sub1 bits))
-	  (loop)))
+        (when (= (vector-ref bl_count bits) 0)
+          (set! bits (sub1 bits))
+          (loop)))
       (vector-set! bl_count bits (sub1 (vector-ref bl_count bits)))
       (vector-set! bl_count (+ bits 1) (+ (vector-ref bl_count (+ bits 1)) 2))
       (vector-set! bl_count max_length (sub1 (vector-ref bl_count max_length)))
@@ -1299,7 +1260,7 @@
       ;;  */
       (set! overflow (- overflow 2))
       (when (> overflow 0)
-	(loop)))
+        (loop)))
 
     (set! h HEAP_SIZE)
     ;; /* Now recompute all bit lengths, scanning in increasing frequency.
@@ -1307,23 +1268,22 @@
     ;;  * lengths instead of fixing only the wrong ones. This idea is taken
     ;;  * from 'ar' written by Haruhiko Okumura.)
     ;;  */
-    (for max_length > 0 sub1
-	 (lambda (bits)
-	   (set! n (vector-ref bl_count bits))
-	   (let loop ()
-	     (when (not (= n 0))
-	       (set! h (sub1 h))
-	       (set! m (vector-ref heap h))
-	       (if (> m max_code)
-		   (loop)
-		   (begin
-		     (when (not (= (ct_data-len (vector-ref tree m)) bits))
-		       (set! opt_len
-			     (+ opt_len (* (- bits (ct_data-len (vector-ref tree m)))
-					   (ct_data-freq (vector-ref tree m))))))
-		     (set-ct_data-len! (vector-ref tree m) bits)
-		     (set! n (sub1 n))
-		     (loop)))))))))
+    (for bits := max_length then sub1 > 0 do
+      (set! n (vector-ref bl_count bits))
+      (let loop ()
+        (when (not (= n 0))
+          (set! h (sub1 h))
+          (set! m (vector-ref heap h))
+          (if (> m max_code)
+            (loop)
+            (begin
+              (when (not (= (ct_data-len (vector-ref tree m)) bits))
+                (set! opt_len
+                      (+ opt_len (* (- bits (ct_data-len (vector-ref tree m)))
+                                    (ct_data-freq (vector-ref tree m))))))
+              (set-ct_data-len! (vector-ref tree m) bits)
+              (set! n (sub1 n))
+              (loop))))))))
 
 ;; /* ===========================================================================
 ;;  * Generate the codes for a given tree and bit counts (which need not be
@@ -1344,35 +1304,32 @@
   ;; /* The distribution counts are first used to generate the code values
   ;;  * without bit reversal.
   ;;  */
-  (for 1 <= MAX_BITS add1
-       (lambda (bits)
-	 (set! code (<< (+ code (vector-ref bl_count (- bits 1))) 1))
-	 (vector-set! next_code bits code)))
+  (for bits := 1 <= MAX_BITS do
+    (set! code (<< (+ code (vector-ref bl_count (- bits 1))) 1))
+    (vector-set! next_code bits code))
   ;; /* Check that the bit counts in bl_count are consistent. The last code
   ;;  * must be all ones.
   ;;  */
-  (Assert 
+  (Assert
    (unless (= (+ code (vector-ref bl_count MAX_BITS)-1)
-	      (- (<< 1 MAX_BITS) 1))
+              (- (<< 1 MAX_BITS) 1))
      "inconsistent bit counts"))
   (DEBUG (Tracev stderr "\ngen_codes: max_code ~a " max_code))
 
-  (for  0 <= max_code add1
-	(lambda (n)
-	  (let ([len (ct_data-len (vector-ref tree n))])
-	    (unless (= len 0)
-	      ;; /* Now reverse the bits */
-	      (let ([nc (vector-ref next_code len)])
-		(set-ct_data-code! (vector-ref tree n)
-				   (bi_reverse nc len))
-		(vector-set! next_code len (add1 nc)))
+  (for n := 0 <= max_code do
+    (let ([len (ct_data-len (vector-ref tree n))])
+      (unless (= len 0)
+        ;; /* Now reverse the bits */
+        (let ([nc (vector-ref next_code len)])
+          (set-ct_data-code! (vector-ref tree n) (bi_reverse nc len))
+          (vector-set! next_code len (add1 nc)))
 
-	      (DEBUG (Tracec (not (eq? tree static_ltree))
-			     stderr
-			     "~nn ~a ~c l ~a c ~x (~x) "
-			     n #\space len
-			     (or (ct_data-code (vector-ref tree n)) 0)
-			     (or (- (vector-ref next_code len) 1) 0))))))))
+        (DEBUG (Tracec (not (eq? tree static_ltree))
+                       stderr
+                       "\nn ~a ~c l ~a c ~x (~x) "
+                       n #\space len
+                       (or (ct_data-code (vector-ref tree n)) 0)
+                       (or (- (vector-ref next_code len) 1) 0)))))))
 
 ;; /* ===========================================================================
 ;;  * Construct one Huffman tree and assigns the code bit strings and lengths.
@@ -1399,18 +1356,16 @@
   (set! heap_len 0)
   (set! heap_max HEAP_SIZE)
 
-  (for 0 < elems add1
-       (lambda (n)
-	 (DEBUG (Trace stderr "freq: ~a ~a~n" n (ct_data-freq (vector-ref tree n))))
-	 (if (not (= (ct_data-freq (vector-ref tree n)) 0))
-	     (begin
-	       (set! heap_len (add1 heap_len))
-	       (set! max_code n)
-	       (vector-set! heap heap_len n)
-	       (vector-set! depth n 0))
-	     (set-ct_data-len! (vector-ref tree n) 0))))
+  (for n := 0 < elems do
+    (DEBUG (Trace stderr "freq: ~a ~a\n" n (ct_data-freq (vector-ref tree n))))
+    (if (not (= (ct_data-freq (vector-ref tree n)) 0))
+      (begin (set! heap_len (add1 heap_len))
+             (set! max_code n)
+             (vector-set! heap heap_len n)
+             (vector-set! depth n 0))
+      (set-ct_data-len! (vector-ref tree n) 0)))
 
-  (DEBUG (Trace stderr "Building: ~a ~a ~a~n" elems heap_len max_code))
+  (DEBUG (Trace stderr "Building: ~a ~a ~a\n" elems heap_len max_code))
 
   ;; /* The pkzip format requires that at least one distance code exists,
   ;;  * and that at least one bit should be sent even if there is only one
@@ -1420,29 +1375,27 @@
   (let loop ()
     (when (< heap_len 2)
       (let ([new (if (< max_code 2)
-		     (begin
-		       (set! max_code (add1 max_code))
-		       max_code)
-		     0)])
-	(set! heap_len (add1 heap_len))
-	(vector-set! heap heap_len new)
-	(set-ct_data-freq! (vector-ref tree new) 1)
+                     (begin
+                       (set! max_code (add1 max_code))
+                       max_code)
+                     0)])
+        (set! heap_len (add1 heap_len))
+        (vector-set! heap heap_len new)
+        (set-ct_data-freq! (vector-ref tree new) 1)
         (vector-set! depth new 0)
-	(set! opt_len (sub1 opt_len))
-	(when stree
-	  (set! static_len (- static_len (ct_data-len (vector-ref stree new)))))
+        (set! opt_len (sub1 opt_len))
+        (when stree
+          (set! static_len (- static_len (ct_data-len (vector-ref stree new)))))
         ;; /* new is 0 or 1 so it does not have extra bits */
-	(loop))))
+        (loop))))
 
   (set-tree_desc-max_code! desc max_code)
 
   ;; /* The elements heap[heap_len/2+1 .. heap_len] are leaves of the tree,
   ;;  * establish sub-heaps of increasing lengths:
   ;;  */
-  (for (quotient heap_len 2) >= 1 sub1
-       (lambda (n)
-	 (pqdownheap tree n)))
- 
+  (for n := (quotient heap_len 2) then sub1 >= 1 do (pqdownheap tree n))
+
   ;; /* Construct the Huffman tree by repeatedly combining the least two
   ;;  * frequent nodes.
   ;;  */
@@ -1462,11 +1415,11 @@
 
     ;; /* Create a new node father of n and m */
     (set-ct_data-freq! (vector-ref tree node)
-		       (+ (ct_data-freq (vector-ref tree n))
-			  (ct_data-freq (vector-ref tree m))))
+                       (+ (ct_data-freq (vector-ref tree n))
+                          (ct_data-freq (vector-ref tree m))))
     (vector-set! depth node (+ (max (vector-ref depth n)
-				    (vector-ref depth m))
-			       1))
+                                    (vector-ref depth m))
+                               1))
     (set-ct_data-dad! (vector-ref tree n) node)
     (set-ct_data-dad! (vector-ref tree m) node)
 
@@ -1486,7 +1439,7 @@
   ;;  */
   (gen_bitlen desc)
 
-  (DEBUG (Trace stderr "Build: ~a~n" max_code))
+  (DEBUG (Trace stderr "Build: ~a\n" max_code))
   ;; /* The field len is now set, we can generate the bit codes */
   (gen_codes tree max_code))
 
@@ -1510,49 +1463,38 @@
   (when (= nextlen 0)
     (set! max_count 138)
     (set! min_count 3))
-  
+
   (set-ct_data-len! (vector-ref tree (+ max_code 1)) #xffff) ;; /* guard */
 
-  (for 0 <= max_code add1
-       (lambda (n)
-	 (let/ec continue
-	   (define (inc-bl_tree-freq which amt)
-	     (set-ct_data-freq! (vector-ref bl_tree which)
-				(+ amt (ct_data-freq 
-					(vector-ref bl_tree which)))))
+  (for n := 0 <= max_code do
+    (let/ec continue
+      (define (inc-bl_tree-freq which amt)
+        (set-ct_data-freq! (vector-ref bl_tree which)
+                           (+ amt (ct_data-freq (vector-ref bl_tree which)))))
 
-	   (set! curlen nextlen)
-	   (set! nextlen (ct_data-len (vector-ref tree (+ n 1))))
-	   (set! count (add1 count))
+      (set! curlen nextlen)
+      (set! nextlen (ct_data-len (vector-ref tree (+ n 1))))
+      (set! count (add1 count))
 
-	   (cond
-	    [(and (< count max_count)
-		  (= curlen nextlen))
-	     (continue)]
-	    [(< count min_count)
-	     (inc-bl_tree-freq curlen count)]
-	    [(not (= curlen 0))
-	     (when (not (= curlen prevlen))
-	       (inc-bl_tree-freq curlen 1))
-	     (inc-bl_tree-freq REP_3_6 1)]
-	    [(<= count 10)
-	     (inc-bl_tree-freq REPZ_3_10 1)]
-	    [else
-	     (inc-bl_tree-freq REPZ_11_138 1)])
+      (cond [(and (< count max_count) (= curlen nextlen))
+             (continue)]
+            [(< count min_count)
+             (inc-bl_tree-freq curlen count)]
+            [(not (= curlen 0))
+             (when (not (= curlen prevlen))
+               (inc-bl_tree-freq curlen 1))
+             (inc-bl_tree-freq REP_3_6 1)]
+            [(<= count 10)
+             (inc-bl_tree-freq REPZ_3_10 1)]
+            [else
+             (inc-bl_tree-freq REPZ_11_138 1)])
 
-	   (set! count 0)
-	   (set! prevlen curlen)
+      (set! count 0)
+      (set! prevlen curlen)
 
-	   (cond
-	    [(= nextlen 0)
-	     (set! max_count 138)
-	     (set! min_count 3)]
-	    [(= curlen nextlen)
-	     (set! max_count 6)
-	     (set! min_count 3)]
-	    [else
-	     (set! max_count 7)
-	     (set! min_count 4)])))))
+      (cond [(= nextlen 0)      (set! max_count 138) (set! min_count 3)]
+            [(= curlen nextlen) (set! max_count   6) (set! min_count 3)]
+            [else               (set! max_count   7) (set! min_count 4)]))))
 
 ;; /* ===========================================================================
 ;;  * Send a literal or distance tree in compressed form, using the codes in
@@ -1570,56 +1512,45 @@
   (define min_count 4)         ;; /* min repeat count */
 
   ;; /* tree[max_code+1].Len = -1; */  ;; /* guard already set */
-  (when (= nextlen 0) 
+  (when (= nextlen 0)
     (set! max_count 138)
     (set! min_count 3))
 
-  (for 0 <= max_code add1
-       (lambda (n)
-	 (let/ec continue
-	   (set! curlen nextlen)
-	   (set! nextlen (ct_data-len (vector-ref tree (+ n 1))))
-	   
-	   (set! count (add1 count))
-	   (cond
-	    [(and (< count max_count)
-		  (= curlen nextlen))
-	     (continue)]
-	    [(< count min_count)
-	     (let loop ()
-	       (send_code curlen bl_tree)
-	       (set! count (sub1 count))
-	       (when (not (= count 0))
-		 (loop)))]
-	    [(not (= curlen 0))
-	     (when (not (= curlen prevlen))
-	       (send_code curlen bl_tree)
-	       (set! count (sub1 count)))
-	     (Assert
-	      (unless (>= 6 count 3)
-		(error " 3_6?")))
-	     (send_code REP_3_6 bl_tree)
-	     (send_bits (- count 3) 2)]
-	    [(<= count 10)
-	     (send_code REPZ_3_10 bl_tree)
-	     (send_bits (- count 3) 3)]
-	    [else
-	     (send_code REPZ_11_138 bl_tree)
-	     (send_bits (- count 11) 7)])
+  (for n := 0 <= max_code do
+    (let/ec continue
+      (set! curlen nextlen)
+      (set! nextlen (ct_data-len (vector-ref tree (+ n 1))))
 
-	   (set! count 0)
-	   (set! prevlen curlen)
-	   
-	   (cond
-	    [(= nextlen 0)
-	     (set! max_count 138)
-	     (set! min_count 3)]
-	    [(= curlen nextlen)
-	     (set! max_count 6)
-	     (set! min_count 3)]
-	    [else
-	     (set! max_count 7)
-	     (set! min_count 4)])))))
+      (set! count (add1 count))
+      (cond [(and (< count max_count) (= curlen nextlen))
+             (continue)]
+            [(< count min_count)
+             (let loop ()
+               (send_code curlen bl_tree)
+               (set! count (sub1 count))
+               (when (not (= count 0)) (loop)))]
+            [(not (= curlen 0))
+             (when (not (= curlen prevlen))
+               (send_code curlen bl_tree)
+               (set! count (sub1 count)))
+             (Assert
+              (unless (>= 6 count 3)
+                (error " 3_6?")))
+             (send_code REP_3_6 bl_tree)
+             (send_bits (- count 3) 2)]
+            [(<= count 10)
+             (send_code REPZ_3_10 bl_tree)
+             (send_bits (- count 3) 3)]
+            [else
+             (send_code REPZ_11_138 bl_tree)
+             (send_bits (- count 11) 7)])
+
+      (set! count 0)
+      (set! prevlen curlen)
+
+      (cond [(= nextlen 0)      (set! max_count 138) (set! min_count 3)]
+            [(= curlen nextlen) (set! max_count   6) (set! min_count 3)]
+            [else               (set! max_count   7) (set! min_count 4)]))))
 
 ;; /* ===========================================================================
 ;;  * Construct the Huffman tree for the bit lengths and return the index in
@@ -1644,16 +1575,16 @@
   ;;  */
   (set! max_blindex (- BL_CODES 1))
   (let loop ()
-    (when (and (>= max_blindex 3) 
-	       (= (ct_data-len (vector-ref bl_tree
-					   (vector-ref bl_order max_blindex)))
-		  0))
+    (when (and (>= max_blindex 3)
+               (= (ct_data-len (vector-ref bl_tree
+                                           (vector-ref bl_order max_blindex)))
+                  0))
       (set! max_blindex (sub1 max_blindex))
       (loop)))
 
   ;; /* Update opt_len to include the bit length tree and counts */
   (set! opt_len (+ opt_len (* 3 (+ max_blindex 1)) 5 5 4))
-  (DEBUG (Tracev stderr "~ndyn trees: dyn ~a, stat ~a" opt_len static_len))
+  (DEBUG (Tracev stderr "\ndyn trees: dyn ~a, stat ~a" opt_len static_len))
 
   max_blindex)
 
@@ -1665,37 +1596,36 @@
 (define (send_all_trees lcodes dcodes blcodes)
   ;; int lcodes, dcodes, blcodes; ;; /* number of codes for each tree */
 
-  (Assert 
+  (Assert
    (unless (and (>= lcodes 257)
-		(>= dcodes 1)
-		(>= blcodes 4))
+                (>= dcodes 1)
+                (>= blcodes 4))
      (error "not enough codes")))
-  (Assert 
+  (Assert
    (unless (and (<= lcodes L_CODES)
-		(<= dcodes D_CODES)
-		(<= blcodes BL_CODES))
+                (<= dcodes D_CODES)
+                (<= blcodes BL_CODES))
      (error "too many codes ~a(~a) ~a(~a) ~a(~a)"
-	    lcodes L_CODES
-	    dcodes D_CODES
-	    blcodes BL_CODES)))
+            lcodes L_CODES
+            dcodes D_CODES
+            blcodes BL_CODES)))
 
-  (DEBUG (Tracev stderr "~nbl counts: "))
+  (DEBUG (Tracev stderr "\nbl counts: "))
 
   (send_bits (- lcodes 257) 5) ;; /* not +255 as stated in appnote.txt */
   (send_bits (- dcodes 1) 5)
   (send_bits (- blcodes 4) 4) ;; /* not -3 as stated in appnote.txt */
-  (for 0 < blcodes add1
-       (lambda (rank)
-	 (DEBUG (Tracev stderr "~nbl code ~a " (vector-ref bl_order rank)))
-	 (send_bits (ct_data-len (vector-ref bl_tree (vector-ref bl_order rank))) 
-		    3)))
-  (DEBUG (Tracev stderr "~nbl tree: sent ~a" bits_sent))
+  (for rank := 0 < blcodes do
+    (DEBUG (Tracev stderr "\nbl code ~a " (vector-ref bl_order rank)))
+    (send_bits (ct_data-len (vector-ref bl_tree (vector-ref bl_order rank)))
+               3))
+  (DEBUG (Tracev stderr "\nbl tree: sent ~a" bits_sent))
 
   (send_tree dyn_ltree (- lcodes 1)) ;; /* send the literal tree */
-  (DEBUG (Tracev stderr "~nlit tree: sent ~a" bits_sent))
+  (DEBUG (Tracev stderr "\nlit tree: sent ~a" bits_sent))
 
   (send_tree dyn_dtree (- dcodes 1)) ;; /* send the distance tree */
-  (DEBUG (Tracev stderr "~ndist tree: sent ~a" bits_sent)))
+  (DEBUG (Tracev stderr "\ndist tree: sent ~a" bits_sent)))
 
 ;; /* ===========================================================================
 ;;  * Determine the best encoding for the current block: dynamic trees, static
@@ -1714,10 +1644,10 @@
 
   ;; /* Construct the literal and distance trees */
   (build_tree l_desc)
-  (DEBUG (Tracev stderr "~nlit data: dyn ~a, stat ~a" opt_len static_len))
+  (DEBUG (Tracev stderr "\nlit data: dyn ~a, stat ~a" opt_len static_len))
 
   (build_tree d_desc)
-  (DEBUG (Tracev stderr "~ndist data: dyn ~a, stat ~a" opt_len static_len))
+  (DEBUG (Tracev stderr "\ndist data: dyn ~a, stat ~a" opt_len static_len))
   ;; /* At this point, opt_len and static_len are the total bit lengths of
   ;;  * the compressed block data, excluding the tree representations.
   ;;  */
@@ -1732,20 +1662,20 @@
   (set! static_lenb (>> (+ static_len 3 7) 3))
   (set! input_len (+ input_len stored_len)) ;; /* for debugging only */
 
-  (DEBUG (Trace stderr "~nopt ~a(~a) stat ~a(~a) stored ~a lit ~a dist ~a "
-		opt_lenb opt_len static_lenb static_len stored_len
-		last_lit last_dist))
+  (DEBUG (Trace stderr "\nopt ~a(~a) stat ~a(~a) stored ~a lit ~a dist ~a "
+                opt_lenb opt_len static_lenb static_len stored_len
+                last_lit last_dist))
 
   (when (<= static_lenb opt_lenb)
     (set! opt_lenb static_lenb))
-  
+
   ;; /* If compression failed and this is the first and last block,
   ;;  * and if the zip file can be seeked (to rewrite the local header),
   ;;  * the whole file is transformed into a stored file:
   ;;  */
   (cond
    [(and (<= (+ stored_len 4) opt_lenb)
-	 (not (null? buf)))
+         (not (null? buf)))
     ;; /* 4: two words for the lengths */
 
     ;; /* The test buf != NULL is only necessary if LIT_BUFSIZE > WSIZE.
@@ -1757,7 +1687,7 @@
     (send_bits (+ (<< STORED_BLOCK 1) eof) 3)  ;; /* send block type */
     (set! compressed_len (bitwise-and (+ compressed_len 3 7) (bitwise-not 7)))
     (set! compressed_len (+ compressed_len (<< (+ stored_len 4) 3)))
-    
+
     (copy_block buf stored_len #t)] ;; /* with header */
    [(= static_lenb opt_lenb)
     (send_bits (+ (<< STATIC_TREES 1) eof) 3)
@@ -1766,27 +1696,27 @@
    [else
     (send_bits (+ (<< DYN_TREES 1) eof) 3)
     (send_all_trees (+ (tree_desc-max_code l_desc) 1)
-		    (+ (tree_desc-max_code d_desc) 1)
-		    (+ max_blindex 1))
+                    (+ (tree_desc-max_code d_desc) 1)
+                    (+ max_blindex 1))
     (compress_block dyn_ltree dyn_dtree)
     (set! compressed_len (+ compressed_len 3 opt_len))])
 
-  ;; Assert 
+  ;; Assert
   ;; (unless (= compressed_len bits_sent)
   ;;  (error "bad compressed size"))
   (init_block)
 
   (when (not (= eof 0))
-    (Assert 
+    (Assert
      (unless (= input_len bytes_in)
        (newline (current-error-port))
        (error 'eof "bad input size: ~a != ~a" input_len bytes_in)))
     (bi_windup)
     (set! compressed_len   ;; /* align on byte boundary */
-	  (+ compressed_len 7)))
+          (+ compressed_len 7)))
 
-  (DEBUG (Tracev stderr "~ncomprlen ~a(~a) " (>> compressed_len 3)
-		 (- compressed_len (* 7 eof))))
+  (DEBUG (Tracev stderr "\ncomprlen ~a(~a) " (>> compressed_len 3)
+                 (- compressed_len (* 7 eof))))
 
   (>> compressed_len 3))
 
@@ -1794,7 +1724,7 @@
 ;;  * Save the match info and tally the frequency counts. Return true if
 ;;  * the current block must be flushed.
 ;;  */
-(define ct_tally 
+(define ct_tally
   (let ([dist 0])
     (lambda (_dist lc)
       ;; int dist;  ;; /* distance of matched string */
@@ -1805,59 +1735,59 @@
       (gzvector-set! l_buf last_lit lc)
       (set! last_lit (add1 last_lit))
       (if (= dist 0)
-	  ;; /* lc is the unmatched char */
-	  (set-ct_data-freq! (vector-ref dyn_ltree lc)
-			     (add1 (ct_data-freq (vector-ref dyn_ltree lc))))
-	  (begin
-	    ;; /* Here, lc is the match length - MIN_MATCH */
-	    (set! dist (sub1 dist)) ;; /* dist = match distance - 1 */
-	    (Assert
-	     (unless (and (< dist MAX_DIST)
-			  (<= lc (- MAX_MATCH MIN_MATCH))
-			  (< (d_code dist) D_CODES))
-	       (error "ct_tally: bad match")))
+          ;; /* lc is the unmatched char */
+          (set-ct_data-freq! (vector-ref dyn_ltree lc)
+                             (add1 (ct_data-freq (vector-ref dyn_ltree lc))))
+          (begin
+            ;; /* Here, lc is the match length - MIN_MATCH */
+            (set! dist (sub1 dist)) ;; /* dist = match distance - 1 */
+            (Assert
+             (unless (and (< dist MAX_DIST)
+                          (<= lc (- MAX_MATCH MIN_MATCH))
+                          (< (d_code dist) D_CODES))
+               (error "ct_tally: bad match")))
 
-	    (let* ([i (+ (vector-ref length_code lc) LITERALS 1)]
-		   [ct (vector-ref dyn_ltree i)])
-	      (DEBUG (Trace stderr "Set: ~a -> ~a~n" lc i))
-	      (set-ct_data-freq! ct (add1 (ct_data-freq ct))))
-	    (let ([ct (vector-ref dyn_dtree (d_code dist))])
-	      (set-ct_data-freq! ct (add1 (ct_data-freq ct))))
-	    
-	    (vector-set! d_buf last_dist dist)
-	    (set! last_dist (add1 last_dist))
-	    (set! flags (bitwise-ior flags flag_bit))))
+            (let* ([i (+ (vector-ref length_code lc) LITERALS 1)]
+                   [ct (vector-ref dyn_ltree i)])
+              (DEBUG (Trace stderr "Set: ~a -> ~a\n" lc i))
+              (set-ct_data-freq! ct (add1 (ct_data-freq ct))))
+            (let ([ct (vector-ref dyn_dtree (d_code dist))])
+              (set-ct_data-freq! ct (add1 (ct_data-freq ct))))
+
+            (vector-set! d_buf last_dist dist)
+            (set! last_dist (add1 last_dist))
+            (set! flags (bitwise-ior flags flag_bit))))
 
       (set! flag_bit (<< flag_bit 1))
 
       ;; /* Output the flags if they fill a byte: */
       (when (= (bitwise-and last_lit 7) 0)
-	(vector-set! flag_buf last_flags flags)
-	(set! last_flags (add1 last_flags))
-	(set! flags 0) (set! flag_bit 1))
+        (vector-set! flag_buf last_flags flags)
+        (set! last_flags (add1 last_flags))
+        (set! flags 0) (set! flag_bit 1))
 
       (or
        ;; /* Try to guess if it is profitable to stop the current block here */
        (and (and (> LEVEL 2) (= (bitwise-and last_lit #xfff) 0))
-	    (let ()
-	      ;; /* Compute an upper bound for the compressed length */
-	      (define out_length (* last_lit 8))
-	      (define in_length (- strstart block_start))
-	      
-	      (for 0 < D_CODES add1
-		   (lambda (dcode)
-		     (set! out_length (+ out_length 
-					 (* (ct_data-freq (vector-ref dyn_dtree dcode))
-					    (+ 5 (vector-ref extra_dbits dcode)))))))
-	      (set! out_length (>> out_length 3))
-	      (DEBUG (Trace stderr "~nlast_lit ~a, last_dist ~a, in ~a, out ~~~a(~a%) "
-			    last_lit last_dist in_length out_length
-			    (- 100 (/ (* out_length 100) in_length))))
-	      (and (< last_dist (quotient last_lit 2))
-		   (< out_length (quotient in_length 2)))))
-       
+            (let ()
+              ;; /* Compute an upper bound for the compressed length */
+              (define out_length (* last_lit 8))
+              (define in_length (- strstart block_start))
+
+              (for dcode := 0 < D_CODES do
+                (set! out_length
+                      (+ out_length
+                         (* (ct_data-freq (vector-ref dyn_dtree dcode))
+                            (+ 5 (vector-ref extra_dbits dcode))))))
+              (set! out_length (>> out_length 3))
+              (DEBUG (Trace stderr "\nlast_lit ~a, last_dist ~a, in ~a, out ~~~a(~a%) "
+                            last_lit last_dist in_length out_length
+                            (- 100 (/ (* out_length 100) in_length))))
+              (and (< last_dist (quotient last_lit 2))
+                   (< out_length (quotient in_length 2)))))
+
        (or (= last_lit (- LIT_BUFSIZE 1))
-	   (= last_dist DIST_BUFSIZE))
+           (= last_dist DIST_BUFSIZE))
        ;; /* We avoid equality with LIT_BUFSIZE because of wraparound at 64K
        ;;  * on 16 bit machines and because stored blocks are restricted to
        ;;  * 64K-1 bytes.
@@ -1883,42 +1813,42 @@
   (when (not (= last_lit 0))
     (let loop ()
       (when (= (bitwise-and lx 7) 0)
-	(set! flag (vector-ref flag_buf fx))
-	(set! fx (add1 fx)))
-      
+        (set! flag (vector-ref flag_buf fx))
+        (set! fx (add1 fx)))
+
       (set! lc (gzvector-ref l_buf lx))
       (set! lx (add1 lx))
 
       (cond
        [(= (bitwise-and flag 1) 0)
-	(send_code lc ltree) ;; /* send a literal byte */
-	(DEBUG '(Tracecv (isgraph lc) stderr " '~c' " (integer->char lc)))]
+        (send_code lc ltree) ;; /* send a literal byte */
+        (DEBUG '(Tracecv (isgraph lc) stderr " '~c' " (integer->char lc)))]
        [else
-	;; /* Here, lc is the match length - MIN_MATCH */
-	(set! code (vector-ref length_code lc))
-	(send_code (+ code LITERALS 1) ltree) ;; /* send the length code */
-	(set! extra (vector-ref extra_lbits code))
-	(when (not (= extra 0))
-	  (set! lc (- lc (vector-ref base_length code)))
-	  (send_bits lc extra))        ;; /* send the extra length bits */
-	(set! dist (vector-ref d_buf dx))
-	(set! dx (add1 dx))
+        ;; /* Here, lc is the match length - MIN_MATCH */
+        (set! code (vector-ref length_code lc))
+        (send_code (+ code LITERALS 1) ltree) ;; /* send the length code */
+        (set! extra (vector-ref extra_lbits code))
+        (when (not (= extra 0))
+          (set! lc (- lc (vector-ref base_length code)))
+          (send_bits lc extra))        ;; /* send the extra length bits */
+        (set! dist (vector-ref d_buf dx))
+        (set! dx (add1 dx))
 
-	;; /* Here, dist is the match distance - 1 */
-	(set! code (d_code dist))
-	(Assert 
-	 (unless (< code D_CODES)
-	   (error "bad d_code")))
+        ;; /* Here, dist is the match distance - 1 */
+        (set! code (d_code dist))
+        (Assert
+         (unless (< code D_CODES)
+           (error "bad d_code")))
 
-	(send_code code dtree)       ;; /* send the distance code */
-	(set! extra (vector-ref extra_dbits code))
-	(when (not (= extra 0))
-	  (set! dist (- dist (vector-ref base_dist code)))
-	  (send_bits dist extra))])   ;; /* send the extra distance bits */
+        (send_code code dtree)       ;; /* send the distance code */
+        (set! extra (vector-ref extra_dbits code))
+        (when (not (= extra 0))
+          (set! dist (- dist (vector-ref base_dist code)))
+          (send_bits dist extra))])   ;; /* send the extra distance bits */
       ;; /* literal or match pair ? */
       (set! flag (>> flag 1))
       (when (< lx last_lit)
-	(loop))))
+        (loop))))
 
   (send_code END_BLOCK ltree))
 
@@ -2022,14 +1952,12 @@
   ;;  * unused bits in value.
   ;;  */
   (if (> bi_valid (- Buf_size length))
-      (begin
-        (set! bi_buf (bitwise-ior bi_buf (<< value bi_valid)))
-        (put_short bi_buf)
-        (set! bi_buf (>> value (- Buf_size bi_valid)))
-        (set! bi_valid (+ bi_valid (- length Buf_size))))
-      (begin
-        (set! bi_buf (bitwise-ior bi_buf (<< value bi_valid)))
-        (set! bi_valid (+ bi_valid length)))))
+    (begin (set! bi_buf (bitwise-ior bi_buf (<< value bi_valid)))
+           (put_short bi_buf)
+           (set! bi_buf (>> value (- Buf_size bi_valid)))
+           (set! bi_valid (+ bi_valid (- length Buf_size))))
+    (begin (set! bi_buf (bitwise-ior bi_buf (<< value bi_valid)))
+           (set! bi_valid (+ bi_valid length)))))
 
 ;; /* ===========================================================================
 ;;  * Reverse the first len bits of a code, using straightforward code (a faster
@@ -2043,17 +1971,15 @@
   (let loop ([res 0][code code][len len])
     (let ([res (<< (bitwise-ior res (bitwise-and code 1)) 1)])
       (if (> len 1)
-	  (loop res (>> code 1) (sub1 len))
-	  (>> res 1)))))
+          (loop res (>> code 1) (sub1 len))
+          (>> res 1)))))
 
 ;; /* ===========================================================================
 ;;  * Write out any remaining bits in an incomplete byte.
 ;;  */
 (define (bi_windup)
-  (cond [(> bi_valid 8)
-         (put_short bi_buf)]
-        [(> bi_valid 0)
-         (put_byte bi_buf)])
+  (cond [(> bi_valid 8) (put_short bi_buf)]
+        [(> bi_valid 0) (put_byte bi_buf)])
   (set! bi_buf 0)
   (set! bi_valid 0)
   (set! bits_sent (bitwise-and (+ bits_sent 7) (bitwise-not 7))))
@@ -2068,19 +1994,19 @@
   ;; unsigned n;             /* number of bytes in s[] */
   (if s
       (let loop ([c crc][p 0])
-	(if (= p n)
-	    (set! crc c)
-	    (loop (bitwise-xor
-		   (vector-ref crc_32_tab
-			       (bitwise-and
-				(bitwise-xor c (vector-ref window-vec (+ s p)))
-				#xff))
-		   (arithmetic-shift c -8))
-		  (add1 p))))
+        (if (= p n)
+            (set! crc c)
+            (loop (bitwise-xor
+                   (vector-ref crc_32_tab
+                               (bitwise-and
+                                (bitwise-xor c (vector-ref window-vec (+ s p)))
+                                #xff))
+                   (arithmetic-shift c -8))
+                  (add1 p))))
       (set! crc #xffffffff)))
 
 (define crc_32_tab
-   #(#x00000000 
+   #(#x00000000
      #x77073096 #xee0e612c #x990951ba #x076dc419
      #x706af48f #xe963a535 #x9e6495a3 #x0edb8832 #x79dcb8a4
      #xe0d5e91e #x97d2d988 #x09b64c2b #x7eb17cbd #xe7b82d07
@@ -2152,10 +2078,7 @@
 
   (set! bits_sent (+ bits_sent (<< len 3)))
 
-  (let loop ([len len][pos 0])
-    (unless (zero? len)
-      (put_byte (gzvector-ref buf pos))
-      (loop (sub1 len) (add1 pos)))))
+  (for pos := 0 < len do (put_byte (gzvector-ref buf pos))))
 
 ;; /* ===========================================================================
 ;;  * Read a new buffer from the current input file, perform end-of-line
@@ -2171,14 +2094,14 @@
   ;;   (error "inbuf not empty"))
 
   (let* ([s (read-bytes size ifd)]
-	 [len (if (eof-object? s)
-		  EOF-const
-		  (bytes-length s))])
+         [len (if (eof-object? s)
+                  EOF-const
+                  (bytes-length s))])
     (when (positive? len)
       (let rloop ([p 0])
-	(unless (= p len)
-	  (vector-set! window-vec (+ p startpos) (bytes-ref s p))
-	  (rloop (add1 p))))
+        (unless (= p len)
+          (vector-set! window-vec (+ p startpos) (bytes-ref s p))
+          (rloop (add1 p))))
 
       (updcrc startpos len)
       (set! bytes_in (+ bytes_in len)))
@@ -2188,19 +2111,16 @@
 (define (put_byte c)
   (bytes-set! outbuf outcnt (bitwise-and #xFF c))
   (set! outcnt (add1 outcnt))
-  (when (= outcnt OUTBUFSIZ)
-    (flush_outbuf)))
+  (when (= outcnt OUTBUFSIZ) (flush_outbuf)))
 
 ;; /* Output a 16 bit value, lsb first */
 (define (put_short w)
   (if (< outcnt (- OUTBUFSIZ 2))
-      (begin
-	(bytes-set! outbuf outcnt (bitwise-and #xFF w))
-	(bytes-set! outbuf (add1 outcnt) (bitwise-and #xFF (>> w 8)))
-	(set! outcnt (+ outcnt 2)))
-      (begin
-	(put_byte w)
-	(put_byte (>> w 8)))))
+    (begin (bytes-set! outbuf outcnt (bitwise-and #xFF w))
+           (bytes-set! outbuf (add1 outcnt) (bitwise-and #xFF (>> w 8)))
+           (set! outcnt (+ outcnt 2)))
+    (begin (put_byte w)
+           (put_byte (>> w 8)))))
 
 ;; /* Output a 32 bit value to the bit stream, lsb first */
 (define (put_long n)
@@ -2232,7 +2152,7 @@
 
 (define (deflate-inner in out)
   (do-deflate))
-  
+
 (define (deflate in out)
 
   (set! bytes_in 0)
@@ -2244,7 +2164,7 @@
   (bi_init)
   (ct_init)
   (lm_init LEVEL)
-  
+
   (deflate-inner in out)
 
   (flush_outbuf)
@@ -2289,11 +2209,11 @@
     (put_byte 0))
 
   (do-deflate)
-  
+
   ;; /* Write the crc and uncompressed size */
   (put_long (bitwise-xor crc #xffffffff))
   (put_long bytes_in)
-  
+
   (flush_outbuf))
 
 (define (gzip infile outfile)
@@ -2302,16 +2222,16 @@
      void
      (lambda ()
        (let ([o (open-output-file outfile 'truncate/replace)])
-	 (dynamic-wind
-	  void
-	  (lambda ()
-	    (let ([name (with-handlers ([exn:fail? (lambda (x) #f)])
-			  (let-values ([(base name dir?) (split-path infile)])
-			    name))]
-		  [timestamp (with-handlers ([exn:fail:filesystem? (lambda (x) 0)])
-			       (file-or-directory-modify-seconds infile))])
-	      (gzip-through-ports i o name timestamp)))
-	  (lambda () (close-output-port o)))))
+         (dynamic-wind
+          void
+          (lambda ()
+            (let ([name (with-handlers ([exn:fail? (lambda (x) #f)])
+                          (let-values ([(base name dir?) (split-path infile)])
+                            name))]
+                  [timestamp (with-handlers ([exn:fail:filesystem? (lambda (x) 0)])
+                               (file-or-directory-modify-seconds infile))])
+              (gzip-through-ports i o name timestamp)))
+          (lambda () (close-output-port o)))))
      (lambda () (close-input-port i)))))
 
 (list gzip gzip-through-ports deflate)))
