@@ -461,8 +461,7 @@ tracing todo:
           (super-new)))
 
       ;; rewrite-module : syntax -> syntax
-      ;; rewrites te module to provide all definitions and 
-      ;; print out all results.
+      ;; rewrites te module to print out results of non-definitions
       (define (rewrite-module stx)
         (syntax-case stx (module #%plain-module-begin)
           [(module name lang (#%plain-module-begin bodies ...))
