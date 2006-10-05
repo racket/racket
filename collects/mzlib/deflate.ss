@@ -2050,11 +2050,10 @@
 ;;  * Write out any remaining bits in an incomplete byte.
 ;;  */
 (define (bi_windup)
-  (cond
-   [(> bi_valid 8)
-    (put_short bi_buf)]
-   [(> bi_valid 0)
-    (put_byte bi_buf)])
+  (cond [(> bi_valid 8)
+         (put_short bi_buf)]
+        [(> bi_valid 0)
+         (put_byte bi_buf)])
   (set! bi_buf 0)
   (set! bi_valid 0)
   (set! bits_sent (bitwise-and (+ bits_sent 7) (bitwise-not 7))))
@@ -2253,8 +2252,14 @@
   (values bytes_in bytes_out (bitwise-xor crc #xffffffff)))
 
 (define (gzip-through-ports in out origname time_stamp)
-  
+
   (define flags (if origname #x8 0)) ;; /* general purpose bit flags */
+
+  ;; make origname be a byte string
+  (set! origname (cond [(not origname)     #f]
+                       [(string? origname) (string->bytes/utf-8 origname)]
+                       [(path? origname)   (path->bytes origname)]
+                       [else               origname]))
 
   (set! bytes_in 0)
 
@@ -2275,14 +2280,14 @@
 
   (bi_init)
   (ct_init)
-  
+
   (put_byte (lm_init LEVEL));; /* extra flags */
   (put_byte 3) ;; /* OS identifier */
-  
+
   (when origname
-    (for-each put_byte (map char->integer (string->list origname)))
+    (for-each put_byte (bytes->list origname))
     (put_byte 0))
-  
+
   (do-deflate)
   
   ;; /* Write the crc and uncompressed size */
