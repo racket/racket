@@ -304,6 +304,7 @@
   (highlight-parens "加亮显示匹配的括号")
   (fixup-open-parens "自动调整开括号")
   (fixup-close-parens "自动调整闭括号")
+  (fixup-open-brackets "自动调整中括号")
   (flash-paren-match "高亮显示括号匹配")
   (auto-save-files "自动保存文件")
   (backup-files "保存备份文件")
@@ -365,6 +366,8 @@
   ;;; indenting preferences panel
   (indenting-prefs-panel-label "缩进")
   (indenting-prefs-extra-regexp "其他表达式")
+  
+  (square-bracket-prefs-panel-label "中括号")
   
   ; filled with define, lambda, or begin
   (enter-new-keyword "请输入一个类似于~a的关键字：")
