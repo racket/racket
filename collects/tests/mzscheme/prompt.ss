@@ -4,6 +4,83 @@
 (Section 'prompt)
 
 ;;----------------------------------------
+;; cc variants
+
+(define call/cc-via-composable 
+  (case-lambda 
+   [(f) (call/cc-via-composable f (default-continuation-prompt-tag))]
+   [(f tag)
+    (call-with-composable-continuation
+     (lambda (k)
+       (f (lambda vs
+            (abort-current-continuation 
+             tag 
+             (lambda () 
+               (call-with-continuation-prompt
+                (lambda ()
+                  (apply k vs))
+                tag
+                (lambda (thunk) (thunk)))))))))]))
+                                           
+(define call/cc-via-aborted-and-restored-composable 
+  (case-lambda 
+   [(f) (call/cc-via-composable f (default-continuation-prompt-tag))]
+   [(f tag)
+    (call-with-composable-continuation
+     (lambda (k)
+       (abort-current-continuation
+        tag
+        (lambda ()
+          (k (f (lambda vs
+                  (abort-current-continuation 
+                   tag 
+                   (lambda () 
+                     (call-with-continuation-prompt
+                      (lambda ()
+                        (apply k vs))
+                      tag
+                      (lambda (thunk) (thunk))))))))))))]))
+                                           
+(define call-with-continuation-prompt-for-composable
+  (case-lambda
+   [(f) (call-with-continuation-prompt-for-composable
+         f
+         (default-continuation-prompt-tag))]
+   [(f tag)
+    (call-with-continuation-prompt f
+                                   tag
+                                   (lambda (thunk) (thunk)))]))
+
+(define (thread-for-composable thunk)
+  (thread (lambda ()
+            (call-with-continuation-prompt-for-composable
+             (lambda () (thunk))))))
+
+(define-syntax (with-cc-variants stx)
+  (syntax-case stx ()
+    [(_ body)
+     (with-syntax ([call/cc (datum->syntax-object stx 'call/cc)]
+                   [let/cc (datum->syntax-object stx 'let/cc)]
+                   [call-with-continuation-prompt
+                    (datum->syntax-object stx
+                                          'call-with-continuation-prompt)]
+                   [thread (datum->syntax-object stx 'thread)])
+       #'(begin
+           (define (a-test call/cc call-with-continuation-prompt thread)
+             (define-syntax let/cc
+               (syntax-rules ()
+                 [(_ id bdy (... ...)) 
+                  (call/cc (lambda (id) bdy (... ...)))]))
+             body)
+           (a-test call/cc call-with-continuation-prompt thread)
+           (a-test call/cc-via-composable
+                   call-with-continuation-prompt-for-composable
+                   thread-for-composable)
+           (a-test call/cc-via-aborted-and-restored-composable
+                   call-with-continuation-prompt-for-composable
+                   thread-for-composable)))]))
+
+;;----------------------------------------
 ;; Prompt escapes
 
 ;; Simple return
@@ -94,110 +171,153 @@
 ;; ----------------------------------------
 ;; Continuations
 
-(test 17
-      call-with-continuation-prompt
-      (lambda ()
-        (let/cc k
-          (k 17))))
+(with-cc-variants
+ (test -17
+       call-with-continuation-prompt
+       (lambda () -17)))
 
-(test 29
-      'in-other-prompt
-      (let ([retry #f])
-        (test 35
-              call-with-continuation-prompt
-              (lambda ()
-                (+ 18
-                   (let/cc k
-                     (set! retry k)
-                     17))))
-        (+ 1 (call-with-continuation-prompt
-              (lambda ()
-                (retry 10))))))
+(with-cc-variants
+ (test 17
+       call-with-continuation-prompt
+       (lambda ()
+         (let/cc k
+           (k 17)))))
 
-(test 60
-      'in-other-prompt
-      (let ([retry #f])
-        (test 35
-              call-with-continuation-prompt
-              (lambda ()
-                (+ 18
-                   (let/cc k
-                     (set! retry k)
-                     17))))
-        (+ 1 (call-with-continuation-prompt
-              (lambda ()
-                (+ (call-with-continuation-prompt
-                    (lambda ()
-                      (retry 12)))
-                   (call-with-continuation-prompt
-                    (lambda ()
-                      (retry 11)))))))))
+(with-cc-variants
+ (test 29
+       'in-other-prompt
+       (let ([retry #f])
+         (test 35
+               call-with-continuation-prompt
+               (lambda ()
+                 (+ 18
+                    (let/cc k
+                      (set! retry k)
+                      17))))
+         (+ 1 (call-with-continuation-prompt
+               (lambda ()
+                 (retry 10)))))))
 
-(test '(#f #t)
-      'in-other-thread
-      (let ([retry #f]
-            [result #f]
-            [did? #f])
-        (call-with-continuation-prompt
-         (lambda ()
-           (+ 18
-              (begin0
-               (let/cc k
-                 (set! retry k)
-                 17)
-               (set! did? #t)))))
-        (set! did? #f)
-        (thread-wait
-         (thread (lambda ()
-                   (set! result (retry 0)))))
-        (list result did?)))
+(with-cc-variants
+ (test 60
+       'in-other-prompt
+       (let ([retry #f])
+         (test 35
+               call-with-continuation-prompt
+               (lambda ()
+                 (+ 18
+                    (let/cc k
+                      (set! retry k)
+                      17))))
+         (+ 1 (call-with-continuation-prompt
+               (lambda ()
+                 (+ (call-with-continuation-prompt
+                     (lambda ()
+                       (retry 12)))
+                    (call-with-continuation-prompt
+                     (lambda ()
+                       (retry 11))))))))))
 
-(test 18
-      'in-other-thread
-      (let ([retry #f]
-            [result #f])
-        (call-with-continuation-prompt
-         (lambda ()
-           (+ 18
-              (let/cc k
-                (set! retry k)
-                17))))
-        (thread-wait
-         (thread (lambda ()
-                   (set! result 
-                         (call-with-continuation-prompt
-                          (lambda ()
-                            (retry 0)))))))
-        result))
+(with-cc-variants
+ (test '(#f #t)
+       'in-other-thread
+       (let ([retry #f]
+             [result #f]
+             [did? #f])
+         (call-with-continuation-prompt
+          (lambda ()
+            (+ 18
+               (begin0
+                (let/cc k
+                  (set! retry k)
+                  17)
+                (set! did? #t)))))
+         (set! did? #f)
+         (thread-wait
+          (thread (lambda ()
+                    (set! result (retry 0)))))
+         (list result did?))))
 
-(test 25
-      'back-in-original-thread
-      (let ([retry #f]
-            [result #f])
-        (thread-wait
-         (thread
+(with-cc-variants
+ (test 18
+       'in-other-thread
+       (let ([retry #f]
+             [result #f])
+         (call-with-continuation-prompt
           (lambda ()
             (+ 18
                (let/cc k
                  (set! retry k)
-                 17)))))
-        (call-with-continuation-prompt
-         (lambda ()
-           (retry 7)))))
+                 17))))
+         (thread-wait
+          (thread (lambda ()
+                    (set! result 
+                          (call-with-continuation-prompt
+                           (lambda ()
+                             (retry 0)))))))
+         result)))
+
+(with-cc-variants
+ (test 25
+       'back-in-original-thread
+       (let ([retry #f]
+             [result #f])
+         (thread-wait
+          (thread
+           (lambda ()
+             (+ 18
+                (let/cc k
+                  (set! retry k)
+                  17)))))
+         (call-with-continuation-prompt
+          (lambda ()
+            (retry 7))))))
 
 ;; Catch continuation in composed continuation:
-(test 89
-      'catch-composed
-      (let ([k (call-with-continuation-prompt
-                (lambda ()
-                  ((let/cc k (lambda () k)))))])
-        (let ([k2 (call-with-continuation-prompt
-                   (lambda ()
-                     (k (lambda ()
-                          (car (let/cc k2 (list k2)))))))])
-          (call-with-continuation-prompt
+(with-cc-variants
+ (test 89
+       'catch-composed
+       (let ([k (call-with-continuation-prompt
+                 (lambda ()
+                   ((let/cc k (lambda () k)))))])
+         (let ([k2 (call-with-continuation-prompt
+                    (lambda ()
+                      (k (lambda ()
+                           (car (let/cc k2 (list k2)))))))])
+           (call-with-continuation-prompt
+            (lambda ()
+              (k2 '(89))))))))
+
+;; Grab continuation shallow inside meta-prompt with
+;;  delimiting prompt deep in a different meta-prompt.
+(with-cc-variants
+ (let ([k (call-with-continuation-prompt
            (lambda ()
-             (k2 '(89)))))))
+             ((call/cc
+               (lambda (k) (lambda () k))))))])
+   (test 10 call-with-continuation-prompt
+         (lambda ()
+           (let loop ([n 300])
+             (if (zero? n)
+                 (k (lambda ()
+                      (let/cc k2 (k2 10))))
+                 (cons n (loop (sub1 n)))))))))
+
+;; Grab continuation deep inside meta-prompt with
+;;  delimiting prompt shallow in a different meta-prompt.
+(with-cc-variants
+ (let ([k (call-with-continuation-prompt
+           (lambda ()
+             (let loop ([n 12])
+               (if (zero? n)
+                   ((call/cc
+                     (lambda (k) (lambda () k))))
+                   (cons 1 (loop (sub1 n)))))))])
+   (test '(1 1 1 1 1 1 1 1 1 1 1 1 . 10) call-with-continuation-prompt
+         (lambda ()
+           ((list-tail k 12)
+            (lambda ()
+              (let/cc k2 (k2 10))))))))
 
 ;; ----------------------------------------
 ;; Overlapping continuations
@@ -263,6 +383,47 @@
       (if (procedure? (car k2))
           ((car k2) 10)
           (test '(10) values k2)))))
+
+;; ----------------------------------------
+;; Composable continuations
+
+(err/rt-test (call-with-composable-continuation
+              (lambda (x) x))
+             exn:fail:contract:continuation?)
+
+(let ([k (call-with-continuation-prompt
+          (lambda ()
+            (call-with-composable-continuation
+             (lambda (k) k))))])
+  (test 12 k 12)
+  (test 13 k (k (k (k 13))))
+  (test-values '(12 13) (lambda () (k 12 13))))
+
+(let ([k (call-with-continuation-prompt
+          (lambda ()
+            ((call-with-composable-continuation
+              (lambda (k) (lambda () k))))))])
+  (test 12 k (lambda () 12))
+  (test-values '(12 13) (lambda () (k (lambda () (values 12 13)))))
+  ;; Composition shouldn't introduce a prompt:
+  (test 10 call-with-continuation-prompt
+        (lambda ()
+          (let ([k2 (k (lambda ()
+                         (let/cc k2 k2)))])
+            (if (procedure? k2)
+                (k2 10)
+                k2))))
+  ;; Escape from composed continuation:
+  (let ([p (make-continuation-prompt-tag)])
+    (test 8 call-with-continuation-prompt 
+          (lambda ()
+            (+ 99 (k (lambda () (abort-current-continuation p 8)))))
+          p))
+  (test 8 call-with-continuation-prompt 
+        (lambda ()
+          (+ 99 (k (lambda () (abort-current-continuation 
+                               (default-continuation-prompt-tag)
+                               8)))))))
 
 ;; ----------------------------------------
 ;; Dynamic wind
