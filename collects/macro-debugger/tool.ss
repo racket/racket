@@ -1,9 +1,5 @@
 
 (module tool mzscheme
-  (require "model/trace.ss"
-           "model/hiding-policies.ss"
-           (prefix view: "view/gui.ss")
-           (prefix prefs: "syntax-browser/prefs.ss"))
   (require (lib "class.ss")
            (lib "list.ss")
            (lib "unitsig.ss")
@@ -11,7 +7,11 @@
            (lib "framework.ss" "framework")
            (lib "tool.ss" "drscheme")
            (lib "bitmap-label.ss" "mrlib")
-           (lib "string-constant.ss" "string-constants"))
+           (lib "string-constant.ss" "string-constants")
+           "model/trace.ss"
+           "model/hiding-policies.ss"
+           (prefix view: "view/gui.ss")
+           (prefix sb: "syntax-browser/embed.ss"))
 
   (define view-base/tool@
     (unit/sig view:view-base^
@@ -22,8 +22,10 @@
   (define-values/invoke-unit/sig view:view^
     (compound-unit/sig
       (import)
-      (link (BASE : view:view-base^ (view-base/tool@))
-            (VIEW : view:view^ (view:view@ BASE)))
+      (link (PREFS : sb:prefs^ (sb:global-prefs@))
+            (SB   : sb:implementation^ (sb:implementation@))
+            (BASE : view:view-base^ (view-base/tool@))
+            (VIEW : view:view^ (view:view@ BASE PREFS SB)))
       (export (open VIEW))))
 
   (provide tool@)

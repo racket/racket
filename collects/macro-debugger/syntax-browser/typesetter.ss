@@ -2,7 +2,7 @@
 (module typesetter mzscheme
   (require (lib "class.ss")
            (lib "mred.ss" "mred")
-           "prefs.ss"
+           "params.ss"
            "pretty-range.ss"
            "pretty-printer.ss"
            "color.ss"

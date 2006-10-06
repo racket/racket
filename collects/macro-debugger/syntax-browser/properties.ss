@@ -1,36 +1,10 @@
 
 (module properties mzscheme
-  (require "prefs.ss"
-           "interfaces.ss"
-           "partition.ss"
+  (require "interfaces.ss"
            "util.ss"
            (lib "class.ss")
            (lib "mred.ss" "mred"))
-  (provide properties-view%
-           independent-properties-controller%)
-
-  ;; independent-properties-controller%
-  (define independent-properties-controller%
-    (class* object% (syntax-properties-controller<%>)
-      (init-field controller)
-
-      ;; Properties display
-      (define parent
-        (new frame% (label "Properties") (height (pref:height))
-             (width (floor (* (pref:props-percentage) (pref:width))))))
-      (define pv (new properties-view% (parent parent)))
-
-      (define/private (show-properties)
-        (unless (send parent is-shown?)
-          (send parent show #t)))
-
-      (define/public (set-syntax stx)
-        (send pv set-syntax stx))
-      (define/public (show ?)
-        (send parent show ?))
-      (define/public (is-shown?)
-        (send parent is-shown?))
-      (super-new)))
+  (provide properties-view%)
 
   ;; properties-view%
   (define properties-view%

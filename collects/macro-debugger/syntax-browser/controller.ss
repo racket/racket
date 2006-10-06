@@ -2,8 +2,7 @@
 (module controller mzscheme
   (require (lib "class.ss")
            "interfaces.ss"
-           "partition.ss"
-           "properties.ss")
+           "partition.ss")
   
   (provide syntax-controller%)
   
@@ -17,8 +16,7 @@
       (define selection-listeners null)
       (define selected-syntax #f)
       (define identifier=?-listeners null)
-      (init-field (properties-controller
-                   (new independent-properties-controller% (controller this))))
+      (init-field (properties-controller #f))
 
       ;; syntax-controller<%> Methods
 
@@ -31,6 +29,8 @@
       (define/public (get-selected-syntax) selected-syntax)
 
       (define/public (get-properties-controller) properties-controller)
+      (define/public (set-properties-controller pc)
+        (set! properties-controller pc))
 
       (define/public (add-view-colorer c)
         (set! colorers (cons c colorers))

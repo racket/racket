@@ -1,7 +1,65 @@
 
 (module interfaces mzscheme
-  (require (lib "class.ss"))
+  (require (lib "class.ss")
+           (lib "unitsig.ss"))
   (provide (all-defined))
+
+  ;; Signatures
+  
+  (define-signature browser^
+    (;; browse-syntax : syntax -> void
+     browse-syntax
+     
+     ;; browse-syntaxes : (list-of syntax) -> void
+     browse-syntaxes
+     
+     ;; make-syntax-browser : -> syntax-browser<%>
+     make-syntax-browser
+     
+     ;; syntax-browser-frame%
+     syntax-browser-frame%))
+
+  (define-signature prefs^
+    (;; pref:width : pref of number
+     pref:width
+     
+     ;; pref:height : pref of number
+     pref:height
+     
+     ;; pref:props-percentage : pref of number in (0,1)
+     pref:props-percentage))
+
+  (define-signature keymap^
+    (;; syntax-keymap% implements syntax-keymap<%>
+     syntax-keymap%))
+  
+  (define-signature context-menu^
+    (;; context-menu%
+     context-menu%))
+
+  (define-signature snip^
+    (;; syntax-snip : syntax -> snip
+     syntax-snip
+     
+     ;; syntax-snip%
+     syntax-snip%))
+
+  (define-signature snipclass^
+    (;; snip-class
+     snip-class))
+  
+  (define-signature widget^
+    (;; syntax-widget%
+     syntax-widget%
+     
+     ;; syntax-widget/controls%
+     syntax-widget/controls%))
+
+  (define-signature implementation^
+    ([unit widget : widget^]
+     [unit snip : snip^]))
+  
+  ;; Class Interfaces
 
   ;; syntax-controller<%>
   ;; A syntax-controller coordinates state shared by many different syntax views.

@@ -9,7 +9,7 @@
            "pretty-range.ss"
            "pretty-helper.ss"
            "interfaces.ss"
-           "prefs.ss")
+           "params.ss")
   (provide syntax-pp%
            (struct range (obj start end)))
 

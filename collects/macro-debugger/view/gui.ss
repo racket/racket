@@ -6,10 +6,7 @@
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "boundmap.ss" "syntax")
-           (prefix sb: "../syntax-browser/syntax-browser.ss")
-           (prefix sb: "../syntax-browser/widget.ss")
-           (prefix sb: "../syntax-browser/prefs.ss")
-           (prefix sb: "../syntax-browser/partition.ss")
+           (prefix sb: "../syntax-browser/embed.ss")
            "../syntax-browser/util.ss"
            "../model/deriv.ss"
            "../model/deriv-util.ss"
@@ -38,7 +35,6 @@
   (define-signature view-base^
     (base-frame%))
 
-
   ;; Configuration
 
   (define catch-errors? (make-parameter #f))
@@ -55,7 +51,9 @@
 
   (define view@
     (unit/sig view^
-        (import view-base^)
+      (import view-base^
+              (sb : sb:prefs^)
+              (sb : sb:implementation^))
       
       (define macro-stepper-frame%
         (class base-frame%
@@ -63,8 +61,8 @@
                 macro-hiding?)
           (init (show-hiding-panel? #t)
                 (identifier=? "<nothing>")
-                (width (sb:pref:width))
-                (height (sb:pref:height)))
+                (width 700 #;(sb:pref:width))
+                (height 500 #;(sb:pref:height)))
           (inherit get-menu%
                    get-menu-item%
                    get-menu-bar
@@ -215,7 +213,9 @@
                  (stretchable-height #f)
                  (alignment '(center center))))
 
-          (define sbview (new sb:syntax-widget% (parent area)))
+          (define sbview (new sb:widget:syntax-widget% 
+                              (parent area)
+                              (pref:props-percentage sb:pref:props-percentage)))
           (define sbc (send sbview get-controller))
           (define control-pane
             (new vertical-panel% (parent area) (stretchable-height #f)))
