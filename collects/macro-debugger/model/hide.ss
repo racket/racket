@@ -103,11 +103,30 @@
 
         [(AnyQ p:variable (e1 e2 rs))
          (values d e2)]
-        [(AnyQ p:module (e1 e2 rs body))
-         (>>Prim d e1 #t (make-p:module body)
-                 (module name lang . _BODY)
-                 (module name lang BODY)
-                 ([for-deriv BODY body]))]
+        [(AnyQ p:module (e1 e2 rs single-body-form? body))
+         ;; FIXME: Find the appropriate module-begin identifier to test
+             ;; otherwise, hide module, seek for body elements...
+         (let ([show-k
+                (lambda ()
+                  (>>Prim d e1 #t (make-p:module single-body-form? body)
+                          (module name lang . _BODY)
+                          (module name lang BODY)
+                          ([for-deriv BODY body])))])
+           (if (or single-body-form? (show-macro? #'#%plain-module-begin))
+               (show-k)
+               (with-handlers ([nonlinearity?
+                                (lambda (nl)
+                                  (warn 'nonlinearity
+                                        (format "~a: ~s"
+                                                (nonlinearity-message nl)
+                                                (nonlinearity-paths nl)))
+                                  (show-k))]
+                               [localactions?
+                                (lambda (nl)
+                                  (warn 'localactions
+                                        "opaque macro called local-expand or lifted expression")
+                                  (show-k))])
+                 (seek/deriv d))))]
         [(struct p:#%module-begin (e1 e2 rs pass1 pass2))
          ;; FIXME: hide tagging
          (let ([lderiv (module-begin->lderiv d)])
@@ -423,7 +442,7 @@
        (let ([subterms (gather-proper-subterms e1)])
          (parameterize ((subterms-table subterms))
            (match (seek d)
-             [(and ($$ error-wrap (exn tag inner)) ew)
+             [(and (struct error-wrap (exn tag inner)) ew)
               (values ew (deriv-e2 inner))]
              [deriv
               (values (rewrap d deriv) (deriv-e2 deriv))])))]))
@@ -482,13 +501,18 @@
       (match d
 
         ;; Primitives
-
-        [(AnyQ p:module (e1 e2 rs body))
-         (for-deriv body)]
+        [(AnyQ p:module (e1 e2 rs one-body-form? body))
+         (cond [one-body-form?
+                ;; FIXME: tricky... how to do renaming?
+                (for-deriv body)]
+               [else
+                (with-syntax ([(?module ?name ?lang . ?body) e1]
+                              [(?module-begin . ?body*) (lift/deriv-e1 body)])
+                  (>>Seek [#:rename (do-rename #'?body #'?body*)]
+                          (for-deriv body)))])]
         [(AnyQ p:#%module-begin (e1 e2 rs pass1 pass2))
          (let ([lderiv (module-begin->lderiv d)])
            (for-lderiv lderiv))]
-
         [(AnyQ p:variable (e1 e2 rs))
          null]
         [(AnyQ p:define-syntaxes (e1 e2 rs rhs))
@@ -1064,7 +1088,7 @@
                      (cons (combine-lifts head finish inners)
                            (loop (sub1 count))))))]
               ['()
-               (printf "module-begin->lderiv:loop: unexpected null~n")
+               #;(printf "module-begin->lderiv:loop: unexpected null~n")
                (cons #f (loop (sub1 count)))])
             null))
 
@@ -1104,7 +1128,7 @@
                                                       (list (make-p:stop head-e2 head-e2 null))))))
                   (loop2 (sub1 count))))]
               ['()
-               (printf "module-body->lderiv:loop2: unexpected null~n")
+               #;(printf "module-body->lderiv:loop2: unexpected null~n")
                (cons #f (loop2 (sub1 count)))])
             null))
 
@@ -1231,6 +1255,7 @@
               [else
                null]))
       (let ([subterms (loop stx rename #t)])
+        #;(printf "~nNew Table: ~s~n" t)
         (values subterms t))))
 
   (define (do-rename/lambda stx rename)

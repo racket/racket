@@ -72,7 +72,7 @@
   (define-struct (p:unknown p::STOP) () #f)
   
   ;; Module stuff.... hairy
-  (define-struct (p:module prule) (body) #f)
+  (define-struct (p:module prule) (one-body-form? body) #f)
   (define-struct (p:#%module-begin prule) (pass1 pass2) #f)
   ;; where pass1 is a ModPass1
   ;;   and pass2 is a ModPass2

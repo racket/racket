@@ -117,7 +117,7 @@
            (struct p:let-values (renames body))
            (struct p:letrec-values (renames rhss body))
            (struct p:letrec-syntaxes+values (srenames srhss vrenames vrhss body))
-           (struct p:module (body))
+           (struct p:module (one-body-form? body))
            (struct p:#%module-begin (pass1 pass2))
            (struct p::STOP ())
            (struct p:#%datum (tagged-stx))

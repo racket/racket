@@ -217,14 +217,17 @@
       ;; Modules
       (PrimModule
        (#:args e1 e2 rs)
+       ;; Multiple forms after language
+       ;; #%module-begin tagging done automatically
        [(prim-module ! (? EE 'body))
-        (make-p:module e1 e2 rs $3)]
+        (make-p:module e1 e2 rs #f $3)]
 
        ;; One form after language ... macro that expands into #%module-begin
-       [(prim-module NoError next 
+       [(prim-module NoError next
                      enter-check (? CheckImmediateMacro/Inner) exit-check
                      (! 'module-begin) next (? EE))
         (make-p:module e1 e2 rs 
+                       #t
                        ($5 $4 
                            (and (deriv? $9) (deriv-e2 $9))
                            (lambda (ce1 ce2) $9)))])

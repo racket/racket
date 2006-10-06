@@ -1,6 +1,6 @@
 
 (module trace-raw mzscheme
-  (require "../syntax-browser/syntax-browser.ss"
+  (require "../syntax-browser.ss"
            (lib "class.ss")
            (lib "lex.ss" "parser-tools")
            "deriv-tokens.ss"

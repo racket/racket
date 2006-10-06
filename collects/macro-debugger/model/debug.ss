@@ -57,7 +57,7 @@
          (append (loops rhss) (loop body))]
         [(AnyQ p:letrec-syntaxes+values (_ _ _ _ srhss _ vrhss body))
          (append (loops srhss) (loops vrhss) (loop body))]
-        [(AnyQ p:module (_ _ _ body))
+        [(AnyQ p:module (_ _ _ _ body))
          (loop body)]
         [(AnyQ p:#%module-begin (_ _ _ pass1 pass2))
          (append (loops pass1) (loops pass2))]

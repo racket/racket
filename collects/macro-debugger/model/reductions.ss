@@ -28,13 +28,18 @@
       ;; Primitives
       [(struct p:variable (e1 e2 rs))
        null]
-      [(IntQ p:module (e1 e2 rs body))
+      [(IntQ p:module (e1 e2 rs #f body))
        (with-syntax ([(?module name language . BODY) e1])
          (let ([ctx (lambda (x) (d->so e1 `(,#'?module ,#'name ,#'language ,x)))]
                [body-e1 (match body [($$ deriv (body-e1 _) _) body-e1])])
            (cons (walk e1 (ctx body-e1) "Tag #%module-begin")
                  (with-context ctx
                    (reductions body)))))]
+      [(IntQ p:module (e1 e2 rs #t body))
+       (with-syntax ([(?module name language . BODY) e1])
+         (let ([ctx (lambda (x) (d->so e1 `(,#'?module ,#'name ,#'language ,x)))])
+           (with-context ctx
+             (reductions body))))]
       [(IntQ p:#%module-begin (e1 e2 rs pass1 pass2))
        #;(R e1 (?module-begin . MBODY)
             [! exni 'blah]
