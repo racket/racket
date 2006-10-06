@@ -105,8 +105,8 @@
           
           (define -outer (new text%))
           (super-new (editor -outer) (with-border? #f))
-          (set-margin 2 0 0 0)
-          (set-inset 3 0 0 0)
+          (set-margin 0 0 0 0)
+          (set-inset 0 0 0 0)
           (set-snipclass snip-class)
           (send -outer select-all)
           (send -outer change-style (make-object style-delta% 'change-alignment 'top)
@@ -195,7 +195,7 @@
             (send pv set-syntax stx))
           (define/public (show ?)
             (send parent show ?))
-          (define/public (is-shown?)
+          (define/public (props-shown?)
             (send parent is-shown?))
           (super-new)))
       ))
@@ -207,7 +207,7 @@
       (define context-menu%
         (class pre:context-menu%
           (init-field snip)
-          
+
           (define/override (after-selection-items)
             (super after-selection-items)
             (new menu-item% (label "Show syntax properties")

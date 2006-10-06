@@ -49,35 +49,42 @@
           (init-field controller)
           (super-new)
 
+          (define copy-menu #f)
+          (define copy-syntax-menu #f)
+          (define clear-menu #f)
+          
           (define/public (add-edit-items)
-            (new menu-item% (label "Copy") (parent this)
-                 (callback (lambda (i e)
-                             (define stx (send controller get-selected-syntax))
-                             (send the-clipboard set-clipboard-string
-                                   (if stx 
-                                       (format "~s" (syntax-object->datum stx))
-                                       "")
-                                   (send e get-time-stamp)))))
-            (new menu-item% (label "Copy syntax") (parent this)
-                 (callback (lambda (i e)
-                             (define stx (send controller get-selected-syntax))
-                             (define t (new text%))
-                             (send t insert
-                                   (new syntax-snip%
-                                        (syntax stx)
-                                        #;(controller controller)))
-                             (send t select-all)
-                             (send t copy))))
+            (set! copy-menu
+                  (new menu-item% (label "Copy") (parent this)
+                       (callback (lambda (i e)
+                                   (define stx (send controller get-selected-syntax))
+                                   (send the-clipboard set-clipboard-string
+                                         (if stx 
+                                             (format "~s" (syntax-object->datum stx))
+                                             "")
+                                         (send e get-time-stamp))))))
+            (set! copy-syntax-menu
+                  (new menu-item% (label "Copy syntax") (parent this)
+                       (callback (lambda (i e)
+                                   (define stx (send controller get-selected-syntax))
+                                   (define t (new text%))
+                                   (send t insert
+                                         (new syntax-snip%
+                                              (syntax stx)
+                                              #;(controller controller)))
+                                   (send t select-all)
+                                   (send t copy)))))
             (void))
 
           (define/public (after-edit-items)
             (void))
 
           (define/public (add-selection-items)
-            (new menu-item%
-                 (label "Clear selection")
-                 (parent this)
-                 (callback (lambda _ (send controller select-syntax #f))))
+            (set! clear-menu
+                  (new menu-item%
+                       (label "Clear selection")
+                       (parent this)
+                       (callback (lambda _ (send controller select-syntax #f)))))
             (void))
           
           (define/public (after-selection-items)
@@ -106,7 +113,14 @@
 
           (define/public (add-separator)
             (new separator-menu-item% (parent this)))
-          
+
+          (define/override (on-demand)
+            (define stx (send controller get-selected-syntax))
+            (send copy-menu enable (and stx #t))
+            (send copy-syntax-menu enable (and stx #t))
+            (send clear-menu enable (and stx #t))
+            (super on-demand))
+
           ;; Initialization
           (add-edit-items)
           (after-edit-items)

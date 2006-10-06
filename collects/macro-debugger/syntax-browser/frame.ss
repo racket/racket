@@ -4,7 +4,9 @@
            (lib "unitsig.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
-           "interfaces.ss")
+           (lib "list.ss")
+           "interfaces.ss"
+           "partition.ss")
   (provide frame@)
   
   (define frame@
@@ -47,5 +49,49 @@
             (send widget save-prefs)
             (preferences:save)
             (inner (void) on-close))
-          ))))
+          ))
+      
+      ;; syntax-widget/controls%
+      (define syntax-widget/controls%
+        (class* syntax-widget% ()
+          (inherit get-main-panel
+                   get-controller
+                   toggle-props)
+          (super-new)
+          
+          (define -control-panel 
+            (new horizontal-pane% (parent (get-main-panel)) (stretchable-height #f)))
+          
+          ;; Put the control panel up front
+          (send (get-main-panel) change-children
+                (lambda (children)
+                  (cons -control-panel (remq -control-panel children))))
+          
+          (define -identifier=-choices (identifier=-choices))
+          (define -choice
+            (new choice% (label "identifer=?") (parent -control-panel)
+                 (choices (map car -identifier=-choices))
+                 (callback (lambda _ (on-update-identifier=?-choice)))))
+          (new button% 
+               (label "Clear")
+               (parent -control-panel)
+               (callback (lambda _ (send (get-controller) select-syntax #f))))
+          (new button%
+               (label "Properties")
+               (parent -control-panel)
+               (callback (lambda _ (toggle-props))))
+          
+          (define/private (on-update-identifier=?-choice)
+            (cond [(assoc (send -choice get-string-selection)
+                          -identifier=-choices)
+                   => (lambda (p)
+                        (send (get-controller)
+                              on-update-identifier=? (car p) (cdr p)))]
+                  [else #f]))
+          (send (get-controller) add-identifier=?-listener
+                (lambda (name func)
+                  (send -choice set-selection
+                        (or (send -choice find-string name) 0))))))
+      
+      ))
   )

@@ -11,7 +11,6 @@
            "typesetter.ss"
            "hrule-snip.ss"
            "properties.ss"
-           "partition.ss"
            "util.ss")
   (provide widget@
            widget-context-menu-extension@)
@@ -40,9 +39,12 @@
             (new syntax-controller%
                  (properties-controller this)))
           
+          (define/public (make-context-menu)
+            (new context-menu% (widget this)))
+          
           (new syntax-keymap% 
                (editor -text)
-               (context-menu (new context-menu% (widget this))))
+               (context-menu (make-context-menu)))
           
           ;; FIXME: Why doesn't this work?
           #;
@@ -68,7 +70,7 @@
           (define/public (show ?)
             (if ? (show-props) (hide-props)))
           
-          (define/public (is-shown?)
+          (define/public (props-shown?)
             (send -props-panel is-shown?))
           
           (define/public (toggle-props)
@@ -152,47 +154,6 @@
           
           (super-new)))
       
-      ;; syntax-widget/controls%
-      (define syntax-widget/controls%
-        (class* syntax-widget% ()
-          (inherit get-main-panel
-                   get-controller
-                   toggle-props)
-          (super-new)
-          
-          (define -control-panel 
-            (new horizontal-pane% (parent (get-main-panel)) (stretchable-height #f)))
-          
-          ;; Put the control panel up front
-          (send (get-main-panel) change-children
-                (lambda (children)
-                  (cons -control-panel (remq -control-panel children))))
-          
-          (define -identifier=-choices (identifier=-choices))
-          (define -choice
-            (new choice% (label "identifer=?") (parent -control-panel)
-                 (choices (map car -identifier=-choices))
-                 (callback (lambda _ (on-update-identifier=?-choice)))))
-          (new button% 
-               (label "Clear")
-               (parent -control-panel)
-               (callback (lambda _ (send (get-controller) select-syntax #f))))
-          (new button%
-               (label "Properties")
-               (parent -control-panel)
-               (callback (lambda _ (toggle-props))))
-          
-          (define/private (on-update-identifier=?-choice)
-            (cond [(assoc (send -choice get-string-selection)
-                          -identifier=-choices)
-                   => (lambda (p)
-                        (send (get-controller)
-                              on-update-identifier=? (car p) (cdr p)))]
-                  [else #f]))
-          (send (get-controller) add-identifier=?-listener
-                (lambda (name func)
-                  (send -choice set-selection
-                        (or (send -choice find-string name) 0))))))
       ))
 
   (define widget-context-menu-extension@
@@ -203,12 +164,22 @@
         (class pre:context-menu%
           (init-field widget)
           
+          (define props-menu #f)
+
           (define/override (after-selection-items)
             (super after-selection-items)
-            (new menu-item% (label "Show/hide syntax properties")
-                 (parent this)
-                 (callback (lambda _ (send widget toggle-props))))
+            (set! props-menu
+                  (new menu-item% (label "Show/hide syntax properties")
+                       (parent this)
+                       (callback (lambda _ (send widget toggle-props)))))
             (void))
+          
+          (define/override (on-demand)
+            (send props-menu set-label
+                  (if (send widget props-shown?)
+                      "Hide syntax properties"
+                      "Show syntax properties"))
+            (super on-demand))
           
           (super-new (controller (send widget get-controller)))))))
 

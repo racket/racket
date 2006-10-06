@@ -16,6 +16,9 @@
      ;; make-syntax-browser : -> syntax-browser<%>
      make-syntax-browser
      
+     ;; syntax-widget/controls%
+     syntax-widget/controls%
+     
      ;; syntax-browser-frame%
      syntax-browser-frame%))
 
@@ -50,10 +53,7 @@
   
   (define-signature widget^
     (;; syntax-widget%
-     syntax-widget%
-     
-     ;; syntax-widget/controls%
-     syntax-widget/controls%))
+     syntax-widget%))
 
   (define-signature implementation^
     ([unit widget : widget^]
@@ -97,8 +97,8 @@
       ;; show : boolean -> void
       #;show
       
-      ;; is-shown? : -> boolean
-      #;is-shown?))
+      ;; props-shown? : -> boolean
+      props-shown?))
 
   ;; syntax-configuration<%>
   (define syntax-configuration<%>

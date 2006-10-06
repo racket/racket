@@ -9,8 +9,9 @@
            (lib "bitmap-label.ss" "mrlib")
            (lib "string-constant.ss" "string-constants")
            "model/trace.ss"
-           "model/hiding-policies.ss"
+           (prefix view: "view/interfaces.ss")
            (prefix view: "view/gui.ss")
+           (prefix view: "view/prefs.ss")
            (prefix sb: "syntax-browser/embed.ss"))
 
   (define view-base/tool@
@@ -19,14 +20,31 @@
       (define base-frame%
         (frame:standard-menus-mixin frame:basic%))))
 
-  (define-values/invoke-unit/sig view:view^
+  (define stepper@
     (compound-unit/sig
       (import)
-      (link (PREFS : sb:prefs^ (sb:global-prefs@))
-            (SB   : sb:implementation^ (sb:implementation@))
-            (BASE : view:view-base^ (view-base/tool@))
-            (VIEW : view:view^ (view:view@ BASE PREFS SB)))
+      (link [PREFS : view:prefs^ (view:prefs@)]
+            [SBKEYMAP : sb:keymap^ (sb:keymap@)]
+            [SBMENU : sb:context-menu^ (sb:context-menu@ SBSNIP)]
+            [SBSNIP : sb:snip^ (sb:global-snip@)]
+            [SBWMENU : sb:context-menu^ (sb:widget-context-menu-extension@ SBMENU)]
+            [VMENU : sb:context-menu^ (view:context-menu-extension@ SBMENU)]
+            [SBWIDGET : sb:widget^ (sb:widget@ SBKEYMAP SBWMENU)]
+            [VWIDGET : sb:widget^ (view:browser-extension@ SBWIDGET VMENU)]
+            [BASE : view:view-base^ (view-base/tool@)]
+            [VIEW : view:view^ (view:view@ PREFS BASE VWIDGET)])
       (export (open VIEW))))
+
+  #;(define stepper@
+      (compound-unit/sig
+        (import)
+        (link (PREFS : view:prefs^ (view:prefs@))
+              (SB   : sb:implementation^ (sb:implementation@))
+              (BASE : view:view-base^ (view-base/tool@))
+              (VIEW : view:view^ (view:view@ PREFS BASE SB)))
+        (export (open VIEW))))
+  
+  (define-values/invoke-unit/sig view:view^ stepper@)
 
   (provide tool@)
 
@@ -135,10 +153,7 @@
           (define/private (make-handlers original-eval-handler original-module-name-resolver)
             (let ([stepper
                    (delay 
-                     (let ([frame (new macro-stepper-frame%
-                                       (policy (new-standard-hiding-policy))
-                                       (macro-hiding? #t)
-                                       (identifier=? "bound-identifier=?"))])
+                     (let ([frame (new macro-stepper-frame%)])
                        (send frame show #t)
                        (send frame get-widget)))]
                   [debugging? debugging?])

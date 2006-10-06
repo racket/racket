@@ -6,9 +6,11 @@
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "boundmap.ss" "syntax")
+           "interfaces.ss"
+           "warning.ss"
+           "hiding-panel.ss"
            (prefix sb: "../syntax-browser/embed.ss")
            "../syntax-browser/util.ss"
-           "../model/deriv.ss"
            "../model/deriv-util.ss"
            "../model/trace.ss"
            "../model/hide.ss"
@@ -17,23 +19,10 @@
            "cursor.ss"
            "util.ss")
 
-  (provide view^
-           view-base^
-           catch-errors?
-           view-base@
-           view@)
-
-  ;; Signatures
-
-  (define-signature view^
-    (macro-stepper-frame%
-     macro-stepper-widget%
-     make-macro-stepper
-     go
-     go/deriv))
-
-  (define-signature view-base^
-    (base-frame%))
+  (provide catch-errors?
+           view@
+           context-menu-extension@
+           browser-extension@)
 
   ;; Configuration
 
@@ -42,27 +31,26 @@
 
   ;; Macro Stepper
 
-  (define view-base@
-    (unit/sig view-base^
-        (import)
-      
-      (define base-frame%
-        (frame:standard-menus-mixin (frame:basic-mixin frame%)))))
-
   (define view@
     (unit/sig view^
-      (import view-base^
-              (sb : sb:prefs^)
-              (sb : sb:implementation^))
+      (import prefs^
+              view-base^
+              (sb : sb:widget^))
+      
+      (define (default-policy)
+        (let ([p (new-hiding-policy)])
+          (set-hiding-policy-opaque-kernel! p (pref:hide-primitives?))
+          (set-hiding-policy-opaque-libs!   p (pref:hide-libs?))
+          p))
       
       (define macro-stepper-frame%
         (class base-frame%
-          (init policy
-                macro-hiding?)
-          (init (show-hiding-panel? #t)
-                (identifier=? "<nothing>")
-                (width 700 #;(sb:pref:width))
-                (height 500 #;(sb:pref:height)))
+          (init (policy (default-policy))
+                (macro-hiding? (pref:macro-hiding?))
+                (show-hiding-panel? (pref:show-hiding-panel?))
+                (identifier=? (pref:identifier=?))
+                (width (pref:width))
+                (height (pref:height)))
           (inherit get-menu%
                    get-menu-item%
                    get-menu-bar
@@ -78,7 +66,10 @@
             (send widget update/preserve-view))
           
           (define/augment (on-close)
+            (pref:width (send this get-width))
+            (pref:height (send this get-height))
             (send widget shutdown)
+            (preferences:save)
             (inner (void) on-close))
           
           (override/return-false file-menu:create-new?
@@ -194,6 +185,7 @@
 
           (define/public (get-controller) sbc)
           (define/public (get-view) sbview)
+          (define/public (get-macro-hiding-prefs) macro-hiding-prefs)
 
           (define area (new vertical-panel% (parent parent)))
           (define super-navigator
@@ -213,9 +205,10 @@
                  (stretchable-height #f)
                  (alignment '(center center))))
 
-          (define sbview (new sb:widget:syntax-widget% 
+          (define sbview (new sb:syntax-widget% 
                               (parent area)
-                              (pref:props-percentage sb:pref:props-percentage)))
+                              (macro-stepper this)
+                              (pref:props-percentage pref:props-percentage)))
           (define sbc (send sbview get-controller))
           (define control-pane
             (new vertical-panel% (parent area) (stretchable-height #f)))
@@ -455,268 +448,28 @@
 
           ;; Hiding policy
 
+          (define/private (get-policy)
+            (and (send macro-hiding-prefs get-enabled?)
+                 (send macro-hiding-prefs get-policy)))
+
           (define/private (get-show-macro?)
-            (let ([policy (send macro-hiding-prefs get-policy)])
+            (let ([policy (get-policy)])
               (and policy (lambda (id) (policy-show-macro? policy id)))))
 
           ;; --
 
           (define/public (shutdown)
+            (let ([policy (get-policy)])
+              (pref:macro-hiding? (and policy #t))
+              (pref:hide-primitives? (and policy (hiding-policy-opaque-kernel policy)))
+              (pref:hide-libs? (and policy (hiding-policy-opaque-libs policy))))
+            (pref:show-hiding-panel? (send control-pane is-shown?))
             (when warnings-frame (send warnings-frame show #f)))
 
           ;; Initialization
           
           (super-new)
           (refresh)))
-
-      ;; macro-hiding-prefs-widget%
-      (define macro-hiding-prefs-widget%
-        (class object%
-          (init parent)
-          (init-field stepper)
-          (init-field policy)
-          (init-field (enabled? #f))
-
-          (define stx #f)
-          (define stx-name #f)
-          (define stx-module #f)
-
-          (define super-pane
-            (new horizontal-pane%
-                 (parent parent)
-                 (stretchable-height #f)))
-          (define left-pane
-            (new vertical-pane%
-                 (parent super-pane)
-                 (stretchable-width #f)
-                 (alignment '(left top))))
-          (define right-pane
-            (new vertical-pane%
-                 (parent super-pane)))
-
-          (define enable-ctl
-            (new check-box% 
-                 (label "Enable macro hiding?")
-                 (parent left-pane)
-                 (value enabled?) 
-                 (callback
-                  (lambda _
-                    (set! enabled? (send enable-ctl get-value))
-                    (force-refresh)))))
-
-          (define kernel-ctl
-            (new check-box%
-                 (label "Hide mzscheme syntax")
-                 (parent left-pane)
-                 (value (hiding-policy-opaque-kernel policy))
-                 (callback (lambda _
-                             (if (send kernel-ctl get-value)
-                                 (policy-hide-kernel policy)
-                                 (policy-unhide-kernel policy))
-                             (refresh)))))
-          (define libs-ctl
-            (new check-box%
-                 (label "Hide library syntax")
-                 (parent left-pane)
-                 (value (hiding-policy-opaque-libs policy))
-                 (callback (lambda _
-                             (if (send libs-ctl get-value)
-                                 (policy-hide-libs policy)
-                                 (policy-unhide-libs policy))
-                             (refresh)))))
-
-          (define look-pane
-            (new horizontal-pane% (parent right-pane) (stretchable-height #f)))
-          (define look-ctl
-            (new list-box% (parent look-pane) (label "") (choices null)))
-          (define delete-ctl
-            (new button% (parent look-pane) (label "Delete")
-                 (callback
-                  (lambda _
-                    (delete-selected)
-                    (refresh)))))
-
-          (define add-pane
-            (new horizontal-pane% (parent right-pane) (stretchable-height #f)))
-          (define add-text
-            (new text-field%
-                 (label "")
-                 (parent add-pane)
-                 (stretchable-width #t)))
-          (define add-editor (send add-text get-editor))
-          (define add-hide-module-button
-            (new button% (parent add-pane) (label "Hide module") (enabled #f)
-                 (callback (lambda _ (add-hide-module) (refresh)))))
-          (define add-hide-id-button
-            (new button% (parent add-pane) (label "Hide macro") (enabled #f)
-                 (callback (lambda _ (add-hide-identifier) (refresh)))))
-          (define add-show-id-button
-            (new button% (parent add-pane) (label "Show macro") (enabled #f)
-                 (callback (lambda _ (add-show-identifier) (refresh)))))
-
-          (send add-editor lock #t)
-          
-          ;; Methods
-
-          ;; enable-hiding : boolean -> void
-          ;; Called only by stepper, which does it's own refresh
-          (define/public (enable-hiding ?)
-            (set! enabled? ?))
-
-          ;; get-policy
-          (define/public (get-policy) (and enabled? policy))
-
-          ;; refresh
-          (define/private (refresh)
-            (when enabled?
-              (send stepper refresh/resynth)))
-
-          ;; force-refresh
-          (define/private (force-refresh)
-            (send stepper refresh/resynth))
-
-          ;; set-syntax : syntax/#f -> void
-          (define/public (set-syntax lstx)
-            (set! stx lstx)
-            (send add-editor lock #f)
-            (send add-editor erase)
-            (unless (identifier? stx)
-              (send add-hide-module-button enable #f))
-            (when (identifier? stx)
-              (let ([binding (identifier-binding stx)])
-                (send add-hide-module-button enable (pair? binding))
-                (if (pair? binding)
-                    (begin
-                      (set! stx-name (cadr binding))
-                      (set! stx-module (car binding)))
-                    (begin
-                      (set! stx-name (syntax-e stx))
-                      (set! stx-module #f)))
-                (update-add-text)))
-            (send add-editor lock #t)
-            (send add-show-id-button enable (identifier? lstx))
-            (send add-hide-id-button enable (identifier? lstx)))
-
-          (define/private (update-add-text)
-            (send add-editor lock #f)
-            (when (identifier? stx)
-              (send add-editor insert (identifier-text "" stx)))
-            (send add-editor lock #t))
-
-          (define/private (add-hide-module)
-            (when stx-module
-              (policy-hide-module policy stx-module)
-              (update-list-view)))
-
-          (define/private (add-hide-identifier)
-            (when (identifier? stx)
-              (policy-hide-id policy stx)
-              (update-list-view)))
-
-          (define/private (add-show-identifier)
-            (when (identifier? stx)
-              (policy-show-id policy stx)
-              (update-list-view)))
-
-          (define/private (delete-selected)
-            (for-each (lambda (n)
-                        (let ([d (send look-ctl get-data n)])
-                          (case (car d)
-                            ((identifier) (policy-unhide-id policy (cdr d)))
-                            ((show-identifier) (policy-unshow-id policy (cdr d)))
-                            ((module) (policy-unhide-module policy (cdr d))))))
-                      (send look-ctl get-selections))
-            (update-list-view))
-
-          (define/private (identifier-text prefix id)
-            (let ([b (identifier-binding id)])
-              (cond [(pair? b)
-                     (let ([name (cadr b)]
-                           [mod (car b)])
-                       (format "~a'~s' from module ~a"
-                               prefix
-                               name
-                               (mpi->string mod)))]
-                    [(eq? b 'lexical)
-                     (format "~alexically bound '~s'"
-                             prefix
-                             (syntax-e id))]
-                    [(not b)
-                     (format "~aglobal or unbound '~s'" prefix (syntax-e id))])))
-
-          (define/private (update-list-view)
-            (let ([opaque-modules
-                   (hash-table-map (hiding-policy-opaque-modules policy)
-                                   (lambda (k v) k))]
-                  [opaque-ids
-                   (filter values
-                           (module-identifier-mapping-map
-                            (hiding-policy-opaque-ids policy)
-                            (lambda (k v) (and v k))))]
-                  [transparent-ids
-                   (filter values
-                           (module-identifier-mapping-map
-                            (hiding-policy-transparent-ids policy)
-                            (lambda (k v) (and v k))))])
-              (define (om s)
-                (cons (format "hide from module ~a" (mpi->string s))
-                      (cons 'module s)))
-              (define (*i prefix tag id)
-                (cons (identifier-text prefix id)
-                      (cons tag id)))
-              (define (oid id) (*i "hide " 'identifier id))
-              (define (tid id) (*i "show " 'show-identifier id))
-              (let ([choices
-                     (sort (append (map om opaque-modules)
-                                   (map oid opaque-ids)
-                                   (map tid transparent-ids))
-                           (lambda (a b)
-                             (string<=? (car a) (car b))))])
-                (send look-ctl clear)
-                (for-each (lambda (c) (send look-ctl append (car c) (cdr c)))
-                          choices))))
-
-          (super-new)))
-
-      ;; warnings-frame%
-      (define warnings-frame%
-        (class frame%
-          (super-new (label "Macro stepper warnings") (width 400) (height 300))
-
-          (define text (new text% (auto-wrap #t)))
-          (define ec (new editor-canvas% (parent this) (editor text)))
-          (send text lock #t)
-
-          (define -nonlinearity-text #f)
-          (define -localactions-text #f)
-
-          (define/private (add-nonlinearity-text)
-            (unless -nonlinearity-text
-              (set! -nonlinearity-text #t)
-              (add-text "An opaque macro duplicated one of its subterms. "
-                        "Macro hiding requires opaque macros to use their subterms linearly. "
-                        "The macro stepper is showing the expansion of that macro use.")))
-          (define/private (add-localactions-text)
-            (unless -localactions-text
-              (set! -localactions-text #t)
-              (add-text "An opaque macro called local-expand, syntax-local-lift-expression, "
-                        "etc. Macro hiding cannot currently handle local actions. "
-                        "The macro stepper is showing the expansion of that macro use.")))
-
-          (define/private (add-text . strs)
-            (send text lock #f)
-            (for-each (lambda (s) (send text insert s)) strs)
-            (send text insert "\n\n")
-            (send text lock #t))
-
-          (define/public (add-warning tag)
-            (case tag
-              ((nonlinearity)
-               (add-nonlinearity-text))
-              ((localactions)
-               (add-localactions-text))))
-
-          (send this show #t)))
 
       ;; Main entry points
 
@@ -745,4 +498,74 @@
           w))
       ))
   
+  
+  (define context-menu-extension@
+    (unit/sig sb:context-menu^
+      (import (pre : sb:context-menu^))
+      
+      (define context-menu%
+        (class pre:context-menu%
+          (init-field macro-stepper)
+          (inherit-field controller)
+          (inherit add-separator)
+          
+          (define/private (get-prefs-panel)
+            (send macro-stepper get-macro-hiding-prefs))
+
+          (define show-macro #f)
+          (define hide-macro #f)
+          (define remove-macro #f)
+          
+          (define/override (after-selection-items)
+            (super after-selection-items)
+            (add-separator)
+            (set! show-macro
+                  (new menu-item% (label "Show this macro") (parent this)
+                       (callback (lambda _ (do-show)))))
+            (set! hide-macro
+                  (new menu-item% (label "Hide this macro") (parent this)
+                       (callback (lambda _ (do-hide)))))
+            #;(set! remove-macro
+                    (new menu-item% (label "Remove macro from policy") (parent this)
+                         (callback (lambda _ (do-remove)))))
+            (void))
+          
+          (define/private (do-show)
+            (send (get-prefs-panel) add-show-identifier))
+          (define/private (do-hide)
+            (send (get-prefs-panel) add-hide-identifier))
+          
+          (define/override (on-demand)
+            (define-values (opaque transparent)
+              (let ([policy (send (get-prefs-panel) get-policy)])
+                (values (hiding-policy-opaque-ids policy)
+                        (hiding-policy-transparent-ids policy))))
+            (define stx (send controller get-selected-syntax))
+            (define id? (identifier? stx))
+            (define transparent?
+              (and id? (module-identifier-mapping-get transparent stx (lambda () #f))))
+            (define opaque?
+              (and id? (module-identifier-mapping-get opaque stx (lambda () #f))))
+            (send show-macro enable (and id? (not transparent?)))
+            (send hide-macro enable (and id? (not opaque?)))
+            #;(send remove-macro enable (and id? (or opaque? transparent?)))
+            (super on-demand))
+
+          (super-new)))))
+  
+  (define browser-extension@
+    (unit/sig sb:widget^
+      (import (pre : sb:widget^)
+              sb:context-menu^)
+      
+      (define syntax-widget%
+        (class pre:syntax-widget%
+          (init-field macro-stepper)
+          (inherit get-controller)
+          
+          (define/override (make-context-menu)
+            (new context-menu%
+                 (controller (get-controller))
+                 (macro-stepper macro-stepper)))
+          (super-new)))))
   )
