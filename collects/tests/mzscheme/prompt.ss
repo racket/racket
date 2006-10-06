@@ -367,22 +367,68 @@
             (k1 (lambda () (k2 (lambda () '(102-1))))))
           p1)))
 
-;; Use default tag to catch a meta-continuation of p1:
-(let ([p1 (make-continuation-prompt-tag)])
-  (let ([k (call-with-continuation-prompt
-            (lambda ()
-              ((call/cc (lambda (k) (lambda () k))
-                        p1)))
-            p1)])
-    (let ([k2 (list
-               (call-with-continuation-prompt
+;; Use default tag to catch a meta-continuation of p1.
+;; Due to different implementations of the default tag,
+;; this test is interesting in the main thread and
+;; a sub thread:
+(let ()
+  (define (go)
+    (let ([p1 (make-continuation-prompt-tag)])
+      (let ([k (call-with-continuation-prompt
                 (lambda ()
-                  (k (lambda ()
-                       (let/cc k k))))
-                p1))])
-      (if (procedure? (car k2))
-          ((car k2) 10)
-          (test '(10) values k2)))))
+                  ((call/cc (lambda (k) (lambda () k))
+                            p1)))
+                p1)])
+        (let ([k2 (list
+                   (call-with-continuation-prompt
+                    (lambda ()
+                      (k (lambda ()
+                           (let/cc k k))))
+                    p1))])
+          (if (procedure? (car k2))
+              ((car k2) 10)
+              (test '(10) values k2))))))
+  (go)
+  (let ([finished #f])
+    (thread-wait
+     (thread (lambda ()
+               (go)
+               (set! finished 'finished))))
+    (test 'finished values finished)))
+
+;; Use default tag to catch a meta-continuation of p1,
+;; then catch continuation again (i.e., loop).
+(let ([finished #f])
+  (define (go)
+    (let ([p1 (make-continuation-prompt-tag)]
+          [counter 10])
+      (let ([k (call-with-continuation-prompt
+                (lambda ()
+                  ((call/cc (lambda (k) (lambda () k))
+                            p1)))
+                p1)])
+        (let ([k2 (list
+                   (call-with-continuation-prompt
+                    (lambda ()
+                      (k (lambda ()
+                           ((let/cc k (lambda () k))))))
+                    p1))])
+          (if (procedure? (car k2))
+              ((car k2) (lambda () 
+                          (if (zero? counter)
+                              10
+                              (begin
+                                (set! counter (sub1 counter))
+                                ((let/cc k (lambda () k)))))))
+              (test '(10) values k2))
+          (set! finished 'finished)))))
+  (go)
+  (let ([finished #f])
+    (thread-wait
+     (thread (lambda ()
+               (go)
+               (set! finished 'finished))))
+    (test 'finished values finished)))
 
 ;; ----------------------------------------
 ;; Composable continuations
@@ -553,6 +599,56 @@
                 (k (lambda () (continuation-mark-set->list (current-continuation-marks) 'y)))))
         
         'done))))
+
+
+;; ----------------------------------------
+;; Variations of Olivier Danvy's traversal
+
+(let ()
+  (define traverse
+    (lambda (xs)
+      (letrec ((visit
+                (lambda (xs)
+                  (if (null? xs)
+                      (list-tail '() 0)
+                      (visit (call-with-composable-continuation
+                              (lambda (k)
+                                (abort-current-continuation
+                                 (default-continuation-prompt-tag)
+                                 (cons (car xs)
+                                       (call-with-continuation-prompt
+                                        (lambda ()
+                                          (k (cdr xs)))))))))))))
+        (call-with-continuation-prompt
+         (lambda ()
+           (visit xs))))))
+  (test '(1 2 3 4 5) traverse '(1 2 3 4 5)))
+
+
+
+(letrec ([call-with-prompt-that-stays
+          (lambda (thunk)
+            (call-with-continuation-prompt
+             thunk
+             (default-continuation-prompt-tag)
+             (lambda (thunk) (call-with-prompt-that-stays thunk))))])
+  (define traverse
+    (lambda (xs)
+      (letrec ((visit
+                (lambda (xs)
+                  (if (null? xs)
+                      (list-tail '() 0)
+                      (visit (call-with-composable-continuation
+                              (lambda (k)
+                                (abort-current-continuation
+                                 (default-continuation-prompt-tag)
+                                 (lambda ()
+                                   (cons (car xs)
+                                         (k (cdr xs))))))))))))
+        (call-with-prompt-that-stays
+         (lambda ()
+           (visit xs))))))
+  (test '(5) traverse '(1 2 3 4 5)))
 
 ;; ----------------------------------------
 
