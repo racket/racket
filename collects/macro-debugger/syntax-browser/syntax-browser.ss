@@ -1,3 +1,0 @@
-
-(module syntax-browser mzscheme
-  )
