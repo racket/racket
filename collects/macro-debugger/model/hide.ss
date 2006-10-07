@@ -33,7 +33,6 @@
   (define-struct localactions ())
 
 
-
 ;   +@   ++           -                    
 ;   *@+  ++           @-                   
 ;   *@@  ++  -+@+-  -+@+++   -+@+-   -+@@+ 
@@ -293,8 +292,54 @@
         ;; Only normal lifts occur in first... no end-module-decl lifts.
         ;; They occur in reverse order.
         [(IntQ lift-deriv (e1 e2 first lifted-stx second) tag)
-         (error 'unimplemented "lifts are unimplemented")
+         ;; Option 1: Give up on first, hide on second
          #;
+         (begin (warn 'lifts "lifts are unimplemented")
+                (let-values ([(second e2) (for-deriv second)])
+                  (values (rewrap d (make-lift-deriv e1 e2 first lifted-stx second))
+                          e2)))
+         ;; Option 2: Hide first, show *all* lifted expressions,
+         ;; and hide second (lifted defs only; replace last expr with first-e2)
+         (let* ([second-derivs
+                 (match second
+                   [(IntQ p:begin (_ _ _ (IntQ lderiv (_ _ inners))))
+                    (reverse inners)])]
+                [lift-stxs
+                 (with-syntax ([(?begin form ...) lifted-stx])
+                   (cdr (reverse (syntax->list #'(form ...)))))]
+                [lift-derivs
+                 ;; If interrupted, then main-expr deriv will not be in list
+                 (if tag second-derivs (cdr second-derivs))]
+                [begin-stx (stx-car lifted-stx)])
+           (let-values ([(first-d first-e2) (for-deriv first)])
+             (define lifted-stx*
+               (datum->syntax-object lifted-stx
+                                     `(,begin-stx ,@(reverse lift-stxs) ,first-e2)
+                                     lifted-stx
+                                     lifted-stx))
+             (define main-deriv (make-p:stop first-e2 first-e2 null))
+             (define inner-derivs 
+               (reverse
+                ;; If interrupted, then main-expr deriv will not be in list
+                (if tag lift-derivs (cons main-deriv lift-derivs))))
+             (define lderiv*
+               (rewrap second
+                       (make-lderiv (map lift/deriv-e1 inner-derivs)
+                                    (and (not tag)
+                                         (map lift/deriv-e2 inner-derivs))
+                                    inner-derivs)))
+             (define-values (lderiv** es2**) (for-lderiv lderiv*))
+             (define e2*
+               (and es2**
+                    (datum->syntax-object e2 `(,begin-stx ,@es2**) e2 e2)))
+             (define second* 
+               (rewrap second (make-p:begin lifted-stx* e2* null lderiv**)))
+             (values (rewrap d (make-lift-deriv e1 e2* first-d lifted-stx* second*))
+                     e2*)))
+         #;
+         ;; Option3: Hide first, retaining transparent lifts and inlining opaque lifts
+         ;; Hide second, only on retained lifts
+         ;; Problem: lift order may be damaged by other hiding processes
          (let* ([second-derivs
                  (match second
                    [(IntQ p:begin (_ _ _ (IntQ lderiv (_ _ inners))))
@@ -345,10 +390,11 @@
         [#f (values #f #f)]))
 
     ;; for-transformation : Transformation -> Transformation???
+    #;
     (define (for-transformation tx)
       (match tx
         [(IntQ transformation (e1 e2 rs me1 me2 locals))
-         (error 'unimplemented)]))
+         (error 'unimplemented "hide: for-transformation")]))
     
     ;; for-rename : Rename -> (values Rename syntax)
     (define (for-rename rename)
@@ -618,21 +664,22 @@
          ;  (values subterms table-at-end))
          (let-values ([(rename-subterms1 table1) (do-rename e1 me1)])
            (parameterize ((subterms-table table1))
-             (let ([sss (map for-local locals)])
+             (let (#;[sss (map for-local locals)])
                (let-values ([(rename-subterms2 table2) (do-rename me2 e2)])
                  ;; FIXME: Including these seems to produce evil results
                  ;; ie, parts of the hidden macro use appear as marked
                  ;;     when they shouldn't
                  (values (append #;rename-subterms1
-                                 (apply append sss)
+                                 #;(apply append sss)
                                  #;rename-subterms2)
                          table2)))))]))
 
     ;; for-local : LocalAction -> (list-of Subterm)
+    #;
     (define (for-local local)
       (match local
         [(IntQ local-expansion (e1 e2 me1 me2 deriv))
-         (error 'unimplemented)]
+         (error 'unimplemented "seek: for-local")]
         ;; Also need to handle local-bind
         ;; ...
         [else null]))

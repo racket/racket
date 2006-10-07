@@ -15,6 +15,7 @@
       
       (define -nonlinearity-text #f)
       (define -localactions-text #f)
+      (define -lifts-text #f)
       
       (define/private (add-nonlinearity-text)
         (unless -nonlinearity-text
@@ -28,7 +29,14 @@
           (add-text "An opaque macro called local-expand, syntax-local-lift-expression, "
                     "etc. Macro hiding cannot currently handle local actions. "
                     "The macro stepper is showing the expansion of that macro use.")))
-      
+      (define/private (add-lifts-text)
+        (unless -lifts-text
+          (set! -lifts-text #t)
+          (add-text "A transparent macro called syntax-local-lift-expression or "
+                    "syntax-local-lift-module-end-declaration. "
+                    "The macro stepper is only hiding macro after the "
+                    "lifts are caught.")))
+
       (define/private (add-text . strs)
         (send text lock #f)
         (for-each (lambda (s) (send text insert s)) strs)
@@ -40,7 +48,9 @@
           ((nonlinearity)
            (add-nonlinearity-text))
           ((localactions)
-           (add-localactions-text))))
+           (add-localactions-text))
+          ((lifts)
+           (add-lifts-text))))
       
       (send this show #t)))
   
