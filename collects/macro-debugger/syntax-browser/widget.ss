@@ -46,17 +46,6 @@
                (editor -text)
                (context-menu (make-context-menu)))
           
-          ;; FIXME: Why doesn't this work?
-          #;
-          (when (current-syntax-font-size)
-            (let* ([style-list (send -text get-style-list)]
-                   [standard (send style-list find-named-style "Standard")])
-              (send style-list replace-named-style "Standard"
-                    (send style-list find-or-create-style
-                          standard
-                          (make-object style-delta% 'change-size
-                            (current-syntax-font-size))))))
-          
           (send -text lock #t)
           (send -split-panel set-percentages 
                 (list (- 1 props-percentage) props-percentage))
