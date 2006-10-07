@@ -26,7 +26,7 @@
 
   ;; Configuration
 
-  (define catch-errors? (make-parameter #f))
+  (define catch-errors? (make-parameter #t))
   (define show-rename-steps? (make-parameter #f))
 
   ;; Macro Stepper
