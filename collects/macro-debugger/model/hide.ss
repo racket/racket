@@ -798,7 +798,12 @@
         (loop (car p) (cons (make-ref pos) rpath))
         (let ([t (cdr p)])
           (cond [(syntax? t)
-                 (loop t (cons (make-tail pos) rpath))]
+                 (let ([te (syntax-e t)])
+                   (if (pair? te)
+                       (begin
+                         (table-add! table t (reverse (cons (make-tail pos) rpath)))
+                         (loop-cons te rpath (add1 pos)))
+                       (loop t (cons (make-tail pos) rpath))))]
                 [(pair? t)
                  (loop-cons t rpath (add1 pos))]
                 [(null? t)
@@ -915,6 +920,12 @@
   ;; wrap-p:rename : syntax (cons syntax syntax) Derivation -> Derivation
   (define (wrap-p:rename e1 rename deriv)
     (make-p:rename e1 (deriv-e2 deriv) null rename deriv))
+
+  ;; wrap/rename-from : syntax Derivation -> Derivation
+  (define (wrap/rename-from e0 d)
+    (match d
+      [(AnyQ deriv (e1 e2))
+       (rewrap d (make-p:rename e0 e2 null (cons e0 e1) d))]))
   
   ;; reconstruct-defval : syntax syntax Derivation -> Derivation
   ;; Reconstruct a define-values node from its rhs deriv
@@ -1110,29 +1121,32 @@
         (if (positive? count)
             (match pass1
               [(cons (struct mod:prim (head prim)) next)
-               (let ([pass1-part (car pass1)])
+               (let ([form0 (stx-car forms)]
+                     [pass1-part (car pass1)])
                  (set! forms (stx-cdr forms))
                  (set! pass1 next)
                  (let ([pass2-part (car (loop2 1))])
-                   (cons (combine-prim pass1-part pass2-part)
+                   (cons (wrap/rename-from form0 (combine-prim pass1-part pass2-part))
                          (loop (sub1 count)))))]
               [(cons (struct mod:splice (head tail)) next)
-               (let ([pass1-part (car pass1)]
+               (let ([form0 (stx-car forms)]
+                     [pass1-part (car pass1)]
                      [inner-n (- (length (stx->list tail))
                                  (length (stx->list (stx-cdr forms))))])
                  (set! forms tail)
                  (set! pass1 next)
                  (let ([inners (loop inner-n)])
-                   (cons (combine-begin head inners)
+                   (cons (wrap/rename-from form0 (combine-begin head inners))
                          (loop (sub1 count)))))]
               [(cons (struct mod:lift (head tail)) next)
-               (let ([inner-n (length (stx->list tail))])
+               (let ([form0 (stx-car forms)]
+                     [inner-n (length (stx->list tail))])
                  (set! forms (stx-cdr forms))
                  (set! pass1 next)
                  (let ([inners (loop inner-n)])
                    (set! forms (cons (deriv-e2 head) forms))
                    (let ([finish (car (loop 1))])
-                     (cons (combine-lifts head finish inners)
+                     (cons (wrap/rename-from form0 (combine-lifts head finish inners))
                            (loop (sub1 count))))))]
               ['()
                #;(printf "module-begin->lderiv:loop: unexpected null~n")
