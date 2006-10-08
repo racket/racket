@@ -31,7 +31,8 @@
      syntax-error         ; exn
      lift-loop            ; syntax
      lift/let-loop        ; syntax
-     lift-end-loop        ; syntax
+     module-lift-loop     ; syntaxes
+     module-lift-end-loop ; syntaxes
      lift                 ; (cons syntax id)
      lift-statement       ; syntax
      enter-local          ; syntax
@@ -128,8 +129,9 @@
       (132 . ,token-local-pre)
       (133 . ,token-local-post)
       (134 . ,token-lift-statement)
-      (135 . ,token-lift-end-loop)
+      (135 . ,token-module-lift-end-loop)
       (136 . ,token-lift/let-loop)
+      (137 . ,token-module-lift-loop)
       ))
   
   (define (tokenize sig-n val pos)

@@ -25,6 +25,7 @@
   ;; reductions : Derivation -> ReductionSequence
   (define (reductions d)
     (match d
+
       ;; Primitives
       [(struct p:variable (e1 e2 rs))
        null]
@@ -64,7 +65,8 @@
        (R e1 _
           [! exni]
           [#:pattern (?define-values formals RHS)]
-          [Expr RHS rhs])]
+          [#:if rhs
+                [Expr RHS rhs]])]
       [(AnyQ p:if (e1 e2 rs full? test then else) exni)
        (if full?
            (R e1 _
@@ -396,34 +398,33 @@
     (let* ([final-stxs #f]
            [reductions
             (let loop ([mbrules mbrules] [suffix all-stxs] [prefix null])
+              (define (the-context x)
+                (revappend prefix (cons x (stx-cdr suffix))))
               ;(printf "** MB loop~n")
               ;(printf "  rules: ~s~n" mbrules)
               ;(printf "  suffix: ~s~n" suffix)
               ;(printf "  prefix: ~s~n" prefix)
               (match mbrules
-                [(cons ($$ mod:skip ()) next)
+                [(cons (struct mod:skip ()) next)
                  (loop next (stx-cdr suffix) (cons (stx-car suffix) prefix))]
-                [(cons ($$ mod:cons (head) _exni) next)
-                 (append (with-context (lambda (x) 
-                                         (revappend prefix (cons x (stx-cdr suffix))))
-                                       (append (reductions head)))
+                [(cons (struct mod:cons (head)) next)
+                 (append (with-context the-context (append (reductions head)))
                          (let ([estx (and (deriv? head) (deriv-e2 head))])
                            (loop next (stx-cdr suffix) (cons estx prefix))))]
-                [(cons ($$ mod:prim (head prim) _exni) next)
-                 (append (with-context (lambda (x)
-                                         (revappend prefix (cons x (stx-cdr suffix))))
-                           (if (and prim (not (p:define-values? prim)))
-                               (append (reductions head)
-                                       (reductions prim))
-                               (reductions head)))
+                [(cons (AnyQ mod:prim (head prim)) next)
+                 (append (with-context the-context
+                           (append (reductions head)
+                                   (reductions prim)))
                          (let ([estx (and (deriv? head) (deriv-e2 head))])
                            (loop next (stx-cdr suffix) (cons estx prefix))))]
-                [(cons ($$ mod:splice (head stxs)) next)
-                 ;(printf "suffix is: ~s~n~n" suffix)
+                [(cons (ErrW mod:splice (head stxs) exn) next)
+                 (append (with-context the-context (reductions head))
+                         (list (stumble (deriv-e2 head) exn)))]
+                [(cons (struct mod:splice (head stxs)) next)
+                 ;(printf "suffix is: ~s~n" suffix)
                  ;(printf "stxs is: ~s~n" stxs)
                  (append
-                  (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                                (reductions head))
+                  (with-context the-context (reductions head))
                   (let ([suffix-tail (stx-cdr suffix)]
                         [head-e2 (deriv-e2 head)])
                     (cons (walk/foci head-e2
@@ -434,12 +435,11 @@
                                      (E (revappend prefix stxs))
                                      "Splice module-level begin")
                           (loop next stxs prefix))))]
-                [(cons ($$ mod:lift (head stxs)) next)
+                [(cons (struct mod:lift (head stxs)) next)
                  ;(printf "suffix is: ~s~n~n" suffix)
                  ;(printf "stxs is: ~s~n" stxs)
                  (append
-                  (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                                (reductions head))
+                  (with-context the-context (reductions head))
                   (let ([suffix-tail (stx-cdr suffix)]
                         [head-e2 (deriv-e2 head)])
                     (let ([new-suffix (append stxs (cons head-e2 suffix-tail))])
@@ -451,7 +451,7 @@
                             (loop next
                                   new-suffix
                                   prefix)))))]
-                [(cons ($$ mod:lift-end (tail)) next)
+                [(cons (struct mod:lift-end (tail)) next)
                  (append
                   (if (pair? tail)
                       (list (walk/foci null

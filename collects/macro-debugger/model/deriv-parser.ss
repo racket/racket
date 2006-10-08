@@ -243,17 +243,17 @@
        [() null]
        [(next (? ModulePass1-Part) (? ModulePass1))
         (cons $2 $3)]
-       [(lift-end-loop (? ModulePass1))
+       [(module-lift-end-loop (? ModulePass1))
         (cons (make-mod:lift-end $1) $2)])
 
       (ModulePass1-Part
        (#:no-wrap)
        [((? EE) (? ModulePass1/Prim))
         (make-mod:prim $1 $2)]
-       [(EE splice)
-        (make-mod:splice $1 $2)]
-       [(EE lift-loop)
-        (make-mod:lift $1 $2)])
+       [(EE NoError module-lift-loop)
+        (make-mod:lift $1 $2)]
+       [(EE ! splice)
+        (make-mod:splice $1 $3)])
 
       (ModulePass1/Prim
        [(enter-prim prim-define-values ! exit-prim)
@@ -277,7 +277,7 @@
        [() null]
        [(next (? ModulePass2-Part) (? ModulePass2))
         (cons $2 $3)]
-       [(lift-end-loop (? ModulePass2))
+       [(module-lift-end-loop (? ModulePass2))
         (cons (make-mod:lift-end $1) $2)])
 
       (ModulePass2-Part
@@ -289,7 +289,7 @@
        [((? EE))
         (make-mod:cons $1)]
        ;; catch lifts
-       [(EE lift-loop)
+       [(EE module-lift-loop)
         (make-mod:lift $1 $2)])
 
       ;; Definitions
