@@ -109,7 +109,7 @@
       (define/public (get-policy) policy)
       
       ;; refresh
-      (define/private (refresh)
+      (define/public (refresh)
         (when enabled?
           (send stepper refresh/resynth)))
       

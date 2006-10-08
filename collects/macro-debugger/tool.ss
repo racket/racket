@@ -28,7 +28,7 @@
             [SBMENU : sb:context-menu^ (sb:context-menu@ SBSNIP)]
             [SBSNIP : sb:snip^ (sb:global-snip@)]
             [SBWMENU : sb:context-menu^ (sb:widget-context-menu-extension@ SBMENU)]
-            [VMENU : sb:context-menu^ (view:context-menu-extension@ SBMENU)]
+            [VMENU : sb:context-menu^ (view:context-menu-extension@ SBWMENU)]
             [SBWIDGET : sb:widget^ (sb:widget@ SBKEYMAP SBWMENU)]
             [VWIDGET : sb:widget^ (view:browser-extension@ SBWIDGET VMENU)]
             [BASE : view:view-base^ (view-base/tool@)]

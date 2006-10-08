@@ -37,7 +37,7 @@
                     "The macro stepper is only hiding macro after the "
                     "lifts are caught.")))
 
-      (define/private (add-text . strs)
+      (define/public (add-text . strs)
         (send text lock #f)
         (for-each (lambda (s) (send text insert s)) strs)
         (send text insert "\n\n")
@@ -51,7 +51,7 @@
            (add-localactions-text))
           ((lifts)
            (add-lifts-text))))
-      
+
       (send this show #t)))
   
   )

@@ -423,7 +423,10 @@
                                     (lambda (tag message)
                                       (unless warnings-frame
                                         (set! warnings-frame (new warnings-frame%)))
-                                      (send warnings-frame add-warning tag))))
+                                      (send warnings-frame add-warning tag)
+                                      #;
+                                      (send warnings-frame add-text
+                                            (format "Warning: ~a~n" message)))))
                       (let-values ([(d s) (hide/policy deriv show-macro?)])
                         d)))
                   deriv)))
@@ -531,9 +534,14 @@
             (void))
           
           (define/private (do-show)
-            (send (get-prefs-panel) add-show-identifier))
+            (send* (get-prefs-panel)
+              (add-show-identifier)
+              (refresh)))
+            
           (define/private (do-hide)
-            (send (get-prefs-panel) add-hide-identifier))
+            (send* (get-prefs-panel)
+              (add-hide-identifier)
+              (refresh)))
           
           (define/override (on-demand)
             (define-values (opaque transparent)
@@ -561,11 +569,10 @@
       (define syntax-widget%
         (class pre:syntax-widget%
           (init-field macro-stepper)
-          (inherit get-controller)
           
           (define/override (make-context-menu)
             (new context-menu%
-                 (controller (get-controller))
+                 (widget this)
                  (macro-stepper macro-stepper)))
           (super-new)))))
   )
