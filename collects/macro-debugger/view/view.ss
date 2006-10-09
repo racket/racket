@@ -1,12 +1,9 @@
 
 (module view mzscheme
   (require (lib "unitsig.ss")
-           (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
-           (prefix sb: "../syntax-browser/embed.ss")
            "interfaces.ss"
-           "prefs.ss"
            "gui.ss")
   (provide (all-defined))
 
@@ -19,9 +16,7 @@
   (define-values/invoke-unit/sig view^
     (compound-unit/sig
       (import)
-      (link (PREFS : prefs^ (prefs@))
-            (SB   : sb:implementation^ (sb:implementation@))
-            (BASE : view-base^ (view-base@))
-            (VIEW : view^ (view@ BASE SB)))
-      (export (open VIEW))))
+      (link [BASE : view-base^ (view-base@)]
+            [STEPPER : view^ (pre-stepper@ BASE)])
+      (export (open STEPPER))))
   )

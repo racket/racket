@@ -7,10 +7,10 @@
            (lib "framework.ss" "framework")
            (lib "boundmap.ss" "syntax")
            "interfaces.ss"
+           "prefs.ss"
            "warning.ss"
            "hiding-panel.ss"
            (prefix sb: "../syntax-browser/embed.ss")
-           "../syntax-browser/util.ss"
            "../model/deriv-util.ss"
            "../model/trace.ss"
            "../model/hide.ss"
@@ -20,6 +20,7 @@
            "util.ss")
 
   (provide catch-errors?
+           pre-stepper@
            view@
            context-menu-extension@
            browser-extension@)
@@ -575,4 +576,20 @@
                  (widget this)
                  (macro-stepper macro-stepper)))
           (super-new)))))
+  
+  (define pre-stepper@
+    (compound-unit/sig
+      (import [BASE : view-base^])
+      (link [PREFS : prefs^ (prefs@)]
+            [SBKEYMAP : sb:keymap^ (sb:keymap@)]
+            [SBMENU : sb:context-menu^ (sb:context-menu@ SBSNIP)]
+            [SBSNIP : sb:snip^ (sb:global-snip@)]
+            [SBWMENU : sb:context-menu^ (sb:widget-context-menu-extension@ SBMENU)]
+            [VMENU : sb:context-menu^ (context-menu-extension@ SBWMENU)]
+            [SBWIDGET : sb:widget^ (sb:widget@ SBKEYMAP SBWMENU)]
+            [VWIDGET : sb:widget^ (browser-extension@ SBWIDGET VMENU)]
+            [VIEW : view^ (view@ PREFS BASE VWIDGET)])
+      (export (open VIEW))))
+    
+  
   )

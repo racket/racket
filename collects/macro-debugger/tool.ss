@@ -23,17 +23,9 @@
   (define stepper@
     (compound-unit/sig
       (import)
-      (link [PREFS : view:prefs^ (view:prefs@)]
-            [SBKEYMAP : sb:keymap^ (sb:keymap@)]
-            [SBMENU : sb:context-menu^ (sb:context-menu@ SBSNIP)]
-            [SBSNIP : sb:snip^ (sb:global-snip@)]
-            [SBWMENU : sb:context-menu^ (sb:widget-context-menu-extension@ SBMENU)]
-            [VMENU : sb:context-menu^ (view:context-menu-extension@ SBWMENU)]
-            [SBWIDGET : sb:widget^ (sb:widget@ SBKEYMAP SBWMENU)]
-            [VWIDGET : sb:widget^ (view:browser-extension@ SBWIDGET VMENU)]
-            [BASE : view:view-base^ (view-base/tool@)]
-            [VIEW : view:view^ (view:view@ PREFS BASE VWIDGET)])
-      (export (open VIEW))))
+      (link [BASE : view:view-base^ (view-base/tool@)]
+            [STEPPER : view:view^ (view:pre-stepper@ BASE)])
+      (export (open STEPPER))))
 
   #;(define stepper@
       (compound-unit/sig
