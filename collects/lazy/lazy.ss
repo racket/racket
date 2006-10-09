@@ -202,17 +202,21 @@
              [$  (lambda (stx)
                    (syntax-property stx
                      'stepper-skipto '(syntax-e cdr syntax-e car)))])
-       (with-syntax ([(y ...) (generate-temporaries #'(x ...))])
-         ;; use syntax/loc for better errors etc
-         (with-syntax ([lazy   (quasisyntax/loc stx (p y     ...))]
-                       [strict (quasisyntax/loc stx (p (hidden-! y) ...))])
-           (quasisyntax/loc stx
-             (let ([p f] [y x] ...)
-               #,($$ #`(if (lazy? p) lazy strict)))))))]))
+         (with-syntax ([(y ...) (generate-temporaries #'(x ...))])
+           ;; use syntax/loc for better errors etc
+           (with-syntax ([lazy   (syntax/loc stx (p y     ...))]
+                         [strict (syntax/loc stx (p (hidden-! y) ...))])
+             (quasisyntax/loc stx
+               (let ([p f] [y x] ...)
+                 #,($$ #`(if (lazy? p) lazy strict)))))))]))
 
   (defsubst (!app   f x ...) (!*app (hidden-! f) x ...))
   (defsubst (~!*app f x ...) (~ (!*app f x ...)))
   (defsubst (~!app  f x ...) (~ (!app f x ...)))
+
+  (define-for-syntax (toplevel?)
+    (memq (syntax-local-context)
+          '(top-level module module-begin))) ; not sure about module-begin
 
   (provide (rename ~!%app #%app)) ; all applications are delayed
   (define-syntax (~!%app stx) ; provided as #%app
@@ -236,7 +240,11 @@
       [(_ !!list x)   (syntax/loc stx (!!list x))]
       [(_ !values x)  (syntax/loc stx (!values x))]
       [(_ !!values x) (syntax/loc stx (!!values x))]
-      [(_ f x ...)    (stepper-annotate (syntax/loc stx (~!app f x ...)))]))
+      [(_ f x ...)
+       (if (toplevel?)
+         ;; toplevel expressions are always forced
+         (syntax/loc stx (! (!app f x ...)))
+         (stepper-annotate (syntax/loc stx (~!app f x ...))))]))
 
   (define (!*apply f . xs)
     (let ([xs (!list (apply list* xs))])
@@ -248,6 +256,12 @@
   (defsubst (~!apply  f . xs) (~ (!apply  f . xs)))
 
   (provide (rename !apply apply)) ; can only be used through #%app => delayed
+
+  ;; do the same special treatment for toplevel variable expressions
+  (provide (rename !top #%top))
+  (define-syntax (!top stx)
+    (syntax-case stx ()
+      [(_ . id) (if (toplevel?) #'(! (#%top . id)) #'(#%top . id))]))
 
   ;; used for explicitly strict/lazy calls
   (defsubst (strict-call f x ...) (~ (f (! x) ...)))
@@ -625,12 +639,9 @@
                (if (! (pred x)) (cons x xs) xs)))
             (else (error 'filter "not a proper list: ~e" list)))))
 
-  (require (rename (lib "list.ss") !quicksort quicksort)
-           (rename (lib "list.ss") !mergesort mergesort))
-  (define* (quicksort list less-than)
-    (!quicksort (!list list) (! less-than)))
-  (define* (mergesort list less-than)
-    (!mergesort (!list list) (! less-than)))
+  (require (rename (lib "list.ss") !sort sort))
+  (define* (sort list less-than)
+    (!sort (!list list) (! less-than)))
 
   ;; --------------------------------------------------------------------------
   ;; (lib "etc.ss") functionality
@@ -678,7 +689,7 @@
                            [~id (string->symbol (string-append "~" str))])
                       (datum->syntax-object id ~id id)))
                   (syntax->list #'(id ...)))])
-         #'(provide (all-from-except mzscheme module #%app apply id ...)
+         #'(provide (all-from-except mzscheme module #%app apply #%top id ...)
                     (rename ~id id) ...))]))
   (renaming-provide
    lambda define let let* letrec parameterize
@@ -702,20 +713,11 @@
    ;; `list' stuff
    first second third fourth fifth sixth seventh eighth rest cons? empty empty?
    foldl foldr last-pair remove remq remv remove* remq* remv* memf assf filter
-   quicksort mergesort
+   sort
    ;; `etc' stuff
    true false boolean=? symbol=? identity compose build-list
    ;; extra stuff for lazy Scheme
    take cycle)
-
-  ;; --------------------------------------------------------------------------
-  ;; Initialize special evaluation hooks
-
-  ;; taking this out so that stepper test cases will work correctly:
-
-  #;
-  (let ([prim-eval (current-eval)])
-    (current-eval (lambda (expr) (!! (prim-eval expr)))))
 
 )
 
