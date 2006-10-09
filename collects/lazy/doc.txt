@@ -50,4 +50,31 @@ forced.  There are also bindings for `begin' (delays a computation
 that forces all sub-expressions), `when', `unless', etc.  These are,
 however, less reliable and might change (or be dropped) in the future.
 
+
+Multiple values
+---------------
+
+Also, to avoid dealing with multiple values, they are treated as a
+single tuple in the lazy language.  This is implemented as a
+`multiple-values' struct, with a `values' slot.
+
+> split-values
+  is used to split such a tuple to actual multiple values.  (This may
+  change in the future.)
+
+> (!values expr)
+  forces `expr', and uses `split-values' on the result.
+
+> (!!values expr)
+  similar to `!values', but forces each of the values (not
+  recursively).
+
+
+Making strict code interact with lazy code
+------------------------------------------
+
+To make it easy for strict code to interact with lazy code, use the
+_force.ss_ module: it provides the above bindings (as functions) that
+can be used to force promises in various ways.
+
 [More documentation will be added.]
