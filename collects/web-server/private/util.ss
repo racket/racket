@@ -3,6 +3,7 @@
            (lib "string.ss")
            (lib "list.ss")
            (lib "url.ss" "net")
+           (lib "plt-match.ss")
            (lib "uri-codec.ss" "net"))
   (require "../request-structs.ss")
   
@@ -14,12 +15,16 @@
   (define (url-path->string strs)
     (apply
      string-append
-     (let loop ([strs strs])
-       (cond
-         [(null? strs) (list)]
-         [else (list* "/"
-                      (maybe-join-params (car strs))
-                      (loop (cdr strs)))]))))
+     (map (match-lambda
+            ['up ".."]
+            ['same "."]
+            [(and s (? string?)) s])
+          (let loop ([strs strs])
+            (cond
+              [(null? strs) (list)]
+              [else (list* "/"
+                           (maybe-join-params (car strs))
+                           (loop (cdr strs)))])))))
     
   ;; needs to unquote things!
   (define (maybe-join-params s)
