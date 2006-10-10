@@ -646,8 +646,7 @@
   ;; --------------------------------------------------------------------------
   ;; (lib "etc.ss") functionality
 
-  (require (rename (lib "etc.ss") boolean=? boolean=?)
-           (rename (lib "etc.ss") symbol=?  symbol=?))
+  (require (only (lib "etc.ss") boolean=? symbol=?))
   (define* true  #t)
   (define* false #f)
 
