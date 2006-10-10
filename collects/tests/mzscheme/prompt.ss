@@ -846,6 +846,163 @@
         
         'done))))
 
+(define (non-tail v) (values v))
+
+(let ([k (call-with-continuation-prompt
+          (lambda ()
+            (with-continuation-mark
+                'x
+                71
+              ((call-with-composable-continuation
+                (lambda (k)
+                  (lambda () k)))))))])
+  (test #f continuation-mark-set-first #f 'x)
+  (test 71 k (lambda () (continuation-mark-set-first #f 'x)))
+  (test '(71) continuation-mark-set->list (continuation-marks k) 'x)
+  (test 71 'wcm (with-continuation-mark
+                    'x 81
+                  (k (lambda () (continuation-mark-set-first #f 'x)))))
+  (test '(71 81) 'wcm (with-continuation-mark
+                          'x 81
+                        (non-tail
+                         (k (lambda ()
+                              (continuation-mark-set->list (current-continuation-marks) 'x))))))
+  #;
+  (test '(71) 'wcm (with-continuation-mark
+                       'x 81
+                     (k (lambda ()
+                          (continuation-mark-set->list (current-continuation-marks) 'x)))))
+  (test '(91 71 81) 'wcm (with-continuation-mark
+                             'x 81
+                           (non-tail
+                            (k (lambda ()
+                                 (non-tail
+                                  (with-continuation-mark
+                                      'x 91
+                                    (continuation-mark-set->list (current-continuation-marks) 'x))))))))
+  (test '(91 81) 'wcm (with-continuation-mark
+                          'x 81
+                        (non-tail
+                         (k (lambda ()
+                              (with-continuation-mark
+                                  'x 91
+                                (continuation-mark-set->list (current-continuation-marks) 'x)))))))
+  #;
+  (test '(91) 'wcm (with-continuation-mark
+                       'x 81
+                     (k (lambda ()
+                          (with-continuation-mark
+                              'x 91
+                            (continuation-mark-set->list (current-continuation-marks) 'x))))))
+  (let ([k2 (with-continuation-mark
+                'x 101
+              (call-with-continuation-prompt
+               (lambda ()
+                 (with-continuation-mark
+                     'x 111
+                   (non-tail
+                    (k (lambda ()
+                         ((call-with-composable-continuation
+                           (lambda (k2)
+                             (test '(71 111 101) continuation-mark-set->list (current-continuation-marks) 'x)
+                             (lambda () k2)))))))))))])
+    (test '(71 111) continuation-mark-set->list (continuation-marks k2) 'x)
+    (test '(71 111) k2 (lambda ()
+                         (continuation-mark-set->list (current-continuation-marks) 'x)))
+    (test 71 k2 (lambda ()
+                  (continuation-mark-set-first #f 'x)))
+    (test '(71 111 121) 'wcm (with-continuation-mark
+                                'x 121
+                               (non-tail
+                                (k2 (lambda ()
+                                      (continuation-mark-set->list (current-continuation-marks) 'x))))))
+    )
+
+  #;
+  (let ([k2 (with-continuation-mark
+                'x 101
+              (call-with-continuation-prompt
+               (lambda ()
+                 (with-continuation-mark
+                     'x 111
+                   (k (lambda ()
+                        ((call-with-composable-continuation
+                          (lambda (k2)
+                            (test '(71 111 101) continuation-mark-set->list (current-continuation-marks) 'x)
+                            (lambda () k2))))))))))])
+    (test '(71) continuation-mark-set->list (continuation-marks k2) 'x)
+    (test '(71) k2 (lambda ()
+                     (continuation-mark-set->list (current-continuation-marks) 'x)))
+    (test 71 k2 (lambda ()
+                  (continuation-mark-set-first #f 'x)))
+    (test '(71 121) 'wcm (with-continuation-mark
+                             'x 121
+                           (non-tail
+                            (k2 (lambda ()
+                                  (continuation-mark-set->list (current-continuation-marks) 'x))))))
+    ))
+
+;; Check interaction of dynamic winds, continuation composition, and continuation marks
+
+(let ([pre-saw-xs null]
+      [post-saw-xs null]
+      [pre-saw-ys null]
+      [post-saw-ys null])
+  (let ([k (call-with-continuation-prompt
+            (lambda ()
+              (with-continuation-mark
+                  'x
+                  77
+                (dynamic-wind
+                    (lambda () 
+                      (set! pre-saw-xs (continuation-mark-set->list (current-continuation-marks) 'x))
+                      (set! pre-saw-ys (continuation-mark-set->list (current-continuation-marks) 'y)))
+                    (lambda ()
+                      ((call-with-composable-continuation
+                        (lambda (k)
+                          (lambda () k)))))
+                    (lambda () 
+                      (set! post-saw-xs (continuation-mark-set->list (current-continuation-marks) 'x))
+                      (set! post-saw-ys (continuation-mark-set->list (current-continuation-marks) 'y)))))))])
+    (test '(77)  values pre-saw-xs)
+    (test '()  values pre-saw-ys)
+    (test '(77)  values post-saw-xs)
+    (test '()  values post-saw-ys)
+    (let ([jump-in
+           (lambda (wrap r-val y-val)
+             (test r-val 'wcm
+                   (wrap
+                    (lambda (esc)
+                      (with-continuation-mark
+                          'y y-val
+                        (k (lambda () (esc)))))))
+             (test '(77)  values pre-saw-xs)
+             (test (list y-val)  values pre-saw-ys)
+             (test '(77)  values post-saw-xs)
+             (test (list y-val)  values post-saw-ys)
+             (let ([k3 (call-with-continuation-prompt
+                        (lambda ()
+                          ((call-with-composable-continuation
+                            (lambda (k)
+                              (lambda () k))))))])
+               (test r-val 'wcm
+                     (wrap
+                      (lambda (esc)
+                        (k3
+                         (lambda ()
+                           (with-continuation-mark
+                               'y y-val
+                             (k (lambda () (k3 (lambda () (esc)))))))))))))])
+      (jump-in (lambda (f) (f (lambda () 10))) 10 88)
+      (jump-in (lambda (f) (let/cc esc (f (lambda () (esc 20))))) 20 99)
+      (jump-in (lambda (f)
+                    (let ([p1 (make-continuation-prompt-tag)])
+                      (call-with-continuation-prompt
+                       (lambda ()
+                         (f (lambda () (abort-current-continuation p1 30))))
+                       p1)))
+               30 111)
+      (void))))
 
 ;; ----------------------------------------
 ;; Variations of Olivier Danvy's traversal
