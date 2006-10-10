@@ -194,7 +194,7 @@
                  'stepper-skipto '(syntax-e cdr syntax-e cdr car))]))
 
   (define-syntax (!*app stx)
-    (syntax-case stx (~ ! !! !list !!list !values !!values)
+    (syntax-case stx ()
       [(_ f x ...)
        (let ([$$ (lambda (stx)
                    (syntax-property stx
