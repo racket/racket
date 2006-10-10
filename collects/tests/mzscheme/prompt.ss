@@ -471,6 +471,98 @@
                                (default-continuation-prompt-tag)
                                8)))))))
 
+;; Etc.
+(let ([k1 (call-with-continuation-prompt
+           (lambda ()
+             ((call-with-composable-continuation
+               (lambda (k)
+                 (lambda () k))))))]
+      [k2 (call-with-continuation-prompt
+           (lambda ()
+             ((call-with-composable-continuation
+               (lambda (k)
+                 (lambda () k))))))])
+  (test 1000
+        call-with-continuation-prompt
+        (lambda ()
+          (k1 (lambda () (k2 (lambda () 1000))))))
+  (test -1000 k1 (lambda () (k2 (lambda () -1000))))
+  
+  (let ([k3 (call-with-continuation-prompt
+             (lambda ()
+               (k1 (lambda ()
+                     ((call-with-composable-continuation
+                       (lambda (k)
+                         (lambda () k))))))))])
+    (test 1001
+          call-with-continuation-prompt
+          (lambda ()
+            (k3 (lambda () 1001))))
+    (test -1001 k3 (lambda () -1001))
+    (test 1002
+          call-with-continuation-prompt
+          (lambda ()
+            (k1 (lambda () (k3 (lambda () 1002))))))
+    (test -1002 k1 (lambda () (k3 (lambda () -1002)))))
+  
+  (let ([k4 (call-with-continuation-prompt
+             (lambda ()
+               (k1
+                (lambda ()
+                  ((call-with-composable-continuation
+                    (lambda (k)
+                      (lambda () k))))))))])
+    (test -1003 k4 (lambda () -1003)))
+    
+  (let ([k5 (call-with-continuation-prompt
+             (lambda ()
+               ((k1
+                 (lambda ()
+                   (call-with-composable-continuation
+                    (lambda (k)
+                      (lambda () k))))))))])
+    (test -1004 k5 (lambda () -1004))
+    
+    (let ([k6 (call-with-continuation-prompt
+               (lambda ()
+                 ((k5
+                   (lambda ()
+                     (call-with-composable-continuation
+                      (lambda (k)
+                        (lambda () k))))))))])
+      (test -1005 k6 (lambda () -1005))))
+    
+  (let ([k7 (call-with-continuation-prompt
+             (lambda ()
+               ((k1
+                 (lambda ()
+                   ((k1
+                     (lambda ()
+                       (call-with-composable-continuation
+                        (lambda (k)
+                          (lambda () (lambda () k))))))))))))])
+    (test -1006 k7 (lambda () (lambda () -1006)))
+    (test '(-1007) call-with-continuation-prompt
+          (lambda ()
+            (list (k7 (lambda () (lambda () -1007)))))))
+  
+  )
+
+;; Check that escape drops the meta-continuation:
+(test 0
+      'esc
+      (let ([p1 (make-continuation-prompt-tag)])
+        (let/cc esc
+          (let ([k
+                 (call-with-continuation-prompt
+                  (lambda ()
+                    ((call-with-composable-continuation
+                      (lambda (k)
+                        (lambda () k))
+                      p1)))
+                  p1)])
+            (/ (k (lambda () (esc 0))))))))
+
 ;; ----------------------------------------
 ;; Dynamic wind
 
@@ -484,6 +576,7 @@
                    void)])
         (let/cc esc
           (k (cons void esc)))))
+
 (let ([l null])
   (let ([k2
          (dynamic-wind
@@ -560,7 +653,160 @@
                       10))
           (test '(10) values k2)))))
 
-    
+;; Composable continuations
+(let ([l null])
+  (let ([k2
+         (dynamic-wind
+             (lambda () (set! l (cons 'pre0 l)))
+             (lambda ()
+               (let ([k (call-with-continuation-prompt
+                         (lambda ()
+                           (dynamic-wind
+                               (lambda () (set! l (cons 'pre l)))
+                               (lambda () 
+                                 ((call-with-composable-continuation
+                                   (lambda (k) 
+                                     (lambda () k)))))
+                               (lambda () (set! l (cons 'post l))))))])
+                 (test '(post pre pre0) values l)
+                 (test 12 k (lambda () 12))
+                 (test '(post pre post pre pre0) values l)
+                 k))
+             (lambda () (set! l (cons 'post0 l))))])
+    (test '(post0 post pre post pre pre0) values l)
+    (test 73 k2 (lambda () 73))
+    (test '(post pre post0 post pre post pre pre0) values l)
+    (set! l null)    
+    ;; Add d-w inside k2:
+    (let ([k3 (call-with-continuation-prompt
+               (lambda ()
+                 (k2 (lambda ()
+                       (dynamic-wind
+                           (lambda () (set! l (cons 'pre2 l)))
+                           (lambda () 
+                             ((call-with-composable-continuation
+                               (lambda (k) 
+                                 (lambda () k)))))
+                           (lambda () (set! l (cons 'post2 l))))))))])
+      (test '(post post2 pre2 pre) values l)
+      (test 99 k3 (lambda () 99))
+      (test '(post post2 pre2 pre post post2 pre2 pre) values l))
+    (set! l null)    
+    ;; Add d-w outside k2:
+    (let ([k4 (call-with-continuation-prompt
+               (lambda ()
+                 (dynamic-wind
+                     (lambda () (set! l (cons 'pre2 l)))
+                     (lambda () 
+                       (k2 (lambda ()
+                             ((call-with-composable-continuation
+                               (lambda (k) 
+                                 (lambda () k)))))))
+                     (lambda () (set! l (cons 'post2 l))))))])
+      (test '(post2 post pre pre2) values l)
+      (test 99 k4 (lambda () 99))
+      (test '(post2 post pre pre2 post2 post pre pre2) values l))))
+
+;; Jump back into post:    
+(let ([l null]
+      [p1 (make-continuation-prompt-tag)]
+      [p2 (make-continuation-prompt-tag)]
+      [k2 #f])
+  (define (out v) (set! l (cons v l)))
+  (call-with-continuation-prompt
+   (lambda ()
+     (dynamic-wind
+         (lambda () (out 'pre))
+         (lambda ()
+           (call-with-continuation-prompt
+            (lambda ()
+              (dynamic-wind
+                  (lambda () (out 'pre2))
+                  (lambda () (void))
+                  (lambda ()
+                    (call/cc (lambda (k)
+                               (set! k2 k))
+                             p2)
+                    (out 'post2))))
+            p2))
+         (lambda () (out 'post1))))
+   p1)
+  (call-with-continuation-prompt
+   (lambda ()
+     (k2 10))
+   p2)
+  (test '(post2 post1 post2 pre2 pre) values l))
+
+;; Jump into post, then back out
+(let ([l null]
+      [p1 (make-continuation-prompt-tag)]
+      [p2 (make-continuation-prompt-tag)]
+      [k2 #f]
+      [count 0])
+    (define (out v) (set! l (cons v l)))
+    (let/cc esc
+      (call-with-continuation-prompt
+       (lambda ()
+         (dynamic-wind
+             (lambda () (out 'pre1))
+             (lambda ()
+               (call-with-continuation-prompt
+                (lambda ()
+                  (dynamic-wind
+                      (lambda () (out 'pre2))
+                      (lambda () (void))
+                      (lambda ()
+                        (call/cc (lambda (k)
+                                   (set! k2 k))
+                                 p2)
+                        (out 'post2)
+                        (esc))))
+                p2))
+             (lambda () (out 'post1))))
+       p1))
+    (set! count (add1 count))
+    (unless (= count 3)
+      (call-with-continuation-prompt
+       (lambda ()
+         (k2 10))
+       p2))
+    (test '(post2 post2 post1 post2 pre2 pre1) values l))
+
+;; Jump into post from an escape, rather than 
+;;  from a result continuation
+(let ([l null]
+      [p1 (make-continuation-prompt-tag)]
+      [p2 (make-continuation-prompt-tag)]
+      [k2 #f]
+      [count 0])
+    (define (out v) (set! l (cons v l)))
+    (let/cc esc
+      (call-with-continuation-prompt
+       (lambda ()
+         (dynamic-wind
+             (lambda () (out 'pre1))
+             (lambda ()
+               (call-with-continuation-prompt
+                (lambda ()
+                  (dynamic-wind
+                      (lambda () (out 'pre2))
+                      (lambda () (esc))
+                      (lambda ()
+                        (call/cc (lambda (k)
+                                   (set! k2 k))
+                                 p2)
+                        (out 'post2))))
+                p2))
+             (lambda () (out 'post1))))
+       p1))
+    (set! count (add1 count))
+    (unless (= count 3)
+      (call-with-continuation-prompt
+       (lambda ()
+         (k2 10))
+       p2))
+    (test '(post2 post2 post1 post2 pre2 pre1) values l))
+
 ;; ----------------------------------------
 ;; Continuation marks
 
@@ -610,7 +856,7 @@
       (letrec ((visit
                 (lambda (xs)
                   (if (null? xs)
-                      (list-tail '() 0)
+                      '()
                       (visit (call-with-composable-continuation
                               (lambda (k)
                                 (abort-current-continuation
@@ -623,8 +869,6 @@
          (lambda ()
            (visit xs))))))
   (test '(1 2 3 4 5) traverse '(1 2 3 4 5)))
-
-
 
 (letrec ([call-with-prompt-that-stays
           (lambda (thunk)
@@ -648,7 +892,7 @@
         (call-with-prompt-that-stays
          (lambda ()
            (visit xs))))))
-  (test '(5) traverse '(1 2 3 4 5)))
+  (test '(5 4 3 2 1) traverse '(1 2 3 4 5)))
 
 ;; ----------------------------------------
 
