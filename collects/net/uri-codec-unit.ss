@@ -2,6 +2,41 @@
 ;; that allows more characters to remain decoded 
 ;; -robby
 
+
+#|
+
+People often seem to wonder why semicolons are the default in this code, 
+and not ampersands. Here's the best answer we have:
+
+From: Doug Orleans <dougorleans@gmail.com>
+To: plt-scheme@list.cs.brown.edu
+Subject: Re: [plt-scheme] Problem fetching a URL
+Date: Wed, 11 Oct 2006 16:18:40 -0400
+X-Mailer: VM 7.19 under 21.4 (patch 19) "Constant Variable" XEmacs Lucid
+
+Robby Findler writes:
+ > Do you (or does anyone else) have a reference to an rfc or similar that
+ > actually says what the syntax for queries is supposed to be?
+ > rfc3986.txt (the latest url syntax rfc I know of) doesn't seem to say.
+
+The HTML 4.01 spec defines the MIME type application/x-www-form-urlencoded:
+
+http://www.w3.org/TR/html401/interact/forms.html#form-content-type
+
+See also XForms, which uses a "separator" attribute whose default
+value is a semicolon:
+
+http://www.w3.org/TR/xforms/slice11.html#serialize-urlencode
+http://www.w3.org/TR/xforms/slice3.html#structure-model-submission
+
+--dougorleans@gmail.com
+_________________________________________________
+  For list-related administrative tasks:
+  http://list.cs.brown.edu/mailman/listinfo/plt-scheme
+
+|#
+
+
 ;;;
 ;;; <uri-codec-unit.ss> ---- En/Decode URLs and form-urlencoded data
 ;;; Time-stamp: <03/04/25 10:31:31 noel>
