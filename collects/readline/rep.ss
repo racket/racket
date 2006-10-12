@@ -10,10 +10,4 @@
     (error 'readline-input
            "invoke this library when the current-input-port is stdin"))
 
-  (current-prompt-read 
-   (let ([orig-read (current-prompt-read)]
-         [orig-input (current-input-port)])
-     (lambda ()
-       (if (eq? (current-input-port) orig-input)
-           (read-cmdline-syntax)
-	   (orig-read))))))
+  (current-prompt-read read-cmdline-syntax))
