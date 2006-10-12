@@ -1154,7 +1154,7 @@
 ;; Check unwinding of runstack overflows on prompt escape
 
 (let ([try
-       (lambda (thread m-top n-top do-abort)
+       (lambda (thread m-top n-top do-mid-stream do-abort)
          (let ([result #f])
            (thread-wait
             (thread
@@ -1163,38 +1163,49 @@
                      (let pre-loop ([m m-top])
                        (if (zero? m)
                            (list
-                            (call-with-continuation-prompt
-                             (lambda ()
-                               (let loop ([n n-top])
-                                 (if (zero? n)
-                                     (do-abort
-                                      (lambda ()
-                                        (abort-current-continuation
-                                         (default-continuation-prompt-tag)
-                                         5000)))
-                                     (+ (loop (sub1 n))))))))
+                            (do-mid-stream
+                             (lambda () 
+                               (call-with-continuation-prompt
+                                (lambda ()
+                                  (let loop ([n n-top])
+                                    (if (zero? n)
+                                        (do-abort
+                                         (lambda ()
+                                           (abort-current-continuation
+                                            (default-continuation-prompt-tag)
+                                            5000)))
+                                        (+ (loop (sub1 n))))))))))
                            (list (car (pre-loop (sub1 m))))))))))
            (test '(5000) values result)))])
-  (try thread 5000 10000 (lambda (abort) (abort)))
-  (try thread 5000 10000 (lambda (abort) ((call-with-continuation-prompt
-                                           (lambda ()
-                                             ((call-with-composable-continuation
-                                               (lambda (k) (lambda () k))))))
-                                          (lambda () 5000))))
-  (try thread 5000 10000 (lambda (abort) ((call-with-continuation-prompt
-                                           (lambda ()
-                                             ((call/cc
-                                               (lambda (k) (lambda () k))))))
-                                          (lambda () 5000))))
-  (try thread 5000 10000 (lambda (abort) (((call/cc
-                                            (lambda (k) (lambda () k))))
-                                          (lambda () (lambda (x) 5000)))))
+  (try thread 5000 10000 (lambda (mid) (mid)) (lambda (abort) (abort)))
+  (try thread 5000 10000 (lambda (mid) (mid)) 
+       (lambda (abort) ((call-with-continuation-prompt
+                         (lambda ()
+                           ((call-with-composable-continuation
+                             (lambda (k) (lambda () k))))))
+                        (lambda () 5000))))
+  (try thread 5000 10000 (lambda (mid) (mid)) 
+       (lambda (abort) ((call-with-continuation-prompt
+                         (lambda ()
+                           ((call/cc
+                             (lambda (k) (lambda () k))))))
+                        (lambda () 5000))))
+  (try thread 5000 10000 (lambda (mid) (mid)) 
+       (lambda (abort) (((call/cc
+                          (lambda (k) (lambda () k))))
+                        (lambda () (lambda (x) 5000)))))
+  (try thread 5000 10000 
+       (lambda (mid) (call-with-continuation-barrier mid))
+       (lambda (abort) (((call/cc
+                          (lambda (k) (lambda () k))))
+                        (lambda () (lambda (x) 5000)))))
   (let ([p (make-continuation-prompt-tag 'p)])
     (try (lambda (f)
            (thread
             (lambda ()
               (call-with-continuation-prompt f p))))
          5000 10000 
+         (lambda (mid) (mid))
          (lambda (abort) 
            ((call/cc
              (lambda (k)
