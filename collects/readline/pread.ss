@@ -2,11 +2,13 @@
   (require (lib "readline.ss" "readline") (lib "file.ss"))
 
   ;; configuration
+  (define current-prompt   (make-parameter #"> "))
   (define show-all-prompts (make-parameter #t))
   (define max-history      (make-parameter 100))
   (define keep-duplicates  (make-parameter #f))
   (define keep-blanks      (make-parameter #f))
-  (provide show-all-prompts max-history keep-duplicates keep-blanks)
+  (provide current-prompt show-all-prompts
+           max-history keep-duplicates keep-blanks)
 
   ;; History management
 
@@ -132,9 +134,15 @@
   ;; a function that can be used for current-prompt-read
   (provide read-cmdline-syntax)
   (define (read-cmdline-syntax)
+    (define prompt (current-prompt))
     ;; needs to set `readline-prompt' to get a prompt when reading
     (parameterize ([read-accept-reader #t]
-                   [readline-prompt #"> "])
+                   [readline-prompt prompt])
+      (unless (eq? readline-input (current-input-port))
+        ;; not the readline port -- print the prompt (changing the
+        ;; readline-prompt and using read-complete-syntax below should still
+        ;; work fine)
+        (display prompt) (flush-output))
       (if (show-all-prompts) (read-syntax) (read-complete-syntax))))
 
   )

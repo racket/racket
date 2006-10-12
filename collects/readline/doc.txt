@@ -34,6 +34,9 @@ prompt-reading after "rep.ss" installs the new input port.
 The reading facility that the new input port provides can be
 customized with these parameters:
 
+> currnet-prompt
+  The prompt that is used, as a byte string.  Defaults to #"> ".
+
 > show-all-prompts
   If #f, no prompt is shown until you write input that is completely
   readable.  For example, when you type
