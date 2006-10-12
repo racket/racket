@@ -56,7 +56,7 @@
         [else (unless (= (bytes-length (readline-prompt-spaces))
                          (bytes-length p))
                 (readline-prompt-spaces (make-bytes (bytes-length p) 32)))
-              (readline-prompt 'spaces) ; use spaces next time
+              (readline-prompt 'space) ; use spaces next time
               p])))
 
   (provide readline-input)
