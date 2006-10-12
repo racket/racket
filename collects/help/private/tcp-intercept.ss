@@ -6,7 +6,6 @@
            (lib "sig.ss" "web-server")
            (lib "tcp-sig.ss" "net")
            (lib "url-sig.ss" "net")
-           (lib "url-structs.ss" "net")
            "internal-hp.ss")
   
   (define-syntax (redefine stx)
