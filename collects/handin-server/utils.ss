@@ -175,17 +175,32 @@
 
   (define coverage-enabled (make-parameter #f))
 
+  (define modules-to-attach
+    (list '(lib "posn.ss" "lang")
+	  '(lib "cache-image-snip.ss" "mrlib")))
+
+  (define (make-evaluation-namespace)
+    (let ([new-ns (make-namespace-with-mred)]
+          [orig-ns (current-namespace)])
+      (for-each (lambda (mod) (dynamic-require mod #f))
+                modules-to-attach)
+      (let ([modsyms
+             (map (lambda (mod) ((current-module-name-resolver) mod #f #f))
+                  modules-to-attach)])
+        (parameterize ((current-namespace new-ns))
+          (for-each (lambda (ms) (namespace-attach-module orig-ns ms))
+                    modsyms)))
+      new-ns))
+
   (define (make-evaluator language teachpacks program-port)
     (let ([coverage-enabled (coverage-enabled)]
           [execute-counts #f]
-          [ns (make-namespace-with-mred)]
-	  [orig-ns (current-namespace)]
-	  [posn-module ((current-module-name-resolver) '(lib "posn.ss" "lang") #f #f)])
+          [ns (make-evaluation-namespace)]
+	  [orig-ns (current-namespace)])
       (parameterize ([current-namespace ns]
 		     [read-case-sensitive #t]
 		     [read-decimal-as-inexact #f]
 		     [current-inspector (make-inspector)])
-	(namespace-attach-module orig-ns posn-module)
 	(parameterize ([current-eventspace (make-eventspace)])
 	  (let ([ch (make-channel)]
 		[result-ch (make-channel)])
