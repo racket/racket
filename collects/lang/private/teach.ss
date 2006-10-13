@@ -25,7 +25,7 @@
 ;; expression (cond [true + 1 2]), the reported error should ideally
 ;; be for a misuse of "+", not that there are two extra parts in the
 ;; clause. This check requires local-expanding, so it doesn't work
-;; when checkign top-level forms like `define' (because not all of the
+;; when checking top-level forms like `define' (because not all of the
 ;; definitions are ready, yet). For other cases, ensure that the
 ;; expansion is in an expression position (not the top level) and use
 ;; the `local-expand-for-error' function instead of `local-expand' to
