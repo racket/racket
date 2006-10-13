@@ -17,6 +17,7 @@
 	     error-display-handler error-escape-handler
 	     port-read-handler error-value->string-handler
 	     call/ec call/cc hash-table-get
+	     call-with-continuation-prompt call-with-composable-continuation
 	     hash-table-map hash-table-for-each make-input-port make-output-port
 	     current-module-name-resolver
 	     call-with-semaphore call-with-semaphore/enable-break))
@@ -27,6 +28,8 @@
      '(call-with-values apply 
 	error
 	call-with-current-continuation
+	call-with-composable-continuation
+	call-with-continuation-prompt
 	call-with-escape-continuation
 	call-with-semaphore
 	call-with-semaphore/enable-break
