@@ -48,6 +48,13 @@
                (lambda (offset subtries)
                  (try (lambda (index) (list (+ offset index))) subtries))))
            
+           ;; WHOA: this code uses the template for fully-expanded syntax; what the code
+           ;; actually gets is reconstructed code.  This is a problem, because you can't
+           ;; distinguish a top-level begin from one that's the result of some evaluation. 
+           ;; I think for the moment that it will solve our problem simply to remove the
+           ;; special case for begin at the top level.  JBC, 2006-10-09
+     
+           
            (define (top-level-expr-iterator stx context-so-far)
              (let ([try (try->offset-try (make-try-all-subexprs stx 'top-level context-so-far))])
                (kernel:kernel-syntax-case stx #f
@@ -71,7 +78,9 @@
                   (try 2 `((,expr-iterator ,#'expr)))]
                  [(define-syntaxes (var ...) expr)
                   (try 2 `((,expr-iterator ,#'expr)))]
-                 [(begin . top-level-exprs)
+                 ;; this code is buggy, but I believe it doesn't belong here at all 
+                 ;; per above discussion.  JBC, 2006-10-09
+                 #;[(begin . top-level-exprs)
                   (try 1 (map (lambda (expr) `(,top-level-expr-iterator ,expr))
                               (syntax->list #'exprs)))]
                  [(require . require-specs)

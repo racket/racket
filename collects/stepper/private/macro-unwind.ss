@@ -82,7 +82,7 @@
                              [(comes-from-or)    (unwind-and/or 'or)]
                              [(comes-from-local) unwind-local]
                              [(comes-from-recur) unwind-recur]
-                             [(comes-from-begin) unwind-begin]
+                             ;;[(comes-from-begin) unwind-begin]
                              [else fall-through])])
               (process stx))))
       stx))
@@ -246,12 +246,13 @@
                           (syntax-object->datum stx))))])
          (syntax (cond . clauses)))))
    
-   (define (unwind-begin stx)
-     (syntax-case stx (let-values)
-       [(let-values () body ...)
-        (with-syntax ([(new-body ...)
-                       (map unwind (syntax->list #`(body ...)))])
-          #`(begin new-body ...))]))
+  ;; unused: the fake-exp begin takes care of this for us...
+  #;(define (unwind-begin stx)
+      (syntax-case stx (let-values)
+        [(let-values () body ...)
+         (with-syntax ([(new-body ...)
+                        (map unwind (syntax->list #`(body ...)))])
+           #`(begin new-body ...))]))
    
   (define ((unwind-and/or label) stx)
     (let ([user-source   (syntax-property stx 'user-source)]

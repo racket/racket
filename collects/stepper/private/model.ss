@@ -330,11 +330,5 @@
        (if (eof-object? expanded)
          (begin
            (receive-result (make-finished-stepping)))
-         (step-through-expression expanded continue-thunk)))))
-
-
-  (define (first-of-one x)
-    (unless (and (pair? x) (null? (cdr x)))
-      (error 'first-of-one "expected a list of length one in: ~v" x))
-    (car x)))
+         (step-through-expression expanded continue-thunk))))))
 

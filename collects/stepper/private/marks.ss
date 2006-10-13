@@ -13,7 +13,7 @@
   (define mark-list? (listof procedure?))
   
   (provide/contract 
-   ;[make-debug-info (-> any/c binding-set? varref-set? any/c boolean? syntax?)] ; (location tail-bound free label lifting? offset-index -> mark-stx)
+   ;[make-debug-info (any/c binding-set? varref-set? any/c boolean? . -> . syntax?)] ; (location tail-bound free label lifting? -> mark-stx)
    [expose-mark (-> mark? (list/c any/c symbol? (listof (list/c identifier? any/c))))]
    [make-top-level-mark (syntax? . -> . syntax?)]
    [lookup-all-bindings ((identifier? . -> . boolean?) mark-list? . -> . (listof any/c))]
@@ -159,7 +159,7 @@
   ;;
   ;;;;;;;;;;
      
-  (define (make-debug-info source tail-bound free-vars label lifting? offset-index)
+  (define (make-debug-info source tail-bound free-vars label lifting?)
        (let*-2vals ([kept-vars (binding-set-varref-set-intersect tail-bound free-vars)])
          (if lifting?
              (let*-2vals ([let-bindings (filter (lambda (var) 
@@ -172,9 +172,9 @@
                                                                  (syntax-property var 'stepper-binding-type)))))
                                                 kept-vars)]
                           [lifter-syms (map get-lifted-var let-bindings)])
-               (make-full-mark (syntax-property source 'stepper-offset-index offset-index) label (append kept-vars lifter-syms)))
+                         (make-full-mark source label (append kept-vars lifter-syms)))
              ;; I'm not certain that non-lifting is currently tested: 2005-12, JBC
-             (make-full-mark (syntax-property source 'stepper-offset-index offset-index) label kept-vars))))
+             (make-full-mark source label kept-vars))))
   
   
   (define (make-top-level-mark source-expr)

@@ -682,162 +682,173 @@
                                           bodies
                                           (iota (length bodies)))])
                          (attach-info #`(label #,recon-bindings #,@rectified-bodies) exp))))])
-             (kernel:kernel-syntax-case exp #f 
-               ; variable references
-               [id
-                (identifier? (syntax id))
-                (if (eq? so-far nothing-so-far)
-                    (recon-source-current-marks exp)
-                    (error 'recon-inner "variable reference given as context: ~a" exp))]
-               
-               [(#%top . id)
-                (if (eq? so-far nothing-so-far)
-                    (recon-source-current-marks exp)
-                    (error 'recon-inner "variable reference given as context: ~a" exp))]
-               
-               ; applications
-               [(#%app . terms)
-                (attach-info
-                 (let* ([sub-exprs (syntax->list (syntax terms))]
-                        [arg-temps (build-list (length sub-exprs) get-arg-var)]
-                        [arg-vals (map (lambda (arg-temp) 
-                                         (lookup-binding mark-list arg-temp))
-                                       arg-temps)])
-                   (case (mark-label (car mark-list))
-                     ((not-yet-called)
-                      (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
-                                                                        (zip sub-exprs arg-vals))]
-                                   [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
-                        (if (null? unevaluated)
-                            #`(#%app . #,rectified-evaluated)
-                            #`(#%app 
-                               #,@rectified-evaluated
-                               #,so-far 
-                               #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
-                     ((called)
-                      (if (eq? so-far nothing-so-far)
-                          (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
-                          (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
-                     (else
-                      (error 'recon-inner "bad label (~v) in application mark in expr: ~a" (mark-label (car mark-list)) exp))))
-                 exp)]
-               
-               ; define-struct 
-               ;               
-               ;               [(z:struct-form? expr)
-               ;                 (if (comes-from-define-struct? expr)
-               ;                     so-far
-               ;                     (let ([super-expr (z:struct-form-super expr)]
-               ;                           [raw-type (utils:read->raw (z:struct-form-type expr))]
-               ;                           [raw-fields (map utils:read->raw (z:struct-form-fields expr))])
-               ;                       (if super-expr
-               ;                           `(struct (,raw-type ,so-far)
-               ;                                    ,raw-fields)
-               ;                           `(struct ,raw-type ,raw-fields))))]
-               
-               ; if
-               [(if test then else)
-                (begin
-                  (when (eq? so-far nothing-so-far)
-                    (error 'reconstruct "breakpoint before an if reduction should have a result value"))
-                  (attach-info
-                   #`(if #,so-far
-                         #,(recon-source-current-marks (syntax then))
-                         #,(recon-source-current-marks (syntax else)))
-                   exp))]
-               
-               ; one-armed if
-               
-               [(if test then)
-                (begin
-                  (when (eq? so-far nothing-so-far)
-                    (error 'reconstruct "breakpoint before an if reduction should have a result value"))
-                  (attach-info
-                   #`(if #,so-far #,(recon-source-current-marks (syntax then)))
-                   exp))]
-               
-               ; quote : there is no break on a quote.
-
-               ;; advanced-begin : okay, here comes advanced-begin.
-               
-               [(begin . terms)
-                ;; copied from app:
-                  (error 'reconstruct/inner "how did we get here?")
-                
-                #;(attach-info
-                 (let* ([sub-exprs (syntax->list (syntax terms))]
-                        [arg-temps (build-list (length sub-exprs) get-arg-var)]
-                        [arg-vals (map (lambda (arg-temp) 
-                                         (lookup-binding mark-list arg-temp))
-                                       arg-temps)])
-                   (case (mark-label (car mark-list))
-                     ((not-yet-called)
-                      (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
-                                                                        (zip sub-exprs arg-vals))]
-                                   [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
-                        (if (null? unevaluated)
-                            #`(#%app . #,rectified-evaluated)
-                            #`(#%app 
-                               #,@rectified-evaluated
-                               #,so-far 
-                               #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
-                     ((called)
-                      (if (eq? so-far nothing-so-far)
-                          (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
-                          (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
-                     (else
-                      (error "bad label in application mark in expr: ~a" exp))))
-                 exp)]
-
-               ; begin : in the current expansion of begin, there are only two-element begin's, one-element begins, and 
-               ;; zero-element begins
-               
-               [(begin stx-a stx-b)
-                (attach-info 
-                 (if (eq? so-far nothing-so-far)
-                     #`(begin #,(recon-source-current-marks #`stx-a) #,(recon-source-current-marks #`stx-b))
-                     #`(begin #,so-far #,(recon-source-current-marks #`stx-b))))]
-               
-               [(begin clause)
-                (attach-info
-                 (if (eq? so-far nothing-so-far)
-                     #`(begin #,(recon-source-current-marks (syntax clause)))
-                     (error 
-                      'recon-inner
-                      "stepper:reconstruct: one-clause begin appeared as context: ~a" (syntax-object->datum exp)))
-                 exp)]
-               
-               [(begin)
-                (attach-info
-                 (if (eq? so-far nothing-so-far)
-                     #`(begin)
-                     (error 
-                      'recon-inner
-                      "stepper-reconstruct: zero-clause begin appeared as context: ~a" (syntax-object->datum exp))))]
-               
-               ; begin0 : may not occur directly except in advanced
-               
-               ; let-values
-               
-               [(let-values . rest) (recon-let)]
-               
-               [(letrec-values . rest) (recon-let)]
-               
-               [(set! var rhs)
-                (begin
-                  (when (eq? so-far nothing-so-far)
-                    (error 'reconstruct "breakpoint before an if reduction should have a result value"))
-                  (attach-info
-                   (let ([rendered-var (reconstruct-set!-var mark-list #`var)])
-                     #`(set! #,rendered-var #,so-far))
-                   exp))]
-               
-               ; lambda : there is no break on a lambda
-               
-               [else
-                (error
-                 'recon-inner
-                 "stepper:reconstruct: unknown object to reconstruct: ~a" (syntax-object->datum exp))])))
+             (if (syntax-property exp 'stepper-fake-exp)
+                 
+                 (syntax-case exp ()
+                   [(begin . bodies)
+                    (if (eq? so-far nothing-so-far)
+                        (error 'recon-inner "breakpoint before a begin reduction should have a result value in exp: ~a" (syntax-object->datum exp))
+                        #`(begin #,so-far #,@(map recon-source-current-marks (cdr (syntax->list #'bodies)))))]
+                   [else
+                    (error 'recon-inner "unexpected fake-exp expression: ~a" (syntax-object->datum exp))])
+                 
+                 (kernel:kernel-syntax-case exp #f 
+                                            ; variable references
+                                            [id
+                                             (identifier? (syntax id))
+                                             (if (eq? so-far nothing-so-far)
+                                                 (recon-source-current-marks exp)
+                                                 (error 'recon-inner "variable reference given as context: ~a" exp))]
+                                            
+                                            [(#%top . id)
+                                             (if (eq? so-far nothing-so-far)
+                                                 (recon-source-current-marks exp)
+                                                 (error 'recon-inner "variable reference given as context: ~a" exp))]
+                                            
+                                            ; applications
+                                            [(#%app . terms)
+                                             (attach-info
+                                              (let* ([sub-exprs (syntax->list (syntax terms))]
+                                                     [arg-temps (build-list (length sub-exprs) get-arg-var)]
+                                                     [arg-vals (map (lambda (arg-temp) 
+                                                                      (lookup-binding mark-list arg-temp))
+                                                                    arg-temps)])
+                                                (case (mark-label (car mark-list))
+                                                  ((not-yet-called)
+                                                   (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
+                                                                                                     (zip sub-exprs arg-vals))]
+                                                                [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
+                                                               (if (null? unevaluated)
+                                                                   #`(#%app . #,rectified-evaluated)
+                                                                   #`(#%app 
+                                                                      #,@rectified-evaluated
+                                                                      #,so-far 
+                                                                      #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
+                                                  ((called)
+                                                   (if (eq? so-far nothing-so-far)
+                                                       (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
+                                                       (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
+                                                  (else
+                                                   (error 'recon-inner "bad label (~v) in application mark in expr: ~a" (mark-label (car mark-list)) exp))))
+                                              exp)]
+                                            
+                                            ; define-struct 
+                                            ;               
+                                            ;               [(z:struct-form? expr)
+                                            ;                 (if (comes-from-define-struct? expr)
+                                            ;                     so-far
+                                            ;                     (let ([super-expr (z:struct-form-super expr)]
+                                            ;                           [raw-type (utils:read->raw (z:struct-form-type expr))]
+                                            ;                           [raw-fields (map utils:read->raw (z:struct-form-fields expr))])
+                                            ;                       (if super-expr
+                                            ;                           `(struct (,raw-type ,so-far)
+                                            ;                                    ,raw-fields)
+                                            ;                           `(struct ,raw-type ,raw-fields))))]
+                                            
+                                            ; if
+                                            [(if test then else)
+                                             (begin
+                                               (when (eq? so-far nothing-so-far)
+                                                 (error 'reconstruct "breakpoint before an if reduction should have a result value"))
+                                               (attach-info
+                                                #`(if #,so-far
+                                                      #,(recon-source-current-marks (syntax then))
+                                                      #,(recon-source-current-marks (syntax else)))
+                                                exp))]
+                                            
+                                            ; one-armed if
+                                            
+                                            [(if test then)
+                                             (begin
+                                               (when (eq? so-far nothing-so-far)
+                                                 (error 'reconstruct "breakpoint before an if reduction should have a result value"))
+                                               (attach-info
+                                                #`(if #,so-far #,(recon-source-current-marks (syntax then)))
+                                                exp))]
+                                            
+                                            ; quote : there is no break on a quote.
+                                            
+                                            ;; advanced-begin : okay, here comes advanced-begin.
+                                            
+                                            [(begin . terms)
+                                             ;; copied from app:
+                                             (error 'reconstruct/inner "how did we get here?")
+                                             
+                                             #;(attach-info
+                                                (let* ([sub-exprs (syntax->list (syntax terms))]
+                                                       [arg-temps (build-list (length sub-exprs) get-arg-var)]
+                                                       [arg-vals (map (lambda (arg-temp) 
+                                                                        (lookup-binding mark-list arg-temp))
+                                                                      arg-temps)])
+                                                  (case (mark-label (car mark-list))
+                                                    ((not-yet-called)
+                                                     (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
+                                                                                                       (zip sub-exprs arg-vals))]
+                                                                  [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
+                                                                 (if (null? unevaluated)
+                                                                     #`(#%app . #,rectified-evaluated)
+                                                                     #`(#%app 
+                                                                        #,@rectified-evaluated
+                                                                        #,so-far 
+                                                                        #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
+                                                    ((called)
+                                                     (if (eq? so-far nothing-so-far)
+                                                         (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
+                                                         (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
+                                                    (else
+                                                     (error "bad label in application mark in expr: ~a" exp))))
+                                                exp)]
+                                            
+                                            ; begin : in the current expansion of begin, there are only two-element begin's, one-element begins, and 
+                                            ;; zero-element begins; these arise as the expansion of ... ?
+                                            
+                                            [(begin stx-a stx-b)
+                                             (attach-info 
+                                              (if (eq? so-far nothing-so-far)
+                                                  #`(begin #,(recon-source-current-marks #`stx-a) #,(recon-source-current-marks #`stx-b))
+                                                  #`(begin #,so-far #,(recon-source-current-marks #`stx-b))))]
+                                            
+                                            [(begin clause)
+                                             (attach-info
+                                              (if (eq? so-far nothing-so-far)
+                                                  #`(begin #,(recon-source-current-marks (syntax clause)))
+                                                  (error 
+                                                   'recon-inner
+                                                   "stepper:reconstruct: one-clause begin appeared as context: ~a" (syntax-object->datum exp)))
+                                              exp)]
+                                            
+                                            [(begin)
+                                             (attach-info
+                                              (if (eq? so-far nothing-so-far)
+                                                  #`(begin)
+                                                  (error 
+                                                   'recon-inner
+                                                   "stepper-reconstruct: zero-clause begin appeared as context: ~a" (syntax-object->datum exp))))]
+                                            
+                                            ; begin0 : may not occur directly except in advanced
+                                            #;[(begin0  )]
+                                            
+                                            ; let-values
+                                            
+                                            [(let-values . rest) (recon-let)]
+                                            
+                                            [(letrec-values . rest) (recon-let)]
+                                            
+                                            [(set! var rhs)
+                                             (begin
+                                               (when (eq? so-far nothing-so-far)
+                                                 (error 'reconstruct "breakpoint before an if reduction should have a result value"))
+                                               (attach-info
+                                                (let ([rendered-var (reconstruct-set!-var mark-list #`var)])
+                                                  #`(set! #,rendered-var #,so-far))
+                                                exp))]
+                                            
+                                            ; lambda : there is no break on a lambda
+                                            
+                                            [else
+                                             (error
+                                              'recon-inner
+                                              "stepper:reconstruct: unknown object to reconstruct: ~a" (syntax-object->datum exp))]))))
          
          ; the main recursive reconstruction loop is in recon:
          ; recon : (syntax-object mark-list boolean -> syntax-object)

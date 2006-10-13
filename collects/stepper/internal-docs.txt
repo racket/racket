@@ -219,6 +219,9 @@ stepper-highlight :
   this expression will be highlighted.
   (Not currently tranferred...?)
 
+stepper-fake-exp :
+  this expression does not occur directly in the source; reconstruct specially.
+  used for begin.
 
 STEPPER-HINT COLLISIONS
 
