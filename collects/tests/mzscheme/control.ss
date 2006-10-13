@@ -1,10 +1,8 @@
-;; Examples from Oleg Kiselyov's:
+;; Examples from some papers, and from Oleg Kiselyov's:
 ;;  Generic implementation of all four delimited control operators
 ;;     shift/reset, prompt/control, shift0/reset0 and prompt0/control0
 ;;                    aka. -F- through +F+   
 ;;  $Id: delim-control-n.scm 815 2005-09-05 23:02:12Z oleg $
-;; Plus examples from some papers
-
 
 (load-relative "loadtest.ss")
 
