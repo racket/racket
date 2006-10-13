@@ -1,3 +1,13 @@
+Version 352.7
+Added delimited continuations: call-with-continuation-prompt,
+ call-with-composable-continuation, etc.
+Changed call-with-escape-continuation so that its argument is
+ no longer applied in tail position (reverses a change in v350)
+Changed make-file-or-directory-link to not expand the link
+ content, and changed make-security-guard to have a separate
+ link guard procedure
+Removed write-image-to-file and read-image-from-file
+
 Version 352.6
 Added case-insensitive mode, multi-line mode, lookahead, lookbehind, 
  non-backtracking, and conditionals to regexp language
@@ -5,6 +15,8 @@ Added pregexp, byte-pregexp, and #px..., which includes numeric
  quantifiers, backreferences char classes, and Unicode predicates
 Added regexp-match?, pregexp?, and byte-pregexp?
 Improved [p]regexp performance
+Changed make-file-or-directory-link to not expand its first
+ argument, and adde 'link to the security-guard protocol 
 
 Version 352.5
 for-each, ormap, and andmap now tail-apply the given function
