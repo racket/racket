@@ -282,8 +282,8 @@
  (editor-prefs-panel-label "Editieren")
  (general-prefs-panel-label "Allgemein")
  (highlight-parens "Geklammerten Text hervorheben")
- (fixup-open-parens "Öffnende Klammern automatisch justieren")
- (fixup-close-parens "Schließende Klammern automatisch justieren")
+ (fixup-open-brackets "Öffnende eckige Klammern automatisch anpassen")
+ (fixup-close-parens "Schließende Klammern automatisch anpassen")
  (flash-paren-match "Passende Klammer anblinken")
  (auto-save-files "Dateien automatisch abspeichern")
  (backup-files "Backup-Dateien")
@@ -348,10 +348,15 @@
  (indenting-prefs-panel-label "Einrücken")
  (indenting-prefs-extra-regexp "Zusätzlicher Regexp")
 
+ (square-bracket-prefs-panel-label "eckige Klammern")
+
  ; filled with define, lambda, or begin
  (enter-new-keyword "Bitte ein Schlüsselwort wie ~a eingeben:")
  (x-keyword "~a-Schlüsselwort")
  (x-like-keywords "Schlüsselwort wie ~a")
+
+ ; used in Square bracket panel
+ (skip-subexpressions "Anzahl zu überspringender Unterausdrücke")
 
  (expected-a-symbol "Symbol erwartet, stattdessen bekommen: ~a")
  (already-used-keyword "\"~a\" ist bereits ein Schlüsselwort mit Spezial-Einrückung")
