@@ -3,6 +3,8 @@
 
 (Section 'prompt)
 
+;;----------------------------------------
+
 (define (test-breaks-ok)
   (err/rt-test (break-thread (current-thread)) exn:break?))
 
@@ -102,11 +104,23 @@
 (test 11 call-with-continuation-prompt 
       (lambda () (abort-current-continuation
                   (default-continuation-prompt-tag)
-                  11)))
+                  11))
+      (default-continuation-prompt-tag)
+      values)
+(test 11 call-with-continuation-prompt 
+      (lambda () (abort-current-continuation
+                  (default-continuation-prompt-tag)
+                  (lambda () 11))))
 (test 12 call-with-continuation-prompt 
       (lambda () (abort-current-continuation
                   (default-continuation-prompt-tag)
                   12))
+      (default-continuation-prompt-tag)
+      values)
+(test 12 call-with-continuation-prompt 
+      (lambda () (abort-current-continuation
+                  (default-continuation-prompt-tag)
+                  (lambda () 12)))
       (default-continuation-prompt-tag))
 (test-values '(11 12)
              (lambda ()
@@ -114,19 +128,28 @@
                 (lambda () (abort-current-continuation
                             (default-continuation-prompt-tag)
                             11
-                            12)))))
+                            12))
+                (default-continuation-prompt-tag)
+                values)))
+(test-values '(11 12)
+             (lambda ()
+               (call-with-continuation-prompt 
+                (lambda () (abort-current-continuation
+                            (default-continuation-prompt-tag)
+                            (lambda () (values 11
+                                               12)))))))
 (test 8 call-with-continuation-prompt 
       (lambda () (+ 17
                     (abort-current-continuation
                      (default-continuation-prompt-tag)
-                     8))))
+                     (lambda () 8)))))
 (test 81 call-with-continuation-prompt 
       (lambda () (+ 17
                     (call-with-continuation-prompt 
                      (lambda ()
                        (abort-current-continuation
                         (default-continuation-prompt-tag)
-                        81))
+                        (lambda () 81)))
                      (make-continuation-prompt-tag)))))
 (let ([p (make-continuation-prompt-tag)])
   (test 810 call-with-continuation-prompt 
@@ -137,7 +160,8 @@
                           p
                           810))
                        (make-continuation-prompt-tag))))
-        p))
+        p
+        values))
 
 ;; Aborts with handler
 (test 110 call-with-continuation-prompt 
@@ -477,12 +501,15 @@
     (test 8 call-with-continuation-prompt 
           (lambda ()
             (+ 99 (k (lambda () (abort-current-continuation p 8)))))
-          p))
+          p
+          values))
   (test 8 call-with-continuation-prompt 
         (lambda ()
           (+ 99 (k (lambda () (abort-current-continuation 
                                (default-continuation-prompt-tag)
-                               8)))))))
+                               8)))))
+        (default-continuation-prompt-tag)
+        values))
 
 ;; Etc.
 (let ([k1 (call-with-continuation-prompt
@@ -1046,7 +1073,7 @@
                     (let ([p1 (make-continuation-prompt-tag)])
                       (call-with-continuation-prompt
                        (lambda ()
-                         (f (lambda () (abort-current-continuation p1 30))))
+                         (f (lambda () (abort-current-continuation p1 (lambda () 30)))))
                        p1)))
                30 111)
       (void))))
@@ -1106,6 +1133,7 @@
 ;; ----------------------------------------
 ;; Olivier Danvy's traversal
 
+;; Shift & reset via composable and abort
 (let ()
   (define traverse
     (lambda (xs)
@@ -1117,21 +1145,44 @@
                               (lambda (k)
                                 (abort-current-continuation
                                  (default-continuation-prompt-tag)
-                                 (cons (car xs)
-                                       (call-with-continuation-prompt
-                                        (lambda ()
-                                          (k (cdr xs)))))))))))))
+                                 (let ([v (cons (car xs)
+                                                (call-with-continuation-prompt
+                                                 (lambda ()
+                                                   (k (cdr xs)))))])
+                                   (lambda () v))))))))))
         (call-with-continuation-prompt
          (lambda ()
            (visit xs))))))
   (test '(1 2 3 4 5) traverse '(1 2 3 4 5)))
 
-(letrec ([call-with-prompt-that-stays
-          (lambda (thunk)
-            (call-with-continuation-prompt
-             thunk
-             (default-continuation-prompt-tag)
-             (lambda (thunk) (call-with-prompt-that-stays thunk))))])
+;; Shift & reset using composable and call/cc
+(let ()
+  (define call-in-application-context
+    (call-with-continuation-prompt
+     (lambda ()
+       ((call-with-current-continuation
+         (lambda (k) (lambda () k)))))))
+  (define traverse
+    (lambda (xs)
+      (letrec ((visit
+                (lambda (xs)
+                  (if (null? xs)
+                      '()
+                      (visit (call-with-composable-continuation
+                              (lambda (k)
+                                (call-in-application-context
+                                 (lambda ()
+                                   (cons (car xs)
+                                         (call-with-continuation-prompt
+                                          (lambda ()
+                                            (k (cdr xs))))))))))))))
+        (call-with-continuation-prompt
+         (lambda ()
+           (visit xs))))))
+  (test '(1 2 3 4 5) traverse '(1 2 3 4 5)))
+
+;; control and prompt using composable and abort
+(let ()
   (define traverse
     (lambda (xs)
       (letrec ((visit
@@ -1145,7 +1196,31 @@
                                  (lambda ()
                                    (cons (car xs)
                                          (k (cdr xs))))))))))))
-        (call-with-prompt-that-stays
+        (call-with-continuation-prompt
+         (lambda ()
+           (visit xs))))))
+  (test '(5 4 3 2 1) traverse '(1 2 3 4 5)))
+
+;; control and prompt using composable and call/cc
+(let ()
+  (define call-in-application-context
+    (call-with-continuation-prompt
+     (lambda ()
+       ((call-with-current-continuation
+         (lambda (k) (lambda () k)))))))
+  (define traverse
+    (lambda (xs)
+      (letrec ((visit
+                (lambda (xs)
+                  (if (null? xs)
+                      (list-tail '() 0)
+                      (visit (call-with-composable-continuation
+                              (lambda (k)
+                                (call-in-application-context
+                                 (lambda ()
+                                   (cons (car xs)
+                                         (k (cdr xs))))))))))))
+        (call-with-continuation-prompt
          (lambda ()
            (visit xs))))))
   (test '(5 4 3 2 1) traverse '(1 2 3 4 5)))
@@ -1173,7 +1248,7 @@
                                          (lambda ()
                                            (abort-current-continuation
                                             (default-continuation-prompt-tag)
-                                            5000)))
+                                            (lambda () 5000))))
                                         (+ (loop (sub1 n))))))))))
                            (list (car (pre-loop (sub1 m))))))))))
            (test '(5000) values result)))])
@@ -1215,7 +1290,7 @@
                                 (lambda ()
                                   (k abort))
                                 p))))
-               (lambda () (abort-current-continuation p)))
+               (lambda () (abort-current-continuation p void)))
              p)))))
   )
 
@@ -1285,7 +1360,7 @@
           (lambda ()
             (k (lambda () (abort-current-continuation
                            (default-continuation-prompt-tag)
-                           45)))))))
+                           (lambda () 45))))))))
 
 ;; ----------------------------------------
 
