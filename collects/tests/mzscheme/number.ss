@@ -3,7 +3,6 @@
 
 (Section 'numbers)
 
-(Section 6 5 5)
 (test #f number? 'a)
 (test #f complex? 'a)
 (test #f real? 'a)
@@ -1618,7 +1617,6 @@
 (newline)
 (display ";testing inexact numbers; ")
 (newline)
-(Section 6 5 5)
 (test #t inexact? f3.9)
 (test #f exact? f3.9)
 (test #t 'inexact? (inexact? (max f3.9 4)))
@@ -1818,8 +1816,6 @@
 	     (remainder n1 n2)))))
 
 
-(Section 6 5 5)
-
 (test -2147483648 - 2147483648)
 (test 2147483648 - -2147483648)
 (test #f = -2147483648 2147483648)
@@ -1843,7 +1839,6 @@
 
 (test #t 'remainder (tb 281474976710655 65535))
 (test #t 'remainder (tb 281474976710654 65535))
-(Section 6 5 6)
 (test 281474976710655 string->number "281474976710655")
 (test "281474976710655" number->string 281474976710655)
 (test "-4" number->string -4 16)
@@ -1852,7 +1847,6 @@
 (test "30000000" number->string #x30000000 16)
 
 
-(Section 6 5 6)
 (test "0" number->string 0)
 (test "100" number->string 100)
 (test "100" number->string 256 16)
@@ -1986,8 +1980,6 @@
 (arity-test current-evt-pseudo-random-generator 0 1)
 (err/rt-test (current-pseudo-random-generator 10))
 
-
-(Section 'bignum)
 
 (test #t = 0 0)
 (test #f = 0 (expt 2 32))

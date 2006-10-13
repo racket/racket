@@ -1,9 +1,10 @@
 
 (load-relative "loadtest.ss")
 
+(Section 'file)
+
 (define testing.ss (build-path (current-load-relative-directory) "testing.ss"))
 
-(Section 6 10 1)
 (test #t input-port? (current-input-port))
 (test #t output-port? (current-output-port))
 (test #t output-port? (current-error-port))
@@ -30,7 +31,6 @@
 (err/rt-test (current-input-port (current-output-port)))
 (err/rt-test (current-output-port (current-input-port)))
 (err/rt-test (current-error-port (current-input-port)))
-(Section 6 10 2)
 (test #\; peek-char this-file)
 (arity-test peek-char 0 2)
 (arity-test peek-char-or-special 0 2)
@@ -69,7 +69,6 @@
   (test display-test-obj read test-file)
   (test load-test-obj read test-file)
   (close-input-port test-file))
-(Section 6 10 3)
 (define write-test-obj
   '(#t #f #\a () 9739 -3 . #((test) "te \" \" st" "" test #() b c)))
 (define display-test-obj
@@ -1035,11 +1034,9 @@
 
 ; --------------------------------------------------
 
-(Section 6 10 4)
 (load "tmp1")
 (test write-test-obj 'load foo)
 
-(Section 'inexact-i/io)
 (define wto write-test-obj)
 (define dto display-test-obj)
 (define lto load-test-obj)
@@ -1064,7 +1061,6 @@
 (define badc-range-start 0)
 (define badc-range-end 255)
 
-(Section 'printf)
 (define (test-format format)
   (test "~" format "~~")
   (test "hello---~---there" format "~a---~~---~a" "hello" 'there)
@@ -1310,6 +1306,8 @@
 ;;----------------------------------------------------------------------
 ;; Security guards:
 
+(arity-test make-security-guard 3 4)
+
 ;; Files - - - - - - - - - - - - - - - - - - - - - -
 
 (define (make-file-sg ok-modes)
@@ -1318,12 +1316,16 @@
 			 (unless (andmap (lambda (m) (memq m ok-modes))
 					 modes)
 			   (raise (cons 'fs-reject who))))
-		       void))
+		       void
+		       (lambda (who path path2)
+			 (unless (memq 'link ok-modes)
+			   (raise (cons 'fs-reject (list 'link path2 who)))))))
 (define (fs-reject? who)
-  (lambda (x) (and (pair? x)
-		   (eq? (car x) 'fs-reject)
-		   (eq? (cdr x) who))))
-  
+  (lambda (x) 
+    (and (pair? x)
+	 (eq? (car x) 'fs-reject)
+	 (equal? (cdr x) who))))
+
 (parameterize ([current-security-guard (make-file-sg '(exists read))])
   (test #t path? (expand-path "tmp1"))
   (test #t file-exists? "tmp1")
@@ -1334,6 +1336,7 @@
   (err/rt-test (delete-file "tmp1") (fs-reject? 'delete-file))
   (err/rt-test (rename-file-or-directory "tmp1" "tmp11") (fs-reject? 'rename-file-or-directory))
   (err/rt-test (copy-file "tmp1" "tmp11") (fs-reject? 'copy-file))
+  (err/rt-test (make-file-or-directory-link "tmp1" "tmp11") (fs-reject? 'make-file-or-directory-link))
   (let ([p (open-input-file "tmp1")])
     (test #t input-port? p)
     (close-input-port p))
@@ -1351,7 +1354,10 @@
   (err/rt-test (copy-file "tmp1" "tmp11") (fs-reject? 'copy-file))
   (err/rt-test (file-or-directory-modify-seconds "tmp1") (fs-reject? 'file-or-directory-modify-seconds))
   (err/rt-test (file-or-directory-permissions "tmp1") (fs-reject? 'file-or-directory-permissions))
-  (err/rt-test (file-size "tmp1") (fs-reject? 'file-size)))
+  (err/rt-test (file-size "tmp1") (fs-reject? 'file-size))
+  (err/rt-test (make-file-or-directory-link "tmp1" "tmp11") (fs-reject? (list 'link  
+									      (string->path "tmp1")
+									      'make-file-or-directory-link))))
 
 (parameterize ([current-security-guard (make-file-sg '(read write))])
   (err/rt-test (current-directory) (fs-reject? 'current-directory))
@@ -1393,5 +1399,7 @@
     (err/rt-test (udp-bind! early-udp "localhost" 40000)  (net-reject? 'udp-bind! "localhost" 40000 'server))
     (err/rt-test (udp-connect! early-udp "localhost" 40000)  (net-reject? 'udp-connect! "localhost" 40000 'client))
     (err/rt-test (udp-send-to early-udp "localhost" 40000 #"hi")  (net-reject? 'udp-send-to "localhost" 40000 'client))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

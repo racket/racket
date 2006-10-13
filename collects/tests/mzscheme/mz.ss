@@ -18,6 +18,7 @@
 (load-relative "sync.ss")
 (load-relative "deep.ss")
 (load-relative "contmark.ss")
+(load-relative "prompt.ss")
 (load-relative "will.ss")
 (load-relative "namespac.ss")
 (unless (or building-flat-tests? in-drscheme?)

@@ -34,6 +34,8 @@
 
 (load-relative "pretty.ss")
 
+(load-relative "control.ss")
+
 ;; (load-relative "package.ss")
 
 (load-relative "contract-test.ss")

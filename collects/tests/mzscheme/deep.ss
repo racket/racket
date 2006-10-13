@@ -32,6 +32,15 @@
 			   (k inside))
 			 (k (lambda () 0)))))))
 
+(test 0 'deep-recursion-resume/abort
+      (call-with-continuation-prompt
+       (lambda ()
+	 (nontail-loop proc-depth
+		       (lambda (v)
+                         (abort-current-continuation
+                          (default-continuation-prompt-tag)
+                          (lambda () 0)))))))
+
 (test 0 'deep-recursion-resume/escape/thread
       (let ([v #f])
 	(thread-wait

@@ -258,7 +258,7 @@
 			     [o (open-output-string)])
 			 (parameterize ([current-input-port i]
 					[current-output-port o])
-			     (read-eval-print-loop))
+                           (read-eval-print-loop))
 			 (let ([s (get-output-string o)])
 			   (printf "**~a**~n" s)
 			   (unless (char=? #\5 (string-ref s 2))

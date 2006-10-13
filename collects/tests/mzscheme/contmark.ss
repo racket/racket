@@ -20,15 +20,31 @@
 (syntax-test #'(with-continuation-mark 1 2 3 . 4))
 
 (define (wcm f) (f))
+(define (wcm-in-barrier f)
+  (let loop ([n 100])
+    (if (zero? n)
+	(call-with-continuation-barrier
+	 (lambda ()
+	   (f)))
+	(with-continuation-mark
+	    'something-else
+	    #t
+	  (let ([v (loop (sub1 n))])
+	    (if (and (number? v)
+		     (zero? v))
+		0
+		v))))))
 
 ;; Test with an without wrapping `lambda', mainly to
 ;;  test JIT interactions.
+;; Also test inside a continuation barrier.
 (define-syntax wcm-test
   (syntax-rules (lambda)
     [(_ expect orig)
      (begin 
        (test expect wcm orig)
-       (test expect 'wcm (orig)))]))
+       (test expect 'wcm (orig))
+       (test expect wcm-in-barrier orig))]))
 	    
 
 (wcm-test '(10) (lambda ()
@@ -188,8 +204,10 @@
 	   (continuation-marks k)
 	   'x))]
        [go
-	(lambda (call/xc in?)
-	  (wcm-test '(12 10)
+	(lambda (call/xc in? is-tail?)
+	  (wcm-test (if is-tail?
+                        '(12 10)
+                        '(12 11 10))
 		    (lambda ()
 		      (let ([k (with-continuation-mark 'x 10
 				 (begin0
@@ -206,9 +224,9 @@
 			(if in?
 			    k
 			    (extract k))))))])
-  (go call/cc #t)
-  (go call/cc #f)
-  (go call/ec #t))
+  (go call/cc #t #t)
+  (go call/cc #f #t)
+  (go call/ec #t #f))
 
 ;; nested continuation, mark shared
 (let* ([extract
@@ -514,8 +532,10 @@
 		 'ok)))))
   (test '(a.4 a.3 a.2 a.1 b.4 b.2 b.1) 'thread-marks result))
 
-(arity-test current-continuation-marks 0 0)
-(arity-test continuation-mark-set->list 2 2)
+(arity-test current-continuation-marks 0 1)
+(arity-test continuation-mark-set->list 2 3)
+(arity-test continuation-mark-set->list* 2 4)
+(arity-test continuation-mark-set-first 2 4)
 (arity-test continuation-mark-set? 1 1)
 
 (err/rt-test (continuation-mark-set->list 5 1))
