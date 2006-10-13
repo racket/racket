@@ -44,9 +44,9 @@ exec mred -u "$0" "$@"
                           "steps do not match\n   given: ~v\nexpected: ~v"
                           result (car all-steps)))
 
-                  ;; uncomment for testing:
-                  #;
-                  (when (compare-steps result (car all-steps))
+                  ;; uncomment to see successful steps, too:
+                  
+                  #;(when (compare-steps result (car all-steps))
                     (printf "test-sequence: steps match for expected result: ~v\n"
                             (car all-steps)))
 
@@ -288,7 +288,7 @@ exec mred -u "$0" "$@"
      :: {(for-each (lambda (x) x) `(1 2 3))} -> (... {1} ...)
      :: ... -> (... {2} ...)
      :: ... -> (... {3} ...)
-     :: ... -> {(void)})
+     :: ... -> {3})
 
   ;; new test case language:
   ;; an expected is (listof step)
@@ -1458,8 +1458,8 @@ exec mred -u "$0" "$@"
                        ((+ 3 (hilite (begin 5 6)))))
          (before-after ((+ 3 (hilite (begin 5 6))))
                        ((+ 3 (hilite 6))))
-         (before-after ((hilite (+ 3 6))
-                        (hilite 9))))))
+         (before-after ((hilite (+ 3 6)))
+                       ((hilite 9))))))
 
   (t1 begin
      (test-advanced-sequence "(begin (+ 3 4) (+ 4 5) (+ 9 8))"
@@ -1470,8 +1470,6 @@ exec mred -u "$0" "$@"
         (before-after ((begin (hilite (+ 4 5)) (+ 9 8)))
                       ((begin (hilite 9) (+ 9 8))))
         (before-after ((hilite (begin 9 (+ 9 8))))
-                      ((hilite (begin (+ 9 8)))))
-        (before-after ((hilite (begin (+ 9 8))))
                       ((hilite (+ 9 8))))
         (before-after ((hilite (+ 9 8)))
                       ((hilite 17)))
@@ -1481,6 +1479,53 @@ exec mred -u "$0" "$@"
      (test-advanced-sequence "(begin)"
       `(error "begin: expected a sequence of expressions after `begin', but nothing's there")))
 
+  ;;;;;;;;;;;;
+  ;;
+  ;; BEGIN0
+  ;;
+  ;;;;;;;;;;;;
+  
+  (t1 empty-begin0
+      (test-advanced-sequence "(begin0)"
+       `((before-error-step ((hilite (begin0)))
+                            "begin0: expected a sequence of expressions after `begin0', but nothing's there"))))
+  
+  (t1 trivial-begin0
+     (test-advanced-sequence "(begin0 3)"
+      `((before-after-step ((hilite (begin0 3)))
+                           ((hilite 3)))
+        (finished-stepping))))
+  
+  ;; urg... the first element of a begin0 is in tail position if there's only one.
+  (t1 one-item-begin0
+     (test-advanced-sequence "(begin0 (+ 3 4))"
+       `((before-after-step ((hilite (begin0 (+ 3 4))))
+                            ((hilite (+ 3 4))))
+         (before-after-step ((hilite (+ 3 4)))
+                            ((hilite 7)))
+         (finished-stepping))))
+  
+  (t1 begin0-onlyvalues
+     (test-advanced-sequence "(begin0 3 4 5)"
+      `((before-after-step ((hilite (begin0 3 4 5)))
+                           ((hilite (begin0 3 5))))
+        (before-after-step ((hilite (begin0 3 5)))
+                           ((hilite 3)))
+        (finished-stepping))))
+  
+  (t1 begin0
+      (test-advanced-sequence "(begin0 (+ 3 4) (+ 4 5) (+ 6 7))"
+       `((before-after-step ((begin0 (hilite (+ 3 4)) (+ 4 5) (+ 6 7)))
+                            ((begin0 (hilite 7) (+ 4 5) (+ 6 7))))
+         (before-after-step ((begin0 7 (hilite (+ 4 5)) (+ 6 7)))
+                            ((begin0 7 (hilite 9) (+ 6 7))))
+         (before-after-step ((hilite (begin0 7 9 (+ 6 7))))
+                            ((hilite (begin0 7 (+ 6 7)))))
+         (before-after-step ((begin0 7 (hilite (+ 6 7))))
+                            ((begin0 7 (hilite 13))))
+         (before-after-step ((hilite (begin0 7 13)))
+                            ((hilite 7))))))
+  
 
   ;; LAZY.SS:
 
@@ -1513,7 +1558,7 @@ exec mred -u "$0" "$@"
       "(define (f2c x) x) (convert-gui f2c)" `() ; placeholder
       ))
 
-  ;;(run-tests '(lam-let))
+  #;(run-tests '(begin0))
   (run-all-tests)
 
   )
