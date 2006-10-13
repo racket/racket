@@ -3983,7 +3983,8 @@ static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
 {
-  char *src, *dest;
+  char *src;
+  Scheme_Object *dest;
   int copied;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
@@ -3991,14 +3992,22 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
   if (!SCHEME_PATH_STRINGP(argv[1]))
     scheme_wrong_type("make-file-or-directory-link", SCHEME_PATH_STRING_STR, 0, argc, argv);
 
-  dest = scheme_expand_string_filename(argv[0],
-				       "make-file-or-directory-link",
-				       &copied,
-				       SCHEME_GUARD_FILE_EXISTS);
+  dest = argv[0];
+  /* dest does not get expanded, but we need to make sure it's a path */
+  dest = TO_PATH(dest);
+  if (has_null(SCHEME_PATH_VAL(dest), SCHEME_PATH_LEN(dest))) {
+    raise_null_error("make-file-or-directory-link", dest, "");
+    return NULL;
+  }
+
   src = scheme_expand_string_filename(argv[1],
 				      "make-file-or-directory-link",
 				      &copied,
 				      SCHEME_GUARD_FILE_WRITE);
+
+  scheme_security_check_file_link("make-file-or-directory-link", 
+				  src, 
+				  SCHEME_PATH_VAL(dest));
 
 #if defined(DOS_FILE_SYSTEM)
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
@@ -4007,7 +4016,7 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
 		   argv[1]);
 #else
   while (1) {
-    if (!MSC_W_IZE(symlink)(MSC_WIDE_PATH(dest), src))
+    if (!symlink(SCHEME_PATH_VAL(dest), src))
       return scheme_void;
     else if (errno != EINTR)
       break;

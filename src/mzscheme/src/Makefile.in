@@ -159,7 +159,7 @@ env.@LTO@: $(srcdir)/env.c
 	$(CC) $(CFLAGS) -c $(srcdir)/env.c -o env.@LTO@
 error.@LTO@: $(srcdir)/error.c
 	$(CC) $(CFLAGS) -c $(srcdir)/error.c -o error.@LTO@
-eval.@LTO@: $(srcdir)/eval.c $(srcdir)/schapp.inc
+eval.@LTO@: $(srcdir)/eval.c $(srcdir)/schapp.inc $(srcdir)/schnapp.inc
 	$(CC) $(CFLAGS) -c $(srcdir)/eval.c -o eval.@LTO@
 file.@LTO@: $(srcdir)/file.c
 	$(CC) $(CFLAGS) -c $(srcdir)/file.c -o file.@LTO@

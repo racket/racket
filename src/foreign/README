@@ -10,3 +10,8 @@ ways:
  * Added line to "configure" for i*86-*-darwin*
 
  * Added line to "configure" for i*86-*-openbsd*
+
+ * Added line to "configure" for amd64-*-freebsd*
+
+ * Added case in "configure" sparc64-*-freebsd* to existing sparc64 line
+

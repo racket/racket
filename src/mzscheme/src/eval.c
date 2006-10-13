@@ -513,7 +513,9 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
   /* "Stack overflow" means running out of C-stack space. The other
      end of this handler (i.e., the target for the longjmp) is
      scheme_top_level_do in fun.c */
+  Scheme_Thread *p = scheme_current_thread;
   Scheme_Overflow *overflow;
+  Scheme_Overflow_Jmp *jmp;
 
   scheme_overflow_k = k;
   scheme_overflow_count++;
@@ -523,23 +525,44 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
   overflow->type = scheme_rt_overflow;
 #endif
   overflow->prev = scheme_current_thread->overflow;
-  scheme_current_thread->overflow = overflow;
+  overflow->stack_start = p->stack_start;
+  p->overflow = overflow;
 
-  scheme_init_jmpup_buf(&overflow->cont);
+  jmp = MALLOC_ONE_RT(Scheme_Overflow_Jmp);
+#ifdef MZTAG_REQUIRED
+  jmp->type = scheme_rt_overflow_jmp;
+#endif
+  overflow->jmp = jmp;
+
+  scheme_init_jmpup_buf(&overflow->jmp->cont);
   scheme_zero_unneeded_rands(scheme_current_thread); /* for GC */
-  if (scheme_setjmpup(&overflow->cont, overflow, scheme_current_thread->o_start)) {
-    if (!overflow->captured) /* reset if not captured in a continuation */
-      scheme_reset_jmpup_buf(&overflow->cont);
+  if (scheme_setjmpup(&overflow->jmp->cont, overflow->jmp, ADJUST_STACK_START(p->stack_start))) {
+    p = scheme_current_thread;
+    overflow = p->overflow;
+    p->overflow = overflow->prev;
+    p->error_buf = overflow->jmp->savebuf;
+    if (!overflow->jmp->captured) /* reset if not captured in a continuation */
+      scheme_reset_jmpup_buf(&overflow->jmp->cont);
     if (!scheme_overflow_reply) {
       /* No reply value means we should continue some escape. */
-      scheme_longjmp(scheme_error_buf, 1);
+      if (p->cjs.jumping_to_continuation
+          && p->cjs.is_escape) {
+        /* Jump directly to prompt: */
+        Scheme_Prompt *prompt = (Scheme_Prompt *)p->cjs.jumping_to_continuation;
+        scheme_longjmp(*prompt->prompt_buf, 1);
+      } else {
+        /* Continue normal escape: */
+        scheme_longjmp(scheme_error_buf, 1);
+      }
     } else {
       Scheme_Object *reply = scheme_overflow_reply;
       scheme_overflow_reply = NULL;
       return reply;
     }
-  } else
-    scheme_longjmp(*scheme_current_thread->overflow_buf, 1);
+  } else {
+    p->stack_start = scheme_overflow_stack_start;
+    scheme_longjmpup(&scheme_overflow_jmp->cont);
+  }
   return NULL; /* never gets here */
 }
 
@@ -652,7 +675,8 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
   Scheme_Saved_Stack *saved;
   void *v;
   int cont_count;
-  long min_size;
+  volatile int escape;
+  mz_jmp_buf newbuf, * volatile savebuf;
 
   saved = MALLOC_ONE_RT(Scheme_Saved_Stack);
 
@@ -660,18 +684,27 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
   saved->type = scheme_rt_saved_stack;
 #endif
   saved->prev = p->runstack_saved;
-  saved->runstack = MZ_RUNSTACK;
   saved->runstack_start = MZ_RUNSTACK_START;
+  saved->runstack_offset = (MZ_RUNSTACK - MZ_RUNSTACK_START);
   saved->runstack_size = p->runstack_size;
   
   size += SCHEME_TAIL_COPY_THRESHOLD;
 
-  /* If we keep growing the stack, then probably it
-     needs to be much larger, so at least double the stack size
-     each time: */
-  min_size = 2 * (p->runstack_size);
-  if (size < min_size)
-    size = min_size;
+  if (size) {
+    /* If we keep growing the stack, then probably it
+       needs to be much larger, so at least double the 
+       stack size each time: */
+    long min_size;
+    min_size = 2 * (p->runstack_size);
+    if (size < min_size)
+      size = min_size;
+  } else {
+    /* This is for a prompt. Re-use the current size, 
+       up to a point: */
+    size = p->runstack_size;
+    if (size > 1000)
+      size = 1000;
+  }
 
   p->runstack_saved = saved;
   if (p->spare_runstack && (size <= p->spare_runstack_size)) {
@@ -686,23 +719,37 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
   
   cont_count = scheme_cont_capture_count;
 
-  v = k();
-  /* If `k' escapes, the escape handler will restore the stack
-     pointers. */
+  savebuf = p->error_buf;
+  p->error_buf = &newbuf;
+  if (scheme_setjmp(newbuf)) {
+    v = NULL;
+    escape = 1;
+    p = scheme_current_thread; /* might have changed! */
+  } else {
+    v = k();
+    escape = 0;
+    p = scheme_current_thread; /* might have changed! */
 
-  p = scheme_current_thread; /* might have changed! */
-
-  if (cont_count == scheme_cont_capture_count) {
-    if (!p->spare_runstack || (p->runstack_size > p->spare_runstack_size)) {
-      p->spare_runstack = MZ_RUNSTACK_START;
-      p->spare_runstack_size = p->runstack_size;
+    if (cont_count == scheme_cont_capture_count) {
+      if (!p->spare_runstack || (p->runstack_size > p->spare_runstack_size)) {
+        p->spare_runstack = MZ_RUNSTACK_START;
+        p->spare_runstack_size = p->runstack_size;
+      }
     }
   }
 
+  p->error_buf = savebuf;
+
+  saved = p->runstack_saved;
+
   p->runstack_saved = saved->prev;
-  MZ_RUNSTACK = saved->runstack;
   MZ_RUNSTACK_START = saved->runstack_start;
+  MZ_RUNSTACK = MZ_RUNSTACK_START + saved->runstack_offset;
   p->runstack_size = saved->runstack_size;
+
+  if (escape) {
+    scheme_longjmp(*p->error_buf, 1);
+  }
 
   return v;
 }
@@ -5282,30 +5329,68 @@ void scheme_pop_continuation_frame(Scheme_Cont_Frame_Data *d)
   MZ_CONT_MARK_STACK = d->cont_mark_stack;
 }
 
-void *scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
+MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Cont_Mark *cm = NULL;
-  long findpos;
+  long findpos, bottom;
 
   findpos = (long)MZ_CONT_MARK_STACK;
-  while (findpos--) {
-    Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
-    long pos = findpos & SCHEME_MARK_SEGMENT_MASK;
-    Scheme_Cont_Mark *find = seg + pos;
+  bottom = (long)p->cont_mark_stack_bottom;
+  while (1) {
+    if (findpos-- > bottom) {
+      Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+      long pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+      Scheme_Cont_Mark *find = seg + pos;
 
-    if ((long)find->pos < (long)MZ_CONT_MARK_POS) {
-      break;
-    } else {
-      if (find->key == key) {
-	cm = find;
-	break;
+      if ((long)find->pos < (long)MZ_CONT_MARK_POS) {
+        break;
       } else {
-	/* Assume that we'll mutate rather than allocate a new mark record. */
-	/* This is a bad assumption for a nasty program that repeatedly
-	   creates a new key for the same frame, but it's good enough. */
-	find->cache = NULL;
+        if (find->key == key) {
+          cm = find;
+          break;
+        } else {
+          /* Assume that we'll mutate rather than allocate a new mark record. */
+          /* This is a bad assumption for a nasty program that repeatedly
+             creates a new key for the same frame, but it's good enough. */
+          find->cache = NULL;
+        }
       }
+    } else {
+      if (MZ_CONT_MARK_POS == p->cont_mark_pos_bottom + 2) {
+        if (p->meta_continuation) {
+          if (key != scheme_stack_dump_key) {
+            /* Check the end of the meta-continuation's stack */
+            Scheme_Meta_Continuation *mc = p->meta_continuation;
+            for (findpos = (long)mc->cont_mark_shareable; findpos--; ) {
+              if (mc->cont_mark_stack_copied[findpos].pos != mc->cont_mark_pos)
+                break;
+              if (mc->cont_mark_stack_copied[findpos].key == key) {
+                if (mc->copy_after_captured < scheme_cont_capture_count) {
+                  /* Clone the meta-continuation, in case it was captured by
+                     a continuation in its current state. */
+                  Scheme_Meta_Continuation *naya;
+                  Scheme_Cont_Mark *cp;
+                  naya = MALLOC_ONE_RT(Scheme_Meta_Continuation);
+                  memcpy(naya, mc, sizeof(Scheme_Meta_Continuation));
+                  cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_shareable);
+                  memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_shareable * sizeof(Scheme_Cont_Mark));
+                  naya->cont_mark_stack_copied = cp;
+                  naya->copy_after_captured = scheme_cont_capture_count;
+                  mc = naya;
+                  p->meta_continuation = mc;
+                }
+                mc->cont_mark_stack_copied[findpos].val = val;
+                mc->cont_mark_stack_copied[findpos].cache = NULL;
+                return 0;
+              } else {
+                mc->cont_mark_stack_copied[findpos].cache = NULL;
+              }
+            }
+          }
+        }
+      }
+      break;
     }
   }
 
@@ -5334,6 +5419,7 @@ void *scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
 
     seg = p->cont_mark_stack_segments[segpos];
     cm = seg + pos;
+    findpos = MZ_CONT_MARK_STACK;
     MZ_CONT_MARK_STACK++;
   }
 
@@ -5342,7 +5428,7 @@ void *scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
   cm->pos = MZ_CONT_MARK_POS; /* always odd */
   cm->cache = NULL;
 
-  return cm;
+  return findpos;
 }
 
 void scheme_temp_dec_mark_depth()
@@ -5495,6 +5581,51 @@ static void make_tail_buffer_safe()
   p->tail_buffer = tb;
 }
 
+static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
+                                         Scheme_Object *prompt_tag, int *_common_depth)
+{
+  int alen = 0, blen = 0;
+  int prompt_delta = 0;
+
+  if (prompt_tag) {
+    Scheme_Dynamic_Wind *dw;
+    for (dw = a; dw && (dw->prompt_tag != prompt_tag); dw = dw->prev) {
+    }
+    if (dw)
+      prompt_delta = dw->depth + 1;
+  }
+
+  alen = (a ? a->depth + 1 : 0) - prompt_delta;
+  blen = (b ? b->depth + 1 : 0);
+
+  while (alen > blen) {
+    --alen;
+    a = a->prev;
+  }
+  if (!alen) {
+    *_common_depth = -1;
+    return a;
+  }
+  while (blen > alen) {
+    --blen;
+    b = b->prev;
+  }
+
+  /* At this point, we have chains that are the same length. */
+  while (blen) {
+    if (SAME_OBJ(a->id ? a->id : (Scheme_Object *)a, 
+                 b->id ? b->id : (Scheme_Object *)b))
+      break;
+    a = a->prev;
+    b = b->prev;
+    blen--;
+  }
+
+  *_common_depth = (b ? b->depth : -1);
+
+  return a;
+}
+
 #ifdef REGISTER_POOR_MACHINE
 # define USE_LOCAL_RUNSTACK 0
 # define DELAY_THREAD_RUNSTACK_UPDATE 0
@@ -5544,7 +5675,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 #if USE_LOCAL_RUNSTACK
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **runstack;
 #endif
-  GC_MAYBE_IGNORE_INTERIOR Scheme_Cont_Mark *pm = NULL;
+  MZ_MARK_STACK_TYPE pmstack = -1;
 # define p scheme_current_thread
 
 #ifdef DO_STACK_CHECK
@@ -5821,24 +5952,33 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       obj = data->code;
 
-      if (pm) { 
+      if (pmstack >= 0) {
+        long segpos = ((long)pmstack) >> SCHEME_LOG_MARK_SEGMENT_SIZE;
+        long pos = ((long)pmstack) & SCHEME_MARK_SEGMENT_MASK;
+        GC_CAN_IGNORE Scheme_Cont_Mark *pm = NULL;
+
+        pm = p->cont_mark_stack_segments[segpos] + pos;
+
 	if (!pm->cache)
 	  pm->val = data->name; 
 	else {
-	  /* Need to clear caches and/or update pm, so do it the slow way */
+	  /* Need to clear caches, so do it the slow way */
 	  UPDATE_THREAD_RSPTR_FOR_PROC_MARK();
-	  pm = (Scheme_Cont_Mark *)scheme_set_cont_mark(scheme_stack_dump_key, data->name); 
+	  pmstack = scheme_set_cont_mark(scheme_stack_dump_key, data->name); 
 	}
       } else { 
 	/* Allocate a new mark record: */
 	long segpos = ((long)MZ_CONT_MARK_STACK) >> SCHEME_LOG_MARK_SEGMENT_SIZE;
 	if (segpos >= p->cont_mark_seg_count) {
 	  UPDATE_THREAD_RSPTR_FOR_PROC_MARK();
-	  pm = (Scheme_Cont_Mark *)scheme_set_cont_mark(scheme_stack_dump_key, data->name); 
+	  pmstack = scheme_set_cont_mark(scheme_stack_dump_key, data->name); 
 	} else {
 	  long pos = ((long)MZ_CONT_MARK_STACK) & SCHEME_MARK_SEGMENT_MASK;
+          GC_CAN_IGNORE Scheme_Cont_Mark *pm;
 	  GC_CAN_IGNORE Scheme_Cont_Mark *seg;
 	
+          pmstack = MZ_CONT_MARK_STACK;
+
 	  seg = p->cont_mark_stack_segments[segpos];
 	  pm = seg + pos;
 	  MZ_CONT_MARK_STACK++;
@@ -5914,6 +6054,9 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       Scheme_Cont *c;
       Scheme_Dynamic_Wind *dw, *common;
       Scheme_Object *value;
+      Scheme_Meta_Continuation *prompt_mc;
+      Scheme_Prompt *prompt;
+      int common_depth;
       
       if (num_rands != 1) {
 	GC_CAN_IGNORE Scheme_Object **vals;
@@ -5944,51 +6087,161 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	c = c->buf.cont;
       }
 
-      if (c->ok && !*c->ok) {
-	UPDATE_THREAD_RSPTR_FOR_ERROR();
-	scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
-			 "continuation application: attempted to cross a continuation barrier");
-      }
-      
-      p->suspend_break++; /* restored at call/cc destination */
+      if (c->composable) {
+        /* Composable continuation. Jump right in... */
+        RUNSTACK = old_runstack;
+	RUNSTACK_CHANGED();
+        UPDATE_THREAD_RSPTR();
+        v = scheme_compose_continuation(c, num_rands, value);
+      } else {
+        /* Aborting (Scheme-style) continuation. */
 
-      /* Find `common', then intersection of dynamic-wind chain for 
-	 the current continuation and the given continuation */
-      common = p->dw;
-      while (common) {
-	dw = c->dw;
-	while (dw && dw != common) {
-	  dw = dw->prev;
-	}
-	if (dw)
-	  break;
-	common = common->prev;
-      }
-	
-      c->common = common;
-      /* For dynamic-winds after `common' in this
-	 continuation, execute the post-thunks */
-      for (dw = p->dw; dw != common; dw = dw->prev) {
-	if (dw->post) {
-	  DW_PrePost_Proc post = dw->post;
-	  p->dw = dw->prev;
-	  MZ_CONT_MARK_POS = dw->envss.cont_mark_pos;
-	  MZ_CONT_MARK_STACK = dw->envss.cont_mark_stack;
-	  post(dw->data);
-	  p = scheme_current_thread;
-	}
-      }
+        prompt = (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, 
+                                                                       SCHEME_PTR_VAL(c->prompt_tag),
+                                                                       NULL,
+                                                                       &prompt_mc);
+        if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, c->prompt_tag)) {
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                           "continuation application: no corresponding prompt in the current continuation");
+        }
+
+        /* A continuation barrier is analogous to a dynamic-wind. A jump is
+           allowed if no dynamic-wind-like barriers would be executed for
+           the jump. */
+        {
+          Scheme_Prompt *b1, *b2;
+
+          b1 = p->barrier_prompt;
+          if (b1) {
+            if (!b1->is_barrier)
+              b1 = NULL;
+            else if (prompt && (prompt->depth > b1->depth))
+              b1 = NULL;
+          }
+          b2 = c->ss.barrier_prompt;
+          if (b2) {
+            if (!b2->is_barrier)
+              b2 = NULL;
+            else if (c->prompt_depth > b2->depth)
+              b2 = NULL;
+          }
+        
+          if (b1 != b2) {
+            UPDATE_THREAD_RSPTR_FOR_ERROR();
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                             "continuation application: attempt to cross a continuation barrier");
+          }
+        }
+
+        p->suspend_break++; /* restored at call/cc destination */
+
+        /* Find `common', the intersection of dynamic-wind chain for 
+           the current continuation and the given continuation, looking
+           no further back in the current continuation than a prompt. */
+        common = intersect_dw(p->dw, c->dw, c->prompt_tag, &common_depth);
+
+        /* For dynamic-winds after `common' in this
+           continuation, execute the post-thunks */
+        {
+          int meta_depth = 0;
+          
+          for (dw = p->dw; 
+               ((common && common->id) ? dw->id != common->id : dw != common); 
+               ) {
+            if (dw->post) {
+              p->dw = dw->prev;
+              meta_depth += dw->next_meta;
+              if (meta_depth) {
+                scheme_apply_dw_in_meta(dw, 1, meta_depth);
+              } else {
+                DW_PrePost_Proc post = dw->post;
+
+                MZ_CONT_MARK_POS = dw->envss.cont_mark_pos;
+                MZ_CONT_MARK_STACK = dw->envss.cont_mark_stack;
+                post(dw->data);
+              }
+              p = scheme_current_thread;
+              /* p->dw might not match dw if the post thunk captures a
+                 continuation that is later restored in a different 
+                 meta continuation: */
+              dw = p->dw;
+            } else
+              dw = dw->prev;
+          }
+        }
+
+        c->common_dw_depth = common_depth;
       
-      if (num_rands == 1)
-	c->value = value;
-      else {
-	GC_CAN_IGNORE Scheme_Object *vals;
-	vals = scheme_values(num_rands, (Scheme_Object **)value);
-	c->value = vals;
-      }
-      scheme_longjmpup(&c->buf);
+        if (num_rands == 1)
+          c->value = value;
+        else {
+          GC_CAN_IGNORE Scheme_Object *vals;
+          vals = scheme_values(num_rands, (Scheme_Object **)value);
+          c->value = vals;
+        }
+
+        p->dw = common;
+
+        if (!prompt) {
+          /* Invoke the continuation directly. If there's no prompt,
+             then the prompt's job is taken by the pseudo-prompt
+             created with a new thread or a barrier prompt. */
+          p->meta_continuation = NULL; /* since prompt wasn't in any meta-continuation */
+          p->meta_prompt = NULL;
+          if (c->ss.barrier_prompt == p->barrier_prompt) {
+            /* Barrier determines continuation end. */
+            c->resume_to = NULL;
+            p->stack_start = c->stack_start;
+          } else {
+            /* Prompt is pseudo-prompt at thread beginning.
+               We're effectively composing the continuation,
+               so use it's prompt stack start. */
+            Scheme_Overflow *oflow;
+            oflow = scheme_get_thread_end_overflow();
+            c->resume_to = oflow;
+            p->stack_start = c->prompt_stack_start;
+          }
+          scheme_longjmpup(&c->buf);
+        } else {
+          p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
+          p->cjs.num_vals = 1;
+          p->cjs.val = (Scheme_Object *)c;
+          p->cjs.is_escape = 1;
+       
+          if (prompt_mc) {
+            /* The prompt is from a meta-continuation that's different
+               from the current one. Jump to the meta-continuation
+               and continue from there. Immediate destination is
+               in compose_continuation() in fun.c; the ultimate
+               destination is in scheme_finish_apply_for_prompt()
+               in fun.c. */
+            p->meta_continuation = prompt_mc->next;
+            p->stack_start = prompt_mc->overflow->stack_start;
+            scheme_longjmpup(&prompt_mc->overflow->jmp->cont);
+          } else if ((!prompt->boundary_overflow_id && !p->overflow)
+                     || (prompt->boundary_overflow_id == p->overflow->id)) {
+            /* Jump directly to the prompt: destination is in
+               scheme_finish_apply_for_prompt() in fun.c. */
+            scheme_longjmp(*prompt->prompt_buf, 1);
+          } else {
+            /* Need to unwind overflows to get to the prompt. */
+            Scheme_Overflow *overflow = p->overflow;
+            while (overflow->prev
+                   && (!overflow->prev->id
+                       || (overflow->prev->id != prompt->boundary_overflow_id))) {
+              overflow = overflow->prev;
+            }
+            /* Immediate destination is in scheme_handle_stack_overflow().
+               Ultimate destination is in scheme_finish_apply_for_prompt()
+               in fun.c. */
+            p->overflow = overflow;
+            p->stack_start = overflow->stack_start;
+            scheme_longjmpup(&overflow->jmp->cont);
+          }
+        }
       
-      return NULL;
+        return NULL;
+      }
     } else if (type == scheme_escaping_cont_type) {
       Scheme_Object *value;
 
@@ -6019,8 +6272,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 			 "continuation application: attempt to jump into an escape continuation");
       }
       
-      p->cjs.u.val = value;
-      p->cjs.jumping_to_continuation = (Scheme_Escaping_Cont *)obj;
+      p->cjs.val = value;
+      p->cjs.jumping_to_continuation = obj;
       scheme_longjmp(MZTHREADELEM(p, error_buf), 1);
       return NULL;
     } else if (type == scheme_proc_struct_type) {

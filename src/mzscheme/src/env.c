@@ -166,6 +166,7 @@ Scheme_Env *scheme_basic_env()
 #ifndef MZ_PRECISE_GC
     scheme_init_setjumpup();
 #endif
+    scheme_reset_overflow();
 
     scheme_make_thread();
     scheme_init_error_escape_proc(NULL);
@@ -224,6 +225,7 @@ Scheme_Env *scheme_basic_env()
 #endif
 
   scheme_init_stack_check();
+  scheme_init_overflow();
   scheme_init_portable_case();
 
 
@@ -430,7 +432,6 @@ static void make_init_env(void)
   MZTIMEIT(print, scheme_init_print(env));
   MZTIMEIT(file, scheme_init_file(env));
   MZTIMEIT(dynamic-extension, scheme_init_dynamic_extension(env));
-  MZTIMEIT(image, scheme_init_image(env));
 #ifndef NO_REGEXP_UTILS
   MZTIMEIT(regexp, scheme_regexp_initialize(env));
 #endif

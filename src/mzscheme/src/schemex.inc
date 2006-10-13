@@ -146,6 +146,7 @@
   scheme_extension_table->scheme_temp_inc_mark_depth = scheme_temp_inc_mark_depth;
   scheme_extension_table->scheme_current_continuation_marks = scheme_current_continuation_marks;
   scheme_extension_table->scheme_extract_one_cc_mark = scheme_extract_one_cc_mark;
+  scheme_extension_table->scheme_extract_one_cc_mark_to_tag = scheme_extract_one_cc_mark_to_tag;
   scheme_extension_table->scheme_do_eval = scheme_do_eval;
   scheme_extension_table->scheme_eval_compiled_stx_string = scheme_eval_compiled_stx_string;
   scheme_extension_table->scheme_load_compiled_stx_string = scheme_load_compiled_stx_string;
@@ -445,6 +446,7 @@
   scheme_extension_table->scheme_add_fd_handle = scheme_add_fd_handle;
   scheme_extension_table->scheme_add_fd_eventmask = scheme_add_fd_eventmask;
   scheme_extension_table->scheme_security_check_file = scheme_security_check_file;
+  scheme_extension_table->scheme_security_check_file_link = scheme_security_check_file_link;
   scheme_extension_table->scheme_security_check_network = scheme_security_check_network;
   scheme_extension_table->scheme_get_host_address = scheme_get_host_address;
   scheme_extension_table->scheme_free_host_address = scheme_free_host_address;

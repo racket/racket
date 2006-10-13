@@ -25,7 +25,7 @@
 #include "wx_gdi.h"
 #include "wx_utils.h"
 
-extern Bool wx_ignore_key;
+extern void wxSmuggleOutEvent(EventRef);
 Bool wx_propagate_key;
 
 wxItem::wxItem(void)
@@ -262,7 +262,10 @@ static OSStatus myEventHandler(EventHandlerCallRef inHandlerCallRef,
   if (wx_propagate_key) {
     return eventNotHandledErr;
   } else {
-    wx_ignore_key = TRUE;
+    /* We don't want anyone else to handle this event
+       at the OS X level, out smuggle out the event
+       so it can be picked up at the WaitNextEvent level: */
+    wxSmuggleOutEvent(inEvent);
     return noErr;
   }
 }

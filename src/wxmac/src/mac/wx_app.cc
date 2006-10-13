@@ -262,6 +262,7 @@ void wxApp::doMacDispatch(EventRecord *e)
       doMacMouseUp(); break;
     case keyDown:
     case wheelEvt:
+    case unicodeEvt:
       doMacKeyDown(); break;
     case autoKey:
       doMacAutoKey(); break;
@@ -645,6 +646,8 @@ void wxApp::doMacKeyUpDown(Bool down)
       key = WXK_WHEEL_UP;
     else
       key = WXK_WHEEL_DOWN;
+  } else if (cCurrentEvent.what == unicodeEvt) {
+    key = cCurrentEvent.message;
   } else {
     key = (cCurrentEvent.message & keyCodeMask) >> 8;
     /* Better way than to use hard-wired key codes? */

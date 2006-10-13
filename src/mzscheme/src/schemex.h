@@ -223,14 +223,17 @@ Scheme_Object *(*scheme_tail_eval_expr)(Scheme_Object *obj);
 void (*scheme_set_tail_buffer_size)(int s);
 Scheme_Object *(*scheme_force_value)(Scheme_Object *);
 Scheme_Object *(*scheme_force_one_value)(Scheme_Object *);
-void *(*scheme_set_cont_mark)(Scheme_Object *key, Scheme_Object *val);
+MZ_MARK_STACK_TYPE (*scheme_set_cont_mark)(Scheme_Object *key, Scheme_Object *val);
 void (*scheme_push_continuation_frame)(Scheme_Cont_Frame_Data *);
 void (*scheme_pop_continuation_frame)(Scheme_Cont_Frame_Data *);
 void (*scheme_temp_dec_mark_depth)();
 void (*scheme_temp_inc_mark_depth)();
-Scheme_Object *(*scheme_current_continuation_marks)(void);
+Scheme_Object *(*scheme_current_continuation_marks)(Scheme_Object *prompt_tag);
 Scheme_Object *(*scheme_extract_one_cc_mark)(Scheme_Object *mark_set, 
 						    Scheme_Object *key);
+Scheme_Object *(*scheme_extract_one_cc_mark_to_tag)(Scheme_Object *mark_set, 
+                                                           Scheme_Object *key,
+                                                           Scheme_Object *prompt_tag);
 /* Internal */
 Scheme_Object *(*scheme_do_eval)(Scheme_Object *obj, int _num_rands, Scheme_Object **rands, int val);
 Scheme_Object *(*scheme_eval_compiled_stx_string)(Scheme_Object *expr, Scheme_Env *env,
@@ -663,6 +666,7 @@ int (*scheme_fdisset)(void *fd, int pos);
 void (*scheme_add_fd_handle)(void *h, void *fds, int repost);
 void (*scheme_add_fd_eventmask)(void *fds, int mask);
 void (*scheme_security_check_file)(const char *who, const char *filename, int guards);
+void (*scheme_security_check_file_link)(const char *who, const char *filename, const char *content);
 void (*scheme_security_check_network)(const char *who, const char *host, int port, int client);
 struct mz_addrinfo *(*scheme_get_host_address)(const char *address, int id, int *err, 
 						      int family, int passive, int tcp);

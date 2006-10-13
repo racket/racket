@@ -154,6 +154,8 @@ Scheme_Thread_Set *thread_set_top;
 
 static int num_running_threads = 1;
 
+void *scheme_deepest_stack_start;
+
 #ifdef LINK_EXTENSIONS_BY_TABLE
 Scheme_Thread **scheme_current_thread_ptr;
 volatile int *scheme_fuel_counter_ptr;
@@ -367,7 +369,7 @@ typedef struct {
 static int num_nsos = 0;
 static Scheme_NSO *namespace_options = NULL;
 
-#define SETJMP(p) scheme_setjmpup(&p->jmpup_buf, p, p->stack_start)
+#define SETJMP(p) scheme_setjmpup(&p->jmpup_buf, p, ADJUST_STACK_START(p->stack_start))
 #define LONGJMP(p) scheme_longjmpup(&p->jmpup_buf)
 #define RESETJMP(p) scheme_reset_jmpup_buf(&p->jmpup_buf)
 
@@ -552,7 +554,7 @@ void scheme_init_thread(Scheme_Env *env)
   scheme_add_global_constant("make-security-guard", 
 			     scheme_make_prim_w_arity(make_security_guard,
 						      "make-security-guard", 
-						      3, 3), 
+						      3, 4), 
 			     env);
   scheme_add_global_constant("current-security-guard", 
 			     scheme_register_parameter(current_security_guard,
@@ -2172,8 +2174,6 @@ void scheme_swap_thread(Scheme_Thread *new_thread)
 	f(o);
       }
     }
-    if (scheme_current_thread->cc_ok)
-      *(scheme_current_thread->cc_ok) = scheme_current_thread->cc_ok_save;
     if ((scheme_current_thread->runstack_owner
 	 && ((*scheme_current_thread->runstack_owner) != scheme_current_thread))
 	|| (scheme_current_thread->cont_mark_stack_owner
@@ -2189,10 +2189,6 @@ void scheme_swap_thread(Scheme_Thread *new_thread)
       int cb;
       cb = can_break_param(scheme_current_thread);
       scheme_current_thread->can_break_at_swap = cb;
-    }
-    if (scheme_current_thread->cc_ok) {
-      scheme_current_thread->cc_ok_save = *(scheme_current_thread->cc_ok);
-      *(scheme_current_thread->cc_ok) = 0;
     }
     scheme_gmp_tls_load(scheme_current_thread->gmp_tls);
 #ifdef RUNSTACK_IS_GLOBAL
@@ -2307,7 +2303,6 @@ static void thread_is_dead(Scheme_Thread *r)
   r->transitive_resumes = NULL;
   
   r->error_buf = NULL;
-  r->overflow_buf = NULL;
 
   r->spare_runstack = NULL;
 }
@@ -2407,11 +2402,27 @@ static void remove_thread(Scheme_Thread *r)
   r->extra_mrefs = scheme_null;
 }
 
+void scheme_end_current_thread(void)
+{
+  remove_thread(scheme_current_thread);
+  
+  thread_ended_with_activity = 1;
+  
+  if (scheme_notify_multithread && !scheme_first_thread->next) {
+    scheme_notify_multithread(0);
+    have_activity = 0;
+  }
+  
+  select_thread();
+}
+
 static void start_child(Scheme_Thread * volatile child,
 			Scheme_Object * volatile child_eval)
 {
   if (SETJMP(child)) {
     /* Initial swap in: */
+    Scheme_Object * volatile result = NULL;
+
     thread_swap_count++;
 #ifdef RUNSTACK_IS_GLOBAL
     MZ_RUNSTACK = scheme_current_thread->runstack;
@@ -2446,11 +2457,9 @@ static void start_child(Scheme_Thread * volatile child,
       mz_jmp_buf newbuf;
       scheme_current_thread->error_buf = &newbuf;
       if (!scheme_setjmp(newbuf)) {
-	/* check for initial break before we do anything */
-	scheme_check_break_now();
-	
-	/* run the main thunk: */
-	scheme_apply_thread_thunk(child_eval);
+	/* Run the main thunk: */
+	/* (checks for break before doing anything else) */
+	result = scheme_apply_thread_thunk(child_eval);
       }
     }
 
@@ -2458,20 +2467,38 @@ static void start_child(Scheme_Thread * volatile child,
        different thread, which invoked the original thread's
        continuation. */
 
-    remove_thread(scheme_current_thread);
+    /* If we still have a meta continuation, then it means we
+       should be resuming at a prompt, not exiting. */
+    while (scheme_current_thread->meta_continuation) {
+      Scheme_Thread *p = scheme_current_thread;
+      Scheme_Overflow *oflow;
 
-    thread_ended_with_activity = 1;
-    
-    if (scheme_notify_multithread && !scheme_first_thread->next) {
-      scheme_notify_multithread(0);
-      have_activity = 0;
+      p->cjs.val = result;
+
+      if (!SAME_OBJ(p->meta_continuation->prompt_tag, scheme_default_prompt_tag)) {
+        scheme_signal_error("thread ended with meta continuation that isn't for the default prompt");
+      } else {
+        oflow = p->meta_continuation->overflow;
+        p->meta_continuation = p->meta_continuation->next;
+        if (!oflow->eot) {
+          p->stack_start = oflow->stack_start;
+          scheme_longjmpup(&oflow->jmp->cont);
+        }
+      }
     }
 
-    select_thread();
+    scheme_end_current_thread();
 
     /* Shouldn't get here! */
     scheme_signal_error("bad thread switch");
   }
+}
+
+void scheme_ensure_stack_start(void *d)
+{
+  if (!scheme_deepest_stack_start
+      || (STK_COMP((unsigned long)scheme_deepest_stack_start, (unsigned long)d)))
+    scheme_deepest_stack_start = d;
 }
 
 static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
@@ -2487,7 +2514,7 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
  
   turn_on_multi = !scheme_first_thread->next;
   
-  scheme_ensure_stack_start(scheme_current_thread, child_start);
+  scheme_ensure_stack_start(child_start);
   
   if (!config)
     config = scheme_current_config();
@@ -2684,9 +2711,6 @@ static Scheme_Object *thread_k(void)
   Scheme_Custodian *mgr;
   Scheme_Thread_Cell_Table *cells;
   int suspend_to_kill = p->ku.k.i1;
-#ifndef MZ_PRECISE_GC
-  long dummy;
-#endif
   
   thunk = (Scheme_Object *)p->ku.k.p1;
   config = (Scheme_Config *)p->ku.k.p2;
@@ -2699,12 +2723,7 @@ static Scheme_Object *thread_k(void)
   p->ku.k.p3 = NULL;
   p->ku.k.p4 = NULL;
   
-  result = make_subprocess(thunk,
-#ifdef MZ_PRECISE_GC
-			   (void *)&__gc_var_stack__,
-#else
-			   (void *)&dummy, 
-#endif
+  result = make_subprocess(thunk, PROMPT_STACK(result),
 			   config, cells, break_cell, mgr, !suspend_to_kill);
 
   /* Don't get rid of `result'; it keeps the
@@ -2769,16 +2788,17 @@ static Scheme_Object *def_nested_exn_handler(int argc, Scheme_Object *argv[])
 {
   if (scheme_current_thread->nester) {
     Scheme_Thread *p = scheme_current_thread;
-    p->cjs.jumping_to_continuation = (struct Scheme_Escaping_Cont *)scheme_current_thread;
-    p->cjs.u.val = argv[0];
+    p->cjs.jumping_to_continuation = (Scheme_Object *)scheme_current_thread;
+    p->cjs.val = argv[0];
     p->cjs.is_kill = 0;
     scheme_longjmp(*p->error_buf, 1);
   }
 
-  return scheme_void; /* misuse of exception handler */
+  return scheme_void; /* misuse of exception handler (wrong kind of thread or under prompt) */
 }
 
-static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
+/* private, but declared as public to avoid inlining: */
+Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], void *max_bottom)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Thread * volatile np;
@@ -2841,22 +2861,12 @@ static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
   }
   np->tail_buffer_size = p->tail_buffer_size;
 
-  np->overflow_set = p->overflow_set;
-  np->o_start = p->o_start;
-  np->overflow_buf = p->overflow_buf;
-
-  /* In case it's not yet set in the main thread... */
-  scheme_ensure_stack_start((Scheme_Thread *)np, (int *)&failure);
+  scheme_ensure_stack_start(max_bottom);
   
   np->list_stack = p->list_stack;
   np->list_stack_pos = p->list_stack_pos;
 
   scheme_gmp_tls_init(np->gmp_tls);
-  
-  if (p->cc_ok) {
-    p->cc_ok_save = *p->cc_ok;
-    *p->cc_ok = 0;
-  }
 
   /* np->prev = NULL; - 0ed by allocation */
   np->next = scheme_first_thread;
@@ -2940,7 +2950,7 @@ static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
   np->error_buf = &newbuf;
   if (scheme_setjmp(newbuf)) {
     if (!np->cjs.is_kill)
-      v = np->cjs.u.val;
+      v = np->cjs.val;
     else
       v = NULL;
     failure = 1;
@@ -2996,9 +3006,6 @@ static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
   MZ_CONT_MARK_POS = p->cont_mark_pos;
 #endif
 
-  if (p->cc_ok)
-    *p->cc_ok = p->cc_ok_save;
-
   if ((p->running & MZTHREAD_KILLED)
       || (p->running & MZTHREAD_USER_SUSPENDED))
     scheme_thread_block(0.0);
@@ -3016,6 +3023,13 @@ static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
   scheme_check_break_now();
 
   return v;
+}
+
+static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *result;
+  result = scheme_call_as_nested_thread(argc, argv, PROMPT_STACK(result));
+  return result;
 }
 
 /*========================================================================*/
@@ -3373,7 +3387,7 @@ static void exit_or_escape(Scheme_Thread *p)
   if (p->nester) {
     if (p->running & MZTHREAD_KILLED)
       p->running -= MZTHREAD_KILLED;
-    p->cjs.jumping_to_continuation = (struct Scheme_Escaping_Cont *)p;
+    p->cjs.jumping_to_continuation = (Scheme_Object *)p;
     p->cjs.is_kill = 1;
     scheme_longjmp(*p->error_buf, 1);
   }
@@ -3432,7 +3446,6 @@ void scheme_thread_block(float sleep_time)
   Scheme_Thread *next, *p = scheme_current_thread;
   Scheme_Object *next_in_set;
   Scheme_Thread_Set *t_set;
-  int dummy;
 
   if (p->running & MZTHREAD_KILLED) {
     /* This thread is dead! Give up now. */
@@ -3645,11 +3658,6 @@ void scheme_thread_block(float sleep_time)
 #endif
 
   if (next) {
-    if (!p->next) {
-      /* This is the main process */
-      scheme_ensure_stack_start(p, (void *)&dummy);
-    }
-    
     scheme_swap_thread(next);
   } else if (do_atomic && scheme_on_atomic_timeout) {
     scheme_on_atomic_timeout();
@@ -6243,12 +6251,16 @@ static Scheme_Object *make_security_guard(int argc, Scheme_Object *argv[])
     scheme_wrong_type("make-security-guard", "security-guard", 0, argc, argv);
   scheme_check_proc_arity("make-security-guard", 3, 1, argc, argv);
   scheme_check_proc_arity("make-security-guard", 4, 2, argc, argv);
+  if (argc > 3)
+    scheme_check_proc_arity2("make-security-guard", 3, 3, argc, argv, 1);
 
   sg = MALLOC_ONE_TAGGED(Scheme_Security_Guard);
   sg->so.type = scheme_security_guard_type;
   sg->parent = (Scheme_Security_Guard *)argv[0];
   sg->file_proc = argv[1];
   sg->network_proc = argv[2];
+  if ((argc > 3) && SCHEME_TRUEP(argv[3]))
+    sg->link_proc = argv[3];
 
   return (Scheme_Object *)sg;
 }
@@ -6309,6 +6321,33 @@ void scheme_security_check_file(const char *who, const char *filename, int guard
 
     while (sg->parent) {
       scheme_apply(sg->file_proc, 3, a);
+      sg = sg->parent;
+    }
+  }
+}
+
+void scheme_security_check_file_link(const char *who, const char *filename, const char *content)
+{
+  Scheme_Security_Guard *sg;
+
+  sg = (Scheme_Security_Guard *)scheme_get_param(scheme_current_config(), MZCONFIG_SECURITY_GUARD);
+
+  if (sg->file_proc) {
+    Scheme_Object *a[3];
+
+    a[0] = scheme_intern_symbol(who);
+    a[1] = scheme_make_sized_path((char *)filename, -1, 1);
+    a[2] = scheme_make_sized_path((char *)content, -1, 1);
+
+    while (sg->parent) {
+      if (sg->link_proc)
+	scheme_apply(sg->link_proc, 3, a);
+      else {
+	scheme_signal_error("%s: security guard does not allow any link operation; attempted from: %s to: %s",
+			    who,
+			    filename,
+			    content);
+      }
       sg = sg->parent;
     }
   }
@@ -6518,12 +6557,21 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       while (o < e && (o != e2)) {
 	*(o++) = NULL;
       }
+
+      /* If there's a meta-prompt, we can also zero out past the unused part */
+      if (p->meta_prompt && (p->meta_prompt->runstack_boundary_start == p->runstack_start)) {
+        e = p->runstack_start + p->runstack_size;
+        o = p->runstack_start + p->meta_prompt->runstack_boundary_offset;
+        while (o < e) {
+          *(o++) = NULL;
+        }
+      }
       
       RUNSTACK_TUNE( size = p->runstack_size - (p->runstack - p->runstack_start); );
       
       for (saved = p->runstack_saved; saved; saved = saved->prev) {
 	o = saved->runstack_start;
-	e = saved->runstack;
+	e = o + saved->runstack_offset;
 	RUNSTACK_TUNE( size += saved->runstack_size; );
 	while (o < e) {
 	  *(o++) = NULL;
@@ -6565,6 +6613,22 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       for (i = stackpos; i < SCHEME_MARK_SEGMENT_SIZE; i++) {
 	seg[i].key = NULL;
 	seg[i].val = NULL;
+	seg[i].cache = NULL;
+      }
+    }
+
+    {
+      MZ_MARK_STACK_TYPE pos;
+      /* also zero out slots before the current bottom */
+      for (pos = 0; pos < p->cont_mark_stack_bottom; pos++) {
+        Scheme_Cont_Mark *seg;
+        int stackpos;
+        segpos = ((long)pos >> SCHEME_LOG_MARK_SEGMENT_SIZE);
+        seg = p->cont_mark_stack_segments[segpos];
+        stackpos = ((long)pos & SCHEME_MARK_SEGMENT_MASK);
+        seg[stackpos].key = NULL;
+        seg[stackpos].val = NULL;
+        seg[stackpos].cache = NULL;
       }
     }
   }
@@ -6599,7 +6663,7 @@ static void get_ready_for_GC()
 
   scheme_clear_modidx_cache();
   scheme_clear_shift_cache();
-  scheme_clear_cc_ok();
+  scheme_clear_prompt_cache();
   scheme_clear_rx_buffers();
 
 #ifdef RUNSTACK_IS_GLOBAL
@@ -6695,7 +6759,7 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
 	  /* C stack */
 	  if (t == scheme_current_thread) {
 	    void *stk_start, *stk_end;
-	    stk_start = t->stack_start;
+	    stk_start = ADJUST_STACK_START(t->stack_start);
 	    stk_end = (void *)&stk_end;
 #         ifdef STACK_GROWS_UP
 	    sz = (long)stk_end XFORM_OK_MINUS (long)stk_start;
@@ -6708,7 +6772,7 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
 	      sz = t->jmpup_buf.stack_size;
 	  }
 	  for (overflow = t->overflow; overflow; overflow = overflow->prev) {
-	    sz += overflow->cont.stack_size;
+	    sz += overflow->jmp->cont.stack_size;
 	  }
 	  
 	  /* Scheme stack */
@@ -6816,7 +6880,9 @@ Scheme_Jumpup_Buf_Holder *scheme_new_jmpupbuf_holder(void)
 #ifdef MZ_PRECISE_GC
 static unsigned long get_current_stack_start(void)
 {
-  return (unsigned long)scheme_current_thread->stack_start;
+  Scheme_Thread *p;
+  p = scheme_current_thread;
+  return (unsigned long)ADJUST_STACK_START(p->stack_start);
 }
 #endif
 

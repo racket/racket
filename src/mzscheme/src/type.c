@@ -222,6 +222,8 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_thread_cell_type, "<thread-cell>");
   set_name(scheme_thread_cell_values_type, "<thread-cell-values>");
 
+  set_name(scheme_prompt_tag_type, "<continuation-prompt-tag>");
+
   set_name(scheme_string_converter_type, "<string-converter>");
 
   set_name(scheme_channel_syncer_type, "<channel-syncer>");
@@ -341,35 +343,23 @@ static int bad_trav_FIXUP(void *p)
 static void MARK_cjs(Scheme_Continuation_Jump_State *cjs)
 {
   gcMARK(cjs->jumping_to_continuation);
-  gcMARK(cjs->u.vals);
+  gcMARK(cjs->val);
 }
 
 static void FIXUP_cjs(Scheme_Continuation_Jump_State *cjs)
 {
   gcFIXUP(cjs->jumping_to_continuation);
-  gcFIXUP(cjs->u.vals);
+  gcFIXUP(cjs->val);
 }
 
 static void MARK_stack_state(Scheme_Stack_State *ss)
 {
-
-  Scheme_Object **old = ss->runstack_start;
-
-  gcMARK(ss->runstack_start);
-  ss->runstack = ss->runstack_start + (ss->runstack - old);
-  gcMARK(ss->runstack_saved);
-  gcMARK(ss->current_escape_cont_key);
+  gcMARK(ss->barrier_prompt);
 }
 
 static void FIXUP_stack_state(Scheme_Stack_State *ss)
 {
-
-  Scheme_Object **old = ss->runstack_start;
-
-  gcFIXUP(ss->runstack_saved);
-  gcFIXUP_TYPED_NOW(Scheme_Object **, ss->runstack_start);
-  ss->runstack = ss->runstack_start + (ss->runstack - old);
-  gcFIXUP(ss->current_escape_cont_key);
+  gcFIXUP(ss->barrier_prompt);
 }
 
 static void MARK_jmpup(Scheme_Jumpup_Buf *buf)
@@ -452,6 +442,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_cont_type, cont_proc);
   GC_REG_TRAV(scheme_rt_dyn_wind, mark_dyn_wind);
   GC_REG_TRAV(scheme_rt_overflow, mark_overflow);
+  GC_REG_TRAV(scheme_rt_overflow_jmp, mark_overflow_jmp);
+  GC_REG_TRAV(scheme_rt_meta_cont, meta_cont_proc);
   GC_REG_TRAV(scheme_escaping_cont_type, escaping_cont_proc);
 
   GC_REG_TRAV(scheme_char_type, char_obj);
@@ -486,6 +478,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_lazy_macro_type, second_of_cons);
   GC_REG_TRAV(scheme_box_type, small_object);
   GC_REG_TRAV(scheme_thread_type, thread_val);
+  GC_REG_TRAV(scheme_prompt_type, prompt_val);
+  GC_REG_TRAV(scheme_prompt_tag_type, cons_cell);
   GC_REG_TRAV(scheme_cont_mark_set_type, cont_mark_set_val);
   GC_REG_TRAV(scheme_sema_type, sema_val);
   GC_REG_TRAV(scheme_channel_type, channel_val);

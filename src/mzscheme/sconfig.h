@@ -260,13 +260,13 @@
   /************** x86/OpenBSD with gcc ****************/
               /* Thanks to Bengt Kleberg */
 
-# if defined(__OpenBSD__) && (defined(__i386__) || defined(i386) || defined(__x86_64__))
+#if defined(__OpenBSD__) && (defined(__i386__) || defined(i386) || defined(__x86_64__))
 
-#if defined(__x86_64__)
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-openbsd"
-#else
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
-#endif
+# if defined(__x86_64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-openbsd"
+# else
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-openbsd"
+# endif
 
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
@@ -302,14 +302,23 @@
 
   /************** x86/FreeBSD with gcc ****************/
 
-# if defined(__FreeBSD__) && (defined(i386) || defined(__x86_64__))
-
-#if defined(i386)
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
-#endif
-#if defined(__x86_64__)
-# define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-freebsd"
-#endif
+#if defined(__FreeBSD__)
+ 
+# if defined(__i386__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-freebsd"
+#  define REGISTER_POOR_MACHINE
+#  define MZ_USE_JIT_I386
+#  define FREEBSD_CONTROL_387
+# elif defined(__amd64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "amd64-freebsd"
+#  define REGISTER_POOR_MACHINE
+#  define MZ_USE_JIT_X86_64
+# elif defined(__sparc64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-freebsd"
+#  define FLUSH_SPARC_REGISTER_WINDOWS
+# else
+#  error Unported platform.
+# endif
 
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
@@ -331,15 +340,7 @@
 
 # define USE_TM_GMTOFF_FIELD
 
-# define REGISTER_POOR_MACHINE
-
-#if defined(__x86_64__)
-# define MZ_USE_JIT_X86_64
 # define MZ_JIT_USE_MPROTECT
-#else
-# define MZ_USE_JIT_I386
-# define MZ_JIT_USE_MPROTECT
-#endif
 
 # define FLAGS_ALREADY_SET
 

@@ -409,8 +409,6 @@ static Scheme_Object *do_load_extension(const char *filename,
 #endif
 
 #ifndef NO_DYNAMIC_LOAD
-  scheme_no_dumps("a dynamic extension has been loaded");
-
   ed = (ExtensionData *)scheme_hash_get(loaded_extensions, mzPROC_TO_HASH_OBJ(init_f));
 
   if (ed) {

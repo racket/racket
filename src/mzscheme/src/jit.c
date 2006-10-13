@@ -1448,7 +1448,8 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
 
 static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok, GC_CAN_IGNORE jit_insn *reftop)
   /* If num_rands < 0, original argc is in V1, and we should
-     pop argc arguments off runstack before pushing more. */
+     pop argc arguments off runstack before pushing more.
+     This function is called with short jumps enabled. */
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *refloop;
 
@@ -1493,7 +1494,9 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   mz_patch_branch(ref2);
   jit_ldxi_l(JIT_V1, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_rator);
   jit_ldxi_l(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
+  __END_SHORT_JUMPS__(1);
   (void)jit_jmpi(reftop);
+  __START_SHORT_JUMPS__(1);
   
   /* Slow path; restore R0 to SCHEME_TAIL_CALL_WAITING */
   mz_patch_branch(ref);
@@ -2802,6 +2805,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         if (!i) {
           ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
           reffail = _jit.x.pc;
+          __END_SHORT_JUMPS__(1);
           if (steps == 1) {
             if (name[1] == 'a') {
               (void)jit_jmpi(bad_car_code);
@@ -2823,6 +2827,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
               }
             }
           }
+          __START_SHORT_JUMPS__(1);
           mz_patch_branch(ref);
         } else {
           (void)jit_bmsi_ul(reffail, JIT_R0, 0x1);
@@ -2955,17 +2960,19 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
   CHECK_LIMIT();
 
   __START_SHORT_JUMPS__(branch_short);
-
+  
   if (!SCHEME_CHARP(r1)) {
     GC_CAN_IGNORE jit_insn *pref;
     pref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
     reffail = _jit.x.pc;
     (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
+    __END_SHORT_JUMPS__(branch_short);
     if (direction > 0) {
       (void)jit_jmpi(call_original_binary_rev_arith_code);
     } else {
       (void)jit_jmpi(call_original_binary_arith_code);
     }
+    __START_SHORT_JUMPS__(branch_short);
     mz_patch_branch(pref);
     jit_ldxi_s(JIT_R2, JIT_R0, (int)&((Scheme_Object *)0x0)->type);
     (void)jit_bnei_i(reffail, JIT_R2, scheme_char_type);
@@ -2980,11 +2987,13 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
       pref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
       reffail = _jit.x.pc;
       (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
+      __END_SHORT_JUMPS__(branch_short);
       if (direction > 0) {
         (void)jit_jmpi(call_original_binary_rev_arith_code);
       } else {
         (void)jit_jmpi(call_original_binary_arith_code);
       }
+      __START_SHORT_JUMPS__(branch_short);
       mz_patch_branch(pref);
     } else {
       (void)jit_bmsi_ul(reffail, JIT_R1, 0x1);
@@ -3939,16 +3948,20 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           /* R0 is space left (in bytes), R2 is argc */
           jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
           if (is_tail) {
+            __END_SHORT_JUMPS__(1);
             (void)jit_bltr_ul(app_values_tail_slow_code, JIT_R0, JIT_R2);
+            __START_SHORT_JUMPS__(1);
             ref5 = 0;
           } else {
             GC_CAN_IGNORE jit_insn *refok;
             refok = jit_bger_ul(jit_forward(), JIT_R0, JIT_R2);
+            __END_SHORT_JUMPS__(1);
             if (multi_ok) {
               (void)jit_calli(app_values_multi_slow_code);
             } else {
               (void)jit_calli(app_values_slow_code);
             }
+            __START_SHORT_JUMPS__(1);
             ref5 = jit_jmpi(jit_forward());
             mz_patch_branch(refok);
           }
@@ -4965,13 +4978,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_addr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_RUNSTACK);
   jit_jmpr(JIT_V1);
   CHECK_LIMIT();
-  /* Slower path (non-tail) when argv != runstack. To simulate
-     a tail call, we must decrement the cont-mark pos. */
+  /* Slower path (non-tail) when argv != runstack. */
   mz_patch_branch(ref);
   mz_patch_branch(ref2);
-  jit_ldi_l(JIT_V1, &scheme_current_cont_mark_pos);
-  jit_subi_l(JIT_V1, JIT_V1, 2);
-  jit_sti_l(&scheme_current_cont_mark_pos, JIT_V1);
   CHECK_LIMIT();
   mz_prepare(3);
   jit_pusharg_p(JIT_R2);
@@ -4979,9 +4988,6 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R0);
   (void)mz_finish(_scheme_apply_multi_from_native);
   CHECK_LIMIT();
-  jit_ldi_l(JIT_NOT_RET, &scheme_current_cont_mark_pos);
-  jit_addi_l(JIT_NOT_RET, JIT_NOT_RET, 2);
-  jit_sti_l(&scheme_current_cont_mark_pos, JIT_NOT_RET);
   mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
   mz_pop_locals();
   jit_ret();
@@ -6251,9 +6257,7 @@ Scheme_Object *scheme_native_stack_trace(void)
     stack_end -= (RETURN_ADDRESS_OFFSET << JIT_LOG_WORD_SIZE);
     tail = stack_cache_stack[stack_cache_stack_pos].cache;
   } else {
-    stack_end = (unsigned long)(scheme_current_thread->next 
-				? scheme_current_thread->stack_start 
-				: scheme_current_thread->o_start);
+    stack_end = (unsigned long)ADJUST_STACK_START(scheme_current_thread->stack_start);
     tail = scheme_null;
   }
 

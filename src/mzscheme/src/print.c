@@ -1849,7 +1849,17 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_utf8_string(pp, ">", 0, 1);
       }
     }
-  else if (SCHEME_CPTRP(obj))
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_prompt_tag_type)
+           && SCHEME_CDR(obj) && !(compact || !pp->print_unreadable))
+    {
+      print_utf8_string(pp, "#<", 0, 2);
+      print_string_in_angle(pp, scheme_symbol_val(SCHEME_CDR(obj)),
+                            "continuation-prompt-tag:", 
+                            SCHEME_SYM_LEN(SCHEME_CDR(obj)));
+      PRINTADDRESS(pp, obj);
+      print_utf8_string(pp, ">", 0, 1);
+    }
+    else if (SCHEME_CPTRP(obj))
     {
       Scheme_Object *tag = SCHEME_CPTR_TYPE(obj);
       if (compact || !pp->print_unreadable) {

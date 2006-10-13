@@ -2507,16 +2507,22 @@
 
   ;; From Dybvig, mostly:
   (-define-syntax syntax-rules
-    (lambda (x)
-      (syntax-case** syntax-rules #t x () module-identifier=?
+    (lambda (stx)
+      (syntax-case** syntax-rules #t stx () module-identifier=?
 	((_ (k ...) ((keyword . pattern) template) ...)
 	 (andmap identifier? (syntax->list (syntax (k ...))))
 	 (with-syntax (((dummy ...)
-			(map (lambda (x)
+			(map (lambda (id)
+			       (unless (identifier? id)
+				 (raise-syntax-error
+				  #f
+				  "pattern must start with an identifier, found something else"
+				  stx
+				  id))
 			       ;; Preserve the name, in case it's printed out
-			       (string->uninterned-symbol (symbol->string (syntax-e x))))
+			       (string->uninterned-symbol (symbol->string (syntax-e id))))
 			     (syntax->list (syntax (keyword ...))))))
-	   (syntax/loc x
+	   (syntax/loc stx
 	     (lambda (x)
 	       (syntax-case** _ #t x (k ...) module-identifier=?
 		 ((dummy . pattern) (syntax/loc x template))
@@ -3098,6 +3104,37 @@
 	 (thunk)))
      (check-for-break)))
 
+  (define (select-handler/no-breaks e bpz l)
+    (cond
+     [(null? l)
+      (raise e)]
+     [((caar l) e)
+      (begin0
+       ((cdar l) e)
+       (with-continuation-mark 
+	   break-enabled-key
+	   bpz
+	 (check-for-break)))]
+     [else
+      (select-handler/no-breaks e bpz (cdr l))]))
+
+  (define (select-handler/breaks-as-is e bpz l)
+    (cond
+     [(null? l)
+      (raise e)]
+     [((caar l) e)
+      (with-continuation-mark 
+	  break-enabled-key
+	  bpz
+	(begin
+	  (check-for-break)
+	  ((cdar l) e)))]
+     [else
+      (select-handler/breaks-as-is e bpz (cdr l))]))
+
+  (define handler-prompt-key (make-continuation-prompt-tag))
+  (define false-thread-cell (make-thread-cell #f))
+
   (define-syntaxes (with-handlers with-handlers*)
     (let ([wh 
 	   (lambda (disable-break?)
@@ -3105,53 +3142,47 @@
 	       (syntax-case stx ()
 		 [(_ () expr1 expr ...) (syntax/loc stx (let () expr1 expr ...))]
 		 [(_ ([pred handler] ...) expr1 expr ...)
-		  (quasisyntax/loc stx
-		    (let ([l (list (cons pred handler) ...)])
-		      ;; Capture current break parameterization, so we can use it to
-		      ;;  evaluate the body
-		      (let ([bpz (continuation-mark-set-first #f break-enabled-key)])
-			;; Disable breaks here, so that when the exception handler jumps
-			;;  to run a handler, breaks are disabled for the handler
-			(with-continuation-mark
-			    break-enabled-key
-			    (make-thread-cell #f)
-			  ((call/ec 
-			    (lambda (k)
-			      ;; Restore the captured break parameterization for
-			      ;;  evaluating the `with-handlers' body. In this
-			      ;;  special case, no check for breaks is needed,
-			      ;;  because bpz is quickly restored past call/ec.
-			      ;;  Thus, `with-handlers' can evaluate its body in
-			      ;;  tail position.
-			      (with-continuation-mark 
-				  break-enabled-key
-				  bpz
-				(parameterize ([current-exception-handler
-						(lambda (e)
-						  (k
-						   (lambda ()
-						     (let loop ([l l])
-						       (cond
-							[(null? l)
-							 (raise e)]
-							[((caar l) e)
-							 #,(if disable-break?
-							       #'(begin0
-								  ((cdar l) e)
-								  (with-continuation-mark 
-								      break-enabled-key
-								      bpz
-								    (check-for-break)))
-							       #'(with-continuation-mark 
-								     break-enabled-key
-								     bpz
-								   (begin
-								     (check-for-break)
-								     ((cdar l) e))))]
-							[else
-							 (loop (cdr l))])))))])
-				  (call-with-values (lambda () expr1 expr ...)
-				    (lambda args (lambda () (apply values args)))))))))))))])))])
+		  (with-syntax ([(pred-name ...) (generate-temporaries (map (lambda (x) 'with-handlers-predicate) 
+									    (syntax->list #'(pred ...))))]
+				[(handler-name ...) (generate-temporaries (map (lambda (x) 'with-handlers-handler) 
+									       (syntax->list #'(handler ...))))])
+		    (quasisyntax/loc stx
+		      (let ([pred-name pred] ...
+			    [handler-name handler] ...)
+			;; Capture current break parameterization, so we can use it to
+			;;  evaluate the body
+			(let ([bpz (continuation-mark-set-first #f break-enabled-key)])
+			  ;; Disable breaks here, so that when the exception handler jumps
+			  ;;  to run a handler, breaks are disabled for the handler
+			  (with-continuation-mark
+			      break-enabled-key
+			      false-thread-cell
+			    (call-with-continuation-prompt
+			     (lambda ()
+			       ;; Restore the captured break parameterization for
+			       ;;  evaluating the `with-handlers' body. In this
+			       ;;  special case, no check for breaks is needed,
+			       ;;  because bpz is quickly restored past call/ec.
+			       ;;  Thus, `with-handlers' can evaluate its body in
+			       ;;  tail position.
+			       (with-continuation-mark 
+				   break-enabled-key
+				   bpz
+				 (parameterize ([current-exception-handler
+						 (lambda (e)
+						   ;; Deliver a thunk to the escape handler:
+						   (abort-current-continuation
+                                                    handler-prompt-key
+						    (lambda ()
+						      (#,(if disable-break?
+							     #'select-handler/no-breaks
+							     #'select-handler/breaks-as-is)
+						       e bpz
+						       (list (cons pred-name handler-name) ...)))))])
+				   expr1 expr ...)))
+                             handler-prompt-key
+			     ;; On escape, apply the handler thunk
+			     (lambda (thunk) (thunk))))))))])))])
       (values (wh #t) (wh #f))))
 
   (define-syntax set!-values
@@ -3315,40 +3346,30 @@
 	   [else (find-between lo hi)])))))
 
   (define (read-eval-print-loop)
-    (let* ([eeh #f]
-	   [jump #f]
-	   [be? #f]
-	   [rep-error-escape-handler (lambda () (jump))])
-      (dynamic-wind
-	  (lambda () (set! eeh (error-escape-handler))
-		  (set! be? (break-enabled))
-		  (error-escape-handler rep-error-escape-handler)
-		  (break-enabled #f))
-	  (lambda ()
-	    (let/ec done
-	      (let repl-loop ()
-		(let/ec k
-		  (dynamic-wind
-		      (lambda ()
-			(break-enabled be?)
-			(set! jump k))
-		      (lambda ()
-			(let ([v ((current-prompt-read))])
-			  (when (eof-object? v) (done (void)))
-			  (call-with-values
-			      (lambda () ((current-eval) (if (syntax? v)
-							     (namespace-syntax-introduce v)
-							     v)))
-			    (lambda results (for-each (current-print) results)))))
-		      (lambda () 
-			(set! be? (break-enabled))
-			(break-enabled #f)
-			(set! jump #f))))
-		(repl-loop))))
-	  (lambda () (error-escape-handler eeh)
-		  (break-enabled be?)
-		  (set! jump #f)
-		  (set! eeh #f)))))
+    (let* ([jump-key (gensym)]
+	   [repl-error-escape-handler
+	    (lambda ()
+	      (let ([jump-k (continuation-mark-set-first #f jump-key)])
+		(if jump-k
+		    (jump-k)
+		    (error 'repl-error-escape-handler "used out of context"))))])
+      ;; This parameterize is outside the loop so that
+      ;;  expressions evaluated in the REPL can set the
+      ;;  error escape handler. That's why we communicate the
+      ;;  actual escape target through a continuation mark.
+      (parameterize ([error-escape-handler repl-error-escape-handler])
+	(let/ec done-k
+	  (let repl-loop ()
+	    (let/ec k
+	      (with-continuation-mark jump-key k
+		(let ([v ((current-prompt-read))])
+		  (when (eof-object? v) (done-k (void)))
+		  (call-with-values
+		      (lambda () ((current-eval) (if (syntax? v)
+						     (namespace-syntax-introduce v)
+						     v)))
+		    (lambda results (for-each (current-print) results))))))
+	    (repl-loop))))))
 
   (define load/cd
     (lambda (n)

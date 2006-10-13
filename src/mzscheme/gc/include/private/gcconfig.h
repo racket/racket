@@ -335,10 +335,15 @@
 #    define X86_64
 #    define mach_type_known
 # endif
+/* PLTSCHEME: added FREEBSD + __amd64__ */
+# if defined(FREEBSD) && defined(__amd64__)
+#    define X86_64
+#    define mach_type_known
+# endif
 # if defined(FREEBSD) && defined(__sparc__)
 #    define SPARC
 #    define mach_type_known
-#endif
+# endif
 # if defined(bsdi) && (defined(i386) || defined(__i386__))
 #    define I386
 #    define BSDI
@@ -1992,6 +1997,18 @@
 #	    define PREFETCH(x) __builtin_prefetch((x), 0, 0)
 #	    define PREFETCH_FOR_WRITE(x) __builtin_prefetch((x), 1)
 #	endif
+#   endif
+/* PLTSCHEME: added FREEBSD: */
+#   ifdef FREEBSD
+#       define OS_TYPE "FREEBSD"
+#       define SIG_SUSPEND SIGUSR1
+#       define SIG_THR_RESTART SIGUSR2
+#       ifdef __ELF__
+#           define DYNAMIC_LOADING
+#       endif
+#       define HEURISTIC2
+        extern char etext[];
+#       define SEARCH_FOR_DATA_START
 #   endif
 #   ifdef NETBSD
 #	define OS_TYPE "NETBSD"

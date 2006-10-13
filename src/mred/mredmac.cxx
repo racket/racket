@@ -269,118 +269,187 @@ void DequeueMrEdEvents(int type, long message)
   }
 }
 
-static int WeAreFront(); /* forward decl */
+static RgnHandle mouseRgn;
 static int waiting_for_next_event;
+static int wne_handlersInstalled;
+static int pending_self_ae;
 
-/* WNE: a replacement for WaitNextEvent so we can get things like
-   wheel events. */
+static void EnsureWNEReturn()
+{
+  /* Generate an event that WaitNextEvent will return, but
+     that we can recognize and ignore. An AppleEvent is a
+     heavyweight but reliable way to do that. */
+  if (!pending_self_ae) {
+    ProcessSerialNumber psn;
+    AEAddressDesc target;
+    AppleEvent ae;
+
+    pending_self_ae = 1;
+
+    GetCurrentProcess(&psn);
+    AECreateDesc(typeProcessSerialNumber, &psn, sizeof(psn), &target);
+    AECreateAppleEvent('MrEd', 'Smug', &target, kAutoGenerateReturnID, kAnyTransactionID, &ae);
+    AESend(&ae, NULL, kAENoReply, kAENormalPriority, kNoTimeOut, NULL, NULL);
+  }
+}
+
+void wxSmuggleOutEvent(EventRef ref)
+{
+  EventRecord e;
+  int ok = 0;
+
+  if ((GetEventClass(ref) == kEventClassMouse)
+      && (GetEventKind(ref) == 11 /* kEventMouseScroll */)) {
+    GetEventParameter(ref, kEventParamEventRef, typeEventRef,
+                      NULL, sizeof(ref), NULL, &ref);
+  }
+
+  if ((GetEventClass(ref) == kEventClassMouse)
+      && (GetEventKind(ref) == kEventMouseWheelMoved)) {
+    UInt32 modifiers;
+    EventMouseWheelAxis axis;
+    SInt32 delta;
+    Point pos;
+	
+    GetEventParameter(ref, kEventParamKeyModifiers, typeUInt32, 
+                      NULL, sizeof(modifiers), NULL, &modifiers);
+    GetEventParameter(ref, kEventParamMouseWheelAxis, 
+                      typeMouseWheelAxis, NULL, sizeof(axis), NULL, &axis);
+    GetEventParameter(ref, kEventParamMouseWheelDelta, 
+                      typeLongInteger, NULL, sizeof(delta), NULL, &delta);
+    GetEventParameter(ref, kEventParamMouseLocation,
+                      typeQDPoint, NULL, sizeof(Point), NULL, &pos);
+
+    if (axis == kEventMouseWheelAxisY) {
+      e.what = wheelEvt;
+      e.message = (delta > 0);
+      e.modifiers = modifiers;
+      e.where.h = pos.h;
+      e.where.v = pos.v;
+      ok = TRUE;
+    }
+  } else if ((GetEventClass(ref) == kEventClassTextInput)
+             && (GetEventKind(ref) == kEventTextInputUnicodeForKeyEvent)) {
+    UniChar *text;
+    UInt32 actualSize; 
+    
+    GetEventParameter(ref, kEventParamTextInputSendText,
+                      typeUnicodeText, NULL, 0, &actualSize, NULL);
+    if (actualSize) {
+      text = (UniChar*)scheme_malloc_atomic(actualSize);
+      GetEventParameter(ref, kEventParamTextInputSendText,
+                        typeUnicodeText, NULL, actualSize, NULL, text);
+
+      e.what = unicodeEvt;
+      e.message = text[0];
+      e.modifiers = 0;
+      e.where.h = 0;
+      e.where.v = 0;
+      ok = TRUE;
+    }
+  } else {
+    ok = ConvertEventRefToEventRecord(ref, &e);
+  }
+
+  if (ok) {
+    QueueTransferredEvent(&e);
+    EnsureWNEReturn();
+  }
+}
+
+static OSStatus unhide_cursor_handler(EventHandlerCallRef inHandlerCallRef, 
+                                      EventRef inEvent, 
+                                      void *inUserData)
+{
+  wxUnhideCursor();
+  return eventNotHandledErr;
+}
+
+static OSStatus smuggle_handler(EventHandlerCallRef inHandlerCallRef, 
+                                      EventRef inEvent, 
+                                      void *inUserData)
+{
+  wxSmuggleOutEvent(inEvent);
+  return noErr;
+}
+
+static pascal OSErr HandleSmug(const AppleEvent *evt, AppleEvent *rae, long k)
+{
+  pending_self_ae = 0;
+  return 0;
+}
+
+/* WNE: a small wrapper for WaitNextEvent, mostly to manage
+   wake-up activities.
+   It's tempting to try to use ReceiveNextEvent() to filter
+   the raw events. Don't do that, because WaitNextEvent() is
+   magic. In particular, WaitNextEvent() properly handles
+   Cmd-~, Cmd-Q, dead keys like option-e on a U.S. keyboard,
+   clicking that brings the application to the foreground,
+   and the character palette. (We used ReceiveNextEvent()
+   until version 352.7, and finally gave up when trying
+   to get the character palette to work.) */
 int WNE(EventRecord *e, double sleep_secs)
 {
-#if 0
+  int r;
+
   wxResetCanvasBackgrounds();
-  return WaitNextEvent(everyEvent, e, sleep_secs * 60, NULL);
-#else
-  EventRef ref;
   
-  wxResetCanvasBackgrounds();
+  if (!wne_handlersInstalled) {
+    EventTypeSpec evts[4];
+    wne_handlersInstalled = TRUE;
+
+    evts[0].eventClass = kEventClassMouse;
+    evts[0].eventKind = kEventMouseDown;
+    evts[1].eventClass = kEventClassMouse;
+    evts[1].eventKind = kEventMouseMoved;
+    evts[2].eventClass = kEventClassMouse;
+    evts[2].eventKind = kEventMouseUp;
+    evts[3].eventClass = kEventClassMouse;
+    evts[3].eventKind = kEventMouseDragged;
+
+    ::InstallEventHandler(GetEventDispatcherTarget(),
+			  unhide_cursor_handler,
+			  4,
+			  evts,
+			  NULL,
+			  NULL);
+
+    evts[0].eventClass = kEventClassMouse;
+    evts[0].eventKind = 11 /* kEventMouseScroll */;
+    evts[1].eventClass = kEventClassMouse;
+    evts[1].eventKind = kEventMouseWheelMoved;
+    evts[2].eventClass = kEventClassTextInput;
+    evts[2].eventKind = kEventTextInputUnicodeForKeyEvent;
+
+    ::InstallEventHandler(GetEventDispatcherTarget(),
+			  smuggle_handler,
+			  2,
+			  evts,
+			  NULL,
+			  NULL);
+
+    AEInstallEventHandler('MrEd', 'Smug', HandleSmug, 0, 0);
+
+    mouseRgn = NewRgn();
+    SetRectRgn(mouseRgn, 0, 0, 1, 1);
+  }
 
   waiting_for_next_event = 1;
 
-  if (noErr == ReceiveNextEvent(0, NULL, sleep_secs, TRUE, &ref)) {
-    Boolean ok;
-
-    waiting_for_next_event = 0;
-
-    if (GetEventClass(ref) == kEventClassMouse)
-      wxUnhideCursor();
-
-    ok = ConvertEventRefToEventRecord(ref, e);
-
-    if (!ok) {
-      EventRef compat = NULL;
-
-      if ((GetEventClass(ref) == kEventClassMouse)
-	  && (GetEventKind(ref) == 11 /* kEventMouseScroll */)) {
-	GetEventParameter(ref, kEventParamEventRef, typeEventRef,
-			  NULL, sizeof(compat), NULL, &compat);
-      }
-      if (!compat)
-	compat = ref;
-
-      if ((GetEventClass(compat) == kEventClassMouse)
-	  && (GetEventKind(compat) == kEventMouseWheelMoved)) {
-	UInt32 modifiers;
-	EventMouseWheelAxis axis;
-	SInt32 delta;
-	Point pos;
-	
-	GetEventParameter(compat, kEventParamKeyModifiers, typeUInt32, 
-			  NULL, sizeof(modifiers), NULL, &modifiers);
-	GetEventParameter(compat, kEventParamMouseWheelAxis, 
-			  typeMouseWheelAxis, NULL, sizeof(axis), NULL, &axis);
-	GetEventParameter(compat, kEventParamMouseWheelDelta, 
-			  typeLongInteger, NULL, sizeof(delta), NULL, &delta);
-	GetEventParameter(compat, kEventParamMouseLocation,
-			  typeQDPoint, NULL, sizeof(Point), NULL, &pos);
-
-	if (axis == kEventMouseWheelAxisY) {
-	  e->what = wheelEvt;
-	  e->message = (delta > 0);
-	  e->modifiers = modifiers;
-	  e->where.h = pos.h;
-	  e->where.v = pos.v;
-	  ok = TRUE;
-	}
-      } else {
-	SendEventToEventTarget(ref, GetEventDispatcherTarget());
-      }
-    }
-
-    if (ok && (e->what == mouseDown)) {
-      /* For bring-to-front: */
-      if (!WeAreFront()) {
-	SendEventToEventTarget(ref, GetEventDispatcherTarget());
-	/* Drop this event, because the target will generate a new one if it's useful */
-	ok = 0;
-      }
-    }
-
-    if (ok && (e->what == keyDown)) {
-      /* Let the normal system handle Cmd-Q, Cmd-~ to rotate windows,
-	 accent handling (so option-e e e doesn't produce an accent on
-	 the 2nd e), etc. */
-      OSErr oe;
-      wx_ignore_key = FALSE;
-      oe = SendEventToEventTarget(ref, GetEventDispatcherTarget());
-      if ((oe != eventNotHandledErr) && !wx_ignore_key) {
-	/* The event was handled, so we don't need to handle it again */
-	ok = 0;
-      }
-    }
-
-    ReleaseEvent(ref);
-
-    return ok;
-  }
+  r = WaitNextEvent(everyEvent, e, sleep_secs * 60, mouseRgn);
 
   waiting_for_next_event = 0;
 
-  return FALSE;
-#endif
+  return r;
 }
 
 void WakeUpMrEd()
 {
   /* Make sure we wake up a sleep, if this is a callback through
      a window painter. */
-  static EventRef wakeup_evt;
-
   if (waiting_for_next_event) {
-    if (!wakeup_evt)
-      CreateEvent(NULL, 'MrEd', 'wkup', 0, 0, &wakeup_evt);
-    PostEventToQueue(GetMainEventQueue(),
-		     wakeup_evt, 
-		     kEventPriorityStandard);
+    EnsureWNEReturn();
     waiting_for_next_event = 0;
   }
 }
@@ -471,23 +540,6 @@ static MrEdContext *KeyOk(int current_only)
 static int WindowStillHere(WindowPtr win)
 {
   return IsValidWindowPtr(win);
-}
-
-static int WeAreFront()
-{
-  static int inited;
-  static ProcessSerialNumber us;
-  ProcessSerialNumber front;
-  Boolean r;
-  
-  if (!inited) {
-    GetCurrentProcess(&us);
-    inited = 1;
-  }
-  GetFrontProcess(&front);
-  SameProcess(&us, &front, &r);
-  
-  return r;
 }
 
 static int GetMods(void)

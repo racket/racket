@@ -1281,7 +1281,7 @@ static Scheme_Object *MrEdDoNextEvent(MrEdContext *c, wxDispatch_Check_Fun alt, 
 
     if (alt_wait) {
       Nested_Wait *nw;
-      Scheme_Object *a[2], *v;
+      Scheme_Object *a[2], *v = NULL;
 
       nw = (Nested_Wait *)scheme_malloc_tagged(sizeof(Nested_Wait));
       nw->so.type = mred_nested_wait_type;
@@ -3202,6 +3202,17 @@ wxFrame *MrEdApp::OnInit(void)
   MrEdContext *mmc;
 
   initialized = 0;
+
+#ifdef wx_mac
+  {
+    TSMDocumentID doc;
+    OSType itfs[1];
+    itfs[0] = kUnicodeDocumentInterfaceType;
+    NewTSMDocument(1, itfs, &doc, 0);
+    UseInputWindow(NULL, TRUE);
+    ActivateTSMDocument(doc);
+  }
+#endif
 
   wxREGGLOB(mred_frames);
   wxREGGLOB(mred_timers);

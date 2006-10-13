@@ -2495,7 +2495,7 @@ do_raise(Scheme_Object *arg, int return_ok, int need_debug)
 
  if (need_debug) {
    Scheme_Object *marks;
-   marks = scheme_current_continuation_marks();
+   marks = scheme_current_continuation_marks(NULL);
    ((Scheme_Structure *)arg)->slots[1] = marks;
  }
 

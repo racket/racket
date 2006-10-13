@@ -291,6 +291,9 @@ static Scheme_Object *do_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, 
     h = (h + h2) & mask;
   }
 
+  if (!val)
+    return NULL;
+
   if (set == 1)
     h = useme;
   else if (table->mcount * FILL_FACTOR >= table->size) {

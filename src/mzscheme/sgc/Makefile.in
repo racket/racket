@@ -12,31 +12,31 @@ ARFLAGS = @ARFLAGS@
 
 CFLAGS = @CFLAGS@ @PREFLAGS@ @COMPFLAGS@ @PROFFLAGS@ @OPTIONS@
 
-OBJS =  sgc.o
+OBJS =  sgc.@LTO@
 
 SRCS =  $(srcdir)/sgc.c
 
-../libmzgc.a: $(OBJS)
+../libmzgc.@LIBSFX@: $(OBJS)
 	$(MAKE) gcobjects
-	$(AR) $(ARFLAGS) ../libmzgc.a $(OBJS)
-	$(RANLIB) ../libmzgc.a
+	$(AR) $(ARFLAGS) ../libmzgc.@LIBSFX@ $(OBJS)
+	$(RANLIB) ../libmzgc.@LIBSFX@
 
-test: $(OBJS) test.o
-	$(CC) -o test $(OBJS) test.o
+test: $(OBJS) test.@LTO@
+	$(CC) -o test $(OBJS) test.@LTO@
 
 gcobjects: $(OBJS)
 
-sgc.o: $(srcdir)/sgc.c $(srcdir)/autostat.inc $(srcdir)/collect.inc $(srcdir)/../utils/splay.c
-	$(CC) $(CFLAGS) -I.. -c $(srcdir)/sgc.c -o sgc.o
+sgc.@LTO@: $(srcdir)/sgc.c $(srcdir)/autostat.inc $(srcdir)/collect.inc $(srcdir)/../utils/splay.c
+	$(CC) $(CFLAGS) -I.. -c $(srcdir)/sgc.c -o sgc.@LTO@
 
-test.o: $(srcdir)/test.c
-	$(CC) $(CFLAGS) -c $(srcdir)/test.c -o test.o
+test.@LTO@: $(srcdir)/test.c
+	$(CC) $(CFLAGS) -c $(srcdir)/test.c -o test.@LTO@
 
 clean:
-	/bin/rm -f $(OBJS) gc.a test
+	/bin/rm -f $(OBJS) gc.@LIBSFX@ test
 
 # Extra dependencies
 
-sgc.o: $(srcdir)/sgc.h
+sgc.@LTO@: $(srcdir)/sgc.h
 
-test.o: $(srcdir)/sgc.h
+test.@LTO@: $(srcdir)/sgc.h

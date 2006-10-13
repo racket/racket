@@ -1,10 +1,15 @@
+/* For non-tail calls, the native context has already
+   incremented MZ_CONT_MARK_POS. Counter
+   scheme_do_eval()'s increment, because this
+   might be the continuation of a tail call. */
+
   if (!SCHEME_INTP(rator)) {
     Scheme_Type t;
 
     t = _SCHEME_TYPE(rator);
 
     if (t == scheme_prim_type) {
-      Scheme_Object *v;
+      GC_CAN_IGNORE Scheme_Object *v;
       GC_CAN_IGNORE Scheme_Primitive_Proc *prim;
       GC_CAN_IGNORE Scheme_Primitive_Closure_Proc *f;
 
@@ -19,7 +24,8 @@
       v = f(argc, argv, (Scheme_Object *)prim);
 
 #if PRIM_CHECK_VALUE
-      v = _scheme_force_value(v);
+      if (v == SCHEME_TAIL_CALL_WAITING)
+	v = scheme_force_value_same_mark(v);
 #endif
 
 #if PRIM_CHECK_MULTI
@@ -34,10 +40,22 @@
   }
 
 #if PRIM_CHECK_MULTI
-  return _scheme_apply(rator, argc, argv);
+  {
+    GC_CAN_IGNORE Scheme_Object *v;
+    MZ_CONT_MARK_POS -= 2;
+    v = _scheme_apply(rator, argc, argv);
+    MZ_CONT_MARK_POS += 2;
+    return v;
+  }
 #else
 # if PRIM_CHECK_VALUE
-  return _scheme_apply_multi(rator, argc, argv);
+  {
+    GC_CAN_IGNORE Scheme_Object *v;
+    MZ_CONT_MARK_POS -= 2;
+    v = _scheme_apply_multi(rator, argc, argv);
+    MZ_CONT_MARK_POS += 2;
+    return v;
+  }
 # else
   return _scheme_tail_apply(rator, argc, argv);
 # endif

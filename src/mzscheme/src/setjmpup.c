@@ -596,13 +596,6 @@ void scheme_reset_jmpup_buf(Scheme_Jumpup_Buf *b)
   memset(&b->buf, 0, sizeof(mz_jmp_buf));
 }
 
-void scheme_ensure_stack_start(Scheme_Thread *p, void *d)
-{
-  if (!p->stack_start 
-      || (STK_COMP((unsigned long)p->stack_start, (unsigned long)d)))
-    p->stack_start = d;
-}
-
 #ifdef USE_MZ_CYGWIN_SETJMP
 /* We have to define setjmp & longjmp to remain compatible
    with MSVC-compiled extensions. It's the mostly same code 

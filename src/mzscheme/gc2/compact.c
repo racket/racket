@@ -3809,6 +3809,11 @@ void *GC_malloc_one_small_tagged(size_t size_in_bytes)
   return GC_malloc_one_tagged(size_in_bytes);
 }
 
+void *GC_malloc_one_small_dirty_tagged(size_t size_in_bytes)
+{
+  return GC_malloc_one_tagged(size_in_bytes);
+}
+
 void *GC_malloc_pair(void *a, void *b)
 {
   void *p;

@@ -365,6 +365,7 @@ extern CGrafPtr wxGetGrafPtr(void);
 #define leaveEvt 42
 #define wheelEvt 43
 #define mouseMenuDown 44
+#define unicodeEvt 45
 
 #include "wx_obj.h"
 

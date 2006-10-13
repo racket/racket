@@ -352,19 +352,31 @@ typedef unsigned int jit_insn;
 #define CLRRWIrri(RA,RS,N)		RLWINMrriii(RA, RS,            0,	0,    31-(N))
 #define CLRLSLWIrrii(RA,RS,B,N)		RLWINMrriii(RA, RS,            N, (B)-(N),    31-(N))
 
+#if 0
+static int bad_short_jump()
+{
+  scheme_signal_error("bad short jump");
+  return 1;
+}
+# define NOT_SHORT_JUMPS() (_jitl.long_jumps ? 0 : bad_short_jump()) ,
+#else
+# define NOT_SHORT_JUMPS() /* empty */
+#endif
 
 /* 9 below inverts the branch condition and the branch prediction.
  * This has an incestuous knowledge of JIT_AUX */
 #define BC_EXT(A, C, D)  ((_siP(16, _jit_UL(D)-_jit_UL(_jit.x.pc)) && !_jitl.long_jumps) \
   ? BCiii((A), (C), (D)) \
-  : (BCiii((A)^9, (C), _jit.x.pc+5), \
+  : (NOT_SHORT_JUMPS() \
+     BCiii((A)^9, (C), _jit.x.pc+5), \
      LISri(JIT_AUX,_HI(D)), \
      ORIrri(JIT_AUX,JIT_AUX,_LO(D)), \
      MTLRr(JIT_AUX), BLR() ))
 
 #define B_EXT(D)         ((_siP(16, _jit_UL(D)-_jit_UL(_jit.x.pc)) && !_jitl.long_jumps) \
   ? Bi((D)) \
-  : (LISri(JIT_AUX,_HI(D)), \
+  : (NOT_SHORT_JUMPS() \
+     LISri(JIT_AUX,_HI(D)), \
      ORIrri(JIT_AUX,JIT_AUX,_LO(D)), \
      MTLRr(JIT_AUX), BLR()) )
 

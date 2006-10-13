@@ -1831,11 +1831,6 @@ long scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
 
       for (rs = c->runstack_copied; rs; rs = rs->prev) {
 	s += sizeof(Scheme_Saved_Stack);
-	scheme_count_closure(rs->runstack,
-			     rs->runstack_size
-			     - (rs->runstack
-				- rs->runstack_start),
-			     ht);
       }
     }
     break;
@@ -1894,18 +1889,8 @@ long scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
 #endif
 
       /* Check stack: */
-      scheme_count_closure(p->runstack, /* p->runstack may be wrong, but count_closure is turned off */
-			   p->runstack_size
-			   - (p->runstack
-			      - p->runstack_start),
-			   ht);
       for (saved = p->runstack_saved; saved; saved = saved->prev) {
 	s += (saved->runstack_size * sizeof(Scheme_Object *));
-	scheme_count_closure(saved->runstack,
-			     saved->runstack_size
-			     - (saved->runstack
-				- saved->runstack_start),
-			     ht);
       }
     }
     break;

@@ -134,6 +134,7 @@ EXPORTS
  scheme_temp_inc_mark_depth
  scheme_current_continuation_marks
  scheme_extract_one_cc_mark
+ scheme_extract_one_cc_mark_to_tag
  scheme_do_eval
  scheme_eval_compiled_stx_string
  scheme_load_compiled_stx_string
@@ -388,6 +389,7 @@ EXPORTS
  scheme_add_fd_handle
  scheme_add_fd_eventmask
  scheme_security_check_file
+ scheme_security_check_file_link
  scheme_security_check_network
  scheme_get_host_address
  scheme_free_host_address

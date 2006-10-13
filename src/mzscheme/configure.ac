@@ -479,6 +479,7 @@ case $OS in
     ;;
   FreeBSD)
     LIBS="$LIBS -rdynamic"
+    DYN_CFLAGS="-fPIC"
     ;;
   OpenBSD)
     LIBS="$LIBS -rdynamic"
