@@ -1908,6 +1908,11 @@ scheme_expt(int argc, Scheme_Object *argv[])
     if (SCHEME_NUMBERP(e))
       return n;
   }
+  if (SCHEME_RATIONALP(e)
+      && (((Scheme_Rational *)e)->num == scheme_exact_one)
+      && (((Scheme_Rational *)e)->denom == scheme_make_integer(2))) {
+    return scheme_sqrt(1, argv);
+  }
 
   if (n == zeroi) {
     /* Power of exact zero */

@@ -214,6 +214,7 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
   Scheme_Complex *cn = (Scheme_Complex *)_n;
   Scheme_Complex *cd = (Scheme_Complex *)_d;
   Scheme_Object *den, *r, *i, *a, *b, *c, *d, *cm, *dm, *aa[1];
+  int swap;
   
   if ((cn->r == zero) && (cn->i == zero))
     return zero;
@@ -231,6 +232,21 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
   } else if (d == zero) {
     r = scheme_bin_div(a, c);
     i = scheme_bin_div(b, c);
+    return scheme_make_complex(r, i);
+  }
+
+  if (!SCHEME_FLOATP(c) && !SCHEME_FLOATP(d)) {
+    /* The simple way: */
+    cm = scheme_bin_plus(scheme_bin_mult(c, c), 
+                         scheme_bin_mult(d, d));
+    
+    r = scheme_bin_div(scheme_bin_plus(scheme_bin_mult(c, a),
+                                       scheme_bin_mult(d, b)),
+                       cm);
+    i = scheme_bin_div(scheme_bin_minus(scheme_bin_mult(c, b),
+                                        scheme_bin_mult(d, a)),
+                       cm);
+    
     return scheme_make_complex(r, i);
   }
 
@@ -270,12 +286,17 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
     cm = c;
     c = d;
     d = cm;
-  }
-
+    swap = 1;
+  } else
+    swap = 0;
+   
   r = scheme_bin_div(c, d);
+
   den = scheme_bin_plus(d, scheme_bin_mult(c, r));
   
-  i = scheme_bin_div(scheme_bin_minus(a, scheme_bin_mult(b, r)),
+  i = scheme_bin_div((swap
+                      ? scheme_bin_minus(a, scheme_bin_mult(b, r))
+                      : scheme_bin_minus(scheme_bin_mult(b, r), a)),
 		     den);
   r = scheme_bin_div(scheme_bin_plus(b, scheme_bin_mult(a, r)),
 		     den);
