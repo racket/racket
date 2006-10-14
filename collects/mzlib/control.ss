@@ -17,8 +17,8 @@
            new-prompt set cupto)
 
   ;; ----------------------------------------
-  ;; Sitiram, PLDI'93
-  ;;  The `%' here is compable with Sitiram & Felleisen, LSC'90,
+  ;; Sitaram, PLDI'93
+  ;;  The `%' here is compable with Sitaram & Felleisen, LSC'90,
   ;;  since we make the handler optional.
 
   (define (fcontrol f)
