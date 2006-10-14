@@ -56,6 +56,11 @@ The first group of functions creates basic shapes (<code>Image</code>):
 <li><code>{(idx triangle)} : Int Mode Color -> Image</code><br>
  to create an upward pointing equilateral triangle using the given edge size and color
 
+<li><code>{(idx star)} : Int[>=2] Int[>=1] Int[>=1] Mode Color -> Image</code><br>
+ to create a multi-pointed star; the first number specifies
+ the number of points, the second specifies the radius where
+ the points begin and the third specifies the radius where they end.
+
 <li><code>{(idx line)} : Int Int Color -> Image </code><br> to create an
  image with a colored line from (0,0) to the point with the given
  coordinates
