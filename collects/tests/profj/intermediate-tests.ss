@@ -1,5 +1,5 @@
 (module intermediate-tests mzscheme
-  (require (lib "profj-testing.ss" "profj"))
+  (require "profj-testing.ss")
   
   (prepare-for-tests "Intermediate")
   

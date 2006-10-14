@@ -1,5 +1,5 @@
 (module full-tests mzscheme
-  (require (lib "profj-testing.ss" "profj")
+  (require "profj-testing.ss"
            (lib "parameters.ss" "profj"))
   
   (prepare-for-tests "Full")
