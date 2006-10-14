@@ -4,6 +4,7 @@
 (require (lib "image.ss" "htdp")
          (lib "error.ss" "htdp")
          (lib "posn.ss" "lang")
+         (lib "list.ss")
          (lib "imageeq.ss" "lang"))
 
 (define-values (image-snip1 image-snip2)
@@ -528,6 +529,20 @@
                 0
                 0)))
 
+;; make sure star is relatively white
+(test #t
+      'star1
+      (>= 100
+          (length (filter (λ (x) (equal? (make-color 255 0 0) x))
+                          (image->color-list (star 4 5 10 'outline 'red))))))
+
+;; make solid star is relatively colored
+(test #t
+      'star2
+      (<= 100
+          (length (filter (λ (x) (equal? (make-color 255 0 0) x))
+                          (image->color-list (star 4 5 10 'solid 'red))))))
+
 (test #t
       'add-line1
       (image=? (overlay (p00 (rectangle 5 4 'solid 'black))
@@ -743,6 +758,8 @@
 (check-on-bitmap 'outline-ellipse (circle 4 'outline 'red))
 (check-on-bitmap 'solid-triangle (triangle 10 'solid 'red))
 (check-on-bitmap 'outline-triangle (triangle 10 'outline 'red))
+(check-on-bitmap 'solid-star (star 4 10 20 'solid 'red))
+(check-on-bitmap 'outline-star (star 4 10 20 'outline 'red))
 (check-on-bitmap 'line (line 10 7 'red))
 (check-on-bitmap 'text (text "XX" 12 'red))
 (check-on-bitmap 'overlay1 (overlay (p00 (rectangle 1 4 'solid 'blue))
