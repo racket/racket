@@ -658,17 +658,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
   }
 
 #ifndef DONT_PARSE_COMMAND_LINE
-  if (argc && (!strcmp(argv[0], "--restore")
-	       || ((argv[0][0] == '-') && (argv[0][1] == 'R')))) {
-    PRINTF("image loading (with --restore or -R<file>) is not supported\n");
-    return 1;
-  }
-
   evals_and_loads = (char **)malloc(sizeof(char *) * argc);
   eval_kind = (int *)malloc(sizeof(int) * argc);
   num_enl = 0;
 
-#ifndef DONT_PARSE_COMMAND_LINE
   runner = check_script_runner(prog);
   if (runner) {
     if (!argc) {
@@ -691,7 +684,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
     argv++;
     --argc;
   }
-#endif
 
   while (!no_more_switches && argc && argv[0][0] == '-' && !is_number_arg(argv[0] + 1)) {
     real_switch = argv[0];
@@ -1244,20 +1236,12 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
 	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode.\n"
 	 "  -h, --help : Shows this information and exits, ignoring other switches.\n"
-#ifdef UNIX_IMAGE_DUMPS
-	 "  -R<file>, --restore <file> : restores an image.\n"
-#endif
 	 "Multiple single-letter switches can be collapsed, with arguments placed\n"
 	 " after the collapsed switches; the first collapsed switch cannot be --.\n"
 	 " E.g.: `-vfme file expr' is the same as `-v -f file -m -e expr'.\n"
 	 "Extra arguments following the last switch are put into the Scheme global\n"
 	 " variable `argv' as a vector of strings. The name used to start " PROGRAM "\n"
 	 " is put into the global variable `program' as a string.\n"
-#ifdef UNIX_IMAGE_DUMPS
-	 "Extra arguments after a `--restore' file are returned as a vector of\n"
-	 " strings to the continuation of the `write-image-to-file' call that created\n"
-	 " the image. Images are not supported on all platforms.\n"
-#endif
          "Expressions/files/--main/etc. are evaluated/loaded in order as provided.\n"
 	 " An error during evaluation/loading causes later ones to be skipped.\n"
 	 "The current-library-collection-paths is automatically set before any\n"
