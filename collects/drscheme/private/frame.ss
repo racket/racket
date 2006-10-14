@@ -201,16 +201,16 @@
                                                                   this
                                                                   last-keybindings-planet-attempt)])
                              (when planet-spec
-                               (set! last-keybindings-planet-attempt planet-spec))
-                             (cond
-                               [(planet-string-spec? planet-spec)
-                                =>
-                                (λ (planet-sexp-spec)
-                                  (add-keybindings-item/update-prefs planet-sexp-spec))]
-                               [else
-                                (message-box (string-constant drscheme)
-                                             (format (string-constant keybindings-planet-malformed-spec)
-                                                     planet-spec))])))))
+                               (set! last-keybindings-planet-attempt planet-spec)
+                               (cond
+                                 [(planet-string-spec? planet-spec)
+                                  =>
+                                  (λ (planet-sexp-spec)
+                                    (add-keybindings-item/update-prefs planet-sexp-spec))]
+                                 [else
+                                  (message-box (string-constant drscheme)
+                                               (format (string-constant keybindings-planet-malformed-spec)
+                                                       planet-spec))]))))))
                    (let ([ud (preferences:get 'drscheme:user-defined-keybindings)])
                      (unless (null? ud)
                        (new separator-menu-item% (parent keybindings-menu))
