@@ -331,7 +331,8 @@
 #   define I386
 #   define mach_type_known
 # endif
-# if defined(__NetBSD__) && defined(__x86_64__)
+/* PLTSCHEME: added OpenBSD: */
+# if (defined(__NetBSD__) || defined(__OpenBSD__)) && defined(__x86_64__)
 #    define X86_64
 #    define mach_type_known
 # endif
@@ -2010,8 +2011,14 @@
         extern char etext[];
 #       define SEARCH_FOR_DATA_START
 #   endif
-#   ifdef NETBSD
-#	define OS_TYPE "NETBSD"
+/* PLTSCHEME: added OPENBSD: */
+#   if defined(NETBSD) || defined(OPENBSD)
+#       ifdef NETBSD
+#	    define OS_TYPE "NETBSD"
+#       endif
+#       ifdef OPENBSD
+#	    define OS_TYPE "OPENBSD"
+#       endif
 #	ifdef __ELF__
 #	    define DYNAMIC_LOADING
 #	endif

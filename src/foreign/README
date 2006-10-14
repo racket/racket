@@ -15,3 +15,4 @@ ways:
 
  * Added case in "configure" sparc64-*-freebsd* to existing sparc64 line
 
+ * Added case in "configure" x86_64-*-openbsd* to the existing x86_64 line

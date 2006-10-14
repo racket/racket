@@ -49,6 +49,7 @@
 #   undef GC_must_restore_redefined_dlopen
 # endif
 
+/* PLTSCHEME: added OPENBSD: */
 #if (defined(DYNAMIC_LOADING) || defined(MSWIN32) || defined(MSWINCE)) \
     && !defined(PCR)
 #if !defined(SUNOS4) && !defined(SUNOS5DL) && !defined(IRIX5) && \
@@ -57,6 +58,7 @@
     !defined(HPUX) && !(defined(LINUX) && defined(__ELF__)) && \
     !defined(RS6000) && !defined(SCO_ELF) && !defined(DGUX) && \
     !(defined(FREEBSD) && defined(__ELF__)) && \
+    !(defined(OPENBSD) && defined(__ELF__)) && \
     !(defined(NETBSD) && defined(__ELF__)) && !defined(HURD) && \
     !defined(DARWIN)
  --> We only know how to find data segments of dynamic libraries for the
@@ -285,8 +287,10 @@ void GC_register_dynamic_libraries()
 # endif /* !USE_PROC ... */
 # endif /* SUNOS */
 
+/* PLTSCHEME: added OPENBSD: */
 #if defined(LINUX) && defined(__ELF__) || defined(SCO_ELF) || \
     (defined(FREEBSD) && defined(__ELF__)) || defined(DGUX) || \
+    (defined(OPENBSD) && defined(__ELF__)) || \
     (defined(NETBSD) && defined(__ELF__)) || defined(HURD)
 
 
@@ -477,6 +481,9 @@ GC_bool GC_register_main_static_data()
 #  ifndef PF_W
 #  define PF_W         2
 #  endif
+/* PLTSCHEME: OPENBSD */
+#elif defined(OPENBSD)
+#   include <link_elf.h>
 #else
 #  include <elf.h>
 #endif
@@ -487,7 +494,11 @@ GC_bool GC_register_main_static_data()
 #ifdef __GNUC__
 # pragma weak _DYNAMIC
 #endif
+
+/* PLTSCHEME: ifndef OPENBSD */
+#ifndef OPENBSD
 extern ElfW(Dyn) _DYNAMIC[];
+#endif
 
 static struct link_map *
 GC_FirstDLOpenedLinkMap()

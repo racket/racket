@@ -223,7 +223,15 @@
 
 #if defined(__NetBSD__)
 
+#if defined(i386)
+# define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-netbsd"
+#elif defined(powerpc)
+# define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-netbsd"
+#elif defined(__x86_64__)
+# define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-netbsd"
+#else
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "netbsd"
+#endif
 
 # include "uconfig.h"
 
@@ -251,6 +259,10 @@
 #endif
 #if defined(powerpc)
 # define MZ_USE_JIT_PPC
+#endif
+#if defined(__x86_64__)
+# define MZ_USE_JIT_X86_64
+# define MZ_JIT_USE_MPROTECT
 #endif
 
 # define FLAGS_ALREADY_SET
