@@ -6,47 +6,46 @@
            (lib "plt-match.ss")
            (lib "uri-codec.ss" "net"))
   (require "../request-structs.ss")
-  
+
   ;; valid-port? : any/c -> boolean?
   (define (valid-port? p)
-    (and (number? p) (integer? p) (exact? p) (<= 1 p 65535)))
-  
+    (and (integer? p) (exact? p) (<= 1 p 65535)))
+
   ;; ripped this off from url-unit.ss
   (define (url-path->string strs)
-    (apply
-     string-append
-     (map (match-lambda
-            ['up ".."]
-            ['same "."]
-            [(and s (? string?)) s])
-          (let loop ([strs strs])
-            (cond
-              [(null? strs) (list)]
-              [else (list* "/"
-                           (maybe-join-params (car strs))
-                           (loop (cdr strs)))])))))
-    
+    (apply string-append
+           (apply append
+                  (map (lambda (s) (list "/" (maybe-join-params s)))
+                       strs))))
+
   ;; needs to unquote things!
   (define (maybe-join-params s)
-    (cond
-      [(string? s) s]
-      [else (path/param-path s)]))
-  
+    (if (string? s)
+      s
+      (let ([s (path/param-path s)])
+        (if (string? s)
+          s
+          (case s
+            [(same) "."]
+            [(up)   ".."]
+            [else (error 'maybe-join-params
+                         "bad value from path/param-path: ~e" s)])))))
+
   ;; decompse-request : request -> uri * symbol * string
   (define (decompose-request req)
     (let* ([uri (request-uri req)]
            [method (request-method req)]
            [path (uri-decode (url-path->string (url-path uri)))])
       (values uri method path)))
-  
+
   ;; network-error: symbol string . values -> void
   ;; throws a formatted exn:fail:network
   (define (network-error src fmt . args)
     (raise (make-exn:fail:network
             (string->immutable-string
-             (apply format (format "~a: ~a" src fmt) args))
+             (format "~a: ~a" src (apply format fmt args)))
             (current-continuation-marks))))
-  
+
   ;; build-path-unless-absolute : path (or/c string? path?) -> path?
   (define (build-path-unless-absolute base path)
     (if (absolute-path? path)
