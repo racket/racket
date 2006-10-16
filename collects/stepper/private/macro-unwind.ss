@@ -1,10 +1,11 @@
-(module macro-unwind mzscheme
+ (module macro-unwind mzscheme
   (require (prefix kernel: (lib "kerncase.ss" "syntax"))
            (lib "etc.ss")
            (lib "contract.ss")
+	   "model-settings.ss"
            "shared.ss")
 
-  (provide/contract [unwind (syntax? . -> . syntax?)])
+  (provide/contract [unwind (syntax? render-settings? . -> . syntax?)])
                                                                                ;
  ; ;;; ;;    ;;;    ;;;  ; ;;  ;;;       ;   ;  ; ;;  ;   ;   ; ;  ; ;;    ;;; ;  ;  ; ;;    ;; ;
  ;;  ;;  ;  ;   ;  ;     ;;   ;   ;      ;   ;  ;;  ; ;   ;   ; ;  ;;  ;  ;   ;;  ;  ;;  ;  ;  ;;
@@ -41,41 +42,41 @@
   ;(->* (syntax? (listof syntax?))
   ;     (syntax? (listof syntax?)))
 
-  (define (recur-on-pieces stx)
+  (define (recur-on-pieces stx settings)
      (if (pair? (syntax-e stx))
          (datum->syntax-object
-          stx (syntax-pair-map (syntax-e stx) unwind) stx stx)
+          stx (syntax-pair-map (syntax-e stx) (lambda (stx) (unwind stx settings))) stx stx)
          stx))
    
-   (define (fall-through stx)
+   (define (fall-through stx settings)
      (kernel:kernel-syntax-case stx #f
                                 [id
                                  (identifier? stx)
                                  (or (syntax-property stx 'stepper-lifted-name)
                                      stx)]
                                 [(define-values dc ...)
-                                 (unwind-define stx)]
+                                 (unwind-define stx settings)]
                                 [(#%app exp ...)
-                                 (recur-on-pieces #'(exp ...))]
+                                 (recur-on-pieces #'(exp ...) settings)]
                                 [(#%datum . datum)
                                  #'datum]
                                 [(let-values . rest)
-                                 (unwind-mz-let stx)]
+                                 (unwind-mz-let stx settings)]
                                 [(letrec-values . rest)
-                                 (unwind-mz-let stx)]
+                                 (unwind-mz-let stx settings)]
                                 [(set! var rhs)
                                  (with-syntax ([unwound-var (or (syntax-property
                                                                  #`var 'stepper-lifted-name)
                                                                 #`var)]
-                                               [unwound-body (unwind #`rhs)])
+                                               [unwound-body (unwind #`rhs settings)])
                                    #`(set! unwound-var unwound-body))]
-                                [else (recur-on-pieces stx)]))
+                                [else (recur-on-pieces stx settings)]))
    
-   (define (unwind stx)
+   (define (unwind stx settings)
      (transfer-info
       (let ([hint (syntax-property stx 'user-stepper-hint)])
         (if (procedure? hint)
-            (hint stx recur-on-pieces)
+            (hint stx (lambda (stx) (recur-on-pieces stx settings)))
             (let ([process (case hint
                              [(comes-from-cond)  unwind-cond]
                              [(comes-from-and)   (unwind-and/or 'and)]
@@ -84,7 +85,7 @@
                              [(comes-from-recur) unwind-recur]
                              ;;[(comes-from-begin) unwind-begin]
                              [else fall-through])])
-              (process stx))))
+              (process stx settings))))
       stx))
    
    (define (transfer-highlight from to)
@@ -92,12 +93,12 @@
          (syntax-property to 'stepper-highlight #t)
          to))
    
-   (define (unwind-recur stx)
+   (define (unwind-recur stx settings)
      ;; if you use #%app, it gets captured here
      (with-syntax ([(app-keywd letrec-term argval ...) stx])
        (with-syntax ([(new-argval ...)
-                      (map unwind (syntax->list #`(argval ...)))])
-         (let ([unwound (unwind #`letrec-term)])
+                      (map (lambda (argval) (unwind argval settings)) (syntax->list #`(argval ...)))])
+         (let ([unwound (unwind #`letrec-term settings)])
            (syntax-case unwound (letrec lambda)
              [(letrec ([loop-name (lambda (argname ...) . bodies)])
                 loop-name-2)
@@ -108,7 +109,7 @@
                #`(recur loop-name ([argname new-argval] ...) . bodies))]
              [else #`(#,unwound new-argval ...)])))))
    
-   (define (unwind-define stx)
+   (define (unwind-define stx settings)
      (kernel:kernel-syntax-case stx #f
                                 [(define-values (name . others) body)
                                  (begin
@@ -120,7 +121,7 @@
                                            (or (syntax-property #`name 'stepper-lifted-name)
                                                (syntax-property #'name 'stepper-orig-name)
                                                #'name)]
-                                          [unwound-body (unwind #'body)]
+                                          [unwound-body (unwind #'body settings)]
                                           ;; see notes in internal-docs.txt
                                           [define-type (syntax-property
                                                         unwound-body 'user-stepper-define-type)])
@@ -158,9 +159,9 @@
                                              "expression is not a define-values: ~e"
                                              (syntax-object->datum stx))]))
    
-   (define (unwind-mz-let stx)
+   (define (unwind-mz-let stx settings)
      (with-syntax ([(label ([(var) rhs] ...) . bodies) stx])
-       (with-syntax ([(rhs2 ...) (map unwind (syntax->list #'(rhs ...)))]
+       (with-syntax ([(rhs2 ...) (map (lambda (rhs) (unwind rhs settings)) (syntax->list #'(rhs ...)))]
                      [new-label
                       (if (improper-member 'comes-from-let*
                                            (syntax-property
@@ -169,7 +170,7 @@
                           (case (syntax-e #'label)
                             [(let-values) #'let]
                             [(letrec-values) #'letrec]))]
-                     [new-bodies (map unwind (syntax->list #'bodies))])
+                     [new-bodies (map (lambda (body) (unwind body settings)) (syntax->list #'bodies))])
          ;; is this let and the nested one part of a let*?
          (syntax-case #`new-bodies (let*)
            [((let* bindings inner-body ...))
@@ -188,35 +189,36 @@
            [else
             #`(new-label ([var rhs2] ...) . new-bodies)]))))
    
-   (define (unwind-local stx)
+   (define (unwind-local stx settings)
      (kernel:kernel-syntax-case stx #f
                                 ;; at least through intermediate, define-values may not occur in
                                 ;; local.
                                 [(letrec-values ([vars exp] ...) body)
-                                 (with-syntax ([defns (map unwind
+                                 (with-syntax ([defns (map (lambda (def)
+							     (unwind def settings))
                                                            (syntax->list
                                                             #`((define-values vars exp) ...)))])
-                                   #`(local defns #,(unwind #'body)))]
+                                   #`(local defns #,(unwind #'body settings)))]
                                 [else (error 'unwind-local
                                              "expected a letrec-values, given: ~e"
                                              (syntax-object->datum stx))]))
    
-   ;(define (unwind-quasiquote-the-cons-application stx)
-   ;  (syntax-case (recur-on-pieces stx) ()
+   ;(define (unwind-quasiquote-the-cons-application stx settings)
+   ;  (syntax-case (recur-on-pieces stx settings) ()
    ;    [(#%app the-cons . rest)
    ;     (syntax (cons . rest))]
    ;    [else
    ;     (error 'reconstruct
    ;            "unexpected result for unwinding the-cons application")]))
    
-   (define (unwind-cond-clause stx test-stx result-stx)
+   (define (unwind-cond-clause stx test-stx result-stx settings)
      (with-syntax ([new-test (if (syntax-property stx 'user-stepper-else)
                                  #`else
-                                 (unwind test-stx))]
-                   [result (unwind result-stx)])
+                                 (unwind test-stx settings))]
+                   [result (unwind result-stx settings)])
        #`(new-test result)))
    
-   (define (unwind-cond stx)
+   (define (unwind-cond stx settings)
      (let ([user-source   (syntax-property stx 'user-source)]
            [user-position (syntax-property stx 'user-position)])
        (with-syntax
@@ -230,9 +232,9 @@
                      ;; the else clause disappears when it's a
                      ;; language-inserted else clause
                      [(if test result)
-                      (list (unwind-cond-clause stx #`test #`result))]
+                      (list (unwind-cond-clause stx #`test #`result settings))]
                      [(if test result else-clause)
-                      (cons (unwind-cond-clause stx #`test #`result)
+                      (cons (unwind-cond-clause stx #`test #`result settings)
                             (loop (syntax else-clause)))]
                      ;; else clause appears momentarily in 'before,' even
                      ;; though it's a 'skip-completely'
@@ -247,17 +249,20 @@
          (syntax (cond . clauses)))))
    
   ;; unused: the fake-exp begin takes care of this for us...
-  #;(define (unwind-begin stx)
+  #;(define (unwind-begin stx settings)
       (syntax-case stx (let-values)
         [(let-values () body ...)
          (with-syntax ([(new-body ...)
-                        (map unwind (syntax->list #`(body ...)))])
+                        (map (lambda (body) (unwind body settings)) (syntax->list #`(body ...)))])
            #`(begin new-body ...))]))
    
-  (define ((unwind-and/or label) stx)
+  (define ((unwind-and/or label) stx settings)
     (let ([user-source   (syntax-property stx 'user-source)]
           [user-position (syntax-property stx 'user-position)]
-          [clause-padder (case label [(and) #`true] [(or) #`false])])
+          [clause-padder
+ 	   (if (render-settings-true-false-printed? settings)
+ 	       (case label [(and) #'true] [(or) #'false])
+ 	       (case label [(and) #'#t] [(or) #'#f]))])
       (with-syntax
           ([clauses
             (append
@@ -271,7 +276,7 @@
                              (syntax-property stx 'user-position)))
                    (syntax-case stx (if let-values #%datum)
                      [(if part-1 part-2 part-3)
-                      (cons (unwind (syntax part-1))
+                      (cons (unwind (syntax part-1) settings)
                             (case label
                               [(and) (loop (syntax part-2))]
                               [(or) (loop (syntax part-3))]

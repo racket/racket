@@ -186,7 +186,7 @@
                      (match (r:reconstruct-completed
                              (source-thunk) lifting-indices
                              getter render-settings)
-                       [#(exp #f) (unwind exp)]
+                       [#(exp #f) (unwind exp render-settings)]
                        [#(exp #t) exp])])
                  finished-exps))
 
@@ -210,7 +210,8 @@
                             "broken invariant: normal-break can't have returned values"))
                    (set! held-finished-list (reconstruct-all-completed))
                    (set! held-exp-list
-                         (map unwind
+                         (map (lambda (exp)
+				(unwind exp render-settings))
                               (maybe-lift
                                (r:reconstruct-left-side
                                 mark-list returned-value-list render-settings)
@@ -224,7 +225,8 @@
 
                    (let* ([new-finished-list (reconstruct-all-completed)]
                           [reconstructed
-                           (map unwind
+                           (map (lambda (exp)
+				  (unwind exp render-settings))
                                 (maybe-lift
                                  (r:reconstruct-right-side
                                   mark-list returned-value-list render-settings)
@@ -275,8 +277,10 @@
                  (let* ([new-finished-list (reconstruct-all-completed)]
                         [reconstruct-result
                          (r:reconstruct-double-break mark-list render-settings)]
-                        [left-side (map unwind (maybe-lift (car reconstruct-result) #f))]
-                        [right-side (map unwind (maybe-lift (cadr reconstruct-result) #t))])
+                        [left-side (map (lambda (exp) (unwind exp render-settings))
+					(maybe-lift (car reconstruct-result) #f))]
+                        [right-side (map (lambda (exp) (unwind exp render-settings))
+					 (maybe-lift (cadr reconstruct-result) #t))])
                    ;; add highlighting code as for other cases...
                    (receive-result
                     (make-before-after-result
