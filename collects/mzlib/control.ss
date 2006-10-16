@@ -41,10 +41,11 @@
         (lambda () expr))]))
 
   ;; ----------------------------------------
-  ;; Felleisen, Wand, Friedman, & Duba, LFP'88
-  ;; Instead of `#', we use `prompt' as in Felleisen, POPL'88
-  ;;  (where `control' is called `F')
-  ;; See also Sitaram and Felleisen, LSC'90
+  ;; Predecessors of Sitaram, PLDI'93
+  ;;  Felleisen, Wand, Friedman, & Duba, LFP'88
+  ;;  Instead of `#', we use `prompt' as in Felleisen, POPL'88
+  ;;   (where `control' is called `F')
+  ;;  See also Sitaram and Felleisen, LSC'90
 
   ;; Helpder function: abort-current-continuation/keep-prompt is
   ;; like abort-current-continuation, but it always leaves the
@@ -62,7 +63,8 @@
 
   ;; call-with-control, parameterized over whether to keep the
   ;; prompt (if the prompt's handler gives us the option of
-  ;; removing it).
+  ;; removing it). The generated function is the same
+  ;; a fcontrol when `abort-cc' is `abort-current-continuation'.
   (define (make-call-with-control abort-cc)
     ;; Uses call/cc to always keep the enclosing prompt.
     (letrec ([call-with-control
