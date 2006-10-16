@@ -1145,7 +1145,9 @@
                                  (annotate/top-level main-exp)])])
           #;(printf "annotated: \n~a\n" (syntax-object->datum annotated-exp))
           annotated-exp)
-        (annotate/inner main-exp 'all #f #f)))
+        (let*-2vals ([(annotated dont-care)
+                     (annotate/inner (top-level-rewrite main-exp) 'all #f #f)])
+                    annotated)))
 
   ;; !@#$ defs have to appear after annotate/master.
   (define annotate (annotate/master #t))
