@@ -1386,10 +1386,6 @@
       (define (make-square-bracket-prefs-panel p)
         (define main-panel (make-object vertical-panel% p))
         (define boxes-panel (new horizontal-panel% [parent main-panel]))
-        (define pref-syms (list 'framework:square-bracket:case
-                                'framework:square-bracket:cond
-                                'framework:square-bracket:letrec))
-        (define pref-prefixes '("Case" "Cond" "Letrec"))
                             
         (define (mk-list-box sym keyword-type pref->string get-new-one)
           (letrec ([vp (new vertical-panel% [parent boxes-panel])]
@@ -1457,7 +1453,9 @@
             (and new-one
                  (let ([parsed (with-handlers ((exn:fail:read? (λ (x) #f)))
                                  (read (open-input-string new-one)))])
-                   parsed))))
+
+                   (and (symbol? parsed)
+                        (symbol->string parsed))))))
         
         (define (get-new-cond-keyword)
           (define f (new dialog% [label (format (string-constant enter-new-keyword) "Cond")]))
