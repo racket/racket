@@ -13,7 +13,8 @@
    stepper-text%
    snip?
    stepper-warning%
-   finished-text)
+   finished-text
+   vertical-separator-snip-class%)
    
   (define test-dc (make-object bitmap-dc% (make-object bitmap% 1 1)))
   (define reduct-highlight-color (make-object color% 255 255 255))
@@ -36,9 +37,8 @@
   (unless (send red-arrow-bitmap ok?)
     (error 'red-arrow-bitmap "unable to load red-arrow bitmap"))
   
-  (define vertical-separator-snipclass
-    (make-object
-     (class snip-class% ()
+  (define vertical-separator-snip-class%
+    (class snip-class% ()
        (override read)
        
        (define (read s)
@@ -46,11 +46,15 @@
            (send s get size-box)
            (make-object vertical-separator-snip% 100)))
        
-       (super-instantiate ()))))
+       (super-instantiate ())))
+  
+  (define vertical-separator-snipclass
+    (make-object vertical-separator-snip-class%))
+  
   
   (send* vertical-separator-snipclass
     (set-version 1)
-    (set-classname "drscheme:vertical-separator-snip%"))
+    (set-classname (format "~s" `(lib "vertical-separator-snip.ss" "stepper" "private"))))
   
   (send (get-the-snip-class-list) add vertical-separator-snipclass)
   
