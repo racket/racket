@@ -2377,16 +2377,17 @@ void wxWindowDC::DrawText(char *orig_text, double x, double y,
 	  while (1) {
 	    cval = text[dt];
 	    if (!XftGlyphExists(DPY, this_time, cval)) {
-	      this_time = (wxFontStruct*)current_font->GetNextAASubstitution(index++, cval, scale_x, scale_y, angle);
+	      this_time = (wxFontStruct*)current_font->GetNextAASubstitution(index, cval, scale_x, scale_y, angle);
 	      if (!this_time) {
 		this_time = xfontinfo;
 		this_time_no_rotate = no_rotate;
 		break;
 	      }
 	      if (angle != 0.0)
-		this_time_no_rotate = (wxFontStruct*)current_font->GetNextAASubstitution(index++, cval, e_scale_x, e_scale_y, 0.0);
+		this_time_no_rotate = (wxFontStruct*)current_font->GetNextAASubstitution(index, cval, e_scale_x, e_scale_y, 0.0);
 	      else
 		this_time_no_rotate = this_time;
+              index++;
 	    } else
 	      break;
 	  }
