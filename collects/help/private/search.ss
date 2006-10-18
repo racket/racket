@@ -210,14 +210,14 @@
                                             (lambda (x)
                                               (k null))])
                              (read p)))]
-                  [key (let loop ([entry entry])
+                  [key (let loop ([l-entry entry])
                          (cond
-                           [(symbol? entry) entry]
-                           [(pair? entry) (if (and (eq? (car entry) 'quote)
-                                                   (pair? (cdr entry)))
-                                              (loop (cadr entry))
-                                              (loop (car entry)))]
-                           [else (error "bad entry")]))]
+                           [(symbol? l-entry) l-entry]
+                           [(pair? l-entry) (if (and (eq? (car l-entry) 'quote)
+                                                   (pair? (cdr l-entry)))
+                                              (loop (cadr l-entry))
+                                              (loop (car l-entry)))]
+                           [else (error 'load-txt-keyworsd "bad entry in ~s: ~s" doc entry)]))]
                   [content (if (symbol? entry)
                                (with-handlers ([exn:fail:read? (lambda (x) #f)])
                                  (let ([s (read p)])
