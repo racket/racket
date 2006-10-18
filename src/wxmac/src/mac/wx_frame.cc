@@ -263,6 +263,12 @@ wxFrame::wxFrame // Constructor (for frame window)
     spec[2].eventKind = kEventWindowBoundsChanging;
     InstallEventHandler(GetWindowEventTarget(theMacWindow), window_evt_handler, 3, spec, refcon, NULL);
   }
+
+  {
+    /* In case we need to recognize MrEd windows: */
+    UInt32 val = 1;
+    SetWindowProperty (theMacWindow, 'mReD', 'Ello', sizeof(UInt32), &val);
+  }
 }
 
 static void userPaneDrawFunction(ControlRef controlRef, SInt16 thePart)

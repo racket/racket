@@ -46,6 +46,8 @@ extern WindowPtr MrEdKeyWindow();
 
 extern void wxCheckRootFrame(WindowPtr w);
 
+int wxTranslateRawKey(int key);
+
 int wxMenuBarHeight;
 
 extern wxApp *wxTheApp;
@@ -649,232 +651,141 @@ void wxApp::doMacKeyUpDown(Bool down)
   } else if (cCurrentEvent.what == unicodeEvt) {
     key = cCurrentEvent.message;
   } else {
+    int newkey;
+
     key = (cCurrentEvent.message & keyCodeMask) >> 8;
-    /* Better way than to use hard-wired key codes? */
-    switch (key) {
-#   define wxFKEY(code, wxk)  case code: key = wxk; break
-      wxFKEY(122, WXK_F1);
-      wxFKEY(120, WXK_F2);
-      wxFKEY(99, WXK_F3);
-      wxFKEY(118, WXK_F4);
-      wxFKEY(96, WXK_F5);
-      wxFKEY(97, WXK_F6);
-      wxFKEY(98, WXK_F7);
-      wxFKEY(100, WXK_F8);
-      wxFKEY(101, WXK_F9);
-      wxFKEY(109, WXK_F10);
-      wxFKEY(103, WXK_F11);
-      wxFKEY(111, WXK_F12);
-      wxFKEY(105, WXK_F13);
-      wxFKEY(107, WXK_F14);
-      wxFKEY(113, WXK_F15);
-    case 0x7e:
-    case 0x3e:
-      key = WXK_UP;
-      break;
-    case 0x7d:
-    case 0x3d:
-      key = WXK_DOWN;
-      break;
-    case 0x7b:
-    case 0x3b:
-      key = WXK_LEFT;
-      break;
-    case 0x7c:
-    case 0x3c:
-      key = WXK_RIGHT;
-      break;
-    case 0x24:
-      key = WXK_RETURN;
-      break;
-    case 0x30:
-      key = WXK_TAB;
-      break;
-    case 0x33:
-      key = WXK_BACK;
-      break;
-    case 0x75:
-      key = WXK_DELETE;
-      break;
-    case 0x73:
-      key = WXK_HOME;
-      break;
-    case 0x77:
-      key = WXK_END;
-      break;   
-    case 0x74:
-      key = WXK_PRIOR;
-      break;     
-    case 0x79:
-      key = WXK_NEXT;
-      break;
-    case 0x45:
-      key = WXK_ADD;
-      break;
-    case 78:
-      key = WXK_SUBTRACT;
-      break;
-    case 0x43:
-      key = WXK_MULTIPLY;
-      break;
-    case 0x4B:
-      key = WXK_DIVIDE;
-      break;
-    case 71:
-      key = WXK_SEPARATOR;
-      break;
-    case 65:
-      key = WXK_DECIMAL;
-      break;
-    case 76:
-      key = 3; /* numpad enter */
-      break;
-    case 82:
-    case 83:
-    case 84:
-    case 85:
-    case 86:
-    case 87:
-    case 88:
-    case 89:
-      key = WXK_NUMPAD0 + (key - 82);
-      break;
-    case 91:
-      key = WXK_NUMPAD8;
-      break;
-    case 92:
-      key = WXK_NUMPAD9;
-      break;
-    default:
-      {
-	int iter, akey, orig_key = key;
+    newkey = wxTranslateRawKey(key);
 
-	key = 0; /* let compiler know that key is assigned */
-	for (iter = 0; iter < ((cCurrentEvent.modifiers & cmdKey) ? 2 : 1); iter++) {
-	  char cstr[3];
-	  int from_str = 0;
+    if (newkey) {
+      key = newkey;
+    } else {
+      int iter, akey, orig_key = key;
 
-	  akey = orig_key;
+      key = 0; /* let compiler know that key is assigned */
+      for (iter = 0; iter < ((cCurrentEvent.modifiers & cmdKey) ? 2 : 1); iter++) {
+        char cstr[3];
+        int from_str = 0;
 
-	  if (cCurrentEvent.modifiers & (wxMacDisableMods | cmdKey)) {
-	    /* The following code manually translates the virtual key event
-	       into a character. We'd use this code all the time, except
-	       that dead keys have already been filtered before we get here,
-	       which means that option-e-e doesn't produce an accented e.
-	       So, instead, we only use this code to find out what would
-	       happen if the control/option key wasn't pressed. */
-	    int mods;
-	    OSStatus status;
-	    UniCharCount len;
-	    UniChar keys[1];
-	    SInt16 currentKeyLayoutID;
-	    static UCKeyboardLayout *key_layout;
+        akey = orig_key;
 
-	    mods = cCurrentEvent.modifiers;
-	    if (mods & cmdKey) {
-	      /* Strip control and option modifiers when command is pressed: */
-	      mods -= (mods & (optionKey | controlKey | cmdKey | shiftKey));
-	      /* On second iteration, set the shift key: */
-	      if (iter)
-		mods |= shiftKey;
-	    } else {
-	      /* Remove effect of anything in wxMacDisableMods: */
-	      mods -= (mods & wxMacDisableMods);
-	    }
+        if (cCurrentEvent.modifiers & (wxMacDisableMods | cmdKey)) {
+          /* The following code manually translates the virtual key event
+             into a character. We'd use this code all the time, except
+             that dead keys have already been filtered before we get here,
+             which means that option-e-e doesn't produce an accented e.
+             So, instead, we only use this code to find out what would
+             happen if the control/option key wasn't pressed. */
+          int mods;
+          OSStatus status;
+          UniCharCount len;
+          UniChar keys[1];
+          SInt16 currentKeyLayoutID;
+          static UCKeyboardLayout *key_layout;
 
-	    currentKeyLayoutID = GetScriptVariable(GetScriptManagerVariable(smKeyScript), smScriptKeys);
-	    if (!keyLayoutSet || (currentKeyLayoutID != lastKeyLayoutID)) {
-	      KeyboardLayoutRef kl;
-	      key_state = 0;
-	      if (KLGetCurrentKeyboardLayout(&kl) == noErr) {
-		void *p;
-		if (KLGetKeyboardLayoutProperty(kl, kKLKCHRData, (const void **)&p) == noErr) {
-		  KCHRPtr = p;
-		} else
-		  KCHRPtr = NULL;
-		if (KLGetKeyboardLayoutProperty(kl, kKLuchrData, (const void **)&p) == noErr)
-		  uchrPtr = p;
-		else
-		  uchrPtr = NULL;
-	      }
-	      lastKeyLayoutID = currentKeyLayoutID;
-	      keyLayoutSet = 1;
-	    }
+          mods = cCurrentEvent.modifiers;
+          if (mods & cmdKey) {
+            /* Strip control and option modifiers when command is pressed: */
+            mods -= (mods & (optionKey | controlKey | cmdKey | shiftKey));
+            /* On second iteration, set the shift key: */
+            if (iter)
+              mods |= shiftKey;
+          } else {
+            /* Remove effect of anything in wxMacDisableMods: */
+            mods -= (mods & wxMacDisableMods);
+          }
 
-	    if (!uchrPtr) {
-	      if (!KCHRPtr) {
-		akey = '?';
-	      } else {
-		int trans;
-		trans = KeyTranslate(KCHRPtr, akey | mods, &key_state);
-		if (trans & 0xFF0000) {
-		  /* 2-byte result */
-		  cstr[0] = (trans & 0xFF0000) >> 16;
-		  cstr[1] = trans & 0xFF;
-		  cstr[2] = 0;
-		} else {
-		  /* 1-byte result */
-		  cstr[0] = trans & 0xFF;
-		  cstr[1] = 0;
-		}
+          currentKeyLayoutID = GetScriptVariable(GetScriptManagerVariable(smKeyScript), smScriptKeys);
+          if (!keyLayoutSet || (currentKeyLayoutID != lastKeyLayoutID)) {
+            KeyboardLayoutRef kl;
+            key_state = 0;
+            if (KLGetCurrentKeyboardLayout(&kl) == noErr) {
+              void *p;
+              if (KLGetKeyboardLayoutProperty(kl, kKLKCHRData, (const void **)&p) == noErr) {
+                KCHRPtr = p;
+              } else
+                KCHRPtr = NULL;
+              if (KLGetKeyboardLayoutProperty(kl, kKLuchrData, (const void **)&p) == noErr)
+                uchrPtr = p;
+              else
+                uchrPtr = NULL;
+            }
+            lastKeyLayoutID = currentKeyLayoutID;
+            keyLayoutSet = 1;
+          }
 
-		akey = '?'; /* temporary */
-		from_str = 1;
-	      }
-	    } else {
-	      key_layout = (UCKeyboardLayout *)uchrPtr;
+          if (!uchrPtr) {
+            if (!KCHRPtr) {
+              akey = '?';
+            } else {
+              int trans;
+              trans = KeyTranslate(KCHRPtr, akey | mods, &key_state);
+              if (trans & 0xFF0000) {
+                /* 2-byte result */
+                cstr[0] = (trans & 0xFF0000) >> 16;
+                cstr[1] = trans & 0xFF;
+                cstr[2] = 0;
+              } else {
+                /* 1-byte result */
+                cstr[0] = trans & 0xFF;
+                cstr[1] = 0;
+              }
 
-	      status = UCKeyTranslate(key_layout,
-				      akey,
-				      cCurrentEvent.what - keyDown,
-				      mods >> 8,
-				      LMGetKbdType(),
-				      0 /* options */,
-				      &key_state,
-				      1,
-				      &len,
-				      keys);
+              akey = '?'; /* temporary */
+              from_str = 1;
+            }
+          } else {
+            key_layout = (UCKeyboardLayout *)uchrPtr;
 
-	      if (status == noErr)
-		akey = keys[0];
-	      else
-		akey = '?';
-	    }
-	  } else {
-	    akey = '?'; /* temporary */
-	    cstr[0] = cCurrentEvent.message & charCodeMask;
-	    cstr[1] = 0;
-	    from_str = 1;
-	  }
+            status = UCKeyTranslate(key_layout,
+                                    akey,
+                                    cCurrentEvent.what - keyDown,
+                                    mods >> 8,
+                                    LMGetKbdType(),
+                                    0 /* options */,
+                                    &key_state,
+                                    1,
+                                    &len,
+                                    keys);
 
-	  if (from_str) {
-	    CFStringRef str;
-	    UniChar keys[1];
+            if (status == noErr)
+              akey = keys[0];
+            else
+              akey = '?';
+          }
+        } else {
+          akey = '?'; /* temporary */
+          cstr[0] = cCurrentEvent.message & charCodeMask;
+          cstr[1] = 0;
+          from_str = 1;
+        }
+
+        if (from_str) {
+          CFStringRef str;
+          UniChar keys[1];
   
-	    str = CFStringCreateWithCStringNoCopy(NULL, cstr,
-						  GetScriptManagerVariable(smKeyScript),
-						  kCFAllocatorNull);
-	    if (str) {
-	      if (CFStringGetLength(str) > 0) {
-		GC_CAN_IGNORE CFRange rng;
-		rng = CFRangeMake(0, 1);
-		CFStringGetCharacters(str, rng, keys);
-	      } else
-		keys[0] = '?';
-	      CFRelease(str);
-	    } else
-	      keys[0] = '?';
+          str = CFStringCreateWithCStringNoCopy(NULL, cstr,
+                                                GetScriptManagerVariable(smKeyScript),
+                                                kCFAllocatorNull);
+          if (str) {
+            if (CFStringGetLength(str) > 0) {
+              GC_CAN_IGNORE CFRange rng;
+              rng = CFRangeMake(0, 1);
+              CFStringGetCharacters(str, rng, keys);
+            } else
+              keys[0] = '?';
+            CFRelease(str);
+          } else
+            keys[0] = '?';
 
-	    akey = keys[0];
-	  }
+          akey = keys[0];
+        }
 
-	  if (!iter)
-	    key = akey;
-	  else
-	    otherKey = akey;
-	}
+        if (!iter)
+          key = akey;
+        else
+          otherKey = akey;
       }
-    } // end switch
+    }
   }
 
   if (down) {
@@ -913,6 +824,111 @@ void wxApp::doMacKeyUp(void)
 void wxApp::doMacAutoKey(void)
 {
   doMacKeyUpDown(true);
+}
+
+int wxTranslateRawKey(int key)
+{
+  /* Better way than to use hard-wired key codes? */
+  switch (key) {
+#   define wxFKEY(code, wxk)  case code: key = wxk; break
+    wxFKEY(122, WXK_F1);
+    wxFKEY(120, WXK_F2);
+    wxFKEY(99, WXK_F3);
+    wxFKEY(118, WXK_F4);
+    wxFKEY(96, WXK_F5);
+    wxFKEY(97, WXK_F6);
+    wxFKEY(98, WXK_F7);
+    wxFKEY(100, WXK_F8);
+    wxFKEY(101, WXK_F9);
+    wxFKEY(109, WXK_F10);
+    wxFKEY(103, WXK_F11);
+    wxFKEY(111, WXK_F12);
+    wxFKEY(105, WXK_F13);
+    wxFKEY(107, WXK_F14);
+    wxFKEY(113, WXK_F15);
+  case 0x7e:
+  case 0x3e:
+    key = WXK_UP;
+    break;
+  case 0x7d:
+  case 0x3d:
+    key = WXK_DOWN;
+    break;
+  case 0x7b:
+  case 0x3b:
+    key = WXK_LEFT;
+    break;
+  case 0x7c:
+  case 0x3c:
+    key = WXK_RIGHT;
+    break;
+  case 0x24:
+    key = WXK_RETURN;
+    break;
+  case 0x30:
+    key = WXK_TAB;
+    break;
+  case 0x33:
+    key = WXK_BACK;
+    break;
+  case 0x75:
+    key = WXK_DELETE;
+    break;
+  case 0x73:
+    key = WXK_HOME;
+    break;
+  case 0x77:
+    key = WXK_END;
+    break;   
+  case 0x74:
+    key = WXK_PRIOR;
+    break;     
+  case 0x79:
+    key = WXK_NEXT;
+    break;
+  case 0x45:
+    key = WXK_ADD;
+    break;
+  case 78:
+    key = WXK_SUBTRACT;
+    break;
+  case 0x43:
+    key = WXK_MULTIPLY;
+    break;
+  case 0x4B:
+    key = WXK_DIVIDE;
+    break;
+  case 71:
+    key = WXK_SEPARATOR;
+    break;
+  case 65:
+    key = WXK_DECIMAL;
+    break;
+  case 76:
+    key = 3; /* numpad enter */
+    break;
+  case 82:
+  case 83:
+  case 84:
+  case 85:
+  case 86:
+  case 87:
+  case 88:
+  case 89:
+    key = WXK_NUMPAD0 + (key - 82);
+    break;
+  case 91:
+    key = WXK_NUMPAD8;
+    break;
+  case 92:
+    key = WXK_NUMPAD9;
+    break;
+  default:
+    key = 0;
+    break;
+  }
+
+  return key;
 }
 
 //-----------------------------------------------------------------------------

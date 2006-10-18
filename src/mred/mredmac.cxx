@@ -41,6 +41,9 @@ static void MrDequeue(MrQueueElem *q);
 WindowPtr MrEdMouseWindow(Point where);
 WindowPtr MrEdKeyWindow();
 
+extern int wxTranslateRawKey(int key);
+extern short wxMacDisableMods;
+
 typedef MrQueueElem *MrQueueRef;
 
 typedef int (*Checker_Func)(EventRecord *evt, MrQueueRef q, int check_only, 
@@ -276,9 +279,15 @@ static int pending_self_ae;
 
 static void EnsureWNEReturn()
 {
-  /* Generate an event that WaitNextEvent will return, but
-     that we can recognize and ignore. An AppleEvent is a
-     heavyweight but reliable way to do that. */
+  /* Generate an event that WaitNextEvent() will return, but that we can
+     recognize and ignore. (Note that window handlers can run nested
+     event handlers, such as the resize handler for the little
+     OS-provided window to implement Chinese text via pinyin. We need
+     something that doesn't break those loops.) An AppleEvent is a
+     heavyweight(?) but apparently reliable way to get WaitNextEvent() to
+     return. Of course, don't install the standard handlers that are put
+     in place by RunApplicationEventLoop(), because they'll dispatch the 
+     dummy AppleEvent and defeat the purpose. */
   if (!pending_self_ae) {
     ProcessSerialNumber psn;
     AEAddressDesc target;
@@ -332,20 +341,34 @@ void wxSmuggleOutEvent(EventRef ref)
              && (GetEventKind(ref) == kEventTextInputUnicodeForKeyEvent)) {
     UniChar *text;
     UInt32 actualSize; 
+    EventRef kref;
     
-    GetEventParameter(ref, kEventParamTextInputSendText,
-                      typeUnicodeText, NULL, 0, &actualSize, NULL);
-    if (actualSize) {
-      text = (UniChar*)scheme_malloc_atomic(actualSize);
-      GetEventParameter(ref, kEventParamTextInputSendText,
-                        typeUnicodeText, NULL, actualSize, NULL, text);
-
-      e.what = unicodeEvt;
-      e.message = text[0];
+    GetEventParameter(ref, kEventParamTextInputSendKeyboardEvent,
+                      typeEventRef, NULL, sizeof(EventRef), NULL, &kref);
+    if (ConvertEventRefToEventRecord(kref, &e)) {
+      ok = TRUE;
+    } else {
       e.modifiers = 0;
+      e.message = 0;
       e.where.h = 0;
       e.where.v = 0;
-      ok = TRUE;
+    }
+
+    if ((e.modifiers & (wxMacDisableMods | cmdKey))
+        || wxTranslateRawKey((e.message & keyCodeMask) >> 8)) {
+      /* keep the raw event */
+    } else {
+      GetEventParameter(ref, kEventParamTextInputSendText,
+                        typeUnicodeText, NULL, 0, &actualSize, NULL);
+      if (actualSize) {
+        text = (UniChar*)scheme_malloc_atomic(actualSize);
+        GetEventParameter(ref, kEventParamTextInputSendText,
+                          typeUnicodeText, NULL, actualSize, NULL, text);
+      
+        e.what = unicodeEvt;
+        e.message = text[0];
+        ok = TRUE;
+      }
     }
   } else {
     ok = ConvertEventRefToEventRecord(ref, &e);
@@ -379,7 +402,7 @@ static pascal OSErr HandleSmug(const AppleEvent *evt, AppleEvent *rae, long k)
   return 0;
 }
 
-/* WNE: a small wrapper for WaitNextEvent, mostly to manage
+/* WNE: a small wrapper for WaitNextEvent(), mostly to manage
    wake-up activities.
    It's tempting to try to use ReceiveNextEvent() to filter
    the raw events. Don't do that, because WaitNextEvent() is
@@ -424,7 +447,7 @@ int WNE(EventRecord *e, double sleep_secs)
 
     ::InstallEventHandler(GetEventDispatcherTarget(),
 			  smuggle_handler,
-			  2,
+			  3,
 			  evts,
 			  NULL,
 			  NULL);
@@ -465,7 +488,7 @@ static int TransferQueue(int all)
   int sleep_time = 0;
   int delay_time = 0;
   
-  /* Don't call WaitNextEvent too often. */
+  /* Don't call WaitNextEvent() too often. */
   static unsigned long lastTime;
   if (TickCount() <= lastTime + delay_time)
     return 0;
@@ -726,6 +749,7 @@ static int CheckForMouseOrKey(EventRecord *e, MrQueueRef osq, int check_only,
     }
     break;
   case wheelEvt:
+  case unicodeEvt:
   case keyDown:
   case autoKey:
   case keyUp:
@@ -754,10 +778,6 @@ static int CheckForActivate(EventRecord *evt, MrQueueRef q, int check_only,
   WindowPtr window;
 
   switch (evt->what) {
-#ifndef OS_X    
-    // OS X does not support the diskEvt event.
-  case diskEvt:
-#endif    
   case kHighLevelEvent:
     {
       MrEdContext *fc;
@@ -904,6 +924,7 @@ int MrEdGetNextEvent(int check_only, int current_only,
       case mouseMenuDown:
       case mouseDown:
       case wheelEvt:
+      case unicodeEvt:
       case keyDown:
       case keyUp:
       case autoKey:
@@ -1071,14 +1092,12 @@ int MrEdCheckForBreak(void)
 /*                                 sleep                                   */
 /***************************************************************************/
 
-#ifdef OS_X
 #include <pthread.h>
 static volatile int thread_running;
 static volatile int need_post; /* 0=>1 transition has a benign race condition, an optimization */
 static SLEEP_PROC_PTR mzsleep;
 static pthread_t watcher;
 static volatile float sleep_secs;
-static ProcessSerialNumber psn;
 
 /* These file descriptors act as semaphores: */
 static int watch_read_fd, watch_write_fd;
@@ -1103,7 +1122,6 @@ static void *do_watch(void *fds)
     mzsleep(sleep_secs, fds);
     if (need_post) {
       need_post = 0;
-      WakeUpProcess(&psn);
       if (cb_socket_ready) {
 	/* Sometimes WakeUpProcess() doesn't work. 
 	   Try a notification socket as a backup. 
@@ -1145,7 +1163,6 @@ static int StartFDWatcher(void (*mzs)(float secs, void *fds), float secs, void *
   }
 
   if (!watcher) {
-    GetCurrentProcess(&psn);
     if (pthread_create(&watcher, NULL,  do_watch, fds)) {
       return 0;
     }
@@ -1175,31 +1192,25 @@ static void EndFDWatcher(void)
   }
 }
 
-/* See ARGH below. */
 void socket_callback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info)
 {
-  WakeUpProcess(&psn);
+  EnsureWNEReturn();
 }
 
-/* See ARGH below. */
 static const void *sock_retain(const void *info)
 {
   return NULL;
 }
 
-/* See ARGH below. */
 static void sock_release(const void *info)
 {
   /* do nothing */
 }
 
-/* See ARGH below. */
 static CFStringRef sock_copy_desc(const void *info)
 {
   return CFSTR("sock");
 }
-
-#endif
 
 static int going, reported_recursive_sleep;
 
@@ -1215,24 +1226,24 @@ void MrEdMacSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep)
   }
 
   /* If we're asked to sleep less than 1/60 of a second, then don't
-     bother with WaitNextEvent. */
+     bother with WaitNextEvent(). */
   if ((secs > 0) && (secs < 1.0/60)) {
     mzsleep(secs, fds);
   } else {
     EventRecord e;
 
     if (!cb_socket_ready) {
-      /* ARGH: We set up a pipe for the purpose of breaking the Carbon
+      /* We set up a pipe for the purpose of breaking the Carbon
 	 event manager out of its loop. When the watcher thread sees
 	 that an fd is ready, it writes to write_sock_ready, which
 	 means that sock_ready is ready to read, which means that
-	 socket_callback is invoked, and it calls WakeUpProcess().
+	 socket_callback is invoked, and it calls EnsureWNEReturn().
 
-	 None of this would be necessary if WakeUpProcess() worked
-	 correctly, because the watcher thread also calls
-	 WakeUpProcess(). It seems to have become broken in OS X 10.2,
-	 where WakeUpprocess() doesn't work when called before the WNE
-	 starts (reminiscent of OS 7.1.2 or so). */
+         With the current implementation of EnsureWNEReturn(), this is
+         probably overkill. I think the watcher thread could call
+         EnsureWNEReturn() directly. Doing it this way moves the call
+         into this thread, though, which seems more robust in the long
+         run (i.e., if EnsureWNEReturn() changes). */
       int fds[2];
       if (!pipe(fds)) {
 	CFRunLoopRef rl;
