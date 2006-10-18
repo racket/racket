@@ -13,9 +13,13 @@
                     [word-count (-> number?)])
   
   (define-lex-abbrevs
-   (extended-alphabetic (:or alphabetic #\'))
-   (word (:: (:* extended-alphabetic) (:+ alphabetic) (:* extended-alphabetic)))
-   (paren (char-set "()[]{}")))
+    ;; Treat only letters with casing for spelling. This avoids
+    ;; Chinese, for example, where the concept of spelling doesn't
+    ;; really apply.
+    (cased-alphabetic (:or lower-case upper-case title-case))
+    (extended-alphabetic (:or cased-alphabetic #\'))
+    (word (:: (:* extended-alphabetic) (:+ cased-alphabetic) (:* extended-alphabetic)))
+    (paren (char-set "()[]{}")))
                                    
   (define get-word
     (lexer 
@@ -23,7 +27,7 @@
       (values lexeme 'white-space #f (position-offset start-pos) (position-offset end-pos)))
      (paren
       (values lexeme 'other (string->symbol lexeme) (position-offset start-pos) (position-offset end-pos)))
-     ((:+ (:~ (:or alphabetic whitespace paren)))
+     ((:+ (:~ (:or cased-alphabetic whitespace paren)))
       (values lexeme 'other #f (position-offset start-pos) (position-offset end-pos)))
      (word
       (let ((ok (spelled-correctly? lexeme)))
