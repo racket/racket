@@ -41,6 +41,8 @@ static void MrDequeue(MrQueueElem *q);
 WindowPtr MrEdMouseWindow(Point where);
 WindowPtr MrEdKeyWindow();
 
+int wx_leave_all_input_alone;
+
 extern int wxTranslateRawKey(int key);
 extern short wxMacDisableMods;
 
@@ -342,6 +344,7 @@ void wxSmuggleOutEvent(EventRef ref)
     UniChar *text;
     UInt32 actualSize; 
     EventRef kref;
+    UInt32 val = 0;    
     
     GetEventParameter(ref, kEventParamTextInputSendKeyboardEvent,
                       typeEventRef, NULL, sizeof(EventRef), NULL, &kref);
@@ -389,9 +392,12 @@ static OSStatus unhide_cursor_handler(EventHandlerCallRef inHandlerCallRef,
 }
 
 static OSStatus smuggle_handler(EventHandlerCallRef inHandlerCallRef, 
-                                      EventRef inEvent, 
-                                      void *inUserData)
+                                EventRef inEvent, 
+                                void *inUserData)
 {
+  if (wx_leave_all_input_alone)
+    return eventNotHandledErr;
+
   wxSmuggleOutEvent(inEvent);
   return noErr;
 }

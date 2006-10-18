@@ -1385,16 +1385,21 @@ void wxApp::DoDefaultAboutItem(void)
 
 //-----------------------------------------------------------------------------
 
+extern int wx_leave_all_input_alone;
+
 void wxPrimDialogSetUp()
 {
   wxUnhideCursor();
   wxSetCursor(wxSTANDARD_CURSOR);
+  wx_leave_all_input_alone++;
 }
 
 void wxPrimDialogCleanUp()
 {
   WindowPtr w;
   EventRecord event;
+
+  --wx_leave_all_input_alone;
 
   wxTheApp->AdjustCursor();
 
