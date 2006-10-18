@@ -41,7 +41,7 @@
                         (uri-decode (url-path->string (url-path uri)))))
       (cond
         [(file-exists? path)
-         (match (headers-assq #"Range" (request-headers/raw req))
+         (match (headers-assq* #"Range" (request-headers/raw req))
            [#f
             (output-file conn path method (get-mime-type path))]
            [range

@@ -36,7 +36,7 @@
   (define (get-host uri headers)
     (cond
       [(url-host uri) => string->symbol]
-      [(headers-assq #"Host" headers)
+      [(headers-assq* #"Host" headers)
        => (match-lambda
             [(struct header (_ v))
              (string->symbol (bytes->string/utf-8 v))])]
@@ -108,7 +108,7 @@
   ;; 2. Headers should be read as bytes and then translated to unicode as appropriate.
   ;; 3. The Authorization header should have bytes (i.e. (cdr pass-pair) is bytes
   (define (extract-user-pass headers)
-    (match (headers-assq #"Authorization" headers)
+    (match (headers-assq* #"Authorization" headers)
       [#f #f]
       [(struct header (_ basic-credentials))
        (cond

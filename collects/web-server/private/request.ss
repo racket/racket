@@ -45,7 +45,7 @@
       (lambda (headers major minor client-ip host-ip)
         (or (< major 1)
             (and (= major 1) (= minor 0))
-            (match (headers-assq #"Connection" headers)
+            (match (headers-assq* #"Connection" headers)
               [(struct header (f v))
                (and (regexp-match rx v)
                     #t)]
@@ -62,8 +62,8 @@
       (lambda (headers client-ip host-ip)
         (and (string=? host-ip client-ip)
              (match
-                 (or (headers-assq #"HTTP_USER_AGENT" headers)
-                     (headers-assq #"User-Agent" headers))
+                 (or (headers-assq* #"HTTP_USER_AGENT" headers)
+                     (headers-assq* #"User-Agent" headers))
                [(struct header (f v))
                 (and (regexp-match rx v)
                      #t)]
@@ -144,7 +144,7 @@
                                   (string->bytes/utf-8 v))])
             (url-query uri))]
       ['post
-       (define content-type (headers-assq #"Content-Type" headers))
+       (define content-type (headers-assq* #"Content-Type" headers))
        (define in (connection-i-port conn))
        (cond
          [(and content-type (regexp-match FILE-FORM-REGEXP (header-value content-type)))
@@ -152,7 +152,7 @@
                [(list _ content-boundary)
                 (map (match-lambda
                        [(struct mime-part (headers contents))
-                        (define rhs (header-value (headers-assq #"Content-Disposition" headers)))
+                        (define rhs (header-value (headers-assq* #"Content-Disposition" headers)))
                         (match (list (regexp-match #"filename=(\"([^\"]*)\"|([^ ;]*))" rhs)
                                      (regexp-match #"[^e]name=(\"([^\"]*)\"|([^ ;]*))" rhs))
                           [(list #f #f)
@@ -163,7 +163,7 @@
                            (make-binding:file (or f10 f11) (or f00 f01) (apply bytes-append contents))])])
                      (read-mime-multipart content-boundary in))])]
          [else
-          (match (headers-assq #"Content-Length" headers)
+          (match (headers-assq* #"Content-Length" headers)
             [(struct header (_ value))
              (cond
                [(string->number (bytes->string/utf-8 value))

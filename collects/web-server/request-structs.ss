@@ -2,18 +2,31 @@
   (require (lib "contract.ss")
            (lib "plt-match.ss")
            (lib "url.ss" "net"))
+  
+  (define (bytes-ci=? b0 b1)
+    (string-ci=? (bytes->string/utf-8 b0)
+                 (bytes->string/utf-8 b1)))
     
   (define-struct header (field value))
+  (define (headers-assq* f hs)
+    (match hs
+      [(list)
+       #f]
+      [(list-rest (and h (struct header (af aw))) hs)
+       (if (bytes-ci=? af f)
+           h
+           (headers-assq f hs))]))
   (define (headers-assq f hs)
     (match hs
       [(list)
        #f]
       [(list-rest (and h (struct header (af av))) hs)
-       (if (equal? af f)
+       (if (bytes=? af f)
            h
            (headers-assq f hs))]))       
   (provide/contract
    [headers-assq (bytes? (listof header?) . -> . (or/c false/c header?))]
+   [headers-assq* (bytes? (listof header?) . -> . (or/c false/c header?))]
    [struct header ([field bytes?]
                    [value bytes?])])
   
