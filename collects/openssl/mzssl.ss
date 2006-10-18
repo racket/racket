@@ -263,7 +263,8 @@
 			    flushing? must-write must-read
 			    refcount 
 			    close-original? shutdown-on-close?
-			    finalizer-cancel))
+			    finalizer-cancel
+                            error))
 
   (define (make-immobile-bytes n)
     (if 3m?
@@ -428,7 +429,7 @@
 	 [else 
 	  (let ([m (BIO_write r-bio buffer n)])
 	    (unless (= m n)
-	      (error 'pump-input-once "couldn't write all bytes to BIO!"))
+	      ((mzssl-error mzssl) 'pump-input-once "couldn't write all bytes to BIO!"))
 	    m)]))))
 
   (define (pump-output-once mzssl need-progress? output-blocked-result)
@@ -443,7 +444,7 @@
 	      (if (n . <= . 0)
 		  (begin
 		    (when need-progress?
-		      (error 'pump-output-once "no output to pump!"))
+		      ((mzssl-error mzssl) 'pump-output-once "no output to pump!"))
 		    #f)
 		  (begin
 		    (write-bytes buffer pipe-w 0 n)
@@ -523,8 +524,9 @@
 				     (wrap-evt (mzssl-o mzssl) (lambda (x) 0))))]
 			      [else
 			       (set! must-read-len #f)
-			       (error 'read-bytes "SSL read failed ~a"
-				      (get-error-message (ERR_get_error)))]))))))]
+			       ((mzssl-error mzssl) 'read-bytes 
+                                "SSL read failed ~a"
+                                (get-error-message (ERR_get_error)))]))))))]
 		[top-read
 		 (lambda (buffer)
 		   (cond
@@ -677,8 +679,9 @@
 					 (wrap-evt (mzssl-o mzssl) (lambda (x) #f))))]
 				  [else
 				   (set! must-write-len #f)
-				   (error 'write-bytes "SSL write failed ~a"
-					  (get-error-message (ERR_get_error)))])))))))]
+				   ((mzssl-error mzssl) 'write-bytes 
+                                    "SSL write failed ~a"
+                                    (get-error-message (ERR_get_error)))])))))))]
 		[top-write
 		 (lambda (buffer s e non-block? enable-break?)
 		   (cond
@@ -708,10 +711,10 @@
 			     (unless (and (len . >= . must-write-len)
 					  (bytes=? (subbytes xfer-buffer 0 must-write-len)
 						   (subbytes buffer s (+ s must-write-len))))
-			       (error 'write-bytes 
-				      "SSL output request: ~e different from previous unsatisfied request: ~e"
-				      (subbytes buffer s e)
-				      (subbytes xfer-buffer 0 must-write-len)))
+			       ((mzssl-error mzssl) 'write-bytes 
+                                "SSL output request: ~e different from previous unsatisfied request: ~e"
+                                (subbytes buffer s e)
+                                (subbytes xfer-buffer 0 must-write-len)))
 			     (do-write must-write-len non-block? enable-break?))
 			   ;; No previous write obligation:
 			   (begin
@@ -762,8 +765,9 @@
 				       ;; out that we have and try again, up to 10 times.
 				       (unless (cnt . >= . 10)
 					 (loop (add1 cnt)))
-				       (error 'read-bytes "SSL shutdown failed ~a"
-					      (get-error-message (ERR_get_error))))])))))))
+				       ((mzssl-error mzssl) 'read-bytes 
+                                        "SSL shutdown failed ~a"
+                                        (get-error-message (ERR_get_error))))])))))))
 		     (set-mzssl-w-closed?! mzssl #t)
 		     (mzssl-release mzssl)
 		     #f]))]
@@ -794,10 +798,11 @@
 			       [encrypt default-encrypt]
 			       [mode 'connect]
 			       [close-original? #f]
-			       [shutdown-on-close? #f])
-    (wrap-ports 'port->ssl-ports i o (or context encrypt) mode close-original? shutdown-on-close?))
+			       [shutdown-on-close? #f]
+                               [error/ssl error])
+    (wrap-ports 'port->ssl-ports i o (or context encrypt) mode close-original? shutdown-on-close? error/ssl))
 
-  (define (create-ssl who context-or-encrypt-method connect/accept)
+  (define (create-ssl who context-or-encrypt-method connect/accept error/ssl)
     (atomically ; so we register the finalizer (and it's ok since everything is non-blocking)
      (let ([ctx (get-context who context-or-encrypt-method (eq? connect/accept 'connect))])
        (check-valid ctx who "context creation")
@@ -852,14 +857,14 @@
 	      ;; Return SSL and the cancel boxL:
 	      (values ssl cancel r-bio w-bio connect?)))))))))
 
-  (define (wrap-ports who i o context-or-encrypt-method connect/accept close? shutdown-on-close?)
+  (define/kw (wrap-ports who i o context-or-encrypt-method connect/accept close? shutdown-on-close? error/ssl)
     (unless (input-port? i)
       (raise-type-error who "input port" i))
     (unless (output-port? o)
       (raise-type-error who "output port" o))
     ;; Create the SSL connection:
     (let-values ([(ssl cancel r-bio w-bio connect?)
-		  (create-ssl who context-or-encrypt-method connect/accept)])
+		  (create-ssl who context-or-encrypt-method connect/accept error/ssl)])
       ;; connect/accept:
       (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
 		   [(pipe-r pipe-w) (make-pipe)]
@@ -869,7 +874,8 @@
 				 #f #f
 				 #f #f #f 2 
 				 close? shutdown-on-close?
-				 cancel)])
+				 cancel
+                                 error/ssl)])
 	  (let loop ()
 	    (let ([status (if connect?
 			      (SSL_connect ssl)
@@ -881,16 +887,16 @@
 		     [(= err SSL_ERROR_WANT_READ)
 		      (let ([n (pump-input-once mzssl (if out-blocked? o #t))])
 			(when (eof-object? n)
-			  (error/network who "~a failed (input terminated prematurely)"
-                                         (if connect? "connect" "accept"))))
+			  (error/ssl who "~a failed (input terminated prematurely)"
+                                     (if connect? "connect" "accept"))))
 		      (loop)]
 		     [(= err SSL_ERROR_WANT_WRITE)
 		      (pump-output-once mzssl #t #f)
 		      (loop)]
 		     [else
-		      (error/network who "~a failed ~a"
-                                     (if connect? "connect" "accept")
-                                     (get-error-message (ERR_get_error)))]))))))
+		      (error/ssl who "~a failed ~a"
+                                 (if connect? "connect" "accept")
+                                 (get-error-message (ERR_get_error)))]))))))
 	  ;; Connection complete; make ports
 	  (values (register (make-ssl-input-port mzssl) mzssl #t)
 		  (register (make-ssl-output-port mzssl) mzssl #f))))))
@@ -956,7 +962,7 @@
 			      (close-input-port i)
 			      (close-output-port o)
 			      (raise exn))])
-	(wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t #f))))
+	(wrap-ports who i o (ssl-listener-mzctx ssl-listener) 'accept #t #f error/network))))
 
   (define (ssl-accept ssl-listener)
     (do-ssl-accept 'ssl-accept tcp-accept ssl-listener))
@@ -974,7 +980,7 @@
 			      (close-input-port i)
 			      (close-output-port o)
 			      (raise exn))])
-	(wrap-ports who i o client-context-or-protocol-symbol 'connect #t #f))))
+	(wrap-ports who i o client-context-or-protocol-symbol 'connect #t #f error/network))))
 
   (define/kw (ssl-connect
               hostname port-k

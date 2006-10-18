@@ -142,7 +142,8 @@ otherwise.
                     [#:context context]
                     [#:encrypt protocol-symbol]
                     [#:close-original? close?]
-                    [#:shutdown-on-close? shutdown?])
+                    [#:shutdown-on-close? shutdown?]
+                    [#:error/ssl error])
 
 Returns two values --- an input port and an output port --- that
 implement the SSL protocol over the given input and output port. (The
@@ -173,6 +174,11 @@ sends a shutdown message to the other end of the SSL connection. The
 default is #f. When shutdown is enabled, closing the output port can
 fail if the given output port becomes unwritable (e.g., because the
 other end of the given port has been closed by another process).
+
+The `error' argument is an error procedure to use for raising
+communication errors. The default is `error', which raises `exn:fail';
+in contrast, `ssl-accept' and `ssl-connect' use an error function that
+raises `exn:fail:network'.
 
 
 -- Context procedures --------------------------------------------
