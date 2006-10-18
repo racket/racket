@@ -294,8 +294,10 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
 
   den = scheme_bin_plus(d, scheme_bin_mult(c, r));
 
-  if (swap) i = scheme_bin_div(scheme_bin_minus(a, scheme_bin_mult(b, r)), den);
-  else      i = scheme_bin_div(scheme_bin_minus(scheme_bin_mult(b, r), a), den);
+  if (swap)
+    i = scheme_bin_div(scheme_bin_minus(a, scheme_bin_mult(b, r)), den);
+  else
+    i = scheme_bin_div(scheme_bin_minus(scheme_bin_mult(b, r), a), den);
 
   r = scheme_bin_div(scheme_bin_plus(b, scheme_bin_mult(a, r)), den);
 
