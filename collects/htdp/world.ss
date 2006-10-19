@@ -271,8 +271,8 @@
                          (with-handlers ([exn:break? break-handler]
                                          [exn? exn-handler])
                            (set! the-world (f the-world 
-                                              (send e get-x)
-                                              (send e get-y)
+                                              (- (send e get-x) INSET)
+                                              (- (send e get-y) INSET)
                                               (cond [(send e button-down?) 'button-down]
                                                     [(send e button-up?)   'button-up]
                                                     [(send e dragging?)    'drag]

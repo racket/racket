@@ -23,10 +23,12 @@
   ;;   between [0,10] and [0,10] on x/y axis 
   (define (make-graph name)
     (start EAST SOUTH)
-    (draw-solid-line ORIGIN X-AXIS 'blue)
-    ((draw-string #cs(get-@VP)) (make-posn (+ OFFSET 10) (+ OFFSET 10)) "Y-AXIS")
-    (draw-solid-line ORIGIN Y-AXIS 'blue)
-    ((draw-string #cs(get-@VP)) (make-posn (- EAST 100) (- SOUTH 15)) "X-AXIS"))
+    (let* ([vp+pm #cs(get-@VP)]
+           [vp    (car vp+pm)])
+      (draw-solid-line ORIGIN X-AXIS 'blue)
+      ((draw-string vp) (make-posn (+ OFFSET 10) (+ OFFSET 10)) "Y-AXIS")
+      (draw-solid-line ORIGIN Y-AXIS 'blue)
+      ((draw-string vp) (make-posn (- EAST 100) (- SOUTH 15)) "X-AXIS")))
   
   ;; (num -> num) symbol -> true
   ;; effect: draw function graph for x in [0,10] at delta = .1
