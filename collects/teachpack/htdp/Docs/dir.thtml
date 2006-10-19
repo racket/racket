@@ -4,7 +4,7 @@
 <p>The teachpack <code>dir.ss</code> provides two-structures and one
 operation:
 <menu>
-  <li> <code>(define-struct dir (names dirs files))</code>
+  <li> <code>(define-struct dir (name dirs files))</code>
 
   <li> <code>(define-struct file (name size content))</code>
 
@@ -15,10 +15,10 @@ operation:
 <p>The teachpack relies on two data definitions:
 <menu>
 <li>
-   A directory is
-   <code>({(idx make-dir)} string[path] (listof directory) (listof file))</code>
+   A Directory is
+   <code>({(idx make-dir)} string[path] (listof Directory) (listof File))</code>
 <li>
-   A file is <code>({(idx make-file)} string[file name])</code>
+   A File is <code>({(idx make-file)} String PositiveNumber (listof Char))</code>
 </menu>
 
 Sample: Set teachpack to <code>dir.ss</code> and execute. Then evaluate
