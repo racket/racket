@@ -678,6 +678,8 @@
   (test #t relative-path? "./~")
   (test (bytes->path #"./~") bytes->path-element #"~")
   (test #"~" path-element->bytes (bytes->path #"./~"))
+  (test #"~" path-element->bytes (bytes->path #"./~/"))
+  (test #"a" path-element->bytes (bytes->path #"a////////////"))
   (test (bytes->path #"./~me") bytes->path-element #"~me")
   (test #"~me" path-element->bytes (bytes->path #"./~me"))
   (err/rt-test (path-element->bytes (bytes->path #"x/y")))
