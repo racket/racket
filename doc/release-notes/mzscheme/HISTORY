@@ -1,3 +1,11 @@
+Version 352.8
+Unix and Mac OS X: Changed path operations to use "./~..." as an
+ encoding for a relative path "~..."
+Changed simplify-path to always normalize path separators,
+ preserve syntactic directoryness, and remove \\?\ from
+ Windows paths when possible
+Added path-element->bytes and bytes->path-element
+
 Version 352.7
 Added delimited continuations: call-with-continuation-prompt,
  call-with-composable-continuation, etc.

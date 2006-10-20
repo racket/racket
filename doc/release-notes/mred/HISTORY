@@ -1,3 +1,9 @@
+Version 352.8
+Mac OS X: fixed event handling to support CJK input and input from 
+ the character palette 
+
+----------------------------------------------------------------------
+
 Version 352.4
 Removed on-scroll from canvas<%> and editor-canvas%
 
