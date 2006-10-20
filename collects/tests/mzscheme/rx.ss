@@ -142,66 +142,71 @@
        #"?"
        #"+"))
 
-(map (lambda (p)
-       (let ([name (car p)]
-	     [predicate (cdr p)]
-	     [mk (lambda (name extra not? star?)
-		   (byte-pregexp
-		    (string->bytes/latin-1
-		     (format "[~a~a[:~a:]]~a" 
-			     (if not? "^" "")
-			     (if extra extra "")
-			     name
-			     (if star? "*" "")))))])
-	 (let ([try
-		(lambda (extra)
-		  (let ([b (mk name extra #f #f)]
-			[not-b (mk name extra #t #f)]
-			[b* (mk name extra #f #t)]
-			[not-b* (mk name extra #t #t)])
-		    (let loop ([c 0])
-		      (unless (= c 128)
-			(let ([in? (or (and extra
-					    (= c (char->integer extra)))
-				       (predicate (integer->char c)))])
-			  (test (if in? (list (bytes c)) #f)
-				regexp-match 
-				b
-				(bytes c))
-			  (test (if in? (list (bytes c c)) (list (bytes)))
-				regexp-match 
-				b*
-				(bytes c c))
-			  (test (if in? #f (list (bytes c)))
-				regexp-match 
-				not-b
-				(bytes c))
-			  (test (if in? (list (bytes)) (list (bytes c c)))
-				regexp-match 
-				not-b*
-				(bytes c c))
-			  (loop (add1 c)))))
-		    (test #f regexp-match b (bytes 128))
-		    (test (list (bytes)) regexp-match b* (bytes 128 128))
-		    (test (list (bytes 128)) regexp-match not-b (bytes 128))
-		    (test (list (bytes 128 128)) regexp-match not-b* (bytes 128 128))))])
-	   (try #f)
-	   (try #\377)
-	   (unless (predicate #\x)
-	     (try #\x))
-	   (unless (predicate #\space)
-	     (try #\space))
-	   (unless (predicate #\000)
-	     (try #\000))
-	   (unless (predicate #\002)
-	     (try #\002)))))
-     (list
-      (cons "alpha" char-alphabetic?)
-      (cons "alnum" (lambda (x)
-		      (or (char-alphabetic? x)
-			  (char-numeric? x))))
-      ))
-
+(map (lambda (as-string?)
+       (map (lambda (p)
+              (let ([name (car p)]
+                    [predicate (cdr p)]
+                    [mk (lambda (name extra not? star?)
+                          ((if as-string? pregexp byte-pregexp)
+                           ((if as-string? values string->bytes/latin-1)
+                            (format "[~a~a[:~a:]]~a" 
+                                    (if not? "^" "")
+                                    (if extra extra "")
+                                    name
+                                    (if star? "*" "")))))]
+                    [-bytes (if as-string?
+                                (lambda l
+                                  (bytes->string/latin-1 (apply bytes l)))
+                                bytes)])
+                (let ([try
+                       (lambda (extra)
+                         (let ([b (mk name extra #f #f)]
+                               [not-b (mk name extra #t #f)]
+                               [b* (mk name extra #f #t)]
+                               [not-b* (mk name extra #t #t)])
+                           (let loop ([c 0])
+                             (unless (= c 128)
+                               (let ([in? (or (and extra
+                                                   (= c (char->integer extra)))
+                                              (predicate (integer->char c)))])
+                                 (test (if in? (list (-bytes c)) #f)
+                                       regexp-match 
+                                       b
+                                       (-bytes c))
+                                 (test (if in? (list (-bytes c c)) (list (-bytes)))
+                                       regexp-match 
+                                       b*
+                                       (-bytes c c))
+                                 (test (if in? #f (list (-bytes c)))
+                                       regexp-match 
+                                       not-b
+                                       (-bytes c))
+                                 (test (if in? (list (-bytes)) (list (-bytes c c)))
+                                       regexp-match 
+                                       not-b*
+                                       (-bytes c c))
+                                 (loop (add1 c)))))
+                           (test #f regexp-match b (-bytes 128))
+                           (test (list (-bytes)) regexp-match b* (-bytes 128 128))
+                           (test (list (-bytes 128)) regexp-match not-b (-bytes 128))
+                           (test (list (-bytes 128 128)) regexp-match not-b* (-bytes 128 128))))])
+                  (try #f)
+                  (try #\377)
+                  (unless (predicate #\x)
+                    (try #\x))
+                  (unless (predicate #\space)
+                    (try #\space))
+                  (unless (predicate #\000)
+                    (try #\000))
+                  (unless (predicate #\002)
+                    (try #\002)))))
+            (list
+             (cons "alpha" char-alphabetic?)
+             (cons "alnum" (lambda (x)
+                             (or (char-alphabetic? x)
+                                 (char-numeric? x))))
+             )))
+     '(#f #t))
 
 (test '("app\u039Be") regexp-match #px"(?i:app\u039Be)" "app\u039Be")
 (test '("app\u039Be") regexp-match #px"(?i:app\u03BBe)" "app\u039Be")
