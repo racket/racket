@@ -284,7 +284,7 @@ TODO
                         [(null? pieces) #t]
                         [else
                          (let-values ([(base name dir?) (split-path path)])
-                           (and (equal? (path->bytes name) (car pieces))
+                           (and (equal? (path-element->bytes name) (car pieces))
                                 (loop base (cdr pieces))))]))))))
         
         ;; drscheme-error-value->string-handler : TST number -> string

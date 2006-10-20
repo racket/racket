@@ -825,25 +825,29 @@
       
       ;; default-executable-filename : path symbol boolean -> path
       (define (default-executable-filename program-filename mode mred?)
-        (let* ([ext (filename-extension program-filename)]
-               [program-bytename (path->bytes program-filename)]
-               ;; ext-less : bytes
-               [ext-less (if ext
-                             (subbytes program-bytename
-                                       0
-                                       (- (bytes-length program-bytename)
-                                          (bytes-length ext)
-                                          1 ;; sub1 for the period in the extension
-                                          ))
-                             program-bytename)])
-          (let ([ext (let-values ([(extension style filters)
-                                   (mode->put-file-extension+style+filters mode mred?)])
-                       (and extension
-                            (string->bytes/utf-8 (string-append "." extension))))])
-            (bytes->path
-             (if ext
-                 (bytes-append ext-less ext)
-                 ext-less)))))
+        (let-values ([(base name dir) (split-path program-filename)])
+          (let* ([ext (filename-extension name)]
+                 [program-bytename (path-element->bytes name)]
+                 ;; ext-less : bytes
+                 [ext-less (if ext
+                               (subbytes program-bytename
+                                         0
+                                         (- (bytes-length program-bytename)
+                                            (bytes-length ext)
+                                            1 ;; sub1 for the period in the extension
+                                            ))
+                               program-bytename)])
+            (let ([ext (let-values ([(extension style filters)
+                                     (mode->put-file-extension+style+filters mode mred?)])
+                         (and extension
+                              (string->bytes/utf-8 (string-append "." extension))))])
+              (if ext
+                  (if (path? base)
+                      (build-path base (bytes->path-element (bytes-append ext-less ext)))
+                      (bytes->path-element (bytes-append ext-less ext)))
+                  (if (path? base)
+                      (build-path base name)
+                      name))))))
       
       (define (mode->put-file-extension+style+filters mode mred?)
         (case mode

@@ -14,7 +14,7 @@
                       (if name
                           (split-path name)
                           (values (find-system-path 'doc-dir)
-                                  (bytes->path #"mredauto")
+                                  (bytes->path-element #"mredauto")
                                   #f))])
           (let* ([base (if (path? base)
                            base
@@ -27,15 +27,15 @@
                      [new-name
                       (build-path path
                                   (if (eq? (system-type) 'windows)
-                                      (bytes->path
+                                      (bytes->path-element
                                        (bytes-append (regexp-replace #rx#"\\..*$" 
-                                                                     (path->bytes name)
+                                                                     (path-element->bytes name)
                                                                      #"")
                                                      #"."
                                                      numb))
-                                      (bytes->path
+                                      (bytes->path-element
                                        (bytes-append #"#"
-                                                     (path->bytes name)
+                                                     (path-element->bytes name)
                                                      #"#"
                                                      numb
                                                      #"#"))))])
@@ -48,15 +48,15 @@
           (let ([base (if (path? pre-base)
                           pre-base
                           (current-directory))])
-            (let ([name-bytes (path->bytes name)])
+            (let ([name-bytes (path-element->bytes name)])
               (cond
                 [(and (eq? (system-type) 'windows)
                       (regexp-match #rx#"(.*)\\.[^.]*" name-bytes))
                  =>
                  (λ (m)
-                   (build-path base (bytes->path (bytes-append (cadr m) #".bak"))))]
+                   (build-path base (bytes->path-element (bytes-append (cadr m) #".bak"))))]
                 [(eq? (system-type) 'windows)
-                 (build-path base (bytes->path (bytes-append name-bytes #".bak")))]
+                 (build-path base (bytes->path-element (bytes-append name-bytes #".bak")))]
                 [else
-                 (build-path base (bytes->path (bytes-append name-bytes #"~")))]))))))))
+                 (build-path base (bytes->path-element (bytes-append name-bytes #"~")))]))))))))
 
