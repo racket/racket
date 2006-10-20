@@ -724,32 +724,35 @@ static Scheme_Object *path_to_bytes(int argc, Scheme_Object **argv)
 				       1);
 }
 
-static int is_path_element(Scheme_Object *p)
+static Scheme_Object *is_path_element(Scheme_Object *p)
 {
-  Scheme_Object *base;
+  Scheme_Object *base, *fn;
   int isdir;
 
-  scheme_split_path(SCHEME_PATH_VAL(p), 
-                    SCHEME_PATH_LEN(p), 
-                    &base, 
-                    &isdir);
+  fn = scheme_split_path(SCHEME_PATH_VAL(p), 
+                         SCHEME_PATH_LEN(p), 
+                         &base, 
+                         &isdir);
 
   if (SCHEME_SYMBOLP(base))
-    return 1;
-  return 0;
+    return fn;
+  return NULL;
 }
 
 static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *p = argv[0];
+  Scheme_Object *p = argv[0], *pe;
 
   if (!SCHEME_PATHP(p))
     scheme_wrong_type("path-element->bytes", "path", 0, argc, argv);
   
-  if (!is_path_element(p))
+  pe = is_path_element(p);
+
+  if (!pe)
     scheme_arg_mismatch("path-element->bytes",
                         "path can be split or is not relative: ",
                         p);
+  p = pe;
 
 #ifdef UNIX_FILE_SYSTEM
   /* Drop ./ of ./~ prefix */
