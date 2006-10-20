@@ -36,6 +36,7 @@ extern int wx_activate_anyway;
 extern void MrEdQueuePaint(wxWindow *wx_window);
 extern void MrEdQueueClose(wxWindow *wx_window);
 extern void MrEdQueueZoom(wxWindow *wx_window);
+extern void MrEdQueueToolbar(wxWindow *wx_window);
 extern void MrEdQueueUnfocus(wxWindow *wx_window);
 extern void MrEdQueueDrop(wxWindow *wx_window, char *s);
 
@@ -254,14 +255,16 @@ wxFrame::wxFrame // Constructor (for frame window)
 
   {
     /* Handle some events. */
-    EventTypeSpec spec[3];
+    EventTypeSpec spec[4];
     spec[0].eventClass = kEventClassWindow;
     spec[0].eventKind = kEventWindowClose;
     spec[1].eventClass = kEventClassWindow;
     spec[1].eventKind = kEventWindowZoom;
     spec[2].eventClass = kEventClassWindow;
     spec[2].eventKind = kEventWindowBoundsChanging;
-    InstallEventHandler(GetWindowEventTarget(theMacWindow), window_evt_handler, 3, spec, refcon, NULL);
+    spec[3].eventClass = kEventClassWindow;
+    spec[3].eventKind = kEventWindowToolbarSwitchMode;
+    InstallEventHandler(GetWindowEventTarget(theMacWindow), window_evt_handler, 4, spec, refcon, NULL);
   }
 
   {
@@ -300,6 +303,9 @@ static OSStatus window_evt_handler(EventHandlerCallRef inHandlerCallRef,
     break;
   case kEventWindowZoom:
     MrEdQueueZoom(f);
+    break;
+  case kEventWindowToolbarSwitchMode:
+    MrEdQueueToolbar(f);
     break;
   case kEventWindowBoundsChanging:
     if (os_x_post_tiger > 0) {

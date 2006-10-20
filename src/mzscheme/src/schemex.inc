@@ -428,6 +428,7 @@
   scheme_extension_table->scheme_getdrive = scheme_getdrive;
   scheme_extension_table->scheme_split_path = scheme_split_path;
   scheme_extension_table->scheme_build_path = scheme_build_path;
+  scheme_extension_table->scheme_path_to_directory_path = scheme_path_to_directory_path;
   scheme_extension_table->scheme_make_path = scheme_make_path;
   scheme_extension_table->scheme_make_sized_path = scheme_make_sized_path;
   scheme_extension_table->scheme_make_sized_offset_path = scheme_make_sized_offset_path;

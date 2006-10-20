@@ -22,6 +22,24 @@
   All rights reserved.
 */
 
+/* Most of this source file is pathname manipulation functions.  At
+   the bottom, a path is just a byte string, not necessarily
+   normalized in any way, except that it doesn't contain a nul
+   character. The advantage of this representation is that it keeps
+   paths the way the user wrote them. The tremendous disadvantage of
+   this representation is that all of the operations must manipulate
+   strings.
+
+   A minor complication is that paths starting "~" are treated as a
+   absolute under Unix, so that "~" as a realtive path must be encoded
+   as "./~".
+
+   A major complication is the complex syntax of Windows paths. Again,
+   since all the operations work on the string, the code in this file
+   parses and re-parses constantly.
+
+ */
+
 #include "schpriv.h"
 #ifdef UNISTD_INCLUDE
 # include <unistd.h>
@@ -103,10 +121,12 @@ long scheme_creator_id = 'MzSc';
 #ifdef UNIX_FILE_SYSTEM
 # define FN_SEP '/'
 # define IS_A_SEP(x) ((x) == '/')
+# define IS_A_PRIM_SEP(x) IS_A_SEP(x)
 #endif
 #ifdef DOS_FILE_SYSTEM
 # define FN_SEP '\\'
 # define IS_A_SEP(x) (((x) == '/') || ((x) == '\\'))
+# define IS_A_PRIM_SEP(x) ((x) == '\\')
 #endif
 #ifdef PALMOS_STUFF
 # define FN_SEP 0
@@ -134,8 +154,10 @@ static int check_dos_slashslash_qm(const char *next, int len, int *drive_end,
 static Scheme_Object *path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *path_to_string(int argc, Scheme_Object **argv);
 static Scheme_Object *path_to_bytes(int argc, Scheme_Object **argv);
+static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv);
 static Scheme_Object *string_to_path(int argc, Scheme_Object **argv);
 static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv);
+static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv);
 
 static Scheme_Object *file_exists(int argc, Scheme_Object **argv);
 static Scheme_Object *directory_exists(int argc, Scheme_Object **argv);
@@ -145,6 +167,7 @@ static Scheme_Object *link_exists(int argc, Scheme_Object **argv);
 static Scheme_Object *delete_file(int argc, Scheme_Object **argv);
 static Scheme_Object *rename_file(int argc, Scheme_Object **argv);
 static Scheme_Object *copy_file(int argc, Scheme_Object **argv);
+static Scheme_Object *path_to_directory_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *directory_list(int argc, Scheme_Object *argv[]);
 static Scheme_Object *filesystem_root_list(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_directory(int argc, Scheme_Object *argv[]);
@@ -179,6 +202,7 @@ static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt
 static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, int use_filesystem, int force_rel_up);
 static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail);
 static char *remove_redundant_slashes(char *filename, int *l, int delta, int *expanded);
+static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check);
 
 static Scheme_Object *up_symbol, *relative_symbol;
 static Scheme_Object *same_symbol;
@@ -260,6 +284,11 @@ void scheme_init_file(Scheme_Env *env)
 						      "path->bytes", 
 						      1, 1), 
 			     env);
+  scheme_add_global_constant("path-element->bytes", 
+			     scheme_make_prim_w_arity(path_element_to_bytes, 
+						      "path-element->bytes", 
+						      1, 1), 
+			     env);
   scheme_add_global_constant("string->path", 
 			     scheme_make_prim_w_arity(string_to_path, 
 						      "string->path", 
@@ -268,6 +297,11 @@ void scheme_init_file(Scheme_Env *env)
   scheme_add_global_constant("bytes->path", 
 			     scheme_make_prim_w_arity(bytes_to_path, 
 						      "bytes->path", 
+						      1, 1), 
+			     env);
+  scheme_add_global_constant("bytes->path-element", 
+			     scheme_make_prim_w_arity(bytes_to_path_element, 
+						      "bytes->path-element", 
 						      1, 1), 
 			     env);
 
@@ -306,6 +340,11 @@ void scheme_init_file(Scheme_Env *env)
 			     scheme_make_prim_w_arity(scheme_build_path,
 						      "build-path", 
 						      1, -1), 
+			     env);
+  scheme_add_global_constant("path->directory-path",
+			     scheme_make_prim_w_arity(path_to_directory_path,
+						      "path->directory-path",
+						      1, 1), 
 			     env);
   scheme_add_global_constant("split-path", 
 			     scheme_make_prim_w_arity2(split_path,
@@ -448,7 +487,10 @@ static int is_special_filename(const char *_f, int offset, int len, int not_nul,
 #endif
 
 static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars, 
-						       long d, long len, int copy)
+						       long d, long len, int copy,
+						       int just_check)
+     /* just_check == 2 => just check, and only for the case
+	that it's the last element of a path */
 {
 #ifdef DOS_FILE_SYSTEM
   if (protect) {
@@ -458,9 +500,10 @@ static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars,
 
     if (!protect) {
       int at_end = 1;
-      for (i = 0; i < len; i++) {
-	if ((chars[i + d] == '.')
-	    || (chars[i + d] == ' ')) {
+      for (i = len; i--; ) {
+	if ((just_check != 2)
+	    && ((chars[i + d] == '.')
+		|| (chars[i + d] == ' '))) {
 	  if (at_end) {
 	    protect = 1;
 	    break;
@@ -476,11 +519,19 @@ static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars,
       }
     }
 
+    if (!protect && (len == 1) && (chars[d] == '.'))
+      protect = 1;
+
+    if (!protect && (len == 2) && (chars[d] == '.') && (chars[d+1] == '.'))
+      protect = 1;
+
     if (!protect) 
       protect = is_special_filename(chars, d, len, 0, 1);
 
     if (protect) {
       char *s2;
+      if (just_check)
+	return scheme_true;
       s2 = (char *)scheme_malloc_atomic(len + 9 + 1);
       memcpy(s2, "\\\\?\\REL\\\\", 9);
       memcpy(s2 + 9, chars + d, len);
@@ -489,21 +540,39 @@ static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars,
     }
   }
 #endif
+#ifdef UNIX_FILE_SYSTEM
+  if (protect) {
+    if (chars[d] == '~') {
+      char *nm;
+      if (just_check)
+	return scheme_true;
+      nm = (char *)scheme_malloc_atomic(len + 3);
+      memcpy(nm XFORM_OK_PLUS 2, chars XFORM_OK_PLUS d, len);
+      nm[0] = '.';
+      nm[1] = '/';
+      nm[len + 2] = 0;
+      return scheme_make_path_without_copying(nm);
+    }
+  }
+#endif
+  if (just_check)
+    return scheme_false;
   return scheme_make_sized_offset_path(chars, d, len, copy);
 }
 
 #ifdef DOS_FILE_SYSTEM
 static Scheme_Object *make_protected_path(char *chars)
 {
-  return make_protected_sized_offset_path(1, chars, 0, strlen(chars), 1);
+  return make_protected_sized_offset_path(1, chars, 0, strlen(chars), 1, 0);
 }
 #endif
 
 Scheme_Object *make_exposed_sized_offset_path(int already_protected, 
 					      char *chars, long d, long len, int copy)
-  /* Called to make a directory path where the end has been removed;
-     if the resulting last element has spaces or is a special file, then
-     we need to protect it with "\\?\". */
+  /* Called to make a directory path where the end has been removed.
+     We may need to remove a redundant separator.
+     Under Windows, if the resulting last element has spaces or is a 
+     special file, then we need to protect it with "\\?\". */
 {
 #ifdef DOS_FILE_SYSTEM
   if (!already_protected) {
@@ -534,13 +603,28 @@ Scheme_Object *make_exposed_sized_offset_path(int already_protected,
       memcpy(s2+9, chars + i + 1, l);
       s2[l + 9] = 0;
       last = scheme_make_sized_path(s2, l+9, 0);
-      first = make_exposed_sized_offset_path(0, chars, d, i-d, 1);
+      first = make_exposed_sized_offset_path(0, chars, d, i-d+1, 1);
       a[0] = first;
       a[1] = last;
       return scheme_build_path(2, a);
     }
   }
 #endif
+
+  /* We may need to remove a redundant separator from the directory
+     path. Try removing it, and see if anyone would care: */
+  if (do_path_to_directory_path(chars, d, len - 1, scheme_true, 1)) {
+#ifdef DOS_FILE_SYSTEM
+    /* Actually, don't remove a separator after a drive, although it's
+       technically redundant. */
+    if (!((len == 3) && is_drive_letter(chars[d]) && (chars[d+1] == ':')))
+#endif
+      {
+	len--;
+	copy = 1;
+      }
+  }
+
   return scheme_make_sized_offset_path(chars, d, len, copy);
 }
 
@@ -580,31 +664,38 @@ static Scheme_Object *path_p(int argc, Scheme_Object **argv)
   return (SCHEME_PATHP(argv[0]) ? scheme_true : scheme_false);
 }
 
+#ifdef DOS_FILE_SYSTEM
+static Scheme_Object *drop_rel_prefix(Scheme_Object *p)
+/* Drop \\?\REL\ prefix */
+{
+  int drive_end;
+  if (check_dos_slashslash_qm(SCHEME_PATH_VAL(p),
+                              SCHEME_PATH_LEN(p),
+                              &drive_end, NULL, NULL)) {
+    if (drive_end < 0) {
+      /* \\?\REL\ */
+      int delta;
+      if (SCHEME_PATH_VAL(p)[8] == '\\')
+        delta = 9;
+      else
+        delta = 8;
+      p = scheme_make_sized_offset_byte_string(SCHEME_BYTE_STR_VAL(p),
+                                               delta,
+                                               SCHEME_BYTE_STRLEN_VAL(p) - delta,
+                                               1);
+    }
+  }
+
+  return p;
+}
+#endif
+
 Scheme_Object *scheme_path_to_char_string(Scheme_Object *p)
 {
   Scheme_Object *s;
 
 #ifdef DOS_FILE_SYSTEM
-  /* Drop \\?\REL\ prefix */
-  {
-    int drive_end;
-    if (check_dos_slashslash_qm(SCHEME_PATH_VAL(p),
-				SCHEME_PATH_LEN(p),
-				&drive_end, NULL, NULL)) {
-      if (drive_end < 0) {
-	/* \\?\REL\ */
-	int delta;
-	if (SCHEME_PATH_VAL(p)[8] == '\\')
-	  delta = 9;
-	else
-	  delta = 8;
-	p = scheme_make_sized_offset_byte_string(SCHEME_BYTE_STR_VAL(p),
-						 delta,
-						 SCHEME_BYTE_STRLEN_VAL(p) - delta,
-						 1);
-      }
-    }
-  }
+  p = drop_rel_prefix(p);
 #endif
 
   s = scheme_byte_string_to_char_string_locale(p);
@@ -630,6 +721,53 @@ static Scheme_Object *path_to_bytes(int argc, Scheme_Object **argv)
 
   return scheme_make_sized_byte_string(SCHEME_PATH_VAL(argv[0]),
 				       SCHEME_PATH_LEN(argv[0]),
+				       1);
+}
+
+static int is_path_element(Scheme_Object *p)
+{
+  Scheme_Object *base;
+  int isdir;
+
+  scheme_split_path(SCHEME_PATH_VAL(p), 
+                    SCHEME_PATH_LEN(p), 
+                    &base, 
+                    &isdir);
+
+  if (SCHEME_SYMBOLP(base))
+    return 1;
+  return 0;
+}
+
+static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *p = argv[0];
+
+  if (!SCHEME_PATHP(p))
+    scheme_wrong_type("path-element->bytes", "path", 0, argc, argv);
+  
+  if (!is_path_element(p))
+    scheme_arg_mismatch("path-element->bytes",
+                        "path can be split or is not relative: ",
+                        p);
+
+#ifdef UNIX_FILE_SYSTEM
+  /* Drop ./ of ./~ prefix */
+  if ((SCHEME_PATH_VAL(p)[0] == '.')
+      && (SCHEME_PATH_VAL(p)[1] == '/')
+      && (SCHEME_PATH_VAL(p)[2] == '~')) {
+    p = scheme_make_sized_offset_byte_string(SCHEME_PATH_VAL(p), 
+                                             2, 
+                                             SCHEME_PATH_LEN(p) - 2, 
+                                             1);
+  }
+#endif
+#ifdef WINDOWS_FILE_SYSTEM
+  p = drop_rel_prefix(p);
+#endif
+
+  return scheme_make_sized_byte_string(SCHEME_PATH_VAL(p),
+				       SCHEME_PATH_LEN(p),
 				       1);
 }
 
@@ -669,6 +807,36 @@ static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv)
   check_path_ok("bytes->path", s, argv[0]);
 
   return s;
+}
+
+static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *s = argv[0], *p;
+  long i, len;
+
+  if (!SCHEME_BYTE_STRINGP(s))
+    scheme_wrong_type("bytes->path-element", "byte string", 0, argc, argv);
+
+  len = SCHEME_BYTE_STRLEN_VAL(s);
+  for (i = 0; i < len; i++) {
+    if (IS_A_PRIM_SEP(SCHEME_BYTE_STR_VAL(s)[i])) {
+      break;
+    }
+  }
+
+  if (i >= len)
+    p = make_protected_sized_offset_path(1, SCHEME_BYTE_STR_VAL(s),
+                                         0, len,
+                                         SCHEME_MUTABLEP(s), 0);
+  else
+    p = NULL;
+
+  if (!p || !is_path_element(p))
+    scheme_arg_mismatch("bytes->path-element",
+                        "converted path can be split or is not relative: ",
+                        argv[0]);
+
+  return p;
 }
 
 /**********************************************************************/
@@ -902,9 +1070,29 @@ static void raise_null_error(const char *name, Scheme_Object *path, const char *
 #ifdef DOS_FILE_SYSTEM
 static int check_dos_slashslash_qm(const char *next, int len, 
 				   int *drive_end, int *clean_start, int *add_sep)
+/* Check starting with exactly \\?\, which prefixes an absolute path
+   to be passed on to the filesystem without changes.
+
+   If it's a \\?\ path, then drive_end is set to the first character
+   after the root specification. For example, if the drive is
+   terminated by \\\ (a weird "root), then drive_end is set to after
+   the third \.  If the drive is \\?\C:\, then drive_end is after the
+   last slash, unless thre's one extra slash, in which case drive_end
+   is after that slash, too. In the case of \\?\UNC\..., drive_end
+   is after the UNC part as in check_dos_slashslash_drive(). If
+   it's a \\?\REL\ path, then drive_end is set to -1(!); use 
+   get_slashslash_qm_dot_ups_end() to get more information.
+
+   clean_start is the position where it's ok to start removing
+   extra slahes. It's usually set to the same thing as drive_end. In the
+   case of a \\?\UNC\ path, clean_start is set to 7 (i.e., just after
+   that prefix). In the case of a \\?\REL\ path, clean_start is the
+   end of the string.
+
+   If add_sep is set, it points to a place where an extra separator
+   might need to be inserted.
+*/
 {
-  /* Check for exactly \\?\, which prefixes an absolute path
-     to be passed on to the filesystem without changes */
   if ((len >= 4)
       && (next[0] == '\\')
       && (next[1] == '\\')
@@ -1002,6 +1190,19 @@ static int check_dos_slashslash_qm(const char *next, int len,
 
 static int check_dos_slashslash_drive(const char *next, int delta, int len, 
 				      int *drive_end, int exact, int no_fw)
+/* Returns 1 if this path is a UNC path, 0 otherwise.
+   (It starts by checking for \\?\ paths, so they won't be
+   treated as UNC. Unless delta is non-0, in which case the
+   check isn't necessary, presumably because the original
+   `next' already started with \\?\UNC\.)
+   For a 1 result, drive_end (if not NULL) is set to point to the
+   byte after the \\server\vol; so, drive_end points to either
+   a separator or NUL char.
+   If exact is 1, then a 1 is returned only if `next' is just the
+   drive; that is, only if 1 would be returned and only slashes are
+   in `next' starting with `*drive_end'.
+   If `no_fw' is set, then only backslashes are recognized.
+*/
 {
   int j;
   int is_drive = 0;
@@ -1071,7 +1272,8 @@ static int get_slashslash_qm_dot_ups_end(const char *s, int len, int *_lit_start
      just past the last "\..". This might be the first "\" of 
      a "\\" separator, the "\" before a non-".." element, or
      the end of the string. The _lit_start value is filled with
-     the starting index of the literal part of the path. */
+     the starting index of the literal part of the path (i.e., 
+     after one or two slashes). */
 {
   int pos = -1, j = 7; /* \\?\REL\ */
 
@@ -1456,7 +1658,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 #ifdef DOS_FILE_SYSTEM
   {
     int drive_end, clean_start;
-    int fixit = 0, i;
+    int fixit = 0, i, insert_initial_sep = 0;
 
     if (!check_dos_slashslash_qm(filename, ilen, &drive_end, &clean_start, NULL))
       drive_end = 0;
@@ -1465,6 +1667,11 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 	 unprotected ..s, so count the start of that area
 	 as the drive end. */
       get_slashslash_qm_dot_ups_end(filename, ilen, &drive_end);
+      /* Make sure that backslashes are doubled after dots. */
+      if ((drive_end != ilen) && (filename[drive_end-2] != '\\')) {
+	insert_initial_sep = 1;
+	fixit = 1;
+      }
     } else if (drive_end == 8) {
       /* For \\?\c:\\ path, start clean up after colon. */
       if (is_drive_letter(filename[4])
@@ -1481,7 +1688,8 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 	&& (filename[1] == ':') 
 	&& !IS_A_SEP(filename[2])) {
       drive_end = 2;
-      fixit = -1;
+      insert_initial_sep = 1;
+      fixit = 1;
     } else {
       int found_slash = 0;
       
@@ -1514,7 +1722,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 
       memcpy(naya, filename, drive_end);
       pos = i = drive_end;
-      if (fixit == -1) {
+      if (insert_initial_sep) {
 	naya[pos++] = '\\';
       }
       
@@ -1535,7 +1743,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 	   backslash and changed the root. In that case, add a \ after \\?\: */
 	check_dos_slashslash_qm(filename, ilen, &drive_end, NULL, NULL);
 	if (drive_end != 4) {
-	  /* There's room to expand, because fixit couldn't be -1. */
+	  /* There's room to expand, because insert_initial_sep couldn't be -1. */
 	  memmove(filename + 5, filename + 4, ilen - 3);
 	  filename[4] = '\\'; /* Actually, this is redundant. */
 	}
@@ -2012,6 +2220,98 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd)
   return NULL;
 }
 
+static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check)
+/* Although this function accepts an offset, the Windows part assumes that
+   `offset' is always 0. */
+{
+  char *s2;
+  int not_a_sep = 0;
+
+#ifdef DOS_FILE_SYSTEM
+  int slash_dir_sep = 1;
+
+  {
+    int drive_end;
+
+    if (offset) {
+      scheme_signal_error("path->directory-path currently assumes a 0 offset");
+    }
+
+    if (check_dos_slashslash_qm(s, len, &drive_end, NULL, NULL)) {
+      if (drive_end == -1) {
+        /* It's a \\?\REL\ path. */
+        int litpos;
+        drive_end = get_slashslash_qm_dot_ups_end(s, len, &litpos);
+        /* If there's no path after the ..s, then nothing more is needed. */
+        if (litpos >= len)
+          return p;
+      } else {
+        /* If s is just a drive, then nothing more is needed. */
+        if (drive_end == len)
+          return p;
+      }
+
+      /* In \\?\, / can be part of a name, and it is never a separator. */
+      slash_dir_sep = 0;
+      /* Any "." or ".." at the end is a literal path element,
+         not an up- or same-directory indicator: */
+      not_a_sep = 1;
+    } else {
+      /* A slash after C: is not strictly necessary: */
+      if ((len == 2)
+          && is_drive_letter(s[offset])
+          && (s[offset+1] == ':'))
+        return p;
+    }
+  }
+# define IS_A_DIR_SEP(x) (slash_dir_sep ? IS_A_SEP(x) : (x == '\\'))
+#else
+# define IS_A_DIR_SEP(x) IS_A_SEP(x)
+#endif
+
+  if (IS_A_DIR_SEP(s[offset + len - 1]))
+    return p;
+
+  if (!not_a_sep
+      && (((len > 1) && (s[offset + len - 1] == '.') && IS_A_SEP(s[offset + len - 2]))
+          || ((len == 1) && (s[offset] == '.'))))
+    return p;
+  if (!not_a_sep
+      && (((len > 2) 
+           && (s[offset + len - 1] == '.') 
+           && (s[offset + len - 2] == '.') 
+           && IS_A_SEP(s[offset + len - 3]))
+          || ((len == 2) && (s[offset] == '.') && (s[offset + 1] == '.'))))
+    return p;
+  
+#ifdef UNIX_FILE_SYSTEM
+  if (s[offset] == '~') {
+    long i;
+    for (i = 1; i < len; i++) {
+      if (IS_A_SEP(s[offset + i]))
+        break;
+    }
+    if (i >= len)
+      return p;
+  }
+#endif
+
+  if (just_check)
+    return NULL;
+
+  s2 = (char *)scheme_malloc_atomic(len + 1);
+  memcpy(s2, s XFORM_OK_PLUS offset, len);
+  s2[len] = FN_SEP;
+  s2[len+1] = 0;
+
+  return scheme_make_sized_path(s2, len + 1, 0);
+}
+
+Scheme_Object *scheme_path_to_directory_path(Scheme_Object *p)
+{
+  return do_path_to_directory_path(SCHEME_PATH_VAL(p), 0, SCHEME_PATH_LEN(p), p, 0);
+}
+
 static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail)
 {
 #ifdef PALMOS_STUFF
@@ -2054,6 +2354,11 @@ char *scheme_normal_path_seps(char *si, int *_len, int delta)
 #define PATH_EXTRA_SPACE 4
 
 static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final_simplify)
+/* Originally, it make sense to just perform build operations
+   directly on strip representations, because it was simple enough.
+   Over the years, though, as we refined the path syntax for Windows
+   to deal with all of its idiosyncracies, this has gotten completely 
+   out of hand. */
 {
 #define PN_BUF_LEN 256
   int pos, i, len, no_sep;
@@ -2072,7 +2377,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 
   no_sep = 0; /* This is actually initialized after we know whether
 		 it's relative or not. */
-  
+
   for (i = 0 ; i < argc; i++) {
     if (SCHEME_PATH_STRINGP(argv[i])
 	|| (SCHEME_SYMBOLP(argv[i]) 
@@ -2126,7 +2431,8 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 	/* Strip trailing spaces before we add more path parts,
 	   because trailing spaces originally don't count for the base
 	   path, and they'll start counting if we add more without
-	   removing the spaces first. */
+	   removing the spaces first. first_len points after anything
+	   that should be saved due to a \\?\ prefix. */
 	int p = pos;
 	strip_trailing_spaces(str, &p, first_len, 1);
 	pos = p;
@@ -2156,8 +2462,14 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 			   next);
 	  return scheme_false;
 	}
-      } else
+      } else {
 	rel = 1;
+        if (i && (next[0] == '.') && (next[1] == '/') && (next[2] == '~')) {
+          /* Strip the "./" prefix */
+          next_off += 2;
+          len -= 2;
+        }
+      }
 #endif
 #ifdef DOS_FILE_SYSTEM
       {
@@ -2225,7 +2537,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 		}
 		
 		if (!pos) {
-		  /* Base was relative "here", so we cal use next directly */
+		  /* Base was relative "here", so we can use next directly */
 		} else {
 		  dots_end = get_slashslash_qm_dot_ups_end(next, len, &lit_start);
 		  
@@ -2296,6 +2608,12 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 		      next_off = 0;
 		    } else
 		      no_sep = 1;
+		  } else {
+		    /* One last possibility: str is \\?\ (which counts as a bizaare
+		       root). We need an extra slash. */
+		    if (!new_rel_base && (pos == 4)) {
+		      str[pos++] = '\\';
+		    }
 		  }
 		  first_len = pos + len;
 		  if (next[next_off + len] != '\\')
@@ -2370,6 +2688,59 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 	pre_unc = check_dos_slashslash_drive(str, 0, pos, NULL, 0, 0);
       else
 	pre_unc = 1;
+
+      if (no_final_simplify
+	  && (len == 2) 
+          && (next[next_off] == '.')
+          && (next[next_off+1] == '.')
+	  && (first_len < pos + 2)) {
+        /* Adding ".." ... */
+        int de;
+        if (check_dos_slashslash_qm(str, pos, &de, NULL, NULL)) {
+          if (de < 0) {
+            /* ... to a \\?\REL\ path. Unless the \\?\REL\ path
+               is only dots, we need to remove a path element
+               here, instead of waiting for simplify, because simplify
+               will just push the job back here. */
+            int ls, dots_end;
+            dots_end = get_slashslash_qm_dot_ups_end(str, pos, &ls);
+            if (ls == pos) {
+              /* It's ok to add "..". Make sure we don't
+                 append to "..\\" by setting pos to no more
+                 than dots_end + 1. */
+              if (dots_end < ls)
+                pos = dots_end + 1;
+            } else {
+              int q;
+              for (q = pos; q-- > ls; ) {
+                if (str[q] == '\\') {
+                  break;
+                }
+              }
+              pos = q;
+	      first_len = pos;
+              len = 0;
+	      while (q && (str[q-1] == '\\')) {
+		q--;
+	      }
+	      if (q == 7) {
+		/* All we have left is \\?\REL (plus a slash or two).
+		   Reduce it to ".". */
+		if (i + 1 == argc) {
+		  /* Since we were called by scheme_simplify, use #f to mean
+		     the empty path. */
+		  return scheme_false;
+		}
+		/* Shouldn't ever get here, but just in case... */
+		str[0] = '.';
+		pos = 1;
+		no_sep = 1;
+		first_len = 0;
+	      }
+            }
+          }
+        }
+      }
 #endif
 
       if (!no_sep)
@@ -2382,7 +2753,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
       if (!pre_unc
 	  && check_dos_slashslash_drive(str, 0, pos, NULL, 0, 0)) {
 	/* Added to //x to get something that looks like UNC. Remove the
-	   first [back]slash. */	
+	   first [back]slash. */
 	memmove(str, str+1, pos - 1);
 	--pos;
       }
@@ -2436,10 +2807,25 @@ Scheme_Object *scheme_build_path(int argc, Scheme_Object **argv)
   return do_build_path(argc, argv, 0);
 }
 
-Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base_out, int *id_out)
+static Scheme_Object *path_to_directory_path(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *inpath;
+
+  inpath = argv[0];
+
+  if (!SCHEME_PATH_STRINGP(inpath))
+    scheme_wrong_type("path->directory-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+
+  inpath = TO_PATH(inpath);
+
+  return scheme_path_to_directory_path(inpath);
+}
+
+static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **base_out, int *id_out,
+                                    int *cleaned_slashes)
 {
   char *s;
-  int p, last_was_sep = 0, is_dir, no_up = 0;
+  int p, last_was_sep = 0, is_dir, no_up = 0, not_same;
   Scheme_Object *file;
 #ifdef DOS_FILE_SYSTEM
   int allow_double_before, drive_end, no_slash_sep = 0;
@@ -2470,7 +2856,7 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
 	    if (s[p] == '\\') {
 	      /* Prefix path element with \\?\REL\\: */
 	      {
-		int len2;
+		int len2, nsep;
 		char *s2;
 		Scheme_Object *dir;
 		len2 = len - p - 1 + 9;
@@ -2478,7 +2864,14 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
 		memcpy(s2, "\\\\?\\REL\\\\", 9);
 		memcpy(s2 + 9, s + p + 1, len - p - 1);
 		s2[len2] = 0;
-		dir = scheme_make_sized_path(s, p, 1);
+		if ((dots_end == p) || (dots_end == p - 1)) {
+		  /* stripping the only element: drop reundant separator(s) after .. */
+		  nsep = ((dots_end == p) ? 0 : -1);
+		} else {
+		  /* preserve separator */
+		  nsep = 1;
+		}
+		dir = scheme_make_sized_path(s, p + nsep, 1);
 		file = scheme_make_sized_path(s2, len2, 0);
 		return MAKE_SPLIT(dir, file, is_dir);
 	      }
@@ -2532,6 +2925,9 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
 	int q;
 	char *old = s;
 
+        if (cleaned_slashes)
+          *cleaned_slashes = 1;
+
 	s = (char *)scheme_malloc_atomic(len);
 	--len;
 
@@ -2573,6 +2969,17 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
       }
     }
 
+#ifdef UNIX_FILE_SYSTEM
+  /* "./~..." can't be split at the beginning. */
+  if ((p == 1)
+      && s[0] == '.'
+      && s[p + 1] == '~') {
+    not_same = 1;
+    p -= 2;
+  } else
+#endif
+    not_same = 0;
+
   if (p < 0) {
     Scheme_Object *dir;
 
@@ -2582,6 +2989,13 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
 #ifdef UNIX_FILE_SYSTEM
     if (s[0] == '/')
       return MAKE_SPLIT(scheme_false, scheme_make_sized_path(s, len, 1), 1);
+    if (s[0] == '~') {
+      /* Strip ending slashes, if any. */
+      while (IS_A_SEP(s[len - 1])) {
+        --len;
+      }
+      return MAKE_SPLIT(scheme_false, scheme_make_sized_path(s, len, 1), 1);
+    }
 #endif
 #ifdef DOS_FILE_SYSTEM
     if (IS_A_SEP(s[0]) || drive_end)
@@ -2595,7 +3009,7 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
 	&& (2 >= len || IS_A_SEP(s[2]))) {
       file = up_symbol;
       is_dir = 1;
-    } else if (!no_up && (s[0] == '.') && (1 >= len || IS_A_SEP(s[1]))) {
+    } else if (!no_up && !not_same && (s[0] == '.') && (1 >= len || IS_A_SEP(s[1]))) {
       file = same_symbol;
       is_dir = 1;
     } else {
@@ -2603,12 +3017,12 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
       is_dir = last_was_sep;
       delta = 0;
       file = make_protected_sized_offset_path(no_up || is_dir, 
-					      s, 0, len - last_was_sep + delta, 1);
+					      s, 0, len - last_was_sep + delta, 1, 0);
     }
     
     return MAKE_SPLIT(dir, file, is_dir);
   }
-		 
+  
   /* Check for 'up and 'same: */
   if (!no_up && (s[p + 1] == '.') && (s[p + 2] == '.')
       && (p + 3 >= len || IS_A_SEP(s[p + 3]))) {
@@ -2618,11 +3032,18 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
     file = same_symbol;
     is_dir = 1;
   } else {
-    file = make_protected_sized_offset_path(no_up || last_was_sep,
+    int protected;
+#ifdef DOS_FILE_SYSTEM
+    protected = no_up || last_was_sep;
+#endif
+#ifdef UNIX_FILE_SYSTEM
+    protected = 1;
+#endif
+    file = make_protected_sized_offset_path(protected,
 					    s,
 					    p + 1, 
 					    len - p - last_was_sep - 1, 
-					    1);
+					    1, 0);
     is_dir = last_was_sep;
   }
   
@@ -2641,6 +3062,11 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
     ss = scheme_make_sized_path(s, 1, 1);
     return MAKE_SPLIT(ss, file, is_dir);
   }
+}
+
+Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base_out, int *id_out)
+{
+  return do_split_path(path, len, base_out, id_out, NULL);
 }
 
 #ifndef NO_FILE_SYSTEM_UTILS
@@ -2748,10 +3174,11 @@ static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt
       wrt = get_drive_part(wrt, wlen);
       wlen = strlen(wrt);
       /* drop trailing separator */
-      if (IS_A_SEP(wrt[wlen - 1]) && !check_dos_slashslash_qm(wrt, wlen, NULL, NULL, NULL)) {
+      if (IS_A_SEP(wrt[wlen - 1]) 
+	  && !check_dos_slashslash_qm(wrt, wlen, NULL, NULL, NULL)) {
 	wlen--;
-	skip_sep = 1;
       }
+      skip_sep = 1;
     }
 
     if (check_dos_slashslash_qm(wrt, wlen, NULL, NULL, NULL) /* wrt is never relative */
@@ -3205,19 +3632,152 @@ static Scheme_Object *convert_literal_relative(Scheme_Object *file)
     return same_symbol;
   return file;
 }
+
+static Scheme_Object *simplify_qm_path(Scheme_Object *path)
+{
+  /* path is already expanded, so the only remaining
+     clean-ups are dropping a trailing separator,
+     and getting rid of \\?\ if it's not actually needed. */
+  char *s = SCHEME_PATH_VAL(path);
+  int drive_end, clean_start, len = SCHEME_PATH_LEN(path), fixed = 0, i;
+  int drop_extra_slash = -1, set_slash = -1, element_start;
+  int found_bad = 0, start_special_check = 0;
+
+  if ((s[len - 1] == '\\')
+      && (s[len - 2] != '\\')
+      && do_path_to_directory_path(s, 0, len - 1, scheme_true, 1)) {
+    --len;
+    fixed = 1;
+  }
+
+  check_dos_slashslash_qm(s, len, &drive_end, &clean_start, NULL);
+  if ((drive_end == 7)
+      && is_drive_letter(s[4])
+      && (s[5] == ':')) {
+    /* Maybe don't need \\?\ for \\?\C:\... */
+    start_special_check = 7;
+    drive_end = 4;
+  } else if (drive_end < 0) {
+    int lit_start, dots_end;
+    dots_end = get_slashslash_qm_dot_ups_end(s, len, &lit_start);
+    if (lit_start == len) {
+      /* just keep the dots */
+      return scheme_make_sized_offset_path(s, 8, dots_end - 8, 1);
+    }
+    start_special_check = lit_start;
+    if (dots_end < 9)
+      drive_end = lit_start; /* no dots, so justkeep the literal part */
+    else {
+      drive_end = 8; /* \\?\REL\..\, and we keep the .. */
+      drop_extra_slash = dots_end;
+    }
+  } else if ((clean_start == 7) 
+	     && (s[4] == 'U')
+	     && (s[5] == 'N')
+	     && (s[6] == 'C')) {
+    drive_end = 6;
+    start_special_check = 7; /* \\?\UNC */
+    set_slash = 6;
+  } else {
+    /* We have a weird root. Give up. */
+    found_bad = 1;
+    start_special_check = len;
+  }
+
+  if (!found_bad) {
+    element_start = start_special_check;
+    for (i = element_start; 1; i++) {
+      if ((i == len) || (s[i] == '\\')) {
+	if (element_start <= i - 1) {
+	  /* Need the protection? */
+	  Scheme_Object *v;
+	  int any_more = 0, j;
+	
+	  for (j = i+1; j < len; j++) {
+	    if (s[j] != '\\') {
+	      any_more = 1;
+	      break;
+	    }
+	  }
+	
+	  v = make_protected_sized_offset_path(1, 
+					       s, element_start, i - element_start,
+					       1, 
+					       (any_more ? 2 : 1));
+	  if (SCHEME_TRUEP(v)) {
+	    found_bad = 1;
+	    break;
+	  }
+	}
+	if (i == len)
+	  break;
+	element_start = i + 1;
+      }
+    }
+  }
+
+  if (found_bad) {
+    if (fixed)
+      return scheme_make_sized_path(s, len, 1);
+    else
+      return path;
+  } else {
+    if (drop_extra_slash > -1) {
+      char *naya;
+      naya = (char *)scheme_malloc_atomic(len);
+      memcpy(naya, s, drop_extra_slash);
+      memcpy(naya + drop_extra_slash, s + drop_extra_slash + 1, len - drop_extra_slash - 1);
+      s = naya;
+      --len;
+    }
+    if (set_slash > -1) {
+      char *naya;
+      naya = (char *)scheme_malloc_atomic(len);
+      memcpy(naya, s, len);
+      s[set_slash] = '\\';
+    }
+    return scheme_make_sized_offset_path(s, drive_end, len - drive_end, 1);
+  }
+}
 #endif
 
-static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, int use_filesystem, int force_rel_up)
+static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, 
+				       int use_filesystem, 
+                                       int force_rel_up)
      /* When !use_filesystem, the result can be #f for an empty relative
-	path, and it can contain leading ".."s. 
+	path, and it can contain leading ".."s, or ".."s after an initial
+        "~" path.
 	When force_rel_up under Windows, "\\?\REL\.." from split-path is
 	treated like 'up. */
 {
-  int isdir;
+  int isdir, cleaned_slashes = 0, must_be_dir = 0, did_first = 0;
   Scheme_Object *file = scheme_false, *base;
 
+#if defined(DOS_FILE_SYSTEM)
+  /* For Windows, expand-path doesn't actually touch the
+     filesystem. Always start with that, to get things basically tidy. */
+  {
+    char *s;
+    int expanded;
+    s = do_expand_filename(path, SCHEME_PATH_VAL(path), SCHEME_PATH_LEN(path),
+                           NULL, &expanded, 0, 0, 0);
+    if (expanded) {
+      path = scheme_make_path_without_copying(s);
+    }
+    if (!check_dos_slashslash_qm(SCHEME_PATH_VAL(path), SCHEME_PATH_LEN(path), NULL, NULL, NULL)) {
+      int len = SCHEME_PATH_LEN(path);
+      s = strip_trailing_spaces(SCHEME_PATH_VAL(path), &len, 0, 0);
+      if (s != SCHEME_PATH_VAL(path))
+        path = scheme_make_path_without_copying(s);
+    }
+  }
+#endif
+
 #if defined(UNIX_FILE_SYSTEM) || defined(DOS_FILE_SYSTEM)
-  /* Fast check; avoids split operations, if possible */
+  /* Fast check; avoids split operations, if possible.
+     Also responsible for determing whether there's a
+     redundant or missing trailing slash in the case that
+     the path is just a root. */
   {
     char *s;
     int len, i, saw_dot = 0;
@@ -3225,14 +3785,37 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
     len = SCHEME_PATH_LEN(path);
 
 # ifdef DOS_FILE_SYSTEM
-    if (!skip && check_dos_slashslash_qm(s, len, NULL, NULL, NULL))
-      return path;
+    if (!skip && check_dos_slashslash_qm(s, len, NULL, NULL, NULL)) {
+      if (!force_rel_up)
+	return simplify_qm_path(path);
+      else
+	return path;
+    }
+    if (!skip && check_dos_slashslash_drive(s, 0, len, NULL, 1, 0)) {
+      /* Remove trailing slashes, if any: */
+      for (i = len; IS_A_SEP(s[i-1]); i--) { }
+      if (i != len) {
+	path = scheme_make_sized_path(s, i, 1);
+      }
+    }
+
+    if (skip) {
+      while (s[skip] == '\\') {
+	skip++;
+      }
+    }
 # endif
 
     i = skip;
 # ifdef DOS_FILE_SYSTEM
-    if (!i && (len >= 2) && is_drive_letter(s[0]) && s[1] == ':')
+    if (!i && (len >= 2) && is_drive_letter(s[0]) && s[1] == ':') {
       i = 2;
+    } else if (!i) {
+      int drive_end;
+      if (check_dos_slashslash_drive(s, 0, len, &drive_end, 0, 0)) {
+        i = drive_end;
+      }
+    }
 # endif
 
     for (; i < len; i++) {
@@ -3241,40 +3824,63 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
       else if (IS_A_SEP(s[i])) {
 	if ((saw_dot == 1) || (saw_dot == 2))
 	  break;
+        if ((i + 1 < len) && (IS_A_SEP(s[i]))) {
+          /* Double slash to clean up... */
+          break;
+        }
 	saw_dot = 0;
       } else
 	saw_dot = 3;
     }
 
     if (i == len) {
-      if ((saw_dot != 1) && (saw_dot != 2))
-	return path;
+      if ((saw_dot != 1) && (saw_dot != 2)) {
+# ifdef UNIX_FILE_SYSTEM
+        /* Double-check for a redundant trailing slash */
+        if (!skip && (s[0] == '~') && IS_A_SEP(s[len - 1])) {
+          for (i = 1; i < len - 1; i++) {
+            if (IS_A_SEP(s[i]))
+              break;
+          }
+          /* If we find any slash, then the last one
+             isn't redundant. */
+          i = ((i < len - 1) ? 1 : 0);
+          if (!i)
+            cleaned_slashes = 1;
+        }
+# endif
+        if (i)
+          return path;
+      }
     }
-    /* There's a . or .. in the path. Switch to 
+    /* There's a ., .., or // in the path. Switch to 
        slower (but reliable across platforms) mode */
   }
 #endif
 
   /* Check whether it can be simplified: */
-  base = path;
-  do {
-    char *s;
-    int len;
-    s = SCHEME_PATH_VAL(base);
-    len = SCHEME_PATH_LEN(base);
-    if (len <= skip)
-      break;
-    file = scheme_split_path(s, len, &base, &isdir);
+  if (!cleaned_slashes) {
+    base = path;
+    do {
+      char *s;
+      int len;
+      s = SCHEME_PATH_VAL(base);
+      len = SCHEME_PATH_LEN(base);
+      if (len <= skip)
+        break;
+      file = do_split_path(s, len, &base, &isdir, &cleaned_slashes);
 #ifdef DOS_FILE_SYSTEM
-    if (force_rel_up) {
-      file = convert_literal_relative(file);
-    }
+      if (force_rel_up) {
+        file = convert_literal_relative(file);
+      }
 #endif
-    if (SCHEME_SYMBOLP(file))
-      break;
-  } while(SCHEME_PATHP(base));
+      if (SCHEME_SYMBOLP(file) || cleaned_slashes)
+        break;
+    } while (SCHEME_PATHP(base));
+  } else
+    file = scheme_false;
 
-  if (SCHEME_SYMBOLP(file)) {
+  if (SCHEME_SYMBOLP(file) || cleaned_slashes) {
     /* It can be simplified: */
     char *s;
     int len;
@@ -3324,8 +3930,15 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 #ifdef DOS_FILE_SYSTEM
       if (force_rel_up) {
 	file = convert_literal_relative(file);
+	if (SCHEME_SYMBOLP(file))
+	  isdir = 1;
       }
 #endif
+
+      if (!did_first) {
+        must_be_dir = isdir;
+        did_first = 1;
+      }
 
       if (SAME_OBJ(file, same_symbol)) {
 	/* Drop it */
@@ -3337,10 +3950,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	len = SCHEME_PATH_LEN(base);
       } else {
 	if (use_filesystem) {
-	  /* Start list with root path, not root name.
-	     This is crucial for MacOS */
-	  accum = scheme_make_pair(scheme_make_sized_path(s, len, 0),
-				   SCHEME_CDR(accum));
+	  accum = scheme_make_pair(file, SCHEME_CDR(accum));
 	}
 	break;
       }
@@ -3416,6 +4026,16 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	      a[0] = result;
 	      a[1] = up_symbol;
 	      result = do_build_path(2, a, 1);
+#ifdef UNIX_FILE_SYSTEM
+	    } else if (SCHEME_FALSEP(next)
+                       && SCHEME_PATHP(to_go)
+                       && SCHEME_PATH_VAL(to_go)[0] == '~') {
+	      /* Can't delete a leading ~ for .. */
+	      Scheme_Object *a[2];
+	      a[0] = result;
+	      a[1] = up_symbol;
+	      result = do_build_path(2, a, 1);
+#endif
 	    } else if (!SCHEME_PATH_STRINGP(next)) {
 	      if (SCHEME_FALSEP(next)) {
 		/* Result is already a root, so we just drop the .. */
@@ -3439,6 +4059,10 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	}
 	accum = SCHEME_CDR(accum);
       }
+    }
+
+    if (must_be_dir && !SCHEME_FALSEP(result)) {
+      result = scheme_path_to_directory_path(result);
     }
 
     return result;
@@ -3665,7 +4289,7 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
     if (nlen == 2 && e->d_name[0] == '.' && e->d_name[1] == '.')
       continue;
 #  endif
-    n = scheme_make_sized_path(e->d_name, nlen, 1);
+    n = make_protected_sized_offset_path(1, e->d_name, 0, nlen, 1, 0);
     elem = scheme_make_pair(n, scheme_null);
     if (last)
       SCHEME_CDR(last) = elem;

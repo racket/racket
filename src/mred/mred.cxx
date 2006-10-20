@@ -2106,6 +2106,20 @@ void MrEdQueueZoom(wxWindow *wx_window)
   MrEdQueueWindowCallback(wx_window, CAST_SCP call_zoom, wx_window);
 }
 
+static Scheme_Object *call_toolbar(void *d, int, Scheme_Object **argv)
+{
+  wxFrame *w = (wxFrame *)d;
+
+  w->OnToolbarButton();
+
+  return scheme_void;
+}
+
+void MrEdQueueToolbar(wxWindow *wx_window)
+{
+  MrEdQueueWindowCallback(wx_window, CAST_SCP call_toolbar, wx_window);
+}
+
 static Scheme_Object *call_on_size(void *d, int, Scheme_Object **argv)
 {
   wxWindow *w = (wxWindow *)d;

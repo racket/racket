@@ -1475,79 +1475,136 @@ static int regcharclass(int c, char *map)
   return 1;
 }
 
-static int is_posix_char_class(int pos, char *map)
+static int is_posix_char_class(char *str, int pos, int len, char *map)
 {
   int c;
 
-  if (!scheme_strncmp(":alnum:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    regcharclass('d', map);
-    for (c = 'a'; c <= 'z'; c++) {
-      map[c] = 1;
-      map[c - ('a' - 'A')] = 1;
+  if (pos + 8 <= len) {
+    if (!scheme_strncmp(":alnum:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        regcharclass('d', map);
+        for (c = 'a'; c <= 'z'; c++) {
+          map[c] = 1;
+          map[c - ('a' - 'A')] = 1;
+        }
+      }
+      return 1;
+    } else if (!scheme_strncmp(":alpha:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        for (c = 'a'; c <= 'z'; c++) {
+          map[c] = 1;
+          map[c - ('a' - 'A')] = 1;
+        }
+      }
+      return 1;
+    } else if (!scheme_strncmp(":ascii:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        for (c = 0; c <= 127; c++) {
+          map[c] = 1;
+        }
+      }
+      return 1;
+    } else if (!scheme_strncmp(":blank:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        map[' '] = 1;
+        map['\t'] = 1;
+      }
+      return 1;
+    } else if (!scheme_strncmp(":cntrl:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        for (c = 0; c <= 31; c++) {
+          map[c] = 1;
+        }
+      }
+      return 1;
+    } else if (!scheme_strncmp(":digit:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        regcharclass('d', map);
+      }
+      return 1;
+    } else if (!scheme_strncmp(":graph:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        for (c = 0; c <= 127; c++) {
+          if (scheme_isgraphic(c))
+            map[c] = 1;
+        }
+      }
+      return 1;
+    } else if (!scheme_strncmp(":lower:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        for (c = 'a'; c <= 'z'; c++) {
+          map[c] = 1;
+        }
+      }
+      return 1;
+    } else if (!scheme_strncmp(":print:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        for (c = 0; c <= 127; c++) {
+          if (scheme_isgraphic(c))
+            map[c] = 1;
+        }
+        map[' '] = 1;
+        map['\t'] = 1;
+      }
+      return 1;
+    } else if (!scheme_strncmp(":space:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        regcharclass('s', map);
+      }
+      return 1;
+    } else if (!scheme_strncmp(":upper:]", str XFORM_OK_PLUS pos, 8)) {
+      if (map) {
+        for (c = 'A'; c <= 'Z'; c++) {
+          map[c] = 1;
+        }
+      }
+      return 1;
+    }
+  }
+  
+  if ((pos + 7 <= len) 
+      && !scheme_strncmp(":word:]", str XFORM_OK_PLUS pos, 7)) {
+    if (map) {
+      regcharclass('w', map);
     }
     return 1;
-  } else if (!scheme_strncmp(":alpha:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    for (c = 'a'; c <= 'z'; c++) {
-      map[c] = 1;
-      map[c - ('a' - 'A')] = 1;
-    }
-    return 1;
-  } else if (!scheme_strncmp(":ascii:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    for (c = 0; c <= 127; c++) {
-      map[c] = 1;
-    }
-    return 1;
-  } else if (!scheme_strncmp(":blank:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    map[' '] = 1;
-    map['\t'] = 1;
-    return 1;
-  } else if (!scheme_strncmp(":cntrl:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    for (c = 0; c <= 31; c++) {
-      map[c] = 1;
-    }
-    return 1;
-  } else if (!scheme_strncmp(":digit:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    regcharclass('d', map);
-    return 1;
-  } else if (!scheme_strncmp(":graph:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    for (c = 0; c <= 127; c++) {
-      if (scheme_isgraphic(c))
-	map[c] = 1;
-    }
-    return 1;
-  } else if (!scheme_strncmp(":lower:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    for (c = 'a'; c <= 'z'; c++) {
-      map[c] = 1;
-    }
-    return 1;
-  } else if (!scheme_strncmp(":print:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    for (c = 0; c <= 127; c++) {
-      if (scheme_isgraphic(c))
-	map[c] = 1;
-    }
-    map[' '] = 1;
-    map['\t'] = 1;
-    return 1;
-  } else if (!scheme_strncmp(":space:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    regcharclass('s', map);
-    return 1;
-  } else if (!scheme_strncmp(":upper:", regparsestr XFORM_OK_PLUS pos, 7)) {
-    for (c = 'A'; c <= 'Z'; c++) {
-      map[c] = 1;
-    }
-    return 1;
-  } else if (!scheme_strncmp(":word:", regparsestr XFORM_OK_PLUS pos, 6)) {
-    regcharclass('w', map);
-    return 1;
-  } else if (!scheme_strncmp(":xdigit:", regparsestr XFORM_OK_PLUS pos, 8)) {
-    regcharclass('d', map);
-    for (c = 'a'; c <= 'f'; c++) {
-      map[c] = 1;
-      map[c - ('a' - 'A')] = 1;
+  } 
+
+  if ((pos + 9 <= len)
+      && !scheme_strncmp(":xdigit:]", str XFORM_OK_PLUS pos, 9)) {
+    if (map) {
+      regcharclass('d', map);
+      for (c = 'a'; c <= 'f'; c++) {
+        map[c] = 1;
+        map[c - ('a' - 'A')] = 1;
+      }
     }
     return 1;
   }
+
   return 0;
+}
+
+static int is_posix_char_class_in_unicode(mzchar *str, int pos, int len, char *map)
+{
+  int ulen;
+  int i;
+  char buf[10];
+
+  if (pos + 7 > len)
+    return 0;
+
+  ulen = len - pos;
+  if (ulen > 9)
+    ulen = 9;
+
+  for (i = 0; i < ulen; i++) {
+    if (str[pos + i] > 127)
+      return 0;
+    buf[i] = (char)str[pos + i];
+  }
+
+  return is_posix_char_class(buf, 0, ulen, map);
 }
 
 static char *regrange(int parse_flags, char *map)
@@ -1622,7 +1679,7 @@ static char *regrange(int parse_flags, char *map)
     } else if ((regparsestr[regparse] == '[') 
 	       && (parse_flags & PARSE_PCRE)
 	       && (regparsestr[regparse+1] == ':')
-	       && is_posix_char_class(regparse + 1, map)) {
+	       && is_posix_char_class(regparsestr, regparse + 1, regparse_end, map)) {
       regparse += 2;
       while (regparsestr[regparse] != ']') {
 	regparse++;
@@ -4135,8 +4192,17 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
       while ((k < len) && (s[k] != ']')) {
 	if (s[k] > 127)
 	  saw_big = 1;
-	if (pcre && (s[k] == '\\') && (k + 1 < len))
+	else if (pcre && (s[k] == '\\') && (k + 1 < len))
 	  k++;
+        else if (pcre 
+                 && (s[k] == '[') 
+                 && (k + 1 < len)
+                 && (s[k+1] == ':')
+                 && is_posix_char_class((char *)s, k + 1, len, NULL)) {
+          while (s[k] != ']') {
+            k++;
+          }
+        }
 	k++;
       }
       if ((k >= len) || (!saw_big && !not_mode)) {
@@ -4260,6 +4326,7 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	      } else {
 		/* Let next iteration handle it.
 		   (There's no danger of using it as a meta-character.) */
+                p++;
 	      }
 	    } else
 	      FAIL("trailing \\ in pattern");
@@ -4294,6 +4361,15 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	      }
 	    }
 	    p++;
+          } else if (pcre
+                     && (us[p] == '[')
+                     && ((p + 1) < ulen)
+                     && (us[p+1] == ':')
+                     && is_posix_char_class_in_unicode(us, p + 1, ulen, simple_on)) {
+            while (us[p] != ']') {
+              p++;
+            }
+            p++;
 	  } else {
 	    if (((p + 1) < ulen) && (us[p] == '-')) {
 	      FAIL("misplaced hypen within square brackets in pattern");

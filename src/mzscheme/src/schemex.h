@@ -648,6 +648,7 @@ int (*scheme_os_setcwd)(char *buf, int noexn);
 char *(*scheme_getdrive)(void);
 Scheme_Object *(*scheme_split_path)(const char *path, int len, Scheme_Object **base, int *isdir);
 Scheme_Object *(*scheme_build_path)(int argc, Scheme_Object **argv);
+Scheme_Object *(*scheme_path_to_directory_path)(Scheme_Object *p);
 Scheme_Object *(*scheme_make_path)(const char *chars);
 Scheme_Object *(*scheme_make_sized_path)(char *chars, long len, int copy);
 Scheme_Object *(*scheme_make_sized_offset_path)(char *chars, long d, long len, int copy);
