@@ -46,7 +46,7 @@ built-in procedures) are distinguished from other types of
 expressions, so that they can be syntactically restricted to
 application positions.
 
-> (define-higher-order-procedure id proc-id (arg ...)) - defines `id'
+> (define-higher-order-primitive id proc-id (arg ...)) - defines `id'
   to be a primitive operator whose implementation is
   `proc-id'. Normally, `id' is exported from the teachpack and
   `proc-id' is not.

@@ -10,10 +10,11 @@
 
   (define (first-order->higher-order id)
     (let ([v (syntax-local-value id (lambda () #f))])
-      (if (and (set!-transformer? v)
-	       (fo? (set!-transformer-procedure v)))
-	  (syntax-local-introduce 
-	   (fo-proc-id (set!-transformer-procedure v)))
+      (if (or (fo? v)
+              (and (set!-transformer? v)
+                   (fo? (set!-transformer-procedure v))))
+          (syntax-local-introduce 
+	   (fo-proc-id (if (fo? v) v (set!-transformer-procedure v))))
 	  id))))
 
 

@@ -11,7 +11,7 @@
   ;; Implements the forms:
   (require "private/teach.ss"
 	   "private/contract-forms.ss")
-  
+
   ;; syntax:
   (provide (rename beginner-define define)
 	   (rename beginner-define-struct define-struct)
@@ -29,7 +29,13 @@
 	   ; (rename beginner-define-data define-data)
 	   #%datum
 	   empty true false)
-  
+
+  (require-for-syntax "private/firstorder.ss")
+    
+  ;; This is essentially a specialized version of `define-primitive'
+  ;;  that refines the error messages for built-in things, which
+  ;;  we might like to call "contructor" or "predicate" instead of
+  ;;  just "primitive".
   (define-syntax (in-rator-position-only stx)
     (syntax-case stx ()
       [(_ new-name orig-name)
@@ -52,20 +58,23 @@
 			      [else
 			       #'("primitive operator"
 				  "applied to arguments")])])
-	       #'(define-syntax (new-name stx)
-		   (syntax-case stx ()
-		     [(id . args)
-		      (syntax/loc stx (beginner-app orig-name . args))]
-		     [_else
-		      (raise-syntax-error
-		       #f
-		       (format
-			"this ~a must be ~a; expected an open parenthesis before the ~a name"
-			what
-			something
-			what)
-		       stx)])))))]))
-  
+	       #'(define-syntax new-name 
+                   (make-first-order
+                    (lambda (stx)
+                      (syntax-case stx ()
+                        [(id . args)
+                         (syntax/loc stx (beginner-app orig-name . args))]
+                        [_else
+                         (raise-syntax-error
+                          #f
+                          (format
+                           "this ~a must be ~a; expected an open parenthesis before the ~a name"
+                           what
+                           something
+                           what)
+                          stx)]))
+                    #'orig-name)))))]))
+      
   ;; procedures:
   (provide-and-document/wrap
    procedures
