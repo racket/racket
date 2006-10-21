@@ -7,8 +7,7 @@
 (module prim mzscheme
   (require (lib "error.ss" "lang")
 	   (rename (lib "htdp-beginner.ss" "lang") beginner-app #%app))
-  (require-for-syntax "private/firstorder.ss"
-                      "private/primwrap.ss")
+  (require-for-syntax "private/firstorder.ss")
   
   (provide define-primitive
 	   define-higher-order-primitive
