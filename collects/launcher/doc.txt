@@ -22,7 +22,7 @@ executables.
    The optional `aux' argument is an association list for
    platform-specific options (i.e., it is a list of pairs where the
    first element of the pair is a key symbol and the second element is
-   the value for that key). See `make-embedding-executable' (from the
+   the value for that key). See `create-embedding-executable' (from the
    "compiler" collection) for a list that applies to Windows launchers
    and Mac OS X MrEd launchers; the following additional associations
    apply to launchers:
