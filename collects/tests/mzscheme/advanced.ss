@@ -201,4 +201,15 @@
 (htdp-test #t 'equal~? (equal~? (box (list 10)) (box (list 10.02)) 0.1))
 (htdp-test #f 'equal~? (equal~? (box (list 10)) (box (list 10.2)) 0.1))
 
+;; Simulate set! in the repl?
+#|
+(module my-advanced-module (lib "htdp-advanced.ss" "lang")
+  (define x 10))
+(require my-advanced-module)
+(parameterize ([current-namespace (module->namespace 'my-advanced-module)])
+  (eval #'(set! x 12)))
+|#
+
+;; ----------------------------------------
+
 (report-errs)

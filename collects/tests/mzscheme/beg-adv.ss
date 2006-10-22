@@ -194,6 +194,29 @@
 (htdp-top-pop 1)
 (htdp-top-pop 1)
 
+;; Teachpacks with higher-order primitives
+;;  Some further tests are in beg-bega.ss
+(module my-teachpack mzscheme
+  (require (lib "prim.ss" "lang"))
+  (provide go)
+  (define-higher-order-primitive go real-go (_ proc))
+  (define (real-go a b) a))
+(htdp-teachpack my-teachpack)
+
+(htdp-top (define (my-f x) x))
+(htdp-top (define-struct foo (a b)))
+
+(htdp-test 5 'tp (go 5 add1))
+(htdp-test 5 'tp (go 5 my-f))
+(htdp-test 5 'tp (go 5 foo?))
+(htdp-test 5 'tp (go 5 make-foo))
+(htdp-test 5 'tp (go 5 foo-a))
+(htdp-test 5 'tp (go 5 go))
+
+(htdp-top-pop 1)
+(htdp-top-pop 1)
+(htdp-teachpack-pop)
+
 ;; Error messages
 (htdp-top (define my-x 5))
 (htdp-top (define (my-f x) (+ x 5)))

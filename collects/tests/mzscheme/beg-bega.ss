@@ -26,3 +26,21 @@
 (htdp-top (define (my-f x) (+ x 5)))
 (htdp-syntax-test #'my-f #rx"a procedure, so it must be applied")
 (htdp-top-pop 1)
+
+;; Teachpacks with higher-order primitives
+;;   Builds on tests in beg-adv.ss
+(htdp-teachpack my-teachpack)
+
+(htdp-top (define (my-f x) x))
+(htdp-top (define-struct foo (a b)))
+
+(htdp-syntax-test #'(go 5 8))
+(htdp-syntax-test #'(go add1 add1))
+(htdp-syntax-test #'(go my-f add1))
+(htdp-syntax-test #'(go foo? add1))
+(htdp-syntax-test #'(go make-foo add1))
+(htdp-syntax-test #'(go foo-a add1))
+(htdp-syntax-test #'(go go add1))
+
+(htdp-top-pop 1)
+(htdp-teachpack-pop)

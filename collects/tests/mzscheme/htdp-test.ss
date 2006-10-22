@@ -23,11 +23,41 @@
 			 null
 			 (cons (car body-accum) (loop (cdr body-accum)))))))
 
+(define teachpack-accum null)
+(define-syntax (htdp-teachpack stx)
+  (syntax-case stx ()
+    [(_ lib) 
+     #'(set! teachpack-accum (cons (strip-context (quote-syntax lib)) teachpack-accum))]))
+(define (htdp-teachpack-pop)
+  (set!  teachpack-accum (cdr teachpack-accum)))
+
+(define previous-tp-accum #f)
+(define previous-tp-lang #f)
+(define (add-teachpacks lang)
+  (cond
+   [(null? teachpack-accum) lang]
+   [(equal? teachpack-accum previous-tp-accum)
+    previous-tp-lang]
+   [else
+    (let ([name (string->symbol (format "~a+tp~a" lang (gensym)))])
+      (eval #`(module #,name mzscheme
+                (define-syntax (bounce stx)
+                  #'(begin
+                      (require #,lang #,@teachpack-accum)
+                      (provide (all-from #,lang)
+                               #,@(map (lambda (tp)
+                                         #`(all-from #,tp))
+                                       teachpack-accum))))
+                (bounce)))
+      (set! previous-tp-accum teachpack-accum)
+      (set! previous-tp-lang name)
+      name)]))
+
 (define htdp-syntax-test
   (case-lambda
    [(stx) (htdp-syntax-test stx #rx".")]
    [(stx rx)
-    (error-test #`(module m #,current-htdp-lang
+    (error-test #`(module m #,(add-teachpacks current-htdp-lang)
 		    #,@body-accum
 		    #,(strip-context stx))
 		(lambda (x)
@@ -49,11 +79,11 @@
      ;; double-check that there's no error, at least,
      ;;  when using the real module-begin:
      #'(mz-let ([name (gensym)])
-	       (eval
-		#`(module #,name #,current-htdp-lang
-		    #,@body-accum
-		    #,(strip-context #'expr)))
-	       (dynamic-require name #f))]
+               (eval
+                #`(module #,name #,(add-teachpacks current-htdp-lang)
+                    #,@body-accum
+                    #,(strip-context #'expr)))
+               (dynamic-require name #f))]
     [_ 
      (printf "~s\n" (syntax-object->datum stx))
      #'(void)]))
@@ -77,10 +107,10 @@
 (module helper mzscheme
   (define-syntax (module-begin stx)
     (syntax-case stx ()
-     [(_ the-test lang to-export . rest)
+     [(_ the-test lang to-export requires . rest)
       #`(#%module-begin
 	 (require (rename tester the-test test))
-	 (require lang)
+	 (require lang . requires)
          #,@(if (syntax-object->datum (syntax to-export))
                 (list (syntax (provide to-export)))
                 '())
@@ -98,6 +128,7 @@
 	 test
 	 (all-except #,current-htdp-lang #%module-begin)
          #f
+         #,teachpack-accum
 	 #,@body-accum
 	 #,(strip-context stx)))
     (unless stx-err?
@@ -116,6 +147,7 @@
 	 test
 	 (all-except #,current-htdp-lang #%module-begin)
          the-answer
+         #,teachpack-accum
 	 #,@body-accum
 	 (define the-answer #,(strip-context stx))))
     (dynamic-require name 'the-answer)))
