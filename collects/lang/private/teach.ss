@@ -220,9 +220,14 @@
 	(format "~ard" n)]))
 
     ;; At the top level, wrap `defn' to first check for
-    ;; existing definitions of the `names'. The `names'
-    ;; argument is a syntax list of identifiers.
-    (define (check-definitions-new who stx names defn)
+    ;;  existing definitions of the `names'. The `names'
+    ;;  argument is a syntax list of identifiers.
+    ;; In a module context, just check the binding
+    ;;  at compile time.
+    ;; In either context, if `assign?' is true, then
+    ;;  generate an unevaluated assignment that makes
+    ;;  the identifier mutable.
+    (define (check-definitions-new who stx names defn assign)
       (cond
        [(eq? (syntax-local-context) 'top-level)
 	(with-syntax ([defn defn]
@@ -230,19 +235,24 @@
 	  (with-syntax ([(check ...)
 			 (map (lambda (name)
 				(with-syntax ([name name])
-				  ;; Make sure each check has the
-				  ;; source location of the original
-				  ;; expression:
-				  (syntax/loc stx
-				    (check-top-level-not-defined 'who #'name))))
-			      (stx->list names))])
-            ;; this use of stepper-ignore-checker will behave badly on multiple-name defines:
-            (stepper-ignore-checker
+                                  ;; Make sure each check has the
+                                  ;; source location of the original
+                                  ;; expression:
+                                  (syntax/loc stx
+                                    (check-top-level-not-defined 'who #'name))))
+                              names)])
+            (syntax-property 
 	     (syntax/loc stx
 	       (begin
 		 check ...
-		 defn)))))]
-       [(eq? (syntax-local-context) 'module)
+		 defn)) 
+             'stepper-skipto 
+             (cons 'syntax-e
+                   (let loop ([l names])
+                     (if (null? l)
+                         `(syntax-e cdr car)
+                         (cons 'cdr (loop (cdr l)))))))))]
+       [(memq (syntax-local-context) '(module module-begin))
 	(for-each (lambda (name)
 		    (let ([b (identifier-binding name)])
 		      (when b
@@ -254,12 +264,22 @@
 			     "this name was defined previously and cannot be re-defined"
 			     "this name has a built-in meaning and cannot be re-defined")))))
 		  names)
-	defn]
+        (if assign
+            (with-syntax ([(name ...) (if (eq? assign #t)
+                                          names
+                                          assign)]
+                          [defn defn])
+              (stepper-ignore-checker
+               (syntax/loc stx
+                 (begin
+                   (lambda () (advanced-set! name 10) ...)
+                   defn))))
+            defn)]
        [else defn]))
 
     ;; Same as above, but for one name
-    (define (check-definition-new who stx name defn)
-      (check-definitions-new who stx (list name) defn))
+    (define (check-definition-new who stx name defn assign)
+      (check-definitions-new who stx (list name) defn assign))
 
     ;; Check context for a `define' before even trying to
     ;; expand
@@ -352,25 +372,27 @@
     (define (wrap-func-definitions first-order? kinds names argcs k)
       (if first-order?
 	  (let ([name2s (map (make-name-inventer) names)])
-	    (quasisyntax
-	     (begin
-	       #,@(map
-		   (lambda (name name2 kind argc)
-		     #`(define-syntax #,name 
-			 (make-first-order-function '#,kind 
-						    #,argc
-						    (quote-syntax #,name2) 
-						    (quote-syntax #%app))))
-		   names name2s kinds argcs)
-	       #,(k name2s))))
-	  (k names)))
+            (values (quasisyntax
+                     (begin
+                       #,@(map
+                           (lambda (name name2 kind argc)
+                             #`(define-syntax #,name 
+                                 (make-first-order-function '#,kind 
+                                                            #,argc
+                                                            (quote-syntax #,name2) 
+                                                            (quote-syntax #%app))))
+                           names name2s kinds argcs)
+                       #,(k name2s)))
+                    name2s))
+          (values (k names)
+                  names)))
 
       
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; define (beginner)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (define (beginner-or-intermediate-define/proc first-order? stx)
+    (define (define/proc first-order? assign? stx)
 
       (define (wrap-func-definition name argc k)
 	(wrap-func-definitions first-order? 
@@ -405,31 +427,38 @@
 	   (syntax-case (syntax expr) (beginner-lambda)
 	     ;; Well-formed lambda def:
 	     [(beginner-lambda arg-seq lexpr ...)
-	      (begin
-		(check-function-defn-ok stx)
-		(check-definition-new
-		 'define
-		 stx
-		 #'name
-		 (wrap-func-definition
-		  #'name
-		  (length (syntax->list #'arg-seq))
-		  (lambda (name)
-		    (with-syntax ([name name])
-		      (quasisyntax/loc 
-		       stx 
-		       (define name
-			 #,(syntax-property
-			    #`(lambda arg-seq #,(syntax-property #`make-lambda-generative 'stepper-skip-completely #t) lexpr ...)
-			    'stepper-define-type
-			    'lambda-define))))))))]
+              (begin
+                (check-function-defn-ok stx)
+                (let-values ([(defn bind-names)
+                              (wrap-func-definition
+                               #'name
+                               (length (syntax->list #'arg-seq))
+                               (lambda (name)
+                                 (with-syntax ([name name])
+                                   (quasisyntax/loc 
+                                    stx 
+                                    (define name
+                                      #,(syntax-property
+                                         #`(lambda arg-seq 
+                                             #,(syntax-property #`make-lambda-generative 
+                                                                'stepper-skip-completely #t) 
+                                             lexpr ...)
+                                         'stepper-define-type
+                                         'lambda-define))))))])
+                  (check-definition-new
+                   'define
+                   stx
+                   #'name
+                   defn
+                   (and assign? bind-names))))]
 	     ;; Constant def
 	     [_else
               (check-definition-new
                 'define
                 stx
                 (syntax name)
-                (quasisyntax/loc stx (define name expr)))]))]
+                (quasisyntax/loc stx (define name expr))
+                (and assign? (list (syntax name))))]))]
 	;; Function definition:
 	[(_ name-seq expr ...)
 	 (syntax-case (syntax name-seq) () [(name ...) #t][_else #f])
@@ -475,24 +504,27 @@
 				     ;; can't local-expand function body, because
 				     ;;  not all top-level defns are ready:
 				     #f)
-
-           (check-definition-new 
-            'define
-            stx
-            (car names)
-	    (wrap-func-definition
-	     (car (syntax-e #'name-seq))
-	     (length (cdr (syntax->list #'name-seq)))
-	     (lambda (fn)
-	       (with-syntax ([fn fn]
-			     [args (cdr (syntax-e #'name-seq))])
-		 (quasisyntax/loc stx (define fn #,(syntax-property
-						    (syntax-property
-						     #`(lambda args expr ...)
-						     'stepper-define-type
-						     'shortened-proc-define)
-						    'stepper-proc-define-name
-						    #`fn))))))))]
+           
+           (let-values ([(defn bind-names)
+                         (wrap-func-definition
+                          (car (syntax-e #'name-seq))
+                          (length (cdr (syntax->list #'name-seq)))
+                          (lambda (fn)
+                            (with-syntax ([fn fn]
+                                          [args (cdr (syntax-e #'name-seq))])
+                              (quasisyntax/loc stx (define fn #,(syntax-property
+                                                                 (syntax-property
+                                                                  #`(lambda args expr ...)
+                                                                  'stepper-define-type
+                                                                  'shortened-proc-define)
+                                                                 'stepper-proc-define-name
+                                                                 #`fn))))))])
+             (check-definition-new 
+              'define
+              stx
+              (car names)
+              defn
+              (and assign? bind-names))))]
 	;; Constant/lambda with too many or too few parts:
 	[(_ name expr ...)
 	 (identifier/non-kw? (syntax name))
@@ -525,10 +557,10 @@
 	 (bad-use-error 'define stx)]))
 
     (define (beginner-define/proc stx)
-      (beginner-or-intermediate-define/proc #t stx))
+      (define/proc #t #f stx))
 
     (define (intermediate-define/proc stx)
-      (beginner-or-intermediate-define/proc #f stx))
+      (define/proc #f #f stx))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; lambda (beginner; only works with define)
@@ -672,13 +704,8 @@
 						 #f
 						 "expected an expression, but found a structure name"
 						 stx))))])
-	       (let ([defn
-                      (quasisyntax/loc stx
-			 (begin
-                           #,(syntax-property #`(define-syntaxes (name_) compile-info)
-                                              'stepper-skip-completely
-                                              #t)
-			   #,(wrap-func-definitions 
+               (let-values ([(defn0 bind-names)
+                             (wrap-func-definitions 
 			      first-order? 
 			      (list* 'constructor 
 				     'predicate
@@ -695,11 +722,19 @@
 							 (define-struct name_ (field_ ...) (make-inspector))
 							 (values proc-name ...)))
 						   'stepper-define-struct-hint
-						   stx))))))])
-                 (check-definitions-new 'define-struct
-                                        stx 
-					(cons #'name_ to-define-names)
-					defn)))))]
+						   stx))))])
+                 (let ([defn
+                         (quasisyntax/loc stx
+                           (begin
+                             #,(syntax-property #`(define-syntaxes (name_) compile-info)
+                                                'stepper-skip-completely
+                                                #t)
+                             #,defn0))])
+                   (check-definitions-new 'define-struct
+                                          stx 
+                                          (cons #'name_ to-define-names)
+                                          defn
+                                          (and setters? bind-names)))))))]
 	[(_ name_ something . rest)
 	 (teach-syntax-error
 	  'define-struct
@@ -1664,7 +1699,8 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (advanced-define/proc stx)
-      ;; Handle the case that doesn't fit into beginner, then dispatch to beginner
+      ;; Handle the case that doesn't fit into intermediate, then dispatch to 
+      ;; the common code that it also used by beginner/intermediate.
       (syntax-case stx ()
 	[(_ (name) expr)
 	 (and (identifier/non-kw? (syntax name))
@@ -1673,19 +1709,20 @@
 	  'define
 	  stx
 	  (syntax name)
-	  (syntax/loc stx (define (name) expr)))]
+	  (syntax/loc stx (define (name) expr))
+          (list #'name))]
 	[(_ (name) expr ...)
 	 (check-single-result-expr (syntax->list (syntax (expr ...)))
 				   #f
 				   stx
 				   (list #'name))]
 	[(_ . rest)
-	 ;; Call transformer beginner-define/proc.
+	 ;; Call transformer define/proc.
 	 ;; Note that we call the transformer instead of producing
-	 ;; new syntax object that is a `beginner-define' form;
+	 ;; new syntax object that is an `intermediate-define' form;
 	 ;; that's important for syntax errors, so that they
 	 ;; report `advanced-define' as the source.
-	 (intermediate-define/proc stx)]
+	 (define/proc #f #t stx)]
 	[_else
 	 (bad-use-error 'define stx)]))
 
