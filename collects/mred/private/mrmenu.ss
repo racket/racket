@@ -282,8 +282,8 @@
 						    [(unix windows) (format "~a~a~a~a~a?:~a" 
 									    exact
 									    (if (memq 'shift prefix) "s:" "")
-									    (if (memq 'meta prefix) "m:" "")
-									    (if (memq 'alt prefix) "m:" "")
+									    (if (memq 'meta prefix) "m:" "~m:")
+									    (if (memq 'alt prefix) "m:" "~m:")
 									    (if (memq 'ctl prefix) "c:" "")
 									    base)]
 						    [(macosx) (format "~a~a~a~a~a?:~a" 
