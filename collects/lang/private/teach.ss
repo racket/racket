@@ -268,11 +268,12 @@
             (with-syntax ([(name ...) (if (eq? assign #t)
                                           names
                                           assign)]
+                          [make-up (gensym)]
                           [defn defn])
               (stepper-ignore-checker
                (syntax/loc stx
                  (begin
-                   (lambda () (advanced-set! name 10) ...)
+                   (define made-up (lambda () (advanced-set! name 10) ...))
                    defn))))
             defn)]
        [else defn]))
