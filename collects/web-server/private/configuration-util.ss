@@ -58,6 +58,6 @@
       'truncate))
   
   (provide/contract
-   [write-configuration-table (configuration-table? (or/c path? string?) . -> . void)]
+   [write-configuration-table (configuration-table? path-string? . -> . void)]
    [format-host (host-table? . -> . list?)]
-   [write-to-file ((or/c path? string?) list? . -> . void)]))
+   [write-to-file (path-string? list? . -> . void)]))

@@ -61,8 +61,8 @@
               (open (new-config : web-config/local^)))))
   
   (provide/contract
-   [complete-configuration (path? configuration-table? . -> . configuration?)]
-   [get-configuration (string? . -> . configuration-table?)]
+   [complete-configuration (path-string? configuration-table? . -> . configuration?)]
+   [get-configuration (path-string? . -> . configuration-table?)]
    ; XXX contract
    [build-developer-configuration (list? . -> . configuration?)]
    ; XXX contract
@@ -70,5 +70,5 @@
    [default-configuration-table-path path?]
    [update-configuration (configuration? (listof (cons/c symbol? any/c)) . -> . configuration?)]
    [load-configration-sexpr (list? . -> . configuration?)]
-   [load-configuration (path? . -> . configuration?)]
-   [load-developer-configuration (path? . -> . configuration?)]))
+   [load-configuration (path-string? . -> . configuration?)]
+   [load-developer-configuration (path-string? . -> . configuration?)]))

@@ -46,10 +46,10 @@
             [file-per-byte number?]
             [file-base number?])]
    [struct paths 
-           ([conf (or/c false/c path? string?)]
-            [host-base (or/c false/c path? string?)]
-            [log (or/c false/c path? string?)]
-            [htdocs (or/c false/c path? string?)]
-            [servlet (or/c false/c path? string?)]
-            [mime-types (or/c false/c path? string?)]
-            [passwords (or/c false/c path? string?)])]))
+           ([conf (or/c false/c path-string?)]
+            [host-base (or/c false/c path-string?)]
+            [log (or/c false/c path-string?)]
+            [htdocs (or/c false/c path-string?)]
+            [servlet (or/c false/c path-string?)]
+            [mime-types (or/c false/c path-string?)]
+            [passwords (or/c false/c path-string?)])]))

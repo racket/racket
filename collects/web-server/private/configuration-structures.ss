@@ -36,11 +36,8 @@
    [struct host 
            ([indices (listof string?)]
             [log-format symbol?]
-            [log-path (or/c false/c path? string?)]
-            [passwords (or/c false/c path? string?)]
-            #;[passwords (listof (cons/c string?
-                                       (cons/c string?
-                                               (listof (list/c symbol? string?)))))]
+            [log-path (or/c false/c path-string?)]
+            [passwords (or/c false/c path-string?)]
             [responders responders?]
             [timeouts timeouts?]
             [paths paths?])]
