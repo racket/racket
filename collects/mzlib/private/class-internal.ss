@@ -1542,10 +1542,20 @@
     (string->uninterned-symbol
      (symbol->string id)))
 
-  (define-struct member-key (id))
+
+  (define-values (struct:member-key make-member-key member-name-key? member-key-ref member-key-set!)
+    (make-struct-type 'member-name-key
+                      #f
+                      1 0 #f
+                      (list
+                       (cons prop:custom-write 
+                             (lambda (v p write?)
+                               (fprintf p "#<member-key:~a>" (member-key-id v)))))))
+
+  (define member-key-id (make-struct-field-accessor member-key-ref 0))
 
   (define (check-member-key id v)
-    (unless (member-key? v)
+    (unless (member-name-key? v)
       (error 'define-local-member-name "not a member key for ~a: ~e" id v))
     (member-key-id v))
 
@@ -1566,10 +1576,18 @@
     (make-member-key (generate-local-member-name (gensym 'member))))
 
   (define (member-name-key=? a b)
-    (if (and (member-key? a)
-             (member-key? b))
+    (if (and (member-name-key? a)
+             (member-name-key? b))
         (eq? (member-key-id a) (member-key-id b))
         (eq? a b)))
+
+  (define (member-name-key-hash-code a)
+    (unless (member-name-key? a)
+      (raise-type-error
+       'member-name-key-hash-code
+       "member name key"
+       a))
+    (eq-hash-code (member-key-id a)))
 
   ;;--------------------------------------------------------------------
   ;;  class implementation
@@ -1660,14 +1678,16 @@
       (check-still-unique name
 			  init-args
 			  "initialization argument names")
+      ;; We intentionally leave inherited names out of the lists below,
+      ;;  on the threory that it's ok to decide to inherit from
+      ;;  yourself:
       (check-still-unique name
-			  (append public-field-names inherit-field-names)
+			  (append public-field-names)
 			  "field names")
       (check-still-unique name
 			  (append pubment-names public-final-names public-normal-names
 				  overment-names override-final-names override-normal-names
-				  augment-names augment-final-names augride-normal-names
-				  inherit-names)
+				  augment-names augment-final-names augride-normal-names)
 			  "method names"))
 
     ;; -- Create new class's name --
@@ -1937,7 +1957,7 @@
 					      (or (vector-ref vec (sub1 (vector-length vec)))
 						  (obj-error 'class* 
 							     (string-append
-							      "superclass method for override, overment, "
+							      "superclass method for override, overment, inherit/super, "
 							      "or rename-super is not overrideable: ~a~a")
 							     mname
 							     (for-class name)))
@@ -1961,7 +1981,7 @@
 						       (when (negative? depth)
 							 (obj-error 'class* 
 								    (string-append
-								     "superclass method for augride, augment, "
+								     "superclass method for augride, augment, inherit/inner, "
 								     "or rename-inner method is not augmentable: ~a~a")
 								    mname
 								    (for-class name)))))
@@ -3412,7 +3432,8 @@
 	   define/override define/overment
 	   define/augride define/augment
 	   define/public-final define/override-final define/augment-final
-	   define-local-member-name define-member-name member-name-key generate-member-key member-name-key=?
+	   define-local-member-name define-member-name 
+           member-name-key generate-member-key member-name-key? member-name-key=? member-name-key-hash-code
 	   (rename generic/form generic) (rename make-generic/proc make-generic) send-generic
 	   is-a? subclass? implementation? interface-extension?
 	   object-interface object-info object->vector

@@ -22,7 +22,9 @@
 	   define/override define/overment
 	   define/augride define/augment
 	   define/public-final define/override-final define/augment-final
-	   define-local-member-name define-member-name member-name-key generate-member-key member-name-key=?
+	   define-local-member-name define-member-name 
+           member-name-key generate-member-key 
+           member-name-key? member-name-key=? member-name-key-hash-code
 	   generic make-generic send-generic
 	   is-a? subclass? implementation? interface-extension?
 	   object-interface object-info object->vector
