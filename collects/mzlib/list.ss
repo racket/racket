@@ -36,8 +36,8 @@
 
            filter
 
-           quicksort
-           mergesort
+           quicksort ; deprecated
+           mergesort ; deprecated
            sort
            sort!
            merge-sorted-lists
@@ -128,7 +128,7 @@
             [else '()]))
     (unless (list? lst)
       (raise-type-error who "proper list" lst))
-    (unless (procedure-arity-includes? less? 2)
+    (unless (and (procedure? less?) (procedure-arity-includes? less? 2))
       (raise-type-error who "procedure of arity 2" less?))
     (let ([n (length lst)])
       (cond [(<= n 1) lst]
@@ -142,37 +142,11 @@
             [else (when copy? (set! lst (append lst '())))
                   (step n)])))
 
-  (define (sort! lst less?)
-    (sort-internal lst less? #f 'sort!))
-  (define (sort lst less?)
-    (sort-internal lst less? #t 'sort))
+  (define (sort! lst less?) (sort-internal lst less? #f 'sort!))
+  (define (sort  lst less?) (sort-internal lst less? #t 'sort))
 
   ;; deprecated!
-  (define (quicksort l less-than)
-    (unless (list? l)
-      (raise-type-error 'quicksort "proper list" l))
-    (unless (procedure-arity-includes? less-than 2)
-      (raise-type-error 'quicksort "procedure of arity 2" less-than))
-    (let* ([v (list->vector l)]
-           [count (vector-length v)])
-      (let loop ([min 0][max count])
-        (if (< min (sub1 max))
-          (let ([pval (vector-ref v min)])
-            (let pivot-loop ([pivot min] [pos (add1 min)])
-              (if (< pos max)
-                (let ([cval (vector-ref v pos)])
-                  (if (less-than cval pval)
-                    (begin (vector-set! v pos (vector-ref v pivot))
-                           (vector-set! v pivot cval)
-                           (pivot-loop (add1 pivot) (add1 pos)))
-                    (pivot-loop pivot (add1 pos))))
-                (if (= min pivot)
-                  (loop (add1 pivot) max)
-                  (begin (loop min pivot)
-                         (loop pivot max))))))))
-      (vector->list v)))
-
-  ;; deprecated!
+  (define quicksort sort)
   (define mergesort sort)
 
   (define remove
