@@ -1583,7 +1583,14 @@ inline static void mark_acc_big_page(struct mpage *page)
   void **end = PPTR(NUM(page) + page->size);
 
   switch(page->page_type) {
-    case PAGE_TAGGED: mark_table[*(unsigned short*)start](start); break;
+    case PAGE_TAGGED: 
+      {
+        unsigned short tag = *(unsigned short*)start;
+        if((unsigned long)mark_table[tag] < PAGE_TYPES) {
+          /* atomic */
+        } else
+          mark_table[tag](start); break;
+      }
     case PAGE_ATOMIC: break;
     case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
     case PAGE_XTAGGED: GC_mark_xtagged(start); break;
@@ -2022,7 +2029,14 @@ inline static void internal_mark(void *p)
     set_backtrace_source(start, page->page_type);
 
     switch(page->page_type) {
-      case PAGE_TAGGED: mark_table[*(unsigned short*)start](start); break;
+      case PAGE_TAGGED: 
+        {
+          unsigned short tag = *(unsigned short*)start;
+          if((unsigned long)mark_table[tag] < PAGE_TYPES) {
+            /* atomic */
+          } else
+            mark_table[tag](start); break;
+        }
       case PAGE_ATOMIC: break;
       case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
       case PAGE_XTAGGED: GC_mark_xtagged(start); break;
