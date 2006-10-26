@@ -3565,7 +3565,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter)
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
     data = (Scheme_Closure_Data *)o;
-    mz_pushr_p(JIT_R1); /* !!!!!!! */  
+    mz_pushr_p(JIT_R1);
     generate_closure(data, jitter);
     CHECK_LIMIT();
     generate_closure_fill(data, jitter);
@@ -3792,7 +3792,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_movr_p(JIT_V1, JIT_R0);
 	  mz_pushr_p(JIT_V1);
 	  mz_pushr_p(JIT_V1);
-	  mz_pushr_p(JIT_V1); /* !!!!!!!! */
+	  mz_pushr_p(JIT_V1);
 	  __START_SHORT_JUMPS__(1);
 	  ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
 	  CHECK_LIMIT();
@@ -3807,7 +3807,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_ori_l(JIT_V1, JIT_V1, 0x1);
 	  mz_pushr_p(JIT_V1);
 	  jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.array);
-	  mz_pushr_p(JIT_V1); /* !!!!!!!! */
+	  mz_pushr_p(JIT_V1);
 	  CHECK_LIMIT();
 	  (void)jit_movi_p(JIT_R1, 0x0);
 	  mz_pushr_p(JIT_R1); /* pushing 0 indicates that multi-array follows */
@@ -4533,7 +4533,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	generate_non_tail(wcm->val, jitter, 0, 1);
 	CHECK_LIMIT();
       } else {
-	mz_pushr_p(JIT_R0); /* !!!!!!! */
+	mz_pushr_p(JIT_R0);
 	generate_non_tail(wcm->val, jitter, 0, 1);
 	CHECK_LIMIT();
 	mz_popr_p(JIT_V1);

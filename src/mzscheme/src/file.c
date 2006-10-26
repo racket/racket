@@ -2302,7 +2302,7 @@ static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, 
   if (just_check)
     return NULL;
 
-  s2 = (char *)scheme_malloc_atomic(len + 1);
+  s2 = (char *)scheme_malloc_atomic(len + 2);
   memcpy(s2, s XFORM_OK_PLUS offset, len);
   s2[len] = FN_SEP;
   s2[len+1] = 0;
