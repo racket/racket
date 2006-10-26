@@ -85,8 +85,8 @@
 		  [(parent [style null] [paint-callback default-paint-cb] [label #f] [gl-config #f])
 		   canvas%-keywords]
       (private-field [paint-cb paint-callback]
-		     [has-x? (memq 'hscroll style)]
-		     [has-y? (memq 'vscroll style)])
+		     [has-x? (and (list? style) (memq 'hscroll style))]
+		     [has-y? (and (list? style) (memq 'vscroll style))])
       (inherit get-client-size get-dc set-label)
       (rename [super-on-paint on-paint])
       (sequence 
