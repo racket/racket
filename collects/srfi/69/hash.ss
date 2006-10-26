@@ -1,6 +1,7 @@
 ; SRFI 69
-; Chongkai Zhu   mrmathematica@yahoo.com
-; 01-Nov-2005
+; Chongkai Zhu   czhu@cs.utah.edu
+; Original 01-Nov-2005
+; Revised 23-Oct-2006
 
 (module hash mzscheme
   
@@ -27,7 +28,7 @@
            (rename my-hash-table-copy s:hash-table-copy)
            hash-table-merge!
            hash
-           string-hash
+           (rename hash string-hash)
            string-ci-hash
            hash-by-identity)
   
@@ -36,14 +37,7 @@
       ((obj) (equal-hash-code obj))
       ((obj bound) (modulo (equal-hash-code obj) bound))))
   
-  (define (string-hash . args)
-    (unless (string? (car args))
-      (raise-type-error 'string-hash "string" 1 args))
-    (apply hash args))
-  
   (define (string-ci-hash s . maybe-bound)
-    (unless (string? s)
-      (raise-type-error 'string-hash "string" s))
     (apply hash (string-downcase s) maybe-bound))
   
   (define hash-by-identity
@@ -57,7 +51,6 @@
   
   (define (appropriate-hash-function-for comparison)
     (cond ((eq? comparison eq?) hash-by-identity)
-          ((eq? comparison string=?) string-hash)
           ((eq? comparison string-ci=?) string-ci-hash)
           (else hash)))
   
@@ -128,10 +121,8 @@
            (raise-mismatch-error 'hash-table-ref "no value associated with " key))
           (else ((car maybe-default)))))
   
-  (define-syntax hash-table-ref/default
-    (syntax-rules ()
-      ((_ hash-table key default)
-       (hash-table-ref hash-table key (lambda () default)))))
+  (define (hash-table-ref/default hash-table key default)
+    (hash-table-ref hash-table key (lambda () default)))
   
   (define (hash-table-set! hash-table key value)
     (let ((hash (%hash-table-hash hash-table key))
@@ -161,10 +152,8 @@
                                            (+ 1 (my-hash-table-size hash-table)))
                   (%hash-table-maybe-resize! hash-table)))))
   
-  (define-syntax hash-table-update!/default
-    (syntax-rules ()
-      ((_ hash-table key function default)
-       (hash-table-update! hash-table key function (lambda () default)))))
+  (define (hash-table-update!/default hash-table key function default)
+    (hash-table-update! hash-table key function (lambda () default)))
   
   (define (hash-table-delete! hash-table key)
     (if (%hash-table-delete! (my-hash-table-entries hash-table)
@@ -191,12 +180,12 @@
     (opt-lambda (alist
                  [comparison equal?]
                  [hash (appropriate-hash-function-for comparison)]
-                 [size (max *default-table-size* (* 2 (length alist)))]
-                 [hash-table (my-make-hash-table comparison hash size)])
-      (for-each (lambda (elem)
-                  (hash-table-set! hash-table (car elem) (cdr elem)))
-                alist)
-      hash-table))
+                 [size (max *default-table-size* (* 2 (length alist)))])
+      (let ([hash-table (my-make-hash-table comparison hash size)])
+        (for-each (lambda (elem)
+                    (hash-table-set! hash-table (car elem) (cdr elem)))
+                  alist)
+        hash-table)))
   
   (define (hash-table->alist hash-table)
     (hash-table-fold hash-table
@@ -206,7 +195,8 @@
     (let ((new (my-make-hash-table (my-hash-table-equivalence-function hash-table)
                                    (my-hash-table-hash-function hash-table)
                                    (max *default-table-size*
-                                        (* 2 (my-hash-table-size hash-table))))))
+                                        (* 2 (my-hash-table-size hash-table)))
+                                   (my-hash-table-association-function hash-table))))
       (hash-table-walk hash-table
                        (lambda (key value) (hash-table-set! new key value)))
       new))

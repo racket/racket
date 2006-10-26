@@ -374,6 +374,9 @@
   (x-keyword "~a关键字")
   (x-like-keywords "~a类型的关键字")
   
+  ; used in Square bracket panel
+  (skip-subexpressions "出现在中括号前的表达式数量")
+  
   (expected-a-symbol "需要一个符号，得到a")
   (already-used-keyword "“~a”已经是缩进关键字了")
   (add-keyword "添加")
