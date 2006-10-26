@@ -16,18 +16,7 @@ Correct output N = 1000 is
 -0.169087605
 |#
 (module nbody mzscheme
-  (provide main)
-
-  ;;; Stupid boiler-plate for formatting floating point value
-  (define (roundto digits n)
-    (let* ([e (expt 10 digits)]
-	   [num (round (abs (* e (inexact->exact n))))])
-      (format "~a~a.~a" 
-	      (if (negative? n) "-" "")
-	      (quotient num e) 
-	      (substring (string-append (number->string (remainder num e))
-					(make-string digits #\0))
-			 0 digits))))
+  (require (only (lib "string.ss") real->decimal-string))
 
   ;; ------------------------------
   ;; define planetary masses, initial positions & velocity
@@ -147,20 +136,16 @@ Correct output N = 1000 is
 	  (loop-o (cdr o))))))
 
   ;; -------------------------------
-  (define (main args)
-    (let ((n (if (null? args)
-		 1
-		 (string->number (car args))))
-	  (system (list *sun* *jupiter* *saturn* *uranus* *neptune*)))
+  
+  (let ((n (string->number (vector-ref (current-command-line-arguments) 0)))
+        (system (list *sun* *jupiter* *saturn* *uranus* *neptune*)))
+    
+    (offset-momentum system)
+    
+    (printf "~a~%" (real->decimal-string (energy system) 9))
+    
+    (do ((i 1 (+ i 1)))
+        ((< n i))
+      (advance system 0.01))
 
-      (offset-momentum system)
-
-      (printf "~a~%" (roundto 9 (energy system)))
-
-      (do ((i 1 (+ i 1)))
-	  ((< n i))
-	(advance system 0.01))
-
-      (printf "~a~%" (roundto 9 (energy system)))))
-
-  (main (vector->list (current-command-line-arguments))))
+      (printf "~a~%" (real->decimal-string (energy system) 9))))

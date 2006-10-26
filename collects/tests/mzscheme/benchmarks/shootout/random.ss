@@ -4,7 +4,7 @@
 ;;; Modified for proper string output by Brent Fulgham
 
 (module random mzscheme
-  (provide main)
+  (require (only (lib "string.ss") real->decimal-string))
 
   (define IM 139968)
   (define IA   3877)
@@ -25,16 +25,13 @@
 					(make-string digits #\0))
 			 0 digits))))
 
-  (define (main args)
-    (let ((n (if (= (vector-length args) 0)
-		 1
-		 (string->number (vector-ref args 0)))))
-      (let loop ((iter n))
-	(if (> iter 1)
-	    (begin
-	      (gen_random 100.0)
-	      (loop (- iter 1)))))
-      (printf "~a~%"
-	      (roundto 9 (gen_random 100.0)))))
-
-  (main (current-command-line-arguments)))
+  (let ((n (string->number 
+            (vector-ref (current-command-line-arguments)
+                        0))))
+    (let loop ((iter n))
+      (if (> iter 1)
+          (begin
+            (gen_random 100.0)
+            (loop (- iter 1)))))
+    (printf "~a~%"
+            (real->decimal-string (gen_random 100.0) 9))))

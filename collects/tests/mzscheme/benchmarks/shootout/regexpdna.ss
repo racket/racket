@@ -31,23 +31,7 @@
   ;; -------------------------------
 
   (define (ci-byte-regexp s)
-    (byte-regexp (ci-pattern s)))
-  (define (ci-pattern s)
-    (let ([m (regexp-match #rx#"^(.*)\\[([^]]*)\\](.*)$" s)])
-      (if m
-	  (bytes-append (ci-pattern (cadr m))
-			#"["
-			(regexp-replace* #rx#"[a-zA-Z]" (caddr m) both-cases)
-			#"]"
-			(ci-pattern (cadddr m)))
-	  (regexp-replace* #rx#"[a-zA-Z]" s (lambda (s)
-					      (string->bytes/latin-1
-					       (format "[~a]" (both-cases s))))))))  
-  (define (both-cases s)
-    (string->bytes/latin-1
-     (format "~a~a" 
-	     (string-downcase (bytes->string/latin-1 s))
-	     (string-upcase (bytes->string/latin-1 s)))))
+    (byte-regexp (bytes-append #"(?i:" s #")")))
 
   ;; -------------------------------
   

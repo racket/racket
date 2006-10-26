@@ -6,7 +6,8 @@
 ;; Updated by Brent Fulgham to provide proper output formatting
 
 (module heapsort mzscheme
-  (require (only (lib "13.ss" "srfi") string-index string-pad-right))
+  (require (only (lib "13.ss" "srfi") string-index string-pad-right)
+           (only (lib "string.ss") real->decimal-string))
 
   (define IM   139968)
   (define IA     3877)
@@ -50,15 +51,6 @@
 		   (set! j (+ ir 1)))))
 	  (vector-set! ra i rra)))))
 
-  (define (roundto digits num)
-    (let* ([e (expt 10 digits)]
-	   [num (round (* e (inexact->exact num)))])
-      (format "~a.~a"
-	      (quotient num e)
-	      (substring (string-append (number->string (remainder num e))
-					(make-string digits #\0))
-			 0 digits))))
-
   (define (main args)
     (let* ((n (or (and (= (vector-length args) 1) (string->number (vector-ref args 0)))
 		  1))
@@ -69,6 +61,6 @@
 	(vector-set! ary i (gen_random 1.0)))
       (heapsort n ary)
       (printf "~a~n"
-	      (roundto 10 (vector-ref ary n)))))
+	      (real->decimal-string (vector-ref ary n) 10))))
 
   (main (current-command-line-arguments)))

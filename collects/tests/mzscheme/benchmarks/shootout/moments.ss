@@ -1,17 +1,10 @@
 ; Moments.scm
 
 (module moments mzscheme
-  (require (only (lib "list.ss") sort))
+  (require (only (lib "list.ss") sort)
+           (only (lib "string.ss") real->decimal-string))
 
-  (define (roundto digits n)
-    (let* ([e (expt 10 digits)]
-	   [num (round (abs (* e (inexact->exact n))))])
-      (format "~a~a.~a"
-	      (if (negative? n) "-" "")
-	      (quotient num e)
-	      (substring (string-append (number->string (remainder num e))
-					(make-string digits #\0))
-			 0 digits))))
+  (define (to-str n) (real->decimal-string n 6))
 
   (let* ((sum 0.0)
 	 (numlist (let loop ((line (read-line)) (numlist '()))
@@ -63,10 +56,10 @@
 
 	(for-each display
 		  `("n:                  " ,n                   "\n"
-		    "median:             " ,(roundto 6 median)  "\n"
-		    "mean:               " ,(roundto 6 mean)    "\n"
-		    "average_deviation:  " ,(roundto 6 average_deviation ) "\n"
-		    "standard_deviation: " ,(roundto 6 standard_deviation) "\n"
-		    "variance:           " ,(roundto 6 variance)"\n"
-		    "skew:               " ,(roundto 6 skew)    "\n"
-		    "kurtosis:           " ,(roundto 6 kurtosis)"\n" ))))))
+		    "median:             " ,(to-str median)  "\n"
+		    "mean:               " ,(to-str mean)    "\n"
+		    "average_deviation:  " ,(to-str average_deviation ) "\n"
+		    "standard_deviation: " ,(to-str standard_deviation) "\n"
+		    "variance:           " ,(to-str variance)"\n"
+		    "skew:               " ,(to-str skew)    "\n"
+		    "kurtosis:           " ,(to-str kurtosis)"\n" ))))))

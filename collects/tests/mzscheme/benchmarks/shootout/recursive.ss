@@ -9,6 +9,7 @@
 ;; ---------------------------------------------------------------------
 
 (module recursive mzscheme
+  (require (only (lib "string.ss") real->decimal-string))
 
   ;; -------------------------------
 
@@ -39,26 +40,19 @@
 
   ;; -------------------------------
 
-  (define (roundto digits n)
-    (let* ([e (expt 10 digits)]
-	   [num (round (* e (inexact->exact n)))])
-      (format "~a.~a" 
-	      (quotient num e) 
-	      (substring (string-append (number->string (remainder num e))
-					(make-string digits #\0))
-			 0 digits))))
-
   (define (main args)
     (let ((n (string->number (vector-ref args 0))))
 
       (printf "Ack(3,~A): ~A~%" n (ack 3 n))
-      (printf "Fib(~a): ~a~%" (roundto 1 (+ 27.0 n)) (roundto 1 (fibflt (+ 27.0 n))))
+      (printf "Fib(~a): ~a~%" 
+              (real->decimal-string (+ 27.0 n) 1)
+              (real->decimal-string (fibflt (+ 27.0 n)) 1))
 
       (set! n (- n 1))
       (printf "Tak(~A,~A,~A): ~A~%" (* n 3) (* n 2) n (tak (* n 3) (* n 2) n))
 
       (printf "Fib(3): ~A~%" (fib 3))
-      (printf "Tak(3.0,2.0,1.0): ~a~%" (roundto 1 (takflt 3.0 2.0 1.0)))))
+      (printf "Tak(3.0,2.0,1.0): ~a~%" (real->decimal-string (takflt 3.0 2.0 1.0) 1))))
 
   ;; -------------------------------
 

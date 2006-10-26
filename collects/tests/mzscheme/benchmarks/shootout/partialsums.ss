@@ -12,17 +12,8 @@
 ;;  its time GCing; it runs 1.5 times as fast in mzscheme3m.
 
 (module partialsums mzscheme
+  (require (only (lib "string.ss") real->decimal-string))
 
-  (define (roundto digits n)
-    (let* ([e (expt 10 digits)]
-	   [num (round (abs (* e (inexact->exact n))))])
-      (format "~a~a.~a" 
-	      (if (negative? n) "-" "")
-	      (quotient num e) 
-	      (substring (string-append (number->string (remainder num e))
-					(make-string digits #\0))
-			 0 digits))))
-  
   (let ((n (exact->inexact
 	    (string->number
 	     (vector-ref (current-command-line-arguments) 0))))
@@ -36,7 +27,7 @@
       (if (= d n #;(+ n 1))
 	  (let ([format-result
 		 (lambda (str n)
-		   (printf str (roundto 9 n)))])
+		   (printf str (real->decimal-string n 9)))])
 	    
 	    (format-result "~a\t(2/3)^k\n" s0)
 	    (format-result "~a\tk^-0.5\n" s1)

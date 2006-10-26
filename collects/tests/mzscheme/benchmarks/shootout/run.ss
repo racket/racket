@@ -17,7 +17,7 @@
       ("lists.ss" . "18")
       ("mandelbrot.ss")
       ("matrix.ss" . "600")
-      ("moments.ss" . "200")
+      ("moments.ss") 200 somethings...
       ("nbody.ss")
       ("nestedloop.ss" . "18")
       ("nsieve.ss")
