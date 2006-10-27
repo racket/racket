@@ -947,19 +947,19 @@
 
 
   (define (declife)
-    (set! jewel-life (- jewel-life jewel-decay))
-    (if (< jewel-life 0.0)
-      (let*
-        ( (score #f) (exit? #f)
-        )
-        ; set life points to zero
-        (set! jewel-life 0.0)
-        ; set high score if any
-        (high-score-set)
-        ; end of game
-        (set! gamestate 'GAME-OVER)
+    (unless (eq? gamestate 'GAME-OVER)
+      (set! jewel-life (- jewel-life jewel-decay))
+      (if (< jewel-life 0.0)
+          (let* ( (score #f) (exit? #f) )
+            ; set life points to zero
+            (set! jewel-life 0.0)
+            ; set high score if any
+            (high-score-set)
+            ; end of game
+            (set! gamestate 'GAME-OVER)
+            )
+          )
       )
-    )
   )
   
   ;check for minimum three adjacent elements
