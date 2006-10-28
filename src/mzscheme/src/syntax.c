@@ -5077,18 +5077,33 @@ do_letrec_syntaxes(const char *where,
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(rec[drec].observer);
 
   if (names_to_disappear) {
-    /* Need to add renaming for disappeared bindings --- unless
-       they originated for internal definitions, in which case
-       adding the renaming is unnecessary and intereferes with the
-       comparsion (due to limitations of the syntax-object
-       representation for internal definitions). */
-    if (!(origenv->flags & SCHEME_FOR_INTDEF)) {
-      Scheme_Object *l, *a;
+    /* Need to add renaming for disappeared bindings. If they
+       originated for internal definitions, then we need both
+       pre-renamed and renamed, since some might have been
+       expanded to determine definitions. */
+    Scheme_Object *l, *a, *pf = NULL, *pl = NULL;
+
+    if (origenv->flags & SCHEME_FOR_INTDEF) {
       for (l = names_to_disappear; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-	a = SCHEME_CAR(l);
-	a = scheme_add_env_renames(a, stx_env, origenv);
-	SCHEME_CAR(l) = a;
+        a = SCHEME_CAR(l);
+        a = icons(a, scheme_null);
+        if (pl)
+          SCHEME_CDR(pl) = a;
+        else
+          pf = a;
+        pl = a;
       }
+    }
+
+    for (l = names_to_disappear; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      a = SCHEME_CAR(l);
+      a = scheme_add_env_renames(a, stx_env, origenv);
+      SCHEME_CAR(l) = a;
+    }
+
+    if (pf) {
+      SCHEME_CDR(pl) = names_to_disappear;
+      names_to_disappear = pf;
     }
   }
 
