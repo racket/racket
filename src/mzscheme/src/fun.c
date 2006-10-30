@@ -4543,6 +4543,12 @@ internal_call_cc (int argc, Scheme_Object *argv[])
      when calling `cont' composably (i.e., when supplying a resume). */
   cont->prompt_stack_start = stack_start;
 
+  /* Zero out any local variable that shouldn't be saved by the
+     continuation.  The meta-continuation for the prompt is an
+     especially important one to zero out (otherwise we build up
+     chains). */
+  prompt_cont = NULL;
+
   if (scheme_setjmpup_relative(&cont->buf, cont, stack_start, sub_cont)) {
     /* We arrive here when the continuation is applied */
     Scheme_Object *result, *extra_marks;

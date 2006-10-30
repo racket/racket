@@ -1016,6 +1016,27 @@ static void print_tagged_value(const char *prefix,
       memcpy(t2 + len, buffer, len2 + 1);
       len += len2;
       type = t2;
+    } else if (!scheme_strncmp(type, "#<continuation", 13)) {
+      char buffer[256];
+      char *t2;
+      int len2;
+	    
+      sprintf(buffer, "[%s%.100s]",
+              (((Scheme_Cont *)v)->composable 
+               ? "delim;"
+               : ""),
+              (((Scheme_Cont *)v)->prompt_tag
+               ? (SCHEME_CDR(((Scheme_Cont *)v)->prompt_tag)
+                  ? SCHEME_SYM_VAL(SCHEME_CDR(((Scheme_Cont *)v)->prompt_tag))
+                  : "<anonymous>")
+               : "NULL"));
+      
+      len2 = strlen(buffer);
+      t2 = (char *)scheme_malloc_atomic(len + len2 + 1);
+      memcpy(t2, type, len);
+      memcpy(t2 + len, buffer, len2 + 1);
+      len += len2;
+      type = t2;
     } else if (!scheme_strncmp(type, "#<namespace", 11)) {
       char buffer[256];
       char *t2;

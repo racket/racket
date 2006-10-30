@@ -6625,10 +6625,12 @@ static void prepare_thread_for_GC(Scheme_Object *t)
         int stackpos;
         segpos = ((long)pos >> SCHEME_LOG_MARK_SEGMENT_SIZE);
         seg = p->cont_mark_stack_segments[segpos];
-        stackpos = ((long)pos & SCHEME_MARK_SEGMENT_MASK);
-        seg[stackpos].key = NULL;
-        seg[stackpos].val = NULL;
-        seg[stackpos].cache = NULL;
+        if (seg) {
+          stackpos = ((long)pos & SCHEME_MARK_SEGMENT_MASK);
+          seg[stackpos].key = NULL;
+          seg[stackpos].val = NULL;
+          seg[stackpos].cache = NULL;
+        }
       }
     }
   }
