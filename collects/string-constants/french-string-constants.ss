@@ -386,7 +386,7 @@
   (editor-prefs-panel-label "Edition")
   (general-prefs-panel-label "Général")
   (highlight-parens "Surligner les paires de parenthèses.")
-  (fixup-open-parens "Ajuster automatiquement les parenthèses ouvrantes")
+  (fixup-open-brackets "Ajuster automatiquement les crochets ouvrants")
   (fixup-close-parens "Ajuster automatiquement les parenthèses fermantes")
   (flash-paren-match "Montrer la parenthèse correspondante.")
   (auto-save-files "Sauvegarde automatique des fichiers.")
@@ -397,7 +397,9 @@
   (wrap-words-in-editor-buffers "Continuer une longue ligne sur la ligne suivante, dans les éditeurs.")
   (show-status-line "Montrer la barre de status.")
   (count-columns-from-one "Compter les lignes et colonnes à partir de un.")
-  (display-line-numbers "Montrer le numéro de ligne et de colonne, pas la distance depuis le début d'éditeur.")
+  (display-line-numbers "Montrer les numéros de ligne et de colonne, pas la distance depuis le début de l'éditeur.")
+  (show-line-and-column-numbers "Montrer les numéros de ligne et de colonne") ; used for popup menu; right click on line/column box in bottom of drs window
+  (show-character-offsets "Montrer la distance depuis le début de l'éditeur") ; used for popup menu; right click on line/column box in bottom of drs window
   (enable-keybindings-in-menus "Raccourcis clavier dans les menus.")
   (automatically-to-ps "Imprimer automatiquement dans un fichier postscript.")
   (option-as-meta "Utiliser la touche option comme touche meta") ;; macos/macos x only
@@ -450,11 +452,16 @@
   (indenting-prefs-panel-label "Indentation")
   (indenting-prefs-extra-regexp "Regexp extra") ; Expression régulière supplémentaire est trop long
   
+  (square-bracket-prefs-panel-label "Crochet")
+  
   ; filled with define, lambda, or begin
   (enter-new-keyword "Entrez un nouveau mot clef ressemblant à ~a :")
   (x-keyword "Mot clef ~a")
-  (x-like-keywords "Mots clefs ressemblant à ~a")
+  (x-like-keywords "Mots clefs ressemblants à ~a")
   
+  ; used in Square bracket panel
+  (skip-subexpressions "Nombre de sous-expressions à ignorer") ; à sauter?
+
   (expected-a-symbol "espérait un symbole, trouvé : ~a")
   (already-used-keyword "\"~a\" est déjà un mot clef avec une indentation spéciale.")
   (add-keyword "Ajouter")
@@ -621,8 +628,15 @@
   (keybindings-sort-by-name "Trier par nom")
   (keybindings-sort-by-key "Trier par raccourci")
   (keybindings-add-user-defined-keybindings "Ajouter des raccourcis clavier...")
+  (keybindings-add-user-defined-keybindings/planet "Ajouter des raccourcis clavier à partir de PLaneT...")
   (keybindings-menu-remove "Enlever ~a")
   (keybindings-choose-user-defined-file "Sélectionnez un fichier contenant des raccourcis clavier.")
+  (keybindings-planet-malformed-spec "Cette spécification de fichier PLaneT est malformée : ~a") ; the string will be what the user typed in
+  (keybindings-type-planet-spec "Veuillez spécifier un fichier PLaneT (sans le `require')")
+  
+  ; first ~a will be a string naming the file or planet package where the keybindings come from;
+  ; second ~a will be an error message
+  (keybindings-error-installing-file "Erreur durant l'installation des raccourcis clavier provenants du fichier PLaneT ~a:\n\n~a")
   
   (user-defined-keybinding-error "Erreur durant l'exécution du raccourci clavier ~a\n\n~a")
   (user-defined-keybinding-malformed-file "Le fichier ~a ne contient pas un module écrit dans le langage (lib \"keybinding-lang.ss\" \"framework\").")  
