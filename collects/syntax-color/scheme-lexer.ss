@@ -71,9 +71,9 @@
                   (:: "#\\" (:/ "0" "3") digit8))]
        
    ;; What about byte string regexp strings
-   [str (:or (:: (:? "#rx") "\"" (:* string-element (:: "\\" unicode)) "\"")
+   [str (:or (:: (:? (:or "#px" "#rx")) "\"" (:* string-element (:: "\\" unicode)) "\"")
              byte-str)]
-   [byte-str (:: (:? "#rx") "#\"" (:* string-element) "\"")]
+   [byte-str (:: (:? (:or "#px" "#rx")) "#\"" (:* string-element) "\"")]
    [string-element (:or (:~ "\"" "\\")
                         "\\\""
                         "\\\\"
@@ -90,7 +90,7 @@
                         (:: "\\x" (:** 1 2 digit16))
                         (:: "\\" #\newline))]
 
-   [bad-str (:: (:? "#rx") (:? "#") "\"" 
+   [bad-str (:: (:? (:or "#px" "#rx")) (:? "#") "\"" 
                 (:* (:~ "\"" "\\")
                     (:: "\\" any-char))
                 (:? "\\" "\""))]
