@@ -605,7 +605,7 @@ void wxApp::doMacKeyUpDown(Bool down)
 {
   wxFrame* theMacWxFrame;
   wxKeyEvent *theKeyEvent;
-  int key, otherKey = 0;
+  int key, otherKey = 0, optKey = 0, otherOptKey = 0;
 
   theMacWxFrame = findMacWxFrame(MrEdKeyWindow());
   
@@ -662,7 +662,7 @@ void wxApp::doMacKeyUpDown(Bool down)
       int iter, akey, orig_key = key;
 
       key = 0; /* let compiler know that key is assigned */
-      for (iter = 0; iter < ((cCurrentEvent.modifiers & cmdKey) ? 2 : 1); iter++) {
+      for (iter = 0; iter < ((cCurrentEvent.modifiers & cmdKey) ? 4 : 1); iter++) {
         char cstr[3];
         int from_str = 0;
 
@@ -684,11 +684,26 @@ void wxApp::doMacKeyUpDown(Bool down)
 
           mods = cCurrentEvent.modifiers;
           if (mods & cmdKey) {
-            /* Strip control and option modifiers when command is pressed: */
-            mods -= (mods & (optionKey | controlKey | cmdKey | shiftKey));
-            /* On second iteration, set the shift key: */
-            if (iter)
-              mods |= shiftKey;
+            int mask;
+            /* Strip control modifier when command is pressed: */
+            mods -= (mods & (controlKey | cmdKey));
+            /* On all but first iteration, toggle shift and/or option: */
+            switch (iter) {
+            case 0:
+              mask = 0;
+              break;
+            case 1:
+              mask = shiftKey;
+              break;
+            case 2:
+              mask = optionKey;
+              break;
+            default:
+            case 3:
+              mask = optionKey | shiftKey;
+              break;
+            }
+            mods = (mods & (~mask)) | ((~mods) & mask);
           } else {
             /* Remove effect of anything in wxMacDisableMods: */
             mods -= (mods & wxMacDisableMods);
@@ -782,8 +797,12 @@ void wxApp::doMacKeyUpDown(Bool down)
 
         if (!iter)
           key = akey;
-        else
+        else if (iter == 1)
           otherKey = akey;
+        else if (iter == 2)
+          optKey = akey;
+        else if (iter == 3)
+          otherOptKey = akey;
       }
     }
   }
@@ -796,6 +815,8 @@ void wxApp::doMacKeyUpDown(Bool down)
     theKeyEvent->keyUpCode = key;
   }  
   theKeyEvent->otherKeyCode = otherKey;
+  theKeyEvent->altKeyCode = optKey;
+  theKeyEvent->otherAltKeyCode = otherOptKey;
 
   {
     wxWindow *in_win;

@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="libmzsch"
-	ProjectGUID="{2D99E176-BCA5-4B8E-B25C-1B2D7179C188}"
+	ProjectGUID="{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}"
 	>
 	<Platforms>
 		<Platform

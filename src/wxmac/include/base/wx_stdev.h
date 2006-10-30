@@ -117,7 +117,7 @@ class wxMouseEvent: public wxEvent
   Bool controlDown;
   Bool shiftDown;
   Bool altDown;
-  Bool metaDown; // mflatt
+  Bool metaDown;
   
   void CopyFrom(wxMouseEvent *src); 
   
@@ -189,6 +189,8 @@ class wxKeyEvent: public wxEvent
   long keyCode;
   long keyUpCode;
   long otherKeyCode;
+  long altKeyCode;
+  long otherAltKeyCode;
   Bool controlDown;
   Bool shiftDown;
   Bool altDown;

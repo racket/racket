@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="MrStart"
+	ProjectGUID="{138CC248-8A45-436E-A4A6-E7570D7C2C0F}"
 	>
 	<Platforms>
 		<Platform

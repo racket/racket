@@ -221,9 +221,13 @@ wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int 
 @ENDSYMBOLS
 
 @MACRO bKeyOrFalse = ({x} ? bundle_symset_keyCode({x}) : scheme_false)
-@MACRO ubKeyOrFalse = (SCHEME_FALSEP({x}) ? 0 : unbundle_symset_keyCode({x}, METHODNAME("key-event%","get-other-shift-key-code")))
+@MACRO ubKeyOrFalse[name] = (SCHEME_FALSEP({x}) ? 0 : unbundle_symset_keyCode({x}, METHODNAME("key-event%",<name>)))
 static long GetOtherKey(wxKeyEvent *k) { return k->otherKeyCode; }
 static void SetOtherKey(wxKeyEvent *k, long c) { k->otherKeyCode = c; }
+static long GetAltKey(wxKeyEvent *k) { return k->altKeyCode; }
+static void SetAltKey(wxKeyEvent *k, long c) { k->altKeyCode = c; }
+static long GetOtherAltKey(wxKeyEvent *k) { return k->otherAltKeyCode; }
+static void SetOtherAltKey(wxKeyEvent *k, long c) { k->otherAltKeyCode = c; }
 
 @CLASSBASE wxKeyEvent=wxKeyEvent_ext "key-event":"event" / nofnl
 
@@ -241,7 +245,11 @@ static void SetOtherKey(wxKeyEvent *k, long c) { k->otherKeyCode = c; }
 @IVAR "y" : int y
 
 @ m "get-other-shift-key-code" : long/bKeyOrFalse GetOtherKey();
-@ m "set-other-shift-key-code" : void SetOtherKey(long//ubKeyOrFalse////push);
+@ m "set-other-shift-key-code" : void SetOtherKey(long//ubKeyOrFalse["set-other-shift-key-code"]////push);
+@ m "get-other-altgr-key-code" : long/bKeyOrFalse GetAltKey();
+@ m "set-other-altgr-key-code" : void SetAltKey(long//ubKeyOrFalse["set-other-altgr-key-code"]////push);
+@ m "get-other-shift-altgr-key-code" : long/bKeyOrFalse GetOtherAltKey();
+@ m "set-other-shift-altgr-key-code" : void SetOtherAltKey(long//ubKeyOrFalse["set-other-shift-altgr-key-code"]////push);
 
 @END
 

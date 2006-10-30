@@ -184,11 +184,13 @@ class wxKeyEvent: public wxEvent
   long keyCode;
   long keyUpCode;
   long otherKeyCode;
+  long altKeyCode;
+  long otherAltKeyCode;
   Bool controlDown;
   Bool shiftDown;
   Bool altDown;
   Bool metaDown;
-  
+
   wxKeyEvent(WXTYPE keyType = 0);
 
   virtual Bool ControlDown(void);

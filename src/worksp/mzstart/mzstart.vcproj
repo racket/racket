@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="MzStart"
+	ProjectGUID="{838B0D91-A8B3-4716-9D37-E0E444B563D2}"
 	>
 	<Platforms>
 		<Platform

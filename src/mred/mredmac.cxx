@@ -344,7 +344,6 @@ void wxSmuggleOutEvent(EventRef ref)
     UniChar *text;
     UInt32 actualSize; 
     EventRef kref;
-    UInt32 val = 0;    
     
     GetEventParameter(ref, kEventParamTextInputSendKeyboardEvent,
                       typeEventRef, NULL, sizeof(EventRef), NULL, &kref);

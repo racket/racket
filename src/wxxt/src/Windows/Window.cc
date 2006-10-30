@@ -1600,7 +1600,8 @@ static int extract_string_key(char *str, int slen)
 #endif
 }
 
-Status wxWindow::LookupKey(int unshifted, Widget w, wxWindow *win, XEvent *xev, KeySym *_keysym, char *str, int *_len)
+Status wxWindow::LookupKey(int unshifted, int unalted, 
+                           Widget w, wxWindow *win, XEvent *xev, KeySym *_keysym, char *str, int *_len)
 {
   KeySym keysym;
   Status status;
@@ -1613,6 +1614,18 @@ Status wxWindow::LookupKey(int unshifted, Widget w, wxWindow *win, XEvent *xev, 
       evt.state -= ShiftMask;
     else
       evt.state |= ShiftMask;
+  }
+  if (unalted) {
+    if (!(evt.state & Mod1Mask) == !(evt.state & ControlMask)) {
+      if (evt.state & Mod1Mask)
+        evt.state -= Mod1Mask;
+      else
+        evt.state |= Mod1Mask;
+      if (evt.state & ControlMask)
+        evt.state -= ControlMask;
+      else
+        evt.state |= ControlMask;
+    }
   }
     
 #ifndef NO_XMB_LOOKUP_STRING
@@ -1651,6 +1664,18 @@ Status wxWindow::LookupKey(int unshifted, Widget w, wxWindow *win, XEvent *xev, 
   *_len = len;
   *_keysym = keysym;
   return status;
+}
+
+static int status_to_kc(Status status, XEvent *xev, KeySym keysym, char *str, int slen)
+{
+  if (XMB_STR_PREFERRED_STATUS(status, xev))
+    return extract_string_key(str, slen);
+  else if (XMB_KC_STATUS(status))
+    return CharCodeXToWX(keysym);
+  else if (XMB_STR_STATUS(status))
+    return extract_string_key(str, slen);
+  else 
+    return 0;
 }
 
 void wxWindow::WindowEventHandler(Widget w,
@@ -1715,16 +1740,18 @@ void wxWindow::WindowEventHandler(Widget w,
       win->current_state = xev->xkey.state;
       { /* ^^^ fallthrough !!!! ^^^ */
 	wxKeyEvent *wxevent;
-	KeySym	   keysym, other_keysym;
-	long       kc, other_kc;
-	Status     status, other_status;
-	char       str[10], other_str[10];
-	int        slen, other_slen;
+	KeySym	   keysym, other_keysym, alt_keysym, other_alt_keysym;
+	long       kc, other_kc, alt_kc, other_alt_kc;
+	Status     status, other_status, alt_status, other_alt_status;
+	char       str[10], other_str[10], alt_str[10], other_alt_str[10];
+	int        slen, other_slen, alt_slen, other_alt_slen;
 
 	wxevent = new wxKeyEvent(wxEVENT_TYPE_CHAR);
 
-	status = LookupKey(0, w, win, xev, &keysym, str, &slen);
-	other_status = LookupKey(1, w, win, xev, &other_keysym, other_str, &other_slen);
+	status = LookupKey(0, 0, w, win, xev, &keysym, str, &slen);
+	other_status = LookupKey(1, 0, w, win, xev, &other_keysym, other_str, &other_slen);
+	alt_status = LookupKey(0, 1, w, win, xev, &alt_keysym, alt_str, &alt_slen);
+	other_alt_status = LookupKey(1, 1, w, win, xev, &other_alt_keysym, other_alt_str, &other_alt_slen);
 
 	if (xev->xany.type == KeyPress) {
 	  static int handle_alt = 0;
@@ -1743,29 +1770,18 @@ void wxWindow::WindowEventHandler(Widget w,
 	  }
 	}
 
-	if (XMB_STR_PREFERRED_STATUS(status, xev))
-          kc = extract_string_key(str, slen);
-	else if (XMB_KC_STATUS(status))
-	  kc = CharCodeXToWX(keysym);
-	else if (XMB_STR_STATUS(status))
-          kc = extract_string_key(str, slen);
-	else 
-	  kc = 0;
-
-	if (XMB_STR_PREFERRED_STATUS(other_status, xev))
-          other_kc = extract_string_key(other_str, other_slen);
-	else if (XMB_KC_STATUS(other_status))
-	  other_kc = CharCodeXToWX(other_keysym);
-	else if (XMB_STR_STATUS(other_status))
-          other_kc = extract_string_key(other_str, other_slen);
-	else 
-	  other_kc = 0;
+        kc = status_to_kc(status, xev, keysym, str, slen);
+        other_kc = status_to_kc(other_status, xev, other_keysym, other_str, other_slen);
+        alt_kc = status_to_kc(alt_status, xev, alt_keysym, alt_str, alt_slen);
+        other_alt_kc = status_to_kc(other_alt_status, xev, other_alt_keysym, other_alt_str, other_alt_slen);
 
 	// set wxWindows event structure
 	wxevent->eventHandle	= (char*)xev;
 	wxevent->keyCode	= (xev->xany.type == KeyPress) ? kc : WXK_RELEASE;
 	wxevent->keyUpCode	= (xev->xany.type == KeyRelease) ? kc : WXK_PRESS;
 	wxevent->otherKeyCode	= other_kc;
+	wxevent->altKeyCode	= alt_kc;
+	wxevent->otherAltKeyCode = other_alt_kc;
 	wxevent->x		= xev->xkey.x;
 	wxevent->y		= xev->xkey.y;
 	wxevent->altDown	= /* xev->xkey.state & Mod3Mask */ FALSE;

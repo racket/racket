@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="libmzgc"
-	ProjectGUID="{CB68718B-24BF-43E3-9E96-BCF9B37CFE2D}"
+	ProjectGUID="{66548E7B-294E-40EF-B7C0-C8D6D7E6234F}"
 	>
 	<Platforms>
 		<Platform

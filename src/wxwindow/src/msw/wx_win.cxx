@@ -33,6 +33,8 @@ extern long last_msg_time; /* timeStamp implementation */
 
 extern int WM_IS_MRED;
 
+static int sakc_initialized;
+
 static void wxDoOnMouseLeave(wxWindow *wx_window, int x, int y, UINT flags);
 static void wxDoOnMouseEnter(wxWindow *wx_window, int x, int y, UINT flags);
 
@@ -866,6 +868,9 @@ static LONG WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, in
   wnd->last_lparam = lParam;
 
   switch (message) {
+  case WM_INPUTLANGCHANGE:
+    sakc_initialized = 0;
+    break;
   case WM_COPYDATA:
     wxCopyData(lParam);
     retval = 0;
@@ -2022,17 +2027,36 @@ static int dot_scan_code;
 
 static int generic_ascii_code[256];
 
-static const char *find_shift_alts = "!@#$%^&*()_+-=\\|[]{}:\";',.<>/?~`";
-static int shift_alt_key_codes[36], sakc_initialized;
+/* The characters in find_shift_alts are things that we'll try
+   to include in keyboard events as char-if-Shift-weren't-pressed,
+   char-if-AltGr-weren't-pressed, etc. */
+static const char *find_shift_alts = ("!@#$%^&*()_+-=\\|[]{}:\";',.<>/?~`"
+                                      "abcdefghijklmnopqrstuvwxyz"
+                                      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                      "0123456789");
+static int other_key_codes[98];
+
+static void init_sakc()
+{
+  int j;
+
+  if (!sakc_initialized) {
+    for (j = 0; find_shift_alts[j]; j++) {
+      other_key_codes[j] = VkKeyScan(find_shift_alts[j]);
+    }
+    sakc_initialized = 1;
+  }
+}
 
 #define THE_SCAN_CODE(lParam) ((((unsigned long)lParam) >> 16) & 0x1FF)
 
 wxKeyEvent *wxMakeCharEvent(BOOL just_check, WORD wParam, LPARAM lParam, Bool isASCII, Bool isRelease, HWND handle)
 {
-  int id, other_id = 0;
-  Bool tempControlDown, tempAltDown;
+  int id, other_id = 0, other_alt_id = 0, alt_id = 0;
+  Bool tempControlDown, tempAltDown, tempShiftDown;
 
   tempControlDown = (::GetKeyState(VK_CONTROL) >> 1);
+  tempShiftDown = (::GetKeyState(VK_SHIFT) >> 1);
   tempAltDown = ((HIWORD(lParam) & KF_ALTDOWN) == KF_ALTDOWN);
 
   if (isASCII) {
@@ -2044,6 +2068,39 @@ wxKeyEvent *wxMakeCharEvent(BOOL just_check, WORD wParam, LPARAM lParam, Bool is
     sc = THE_SCAN_CODE(lParam);
     if ((id >= 0) && (id <= 255))
       generic_ascii_code[id] = sc;
+
+    {
+      /* Look for elements of find_shift_alts that have a different
+         shift/AltGr state: */
+      short k;
+      k = MapVirtualKey(sc, 1);
+      if (k) {
+        int j;
+        init_sakc();
+        for (j = 0; find_shift_alts[j]; j++) {
+          if ((other_key_codes[j] & 0xFF) == k) {
+            /* Figure out whether it's different in the shift
+               for AltGr dimension, or both: */
+            if (!((other_key_codes[j] & 0x100) != !tempShiftDown)) {
+              /* shift is different */
+              if (((other_key_codes[j] & 0x600) == 0x600)
+                  == (tempControlDown && tempAltDown))
+                other_id = find_shift_alts[j];
+              else
+                other_alt_id = find_shift_alts[j];
+            } else {
+              /* Shift is the same */
+              if (((other_key_codes[j] & 0x600) == 0x600)
+                  == (tempControlDown && tempAltDown)) {
+                /* Shift and ctrl-alt states are the same.
+                   Hopefully, so is the character! */
+              } else
+                alt_id = find_shift_alts[j];
+            }
+          }
+        }
+      }
+    }
   } else {
     int override_mapping = (tempControlDown && !tempAltDown);
 
@@ -2051,31 +2108,49 @@ wxKeyEvent *wxMakeCharEvent(BOOL just_check, WORD wParam, LPARAM lParam, Bool is
       if (override_mapping || isRelease) {
 	int j;
 
-	id = MapVirtualKey(wParam, 2);
+        /* Non-AltGr Ctl- combination, or a release event: 
+           Map manually, because the default mapping is
+           unsatisfactory. */
+
+        /* Set id to the unshifted key: */
+	id = MapVirtualKeyW(wParam, 2);
 	id &= 0xFFFF;
 	if (!id)
 	  id = -1;
-	else if (id < 128)
-	  id = tolower(id);
+	else {
+          if (id < 128)
+            id = tolower(id);
+        }
 
 	/* Look for shifted alternate: */
-	if (!sakc_initialized) {
-	  for (j = 0; find_shift_alts[j]; j++) {
-	    shift_alt_key_codes[j] = VkKeyScan(find_shift_alts[j]) & 0xFF;
-	  }
-	}
+        init_sakc();
 	for (j = 0; find_shift_alts[j]; j++) {
-	  if (shift_alt_key_codes[j] == wParam) {
-	    if (find_shift_alts[j] != id) {
-	      other_id = find_shift_alts[j];
-	    }
+	  if ((other_key_codes[j] & 0xFF) == wParam) {
+            if (other_key_codes[j] & 0x100) {
+              if ((other_key_codes[j] & 0x600) == 0x600)
+                other_alt_id = find_shift_alts[j];
+              else
+                other_id = find_shift_alts[j];
+            } else if ((other_key_codes[j] & 0x600) == 0x600) {
+              alt_id = find_shift_alts[j];
+            }
 	  }
 	}
-	
+
+        if ((id > -1) && tempShiftDown) {
+          /* shift was pressed, so swap role of shifted and unshifted */
+          int t;
+          t = id;
+          id = other_id;
+          other_id = t;
+          t = other_alt_id;
+          other_alt_id = alt_id;
+          alt_id = t;
+        }
       } else
 	id = -1;
     } else {
-      /* Don't generat control-key down events: */
+      /* Don't generate control-key down events: */
       if (!isRelease && (wParam == VK_CONTROL))
 	return NULL;
 
@@ -2122,7 +2197,7 @@ wxKeyEvent *wxMakeCharEvent(BOOL just_check, WORD wParam, LPARAM lParam, Bool is
 
     event = new wxKeyEvent(wxEVENT_TYPE_CHAR);
 
-    if (::GetKeyState(VK_SHIFT) >> 1)
+    if (tempShiftDown)
       event->shiftDown = TRUE;
     if (tempControlDown)
       event->controlDown = TRUE;
@@ -2132,6 +2207,8 @@ wxKeyEvent *wxMakeCharEvent(BOOL just_check, WORD wParam, LPARAM lParam, Bool is
     event->keyCode = (isRelease ? WXK_RELEASE : id);
     event->keyUpCode = (isRelease ? id : WXK_PRESS);
     event->otherKeyCode = other_id;
+    event->altKeyCode = alt_id;
+    event->otherAltKeyCode = other_alt_id;
     event->SetTimestamp(last_msg_time);
 
     GetCursorPos(&pt);
