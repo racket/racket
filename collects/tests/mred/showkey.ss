@@ -37,7 +37,7 @@
 	   [on-char
 	    (lambda (ev)
 	      (set! iter (add1 iter))
-	      (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-code: ~a\n  mods:~a~a~a~a~n" 
+	      (printf "~a~a KEY: ~a\n  rel-code: ~a\n  other-codes: ~a\n  mods:~a~a~a~a~n" 
 		      (es-check)
 		      iter
 		      (let ([v (send ev get-key-code)])
@@ -48,11 +48,15 @@
 			(if (symbol? v)
 			    v
 			    (format "~s = ASCII ~a" (string v) (char->integer v))))
-		      (let ([v (send ev get-other-shift-key-code)])
-			(and v
-			     (if (symbol? v)
-				 v
-				 (format "~s = ASCII ~a" (string v) (char->integer v)))))
+		      (let ([vs (list (send ev get-other-shift-key-code)
+                                      (send ev get-other-altgr-key-code)
+                                      (send ev get-other-shift-altgr-key-code))])
+                        (map (lambda (v)
+                               (and v
+                                    (if (symbol? v)
+                                        v
+                                        (format "~s = ASCII ~a" (string v) (char->integer v)))))
+                             vs))
 		      (if (send ev get-meta-down) " META" "")
 		      (if (send ev get-control-down) " CTL" "")
 		      (if (send ev get-alt-down) " ALT" "")
