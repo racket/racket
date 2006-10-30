@@ -11,15 +11,17 @@
   (define (image? a)
     (or (is-a? a image-snip%)
         (is-a? a cache-image-snip%)))
+
+  (define size-dc (delay (make-object bitmap-dc% (make-object bitmap% 1 1))))
   
   (define (snip-size a)
     (cond
       [(is-a? a cache-image-snip%)
        (send a get-size)]
       [else
-       (let ([dc (make-object bitmap-dc% (make-object bitmap% 1 1))]
-             [wb (box 0)]
-             [hb (box 0)])
+       (let* ([dc (force size-dc)]
+              [wb (box 0)]
+              [hb (box 0)])
          (send a get-extent dc 0 0 wb hb #f #f #f #f)
          (values (unbox wb) 
                  (unbox hb)))]))

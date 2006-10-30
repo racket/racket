@@ -28,16 +28,16 @@
 		   (syntax args))
 	     stx)]
 	   [id
-	    (syntax-property
-	     (datum->syntax-object
-	      check-proc
-	      (list check-proc 
-		    (list 'quote (syntax id))
-		    tmp-id)
-	      stx)
+            (syntax-property
+             (datum->syntax-object
+              check-proc
+              (list check-proc 
+                    (list 'quote (syntax id))
+                    tmp-id)
+              stx)
              'stepper-skipto
              '(syntax-e cdr syntax-e cdr cdr car))]))))) ; this may make other stepper-skipto annotations obsolete.
-
+    
   (define (appropriate-use what)
     (case what
      [(constructor)
