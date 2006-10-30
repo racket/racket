@@ -416,8 +416,8 @@ _boundmap.ss_: mapping identifiers based on bound-identifier=? and module-identi
 
    The mapping uses `bound-identifier=?' to compare mapping keys, but
    also uses a hash table based on symbol equality to make the mapping
-   efficient in the common case (i.e., where the identifiers print
-   differently).
+   efficient in the common case (i.e., where non-equivalent identifiers
+   are derived from different symbolic names).
 
 > (bound-identifier-mapping? v) - #t if v was produced by
    `make-bound-identifier-mapping', #f otherwise.
@@ -455,11 +455,9 @@ _boundmap.ss_: mapping identifiers based on bound-identifier=? and module-identi
 
    The mapping uses `module-identifier=?' to compare mapping
    keys, but also uses a hash table based on symbol equality
-   to make the mapping efficient in the common case, i.e.,
-   where the identifiers print differently. Note that some
-   identifiers print differently but are module-identifier=?
-   to each other. This case is handled properly by this
-   library.
+   to make the mapping efficient in the common case (i.e., where
+   non-equivalent identifiers are derived from different symbolic
+   names at their definition sites).
 
 > (module-identifier-mapping? v) - #t if v was produced by
    `make-module-identifier-mapping', #f otherwise.
