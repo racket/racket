@@ -467,6 +467,10 @@
     get-position
     set-position)
   (define-class key-event% event% ([key-code #\nul] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [x 0] [y 0] [time-stamp 0])
+    set-other-shift-altgr-key-code
+    get-other-shift-altgr-key-code
+    set-other-altgr-key-code
+    get-other-altgr-key-code
     set-other-shift-key-code
     get-other-shift-key-code
     get-key-code
