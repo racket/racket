@@ -417,7 +417,7 @@ wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl,
 		   + (newkey->altOff ? 5 : 0)
 		   + (newkey->metaOn ? 1 : 0)
 		   + (newkey->metaOn ? 5 : 0)
-		   + (newkey->checkOther ? 0 : 20));
+		   + (newkey->checkOther ? 5 : 25));
   newkey->fullset = 0;
   newkey->fname = copystring(fname);
   newkey->next = NULL;
