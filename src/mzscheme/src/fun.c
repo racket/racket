@@ -4872,7 +4872,8 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain, Sc
             jumping_to_continuation = #t. */
     if (!v && ((loop_prompt
                 && SAME_OBJ((Scheme_Object *)p->cjs.jumping_to_continuation,
-                            loop_prompt))
+                            loop_prompt)
+                && p->cjs.is_escape)
                || (!loop_prompt
                    && p->cjs.jumping_to_continuation
                    && SCHEME_VECTORP((Scheme_Object *)p->cjs.jumping_to_continuation)))) {
