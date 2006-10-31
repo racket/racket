@@ -490,7 +490,7 @@ plt/collects/tests/mzscheme/image-test.ss
     (check 'star
            (lambda (x) (and (real? x) (< 3 x 10000)))
            points
-           "positive real number bigger than 3"
+           "positive real number bigger than or equal to 4"
            "first")
     (check-size 'star inner-radius "second")
     (check-size 'star outer-radius "second")
