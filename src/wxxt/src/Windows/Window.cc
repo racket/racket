@@ -1588,6 +1588,8 @@ static XComposeStatus compose_status;
 # define DEFAULT_XMB_STATUS 1
 #endif
 
+static XModifierKeymap *xmodkeymap;
+
 static int extract_string_key(char *str, int slen)
 {
   if (slen > 9)
@@ -1775,6 +1777,23 @@ void wxWindow::WindowEventHandler(Widget w,
         alt_kc = status_to_kc(alt_status, xev, alt_keysym, alt_str, alt_slen);
         other_alt_kc = status_to_kc(other_alt_status, xev, other_alt_keysym, other_alt_str, other_alt_slen);
 
+        /* Figure out key state *after* event: */
+        {
+          int i, j;
+          if (!xmodkeymap)
+            xmodkeymap = XGetModifierMapping(wxAPP_DISPLAY);
+          for (i = 0; i < 8; i++) {
+            for (j = 0; j < xmodkeymap->max_keypermod; j++) {
+              if (xev->xkey.keycode == xmodkeymap->modifiermap[(i * xmodkeymap->max_keypermod) + j]) {
+                if (xev->xany.type == KeyPress)
+                  win->current_state |= (1 << i);
+                else
+                  win->current_state -= (1 << i);
+              }
+            }
+          }
+        }
+
 	// set wxWindows event structure
 	wxevent->eventHandle	= (char*)xev;
 	wxevent->keyCode	= (xev->xany.type == KeyPress) ? kc : WXK_RELEASE;
@@ -1950,7 +1969,7 @@ void wxWindow::WindowEventHandler(Widget w,
 				   || (xev->xbutton.state & Button2Mask));
 	wxevent->rightDown	= ((wxevent->eventType == wxEVENT_TYPE_RIGHT_DOWN)
 				   || (xev->xbutton.state & Button3Mask));
-	wxevent->timeStamp       = xev->xbutton.time; /* MATTHEW */
+	wxevent->timeStamp       = xev->xbutton.time;
 
 	/* Adjust location of mouse-moved events when it's
 	   over sub-parts, and counter canvas scroll: */
