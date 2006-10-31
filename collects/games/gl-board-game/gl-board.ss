@@ -10,6 +10,7 @@
 
   (define-struct space (draw info))
   (define-struct piece (x y z draw info enabled?))
+  (define-struct heads-up (w h draw info))
   
   (define (get-info x)
     (cond
@@ -50,9 +51,11 @@
       
       (define spaces null)
       (define pieces null)
+      (define heads-ups null)
       
       (define/public (get-pieces) (map piece-info pieces))
       (define/public (get-spaces) (map space-info spaces))
+      (define/public (get-heads-ups) (map heads-up-info heads-ups))
 
       ;; add-space: (->) info ->
       ;; Adds a space to this board.  The draw thunk should draw the space 
@@ -86,7 +89,16 @@
            (when (equal? (piece-info p) piece)
              (set-piece-draw! p d)))
          pieces))
-      
+
+      ;; set-heads-up-draw: info (->) ->
+      ;; Sets the drawing method of all heads-up objects whose info is equal to piece to d.
+      (define/public (set-heads-up-draw piece d)
+        (for-each
+         (lambda (p)
+           (when (equal? (heads-up-info p) piece)
+             (set-heads-up-draw! p d)))
+         heads-ups))
+
       ;; enabled/disables dragging of a piece
       (define/public (enable-piece info on?)
 	(let ([p (ormap (lambda (p)
@@ -113,6 +125,16 @@
                         (not (equal? p-i (piece-info x))))
                       pieces)))
       
+      (define/public (add-heads-up w h draw info)
+        (set! heads-ups (append heads-ups
+                                (list (make-heads-up w h draw info)))))
+      
+      (define/public (remove-heads-up info)
+        (set! heads-ups (filter
+                         (lambda (x)
+                           (not (equal? info (heads-up-info x))))
+                         heads-ups)))
+      
       ;; How far the light is from the board's center
       (define light-distance (* 4.0 (max (- max-x min-x) (- max-y min-y))))
       ;; The board's center
@@ -123,7 +145,9 @@
       (define delta-eye-distance (/ eye-distance 30.0))
       (define fov 30)
       (init-field [theta 45])
-      (init-field [phi 0])
+      (init-field [phi 0]
+                  [delta-x 0]
+                  [delta-y 0])
       
       ;; Transformation used to draw shadows.
       (define shadow-projection 
@@ -184,6 +208,26 @@
                 (gl-pop-matrix))
               (loop (add1 i)
                     (cdr ps))))))
+
+      (inherit get-client-size)
+
+      (define/private (draw-heads-up sh)
+        (let-values ([(w) (apply + (map heads-up-w heads-ups))]
+                     [(h) (apply max 0 (map heads-up-h heads-ups))])
+          (let ([dy sh]
+                [x (/ (- w) 2)])
+            (let loop ([heads-ups heads-ups]
+                       [x x])
+              (unless (null? heads-ups) 
+                (let ([hu (car heads-ups)])
+                  (gl-push-matrix)
+                  (gl-translate (+ x (/ (heads-up-w hu) 2))
+                                dy
+                                0)
+                  ((heads-up-draw hu))
+                  (gl-pop-matrix)
+                  (loop (cdr heads-ups)
+                        (+ x (heads-up-w hu)))))))))
       
       (define/override (on-paint)
         (with-gl-context
@@ -220,6 +264,22 @@
 	   (gl-disable 'blend)
 	   (gl-disable 'stencil-test)
            (gl-pop-matrix)
+
+           (gl-clear 'depth-buffer-bit 'stencil-buffer-bit)
+           (gl-matrix-mode 'projection)
+           (gl-push-matrix)
+           (gl-load-identity)
+           (gl-perspective 45 (/ (get-width) (get-height)) 5 10)
+           (gl-matrix-mode 'modelview)
+           (gl-push-matrix)
+           (gl-load-identity)
+           (gl-translate 0 0 (- 10))
+           (draw-heads-up -3.5)
+           (gl-pop-matrix)
+           (gl-matrix-mode 'projection)
+           (gl-pop-matrix)
+           (gl-matrix-mode 'modelview)
+
            (gl-flush)
            (swap-gl-buffers))))
       
@@ -237,7 +297,7 @@
                         (/ eye-distance 2) (* 2 eye-distance))
         (gl-matrix-mode 'modelview)
         (gl-load-identity)
-        (gl-translate 0 0 (- eye-distance))
+        (gl-translate delta-x delta-y (- eye-distance))
         (gl-rotate (- theta) 1 0 0)
         (gl-rotate phi 0 0 1)
         (gl-translate (- center-x) (- center-y) 0))
@@ -337,10 +397,22 @@
       
       (define/override (on-char e)
         (case (send e get-key-code)
-          ((left) (set! phi (+ phi 3)))
-          ((right) (set! phi (- phi 3)))
-          ((up) (set! theta (- theta 3)))
-          ((down) (set! theta (+ theta 3)))
+          ((left) 
+           (if (send e get-meta-down)
+               (set! delta-x (- delta-x 0.1))
+               (set! phi (+ phi 3))))
+          ((right) 
+           (if (send e get-meta-down)
+               (set! delta-x (+ delta-x 0.1))
+               (set! phi (- phi 3))))
+          ((up) 
+           (if (send e get-meta-down)
+               (set! delta-y (+ delta-y 0.1))
+               (set! theta (- theta 3))))
+          ((down)
+           (if (send e get-meta-down)
+               (set! delta-y (- delta-y 0.1))
+               (set! theta (+ theta 3))))
           ((#\+) (unless (< fov 4)
 		   (set! fov (- fov 2))))
           ((#\=) (set! eye-distance (- eye-distance delta-eye-distance)))
