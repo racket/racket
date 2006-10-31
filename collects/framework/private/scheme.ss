@@ -404,13 +404,13 @@
           (inherit get-styles-fixed)
           (inherit has-focus? find-snip split-snip)
           
-          (public get-limit tabify-on-return? tabify
+          (public tabify-on-return? tabify
                   tabify-all insert-return calc-last-para 
                   box-comment-out-selection comment-out-selection uncomment-selection
-                  get-forward-sexp remove-sexp forward-sexp flash-forward-sexp get-backward-sexp
+                  flash-forward-sexp 
                   flash-backward-sexp backward-sexp find-up-sexp up-sexp find-down-sexp down-sexp
                   remove-parens-forward)
-          (define (get-limit pos) 0)
+          (define/public (get-limit pos) 0)
           
           (define/public (balance-parens key-event)
             (insert-close-paren (get-start-position) 
@@ -484,7 +484,7 @@
                              pos-start))))]
                      [get-proc
                       (λ ()
-			(let ([id-end (forward-match contains (last-position))])
+			(let ([id-end (get-forward-sexp contains)])
 			  (if (and id-end (> id-end contains))
 			      (let* ([text (get-text contains id-end)])
                                 (or (get-keyword-type text)
@@ -492,8 +492,7 @@
                      [procedure-indent
                       (λ ()
                         (case (get-proc)
-                          [(define) 1]
-                          [(begin) 1]
+                          [(begin define) 1]
                           [(lambda) 3]
                           [else 0]))]
                      [special-check
@@ -542,7 +541,7 @@
 		     ;; So far, the S-exp containing "pos" was all on
 		     ;;  one line (possibly not counting the opening paren),
 		     ;;  so indent to follow the first S-exp's end
-                     (let ([name-length (let ([id-end (forward-match contains (last-position))])
+                     (let ([name-length (let ([id-end (get-forward-sexp contains)])
 					  (if id-end
 					      (- id-end contains)
 					      0))])
@@ -744,44 +743,49 @@
                 (delete snip-pos (+ snip-pos 1)))
               (set-position pos pos)))
           
-          [define get-forward-sexp
-            (λ (start-pos)
-              (forward-match start-pos (last-position)))]
-          [define remove-sexp
-            (λ (start-pos)
-              (let ([end-pos (get-forward-sexp start-pos)])
-                (if end-pos 
-                    (kill 0 start-pos end-pos)
-                    (bell)))
-              #t)]
-          [define forward-sexp
-            (λ (start-pos)
-              (let ([end-pos (get-forward-sexp start-pos)])
-                (if end-pos 
-                    (set-position end-pos)
-                    (bell))
-                #t))]
+          (define/public (get-forward-sexp start-pos) 
+            (let ([one-forward (forward-match start-pos (last-position))])
+              (cond
+                [(and one-forward (not (= 0 one-forward)))
+                 (let ([bw (backward-match one-forward 0)])
+                   (cond
+                     [(and bw 
+                           (= (- one-forward 1) bw)
+                           (member (get-character bw) '(#\, #\` #\')))
+                      (let ([two-forward (forward-match one-forward (last-position))])
+                        (or two-forward
+                            one-forward))]
+                     [else
+                      one-forward]))]
+                [else one-forward])))
+          (define/public (remove-sexp start-pos)
+            (let ([end-pos (get-forward-sexp start-pos)])
+              (if end-pos 
+                  (kill 0 start-pos end-pos)
+                  (bell)))
+            #t)
+          (define/public (forward-sexp start-pos)
+            (let ([end-pos (get-forward-sexp start-pos)])
+              (if end-pos 
+                  (set-position end-pos)
+                  (bell))
+              #t))
           [define flash-forward-sexp
             (λ (start-pos)
               (let ([end-pos (get-forward-sexp start-pos)])
                 (if end-pos 
                     (flash-on end-pos (add1 end-pos))
                     (bell)) 
-                #t))]	    
-          [define get-backward-sexp
-            (λ (start-pos)
-              (let* ([limit (get-limit start-pos)]
-                     [end-pos
-                      (backward-match start-pos limit)]
-                     [min-pos
-                      (backward-containing-sexp start-pos limit)]
-                     [ans
-                      (if (and end-pos 
-                               (or (not min-pos)
-                                   (>= end-pos min-pos)))
-                          end-pos
-                          #f)])
-                ans))]
+                #t))]
+          (define/public (get-backward-sexp start-pos)
+            (let* ([limit (get-limit start-pos)]
+                   [end-pos (backward-match start-pos limit)]
+                   [min-pos (backward-containing-sexp start-pos limit)])
+              (if (and end-pos 
+                       (or (not min-pos)
+                           (end-pos . >= . min-pos)))
+                  end-pos
+                  #f)))
           [define flash-backward-sexp
             (λ (start-pos)
               (let ([end-pos (get-backward-sexp start-pos)])
@@ -832,17 +836,16 @@
                 #t))]
           [define find-down-sexp
             (λ (start-pos)
-              (let ([last (last-position)])
-                (let loop ([pos start-pos])
-                  (let ([next-pos (forward-match pos last)])
-                    (if (and next-pos (> next-pos pos))
-                        (let ([back-pos
-                               (backward-containing-sexp (sub1 next-pos) pos)])
-                          (if (and back-pos
-                                   (> back-pos pos))
-                              back-pos
-                              (loop next-pos)))
-                        #f)))))]
+              (let loop ([pos start-pos])
+                (let ([next-pos (get-forward-sexp pos)])
+                  (if (and next-pos (> next-pos pos))
+                      (let ([back-pos
+                             (backward-containing-sexp (sub1 next-pos) pos)])
+                        (if (and back-pos
+                                 (> back-pos pos))
+                            back-pos
+                            (loop next-pos)))
+                      #f))))]
           [define down-sexp
             (λ (start-pos)
               (let ([pos (find-down-sexp start-pos)])
@@ -857,7 +860,7 @@
                      [paren? (or (char=? first-char #\( )
                                  (char=? first-char #\[ ))]
                      [closer (if paren? 
-                                 (forward-match pos (last-position)))])
+                                 (get-forward-sexp pos))])
                 (if (and paren? closer)
                     (begin (begin-edit-sequence)
                            (delete pos (add1 pos))
@@ -1254,7 +1257,7 @@
                              (loop before-whitespace-pos
                                    (+ n 1)))]
                           [else
-                           (let* ([afterwards (send text forward-match pos (send text last-position))]
+                           (let* ([afterwards (send text get-forward-sexp pos)]
                                   [keyword
                                    (and afterwards
                                         (send text get-text pos afterwards))])
