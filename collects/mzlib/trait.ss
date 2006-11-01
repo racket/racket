@@ -13,7 +13,10 @@
 
   (provide (rename :trait trait)
            trait->mixin
-           trait-sum trait-exclude trait-alias trait-rename)
+           trait-sum 
+           trait-exclude trait-exclude-field 
+           trait-alias 
+           trait-rename trait-rename-field)
   
   ;; A trait is a list of supplied methods.
   ;; Each supplied method is:
@@ -26,18 +29,19 @@
   ;;   * list of required methods (external names) for inherit
   ;;   * list of required methods (external names) for super
   ;;   * list of required methods (external names) for inner
+  ;;   * list of required methods (external names) for inherit-fields
   ;;   * a mixin patameterized by all external names
   ;;   * an indrection mixin for supers
-  ;;   * an indrection mixin for inners
   
-  (define-struct trait (methods))
+  (define-struct trait (methods fields))
   
   (define-struct method (name inherit? super? inner?
                               override? augment?
-                              need-inherit need-super need-inner
+                              need-inherit need-super need-inner need-field
                               make-mixin
-                              make-super-indirection-mixin
-                              make-inner-indirection-mixin))
+                              make-super-indirection-mixin))
+
+  (define-struct feeld (name make-mixin))
   
   (define-syntax (:trait stx)
     ;; The main compiler (helpers are below):
@@ -49,7 +53,8 @@
            ;; Pull out declared names:
            (let-values ([(publics pubments
                                   overrides augments augrides overments
-                                  inherits inherits/super inherits/inner)
+                                  inherits inherits/super inherits/inner
+                                  inherit-fields)
                          (extract expanded-clauses
                                   (map syntax->list
                                        (syntax->list
@@ -59,15 +64,23 @@
                                            (augment augment-final) 
                                            (augride)
                                            (overment)
-                                           (inherit) (inherit/super) (inherit/inner)))))])
+                                           (inherit) (inherit/super) (inherit/inner)
+                                           (inherit-fields)))))]
+                        [(fields)
+                         (extract-fields expanded-clauses)])
              ;; Every declaration implies direct use for other declarations:
-             (let ([to-inherit
-                    (append publics pubments
-                            overrides augments augrides overments
-                            inherits inherits/super inherits/inner)])
+             (let* ([to-inherit
+                     (append publics pubments
+                             overrides augments augrides overments
+                             inherits inherits/super inherits/inner)]
+                    [to-inherit-fields 
+                     (append fields inherit-fields)]
+                    [decls
+                     (append to-inherit-fields to-inherit)])
                ;; Check distinct delcarations:
                (check-distinct-external-names to-inherit)
-               (check-distinct-internal-names to-inherit)
+               (check-distinct-external-names to-inherit-fields)
+               (check-distinct-internal-names decls)
                
                ;; Some declarations imply use via `super' or `inner':
                (let ([to-super (append overrides inherits/super)]
@@ -75,28 +88,31 @@
                  
                  (let ([to-inherit-only
                         (filter (lambda (n)
-                                  (not (or (ormap (lambda (n2) (bound-identifier=? n n2))
+                                  (not (or (ormap (lambda (n2) (internal-identifier=? n n2))
                                                   to-super)
-                                           (ormap (lambda (n2) (bound-identifier=? n n2))
+                                           (ormap (lambda (n2) (internal-identifier=? n n2))
                                                   to-inner))))
                                 to-inherit)])
                    
                    ;; Current method-making function with respect to the
                    ;;  common part:
                    (let* ([bindings (make-bindings expanded-clauses)]
-                          [make-method (make-method-with-requirements
-                                        bindings
-                                        to-inherit-only to-super to-inner)])
-
+                          [compose-method (compose-method-with-requirements
+                                           bindings
+                                           to-inherit-only to-super to-inner
+                                           to-inherit-fields)])
+                     
                      ;; Build a mixin and `method' record for each declaration:
                      (with-syntax ([(method ...)
                                     (append
-                                     (map (make-method #'override #t #f #f  #f #f  #f) publics)
-                                     (map (make-method #'overment #t #t #f  #f #f  #f) pubments)
-                                     (map (make-method #'override #t #t #f  #t #f  #f) overrides)
-                                     (map (make-method #'overment #t #f #f  #t #f  #t) overments)
-                                     (map (make-method #'augment  #t #f #t  #f #t  #f) augments)                                   
-                                     (map (make-method #'augride  #t #f #f  #f #t  #f) augrides))])
+                                     (map (compose-method #'override #t #f #f  #f #f  #f) publics)
+                                     (map (compose-method #'overment #t #t #f  #f #f  #f) pubments)
+                                     (map (compose-method #'override #t #t #f  #t #f  #f) overrides)
+                                     (map (compose-method #'overment #t #f #f  #t #f  #t) overments)
+                                     (map (compose-method #'augment  #t #f #t  #f #t  #f) augments)
+                                     (map (compose-method #'augride  #t #f #f  #f #t  #f) augrides))]
+                                   [(field ...)
+                                    (map (compose-field bindings) fields)])
 
                        (bound-identifier-mapping-for-each 
                         bindings
@@ -109,7 +125,8 @@
                              key))))
 
                        ;; Combine the result into a trait:
-                       #'(make-trait (list method ...)))))))))]))
+                       #'(make-trait (list method ...)
+                                     (list field ...)))))))))]))
 
     (define (expand-body clauses)
       ;; For now, we expand naively: no support for internal define-syntax,
@@ -121,7 +138,8 @@
                    public public-final pubment
                    override override-final augment augment-final augride overment
                    inherit inherit/super inherit/inner
-                   this super inner))
+                   this super inner
+                   field inherit-field))
               (kernel-form-identifier-list #'here))]
             [expand-context (generate-class-expand-context)])
         (let loop ([l clauses])
@@ -137,12 +155,27 @@
                               (cdr l)))]
                       [(define-values (id) rhs)
                        (cons e (loop (cdr l)))]
+                      [(field (id expr) ...)
+                       (if (andmap (lambda (id)
+                                     (or (identifier? id)
+                                         (syntax-case id ()
+                                           [(a b)
+                                            (and (identifier? #'a)
+                                                 (identifier? #'b))]
+                                           [_else #f])))
+                                   (syntax->list #'(id ...)))
+                           (cons e (loop (cdr l)))
+                           (raise-syntax-error
+                            #f
+                            "bad syntax"
+                            e))]
                       [(id . rest)
                        (ormap (lambda (x) (module-identifier=? x #'id))
                               (syntax->list
                                #'(public public-final pubment
                                          override override-final augment augment-final augride overment
-                                         inherit inherit/super inherit/inner)))
+                                         inherit inherit/super inherit/inner
+                                         inherit-field)))
                        (let ([l2 (syntax->list #'rest)])
                          (if (and l2
                                   (andmap (lambda (i)
@@ -158,6 +191,16 @@
                               #f
                               "bad syntax (inside trait)"
                               e)))]
+                      [(define-values . _)
+                       (raise-syntax-error
+                        #f
+                        "bad syntax"
+                        e)]
+                      [(field . _)
+                       (raise-syntax-error
+                        #f
+                        "bad syntax"
+                        e)]
                       [else
                        (raise-syntax-error
                         #f
@@ -171,7 +214,8 @@
           [(null? l) (apply values results)]
           [else
            (let ([kw (stx-car (car l))])
-             (if (module-identifier=? kw #'define-values)
+             (if (or (module-identifier=? kw #'define-values)
+                     (module-identifier=? kw #'field))
                  (loop (cdr l) results)
                  (loop (cdr l)
                        (let iloop ([mapping keyword-mapping]
@@ -184,16 +228,44 @@
                              (cons (car results)
                                    (iloop (cdr mapping)
                                           (cdr results))))))))])))
+
+    (define (extract-fields expanded-clauses)
+      (apply
+       append
+       (map (lambda (clause)
+              (syntax-case clause (field)
+                [(field [id expr] ...)
+                 (syntax->list #'(id ...))]
+                [_else null]))
+            expanded-clauses)))
     
     (define (make-bindings expanded-clauses)
       (let ([boundmap (make-bound-identifier-mapping)])
         (for-each (lambda (clause)
-                    (syntax-case clause (define-values)
+                    (syntax-case clause (define-values field)
                       [(define-values (id) rhs)
                        (bound-identifier-mapping-put! boundmap #'id #'rhs)]
+                      [(field [id expr] ...)
+                       (for-each (lambda (id expr)
+                                   (bound-identifier-mapping-put! boundmap (internal-name id) expr))
+                                 (syntax->list #'(id ...))
+                                 (syntax->list #'(expr ...)))]
                       [_else (void)]))
                   expanded-clauses)
         boundmap))
+
+    (define (internal-identifier=? a b)
+      (bound-identifier=? (internal-name a) (internal-name b)))
+
+    (define (internal-name decl)
+      (if (identifier? decl)
+          decl
+          (stx-car decl)))
+
+    (define (external-name decl)
+      (if (identifier? decl)
+          decl
+          (stx-car (stx-cdr decl))))
     
     (define (check-distinct-names method-decls
                                   what which
@@ -202,10 +274,7 @@
                                   identifier-mapping-set!)
       (let ([idmap (make-identifier-mapping)])
         (for-each (lambda (decl)
-                    (let ([ext-id 
-                           (if (identifier? decl)
-                               decl
-                               (which decl))])
+                    (let ([ext-id (which decl)])
                       (when (identifier-mapping-get 
                              idmap ext-id
                              (lambda ()
@@ -222,33 +291,40 @@
     
     (define (check-distinct-external-names method-decls)
       (check-distinct-names method-decls
-                            "external" (lambda (x) (stx-car (stx-cdr x)))
+                            "external" external-name
                             make-module-identifier-mapping
                             module-identifier-mapping-get
                             module-identifier-mapping-put!))
     
     (define (check-distinct-internal-names method-decls)
       (check-distinct-names method-decls
-                            "internal" stx-car
+                            "internal" internal-name
                             make-bound-identifier-mapping
                             bound-identifier-mapping-get
                             bound-identifier-mapping-put!))
     
-    (define (((make-method-with-requirements binding-map
-                                             to-inherit to-super to-inner)
+    (define (((compose-method-with-requirements binding-map
+                                                to-inherit to-super to-inner
+                                                to-inherit-field)
               keyword inherit? super? inner?  override? augment? always-deep?)
              name)
-      (let ([impl (bound-identifier-mapping-get binding-map name)]
+      (let ([impl (bound-identifier-mapping-get binding-map (internal-name name))]
             [to-inherit (if always-deep?
-                            (filter (lambda (n) (not (bound-identifier=? n name)))
+                            (filter (lambda (n) (not (internal-identifier=? n name)))
                                     to-inherit)
                             to-inherit)])
         (with-syntax ([(to-inherit ...) to-inherit]
                       [(to-super ...) to-super]
                       [(to-inner ...) to-inner]
+                      [(to-inherit-field ...) to-inherit-field]
+                      [(to-inherit-ext ...) (map external-name to-inherit)]
+                      [(to-super-ext ...) (map external-name to-super)]
+                      [(to-inner-ext ...) (map external-name to-inner)]
+                      [(to-inherit-field-ext ...) (map external-name to-inherit-field)]
                       [(to-inherit-arg ...) (generate-temporaries to-inherit)]
                       [(to-super-arg ...) (generate-temporaries to-super)]
                       [(to-inner-arg ...) (generate-temporaries to-inner)]
+                      [(to-inherit-field-arg ...) (generate-temporaries to-inherit-field)]
                       [impl impl]
                       [declare keyword]
                       [this-method (if always-deep?
@@ -261,28 +337,33 @@
                                                #'values
                                                #'omit)])
           ;; for tracking unused bindings at the end:
-          (bound-identifier-mapping-put! binding-map name #f)
+          (bound-identifier-mapping-put! binding-map (internal-name name) #f)
           ;; generate method:
           #`(make-method
-             (member-name-key #,name)
+             (member-name-key #,(external-name name))
              #,inherit? #,super? #,inner?  #,override? #,augment?
-             (list (member-name-key to-inherit) ...)
-             (list (member-name-key to-super) ...)
-             (list (member-name-key to-inner) ...)
+             (list (member-name-key to-inherit-ext) ...)
+             (list (member-name-key to-super-ext) ...)
+             (list (member-name-key to-inner-ext) ...)
+             (list (member-name-key to-inherit-field-ext) ...)
              (lambda (this-method-arg to-inherit-arg ...
                                       to-super-arg ...
-                                      to-inner-arg ...)
+                                      to-inner-arg ...
+                                      to-inherit-field-arg ...)
                (define-member-name this-method this-method-arg)
-               (define-member-name to-inherit to-inherit-arg) ...
-               (define-member-name to-super to-super-arg) ...
-               (define-member-name to-inner to-inner-arg) ...
+               (define-member-name to-inherit-ext to-inherit-arg) ...
+               (define-member-name to-super-ext to-super-arg) ...
+               (define-member-name to-inner-ext to-inner-arg) ...
+               (define-member-name to-inherit-field-ext to-inherit-field-arg) ...
                (lambda (%)
                  (class %
                    (inherit to-inherit ...)
                    (inherit/super to-super ...)
                    (inherit/inner to-inner ...)
+                   (inherit-field to-inherit-field ...)
                    (declare this-method)
-                   (define this-method impl)
+                   (define this-method (let ([#,(internal-name name) impl])
+                                         #,(internal-name name)))
                    (super-new))))
              ;; For `super' call indirections:
              (wrap-super-indirect
@@ -294,19 +375,22 @@
                     (override name)
                     (inherit/super super-name)
                     (define name (similar-lambda impl (super super-name)))
-                    (super-new)))))
-             ;; For `inner' call indirections:
-             (wrap-inner-indirect
-              (lambda (name-arg inner-name-arg)
-                (define-member-name name name-arg)
-                (define-member-name inner-name inner-name-arg)
-                (lambda (%)
-                  (class %
-                    (augment name)
-                    (inherit/inner inner-name)
-                    (define name (similar-lambda impl (inner 'inner-indirect-call inner-name)))
                     (super-new)))))))))
-    
+
+    (define ((compose-field binding-map) name)
+      (let ([impl (bound-identifier-mapping-get binding-map (internal-name name))])
+        ;; for tracking unused bindings at the end:
+        (bound-identifier-mapping-put! binding-map (internal-name name) #f)
+        ;; generate method:
+        #`(make-feeld
+           (member-name-key #,(external-name name))
+           (lambda (name-arg)
+             (define-member-name #,(external-name name) name-arg)
+             (lambda (%)
+               (class %
+                 (field [#,name #,impl])
+                 (super-new)))))))
+
     (main stx))
   
   (define-syntax (similar-lambda stx)
@@ -332,28 +416,34 @@
       ;;  We need to check in trait-sum, trait-alias, etc., because we'll
       ;;  have to use dummy introductions when stacking up the mixins, and
       ;;  there might be no error otherwise.
-      ;; Meanwhile, for inserting needed inner indirections below,
-      ;;  we need to know which augmenting methods will be added.
-      (let ([augments-to-add (map method-name
-                                  (filter method-augment? methods))])
         
-        ;; Order the mixins. If M1 super-calls M2 and we have an override
-        ;;  for M2, then try to mix M2 later. Similarly, if M1 inner-calls M2
-        ;;  and we have an augment for M2, try to mix M2 earlier.
-        ;; We'll have to break cycles by inserting indirections.
-        ;; For simplicty, we sort right now by just all augments first
-        ;;  and all overrides last. In the common case where methods
-        ;;  only self-call supers and inners, that will work fine.
+      ;; Order the mixins. If M1 super-calls M2 and we have an override
+      ;;  for M2, then try to mix M2 later. Similarly, if M1 inner-calls M2
+      ;;  and we have an augment for M2, try to mix M2 earlier.
+      ;; We'll have to break cycles by inserting indirections, but we can't
+      ;;  do that for `inner'; consequently, an `inner' from M1 to M2
+      ;;  might land at an implementation in the same trait!
+      ;; For simplicty, we sort right now by just all augments first
+      ;;  and all overrides last. In the common case where methods
+      ;;  only self-call supers and inners, that will work fine.
         (let loop ([methods (sort methods
                                   (lambda (a b)
                                     (or (method-augment? a)
                                         (method-override? b))))]
-                   ;; Start by mixing a dummy method for each public/pubment
+                   ;; Start by adding mixins for fields. Then continue
+                   ;; by mixing a dummy method for each public/pubment
                    ;; method. We'll override it, but having it here at the start
                    ;; means that the methods can refer to each other via
                    ;; `inherit'.
                    [mixin (let loop ([methods methods]
-                                     [mixin (lambda (%) %)])
+                                     [mixin (let loop ([mixin (lambda (%) %)]
+                                                       [fields (trait-fields t)])
+                                              (cond
+                                               [(null? fields) mixin]
+                                               [else (let ([mix ((feeld-make-mixin (car fields))
+                                                                 (feeld-name (car fields)))])
+                                                       (loop (lambda (%) (mix (mixin %)))
+                                                             (cdr fields)))]))])
                             (cond
                               [(null? methods) mixin]
                               [else (let ([method (car methods)])
@@ -364,9 +454,7 @@
                                                 (introduce-into-mixin
                                                  (method-name method)
                                                  mixin))))]))]
-                   [super-indirections null]
-                   [inner-indirections null]
-                   [done-augments null])
+                   [super-indirections null])
           (cond
             [(null? methods)
              ;; No more methods to add, so just insert needed
@@ -381,30 +469,10 @@
                                (let ([mix ((method-make-super-indirection-mixin method)
                                            (method-name method)
                                            (cadar indirections))])
-                                 (define-member-name name (cadar indirections))
                                  (lambda (%) (mix (mixin %))))))]))]
             [else
              ;; Add one method:
              (let*-values ([(method) (car methods)]
-                           ;; About to complete an augment?
-                           [(done-augments)
-                            (if (method-augment? method)
-                                (cons (method-name method)
-                                      done-augments)
-                                done-augments)]
-                           ;; Remove inner indirection, in case we're adding
-                           ;;  the augment, now:
-                           [(inner-indirections insert-indirection)
-                            (remove-inner-indirection (method-name method)
-                                                      inner-indirections)]
-                           ;; Add any newly needed indirections:
-                           [(new-inner-indirections)
-                            (add-inner-indirection (method-need-inner method)
-                                                   augments-to-add
-                                                   done-augments
-                                                   inner-indirections)]
-                           [(inner-indirections) (append new-inner-indirections
-                                                         inner-indirections)]
                            ;; Rename method, in case we need a super
                            ;; indirection:
                            [(name)
@@ -416,42 +484,15 @@
                                             (cdr methods)))
                                 (generate-member-key)
                                 (method-name method))]
-                           ;; Prepare the mixin with any needed new indirections
-                           [(mixin)
-                            (let loop ([l new-inner-indirections]
-                                       [mixin mixin])
-                              (cond
-                                [(null? l) 
-                                 (if (eq? (method-name method) name)
-                                     mixin
-                                     (introduce-into-mixin name mixin))]
-                                [else (loop
-                                       (cdr l)
-                                       (let ()
-                                         (define-member-name m (cadar l))
-                                         (lambda (%)
-                                           (class (mixin %)
-                                             (pubment m)
-                                             (define (m) 'inner-indirection)
-                                             (super-new)))))]))]
                            ;; Build the base mixin:
-                           [(core-mixin) (apply
+                           [(next-mixin) (apply
                                           (method-make-mixin method)
                                           name
                                           (append
                                            (method-need-inherit method)
                                            (method-need-super method)
-                                           (apply-renames (method-need-inner method)
-                                                          inner-indirections)))]
-                           ;; Complete the mixin with an inner indirection,
-                           ;;  if needed:
-                           [(next-mixin) (if insert-indirection
-                                             (let ([mix ((method-make-inner-indirection-mixin method)
-                                                         name
-                                                         insert-indirection)])
-                                               (lambda (%)
-                                                 (mix (core-mixin %))))
-                                             core-mixin)])
+                                           (method-need-inner method)
+                                           (method-need-field method)))])
                (loop (cdr methods)
                      (lambda (%) (next-mixin (mixin %)))
                      (if (eq? name (method-name method))
@@ -459,9 +500,7 @@
                          (cons (list (method-name method)
                                      name
                                      method)
-                               super-indirections))
-                     inner-indirections
-                     done-augments))])))))
+                               super-indirections))))]))))
   
   (define (introduce-into-mixin name mixin)
     (define-member-name m name)
@@ -469,47 +508,6 @@
       (class (mixin %)
         (define/public (m) 'inroduce-stub)
         (super-new))))
-
-  
-  (define (remove-inner-indirection name inner-indirections)
-    (cond
-      [(null? inner-indirections)
-       (values inner-indirections #f)]
-      [(same-name? name (caar inner-indirections))
-       (values (cdr inner-indirections) (cadar inner-indirections))]
-      [else
-       (let-values ([(new-inner-indirections indirect)
-                     (remove-inner-indirection name inner-indirections)])
-         (if indirect
-             (values (cons (car inner-indirections)
-                           new-inner-indirections)
-                     indirect)
-             (values inner-indirections #f)))]))
-  
-  (define (add-inner-indirection need-inners augments-to-add done-augments inner-indirections)
-    (apply append
-           (map (lambda (m)
-                  (if (and (ormap (lambda (n) 
-                                    (same-name? m n))
-                                  augments-to-add)
-                           (not (ormap (lambda (n)
-                                         (same-name? m n))
-                                       done-augments))
-                           (not (ormap (lambda (i)
-                                         (same-name? m (car i)))
-                                       inner-indirections)))
-                      (list (list m (generate-member-key)))
-                      null))
-                need-inners)))
-  
-  (define (apply-renames names indirections)
-    (map (lambda (n)
-           (or (ormap (lambda (i)
-                        (and (same-name? (car i) n)
-                             (cadr i)))
-                      indirections)
-               n))
-         names))
   
   (define same-name? member-name-key=?)
 
@@ -517,6 +515,7 @@
   ;;  sum, exclude, alias
   
   (define (validate-trait who t)
+    ;; Methods:
     (let ([ht (make-hash-table)])
       ;; Build up table and check for duplicates:
       (for-each (lambda (m)
@@ -527,7 +526,7 @@
                                    l)
                         (raise-mismatch-error
                          who
-                         "result would include two declarations of a method: " 
+                         "result would include multiple declarations of a method: " 
                          name))
                       (hash-table-put! ht key (cons (cons name m) l)))))
                 (trait-methods t))
@@ -565,6 +564,22 @@
                     (for-each (check #f #t)
                               (method-need-inner m)))
                   (trait-methods t))))
+    ;; Fields:
+    (let ([ht (make-hash-table)])
+      ;; Build up table and check for duplicates:
+      (for-each (lambda (f)
+                  (let* ([name (feeld-name f)]
+                         [key (member-name-key-hash-code name)])
+                    (let ([l (hash-table-get ht key null)])
+                      (when (ormap (lambda (n) (member-name-key=? (car n) name))
+                                   l)
+                        (raise-mismatch-error
+                         who
+                         "result would include multiple declarations of a field: " 
+                         name))
+                      (hash-table-put! ht key (cons (cons name f) l)))))
+                (trait-fields t)))
+    ;; Return validated trait:
     t)
 
   (define (trait-sum . ts)
@@ -576,7 +591,10 @@
      'trait-sum
      (make-trait (apply
                   append
-                  (map trait-methods ts)))))
+                  (map trait-methods ts))
+                 (apply
+                  append
+                  (map trait-fields ts)))))
     
   (define (:trait-exclude t name)
     (unless (trait? t)
@@ -590,19 +608,39 @@
         (raise-mismatch-error
          'trait-exclude
          "method not in trait: " name))
-      (make-trait new-methods)))
+      (make-trait new-methods (trait-fields t))))
 
-  (define-syntax (trait-exclude stx)
-    (syntax-case stx ()
-      [(_ t name)
-       (begin
-         (unless (identifier? #'name)
-           (raise-syntax-error
-            #f
-            "expected an identifier for a method name"
-            stx
-            #'name))
-         #'(:trait-exclude t (member-name-key name)))]))
+  (define (:trait-exclude-field t name)
+    (unless (trait? t)
+      (raise-type-error 'trait-exclude-field "trait" t))
+    (let ([new-fields
+           (filter (lambda (m)
+                     (not (member-name-key=? (feeld-name m) name)))
+                   (trait-fields t))])
+      (when (= (length new-fields)
+               (length (trait-fields t)))
+        (raise-mismatch-error
+         'trait-exclude
+         "field not in trait: " name))
+      (make-trait (trait-methods t) new-fields)))
+
+  (define-syntax define-trait-exclude
+    (syntax-rules ()
+      [(_ trait-exclude :trait-exclude)
+       (define-syntax (trait-exclude stx)
+         (syntax-case stx ()
+           [(_ t name)
+            (begin
+              (unless (identifier? #'name)
+                (raise-syntax-error
+                 #f
+                 "expected an identifier for a method name"
+                 stx
+                 #'name))
+              #'(:trait-exclude t (member-name-key name)))]))]))
+  
+  (define-trait-exclude trait-exclude :trait-exclude)
+  (define-trait-exclude trait-exclude-field :trait-exclude-field)
 
   (define (:trait-alias t name new-name)
     (unless (trait? t)
@@ -620,11 +658,12 @@
        (make-trait
         (cons (copy-struct method m
                            [method-name new-name])
-              (trait-methods t))))))
+              (trait-methods t))
+        (trait-fields t)))))
 
   (define (:trait-rename t name new-name)
     (unless (trait? t)
-      (raise-type-error 'trait-alias "trait" t))
+      (raise-type-error 'trait-rename "trait" t))
     (let ([rename (lambda (n)
                     (if (same-name? n name)
                         new-name
@@ -638,7 +677,27 @@
                             [method-need-inherit (map rename (method-need-inherit m))]
                             [method-need-super (map rename (method-need-super m))]
                             [method-need-inner (map rename (method-need-inner m))]))
-             (trait-methods t))))))
+             (trait-methods t))
+        (trait-fields t)))))
+
+  (define (:trait-rename-field t name new-name)
+    (unless (trait? t)
+      (raise-type-error 'trait-rename-field "trait" t))
+    (let ([rename (lambda (n)
+                    (if (same-name? n name)
+                        new-name
+                        n))])
+      (validate-trait
+       'trait-rename
+       (make-trait
+        (map (lambda (m)
+               (copy-struct method m
+                            [method-need-field (map rename (method-need-field m))]))
+             (trait-methods t))
+        (map (lambda (f)
+               (copy-struct feeld f
+                            [feeld-name (rename (feeld-name f))]))
+             (trait-fields t))))))
 
   (define-syntax define-trait-alias
     (syntax-rules ()
@@ -663,6 +722,7 @@
 
   (define-trait-alias trait-alias :trait-alias)
   (define-trait-alias trait-rename :trait-rename)
+  (define-trait-alias trait-rename-field :trait-rename-field)
 
   ;; ----------------------------------------;
   )
