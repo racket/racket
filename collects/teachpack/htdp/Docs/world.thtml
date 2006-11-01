@@ -54,10 +54,12 @@ students to simulate a small world of animated drawings and games:
    its button(s).
 </pre>
 
-<li><code>{(idx on-redraw)} : (World -> Image) -> true</code><br>
-   <code>(on-tick-event world->image)</code> means that DrScheme 
-   calls <code>world->image</code> whenever the canvas must be redrawn; the
-   result is displayed in the teachpack's canvas 
+<li><code>{(idx on-redraw)} : (World -> Scene) -> true</code><br>
+   <code>(on-redraw world->scene)</code> means that DrScheme calls
+   <code>world->image</code> whenever the canvas must be redrawn (usually
+   after a tick event/a keyboard event/a mouse event has occurred); 
+   the function consumes the current world and produces a scene, which is
+   then displayed in the teachpack's canvas 
 
 <li><code>{(idx end-of-time)} : String u Symbol -> World</code><br> When DrScheme
    evaluates <code>(end-of-time)</code>, it stops the clock and displays the
