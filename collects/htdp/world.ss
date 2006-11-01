@@ -85,7 +85,7 @@
     (check-pos 'rectangle height "second")
     (check-mode 'rectangle mode "third")
     (check-color 'rectangle color "fourth")
-    (move-pinhole (rectangle width height mode color) (/ width -2) (/ height -2)))
+    (put-pinhole (rectangle width height mode color) 0 0))
   
   (define (place-image image x y scene)
     (check-image 'place-image image "first")
