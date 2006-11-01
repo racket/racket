@@ -89,8 +89,8 @@
   
   (define (place-image image x y scene)
     (check-image 'place-image image "first")
-    (check-arg 'place-image (and (number? x) (real? x)) 'number "second" x)
-    (check-arg 'place-image (and (number? y) (real? x)) 'number "third" y)
+    (check-arg 'place-image (and (number? x) (integer? x)) 'integer "second" x)
+    (check-arg 'place-image (and (number? y) (integer? x)) 'integer "third" y)
     (check-image 'place-image scene "fourth" "scene")
     (let ()
       (define sw (image-width scene))
