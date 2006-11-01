@@ -277,14 +277,20 @@ _bitmap.ss_
 The "bitmap.ss" library in the "sgl" collection provides a helper
 function for converting a MrEd bitmap to a GL list:
 
-> (bitmap->gl-list bitmap with-gl-proc)
+> (bitmap->gl-list bitmap #:with-gl with-gl-proc
+                          #:mask bitmap)
 
 Converts the given bitmap (an instance of bitmap%) into a GL list that
 can be rendered with `call-list' or `glCallList'. The rendered object
 is a square on the z=0 plane with corners at (0,0) and (1,1).
 
-The given `with-gl-proc' function must accept a thunk and call it
-while the relevant GL context is selected.
+If `with-gl-proc' is provided, it must accept a thunk and call it
+while the relevant GL context is selected. Otherwise, the relevant GL
+context must be selected already.
+
+If `mask' is given, it is used as the mask bitmap (for extracting
+alpha values). The default is the result of the `get-loaded-mask'
+method of `bm'.
 
 =================================================================
 Function indexes

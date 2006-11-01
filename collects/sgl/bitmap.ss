@@ -4,7 +4,8 @@
            (lib "class.ss")
            (lib "gl-vectors.ss" "sgl")
            (prefix gl- (lib "sgl.ss" "sgl"))
-           (lib "gl.ss" "sgl"))
+           (lib "gl.ss" "sgl")
+           (lib "kw.ss"))
   
   (provide bitmap->gl-list)
   
@@ -20,22 +21,22 @@
           (loop (+ i 4))))
       rgba))
   
-  (define (bitmap->argb bmp)
+  (define (bitmap->argb bmp bmp-mask)
     (let* ((width (send bmp get-width))
            (height (send bmp get-height))
-           (argb (make-bytes (* 4 width height) 255))
-           (dc (make-object bitmap-dc% bmp)))
-      (send dc get-argb-pixels 0 0 width height argb #f)
-      (when (send bmp get-loaded-mask)
-        (send dc set-bitmap (send bmp get-loaded-mask))
-        (send dc get-argb-pixels 0 0 width height argb #t))
-      (send dc set-bitmap #f)
+           (argb (make-bytes (* 4 width height) 255)))
+      (send bmp get-argb-pixels 0 0 width height argb #f)
+      (when bmp-mask
+        (send bmp-mask get-argb-pixels 0 0 width height argb #t))
       argb))
   
-  (define (bitmap->gl-list bm with-gl)
+  (define/kw (bitmap->gl-list bm 
+                              #:key 
+                              [with-gl (lambda (f) (f))]
+                              [mask (send bm get-loaded-mask)])
     (let ([w (send bm get-width)]
           [h (send bm get-height)]
-          [rgba (argb->rgba (bitmap->argb bm))])
+          [rgba (argb->rgba (bitmap->argb bm mask))])
     (with-gl
      (lambda ()
        (let ((tex (gl-vector-ref (glGenTextures 1) 0))
