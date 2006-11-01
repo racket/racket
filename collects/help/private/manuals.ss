@@ -150,7 +150,9 @@
                          (format "<A HREF=\"/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection\">~a collection</A>"
                                  ;; escape colons and other junk
                                  (uri-encode (path->string path))
-                                 name name name)
+                                 (uri-encode name)
+                                 (uri-encode name)
+                                 name)
                          (format "<FONT COLOR=\"RED\">~a collection: specified doc.txt file (~a) not found</FONT>"
                                  name path)))))
            collections-doc-files
