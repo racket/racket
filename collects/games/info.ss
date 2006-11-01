@@ -7,7 +7,7 @@
     (list "cards" "paint-by-numbers" "same" "lights-out" "aces" "spider"
 	  "memory" "pousse" "crazy8s"
           "gcalc" "parcheesi" "gl-board-game"
-	  "jewel"))
+	  "jewel" "doors"))
   (define blurb 
     (list "Demos a few small "
 	  '(a ((MZSCHEME "

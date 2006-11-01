@@ -82,7 +82,9 @@ the board.  They are used to setup viewing parameters.  The board is viewed
 centered around the center of the coordinates, and the view attempts to fill
 the window to them. The optional theta and phi arguments determine the initial
 rotation of the board, with respective defaults 45 and 0; theta corresponds to
-the up and down keys, and phi corresponds to the left and right keys.
+the up and down keys, and phi corresponds to the left and right keys. (Holding
+down Command/Meta/Alt while pressing an arrow key pans the display, instead
+of rotating.)
 
 The lift parameter specifies how high off the board mouse-dragged pieces are.
 

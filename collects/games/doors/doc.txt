@@ -1,0 +1,9 @@
+
+_doors.ss_
+
+The "doors.ss" library builds on "gl-board.ss" to support simple
+maze-like games, where the maze is formed by a grid of squares and
+doors of various types can appears between adjacent squares.
+
+But it's not ready, yet. Check back later.
+
