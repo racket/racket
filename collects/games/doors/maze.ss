@@ -19,75 +19,75 @@
     (let loop ([layout layout]
                [j (sub1 (quotient (length layout) 2))])
       (unless (null? (cdr layout))
-        (let loop ([doors (car layout)]
+        (let loop ([walls (car layout)]
                    [rooms (cadr layout)]
-                   [next-doors (caddr layout)]
+                   [next-walls (caddr layout)]
                    [i 0])
           (unless (null? (cdr rooms))
-            (let ([n (car doors)]
-                  [s (car next-doors)]
+            (let ([n (car walls)]
+                  [s (car next-walls)]
                   [e (caddr rooms)]
                   [w (car rooms)]
                   [r (cadr rooms)])
               (send r connect i j n s e w))
-            (loop (cdr doors)
+            (loop (cdr walls)
                   (cddr rooms)
-                  (cdr next-doors)
+                  (cdr next-walls)
                   (add1 i))))
         (loop (cddr layout) (sub1 j)))))
 
   (define-syntax maze
     (lambda (stx)
       (syntax-case stx ()
-        [(maze connect door<%> room<%> (items ...) ...)
+        [(maze connect wall<%> room<%> (items ...) ...)
          (let ([itemss (syntax->list #'((items ...) ...))])
            (unless (odd? (length itemss))
              (raise-syntax-error
               #f
               "need an odd number of rows"
               stx))
-           (let-values ([(doorss roomss) (alternates itemss)])
+           (let-values ([(wallss roomss) (alternates itemss)])
              (when (null? roomss)
                (raise-syntax-error
                 #f
                 "no rooms supplied"
                 stx))
-             (let ([first-doors-len
-                    (length (syntax->list (car doorss)))])
-               (for-each (lambda (doors)
-                           (let ([len (length (syntax->list doors))])
-                             (unless (= len first-doors-len)
+             (let ([first-walls-len
+                    (length (syntax->list (car wallss)))])
+               (for-each (lambda (walls)
+                           (let ([len (length (syntax->list walls))])
+                             (unless (= len first-walls-len)
                                (raise-syntax-error
                                 #f
-                                "N/S doors sequence length doesn't match first doors sequence"
+                                "N/S walls sequence length doesn't match first walls sequence"
                                 stx
-                                doors))))
-                         doorss)
+                                walls))))
+                         wallss)
                (for-each (lambda (rooms)
                            (let ([len (length (syntax->list rooms))])
-                             (unless (= len (add1 (* 2 first-doors-len)))
+                             (unless (= len (add1 (* 2 first-walls-len)))
                                (raise-syntax-error
                                 #f
-                                "rooms with E/W doors sequence length doesn't match first doors sequence"
+                                "rooms with E/W walls sequence length doesn't match first walls sequence"
                                 stx
                                 rooms))))
                          roomss))
              (with-syntax ([((items ...) ...)
                             (interleave
-                             (map (lambda (doors)
-                                    (map (lambda (door)
-                                           (quasisyntax/loc door 
-                                             (instance door<%> #,door)))
-                                         (syntax->list doors)))
-                                  doorss)
+                             (map (lambda (walls)
+                                    (map (lambda (wall)
+                                           (quasisyntax/loc wall 
+                                             (instance wall<%> #,wall)))
+                                         (syntax->list walls)))
+                                  wallss)
                              (map (lambda (rooms)
-                                    (let-values ([(doors rooms) 
+                                    (let-values ([(walls rooms) 
                                                   (alternates (syntax->list rooms))])
                                       (interleave
-                                       (map (lambda (door)
-                                              (quasisyntax/loc door 
-                                                (instance door<%> #,door)))
-                                            doors)
+                                       (map (lambda (wall)
+                                              (quasisyntax/loc wall 
+                                                (instance wall<%> #,wall)))
+                                            walls)
                                        (map (lambda (room)
                                               (quasisyntax/loc room
                                                 (instance room<%> #,room)))

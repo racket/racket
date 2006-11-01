@@ -155,7 +155,7 @@
       (define/public (with-gl-context f)
         (send board with-gl-context f))
       
-      (define/public (set-wall ri rj dir wall? door)
+      (define/public (set-wall ri rj dir wall? door-image)
         (case dir
           [(n s e w) 'ok]
           [else (raise-type-error
@@ -172,7 +172,7 @@
                                 [(s) 0]))]
                [wall (vector-ref (vector-ref walls i) j)]
                [drawer (if wall?
-                           (make-wall-draw ri rj dir door)
+                           (make-wall-draw ri rj dir door-image)
                            void)])
           (if (wall-drawer wall)
               (send board set-space-draw wall drawer)

@@ -38,7 +38,20 @@
       (send game with-gl-context f)))
 
   (define (bitmap->drawer bm game)
-    (let ([dl (bitmap->gl-list bm (with-gl game))])
+    (let*-values ([(bm mask)
+                   (cond
+                    [(bm . is-a? . bitmap%) 
+                     (values bm (send bm get-loaded-mask))]
+                    [(bm . is-a? . image-snip%)
+                     (values (send bm get-bitmap)
+                             (send bm get-bitmap-mask))]
+                    [else (raise-type-error
+                           'bitmap->drawer
+                           "bitmap% or image-snip% object"
+                           bm)])]
+                  [(dl) (bitmap->gl-list bm 
+                                         #:with-gl (with-gl game)
+                                         #:mask mask)])
       (lambda ()
         (gl-call-list dl))))
   
