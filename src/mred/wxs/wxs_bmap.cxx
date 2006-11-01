@@ -162,6 +162,12 @@ static Bool IsColor(wxBitmap *bm)
   return (bm->GetDepth() != 1);
 }
 
+extern void wxGetARGBPixels(wxBitmap *bm, double x, double y, int w, int h, char *s, Bool get_alpha);
+
+
+
+
+
 
 
 
@@ -220,6 +226,42 @@ CONSTRUCTOR_INIT(: wxBitmap(x0, x1, x2))
 os_wxBitmap::~os_wxBitmap()
 {
     objscheme_destroy(this, (Scheme_Object *) __gc_external);
+}
+
+static Scheme_Object *os_wxBitmapwxGetARGBPixels(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxBitmap_class, "get-argb-pixels in bitmap%", n, p);
+  double x0;
+  double x1;
+  int x2;
+  int x3;
+  wbstring x4 INIT_NULLED_OUT;
+  Bool x5;
+
+  SETUP_VAR_STACK_REMEMBERED(2);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x4);
+
+  
+  x0 = WITH_VAR_STACK(objscheme_unbundle_double(p[POFFSET+0], "get-argb-pixels in bitmap%"));
+  x1 = WITH_VAR_STACK(objscheme_unbundle_double(p[POFFSET+1], "get-argb-pixels in bitmap%"));
+  x2 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+2], 0, 10000, "get-argb-pixels in bitmap%"));
+  x3 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+3], 0, 10000, "get-argb-pixels in bitmap%"));
+  x4 = (wbstring)WITH_VAR_STACK(objscheme_unbundle_mutable_bstring(p[POFFSET+4], "get-argb-pixels in bitmap%"));
+  if (n > (POFFSET+5)) {
+    x5 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+5], "get-argb-pixels in bitmap%"));
+  } else
+    x5 = FALSE;
+
+  { if (!((wxBitmap *)((Scheme_Class_Object *)THEOBJ)->primdata)->Ok()) WITH_VAR_STACK(scheme_arg_mismatch(METHODNAME("bitmap%","get-argb-pixels"), "bad bitmap: ", THEOBJ)); }if (SCHEME_BYTE_STRTAG_VAL(p[4+POFFSET]) < (x2 * x3 * 4)) WITH_VAR_STACK(scheme_arg_mismatch(METHODNAME("bitmap%","get-argb-pixels"), "byte string too short: ", p[4+POFFSET]));
+  WITH_VAR_STACK(wxGetARGBPixels(((wxBitmap *)((Scheme_Class_Object *)p[0])->primdata), x0, x1, x2, x3, x4, x5));
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
 }
 
 static Scheme_Object *os_wxBitmapGetGLConfig(int n,  Scheme_Object *p[])
@@ -589,8 +631,9 @@ void objscheme_setup_wxBitmap(Scheme_Env *env)
 
   wxREGGLOB(os_wxBitmap_class);
 
-  os_wxBitmap_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "bitmap%", "object%", (Scheme_Method_Prim *)os_wxBitmap_ConstructScheme, 11));
+  os_wxBitmap_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "bitmap%", "object%", (Scheme_Method_Prim *)os_wxBitmap_ConstructScheme, 12));
 
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxBitmap_class, "get-argb-pixels" " method", (Scheme_Method_Prim *)os_wxBitmapwxGetARGBPixels, 5, 6));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxBitmap_class, "get-gl-config" " method", (Scheme_Method_Prim *)os_wxBitmapGetGLConfig, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxBitmap_class, "set-gl-config" " method", (Scheme_Method_Prim *)os_wxBitmapSetGLConfig, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxBitmap_class, "set-loaded-mask" " method", (Scheme_Method_Prim *)os_wxBitmapSetMask, 1, 1));

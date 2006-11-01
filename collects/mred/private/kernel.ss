@@ -300,6 +300,7 @@
   (define-function set-editor-print-margin)
   (define-function get-editor-print-margin)
   (define-class bitmap% object% #f
+    get-argb-pixels
     get-gl-config
     set-gl-config
     set-loaded-mask

@@ -330,6 +330,19 @@ static void dcGetARGBPixels(wxMemoryDC *dc, double x, double y, int w, int h, ch
   READY_TO_RETURN;
 }
 
+void wxGetARGBPixels(wxBitmap *src, double x, double y, int w, int h, char *s, Bool get_alpha)
+{
+  wxMemoryDC *srcdc;
+  SETUP_VAR_STACK(1);
+  VAR_STACK_PUSH(0, srcdc);
+
+  srcdc = WITH_VAR_STACK(MakeDC(src));
+  WITH_VAR_STACK(dcGetARGBPixels(srcdc, x, y, w, h, (char *)s, get_alpha));
+  WITH_VAR_STACK(UnmakeDC(srcdc));
+
+  READY_TO_RETURN;
+}
+
 static void dcSetARGBPixels(wxMemoryDC *dc, double x, double y, int w, int h, char *s, Bool set_alpha)
 {
   int i, j, p;
