@@ -201,8 +201,9 @@
           (when from-room
             (send board remove-piece player))
           (when to-room
-            (send board add-piece (+ i 0.5) (+ j 0.5) 0.0 (player-drawer player) player))))
-
+            (send board add-piece (+ i 0.5) (+ j 0.5) 0.0 (player-drawer player) player))
+          (send board refresh)))
+      
       (public [new-thing make-thing])
       (define (new-thing drawer data)
         (make-thing data drawer #f #f #f))
@@ -227,7 +228,8 @@
             (send board add-piece (+ i 0.5) (+ j 0.5) 0.0 (thing-drawer thing) thing)
             (send board enable-piece thing #f))
           (when hu?
-            (send board add-heads-up 1.0 1.0 (thing-drawer thing) thing))))
+            (send board add-heads-up 1.0 1.0 (thing-drawer thing) thing))
+          (send board refresh)))
 
       (define/public (move-thing thing i j)
         (move-thing/hu thing i j #f))
