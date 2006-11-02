@@ -1511,6 +1511,7 @@
         (define check-box (new check-box% 
                                [parent main-panel]
                                [label (string-constant fixup-open-brackets)]
+                               [value (preferences:get 'framework:fixup-open-parens)]
                                [callback 
                                 (λ (x y)
                                   (preferences:set 'framework:fixup-open-parens (send check-box get-value)))]))
