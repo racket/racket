@@ -961,29 +961,32 @@ TODO
           
           (define/augment (on-submit)
             (inner (void) on-submit)
-            ;; the -2 drops the last newline from history (why -2 and not -1?!)
-            (save-interaction-in-history prompt-position (- (last-position) 2))
-            (freeze-colorer)
             
-            (let ([needs-execution (send context needs-execution)])
-              (when (if (preferences:get 'drscheme:execute-warning-once)
-                        (and (not already-warned?)
-                             needs-execution)
-                        needs-execution)
-                (set! already-warned? #t)
-                (insert-warning needs-execution)))
-            
-            ;; lets us know we are done with this one interaction
-            ;; (since there may be multiple expressions at the prompt)
-            (send-eof-to-in-port)
-            
-            (set! prompt-position #f)
-            (evaluate-from-port
-             (get-in-port) 
-             #f
-             (λ ()
-               ;; clear out the eof object if it wasn't consumed
-               (clear-input-port))))
+            (when (and (get-user-thread) 
+                       (thread-running? (get-user-thread)))
+              ;; the -2 drops the last newline from history (why -2 and not -1?!)
+              (save-interaction-in-history prompt-position (- (last-position) 2))
+              (freeze-colorer)
+              
+              (let ([needs-execution (send context needs-execution)])
+                (when (if (preferences:get 'drscheme:execute-warning-once)
+                          (and (not already-warned?)
+                               needs-execution)
+                          needs-execution)
+                  (set! already-warned? #t)
+                  (insert-warning needs-execution)))
+              
+              ;; lets us know we are done with this one interaction
+              ;; (since there may be multiple expressions at the prompt)
+              (send-eof-to-in-port)
+              
+              (set! prompt-position #f)
+              (evaluate-from-port
+               (get-in-port) 
+               #f
+               (λ ()
+                 ;; clear out the eof object if it wasn't consumed
+                 (clear-input-port)))))
           
           ;; prompt-position : (union #f integer)
           ;; the position just after the last prompt
