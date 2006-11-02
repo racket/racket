@@ -223,7 +223,7 @@
       (define (comment-mode? mode)
 	(eq? mode 'comment))
       
-      (define-computed dot-p (tt " . "))
+      (define-computed dot-p (tt "."))
 
       (define (mode-colorize mode type p)
 	(maybe-colorize
@@ -367,7 +367,8 @@
 			(lambda (a b) (eq? (syntax-e a) (syntax-e b)))
 	    [() (add-close (htl-append (get-open mode stx) (get-close mode stx))
 			   closes)]
-	    [code:blank (tt " ")]
+	    [code:blank (add-close (tt " ")
+                                   closes)]
 	    [$ (colorize-id "|" closes)]
 	    [(quote x)
 	     (memq 'quote (current-reader-forms))
@@ -503,9 +504,23 @@
 	     (identifier? stx)
 	     (add-close (colorize-id (symbol->string (syntax-e stx)) mode) closes)]
 	    [(a . b)
-	     (code-hbl-append (mode-colorize mode #f open-paren-p) (loop #'a null mode)
-			      (mode-colorize mode #f dot-p)
-			      (loop #'b (cons (cons mode stx) closes) mode))]
+             ;; Build a list that makes the "." explicit.
+             (let ([p (let loop ([a (syntax-e stx)])
+                        (cond
+                         [(pair? a) (cons (car a) (loop (cdr a)))]
+                         [else (list (datum->syntax-object #f
+                                                           (mode-colorize mode #f dot-p)
+                                                           (list (syntax-source a)
+                                                                 (syntax-line a)
+                                                                 (- (syntax-column a) 2)
+                                                                 (- (syntax-position a) 2)
+                                                                 1))
+                                     a)]))])
+               (loop (datum->syntax-object stx
+                                           p
+                                           stx)
+                     closes
+                     mode))]
 	    [else
 	     (add-close (if (pict? (syntax-e stx))
 			    (syntax-e stx)
