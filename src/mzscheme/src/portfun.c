@@ -2912,7 +2912,7 @@ static Scheme_Object *do_read_syntax_f(const char *who, int argc, Scheme_Object 
     o[1] = (argc ? argv[0] : ((Scheme_Input_Port *)port)->name);
 
     result = _scheme_apply(((Scheme_Input_Port *)port)->read_handler, 2, o);
-    if (SCHEME_STXP(result))
+    if (SCHEME_STXP(result) || SCHEME_EOFP(result))
       return result;
     else {
       o[0] = result;
