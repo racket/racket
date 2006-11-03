@@ -4,7 +4,8 @@
            (lib "readerr.ss" "syntax")
            (lib "mred.ss" "mred")
            (lib "class.ss")
-           (lib "list.ss"))
+           (lib "list.ss")
+           "shared.ss")
   
   (provide xml-read-special
            xml-snip<%>
@@ -53,7 +54,7 @@
                 [expd-xexpr (expand-embedded clean-xexpr)]
                 [qq-body (datum->syntax-object #'here expd-xexpr (list editor #f #f #f #f))])
            (with-syntax ([qq-body qq-body])
-             (syntax-property (syntax (quasiquote qq-body))
+             (stepper-syntax-property (syntax (quasiquote qq-body))
                               'stepper-xml-hint
                               'from-xml-box))))
        (lambda () (send editor lock old-locked)))))
@@ -111,13 +112,13 @@
                  (with-syntax ([err (syntax/loc 
                                      (car (last-pair raw-stxs))
                                      (error 'scheme-splice-box "expected a list, found: ~e" lst))])
-                   #`,@#,(syntax-property #`(let ([lst (begin stxs ...)])
+                   #`,@#,(stepper-syntax-property #`(let ([lst (begin stxs ...)])
                                               (if (list? lst)
                                                   lst
                                                   err))
                                           'stepper-xml-hint
                                           'from-splice-box))
-                 #`,#,(syntax-property #`(begin stxs ...) 
+                 #`,#,(stepper-syntax-property #`(begin stxs ...) 
                                        'stepper-xml-hint
                                        'from-scheme-box))))]
         [else xexpr])))

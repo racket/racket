@@ -91,7 +91,7 @@
                   (expr-iterator stx context-so-far)])))
            
            (define (expr-iterator stx context-so-far)
-             (when (syntax-property stx 'stepper-highlight)
+             (when (stepper-syntax-property stx 'stepper-highlight)
                (success-escape (2vals context-so-far stx)))
              (let* ([try (make-try-all-subexprs stx 'expr context-so-far)]
                     [try-exprs (lambda (index-mangler exprs) (try index-mangler (map (lambda (expr) (list expr-iterator expr)) 
@@ -243,9 +243,9 @@
                                                           (lift-helper highlighted #f null)
                                                           (values null highlighted))])
       (let loop ([ctx-list ctx-list]
-                 [so-far-defs (map (lambda (x) (syntax-property x 'stepper-highlight #t)) 
+                 [so-far-defs (map (lambda (x) (stepper-syntax-property x 'stepper-highlight #t)) 
                                    highlighted-defs)]
-                 [body (syntax-property highlighted-body 'stepper-highlight #t)])
+                 [body (stepper-syntax-property highlighted-body 'stepper-highlight #t)])
         (if (null? ctx-list)
             (append so-far-defs (list body))
             (let*-values ([(ctx) (car ctx-list)]
@@ -280,7 +280,7 @@
                 [else (error 'lift-helper "let or letrec does not have expected shape: ~v\n" (syntax-object->datum stx))]))])
     (kernel:kernel-syntax-case stx #f
       [(let-values . dc)
-       (not (eq? (syntax-property stx 'user-stepper-hint) 'comes-from-or))
+       (not (eq? (stepper-syntax-property stx 'stepper-hint) 'comes-from-or))
        (lift)]
       [(letrec-values . dc)
        (lift)]

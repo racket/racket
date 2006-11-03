@@ -49,7 +49,8 @@
            "macro-unwind.ss"
            "lifting.ss"           
            ;; for breakpoint display
-           "display-break-stuff.ss")
+           "display-break-stuff.ss"
+           (file "/Users/clements/clements/scheme-scraps/eli-debug.ss"))
 
   (define program-expander-contract
     ((-> void?) ; init
@@ -134,8 +135,8 @@
     (define (highlight-mutated-expression left right)
       (cond
         ;; if either one is already highlighted, leave them alone.
-        [(or (syntax-property left 'stepper-highlight)
-             (syntax-property right 'stepper-highlight))
+        [(or (stepper-syntax-property left 'stepper-highlight)
+             (stepper-syntax-property right 'stepper-highlight))
          (list left right)]
 
         ;; first pass: highlight if not eq?.  Should be broken for local-bound
@@ -143,8 +144,8 @@
         [(eq? left right)
          (list left right)]
 
-        [else (list (syntax-property left 'stepper-highlight)
-                    (syntax-property right 'stepper-highlight))]))
+        [else (list (stepper-syntax-property left 'stepper-highlight)
+                    (stepper-syntax-property right 'stepper-highlight))]))
 
     ;; mutated on receipt of a break, used in displaying breakpoint stuff.
     (define steps-received 0)
@@ -311,6 +312,7 @@
     (define (step-through-expression expanded expand-next-expression)
       (let* ([annotated (a:annotate expanded break track-inferred-names?
                                     language-level)])
+        (>>> "annotation complete")
         (eval-syntax annotated)
         (expand-next-expression)))
 
@@ -326,8 +328,8 @@
     (program-expander
      (lambda ()
        ;; swap these to allow errors to escape (e.g., when debugging)
-       (error-display-handler err-display-handler)
-       ;;(void)
+       ;;(error-display-handler err-display-handler)
+       (void)
        )
      (lambda (expanded continue-thunk) ; iter
        (r:reset-special-values)

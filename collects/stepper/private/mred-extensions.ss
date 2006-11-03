@@ -4,6 +4,7 @@
            (prefix f: (lib "framework.ss" "framework"))
            (lib "pretty.ss")
            "testing-shared.ss"
+           "shared.ss"
 	   (lib "string-constant.ss" "string-constants")
            (lib "bitmap-label.ss" "mrlib"))
 
@@ -487,7 +488,7 @@
   (define (strip-to-sexp stx highlight-table)
     (define (strip-regular stx)
       (let* ([it (if (and (syntax? stx)
-                          (eq? (syntax-property stx 'stepper-hint) 'from-xml))
+                          (eq? (stepper-syntax-property stx 'stepper-hint) 'from-xml))
                      (strip-xml stx)
                      stx)]
              [it
@@ -499,7 +500,7 @@
                     [else it])]
              [it
               (if (and (syntax? stx)
-                       (syntax-property stx 'stepper-highlight))
+                       (stepper-syntax-property stx 'stepper-highlight))
                   (if (pair? it) 
                       (begin
                         (hash-table-put! highlight-table it 'non-confusable)

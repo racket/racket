@@ -25,7 +25,7 @@
                  (let stx-loop ([stx stx])
                    (syntax-case stx (hilite)
                      [(hilite x)
-                      (syntax-property (stx-loop #`x) 'stepper-highlight #t)]
+                      (stepper-syntax-property (stx-loop #`x) 'stepper-highlight #t)]
                      [(a . rest) (datum->syntax-object stx (cons (stx-loop #`a) (stx-loop #`rest)) stx stx)]
                      [else stx]))
                  (read-loop (read-syntax temp-file file-port))))))
@@ -43,13 +43,13 @@
 ;        (let ([test-stx (car test-run)])
 ;          (test `(+ x (+ 13 (a b)))
 ;                syntax-object->datum test-stx)
-;          (test #f syntax-property test-stx 'stepper-highlight)
-;          (test #t syntax-property (car (syntax-e (cdr (syntax-e test-stx)))) 'stepper-highlight)
-;          (test #t syntax-property (syntax-case test-stx ()
+;          (test #f stepper-syntax-property test-stx 'stepper-highlight)
+;          (test #t stepper-syntax-property (car (syntax-e (cdr (syntax-e test-stx)))) 'stepper-highlight)
+;          (test #t stepper-syntax-property (syntax-case test-stx ()
 ;                                     [(+ x target)
 ;                                      #`target])
 ;                'stepper-highlight)
-;          (test #t syntax-property (syntax-case test-stx (#%app)
+;          (test #t stepper-syntax-property (syntax-case test-stx (#%app)
 ;                                     [(+ x (a target d))
 ;                                      #`target])
 ;                'stepper-highlight)))

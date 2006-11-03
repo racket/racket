@@ -88,8 +88,26 @@
    get-set-pair-union-stats ; profiling info
    re-intern-identifier
    finished-xml-box-table
-   language-level->name)
+   language-level->name
+   
+   stepper-syntax-property)
   
+    
+  ;; stepper-syntax-property : like syntax property, but adds properties to an association
+  ;; list associated with the syntax property 'stepper-properties
+  (define stepper-syntax-property
+    (case-lambda 
+      [(stx tag) (let ([stepper-props (syntax-property stx 'stepper-properties)])
+                   (if stepper-props
+                       (let ([table-lookup (assq tag stepper-props)])
+                         (if table-lookup
+                             (cadr table-lookup)
+                             #f))
+                       #f))]
+      [(stx tag new-val) (syntax-property stx 'stepper-properties
+                                          (cons (list tag new-val)
+                                                (or (syntax-property stx 'stepper-properties)
+                                                    null)))]))
   
   ; A step-result is either:
   ; (make-before-after-result finished-exps exp redex reduct)
@@ -325,7 +343,7 @@
       (apply map list args)))
 
   (define let-counter
-    (syntax-property #'let-counter 'stepper-binding-type 'stepper-temp))
+    (stepper-syntax-property #'let-counter 'stepper-binding-type 'stepper-temp))
 
 
   ; syntax-pair-map (using the def'ns of the MzScheme docs):
@@ -432,14 +450,14 @@
   ;; traversal argument is 'discard, the result of the transformation is the
   ;; result of this function
   (define (skipto/auto stx traversal transformer)
-    (cond [(syntax-property stx 'stepper-skipto)
+    (cond [(stepper-syntax-property stx 'stepper-skipto)
            =>
            (cut update <> stx (cut skipto/auto <> traversal transformer) traversal)]
           [else (transformer stx)]))
 
   ;  small test case:
   #;(display (equal? (syntax-object->datum
-                    (skipto/auto (syntax-property #`(a #,(syntax-property #`(b c)
+                    (skipto/auto (stepper-syntax-property #`(a #,(stepper-syntax-property #`(b c)
                                                                           'stepper-skipto
                                                                           '(syntax-e cdr car)))
                                                   'stepper-skipto
@@ -531,54 +549,25 @@
                   (sublist 0 (- end 1) (cdr lst)))
             (sublist (- begin 1) (- end 1) (cdr lst)))))
 
-  ; attach-info : SYNTAX-OBJECT SYNTAX-OBJECT -> SYNTAX-OBJECT
-  ; attach-info attaches to a generated piece of syntax the origin & source
-  ; information of another.  we do this so that macro unwinding can tell what
-  ; reconstructed syntax came from what original syntax
-
-  (define labels-to-attach
-    `((user-origin origin)
-      (user-stepper-hint stepper-hint)
-      (user-stepper-else stepper-else)
-      (user-stepper-define-type stepper-define-type)
-      (user-stepper-proc-define-name stepper-proc-define-name)
-      (user-stepper-and/or-clauses-consumed stepper-and/or-clauses-consumed)
-      (user-stepper-offset-index stepper-offset-index)
-      ;; I find it mildly worrisome that this breaks the pattern
-      ;;  by failing to preface the identifier with 'user-'.  JBC, 2005-08
-      (stepper-xml-hint stepper-xml-hint)))
-
   ;; take info from source expressions to reconstructed expressions
-  ;;  (from native property names to 'user-' style property names)
 
   (define (attach-info to-exp from-exp)
-    ;; (if (syntax-property from-exp 'stepper-offset-index)
-    ;;   (>>> (syntax-property from-exp 'stepper-offset-index)))
-    (let* ([attached (foldl (lambda (labels stx)
-                              (match labels
-                                [`(,new-label ,old-label)
-                                  (syntax-property stx new-label (syntax-property from-exp old-label))]))
-                            to-exp
-                            labels-to-attach)]
+    ;; (if (stepper-syntax-property from-exp 'stepper-offset-index)
+    ;;   (>>> (stepper-syntax-property from-exp 'stepper-offset-index)))
+    (let* ([attached (syntax-property to-exp 'stepper-properties (syntax-property from-exp 'stepper-properties))]
            [attached (syntax-property attached 'user-source (syntax-source from-exp))]
            [attached (syntax-property attached 'user-position (syntax-position from-exp))])
       attached))
 
   ;; transfer info from reconstructed expressions to other reconstructed
   ;; expressions
-  ;;  (from 'user-' style names to 'user-' style names)
 
-  (define (transfer-info to-stx from-exp)
-    (let* ([attached (foldl (lambda (labels stx)
-                              (match labels
-                                [`(,new-label ,old-label)
-                                 (syntax-property stx new-label (syntax-property from-exp new-label))]))
-                            to-stx
-                            labels-to-attach)]
+  (define (transfer-info to-exp from-exp)
+    (let* ([attached (syntax-property to-exp 'stepper-properties (append (syntax-property from-exp 'stepper-properties)
+                                                                         (or (syntax-property to-exp 'stepper-properties)
+                                                                             null)))]
            [attached (syntax-property attached 'user-source (syntax-property from-exp 'user-source))]
-           [attached (syntax-property attached 'user-position (syntax-property from-exp 'user-position))]
-           [attached (syntax-property attached 'stepper-highlight (or (syntax-property from-exp 'stepper-highlight)
-                                                                      (syntax-property attached 'stepper-highlight)))])
+           [attached (syntax-property attached 'user-position (syntax-property from-exp 'user-position))])
       attached))
 
   (define (values-map fn . lsts)
@@ -624,16 +613,16 @@
                      [else (if (syntax? stx)
                                (syntax-object->datum stx)
                                stx)])])
-        (let* ([it (case (syntax-property stx 'stepper-xml-hint)
+        (let* ([it (case (stepper-syntax-property stx 'stepper-xml-hint)
                      [(from-xml-box) `(xml-box ,datum)]
                      [(from-scheme-box) `(scheme-box ,datum)]
                      [(from-splice-box) `(splice-box ,datum)]
                      [else datum])]
-               [it (case (syntax-property stx 'stepper-xml-value-hint)
+               [it (case (stepper-syntax-property stx 'stepper-xml-value-hint)
                      [(from-xml-box) `(xml-box-value ,it)]
                      [else it])]
                [it (if (and (not ignore-highlight?)
-                            (syntax-property stx 'stepper-highlight))
+                            (stepper-syntax-property stx 'stepper-highlight))
                        `(hilite ,it)
                        it)])
           it))))
@@ -703,11 +692,14 @@
   
   (define (language-level->name language)
     (car (last-pair (send language get-language-position))))
+  
   )
+
   
 ; test cases
 ;(require shared)
-;(load "/Users/clements/plt/tests/mzscheme/testing.ss")
+;(write (collection-path "tests" "mzscheme"))
+;(load (build-path (collection-path "tests" "mzscheme") "testing.ss"))
 ;
 ;(define (a sym) 
 ;  (syntax-object->datum (get-lifted-var sym)))
@@ -755,3 +747,10 @@
 ;                     (list sums diffs)))
 ; `((10 10 10 10 10)
 ;   (-8 -6 -4 -2 0)))
+
+;(test #f stepper-syntax-property #`13 'abc)
+;(test 'yes stepper-syntax-property (stepper-syntax-property #`13 'abc 'yes) 'abc)
+;(test 'yes stepper-syntax-property (stepper-syntax-property (stepper-syntax-property #`13 'abc 'no) 'abc 'yes) 'abc)
+;(test 'yes stepper-syntax-property (stepper-syntax-property (stepper-syntax-property #`13 'abc 'yes) 'def 'arg) 'abc)
+;(test 13 syntax-object->datum (stepper-syntax-property (stepper-syntax-property #`13 'abc 'yes) 'def 'arg))
+

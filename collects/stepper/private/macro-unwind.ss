@@ -52,7 +52,7 @@
      (kernel:kernel-syntax-case stx #f
                                 [id
                                  (identifier? stx)
-                                 (or (syntax-property stx 'stepper-lifted-name)
+                                 (or (stepper-syntax-property stx 'stepper-lifted-name)
                                      stx)]
                                 [(define-values dc ...)
                                  (unwind-define stx settings)]
@@ -65,7 +65,7 @@
                                 [(letrec-values . rest)
                                  (unwind-mz-let stx settings)]
                                 [(set! var rhs)
-                                 (with-syntax ([unwound-var (or (syntax-property
+                                 (with-syntax ([unwound-var (or (stepper-syntax-property
                                                                  #`var 'stepper-lifted-name)
                                                                 #`var)]
                                                [unwound-body (unwind #`rhs settings)])
@@ -74,7 +74,7 @@
    
    (define (unwind stx settings)
      (transfer-info
-      (let ([hint (syntax-property stx 'user-stepper-hint)])
+      (let ([hint (stepper-syntax-property stx 'stepper-hint)])
         (if (procedure? hint)
             (hint stx (lambda (stx) (recur-on-pieces stx settings)))
             (let ([process (case hint
@@ -89,8 +89,8 @@
       stx))
    
    (define (transfer-highlight from to)
-     (if (syntax-property from 'stepper-highlight)
-         (syntax-property to 'stepper-highlight #t)
+     (if (stepper-syntax-property from 'stepper-highlight)
+         (stepper-syntax-property to 'stepper-highlight #t)
          to))
    
    (define (unwind-recur stx settings)
@@ -118,29 +118,29 @@
                                             "reconstruct fails on multiple-values define: ~v\n"
                                             (syntax-object->datum stx)))
                                    (let* ([printed-name
-                                           (or (syntax-property #`name 'stepper-lifted-name)
-                                               (syntax-property #'name 'stepper-orig-name)
+                                           (or (stepper-syntax-property #`name 'stepper-lifted-name)
+                                               (stepper-syntax-property #'name 'stepper-orig-name)
                                                #'name)]
                                           [unwound-body (unwind #'body settings)]
                                           ;; see notes in internal-docs.txt
-                                          [define-type (syntax-property
-                                                        unwound-body 'user-stepper-define-type)])
+                                          [define-type (stepper-syntax-property
+                                                        unwound-body 'stepper-define-type)])
                                      (if define-type
                                          (kernel:kernel-syntax-case unwound-body #f
                                                                     [(lambda arglist lam-body ...)
                                                                      (case define-type
                                                                        [(shortened-proc-define)
                                                                         (let ([proc-define-name
-                                                                               (syntax-property
+                                                                               (stepper-syntax-property
                                                                                 unwound-body
-                                                                                'user-stepper-proc-define-name)])
+                                                                                'stepper-proc-define-name)])
                                                                           (if (or (module-identifier=? proc-define-name
                                                                                                        #'name)
-                                                                                  (and (syntax-property #'name
+                                                                                  (and (stepper-syntax-property #'name
                                                                                                         'stepper-orig-name)
                                                                                        (module-identifier=?
                                                                                         proc-define-name
-                                                                                        (syntax-property
+                                                                                        (stepper-syntax-property
                                                                                          #'name 'stepper-orig-name))))
                                                                               #`(define (#,printed-name . arglist)
                                                                                   lam-body ...)
@@ -149,7 +149,7 @@
                                                                        [(lambda-define)
                                                                         #`(define #,printed-name #,unwound-body)]
                                                                        [else (error 'unwind-define
-                                                                                    "unknown value for syntax property 'user-stepper-define-type: ~e"
+                                                                                    "unknown value for syntax property 'stepper-define-type: ~e"
                                                                                     define-type)])]
                                                                     [else (error 'unwind-define
                                                                                  "expr with stepper-define-type is not a lambda: ~e"
@@ -164,8 +164,8 @@
        (with-syntax ([(rhs2 ...) (map (lambda (rhs) (unwind rhs settings)) (syntax->list #'(rhs ...)))]
                      [new-label
                       (if (improper-member 'comes-from-let*
-                                           (syntax-property
-                                            stx 'user-stepper-hint))
+                                           (stepper-syntax-property
+                                            stx 'stepper-hint))
                           #`let*
                           (case (syntax-e #'label)
                             [(let-values) #'let]
@@ -176,13 +176,13 @@
            [((let* bindings inner-body ...))
             (and
              (improper-member 'comes-from-let*
-                              (syntax-property stx 'user-stepper-hint))
-             (eq? (syntax-property stx 'user-stepper-source)
-                  (syntax-property (car (syntax->list #`new-bodies))
-                                   'user-stepper-source))
-             (eq? (syntax-property stx 'user-stepper-position)
-                  (syntax-property (car (syntax->list #`new-bodies))
-                                   'user-stepper-position)))
+                              (stepper-syntax-property stx 'stepper-hint))
+             (eq? (stepper-syntax-property stx 'stepper-source)
+                  (stepper-syntax-property (car (syntax->list #`new-bodies))
+                                   'stepper-source))
+             (eq? (stepper-syntax-property stx 'stepper-position)
+                  (stepper-syntax-property (car (syntax->list #`new-bodies))
+                                   'stepper-position)))
             #`(let* #,(append (syntax->list #`([var rhs2] ...))
                               (syntax->list #`bindings))
                 inner-body ...)]
@@ -212,7 +212,7 @@
    ;            "unexpected result for unwinding the-cons application")]))
    
    (define (unwind-cond-clause stx test-stx result-stx settings)
-     (with-syntax ([new-test (if (syntax-property stx 'user-stepper-else)
+     (with-syntax ([new-test (if (stepper-syntax-property stx 'stepper-else)
                                  #`else
                                  (unwind test-stx settings))]
                    [result (unwind result-stx settings)])
@@ -266,8 +266,8 @@
       (with-syntax
           ([clauses
             (append
-             (build-list (syntax-property
-                          stx 'user-stepper-and/or-clauses-consumed)
+             (build-list (stepper-syntax-property
+                          stx 'stepper-and/or-clauses-consumed)
                          (lambda (dc) clause-padder))
              (let loop ([stx stx])
                (if (and (eq? user-source

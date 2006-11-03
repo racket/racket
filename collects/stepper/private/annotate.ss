@@ -115,14 +115,14 @@
   ; it flags if's which could come from cond's, it labels the begins in conds with 'stepper-skip annotations
   
   ; label-var-types returns a syntax object which is identical to the original except that the variable references are labeled
-  ; with the syntax-property 'stepper-binding-type, which is set to either let-bound, lambda-bound, or non-lexical.
+  ; with the stepper-syntax-property 'stepper-binding-type, which is set to either let-bound, lambda-bound, or non-lexical.
   
   (define (top-level-rewrite stx)
     (let loop ([stx stx]
                [let-bound-bindings null]
                [cond-test (lx #f)])
-      (if (or (syntax-property stx 'stepper-skip-completely)
-              (syntax-property stx 'stepper-define-struct-hint))
+      (if (or (stepper-syntax-property stx 'stepper-skip-completely)
+              (stepper-syntax-property stx 'stepper-define-struct-hint))
           stx
           (let* ([recur-regular 
                   (lambda (stx)
@@ -162,7 +162,7 @@
                            [rebuild-if
                             (lambda (new-cond-test)
                               (let* ([new-then (recur-regular (syntax then))]
-                                     [rebuilt (syntax-property
+                                     [rebuilt (stepper-syntax-property
                                                (rebuild-stx `(if ,(recur-regular (syntax test))
                                                                  ,new-then
                                                                  ,(recur-in-cond (syntax else-stx) new-cond-test))
@@ -170,8 +170,8 @@
                                                'stepper-hint
                                                'comes-from-cond)])
                                 ; move the stepper-else mark to the if, if it's present:
-                                (if (syntax-property (syntax test) 'stepper-else)
-                                    (syntax-property rebuilt 'stepper-else #t)
+                                (if (stepper-syntax-property (syntax test) 'stepper-else)
+                                    (stepper-syntax-property rebuilt 'stepper-else #t)
                                     rebuilt)))])
                        (cond [(cond-test stx) ; continuing an existing 'cond'
                               (rebuild-if cond-test)]
@@ -183,17 +183,17 @@
                               (rebuild-stx `(if ,@(map recur-regular (list (syntax test) (syntax (begin then)) (syntax else-stx)))) stx)]))]
                     [(begin body) ; else clauses of conds; ALWAYS AN ERROR CALL
                      (cond-test stx)
-                     (syntax-property stx 'stepper-skip-completely #t)]
+                     (stepper-syntax-property stx 'stepper-skip-completely #t)]
                     
                     ; wrapper on a local.  This is necessary because teach.ss expands local into a trivial let wrapping a bunch of
                     ;  internal defines, and therefore the letrec-values on which I want to hang the 'stepper-hint doesn't yet
                     ;  exist.  So we patch it up after expansion.  And we discard the outer 'let' at the same time.
                     [(let-values () expansion-of-local)
-                     (eq? (syntax-property stx 'stepper-hint) 'comes-from-local)
+                     (eq? (stepper-syntax-property stx 'stepper-hint) 'comes-from-local)
                      (syntax-case #`expansion-of-local (letrec-values)
                        [(letrec-values (bogus-clause clause ...) . bodies)
                         (recur-regular
-                         (syntax-property #`(letrec-values (clause ...) . bodies) 'stepper-hint 'comes-from-local))]
+                         (stepper-syntax-property #`(letrec-values (clause ...) . bodies) 'stepper-hint 'comes-from-local))]
                        [else (error 'top-level-rewrite "expected a letrec-values inside a local, given: ~e" 
                                     (syntax-object->datum #`expansion-of-local))])]
                     
@@ -204,7 +204,7 @@
                     ; varref :
                     [var
                      (identifier? (syntax var))
-                     (syntax-property 
+                     (stepper-syntax-property 
                       (syntax var) 
                       'stepper-binding-type
                       (if (eq? (identifier-binding (syntax var)) 'lexical)
@@ -220,8 +220,8 @@
                            (rebuild-stx (syntax-pair-map content recur-regular) stx)
                            stx))])])
             
-            (if (eq? (syntax-property stx 'stepper-xml-hint) 'from-xml-box)
-                (syntax-property #`(#,put-into-xml-table #,rewritten) 
+            (if (eq? (stepper-syntax-property stx 'stepper-xml-hint) 'from-xml-box)
+                (stepper-syntax-property #`(#,put-into-xml-table #,rewritten) 
                                  'stepper-skipto
                                  (list syntax-e cdr car))
                 (syntax-recertify rewritten stx (current-code-inspector) #f))))))
@@ -383,9 +383,9 @@
                . -> . (vector/p syntax? binding-set?))
       (lambda (exp tail-bound pre-break? procedure-name-info)
         
-        (cond [(syntax-property exp 'stepper-skipto)                
+        (cond [(stepper-syntax-property exp 'stepper-skipto)                
                (let* ([free-vars-captured #f] ; this will be set!'ed
-                      ;[dont-care (printf "expr: ~a\nskipto: ~a\n" expr (syntax-property expr 'stepper-skipto))]
+                      ;[dont-care (printf "expr: ~a\nskipto: ~a\n" expr (stepper-syntax-property expr 'stepper-skipto))]
                       ; WARNING! I depend on the order of evaluation in application arguments here:
                       [annotated (skipto/auto
                                   exp
@@ -399,7 +399,7 @@
                          annotated)
                         free-vars-captured))]
 
-              [(syntax-property exp 'stepper-skip-completely)
+              [(stepper-syntax-property exp 'stepper-skip-completely)
                (2vals (wcm-wrap 13 exp) null)]
 
               [else
@@ -443,7 +443,7 @@
                                                             'let-body
                                                             #t))]
                     [make-debug-info-fake-exp (lambda (exp free-bindings)
-                                                (make-debug-info (syntax-property exp 'stepper-fake-exp #t) 
+                                                (make-debug-info (stepper-syntax-property exp 'stepper-fake-exp #t) 
                                                                  tail-bound free-bindings 'none #t))]
                     
                     [outer-wcm-wrap (if pre-break?
@@ -476,7 +476,7 @@
                                        ; wrap bodies in explicit begin if more than 1 user-introduced (non-skipped) bodies
                                        ; NB: CAN'T HAPPEN in beginner up through int/lambda
                                        (if (> (length (filter (lambda (clause)
-                                                                (not (syntax-property clause 'stepper-skip-completely)))
+                                                                (not (stepper-syntax-property clause 'stepper-skip-completely)))
                                                               (syntax->list (syntax bodies)))) 1)
                                            (lambda-body-recur (syntax (begin . bodies)))
                                            (let*-2vals ([(annotated-bodies free-var-sets)
@@ -728,7 +728,7 @@
                                            (varref-break-wrap)
                                            (varref-no-break-wrap)))])
                                    (2vals 
-                                    (case (syntax-property var 'stepper-binding-type)
+                                    (case (stepper-syntax-property var 'stepper-binding-type)
                                       ((lambda-bound macro-bound)   (varref-no-break-wrap))
                                       ((let-bound)                  (varref-break-wrap))
                                       ((non-lexical) ;; is it from this module or not?
@@ -836,7 +836,7 @@
                     ;; more efficient, but disabled because of difficulties in threading it through the 
                     ;; reconstruction.  Easier to undo in the macro-unwind phase.
                     #;[(let-values () . bodies-stx)
-                     (eq? (syntax-property exp 'stepper-hint) 'comes-from-begin)
+                     (eq? (stepper-syntax-property exp 'stepper-hint) 'comes-from-begin)
                      (begin-abstraction (syntax->list #`bodies-stx))]
                     
                     [(let-values . _)
@@ -976,7 +976,7 @@
                        [free-varrefs (varref-set-union free-varrefs-terms)])
                       (2vals
                        (let* ([arg-temps (build-list (length annotated-terms) get-arg-var)]
-                              [tagged-arg-temps (map (lambda (var) (syntax-property var 'stepper-binding-type 'stepper-temp))
+                              [tagged-arg-temps (map (lambda (var) (stepper-syntax-property var 'stepper-binding-type 'stepper-temp))
                                                      arg-temps)]
                               [let-clauses #`((#,tagged-arg-temps 
                                                  (values #,@(map (lambda (_) *unevaluated*) tagged-arg-temps))))]
@@ -1090,11 +1090,11 @@
     (define/contract annotate/module-top-level
       (syntax? . -> . syntax?)
       (lambda (exp)
-        (cond [(syntax-property exp 'stepper-skip-completely) exp]
-              [(syntax-property exp 'stepper-define-struct-hint)
+        (cond [(stepper-syntax-property exp 'stepper-skip-completely) exp]
+              [(stepper-syntax-property exp 'stepper-define-struct-hint)
                #`(begin #,exp
                         (#,(make-define-struct-break exp)))]
-              [(syntax-property exp 'stepper-skipto)
+              [(stepper-syntax-property exp 'stepper-skipto)
                (skipto/auto exp 'rebuild annotate/module-top-level)] 
               [else 
                (syntax-case exp (#%app call-with-values define-values define-syntaxes require require-for-syntax provide begin lambda)
@@ -1127,7 +1127,7 @@
                          (call-with-values (lambda () vals)
                                            print-values))))]
                  [any
-                  (syntax-property exp 'stepper-test-suite-hint)
+                  (stepper-syntax-property exp 'stepper-test-suite-hint)
                   (top-level-annotate/inner (top-level-rewrite exp) exp #f)]
                  [else
                   (top-level-annotate/inner (top-level-rewrite exp) exp #f)
