@@ -661,9 +661,9 @@
                      (test 'a syntax-e (syntax a-var-0))
                      (test 'a syntax-e (strip-return-value-wrap (syntax a-var-1)))
                      (test 'b syntax-e (syntax b-var-0))
-                     (test 'let-bound syntax-property (syntax a-var-0) 'stepper-binding-type)
-                     (test 'let-bound syntax-property (strip-return-value-wrap (syntax a-var-1)) 'stepper-binding-type)
-                     (test 'lambda-bound syntax-property (syntax b-var-0) 'stepper-binding-type)
+                     (test 'let-bound stepper-syntax-property (syntax a-var-0) 'stepper-binding-type)
+                     (test 'let-bound stepper-syntax-property (strip-return-value-wrap (syntax a-var-1)) 'stepper-binding-type)
+                     (test 'lambda-bound stepper-syntax-property (syntax b-var-0) 'stepper-binding-type)
                      )])))
 
 
@@ -678,9 +678,9 @@
 (syntax-case (namespace-rewrite-expr '(lambda (a) a) mz-namespace) (lambda)
   [(lambda (a-var-0) a-var-1)
    (begin
-     (test 'lambda-bound syntax-property (syntax a-var-0) 'stepper-binding-type)
+     (test 'lambda-bound stepper-syntax-property (syntax a-var-0) 'stepper-binding-type)
      (test 'lexical identifier-binding (syntax a-var-0)) 
-     (test 'lambda-bound syntax-property (syntax a-var-1) 'stepper-binding-type)
+     (test 'lambda-bound stepper-syntax-property (syntax a-var-1) 'stepper-binding-type)
      (test 'lexical identifier-binding (syntax a-var-1)))])
 
 (syntax-case (namespace-rewrite-expr (datum->syntax-object #'here '(case-lambda ((a) a) ((a b) b))) mz-namespace) (case-lambda)
@@ -693,9 +693,9 @@
 ;  [(let-values ([(or-part-0) true-0]) (if or-part-1 or-part-2 rest))
 ;   (begin
 ;     (test 'or-part syntax-e (syntax or-part-0))
-;     (test 'let-bound syntax-property (syntax or-part-0) 'stepper-binding-type)
+;     (test 'let-bound stepper-syntax-property (syntax or-part-0) 'stepper-binding-type)
 ;     (test 'or-part syntax-e (syntax or-part-1))
-;     (test 'let-bound syntax-property (syntax or-part-1) 'stepper-binding-type))])
+;     (test 'let-bound stepper-syntax-property (syntax or-part-1) 'stepper-binding-type))])
 
 (parameterize ([current-namespace beginner-namespace])
   (err/rt-test (eval (car (annotate-exprs-no-break (string->stx-list "(define first 3)")))) exn:user?))

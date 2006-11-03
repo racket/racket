@@ -265,7 +265,7 @@
     (printf "expanded: ~a\n" (syntax-object->datum stx))
     (syntax-case stx (if begin #%datum)
       [(if dc dc2 stx2)
-       (printf "stepper-else: ~a\n" (syntax-property stx 'stepper-else))
+       (printf "stepper-else: ~a\n" (stepper-syntax-property stx 'stepper-else))
        ]
       [stx
        (printf "outer thing has wrong shape: ~a\n" (syntax-object->datum (syntax stx)))])))
