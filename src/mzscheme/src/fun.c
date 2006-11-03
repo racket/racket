@@ -66,7 +66,12 @@
 # endif /* USE_MACTIME */
 #endif /* TIME_SYNTAX */
 
-#define ASSERT_SUSPEND_BREAK_ZERO() (scheme_current_thread->suspend_break ? (*(long *)0x0 = 1): 0)
+static void ASSERT_SUSPEND_BREAK_ZERO() {
+#if 0
+  if (scheme_current_thread->suspend_break)
+    abort();
+#endif
+}
 
 /* globals */
 int scheme_defining_primitives; /* set to 1 during start-up */
