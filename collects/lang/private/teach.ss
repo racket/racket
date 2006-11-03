@@ -43,7 +43,8 @@
 		      (lib "stx.ss" "syntax")
 		      (lib "struct.ss" "syntax")
 		      (lib "context.ss" "syntax")
-		      (lib "include.ss"))
+		      (lib "include.ss")
+                      (lib "shared.ss" "stepper" "private"))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; run-time helpers
@@ -95,7 +96,7 @@
   
   ;; A consistent pattern for stepper-skipto:
   (define-for-syntax (stepper-ignore-checker stx)
-    (syntax-property stx 'stepper-skipto '(syntax-e cdr syntax-e cdr car)))
+    (stepper-syntax-property stx 'stepper-skipto '(syntax-e cdr syntax-e cdr car)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; syntax implementations
@@ -241,7 +242,7 @@
                                   (syntax/loc stx
                                     (check-top-level-not-defined 'who #'name))))
                               names)])
-            (syntax-property 
+            (stepper-syntax-property 
 	     (syntax/loc stx
 	       (begin
 		 check ...
@@ -300,7 +301,7 @@
     (define (ensure-expression stx k)
       (if (memq (syntax-local-context) '(expression))
 	  (k)
-	  (syntax-property #`(begin0 #,stx) 'stepper-skipto '(syntax-e cdr car))))
+	  (stepper-syntax-property #`(begin0 #,stx) 'stepper-skipto '(syntax-e cdr car))))
 
     ;; Use to generate nicer error messages than direct pattern
     ;; matching. The `where' argument is an English description
@@ -439,10 +440,10 @@
                                    (quasisyntax/loc 
                                     stx 
                                     (define name
-                                      #,(syntax-property
+                                      #,(stepper-syntax-property
                                          #`(lambda arg-seq 
-                                             #,(syntax-property #`make-lambda-generative 
-                                                                'stepper-skip-completely #t) 
+                                             #,(stepper-syntax-property #`make-lambda-generative 
+                                                                       'stepper-skip-completely #t) 
                                              lexpr ...)
                                          'stepper-define-type
                                          'lambda-define))))))])
@@ -513,8 +514,8 @@
                           (lambda (fn)
                             (with-syntax ([fn fn]
                                           [args (cdr (syntax-e #'name-seq))])
-                              (quasisyntax/loc stx (define fn #,(syntax-property
-                                                                 (syntax-property
+                              (quasisyntax/loc stx (define fn #,(stepper-syntax-property
+                                                                 (stepper-syntax-property
                                                                   #`(lambda args expr ...)
                                                                   'stepper-define-type
                                                                   'shortened-proc-define)
@@ -718,7 +719,7 @@
 			      (lambda (def-proc-names)
 				(with-syntax ([(def-proc-name ...) def-proc-names]
 					      [(proc-name ...) proc-names])
-				  (syntax-property #`(define-values (def-proc-name ...)
+				  (stepper-syntax-property #`(define-values (def-proc-name ...)
 						       (let ()
 							 (define-struct name_ (field_ ...) (make-inspector))
 							 (values proc-name ...)))
@@ -727,9 +728,9 @@
                  (let ([defn
                          (quasisyntax/loc stx
                            (begin
-                             #,(syntax-property #`(define-syntaxes (name_) compile-info)
-                                                'stepper-skip-completely
-                                                #t)
+                             #,(stepper-syntax-property #`(define-syntaxes (name_) compile-info)
+                                                        'stepper-skip-completely
+                                                        #t)
                              #,defn0))])
                    (check-definitions-new 'define-struct
                                           stx 
@@ -951,7 +952,7 @@
 				clause
 				"found an `else' clause that isn't the last clause ~
                                     in its `cond' expression"))
-			     (with-syntax ([new-test (syntax-property (syntax #t) 'stepper-else #t)])
+			     (with-syntax ([new-test (stepper-syntax-property (syntax #t) 'stepper-else #t)])
 			       (syntax/loc clause (new-test answer))))]
 			  [(question answer)
 			   (with-syntax ([verified (stepper-ignore-checker (syntax (verify-boolean question 'cond)))])
@@ -1076,8 +1077,8 @@
 				   (case where
 				     [(or) #`#f]
 				     [(and) #`#t])
-				   (syntax-property
-				    (syntax-property
+				   (stepper-syntax-property
+				    (stepper-syntax-property
 				     (quasisyntax/loc 
 					 stx
 				       (if #,(stepper-ignore-checker (quasisyntax/loc stx (verify-boolean #,(car remaining) 'swhere)))
@@ -1210,7 +1211,7 @@
 				   (map (lambda (def-ids)
 					  (map (lambda (def-id)
 						 (list
-						  (syntax-property
+						  (stepper-syntax-property
 						   (datum->syntax-object
 						    #f
 						    (string->uninterned-symbol
@@ -1238,7 +1239,7 @@
 					    mappers
 					    val-defns
 					    (syntax->list (syntax (d-v ...)))))])
-			(syntax-property
+			(stepper-syntax-property
 			 (quasisyntax/loc stx
 			   (let ()
 			     (define #,(gensym) 1) ; this ensures that the expansion of 'local' looks
@@ -1285,7 +1286,7 @@
 			   ;; Generate tmp-ids that at least look like the defined
 			   ;;  ids, for the purposes of error reporting, etc.:
 			   (map (lambda (name)
-				  (syntax-property
+				  (stepper-syntax-property
 				   (datum->syntax-object
 				    #f
 				    (string->uninterned-symbol
@@ -1318,7 +1319,7 @@
 			   ;; Generate tmp-ids that at least look like the defined
 			   ;;  ids, for the purposes of error reporting, etc.:
 			   (map (lambda (name)
-				  (syntax-property
+				  (stepper-syntax-property
 				   (datum->syntax-object
 				    #f
 				    (string->uninterned-symbol
@@ -1343,7 +1344,7 @@
        (lambda ()
 	 (syntax-case stx ()
 	   [(_ () expr)
-	    (syntax-property
+	    (stepper-syntax-property
 	     #`(let () expr)
 	     'stepper-skipto
 	     '(syntax-e cdr cdr car))]
@@ -1351,7 +1352,7 @@
 	    (let ([names (syntax->list (syntax (name0 name ...)))])
 	      (andmap identifier/non-kw? names))
 	    (with-syntax ([rhs-expr0 (allow-local-lambda (syntax rhs-expr0))])
-	      (syntax-property
+	      (stepper-syntax-property
 	       (quasisyntax/loc stx
 		 (intermediate-let ([name0 rhs-expr0])
 				   #,(quasisyntax/loc stx 
@@ -1372,7 +1373,7 @@
 	   ;; pattern-match again to pull out the formals:
 	   (syntax-case stx ()
 	     [(_ formals . rest)
-	      (quasisyntax/loc stx (lambda formals #,(syntax-property
+	      (quasisyntax/loc stx (lambda formals #,(stepper-syntax-property
                                                     #`make-lambda-generative
                                                     'stepper-skip-completely
                                                     #t) 
@@ -1477,11 +1478,11 @@
 			      (and (andmap identifier/non-kw? names)
 				   (or empty-ok? (pair? names))
 				   (not (check-duplicate-identifier names)))))
-		       (syntax-property
+		       (stepper-syntax-property
 			(quasisyntax/loc stx
 			  ((intermediate-letrec ([fname
-						  #,(syntax-property
-						     (syntax-property 
+						  #,(stepper-syntax-property
+						     (stepper-syntax-property 
 						      #`(lambda (name ...)
 							  expr)
 						      'stepper-define-type
@@ -1637,7 +1638,7 @@
 	       (with-syntax ([x (loop (syntax x) (sub1 depth))]
 			     [rest (loop (syntax rest) depth)]
 			     [uq-splicing (stx-car (stx-car stx))])
-		 (syntax-property (syntax/loc stx (the-cons (list (quote uq-splicing) x) rest))
+		 (stepper-syntax-property (syntax/loc stx (the-cons (list (quote uq-splicing) x) rest))
                                   'stepper-hint
                                   'quasiquote-the-cons-application)))]
 	  [intermediate-unquote-splicing
@@ -1653,7 +1654,7 @@
 	  [(a . b)
 	   (with-syntax ([a (loop (syntax a) depth)]
 			 [b (loop (syntax b) depth)])
-	     (syntax-property (syntax/loc stx (the-cons a b))
+	     (stepper-syntax-property (syntax/loc stx (the-cons a b))
                               'stepper-hint
                               'quasiquote-the-cons-application))]
 	  [any
@@ -1688,7 +1689,7 @@
 				     stx
 				     (syntax->list (syntax exprs))
 				     null)
-	    (syntax-property 
+	    (stepper-syntax-property 
 	     (syntax/loc stx (time . exprs))
 	     'stepper-skipto
              '(syntax-e cdr car syntax-e car syntax-e cdr car syntax-e cdr syntax-e cdr car syntax-e cdr cdr syntax-e car))]
@@ -1866,7 +1867,7 @@
 						  exprs
 						  null)
 			 (if continuing?
-			     (syntax-property
+			     (stepper-syntax-property
 			      (syntax/loc stx (begin (set! id expr ...) set!-result))
 			      'stepper-skipto
 			      '(syntax-e cdr syntax-e car))
@@ -1968,7 +1969,7 @@
 	  #f
 	  "expected a sequence of expressions after `begin', but nothing's there")]
 	[(_ e ...)
-	 (syntax-property (syntax/loc stx (let () e ...))
+	 (stepper-syntax-property (syntax/loc stx (let () e ...))
                           'stepper-hint
                           'comes-from-begin)]
 	[_else

@@ -1,6 +1,9 @@
 
 (module teachhelp mzscheme
-  (require "firstorder.ss")
+  (require "firstorder.ss"
+           (lib "shared.ss" "stepper" "private"))
+
+  (require-for-syntax (lib "shared.ss" "stepper" "private"))
   
   (provide make-undefined-check 
 	   make-first-order-function)
@@ -17,7 +20,7 @@
 	   [(id . args)
 	    (datum->syntax-object
 	     check-proc
-	     (cons (syntax-property
+	     (cons (stepper-syntax-property
 		    (datum->syntax-object
 		     check-proc
 		     (list check-proc 
@@ -28,7 +31,7 @@
 		   (syntax args))
 	     stx)]
 	   [id
-            (syntax-property
+            (stepper-syntax-property
              (datum->syntax-object
               check-proc
               (list check-proc 

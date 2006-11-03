@@ -7,7 +7,9 @@
 (module prim mzscheme
   (require (lib "error.ss" "lang")
 	   (rename (lib "htdp-beginner.ss" "lang") beginner-app #%app))
-  (require-for-syntax "private/firstorder.ss")
+  
+  (require-for-syntax "private/firstorder.ss"
+                      (lib "shared.ss" "stepper" "private"))
   
   (provide define-primitive
 	   define-higher-order-primitive
@@ -24,8 +26,8 @@
 	 #'(define-syntax name 
              (make-first-order
               (lambda (stx)
-                (with-syntax ([tagged-impl (syntax-property
-                                            (syntax-property (quote-syntax impl) 'stepper-skip-completely #t)
+                (with-syntax ([tagged-impl (stepper-syntax-property
+                                            (stepper-syntax-property (quote-syntax impl) 'stepper-skip-completely #t)
                                             'stepper-prim-name
                                             (quote-syntax name))])
                   (syntax-case stx ()
@@ -90,8 +92,8 @@
 		   (define-syntax name
                      (make-first-order
                       (lambda (s)
-                        (with-syntax ([tagged-impl (syntax-property
-                                                    (syntax-property (quote-syntax impl) 'stepper-skip-completely #t)
+                        (with-syntax ([tagged-impl (stepper-syntax-property
+                                                    (stepper-syntax-property (quote-syntax impl) 'stepper-skip-completely #t)
                                                     'stepper-prim-name
                                                     (quote-syntax name))])
                           (syntax-case s ()
