@@ -563,7 +563,8 @@
   ;; expressions
 
   (define (transfer-info to-exp from-exp)
-    (let* ([attached (syntax-property to-exp 'stepper-properties (append (syntax-property from-exp 'stepper-properties)
+    (let* ([attached (syntax-property to-exp 'stepper-properties (append (or (syntax-property from-exp 'stepper-properties)
+                                                                             null)
                                                                          (or (syntax-property to-exp 'stepper-properties)
                                                                              null)))]
            [attached (syntax-property attached 'user-source (syntax-property from-exp 'user-source))]
