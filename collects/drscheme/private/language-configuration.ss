@@ -256,30 +256,25 @@
               ;; finds the next leaf after the selected child,
               ;; using `inc' and `start' to control the direction of the traversal.
               (define/private (select-next inc start)
-                (let ([fst-selected (get-selected)])
-                  (when fst-selected
-                    (let loop ([item fst-selected])
-		      (when item
-			(let* ([parent (send item get-parent)]
-			       [siblings (list->vector 
-                                          (if parent
-                                              (send parent get-items)
-                                              (get-items)))])
-			  (let sibling-loop ([index (inc (find-index item siblings))])
-			    (cond
-			      [(and (<= 0 index)
-				    (< index (vector-length siblings)))
-			       (let ([sibling (vector-ref siblings index)])
-				 (cond
-				   [(find-first-leaf sibling inc start)
-				    =>
-				    (λ (child)
-				      (send fst-selected select #f)
-				      (send child select #t)
-				      (open-parents child)
-                                      (make-visible child))]
-				   [else (sibling-loop (inc index))]))]
-			      [else (loop parent)]))))))))
+                (define fst-selected (get-selected))
+                (let loop ([item fst-selected])
+                  (when item
+                    (let* ([parent (send item get-parent)]
+                           [siblings (if parent
+                                       (send parent get-items)
+                                       (get-items))]
+                           [siblings-len (length siblings)])
+                      (let sibling-loop ([index (inc (find-index item siblings))])
+                        (if (< -1 index siblings-len)
+                          (let ([child (find-first-leaf (list-ref siblings index)
+                                                        inc start)])
+                            (if child
+                              (begin (send fst-selected select #f)
+                                     (send child select #t)
+                                     (open-parents child)
+                                     (make-visible child))
+                              (sibling-loop (inc index))))
+                          (loop parent)))))))
               
               ;; find-first-leaf : item (int -> int) (vec -> int)
               ;; finds the first child, using `inc' and `start' to control
@@ -299,16 +294,14 @@
                      item]
                     [else #f])))
 
-              ;; find-index : tst (vectorof tst) -> int
-              ;; returns the index of `item' in `vec'
-              (define/private (find-index item vec)
-                (let loop ([i 0])
-                  (cond
-                    [(< i (vector-length vec))
-                     (if (eq? (vector-ref vec i) item)
-                         i
-                         (loop (+ i 1)))]
-                    [else (error 'find-index "didn't find ~e in ~e" item vec)])))
+              ;; find-index : tst (listof tst) -> int
+              ;; returns the index of `item' in `lst'
+              (define/private (find-index item lst)
+                (let loop ([i 0] [l lst])
+                  (cond [(null? l)
+                         (error 'find-index "didn't find ~e in ~e" item lst)]
+                        [(eq? (car l) item) i]
+                        [else (loop (add1 i) (cdr l))])))
 
               ;; open-parents : item -> void
               ;; selects the item and opens all of its parents.
