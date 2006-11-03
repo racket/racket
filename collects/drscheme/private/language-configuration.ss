@@ -170,38 +170,38 @@
              (λ (x y) (cancel-callback))))
           (define grow-box-spacer (make-object grow-box-spacer-pane% button-panel))
 
-          (define-values (get-selected-language get-selected-language-settings)
-            (fill-language-dialog language-dialog-meat-panel 
-                                  button-panel 
-                                  language-settings-to-show 
-                                  #f
-                                  manuals?
-                                  ok-button))
-
           ;; cancelled? : boolean
           ;; flag that indicates if the dialog was cancelled.
           (define cancelled? #t)
 
-	  ;; ok-callback : -> void
-          (define (ok-callback)
-            (cond [(get-selected-language)
-                   (set! cancelled? #f)
-                   (send dialog show #f)]
-                  [else
-                   (message-box (string-constant drscheme)
-                                (string-constant please-select-a-language))]))
-          ;; enter-callback : -> void similar to the above, but return #f if no
-          ;; language is selected, so the event will be processed by the list
-          ;; (which will toggle subtrees)
+          ;; enter-callback : -> bool
+          ;; similar to the above, but return #f if no language is selected, so
+          ;; the event will be processed by the list (which will toggle
+          ;; subtrees)
           (define (enter-callback)
             (cond [(get-selected-language)
                    (set! cancelled? #f)
                    (send dialog show #f)]
                   [else #f]))
 
+	  ;; ok-callback : -> void
+          (define (ok-callback)
+            (unless (enter-callback)
+              (message-box (string-constant drscheme)
+                           (string-constant please-select-a-language))))
+
           ;; cancel-callback : -> void
 	  (define (cancel-callback)
             (send dialog show #f))
+
+          (define-values (get-selected-language get-selected-language-settings)
+            (fill-language-dialog language-dialog-meat-panel 
+                                  button-panel 
+                                  language-settings-to-show 
+                                  #f
+                                  manuals?
+                                  ok-button
+                                  enter-callback))
 
           (when show-welcome?
             (add-welcome dialog welcome-before-panel welcome-after-panel))
@@ -225,7 +225,9 @@
       ;; as the defaults in the dialog and the output language setting is the user's choice
       ;; if re-center is a dialog, when the show details button is clicked, the dialog is recenterd.
       (define fill-language-dialog
-        (opt-lambda (parent show-details-parent language-settings-to-show [re-center #f] [manuals? #f] [ok-button #f])
+        (opt-lambda (parent show-details-parent language-settings-to-show
+                     [re-center #f] [manuals? #f]
+                     [ok-button #f] [enter-callback #f])
 
           (define-values (language-to-show settings-to-show)
             (let ([request-lang-to-show (language-settings-language language-settings-to-show)])
@@ -318,16 +320,20 @@
 
               (define/override (on-select i)
                 (if (and i (is-a? i hieritem-language<%>))
-                  (something-selected)
+                  (something-selected i)
                   (nothing-selected)))
               ;; this is not used, since all lists are selectable
-              (define/override (on-click i)
-                (when (and i (is-a? i hierarchical-list-compound-item<%>))
-                  (send i toggle-open/closed)))
+              ;; (define/override (on-click i)
+              ;;   (when (and i (is-a? i hierarchical-list-compound-item<%>))
+              ;;     (send i toggle-open/closed)))
               ;; use this instead
               (define/override (on-double-select i)
-                (when (and i (is-a? i hierarchical-list-compound-item<%>))
-                  (send i toggle-open/closed)))
+                (when i
+                  (cond [(is-a? i hierarchical-list-compound-item<%>)
+                         (send i toggle-open/closed)]
+                        [(is-a? i hieritem-language<%>)
+                         (something-selected i)
+                         (enter-callback)])))
               (super-instantiate (parent))))
 
           (define outermost-panel (make-object horizontal-pane% parent))
@@ -398,10 +404,11 @@
             (when ok-button (send ok-button enable #f))
             (send details-button enable #f))
 
-          ;; something-selected : -> void
-          (define (something-selected)
+          ;; something-selected : item -> void
+          (define (something-selected item)
             (when ok-button (send ok-button enable #t))
-            (send details-button enable #t))
+            (send details-button enable #t)
+            (send item selected))
 
           ;; update-manual-ordering-text : -> void
           ;; updates the manual ordering text with the order the manuals are searched for this language
