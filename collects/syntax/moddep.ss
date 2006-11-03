@@ -109,20 +109,20 @@
 		     (read-syntax path p)))])
 	   (when (eof-object? v)
 	     (error 'read-one "empty file; expected a module declaration in: ~a" path))
-	   (let ([name (let-values ([(base name dir?) (split-path path)])
-			 (string->symbol (bytes->string/utf-8
-					  (path->bytes (path-replace-suffix  name #""))
-					  #\?)))])
-	     (check-module-form v name path))
-	   (unless (eof-object? (read p))
-	     (error 
-	      'read-one
-	      "file has more than one expression; expected a module declaration only in: ~a"
-	      path))
-	   (if (and (syntax? v)
-		    (compiled-expression? (syntax-e v)))
-	       (syntax-e v)
-	       v)))
+	   (let* ([name (let-values ([(base name dir?) (split-path path)])
+                          (string->symbol (bytes->string/utf-8
+                                           (path->bytes (path-replace-suffix  name #""))
+                                           #\?)))]
+                  [v (check-module-form v name path)])
+             (unless (eof-object? (read p))
+               (error 
+                'read-one
+                "file has more than one expression; expected a module declaration only in: ~a"
+                path))
+             (if (and (syntax? v)
+                      (compiled-expression? (syntax-e v)))
+                 (syntax-e v)
+                 v))))
        (lambda () (close-input-port p)))))
   
   (define-struct (exn:get-module-code exn) (path))
