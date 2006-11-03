@@ -257,7 +257,10 @@
                     [(down) (select-next add1)]
                     ;; right key is fine, but nicer to close after a left
                     [(left) (super on-char evt)
-                            (cond [(get-selected) => (λ (i) (send i close))])]
+                            (cond [(get-selected)
+                                   => (λ (i)
+                                        (when (is-a? i hierarchical-list-compound-item<%>)
+                                          (send i close)))])]
                     [else (super on-char evt)])))
 
               (inherit get-items)
