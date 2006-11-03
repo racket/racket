@@ -115,6 +115,7 @@
                     (list '(right alt))
                     (list '(right alt))
                     (list '(right alt)))
+     #|
      (make-key-spec (make-buff-spec "'(abc (def))" 0 0)
                     (make-buff-spec "'(abc (def))" 12 12)
                     (list '(right alt))
@@ -125,6 +126,7 @@
                     (list '(left alt))
                     (list '(left alt))
                     (list '(left alt)))
+|#
      (build-open-bracket-spec "" 0 #\()
      (build-open-bracket-spec "(f cond " 8 #\()
      (build-open-bracket-spec "(f let (" 8 #\()
