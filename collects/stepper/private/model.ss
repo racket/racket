@@ -47,10 +47,9 @@
            "marks.ss"
            "model-settings.ss"
            "macro-unwind.ss"
-           "lifting.ss"           
+           "lifting.ss"
            ;; for breakpoint display
-           "display-break-stuff.ss"
-           (file "/Users/clements/clements/scheme-scraps/eli-debug.ss"))
+           "display-break-stuff.ss")
 
   (define program-expander-contract
     ((-> void?) ; init
@@ -302,17 +301,16 @@
                            returned-value-list)]
 
                 [else (error 'break "unknown label on break")]))))))
-    
+
     (define maybe-lift
       (if (render-settings-lifting? render-settings)
           lift
           ;; ... oh dear; model.ss should disable the double-break & late-let break when lifting is off.
           (lambda (stx dont-care) (list stx))))
-    
+
     (define (step-through-expression expanded expand-next-expression)
       (let* ([annotated (a:annotate expanded break track-inferred-names?
                                     language-level)])
-        (>>> "annotation complete")
         (eval-syntax annotated)
         (expand-next-expression)))
 
