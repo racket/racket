@@ -2,9 +2,12 @@
   (require (lib "etc.ss")
            (lib "list.ss")
            "contract-guts.ss"
+           "contract-opt.ss"
+           "contract-opt-guts.ss"
            "class-internal.ss")
   
-  (require-for-syntax "contract-helpers.ss"
+  (require-for-syntax "contract-opt-guts.ss"
+                      "contract-helpers.ss"
                       (lib "list.ss")
                       (lib "stx.ss" "syntax")
                       (lib "name.ss" "syntax"))
@@ -25,7 +28,9 @@
            make-mixin-contract
            is-a?/c 
            subclass?/c 
-           implementation?/c)
+           implementation?/c
+           
+           check-procedure)
   
   
   (define-syntax (any stx)
@@ -1738,6 +1743,113 @@
                            (void)]
                           [else (loop (cdr counts))]))))
                   (<= min-at-least dom-length))))])))
+  
+  ;;
+  ;; arrow opter
+  ;;
+  (define/opter (-> opt/i pos neg stx)
+    (define (opt/arrow-ctc doms rngs)
+      (let*-values ([(dom-vars rng-vars) (values (generate-temporaries doms)
+                                                 (generate-temporaries rngs))]
+                    [(next-doms lifts-doms partials-doms)
+                     (let loop ([vars dom-vars]
+                                [doms doms]
+                                [next-doms null]
+                                [lifts-doms null]
+                                [partials-doms null])
+                       (cond
+                         [(null? doms) (values (reverse next-doms) lifts-doms partials-doms)]
+                         [else
+                          (let-values ([(next lift partial _ __)
+                                        (opt/i neg pos (car doms))])
+                            (loop (cdr vars)
+                                  (cdr doms)
+                                  (cons (with-syntax ((next next)
+                                                      (car-vars (car vars)))
+                                          (syntax (let ((val car-vars)) next)))
+                                        next-doms)
+                                  (append lifts-doms lift)
+                                  (append partials-doms partial)))]))]
+                    [(next-rngs lifts-rngs partials-rngs)
+                     (let loop ([vars rng-vars]
+                                [rngs rngs]
+                                [next-rngs null]
+                                [lifts-rngs null]
+                                [partials-rngs null])
+                       (cond
+                         [(null? rngs) (values (reverse next-rngs) lifts-rngs partials-rngs)]
+                         [else
+                          (let-values ([(next lift partial _ __)
+                                        (opt/i pos neg (car rngs))])
+                            (loop (cdr vars)
+                                  (cdr rngs)
+                                  (cons (with-syntax ((next next)
+                                                      (car-vars (car vars)))
+                                          (syntax (let ((val car-vars)) next)))
+                                        next-rngs)
+                                  (append lifts-rngs lift)
+                                  (append partials-rngs partial)))]))])
+        (values
+         (with-syntax ((pos pos)
+                       ((dom-arg ...) dom-vars)
+                       ((rng-arg ...) rng-vars)
+                       ((next-dom ...) next-doms)
+                       (dom-len (length dom-vars))
+                       ((next-rng ...) next-rngs))
+           (syntax (begin
+                     (check-procedure val dom-len src-info pos orig-str)
+                     (λ (dom-arg ...)
+                       (let-values ([(rng-arg ...) (val next-dom ...)])
+                         (values next-rng ...))))))
+         (append lifts-doms lifts-rngs)
+         (append partials-doms partials-rngs)
+         #f
+         #f)))
+    
+    (define (opt/arrow-any-ctc doms)
+      (let*-values ([(dom-vars) (generate-temporaries doms)]
+                    [(next-doms lifts-doms partials-doms)
+                     (let loop ([vars dom-vars]
+                                [doms doms]
+                                [next-doms null]
+                                [lifts-doms null]
+                                [partials-doms null])
+                       (cond
+                         [(null? doms) (values (reverse next-doms) lifts-doms partials-doms)]
+                         [else
+                          (let-values ([(next lift partial flat _)
+                                        (opt/i pos neg (car doms))])
+                            (loop (cdr vars)
+                                  (cdr doms)
+                                  (cons (with-syntax ((next next)
+                                                      (car-vars (car vars)))
+                                          (syntax (let ((val car-vars)) next)))
+                                        next-doms)
+                                  (append lifts-doms lift)
+                                  (append partials-doms partial)))]))])
+        (values
+         (with-syntax ((pos pos)
+                       ((dom-arg ...) dom-vars)
+                       ((next-dom ...) next-doms)
+                       (dom-len (length dom-vars)))
+           (syntax (begin
+                     (check-procedure val dom-len src-info pos orig-str)
+                     (λ (dom-arg ...)
+                       (val next-dom ...)))))
+         lifts-doms
+         partials-doms
+         #f
+         #f)))
+    
+    (syntax-case stx (-> values any)
+      [(-> dom ... (values rng ...))
+       (opt/arrow-ctc (syntax->list (syntax (dom ...)))
+                      (syntax->list (syntax (rng ...))))]
+      [(-> dom ... any)
+       (opt/arrow-any-ctc (syntax->list (syntax (dom ...))))]
+      [(-> dom ... rng)
+       (opt/arrow-ctc (syntax->list (syntax (dom ...)))
+                      (list #'rng))]))
 
   ;; ----------------------------------------
   ;; Checks and error functions used in macro expansions

@@ -1,7 +1,5 @@
 (module contract-opt-tests mzscheme
-  (require (lib "private/contract-opt.scm")
-           (lib "private/contract-opters.scm")
-           (lib "contract.ss")
+  (require (lib "contract.ss")
            (planet "test.ss" ("schematics" "schemeunit.plt" 2 1)))
     
   (define (exn:fail:contract-violation? exn)
@@ -141,9 +139,15 @@
      
      (test-exn
       "between/c 2"
-      (match-msg "expected two numbers")
+      (match-msg "expected a number as first")
       (λ ()
         (contract (opt/c (between/c 'x 'b)) 1 'pos 'neg)))
+     
+     (test-exn
+      "between/c 3"
+      (match-msg "expected a number as second")
+      (λ ()
+        (contract (opt/c (between/c 1 'b)) 1 'pos 'neg)))
       
      ))
   
