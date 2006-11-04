@@ -1,6 +1,7 @@
 
 (module classidmap mzscheme
   (require (lib "stx.ss" "syntax"))
+  (require-for-template mzscheme "class-events.ss")
 
   (define-values (struct:s!t make-s!t s!t? s!t-ref s!t-set!)
     (make-struct-type 'set!-transformer #f 2 0 #f null (current-inspector) 0))
@@ -24,13 +25,7 @@
 
   ;; Check Syntax binding info:
   (define (binding from to stx)
-    stx
-    ;; This 'bound-in-source is no longer needed
-    #;
-    (syntax-property
-     stx
-     'bound-in-source
-     (cons from (syntax-local-introduce to))))
+    stx)
 
 
   (define (make-this-map orig-id the-finder the-obj)
@@ -49,34 +44,42 @@
 	     stx)]
 	   [id (find the-finder the-obj stx)])))))
 
-  (define (make-field-map the-finder the-obj the-binder the-binder-localized field-accessor field-mutator field-pos/null)
+  (define (make-field-map trace-flag the-finder the-obj the-binder the-binder-localized
+                          field-accessor field-mutator field-pos/null)
     (let ([set!-stx (datum->syntax-object the-finder 'set!)])
       (mk-set!-trans
        the-binder-localized
        (lambda (stx)
-	 (syntax-case stx ()
-	   [(set! id expr)
-	    (module-identifier=? (syntax set!) set!-stx)
-	    (binding
-	     the-binder (syntax id)
-	     (datum->syntax-object 
-	      the-finder
-	      (list* field-mutator (find the-finder the-obj stx) (append field-pos/null (list (syntax expr))))
-	      stx))]
-	   [(id . args)
-	    (binding
-	     the-binder (syntax id)
-	     (datum->syntax-object 
-	      the-finder
-	      (cons (list* field-accessor (find the-finder the-obj stx) field-pos/null) (syntax args))
-	      stx))]
-	   [_else
-	    (binding
-	     the-binder stx
-	     (datum->syntax-object 
-	      the-finder
-	      (list* field-accessor (find the-finder the-obj stx) field-pos/null)
-	      stx))])))))
+         (with-syntax ([obj-expr (find the-finder the-obj stx)])
+           (syntax-case stx ()
+             [(set! id expr)
+              (module-identifier=? (syntax set!) set!-stx)
+              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [value expr]))]
+                            [trace (syntax/loc stx (set-event obj (quote id) value))]
+                            [set (quasisyntax/loc stx
+                                   ((unsyntax field-mutator)
+                                    obj (unsyntax-splicing field-pos/null) value))])
+                (if trace-flag
+                    (syntax/loc stx (let* bindings trace set))
+                    (syntax/loc stx (let* bindings set))))]
+             [(id . args)
+              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
+                            [trace (syntax/loc stx (get-event obj (quote id)))]
+                            [call (quasisyntax/loc stx
+                                    (((unsyntax field-accessor)
+                                      obj-expr (unsyntax-splicing field-pos/null)) . args))])
+                (if trace-flag
+                    (syntax/loc stx (let* bindings trace call))
+                    (syntax/loc stx (let* bindings call))))]
+             [id
+              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr]))]
+                            [trace (syntax/loc stx (get-event obj (quote id)))]
+                            [get (quasisyntax/loc stx
+                                   ((unsyntax field-accessor)
+                                    obj-expr (unsyntax-splicing field-pos/null)))])
+                (if trace-flag
+                    (syntax/loc stx (let* bindings trace get))
+                    (syntax/loc stx (let* bindings get))))]))))))
 
   (define (make-method-map the-finder the-obj the-binder the-binder-localized method-accessor)
     (let ([set!-stx (datum->syntax-object the-finder 'set!)])
@@ -248,22 +251,31 @@
        "cannot use superclass initialization form in a method"
        stx)))
 
-  (define (make-with-method-map set!-stx id-stx method-stx method-obj-stx)
+  (define (make-with-method-map trace-flag set!-stx id-stx
+                                method-stx method-obj-stx unwrap-stx)
     (make-set!-transformer
      (lambda (stx)
        (syntax-case stx ()
 	 [(set! id expr)
-	  (module-identifier=? (syntax set!) set!-stx)
+          (and (identifier? (syntax id))
+               (module-identifier=? (syntax set!) set!-stx))
 	  (raise-syntax-error 'with-method "cannot mutate method" stx)]
 	 [(id . args)
-	  (datum->syntax-object 
-	   set!-stx
-	   (make-method-apply
-	    method-stx
-	    method-obj-stx
-	    (syntax args))
-	   stx)]
-	 [_else
+          (identifier? (syntax id))
+          (let* ([args-stx (syntax args)]
+                 [proper? (stx-list? args-stx)]
+                 [flat-args-stx (if proper? args-stx (flatten-args args-stx))])
+            (make-method-call
+             trace-flag
+             stx
+             method-obj-stx
+             unwrap-stx
+             method-stx
+             (syntax (quote id))
+             flat-args-stx
+             (not proper?)))]
+	 [id
+          (identifier? (syntax id))
 	  (raise-syntax-error 
 	   'with-method 
 	   "misuse of method (not in application)" 
@@ -307,12 +319,39 @@
     (and (pair? ctx)
 	 (class-context? (car ctx))))
 
+  (define (make-method-call traced? source-stx object-stx unwrap-stx
+                            method-proc-stx method-name-stx args-stx rest-arg?)
+
+    (define-syntax (qstx stx)
+      (syntax-case stx ()
+        [(form body) (syntax/loc stx (quasisyntax/loc source-stx body))]))
+
+    (with-syntax ([object object-stx]
+                  [method method-proc-stx]
+                  [app (if rest-arg? (qstx apply) (qstx #%app))]
+                  [args args-stx])
+      (if traced?
+          (with-syntax ([(mth obj) (generate-temporaries
+                                    (list object-stx method-proc-stx))]
+                        [unwrap unwrap-stx]
+                        [name method-name-stx]
+                        [(arg ...) (qstx args)]
+                        [(var ...) (generate-temporaries (qstx args))])
+            (qstx (let ([mth method]
+                        [obj object]
+                        [var arg] ...)
+                    (initialize-call-event
+                     (unwrap obj) name (app list var ...))
+                    (call-with-values (lambda () (app mth obj var ...))
+                      finalize-call-event))))
+          (qstx (app method object . args)))))
+
   (provide (protect make-this-map make-field-map make-method-map 
 		    make-direct-method-map 
 		    make-rename-super-map make-rename-inner-map
 		    make-init-error-map make-init-redirect super-error-map 
 		    make-with-method-map
-		    flatten-args
+		    flatten-args make-method-call
 		    make-private-name localize
 		    generate-super-call generate-inner-call
 		    generate-class-expand-context class-top-level-context?)))
