@@ -125,7 +125,7 @@
   ;; reason for this is to allow the implementation of Y to re-use the
   ;; implementation of X (expanding to a use of X would mangle syntax
   ;; error messages), while preserving the binding of X as the one for
-  ;; the syntax definition (so that quasiquote can regonzie unquote,
+  ;; the syntax definition (so that quasiquote can recognize unquote,
   ;; etc.).
 
   (define-syntax-set/provide (beginner-define
@@ -271,14 +271,17 @@
                                           assign)]
                           [make-up (gensym)]
                           [defn defn])
-              (stepper-ignore-checker
-               (syntax/loc stx
-                 (begin
-                   (define made-up (lambda () (advanced-set! name 10) ...))
-                   defn))))
+              (with-syntax ([made-up-defn (stepper-syntax-property 
+                                           (syntax (define made-up (lambda () (advanced-set! name 10) ...)))
+                                           'stepper-skip-completely
+                                           #t)])
+                (syntax/loc stx
+                  (begin
+                    made-up-defn ;; (define made-up (lambda () (advanced-set! name 10) ...))
+                    defn))))
             defn)]
        [else defn]))
-
+    
     ;; Same as above, but for one name
     (define (check-definition-new who stx name defn assign)
       (check-definitions-new who stx (list name) defn assign))
