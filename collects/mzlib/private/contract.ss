@@ -1202,10 +1202,10 @@ add struct contracts for immutable structs?
                 high
                 (cond
                   [(eq? checker 'between/c) #'(check-between/c n m)]
-                  [(eq? checker '>/c #'(check-unary-between/c '>/c n))]
-                  [(eq? checker '>=/c #'(check-unary-between/c '>=/c n))]
-                  [(eq? checker '</c #'(check-unary-between/c '</c m))]
-                  [(eq? checker '<=/c #'(check-unary-between/c '<=/c m))])))
+                  [(eq? checker '>/c) #'(check-unary-between/c '>/c n)]
+                  [(eq? checker '>=/c) #'(check-unary-between/c '>=/c n)]
+                  [(eq? checker '</c) #'(check-unary-between/c '</c m)]
+                  [(eq? checker '<=/c) #'(check-unary-between/c '<=/c m)])))
          null
          (syntax (and (number? val) (op n val m)))
          #f))))
@@ -1220,16 +1220,16 @@ add struct contracts for immutable structs?
       [(between/c low high) (opt/between-ctc pos stx #'low #'high #'<= 'between/c)]))
   (define/opter (>/c opt/i pos neg stx)
     (syntax-case stx (>/c)
-      [(>/c low) (opt/between-ctc #'low #'+inf.0 #'< '>/c)]))
+      [(>/c low) (opt/between-ctc pos stx #'low #'+inf.0 #'< '>/c)]))
   (define/opter (>=/c opt/i pos neg stx)
     (syntax-case stx (>=/c)
-      [(>=/c low) (opt/between-ctc #'low #'+inf.0 #'<= '>=/c)]))
+      [(>=/c low) (opt/between-ctc pos stx #'low #'+inf.0 #'<= '>=/c)]))
   (define/opter (</c opt/i pos neg stx)
     (syntax-case stx (</c)
-      [(</c high) (opt/between-ctc #'-inf.0 #'high #'< '</c)]))
+      [(</c high) (opt/between-ctc pos stx #'-inf.0 #'high #'< '</c)]))
   (define/opter (<=/c opt/i pos neg stx)
     (syntax-case stx (<=/c)
-      [(<=/c high) (opt/between-ctc #'-inf.0 #'high #'<= '<=/c)]))
+      [(<=/c high) (opt/between-ctc pos stx #'-inf.0 #'high #'<= '<=/c)]))
 
   (define (</c x)
     (flat-named-contract

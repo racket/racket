@@ -13,9 +13,13 @@
   (define ((match-msg msg) exn)
     (regexp-match (regexp msg) (exn-message exn)))
   
-  (define-check (check-pred2 func thunk)
+  (define-simple-check (check-pred2 func thunk)
     (let-values ([(a b) (thunk)])
       (func a b)))
+  
+  (define-simple-check (check-name expected ctc)
+    (let ((got (contract-name ctc)))
+        (equal? expected got)))
   
   (define opt-tests
     (test-suite
@@ -148,7 +152,138 @@
       (match-msg "expected a number as second")
       (λ ()
         (contract (opt/c (between/c 1 'b)) 1 'pos 'neg)))
-      
+     
+     ;;
+     ;; name tests
+     ;;
+     
+     (test-case
+      "integer? name"
+      (check-name 'integer? (opt/c (flat-contract integer?))))
+     
+     (test-case
+      "boolean? name"
+      (check-name 'boolean? (opt/c (flat-contract boolean?))))
+     
+     (test-case
+      "char? name"
+      (check-name 'char? (opt/c (flat-contract char?))))
+     
+     (test-case
+      "any/c name"
+      (check-name 'any/c (opt/c any/c)))
+     
+     (test-case
+      "-> name 1"
+      (check-name '(-> integer? integer?) (opt/c (-> integer? integer?))))
+     
+     (test-case
+      "-> name 2"
+      (check-name '(-> integer? any) (opt/c (-> integer? any))))
+     
+     (test-case
+      "-> name 3"
+      (check-name '(-> integer? (values boolean? char?)) (opt/c (-> integer? (values boolean? char?)))))
+     
+     (test-case
+      "or/c name 1"
+      (check-name '(or/c) (opt/c (or/c))))
+     
+     (test-case
+      "or/c name 2"
+      (check-name '(or/c integer? gt0?) (opt/c (or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))))
+     
+     (test-case
+      "or/c name 3"
+      (check-name '(or/c integer? boolean?)
+                  (opt/c (or/c (flat-contract integer?)
+                               (flat-contract boolean?)))))
+     
+     (test-case
+      "or/c name 4"
+      (check-name '(or/c integer? boolean?)
+                  (opt/c (or/c integer? boolean?))))
+     
+     (test-case
+      "or/c name 5"
+      (check-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+                  (opt/c (or/c (-> (>=/c 5) (>=/c 5)) boolean?))))
+     
+     (test-case
+      "or/c name 6"
+      (check-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+                  (opt/c (or/c boolean? (-> (>=/c 5) (>=/c 5))))))
+     
+     (test-case
+      "or/c name 7"
+      (check-name '(or/c (-> (>=/c 5) (>=/c 5))
+                         (-> (<=/c 5) (<=/c 5) (<=/c 5)))
+                  (opt/c (or/c (-> (>=/c 5) (>=/c 5))
+                               (-> (<=/c 5) (<=/c 5) (<=/c 5))))))
+     
+     (test-case
+      "or/c name 8"
+      (check-name '(or/c boolean?
+                         (-> (>=/c 5) (>=/c 5))
+                         (-> (<=/c 5) (<=/c 5) (<=/c 5)))
+                  (opt/c (or/c boolean?
+                               (-> (>=/c 5) (>=/c 5))
+                               (-> (<=/c 5) (<=/c 5) (<=/c 5))))))
+     
+     (test-case
+      "=/c name 1"
+      (check-name '(=/c 5) (opt/c (=/c 5))))
+     
+     (test-case
+      ">=/c name 1"
+      (check-name '(>=/c 5) (opt/c (>=/c 5))))
+     
+     (test-case
+      "<=/c name 1"
+      (check-name '(<=/c 5) (opt/c (<=/c 5))))
+     
+     (test-case
+      "</c name 1"
+      (check-name '(</c 5) (opt/c (</c 5))))
+
+     (test-case
+      ">/c name 1"
+      (check-name '(>/c 5) (opt/c (>/c 5))))
+     
+     (test-case
+      "between/c name 1"
+      (check-name '(between/c 5 6) (opt/c (between/c 5 6))))
+     
+     (test-case
+      "cons/c name 1"
+      (check-name '(cons/c boolean? integer?) 
+                  (opt/c (cons/c boolean? (flat-contract integer?)))))
+     
+     (test-case
+      "cons/c name 2"
+      (check-name '(cons/c boolean? integer?) 
+                  (opt/c (cons/c boolean? (flat-contract integer?)))))
+  
+     (test-case
+      "cons-immutable/c name 1"
+      (check-name '(cons-immutable/c boolean? integer?)
+                  (opt/c (cons-immutable/c boolean? (flat-contract integer?)))))
+     
+     (test-case
+      "cons-immutable/c name 2"
+      (check-name '(cons-immutable/c boolean? integer?) 
+                  (opt/c (cons-immutable/c boolean? (flat-contract integer?)))))
+     
+     (test-case
+      "cons-immutable/c name 3"
+      (check-name '(cons-immutable/c boolean? integer?) 
+                  (opt/c (cons-immutable/c boolean? (flat-contract integer?)))))
+     
+     (test-case
+      "cons-immutable/c name 4"
+      (check-name '(cons-immutable/c (-> boolean? boolean?) integer?)
+                  (opt/c (cons-immutable/c (-> boolean? boolean?) integer?))))
+     
      ))
   
   (require (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2 1)))
