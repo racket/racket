@@ -20,8 +20,8 @@
   (define (load-configuration table-file-name)
     (complete-configuration (directory-part table-file-name) (get-configuration table-file-name)))
   
-  ; load-configration-sexpr : sexp -> configuration
-  (define (load-configration-sexpr sexpr)
+  ; load-configuration-sexpr : sexp -> configuration
+  (define (load-configuration-sexpr sexpr)
     (build-configuration (parse-configuration-table sexpr) empty))
   
   ; load-developer-configuration : path -> configuration
@@ -69,6 +69,6 @@
    [build-developer-configuration/vhosts (list? . -> . configuration?)]
    [default-configuration-table-path path?]
    [update-configuration (configuration? (listof (cons/c symbol? any/c)) . -> . configuration?)]
-   [load-configration-sexpr (list? . -> . configuration?)]
+   [load-configuration-sexpr (list? . -> . configuration?)]
    [load-configuration (path-string? . -> . configuration?)]
    [load-developer-configuration (path-string? . -> . configuration?)]))
