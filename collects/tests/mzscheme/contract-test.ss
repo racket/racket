@@ -4242,7 +4242,29 @@
              (or/c (-> (>=/c 5) (>=/c 5)) boolean?))
   (test-name '(or/c (-> (>=/c 5) (>=/c 5)) boolean?)
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
+
   
+  (test 1
+        length
+        (let ([f (contract (-> integer? any)
+                           (lambda (x) 
+                             (with-continuation-mark 'x 'x
+                               (continuation-mark-set->list (current-continuation-marks) 'x)))
+                           'pos
+                           'neg)])
+          (with-continuation-mark 'x 'x
+            (f 1))))
+  
+  (test 2
+        length
+        (let ([f (contract (-> integer? list?)
+                           (lambda (x) 
+                             (with-continuation-mark 'x 'x
+                               (continuation-mark-set->list (current-continuation-marks) 'x)))
+                           'pos
+                           'neg)])
+          (with-continuation-mark 'x 'x
+            (f 1))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
