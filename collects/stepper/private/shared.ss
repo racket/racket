@@ -552,9 +552,10 @@
   ;; take info from source expressions to reconstructed expressions
 
   (define (attach-info to-exp from-exp)
-    ;; (if (stepper-syntax-property from-exp 'stepper-offset-index)
-    ;;   (>>> (stepper-syntax-property from-exp 'stepper-offset-index)))
-    (let* ([attached (syntax-property to-exp 'stepper-properties (syntax-property from-exp 'stepper-properties))]
+    (let* ([attached (syntax-property to-exp 'stepper-properties (append (or (syntax-property from-exp 'stepper-properties)
+                                                                             null)
+                                                                         (or (syntax-property to-exp 'stepper-properties)
+                                                                             null)))]
            [attached (syntax-property attached 'user-source (syntax-source from-exp))]
            [attached (syntax-property attached 'user-position (syntax-position from-exp))])
       attached))

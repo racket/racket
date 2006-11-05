@@ -326,8 +326,8 @@
     (program-expander
      (lambda ()
        ;; swap these to allow errors to escape (e.g., when debugging)
-       ;;(error-display-handler err-display-handler)
-       (void)
+       (error-display-handler err-display-handler)
+       #;(void)
        )
      (lambda (expanded continue-thunk) ; iter
        (r:reset-special-values)

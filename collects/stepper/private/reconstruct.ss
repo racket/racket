@@ -403,6 +403,7 @@
                               [var-stx
                                (identifier? expr)
                                (let* ([var (syntax var-stx)])
+                                 var
                                  (cond [(eq? (identifier-binding var) 'lexical)
                                         ; has this varref's binding not been evaluated yet?
                                         ; (and this varref isn't in the list of must-lookups?)
@@ -422,8 +423,8 @@
                                                (recon-value (lookup-binding mark-list var) render-settings))
                                               ((let-bound)
                                                (stepper-syntax-property var
-                                                                'stepper-lifted-name
-                                                                (binding-lifted-name mark-list var)))
+                                                                        'stepper-lifted-name
+                                                                        (binding-lifted-name mark-list var)))
                                               ((stepper-temp)
                                                (error 'recon-source-expr "stepper-temp showed up in source?!?"))
                                               ((non-lexical)

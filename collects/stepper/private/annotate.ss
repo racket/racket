@@ -383,7 +383,7 @@
                . -> . (vector/p syntax? binding-set?))
       (lambda (exp tail-bound pre-break? procedure-name-info)
         
-        (cond [(stepper-syntax-property exp 'stepper-skipto)                
+        (cond [(stepper-syntax-property exp 'stepper-skipto)
                (let* ([free-vars-captured #f] ; this will be set!'ed
                       ;[dont-care (printf "expr: ~a\nskipto: ~a\n" expr (stepper-syntax-property expr 'stepper-skipto))]
                       ; WARNING! I depend on the order of evaluation in application arguments here:
@@ -398,7 +398,7 @@
                          skipto-mark
                          annotated)
                         free-vars-captured))]
-
+              
               [(stepper-syntax-property exp 'stepper-skip-completely)
                (2vals (wcm-wrap 13 exp) null)]
 
@@ -1143,7 +1143,6 @@
                                  (annotate/top-level/acl2 main-exp)]
                                 [else 
                                  (annotate/top-level main-exp)])])
-          #;(printf "annotated: \n~a\n" (syntax-object->datum annotated-exp))
           annotated-exp)
         (let*-2vals ([(annotated dont-care)
                      (annotate/inner (top-level-rewrite main-exp) 'all #f #f)])
