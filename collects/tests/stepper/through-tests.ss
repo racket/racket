@@ -1558,8 +1558,8 @@ exec mred -u "$0" "$@"
       "(define (f2c x) x) (convert-gui f2c)" `() ; placeholder
       ))
 
-  (run-tests '(mz1))
-  #;(run-all-tests)
+  #;(run-tests '(recur))
+  (run-all-tests)
 
   )
 ;; Local variables:
