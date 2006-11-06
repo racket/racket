@@ -8,9 +8,9 @@
            "private/contract-basic-opters.ss")
   
   (provide 
-   (all-from "private/contract-opt.ss")
-   (all-from "private/contract-opt-guts.ss")
-   (all-from-except "private/contract-opt-guts.ss"
+   ;; opt is not ready yet
+   #;(all-from "private/contract-opt.ss")
+   #;(all-from-except "private/contract-opt-guts.ss"
                     make-opt-contract
                     orig-ctc-prop
                     orig-ctc-pred?
