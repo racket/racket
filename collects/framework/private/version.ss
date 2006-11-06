@@ -1,9 +1,9 @@
 (module version mzscheme
   (require (lib "unitsig.ss")
-	   "sig.ss"
-	   (lib "mred-sig.ss" "mred")
-	   (lib "string.ss")
-	   (lib "list.ss"))
+           "sig.ss"
+           (lib "mred-sig.ss" "mred")
+           (lib "string.ss")
+           (lib "list.ss"))
 
   (provide version@)
 
@@ -14,17 +14,14 @@
 
       (define specs null)
 
-      (define -version
-	(λ ()
-	  (foldr
-	   (λ (entry sofar)
-	     (let ([sep (first entry)]
-		   [num (second entry)])
-	       (string-append sofar sep num)))
-	   (version)
-	   specs)))
+      (define (-version)
+        (foldr (lambda (entry sofar)
+                 (let ([sep (first entry)]
+                       [num (second entry)])
+                   (string-append sofar sep num)))
+               (version)
+               specs))
 
-      (define add-spec
-	(λ (sep num)
-	  (set! specs (cons (list (expr->string sep) (format "~a" num))
-			    specs)))))))
+      (define (add-spec sep num)
+        (set! specs (cons (list (expr->string sep) (format "~a" num))
+                          specs))))))
