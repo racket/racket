@@ -157,27 +157,22 @@
           (define welcome-after-panel (instantiate vertical-pane% () 
                                         (parent dialog)
                                         (stretchable-height #f)))
-          
+
           (define button-panel (instantiate horizontal-pane% ()
                                  (parent dialog)
                                  (stretchable-height #f)))
 
-          (define button-gap (make-object horizontal-pane% button-panel))
-	  (define-values (ok-button cancel-button)
-            (gui-utils:ok/cancel-buttons
-             button-panel
-             (λ (x y) (ok-callback))
-             (λ (x y) (cancel-callback))))
-          (define grow-box-spacer (make-object grow-box-spacer-pane% button-panel))
+          ;; initialized below
+          (define ok-button #f)
+          (define cancel-button #f)
 
           ;; cancelled? : boolean
           ;; flag that indicates if the dialog was cancelled.
           (define cancelled? #t)
 
           ;; enter-callback : -> bool
-          ;; similar to the above, but return #f if no language is selected, so
-          ;; the event will be processed by the list (which will toggle
-          ;; subtrees)
+          ;; returns #f if no language is selected (so the event will be
+          ;; processed by the hierlist widget, which will toggle subtrees)
           (define (enter-callback)
             (cond [(get-selected-language)
                    (set! cancelled? #f)
@@ -185,6 +180,8 @@
                   [else #f]))
 
 	  ;; ok-callback : -> void
+          ;; similar to the above, but shows an error dialog if no language os
+          ;; selected
           (define (ok-callback)
             (unless (enter-callback)
               (message-box (string-constant drscheme)
@@ -194,14 +191,38 @@
 	  (define (cancel-callback)
             (send dialog show #f))
 
+          ;; a handler for "ok"-related stuff
+          (define ok-handler
+            ;; this is called before the buttons are made: keep track of state
+            ;; in that case
+            (let ([enabled? #t])
+              (define (enable! state)
+                (set! enabled? state)
+                (when ok-button (send ok-button enable state)))
+              (λ (msg)
+                (case msg
+                  [(disable)     (enable! #f)]
+                  [(enable)      (enable! #t)]
+                  [(enable-sync) (enable! enabled?)]
+                  [(execute)     (enter-callback)]
+                  [else (error 'ok-handler "internal error (~e)" msg)]))))
+
           (define-values (get-selected-language get-selected-language-settings)
-            (fill-language-dialog language-dialog-meat-panel 
-                                  button-panel 
-                                  language-settings-to-show 
+            (fill-language-dialog language-dialog-meat-panel
+                                  button-panel
+                                  language-settings-to-show
                                   #f
                                   manuals?
-                                  ok-button
-                                  enter-callback))
+                                  ok-handler))
+
+          ;; create ok/cancel buttons
+          (make-object horizontal-pane% button-panel)
+	  (set!-values (ok-button cancel-button)
+            (gui-utils:ok/cancel-buttons button-panel
+                                         (λ (x y) (ok-callback))
+                                         (λ (x y) (cancel-callback))))
+          (ok-handler 'enable-sync) ; sync enable status now
+          (make-object grow-box-spacer-pane% button-panel)
 
           (when show-welcome?
             (add-welcome dialog welcome-before-panel welcome-after-panel))
@@ -227,7 +248,7 @@
       (define fill-language-dialog
         (opt-lambda (parent show-details-parent language-settings-to-show
                      [re-center #f] [manuals? #f]
-                     [ok-button #f] [enter-callback #f])
+                     [ok-handler void]) ; en/disable button, execute it
 
           (define-values (language-to-show settings-to-show)
             (let ([request-lang-to-show (language-settings-language language-settings-to-show)])
@@ -336,7 +357,7 @@
                          (send i toggle-open/closed)]
                         [(is-a? i hieritem-language<%>)
                          (something-selected i)
-                         (enter-callback)])))
+                         (ok-handler 'execute)])))
               (super-instantiate (parent))))
 
           (define outermost-panel (make-object horizontal-pane% parent))
@@ -404,12 +425,12 @@
             (send one-line-summary-message set-label "")
 	    (set! get/set-selected-language-settings #f)
 	    (set! selected-language #f)
-            (when ok-button (send ok-button enable #f))
+            (ok-handler 'disable)
             (send details-button enable #f))
 
           ;; something-selected : item -> void
           (define (something-selected item)
-            (when ok-button (send ok-button enable #t))
+            (ok-handler 'enable)
             (send details-button enable #t)
             (send item selected))
 
