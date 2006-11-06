@@ -1281,6 +1281,68 @@
       (define/public (get-fld) fld)))
   (test (list add1 4 (void) 12) 'send-fld (send (new c% [the-local-name add1]) get-fld)))
 
+;; ----------------------------------------
+;; Tail position behavior:
+
+(let* ([callee
+        (lambda ()
+          (with-continuation-mark
+           'tail 'callee
+           (continuation-mark-set->list
+            (current-continuation-marks)
+            'tail)))]
+       [superclass%
+        (class object%
+          (super-new)
+          (public-final simple-tail-method)
+          (pubment unaugmented-tail-method augmented-tail-method)
+          (public overridden-tail-method supercall-tail-method)
+
+          (define (simple-tail-method)
+            (callee))
+
+          (define (unaugmented-tail-method)
+            (inner (callee) unaugmented-tail-method))
+
+          (define (augmented-tail-method)
+            (inner (void) augmented-tail-method))
+
+          (define (overridden-tail-method)
+            (void))
+
+          (define (supercall-tail-method)
+            (callee)))]
+       [subclass%
+        (class superclass%
+          (super-new)
+          (augment augmented-tail-method)
+          (override overridden-tail-method supercall-tail-method)
+
+          (define (augmented-tail-method)
+            (callee))
+
+          (define (overridden-tail-method)
+            (callee))
+
+          (define (supercall-tail-method)
+            (super supercall-tail-method)))])
+
+  (define-syntax (test-call stx)
+    (syntax-case stx ()
+      [(form method)
+       (syntax/loc stx
+         (test '(callee)
+               'method
+               (with-continuation-mark
+                'tail 'caller
+                (send (new subclass%) method))))]))
+
+  (test-call simple-tail-method)
+  (test-call unaugmented-tail-method)
+  (test-call augmented-tail-method)
+  (test-call overridden-tail-method)
+  (test-call supercall-tail-method))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
