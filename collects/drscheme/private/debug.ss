@@ -350,7 +350,7 @@ profile todo:
               [send-out
                (λ (msg f) 
                  (if (port-writes-special? (current-error-port))
-                     (let ([snp (make-object string-snip% " in:")])
+                     (let ([snp (make-object string-snip% msg)])
                        (f snp)
                        (write-special snp (current-error-port)))
                      (display msg (current-error-port))))])
