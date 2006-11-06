@@ -1,17 +1,15 @@
 (module utils mzscheme
   (require (lib "gl-vectors.ss" "sgl")
            (prefix gl- (lib "sgl.ss" "sgl"))
-           (lib "bitmap.ss" "sgl")
            (lib "math.ss")
            (lib "mred.ss" "mred")
            (lib "list.ss")
            (lib "etc.ss")
            (lib "class.ss")
-           (lib "kw.ss"))
+           (lib "kw.ss")
+           "doors.ss")
   
-  (provide bitmap->drawer
-           
-           door-bm
+  (provide door-bm
            magic-door-bm
            locked-door-bm
 
@@ -20,8 +18,8 @@
            magic-door-drawer
            open-door-drawer
            
-           make-i-player
-           make-key-thing)
+           make-i-player-icon
+           make-key-thing-icon)
   
   (define light-black (gl-float-vector 0.0 0.0 0.0 0.25))
   (define green (gl-float-vector 0.0 1.0 0.0 1.0))
@@ -32,28 +30,6 @@
   (define door-bm 
     (make-object bitmap%
       (build-path (collection-path "games" "checkers") "light.jpg")))
-
-  (define (with-gl game)
-    (lambda (f)
-      (send game with-gl-context f)))
-
-  (define (bitmap->drawer bm game)
-    (let*-values ([(bm mask)
-                   (cond
-                    [(bm . is-a? . bitmap%) 
-                     (values bm (send bm get-loaded-mask))]
-                    [(bm . is-a? . image-snip%)
-                     (values (send bm get-bitmap)
-                             (send bm get-bitmap-mask))]
-                    [else (raise-type-error
-                           'bitmap->drawer
-                           "bitmap% or image-snip% object"
-                           bm)])]
-                  [(dl) (bitmap->gl-list bm 
-                                         #:with-gl (with-gl game)
-                                         #:mask mask)])
-      (lambda ()
-        (gl-call-list dl))))
   
   (define (door-drawer game)
     (bitmap->drawer door-bm game))
@@ -130,14 +106,15 @@
               (gl-end-list)
               list-id))))
   
-  (define/kw (make-i-player game
-                            #:key
-                            [color green] 
-                            [data #f])
+  (define/kw (make-i-player-icon game
+                                 #:optional
+                                 [data #f]
+                                 #:key
+                                 [color green] )
     (let ([shadow-cylinder-dl (make-cylinder-dl game dark-gray #t)]
           [cylinder-dl (make-cylinder-dl game color #f)]
           [sphere-dl (sphere-dl game color)])
-      (send game make-player
+      (send game make-player-icon
             (lambda (just-shadow?)
               (with-light
                just-shadow?
@@ -206,13 +183,15 @@
         (gl-light-model-v 'light-model-ambient (gl-float-vector 1.0 1.0 1.0 0.0))
         (gl-disable 'light0)))
 
-  (define/kw (make-key-thing game
-                             #:key
-                             [color yellow])
+  (define/kw (make-key-thing-icon game
+                                  #:optional
+                                  [data #f]
+                                  #:key
+                                  [color yellow])
     (let ([dl (make-key-dl game color)])
-      (send game make-thing 
+      (send game make-thing-icon
             (lambda/kw (#:optional [just-shadow? #f]) 
               (with-light just-shadow? (lambda ()
                                          (gl-scale 0.5 0.5 0.5)
                                          (gl-call-list dl))))
-            'thing))))
+            data))))

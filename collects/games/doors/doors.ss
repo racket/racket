@@ -10,7 +10,8 @@
   
   (provide door-game%
            player-data
-           thing-data)
+           thing-data
+           bitmap->drawer)
   
   (define-struct door-game (board))
   
@@ -21,6 +22,25 @@
   (define-struct wall (drawer))
   (define-struct player (data drawer i j))
   (define-struct thing (data drawer i j heads-up?))
+
+  (define (bitmap->drawer bm game)
+    (let*-values ([(bm mask)
+                   (cond
+                    [(bm . is-a? . bitmap%) 
+                     (values bm (send bm get-loaded-mask))]
+                    [(bm . is-a? . image-snip%)
+                     (values (send bm get-bitmap)
+                             (send bm get-bitmap-mask))]
+                    [else (raise-type-error
+                           'bitmap->drawer
+                           "bitmap% or image-snip% object"
+                           bm)])]
+                  [(dl) (bitmap->gl-list bm 
+                                         #:with-gl (lambda (f)
+                                                     (send game with-gl-context f))
+                                         #:mask mask)])
+      (lambda ()
+        (gl-call-list dl))))
     
   (define door-game%
     (class object%
@@ -36,10 +56,10 @@
                           (make-room #f null null))))))
 
       (define walls (build-vector
-                     (add1 (* 2 x-rooms))
+                     (add1 (* 2 (add1 x-rooms)))
                      (lambda (i)
                        (build-vector
-                        (add1 (* 2 y-rooms))
+                        (add1 (* 2 (add1 y-rooms)))
                         (lambda (j)
                           (make-wall #f))))))
 
@@ -155,85 +175,109 @@
       (define/public (with-gl-context f)
         (send board with-gl-context f))
       
-      (define/public (set-wall ri rj dir wall? door-image)
-        (case dir
-          [(n s e w) 'ok]
-          [else (raise-type-error
-                 'set-wall
-                 "'n, 's, 'e, or 'w"
-                 dir)])
-        (let* ([i (+ (* 2 ri) (case dir
-                                [(w) 0]
-                                [(n s) 1]
-                                [(e) 2]))]
-               [j (+ (* 2 rj) (case dir
-                                [(n) 2]
-                                [(w e) 1]
-                                [(s) 0]))]
-               [wall (vector-ref (vector-ref walls i) j)]
-               [drawer (if wall?
-                           (make-wall-draw ri rj dir door-image)
-                           void)])
-          (if (wall-drawer wall)
-              (send board set-space-draw wall drawer)
-              (send board add-space drawer wall))
-          (set-wall-drawer! wall drawer))
-        (send board refresh))
+      (define/public (set-wall-image loc wall? door-image)
+        (let-values ([(ri rj dir)
+                      (cond
+                       [(and (list? loc)
+                             (= 3 (length loc)))
+                        (apply values loc)]
+                       [(and (list? loc)
+                             (= 2 (length loc)))
+                        (let ([i (car loc)]
+                              [j (cadr loc)])
+                          (if (= 1 (+ (if (integer? i) 1 0)
+                                      (if (integer? j) 1 0)))
+                              (values (if (integer? i)
+                                          i
+                                          (add1 (floor (inexact->exact i))))
+                                      (if (integer? j)
+                                          j
+                                          (add1 (floor (inexact->exact j))))
+                                      (if (integer? i) 's 'w))
+                              (values 0 0 'bad)))]
+                       [else (values 0 0 'bad)])])
+          (case dir
+            [(n s e w) 'ok]
+            [else (raise-type-error
+                   'set-wall
+                   "location"
+                   loc)])
+          (let* ([i (+ (* 2 ri) (case dir
+                                  [(w) 0]
+                                  [(n s) 1]
+                                  [(e) 2]))]
+                 [j (+ (* 2 rj) (case dir
+                                  [(n) 2]
+                                  [(w e) 1]
+                                  [(s) 0]))]
+                 [wall (vector-ref (vector-ref walls i) j)]
+                 [door-image (if (or (door-image . is-a? . bitmap%) 
+                                     (door-image . is-a? . image-snip%))
+                                 (bitmap->drawer door-image this)
+                                 door-image)]
+                 [drawer (if wall?
+                             (make-wall-draw ri rj dir door-image)
+                             void)])
+            (if (wall-drawer wall)
+                (send board set-space-draw wall drawer)
+                (send board add-space drawer wall))
+            (set-wall-drawer! wall drawer))
+          (send board refresh)))
 
-      (define/public (set-room i j data)
-        (let ([room (vector-ref (vector-ref rooms i) j)])
+      (define/public (set-room-data loc data)
+        (let ([room (vector-ref (vector-ref rooms (car loc)) (cadr loc))])
           (set-room-data! room data)))
       
-      (public [new-player make-player])
+      (public [new-player make-player-icon])
       (define (new-player drawer data)
         (make-player data drawer #f #f))
       
-      (define/public (move-player player i j)
-        (let ([from-room (and (player-i player)
-                              (vector-ref (vector-ref rooms (player-i player)) (player-j player)))]
-              [to-room (and i (vector-ref (vector-ref rooms i) j))])
-          (when from-room
-            (set-room-players! from-room (remq player (room-players from-room))))
-          (when to-room
-            (set-room-players! to-room (cons player (room-players to-room))))
-          (set-player-i! player i)
-          (set-player-j! player j)
-          (when from-room
-            (send board remove-piece player))
-          (when to-room
-            (send board add-piece (+ i 0.5) (+ j 0.5) 0.0 (player-drawer player) player))
-          (send board refresh)))
+      (define/public (move-player-icon player loc)
+        (let ([i (and loc (car loc))]
+              [j (and loc (cadr loc))])
+          (let ([from-room (and (player-i player)
+                                (vector-ref (vector-ref rooms (player-i player)) (player-j player)))]
+                [to-room (and loc (vector-ref (vector-ref rooms i) j))])
+            (when from-room
+              (set-room-players! from-room (remq player (room-players from-room))))
+            (when to-room
+              (set-room-players! to-room (cons player (room-players to-room))))
+            (set-player-i! player i)
+            (set-player-j! player j)
+            (when from-room
+              (send board remove-piece player))
+            (when to-room
+              (send board add-piece (+ i 0.5) (+ j 0.5) 0.0 (player-drawer player) player))
+            (send board refresh))))
       
-      (public [new-thing make-thing])
+      (public [new-thing make-thing-icon])
       (define (new-thing drawer data)
         (make-thing data drawer #f #f #f))
       
-      (define/private (move-thing/hu thing i j hu?)
-        (let ([from-hu? (thing-heads-up? thing)]
-              [from-room (and (thing-i thing)
-                              (vector-ref (vector-ref rooms (thing-i thing)) (thing-j thing)))]
-              [to-room (and i (vector-ref (vector-ref rooms i) j))])
-          (when from-room
-            (set-room-things! from-room (remq thing (room-things from-room))))
-          (when to-room
-            (set-room-things! to-room (cons thing (room-things to-room))))
-          (set-thing-i! thing i)
-          (set-thing-j! thing j)
-          (set-thing-heads-up?! thing hu?)
-          (when from-room
-            (send board remove-piece thing))
-          (when from-hu?
-            (send board remove-heads-up thing))
-          (when to-room
-            (send board add-piece (+ i 0.5) (+ j 0.5) 0.0 (thing-drawer thing) thing)
-            (send board enable-piece thing #f))
-          (when hu?
-            (send board add-heads-up 1.0 1.0 (thing-drawer thing) thing))
-          (send board refresh)))
-
-      (define/public (move-thing thing i j)
-        (move-thing/hu thing i j #f))
-      (define/public (move-thing-heads-up thing)
-        (move-thing/hu thing #f #f #t))
+      (define/public (move-thing-icon thing loc)
+        (let ([i (and (pair? loc) (car loc))]
+              [j (and (pair? loc) (cadr loc))]
+              [hu? (eq? loc 'heads-up)])
+          (let ([from-hu? (thing-heads-up? thing)]
+                [from-room (and (thing-i thing)
+                                (vector-ref (vector-ref rooms (thing-i thing)) (thing-j thing)))]
+                [to-room (and i (vector-ref (vector-ref rooms i) j))])
+            (when from-room
+              (set-room-things! from-room (remq thing (room-things from-room))))
+            (when to-room
+              (set-room-things! to-room (cons thing (room-things to-room))))
+            (set-thing-i! thing i)
+            (set-thing-j! thing j)
+            (set-thing-heads-up?! thing hu?)
+            (when from-room
+              (send board remove-piece thing))
+            (when from-hu?
+              (send board remove-heads-up thing))
+            (when to-room
+              (send board add-piece (+ i 0.5) (+ j 0.5) 0.0 (thing-drawer thing) thing)
+              (send board enable-piece thing #f))
+            (when hu?
+              (send board add-heads-up 1.0 1.0 (thing-drawer thing) thing))
+            (send board refresh))))
 
       (super-new))))
