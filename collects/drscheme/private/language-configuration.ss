@@ -204,7 +204,7 @@
                   [(disable)     (enable! #f)]
                   [(enable)      (enable! #t)]
                   [(enable-sync) (enable! enabled?)]
-                  [(execute)     (enter-callback)]
+                  [(execute)     (enter-callback) (void)]
                   [else (error 'ok-handler "internal error (~e)" msg)]))))
 
           (define-values (get-selected-language get-selected-language-settings)
