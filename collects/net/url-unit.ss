@@ -96,6 +96,7 @@
         (let ([scheme (url-scheme url)])
           (cond [(not scheme) 80]
                 [(string=? scheme "http") 80]
+                [(string=? scheme "https") 443]
                 [else (url-error "Scheme ~a not supported" (url-scheme url))])))
 
       ;; make-ports : url -> in-port x out-port
@@ -167,7 +168,8 @@
         (let ([scheme (url-scheme url)])
           (cond [(not scheme)
                  (schemeless-url url)]
-                [(string=? scheme "http")
+                [(or (string=? scheme "http")
+                     (string=? scheme "https"))
                  (http://getpost-impure-port get? url post-data strings)]
                 [(string=? scheme "file")
                  (url-error "There are no impure file: ports")]
@@ -191,7 +193,8 @@
         (let ([scheme (url-scheme url)])
           (cond [(not scheme)
                  (schemeless-url url)]
-                [(string=? scheme "http")
+                [(or (string=? scheme "http")
+                     (string=? scheme "https"))
                  (let ([port (http://getpost-impure-port
                               get? url post-data strings)])
                    (with-handlers ([void (lambda (exn)
