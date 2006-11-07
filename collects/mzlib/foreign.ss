@@ -1169,7 +1169,7 @@
                            (when p (unless (cpointer-has-tag? p t) (error* p)))
                            (error* p)))])])
         (make-ctype (or ptr-type _pointer)
-          ;; bad hack: cond outside the lambda for efficiency
+          ;; bad hack: `if's outside the lambda for efficiency
           (if nullable?
             (if scheme->c
               (lambda (p) (tag-or-error/null (scheme->c p) tag) p)
@@ -1338,8 +1338,16 @@
                             [(types)      (list stype ...)]
                             [(offsets)    (compute-offsets types)]
                             [(offset ...) (apply values offsets)])
-                (define _TYPE* (_cpointer TYPE-tag (make-cstruct-type types)))
                 (define all-tags (cons TYPE-tag super-tags))
+                (define _TYPE*
+                  ;; c->scheme adjusts all tags
+                  (let* ([t (_cpointer TYPE-tag (make-cstruct-type types))]
+                         [c->s (ctype-c->scheme t)])
+                    (make-ctype (ctype-basetype t) (ctype-scheme->c t)
+                      ;; hack: modify & reuse the procedure made by _cpointer
+                      (lambda (p)
+                        (if p (set-cpointer-tag! p all-tags) (c->s p))
+                        p))))
                 (define-values (all-types all-offsets)
                   (if (and has-super? super-types super-offsets)
                     (values (append super-types   (cdr types))
