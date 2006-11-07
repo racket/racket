@@ -1,4 +1,13 @@
 ------------------------------------------------------------------------
+VERSION 360				  [Tue Nov  7 12:45:48 EST 2006]
+
+ * The world.ss teachpack has now callback hooks for mouse clicks. 
+
+ * The image.ss teachpack now includes a star primitive. 
+
+ * Fixed bugs in world.ss, graphing.ss, image.ss
+
+------------------------------------------------------------------------
 VERSION 351				  [Tue Jul 18 14:11:29 EDT 2006]
 
  * The libraries for ProfessorJ are now organized as four packages: 
