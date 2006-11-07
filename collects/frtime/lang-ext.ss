@@ -82,24 +82,26 @@
   (define switch
     (opt-lambda (e [init undefined])
       (let* ([init (box init)]
-             [e-b (hold e (unbox init))])
-        (rec ret
-          (proc->signal:switching
-           (case-lambda
-             [()
-              (when (not (eq? (unbox init) (signal-value e-b)))
-                (unregister ret (unbox init))
-                (set-box! init (value-now/no-copy e-b))
-                (register ret (unbox init))
-                (set-signal-producers! ret (list e-b (unbox init)))
-                (set-signal-depth! ret (max (signal-depth ret)
-                                            (add1 (safe-signal-depth (unbox init)))))
-                (iq-resort))
-              (value-now/no-copy (unbox init))]
-             [(msg) e])
-           init
-           e-b
-           e-b (unbox init))))))
+             [e-b (hold e (unbox init))]
+             [ret (proc->signal:switching
+                   (case-lambda [() undefined]
+                                [(msg) e])
+                   init e-b e-b (unbox init))])
+        (set-signal-thunk!
+         ret
+         (case-lambda
+           [()
+            (when (not (eq? (unbox init) (signal-value e-b)))
+              (unregister ret (unbox init))
+              (set-box! init (value-now e-b))
+              (register ret (unbox init))
+              (set-signal-producers! ret (list e-b (unbox init)))
+              (set-signal-depth! ret (max (signal-depth ret)
+                                          (add1 (safe-signal-depth (unbox init)))))
+              (iq-resort))
+            (value-now/no-copy (unbox init))]
+           [(msg) e]))
+        ret)))
   
   ; event ... -> event
   (define (merge-e . args)
