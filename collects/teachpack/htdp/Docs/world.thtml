@@ -37,12 +37,13 @@ students to simulate a small world of animated drawings and games:
    World) -> true</code><br> <code>(on-mouse-event clack)</code> means that
    DrScheme must call <code>clack</code> on the current world, the current
    <code>x</code> and <code>y</code> coordinates of the mouse, and and a
-   (representation of the) mouseevent for every action of the mouse the programmer
-   (user of the computer) makes; it uses the result as the next world
+   (representation of the) mouse event for every action of the mouse the
+   programmer (user of the computer) makes; it uses the result as the next
+   world
 
 <pre>
 <code>
-  ;; A MouseEventType is one of:
+  ;; A MouseEvent is one of:
   ;; - 'button-down
   ;; - 'button-up
   ;; - 'drag
@@ -97,6 +98,5 @@ students to simulate a small world of animated drawings and games:
 
 <p>Finally, the teachpack provides all the functions that image.ss provides
 except <code>add-line</code>, which has a slightly different functionality.</p>
-
 
 {(include "foot.tinc")}
