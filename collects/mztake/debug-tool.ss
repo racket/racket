@@ -45,6 +45,11 @@
 			   (string-constant intermediate-student/lambda)
 			   (string-constant advanced-student))))
       
+      (define (robust-vector-ref vec idx)
+        (if (< idx (vector-length vec))
+            (vector-ref vec idx)
+            #f))
+      
       (define (break-at bp p)
         (hash-table-get bp p))
       
@@ -230,7 +235,7 @@
                               (invalidate-bitmap-cache)])
                            (let* ([frames (send (get-tab) get-stack-frames)]
                                   [pos-vec (send (get-tab) get-pos-vec)]
-                                  [id (vector-ref pos-vec pos)]
+                                  [id (robust-vector-ref pos-vec pos)]
                                 #;
                                   [_ (printf "frames = ~a~npos-vec = ~a~nid = ~a~n"
                                              frames pos-vec id)])
@@ -326,7 +331,7 @@
                                [(invalid)
                                 (let* ([frames (send (get-tab) get-stack-frames)]
                                        [pos-vec (send (get-tab) get-pos-vec)]
-                                       [id (vector-ref pos-vec pos)]
+                                       [id (robust-vector-ref pos-vec pos)]
                                        #;
                                        [_ (printf "frames = ~a~npos-vec = ~a~nid = ~a~n"
                                                     frames pos-vec id)])
