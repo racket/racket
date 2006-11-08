@@ -113,9 +113,11 @@
                     servlet-mutex))
                  (define the-exit-handler
                    (lambda _
-                     (kill-connection!
-                      (execution-context-connection
-                       (thread-cell-ref current-execution-context)))
+                     (define ectxt
+                       (thread-cell-ref current-execution-context))
+                     (when ectxt
+                       (kill-connection!
+                        (execution-context-connection ectxt)))
                      (custodian-shutdown-all instance-custodian)))
                  (thread-cell-set! current-execution-context ctxt)
                  (parameterize ([exit-handler the-exit-handler])
@@ -224,14 +226,15 @@
           (semaphore-wait (servlet-instance-data-mutex data))
           (let ([response
                  (let/cc suspend
-                   (define k ((manager-continuation-lookup manager) instance-id k-id salt))
                    (thread-cell-set! current-execution-context
                                      (make-execution-context
                                       conn req suspend))
-                   (k req))])
+                   (let ([k ((manager-continuation-lookup manager) instance-id k-id salt)])
+                     (k req)))])
             (output-response conn response))
           (semaphore-post (servlet-instance-data-mutex data))))
       ((manager-instance-unlock! manager) instance-id)
+      (thread-cell-set! current-execution-context #f)
       (thread-cell-set! current-servlet-instance-id #f)
       (thread-cell-set! current-servlet #f))
     
