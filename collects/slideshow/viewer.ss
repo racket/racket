@@ -650,10 +650,14 @@
 		    (send dc draw-rectangle  x y w h)
 		    (send dc set-pen p)
 		    (send dc set-brush b))
-		  (send dc draw-bitmap-section
-			(send offscreen get-bitmap)
-			x y x y
-			w h))))
+                  (let ([x (floor x)]
+                        [y (floor y)]
+                        [w (- (floor (+ x w)) (floor x))]
+                        [h (- (floor (+ y h)) (floor y))])
+                    (send dc draw-bitmap-section
+                          (send offscreen get-bitmap)
+                          x y x y
+                          w h)))))
 	  
 	  (define offscreen #f)
 	  (define/public get-offscreen (lambda () offscreen))
