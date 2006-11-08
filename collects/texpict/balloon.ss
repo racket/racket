@@ -71,15 +71,15 @@
                                    (/ w 2) 1
                                    1 -1 1 1
                                    0 1)]
-                      [(sw) (values 0 (- h dh)
+                      [(sw) (values 0 (- (sub1 h) dh)
                                     dw (sub1 h)
                                     0 (sub1 h)
                                     0.5 -1 0.5 -1
                                     (dxbig 1) (dybig -1))]
-                      [(se) (values (- w dw) h
-                                    w (- h dh)
-                                    w h
-                                    1 -1 1 -1
+                      [(se) (values (- w dw) (sub1 h)
+                                    w (- (sub1 h) dh)
+                                    w (sub1 h)
+                                    0.5 -1 -1 0.5
                                     (dxbig -1) (dybig -1))])])
         (let ([xf (+ xc dx)]
               [yf (+ yc dy)]
