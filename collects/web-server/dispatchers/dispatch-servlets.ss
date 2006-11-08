@@ -122,13 +122,13 @@
                  (thread-cell-set! current-execution-context ctxt)
                  (parameterize ([exit-handler the-exit-handler])
                    (define instance-id ((manager-create-instance manager) data the-exit-handler))
+                   (thread-cell-set! current-servlet-instance-id instance-id)
+                   ((manager-instance-lock! manager) instance-id)
                    (parameterize ([exit-handler (lambda x
                                                   ((manager-instance-unlock! manager) instance-id)
                                                   (the-exit-handler x))])
-                     (thread-cell-set! current-servlet-instance-id instance-id)
-                     ((manager-instance-lock! manager) instance-id)
                      (with-handlers ([(lambda (x) #t)
-                                      (make-servlet-exception-handler data)])
+                                      (make-servlet-exception-handler)])
                        ;; Two possibilities:
                        ;; - module servlet. start : Request -> Void handles
                        ;;   output-response via send/finish, etc.
@@ -137,15 +137,13 @@
                        ;; Here, we do not know if the servlet was a module,
                        ;; unit/sig, or Xexpr; we do know whether it produces a
                        ;; response.
-                       (define r ((servlet-handler the-servlet) req))
-                       (when (response? r)
-                         (send/back r)))                 
+                       (send/back ((servlet-handler the-servlet) req)))
                      ((manager-instance-unlock! manager) instance-id))))))))
         (output-response conn response)
+        (semaphore-post servlet-mutex)
         (thread-cell-set! current-execution-context #f)
         (thread-cell-set! current-servlet #f)
-        (thread-cell-set! current-servlet-instance-id #f)
-        (semaphore-post servlet-mutex)))
+        (thread-cell-set! current-servlet-instance-id #f)))
     
     ;; default-server-instance-expiration-handler : (request -> response)
     (define (default-servlet-instance-expiration-handler req)
@@ -165,7 +163,7 @@
     ;; * Also, suspend will post to the semaphore so that future
     ;;   requests won't be blocked.
     ;; * This fixes PR# 7066
-    (define ((make-servlet-exception-handler inst-data) the-exn)
+    (define ((make-servlet-exception-handler) the-exn)
       (define context (thread-cell-ref current-execution-context))
       (define request (execution-context-request context))
       (define resp 
@@ -224,15 +222,18 @@
           ; always call a continuation. The exit-handler above ensures that
           ; the post is done.
           (semaphore-wait (servlet-instance-data-mutex data))
-          (let ([response
-                 (let/cc suspend
-                   (thread-cell-set! current-execution-context
-                                     (make-execution-context
-                                      conn req suspend))
-                   (let ([k ((manager-continuation-lookup manager) instance-id k-id salt)])
-                     (k req)))])
-            (output-response conn response))
-          (semaphore-post (servlet-instance-data-mutex data))))
+          (with-handlers ([exn? (lambda (exn)
+                                  (semaphore-post (servlet-instance-data-mutex data))
+                                  (raise exn))])
+            (let ([response
+                   (let/cc suspend
+                     (thread-cell-set! current-execution-context
+                                       (make-execution-context
+                                        conn req suspend))
+                     (let ([k ((manager-continuation-lookup manager) instance-id k-id salt)])
+                       (k req)))])
+              (output-response conn response))
+            (semaphore-post (servlet-instance-data-mutex data)))))
       ((manager-instance-unlock! manager) instance-id)
       (thread-cell-set! current-execution-context #f)
       (thread-cell-set! current-servlet-instance-id #f)
