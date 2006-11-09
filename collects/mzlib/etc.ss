@@ -248,7 +248,7 @@
       [(rec id expr)
        (identifier? #'id)
        #`(letrec ((id expr))
-           #,(syntax-property #'expr 'inferred-name (syntax-e #'id)))]
+           #,(syntax-property #'id 'inferred-name (syntax-e #'id)))]
       [(rec (name id ...) body ...)
        (andmap identifier? (syntax->list #'(name id ...)))
        #`(letrec ((name (lambda (id ...) body ...)))
