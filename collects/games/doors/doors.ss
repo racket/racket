@@ -216,7 +216,10 @@
                                  (bitmap->drawer door-image this)
                                  door-image)]
                  [drawer (if wall?
-                             (make-wall-draw ri rj dir door-image)
+                             (make-wall-draw ri rj dir 
+                                             (if (null? door-image)
+                                                 void
+                                                 door-image))
                              void)])
             (if (wall-drawer wall)
                 (send board set-space-draw wall drawer)
