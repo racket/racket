@@ -3578,7 +3578,82 @@
         ((couple-tl (contract c x 'pos 'neg)) -11))))
   
   
+  ;; NOT YET RELEASED
+  #;
+  (test/pos-blame
+   'd-c-s/attr-1
+   '(let ()
+      (define-contract-struct pr (x y))
+      (pr-x
+       (contract (pr/dc [x integer?]
+                        [y integer?]
+                        where
+                        [x-val x]
+                        [y-val y]
+                        and
+                        (= x-val y-val))
+                 (make-pr 4 5)
+                 'pos
+                 'neg))))
   
+  ;; NOT YET RELEASED
+  #;
+  (test/spec-passed
+   'd-c-s/attr-2
+   '(let ()
+      (define-contract-struct pr (x y))
+      (contract (pr/dc [x integer?]
+                       [y integer?]
+                       where
+                       [x-val x]
+                       [y-val y]
+                       and
+                       (= x-val y-val))
+                (make-pr 4 5)
+                'pos
+                'neg)))
+  
+  ;; NOT YET RELEASED
+  #;
+  (let ()
+    (define-contract-struct node (n l r) (make-inspector))
+    
+    (define (get-val n attr)
+      (if (null? n)
+          1
+          (let ([h (synthesized-value n attr)])
+            (if (unknown? h)
+                h
+                (+ h 1)))))
+    
+    (define (full-bbt lo hi)
+      (or/c null?
+            (node/dc [n (between/c lo hi)]
+                     [l (n) (full-bbt lo n)]
+                     [r (n) (full-bbt n hi)]
+                     
+                     where
+                     [lheight (get-val l lheight)]
+                     [rheight (get-val r rheight)]
+                     
+                     and
+                     (<= 0 (- lheight rheight) 1))))
+    
+    (define t (contract (full-bbt -inf.0 +inf.0)
+                        (make-node 0
+                                   (make-node -1 null null) 
+                                   (make-node 2
+                                              (make-node 1 null null) 
+                                              (make-node 3 null null)))
+                        'pos
+                        'neg))
+    (test/spec-passed
+     'd-c-s/attr-3
+     `(,node-l (,node-l ,t)))
+     
+    (test/pos-blame 
+     'd-c-s/attr-4
+     `(,node-r (,node-r (,node-r ,t)))))
   
 
   
@@ -3953,6 +4028,26 @@
              (let ()
                (define-contract-struct couple (hd tl))
                (couple/dc [hd any/c] [tl (hd) any/c])))
+  
+  ;; NOT YET RELEASED
+  #;
+  (test-name '(pr/dc [x integer?]
+                     [y integer?]
+                     where
+                     [x-val ...]
+                     [y-val ...]
+                     and
+                     ...)
+             (let ()
+               (define-contract-struct pr (x y))
+               (pr/dc [x integer?]
+                      [y integer?]
+                      where
+                      [x-val x]
+                      [y-val y]
+                      and
+                      (= x-val y-val))))
+             
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
