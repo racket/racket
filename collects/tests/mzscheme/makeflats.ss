@@ -25,6 +25,7 @@
 	    "sync.ss"
 	    "deep.ss"
 	    "contmark.ss"
+            "prompt.ss"
 	    "will.ss"
 	    "namespac.ss"
 	    "port.ss"

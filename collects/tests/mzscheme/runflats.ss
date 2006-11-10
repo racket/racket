@@ -1,7 +1,8 @@
 
 (for-each (lambda (f)
 	    (when (regexp-match "^flat-[0-9]+[.]ss$" (path->string f))
-	      (parameterize ([current-namespace (make-namespace)])
+	      (parameterize ([current-namespace (make-namespace)]
+                             [exit-handler void])
 		(eval
 		 `(begin
 		    (require-for-syntax mzscheme)
