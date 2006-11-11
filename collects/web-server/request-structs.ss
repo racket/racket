@@ -50,11 +50,12 @@
                                    [filename bytes?]
                                    [content bytes?])])
   
-  (define-struct request (method uri headers/raw bindings/raw
+  (define-struct request (method uri headers/raw bindings/raw post-data/raw
                                  host-ip host-port client-ip))
   (provide/contract
    [struct request ([method symbol?] [uri url?] 
                                      [headers/raw (listof header?)]
                                      [bindings/raw (listof binding?)]
+                                     [post-data/raw (or/c false/c bytes?)]
                                      [host-ip string?] [host-port number?]
                                      [client-ip string?])]))
