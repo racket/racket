@@ -177,7 +177,7 @@
                  (network-error 'read-bindings "Post request contained a non-numeric content-length")])]
              [#f
               (let ([raw-bytes (apply bytes-append (read-to-eof in))])
-                (parse-bindings raw-bytes))])])]
+                (values (parse-bindings raw-bytes) raw-bytes))])])]
       [meth
        (values empty #f)]))
   
