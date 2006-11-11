@@ -65,6 +65,7 @@
            (send buffer-dc set-bitmap bitmap)
            (send buffer-dc set-brush (send dc get-brush))
            (send buffer-dc set-pen (send dc get-pen))
+           (send buffer-dc set-smoothing 'aligned)
            (let ([f (send dc get-font)])
              (when f
                (send buffer-dc set-font f)))
