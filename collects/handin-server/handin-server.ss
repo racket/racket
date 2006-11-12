@@ -1,16 +1,15 @@
-#cs
 (module handin-server mzscheme
   (require (lib "thread.ss")
-	   (lib "port.ss")
-	   (lib "mzssl.ss" "openssl")
-	   (lib "file.ss")
-	   (lib "date.ss")
-	   (lib "list.ss")
-	   (lib "string.ss")
-	   "md5.ss"
-	   "lock.ss"
-	   "web-status-server.ss"
-	   "run-status.ss")
+           (lib "port.ss")
+           (lib "mzssl.ss" "openssl")
+           (lib "file.ss")
+           (lib "date.ss")
+           (lib "list.ss")
+           (lib "string.ss")
+           "private/md5.ss"
+           "private/lock.ss"
+           "web-status-server.ss"
+           "run-status.ss")
 
   (define log-port (open-output-file "log.ss" 'append))
 
@@ -35,11 +34,11 @@
     ;; Assemble log into into a single string, to make
     ;;  interleaved log lines unlikely:
     (let ([line
-	   (format "(~a ~s ~s)\n"
-		   (current-session)
-		   (parameterize ([date-display-format 'iso-8601])
-		     (date->string (seconds->date (current-seconds)) #t))
-		   (apply format str args))])
+           (format "(~a ~s ~s)\n"
+                   (current-session)
+                   (parameterize ([date-display-format 'iso-8601])
+                     (date->string (seconds->date (current-seconds)) #t))
+                   (apply format str args))])
       (display line log-port)
       (flush-output log-port)))
 
@@ -77,15 +76,15 @@
   (define orig-custodian (current-custodian))
 
   ;; On startup, check that the users file is not locked:
-  (put-preferences null null 
-		   (lambda (f)
-		     (delete-file f)
-		     (put-preferences null null 
-				      (lambda (f)
-					(error 'handin-server
-					       "unable to clean up lock file: ~s" f))
-				      "users.ss"))
-		   "users.ss")
+  (put-preferences null null
+    (lambda (f)
+      (delete-file f)
+      (put-preferences null null
+                       (lambda (f)
+                         (error 'handin-server
+                                "unable to clean up lock file: ~s" f))
+                       "users.ss"))
+    "users.ss")
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,11 +95,11 @@
   (define (make-success-dir-available n)
     (let ([name (success-dir n)])
       (when (directory-exists? name)
-	(if (< n MAX-UPLOAD-KEEP)
-	    (begin
-	      (make-success-dir-available (add1 n))
-	      (rename-file-or-directory name (success-dir (add1 n))))
-	    (delete-directory/files name)))))
+        (if (< n MAX-UPLOAD-KEEP)
+            (begin
+              (make-success-dir-available (add1 n))
+              (rename-file-or-directory name (success-dir (add1 n))))
+            (delete-directory/files name)))))
 
   (define ATTEMPT-RE (regexp (format "^~a$" ATTEMPT-DIR)))
   (define SUCCESS-RE (regexp (format "^~a$" (success-dir "[0-9]+"))))
@@ -111,35 +110,35 @@
     ;; means that there was a failed submission and the next one will
     ;; re-create ATTEMPT.
     (let* ([dirlist (map path->string (directory-list))]
-	   [dir (sort (filter (lambda (d)
+           [dir (sort (filter (lambda (d)
                                 (and (directory-exists? d)
                                      (regexp-match SUCCESS-RE d)))
                               dirlist)
-		 string<?)]
-	   [dir (and (pair? dir) (car dir))])
+                 string<?)]
+           [dir (and (pair? dir) (car dir))])
       (when dir
-	(unless (member dir SUCCESS-GOOD)
-	  (LOG "*** USING AN UNEXPECTED SUBMISSION DIRECTORY: ~a"
-	       (build-path (current-directory) dir)))
-	;; We have a submission directory -- copy all newer things (extra
-	;; things that exist in the main submission directory but not in
-	;; SUCCESS, or things that are newer in the main submission
-	;; directory are kept (but subdirs in SUCCESS will are copied as
-	;; is))
-	(for-each
-	 (lambda (f)
-	   (define dir/f (build-path dir f))
-	   (cond [(not (or (file-exists? f) (directory-exists? f)))
-		  ;; f is in dir but not in the working directory
-		  (copy-directory/files dir/f f)]
-		 [(or (<= (file-or-directory-modify-seconds f)
-			  (file-or-directory-modify-seconds dir/f))
-		      (and (file-exists? f) (file-exists? dir/f)
-			   (not (= (file-size f) (file-size dir/f)))))
-		  ;; f is newer in dir than in the working directory
-		  (delete-directory/files f)
-		  (copy-directory/files dir/f f)]))
-	 (directory-list dir)))))
+        (unless (member dir SUCCESS-GOOD)
+          (LOG "*** USING AN UNEXPECTED SUBMISSION DIRECTORY: ~a"
+               (build-path (current-directory) dir)))
+        ;; We have a submission directory -- copy all newer things (extra
+        ;; things that exist in the main submission directory but not in
+        ;; SUCCESS, or things that are newer in the main submission
+        ;; directory are kept (but subdirs in SUCCESS will are copied as
+        ;; is))
+        (for-each
+         (lambda (f)
+           (define dir/f (build-path dir f))
+           (cond [(not (or (file-exists? f) (directory-exists? f)))
+                  ;; f is in dir but not in the working directory
+                  (copy-directory/files dir/f f)]
+                 [(or (<= (file-or-directory-modify-seconds f)
+                          (file-or-directory-modify-seconds dir/f))
+                      (and (file-exists? f) (file-exists? dir/f)
+                           (not (= (file-size f) (file-size dir/f)))))
+                  ;; f is newer in dir than in the working directory
+                  (delete-directory/files f)
+                  (copy-directory/files dir/f f)]))
+         (directory-list dir)))))
 
   (define cleanup-sema (make-semaphore 1))
   (define (cleanup-submission dir)
@@ -180,11 +179,11 @@
             (let loop ()
               (let loop ([n (+ 20 (random 20))]) ; 10-20 minute delay
                 (when (>= n 0)
-                  (let ([new (map (lambda (x) 
-				    (if (directory-exists? x) 
-					(directory-list x)
-					null))
-				  '("active" "inactive"))])
+                  (let ([new (map (lambda (x)
+                                    (if (directory-exists? x)
+                                      (directory-list x)
+                                      null))
+                                  '("active" "inactive"))])
                     (if (equal? new last-active/inactive)
                       (begin (sleep 30) (loop (sub1 n)))
                       (begin (set! last-active/inactive new)
@@ -660,57 +659,57 @@
   (define session-count 0)
 
   (parameterize ([error-display-handler
-		  (lambda (msg exn)
-		    (LOG msg))])
+                  (lambda (msg exn)
+                    (LOG msg))])
     (run-server
      PORT-NUMBER
      (lambda (r w)
        (set! connection-num (add1 connection-num))
        (when ((current-memory-use) . > . SESSION-MEMORY-LIMIT)
-	 (collect-garbage))
+         (collect-garbage))
        (parameterize ([current-session (begin
-					 (set! session-count (add1 session-count))
-					 session-count)])
-	 (let-values ([(here there) (ssl-addresses r)])
-	   (LOG "connect from ~a" there))
-	 (with-watcher
-	  w
-	  (lambda (kill-watcher)
-	    (let ([r-safe (make-limited-input-port r 2048)])
-	      (write+flush w 'handin)
-	      ;; Check protocol:
-	      (with-handlers ([exn:fail?
-			       (lambda (exn)
-				 (let ([msg (if (exn? exn)
-						(exn-message exn)
-						(format "~e" exn))])
-				   (kill-watcher)
-				   (LOG "ERROR: ~a" msg)
-				   (write+flush w msg)
-				   ;; see note on close-output-port below
-				   (close-output-port w)))])
+                                         (set! session-count (add1 session-count))
+                                         session-count)])
+         (let-values ([(here there) (ssl-addresses r)])
+           (LOG "connect from ~a" there))
+         (with-watcher
+          w
+          (lambda (kill-watcher)
+            (let ([r-safe (make-limited-input-port r 2048)])
+              (write+flush w 'handin)
+              ;; Check protocol:
+              (with-handlers ([exn:fail?
+                               (lambda (exn)
+                                 (let ([msg (if (exn? exn)
+                                                (exn-message exn)
+                                                (format "~e" exn))])
+                                   (kill-watcher)
+                                   (LOG "ERROR: ~a" msg)
+                                   (write+flush w msg)
+                                   ;; see note on close-output-port below
+                                   (close-output-port w)))])
                 (let ([protocol (read r-safe)])
-		  (if (eq? protocol 'ver1)
-		      (write+flush w 'ver1)
-		      (error 'handin "unknown protocol: ~s" protocol)))
-		(handle-connection r r-safe w)
-		(LOG "normal exit")
-		(kill-watcher)
-		;; This close-output-port should not be necessary, and it's
-		;; here due to a deficiency in the SLL binding.
-		;; The problem is that a custodian shutdown of w is harsher
-		;; for SSL output than a normal close. A normal close
-		;; flushes an internal buffer that's not supposed to exist, while
-		;; the shutdown gives up immediately.
-		(close-output-port w)))))))
+                  (if (eq? protocol 'ver1)
+                      (write+flush w 'ver1)
+                      (error 'handin "unknown protocol: ~s" protocol)))
+                (handle-connection r r-safe w)
+                (LOG "normal exit")
+                (kill-watcher)
+                ;; This close-output-port should not be necessary, and it's
+                ;; here due to a deficiency in the SLL binding.
+                ;; The problem is that a custodian shutdown of w is harsher
+                ;; for SSL output than a normal close. A normal close
+                ;; flushes an internal buffer that's not supposed to exist, while
+                ;; the shutdown gives up immediately.
+                (close-output-port w)))))))
      #f ; `with-watcher' handles our timeouts
      (lambda (exn)
        (printf "~a\n" (if (exn? exn) (exn-message exn) exn)))
      (lambda (port-k cnt reuse?)
        (let ([l (ssl-listen port-k cnt #t)])
-	 (ssl-load-certificate-chain! l "server-cert.pem")
-	 (ssl-load-private-key! l "private-key.pem")
-	 l))
+         (ssl-load-certificate-chain! l "server-cert.pem")
+         (ssl-load-private-key! l "private-key.pem")
+         l))
      ssl-close
      ssl-accept
      ssl-accept/enable-break)))
