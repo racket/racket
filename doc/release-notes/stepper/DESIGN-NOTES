@@ -892,3 +892,14 @@ Begin STILL isn't working.  My last plan, to wrap each 'begin' body with a mark 
 indicates the source, is naturally broken because an inner mark can destroy that one.
 The solution is (hopefully) easy; just eta-expand to prevent the mark from being lost.
 Since it's a non-tail call, this doesn't destroy tail-calling.
+
+**************
+
+Okay, begin now works.  I decided that one of my implicit invariants--that the source
+expressions linked to by the marks always be actual parts of the source--was too
+restrictive.  I've now introduced a "fake-exp" which signals an artificially constructed
+expression.  This made all my problems go away, and now I'm a happy man.  If only
+begin0 worked, too...
+
+2006-11-13
+
