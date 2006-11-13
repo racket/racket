@@ -1360,7 +1360,7 @@
 (map-tests andmap)
 (map-tests ormap)
 
-(test-values '(1 2) (lambda () (for-each (lambda (x) (values 1 2)) '(1 2))))
+(test-values (list (void)) (lambda () (for-each (lambda (x) (values 1 2)) '(1 2))))
 (err/rt-test (map (lambda (x) (values 1 2)) '(1 2)) arity?)
 
 (test #t andmap add1 null)

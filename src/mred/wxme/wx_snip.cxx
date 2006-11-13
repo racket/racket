@@ -1581,7 +1581,14 @@ void wxImageSnip::Copy(wxImageSnip *newSnip)
   newSnip->viewh = viewh;
   newSnip->viewdx = viewdx;
   newSnip->viewdy = viewdy;
+
   newSnip->bm = bm;
+  newSnip->mask = mask;
+
+  if (bm)
+    bm->selectedIntoDC++;
+  if (mask)
+    mask->selectedIntoDC++;
 }
 
 char *wxImageSnip::GetFilename(Bool *rel)

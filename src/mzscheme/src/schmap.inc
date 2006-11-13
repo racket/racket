@@ -105,11 +105,13 @@ DO_MAP(int argc, Scheme_Object *argv[])
     v = _scheme_apply(argv[0], argc, args);
 #else
 # ifdef FOR_EACH_MODE
+#  if 0
+    /* Last in tail position (currently disabled): */
     if (pos + 1 == size) {
       return _scheme_tail_apply(argv[0], argc, args);
-    } else {
-      _scheme_apply_multi(argv[0], argc, args);
     }
+#  endif
+    _scheme_apply_multi(argv[0], argc, args);
 # else
     if (pos + 1 == size) {
       return _scheme_tail_apply(argv[0], argc, args);

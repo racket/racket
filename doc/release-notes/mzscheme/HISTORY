@@ -23,8 +23,8 @@ Filesystem:
   link guard procedure
 Misc:
  Removed write-image-to-file and read-image-from-file
- for-each, ormap, and andmap now tail-apply the given function
-  for the last call
+ ormap and andmap now tail-apply a given function for the 
+  last list element(s)
  eval evaluates its argument in tail position
  Improved compilation of call-with-values and an immediate
   lambda argument to avoid closure creation

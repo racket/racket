@@ -2442,8 +2442,6 @@ int scheme_get_port_socket(Scheme_Object *p, long *_s)
       }
     }
   } else if (SCHEME_INPORTP(p)) {
-    /* Abandon is not really useful on input ports from the Schemer's
-       perspective, but it's here for completeness. */
     Scheme_Input_Port *ip;
     ip = (Scheme_Input_Port *)p;
     if (ip->sub_type == scheme_tcp_input_port_type) {
