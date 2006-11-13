@@ -313,12 +313,12 @@
                        (lambda ()
                          (with-input-from-file pref-file read)))])
           ;; Make sure file content had the right shape:
-        (if (and (list? prefs)
-                 (andmap (lambda (x)
-                           (and (pair? x) (pair? (cdr x)) (null? (cddr x))))
-                         prefs))
-          prefs
-          null))))
+          (if (and (list? prefs)
+                   (andmap (lambda (x)
+                             (and (pair? x) (pair? (cdr x)) (null? (cddr x))))
+                           prefs))
+            prefs
+            null))))
     (let ([f (and (not flush?) (not filename) (weak-box-value pref-box))])
       (or f (let ([f (read-prefs)])
               (unless filename (set! pref-box (make-weak-box f)))
