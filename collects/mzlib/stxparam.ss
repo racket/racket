@@ -52,7 +52,7 @@
 		"duplicate binding"
 		stx
 		dup)))
-	   #'(letrec-syntaxes+values ([(gen-id) (convert-renamer val)] ...) ()
+	   #'(let-syntaxes ([(gen-id) (convert-renamer val)] ...)
 	       body0 body ...)))]))
 
   ;; ----------------------------------------
