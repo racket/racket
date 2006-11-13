@@ -391,10 +391,10 @@
               ;; To write the file, copy the old one to a temporary name
               ;; (preserves permissions, etc), write to the temp file,
               ;; then move (atomicly) the temp file to the normal name.
-              (let* ([tmp-file (make-temporary-file
-                                "TMPPREF~a"
-                                (and (file-exists? pref-file) pref-file)
-                                pref-dir)])
+              (let ([tmp-file (make-temporary-file
+                               "TMPPREF~a"
+                               (and (file-exists? pref-file) pref-file)
+                               pref-dir)])
                 ;; If something goes wrong, try to delete the temp file.
                 (with-handlers ([exn:fail? (lambda (exn)
                                              (with-handlers ([exn:fail:filesystem? void])
