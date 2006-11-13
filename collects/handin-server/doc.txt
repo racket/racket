@@ -6,24 +6,24 @@ instructor for accepting homework assignments and reporting on
 submitted assignments.
 
 The "handin-client" directory contains a client to be customized then
-re-distributed to students in the course. The customized client will
+re-distributed to students in the course.  The customized client will
 embed a particular hostname and port where the server is running, as
 well as a server certificate.
 
 With a customized client, students simply install a ".plt" file --- so
-there's no futzing with configuration dialogs and certificates. A
+there's no futzing with configuration dialogs and certificates.  A
 student can install any number of clients at once (assuming that the
 clients are properly customized, as described below).
 
 The result, on the student's side, is a "Handin" button in DrScheme's
-toolbar. Clicking the "Handin" button allows the student to type a
+toolbar.  Clicking the "Handin" button allows the student to type a
 password and upload the current content of the definitions and
-interactions window to the course instructor's server. The "File" menu
-is also extended with a "Manage..." menu item for managing a handin
-account (i.e., changing the password and other information, or
+interactions window to the course instructor's server.  The "File"
+menu is also extended with a "Manage..." menu item for managing a
+handin account (i.e., changing the password and other information, or
 creating a new account if the instructor configures the server to
-allow new accounts). Students can submit joint work by submitting with
-a concatenation of usernames separated by a "+".
+allow new accounts).  Students can submit joint work by submitting
+with a concatenation of usernames separated by a "+".
 
 On the instructor's side, the handin server can be configured to check
 the student's submission before accepting it.
@@ -93,16 +93,16 @@ Client Customization
 To customize the client:
 
   1. Rename (or make a copy of) the "handin-client" collection
-     directory. The new name should describe your class uniquely.
-     For example, "uu-cpsc2010" is a good name for CPSC 2010
-     at the University of Utah.
+     directory.  The new name should describe your class uniquely.
+     For example, "uu-cpsc2010" is a good name for CPSC 2010 at the
+     University of Utah.
 
   2. Edit the first three definitions of "info.ss" in your renamed
      client collection:
 
        * For `name', choose a name for the handin tool as it will
          appear in DrScheme's interface (e.g., the "XXX" for the
-         "Manage XXX Handin Account..."  menu item). Again, make the
+         "Manage XXX Handin Account..."  menu item).  Again, make the
          name specific to the course, in case a student installs
          multiple handin tools.  Do not use "Handin" as the last part
          of the name, since "Handin" is always added for button and
@@ -121,17 +121,17 @@ To customize the client:
       menu that opens a (course-specific) web page.
 
    3. Replace "icon.png" in your renamed directory with a new 32x32
-      icon. This icon is displayed on startup with DrScheme's splash
-      screen, and it is included at half size on the "Handin"
-      button. Again, choose a distinct icon for the benefit of
-      students who install multiple handin tools.
+      icon.  This icon is displayed on startup with DrScheme's splash
+      screen, and it is included at half size on the "Handin" button.
+      Again, choose a distinct icon for the benefit of students who
+      install multiple handin tools.
 
    4. Replace "server-cert.pem" in your renamed directory with a
-      server certificate. The file "server-cert.pem" in
+      server certificate.  The file "server-cert.pem" in
       "handin-client" collection is ok for testing, but the point of
       this certificate is to make handins secure, so you should
       generate a new (self-certifying) certificate and keep its key
-      private. (See server setup, below.)
+      private.  (See server setup, below.)
 
    5. Run
            mzc --collection-plt <name>.plt <name>
@@ -139,9 +139,9 @@ To customize the client:
       (i.e., whatever you changed "handin-client" to).
 
    6. Distribute <name>.plt to students for installation into their
-      copies of DrScheme. The students need not have access to the
+      copies of DrScheme.  The students need not have access to the
       DrScheme installation directory; the tool will be installed on
-      the filesystem in the student's personal space. If you want to
+      the filesystem in the student's personal space.  If you want to
       install it once on a shared installation, use setup-plt with the
       --all-users flag.
 
@@ -150,18 +150,19 @@ Server Setup
 ============================================
 
 The server must be run from a directory that is specially prepared to
-host the server. This directory contains the following files and
+host the server.  This directory contains the following files and
 sub-directories:
 
-  * "server-cert.pem" --- the server's certificate. To create a
+  * "server-cert.pem" --- the server's certificate.  To create a
     certificate and key with openssl:
 
-     openssl req -new -nodes -x509 -days 365 -out server-cert.pem
-                 -keyout private-key.pem
+      openssl req -new -nodes -x509 -days 365 -out server-cert.pem
+                  -keyout private-key.pem
 
-  * "private-key.pem" --- the private key to go with "server-cert.pem".
-    Whereas "server-cert.pem" gets distributed to students with the
-    handin client, "private-key.pem" is kept private.
+  * "private-key.pem" --- the private key to go with
+    "server-cert.pem".  Whereas "server-cert.pem" gets distributed to
+    students with the handin client, "private-key.pem" is kept
+    private.
 
   * "config.ss" (optional) --- configuration options. The file format
     is
@@ -280,7 +281,7 @@ sub-directories:
     the list of user accounts, along with the associated password
     (actually the MD5 hash of the password), and extra string fields
     as specified by the 'extra-fields configuration entry (in the same
-    order). The file format is
+    order).  The file format is
 
       ((<username-sym> (<pw-md5-str> <extra-field> ...))
         ...)
@@ -291,13 +292,13 @@ sub-directories:
         ...)
 
     Username that begin with "solution" are special.  They are used by
-    the HTTPS status server. Independent of the 'user-regexp and
+    the HTTPS status server.  Independent of the 'user-regexp and
     'username-case-sensitive? configuration items, usernames are not
     allowed to contain characters that are illegal in Windows
     pathnames, they cannot end or begin in spaces or periods.
 
     If the 'allow-new-users configuration allows new users, the
-    "users.ss" file can be updated by the server with new users. It
+    "users.ss" file can be updated by the server with new users.  It
     can always be updated by the server to change passwords.
 
     If you have access to a standard Unix password file (from
@@ -314,12 +315,12 @@ sub-directories:
     system file:
 
       foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo:/home/foo:/bin/tcsh
-      bar:$1$dKlU0OkJ$t63NU/eTzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash
+      bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash
 
     you can create this "users.ss" file:
 
       ((foo ((unix "wRzN1u5q2SqRD") "L.E. Foo" "?"))
-       (bar ((unix "$1$dKlU0OkJ$t63NU/eTzKz") "Bar Z. Lie" "?")))
+       (bar ((unix "$1$dKlU0OkJ$t63TzKz") "Bar Z. Lie" "?")))
 
     which can be combined with this setting for 'extra-fields in your
     "config.ss":
@@ -477,34 +478,36 @@ sub-directories:
 
 The server can be run within either MzScheme or MrEd, but "utils.ss"
 requires MrEd (which means that `checker' modules will likely require
-the server to run under MrEd).
+the server to run under MrEd).  It is best to use MrEd3m so memory
+accounting is possible and the server will be protected from memory
+related crashes.
 
 The server currently provides no mechanism for a graceful shutdown,
-but terminating the server is no worse than a network outage. (In
-particular, no data should be lost.) To reconfigure the server (e.g.,
+but terminating the server is no worse than a network outage.  (In
+particular, no data should be lost.)  To reconfigure the server (e.g.,
 to change the set of active assignments), stop it and restart it.
 
 The client and server are designed to be robust against network
-problems and timeouts. The client-side tool always provides a "cancel"
-button for any network transaction. For handins, "cancel" is
+problems and timeouts.  The client-side tool always provides a
+"cancel" button for any network transaction.  For handins, "cancel" is
 guaranteed to work up to the point that the client sends a "commit"
 command; this command is sent only after the server is ready to record
 the submission (having run it through the checker, if any), but before
-renaming "ATTEMPT". Also, the server responds to a commit with "ok"
-only after it has written the file. Thus, when the client-side tool
-reports that the handin was successful, the report is
-reliable. Meanwhile, the tool can also report successful cancels most
-of the time. In the (normally brief) time between a commit and an "ok"
+renaming "ATTEMPT".  Also, the server responds to a commit with "ok"
+only after it has written the file.  Thus, when the client-side tool
+reports that the handin was successful, the report is reliable.
+Meanwhile, the tool can also report successful cancels most of the
+time.  In the (normally brief) time between a commit and an "ok"
 response, the tool gives the student a suitable warning that the
 cancel is unreliable.
 
 To minimize human error, the number of active assignments should be
-limited to one whenever possible. When multiple assignments are
+limited to one whenever possible.  When multiple assignments are
 active, design a checker to help ensure that the student has selected
 the correct assignment in the handin dialog.
 
 A student can download his/her own submissions through a web server
-that runs concurrently with the handin server. The starting URL is
+that runs concurrently with the handin server.  The starting URL is
 
   https://SERVER:PORT/servlets/status.ss
 
@@ -512,7 +515,7 @@ to obtain a list of all assignments, or
 
   https://SERVER:PORT/servlets/status.ss?handin=ASSIGNMENT
 
-to start with a specific assignment (named ASSIGNMENT). The default
+to start with a specific assignment (named ASSIGNMENT).  The default
 PORT is 7980.
 
 
@@ -522,14 +525,15 @@ Checker Utilities
 The _utils.ss_ module provides utilities helpful in implementing
 `checker' functions:
 
-> (unpack-submission bytes) - returns two text% objects corresponding
-  to the submitted definitions and interactions windows.
+> (unpack-submission bytes)
+  Returns two text% objects corresponding to the submitted definitions
+  and interactions windows.
 
-> (make-evaluator language teachpack-paths program-port) - returns a
-  function of one required argument for evaluating expressions in the
-  designated language, and loading teachpacks that are specified in
-  `teachpack-paths'.  The `program-port' is an input port that
-  produces the content of the definitions window; use
+> (make-evaluator language teachpack-paths program-port)
+  Returns a function of one required argument for evaluating
+  expressions in the designated language, and loading teachpacks that
+  are specified in `teachpack-paths'.  The `program-port' is an input
+  port that produces the content of the definitions window; use
   `(open-input-string "")' for an empty definitions window.
 
   The `language' can be:
@@ -557,114 +561,118 @@ The _utils.ss_ module provides utilities helpful in implementing
   that retrieve additional information.  Currently, only
   'execute-counts is used (see below).
 
-> (make-evaluator/submission language teachpack-paths bytes) - like
-  `make-evaluator', but the definitions content is supplied as a
+> (make-evaluator/submission language teachpack-paths bytes)
+  Like `make-evaluator', but the definitions content is supplied as a
   submission byte string.  The byte string is opened for reading, with
   line-counting enabled.
 
-> (call-with-evaluator language teachpack-paths program-port proc) -
-  calls `proc' with an evaluator for the given language, teachpack
-  paths, and initial definition content as supplied by a port. It also
-  sets the current error-value print handler to print values in a way
-  suitable for `lang', it initializes `current-run-status' with
+> (call-with-evaluator language teachpack-paths program-port proc)
+  Calls `proc' with an evaluator for the given language, teachpack
+  paths, and initial definition content as supplied by a port.  It
+  also sets the current error-value print handler to print values in a
+  way suitable for `lang', it initializes `current-run-status' with
   "executing your code", and it catches all exceptions to re-raise
   them in a form suitable as a submission error.
 
-> (call-with-evaluator/submission language teachpack-paths bytes proc) -
-  like `call-with-evaluator', but the definitions content is supplied
-  as a submission string.  The byte string is opened for reading,
-  with line-counting enabled.
+> (call-with-evaluator/submission language teachpack-paths bytes proc)
+  Like `call-with-evaluator', but the definitions content is supplied
+  as a submission string.  The byte string is opened for reading, with
+  line-counting enabled.
 
+> (evaluate-all source input-port eval)
+  Like `load' on an input port.
 
-> (evaluate-all source input-port eval) - like `load' on an input
-  port.
+> (evaluate-submission bytes eval)
+  Like `load' on a non-test-suite submission byte string.
 
-> (evaluate-submission bytes eval) - like `load' on a non-test-suite
-  submission byte string.
+> coverage-enabled
+  Parameter that controls whether coverage testing is enabled.  If it
+  set to true, the errortrace collection will be used to collect
+  coverage information during evaluation of the submission, this
+  information is collected before additional checker-evaluations.  To
+  retrieve the collected information, apply the evaluation function
+  with a second argument of 'execute-counts (the first argument will
+  be ignored).  The resulting value is the same as the result of
+  errortrace's `get-execute-counts', with all non-submission entries
+  filtered out.
 
-
-> coverage-enabled - parameter that controls whether coverage testing
-  is enabled.  If it set to true, the errortrace collection will be
-  used to collect coverage information during evaluation of the
-  submission, this information is collected before additional
-  checker-evaluations.  To retrieve the collected information, apply
-  the evaluation function with a second argument of 'execute-counts
-  (the first argument will be ignored).  The resulting value is the
-  same as the result of errortrace's `get-execute-counts', with all
-  non-submission entries filtered out.
-
-
-> (check-proc eval expect-v compare-proc proc-name arg ...) - calls
-  the function named `proc-name' using the evaluator `eval', giving it
-  the (unquoted) arguments `arg'... Let `result-v' be the result of
-  the call; unless `(compare-proc result-v expect-v)' is true, an
-  exception is raised.
+> (check-proc eval expect-v compare-proc proc-name arg ...)
+  Calls the function named `proc-name' using the evaluator `eval',
+  giving it the (unquoted) arguments `arg'...  Let `result-v' be the
+  result of the call; unless `(compare-proc result-v expect-v)' is
+  true, an exception is raised.
 
   Every exception or result mismatch during the call to `check-proc'
   phrased suitably for the handin client.
 
-> (check-defined eval name) - checks whether `name' is defined in the
-  evaluator `eval', and raises an error if not (suitably phrased for
-  the handin client).  If it is defined as non-syntax, its value is
-  returned. Warning: in the beginner language level, procedure
-  definitions are bound as syntax.
+> (check-defined eval name)
+  Checks whether `name' is defined in the evaluator `eval', and raises
+  an error if not (suitably phrased for the handin client).  If it is
+  defined as non-syntax, its value is returned.  Warning: in the
+  beginner language level, procedure definitions are bound as syntax.
 
-> (look-for-tests text name n) - inspects the given text% object to
-  determine whether it contains at least `n' tests for the function
-  `name'. The tests must be top-level expressions.
+> (look-for-tests text name n)
+  Inspects the given text% object to determine whether it contains at
+  least `n' tests for the function `name'.  The tests must be
+  top-level expressions.
 
-> (user-construct eval name arg ...) - like `check-proc', but with no
-  result checking. This function is often useful for calling a
-  student-defined constructor.
+> (user-construct eval name arg ...)
+  Like `check-proc', but with no result checking.  This function is
+  often useful for calling a student-defined constructor.
 
+> test-history-enabled
+  Parameter that controls how run-time errors are reported to the
+  handin client.  If the parameter's value is true, then the complete
+  sequence of tested expressions is reported to the handin client for
+  any test failure.  Set this parameter to true when testing programs
+  that use state.
 
-> test-history-enabled - parameter that controls how run-time errors
-  are reported to the handin client. If the parameter's value is true,
-  then the complete sequence of tested expressions is reported to the
-  handin client for any test failure. Set this parameter to true when
-  testing programs that use state.
+> (message string [styles])
+  If given only a string, this string will be shown on the client's
+  submission dialog; if `styles' is also given, it can be the symbol
+  'final, which will be used as the text on the handin dialog after a
+  successful submission instead of "Handin successful." (useful for
+  submissions that were saved, but had problems); finally, `styles'
+  can be used as a list of styles for a `message-box' dialog on the
+  client side, and the resulting value is returned as the result of
+  `message'.  You can use that to send warnings to the student and
+  wait for confirmation.
 
-> (message string [styles]) - if given only a string, this string will
-  be shown on the client's submission dialog; if `styles' is also
-  given, it can be the symbol 'final, which will be used as the text
-  on the handin dialog after a successful submission instead of
-  "Handin successful." (useful for submissions that were saved, but
-  had problems); finally, `styles' can be used as a list of styles for
-  a `message-box' dialog on the client side, and the resulting value
-  is returned as the result of `message'.  You can use that to send
-  warnings to the student and wait for confirmation.
+> (current-run-status string-or-#f)
+  Registers information about the current actions of the checker, in
+  case the session is terminated due to excessive memory consumption.
+  For example, a checker might set the status to indicate which
+  instructor-supplied test was being executed when the session ran out
+  of memory.  This status is only used when per-session memory limits
+  are supported (i.e., under MrEd3m or MzScheme3m with memory
+  accounting), but in both cases, a string value will also be passed
+  on to `message' above.
 
-> (current-run-status string-or-#f) - registers information about the
-  current actions of the checker, in case the session is terminated
-  due to excessive memory consumption. For example, a checker might
-  set the status to indicate which instructor-supplied test was being
-  executed when the session ran out of memory. This status is only
-  used when per-session memory limits are supported (i.e., under
-  MrEd3m or MzScheme3m with memory accounting), but in both cases, a
-  string value will also be passed on to `message' above.
+> (current-value-printer proc)
+  A parameter that controls how values are printed, a procedure that
+  expects a Scheme value and returns a string representation for it.
+  The default value printer uses pretty-print, with DrScheme-like
+  settings.
 
-> (current-value-printer proc) - a parameter that controls how values
-  are printed, a procedure that expects a Scheme value and returns a
-  string representation for it.  The default value printer uses
-  pretty-print, with DrScheme-like settings.
+> (reraise-exn-as-submission-problem thunk)
+  Calls thunk in a context that catches exceptions and re-raises them
+  in a form suitable as a submission error.
 
-> (reraise-exn-as-submission-problem thunk) - calls thunk in a context
-  that catches exceptions and re-raises them in a form suitable as a
-  submission error.
+> (log-line fmt args ...)
+  Produces a line in the server log file, using the given format
+  string and arguments.  All this actually does, is arrange to print
+  the line fast (to avoid mixing lines from different threads) to the
+  error port, and flush it.
 
-
-> (LOG fmt args ...) - produces a line in the server log file, using
-  the given format string and arguments.
-
-> (timeout-control msg) - control the timeout for this session.  The
-  timeout is initialized by the value of the 'session-timeout
-  configuration entry, and the checker can use this procedure to
-  further control it: if msg is 'reset the timeout is reset to
-  'session-timeout seconds; if msg is a number the timeout will be set
-  to that many seconds in the future.  The timeout can be completely
-  disabled by (timeout-control #f).  (Note that before the checker is
-  used (after the pre-checker, if specified), the timer will be reset
-  to the 'session-timeout value.)
+> (timeout-control msg)
+  Control the timeout for this session.  The timeout is initialized by
+  the value of the 'session-timeout configuration entry, and the
+  checker can use this procedure to further control it: if msg is
+  'reset the timeout is reset to 'session-timeout seconds; if msg is a
+  number the timeout will be set to that many seconds in the future.
+  The timeout can be completely disabled by (timeout-control #f).
+  (Note that before the checker is used (after the pre-checker, if
+  specified), the timer will be reset to the 'session-timeout value.)
 
 
 Extra Checker Utilities
@@ -780,10 +788,10 @@ Keywords for configuring `check:':
   additional tests).  It can be a plain string which will be used as
   the error message, or a string with single a "~a" (or "~e", "~s",
   "~v") that will be used as a format string with the actual error
-  message.  The default is "Error in your code --\n~a".  Examples of
-  these:
+  message.  The default is "Error in your code --\n~a".  Useful
+  examples of these messages:
 
-    "there is an error in your program, hit \"Run\" and debug your code"
+    "There is an error in your program, hit \"Run\" to debug"
     "There is an error in your program:\n----\n~a\n----\n
      Hit \"Run\" and debug your code."
 
@@ -798,8 +806,10 @@ Keywords for configuring `check:':
       (message (string-append
                 "You have an error in your program -- please hit"
                 " \"Run\" and debug your code.\n"
-                "Email the course staff if you think your code is fine.\n"
-                "(The submission has been saved but marked as erroneous.)")
+                "Email the course staff if you think your code is"
+                " fine.\n"
+                "(The submission has been saved but marked as"
+                " erroneous.)")
                '(ok))
       (message "Handin saved as erroneous." 'final))
 
@@ -841,7 +851,7 @@ value from the submission code.
               (file-size "hw.scm")
               (file-or-directory-modify-seconds "hw.scm")))
     (timeout-control 'disable)
-    (LOG "Sending a receipt: ~a" info)
+    (log-line "Sending a receipt: ~a" info)
     (send-mail-message
      "course-staff@university.edu"
      "Submission Receipt"

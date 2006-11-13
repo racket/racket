@@ -6,6 +6,7 @@
            (lib "unitsig.ss")
            (lib "servlet-sig.ss" "web-server")
            (lib "response-structs.ss" "web-server")
+           (lib "logger.ss" "handin-server" "private")
            (lib "md5.ss" "handin-server" "private")
            (lib "uri-codec.ss" "net"))
 
@@ -151,6 +152,7 @@
 
       (define (one-status-page status for-handin)
         (let ([user (get-status status 'user (lambda () "???"))])
+          (log-line "Status access: ~s" user)
           (let ([next
                  (send/suspend
                   (lambda (k)
@@ -183,6 +185,7 @@
                               (string<? a b))
                           (string<? a b)))))]
               [user (get-status status 'user (lambda () "???"))])
+          (log-line "Status access: ~s" user)
           (let ([next
                  (send/suspend
                   (lambda (k)
@@ -229,25 +232,25 @@
             (or (check file `(* ,who *))
                 (check file `(* #rx"^solution"))
                 (check file `(* #rx"^solution" *))
-                (error "Boom!")))
+                (error "Boom!"))
+            (log-line "Status file-get: ~s ~a" who file))
           ;; Return the downloaded file
           (let* ([data (with-input-from-file file
                          (lambda () (read-bytes (file-size file))))]
                  [html? (regexp-match #rx"[.]html?$" (string-foldcase tag))]
                  [wxme? (regexp-match #rx#"^WXME" data)])
             (make-response/full 200 "Okay" (current-seconds)
-                                (cond [html? #"text/html"]
-                                      [wxme? #"application/data"]
-                                      [else  #"text/plain"])
-                                `((Content-Length . ,(number->string (bytes-length data)))
-                                  ,@(if wxme?
-                                      `((Content-Disposition
-                                         .
-                                         ,(format "attachment; filename=~s"
-                                                  (let-values ([(base name dir?) (split-path file)])
-                                                    (path->string name)))))
-                                      '()))
-                                (list data)))))
+              (cond [html? #"text/html"]
+                    [wxme? #"application/data"]
+                    [else  #"text/plain"])
+              `((Content-Length . ,(number->string (bytes-length data)))
+                (Content-Disposition
+                 . ,(format "~a; filename=~s"
+                            (if wxme? "attachment" "inline")
+                            (let-values ([(base name dir?)
+                                          (split-path file)])
+                              (path->string name)))))
+              (list data)))))
 
       (define (status-page status for-handin)
         (if for-handin
