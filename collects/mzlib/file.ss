@@ -355,15 +355,17 @@
                                    base)])
                         (unless (directory-exists? dir)
                           (make-directory* dir))
-                        (values filename
-                                (build-path dir (bytes->path
-                                                 (bytes-append
-                                                  (if (eq? 'windows (system-type))
-                                                    #"_"
-                                                    #".")
-                                                  #"LOCK"
-                                                  (path->bytes name))))
-                                dir))))])
+                        (values
+                         filename
+                         (build-path dir
+                                     (bytes->path-element
+                                      (bytes-append
+                                       (if (eq? 'windows (system-type))
+                                         #"_"
+                                         #".")
+                                       #"LOCK"
+                                       (path-element->bytes name))))
+                         dir))))])
       (with-handlers ([exn:fail:filesystem:exists?
                        (lambda (x)
                          (if lock-there
