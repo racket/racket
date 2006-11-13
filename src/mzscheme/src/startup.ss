@@ -3132,8 +3132,13 @@
      [else
       (select-handler/breaks-as-is e bpz (cdr l))]))
 
-  (define handler-prompt-key (make-continuation-prompt-tag))
   (define false-thread-cell (make-thread-cell #f))
+
+
+  (define (check-with-handlers-in-context handler-prompt-key)
+    (unless (continuation-prompt-available? handler-prompt-key) 
+      (error 'with-handlers
+             "exception handler used out of context")))
 
   (define-syntaxes (with-handlers with-handlers*)
     (let ([wh 
@@ -3148,7 +3153,8 @@
 									       (syntax->list #'(handler ...))))])
 		    (quasisyntax/loc stx
 		      (let ([pred-name pred] ...
-			    [handler-name handler] ...)
+			    [handler-name handler] ...
+                            [handler-prompt-key (make-continuation-prompt-tag)])
 			;; Capture current break parameterization, so we can use it to
 			;;  evaluate the body
 			(let ([bpz (continuation-mark-set-first #f break-enabled-key)])
@@ -3170,6 +3176,7 @@
 				   bpz
 				 (parameterize ([current-exception-handler
 						 (lambda (e)
+                                                   (check-with-handlers-in-context handler-prompt-key)
 						   ;; Deliver a thunk to the escape handler:
 						   (abort-current-continuation
                                                     handler-prompt-key
