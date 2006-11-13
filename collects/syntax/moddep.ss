@@ -144,6 +144,7 @@
 				      file
 				      (case (system-type)
 					[(windows) #".dll"]
+                                        [(macosx) #".dylib"]
 					[else #".so"]))))]
 	       [zo (build-path base
 			       sub-path

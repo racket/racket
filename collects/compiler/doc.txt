@@ -403,6 +403,7 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
                                [#:variant variant]
                                [#:aux aux]
 			       [#:collects-path path-or-list]
+                               [#:on-extension ext-proc]
                                [#:launcher? launcher?]
                                [#:verbose? verbose?])
   - Copies the MzScheme (if `mred?' is #f) or MrEd (otherwise) binary,
@@ -554,6 +555,15 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
    path (placed, in order, after the user-specific "collects"
    directory, but before the main "collects" directory; then the
    search list is combined with "PLTCOLLECTS", if it is defined).
+
+   If the `on-extension' argument is a procedure, the procedure is
+   called when the traversal of module dependencies arrives at an
+   extension (i.e., a DLL or shared object). The default, #f, causes
+   an exception to be raised when an extension is encountered, since
+   extensions cannot be embedded in executables. The procedure is
+   called with two arguments: a path for the extension, and a boolean
+   that is #t if the extension is a _loader variant (instead of a
+   single-module extension).
 
    If `launcher?' is #t, then no `modules' should be null,
    `literal-file-list' should be null, `literal-sexp' should be #f,

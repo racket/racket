@@ -331,7 +331,7 @@
 	      p))))
 
       ;; Loads module code, using .zo if there, compiling from .scm if not
-      (define (get-code filename module-path codes prefixes verbose? collects-dest)
+      (define (get-code filename module-path codes prefixes verbose? collects-dest on-extension)
 	(when verbose?
 	  (fprintf (current-error-port) "Getting ~s~n" filename))
 	(let ([a (assoc filename (unbox codes))])
@@ -349,62 +349,78 @@
 			 filename)]
 		 [else 'ok]))
 	      ;; First use of the module. Get code and then get code for imports.
-	      (let ([code (get-module-code filename)])
-		(let-values ([(imports fs-imports ft-imports) (module-compiled-imports code)])
-		  (let ([name (let-values ([(base name dir?) (split-path filename)])
-				(path->string (path-replace-suffix name #"")))]
-			[prefix (let ([a (assoc filename prefixes)])
-				  (if a
-				      (cdr a)
-				      (generate-prefix)))]
-			[all-file-imports (filter (lambda (x) (not (symbol? x)))
-						  (append imports fs-imports ft-imports))])
-		    (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
-					  all-file-imports)]
-			  [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
-					  all-file-imports)])
-		      ;; Get code for imports:
-		      (for-each (lambda (sub-filename sub-path)
-				  (get-code sub-filename
-					    sub-path
-					    codes
-					    prefixes
-					    verbose?
-					    collects-dest))
-				sub-files sub-paths)
-		      (if (and collects-dest
-			       (is-lib-path? module-path))
-			  ;; Install code as .zo:
-			  (begin
-			    (with-output-to-file (lib-module-filename collects-dest module-path)
-			      (lambda ()
-				(write code))
-			      'truncate/replace)
-			    ;; Record module as copied
-			    (set-box! codes
-				      (cons (make-mod filename module-path #f
-						      #f #f #f #f)
-					    (unbox codes))))
-			  ;; Build up relative module resolutions, relative to this one,
-			  ;; that will be requested at run-time.
-			  (let ([mappings (map (lambda (sub-i sub-filename sub-path)
-						 (and (not (and collects-dest
-								(is-lib-path? sub-path)))
-						      (let-values ([(path base) (module-path-index-split sub-i)])
-							;; Assert: base should refer to this module:
-							(let-values ([(path2 base2) (module-path-index-split base)])
-							  (when (or path2 base2)
-							    (error 'embed "unexpected nested module path index")))
-							(let ([m (assoc sub-filename (unbox codes))])
-							  (cons path (mod-full-name m))))))
-					       all-file-imports sub-files sub-paths)])
-			    ;; Record the module
-			    (set-box! codes
-				      (cons (make-mod filename module-path code 
-						      name prefix (string->symbol
-								   (format "~a~a" prefix name))
-						      (filter values mappings))
-					    (unbox codes))))))))))))
+	      (let ([code (get-module-code filename
+                                           "compiled"
+                                           compile
+                                           (if on-extension
+                                               (lambda (f l?)
+                                                 (on-extension f l?)
+                                                 #f)
+                                               #f))]
+                    [name (let-values ([(base name dir?) (split-path filename)])
+                            (path->string (path-replace-suffix name #"")))]
+                    [prefix (let ([a (assoc filename prefixes)])
+                              (if a
+                                  (cdr a)
+                                  (generate-prefix)))])
+                (if code
+                    (let-values ([(imports fs-imports ft-imports) (module-compiled-imports code)])
+                      (let ([all-file-imports (filter (lambda (x) (not (symbol? x)))
+                                                      (append imports fs-imports ft-imports))])
+                        (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
+                                              all-file-imports)]
+                              [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
+                                              all-file-imports)])
+                          ;; Get code for imports:
+                          (for-each (lambda (sub-filename sub-path)
+                                      (get-code sub-filename
+                                                sub-path
+                                                codes
+                                                prefixes
+                                                verbose?
+                                                collects-dest
+                                                on-extension))
+                                    sub-files sub-paths)
+                          (if (and collects-dest
+                                   (is-lib-path? module-path))
+                              ;; Install code as .zo:
+                              (begin
+                                (with-output-to-file (lib-module-filename collects-dest module-path)
+                                  (lambda ()
+                                    (write code))
+                                  'truncate/replace)
+                                ;; Record module as copied
+                                (set-box! codes
+                                          (cons (make-mod filename module-path #f
+                                                          #f #f #f #f)
+                                                (unbox codes))))
+                              ;; Build up relative module resolutions, relative to this one,
+                              ;; that will be requested at run-time.
+                              (let ([mappings (map (lambda (sub-i sub-filename sub-path)
+                                                     (and (not (and collects-dest
+                                                                    (is-lib-path? sub-path)))
+                                                          (let-values ([(path base) (module-path-index-split sub-i)])
+                                                            ;; Assert: base should refer to this module:
+                                                            (let-values ([(path2 base2) (module-path-index-split base)])
+                                                              (when (or path2 base2)
+                                                                (error 'embed "unexpected nested module path index")))
+                                                            (let ([m (assoc sub-filename (unbox codes))])
+                                                              (cons path (mod-full-name m))))))
+                                                   all-file-imports sub-files sub-paths)])
+                                ;; Record the module
+                                (set-box! codes
+                                          (cons (make-mod filename module-path code 
+                                                          name prefix (string->symbol
+                                                                       (format "~a~a" prefix name))
+                                                          (filter (lambda (p)
+                                                                    (and p (cdr p)))
+                                                                  mappings))
+                                                (unbox codes))))))))
+                    (set-box! codes
+                              (cons (make-mod filename module-path code 
+                                              name #f #f
+                                              null)
+                                    (unbox codes))))))))
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -487,7 +503,8 @@
 
       ;; Write a module bundle that can be loaded with 'load' (do not embed it
       ;; into an executable). The bundle is written to the current output port.
-      (define (write-module-bundle verbose? modules literal-files literal-expression collects-dest)
+      (define (write-module-bundle verbose? modules literal-files literal-expression collects-dest
+                                   on-extension)
 	(let* ([module-paths (map cadr modules)]
 	       [files (map
 		       (lambda (mp)
@@ -515,14 +532,15 @@
 	       ;; As we descend the module tree, we append to the front after
 	       ;; loasing imports, so the list in the right order.
 	       [codes (box null)])
-	  (for-each (lambda (f mp) (get-code f mp codes prefix-mapping verbose? collects-dest))
+	  (for-each (lambda (f mp) (get-code f mp codes prefix-mapping verbose? collects-dest
+                                             on-extension))
 		    files
 		    collapsed-mps)
 	  ;; Drop elements of `codes' that just record copied libs:
-	  (set-box! codes (filter (lambda (m) (mod-code m)) (unbox codes)))
+	  (set-box! codes (filter mod-code (unbox codes)))
 	  ;; Install a module name resolver that redirects
 	  ;; to the embedded modules
-	  (write (make-module-name-resolver (unbox codes)))
+	  (write (make-module-name-resolver (filter mod-code (unbox codes))))
 	  (let ([l (unbox codes)])
 	    (for-each
 	     (lambda (nc)
@@ -577,7 +595,8 @@
 					      [launcher? #f]
 					      [variant 'normal]
 					      [collects-path #f]
-					      [collects-dest #f])
+					      [collects-dest #f]
+                                              [on-extension #f])
 	  (define keep-exe? (and launcher?
 				 (let ([m (assq 'forget-exe? aux)])
 				   (or (not m)
@@ -669,7 +688,8 @@
 			      (update-dll-dir dest (build-path orig-dir dir))))))))
 		(let ([write-module
 		       (lambda ()
-			 (write-module-bundle verbose? modules literal-files literal-expression collects-dest))])
+			 (write-module-bundle verbose? modules literal-files literal-expression collects-dest
+                                              on-extension))])
 		  (let-values ([(start end)
 				(if (and (eq? (system-type) 'macosx)
 					 (not unix-starter?))
