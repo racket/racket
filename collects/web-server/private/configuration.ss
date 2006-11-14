@@ -1,6 +1,7 @@
 (module configuration mzscheme
   (require (lib "unitsig.ss")
            (lib "kw.ss")
+           (lib "list.ss")
            (lib "contract.ss"))
   (require "configuration-structures.ss"
            "configuration-table-structs.ss"
@@ -56,13 +57,13 @@
       ;; GregP: putting mred.ss here is a bad idea because it will cause
       ;; web-server-text to have a dependency on mred
       ;; JM: We get around it by only doing it if the module is already attached.
-      ; (lib "mred.ss" "mred")
+      (lib "mred.ss" "mred")
       (lib "servlet.ss" "web-server")))
   ; end stolen
   
   (define/kw (make-make-servlet-namespace
               #:key
-              [to-be-copied-module-specs default-to-be-copied-module-specs])
+              [to-be-copied-module-specs empty])
     ; JBC : added error-handler hack; the right answer is only to transfer the 'mred'
     ; module binding when asked to, e.g. by a field in the configuration file.
     ; GregP: put this back in if Sam's code breaks
@@ -79,14 +80,17 @@
                (if (symbol? spec)
                    spec
                    ((current-module-name-resolver) spec #f #f)))])
-        (map get-name to-be-copied-module-specs)))
+        (map get-name 
+             (append default-to-be-copied-module-specs
+                     to-be-copied-module-specs))))
     ;end stolen
     (lambda ()
       (define server-namespace (current-namespace))
       (define new-namespace (make-namespace))
       (parameterize ([current-namespace new-namespace])
         (for-each (lambda (name)
-                      (namespace-attach-module server-namespace name))
+                    (with-handlers ([exn? void])
+                      (namespace-attach-module server-namespace name)))
                   to-be-copied-module-names)
         new-namespace)))
   
