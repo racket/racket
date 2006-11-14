@@ -6,38 +6,38 @@
            (lib "plt-match.ss")
            (lib "uri-codec.ss" "net"))
   (require "../request-structs.ss")
-
+  
   ;; valid-port? : any/c -> boolean?
   (define (valid-port? p)
     (and (integer? p) (exact? p) (<= 1 p 65535)))
-
+  
   ;; ripped this off from url-unit.ss
   (define (url-path->string strs)
     (apply string-append
            (apply append
                   (map (lambda (s) (list "/" (maybe-join-params s)))
                        strs))))
-
+  
   ;; needs to unquote things!
   (define (maybe-join-params s)
     (if (string? s)
-      s
-      (let ([s (path/param-path s)])
-        (if (string? s)
-          s
-          (case s
-            [(same) "."]
-            [(up)   ".."]
-            [else (error 'maybe-join-params
-                         "bad value from path/param-path: ~e" s)])))))
-
+        s
+        (let ([s (path/param-path s)])
+          (if (string? s)
+              s
+              (case s
+                [(same) "."]
+                [(up)   ".."]
+                [else (error 'maybe-join-params
+                             "bad value from path/param-path: ~e" s)])))))
+  
   ;; decompse-request : request -> uri * symbol * string
   (define (decompose-request req)
     (let* ([uri (request-uri req)]
            [method (request-method req)]
            [path (uri-decode (url-path->string (url-path uri)))])
       (values uri method path)))
-
+  
   ;; network-error: symbol string . values -> void
   ;; throws a formatted exn:fail:network
   (define (network-error src fmt . args)
@@ -45,8 +45,8 @@
             (string->immutable-string
              (format "~a: ~a" src (apply format fmt args)))
             (current-continuation-marks))))
-
-  ;; build-path-unless-absolute : path (or/c string? path?) -> path?
+  
+  ;; build-path-unless-absolute : path-string? path-string? -> path?
   (define (build-path-unless-absolute base path)
     (if (absolute-path? path)
         (build-path path)
@@ -160,7 +160,7 @@
   ; hash-table-empty? : hash-table -> bool
   (define (hash-table-empty? table)
     (zero? (hash-table-count table)))
-    
+  
   (provide/contract
    [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
    [extract-flag (symbol? (listof (cons/c symbol? any/c)) any/c . -> . any/c)]
@@ -174,4 +174,4 @@
    [directory-part (path? . -> . path?)]
    [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
    [exn->string ((or/c exn? any/c) . -> . string?)]
-   [build-path-unless-absolute (path? (or/c string? path?) . -> . path?)]))
+   [build-path-unless-absolute (path-string? path-string? . -> . path?)]))

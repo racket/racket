@@ -1,5 +1,6 @@
 (module configuration mzscheme
   (require (lib "unitsig.ss")
+           (lib "kw.ss")
            (lib "list.ss")
            (lib "contract.ss"))
   (require "private/configuration.ss"
@@ -15,28 +16,29 @@
   ; get-configuration : path -> configuration-table
   (define (get-configuration table-file-name)
     (parse-configuration-table (call-with-input-file table-file-name read)))
-
+  
   ; load-configuration : path -> configuration
   (define (load-configuration table-file-name)
     (complete-configuration (directory-part table-file-name) (get-configuration table-file-name)))
   
   ; load-configuration-sexpr : sexp -> configuration
-  (define (load-configuration-sexpr sexpr)
-    (build-configuration (parse-configuration-table sexpr) empty))
+  (define/kw (load-configuration-sexpr sexpr
+                                       #:other-keys bct-keys)                                       
+    (define table (parse-configuration-table sexpr))
+    (apply build-configuration table
+           (lambda (host)
+             (configuration-table-default-host table))
+           bct-keys))
   
   ; load-developer-configuration : path -> configuration
   (define (load-developer-configuration table-file-name)
     (complete-developer-configuration (directory-part table-file-name)
                                       (get-configuration table-file-name)))
-
-    ; build-developer-configuration : tst -> configuration-table
+  
+  ; build-developer-configuration : tst -> configuration-table
   (define (build-developer-configuration s-expr)
     (complete-developer-configuration (directory-part default-configuration-table-path)
                                       (parse-configuration-table s-expr)))
-
-  (define (build-developer-configuration/vhosts s-expr)
-    (complete-developer-configuration/vhosts (directory-part default-configuration-table-path)
-                                             (parse-configuration-table s-expr)))
   
   ; : (listof (cons sym TST)) -> configuration
   ; more here - this is ugly.  It also does not catch "unbound identifiers" since I use symbols.
@@ -65,8 +67,6 @@
    [get-configuration (path-string? . -> . configuration-table?)]
    ; XXX contract
    [build-developer-configuration (list? . -> . configuration?)]
-   ; XXX contract
-   [build-developer-configuration/vhosts (list? . -> . configuration?)]
    [default-configuration-table-path path?]
    [update-configuration (configuration? (listof (cons/c symbol? any/c)) . -> . configuration?)]
    [load-configuration-sexpr (list? . -> . configuration?)]

@@ -1,5 +1,6 @@
 (module configuration mzscheme
   (require (lib "unitsig.ss")
+           (lib "kw.ss")
            (lib "contract.ss"))
   (require "configuration-structures.ss"
            "configuration-table-structs.ss"
@@ -7,20 +8,6 @@
            "cache-table.ss"
            "../sig.ss"
            "../response-structs.ss")
-        
-  ; : str configuration-table/vhosts -> configuration
-  (define (complete-developer-configuration/vhosts base table)
-    (build-configuration
-     table     
-     (let ([default-host
-             (apply-default-functions-to-host-table
-              base (configuration-table-default-host table))]
-           [expanded-virtual-host-table
-            (map (lambda (x)
-                   (list (regexp (string-append (car x) "(:[0-9]*)?"))
-                         (apply-default-functions-to-host-table base (cdr x))))
-                 (configuration-table-virtual-hosts table))])
-       (gen-virtual-hosts expanded-virtual-host-table default-host))))
   
   ; : str configuration-table -> configuration
   (define (complete-configuration base table)
@@ -45,7 +32,10 @@
                               (configuration-table-default-host table)))))
   
   ; : configuration-table host-table -> configuration
-  (define (build-configuration table the-virtual-hosts)
+  (define/kw (build-configuration table the-virtual-hosts
+                                  #:key
+                                  [make-servlet-namespace default-make-servlet-namespace])
+    (define the-make-servlet-namespace make-servlet-namespace)
     (unit/sig web-config^
       (import)
       (define port (configuration-table-port table))
@@ -60,44 +50,48 @@
   
   ; begin stolen from commander.ss, which was stolen from private/drscheme/eval.ss
   ; FIX - abstract this out to a namespace library somewhere (ask Robby and Matthew)
-  (define to-be-copied-module-specs
+  (define default-to-be-copied-module-specs
     '(mzscheme
       ;; allow people (SamTH) to use MrEd primitives from servlets.
       ;; GregP: putting mred.ss here is a bad idea because it will cause
       ;; web-server-text to have a dependency on mred
       ;; JM: We get around it by only doing it if the module is already attached.
-      (lib "mred.ss" "mred")
+      ; (lib "mred.ss" "mred")
       (lib "servlet.ss" "web-server")))
-  
-  ; JBC : added error-handler hack; the right answer is only to transfer the 'mred'
-  ; module binding when asked to, e.g. by a field in the configuration file.
-  ; GregP: put this back in if Sam's code breaks
-  ;  (for-each (lambda (x) (with-handlers ([exn:fail? (lambda (exn) 'dont-care)])
-  ;                          ; dynamic-require will fail when running web-server-text.
-  ;                          ; maybe a warning message in the exception-handler?
-  ;                          (dynamic-require x #f)))
-  ;            to-be-copied-module-specs)
-  
-  ;; get the names of those modules.
-  (define to-be-copied-module-names
-    (let ([get-name
-           (lambda (spec)
-             (if (symbol? spec)
-                 spec
-                 ((current-module-name-resolver) spec #f #f)))])
-      (map get-name to-be-copied-module-specs)))
   ; end stolen
   
-  (define (the-make-servlet-namespace)
-    (let ([server-namespace (current-namespace)]
-          [new-namespace (make-namespace)])
+  (define/kw (make-make-servlet-namespace
+              #:key
+              [to-be-copied-module-specs default-to-be-copied-module-specs])
+    ; JBC : added error-handler hack; the right answer is only to transfer the 'mred'
+    ; module binding when asked to, e.g. by a field in the configuration file.
+    ; GregP: put this back in if Sam's code breaks
+    ;  (for-each (lambda (x) (with-handlers ([exn:fail? (lambda (exn) 'dont-care)])
+    ;                          ; dynamic-require will fail when running web-server-text.
+    ;                          ; maybe a warning message in the exception-handler?
+    ;                          (dynamic-require x #f)))
+    ;            to-be-copied-module-specs)
+    
+    ;; get the names of those modules.
+    (define to-be-copied-module-names
+      (let ([get-name
+             (lambda (spec)
+               (if (symbol? spec)
+                   spec
+                   ((current-module-name-resolver) spec #f #f)))])
+        (map get-name to-be-copied-module-specs)))
+    ;end stolen
+    (lambda ()
+      (define server-namespace (current-namespace))
+      (define new-namespace (make-namespace))
       (parameterize ([current-namespace new-namespace])
         (for-each (lambda (name)
-                    (with-handlers ([exn? void])
-                      (namespace-attach-module server-namespace name)))
+                      (namespace-attach-module server-namespace name))
                   to-be-copied-module-names)
         new-namespace)))
-    
+  
+  (define default-make-servlet-namespace (make-make-servlet-namespace))
+  
   ; error-response : nat str str [(cons sym str) ...] -> response
   ; more here - cache files with a refresh option.
   ; The server should still start without the files there, so the
@@ -222,13 +216,12 @@
                  expanded-virtual-host-table)
           default-host)))
   
+  (provide ; XXX contract
+   build-configuration
+   make-make-servlet-namespace)
   (provide/contract
-   [build-configuration (configuration-table? host-table? . -> . configuration?)]
    [complete-configuration (path-string? configuration-table? . -> . configuration?)]
    [complete-developer-configuration (path-string? configuration-table? . -> . configuration?)])
-  ; XXX contract
-  (provide
-   complete-developer-configuration/vhosts)
   (provide/contract
    [error-response ((natural-number/c string? string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
    ; XXX contract

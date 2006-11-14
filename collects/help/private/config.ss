@@ -42,7 +42,7 @@
                  (servlet-root ,servlet-root)
                  (mime-types "../../web-server/default-web-root/mime.types")
                  (password-authentication "passwords"))))])
-      (build-developer-configuration/vhosts
+      (build-developer-configuration
        `((port ,internal-port)
          (max-waiting 40)
          (initial-connection-timeout 30)
