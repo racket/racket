@@ -14,7 +14,7 @@ interact with it.
 You can put the following in your ~/.mzschemerc so that MzScheme
 starts with readline support on xterms:
 
-  (when (regexp-match? #rx"xterm" (getenv "TERM"))
+  (when (terminal-port? (current-input-port))
     (dynamic-require '(lib "rep.ss" "readline") #f))
 
 or start MzScheme with
