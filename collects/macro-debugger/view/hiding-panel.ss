@@ -100,6 +100,7 @@
       ;; enable-hiding : boolean -> void
       ;; Called only by stepper, which does it's own refresh
       (define/public (enable-hiding ok?)
+        (send enable-ctl set-value ok?)
         (set! enabled? ok?))
       
       ;; get-enabled?

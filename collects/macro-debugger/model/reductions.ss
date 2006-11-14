@@ -6,6 +6,7 @@
            "context.ss"
            "deriv.ss"
            "reductions-engine.ss")
+
   (provide reductions)
 
   ;; Setup for reduction-engines
@@ -266,7 +267,9 @@
 
       ;; Skipped
       
-      [#f null]))
+      [#f null]
+      
+      #;[else (error 'reductions "unmatched case: ~s" d)]))
 
   ;; reductions-transformation : Transformation -> ReductionSequence
   (define (reductions-transformation tx)

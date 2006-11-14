@@ -150,7 +150,6 @@
     (make-parameter
      `(("<nothing>" . #f)
        ("bound-identifier=?"  . ,bound-identifier=?)
-       ("same marks" . ,id:same-marks?)
        ("module-identifier=?" . ,module-identifier=?)
        ("module-or-top-identifier=?" . ,module-or-top-identifier=?)
        ("symbolic-identifier=?" . ,symbolic-identifier=?)

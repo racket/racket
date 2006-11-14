@@ -179,10 +179,10 @@
                        (pair? (cdr (append derivs-prefix derivs))))
               (send super-navigator add-child updown-navigator)
               (send updown-navigator show #t))
-            (when (null? (cdr derivs))
-              ;; There is nothing currently displayed
-              (refresh))
-            (update))
+            (if (null? (cdr derivs))
+                ;; There is nothing currently displayed
+                (refresh)
+                (update)))
 
           (define/public (get-controller) sbc)
           (define/public (get-view) sbview)
@@ -321,30 +321,21 @@
                   (let ([result (lift/deriv-e2 synth-deriv)])
                     (when result
                       (send sbview add-text "Expansion finished\n")
-                      (send sbview add-syntax (lift/deriv-e2 synth-deriv)))
+                      (send sbview add-syntax result))
                     (unless result
                       (send sbview add-text "Error\n"))))
                 (when (step? step)
                   (when (pair? (step-lctx step))
                     (for-each (lambda (bc)
                                 (send sbview add-text "While executing macro transformer in:\n")
-                                (send sbview add-syntax (cdr bc) (car bc) "MistyRose"))
+                                (insert-syntax/redex (cdr bc) (car bc)))
                               (step-lctx step))
                     (send sbview add-text "\n"))
-                  (send sbview add-syntax
-                        (step-e1 step)
-                        (foci (step-redex step))
-                        "MistyRose")
+                  (insert-syntax/redex (step-e1 step) (foci (step-redex step)))
                   (insert-step-separator (step-note step))
-                  (send sbview add-syntax
-                        (step-e2 step)
-                        (foci (step-contractum step))
-                        "LightCyan"))
+                  (insert-syntax/contractum (step-e2 step) (foci (step-contractum step))))
                 (when (misstep? step)
-                  (send sbview add-syntax
-                        (misstep-e1 step)
-                        (foci (misstep-redex step))
-                        "MistyRose")
+                  (insert-syntax/redex (misstep-e1 step) (foci (misstep-redex step)))
                   (insert-step-separator "Error")
                   (send sbview add-text (exn-message (misstep-exn step)))
                   (send sbview add-text "\n")
@@ -363,7 +354,16 @@
                   (send text last-position)
                   'start)
             (enable/disable-buttons))
+
+          ;; insert-syntax/redex : syntax syntaxes -> void
+          (define/private (insert-syntax/redex stx foci)
+            (send sbview add-syntax stx foci "MistyRose"))
           
+          ; insert-syntax/contractum : syntax syntaxes -> void
+          (define/private (insert-syntax/contractum stx foci)
+            (send sbview add-syntax stx foci "LightCyan"))
+          
+          ;; enable/disable-buttons : -> void
           (define/private (enable/disable-buttons)
             (send nav:start enable (and steps (cursor:can-move-previous? steps)))
             (send nav:previous enable (and steps (cursor:can-move-previous? steps)))
@@ -401,17 +401,10 @@
           ;; refresh/nontrivial : -> void
           (define/private (refresh/nontrivial)
             (let ([deriv (car derivs)])
-              (with-handlers ([(lambda (e) (catch-errors?))
-                               (lambda (e)
-                                 (message-box 
-                                  "Error"
-                                  "Internal error in macro stepper (reductions)")
-                                 (set! synth-deriv #f)
-                                 (set! steps (cursor:new null)))])
-                (let ([d (synthesize deriv)])
-                  (let ([s (cursor:new (reduce d))])
-                    (set! synth-deriv d)
-                    (set! steps s)))))
+              (let ([d (synthesize deriv)])
+                (let ([s (cursor:new (reduce d))])
+                  (set! synth-deriv d)
+                  (set! steps s))))
             (update))
 
           ;; synthesize : Derivation -> Derivation
@@ -440,13 +433,20 @@
               "Trying again with macro hiding disabled."))
             (send macro-hiding-prefs enable-hiding #f)
             (synthesize deriv))
-
+          
           ;; reduce : Derivation -> ReductionSequence
           (define/private (reduce d)
-            (if (show-rename-steps?)
-                (reductions d)
-                (filter (lambda (x) (not (rename-step? x)))
-                        (reductions d))))
+            (with-handlers ([(lambda (e) (catch-errors?))
+                             (lambda (e)
+                               (message-box 
+                                "Error"
+                                "Internal error in macro stepper (reductions)")
+                               (set! synth-deriv #f)
+                               (set! steps #f))])
+              (if (show-rename-steps?)
+                  (reductions d)
+                  (filter (lambda (x) (not (rename-step? x)))
+                          (reductions d)))))
           
           (define/private (foci x) (if (list? x) x (list x)))
 

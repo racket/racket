@@ -491,7 +491,7 @@
              [(and (struct error-wrap (exn tag inner)) ew)
               (values ew (deriv-e2 inner))]
              [deriv
-              (values (rewrap d deriv) (deriv-e2 deriv))])))]))
+              (values (rewrap d deriv) (lift/deriv-e2 deriv))])))]))
 
   ;; seek : Derivation -> Derivation
   ;; Expects macro-policy, subterms-table to be set up already
@@ -505,7 +505,9 @@
 
   ;; create-synth-deriv : syntax (list-of Subterm) -> Derivation
   (define (create-synth-deriv e1 subterm-derivs)
-    (define (error? x) (and (s:subterm? x) (not (s:subterm-path x))))
+    (define (error? x)
+      (and (s:subterm? x) 
+           (or (interrupted-wrap? (s:subterm-deriv x)) (error-wrap? (s:subterm-deriv x)))))
     (let ([errors
            (map s:subterm-deriv (filter error? subterm-derivs))]
           [subterms (filter (lambda (x) (not (error? x))) subterm-derivs)])
@@ -514,9 +516,7 @@
       (let ([e2 (substitute-subterms e1 subterms)])
         (let ([d (make-p:synth e1 e2 null subterms)])
           (if (pair? errors)
-              (make-error-wrap (error-wrap-exn (car errors))
-                               (error-wrap-tag (car errors))
-                               d)
+              (rewrap (car errors) d)
               d)))))
 
   ;; subterm-derivations : Derivation -> (list-of Subterm)
@@ -638,6 +638,11 @@
         [(AnyQ mrule (e1 e2 (and ew (struct error-wrap (_ _ _))) next))
          (list (make-s:subterm #f ew))]
 
+        
+        [(AnyQ lift-deriv (e1 e2 first lifted-stx next))
+         (>>Seek (for-deriv first)
+                 (for-deriv next))]
+        
         ;; Errors
 
 ;        [(struct error-wrap (exn tag (? deriv? inner)))
@@ -763,9 +768,11 @@
            (let* ([subterm0 (car subterm-derivs)]
                   [path0 (s:subterm-path subterm0)]
                   [deriv0 (s:subterm-deriv subterm0)])
-             (substitute-subterms
-              (if path0 (path-replace stx path0 (deriv-e2 deriv0)) stx)
-              (cdr subterm-derivs)))]
+             (let ([e2 (lift/deriv-e2 deriv0)])
+               (and e2
+                    (substitute-subterms
+                     (if path0 (path-replace stx path0 (deriv-e2 deriv0)) stx)
+                     (cdr subterm-derivs)))))]
           [(s:rename? (car subterm-derivs))
            (let ([subterm0 (car subterm-derivs)])
              (substitute-subterms
@@ -1182,6 +1189,7 @@
                   (make-lift-deriv 
                    head-e1 begin-stx2
                    deriv
+                   begin-stx1
                    (make-p:begin begin-stx1 begin-stx2 null
                                  (make-lderiv (append inners-es1 (list head-e2))
                                               (append inners-es2 (list head-e2))
