@@ -23,8 +23,6 @@
   ;; fine: getting rid of `.' and `..' (simplify-path) and collapsing
   ;; `//' to `/' (expand-path).  Using `expand-path' also expands `~'
   ;; and `~user', but this should not be a problem in practice.
-  ;; Note: (expand-path (simplify-path P)) is bogus, if P is "./~foo"
-  ;; or "~foo/.."
   (define (simplify-bytes-path bytes)
     (path->bytes (simplify-path (expand-path (bytes->path bytes)))))
   ;; on Windows, turn backslashes to forward slashes
