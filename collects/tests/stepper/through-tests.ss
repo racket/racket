@@ -217,6 +217,8 @@ exec mred -u "$0" "$@"
     (syntax-case stx ()
       [(_ name test)
        (syntax/loc stx (add-test `name (lambda () test)))]))
+  
+  ;; Eli can't help adding his own convenient but complex syntax here (JBC, 2006-11-14):
 
   (define-syntax (t stx)
     (define (split l)
@@ -821,7 +823,8 @@ exec mred -u "$0" "$@"
                                           (before-after ((define f_0 (lambda (x) (+ x 13))) (define a (hilite f_0)))
                                                         ((define f_0 (lambda (x) (+ x 13))) (define a (hilite (lambda (x) (+ x 13))))))
                                           (finished-stepping))))
-  ;;;;;;;;;;;;;
+  
+    ;;;;;;;;;;;;;
     ;;
     ;;  LET*
     ;;
