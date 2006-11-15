@@ -1910,6 +1910,21 @@ void wxWindow::WindowEventHandler(Widget w,
 	    }
 	  }	  
 	}
+        
+        switch (xev->xbutton.button) {
+	case Button4: 
+	  if (Press)
+	    win->current_state |= Button4Mask;
+	  else
+	    win->current_state -= Button4Mask;
+	  break;
+	case Button5: 
+	  if (Press)
+	    win->current_state |= Button5Mask;
+	  else
+	    win->current_state -= Button5Mask;
+	  break;
+	}
       } else {
         wxMouseEvent *wxevent;
 
