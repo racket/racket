@@ -501,67 +501,57 @@
           ;; returns the name after "(module " suffixed with .scm
           ;; in the beginning of the editor
           ;; or #f if the beginning doesn't match "(module "
-          (define/contract get-module-filename
-            (-> (or/c false/c string?))
-            (λ ()
-              (let ([open-paren (skip-whitespace 0)])
-                (or (match-paren open-paren "(")
-                    (match-paren open-paren "[")
-                    (match-paren open-paren "{")))))
+          (define (get-module-filename)
+            (let ([open-paren (skip-whitespace 0)])
+              (or (match-paren open-paren "(")
+                  (match-paren open-paren "[")
+                  (match-paren open-paren "{"))))
           
-          (define/contract match-paren
-            (number? string? . -> . (or/c false/c string?))
-            (λ (open-paren paren)
-              (and (matches open-paren paren)
-                   (let ([module (skip-whitespace (+ open-paren 1))])
-                     (and (matches module "module")
-                          (let* ([end-module (+ module (string-length "module"))]
-                                 [filename-start (skip-whitespace end-module)]
-                                 [filename-end (skip-to-whitespace filename-start)])
-                            (and (not (= filename-start end-module))
-                                 (string-append (get-text filename-start filename-end)
-                                                ".scm"))))))))
+          (define (match-paren open-paren paren)
+            (and (matches open-paren paren)
+                 (let ([module (skip-whitespace (+ open-paren 1))])
+                   (and (matches module "module")
+                        (let* ([end-module (+ module (string-length "module"))]
+                               [filename-start (skip-whitespace end-module)]
+                               [filename-end (skip-to-whitespace filename-start)])
+                          (and (not (= filename-start end-module))
+                               (string-append (get-text filename-start filename-end)
+                                              ".scm")))))))
           
 
-          (define/contract matches
-            (number? string? . -> . boolean?)
-            (λ (start string)
-              (let ([last-pos (last-position)])
-                (let loop ([i 0])
-                  (cond
-                    [(and (i . < . (string-length string))
-                          ((+ i start) . < . last-pos))
-                     (and (char=? (string-ref string i)
-                                  (get-character (+ i start)))
-                          (loop (+ i 1)))]
-                    [(= i (string-length string)) #t]
-                    [else #f])))))
+          (define (matches start string)
+            (let ([last-pos (last-position)])
+              (let loop ([i 0])
+                (cond
+                  [(and (i . < . (string-length string))
+                        ((+ i start) . < . last-pos))
+                   (and (char=? (string-ref string i)
+                                (get-character (+ i start)))
+                        (loop (+ i 1)))]
+                  [(= i (string-length string)) #t]
+                  [else #f]))))
           
-          (define/contract skip-whitespace
-            (number? . -> . number?)
-            (λ (start) 
-              (let ([last-pos (last-position)])
-                (let loop ([pos start])
-                  (cond
-                    [(pos . >= . last-pos) last-pos]
-                    [else 
-                     (let ([char (get-character pos)])
-                       (cond
-                         [(char-whitespace? char)
-                          (loop (+ pos 1))]
-                         [else pos]))])))))
+          (define (skip-whitespace start)
+            (let ([last-pos (last-position)])
+              (let loop ([pos start])
+                (cond
+                  [(pos . >= . last-pos) last-pos]
+                  [else 
+                   (let ([char (get-character pos)])
+                     (cond
+                       [(char-whitespace? char)
+                        (loop (+ pos 1))]
+                       [else pos]))]))))
 
-          (define/contract skip-to-whitespace
-            (number? . -> . number?)
-            (λ (start) 
-              (let ([last-pos (last-position)])
-                (let loop ([pos start])
-                  (cond
-                    [(pos . >= . last-pos)
-                     last-pos]
-                    [(char-whitespace? (get-character pos))
-                     pos]
-                    [else
-                     (loop (+ pos 1))])))))
+          (define (skip-to-whitespace start)
+            (let ([last-pos (last-position)])
+              (let loop ([pos start])
+                (cond
+                  [(pos . >= . last-pos)
+                   last-pos]
+                  [(char-whitespace? (get-character pos))
+                   pos]
+                  [else
+                   (loop (+ pos 1))]))))
           
           (super-instantiate ()))))))
