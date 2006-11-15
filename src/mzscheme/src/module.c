@@ -3842,6 +3842,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   if (scheme_stx_proper_list_length(form) < 0)
     scheme_wrong_syntax(NULL, NULL, form, "bad syntax (" IMPROPER_LIST_FORM ")");
 
+  if (!env->genv->module)
+    scheme_wrong_syntax(NULL, NULL, form, "not currently transforming a module");
+
   /* Redefining a module? */
   redef_modname = env->genv->module->modname;
   if (!scheme_hash_get(env->genv->module_registry, redef_modname))
