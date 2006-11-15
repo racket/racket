@@ -1147,5 +1147,27 @@
 	  (test #f eval `(module-identifier=? (f) (quote-syntax ,x-id))))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  certification example from the manual
+
+(module @-m mzscheme
+  (provide def-go)
+  (define (unchecked-go n x) 
+    (+ n 17))
+  (define-syntax (def-go stx)
+   (syntax-case stx ()
+     [(_ go)
+      #'(define-syntax (go stx)
+          (syntax-case stx ()
+           [(_ x)
+            #'(unchecked-go 8 x)]))])))
+
+(module @-n mzscheme
+  (require @-m)
+  (def-go go)
+  (go 10)) ; access to unchecked-go is allowed
+
+(require @-n)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

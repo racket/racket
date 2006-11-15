@@ -2014,7 +2014,9 @@
 	   (let ([new-e (loop (syntax-e stx))])
 	     (if (eq? (syntax-e stx) new-e)
 		 stx
-		 (datum->syntax-object/shape stx new-e)))]
+                 (syntax-recertify
+                  (datum->syntax-object/shape stx new-e)
+                  stx sub-insp #f)))]
 	  [(vector? stx)
 	   (list->vector (map loop (vector->list stx)))]
 	  [(box? stx) (box (loop (unbox stx)))]
@@ -2309,6 +2311,8 @@
 				  [else
 				   (cons (quote-syntax list*) r)]))))))))))
        x)))
+
+  (-define sub-insp (current-code-inspector))
 
   (provide syntax-case** syntax))
 
