@@ -51,4 +51,5 @@
       (super-new)
       (set-snipclass gui-snip-class)))
 
-  (provide gui-code-snip%))
+  (provide gui-code-snip%
+           (rename gui-snip-class snip-class)))
