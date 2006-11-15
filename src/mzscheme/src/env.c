@@ -3950,10 +3950,9 @@ local_lift_expr(int argc, Scheme_Object *argv[])
   expr = scheme_make_pair(expr, SCHEME_VEC_ELS(vec)[0]);
   SCHEME_VEC_ELS(vec)[0] = expr;
 
-  id = scheme_add_remove_mark(id, local_mark);
-
   SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(scheme_get_expand_observe(), id, orig_expr);
 
+  id = scheme_add_remove_mark(id, local_mark);
   return id;
 }
 

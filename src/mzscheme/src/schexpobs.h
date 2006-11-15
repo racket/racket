@@ -117,7 +117,11 @@ extern Scheme_Object *scheme_get_expand_observe();
 
 #define SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer,stx) \
         _SCHEME_EXPOBS(observer,128,stx)
-#define SCHEME_EXPAND_OBSERVE_LIFT_END_LOOP(observer,stx) \
+#define SCHEME_EXPAND_OBSERVE_LETLIFT_LOOP(observer,stx) \
+        _SCHEME_EXPOBS(observer,136,stx)
+#define SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observe,stxs) \
+        _SCHEME_EXPOBS(observer,137,stxs)
+#define SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer,stx) \
         _SCHEME_EXPOBS(observer,135,stx)
 
 #define SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(obs,id,stx) \

@@ -4826,6 +4826,7 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
 		      icons(o, scheme_null)));
     }
     form = scheme_datum_to_syntax(o, orig_form, scheme_false, 0, 0);
+    SCHEME_EXPAND_OBSERVE_LETLIFT_LOOP(rec[drec].observer, form);
     form = compile_expand_expr_lift_to_let(form, env, recs, 1);
     if (rec[drec].comp)
       scheme_merge_compile_recs(rec, drec, recs, 2);

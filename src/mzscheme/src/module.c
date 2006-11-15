@@ -4038,7 +4038,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_et_rn);
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_tt_rn);
 	fm = scheme_append(fst, scheme_make_pair(e, fm));
-        SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer, fst);
+        SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, fst);
       } else {
 	/* No lifts added... */
 	if (SCHEME_STX_PAIRP(e))
@@ -4056,7 +4056,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  if (SCHEME_STX_NULLP(fm)) {
             fm = scheme_frame_get_end_statement_lifts(xenv);
             fm = scheme_reverse(fm);
-            SCHEME_EXPAND_OBSERVE_LIFT_END_LOOP(observer, fm);
+            SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer, fm);
             maybe_has_lifts = 0;
             if (SCHEME_NULLP(fm)) {
               e = NULL;
@@ -4631,13 +4631,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     if (SCHEME_STX_NULLP(fm) && maybe_has_lifts) {
       fm = scheme_frame_get_end_statement_lifts(xenv);
       fm = scheme_reverse(fm);
-      SCHEME_EXPAND_OBSERVE_LIFT_END_LOOP(observer, fm);
+      SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer, fm);
       maybe_has_lifts = 0;
     }
   }
   /* first =  a list of (cons semi-expanded-expression normal?) */
 
-  /* Phase 2 */
+  /* Pass 2 */
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);
   
   if (rec[drec].comp) {
@@ -4692,6 +4692,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	p = SCHEME_CDR(p);
       } else {
 	/* Lifts - insert them and try again */
+        SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, scheme_copy_list(l));
 	e = scheme_make_pair(e, scheme_false); /* don't re-compile/-expand */
 	SCHEME_CAR(p) = e;
 	for (ll = l; SCHEME_PAIRP(ll); ll = SCHEME_CDR(ll)) {
@@ -4704,7 +4705,6 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	} else {
 	  first = p;
 	}
-	SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer, first);
       }
     } else {
       SCHEME_CAR(p) = e;
@@ -4715,7 +4715,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     /* If we're out of declarations, check for lifted-to-end: */
     if (SCHEME_NULLP(p) && maybe_has_lifts) {
       p = scheme_frame_get_end_statement_lifts(cenv);
-      SCHEME_EXPAND_OBSERVE_LIFT_END_LOOP(observer, scheme_reverse(p));
+      SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer, scheme_reverse(p));
       p = scheme_reverse(p);
       for (ll = p; SCHEME_PAIRP(ll); ll = SCHEME_CDR(ll)) {
         e = scheme_make_pair(SCHEME_CAR(ll), scheme_true);
