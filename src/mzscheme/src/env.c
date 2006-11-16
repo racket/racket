@@ -148,6 +148,8 @@ static void init_compile_data(Scheme_Comp_Env *env);
 #define SCHEME_NON_SIMPLE_FRAME (SCHEME_NO_RENAME | SCHEME_CAPTURE_WITHOUT_RENAME \
                                  | SCHEME_FOR_STOPS | SCHEME_FOR_INTDEF | SCHEME_CAPTURE_LIFTED)
 
+#define ASSERT_IS_VARIABLE_BUCKET(b) /* if (((Scheme_Object *)b)->type != scheme_variable_type) abort() */
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
@@ -869,8 +871,10 @@ Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *
 
       b = scheme_bucket_from_table(r, (const char *)name);
       b->val = val;
-      if (home)
+      if (home) {
+        ASSERT_IS_VARIABLE_BUCKET(b);
 	((Scheme_Bucket_With_Home *)b)->home = home;
+      }
     }
   }
 
@@ -916,6 +920,7 @@ scheme_lookup_global(Scheme_Object *symbol, Scheme_Env *env)
     
   b = scheme_bucket_or_null_from_table(env->toplevel, (char *)symbol, 0);
   if (b) {
+    ASSERT_IS_VARIABLE_BUCKET(b);
     if (!((Scheme_Bucket_With_Home *)b)->home)
       ((Scheme_Bucket_With_Home *)b)->home = env;
     return (Scheme_Object *)b->val;
@@ -930,6 +935,7 @@ scheme_global_bucket(Scheme_Object *symbol, Scheme_Env *env)
   Scheme_Bucket *b;
     
   b = scheme_bucket_from_table(env->toplevel, (char *)symbol);
+  ASSERT_IS_VARIABLE_BUCKET(b);
   if (!((Scheme_Bucket_With_Home *)b)->home)
     ((Scheme_Bucket_With_Home *)b)->home = env;
     
@@ -957,6 +963,7 @@ scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
     Scheme_Bucket *b;
     b = scheme_bucket_from_table(env->toplevel, (const char *)sym);
     b->val = obj;
+    ASSERT_IS_VARIABLE_BUCKET(b);
     ((Scheme_Bucket_With_Home *)b)->home = env;
     if (constant && scheme_defining_primitives) {
       ((Scheme_Bucket_With_Flags *)b)->id = builtin_ref_counter++;
@@ -2488,6 +2495,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       && !(flags & SCHEME_GLOB_ALWAYS_REFERENCE))
     return (Scheme_Object *)b->val;
 
+  ASSERT_IS_VARIABLE_BUCKET(b);
   if (!((Scheme_Bucket_With_Home *)b)->home)
     ((Scheme_Bucket_With_Home *)b)->home = genv;
   

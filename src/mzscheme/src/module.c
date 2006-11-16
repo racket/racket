@@ -3806,6 +3806,7 @@ static void flush_definitions(Scheme_Env *genv)
   if (genv->toplevel) {
     Scheme_Bucket_Table *t;
     t = scheme_make_bucket_table(7, SCHEME_hash_ptr);
+    t->with_home = 1;
     genv->toplevel = t;
   }
 }
@@ -4101,7 +4102,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    name = SCHEME_STX_CAR(vars);
 
 	    orig_name = name;
-	    
+
 	    /* Remember the original: */
 	    all_defs = scheme_make_pair(name, all_defs);
 	    
@@ -4174,8 +4175,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    name = SCHEME_STX_CAR(l);
 
 	    orig_name = name;
-	    
-	    /* Remember the original: */
+
+            /* Remember the original: */
 	    if (!for_stx)
 	      all_defs = scheme_make_pair(name, all_defs);
 	    
