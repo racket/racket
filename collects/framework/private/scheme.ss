@@ -743,7 +743,14 @@
                 (delete snip-pos (+ snip-pos 1)))
               (set-position pos pos)))
           
+          
           (define/public (get-forward-sexp start-pos) 
+            (forward-match start-pos (last-position))
+            
+            ;; the below is my first attempt to get forward/backward sexp 
+            ;;  to work properly with qutoe.
+            ;; it broke the tabber, so I took it out for now.
+            #;
             (let ([one-forward (forward-match start-pos (last-position))])
               (cond
                 [(and one-forward (not (= 0 one-forward)))
@@ -758,6 +765,7 @@
                      [else
                       one-forward]))]
                 [else one-forward])))
+          
           (define/public (remove-sexp start-pos)
             (let ([end-pos (get-forward-sexp start-pos)])
               (if end-pos 
