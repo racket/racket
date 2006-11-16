@@ -9,7 +9,7 @@
    If you make a version with omissions or additions and then run
    `make startup' to recreate the cstartup.inc file, set
    EXPECTED_PRIM_COUNT to the new value, and then USE_COMPILED_STARTUP
-   can be set to 1 again.  */
+   can be set to 1 again. */
 
 #define USE_COMPILED_STARTUP 1
 
