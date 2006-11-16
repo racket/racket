@@ -235,7 +235,7 @@ void wxMediaEdit::_ChangeStyle(long start, long end,
   wxSnip *gsnip, *startSnip, *endSnip;
   wxStyleChangeRecord *rec;
   wxStyle *style, *style2, *prev_style;
-  long p, prev_style_pos;
+  long p, prev_style_pos, extra_check_pos = 0;
   int something;
 
   if (writeLocked || userLocked)
@@ -317,7 +317,9 @@ void wxMediaEdit::_ChangeStyle(long start, long end,
       gsnip->style = style2;
 
       if (rec && (style != prev_style)) {
-	rec->AddStyleChange(prev_style_pos, p, prev_style);
+        if (prev_style) {
+          rec->AddStyleChange(prev_style_pos, p, prev_style);
+        }
 	prev_style_pos = p;
 	prev_style = style;
       }
@@ -326,6 +328,8 @@ void wxMediaEdit::_ChangeStyle(long start, long end,
       gsnip->line->MarkRecalculate();
       if (maxWidth > 0)
 	gsnip->line->MarkCheckFlow();
+
+      extra_check_pos = p;
 
       something = TRUE;
     } else if (rec && prev_style) {
@@ -356,7 +360,10 @@ void wxMediaEdit::_ChangeStyle(long start, long end,
       delayedStreak = TRUE;
     
     CheckMergeSnips(start);
-    CheckMergeSnips(end);
+    if (extra_check_pos)
+      CheckMergeSnips(extra_check_pos);
+    if (extra_check_pos != end)
+      CheckMergeSnips(end);
     
     if (!modified && counts_as_mod)
       SetModified(TRUE);
