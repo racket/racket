@@ -287,7 +287,7 @@ please adhere to these guidelines:
  (plt:hd:refreshing-manuals-finished "Concluído.")
  (plt:hd:about-help-desk "Sobre o Directorio de Ajuda")
  (plt:hd:help-desk-about-string
-  "O Directorio de Ajuda é um recurso completo de informação sobre o software da PLT, incluindo o DrScheme, MzScheme e o MrEd.\n\nVersão ~a\n Copyright (c) 1995-2003 PLT")
+  "O Directorio de Ajuda é um recurso completo de informação sobre o software da PLT, incluindo o DrScheme, MzScheme e o MrEd.\n\nVersão ~a\n Copyright (c) ~a-~a PLT")
  (plt:hd:help-on-help "Ajuda sobre a Ajuda")
  (plt:hd:help-on-help-details "Para ajuda sobre como utilizar o Directorio de Ajuda, seguir a ligação `Como usar o Directorio de Ajuda' no inicio do Directorio de Ajuda. (Para ir para o inicio se ainda não estiver lá, clique no botão `Início' no topo da janela do Directorio de Ajuda.)")
   (reload "Actualizar") ;; refresh the page in a web browser

@@ -194,7 +194,7 @@
  (plt:hd:refreshing-manuals-finished "Fertig.")
  (plt:hd:about-help-desk "Über das Hilfezentrum")
  (plt:hd:help-desk-about-string
-  "Das Hilfezentrum ist die primäre Quelle für Information über die PLT-Software,insbesondere DrScheme, MzScheme und MrEd.\n\nVersion ~a\nCopyright (c) 1995-2003 PLT")
+  "Das Hilfezentrum ist die primäre Quelle für Information über die PLT-Software,insbesondere DrScheme, MzScheme und MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
  (plt:hd:help-on-help "Hilfe zur Hilfe")
  (plt:hd:help-on-help-details "Hilfe zum Hilfezentrum finden Sie auf der Hilfezentrum-Hompage unter 'Help Desk'. (Um auf diese Homepage zu gelangen, drücken Sie den 'Home'-Knopf oben im Hilfezentrum.)")
   (reload "Aktualisieren") ;; refresh the page in a web browser

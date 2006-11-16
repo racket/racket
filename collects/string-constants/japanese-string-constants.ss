@@ -293,7 +293,7 @@ please adhere to these guidelines:
  (plt:hd:refreshing-manuals-finished "完了しました。")
  (plt:hd:about-help-desk "ヘルプデスクについて")
  (plt:hd:help-desk-about-string
-  "ヘルプデスクは PLT のソフトウェア (DrScheme, MzScheme, MrEd など) に関する完全な情報を提供します。\n\nバージョン ~a\nCopyright (c) 1995-2003 PLT")
+  "ヘルプデスクは PLT のソフトウェア (DrScheme, MzScheme, MrEd など) に関する完全な情報を提供します。\n\nバージョン ~a\nCopyright (c) ~a-~a PLT")
  (plt:hd:help-on-help "ヘルプのヘルプ")
  (plt:hd:help-on-help-details "ヘルプデスクの使い方については、ヘルプデスクのホームページにある `How to use Help Desk' というリンクをたどってください。(ホームページが表示されていない場合は、ヘルプデスク ウィンドウの上部にある [ホーム] ボタンを押すことで表示されます。)")
   (reload "再読み込み") ;; refresh the page in a web browser

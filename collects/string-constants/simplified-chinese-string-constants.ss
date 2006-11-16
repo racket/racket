@@ -215,7 +215,7 @@
   (plt:hd:refreshing-manuals-finished "完成。")
   (plt:hd:about-help-desk "关于Help Desk")
   (plt:hd:help-desk-about-string
-   "Help Desk是PLT软件的信息来源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)1995-2006 PLT")
+   "Help Desk是PLT软件的信息来源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)~a-~a PLT")
   (plt:hd:help-on-help "关于帮助的帮助")
   (plt:hd:help-on-help-details "如果你需要使用Help Desk的帮助，请在Help Desk的主页中点击链接“How to use Help Desk”。（要进入Help Desk的主页，请单击Help Desk窗口上方的“主页”按钮。）")
   (reload "刷新") ;; refresh the page in a web browser

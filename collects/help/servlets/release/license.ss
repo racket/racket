@@ -49,15 +49,15 @@
        (P)
        ,@(map make-item 
               `(("DrScheme"
-                 "Copyright (c) 1995-2003 PLT"
+                 "Copyright (c) 1995-2006 PLT"
                  ,(format "Copyright (c) 2004-~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("MrEd"
-                 "Copyright (c) 1995-2003 PLT"
+                 "Copyright (c) 1995-2006 PLT"
 		 ,(format "Copyright (c) 2004-~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("MzScheme" 
-                 "Copyright (c) 1995-2003 PLT"
+                 "Copyright (c) 1995-2006 PLT"
 		 ,(format "Copyright (c) 2004-~a PLT Scheme Inc." copyright-year)
                  "All rights reserved.")
                 ("libscheme" 
