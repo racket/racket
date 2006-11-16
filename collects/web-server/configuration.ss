@@ -32,13 +32,15 @@
   
   ; load-developer-configuration : path -> configuration
   (define (load-developer-configuration table-file-name)
-    (complete-developer-configuration (directory-part table-file-name)
-                                      (get-configuration table-file-name)))
+    (complete-developer-configuration
+     (directory-part table-file-name)
+     (get-configuration table-file-name)))
   
   ; build-developer-configuration : tst -> configuration-table
   (define (build-developer-configuration s-expr)
-    (complete-developer-configuration (directory-part default-configuration-table-path)
-                                      (parse-configuration-table s-expr)))
+    (complete-configuration ; used to be: complete-developer-configuration
+     (directory-part default-configuration-table-path)
+     (parse-configuration-table s-expr)))
   
   ; : (listof (cons sym TST)) -> configuration
   ; more here - this is ugly.  It also does not catch "unbound identifiers" since I use symbols.
