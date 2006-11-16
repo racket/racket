@@ -1190,17 +1190,17 @@
     (let-string-start+end (start end) 'string-index-right str maybe-start+end
 			  (cond ((char? criterion)
 				 (let lp ((i (- end 1)))
-				   (and (>= i 0)
+				   (and (>= i start)
 					(if (char=? criterion (string-ref str i)) i
 					    (lp (- i 1))))))
 				((char-set? criterion)
 				 (let lp ((i (- end 1)))
-				   (and (>= i 0)
+				   (and (>= i start)
 					(if (char-set-contains? criterion (string-ref str i)) i
 					    (lp (- i 1))))))
 				((procedure? criterion)
 				 (let lp ((i (- end 1)))
-				   (and (>= i 0)
+				   (and (>= i start)
 					(if (criterion (string-ref str i)) i
 					    (lp (- i 1))))))
 				(else (error "Second param is neither char-set, char, or predicate procedure."
@@ -1232,19 +1232,19 @@
     (let-string-start+end (start end) 'string-skip-right str maybe-start+end
 			  (cond ((char? criterion)
 				 (let lp ((i (- end 1)))
-				   (and (>= i 0)
+				   (and (>= i start)
 					(if (char=? criterion (string-ref str i))
 					    (lp (- i 1))
 					    i))))
 				((char-set? criterion)
 				 (let lp ((i (- end 1)))
-				   (and (>= i 0)
+				   (and (>= i start)
 					(if (char-set-contains? criterion (string-ref str i))
 					    (lp (- i 1))
 					    i))))
 				((procedure? criterion)
 				 (let lp ((i (- end 1)))
-				   (and (>= i 0)
+				   (and (>= i start)
 					(if (criterion (string-ref str i)) (lp (- i 1))
 					    i))))
 				(else (error "CRITERION param is neither char-set or char."
