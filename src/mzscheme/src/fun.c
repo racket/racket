@@ -3281,7 +3281,9 @@ scheme_call_ec (int argc, Scheme_Object *argv[])
 
   scheme_save_env_stack_w_thread(cont->envss, p1);
 
-  p1->barrier_prompt->is_captured = 1;
+  if (p1->barrier_prompt) /* can be NULL if this is for raise_break()
+                             called outside any Scheme evaluation */
+    p1->barrier_prompt->is_captured = 1;
 
   scheme_push_continuation_frame(&cframe);
   scheme_set_cont_mark((Scheme_Object *)cont, scheme_true);
