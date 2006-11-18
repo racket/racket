@@ -2812,7 +2812,7 @@ void wxMediaEdit::EndPrint(wxDC *, void *data)
     SetMaxWidth(savedInfo->maxw);
     SetAutowrapBitmap(savedInfo->bm);
 
-    DELETE_OBJ savedInfo;
+    /* DELETE_OBJ savedInfo; */
   }
 
   {
