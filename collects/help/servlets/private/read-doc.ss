@@ -33,7 +33,8 @@
 	  `(HTML
 	    (HEAD (TITLE "PLT Help Desk") 
 		  ,hd-css)
-	    ,(read-lines file caption offset)))))
+            (BODY
+             ,(read-lines file caption offset))))))
 
   (define read-doc 
     (opt-lambda (file caption coll [offset #f])
