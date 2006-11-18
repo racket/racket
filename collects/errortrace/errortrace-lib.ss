@@ -170,11 +170,7 @@
           (for-each (lambda (s)
                       (let ([pos (sub1 (syntax-position (car s)))]
                             [span (syntax-span (car s))]
-                            [key (let ([c (cdr s)])
-                                   (cond
-                                    [(zero? c) #\^]
-                                    [(= c 1) #\.]
-                                    [else #\,]))])
+                            [key (case (cdr s) [(0) #\^] [(1) #\.] [else #\,])])
                         (let loop ([p pos])
                           (unless (= p (+ pos span))
                             (string-set! pic p key)
