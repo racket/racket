@@ -461,7 +461,7 @@
 	   [scale (/ size 1000.0)]
 	   [descent (* scale (font-descent font))])
       (values (* scale
-		 (let loop ([cl (map-symbols sym-map? (string->list string))][width 0])
+		 (let loop ([cl (map-symbols sym-map? (string->list string))][width 0.0])
 		   (cond
 		    [(empty? cl) width]
 		    [else (let ([achar (hash-table-get 
