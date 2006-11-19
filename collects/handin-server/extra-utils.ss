@@ -1,11 +1,9 @@
 (module extra-utils mzscheme
 
-(require (lib "utils.ss" "handin-server")
-         (lib "file.ss") (lib "list.ss") (lib "class.ss")
+(require "utils.ss" (lib "file.ss") (lib "list.ss") (lib "class.ss")
          (lib "mred.ss" "mred"))
 
-(provide (all-from-except mzscheme #%module-begin)
-         (all-from (lib "utils.ss" "handin-server")))
+(provide (all-from-except mzscheme #%module-begin) (all-from "utils.ss"))
 
 (provide (rename module-begin~ #%module-begin))
 (define-syntax (module-begin~ stx)
@@ -412,7 +410,6 @@
             [users          (id 'users)]
             [submission     (id 'submission)]
             [eval           (id 'eval)]
-            [execute-counts (id 'execute-counts)]
             [with-submission-bindings (id 'with-submission-bindings)]
             [user-pre       (id 'user-pre)]
             [user-post      (id 'user-post)]
@@ -447,8 +444,7 @@
                    [output-file    output*]
                    [multi-file     multi-file*]
                    [names-checker  names-checker*]
-                   [user-error-message user-error-message*]
-                   [execute-counts #f])
+                   [user-error-message user-error-message*])
                ;; ========================================
                ;; set defaults that depend on file name
                (define suffix
@@ -522,40 +518,41 @@
                  (when coverage? (coverage-enabled #t))
                  (current-run-status "checking submission")
                  (cond
-                  [(not eval?) (let () body ...)]
-                  [language
-                   (let ([eval
-                          (with-handlers
-                              ([void
-                                (lambda (e)
-                                  (let ([m (if (exn? e)
-                                             (exn-message e)
-                                             (format "~a" e))])
-                                    (cond
-                                     [(procedure? user-error-message)
-                                      (user-error-message m)]
-                                     [(not (string? user-error-message))
-                                      (error*
-                                       "badly configured user-error-message")]
-                                     [(regexp-match #rx"~[aesvAESV]"
-                                                    user-error-message)
-                                      (error* user-error-message m)]
-                                     [else
-                                      (error* "~a" user-error-message)])))])
-                            (call-with-evaluator/submission
-                             language teachpacks submission values))])
-                     (when coverage?
-                       (set! execute-counts (eval #f 'execute-counts)))
-                     (current-run-status "running tests")
-                     (parameterize ([submission-eval eval])
-                       (let-syntax ([with-submission-bindings
-                                     (syntax-rules ()
-                                       [(_ bindings body*1 body* (... ...))
-                                        (with-bindings eval bindings
-                                          body*1 body* (... ...))])])
-                         (let () body ...))
-                       (when (thread-cell-ref added-lines) (write-text))))]
-                  [else (error* "no language configured for submissions")])
+                   [(not eval?) (let () body ...)]
+                   [language
+                    (let ([eval
+                           (with-handlers
+                               ([void
+                                 (lambda (e)
+                                   (let ([m (if (exn? e)
+                                              (exn-message e)
+                                              (format "~a" e))])
+                                     (cond
+                                       [(procedure? user-error-message)
+                                        (user-error-message m)]
+                                       [(not (string? user-error-message))
+                                        (error*
+                                         "badly configured user-error-message")]
+                                       [(regexp-match #rx"~[aesvAESV]"
+                                                      user-error-message)
+                                        (error* user-error-message m)]
+                                       [else
+                                        (error* "~a" user-error-message)])))])
+                             (call-with-evaluator/submission
+                              language teachpacks submission values))])
+                      (current-run-status "running tests")
+                      (parameterize ([submission-eval eval])
+                        (let-syntax ([with-submission-bindings
+                                      (syntax-rules ()
+                                        [(_ bindings body*1 body* (... ...))
+                                         (with-bindings eval bindings
+                                           body*1 body* (... ...))])])
+                          (let () body ...))
+                        ;; test coverage at the end (no harm if already done in
+                        ;; the checker since it's cheap)
+                        (when coverage? (!all-covered))
+                        (when (thread-cell-ref added-lines) (write-text))))]
+                   [else (error* "no language configured for submissions")])
                  output-file)
                ;; ========================================
                ;; indirection for user-post (may be set after `check:')
@@ -571,8 +568,8 @@
                                  "`untabify?' without `maxwidth'"]
                                 [(and (not eval?) coverage?)
                                  "`coverage?' without `eval?'"]
-                                [(and textualize? coverage?)
-                                 "`textualize?' and `coverage?'"]
+                                ;; [(and textualize? coverage?)
+                                ;;  "`textualize?' and `coverage?'"]
                                 [else #f])])
                  (when bad
                    (error* "bad checker specifications: ~a" bad)))
@@ -737,51 +734,21 @@
 
 (provide !all-covered)
 (define (!all-covered)
-  (define execute-counts ((submission-eval) #f 'execute-counts))
-  (define (coverage-error stx)
-    (error* "your code is not completely covered by test cases~a"
-            (cond [(and (syntax-line stx) (syntax-column stx))
-                   (format ": uncovered expression at ~a:~a"
-                           (syntax-line stx) (syntax-column stx))]
-                  [(syntax-position stx)
-                   (format ": uncovered expression at position ~a"
-                           (syntax-position stx))]
-                  [else ""])))
-  (if execute-counts
-    #|
-    ;; Go over all counts that are syntax-original, avoiding code that macros
-    ;; insert
-    (for-each (lambda (x)
-                (when (and (zero? (cdr x)) (syntax-original? (car x)))
-                  (coverage-error (car x))))
-              execute-counts)
-    |#
-    ;; Better: try to find if there is some source position that is not
-    ;; covered, if so, it means that there is some macro that originates in
-    ;; some real source position that is not covered.  Also, return the first
-    ;; one found of the biggest span (so an error will point at `(+ 1 2)', not
-    ;; on the `+').
-    (let ([table (make-hash-table)])
-      (for-each
-       (lambda (x)
-         (let* ([loc (syntax-position (car x))]
-                [h (hash-table-get table loc (lambda () #f))])
-           (when (or (not h) (< (cdr h) (cdr x)))
-             (hash-table-put! table loc x))))
-       execute-counts)
-      (let ([1st #f])
-        (hash-table-for-each table
-          (lambda (key val)
-            (when (and (zero? (cdr val))
-                       (or (not 1st)
-                           (let ([car-pos (syntax-position (car val))]
-                                 [1st-pos (syntax-position 1st)])
-                             (or (< car-pos 1st-pos)
-                                 (and (= car-pos 1st-pos)
-                                      (> (syntax-span (car val))
-                                         (syntax-span 1st)))))))
-              (set! 1st (car val)))))
-        (when 1st (coverage-error 1st))))
-    (error* "mis-configuration: requires coverage, but no coverage info!")))
+  (let ([uncovered ((submission-eval) #f 'uncovered-expressions)])
+    (cond [(pair? uncovered)
+           (let ([stx (car uncovered)])
+             (when stx
+               (error*
+                "your code is not completely covered by tests~a"
+                (cond [(and (syntax-line stx) (syntax-column stx))
+                       (format ": uncovered expression at ~a:~a"
+                               (syntax-line stx) (syntax-column stx))]
+                      [(syntax-position stx)
+                       (format ": uncovered expression at position ~a"
+                               (syntax-position stx))]
+                      [else ""]))))]
+          [(null? uncovered) #f]
+          [else (error*
+                 "bad checker: no coverage information for !all-covered")])))
 
 )

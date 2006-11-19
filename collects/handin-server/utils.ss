@@ -193,7 +193,7 @@
 
   (define (make-evaluator language teachpacks program-port)
     (let ([coverage-enabled (coverage-enabled)]
-          [execute-counts #f]
+          [uncovered-expressions #f]
           [ns (make-evaluation-namespace)]
           [orig-ns (current-namespace)])
       (parameterize ([current-namespace ns]
@@ -251,9 +251,8 @@
                                        "Bad language specification: ~e"
                                        language)])])
                    (when coverage-enabled
-                     (for-each safe-eval
-                               '((require (lib "errortrace.ss" "errortrace"))
-                                 (execute-counts-enabled #t))))
+                     (safe-eval '(require (lib "coverage.ss"
+                                               "handin-server" "private"))))
                    (safe-eval body)
                    (when (and (pair? body) (eq? 'module (car body))
                               (pair? (cdr body)) (symbol? (cadr body)))
@@ -261,18 +260,18 @@
                        (safe-eval `(require ,mod))
                        (current-namespace (module->namespace mod))))
                    (when coverage-enabled
-                     (set! execute-counts
-                           (map (lambda (x) (cons (car x) (cdr x)))
-                                (filter (lambda (x)
-                                          (eq? 'program (syntax-source (car x))))
-                                        (safe-eval '(get-execute-counts) ns))))))
+                     (set! uncovered-expressions
+                           (filter (lambda (x) (eq? 'program (syntax-source x)))
+                                   (safe-eval '(get-uncovered-expressions)
+                                              ns)))))
                  (channel-put result-ch 'ok))
                ;; Now wait for interaction expressions:
                (let loop ()
                  (let ([expr (channel-get ch)])
                    (unless (eof-object? expr)
                      (with-handlers ([void (lambda (exn)
-                                             (channel-put result-ch (cons 'exn exn)))])
+                                             (channel-put result-ch
+                                                          (cons 'exn exn)))])
                        (channel-put result-ch (cons 'val (safe-eval expr))))
                      (loop))))
                (let loop ()
@@ -284,7 +283,7 @@
                   (lambda (expr . more)
                     (if (pair? more)
                       (case (car more)
-                        [(execute-counts) execute-counts]
+                        [(uncovered-expressions) uncovered-expressions]
                         [else (error 'make-evaluator
                                      "Bad arguments: ~e"
                                      (cons expr more))])

@@ -559,7 +559,7 @@ The _utils.ss_ module provides utilities helpful in implementing
 
   Additional arguments to the evaluator function are special messages
   that retrieve additional information.  Currently, only
-  'execute-counts is used (see below).
+  'uncovered-expressions is used (see below).
 
 > (make-evaluator/submission language teachpack-paths bytes)
   Like `make-evaluator', but the definitions content is supplied as a
@@ -587,14 +587,14 @@ The _utils.ss_ module provides utilities helpful in implementing
 
 > coverage-enabled
   Parameter that controls whether coverage testing is enabled.  If it
-  set to true, the errortrace collection will be used to collect
-  coverage information during evaluation of the submission, this
-  information is collected before additional checker-evaluations.  To
-  retrieve the collected information, apply the evaluation function
-  with a second argument of 'execute-counts (the first argument will
-  be ignored).  The resulting value is the same as the result of
-  errortrace's `get-execute-counts', with all non-submission entries
-  filtered out.
+  set to true, the handin-server/private/coverage collection will be
+  used to detect uncovered expressions.  This information is collected
+  before additional checker-evaluations.  To retrieve the collected
+  information, apply the evaluation function with a second argument of
+  'uncovered-expressions (the first argument will be ignored).  The
+  resulting value is a list of uncovered expressions, with at most one
+  per position+span (so the contents is unreliable, but the position
+  is).
 
 > (check-proc eval expect-v compare-proc proc-name arg ...)
   Calls the function named `proc-name' using the evaluator `eval',
@@ -691,8 +691,7 @@ checker that uses it looks like this:
        (!test (Fahrenheit->Celsius  32)   0)
        (!test (Fahrenheit->Celsius 212) 100)
        (!test (Fahrenheit->Celsius  -4) -20)
-       ...
-       (!all-covered)))
+       ...))
 
 > (check: :key val ... body ...)
   Construct a checker procedure.
@@ -820,9 +819,13 @@ Keywords for configuring `check:':
   `current-value-printer' (see above).
 
 * :coverage? -- collect coverage information when evaluating the
-  submission (not including additional checker tests).  This is needed
-  for the `!all-covered' procedure below.  Does not work with
-  non-textual submissions.
+  submission.  This will
+  cause an error if some input is not covered.  This check happens
+  after checker tests are run, but the information is collected and
+  stored before, so checker tests do not change the result.  Also, you
+  can use the `!all-covered' procedure in the checker before other
+  tests, if you want that feedback earlier.
+  Does not work with non-textual submissions.
 
 Within the body of `check:', `users' and `submission' will be bound to
 the checker arguments -- a (sorted) list of usernames and the
@@ -948,7 +951,11 @@ value from the submission code.
   procedure checks the collected coverage information and throws an
   error with source information if some code is left uncovered.  The
   collected information includes only execution coverage by submission
-  code, excluding additional checker tests.
+  code, excluding additional checker tests.  You do not have to call
+  this explicitly -- it is called at the end of the process
+  automatically when `:coverage?' is enabled.  It is made available so
+  you can call it earlier (eg, before testing) to show clients a
+  coverage error first.
 
 *** Multiple-file submissions
 
