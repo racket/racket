@@ -1524,7 +1524,7 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 				   ? SCHEME_RESOLVE_MODIDS
 				   : 0),
 				rec[drec].certs, env->in_modidx, 
-				&menv, NULL);
+				&menv, NULL, NULL);
     
     if (SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)) {
       /* Redirect to a macro? */
@@ -1587,7 +1587,7 @@ static Scheme_Object *
 set_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
   Scheme_Env *menv = NULL;
-  Scheme_Object *name, *var, *fn, *rhs, *find_name;
+  Scheme_Object *name, *var, *fn, *rhs, *find_name, *lexical_binding_id;
   int l;
 
   SCHEME_EXPAND_OBSERVE_PRIM_SET(erec[drec].observer);
@@ -1609,9 +1609,10 @@ set_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, 
 
   while (1) {
     /* Make sure it's mutable, and check for redirects: */
+    lexical_binding_id = NULL;
     var = scheme_lookup_binding(find_name, env, SCHEME_SETTING, 
 				erec[drec].certs, env->in_modidx, 
-				&menv, NULL);
+				&menv, NULL, &lexical_binding_id);
 
     SCHEME_EXPAND_OBSERVE_RESOLVE(erec[drec].observer, find_name);
 
@@ -1639,9 +1640,13 @@ set_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, 
 	find_name = new_name;
 	menv = NULL;
       } else
-	break;
-    } else
+        break;
+    } else {
+      if (lexical_binding_id) {
+        find_name = lexical_binding_id;
+      }
       break;
+    }
   }
 
   if (SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
@@ -1775,7 +1780,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 				   ? SCHEME_RESOLVE_MODIDS
 				   : 0),
 				rec[drec].certs, env->in_modidx, 
-				&menv, NULL);
+				&menv, NULL, NULL);
 
     if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
 	|| SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {

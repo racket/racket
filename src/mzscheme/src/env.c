@@ -2207,7 +2207,8 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
 Scheme_Object *
 scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 		      Scheme_Object *certs, Scheme_Object *in_modidx,
-		      Scheme_Env **_menv, int *_protected)
+		      Scheme_Env **_menv, int *_protected,
+                      Scheme_Object **_lexical_binding_id)
 {
   Scheme_Comp_Env *frame;
   int j = 0, p = 0, modpos, skip_stops = 0, mod_defn_phase, module_self_reference = 0;
@@ -2261,7 +2262,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 		      && scheme_stx_module_eq(find_id, frame->values[i], phase))
 		  || ((frame->flags & SCHEME_CAPTURE_LIFTED)
 		      && scheme_stx_bound_eq(find_id, frame->values[i], phase)))) {
-	    /* Found a lambda- or let-bound variable: */
+	    /* Found a lambda-, let-, etc. bound variable: */
 	    /* First, check certs (don't bind with fewer certs): */
 	    if (!(flags & SCHEME_NO_CERT_CHECKS) 
 		&& !(frame->flags & (SCHEME_CAPTURE_WITHOUT_RENAME | SCHEME_CAPTURE_LIFTED))) {
@@ -2272,6 +2273,10 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	      }
 	    }
 	    /* Looks ok; return a lexical reference */
+            if (_lexical_binding_id) {
+              val = scheme_stx_remove_extra_marks(find_id, frame->values[i]);
+              *_lexical_binding_id = val;
+            }
 	    if (flags & SCHEME_DONT_MARK_USE)
 	      return scheme_make_local(scheme_local_type, 0);
 	    else
@@ -3365,7 +3370,7 @@ namespace_variable_value(int argc, Scheme_Object *argv[])
     init_compile_data((Scheme_Comp_Env *)&inlined_e);
     inlined_e.base.prefix = NULL;
 
-    v = scheme_lookup_binding(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, NULL, NULL, NULL, NULL);
+    v = scheme_lookup_binding(id, (Scheme_Comp_Env *)&inlined_e, SCHEME_RESOLVE_MODIDS, NULL, NULL, NULL, NULL, NULL);
     if (v) {
       if (!SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type)) {
 	use_map = -1;
@@ -3558,7 +3563,7 @@ local_exp_time_value(int argc, Scheme_Object *argv[])
 			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
 			      scheme_current_thread->current_local_certs, 
 			      scheme_current_thread->current_local_modidx, 
-			      &menv, NULL);
+			      &menv, NULL, NULL);
     
     /* Deref globals */
     if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type))

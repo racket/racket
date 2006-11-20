@@ -3898,7 +3898,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
                                      ? SCHEME_RESOLVE_MODIDS
                                      : 0),
                                   certs, env->in_modidx,
-                                  &menv, NULL);
+                                  &menv, NULL, NULL);
     
       if (SCHEME_STX_PAIRP(first))
         *current_val = val;
@@ -4046,10 +4046,11 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     normal = app_expander;
   } else if (!SCHEME_STX_PAIRP(form)) {
     if (SCHEME_STX_SYMBOLP(form)) {
-      Scheme_Object *find_name = form;
+      Scheme_Object *find_name = form, *lexical_binding_id;
       int protected = 0;
 
       while (1) {
+        lexical_binding_id = NULL;
 	var = scheme_lookup_binding(find_name, env, 
 				    SCHEME_NULL_FOR_UNBOUND
 				    + SCHEME_ENV_CONSTANTS_OK
@@ -4066,7 +4067,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				       ? SCHEME_RESOLVE_MODIDS
 				       : 0),
 				    rec[drec].certs, env->in_modidx, 
-				    &menv, &protected);
+				    &menv, &protected, &lexical_binding_id);
 	
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer,find_name);
 
@@ -4119,11 +4120,14 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	  else
 	    return var;
 	} else {
+          SCHEME_EXPAND_OBSERVE_VARIABLE(rec[drec].observer, form, find_name);
+          if (lexical_binding_id) {
+            find_name = lexical_binding_id;
+          }
 	  if (protected) {
 	    /* Add a property to indicate that the name is protected */
 	    find_name = scheme_stx_property(find_name, protected_symbol, scheme_true);
 	  }
-          SCHEME_EXPAND_OBSERVE_VARIABLE(rec[drec].observer, form, find_name);
           SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer, find_name);
 	  return find_name; /* which is usually == form */
 	}
@@ -4165,7 +4169,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				       ? SCHEME_RESOLVE_MODIDS
 				       : 0),
 				    erec1.certs, env->in_modidx, 
-				    &menv, NULL);
+				    &menv, NULL, NULL);
 
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
@@ -4243,7 +4247,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				  + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 				  + SCHEME_DONT_MARK_USE,
 				  rec[drec].certs, env->in_modidx, 
-				  &menv, NULL);
+				  &menv, NULL, NULL);
 
       SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 
@@ -4286,7 +4290,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				  + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 				  + SCHEME_DONT_MARK_USE,
 				  rec[drec].certs, env->in_modidx, 
-				  &menv, NULL);
+				  &menv, NULL, NULL);
     }
   }
 
@@ -7170,8 +7174,6 @@ static void *expand_k(void)
       Scheme_Object *l;
       l = scheme_frame_get_lifts(env);
       if (SCHEME_PAIRP(l)) {
-	if (rename && !just_to_top)
-	  obj = scheme_add_mark_barrier(obj);
 	obj = scheme_append(l, scheme_make_immutable_pair(obj, scheme_null));
 	obj = icons(scheme_datum_to_syntax(begin_symbol, scheme_false, scheme_sys_wraps(env), 0, 0),
 		    obj);
@@ -7186,7 +7188,6 @@ static void *expand_k(void)
   }
 
   if (rename && !just_to_top) {
-    obj = scheme_add_mark_barrier(obj);
     /* scheme_simplify_stx(obj, scheme_new_stx_simplify_cache()); */ /* too expensive */
   }
 

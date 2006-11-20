@@ -595,6 +595,8 @@ Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename);
 Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib);
 Scheme_Object *scheme_add_mark_barrier(Scheme_Object *o);
 
+Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to);
+
 #define mzMOD_RENAME_TOPLEVEL 0
 #define mzMOD_RENAME_NORMAL   1
 #define mzMOD_RENAME_MARKED   2
@@ -1788,7 +1790,8 @@ Scheme_Comp_Env *scheme_require_renames(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env, int flags, 
 				     Scheme_Object *certs, Scheme_Object *in_modidx, 
-				     Scheme_Env **_menv, int *_protected);
+				     Scheme_Env **_menv, int *_protected,
+                                     Scheme_Object **_lexical_binding_id);
 
 Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
 				      Scheme_Comp_Env *upto);

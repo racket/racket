@@ -327,6 +327,8 @@ XFORM_NONGCING static void DO_WRAP_POS_REVINIT(Wrap_Pos *w, Scheme_Object *k)
 #define WRAP_POS_REVEND_P(w) (w.pos < 0)
 #define WRAP_POS_DEC(w) --w.pos; if (w.pos >= 0) w.a = ((Wrap_Chunk *)SCHEME_CAR(w.l))->a[w.pos]
 
+#define WRAP_POS_PLAIN_TAIL(w) (w.is_limb ? (w.pos ? NULL : w.l) : w.l)
+
 /*========================================================================*/
 /*                           initialization                               */
 /*========================================================================*/
@@ -2641,6 +2643,111 @@ static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
   }
 }
 
+static Scheme_Object *prune_marks(Scheme_Stx *stx, Scheme_Object *keep_list)
+/* Returns a new wrap */
+{
+  WRAP_POS awl, acur_mark_l, shared_tail_l;
+  Scheme_Object *acur_mark, *w, *save_wraps = scheme_null, *acur_save_wraps = NULL, *shared_tail_save_wraps = NULL;
+  int wrap_c = 0, shared_tail_wrap_c = 0, acur_wrap_c = 0;
+
+  WRAP_POS_INIT(awl, stx->wraps);
+
+  /* Just so they're initialized: */
+  WRAP_POS_COPY(acur_mark_l, awl);
+  WRAP_POS_COPY(shared_tail_l, awl);
+
+  while (1) {
+    /* Skip over renames and cancelled marks: */
+    acur_mark = NULL;
+    while (1) {
+      if (WRAP_POS_END_P(awl))
+	break;
+      w = WRAP_POS_FIRST(awl);
+      if (SCHEME_NUMBERP(w) && IS_POSMARK(WRAP_POS_FIRST(awl))) {
+	if (acur_mark) {
+	  if (SAME_OBJ(acur_mark, w)) {
+	    acur_mark = NULL;
+	    WRAP_POS_INC(awl);
+	  } else
+	    break;
+	} else {
+	  acur_mark = WRAP_POS_FIRST(awl);
+	  WRAP_POS_INC(awl);
+          WRAP_POS_COPY(acur_mark_l, awl);
+          acur_wrap_c = wrap_c;
+          acur_save_wraps = save_wraps;
+	}
+      } else {
+        save_wraps = scheme_make_pair(w, save_wraps);
+        wrap_c++;
+	WRAP_POS_INC(awl);
+      }
+    }
+
+    if (!acur_mark)
+      break;
+
+    /* Same mark? */
+    if (SCHEME_PAIRP(keep_list) && SAME_OBJ(acur_mark, SCHEME_CAR(keep_list))) {
+      save_wraps = scheme_make_pair(acur_mark, save_wraps);
+      wrap_c++;
+      keep_list = SCHEME_CDR(keep_list);
+    } else {
+      /* We need to drop the mark, so shift the shared tail */
+      WRAP_POS_COPY(shared_tail_l, acur_mark_l);
+      shared_tail_save_wraps = acur_save_wraps;
+      shared_tail_wrap_c = acur_wrap_c;
+    }
+  }
+
+  if (!shared_tail_save_wraps) {
+    w = scheme_null;
+    shared_tail_save_wraps = save_wraps;
+    shared_tail_wrap_c = wrap_c;
+  } else {
+    /* save_wraps is the set of wraps (in reverse order) that we want to
+       keep, but there could be a shared tail; build on shared_tail_l
+       with shared_tail_save_wraps: */
+    while (1) {
+      w = WRAP_POS_PLAIN_TAIL(shared_tail_l);
+      if (w)
+        break;
+      shared_tail_save_wraps = scheme_make_pair(WRAP_POS_FIRST(shared_tail_l), 
+                                                shared_tail_save_wraps);
+      shared_tail_wrap_c++;
+      WRAP_POS_INC(shared_tail_l);
+    }
+  }
+
+  if (shared_tail_wrap_c) {
+    Wrap_Chunk *wc;
+    int i;
+
+    wc = MALLOC_WRAP_CHUNK(shared_tail_wrap_c);
+    wc->type = scheme_wrap_chunk_type;
+    wc->len = shared_tail_wrap_c;
+
+    for (i = shared_tail_wrap_c - 1; 
+         !SCHEME_NULLP(shared_tail_save_wraps);
+         shared_tail_save_wraps = SCHEME_CDR(shared_tail_save_wraps), --i) {
+      wc->a[i] = SCHEME_CAR(shared_tail_save_wraps);
+    }
+
+    w = scheme_make_pair((Scheme_Object *)wc, w);
+  }
+
+  /* Construct the new id: */
+  {
+    Scheme_Object *certs;
+    certs = stx->certs;
+    stx = (Scheme_Stx *)scheme_make_stx(stx->val, stx->srcloc, stx->props);
+    stx->wraps = w;
+    stx->certs = certs;
+  }
+  
+  return (Scheme_Object *)stx;
+}
+
 #define QUICK_STACK_SIZE 10
 
 /* Although resolve_env may call itself recursively, the recursion
@@ -3365,6 +3472,22 @@ int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *id_certs,
   }
 
   return 0;
+}
+
+Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *a, Scheme_Object *relative_to)
+{
+  WRAP_POS aw;
+  WRAP_POS bw;
+
+  WRAP_POS_INIT(aw, ((Scheme_Stx *)a)->wraps);
+  WRAP_POS_INIT(bw, ((Scheme_Stx *)relative_to)->wraps);
+
+  if (!same_marks(&aw, &bw, 0, NULL, NULL)) {
+    return prune_marks((Scheme_Stx *)a,
+                       scheme_stx_extract_marks(relative_to));
+  }
+
+  return a;
 }
 
 /*========================================================================*/
