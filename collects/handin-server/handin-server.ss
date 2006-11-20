@@ -6,13 +6,13 @@
            (lib "date.ss")
            (lib "list.ss")
            (lib "string.ss")
-           "private/md5.ss"
-           "private/lock.ss"
            "private/logger.ss"
+           "private/config.ss"
+           "private/lock.ss"
+           "private/md5.ss"
            "private/run-status.ss"
            "web-status-server.ss")
 
-  ;; !!! (define log-port (open-output-file "log.ss" 'append))
   (install-logger-port)
 
   (define (write+flush port . xs)
@@ -29,33 +29,20 @@
           [(pair? default) (car default)]
           [else (error (alist-name alist) "no value for `~s'" key)]))
 
-  (define server-dir (current-directory))
-  (define config-file (build-path server-dir "config.ss"))
-
-  (define (get-config which default)
-    (if (file-exists? config-file)
-      (get-preference which (lambda () default) #f config-file)
-      default))
-
-  (define PORT-NUMBER        (get-config 'port-number 7979))
-  (define HTTPS-PORT-NUMBER  (get-config 'https-port-number (add1 PORT-NUMBER)))
-  (define SESSION-TIMEOUT    (get-config 'session-timeout 300))
-  (define SESSION-MEMORY-LIMIT (get-config 'session-memory-limit 40000000))
-  (define DEFAULT-FILE-NAME  (get-config 'default-file-name "handin.scm"))
-  (define MAX-UPLOAD         (get-config 'max-upload 500000))
-  (define MAX-UPLOAD-KEEP    (get-config 'max-upload-keep 9))
-  (define USER-REGEXP        (get-config 'user-regexp #rx"^[a-z][a-z0-9]+$"))
-  (define USER-DESC          (get-config 'user-desc "alphanumeric string"))
-  (define USERNAME-CASE-SENSITIVE? (get-config 'username-case-sensitive? #f))
-  (define ALLOW-NEW-USERS?   (get-config 'allow-new-users #f))
-  (define ALLOW-CHANGE-INFO? (get-config 'allow-change-info #f))
-  (define MASTER-PASSWD      (get-config 'master-password #f))
-  (define EXTRA-FIELDS
-    (get-config 'extra-fields
-                '(("Full Name" #f #f)
-                  ("ID#" #f #f)
-                  ("Email" #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
-                   "a valid email address"))))
+  (define PORT-NUMBER        (get-config 'port-number))
+  (define HTTPS-PORT-NUMBER  (get-config 'https-port-number))
+  (define SESSION-TIMEOUT    (get-config 'session-timeout))
+  (define SESSION-MEMORY-LIMIT (get-config 'session-memory-limit))
+  (define DEFAULT-FILE-NAME  (get-config 'default-file-name))
+  (define MAX-UPLOAD         (get-config 'max-upload))
+  (define MAX-UPLOAD-KEEP    (get-config 'max-upload-keep))
+  (define USER-REGEXP        (get-config 'user-regexp))
+  (define USER-DESC          (get-config 'user-desc))
+  (define USERNAME-CASE-SENSITIVE? (get-config 'username-case-sensitive?))
+  (define ALLOW-NEW-USERS?   (get-config 'allow-new-users))
+  (define ALLOW-CHANGE-INFO? (get-config 'allow-change-info))
+  (define MASTER-PASSWD      (get-config 'master-password))
+  (define EXTRA-FIELDS       (get-config 'extra-fields))
   ;; separate user-controlled fields, and hidden fields
   (define USER-FIELDS
     (filter (lambda (f) (not (eq? '- (cadr f)))) EXTRA-FIELDS))
@@ -641,7 +628,7 @@
 
   (log-line "server started ------------------------------")
 
-  (define stop-status (serve-status HTTPS-PORT-NUMBER get-config))
+  (define stop-status (serve-status HTTPS-PORT-NUMBER))
 
   (define session-count 0)
 

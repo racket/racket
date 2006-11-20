@@ -1,25 +1,23 @@
 (module web-status-server mzscheme
   (require (lib "unitsig.ss")
-           (lib "web-server-unit.ss" "web-server")
-           (lib "sig.ss" "web-server")
-           (lib "configuration.ss" "web-server")
            (lib "ssl-tcp-unit.ss" "net")
            (lib "tcp-sig.ss" "net")
            (lib "tcp-unit.ss" "net")
            (lib "file.ss")
-           (lib "etc.ss"))
+           (lib "etc.ss")
+           (lib "web-server-unit.ss" "web-server")
+           (lib "sig.ss" "web-server")
+           (lib "configuration.ss" "web-server")
+           "private/config.ss")
 
   (provide serve-status)
 
-  (define (serve-status port-no get-config)
-
-    (define WEB-BASE-DIR (get-config 'web-base-dir #f))
+  (define (serve-status port-no)
 
     (define web-dir
       (path->string
-       (if WEB-BASE-DIR
-         (build-path (current-directory) WEB-BASE-DIR)
-         (build-path (this-expression-source-directory) "status-web-root"))))
+       (or (get-config 'web-base-dir)
+           (build-path (this-expression-source-directory) "status-web-root"))))
 
     (define config
       `((port ,port-no)
@@ -46,7 +44,8 @@
            (paths
             (configuration-root "conf")
             (host-root ,web-dir)
-            (log-file-path ,(path->string (build-path (current-directory) "web-status-log.ss")))
+            (log-file-path ,(cond [(get-config 'web-log-file) => path->string]
+                                  [else #f]))
             (file-root "htdocs")
             (servlet-root ,web-dir)
             (mime-types ,(path->string (build-path (collection-path "web-server")
@@ -59,6 +58,13 @@
       (let ([file (make-temporary-file)])
         (with-output-to-file file (lambda () (write config)) 'truncate)
         (begin0 (load-configuration file) (delete-file file))))
+    #; ; This is not working yet
+    (define config@
+      (load-configuration-sexpr config
+        #:make-servlet-namespace
+        (make-make-servlet-namespace
+         #:to-be-copied-module-specs
+         '((lib "logger.ss" "handin-server" "private")))))
 
     (define-values/invoke-unit/sig web-server^
       (compound-unit/sig

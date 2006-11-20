@@ -164,7 +164,7 @@ sub-directories:
     students with the handin client, "private-key.pem" is kept
     private.
 
-  * "config.ss" (optional) --- configuration options. The file format
+  * "config.ss" (optional) --- configuration options.  The file format
     is
 
          ((<key> <val>) ...)
@@ -231,13 +231,25 @@ sub-directories:
          allows login as any user; the default is #f, which disables
          the password
 
+      'log-output : a boolean that controls whether the handin server
+         log is written on the standard output; defaults to #t
+
+      'log-file : a path (relative to handin server directory or
+         absolute) that specifies a filename for the handin server log
+         (possibly combined with the 'log-output option), or #f for no
+         log file; defaults to "log"
+
       'web-base-dir : if #f (the default), the built-in web server
          will use the "status-web-root" in this collection for its
          configuration; to have complete control over the built in
-         server, you can copy and edit "status-web-root" to the
-         directory you're running the handin server server from, and
-         add this configuration entry with the name of your new copy
-         (relative to the handin server directory)
+         server, you can copy and edit "status-web-root", and add this
+         configuration entry with the name of your new copy (relative
+         to the handin server directory, or absolute)
+
+      'web-log-file : a path (relative to handin server directory or
+         absolute) that specifies a filename for logging the internal
+         HTTPS status web server; or #f (the default) to disable this
+         log
 
       'extra-fields : a list that describes extra string fields of
          information for student records; each element in this list is
@@ -445,15 +457,15 @@ sub-directories:
     To specify only pre/post-checker, use #f for the one you want to
     omit.
 
-  * "log.ss" (created if not present, appended otherwise) --- records
-    connections and actions, where each entry is of the form
+  * "log" (or any other name that the 'log-file configuration option
+    specifies (if any), created if not present, appended otherwise)
+    --- records connections and actions, where each entry is of the
+    form
         (id time-str msg-str)
-    and `id' is an integer representing the connection (numbered
-    consecutively from 1 when the server starts) or 0 for a message
-    for server without a connection.
-
-  * "web-status-log.ss" (created if not present, appended otherwise)
-    --- records accesses of the HTTPS status web server.
+        [<id>|<time>] <msg>
+    where `<id>' is an integer representing the connection (numbered
+    consecutively from 1 when the server starts) or "-" for a message
+    without a connection.
 
   * "[in]active/<assignment>/<user>/<filename>" (if submitted) --- the
     most recent submission for <assignment> by <user> where <filename>

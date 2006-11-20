@@ -1,5 +1,5 @@
 (module logger mzscheme
-  (require (lib "date.ss"))
+  (require "config.ss" (lib "date.ss") (lib "port.ss"))
 
   (provide current-session)
   (define current-session (make-parameter #f))
@@ -17,35 +17,62 @@
               (or (current-session) '-)
               (date->string (seconds->date (current-seconds)) #t))))
 
-  ;; Implement a logger by capturing current-error-port and printing a prefix,
-  ;; provide a function to install this port
-  (define (make-logger-port stderr)
-    (define prompt? #t)
-    (define sema (make-semaphore 1))
-    (make-output-port
-     'logger-output
-     stderr
-     (lambda (buf start end imm? break?)
-       (dynamic-wind
-         (lambda () (semaphore-wait sema))
-         (lambda ()
-           (if (= start end)
-             (begin (flush-output stderr) 0)
-             (let ([nl (regexp-match-positions #rx#"\n" buf start end)])
-               ;; may be problematic if this hangs...
-               (when prompt? (display (prefix) stderr) (set! prompt? #f))
-               (if (not nl)
-                 (write-bytes-avail* buf stderr start end)
-                 (let* ([nl (cdar nl)]
-                        [l  (write-bytes-avail* buf stderr start nl)])
-                   (when (= l (- nl start))
-                     ;; pre-newline part written
-                     (flush-output stderr) (set! prompt? #t))
-                   l)))))
-        (lambda () (semaphore-post sema))))
-     (lambda () (close-output-port stderr))))
+  (define (combine-outputs o1 o2)
+    (let-values ([(i o) (make-pipe)])
+      (thread
+       (lambda ()
+         (let loop ()
+           (let ([line (read-bytes-line i)])
+             (if (eof-object? line)
+               (begin (close-output-port o1) (close-output-port o2))
+               (begin (write-bytes line o1) (newline o1) (flush-output o1)
+                      (write-bytes line o2) (newline o2) (flush-output o2)
+                      (loop)))))))
+      o))
 
-  ;; Install this wrapper on the current error port
+  ;; Implement a logger by making the current-error-port show prefix tags and
+  ;; output the line on the output port
+  (define (make-logger-port out log)
+    (if (and (not out) (not log))
+      ;; /dev/null-like output port
+      (make-output-port 'nowhere
+                        always-evt
+                        (lambda (buf start end imm? break?) (- end start))
+                        void)
+      (let ([prompt? #t]
+            [sema (make-semaphore 1)]
+            [outp (cond [(not log) out]
+                        [(not out) log]
+                        [else (combine-outputs out log)])])
+        (make-output-port
+         'logger-output
+         outp
+         (lambda (buf start end imm? break?)
+           (dynamic-wind
+             (lambda () (semaphore-wait sema))
+             (lambda ()
+               (if (= start end)
+                 (begin (flush-output outp) 0)
+                 (let ([nl (regexp-match-positions #rx#"\n" buf start end)])
+                   ;; may be problematic if this hangs...
+                   (when prompt? (display (prefix) outp) (set! prompt? #f))
+                   (if (not nl)
+                     (write-bytes-avail* buf outp start end)
+                     (let* ([nl (cdar nl)]
+                            [l  (write-bytes-avail* buf outp start nl)])
+                       (when (= l (- nl start))
+                         ;; pre-newline part written
+                         (flush-output outp) (set! prompt? #t))
+                       l)))))
+             (lambda () (semaphore-post sema))))
+         (lambda () (close-output-port outp))))))
+
+  ;; Install this wrapper as the current error port
   (provide install-logger-port)
   (define (install-logger-port)
-    (current-error-port (make-logger-port (current-error-port)))))
+    (current-error-port
+     (make-logger-port
+      (and (get-config 'log-output) (current-output-port))
+      (cond [(get-config 'log-file)
+             => (lambda (f) (open-output-file f 'append))]
+            [else #f])))))
