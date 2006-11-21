@@ -245,7 +245,7 @@ void wxSlider::Paint(void)
     if (font && (font != wxNORMAL_FONT)) {
       double w, h, d, dx;
 
-      font->GetTextExtent(t, 0, &w, &h, &d, NULL, FALSE);
+      font->GetTextExtent(t, 0, -1, &w, &h, &d, NULL, FALSE);
       dx = ((r.right - r.left) - w) / 2;
       
       MoveTo((short)floor(r.left + dx), (short)floor(r.top + (h - d)));

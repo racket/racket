@@ -129,7 +129,7 @@ class wxPostScriptDC: public wxDC
   void GetTextExtent(const char *string, double *x, double *y,
                      double *descent = NULL, double *externalLeading = NULL, 
 		     wxFont *theFont = NULL, 
-		     Bool combine = FALSE, Bool use16 = FALSE, int dt = 0);
+		     Bool combine = FALSE, Bool use16 = FALSE, int dt = 0, int slen = -1);
   void SetMapMode(int mode);
   void SetUserScale(double x, double y);
   double DeviceToLogicalX(int x);

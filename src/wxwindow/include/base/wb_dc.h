@@ -149,7 +149,7 @@ class wxbDC: public wxObject
                              double *externalLeading = NULL, 
                              wxFont *theFont = NULL,
                              Bool combine = FALSE, Bool use16bit = FALSE,
-			     int d = 0) = 0;
+			     int d = 0, int len = -1) = 0;
 
   inline virtual Bool Ok(void) {return ok;};
   virtual Bool CanGetTextExtent(void) = 0;

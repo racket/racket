@@ -1616,10 +1616,13 @@ wchar_t *convert_to_drawable_format(const char *text, int d, int ucs4, long *_ul
   wchar_t *unicode;
   int theStrlen;
 
-  if (ucs4) {
-    theStrlen = ucs4_strlen((const unsigned int *)text XFORM_OK_PLUS d);
-  } else {
-    theStrlen = strlen(text XFORM_OK_PLUS d);
+  theStrlen = *_ulen;
+  if (theStrlen < 0) {
+    if (ucs4) {
+      theStrlen = ucs4_strlen((const unsigned int *)text XFORM_OK_PLUS d);
+    } else {
+      theStrlen = strlen(text XFORM_OK_PLUS d);
+    }
   }
 
   if (ucs4) {
@@ -1817,7 +1820,7 @@ void wxDC::DrawText(const char *text, double x, double y, Bool combine, Bool ucs
   DWORD old_background;
   double w, h, ws, hs, ow, oh;
   wchar_t *ustring;
-  long len, alen;
+  long len = -1, alen;
   double oox, ooy;
   int fam, reset = 0;
   wxFont *theFont;
@@ -2139,12 +2142,12 @@ double wxDC::GetCharWidth(void)
 
 void wxDC::GetTextExtent(const char *string, double *x, double *y,
                          double *descent, double *topSpace, 
-			 wxFont *theFont, Bool combine, Bool ucs4, int d)
+			 wxFont *theFont, Bool combine, Bool ucs4, int d, int slen)
 {
   wxFont *oldFont = NULL;
   HDC dc;
   TEXTMETRIC tm;
-  long len, alen;
+  long len = slen, alen;
   double tx, ty, ow, oh;
   wchar_t *ustring;
   int once = 1, fam, reset = 0;

@@ -1325,7 +1325,7 @@ static void draw_tab_label(const Rect *bounds,
   char *str = ((tab_info *)ti)->str;
   double w, h, d, dy, dx;
 
-  font->GetTextExtent(str, 0, &w, &h, &d, NULL, FALSE);
+  font->GetTextExtent(str, 0, -1, &w, &h, &d, NULL, FALSE);
 
   dy = ((bounds->bottom - bounds->top - 3) - (h - d)) / 2;
   dx = ((bounds->right - bounds->left) - w) / 2;

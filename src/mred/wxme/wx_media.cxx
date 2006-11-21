@@ -3539,19 +3539,23 @@ long wxMediaEdit::_FindPositionInSnip(wxDC *dc, double X, double Y,
   while (1) {
     double dl, dr;
 
-    if ((dl = snip->PartialOffset(dc, X, Y, offset + i)) > x)
+    dl = snip->PartialOffset(dc, X, Y, offset + i);
+    if (dl > x)
       range = i;
-    else if ((dr = snip->PartialOffset(dc, X, Y, offset + i + 1)) <= x) {
-      offset += i;
-      range -= i;
-    } else {
-      if (how_close) {
-	if (dr - x < x - dl)
-	  *how_close = dr - x;
-	else
-	  *how_close = dl - x;
+    else {
+      dr = snip->PartialOffset(dc, X, Y, offset + i + 1);
+      if (dr <= x) {
+        offset += i;
+        range -= i;
+      } else {
+        if (how_close) {
+          if (dr - x < x - dl)
+            *how_close = dr - x;
+          else
+            *how_close = dl - x;
+        }
+        break;
       }
-      break;
     }
     
     i = range / 2;

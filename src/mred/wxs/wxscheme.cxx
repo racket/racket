@@ -1342,7 +1342,7 @@ void wxPostScriptDrawText(Scheme_Object *f, const char *fontname,
 }
 
 extern void wxPostScriptGetTextExtent(const char *fontname, 
-				      const char *text, int dt, Bool combine, int use16, 
+				      const char *text, int dt, int slen, Bool combine, int use16, 
 				      double font_size,
 				      double *x, double *y, double *descent, double *topSpace,
 				      int sym_map)
@@ -1354,9 +1354,9 @@ extern void wxPostScriptGetTextExtent(const char *fontname,
     a[0] = v;
     a[1] = scheme_make_double(font_size);
     if (use16)
-      v = scheme_make_sized_offset_char_string((mzchar *)text, dt, -1, 1);
+      v = scheme_make_sized_offset_char_string((mzchar *)text, dt, slen, 1);
     else 
-      v = scheme_make_sized_offset_utf8_string((char *)text, dt, -1);
+      v = scheme_make_sized_offset_utf8_string((char *)text, dt, slen);
     a[2] = v;
     a[3] = (combine ? scheme_true : scheme_false);
     a[4] = (sym_map ? scheme_true : scheme_false);

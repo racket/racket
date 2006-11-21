@@ -106,7 +106,8 @@ public:
     virtual void  GetTextExtent(const char *s, double *w, double *h,
 				double *descent = 0, double *ext_leading = 0,
 				wxFont *font=NULL, 
-				Bool combine=FALSE, Bool use16bit=FALSE, int dt=0) = 0;
+				Bool combine=FALSE, Bool use16bit=FALSE, int dt=0,
+                                int len = -1) = 0;
     virtual void  SetBackground(wxColour *c) = 0;
     virtual void  SetBrush(wxBrush *brush) = 0;
     virtual void  SetClippingRect(double x, double y, double w, double h) = 0;

@@ -1666,9 +1666,9 @@ void wxWindow::GetTextExtent(const char* string, double* x, double* y, double* d
 			     double* externalLeading, wxFont* the_font, Bool use16)
 {
   if (the_font)
-    the_font->GetTextExtent((char *)string, 0, x, y, descent, externalLeading, TRUE, use16);
+    the_font->GetTextExtent((char *)string, 0, -1, x, y, descent, externalLeading, TRUE, use16);
   else if (font)
-    font->GetTextExtent((char *)string, 0, x, y, descent, externalLeading, TRUE, use16);
+    font->GetTextExtent((char *)string, 0, -1, x, y, descent, externalLeading, TRUE, use16);
   else {
     *x = -1;
     *y = -1;

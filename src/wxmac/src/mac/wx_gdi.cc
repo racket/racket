@@ -356,12 +356,12 @@ double wxFont::GetCharWidth(double scale_x, double scale_y)
 }
 
 //-----------------------------------------------------------------------------
-void wxFont::GetTextExtent(char* string, int delta, double* x, double* y,
+void wxFont::GetTextExtent(char* string, int delta, int slen, double* x, double* y,
 			   double* descent, double* externalLeading, 
 			   Bool qd_spacing, Bool ucs4,
 			   double scale_x, double scale_y)
 {
-  wxGetUnicodeTextWidth(string, delta, -1,
+  wxGetUnicodeTextWidth(string, delta, slen,
 			GetMacFontNum(), point_size, GetMacFontStyle(),
 			ucs4, scale_y,
 			x, y, descent, externalLeading,

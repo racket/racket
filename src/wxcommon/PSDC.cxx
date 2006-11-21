@@ -71,7 +71,7 @@ extern void wxPostScriptDrawText(Scheme_Object *f, const char *fontname,
 				 const char *text, int dt, Bool combine, int use16, 
 				 double font_size, int symbol_map);
 extern void wxPostScriptGetTextExtent(const char *fontname, 
-				      const char *text, int dt, Bool combine, int use16, 
+				      const char *text, int dt, int len, Bool combine, int use16, 
 				      double font_size,
 				      double *x, double *y, double *descent, double *topSpace,
 				      int symbol_map);
@@ -1963,7 +1963,7 @@ double wxPostScriptDC::GetCharWidth (void)
 
 void wxPostScriptDC::GetTextExtent (const char *string, double *x, double *y,
 				    double *descent, double *topSpace, wxFont *theFont,
-				    Bool combine, Bool use16, int dt)
+				    Bool combine, Bool use16, int dt, int slen)
 {
   wxFont *fontToUse = theFont;
   int family;
@@ -1987,7 +1987,7 @@ void wxPostScriptDC::GetTextExtent (const char *string, double *x, double *y,
 
   sym_map = fontToUse->GetFamily() == wxSYMBOL;
 
-  wxPostScriptGetTextExtent(name, string, dt, combine, use16, size,
+  wxPostScriptGetTextExtent(name, string, dt, slen, combine, use16, size,
 			    x, y, descent, topSpace, sym_map);
 }
 

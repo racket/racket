@@ -170,7 +170,7 @@ void wxGetBestControlRect(ControlRef c, Rect *r, SInt16 *offset,
   if (label && (size < 13)) {
     /* GetBestControlRect makes things too wide */
     double x, y;
-    font->GetTextExtent(label, 0, &x, &y, NULL, NULL);
+    font->GetTextExtent(label, 0, -1, &x, &y, NULL, NULL);
     if (r->right - r->left > x + width_pad)
       r->right = r->left + (short)x + (short)width_pad;
   }

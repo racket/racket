@@ -2227,7 +2227,7 @@ void wxWindow::GetTextExtent(const char *s, double *w, double *h, double *descen
   
   wxGetTextExtent(wxAPP_DISPLAY, 1.0, 1.0,
 		  s, w, h, descent, ext_leading, theFont,
-		  1, use16bit, 0);
+		  1, use16bit, 0, -1);
 }
 
 

@@ -2151,11 +2151,14 @@ static unsigned int *convert_to_drawable_format(const char *s, int ds, long *_ul
 						int isUnicode, int non_xft)
 {
   unsigned int *us;
-  long ulen;
+  long ulen = *_ulen;
 
   if (isUnicode) {
     us = (unsigned int *)s;
-    for (ulen = ds; us[ulen]; ulen++) {
+    if (ulen < 0) {
+      ulen = 0;
+      for (ulen = ds; us[ulen]; ulen++) {
+      }
     }
     ulen -= ds;
     if (ds) {
@@ -2168,7 +2171,10 @@ static unsigned int *convert_to_drawable_format(const char *s, int ds, long *_ul
   } else {
     int length;
 
-    length = strlen(s XFORM_OK_PLUS ds);
+    if (ulen < 0)
+      length = strlen(s XFORM_OK_PLUS ds);
+    else
+      length = ulen;
     
     ulen = scheme_utf8_decode((const unsigned char *)s, ds, ds + length, NULL, 0, -1, NULL, 0, '?');
     if (ulen <= bufsize)
@@ -2287,12 +2293,13 @@ void wxWindowDC::DrawText(char *orig_text, double x, double y,
 
   {
     double tw, th, td, ts;
-    GetTextExtent(orig_text, &tw, &th, &td, &ts, current_font, combine, isUnicode, dt);
+    GetTextExtent(orig_text, &tw, &th, &td, &ts, current_font, combine, isUnicode, dt, -1);
     cx = (tw * e_scale_x);
     cy = (th * e_scale_y);
     ascent = (int)((th - td) * e_scale_y);
   }
 
+  textlen = -1;
   text = convert_to_drawable_format(orig_text, dt, &textlen, cvt_buf, WX_CVT_BUF_SIZE, 
 				    isUnicode, WX_XFT_ONLY(!xfontinfo));
   dt = 0;
@@ -2515,7 +2522,7 @@ double wxWindowDC::GetCharWidth(void)
 void wxGetTextExtent(Display *dpy, double scale_x, double scale_y,
 		     const char *orig_s, double *_w, double *_h, double *_descent,
 		     double *_topspace, wxFont *font_to_use,
-		     Bool combine, Bool isUnicode, int dt)
+		     Bool combine, Bool isUnicode, int dt, int len)
 {
   int         ascent, descent, space = 0;
   long        textlen;
@@ -2534,6 +2541,7 @@ void wxGetTextExtent(Display *dpy, double scale_x, double scale_y,
 #endif
     fontinfo = (XFontStruct*)font_to_use->GetInternalFont(scale_x, scale_y);
 
+  textlen = len;
   s = convert_to_drawable_format(orig_s, dt, &textlen, cvt_buf, WX_CVT_BUF_SIZE, 
 				 isUnicode, WX_XFT_ONLY(!xfontinfo));
   dt = 0;
@@ -2629,7 +2637,7 @@ void wxGetTextExtent(Display *dpy, double scale_x, double scale_y,
 
 void wxWindowDC::GetTextExtent(const char *orig_s, double *_w, double *_h, double *_descent,
 			       double *_topspace, wxFont *_font,
-			       Bool combine, Bool isUnicode, int dt)
+			       Bool combine, Bool isUnicode, int dt, int len)
 {
   wxFont *font_to_use;
   double v;
@@ -2649,7 +2657,7 @@ void wxWindowDC::GetTextExtent(const char *orig_s, double *_w, double *_h, doubl
 
   wxGetTextExtent(DPY, scale_x, scale_y,
 		  orig_s, _w, _h, _descent, _topspace, 
-		  font_to_use, combine, isUnicode, dt);
+		  font_to_use, combine, isUnicode, dt, len);
 
   if (_w) {
     v = XDEV2LOGREL((int)*_w);

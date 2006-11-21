@@ -110,7 +110,7 @@ wxTabChoice::wxTabChoice(wxPanel *panel, wxFunction function, char *label,
   cWindowWidth = TAB_TITLE_SPACE + TAB_BASE_SIDE_SPACE;
   for (i = 0; i < N; i++) {
     double x, y;
-    font->GetTextExtent(wxItemStripLabel(Choices[i]), 0, &x, &y, NULL, NULL, TRUE);
+    font->GetTextExtent(wxItemStripLabel(Choices[i]), 0, -1, &x, &y, NULL, NULL, TRUE);
     cWindowWidth += TAB_TITLE_SPACE + (int)x;
   }
   padTop = TAB_TOP_SPACE;

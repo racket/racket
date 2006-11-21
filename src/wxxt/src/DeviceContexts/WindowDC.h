@@ -147,7 +147,8 @@ public:
   double GetCharWidth(void);
   void  GetTextExtent(const char *s, double *w, double *h, double *descent = 0,
 		      double *ext_leading = 0,	wxFont *font=NULL,
-		      Bool combine=FALSE, Bool use16bit=FALSE, int dt=0);
+		      Bool combine=FALSE, Bool use16bit=FALSE, int dt=0,
+                      int len=-1);
   void  SetBackground(wxColour *c);
   void  SetBrush(wxBrush *brush);
   void  ResetBrush(wxBrush *brush);
@@ -264,7 +265,7 @@ public:
 void wxGetTextExtent(Display *dpy, double scale_x, double scale_y,
 		     const char *orig_s, double *_w, double *_h, double *_descent,
 		     double *_topspace, wxFont *font_to_use,
-		     Bool combine, Bool isUnicode, int dt);
+		     Bool combine, Bool isUnicode, int dt, int len);
 #endif
 
 #endif // WindowDC_hh

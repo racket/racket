@@ -122,7 +122,7 @@ class wxCanvasDC: public wxbCanvasDC
   virtual void GetTextExtent(const char* string, double* x, double* y, double* descent = NULL,
 			     double* externalLeading = NULL, wxFont* the_font = NULL, 
 			     Bool combine = FALSE, Bool use16 = FALSE,
-			     int d = 0);
+			     int d = 0, int len = -1);
   Bool StartDoc(char* message);
   void EndDoc(void);
   void StartPage(void);

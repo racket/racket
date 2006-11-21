@@ -380,7 +380,7 @@ double wxCanvasDC::GetCharWidth(void)
 //-----------------------------------------------------------------------------
 void wxCanvasDC::GetTextExtent(const char* string, double* x, double* y, double* descent,
 			       double* internalLeading, wxFont* the_font, 
-			       Bool combine, Bool ucs4, int d)
+			       Bool combine, Bool ucs4, int d, int slen)
 {
   double x2, y2, descent2, externalLeading2;
 
@@ -388,11 +388,11 @@ void wxCanvasDC::GetTextExtent(const char* string, double* x, double* y, double*
      in font selection. */
 
   if (the_font)
-    the_font->GetTextExtent((char *)string, d, &x2, &y2, &descent2, &externalLeading2, 
+    the_font->GetTextExtent((char *)string, d, slen, &x2, &y2, &descent2, &externalLeading2, 
 			    !combine, ucs4, 
 			    user_scale_x, user_scale_y);
   else if (font)
-    font->GetTextExtent((char *)string, d, &x2, &y2, &descent2, &externalLeading2, 
+    font->GetTextExtent((char *)string, d, slen, &x2, &y2, &descent2, &externalLeading2, 
 			!combine, ucs4,
 			user_scale_x, user_scale_y);
   else {

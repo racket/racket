@@ -46,7 +46,7 @@ class wxFont: public wxbFont
 
 	double GetCharHeight(double scale_x = 1.0, double scale_y = 1.0);
 	double GetCharWidth(double scale_x = 1.0, double scale_y = 1.0);
-	void  GetTextExtent(char* string, int delta, double* x, double* y,
+	void  GetTextExtent(char* string, int delta, int len, double* x, double* y,
 			    double* descent, double* externalLeading, 
 			    Bool qd_spacing = TRUE, Bool use16 = FALSE,
 			    double scale_x = 1.0, double scale_y = 1.0);

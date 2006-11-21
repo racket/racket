@@ -592,13 +592,9 @@ void wxTextSnip::SizeCacheInvalid(void)
 
 void wxTextSnip::GetTextExtent(wxDC *dc, int count, double *wo)
 {
-  wxchar save;
   double _w, h;
   wxFont *font;
   int i;
-
-  save = buffer[dtext + count];
-  buffer[dtext + count] = 0;
 
   for (i = count; i--; ) {
     wxchar c = buffer[dtext + i]; 
@@ -612,7 +608,7 @@ void wxTextSnip::GetTextExtent(wxDC *dc, int count, double *wo)
 #endif
 
   if (i < 0) {
-    dc->GetTextExtent((char *)buffer, &_w, &h, NULL, NULL, font, FALSE, TRUE, dtext);
+    dc->GetTextExtent((char *)buffer, &_w, &h, NULL, NULL, font, FALSE, TRUE, dtext, count);
   } else {
     /* text includes null chars */
     double ex_w;
@@ -628,10 +624,7 @@ void wxTextSnip::GetTextExtent(wxDC *dc, int count, double *wo)
       if (!buffer[dtext + i] || (buffer[dtext + i] == NON_BREAKING_SPACE) || (i == count)) {
 	if (i > start) {
 	  double piece_w, h;
-	  wxchar save = buffer[dtext + i];
-	  buffer[dtext + i] = 0;
-	  dc->GetTextExtent((char *)buffer, &piece_w, &h, NULL, NULL, NULL, FALSE, TRUE, dtext + start);
-	  buffer[dtext + i] = save;
+	  dc->GetTextExtent((char *)buffer, &piece_w, &h, NULL, NULL, NULL, FALSE, TRUE, dtext + start, i - start);
 	  _w += piece_w;
 	}
 	if (i < count) {
@@ -641,8 +634,6 @@ void wxTextSnip::GetTextExtent(wxDC *dc, int count, double *wo)
       }
     }
   }
-  
-  buffer[dtext + count] = save;
 
   *wo = _w;
 }
