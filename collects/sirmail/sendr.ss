@@ -840,85 +840,109 @@
 		(send edit set-wordbreak-map reflow-wordbreak-map)
 		(send edit begin-edit-sequence))
 	      (lambda ()
-		(let ([p (max start-min (send edit get-start-position))]
-		      [min-line (send edit position-paragraph start-min)])
-		  (let loop ([start-l (send edit position-paragraph p)])
-		    (if (or (<= start-l min-line)
-			    (= (send edit paragraph-start-position start-l)
-			       (add1 (send edit paragraph-start-position (sub1 start-l)))))
-			(let loop ([end-l start-l])
-			  (if (or (= end-l (send edit last-paragraph))
-				  (= (send edit paragraph-end-position end-l)
-				     (sub1 (send edit paragraph-end-position (add1 end-l)))))
-			      (let ([orig-start (send edit paragraph-start-position start-l)]
-				    [end (send edit paragraph-end-position end-l)]
-				    [second-line-prefix
-				     (if (= start-l end-l)
-					 ""
-					 (let ([p (send edit paragraph-start-position (add1 start-l))])
-					   (let loop ([pe p])
-					     (case (send edit get-character pe)
-					       [(#\space #\tab #\>) (loop (add1 pe))]
-					       [else (send edit get-text p pe)]))))])
-				(let ([start ; skip spaces on first line (if there's a non-space):
-				       (let ([start-end (send edit paragraph-end-position start-l)])
-					 (let loop ([start orig-start])
-					   (cond
-					    [(= start-end start) orig-start]
-					    [(memq (send edit get-character start) '(#\space #\tab))
-					     (loop (add1 start))]
-					    [else start])))])
-					; Remove all line breaks and double-spaces
-					; spaces
-				  (let loop ([start start]
-					     [end end]
-					     [l (list (string-append (string #\newline)
-								     second-line-prefix)
-						      (string #\newline)
-						      (string #\tab)
-						      (string #\space #\space))])
-				    (let ([p (send edit find-string (car l)
-						   'forward start end)]
-					  [line-break (string-append (string #\newline)
-								     second-line-prefix)]
-					  [slp-len (string-length second-line-prefix)])
-				      (if (or p (pair? (cdr l)))
-					  (if p
-					      (let ([len (string-length (car l))])
-						(send edit insert " " p (+ p len))
-						(loop start (- end len -1) l))
-					      (loop start end (cdr l)))
-					; Insert good line breaks
-					  (let loop ([start start]
-						     [len (- start orig-start)]
-					; First, remove ending space
-						     [end (if (or (= end start)
-								  (not (char=?
-									#\space
-									(send edit get-character 
-									      (sub1 end)))))
-							      end
-							      (begin
-								(send edit delete (sub1 end) end)
-								(sub1 end)))])
-					    (unless (>= start end)
-					      (let ([ebox (box start)])
-						(send edit find-wordbreak #f ebox 'line)
-						(let* ([p (unbox ebox)]
-						       [wlen (- p start)])
-						  (cond
-						   [(or (zero? len) (< (+ len wlen) 72))
-						    (loop p (+ len wlen) end)]
-						   [(char=? #\space (send edit get-character start))
-						    (send edit insert line-break start (add1 start))
-						    (loop (+ p slp-len) (+ wlen -1 slp-len) 
-							  (+ slp-len end))]
-						   [else
-						    (send edit insert line-break start)
-						    (loop (+ p 1 slp-len) (+ wlen slp-len)
-							  (+ end 1 slp-len))]))))))))))
-			      (loop (add1 end-l))))
-			(loop (sub1 start-l))))))
+		(let* ([p (max start-min (send edit get-start-position))]
+                       [min-line (send edit position-paragraph start-min)]
+                       [end-line (send edit position-paragraph p)])
+                  ;; Find start and end lines that form a paragraph:
+                  (let* ([start-l
+                          (let loop ([start-l end-line])
+                            (if (or (<= start-l min-line)
+                                    (= (send edit paragraph-start-position start-l)
+                                       (add1 (send edit paragraph-start-position (sub1 start-l)))))
+                                start-l
+                                (loop (sub1 start-l))))]
+                         [end-l
+                          (let loop ([end-l start-l])
+                            (if (or (= end-l (send edit last-paragraph))
+                                    (= (send edit paragraph-end-position end-l)
+                                       (sub1 (send edit paragraph-end-position (add1 end-l)))))
+                                end-l
+                                (loop (add1 end-l))))])
+                    ;; Remember start and end positions, and determine the paragraph prefix:
+                    (let ([orig-start (send edit paragraph-start-position start-l)]
+                          [end (send edit paragraph-end-position end-l)]
+                          [second-line-prefix
+                           (if (= start-l end-l)
+                               ""
+                               (let ([p (send edit paragraph-start-position (add1 start-l))])
+                                 (let loop ([pe p])
+                                   (case (send edit get-character pe)
+                                     [(#\space #\tab #\>) (loop (add1 pe))]
+                                     [else (send edit get-text p pe)]))))])
+                      ;; Adjust starting position by skipping spaces on the first line:
+                      (let ([start
+                             (let ([start-end (send edit paragraph-end-position start-l)])
+                               (let loop ([start orig-start])
+                                     (cond
+                                      [(= start-end start) orig-start]
+                                      [(memq (send edit get-character start) '(#\space #\tab))
+                                       (loop (add1 start))]
+                                      [else start])))])
+                        ;; Remove all line breaks, double spaces, tabs, and prefixes,
+                        ;;  producing a revised start and end position:
+                        (let-values ([(start end)
+                                      (let loop ([start start]
+                                                 [end end]
+                                                 ;; l is the list of patterns to delete:
+                                                 [l (list (string-append (string #\newline)
+                                                                         second-line-prefix)
+                                                          (string #\newline)
+                                                          (string #\tab)
+                                                          (string #\space #\space))])
+                                        ;; Look for the first thing in l:
+                                        (let ([p (send edit find-string (car l)
+                                                       'forward start end)])
+                                          (if (or p (pair? (cdr l)))
+                                              (if p
+                                                  ;; Found an instance; replace it with a single space,
+                                                  ;;  and look again
+                                                  (let ([len (string-length (car l))])
+                                                    (send edit insert " " p (+ p len))
+                                                    (loop start (- end len -1) l))
+                                                  ;; Didn't find an instance; start looking for the
+                                                  ;;  next thing in our list
+                                                  (loop start end (cdr l)))
+                                              ;; Nothing else to find, so we're done removing things
+                                              (values start end))))])
+                          ;; At this point the paragraph should be on a single line.
+                          ;; Insert good line breaks to wrap the paragraph:
+                          (let ([line-break (string-append (string #\newline)
+                                                           second-line-prefix)]
+                                [slp-len (string-length second-line-prefix)])
+                            (let loop ([start start]
+                                       [len (- start orig-start)]
+                                       ;; Actually, remove ending space before we start:
+                                       [end (if (or (= end start)
+                                                    (not (char=?
+                                                          #\space
+                                                          (send edit get-character 
+                                                                (sub1 end)))))
+                                                end
+                                                (begin
+                                                  (send edit delete (sub1 end) end)
+                                                  (sub1 end)))])
+                              (unless (>= start end)
+                                ;; Find end of the current word:
+                                (let ([ebox (box start)])
+                                  (send edit find-wordbreak #f ebox 'line)
+                                  (let* ([p (unbox ebox)]
+                                         [wlen (- p start)])
+                                    (cond
+                                     ;; If it's the first word on the line, or if it fits,
+                                     ;; no line break
+                                     [(or (zero? len) (< (+ len wlen) 72))
+                                      (loop p (+ len wlen) end)]
+                                     ;; If the next thing is a space, then replace the space with a
+                                     ;; newline and prefix
+                                     [(char=? #\space (send edit get-character start))
+                                      (send edit insert line-break start (add1 start))
+                                      (loop (+ p slp-len) (+ wlen -1 slp-len) 
+                                            (+ slp-len end))]
+                                     ;; Otherwise, insert a newline and prefix
+                                     [else
+                                      (send edit insert line-break start)
+                                      (loop (+ p 1 slp-len) (+ wlen slp-len)
+                                            (+ end 1 slp-len))]))))))))))))
 	      (lambda () 
 		(send edit end-edit-sequence)
 		(send edit set-wordbreak-map wbm)))
