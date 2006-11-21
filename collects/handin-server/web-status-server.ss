@@ -58,9 +58,10 @@
       (let ([file (make-temporary-file)])
         (with-output-to-file file (lambda () (write config)) 'truncate)
         (begin0 (load-configuration file) (delete-file file))))
-    #; ; This is not working yet
+    #; ; This is working now
     (define config@
-      (load-configuration-sexpr config
+      (load-configuration-sexpr 
+       web-dir config
         #:make-servlet-namespace
         (make-make-servlet-namespace
          #:to-be-copied-module-specs
