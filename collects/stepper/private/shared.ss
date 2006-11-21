@@ -21,18 +21,18 @@
         (and (syntax? v) 
              ((flat-contract-predicate (cons/c identifier? arglist?)) (syntax-e v)))))
   
-  (provide/contract
-   ;[varref-set-remove-bindings (-> varref-set? varref-set? varref-set?)]
-   ;[binding-set-varref-set-intersect (-> binding-set? varref-set? binding-set?)]
-   ;[binding-set-union (-> (listof binding-set?) binding-set?)]
-   ;[varref-set-union (-> (listof varref-set?) varref-set?)]
-   #;[skipto/auto (syntax? (symbols 'rebuild 'discard) (syntax? . -> . syntax?) . -> . syntax?)]
-   #;[in-closure-table (-> any/c boolean?)]
-   #;[sublist (-> number? number? list? list?)]
-   #;[attach-info (-> syntax? syntax? syntax?)]
-   #;[transfer-info (-> syntax? syntax? syntax?)]
-   #;[arglist->ilist (-> arglist? any)]
-   #;[arglist-flatten (-> arglist? (listof identifier?))])
+  #;(provide/contract
+   [varref-set-remove-bindings (-> varref-set? varref-set? varref-set?)]
+   [binding-set-varref-set-intersect (-> binding-set? varref-set? binding-set?)]
+   [binding-set-union (-> (listof binding-set?) binding-set?)]
+   [varref-set-union (-> (listof varref-set?) varref-set?)]
+   [skipto/auto (syntax? (symbols 'rebuild 'discard) (syntax? . -> . syntax?) . -> . syntax?)]
+   [in-closure-table (-> any/c boolean?)]
+   [sublist (-> number? number? list? list?)]
+   [attach-info (-> syntax? syntax? syntax?)]
+   [transfer-info (-> syntax? syntax? syntax?)]
+   [arglist->ilist (-> arglist? any)]
+   [arglist-flatten (-> arglist? (listof identifier?))])
   
   (provide
    skipto/auto
@@ -66,6 +66,7 @@
    closure-table-lookup
    get-lifted-var
    get-arg-var
+   begin0-temp
    zip
    let-counter
    syntax-pair-map
@@ -174,6 +175,7 @@
 ;                 (eq? arg2 arg2p)
 ;                 (not (eq? arg1 arg2p)))))
 
+  (define begin0-temp (create-bogus-binding "begin0-temp"))
   
   ; get-lifted-var maintains the mapping between let-bindings and the syntax object
   ; which is used to capture its index at runtime.

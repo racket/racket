@@ -452,6 +452,7 @@
                     [wcm-break-wrap (lambda (debug-info exp)
                                       (outer-wcm-wrap debug-info (break-wrap exp)))]
                     
+                    ;; used for things that are values:
                     [normal-bundle
                      (lambda (free-vars annotated)
                        (2vals (outer-wcm-wrap (make-debug-info-normal free-vars)
@@ -573,6 +574,9 @@
                     ;  and confused the heck out of me for some time today.  Bleah.  I'm just going to 
                     ;  do the whole expansion here. Also, I'm going to make this expansion call/cc-clean, 
                     ;  because I think it'll actually be easier to state & read this way.
+                    
+                    ; 2006-11: appears to work now.  I'm about to try to transfer this new idiom to begin0;
+                    ;  wish me luck.
                     
                     
                     [let-abstraction
@@ -702,14 +706,21 @@
                          free-varrefs)))]
                     
                     
-                    ;                                       :@@$ 
-                    ;                                       @:   
-                    ;  @@@ @@@  $@$:  @@-$+  @@-$+  -@@$   @@@@@ 
-                    ;   $   $     -@   @$ :   @$ :  $  -$   @    
-                    ;   +: ++  -$@$@   @      @     @@@@@   @    
-                    ;    $ $   $*  @   @      @     $       @    
-                    ;    $:+   @- *@   @      @     +:      @    
-                    ;    :@    -$$-@@ @@@@@  @@@@@   $@@+  @@@@@ 
+
+                    ;                                            
+                    ;                                            
+                    ;                                        ;;; 
+                    ;                                       ;    
+                    ;                                       ;    
+                    ;   ;   ;   ;;;;  ; ;;;  ; ;;;   ;;;  ;;;;;; 
+                    ;   ;   ;  ;   ;  ;;  ;  ;;  ;  ;   ;   ;    
+                    ;    ; ;   ;   ;  ;      ;      ;;;;;   ;    
+                    ;    ; ;   ;   ;  ;      ;      ;       ;    
+                    ;    ; ;   ;  ;;  ;      ;      ;       ;    
+                    ;     ;     ;; ;  ;      ;       ;;;;   ;    
+                    ;                                            
+                    ;                                            
+                    ;                                            
                     
                     
                     [varref-abstraction
@@ -822,7 +833,45 @@
                     ;                 ;;;;                       
                     ;                                            
                     
-                    [(begin0 . bodies-stx)
+                    ;; one-element begin0 is a special case, because in this case only
+                    ;; the body of the begin0 is in tail position.
+                    
+                    [(begin0 body)
+                     (let*-2vals ([(annotated-body free-vars-body) 
+                                   (tail-recur #'body)])
+                       (2vals (wcm-break-wrap (make-debug-info-normal free-vars-body)
+                                              (quasisyntax/loc exp (begin0 #,annotated-body)))
+                              free-vars-body))]
+                    
+                    #;(let unroll-loop ([bodies-list bodies-list] [outermost? #t])
+                                  (cond [(null? bodies-list)
+                                         (error 'annotate "no bodies in let")]
+                                        [(null? (cdr bodies-list))
+                                         (tail-recur (car bodies-list))]
+                                        [else
+                                         (let*-2vals
+                                          ([(rest free-vars-rest) (unroll-loop (cdr bodies-list) #f)]
+                                           [(this-one free-vars-this) (non-tail-recur (car bodies-list))]
+                                           [free-vars-all (varref-set-union (list free-vars-rest free-vars-this))]
+                                           [debug-info (make-debug-info-fake-exp 
+                                                        #`(begin #,@bodies-list)
+                                                        free-vars-all)]
+                                           [begin-form #`(begin #,(normal-break/values-wrap this-one) #,rest)])
+                                          (2vals (if outermost?
+                                                     (wcm-wrap debug-info begin-form)
+                                                     (wcm-pre-break-wrap debug-info begin-form))
+                                                 free-vars-all))]))
+                    
+                    #;[(begin0 first-body . bodies-stx)
+                     (let*-2vals ([(annotated-first free-vars-first) (result-recur first-body)])
+                       #`(let ([,begin0-temp #,annotated-first])
+                           #,unrolled-rest))
+                     (let unroll-loop ([bodies-list (syntax->list #`(first-body . bodies-stx))] [outermost? #t])
+                       (cond [(null? bodies-list)
+                              (error 'annotate "this case should have been handled by the zero-body annotation")]
+                             [(null? (cdr bodies-list))
+                              (let*-2vals
+                                  ([(this-one free-vars-this) (non-tail-recur)]))]))
                      (let*-2vals
                       ([bodies (syntax->list (syntax bodies-stx))]
                        [(annotated-first free-varrefs-first)
@@ -832,13 +881,22 @@
                       (normal-bundle (varref-set-union (cons free-varrefs-first free-varref-sets))
                                      (quasisyntax/loc exp (begin0 #,annotated-first #,@annotated-bodies))))]
                     
-                    ;; special case for the expansion of begin.
-                    ;; more efficient, but disabled because of difficulties in threading it through the 
-                    ;; reconstruction.  Easier to undo in the macro-unwind phase.
-                    #;[(let-values () . bodies-stx)
-                     (eq? (stepper-syntax-property exp 'stepper-hint) 'comes-from-begin)
-                     (begin-abstraction (syntax->list #`bodies-stx))]
                     
+                    
+                    ;                                                                        
+                    ;                                                                        
+                    ;  ;;;                                       ;;;                         
+                    ;    ;              ;                          ;                         
+                    ;    ;              ;                          ;                         
+                    ;    ;      ;;;   ;;;;;         ;   ;   ;;;;   ;     ;   ;   ;;;    ;;;  
+                    ;    ;     ;   ;    ;           ;   ;  ;   ;   ;     ;   ;  ;   ;  ;   ; 
+                    ;    ;     ;;;;;    ;    ;;;;;   ; ;   ;   ;   ;     ;   ;  ;;;;;   ;;   
+                    ;    ;     ;        ;            ; ;   ;   ;   ;     ;   ;  ;         ;  
+                    ;    ;     ;        ;            ; ;   ;  ;;   ;     ;  ;;  ;      ;   ; 
+                    ;    ;;;    ;;;;     ;;           ;     ;; ;   ;;;    ;; ;   ;;;;   ;;;  
+                    ;                                                                        
+                    ;                                                                        
+                    ;                                                                        
                     [(let-values . _)
                      (let-abstraction exp 
                                           #`let-values

@@ -772,44 +772,21 @@
                                             ;; advanced-begin : okay, here comes advanced-begin.
                                             
                                             [(begin . terms)
-                                             ;; copied from app:
-                                             (error 'reconstruct/inner "how did we get here?")
-                                             
-                                             #;(attach-info
-                                                (let* ([sub-exprs (syntax->list (syntax terms))]
-                                                       [arg-temps (build-list (length sub-exprs) get-arg-var)]
-                                                       [arg-vals (map (lambda (arg-temp) 
-                                                                        (lookup-binding mark-list arg-temp))
-                                                                      arg-temps)])
-                                                  (case (mark-label (car mark-list))
-                                                    ((not-yet-called)
-                                                     (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
-                                                                                                       (zip sub-exprs arg-vals))]
-                                                                  [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
-                                                                 (if (null? unevaluated)
-                                                                     #`(#%app . #,rectified-evaluated)
-                                                                     #`(#%app 
-                                                                        #,@rectified-evaluated
-                                                                        #,so-far 
-                                                                        #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
-                                                    ((called)
-                                                     (if (eq? so-far nothing-so-far)
-                                                         (datum->syntax-object #'here `(,#'#%app ...)) ; in unannotated code
-                                                         (datum->syntax-object #'here `(,#'#%app ... ,so-far ...))))
-                                                    (else
-                                                     (error "bad label in application mark in expr: ~a" exp))))
-                                                exp)]
+                                             ;; even in advanced, begin expands into a let-values.
+                                             (error 'reconstruct/inner "begin in non-teaching-languages not implemented in reconstruct")]
                                             
                                             ; begin : in the current expansion of begin, there are only two-element begin's, one-element begins, and 
                                             ;; zero-element begins; these arise as the expansion of ... ?
                                             
-                                            [(begin stx-a stx-b)
+                                            ;; these are all dead code, right?
+                                            
+                                            #;[(begin stx-a stx-b)
                                              (attach-info 
                                               (if (eq? so-far nothing-so-far)
                                                   #`(begin #,(recon-source-current-marks #`stx-a) #,(recon-source-current-marks #`stx-b))
                                                   #`(begin #,so-far #,(recon-source-current-marks #`stx-b))))]
                                             
-                                            [(begin clause)
+                                            #;[(begin clause)
                                              (attach-info
                                               (if (eq? so-far nothing-so-far)
                                                   #`(begin #,(recon-source-current-marks (syntax clause)))
@@ -818,7 +795,7 @@
                                                    "stepper:reconstruct: one-clause begin appeared as context: ~a" (syntax-object->datum exp)))
                                               exp)]
                                             
-                                            [(begin)
+                                            #;[(begin)
                                              (attach-info
                                               (if (eq? so-far nothing-so-far)
                                                   #`(begin)
@@ -826,8 +803,13 @@
                                                    'recon-inner
                                                    "stepper-reconstruct: zero-clause begin appeared as context: ~a" (syntax-object->datum exp))))]
                                             
-                                            ; begin0 : may not occur directly except in advanced
-                                            #;[(begin0  )]
+                                            ; begin0 : 
+                                            ;; one-body begin0: perhaps this will turn out to be a special case of the
+                                            ;; many-body case.
+                                            [(begin0 body)
+                                             (if (eq? so-far nothing-so-far)
+                                                 (recon-source-current-marks exp)
+                                                 (error 'recon-inner "one-body begin0 given as context: ~a" exp))]
                                             
                                             ; let-values
                                             
