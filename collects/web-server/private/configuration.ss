@@ -222,6 +222,7 @@
   
   (provide ; XXX contract
    build-configuration
+   apply-default-functions-to-host-table
    make-make-servlet-namespace)
   (provide/contract
    [complete-configuration (path-string? configuration-table? . -> . configuration?)]

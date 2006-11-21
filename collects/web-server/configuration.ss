@@ -21,13 +21,17 @@
   (define (load-configuration table-file-name)
     (complete-configuration (directory-part table-file-name) (get-configuration table-file-name)))
   
-  ; load-configuration-sexpr : sexp -> configuration
-  (define/kw (load-configuration-sexpr sexpr
+  ; load-configuration-sexpr : string? sexp -> configuration
+  (define/kw (load-configuration-sexpr web-server-root sexpr
                                        #:other-keys bct-keys)                                       
-    (define table (parse-configuration-table sexpr))
+    (define table 
+      (parse-configuration-table sexpr))
+    (define default-host
+      (apply-default-functions-to-host-table 
+       web-server-root 
+       (configuration-table-default-host table)))
     (apply build-configuration table
-           (lambda (host)
-             (configuration-table-default-host table))
+           (lambda (host) default-host)
            bct-keys))
   
   ; load-developer-configuration : path -> configuration
@@ -64,6 +68,9 @@
       (export (open (config : web-config/pervasive^))
               (open (new-config : web-config/local^)))))
   
+  (provide ; XXX contract
+   make-make-servlet-namespace
+   load-configuration-sexpr)
   (provide/contract
    [complete-configuration (path-string? configuration-table? . -> . configuration?)]
    [get-configuration (path-string? . -> . configuration-table?)]
@@ -71,6 +78,5 @@
    [build-developer-configuration (list? . -> . configuration?)]
    [default-configuration-table-path path?]
    [update-configuration (configuration? (listof (cons/c symbol? any/c)) . -> . configuration?)]
-   [load-configuration-sexpr (list? . -> . configuration?)]
    [load-configuration (path-string? . -> . configuration?)]
    [load-developer-configuration (path-string? . -> . configuration?)]))
