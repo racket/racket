@@ -85,10 +85,7 @@ _toplevel.ss_: helper for moduleless compilation and expansion
   expressions.)
 
   The `stx' should have a context already, possibly introduced with
-  `namespacae-introduce-syntax'.
-
-  The `stx' argument need not have a context already; a context is
-  supplied with `namespace-introduce-syntax'.
+  `namespace-introduce-syntax'.
 
 > (expand-top-level-with-compile-time-evals stx) - like
   `expand-syntax-top-level-with-compile-time-evals', but `stx' is
