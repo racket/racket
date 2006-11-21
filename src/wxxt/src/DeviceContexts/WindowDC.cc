@@ -2156,11 +2156,10 @@ static unsigned int *convert_to_drawable_format(const char *s, int ds, long *_ul
   if (isUnicode) {
     us = (unsigned int *)s;
     if (ulen < 0) {
-      ulen = 0;
       for (ulen = ds; us[ulen]; ulen++) {
       }
+      ulen -= ds;
     }
-    ulen -= ds;
     if (ds) {
       if (ulen <= bufsize)
 	us = buf;
