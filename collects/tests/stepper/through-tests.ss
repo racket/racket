@@ -1495,38 +1495,38 @@ exec mred -u "$0" "$@"
   
   (t1 trivial-begin0
      (test-advanced-sequence "(begin0 3)"
-      `((before-after-step ((hilite (begin0 3)))
+      `((before-after ((hilite (begin0 3)))
                            ((hilite 3)))
         (finished-stepping))))
   
   ;; urg... the first element of a begin0 is in tail position if there's only one.
   (t1 one-item-begin0
      (test-advanced-sequence "(begin0 (+ 3 4))"
-       `((before-after-step ((hilite (begin0 (+ 3 4))))
+       `((before-after ((hilite (begin0 (+ 3 4))))
                             ((hilite (+ 3 4))))
-         (before-after-step ((hilite (+ 3 4)))
+         (before-after ((hilite (+ 3 4)))
                             ((hilite 7)))
          (finished-stepping))))
   
   (t1 begin0-onlyvalues
      (test-advanced-sequence "(begin0 3 4 5)"
-      `((before-after-step ((hilite (begin0 3 4 5)))
+      `((before-after ((hilite (begin0 3 4 5)))
                            ((hilite (begin0 3 5))))
-        (before-after-step ((hilite (begin0 3 5)))
+        (before-after ((hilite (begin0 3 5)))
                            ((hilite 3)))
         (finished-stepping))))
   
   (t1 begin0
       (test-advanced-sequence "(begin0 (+ 3 4) (+ 4 5) (+ 6 7))"
-       `((before-after-step ((begin0 (hilite (+ 3 4)) (+ 4 5) (+ 6 7)))
+       `((before-after ((begin0 (hilite (+ 3 4)) (+ 4 5) (+ 6 7)))
                             ((begin0 (hilite 7) (+ 4 5) (+ 6 7))))
-         (before-after-step ((begin0 7 (hilite (+ 4 5)) (+ 6 7)))
+         (before-after ((begin0 7 (hilite (+ 4 5)) (+ 6 7)))
                             ((begin0 7 (hilite 9) (+ 6 7))))
-         (before-after-step ((hilite (begin0 7 9 (+ 6 7))))
+         (before-after ((hilite (begin0 7 9 (+ 6 7))))
                             ((hilite (begin0 7 (+ 6 7)))))
-         (before-after-step ((begin0 7 (hilite (+ 6 7))))
+         (before-after ((begin0 7 (hilite (+ 6 7))))
                             ((begin0 7 (hilite 13))))
-         (before-after-step ((hilite (begin0 7 13)))
+         (before-after ((hilite (begin0 7 13)))
                             ((hilite 7))))))
   
 
@@ -1561,7 +1561,7 @@ exec mred -u "$0" "$@"
       "(define (f2c x) x) (convert-gui f2c)" `() ; placeholder
       ))
 
-  #;(run-tests '(recur))
+  #;(run-tests '(begin0-onlyvalues))
   (run-all-tests)
 
   )
