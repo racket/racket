@@ -53,8 +53,8 @@ default.  The `instrumenting-enabled' parameter affects only the way
 that source code is compiled, not the way that exception information
 is reported.
 
-> (instrumenting-enabled) - returns #t if error tracing instrumentation is
-  enabled, #f otherwise
+> (instrumenting-enabled) - returns #t if error tracing
+  instrumentation is enabled, #f otherwise
 > (instrumenting-enabled on?) - enables/disables error tracing
   instrumentation
 
@@ -162,32 +162,51 @@ Clears accumulated profile results.
 Coverage
 --------
 
-Errortrace can track expression execution that is useful for checking
-test coverage (i.e., simple expression coverage).  Enable coverage
-checking with the `execute-counts-enabled' boolean parameter (but
-setting `instrumentation-enabled' to #f also disables execute
-counting):
+Errortrace can produce coverage information in two flavors: both count
+the number of times each expression in the source was used during
+execution.  The first flavor uses a simple approach, where each
+expression is counted when executed; the second one uses the same
+annotations that the profiler uses, so only function bodies are
+counted.  To see the difference between the two approaches, try this
+program:
 
-> (execute-counts-enabled) - returns #t if execute-counting
-  instrumentation is enabled, #f otherwise
-> (execute-counts-enabled on?) - enables/disables execute-counting
-  instrumentation
+  (define (foo x) (if x 1 2))
+  (equal? (foo #t) 1)
 
-> (get-execute-counts) - returns a list of pairs, one for each
-  instrumented expression.  The first element of the pair is a syntax
-  object (usually containing source location information) for the
-  original expression, and the second element of the pair is the
-  number of times that the expression has been evaluated.  These
-  elements are destructively modified, so to take a snapshot you will
-  need to copy them.
+The first approach will produce exact results, but it is more
+expensive; use it when you want to know how covered your code is (when
+the expected counts are small).  The second approach produces coarser
+results (which, in the above case, will miss the `2' expression), but
+is less expensive; use it when you want to use the counts for
+profiling (when the expected counts are large).
 
-> (annotate-executed-file filename-path) - writes the named file to
-  the current output port, inserting an additional line between each
-  source line to reflect execution counts (as reported by
-  `get-execute-counts').  An expression underlined with "^" has been
-  executed 0 times; an expression underlined with "." has been
-  executed 1 time; and an expression underlined with "," has been
-  executed multiple times.
+> (coverage-counts-enabled [on?])
+> (execute-counts-enabled  [on?])
+  parameters that determine if the first (exact coverage) or second
+  (profiler-based coverage) are enabled.  (Remember that setting
+  `instrumentation-enabled' to #f also disables both)
+
+> (get-coverage-counts)
+> (get-execute-counts)
+  returns a list of pairs, one for each instrumented expression.  The
+  first element of the pair is a syntax object (usually containing
+  source location information) for the original expression, and the
+  second element of the pair is the number of times that the
+  expression has been evaluated.  These elements are destructively
+  modified, so to take a snapshot you will need to copy them.
+
+> (annotate-covered-file filename-path  [display-string])
+> (annotate-executed-file filename-path [display-string])
+  writes the named file to the current output port, inserting an
+  additional line between each source line to reflect execution counts
+  (as reported by `get-coverage-counts' or `get-execute-counts').  The
+  optional display string is used for the annotation: the first
+  character is used for expressions that were visited 0 times, the
+  second character for 1 time, ..., and the last character for
+  expressions that were visited more times.  It can also be #t for a
+  maximal display ("012...9ABC...Z"), #f for a minimal display
+  ("#-").  The default for `annotate-covered-file' is #f, and the
+  default for `annotate-executed-file' is "^.,".
 
 _Re-using errortrace handlers_
 -----------------------------------

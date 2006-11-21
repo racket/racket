@@ -19,7 +19,11 @@
 
            execute-counts-enabled
            get-execute-counts
-           annotate-executed-file)
+           annotate-executed-file
+
+           coverage-counts-enabled
+           get-coverage-counts
+           annotate-covered-file)
 
   (current-compile errortrace-compile-handler)
   (error-display-handler errortrace-error-display-handler)

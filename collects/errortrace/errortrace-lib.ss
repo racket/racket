@@ -15,11 +15,18 @@
   (define test-coverage-info (make-hash-table))
 
   (define (initialize-test-coverage-point key expr)
-    (hash-table-put! test-coverage-info key (list #f expr)))
+    (hash-table-put! test-coverage-info key (cons expr 0)))
 
   (define (test-covered key)
     (let ([v (hash-table-get test-coverage-info key)])
-      (set-car! v #t)))
+      (set-cdr! v (add1 (cdr v)))))
+
+  (define (get-coverage-counts)
+    (hash-table-map test-coverage-info (lambda (k v) v)))
+
+  (define (annotate-covered-file name . more)
+    (apply annotate-file name (get-coverage-counts)
+           (if (null? more) '(#f) more)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Profiling run-time support
@@ -145,55 +152,81 @@
   (define (get-execute-counts)
     (hash-table-map execute-info (lambda (k v) v)))
 
-  (define (annotate-executed-file name)
+  (define (annotate-executed-file name . more)
+    (apply annotate-file name (get-execute-counts)
+           (if (null? more) '("^.,") more)))
+
+  ;; shared functionality for annotate-executed-file and annotate-covered-file
+  (define (annotate-file name counts display-string)
     (let ([name (path->complete-path name (current-directory))])
-      (let ([here (filter (lambda (s)
-                            (and (equal? name (syntax-source (car s)))
-                                 (syntax-position (car s))))
-                          (get-execute-counts))])
-        (let ([sorted
-               (sort
-                here
-                (lambda (a b)
-                  (let ([ap (syntax-position (car a))]
-                        [bp (syntax-position (car b))])
-                    (or (< ap bp) ; earlier first
-                        (and (= ap bp)
-                             (let ([as (syntax-span (car a))]
-                                   [bs (syntax-span (car b))])
-                               (or (> as bs) ; wider first at same pos
-                                   (and (= as bs)
-                                        ;; less called for same region last
-                                        (> (cdr a) (cdr b))))))))))]
-              [pic (make-string (file-size name) #\space)])
-          ;; fill out picture:
-          (for-each (lambda (s)
-                      (let ([pos (sub1 (syntax-position (car s)))]
-                            [span (syntax-span (car s))]
-                            [key (case (cdr s) [(0) #\^] [(1) #\.] [else #\,])])
-                        (let loop ([p pos])
-                          (unless (= p (+ pos span))
-                            (string-set! pic p key)
-                            (loop (add1 p))))))
-                    sorted)
-          ;; Write annotated file
-          (with-input-from-file name
-            (lambda ()
-              (let loop ()
-                (let ([pos (file-position (current-input-port))]
-                      [line (read-line (current-input-port) 'any)])
-                  (unless (eof-object? line)
-                    (printf "~a~n" line)
-                    (let ([w (string-length line)])
-                      ;; Blank out leading spaces in pic:
-                      (let loop ([i 0])
-                        (cond
-                         [(and (< i w)
-                               (char-whitespace? (string-ref line i)))
-                          (string-set! pic (+ pos i) (string-ref line i))
-                          (loop (add1 i))]))
-                      (printf "~a~n" (substring pic pos (+ pos w))))
-                    (loop))))))))))
+      (let* (;; Filter relevant syntaxes
+             [here (filter (lambda (s)
+                             (and (equal? name (syntax-source (car s)))
+                                  (syntax-position (car s))))
+                           counts)]
+             ;; Sort them: earlier first, wider if in same position
+             [sorted (sort here
+                           (lambda (a b)
+                             (let ([ap (syntax-position (car a))]
+                                   [bp (syntax-position (car b))])
+                               (or (< ap bp)
+                                   (and (= ap bp)
+                                        (> (syntax-span (car a))
+                                           (syntax-span (car b))))))))]
+             ;; Merge entries with the same position+span
+             [sorted (if (null? sorted)
+                       sorted ; guarantee one element for the next case
+                       (let loop ([xs (reverse! sorted)] [r '()])
+                         (cond [(null? (cdr xs)) (append xs r)]
+                               [(and (= (syntax-position (caar xs))
+                                        (syntax-position (caadr xs)))
+                                     (= (syntax-span (caar xs))
+                                        (syntax-span (caadr xs))))
+                                ;; doesn't matter which syntax object is kept,
+                                ;; we only care about its position+span
+                                (loop (cons (cons (caar xs)
+                                                  (max (cdar xs) (cdadr xs)))
+                                            (cddr xs))
+                                      r)]
+                               [else (loop (cdr xs) (cons (car xs) r))])))]
+             [pic (make-string (file-size name) #\space)]
+             [display-string
+              (case display-string
+                [(#t) "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"]
+                [(#f) "#-"]
+                [else display-string])]
+             [many-char (string-ref display-string
+                                    (sub1 (string-length display-string)))])
+        ;; Fill out picture
+        (for-each (lambda (s)
+                    (let ([pos (sub1 (syntax-position (car s)))]
+                          [span (syntax-span (car s))]
+                          [key (let ([k (cdr s)])
+                                 (if (< k (string-length display-string))
+                                   (string-ref display-string k)
+                                   many-char))])
+                      (let loop ([p pos])
+                        (unless (= p (+ pos span))
+                          (string-set! pic p key)
+                          (loop (add1 p))))))
+                  sorted)
+        ;; Write annotated file
+        (with-input-from-file name
+          (lambda ()
+            (let loop ()
+              (let ([pos (file-position (current-input-port))]
+                    [line (read-line (current-input-port) 'any)])
+                (unless (eof-object? line)
+                  (printf "~a\n" line)
+                  (let ([w (string-length line)])
+                    ;; Blank leading spaces in pic (copy them: works for tabs)
+                    (let loop ([i 0])
+                      (when (and (< i w)
+                                 (char-whitespace? (string-ref line i)))
+                        (string-set! pic (+ pos i) (string-ref line i))
+                        (loop (add1 i))))
+                    (printf "~a\n" (substring pic pos (+ pos w))))
+                  (loop)))))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Eval handler, exception handler
@@ -350,5 +383,9 @@
            get-execute-counts
            annotate-executed-file
 
-           annotate-top))
+           ;; use names that are consistent with the above
+           (rename test-coverage-enabled coverage-counts-enabled)
+           get-coverage-counts
+           annotate-covered-file
 
+           annotate-top))
