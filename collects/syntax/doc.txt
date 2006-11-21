@@ -73,7 +73,7 @@ _kerncase.ss_: matching fully-expanded expressions
 _toplevel.ss_: helper for moduleless compilation and expansion
 ======================================================================
 
-> (expand-top-level-with-compile-time-evals stx) - expands `stx' as
+> (expand-syntax-top-level-with-compile-time-evals stx) - expands `stx' as
   a top-level expression, and evaluates its compile-time portion for
   the benefit of later expansions.
 
@@ -84,25 +84,27 @@ _toplevel.ss_: helper for moduleless compilation and expansion
   expanding a `begin' is the same as expanding separate top-level
   expressions.)
 
-  The `stx' argument should have a context already, possibly
-  introduced with `namespacae-introduce-syntax'.
-
-> (expand-top-level-with-compile-time-evals/flatten stx) - 
-  Just like expand-top-level-with-compile-time-evals,
-  except that it returns a list of syntax objects, none of
-  which have a begin. These syntax objects are the
-  flattened out contents of any begins in `stx'.
-
-> (expand-syntax-top-level-with-compile-time-evals stx)
-  Like `expand-top-level-with-compile-time-evals', but `stx' should
-  have a context already, possibly introduced with
+  The `stx' should have a context already, possibly introduced with
   `namespacae-introduce-syntax'.
+
+  The `stx' argument need not have a context already; a context is
+  supplied with `namespace-introduce-syntax'.
+
+> (expand-top-level-with-compile-time-evals stx) - like
+  `expand-syntax-top-level-with-compile-time-evals', but `stx' is
+  first given context by applying `namespace-introduce-syntax' to it.
+
+> (expand-top-level-with-compile-time-evals/flatten stx) - like
+  `expand-syntax-top-level-with-compile-time-evals', except that it
+  returns a list of syntax objects, none of which have a
+  `begin'. These syntax objects are the flattened out contents of any
+  `begin's in the expansion of `stx'.
 
 > (eval-compile-time-part-of-top-level stx) - evaluates
   expansion-time code in the fully expanded top-level expression
-  represented by `stx (or a part of it, in the case of `begin'
+  represented by `stx' (or a part of it, in the case of `begin'
   expressions). The expansion-time code might affect the compilation
-  of later top-level expressions. For example, if `stx is a
+  of later top-level expressions. For example, if `stx' is a
   `require' expression, then `namespace-require/expansion-time' is
   used on each require specification in the form. Normally, this
   function is used only by `expand-top-level-with-compile-time-evals'.
