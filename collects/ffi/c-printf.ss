@@ -19,8 +19,8 @@
   (define itypes
     (cons _string
           (map (lambda (x)
-                 (cond [(integer? x) _int]
-                       [(and (number? x) (not (complex? x)))  _double*]
+                 (cond [(and (integer? x) (exact? x)) _int]
+                       [(and (number? x) (real? x))   _double*]
                        [(string? x)  _string]
                        [(bytes? x)   _bytes]
                        [(symbol? x)  _symbol]
