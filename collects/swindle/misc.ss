@@ -9,7 +9,7 @@
 (provide (all-from (lib "list.ss")))
 (require (lib "etc.ss"))
 (provide (all-from (lib "etc.ss")))
-(require (all-except (lib "string.ss") regexp-quote))
+(require (all-except (lib "string.ss")))
 (provide (all-from (lib "string.ss")))
 
 ;; ----------------------------------------------------------------------------
@@ -590,12 +590,6 @@
                 (or (null? l) (if (memq '() rest) #t #f)
                     (and (apply pred? (car l) (map car rest))
                          (mapf (cdr l) (map cdr rest)))))]))
-
-;;>> (regexp-quote string)
-;;>   The same as `regexp-quote' from mzlib/string, but faster.
-(define* regexp-quote
-  (let ([re (regexp "[][*?+|().\\$^-]")])
-    (lambda (s) (regexp-replace* re s "\\\\&"))))
 
 ;;>> (with-output-to-string thunk)
 ;;>   Run `thunk' collecting generated output into a string.
