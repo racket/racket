@@ -96,4 +96,46 @@
   (test '(#"here's " #" " #"u" #"k") regexp-split "[abc]" s 0 #f)
   (test eof read-char s))
 
+(let ([g->re-test
+       (lambda (glob . more)
+         (let ([re (apply glob->regexp glob more)])
+           (lambda xs
+             (let loop ([xs xs] [res 'unspecified])
+               (when (pair? xs)
+                 (loop (cdr xs)
+                       (if (boolean? (car xs))
+                         (car xs)
+                         (begin (test res regexp-match? re (car xs))
+                                res))))))))])
+  ((g->re-test "foo*bar" #t #t)
+   #t "foobar" "foo-bar" "foo--bar"
+   #f "fobar" "foo-barr" "ffoo-bar" ".foobar")
+  ((g->re-test "*foo-bar" #t #t)
+   #f "foobar" "foo-barr"
+   #t "foo-bar" "-foo-bar" "foo-foo-bar" "foo-bar-foo-bar" "f.foo-bar"
+   #f ".foo-bar" ".foo-foo-bar")
+  ((g->re-test "[ab]*foo-bar" #t #t)
+   #f "foobar" "foo-barr" "foo-bar"
+   #t "afoo-bar" "b-foo-bar" "a-foo-foo-bar" "b.foo-bar"
+   #f ".afoo-bar" ".b-foo-bar")
+  ((g->re-test "[.]foo-bar" #t #t)
+   #f "foobar" "foo-barr" "foo-bar" "-foo-bar" ".foo-bar")
+  ((g->re-test "foo*bar" #t #f)
+   #t "fOobAr" "Foo-Bar" "foO--baR"
+   #f "FoBar" "fOO-baRR" "FFoo-bar" ".foobar")
+  ((g->re-test "foo*bar" #f #t)
+   #t "foobar" "foo-bar" "foo--bar"
+   #f "fobar" "foo-barr" "ffoo-bar" ".foobar")
+  ((g->re-test "*foo-bar" #f #t)
+   #f "foobar" "foo-barr"
+   #t "foo-bar" "-foo-bar" "foo-foo-bar" "foo-bar-foo-bar" "f.foo-bar"
+   #t ".foo-bar" ".foo-foo-bar")
+  ((g->re-test "[ab]*foo-bar" #f #t)
+   #f "foobar" "foo-barr" "foo-bar"
+   #t "afoo-bar" "b-foo-bar" "a-foo-foo-bar" "b.foo-bar"
+   #f ".afoo-bar" ".b-foo-bar")
+  ((g->re-test "[.]foo-bar" #f #t)
+   #f "foobar" "foo-barr" "foo-bar" "-foo-bar"
+   #t ".foo-bar"))
+
 (report-errs)

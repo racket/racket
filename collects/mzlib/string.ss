@@ -147,8 +147,8 @@
     (opt-lambda (s [case-sens? #t])
       (let* ([b? (cond [(bytes? s) #t]
                        [(string? s) #f]
-                       (raise-type-error 'regexp-quote
-                                         "string or byte string" s))]
+                       [else (raise-type-error 'regexp-quote
+                                               "string or byte string" s)])]
              [s (if b?
                   (regexp-replace* regexp-quote-chars:b s #"\\\\&")
                   (regexp-replace* regexp-quote-chars:s s "\\\\&"))])
@@ -159,8 +159,8 @@
   (define (regexp-replace-quote s)
     (let ([b? (cond [(bytes? s) #t]
                     [(string? s) #f]
-                    (raise-type-error 'regexp-replace-quote
-                                      "string or byte string" s))])
+                    [else (raise-type-error 'regexp-replace-quote
+                                            "string or byte string" s)])])
       (if b?
         (regexp-replace* #rx#"[&\\]" s #"\\\\&")
         (regexp-replace* #rx"[&\\]"  s "\\\\&"))))
@@ -418,132 +418,53 @@
 		 (= (cdar m) (string-length s)))))))
 
   (define glob->regexp
-    (let* ([def-case-sens (not (memq (system-type) '(windows macos macosx)))]
-           [quoted-chars  (string->list ".|+^$()[]")]
-           [error
-            (lambda xs (apply error 'glob->regexp xs))]
-           [->case-insens
-            (lambda (c)
-              (let ([c1 (char-upcase c)] [c2 (char-downcase c)])
-                (if (char=? c1 c2) c (list #\[ c1 c2 #\]))))]
-           [no-dot* (string->list "(?:[^.].*|)")]
-           [no-dot+ (string->list "(?:[^.].*)")]
-           [no-dot1 (string->list "[^.]")]
-           [ndot    (char->integer #\.)]
-           [dot+1   (integer->char (add1 ndot))]
-           ;; don't use dot-1, because it's "-"
-           [dot-2   (integer->char (- ndot 2))])
-      (define (range:add-dot l) ; add it to the end, before a possible last "-"
-        (if (member l '(() (#\-)))
-          (cons #\. l)
-          (cons (car l) (range:add-dot (cdr l)))))
-      (define (range:del-dot l) ; remove "."s, take care of ranges too
-        ;; problem: when we remove a "." from the middle of a range, we need to
-        ;; add "-" at the end
-        (let loop ([l l] [-? #f])
-          (cond [(and -? (null? l)) '(#\-)] ; add a "-"
-                [(and -? (null? (cdr l)))
-                 (if (char=? #\- (car l)) l (list (car l) #\-))]
-                [(null? l) '()]
-                [(and (pair? l) (pair? (cdr l)) (pair? (cddr l))
-                      (char=? #\- (cadr l)))
-                 (let* ([lo (car   l)] [nlo (char->integer lo)]
-                        [hi (caddr l)] [nhi (char->integer hi)]
-                        [rest (lambda (-?) (loop (cdddr l) -?))])
-                   (cond [(= nlo ndot nhi) (rest -?)]
-                         [(= nlo ndot) (list* dot+1 #\- hi (rest -?))]
-                         [(= nhi ndot) (list* lo #\- dot-2 (rest #t))]
-                         [(<= nlo ndot nhi)
-                          (list* lo #\- dot-2 dot+1 #\- hi (rest #t))]
-                         [else (list* lo #\- hi (rest -?))]))]
-                [(char=? #\. (car l)) (loop (cdr l) -?)]
-                [else (cons (car l) (loop (cdr l) -?))])))
-      (define (hide-dots l)
-        (let* ([1st (and (pair? l) (car l))]
-               [2nd (and 1st (pair? (cdr l)) (cadr l))])
-          (cond [(or (not 1st) (char? 1st)) l]
-                ;; "?---"  -->  "[^.]---"
-                [(eq? 'char 1st) (cons no-dot1 (cdr l))]
-                [(eq? 'any 1st)
-                 (cond ;; "*"      -->  "(?:[^.].*)"
-                       [(not 2nd) (list no-dot+)]
-                       ;; "*.---"  -->  "(?:[^.].*).---"
-                       [(or (eq? #\. 2nd) (equal? '(quote #\.) 2nd))
-                        (cons no-dot+ (cdr l))]
-                       ;; "*---"   -->  "(?:[^.].*|)---"
-                       [(char? 2nd) (cons no-dot* (cdr l))]
-                       ;; "*?---"  -->  "?*---"
-                       [(eq? 'char 2nd) (hide-dots (list* 'char 'any (cddr l)))]
-                       ;; "**---"  -->  "*---"
-                       [(eq? 'any 2nd) (hide-dots (cons 'any (cddr l)))]
-                       ;; same as non-.-char
-                       [(eq? 'quote (car 2nd)) (cons no-dot* (cdr l))]
-                       ;; "*[---]---" --> "(?:[^.].*|)[--*--]---"
-                       [(eq? 'range (car 2nd))
-                        (list* no-dot*
-                               (list* (car 2nd) (cadr 2nd)
-                                      ((if (cadr 2nd)
-                                         range:add-dot range:del-dot)
-                                       (cddr 2nd)))
-                               (cddr l))])]
-                [(eq? 'quote (caar l)) l]
-                [(eq? 'range (caar l))
-                 (list* (list* (car 1st) (cadr 1st)
-                               ((if (cadr 1st) range:add-dot range:del-dot)
-                                (cddr 1st)))
-                        (cdr l))]
-                [else (error "internal error")])))
+    (let-values
+        ([(def-case-sens) (not (memq (system-type) '(windows macos macosx)))]
+         [(item:s item:b)
+          (let ([rx (string-append
+                     "(?:"
+                     "[\\]." ; escaped item
+                     "|"
+                     "[*?]"  ; wildcards -- the only 1-character match
+                     "|"
+                     "\\[(?:\\^?\\]|\\^?[^]^])[^]]*\\]" ; range
+                     ")"
+                     )])
+            (values (regexp rx) (byte-regexp (string->bytes/utf-8 rx))))])
       (opt-lambda (glob [hide-dots? #t] [case-sens? def-case-sens])
-        (let ([len    (string-length glob)]
-              [->case (if case-sens? list ->case-insens)])
-          (let loop ([r '()] [i 0])
-            (if (< i len)
-              (let ([c (string-ref glob i)])
-                (case c
-                  [(#\\)
-                   (let ([i (add1 i)])
-                     (if (< i len)
-                       (loop (cons `(quote ,(string-ref glob i)) r) (add1 i))
-                       (error "glob ends in backslash: ~e" glob)))]
-                  [(#\*) (loop (cons 'any  r) (add1 i))]
-                  [(#\?) (loop (cons 'char r) (add1 i))]
-                  [(#\[)
-                   (let* ([i    (add1 i)]
-                          [not? (and (< i len)
-                                     (char=? #\^ (string-ref glob i)))])
-                     (let loop2 ([chars '()] [i (if not? (add1 i) i)])
-                       (if (= i len)
-                         (error "unterminated range in glob: ~e" glob)
-                         (let ([c (string-ref glob i)])
-                           (if (and (char=? #\] c) (pair? chars))
-                             (loop (cons `(range ,not? ,@(reverse! chars)) r)
-                                   (add1 i))
-                             (loop2 (cons c chars) (add1 i)))))))]
-                  [else (loop (cons c r) (add1 i))]))
-              (let* ([r (reverse! r)]
-                     [r `((#\^) ,@(if hide-dots? (hide-dots r) r) (#\$))])
-                (regexp
-                 (list->string
-                  (apply append
-                         (map (lambda (c)
-                                (cond [(char? c)
-                                       (if (memq c quoted-chars)
-                                         ;; doing this only for single chars,
-                                         ;; which means that backslash-quoted
-                                         ;; chars are left alone
-                                         `(#\\ ,c) (->case c))]
-                                      [(eq? 'any c) '(#\. #\*)]
-                                      [(eq? 'char c) '(#\.)]
-                                      ;; results of dot tweaking: no alphabetics
-                                      [(char? (car c)) c]
-                                      ;; note: no ->case here
-                                      [(eq? 'quote (car c)) `(#\\ ,(cadr c))]
-                                      [(eq? 'range (car c))
-                                       (append '(#\[)
-                                               (if (cadr c) '(#\^) '())
-                                               (cddr c)
-                                               '(#\]))]
-                                      [else (error "internal error")]))
-                              r)))))))))))
+        (let*-values ([(b?) (cond [(bytes? glob) #t]
+                                  [(string? glob) #f]
+                                  [else (raise-type-error
+                                         'glob->regexp
+                                         "string or byte string" glob)])]
+                      [(app sub ref rx item star any one)
+                       (if b?
+                         (values bytes-append subbytes bytes-ref byte-regexp
+                                 item:b (char->integer #\*) #".*" #".")
+                         (values string-append substring string-ref regexp
+                                 item:s #\* ".*" "."))]
+                      [(pfx sfx) (if case-sens?
+                                   (if b? (values #"^" #"^")
+                                          (values  "^"  "$"))
+                                   (if b? (values #"^(?i:" #")$")
+                                          (values  "^(?i:"  ")$")))]
+                      [(pfx) (if hide-dots?
+                               (app pfx (if b? #"(?![.])" "(?![.])"))
+                               pfx)])
+          (let loop ([i 0] [ps (regexp-match-positions* item glob)] [r '()])
+            (cond [(null? ps)
+                   (rx (app pfx
+                            (apply app (reverse! (cons (sub glob i) r)))
+                            sfx))]
+                  [(= 1 (- (cdar ps) (caar ps)))
+                   (loop (cdar ps)
+                         (cdr ps)
+                         (cons (if (equal? star (ref glob (caar ps))) any one)
+                               (if (= i (caar ps))
+                                 r
+                                 (cons (sub glob i (caar ps)) r))))]
+                  [else (loop (cdar ps)
+                              (cdr ps)
+                              (cons (sub glob i (cdar ps)) r))]))))))
 
   )
