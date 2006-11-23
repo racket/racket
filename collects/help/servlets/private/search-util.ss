@@ -1,18 +1,14 @@
 (module search-util mzscheme
-
   (require (lib "string-constant.ss" "string-constants"))
 
-  (provide 
-    search-types 
-    search-type-default
-    match-types
-    match-type-default
-    kind-types)
+  (provide search-types search-type-default
+           match-types match-type-default kind-types)
 
   (define search-types
     `(("keyword" ,(string-constant plt:hd:search-for-keyword))
       ("keyword-index" ,(string-constant plt:hd:search-for-keyword-or-index))
-      ("keyword-index-text" ,(string-constant plt:hd:search-for-keyword-or-index-or-text))))
+      ("keyword-index-text"
+       ,(string-constant plt:hd:search-for-keyword-or-index-or-text))))
 
   (define search-type-default "keyword-index")
 

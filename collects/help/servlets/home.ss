@@ -30,17 +30,17 @@
     (define (item->xexpr item)
       (cond [(and (pair? item) (symbol? (car item))) item]
             [(procedure? item) (item->xexpr (item))]
-            [else `(A ([HREF ,(cadr item)]) ,(car item))]))
+            [else `(a ([href ,(cadr item)]) ,(car item))]))
     (let ([title (car i)] [subtitle (cadr i)] [url (caddr i)] [subs (cdddr i)])
-      `(LI (B (A ([HREF ,url]) ,title)) ": " ,subtitle
+      `(li (b (a ([href ,url]) ,title)) ": " ,subtitle
          ,@(if (null? subs)
              '()
-             `((BR) nbsp nbsp nbsp nbsp nbsp nbsp
-               (FONT ([SIZE "-2"])
-                 ,@(apply append
-                          (map (lambda (s) `(,(item->xexpr s) ", ")) subs))
+             `((br) nbsp nbsp nbsp nbsp nbsp nbsp
+               (font ([size "-2"])
+                 ,@(apply append (map (lambda (s) `(,(item->xexpr s) ", "))
+                                      subs))
                  "...")))
-         (BR) (BR))))
+         (br) (br))))
 
   (define (start initial-request)
     (report-errors-to-browser send/finish)
@@ -48,14 +48,14 @@
       (head (title "PLT Help Desk"))
       (body
        (table ([cellspacing "0"] [cellpadding "0"])
-         (TR (TD (H1 "PLT Help Desk")
-                 (UL ,@(map item items))
-                 (P) nbsp nbsp nbsp
-                 (B (A ((HREF "/servlets/acknowledge.ss"))
-                       (FONT ([COLOR "forestgreen"]) "Acknowledgements")))
+         (tr (td (h1 "PLT Help Desk")
+                 (ul ,@(map item items))
+                 (p) nbsp nbsp nbsp
+                 (b (a ((href "/servlets/acknowledge.ss"))
+                      (font ([color "forestgreen"]) "Acknowledgements")))
                  nbsp nbsp nbsp nbsp
-                 (B (A ((mzscheme
-                         "((dynamic-require '(lib |bug-report.ss| |help|) 'help-desk:report-bug))"))
-                       (FONT ([COLOR "forestgreen"]) "Send a bug report")))
-                 (P)
-                 (I "Version: " ,(plt-version)))))))))
+                 (b (a ([mzscheme
+                         "((dynamic-require '(lib |bug-report.ss| |help|) 'help-desk:report-bug))"])
+                      (font ([color "forestgreen"]) "Send a bug report")))
+                 (p)
+                 (i "Version: " ,(plt-version)))))))))

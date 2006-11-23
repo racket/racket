@@ -12,13 +12,15 @@
           [stamp-collection
            (with-handlers ([exn:fail:filesystem? (lambda (exn) #f)])
              (collection-path "repos-time-stamp"))])
-      (if (and stamp-collection (file-exists? (build-path stamp-collection "stamp.ss")))
-          (format "~a-svn~a" mz-version (dynamic-require '(lib "stamp.ss" "repos-time-stamp") 'stamp))
+      (if (and stamp-collection
+               (file-exists? (build-path stamp-collection "stamp.ss")))
+          (format "~a-svn~a" mz-version
+                  (dynamic-require '(lib "stamp.ss" "repos-time-stamp") 'stamp))
           mz-version)))
 
   (define home-page
-    `(A ((HREF "/servlets/home.ss") (TARGET "_top"))
-	,(string-constant plt:hd:home)))
+    `(a ([href "/servlets/home.ss"] [target "_top"])
+        ,(string-constant plt:hd:home)))
 
   (define (get-pref/default pref default)
     (get-preference pref (lambda () default)))
@@ -31,17 +33,17 @@
     (put-preferences names vals))
 
   (define search-height-default "85")
-  (define search-bg-default "lightsteelblue")
-  (define search-text-default "black")
-  (define search-link-default "darkblue")
+  (define search-bg-default     "lightsteelblue")
+  (define search-text-default   "black")
+  (define search-link-default   "darkblue")
 
   (define *the-highlight-color* "forestgreen")
 
-  ; string xexpr ... -> xexpr
+  ;; string xexpr ... -> xexpr
   (define (with-color color . s)
-    `(FONT ((COLOR ,color)) ,@s))
+    `(font ([color ,color]) ,@s))
 
-  ; xexpr ... -> xexpr
+  ;; xexpr ... -> xexpr
   (define (color-highlight . s)
     (apply with-color *the-highlight-color* s))
 
@@ -53,73 +55,46 @@
             (with-handlers ([exn:fail:filesystem? (lambda (x) #f)])
               (collection-path "repos-time-stamp"))))))
 
-  ;; can-keep? : byte -> boolean
-  ;; source rfc 2396
-  (define (can-keep? i)
-    (or (<= (char->integer #\a) i (char->integer #\z))
-        (<= (char->integer #\A) i (char->integer #\Z))
-        (<= (char->integer #\0) i (char->integer #\9))
-        (memq i (map char->integer
-                     '(#\- #\_ #\; #\. #\! #\~ #\* #\' #\( #\))))))
-
   ; string string -> xexpr
   (define (collection-doc-link coll txt)
-    (let ([coll-file (build-path 
-		      (collection-path coll) "doc.txt")])
+    (let ([coll-file (build-path (collection-path coll) "doc.txt")])
       (if (file-exists? coll-file)
-	  `(A ((HREF
-		,(format
-		  "/servlets/doc-anchor.ss?file=~a&name=~a&caption=Documentation for the ~a collection"
-		  (uri-encode (path->string coll-file))
-		  coll
-		  coll)))
-	      ,txt)
-	  "")))
+        `(a ((href
+              ,(format
+                "~a?file=~a&name=~a&caption=Documentation for the ~a collection"
+                "/servlets/doc-anchor.ss"
+                (uri-encode (path->string coll-file))
+                coll
+                coll)))
+            ,txt)
+        "")))
 
-  ; (listof string) -> string
-  ; result is forward-slashed web path
-  ;  e.g. ("foo" "bar") -> "foo/bar"
+  ;; (listof string) -> string
+  ;; result is forward-slashed web path
+  ;;  e.g. ("foo" "bar") -> "foo/bar"
   (define (fold-into-web-path lst)
-      (foldr (lambda (s a)
-	       (if a
-		   (string-append s "/" a)
-		   s))
-	     #f
-	     lst))
-  
-  ;; ??
-  ;(define (text-frame) "_top")
+    (foldr (lambda (s a) (if a (string-append s "/" a) s)) #f lst))
 
   (define (format-collection-message s)
-    `(B ((STYLE "color:green")) ,s))
-
-  (define nl (string #\newline))
+    `(b ((style "color:green")) ,s))
 
   (define (make-javascript . ss)
-    `(SCRIPT ((LANGUAGE "Javascript"))
-	     ,(make-comment
-	       (apply string-append 
-		      nl
-		      (map (lambda (s)
-			     (string-append s nl))
-			   ss)))))
+    `(script ([language "Javascript"])
+       ,(make-comment (apply string-append "\n"
+                             (map (lambda (s) (string-append s "\n")) ss)))))
 
   (define (redir-javascript k-url)
-    (make-javascript
-     "function redir() {"
-     (string-append
-       "  document.location.href=\"" k-url "\"") 
-     "}"))
+    (make-javascript "function redir() {"
+                     (string-append "  document.location.href=\"" k-url "\"")
+                     "}"))
 
   (define (onload-redir secs)
-    (string-append 
-     "setTimeout(\"redir()\","
-     (number->string (* secs 1000))
-     ")"))
-  
+    (string-append "setTimeout(\"redir()\","
+                   (number->string (* secs 1000)) ")"))
+
   (provide/contract
    [fold-into-web-path ((listof string?) . -> . string?)])
-  
+
   (provide get-pref/default
            get-bool-pref/default
            put-prefs
@@ -133,7 +108,6 @@
            collection-doc-link
            home-page
            format-collection-message
-           nl
            plt-version
            make-javascript
            redir-javascript

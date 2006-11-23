@@ -3,37 +3,31 @@
            "private/headelts.ss"
            "../private/manuals.ss"
            (lib "servlet.ss" "web-server"))
-
   (provide interface-version timeout start)
   (define interface-version 'v1)
   (define timeout +inf.0)
-
   (define (start initial-request)
     (report-errors-to-browser send/finish)
-
-    `(HTML
-      (TITLE "Program Design")
-      (HEAD ,hd-css
-            ,@hd-links)
-      (BODY
-       (H1  "Program Design")
-       ,(color-highlight `(H2  "For Students"))
-       "The textbook " (I  "How to Design Programs")
-       " provides an introduction to programming using the DrScheme environment. "
-       "The book is not distributed with DrScheme, but it is available online at "
-       (PRE
-        "   " (A ((HREF "http://www.htdp.org/") (TARGET "_top"))
-                 "http://www.htdp.org/"))
-       (P)
+    `(html
+      (head ,hd-css ,@hd-links (title "Program Design"))
+      (body
+       (h1  "Program Design")
+       ,(color-highlight `(h2  "For Students"))
+       "The textbook " (i  "How to Design Programs")
+       " provides an introduction to programming using the DrScheme"
+       " environment.  The book is not distributed with DrScheme, but it"
+       " is available online at "
+       (pre "   " (a ([href "http://www.htdp.org/"] [target "_top"])
+                     "http://www.htdp.org/"))
+       (p)
        "Help Desk provides the following interactive support for the textbook:"
-       (UL
-        (LI (B (A ((HREF "/servlets/teachpacks.ss")) "Teachpack documentation"))))
-       (P)
-       ,(color-highlight
-         `(H2  "For Experienced Programmers"))
-       (UL  (LI  (B  (A ((HREF ,(get-manual-index "t-y-scheme")))
-                        "Teach Yourself Scheme in Fixnum Days"))
-                 ": For programmers with lots of experience in other languages"))
-       ,(color-highlight `(H2  "For Teachers and Researchers"))
-       (UL  (LI  (B  (A ((HREF "/servlets/research/why.ss")) "Why DrScheme?"))
-                 ": PLT's vision "))))))
+       (ul (li (b (a ([href "/servlets/teachpacks.ss"])
+                     "Teachpack documentation"))))
+       (p)
+       ,(color-highlight `(h2  "For Experienced Programmers"))
+       (ul (li (b (a ((href ,(get-manual-index "t-y-scheme")))
+                     "Teach Yourself Scheme in Fixnum Days"))
+               ": For programmers with lots of experience in other languages"))
+       ,(color-highlight `(h2 "For Teachers and Researchers"))
+       (ul (li (b (a ([href "/servlets/research/why.ss"]) "Why DrScheme?"))
+               ": PLT's vision "))))))
