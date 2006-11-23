@@ -125,7 +125,7 @@
  'expand-load
  #f
  (lambda ()
-   (namespace-set-variable-value! 'expand-load "quiet.ss")))
+   (namespace-set-variable-value! 'expand-load "mz.ss")))
 
 (let ([orig (current-eval)])
   (dynamic-wind

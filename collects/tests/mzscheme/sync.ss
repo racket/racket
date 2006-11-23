@@ -20,7 +20,7 @@
   (test p sync p)
   (test s sync s)
   (test #f sync/timeout 0 p)
-  (thread (lambda () (sleep SYNC-SLEEP-DELAY) (semaphore-post s)))
+  (thread (lambda () (sync (system-idle-evt)) (semaphore-post s)))
   (test p sync p)
   (test p sync p)
   (test s sync s)
@@ -34,7 +34,7 @@
   (test 7 channel-get ch)
   (test #f channel-try-get ch)
   (thread (lambda () (channel-put ch 9)))
-  (sleep SYNC-SLEEP-DELAY)
+  (sync (system-idle-evt))
   (test 9 channel-try-get ch)
   (test #f channel-try-get ch))
 
@@ -50,19 +50,19 @@
 (let ([c (make-channel)]
       [v 'nope])
   (test #f sync/timeout 0 c)
-  (thread (lambda () (sleep SYNC-SLEEP-DELAY) (set! v (channel-get c))))
+  (thread (lambda () (sync (system-idle-evt)) (set! v (channel-get c))))
   (test (void) channel-put c 10)
-  (sleep)
+  (sync (system-idle-evt))
   (test 10 'thread-v v)
-  (thread (lambda () (sleep SYNC-SLEEP-DELAY) (channel-put c 11)))
+  (thread (lambda () (sync (system-idle-evt)) (channel-put c 11)))
   (test #f sync/timeout 0 c)
   (test 11 sync c)
   (let ([p (channel-put-evt c 45)])
-    (thread (lambda () (sleep SYNC-SLEEP-DELAY) (set! v (sync c))))
+    (thread (lambda () (sync (system-idle-evt)) (set! v (sync c))))
     (test #f sync/timeout 0 p)
     (test p sync p)
     (test #f sync/timeout 0 p)
-    (sleep)
+    (sync (system-idle-evt))
     (test 45 'thread-v v))
   ;;;;; Make sure break/kill before action => break/kill only
   ;; get:
@@ -70,11 +70,11 @@
 	       (let ([t (thread (lambda ()
 				  (set! v (channel-get c))))])
 		 (test #t thread-running? t)
-		 (sleep)
+		 (sync (system-idle-evt))
 		 (test #t thread-running? t)
 		 (test (void) break-thread t)
 		 (test #f sync/timeout 0 (channel-put-evt c 32))
-		 (sleep)
+                 (sync (system-idle-evt))
 		 (test #f thread-running? t)
 		 (test 45 'old-v v)))])
     (try break-thread)
@@ -83,18 +83,18 @@
   (let ([try (lambda (break-thread)
 	       (let ([t (thread (lambda () (channel-put c 17)))])
 		 (test #t thread-running? t)
-		 (sleep)
+		 (sync (system-idle-evt))
 		 (test #t thread-running? t)
 		 (test (void) break-thread t)
 		 (test #f sync/timeout 0 c)
-		 (sleep)
+		 (sync (system-idle-evt))
 		 (test #f thread-running? t)))])
     (try break-thread)
     (try kill-thread))
   ;; put in main thread:
   (let ([t (current-thread)])
     (thread (lambda () 
-	      (sleep SYNC-SLEEP-DELAY) 
+	      (sync (system-idle-evt))
 	      (break-thread t) 
 	      (set! v (channel-get c)))))
   (test 77
@@ -108,7 +108,7 @@
   ;; get in main thread:
   (let ([t (current-thread)])
     (thread (lambda () 
-	      (sleep SYNC-SLEEP-DELAY) 
+	      (sync (system-idle-evt))
 	      (break-thread t) 
 	      (channel-put c 66))))
   (test 99
@@ -215,8 +215,8 @@
 	  (make-semaphore) (make-semaphore) (make-semaphore) (make-semaphore) 
 	  (let ([sema (make-semaphore 1)])
 	    (wrap-evt sema (lambda (x)
-					  (test sema values x)
-					  77)))))))
+                             (test sema values x)
+                             77)))))))
 
 ;; More alarms:
 (let ([make-delay
@@ -250,14 +250,14 @@
 (test 18 'sync
       (let ([n 17]
 	    [s (make-semaphore)])
-	(thread (lambda () (sleep SYNC-SLEEP-DELAY) (semaphore-post s)))
+	(thread (lambda () (sync (system-idle-evt)) (semaphore-post s)))
 	(sync 
-			      (wrap-evt 
-			       s 
-			       (lambda (sema) (set! n (add1 n)) n))
-			      (wrap-evt 
-			       s 
-			       (lambda (sema) (set! n (add1 n)) n)))))
+         (wrap-evt 
+          s 
+          (lambda (sema) (set! n (add1 n)) n))
+         (wrap-evt 
+          s 
+          (lambda (sema) (set! n (add1 n)) n)))))
 
 (let ([c (make-channel)])
   (thread (lambda () (channel-put c 76)))
@@ -666,12 +666,12 @@
     (test t sync/timeout 0 s)
     (test t sync/timeout 0 r)
     (let* ([s (thread-suspend-evt t)])
-      (thread (lambda () (sleep SYNC-SLEEP-DELAY) (thread-suspend t)))
+      (thread (lambda () (sync (system-idle-evt)) (thread-suspend t)))
       (test #f sync/timeout 0 s)
       (test t sync s)
       (let* ([r (thread-resume-evt t)]
 	     [d (thread-dead-evt t)])
-	(thread (lambda () (sleep SYNC-SLEEP-DELAY) (thread-resume t)))
+	(thread (lambda () (sync (system-idle-evt)) (thread-resume t)))
 	(test #f sync/timeout 0 r)
 	(test t sync r)
 
