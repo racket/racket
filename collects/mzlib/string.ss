@@ -139,44 +139,40 @@
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Regexp helpers
-  
+
+  (define regexp-quote-chars:s #rx"[][.*?+|(){}\\$^]")
+  (define regexp-quote-chars:b #rx#"[][.*?+|(){}\\$^]")
+
   (define regexp-quote
     (opt-lambda (s [case-sens? #t])
-      (unless (or (string? s)
-		  (bytes? s))
-	(raise-type-error 'regexp-quote "string or byte string" s))
-      ((if (bytes? s) 
-	   (lambda (l) (list->bytes (map char->integer l)))
-	   list->string)
-       (apply
-	append
-	(map
-	 (lambda (c)
-	   (cond 
-	    [(memq c '(#\$ #\| #\\ #\[ #\] #\. #\* #\? #\+ #\( #\) #\^ #\{ #\}))
-	     (list #\\ c)]
-	    [(and (not case-sens?)
-		  (not (char=? (char-upcase c) (char-downcase c))))
-	     (list #\[ (char-upcase c) (char-downcase c) #\])]
-	    [else (list c)]))
-	 (if (bytes? s) 
-	     (map integer->char (bytes->list s))
-	     (string->list s)))))))
+      (let* ([b? (cond [(bytes? s) #t]
+                       [(string? s) #f]
+                       (raise-type-error 'regexp-quote
+                                         "string or byte string" s))]
+             [s (if b?
+                  (regexp-replace* regexp-quote-chars:b s #"\\\\&")
+                  (regexp-replace* regexp-quote-chars:s s "\\\\&"))])
+        (cond [case-sens? s]
+              [b?   (bytes-append #"(?i:" s #")")]
+              [else (string-append "(?i:" s ")")]))))
 
   (define (regexp-replace-quote s)
-    (unless (or (string? s)
-		(bytes? s))
-      (raise-type-error 'regexp-replace-quote "string or byte string" s))
-    (if (bytes? s)
-	(regexp-replace* #rx#"&" (regexp-replace* #rx#"\\\\" s #"\\\\\\\\") #"\\\\&")
-	(regexp-replace* #rx"&" (regexp-replace* #rx"\\\\" s "\\\\\\\\") "\\\\&")))
+    (let ([b? (cond [(bytes? s) #t]
+                    [(string? s) #f]
+                    (raise-type-error 'regexp-replace-quote
+                                      "string or byte string" s))])
+      (if b?
+        (regexp-replace* #rx#"[&\\]" s #"\\\\&")
+        (regexp-replace* #rx"[&\\]"  s "\\\\&"))))
 
   (define regexp-match/fail-without-reading
     (opt-lambda (pattern input-port [start-k 0] [end-k #f] [out #f])
       (unless (input-port? input-port)
-        (raise-type-error 'regexp-match/fail-without-reading "input port" input-port))
+        (raise-type-error 'regexp-match/fail-without-reading
+                          "input port" input-port))
       (unless (or (not out) (output-port? out))
-        (raise-type-error 'regexp-match/fail-without-reading "output port or #f" out))
+        (raise-type-error 'regexp-match/fail-without-reading
+                          "output port or #f" out))
       (let ([m (regexp-match-peek-positions pattern input-port start-k end-k)])
         (and m
              ;; What happens if someone swipes our bytes before we can get them?
