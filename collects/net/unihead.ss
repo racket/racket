@@ -10,7 +10,7 @@
   (define re:ascii #rx"^[\u0-\u7F]*$")
 
   (define (encode-for-header s)
-    (if (regexp-match re:ascii s)
+    (if (regexp-match? re:ascii s)
 	s
 	(let ([l (regexp-split #rx"\r\n" s)])
 	  (apply string-append
@@ -36,10 +36,10 @@
 					   (encode (string->bytes s))
 					   #"")))))))
     (cond
-     [(regexp-match re:ascii s)
+     [(regexp-match? re:ascii s)
       ;; ASCII - do nothing
       s]
-     [(regexp-match #rx"[^\u0-\uFF]" s)
+     [(regexp-match? #rx"[^\u0-\uFF]" s)
       ;; Not Latin-1, so use UTF-8
       (loop s string->bytes/utf-8 "UTF-8" base64-encode "B")]
      [else
@@ -51,36 +51,30 @@
 
   ;; ----------------------------------------
 
-  (define re:us-ascii #rx#"^[uS][sS]-[aA][sS][cC][iI][iI]$")
-  (define re:iso #rx#"^[iI][sS][oO]-8859-1$")
-  (define re:gb #rx#"^[gG][bB](2312)?$")
-  (define re:ks_c #rx#"^[kK][sS]_[cC]_5601-1987$")
-  (define re:utf-8 #rx#"^[uU][tT][fF]-8$")
-  
+  (define re:us-ascii #rx#"^(?i:us-ascii)$")
+  (define re:iso      #rx#"^(?i:iso-8859-1)$")
+  (define re:gb       #rx#"^(?i:gb(?:2312)?)$")
+  (define re:ks_c     #rx#"^(?i:ks_c_5601-1987)$")
+  (define re:utf-8    #rx#"^(?i:utf-8)$")
+
   (define re:encoded #rx#"^(.*?)=[?]([^?]+)[?]([qQbB])[?](.*?)[?]=(.*)$")
-  
+
   (define (generalize-encoding encoding)
     ;; Treat Latin-1 as Windows-1252 and also threat GB and GB2312
     ;; as GBK, because some mailers are broken.
-    (cond 
-     [(or (regexp-match re:iso encoding) 
-	  (regexp-match re:us-ascii encoding))
-      (if (bytes? encoding)
-	  #"WINDOWS-1252"
-	  "WINDOWS-1252")]
-     [(regexp-match re:gb encoding) 
-      (if (bytes? encoding)
-	  #"GBK"
-	  "GBK")]
-     [(regexp-match re:ks_c encoding) 
-      (if (bytes? encoding)
-	  #"CP949"
-	  "CP949")]
-     [else encoding]))
-  
+    (cond [(or (regexp-match? re:iso encoding)
+               (regexp-match? re:us-ascii encoding))
+           (if (bytes? encoding) #"WINDOWS-1252" "WINDOWS-1252")]
+          [(regexp-match? re:gb encoding)
+           (if (bytes? encoding) #"GBK" "GBK")]
+          [(regexp-match? re:ks_c encoding)
+           (if (bytes? encoding) #"CP949" "CP949")]
+          [else encoding]))
+
   (define (decode-for-header s)
     (and s
-	 (let ([m (regexp-match re:encoded (string->bytes/latin-1 s (char->integer #\?)))])
+	 (let ([m (regexp-match re:encoded
+                                (string->bytes/latin-1 s (char->integer #\?)))])
 	   (if m
 	       (let ([s ((if (member (cadddr m) '(#"q" #"Q"))
 			     ;; quoted-printable, with special _ handling
@@ -94,10 +88,13 @@
 		  (decode-for-header (bytes->string/latin-1 (cadr m)))
 		  (let ([encoding (generalize-encoding encoding)])
 		    (cond
-		     [(regexp-match re:utf-8 encoding) (bytes->string/utf-8 s #\?)]
-		     [else (let ([c (bytes-open-converter (bytes->string/latin-1 encoding) "UTF-8")])
+		     [(regexp-match? re:utf-8 encoding)
+                      (bytes->string/utf-8 s #\?)]
+		     [else (let ([c (bytes-open-converter
+                                     (bytes->string/latin-1 encoding) "UTF-8")])
 			     (if c
-				 (let-values ([(r got status) (bytes-convert c s)])
+				 (let-values ([(r got status)
+                                               (bytes-convert c s)])
 				   (bytes-close-converter c)
 				   (if (eq? status 'complete)
 				       (bytes->string/utf-8 r #\?)
@@ -105,13 +102,14 @@
 				 (bytes->string/latin-1 s)))]))
 		  (let ([rest (cadddr (cddr m))])
 		    (let ([rest
-			   ;; A CR-LF-space-encoding sequence means that we should
-			   ;; drop the space.
+			   ;; A CR-LF-space-encoding sequence means that we
+			   ;; should drop the space.
 			   (if (and (> (bytes-length rest) 4)
 				    (= 13 (bytes-ref rest 0))
 				    (= 10 (bytes-ref rest 1))
 				    (= 32 (bytes-ref rest 2))
-				    (let ([m (regexp-match-positions re:encoded rest)])
+				    (let ([m (regexp-match-positions
+                                              re:encoded rest)])
 				      (and m (= (caaddr m) 5))))
 			       (subbytes rest 3)
 			       rest)])
