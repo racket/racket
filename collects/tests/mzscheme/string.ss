@@ -125,6 +125,9 @@
                          (car xs)
                          (begin (test res regexp-match? re (car xs))
                                 res))))))))])
+  ((g->re-test #"foo*bar" #t #t)
+   #t #"foobar" #"foo-bar" #"foo--bar"
+   #f #"fobar" #"foo-barr" #"ffoo-bar" #".foobar")
   ((g->re-test "foo*bar" #t #t)
    #t "foobar" "foo-bar" "foo--bar"
    #f "fobar" "foo-barr" "ffoo-bar" ".foobar")

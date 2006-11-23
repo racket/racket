@@ -447,7 +447,7 @@
                                  (if simple? simple-item:s item:s)
                                  #\* ".*" "."))]
                       [(pfx sfx) (if case-sens?
-                                   (if b? (values #"^" #"^")
+                                   (if b? (values #"^" #"$")
                                           (values  "^"  "$"))
                                    (if b? (values #"^(?i:" #")$")
                                           (values  "^(?i:"  ")$")))]
