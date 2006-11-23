@@ -456,19 +456,15 @@
                                pfx)]
                       [(subq) (lambda xs (regexp-quote (apply sub xs)))])
           (let loop ([i 0] [ps (regexp-match-positions* item glob)] [r '()])
-            (cond [(null? ps)
-                   (let ([r (apply app (reverse! (cons (subq glob i) r)))])
-                     (rx (app pfx r sfx)))]
-                  [(= 1 (- (cdar ps) (caar ps)))
-                   (loop (cdar ps)
-                         (cdr ps)
-                         (cons (if (equal? star (ref glob (caar ps))) any one)
-                               (if (= i (caar ps))
-                                 r (cons (subq glob i (caar ps)) r))))]
-                  [else (loop (cdar ps)
-                              (cdr ps)
-                              (cons (sub glob (caar ps) (cdar ps))
-                                    (if (= i (caar ps))
-                                      r (cons (subq glob i (caar ps)) r))))]))))))
+            (if (null? ps)
+              (let ([r (apply app (reverse! (cons (subq glob i) r)))])
+                (rx (app pfx r sfx)))
+              (loop (cdar ps) (cdr ps)
+                    ;; length=1 is only for `*' or `?'
+                    (cons (if (= 1 (- (cdar ps) (caar ps)))
+                            (if (equal? star (ref glob (caar ps))) any one)
+                            (sub glob (caar ps) (cdar ps)))
+                          (if (= i (caar ps))
+                            r (cons (subq glob i (caar ps)) r))))))))))
 
   )
