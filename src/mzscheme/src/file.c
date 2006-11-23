@@ -364,9 +364,9 @@ void scheme_init_file(Scheme_Env *env)
 						      "build-path", 
 						      1, -1), 
 			     env);
-  scheme_add_global_constant("build-path/kind", 
+  scheme_add_global_constant("build-path/convention-type", 
 			     scheme_make_prim_w_arity(build_path_kind,
-						      "build-path/kind", 
+						      "build-path/convention-type", 
 						      2, -1), 
 			     env);
   scheme_add_global_constant("path->directory-path",
@@ -2453,7 +2453,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
   int first_len = 0;
   int needs_extra_slash = 0;
   int pre_unc = 0;
-  const char *who = (idelta ? "build-path/kind" : "build-path");
+  const char *who = (idelta ? "build-path/convention-type" : "build-path");
 
   str = buffer;
   pos = 0;
@@ -2921,7 +2921,7 @@ static Scheme_Object *build_path_kind(int argc, Scheme_Object **argv)
 { 
   int kind;
 
-  kind = extract_path_kind("build-path/kind", 0, argc, argv);
+  kind = extract_path_kind("build-path/convention-type", 0, argc, argv);
   return do_build_path(argc - 1, argv, 1, 0, kind);
 }
 
