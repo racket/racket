@@ -2370,7 +2370,7 @@ static Scheme_Object *append_path(Scheme_Object *a, Scheme_Object *b)
 {
   Scheme_Object *s;
   s = scheme_append_byte_string(a, b);
-  s->type = scheme_path_type;
+  s->type = SCHEME_PLATFORM_PATH_KIND;
   return s;
 }
 
