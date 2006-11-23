@@ -404,34 +404,35 @@
 	       #f))
   (wrap regexp-match* -regexp-match*)
 
-  (define regexp-match-exact?
-    (lambda (p s)
-      (let ([m (regexp-match-positions p s)])
-	(and m
-	     (zero? (caar m))
-	     (if (or (byte-regexp? p)
-		     (bytes? p)
-		     (bytes? s))
-		 (= (cdar m) (if (bytes? s)
-				 (bytes-length s)
-				 (string-utf-8-length s)))
-		 (= (cdar m) (string-length s)))))))
+  (define (regexp-match-exact? p s)
+    (let ([m (regexp-match-positions p s)])
+      (and m
+           (zero? (caar m))
+           (if (or (byte-regexp? p) (bytes? p) (bytes? s))
+             (= (cdar m) (if (bytes? s)
+                           (bytes-length s)
+                           (string-utf-8-length s)))
+             (= (cdar m) (string-length s))))))
 
   (define glob->regexp
     (let-values
         ([(def-case-sens) (not (memq (system-type) '(windows macos macosx)))]
-         [(item:s item:b)
-          (let ([rx (string-append
-                     "(?:"
-                     "[\\]." ; escaped item
-                     "|"
-                     "[*?]"  ; wildcards -- the only 1-character match
-                     "|"
-                     "\\[(?:\\^?\\]|\\^?[^]^])[^]]*\\]" ; range
-                     ")"
-                     )])
-            (values (regexp rx) (byte-regexp (string->bytes/utf-8 rx))))])
-      (opt-lambda (glob [hide-dots? #t] [case-sens? def-case-sens])
+         [(item:s item:b simple-item:s simple-item:b)
+          (let ([rx (lambda (s)
+                      (string-append
+                       "(?:"
+                       "[\\]." ; escaped item
+                       "|"
+                       "[*?]"  ; wildcards -- the only 1-character match
+                       s       ; [*] more stuff here
+                       ")"
+                       ))]
+                [range "|\\[(?:\\^?\\]|\\^?[^]^])[^]]*\\]"]) ; goes in [*]
+            (values (regexp (rx range))
+                    (byte-regexp (string->bytes/utf-8 (rx range)))
+                    (regexp (rx ""))
+                    (byte-regexp (string->bytes/utf-8 (rx "")))))])
+      (opt-lambda (glob [hide-dots? #t] [case-sens? def-case-sens] [simple? #f])
         (let*-values ([(b?) (cond [(bytes? glob) #t]
                                   [(string? glob) #f]
                                   [else (raise-type-error
@@ -440,9 +441,11 @@
                       [(app sub ref rx item star any one)
                        (if b?
                          (values bytes-append subbytes bytes-ref byte-regexp
-                                 item:b (char->integer #\*) #".*" #".")
+                                 (if simple? simple-item:b item:b)
+                                 (char->integer #\*) #".*" #".")
                          (values string-append substring string-ref regexp
-                                 item:s #\* ".*" "."))]
+                                 (if simple? simple-item:s item:s)
+                                 #\* ".*" "."))]
                       [(pfx sfx) (if case-sens?
                                    (if b? (values #"^" #"^")
                                           (values  "^"  "$"))
@@ -450,21 +453,22 @@
                                           (values  "^(?i:"  ")$")))]
                       [(pfx) (if hide-dots?
                                (app pfx (if b? #"(?![.])" "(?![.])"))
-                               pfx)])
+                               pfx)]
+                      [(subq) (lambda xs (regexp-quote (apply sub xs)))])
           (let loop ([i 0] [ps (regexp-match-positions* item glob)] [r '()])
             (cond [(null? ps)
-                   (rx (app pfx
-                            (apply app (reverse! (cons (sub glob i) r)))
-                            sfx))]
+                   (let ([r (apply app (reverse! (cons (subq glob i) r)))])
+                     (rx (app pfx r sfx)))]
                   [(= 1 (- (cdar ps) (caar ps)))
                    (loop (cdar ps)
                          (cdr ps)
                          (cons (if (equal? star (ref glob (caar ps))) any one)
                                (if (= i (caar ps))
-                                 r
-                                 (cons (sub glob i (caar ps)) r))))]
+                                 r (cons (subq glob i (caar ps)) r))))]
                   [else (loop (cdar ps)
                               (cdr ps)
-                              (cons (sub glob i (cdar ps)) r))]))))))
+                              (cons (sub glob (caar ps) (cdar ps))
+                                    (if (= i (caar ps))
+                                      r (cons (subq glob i (caar ps)) r))))]))))))
 
   )
