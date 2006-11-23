@@ -76,7 +76,7 @@
                                        (cons
                                         (format "~a~a = "
                                                 (if newline? (if (eq? fields null)
-                                                                 (format "~n~a" (get-n-spaces new-tabs))
+                                                                 (format "\n~a" (get-n-spaces new-tabs))
                                                                  (get-n-spaces new-tabs)) "")
                                                 (car current))
                                         (append
@@ -90,7 +90,7 @@
                                                                    num-tabs)))
                                          (list (format "~a~a" 
                                                        (if next "," "")
-                                                       (if newline? (format "~n") " ")))))))
+                                                       (if newline? "\n" " ")))))))
                          (loop next))))
                    (cons st 
                          (append
@@ -111,15 +111,15 @@
                            (list (make-partial-string (add1 idx) first-test second-test))))
                   (else
                    (append (internal-format (send value access idx) full-print? style already-printed nl? nt)
-                           (if nl? (list (format "~n")) (list " "))
+                           (if nl? (list "\n") (list " "))
                            (make-partial-string (add1 idx) first-test second-test)))))))
       (if (or full-print? (< restart stop))
           (append '("[") (make-partial-string 0 (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len)))) '("]"))
           (append '("[")                      
                   (make-partial-string 0 (lambda (i) (or (>= i stop) (>= i len))) (lambda (i) (= i (sub1 stop))))
-                  (if nl? (list (format "~n")) (list ""))
+                  (if nl? (list "\n") (list ""))
                   '(" ... ")
-                  (if nl? (list (format "~n")) (list ""))
+                  (if nl? (list "\n") (list ""))
                   (make-partial-string restart (lambda (i) (>= i len)) (lambda (i) (= i (sub1 len))))
                   '("]")))))
   
