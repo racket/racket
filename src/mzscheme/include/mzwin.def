@@ -379,6 +379,7 @@ EXPORTS
  scheme_make_path
  scheme_make_sized_path
  scheme_make_sized_offset_path
+ scheme_make_sized_offset_kind_path
  scheme_make_path_without_copying
  scheme_alloc_fdset_array
  scheme_init_fdset_array

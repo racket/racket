@@ -1626,7 +1626,8 @@
 			       (datum->syntax-object stx
 						     v
 						     stx
-						     stx)
+						     stx
+                                                     stx)
 			       v)))
 	  . ,(cddr t))]
        [(and (pair? h)
@@ -1637,7 +1638,8 @@
 						  (datum->syntax-object stx
 									v
 									stx
-									stx)
+									stx
+                                                                        stx)
 						  v)))
 			     ,@(cddr h) ;; <-- WARNING: potential quadratic expansion
 			     . ,(cddr t))]
@@ -1649,7 +1651,8 @@
 			 (datum->syntax-object stx
 					       expr
 					       stx
-					       stx)
+					       stx
+                                               stx)
 			 expr)])
 	  `(pattern-substitute
 	    (quote-syntax ,expr)
@@ -1894,7 +1897,7 @@
   (-define (datum->syntax-object/shape orig datum)
      (if (syntax? datum)
 	 datum
-	 (let ([stx (datum->syntax-object orig datum orig)])
+	 (let ([stx (datum->syntax-object orig datum orig #f orig)])
 	   (let ([shape (syntax-property orig 'paren-shape)])
 	     (if shape
 		 (syntax-property stx 'paren-shape shape)
@@ -2014,9 +2017,7 @@
 	   (let ([new-e (loop (syntax-e stx))])
 	     (if (eq? (syntax-e stx) new-e)
 		 stx
-                 (syntax-recertify
-                  (datum->syntax-object/shape stx new-e)
-                  stx sub-insp #f)))]
+                 (datum->syntax-object/shape stx new-e)))]
 	  [(vector? stx)
 	   (list->vector (map loop (vector->list stx)))]
 	  [(box? stx) (box (loop (unbox stx)))]
@@ -2312,8 +2313,6 @@
 				   (cons (quote-syntax list*) r)]))))))))))
        x)))
 
-  (-define sub-insp (current-code-inspector))
-
   (provide syntax-case** syntax))
 
 ;;----------------------------------------------------------------------
@@ -2337,14 +2336,13 @@
 	[(_ stxe kl clause ...)
 	 (syntax (syntax-case** _ #f stxe kl module-identifier=? clause ...))])))
 
-  (-define loc-insp (current-code-inspector))
   (-define (relocate loc stx)
     (if (syntax-source loc)
-	(let-values ([(new-stx) (datum->syntax-object
-                                 stx
-                                 (syntax-e stx)
-                                 loc)])
-	  (syntax-recertify new-stx stx loc-insp #f))
+        (datum->syntax-object stx
+                              (syntax-e stx)
+                              loc
+                              #f
+                              stx)
 	stx))
 
   ;; Like syntax, but also takes a syntax object
@@ -3288,19 +3286,23 @@
 
   (define -re:suffix #rx#"([.][^.]*|)$")
   (define (path-replace-suffix s sfx)
-    (unless (path-string? s)
-      (raise-type-error 'path-replace-suffix "path or valid-path string" 0 s sfx))
+    (unless (or (path-for-some-system? s)
+                (path-string? s))
+      (raise-type-error 'path-replace-suffix "path (for any system) or valid-path string" 0 s sfx))
     (unless (or (string? sfx) (bytes? sfx))
       (raise-type-error 'path-replace-suffix "string or byte string" 1 s sfx))
     (let-values ([(base name dir?) (split-path s)])
       (when (not base)
 	(raise-mismatch-error 'path-replace-suffix "cannot add a suffix to a root path: " s))
-      (let ([new-name (bytes->path
+      (let ([new-name (bytes->path-element
 		       (regexp-replace -re:suffix 
-				       (path->bytes name)
+				       (path-element->bytes name)
 				       (if (string? sfx)
 					   (string->bytes/locale sfx (char->integer #\?))
-					   sfx)))])
+					   sfx))
+                       (if (path-for-some-system? s)
+                           (path-convention-type s)
+                           (system-path-convention-type)))])
 	(if (path? base)
 	    (build-path base new-name)
 	    new-name))))
@@ -3308,27 +3310,28 @@
   (define bsbs (string #\u5C #\u5C))
 
   (define (normal-case-path s)
-    (unless (path-string? s)
-      (raise-type-error 'normal-path-case "path or valid-path string" s))
+    (unless (or (path-for-some-system? s)
+                (path-string? s))
+      (raise-type-error 'normal-path-case "path (for any system) or valid-path string" s))
     (cond
-     [(eq? (system-type) 'windows)
-      (let ([str (if (string? s) s (path->string s))])
+     [(if (path-for-some-system? s)
+          (eq? (path-convention-type s) 'windows)
+          (eq? (system-type) 'windows))
+      (let ([str (if (string? s) s (bytes->string/locale (path->bytes s)))])
 	(if (regexp-match-positions #rx"^[\u5C][\u5C][?][\u5C]" str)
 	    (if (string? s)
 		(string->path s)
 		s)
 	    (let ([s (string-locale-downcase str)])
-	      (string->path 
-	       (regexp-replace* #rx"/" 
-				(if (regexp-match-positions #rx"[/\u5C][. ]+[/\u5C]*$" s)
-				    ;; Just "." or ".." in last path element - don't remove
-				    s
-				    (regexp-replace* #rx"\u5B .\u5D+([/\u5C]*)$" s "\u005C1"))
-				bsbs)))))]
-     [(eq? (system-type) 'macos)
-      (string->path (string-locale-downcase (if (string? s)
-						s
-						(path->string s))))]
+	      (bytes->path 
+               (string->bytes/locale
+                (regexp-replace* #rx"/" 
+                                 (if (regexp-match-positions #rx"[/\u5C][. ]+[/\u5C]*$" s)
+                                     ;; Just "." or ".." in last path element - don't remove
+                                     s
+                                     (regexp-replace* #rx"\u5B .\u5D+([/\u5C]*)$" s "\u005C1"))
+                                 bsbs))
+               'windows))))]
      [(string? s) (string->path s)]
      [else s]))
 

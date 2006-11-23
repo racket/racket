@@ -4400,7 +4400,7 @@ static Scheme_Object *abs_directory_p(const char *name, int argc, Scheme_Object 
     s = SCHEME_BYTE_STR_VAL(ed);
     len = SCHEME_BYTE_STRTAG_VAL(ed);
 
-    if (!scheme_is_complete_path(s, len))
+    if (!scheme_is_complete_path(s, len, SCHEME_PLATFORM_PATH_KIND))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 		       "%s: not a complete path: \"%q\"",
 		       name,

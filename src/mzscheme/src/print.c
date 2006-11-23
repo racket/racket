@@ -1624,9 +1624,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
       closed = 1;
     }
-  else if (SCHEME_PATHP(obj))
+  else if (SCHEME_GENERAL_PATHP(obj))
     {
-      if (compact) {
+      if (compact && SCHEME_PATHP(obj)) {
 	/* Needed for srclocs in procedure names */
 	Scheme_Object *idx;
 	int l;
@@ -1661,8 +1661,21 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       } else if (!pp->print_unreadable) {
 	cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
-	if (notdisplay)
-	  print_utf8_string(pp, "#<path:", 0, 7);
+	if (notdisplay) {
+          if (SCHEME_PATHP(obj)) {
+            print_utf8_string(pp, "#<path:", 0, 7);
+          } else {
+            switch (SCHEME_TYPE(obj)) {
+            case scheme_windows_path_type:
+              print_utf8_string(pp, "#<windows-path:", 0, 15);
+              break;
+            default:
+            case scheme_unix_path_type:
+              print_utf8_string(pp, "#<unix-path:", 0, 12);
+              break;
+            }
+          }
+        }
 	{
 	  Scheme_Object *str;
 	  str = scheme_path_to_char_string(obj);

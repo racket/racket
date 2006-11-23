@@ -118,52 +118,54 @@
 long scheme_creator_id = 'MzSc';
 #endif
 
-#ifdef UNIX_FILE_SYSTEM
-# define FN_SEP '/'
-# define IS_A_SEP(x) ((x) == '/')
-# define IS_A_PRIM_SEP(x) IS_A_SEP(x)
-#endif
-#ifdef DOS_FILE_SYSTEM
-# define FN_SEP '\\'
-# define IS_A_SEP(x) (((x) == '/') || ((x) == '\\'))
-# define IS_A_PRIM_SEP(x) ((x) == '\\')
-#endif
-#ifdef PALMOS_STUFF
-# define FN_SEP 0
-# define IS_A_SEP(x) (!(x))
-#endif
+#define UNIX_FN_SEP '/'
+#define IS_A_UNIX_SEP(x) ((x) == '/')
+#define IS_A_UNIX_PRIM_SEP(x) IS_A_UNIX_SEP(x)
+
+#define DOS_FN_SEP '\\'
+#define IS_A_DOS_SEP(x) (((x) == '/') || ((x) == '\\'))
+#define IS_A_DOS_PRIM_SEP(x) ((x) == '\\')
+
+#define FN_SEP(kind) ((kind == SCHEME_UNIX_PATH_KIND) ? UNIX_FN_SEP : DOS_FN_SEP)
+#define IS_A_SEP(kind, x) ((kind == SCHEME_UNIX_PATH_KIND) ? IS_A_UNIX_SEP(x) : IS_A_DOS_SEP(x))
+#define IS_A_PRIM_SEP(kind, x) ((kind == SCHEME_UNIX_PATH_KIND) ? IS_A_UNIX_PRIM_SEP(x) : IS_A_DOS_PRIM_SEP(x))
 
 MZ_DLLSPEC int scheme_ignore_user_paths;
 void scheme_set_ignore_user_paths(int v) { scheme_ignore_user_paths = v; }
 
 #define CURRENT_WD() scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY)
 
-#define TO_PATH(x) (SCHEME_PATHP(x) ? x : scheme_char_string_to_path(x))
+#define TO_PATH(x) (SCHEME_GENERAL_PATHP(x) ? x : scheme_char_string_to_path(x))
 
 #ifdef DOS_FILE_SYSTEM
 extern int scheme_stupid_windows_machine;
+#endif
+
 static int check_dos_slashslash_drive(const char *next, int delta, int len, 
 				      int *drive_end, int exact, int no_fw);
 static int check_dos_slashslash_qm(const char *next, int len, int *drive_end, 
 				   int *clean_start, int *add_sep);
-#endif
 
-#define is_drive_letter(c) ((c > 0) && (c < 128) && isalpha(c))
+#define is_drive_letter(c) (((unsigned char)c < 128) && isalpha(c))
 
 /* local */
 static Scheme_Object *path_p(int argc, Scheme_Object **argv);
+static Scheme_Object *general_path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *path_to_string(int argc, Scheme_Object **argv);
 static Scheme_Object *path_to_bytes(int argc, Scheme_Object **argv);
 static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv);
 static Scheme_Object *string_to_path(int argc, Scheme_Object **argv);
 static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv);
 static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv);
+static Scheme_Object *path_kind(int argc, Scheme_Object **argv);
+static Scheme_Object *platform_path_kind(int argc, Scheme_Object **argv);
 
 static Scheme_Object *file_exists(int argc, Scheme_Object **argv);
 static Scheme_Object *directory_exists(int argc, Scheme_Object **argv);
 static Scheme_Object *link_exists(int argc, Scheme_Object **argv);
 
 #ifndef NO_FILE_SYSTEM_UTILS
+static Scheme_Object *build_path_kind(int argc, Scheme_Object **argv);
 static Scheme_Object *delete_file(int argc, Scheme_Object **argv);
 static Scheme_Object *rename_file(int argc, Scheme_Object **argv);
 static Scheme_Object *copy_file(int argc, Scheme_Object **argv);
@@ -198,11 +200,11 @@ static Scheme_Object *current_directory(int argc, Scheme_Object *argv[]);
 static int has_null(const char *s, long l);
 static void raise_null_error(const char *name, Scheme_Object *path, const char *mod);
 
-static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt, long wlen);
-static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, int use_filesystem, int force_rel_up);
-static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail);
-static char *remove_redundant_slashes(char *filename, int *l, int delta, int *expanded);
-static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check);
+static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt, long wlen, int kind);
+static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, int use_filesystem, int force_rel_up, int kind);
+static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail, int kind);
+static char *remove_redundant_slashes(char *filename, int *l, int delta, int *expanded, int kind);
+static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check, int kind);
 
 static Scheme_Object *up_symbol, *relative_symbol;
 static Scheme_Object *same_symbol;
@@ -217,6 +219,7 @@ static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
 
 static Scheme_Object *exec_cmd, *run_cmd, *collects_path, *original_pwd;
 #endif
+static Scheme_Object *windows_symbol, *unix_symbol;
 
 void scheme_init_file(Scheme_Env *env)
 {
@@ -243,6 +246,8 @@ void scheme_init_file(Scheme_Env *env)
   REGISTER_SO(orig_dir_symbol);
   REGISTER_SO(addon_dir_symbol);
 #endif
+  REGISTER_SO(windows_symbol);
+  REGISTER_SO(unix_symbol);
 
   up_symbol = scheme_intern_symbol("up");
   relative_symbol = scheme_intern_symbol("relative");
@@ -269,10 +274,28 @@ void scheme_init_file(Scheme_Env *env)
   addon_dir_symbol = scheme_intern_symbol("addon-dir");
 #endif
 
+  windows_symbol = scheme_intern_symbol("windows");
+  unix_symbol = scheme_intern_symbol("unix");
+
   scheme_add_global_constant("path?", 
 			     scheme_make_prim_w_arity(path_p, 
 						      "path?", 
 						      1, 1), 
+			     env);
+  scheme_add_global_constant("path-for-some-system?", 
+			     scheme_make_folding_prim(general_path_p, 
+                                                      "path-for-some-system?", 
+                                                      1, 1, 1), 
+			     env);
+  scheme_add_global_constant("path-convention-type", 
+			     scheme_make_folding_prim(path_kind, 
+                                                      "path-convention-type", 
+                                                      1, 1, 1), 
+			     env);
+  scheme_add_global_constant("system-path-convention-type", 
+			     scheme_make_prim_w_arity(platform_path_kind, 
+                                                      "system-path-convention-type", 
+                                                      0, 0),
 			     env);
   scheme_add_global_constant("path->string", 
 			     scheme_make_prim_w_arity(path_to_string, 
@@ -297,12 +320,12 @@ void scheme_init_file(Scheme_Env *env)
   scheme_add_global_constant("bytes->path", 
 			     scheme_make_prim_w_arity(bytes_to_path, 
 						      "bytes->path", 
-						      1, 1), 
+						      1, 2), 
 			     env);
   scheme_add_global_constant("bytes->path-element", 
 			     scheme_make_prim_w_arity(bytes_to_path_element, 
 						      "bytes->path-element", 
-						      1, 1), 
+						      1, 2), 
 			     env);
 
   scheme_add_global_constant("file-exists?", 
@@ -340,6 +363,11 @@ void scheme_init_file(Scheme_Env *env)
 			     scheme_make_prim_w_arity(scheme_build_path,
 						      "build-path", 
 						      1, -1), 
+			     env);
+  scheme_add_global_constant("build-path/kind", 
+			     scheme_make_prim_w_arity(build_path_kind,
+						      "build-path/kind", 
+						      2, -1), 
 			     env);
   scheme_add_global_constant("path->directory-path",
 			     scheme_make_prim_w_arity(path_to_directory_path,
@@ -473,159 +501,162 @@ void scheme_init_file(Scheme_Env *env)
 /*                             paths                                  */
 /**********************************************************************/
 
-Scheme_Object *scheme_make_sized_offset_path(char *chars, long d, long len, int copy)
+Scheme_Object *scheme_make_sized_offset_kind_path(char *chars, long d, long len, int copy, int kind)
 {
   Scheme_Object *s;
   s = scheme_make_sized_offset_byte_string(chars, d, len, copy);
-  s->type = scheme_path_type;
+  s->type = kind;
   return s;
 }
 
-#ifdef DOS_FILE_SYSTEM
-# define IS_SPEC_CHAR(x) (IS_A_SEP(x) || ((x) == '"') || ((x) == '|') || ((x) == ':') || ((x) == '<') || ((x) == '>'))
+Scheme_Object *scheme_make_sized_offset_path(char *chars, long d, long len, int copy)
+{
+  return scheme_make_sized_offset_kind_path(chars, d, len, copy, SCHEME_PLATFORM_PATH_KIND);
+}
+
+# define IS_SPEC_CHAR(x) (IS_A_DOS_SEP(x) || ((x) == '"') || ((x) == '|') || ((x) == ':') || ((x) == '<') || ((x) == '>'))
 static int is_special_filename(const char *_f, int offset, int len, int not_nul, int immediate);
-#endif
 
 static Scheme_Object *make_protected_sized_offset_path(int protect, char *chars, 
 						       long d, long len, int copy,
-						       int just_check)
+						       int just_check, int kind)
      /* just_check == 2 => just check, and only for the case
 	that it's the last element of a path */
 {
-#ifdef DOS_FILE_SYSTEM
-  if (protect) {
-    int i;
+  if (kind == SCHEME_WINDOWS_PATH_KIND) {
+    if (protect) {
+      int i;
 
-    protect = 0;
+      protect = 0;
 
-    if (!protect) {
-      int at_end = 1;
-      for (i = len; i--; ) {
-	if ((just_check != 2)
-	    && ((chars[i + d] == '.')
-		|| (chars[i + d] == ' '))) {
-	  if (at_end) {
-	    protect = 1;
-	    break;
-	  }
-	} else {
-	  at_end = 0;
-	  if ((chars[i + d] == '/')
-	      || (IS_SPEC_CHAR(chars[i + d]))) {
-	    protect = 1;
-	    break;
-	  }
-	}
+      if (!protect) {
+        int at_end = 1;
+        for (i = len; i--; ) {
+          if ((just_check != 2)
+              && ((chars[i + d] == '.')
+                  || (chars[i + d] == ' '))) {
+            if (at_end) {
+              protect = 1;
+              break;
+            }
+          } else {
+            at_end = 0;
+            if ((chars[i + d] == '/')
+                || (IS_SPEC_CHAR(chars[i + d]))) {
+              protect = 1;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!protect && (len == 1) && (chars[d] == '.'))
+        protect = 1;
+
+      if (!protect && (len == 2) && (chars[d] == '.') && (chars[d+1] == '.'))
+        protect = 1;
+
+      if (!protect) 
+        protect = is_special_filename(chars, d, len, 0, 1);
+
+      if (protect) {
+        char *s2;
+        if (just_check)
+          return scheme_true;
+        s2 = (char *)scheme_malloc_atomic(len + 9 + 1);
+        memcpy(s2, "\\\\?\\REL\\\\", 9);
+        memcpy(s2 + 9, chars + d, len);
+        s2[9 + len] = 0;
+        return scheme_make_sized_offset_kind_path(s2, 0, len + 9, 0, SCHEME_WINDOWS_PATH_KIND);
       }
     }
-
-    if (!protect && (len == 1) && (chars[d] == '.'))
-      protect = 1;
-
-    if (!protect && (len == 2) && (chars[d] == '.') && (chars[d+1] == '.'))
-      protect = 1;
-
-    if (!protect) 
-      protect = is_special_filename(chars, d, len, 0, 1);
-
+  } else {
     if (protect) {
-      char *s2;
-      if (just_check)
-	return scheme_true;
-      s2 = (char *)scheme_malloc_atomic(len + 9 + 1);
-      memcpy(s2, "\\\\?\\REL\\\\", 9);
-      memcpy(s2 + 9, chars + d, len);
-      s2[9 + len] = 0;
-      return scheme_make_sized_offset_path(s2, 0, len + 9, 0);
+      if (chars[d] == '~') {
+        char *nm;
+        if (just_check)
+          return scheme_true;
+        nm = (char *)scheme_malloc_atomic(len + 3);
+        memcpy(nm XFORM_OK_PLUS 2, chars XFORM_OK_PLUS d, len);
+        nm[0] = '.';
+        nm[1] = '/';
+        nm[len + 2] = 0;
+        return scheme_make_sized_offset_kind_path(nm, 0, len + 2, 0, kind);
+      }
     }
   }
-#endif
-#ifdef UNIX_FILE_SYSTEM
-  if (protect) {
-    if (chars[d] == '~') {
-      char *nm;
-      if (just_check)
-	return scheme_true;
-      nm = (char *)scheme_malloc_atomic(len + 3);
-      memcpy(nm XFORM_OK_PLUS 2, chars XFORM_OK_PLUS d, len);
-      nm[0] = '.';
-      nm[1] = '/';
-      nm[len + 2] = 0;
-      return scheme_make_path_without_copying(nm);
-    }
-  }
-#endif
+
   if (just_check)
     return scheme_false;
-  return scheme_make_sized_offset_path(chars, d, len, copy);
+
+  return scheme_make_sized_offset_kind_path(chars, d, len, copy, kind);
 }
 
 #ifdef DOS_FILE_SYSTEM
 static Scheme_Object *make_protected_path(char *chars)
 {
-  return make_protected_sized_offset_path(1, chars, 0, strlen(chars), 1, 0);
+  return make_protected_sized_offset_path(1, chars, 0, strlen(chars), 1, 0, SCHEME_WINDOWS_PATH_KIND);
 }
 #endif
 
 Scheme_Object *make_exposed_sized_offset_path(int already_protected, 
-					      char *chars, long d, long len, int copy)
+					      char *chars, long d, long len, int copy,
+                                              int kind)
   /* Called to make a directory path where the end has been removed.
      We may need to remove a redundant separator.
      Under Windows, if the resulting last element has spaces or is a 
      special file, then we need to protect it with "\\?\". */
 {
-#ifdef DOS_FILE_SYSTEM
-  if (!already_protected) {
-    int i, name_end;
-    int non_dot = 0, dots_only = 1, trailing_dots = 0, protect = 0;
-    /* Skip trailing seps: */
-    for (i = d + len - 1; (i > d) && IS_A_SEP(chars[i]); --i) {
-    }
-    name_end = i+1;
-    for (; (i > d) && !IS_A_SEP(chars[i]); --i) {
-      if ((chars[i] != ' ') && (chars[i] != '.'))
-	non_dot = 1;
-      else if (!non_dot)
-	trailing_dots = 1;
-    }
-    if (non_dot && trailing_dots)
-      protect = 1;
-    else if (name_end == (d + len))
-      protect = is_special_filename(chars, i+1, name_end, 0, 1);
+  if (kind == SCHEME_WINDOWS_PATH_KIND) {
+    if (!already_protected) {
+      int i, name_end;
+      int non_dot = 0, trailing_dots = 0, protect = 0;
+      /* Skip trailing seps: */
+      for (i = d + len - 1; (i > d) && IS_A_DOS_SEP(chars[i]); --i) {
+      }
+      name_end = i+1;
+      for (; (i > d) && !IS_A_DOS_SEP(chars[i]); --i) {
+        if ((chars[i] != ' ') && (chars[i] != '.'))
+          non_dot = 1;
+        else if (!non_dot)
+          trailing_dots = 1;
+      }
+      if (non_dot && trailing_dots)
+        protect = 1;
+      else if (name_end == (d + len))
+        protect = is_special_filename(chars, i+1, name_end, 0, 1);
 
-    if (protect) {
-      Scheme_Object *first, *last, *a[2];
-      char *s2;
-      int l;
-      l = name_end - (i+1);
-      s2 = (char *)scheme_malloc_atomic(l + 9 + 1);
-      memcpy(s2, "\\\\?\\REL\\\\", 9);
-      memcpy(s2+9, chars + i + 1, l);
-      s2[l + 9] = 0;
-      last = scheme_make_sized_path(s2, l+9, 0);
-      first = make_exposed_sized_offset_path(0, chars, d, i-d+1, 1);
-      a[0] = first;
-      a[1] = last;
-      return scheme_build_path(2, a);
+      if (protect) {
+        Scheme_Object *first, *last, *a[2];
+        char *s2;
+        int l;
+        l = name_end - (i+1);
+        s2 = (char *)scheme_malloc_atomic(l + 9 + 1);
+        memcpy(s2, "\\\\?\\REL\\\\", 9);
+        memcpy(s2+9, chars + i + 1, l);
+        s2[l + 9] = 0;
+        last = scheme_make_sized_offset_kind_path(s2, 0, l+9, 0, SCHEME_WINDOWS_PATH_KIND);
+        first = make_exposed_sized_offset_path(0, chars, d, i-d+1, 1, SCHEME_WINDOWS_PATH_KIND);
+        a[0] = first;
+        a[1] = last;
+        return scheme_build_path(2, a);
+      }
     }
   }
-#endif
 
   /* We may need to remove a redundant separator from the directory
      path. Try removing it, and see if anyone would care: */
-  if (do_path_to_directory_path(chars, d, len - 1, scheme_true, 1)) {
-#ifdef DOS_FILE_SYSTEM
+  if (do_path_to_directory_path(chars, d, len - 1, scheme_true, 1, kind)) {
     /* Actually, don't remove a separator after a drive, although it's
        technically redundant. */
-    if (!((len == 3) && is_drive_letter(chars[d]) && (chars[d+1] == ':')))
-#endif
-      {
-	len--;
-	copy = 1;
-      }
+    if ((kind != SCHEME_WINDOWS_PATH_KIND)
+        || !((len == 3) && is_drive_letter(chars[d]) && (chars[d+1] == ':'))) {
+      len--;
+      copy = 1;
+    }
   }
 
-  return scheme_make_sized_offset_path(chars, d, len, copy);
+  return scheme_make_sized_offset_kind_path(chars, d, len, copy, kind);
 }
 
 Scheme_Object *scheme_make_path(const char *chars)
@@ -647,14 +678,14 @@ static Scheme_Object *append_path(Scheme_Object *a, Scheme_Object *b)
 {
   Scheme_Object *s;
   s = scheme_append_byte_string(a, b);
-  s->type = scheme_path_type;
+  s->type = SCHEME_PLATFORM_PATH_KIND;
   return s;
 }
 
 Scheme_Object *scheme_char_string_to_path(Scheme_Object *p)
 {
   p = scheme_char_string_to_byte_string_locale(p);
-  p->type = scheme_path_type;
+  p->type = SCHEME_PLATFORM_PATH_KIND;
   return p;
 }
 
@@ -664,7 +695,42 @@ static Scheme_Object *path_p(int argc, Scheme_Object **argv)
   return (SCHEME_PATHP(argv[0]) ? scheme_true : scheme_false);
 }
 
-#ifdef DOS_FILE_SYSTEM
+static Scheme_Object *general_path_p(int argc, Scheme_Object **argv)
+{
+  return (SCHEME_GENERAL_PATHP(argv[0]) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *path_kind(int argc, Scheme_Object **argv)
+{
+  if (SCHEME_GENERAL_PATHP(argv[0])) {
+    switch (SCHEME_PATH_KIND(argv[0])) {
+    case SCHEME_WINDOWS_PATH_KIND:
+      return windows_symbol;
+      break;
+    default:
+    case SCHEME_UNIX_PATH_KIND:
+      return unix_symbol;
+      break;
+    }
+  } else {
+    scheme_wrong_type("path-system-type", "path (for any system)", 0, argc, argv);
+    return NULL;
+  }
+}
+
+static Scheme_Object *platform_path_kind(int argc, Scheme_Object **argv)
+{
+  switch (SCHEME_PLATFORM_PATH_KIND) {
+  case SCHEME_WINDOWS_PATH_KIND:
+    return windows_symbol;
+    break;
+  default:
+  case SCHEME_UNIX_PATH_KIND:
+    return unix_symbol;
+    break;
+  }
+}
+
 static Scheme_Object *drop_rel_prefix(Scheme_Object *p)
 /* Drop \\?\REL\ prefix */
 {
@@ -679,16 +745,16 @@ static Scheme_Object *drop_rel_prefix(Scheme_Object *p)
         delta = 9;
       else
         delta = 8;
-      p = scheme_make_sized_offset_byte_string(SCHEME_BYTE_STR_VAL(p),
-                                               delta,
-                                               SCHEME_BYTE_STRLEN_VAL(p) - delta,
-                                               1);
+      p = scheme_make_sized_offset_kind_path(SCHEME_BYTE_STR_VAL(p),
+                                             delta,
+                                             SCHEME_BYTE_STRLEN_VAL(p) - delta,
+                                             1,
+                                             SCHEME_WINDOWS_PATH_KIND);
     }
   }
 
   return p;
 }
-#endif
 
 Scheme_Object *scheme_path_to_char_string(Scheme_Object *p)
 {
@@ -716,7 +782,7 @@ static Scheme_Object *path_to_string(int argc, Scheme_Object **argv)
 
 static Scheme_Object *path_to_bytes(int argc, Scheme_Object **argv)
 {
-  if (!SCHEME_PATHP(argv[0]))
+  if (!SCHEME_GENERAL_PATHP(argv[0]))
     scheme_wrong_type("path->bytes", "path", 0, argc, argv);
 
   return scheme_make_sized_byte_string(SCHEME_PATH_VAL(argv[0]),
@@ -732,7 +798,8 @@ static Scheme_Object *is_path_element(Scheme_Object *p)
   fn = scheme_split_path(SCHEME_PATH_VAL(p), 
                          SCHEME_PATH_LEN(p), 
                          &base, 
-                         &isdir);
+                         &isdir,
+                         SCHEME_PATH_KIND(p));
 
   if (SCHEME_SYMBOLP(base))
     return fn;
@@ -742,8 +809,9 @@ static Scheme_Object *is_path_element(Scheme_Object *p)
 static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv)
 {
   Scheme_Object *p = argv[0], *pe;
+  int kind;
 
-  if (!SCHEME_PATHP(p))
+  if (!SCHEME_GENERAL_PATHP(p))
     scheme_wrong_type("path-element->bytes", "path", 0, argc, argv);
   
   pe = is_path_element(p);
@@ -754,20 +822,22 @@ static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv)
                         p);
   p = pe;
 
-#ifdef UNIX_FILE_SYSTEM
-  /* Drop ./ of ./~ prefix */
-  if ((SCHEME_PATH_VAL(p)[0] == '.')
-      && (SCHEME_PATH_VAL(p)[1] == '/')
-      && (SCHEME_PATH_VAL(p)[2] == '~')) {
-    p = scheme_make_sized_offset_byte_string(SCHEME_PATH_VAL(p), 
-                                             2, 
-                                             SCHEME_PATH_LEN(p) - 2, 
-                                             1);
+  kind = SCHEME_PATH_KIND(p);
+
+  if (kind == SCHEME_UNIX_PATH_KIND) {
+    /* Drop ./ of ./~ prefix */
+    if ((SCHEME_PATH_VAL(p)[0] == '.')
+        && (SCHEME_PATH_VAL(p)[1] == '/')
+        && (SCHEME_PATH_VAL(p)[2] == '~')) {
+      p = scheme_make_sized_offset_byte_string(SCHEME_PATH_VAL(p), 
+                                               2, 
+                                               SCHEME_PATH_LEN(p) - 2, 
+                                               1);
+    }
   }
-#endif
-#ifdef WINDOWS_FILE_SYSTEM
-  p = drop_rel_prefix(p);
-#endif
+  if (kind == SCHEME_WINDOWS_PATH_KIND) {
+    p = drop_rel_prefix(p);
+  }
 
   return scheme_make_sized_byte_string(SCHEME_PATH_VAL(p),
 				       SCHEME_PATH_LEN(p),
@@ -795,17 +865,33 @@ static Scheme_Object *string_to_path(int argc, Scheme_Object **argv)
   return p;
 }
 
+static int extract_path_kind(const char *who, int which, int argc, Scheme_Object **argv)
+{
+  if (which >= argc)
+    return SCHEME_PLATFORM_PATH_KIND;
+  
+  if (SAME_OBJ(argv[which], windows_symbol))
+    return SCHEME_WINDOWS_PATH_KIND;
+  if (SAME_OBJ(argv[which], unix_symbol))
+    return SCHEME_UNIX_PATH_KIND;
+
+  scheme_wrong_type(who, "'unix or 'windows", which, argc, argv);
+  return 0;
+}
+
 static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv)
 {
   Scheme_Object *s;
+  int kind;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_type("bytes->path", "byte string", 0, argc, argv);
+  kind = extract_path_kind("bytes->path", 1, argc, argv);
 
   s = scheme_make_sized_byte_string(SCHEME_BYTE_STR_VAL(argv[0]),
 				    SCHEME_BYTE_STRLEN_VAL(argv[0]),
 				    SCHEME_MUTABLEP(argv[0]));
-  s->type = scheme_path_type;
+  s->type = kind;
 
   check_path_ok("bytes->path", s, argv[0]);
 
@@ -816,13 +902,15 @@ static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv)
 {
   Scheme_Object *s = argv[0], *p;
   long i, len;
+  int kind;
 
   if (!SCHEME_BYTE_STRINGP(s))
     scheme_wrong_type("bytes->path-element", "byte string", 0, argc, argv);
+  kind = extract_path_kind("bytes->path-element", 1, argc, argv);
 
   len = SCHEME_BYTE_STRLEN_VAL(s);
   for (i = 0; i < len; i++) {
-    if (IS_A_PRIM_SEP(SCHEME_BYTE_STR_VAL(s)[i])) {
+    if (IS_A_PRIM_SEP(kind, SCHEME_BYTE_STR_VAL(s)[i])) {
       break;
     }
   }
@@ -830,7 +918,8 @@ static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv)
   if (i >= len)
     p = make_protected_sized_offset_path(1, SCHEME_BYTE_STR_VAL(s),
                                          0, len,
-                                         SCHEME_MUTABLEP(s), 0);
+                                         SCHEME_MUTABLEP(s), 0,
+                                         kind);
   else
     p = NULL;
 
@@ -1016,7 +1105,7 @@ Scheme_Object *scheme_get_file_directory(const char *filename)
   int isdir;
   Scheme_Object *base;
   
-  scheme_split_path(filename, strlen(filename), &base, &isdir);
+  scheme_split_path(filename, strlen(filename), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
   
   return base;
 }
@@ -1034,7 +1123,7 @@ Scheme_Object *scheme_remove_current_directory_prefix(Scheme_Object *fn)
   if ((len < SCHEME_PATH_LEN(fn))
       && !scheme_strncmp(SCHEME_PATH_VAL(cwd), SCHEME_PATH_VAL(fn), len)) {
     /* Skip over path separators: */
-    while (IS_A_SEP(SCHEME_PATH_VAL(fn)[len])) {
+    while (IS_A_SEP(SCHEME_PLATFORM_PATH_KIND, SCHEME_PATH_VAL(fn)[len])) {
       len++;
     }
 
@@ -1070,7 +1159,6 @@ static void raise_null_error(const char *name, Scheme_Object *path, const char *
 		     path);
 }
 
-#ifdef DOS_FILE_SYSTEM
 static int check_dos_slashslash_qm(const char *next, int len, 
 				   int *drive_end, int *clean_start, int *add_sep)
 /* Check starting with exactly \\?\, which prefixes an absolute path
@@ -1083,14 +1171,14 @@ static int check_dos_slashslash_qm(const char *next, int len,
    last slash, unless thre's one extra slash, in which case drive_end
    is after that slash, too. In the case of \\?\UNC\..., drive_end
    is after the UNC part as in check_dos_slashslash_drive(). If
-   it's a \\?\REL\ path, then drive_end is set to -1(!); use 
-   get_slashslash_qm_dot_ups_end() to get more information.
+   it's a \\?\REL\ or \\?\RED\ path, then drive_end is set to -1(!)
+   or -2(!)!; use get_slashslash_qm_dot_ups_end() to get more information.
 
    clean_start is the position where it's ok to start removing
    extra slahes. It's usually set to the same thing as drive_end. In the
    case of a \\?\UNC\ path, clean_start is set to 7 (i.e., just after
-   that prefix). In the case of a \\?\REL\ path, clean_start is the
-   end of the string.
+   that prefix). In the case of a \\?\REL\ or \\?\RED\ path, clean_start
+   is the end of the string.
 
    If add_sep is set, it points to a place where an extra separator
    might need to be inserted.
@@ -1101,7 +1189,7 @@ static int check_dos_slashslash_qm(const char *next, int len,
       && (next[1] == '\\')
       && (next[2] == '?')
       && (next[3] == '\\')) {
-    if (!drive_end && !clean_start)
+    if (!drive_end && !clean_start && !add_sep)
       return 1;
     /* If there's two backslashes in a row at the end, count everything
        as the drive. There's an exception: two backslashes are ok
@@ -1166,12 +1254,12 @@ static int check_dos_slashslash_qm(const char *next, int len,
     } else if ((len > 8)
 	       && (next[4] == 'R')
 	       && (next[5] == 'E')
-	       && (next[6] == 'L')
+	       && ((next[6] == 'L') || (next[6] == 'D'))
 	       && (next[7] == '\\')
 	       && ((next[8] != '\\')
 		   || (len > 9))) { 
       if (drive_end)
-	*drive_end = -1;
+	*drive_end = ((next[6] == 'L') ? -1 : -2);
       if (clean_start)
 	*clean_start = len; /* caller will have to use get_slashslash_qm_dot_ups_end */
     } else {
@@ -1216,9 +1304,9 @@ static int check_dos_slashslash_drive(const char *next, int delta, int len,
   if (!delta && check_dos_slashslash_qm(next, len, NULL, NULL, NULL))
     return 0;
 
-#define IS_X_SEP(c) (no_fw ? (c == '\\') : IS_A_SEP(c))
+#define IS_X_SEP(c) (no_fw ? (c == '\\') : IS_A_DOS_SEP(c))
 
-  if (delta || (IS_A_SEP(next[0]) && IS_A_SEP(next[1]))) {
+  if (delta || (IS_A_DOS_SEP(next[0]) && IS_A_DOS_SEP(next[1]))) {
     /* Found two separators... */
     /* Check for a drive form: //x/y */
     j = delta ? delta : 2;
@@ -1259,7 +1347,7 @@ static int check_dos_slashslash_drive(const char *next, int delta, int len,
 	    break;
 	  }
 	  break;
-	} else if (IS_A_SEP(next[j])) {
+	} else if (IS_A_DOS_SEP(next[j])) {
 	  /* Found / when only \ is allowed as separator */
 	  break;
 	}
@@ -1271,24 +1359,27 @@ static int check_dos_slashslash_drive(const char *next, int delta, int len,
 }
 
 static int get_slashslash_qm_dot_ups_end(const char *s, int len, int *_lit_start)
-  /* If str is of the form \\?\REL\..\..\.., returns the index
-     just past the last "\..". This might be the first "\" of 
-     a "\\" separator, the "\" before a non-".." element, or
-     the end of the string. The _lit_start value is filled with
-     the starting index of the literal part of the path (i.e., 
-     after one or two slashes). */
+  /* If str is of the form \\?\REL\..\..\.., returns the index just
+     past the last "\..". This might be the first "\" of a "\\"
+     separator, the "\" before a non-".." element, or the end of the
+     string. For a \\?\RED\ path, it's as if there are no ".."s
+     (because ".." is not special in "RED" paths).  The _lit_start
+     value is filled with the starting index of the literal part of
+     the path (i.e., after one or two slashes). */
 {
-  int pos = -1, j = 7; /* \\?\REL\ */
+  int pos = -1, j = 7; /* \\?\REL\ or \\?\RED\ */
 
-  while (1) {
-    if (j + 3 > len) {
-      break;
-    } else if ((s[j] == '\\') && (s[j+1] == '.') && (s[j+2] == '.')
-	       && ((j + 3 == len) || (s[j+3] == '\\'))) {
-      pos = j + 3;
-      j += 3;
-    } else {
-      break;
+  if (s[6] == 'L') {
+    while (1) {
+      if (j + 3 > len) {
+        break;
+      } else if ((s[j] == '\\') && (s[j+1] == '.') && (s[j+2] == '.')
+                 && ((j + 3 == len) || (s[j+3] == '\\'))) {
+        pos = j + 3;
+        j += 3;
+      } else {
+        break;
+      }
     }
   }
 
@@ -1326,54 +1417,46 @@ static char *convert_to_backslashbackslash_qm(char *cleaned, int *_clen, char *s
     str = scheme_malloc_atomic(alloc);
   }
 
-  while (1) {
-    {
-      int cde = 0;
-      if (!check_dos_slashslash_drive(cleaned, 0, clen, &cde, 0, 0))
-	cde = 0;
-      cleaned = remove_redundant_slashes(cleaned, &clen, cde, NULL);
-    }
-    cleaned = scheme_normal_path_seps(cleaned, &clen, 0);
-    if (scheme_is_relative_path(cleaned, clen)) {
-      memcpy(str, "\\\\?\\REL\\", 8);
-      memcpy(str + 8, cleaned, clen);
-      pos = clen + 8;
-    } else {
-      int plen, xdel = 0;
-      if (cleaned[0] == '\\') {
-	if (cleaned[1] == '\\') {
-	  /* UNC */
-	  xdel = 1;
-	  plen = 7;
-	} else {
-	  /* Drive-relative absolute. Make it complete. */
-	  cleaned = do_path_to_complete_path(cleaned, clen, NULL, 0);
-	  clen = strlen(cleaned);
-	  /* Completion can make the string arbitrarily larger. */
-	  if (clen + len >= alloc) {
-	    alloc = 2 * alloc + len + 1;
-	    str = (char *)scheme_malloc_atomic(alloc);
-	  }
-	  /* Try again */
-	  continue;
-	}
+  {
+    int cde = 0;
+    if (!check_dos_slashslash_drive(cleaned, 0, clen, &cde, 0, 0))
+      cde = 0;
+    cleaned = remove_redundant_slashes(cleaned, &clen, cde, NULL, SCHEME_WINDOWS_PATH_KIND);
+  }
+  cleaned = do_normal_path_seps(cleaned, &clen, 0, 1, SCHEME_WINDOWS_PATH_KIND);
+  if (scheme_is_relative_path(cleaned, clen, SCHEME_WINDOWS_PATH_KIND)) {
+    memcpy(str, "\\\\?\\REL\\", 8);
+    memcpy(str + 8, cleaned, clen);
+    pos = clen + 8;
+  } else {
+    int plen, xdel = 0;
+    if (cleaned[0] == '\\') {
+      if (cleaned[1] == '\\') {
+        /* UNC */
+        xdel = 1;
+        plen = 7;
       } else {
-	plen = 4;
+        /* Drive-relative absolute. */
+        memcpy(str, "\\\\?\\RED\\", 8);
+        memcpy(str + 8, cleaned, clen);
+        pos = clen + 8;
+        plen = 0;
       }
+    } else {
+      plen = 4;
+    }
+    if (plen) {
       memcpy(str, "\\\\?\\UNC", plen);
       memcpy(str + plen, cleaned + xdel, clen - xdel);
       pos = clen + plen - xdel;
     }
-    break;
   }
 
   *_alloc = alloc;
   *_clen = pos;
   return str;
 }
-#endif
 
-#ifdef DOS_FILE_SYSTEM
 static char *get_drive_part(const char *wds, int wdlen)
 {
   int dend, dstart = 0;
@@ -1390,7 +1473,6 @@ static char *get_drive_part(const char *wds, int wdlen)
 
   return naya;
 }
-#endif
 
 char *scheme_getdrive()
 {
@@ -1406,8 +1488,6 @@ char *scheme_getdrive()
 #endif
 }
 
-#ifdef DOS_FILE_SYSTEM
-
 char *strip_trailing_spaces(const char *s, int *_len, int delta, int in_place)
   /* Strips trailing dots, too */
 {
@@ -1419,12 +1499,12 @@ char *strip_trailing_spaces(const char *s, int *_len, int delta, int in_place)
     len = strlen(s);
 
   /* Keep separators that are at the very end: */
-  if ((len - skip_end > delta) && IS_A_SEP(s[len - 1 - skip_end])) {
+  if ((len - skip_end > delta) && IS_A_DOS_SEP(s[len - 1 - skip_end])) {
     skip_end++;
   }
 
   if ((len - skip_end > delta) 
-	&& (s[len - 1 - skip_end] == ' ') || (s[len - 1 - skip_end] == '.')) {
+      && ((s[len - 1 - skip_end] == ' ') || (s[len - 1 - skip_end] == '.'))) {
     char *t;
     int orig_len = len;
 
@@ -1435,7 +1515,7 @@ char *strip_trailing_spaces(const char *s, int *_len, int delta, int in_place)
 
     /* If the path element doesn't contain any non-space non-. chars, don't
        strip them after all. */
-    if ((len - skip_end > delta) && !IS_A_SEP(s[len - 1 - skip_end])) {
+    if ((len - skip_end > delta) && !IS_A_DOS_SEP(s[len - 1 - skip_end])) {
       if (in_place)
 	t = (char *)s;
       else {
@@ -1456,16 +1536,15 @@ char *strip_trailing_spaces(const char *s, int *_len, int delta, int in_place)
 }
 
 /* Watch out for special device names. Could we do better than hardwiring this list? */
-static unsigned char *special_filenames[] = { "NUL", "CON", "PRN", "AUX", /* NT only: "CLOCK$", */
-					      "COM1", "COM2", "COM3", "COM4", "COM5", 
-					      "COM6", "COM7", "COM8", "COM9",
-					      "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", 
-					      "LPT6", "LPT7", "LPT8", "LPT9", NULL };
+static char *special_filenames[] = { "NUL", "CON", "PRN", "AUX", /* NT only: "CLOCK$", */
+                                     "COM1", "COM2", "COM3", "COM4", "COM5", 
+                                     "COM6", "COM7", "COM8", "COM9",
+                                     "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", 
+                                     "LPT6", "LPT7", "LPT8", "LPT9", NULL };
 
-static int is_special_filename(const char *_f, int offset, int len, int not_nul, int immediate)
+static int is_special_filename(const char *f, int offset, int len, int not_nul, int immediate)
 {
   int i, j, delta;
-  const unsigned char *f = (const unsigned char *)_f;
 
   /* Skip over path: */
   if (!len)
@@ -1475,20 +1554,20 @@ static int is_special_filename(const char *_f, int offset, int len, int not_nul,
     if (check_dos_slashslash_qm(f, delta, NULL, NULL, NULL))
       return 0;
     delta -= 1;
-    while (delta && !IS_A_SEP(f[delta])) {
+    while (delta && !IS_A_DOS_SEP(f[delta])) {
       --delta;
     }
     if (!delta && is_drive_letter(f[0]) && f[1] == ':') {
       delta = 2;
-    } else if (IS_A_SEP(f[delta]))
+    } else if (IS_A_DOS_SEP(f[delta]))
       delta++;
   } else
     delta = offset;
 
   for (i = not_nul; special_filenames[i]; i++) {
-    unsigned char *sf = special_filenames[i];
+    const char *sf = special_filenames[i];
     for (j = 0; sf[j] && f[delta + j]; j++) {
-      if (toupper(f[delta + j]) != sf[j])
+      if (scheme_toupper((unsigned char)f[delta + j]) != sf[j])
 	break;
     }
     if (j && !sf[j]) {
@@ -1512,53 +1591,54 @@ static int is_special_filename(const char *_f, int offset, int len, int not_nul,
   return 0;
 }
 
+#ifdef DOS_FILE_SYSTEM
 int scheme_is_special_filename(const char *f, int not_nul)
 {
   return is_special_filename(f, 0, strlen(f), not_nul, 0);
 }
 #endif
 
-static char *remove_redundant_slashes(char *filename, int *l, int delta, int *expanded)
+static char *remove_redundant_slashes(char *filename, int *l, int delta, int *expanded, int kind)
 {
   int extra = 0, i, ilen = *l;
   
   for (i = ilen; --i > delta; ) {
-     if (IS_A_SEP(filename[i])) {
-       if (IS_A_SEP(filename[i - 1])) {
-	 extra++;
-       }
-     }
-   }
+    if (IS_A_SEP(kind, filename[i])) {
+      if (IS_A_SEP(kind, filename[i - 1])) {
+        extra++;
+      }
+    }
+  }
 
-   if (extra) {
-     char *naya;
-     naya = (char *)scheme_malloc_atomic(ilen + 1 - extra);
-     extra = 0;
-     for (i = delta; i < ilen; i++) {
-       if (IS_A_SEP(filename[i])
-	   && IS_A_SEP(filename[i + 1])) {
-	 /* Skip */
-	 extra++;
-       } else {
-	 naya[i - extra] = filename[i];
-       }
-     }
-     memcpy(naya, filename, delta);
-     ilen -= extra;
-     naya[ilen] = 0;
-     filename = naya;
-     if (expanded)
-       *expanded = 1;
-   }
-
-   *l = ilen;
-   return filename;
- }
+  if (extra) {
+    char *naya;
+    naya = (char *)scheme_malloc_atomic(ilen + 1 - extra);
+    extra = 0;
+    for (i = delta; i < ilen; i++) {
+      if (IS_A_SEP(kind, filename[i])
+          && IS_A_SEP(kind, filename[i + 1])) {
+        /* Skip */
+        extra++;
+      } else {
+        naya[i - extra] = filename[i];
+      }
+    }
+    memcpy(naya, filename, delta);
+    ilen -= extra;
+    naya[ilen] = 0;
+    filename = naya;
+    if (expanded)
+      *expanded = 1;
+  }
+  
+  *l = ilen;
+  return filename;
+}
 
 static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, const char *errorin, 
 				int *expanded,
 				int report_bad_user, int fullpath,
-				int guards)
+				int guards, int kind)
 {
   if (expanded)
     *expanded = 0;
@@ -1583,90 +1663,89 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
     }
   }
 
-#ifdef EXPAND_FILENAME_TILDE
-  /* User home lookup strategy taken from wxWindows: */
+  if (kind == SCHEME_UNIX_PATH_KIND) {
+    /* User home lookup strategy taken from wxWindows: */
 
-  if (filename[0] == '~') {
-    char user[256], *home = NULL, *naya;
-    struct passwd *who = NULL;
-    int u, f, len, flen;
+    if (filename[0] == '~') {
+      char user[256], *home = NULL, *naya;
+      struct passwd *who = NULL;
+      int u, f, len, flen;
     
-    for (u = 0, f = 1; 
-	 u < 255 && filename[f] && filename[f] != '/'; 
-	 u++, f++) {
-      user[u] = filename[f];
-    }
-
-    if (filename[f] && filename[f] != '/') {
-      if (errorin && report_bad_user)
-	scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-			 "%s: bad username in path: \"%q\"", 
-			 errorin, filename);
-      return NULL;
-    }
-    user[u] = 0;
-
-    if (!user[0]) {
-      if (!(home = getenv("HOME"))) {
-	char *ptr;
-
-	ptr = getenv("USER");
-	if (!ptr)
-	  ptr = getenv("LOGNAME");
-
-	who = ptr ? getpwnam(ptr) : NULL;
-
-	if (!who)
-	  who = getpwuid(getuid());
+      for (u = 0, f = 1; 
+           u < 255 && filename[f] && filename[f] != '/'; 
+           u++, f++) {
+        user[u] = filename[f];
       }
-    } else
-      who = getpwnam(user);
 
-    if (!home && who)
-      home = who->pw_dir;
+      if (filename[f] && filename[f] != '/') {
+        if (errorin && report_bad_user)
+          scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                           "%s: bad username in path: \"%q\"", 
+                           errorin, filename);
+        return NULL;
+      }
+      user[u] = 0;
 
-    if (!home) {
-      if (errorin && report_bad_user)
-	scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-			 "%s: bad username in path: \"%q\"", 
-			 errorin, filename);
-      return NULL;
+      if (!user[0]) {
+        if (!(home = getenv("HOME"))) {
+          char *ptr;
+
+          ptr = getenv("USER");
+          if (!ptr)
+            ptr = getenv("LOGNAME");
+
+          who = ptr ? getpwnam(ptr) : NULL;
+
+          if (!who)
+            who = getpwuid(getuid());
+        }
+      } else
+        who = getpwnam(user);
+
+      if (!home && who)
+        home = who->pw_dir;
+
+      if (!home) {
+        if (errorin && report_bad_user)
+          scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                           "%s: bad username in path: \"%q\"", 
+                           errorin, filename);
+        return NULL;
+      }
+
+      len = strlen(home);
+      if (f < ilen) 
+        flen = ilen - f - 1;
+      else
+        flen = 0;
+      naya = (char *)scheme_malloc_atomic(len + flen + 2);
+      memcpy(naya, home, len);
+      naya[len] = '/';
+      memcpy(naya + len + 1, filename + f + 1, flen);
+      naya[len + flen + 1] = 0;
+
+      if (expanded)
+        *expanded = 1;
+  
+      filename = naya;
+      ilen = len + flen + 1;
     }
 
-    len = strlen(home);
-    if (f < ilen) 
-      flen = ilen - f - 1;
-    else
-      flen = 0;
-    naya = (char *)scheme_malloc_atomic(len + flen + 2);
-    memcpy(naya, home, len);
-    naya[len] = '/';
-    memcpy(naya + len + 1, filename + f + 1, flen);
-    naya[len + flen + 1] = 0;
-
-    if (expanded)
-      *expanded = 1;
-  
-    filename = naya;
-    ilen = len + flen + 1;
-  }
-
-  /* Remove redundant slashes */
-  {
-    int l = ilen;
-    filename = remove_redundant_slashes(filename, &l, 0, expanded);
-    ilen = l;
-  }
-#endif
-#ifdef DOS_FILE_SYSTEM
-  {
+    /* Remove redundant slashes */
+    {
+      int l = ilen;
+      filename = remove_redundant_slashes(filename, &l, 0, expanded, SCHEME_PLATFORM_PATH_KIND);
+      ilen = l;
+    }
+  } else {
+    /* SCHEME_WINDOWS_PATH_KIND */
     int drive_end, clean_start;
     int fixit = 0, i, insert_initial_sep = 0;
 
     if (!check_dos_slashslash_qm(filename, ilen, &drive_end, &clean_start, NULL))
       drive_end = 0;
     else if (drive_end < 0) {
-      /* \\?\REL\ path; only remove extra backslashes after 
+      /* For \\?\REL\, only remove extra backslashes after 
 	 unprotected ..s, so count the start of that area
 	 as the drive end. */
       get_slashslash_qm_dot_ups_end(filename, ilen, &drive_end);
@@ -1683,13 +1762,13 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
     } else {
       drive_end = clean_start;
     }
-    
+
     /* Check whether to clean up the name, removing mulitple // and
        adding "/" after "c:" if necessary */
     if (!drive_end 
 	&& is_drive_letter(filename[0])
 	&& (filename[1] == ':') 
-	&& !IS_A_SEP(filename[2])) {
+	&& !IS_A_DOS_SEP(filename[2])) {
       drive_end = 2;
       insert_initial_sep = 1;
       fixit = 1;
@@ -1697,8 +1776,8 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       int found_slash = 0;
       
       for (i = ilen; i-- > drive_end; ) {
-	if (IS_A_SEP(filename[i])) {
-	  if (IS_A_SEP(filename[i - 1])) {
+	if (IS_A_DOS_SEP(filename[i])) {
+	  if (IS_A_DOS_SEP(filename[i - 1])) {
 	    if ((i > 1) || !found_slash)
 	      fixit = 1;
 	    break;
@@ -1730,8 +1809,8 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       }
       
       while (i < ilen) {
-	if (IS_A_SEP(filename[i])
-	    && IS_A_SEP(filename[i + 1])) {
+	if (IS_A_DOS_SEP(filename[i])
+	    && IS_A_DOS_SEP(filename[i + 1])) {
 	  i++;
 	} else
 	  naya[pos++] = filename[i++];
@@ -1753,32 +1832,31 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       }
     }
   }
-#endif
 
   if (fullpath) {
-    if (!scheme_is_complete_path(filename, ilen)) {
+    if (!scheme_is_complete_path(filename, ilen, kind)) {
       if (expanded)
 	*expanded = 1;
-      filename = do_path_to_complete_path(filename, ilen, NULL, 0);
+      filename = do_path_to_complete_path(filename, ilen, NULL, 0, kind);
       ilen = strlen(filename);
     }
-#ifdef DOS_FILE_SYSTEM
-    if (ilen > ((fullpath > 1) ? fullpath : 259)) {
-      if (!check_dos_slashslash_qm(filename, ilen, NULL, NULL, NULL)) {
-	/* Convert to \\?\ to avoid length limit. */
-	int l = ilen, a = ilen + 1;
-	Scheme_Object *p;
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
+      if (ilen > ((fullpath > 1) ? fullpath : 259)) {
+        if (!check_dos_slashslash_qm(filename, ilen, NULL, NULL, NULL)) {
+          /* Convert to \\?\ to avoid length limit. */
+          int l = ilen, a = ilen + 1;
+          Scheme_Object *p;
 
-	p = scheme_make_sized_path(filename, ilen, 0);
-	p = do_simplify_path(p, scheme_null, 0, 1, 0);
-	filename = SCHEME_PATH_VAL(p);
-	ilen = SCHEME_PATH_LEN(p);
+          p = scheme_make_sized_path(filename, ilen, 0);
+          p = do_simplify_path(p, scheme_null, 0, 1, 0, SCHEME_WINDOWS_PATH_KIND);
+          filename = SCHEME_PATH_VAL(p);
+          ilen = SCHEME_PATH_LEN(p);
 
-	filename = convert_to_backslashbackslash_qm(filename, &l, filename, &a, 0);
-	filename[l] = 0;
+          filename = convert_to_backslashbackslash_qm(filename, &l, filename, &a, 0);
+          filename[l] = 0;
+        }
       }
     }
-#endif
   }
 
   return filename;
@@ -1786,12 +1864,12 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 
 char *scheme_expand_filename(char* filename, int ilen, const char *errorin, int *expanded, int guards)
 {
-  return do_expand_filename(NULL, filename, ilen, errorin, expanded, 1, 1, guards);
+  return do_expand_filename(NULL, filename, ilen, errorin, expanded, 1, 1, guards, SCHEME_PLATFORM_PATH_KIND);
 }
 
 char *scheme_expand_string_filename(Scheme_Object *o, const char *errorin, int *expanded, int guards)
 {
-  return do_expand_filename(o, NULL, 0, errorin, expanded, 1, 1, guards);
+  return do_expand_filename(o, NULL, 0, errorin, expanded, 1, 1, guards, SCHEME_PLATFORM_PATH_KIND);
 }
 
 #ifdef DOS_FILE_SYSTEM
@@ -1897,7 +1975,7 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Objec
   if (date)
     *date = scheme_false;
 
-  if ((len > 1) && IS_A_SEP(dirname[0]) 
+  if ((len > 1) && IS_A_DOS_SEP(dirname[0]) 
       && (check_dos_slashslash_qm(dirname, len, NULL, NULL, NULL) /* dirname is absolute */
 	  || check_dos_slashslash_drive(dirname, 0, len, NULL, 1, 0))) {
     /* stat doesn't work with UNC "drive" names or \\?\ paths */
@@ -1910,7 +1988,7 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Objec
       memcpy(copy, dirname, len + 1);
     } else {
       memcpy(copy, dirname, len + 1);
-      while (IS_A_SEP(copy[len - 1])) {
+      while (IS_A_DOS_SEP(copy[len - 1])) {
 	--len;
 	copy[len] = 0;
 	must_be_dir = 1;
@@ -2082,7 +2160,8 @@ static Scheme_Object *file_exists(int argc, Scheme_Object **argv)
 			 "file-exists?",
 			 NULL,
 			 0, 1,
-			 SCHEME_GUARD_FILE_EXISTS);
+			 SCHEME_GUARD_FILE_EXISTS,
+                         SCHEME_PLATFORM_PATH_KIND);
 
   return (f && scheme_file_exists(f)) ? scheme_true : scheme_false;
 }
@@ -2100,7 +2179,8 @@ static Scheme_Object *directory_exists(int argc, Scheme_Object **argv)
 			 "directory-exists?",
 			 NULL,
 			 0, 1,
-			 SCHEME_GUARD_FILE_EXISTS);
+			 SCHEME_GUARD_FILE_EXISTS,
+                         SCHEME_PLATFORM_PATH_KIND);
 
   return (f && scheme_directory_exists(f)) ? scheme_true : scheme_false;
 }
@@ -2141,7 +2221,8 @@ static Scheme_Object *link_exists(int argc, Scheme_Object **argv)
 				  "link-exists?",
 				  NULL,
 				  0, 1,
-				  SCHEME_GUARD_FILE_EXISTS);
+				  SCHEME_GUARD_FILE_EXISTS, 
+                                  SCHEME_PLATFORM_PATH_KIND);
     while (1) {
       if (!MSC_W_IZE(lstat)(MSC_WIDE_PATH(filename), &buf))
 	break;
@@ -2223,142 +2304,142 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd)
   return NULL;
 }
 
-static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check)
+static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check,
+                                                int kind)
 /* Although this function accepts an offset, the Windows part assumes that
    `offset' is always 0. */
 {
   char *s2;
   int not_a_sep = 0;
 
-#ifdef DOS_FILE_SYSTEM
-  int slash_dir_sep = 1;
+  if (kind == SCHEME_WINDOWS_PATH_KIND) {
+    int slash_dir_sep = 1;
 
-  {
-    int drive_end;
+    {
+      int drive_end;
 
-    if (offset) {
-      scheme_signal_error("path->directory-path currently assumes a 0 offset");
-    }
-
-    if (check_dos_slashslash_qm(s, len, &drive_end, NULL, NULL)) {
-      if (drive_end == -1) {
-        /* It's a \\?\REL\ path. */
-        int litpos;
-        drive_end = get_slashslash_qm_dot_ups_end(s, len, &litpos);
-        /* If there's no path after the ..s, then nothing more is needed. */
-        if (litpos >= len)
-          return p;
-      } else {
-        /* If s is just a drive, then nothing more is needed. */
-        if (drive_end == len)
-          return p;
+      if (offset) {
+        scheme_signal_error("path->directory-path currently assumes a 0 offset");
       }
 
-      /* In \\?\, / can be part of a name, and it is never a separator. */
-      slash_dir_sep = 0;
-      /* Any "." or ".." at the end is a literal path element,
-         not an up- or same-directory indicator: */
-      not_a_sep = 1;
-    } else {
-      /* A slash after C: is not strictly necessary: */
-      if ((len == 2)
-          && is_drive_letter(s[offset])
-          && (s[offset+1] == ':'))
+      if (check_dos_slashslash_qm(s, len, &drive_end, NULL, NULL)) {
+        if (drive_end < 0) {
+          /* It's a \\?\REL\ or \\?\RED\ path. */
+          int litpos;
+          drive_end = get_slashslash_qm_dot_ups_end(s, len, &litpos);
+          /* If there's no path after the ..s, then nothing more is needed. */
+          if (litpos >= len)
+            return p;
+        } else {
+          /* If s is just a drive, then nothing more is needed. */
+          if (drive_end == len)
+            return p;
+        }
+
+        /* In \\?\, / can be part of a name, and it is never a separator. */
+        slash_dir_sep = 0;
+        /* Any "." or ".." at the end is a literal path element,
+           not an up- or same-directory indicator: */
+        not_a_sep = 1;
+      } else {
+        /* A slash after C: is not strictly necessary: */
+        if ((len == 2)
+            && is_drive_letter(s[offset])
+            && (s[offset+1] == ':'))
+          return p;
+      }
+    }
+    {
+      int cs = s[offset + len - 1];
+      if (slash_dir_sep ? IS_A_DOS_SEP(cs) : (cs == '\\'))
         return p;
     }
+  } else {
+    if (IS_A_UNIX_SEP(s[offset + len - 1]))
+      return p;
   }
-# define IS_A_DIR_SEP(x) (slash_dir_sep ? IS_A_SEP(x) : (x == '\\'))
-#else
-# define IS_A_DIR_SEP(x) IS_A_SEP(x)
-#endif
-
-  if (IS_A_DIR_SEP(s[offset + len - 1]))
-    return p;
 
   if (!not_a_sep
-      && (((len > 1) && (s[offset + len - 1] == '.') && IS_A_SEP(s[offset + len - 2]))
+      && (((len > 1) && (s[offset + len - 1] == '.') && IS_A_SEP(kind, s[offset + len - 2]))
           || ((len == 1) && (s[offset] == '.'))))
     return p;
   if (!not_a_sep
       && (((len > 2) 
            && (s[offset + len - 1] == '.') 
            && (s[offset + len - 2] == '.') 
-           && IS_A_SEP(s[offset + len - 3]))
+           && IS_A_SEP(kind, s[offset + len - 3]))
           || ((len == 2) && (s[offset] == '.') && (s[offset + 1] == '.'))))
     return p;
   
-#ifdef UNIX_FILE_SYSTEM
-  if (s[offset] == '~') {
-    long i;
-    for (i = 1; i < len; i++) {
-      if (IS_A_SEP(s[offset + i]))
-        break;
+  if (kind == SCHEME_UNIX_PATH_KIND) {
+    if (s[offset] == '~') {
+      long i;
+      for (i = 1; i < len; i++) {
+        if (IS_A_UNIX_SEP(s[offset + i]))
+          break;
+      }
+      if (i >= len)
+        return p;
     }
-    if (i >= len)
-      return p;
   }
-#endif
 
   if (just_check)
     return NULL;
 
   s2 = (char *)scheme_malloc_atomic(len + 2);
   memcpy(s2, s XFORM_OK_PLUS offset, len);
-  s2[len] = FN_SEP;
+  s2[len] = FN_SEP(kind);
   s2[len+1] = 0;
 
-  return scheme_make_sized_path(s2, len + 1, 0);
+  return scheme_make_sized_offset_kind_path(s2, 0, len + 1, 0, kind);
 }
 
 Scheme_Object *scheme_path_to_directory_path(Scheme_Object *p)
 {
-  return do_path_to_directory_path(SCHEME_PATH_VAL(p), 0, SCHEME_PATH_LEN(p), p, 0);
+  return do_path_to_directory_path(SCHEME_PATH_VAL(p), 0, SCHEME_PATH_LEN(p), p, 0, 
+                                   SCHEME_PATH_KIND(p));
 }
 
-static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail)
+static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail, int kind)
 {
-#ifdef PALMOS_STUFF
-  return si;
-#else
-# ifndef UNIX_FILE_SYSTEM
-  int i;
-  unsigned char *s;
-  int len = *_len;
-
-#  ifdef DOS_FILE_SYSTEM
-  if (!delta && check_dos_slashslash_qm(si, len, NULL, NULL, NULL))
+  if (kind == SCHEME_UNIX_PATH_KIND) {
     return si;
-#  endif
-
-  s = (unsigned char *)MALLOC_N_ATOMIC(char, len + 1);
-  memcpy(s, si, len + 1);
-
-#  ifdef DOS_FILE_SYSTEM
-  for (i = delta; i < len; i++) {
-    if (s[i] == '/')
-      s[i] = '\\';
+  } else {
+    int i;
+    unsigned char *s;
+    int len = *_len;
+    
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
+      if (!delta && check_dos_slashslash_qm(si, len, NULL, NULL, NULL))
+        return si;
+    }
+    
+    s = (unsigned char *)MALLOC_N_ATOMIC(char, len + 1);
+    memcpy(s, si, len + 1);
+    
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
+      for (i = delta; i < len; i++) {
+        if (s[i] == '/')
+          s[i] = '\\';
+      }
+      if (strip_trail)
+        s = (unsigned char *)strip_trailing_spaces((char *)s, _len, delta, 1);
+    }
+    
+    return (char *)s;
   }
-  if (strip_trail)
-    s = (unsigned char *)strip_trailing_spaces((char *)s, _len, delta, 1);
-#  endif
-
-  return (char *)s;
-# else
-  return si;
-# endif
-#endif
 }
 
 char *scheme_normal_path_seps(char *si, int *_len, int delta)
 {
-  return do_normal_path_seps(si, _len, delta, 1);
+  return do_normal_path_seps(si, _len, delta, 1, SCHEME_PLATFORM_PATH_KIND);
 }
 
 #define PATH_EXTRA_SPACE 4
 
-static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final_simplify)
+static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, int no_final_simplify, int kind)
 /* Originally, it make sense to just perform build operations
-   directly on strip representations, because it was simple enough.
+   directly on string representations, because it was simple enough.
    Over the years, though, as we refined the path syntax for Windows
    to deal with all of its idiosyncracies, this has gotten completely 
    out of hand. */
@@ -2368,12 +2449,11 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
   int alloc = PN_BUF_LEN;
   char buffer[PN_BUF_LEN], *str, *next;
   int rel, next_off;
-#ifdef DOS_FILE_SYSTEM
   int first_was_drive = 0;
   int first_len = 0;
-  int needs_extra_slash;
-  int pre_unc;
-#endif
+  int needs_extra_slash = 0;
+  int pre_unc = 0;
+  const char *who = (idelta ? "build-path/kind" : "build-path");
 
   str = buffer;
   pos = 0;
@@ -2382,41 +2462,50 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 		 it's relative or not. */
 
   for (i = 0 ; i < argc; i++) {
-    if (SCHEME_PATH_STRINGP(argv[i])
-	|| (SCHEME_SYMBOLP(argv[i]) 
-	    && (SAME_OBJ(argv[i], up_symbol)
-		|| SAME_OBJ(argv[i], same_symbol)))) {
+    if (SCHEME_GENERAL_PATH_STRINGP(argv[i+idelta])
+	|| (SCHEME_SYMBOLP(argv[i+idelta]) 
+	    && (SAME_OBJ(argv[i+idelta], up_symbol)
+		|| SAME_OBJ(argv[i+idelta], same_symbol)))) {
       next_off = 0;
-      if (SAME_OBJ(argv[i], up_symbol)) {
-#ifdef UNIX_FILE_SYSTEM
-	next = "..";
-	len = 2;
-#endif
-#ifdef DOS_FILE_SYSTEM
-	next = "..";
-	len = 2;
-#endif
-      } else if (SAME_OBJ(argv[i], same_symbol)) {
-#ifdef UNIX_FILE_SYSTEM
+      if (SAME_OBJ(argv[i+idelta], up_symbol)) {
+        next = "..";
+        len = 2;
+      } else if (SAME_OBJ(argv[i+idelta], same_symbol)) {
 	next = ".";
 	len = 1;
-#endif
-#ifdef DOS_FILE_SYSTEM
-	next = ".";
-	len = 1;
-#endif
       } else {
 	Scheme_Object *bs;
-	bs = TO_PATH(argv[i]);
+
+        if (SCHEME_CHAR_STRINGP(argv[i+idelta])) {
+          if (kind != SCHEME_PLATFORM_PATH_KIND) {
+            scheme_arg_mismatch(who,
+                                (idelta
+                                 ? "specified convention incompatible with string path element: "
+                                 : "preceding path's convention incompatible with string path element: "),
+                                argv[i+idelta]); 
+          }
+        }
+
+	bs = TO_PATH(argv[i+idelta]);
+
+        if (kind != SCHEME_PATH_KIND(bs)) {
+          scheme_arg_mismatch(who,
+                              (idelta
+                               ? "specified convention incompatible with given path element: "
+                               : "preceding path's convention incompatible from given path element: "),
+                              argv[i+idelta]);
+        }
+
 	next = SCHEME_PATH_VAL(bs);
 	len = SCHEME_PATH_LEN(bs);
 	if (!len) {
 	  char *astr;
 	  long alen;
 
-	  astr = scheme_make_args_string("other ", i, argc, argv, &alen);
+	  astr = scheme_make_args_string("other ", i+idelta, argc, argv, &alen);
 	  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			   "build-path: %d%s path element is an empty string%t", 
+			   "%s: %d%s path element is an empty string%t", 
+                           who,
 			   i + 1,
 			   scheme_number_suffix(i + 1),
 			   astr, alen); 
@@ -2424,13 +2513,12 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 	}
 
 	if (has_null(next, len)) {
-	  raise_null_error("build-path", argv[i], " element");
+	  raise_null_error(who, argv[i+idelta], " element");
 	  return NULL;
 	}
       }
 
-#ifdef DOS_FILE_SYSTEM
-      {
+      if (kind == SCHEME_WINDOWS_PATH_KIND) {
 	/* Strip trailing spaces before we add more path parts,
 	   because trailing spaces originally don't count for the base
 	   path, and they'll start counting if we add more without
@@ -2440,7 +2528,6 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 	strip_trailing_spaces(str, &p, first_len, 1);
 	pos = p;
       }
-#endif
 
       /* +3: null term, leading sep, and trailing sep (if up & Mac) */
       if (pos + len + PATH_EXTRA_SPACE >= alloc) {
@@ -2455,37 +2542,37 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 	str = naya;
       }
 
-#ifdef UNIX_FILE_SYSTEM
-      if (next[0] == '/') {
-	rel = 0;
-	if (i) {
-	  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			   "build-path: absolute path \"%q\" cannot be"
-			   " added to a path",
-			   next);
-	  return scheme_false;
-	}
-      } else {
-	rel = 1;
-        if (i && (next[0] == '.') && (next[1] == '/') && (next[2] == '~')) {
-          /* Strip the "./" prefix */
-          next_off += 2;
-          len -= 2;
+      if (kind == SCHEME_UNIX_PATH_KIND) {
+        if (next[0] == '/') {
+          rel = 0;
+          if (i) {
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: absolute path \"%q\" cannot be"
+                             " added to a path",
+                             who,
+                             next);
+            return scheme_false;
+          }
+        } else {
+          rel = 1;
+          if (i && (next[0] == '.') && (next[1] == '/') && (next[2] == '~')) {
+            /* Strip the "./" prefix */
+            next_off += 2;
+            len -= 2;
+          }
         }
-      }
-#endif
-#ifdef DOS_FILE_SYSTEM
-      {
+      } else {
+        /* SCHEME_WINDOWS_PATH_KIND: */
 	int is_drive;
 
 	needs_extra_slash = 0;
 	
-	if (IS_A_SEP(next[0])) {
+	if (IS_A_DOS_SEP(next[0])) {
 	  int drive_end, plus_sep = 0;
 	  rel = 0;
 	  if (check_dos_slashslash_qm(next, len, &drive_end, NULL, &plus_sep)) {
 	    if (drive_end < 0) {
-	      /* \\?\REL\ path */
+	      /* \\?\REL\ or \\?\RED\ path */
 	      rel = 1;
 	      is_drive = 0;
 	      if (i) {
@@ -2498,8 +2585,10 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 		  Scheme_Object *simp;
 
 		  str[pos] = 0;
-		  simp = do_simplify_path(scheme_make_sized_path(str, pos, 0),
-					  scheme_null, first_len, 0, 0);
+		  simp = do_simplify_path(scheme_make_sized_offset_kind_path(str, 0, pos, 0,
+                                                                             SCHEME_WINDOWS_PATH_KIND),
+					  scheme_null, first_len, 0, 0,
+                                          SCHEME_WINDOWS_PATH_KIND);
 		  if (SCHEME_FALSEP(simp)) {
 		    /* Base path is just relative "here". We can ignore it. */
 		    pos = 0;
@@ -2507,6 +2596,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 		    if (next[len] != '\\')
 		      first_len++;
 		    no_sep = 1;
+		    new_rel_base = 0;
 		  } else {
 		    char *cleaned;
 		    int clen;
@@ -2514,7 +2604,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 
 		    clen = SCHEME_PATH_LEN(simp); 
 		    cleaned = SCHEME_PATH_VAL(simp);
-		    
+
 		    str = convert_to_backslashbackslash_qm(cleaned, &clen, str, &al, 
 							   len + PATH_EXTRA_SPACE);
 
@@ -2553,13 +2643,18 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 		    str[pos] = 0;
 		    need_simplify = 1;
 		  }
-		 
+
 		  if (need_simplify) {
+                    /* Simplify the base path to build on: */
 		    Scheme_Object *simp;
-		    
-		    simp = do_simplify_path(scheme_make_sized_path(str, pos, 0),
-					    scheme_null, first_len, 0, 1);
+
+		    simp = do_simplify_path(scheme_make_sized_offset_kind_path(str, 0, pos, 0,
+                                                                               SCHEME_WINDOWS_PATH_KIND),
+					    scheme_null, first_len, 0, 1,
+                                            SCHEME_WINDOWS_PATH_KIND);
 		    if (SCHEME_FALSEP(simp)) {
+                      /* Note: if root turns out to be relative, then we couldn't
+                         have had a \\?\RED\ path. */
 		      memcpy(str, "\\\\?\\REL\\\\", 9);
 		      pos = 9;
 		      no_sep = 1;
@@ -2626,7 +2721,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 		first_len = len;
 	      }
 	    } else {
-	      is_drive = (drive_end == len);
+              is_drive = (drive_end == len);
 	      needs_extra_slash = plus_sep;
 	      if (!i) {
 		first_len = len;
@@ -2642,7 +2737,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 	  int j;
 	  rel = 0;
 	  for (j = 2; j < len; j++) {
-	    if (!IS_A_SEP(next[j]))
+	    if (!IS_A_DOS_SEP(next[j]))
 	      break;
 	  }
 	  is_drive = (j >= len);
@@ -2661,8 +2756,9 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 	    } else
 	      str[pos] = 0;
 	    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			     "build-path: %s \"%s\" cannot be"
+			     "%s: %s \"%s\" cannot be"
 			     " added to the path \"%q\"",
+                             who,
 			     is_drive ? "drive" : "absolute path",
 			     next, str);
 	    return scheme_false;
@@ -2670,7 +2766,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 
 	  if (i == 1) {
 	    /* Absolute path onto a drive: skip separator(s) */
-	    while (len && IS_A_SEP(next[next_off])) {
+	    while (len && IS_A_DOS_SEP(next[next_off])) {
 	      next_off++;
 	      len--;
 	    }
@@ -2680,134 +2776,153 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int no_final
 	if (!i)
 	  first_was_drive = is_drive;
       }
-#endif
 
       if (!i) {
 	no_sep = 1;
       }
       
-#ifdef DOS_FILE_SYSTEM
-      if (i)
-	pre_unc = check_dos_slashslash_drive(str, 0, pos, NULL, 0, 0);
-      else
-	pre_unc = 1;
+      if (kind == SCHEME_WINDOWS_PATH_KIND) {
+        if (i)
+          pre_unc = check_dos_slashslash_drive(str, 0, pos, NULL, 0, 0);
+        else
+          pre_unc = 1;
 
-      if (no_final_simplify
-	  && (len == 2) 
-          && (next[next_off] == '.')
-          && (next[next_off+1] == '.')
-	  && (first_len < pos + 2)) {
-        /* Adding ".." ... */
-        int de;
-        if (check_dos_slashslash_qm(str, pos, &de, NULL, NULL)) {
-          if (de < 0) {
-            /* ... to a \\?\REL\ path. Unless the \\?\REL\ path
-               is only dots, we need to remove a path element
-               here, instead of waiting for simplify, because simplify
-               will just push the job back here. */
-            int ls, dots_end;
-            dots_end = get_slashslash_qm_dot_ups_end(str, pos, &ls);
-            if (ls == pos) {
-              /* It's ok to add "..". Make sure we don't
-                 append to "..\\" by setting pos to no more
-                 than dots_end + 1. */
-              if (dots_end < ls)
-                pos = dots_end + 1;
-            } else {
-              int q;
-              for (q = pos; q-- > ls; ) {
-                if (str[q] == '\\') {
-                  break;
+        if (no_final_simplify
+            && (len == 2) 
+            && (next[next_off] == '.')
+            && (next[next_off+1] == '.')
+            && (first_len < pos + 2)) {
+          /* Adding ".." ... */
+          int de;
+          if (check_dos_slashslash_qm(str, pos, &de, NULL, NULL)) {
+            if (de < 0) {
+              /* ... to a \\?\REL\ or \\?\RED\ path. Unless the \\?\REL\ path
+                 is only dots, we need to remove a path element
+                 here, instead of waiting for simplify, because simplify
+                 will just push the job back here. */
+              int ls, dots_end;
+              dots_end = get_slashslash_qm_dot_ups_end(str, pos, &ls);
+              if (ls == pos) {
+                /* It's ok to add "..". Make sure we don't
+                   append to "..\\" by setting pos to no more
+                   than dots_end + 1. */
+                if (dots_end < ls)
+                  pos = dots_end + 1;
+              } else {
+                int q;
+                for (q = pos; q-- > ls; ) {
+                  if (str[q] == '\\') {
+                    break;
+                  }
+                }
+                pos = q;
+                first_len = pos;
+                len = 0;
+                while (q && (str[q-1] == '\\')) {
+                  q--;
+                }
+                if (q == 7) {
+                  /* All we have left is \\?\REL or \\?\RED (plus a slash or two).
+                     We should only get here when called by scheme_simplify. */
+                  if (i + 1 == argc) {
+                    /* Since we were called by scheme_simplify, use #f to mean
+                       the empty path. */
+                    return scheme_false;
+                  }
+                  /* Shouldn't ever get here, but just in case... */
+                  str[0] = '.';
+                  pos = 1;
+                  no_sep = 1;
+                  first_len = 0;
                 }
               }
-              pos = q;
-	      first_len = pos;
-              len = 0;
-	      while (q && (str[q-1] == '\\')) {
-		q--;
-	      }
-	      if (q == 7) {
-		/* All we have left is \\?\REL (plus a slash or two).
-		   Reduce it to ".". */
-		if (i + 1 == argc) {
-		  /* Since we were called by scheme_simplify, use #f to mean
-		     the empty path. */
-		  return scheme_false;
-		}
-		/* Shouldn't ever get here, but just in case... */
-		str[0] = '.';
-		pos = 1;
-		no_sep = 1;
-		first_len = 0;
-	      }
             }
           }
         }
       }
-#endif
 
       if (!no_sep)
-	str[pos++] = FN_SEP;
+	str[pos++] = FN_SEP(kind);
 
       memcpy(str + pos, next + next_off, len);
       pos += len;
 
-#ifdef DOS_FILE_SYSTEM
-      if (!pre_unc
-	  && check_dos_slashslash_drive(str, 0, pos, NULL, 0, 0)) {
-	/* Added to //x to get something that looks like UNC. Remove the
-	   first [back]slash. */
-	memmove(str, str+1, pos - 1);
-	--pos;
+      if (kind == SCHEME_WINDOWS_PATH_KIND) {
+        if (!pre_unc
+            && check_dos_slashslash_drive(str, 0, pos, NULL, 0, 0)) {
+          /* Added to //x to get something that looks like UNC. Remove the
+             first [back]slash. */
+          memmove(str, str+1, pos - 1);
+          --pos;
+        }
+        if (needs_extra_slash) {
+          if (needs_extra_slash >= pos)
+            str[pos++] = '\\';
+          else if (str[needs_extra_slash] != '\\') {
+            memmove(str + needs_extra_slash + 1, str + needs_extra_slash, pos - needs_extra_slash);
+            str[needs_extra_slash] = '\\';
+            pos++;
+          }
+        }
       }
-      if (needs_extra_slash) {
-	if (needs_extra_slash >= pos)
-	  str[pos++] = '\\';
-	else if (str[needs_extra_slash] != '\\') {
-	  memmove(str + needs_extra_slash + 1, str + needs_extra_slash, pos - needs_extra_slash);
-	  str[needs_extra_slash] = '\\';
-	  pos++;
-	}
-      }
-#endif
 
       /* If last path elem ends in a separator, don't add one: */
       if (len) {
-	no_sep = IS_A_SEP(next[next_off + len - 1]);
+	no_sep = IS_A_SEP(kind, next[next_off + len - 1]);
       } else {
 	no_sep = 0;
       }
     } else {
-      scheme_wrong_type("build-path", "path, string, 'up, 'same", i, argc, argv);
+      scheme_wrong_type(who, "path, string, 'up, 'same", i + idelta, argc, argv);
       return scheme_false;
     }
   }
 
   str[pos] = 0;
 
-#ifdef DOS_FILE_SYSTEM
-  if (check_dos_slashslash_qm(str, pos, NULL, NULL, NULL) && !no_final_simplify) {
-    /* Clean up additions to \\?\ path */
-    int p;
-    Scheme_Object *simp;
-    p = pos;
-    str = scheme_normal_path_seps(str, &p, first_len);
-    str = remove_redundant_slashes(str, &p, first_len, NULL);
-    simp = do_simplify_path(scheme_make_sized_path(str, p, 0),
-			    scheme_null, first_len, 0, 1);
-    if (SCHEME_FALSEP(simp))
-      return scheme_make_sized_path(".", 1, 0);
-    else
-      return simp;
+  if (kind == SCHEME_WINDOWS_PATH_KIND) {
+    if (check_dos_slashslash_qm(str, pos, NULL, NULL, NULL) && !no_final_simplify) {
+      /* Clean up additions to \\?\ path */
+      int p;
+      Scheme_Object *simp;
+      p = pos;
+      str = do_normal_path_seps(str, &p, first_len, 1, SCHEME_WINDOWS_PATH_KIND);
+      str = remove_redundant_slashes(str, &p, first_len, NULL, SCHEME_WINDOWS_PATH_KIND);
+      simp = do_simplify_path(scheme_make_sized_offset_kind_path(str, 0, p, 0, SCHEME_WINDOWS_PATH_KIND),
+                              scheme_null, first_len, 0, 1, SCHEME_WINDOWS_PATH_KIND);
+      if (SCHEME_FALSEP(simp))
+        return scheme_make_sized_offset_kind_path(".", 0, 1, 0, SCHEME_WINDOWS_PATH_KIND);
+      else
+        return simp;
+    }
   }
-#endif
 
-  return scheme_make_sized_path(str, pos, alloc == PN_BUF_LEN);
+  return scheme_make_sized_offset_kind_path(str, 0, pos, alloc == PN_BUF_LEN, kind);
 }
 
 Scheme_Object *scheme_build_path(int argc, Scheme_Object **argv)
 {
-  return do_build_path(argc, argv, 0);
+  int kind = SCHEME_PLATFORM_PATH_KIND, i;
+
+  for (i = 0; i < argc; i++) {
+    if (SCHEME_GENERAL_PATHP(argv[i])) {
+      kind = SCHEME_PATH_KIND(argv[i]);
+      break;
+    } else if (SCHEME_CHAR_STRINGP(argv[i])) {
+      kind = SCHEME_PLATFORM_PATH_KIND;
+      break;
+    }
+  }
+  
+  return do_build_path(argc, argv, 0, 0, kind);
+}
+
+static Scheme_Object *build_path_kind(int argc, Scheme_Object **argv)
+{ 
+  int kind;
+
+  kind = extract_path_kind("build-path/kind", 0, argc, argv);
+  return do_build_path(argc - 1, argv, 1, 0, kind);
 }
 
 static Scheme_Object *path_to_directory_path(int argc, Scheme_Object **argv)
@@ -2816,8 +2931,8 @@ static Scheme_Object *path_to_directory_path(int argc, Scheme_Object **argv)
 
   inpath = argv[0];
 
-  if (!SCHEME_PATH_STRINGP(inpath))
-    scheme_wrong_type("path->directory-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(inpath))
+    scheme_wrong_type("path->directory-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
 
   inpath = TO_PATH(inpath);
 
@@ -2825,105 +2940,132 @@ static Scheme_Object *path_to_directory_path(int argc, Scheme_Object **argv)
 }
 
 static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **base_out, int *id_out,
-                                    int *cleaned_slashes)
+                                    int *cleaned_slashes, int kind)
 {
   char *s;
   int p, last_was_sep = 0, is_dir, no_up = 0, not_same;
   Scheme_Object *file;
-#ifdef DOS_FILE_SYSTEM
-  int allow_double_before, drive_end, no_slash_sep = 0;
-#endif
+  int allow_double_before = 0, drive_end, no_slash_sep = 0;
 
 #define MAKE_SPLIT(x, y, z) (*base_out = x, *id_out = z, y)
 
   s = (char *)path;
 
-#ifdef DOS_FILE_SYSTEM
-  allow_double_before = 0;
-  if ((len > 2) && IS_A_SEP(s[0]) && IS_A_SEP(s[1])) {
-    if (check_dos_slashslash_qm(s, len, &drive_end, NULL, NULL)) {
-      allow_double_before = drive_end;
-      no_slash_sep = 1;
-      if (drive_end < 0) {
-	/* \\?\REL\ path. Handle it directly as a special case. */
-	int p, lit_start, dots_end;
-	is_dir = 0;
-	if (s[len - 1] == '\\') {
-	  --len;
-	  is_dir = 1;
-	}
-	dots_end = get_slashslash_qm_dot_ups_end(s, len, &lit_start);
-	if (lit_start < len) {
-	  /* There's at least one literal path. */
-	  for (p = len; --p >= ((dots_end > 0) ? lit_start - 1 : lit_start); ) {
-	    if (s[p] == '\\') {
-	      /* Prefix path element with \\?\REL\\: */
-	      {
-		int len2, nsep;
-		char *s2;
-		Scheme_Object *dir;
-		len2 = len - p - 1 + 9;
-		s2 = scheme_malloc_atomic(len2 + 1);
-		memcpy(s2, "\\\\?\\REL\\\\", 9);
-		memcpy(s2 + 9, s + p + 1, len - p - 1);
-		s2[len2] = 0;
-		if ((dots_end == p) || (dots_end == p - 1)) {
-		  /* stripping the only element: drop reundant separator(s) after .. */
-		  nsep = ((dots_end == p) ? 0 : -1);
-		} else {
-		  /* preserve separator */
-		  nsep = 1;
-		}
-		dir = scheme_make_sized_path(s, p + nsep, 1);
-		file = scheme_make_sized_path(s2, len2, 0);
-		return MAKE_SPLIT(dir, file, is_dir);
-	      }
-	    }
-	  }
-	}
-	/* Either no literal path elements, or only one element and no dots */
-	if (dots_end > 0) {
-	  /* There are dots (so no literals) */
-	  if (dots_end - 3 > 8) {
-	    file = scheme_make_sized_path(s, dots_end - 3, 1);
-	    return MAKE_SPLIT(file, up_symbol, 1);
-	  } else
-	    return MAKE_SPLIT(relative_symbol, up_symbol, 1);
-	} else {
-	  /* No dots; keep \\?\REL\ on path, and report 'relative as base */
-	  return MAKE_SPLIT(relative_symbol, scheme_make_sized_path(s, len, 1), is_dir);
-	}
-      } else {
-	no_up = 1;
-	if ((drive_end < len) && s[drive_end] == '\\') {
-	  /* Happens with \\?\c:\\, for example. */
-	  drive_end++;
-	}
-      }
-    } else if (check_dos_slashslash_drive(s, 0, len, &drive_end, 0, 0)) {
-      allow_double_before = 1;
-      if ((drive_end < len) && IS_A_SEP(s[drive_end]))
-	drive_end++;
+  if (kind == SCHEME_WINDOWS_PATH_KIND) {
+    if ((len > 2) && IS_A_DOS_SEP(s[0]) && IS_A_DOS_SEP(s[1])) {
+      if (check_dos_slashslash_qm(s, len, &drive_end, NULL, NULL)) {
+        allow_double_before = drive_end;
+        no_slash_sep = 1;
+        if (drive_end < 0) {
+          /* \\?\REL\ or \\?\RED\ path. Handle it directly as a special case. */
+          int p, lit_start, dots_end;
+          is_dir = 0;
+          if (s[len - 1] == '\\') {
+            --len;
+            is_dir = 1;
+          }
+          dots_end = get_slashslash_qm_dot_ups_end(s, len, &lit_start);
+          if (lit_start < len) {
+            /* There's at least one literal path. */
+            for (p = len; --p >= ((dots_end > 0) ? lit_start - 1 : lit_start); ) {
+              if (s[p] == '\\') {
+                /* Prefix path element with \\?\REL\\: */
+                {
+                  int len2, nsep;
+                  char *s2;
+                  Scheme_Object *dir;
+                  len2 = len - p - 1 + 9;
+                  s2 = scheme_malloc_atomic(len2 + 1);
+                  memcpy(s2, "\\\\?\\REL\\\\", 9);
+                  memcpy(s2 + 9, s + p + 1, len - p - 1);
+                  s2[len2] = 0;
+                  if ((dots_end == p) || (dots_end == p - 1)) {
+                    /* stripping the only element: drop reundant separator(s) after .. */
+                    nsep = ((dots_end == p) ? 0 : -1);
+                  } else {
+                    if (s[6] == 'L') {
+                      /* preserve separator */
+                      nsep = 1;
+                    } else {
+                      /* preserve one separator, but not two */
+                      if (s[p - 1] == '\\')
+                        nsep = 0;
+                      else
+                        nsep = 1;
+                    }
+                  }
+                  dir = scheme_make_sized_offset_kind_path(s, 0, p + nsep, 1, SCHEME_WINDOWS_PATH_KIND);
+                  file = scheme_make_sized_offset_kind_path(s2, 0, len2, 0, SCHEME_WINDOWS_PATH_KIND);
+                  return MAKE_SPLIT(dir, file, is_dir);
+                }
+              }
+            }
+          }
+          /* Either no literal path elements, or only one element and no dots */
+          if (dots_end > 0) {
+            /* There are dots (so no literals) */
+            if (dots_end - 3 > 8) {
+              file = scheme_make_sized_offset_kind_path(s, 0, dots_end - 3, 1, SCHEME_WINDOWS_PATH_KIND);
+              return MAKE_SPLIT(file, up_symbol, 1);
+            } else
+              return MAKE_SPLIT(relative_symbol, up_symbol, 1);
+          } else {
+            /* No dots, so there must be one element. */
+            if (s[6] == 'L') {
+              /* keep \\?\REL\ on path, and report 'relative as base */
+              return MAKE_SPLIT(relative_symbol, 
+                                scheme_make_sized_offset_kind_path(s, 0, len, 1,
+                                                                   SCHEME_WINDOWS_PATH_KIND), 
+                                is_dir);
+            } else {
+              /* Switch "D" to "L", and simplify base to just "\\" */
+              char *naya;
+              Scheme_Object *dir;
+              naya = (char *)scheme_malloc_atomic(len + 2);
+              memcpy(naya, s, len + 2);
+              naya[6] = 'L';
+              if (naya[8] != '\\') {
+                /* Make sure REL is followed by \\, just in case the element is
+                   ".." (i.e., we had \\?\RED\..). */
+                memmove(naya + 9, naya + 8, len + 1 - 8);
+                naya[8] = '\\';
+                len++;
+              }
+              dir = scheme_make_sized_offset_kind_path("\\", 0, 1, 0,
+                                                       SCHEME_WINDOWS_PATH_KIND);
+              return MAKE_SPLIT(dir, 
+                                scheme_make_sized_offset_kind_path(naya, 0, len, 0,
+                                                                   SCHEME_WINDOWS_PATH_KIND), 
+                                is_dir);
+            }
+          }
+        } else {
+          no_up = 1;
+          if ((drive_end < len) && s[drive_end] == '\\') {
+            /* Happens with \\?\c:\\, for example. */
+            drive_end++;
+          }
+        }
+      } else if (check_dos_slashslash_drive(s, 0, len, &drive_end, 0, 0)) {
+        allow_double_before = 1;
+        if ((drive_end < len) && IS_A_DOS_SEP(s[drive_end]))
+          drive_end++;
+      } else
+        drive_end = 0;
+    } else if ((len > 1) && is_drive_letter(s[0]) && (s[1] == ':')) {
+      drive_end = 2;
+      if ((drive_end < len) && IS_A_DOS_SEP(s[drive_end]))
+        drive_end++;
     } else
       drive_end = 0;
-  } else if ((len > 1) && is_drive_letter(s[0]) && (s[1] == ':')) {
-    drive_end = 2;
-    if ((drive_end < len) && IS_A_SEP(s[drive_end]))
-      drive_end++;
-  } else
+  } else {
     drive_end = 0;
+  }
 
-#endif
-
-#ifdef DOS_FILE_SYSTEM
-# define ALLOW_DOUBLE_BEFORE allow_double_before
-#else
-# define ALLOW_DOUBLE_BEFORE 0
-#endif
   /* Look for confusing repeated separators (e.g. "x//y") */
   for (p = len; p--; ) {
-    if (p > ALLOW_DOUBLE_BEFORE) {
-      if (IS_A_SEP(s[p]) && IS_A_SEP(s[p - 1])) {
+    if (p > allow_double_before) {
+      if (IS_A_SEP(kind, s[p]) && IS_A_SEP(kind, s[p - 1])) {
 	/* Found it; copy without repeats */
 	int q;
 	char *old = s;
@@ -2934,12 +3076,12 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
 	s = (char *)scheme_malloc_atomic(len);
 	--len;
 
-	for (p = 0, q = 0; p < ALLOW_DOUBLE_BEFORE; p++) {
+	for (p = 0, q = 0; p < allow_double_before; p++) {
 	  s[q++] = old[p];
 	}
 
 	for (; p < len; p++) {
-	  if (!IS_A_SEP(old[p]) || !IS_A_SEP(old[p + 1]))
+	  if (!IS_A_SEP(kind, old[p]) || !IS_A_SEP(kind, old[p + 1]))
 	    s[q++] = old[p];
 	}
 	s[q++] = old[len];
@@ -2949,38 +3091,35 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
     }
   }
 
-#ifdef DOS_FILE_SYSTEM
-  if (len <= drive_end)
+# define IS_A_SPLIT_SEP(x) (((kind == SCHEME_WINDOWS_PATH_KIND) && no_slash_sep) ? (x == '\\') : IS_A_SEP(kind, x))
+
+  if ((kind == SCHEME_WINDOWS_PATH_KIND) && (len <= drive_end))
     p = -1;
-  else
-# define IS_A_SPLIT_SEP(x) (no_slash_sep ? (x == '\\') : IS_A_SEP(x))
-#else
-# define IS_A_SPLIT_SEP(x) IS_A_SEP(x)
-#endif
-    {
-      for (p = len; p--; ) {
-	if (IS_A_SPLIT_SEP(s[p])) {
-	  if (p != len - 1)
-	    break;
-	  else
-	    last_was_sep = 1;
-	}
-#ifdef DOS_FILE_SYSTEM
+  else {
+    for (p = len; p--; ) {
+      if (IS_A_SPLIT_SEP(s[p])) {
+        if (p != len - 1)
+          break;
+        else
+          last_was_sep = 1;
+      }
+      if (kind == SCHEME_WINDOWS_PATH_KIND) {
 	if (p < drive_end)
 	  break;
-#endif
       }
     }
-
-#ifdef UNIX_FILE_SYSTEM
-  /* "./~..." can't be split at the beginning. */
-  if ((p == 1)
-      && s[0] == '.'
-      && s[p + 1] == '~') {
-    not_same = 1;
-    p -= 2;
+  }
+  
+  if (kind == SCHEME_UNIX_PATH_KIND) {
+    /* "./~..." can't be split at the beginning. */
+    if ((p == 1)
+        && s[0] == '.'
+        && s[p + 1] == '~') {
+      not_same = 1;
+      p -= 2;
+    } else
+      not_same = 0;
   } else
-#endif
     not_same = 0;
 
   if (p < 0) {
@@ -2989,30 +3128,29 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
     /* No splitting available. 
        For Unx & DOS, it was relative or exactly root.
        For Mac, it is relative or root with trailing sep. */
-#ifdef UNIX_FILE_SYSTEM
-    if (s[0] == '/')
-      return MAKE_SPLIT(scheme_false, scheme_make_sized_path(s, len, 1), 1);
-    if (s[0] == '~') {
-      /* Strip ending slashes, if any. */
-      while (IS_A_SEP(s[len - 1])) {
-        --len;
+    if (kind == SCHEME_UNIX_PATH_KIND) {
+      if (s[0] == '/')
+        return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
+      if (s[0] == '~') {
+        /* Strip ending slashes, if any. */
+        while (IS_A_UNIX_SEP(s[len - 1])) {
+          --len;
+        }
+        return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
       }
-      return MAKE_SPLIT(scheme_false, scheme_make_sized_path(s, len, 1), 1);
+    } else {
+      if (IS_A_DOS_SEP(s[0]) || drive_end)
+        return MAKE_SPLIT(scheme_false, scheme_make_sized_offset_kind_path(s, 0, len, 1, kind), 1);
     }
-#endif
-#ifdef DOS_FILE_SYSTEM
-    if (IS_A_SEP(s[0]) || drive_end)
-      return MAKE_SPLIT(scheme_false, scheme_make_sized_path(s, len, 1), 1);
-#endif
 
     dir = relative_symbol;
 
     /* Check for 'up: */
     if (!no_up && (s[0] == '.') && (s[1] == '.')
-	&& (2 >= len || IS_A_SEP(s[2]))) {
+	&& (2 >= len || IS_A_SEP(kind, s[2]))) {
       file = up_symbol;
       is_dir = 1;
-    } else if (!no_up && !not_same && (s[0] == '.') && (1 >= len || IS_A_SEP(s[1]))) {
+    } else if (!no_up && !not_same && (s[0] == '.') && (1 >= len || IS_A_SEP(kind, s[1]))) {
       file = same_symbol;
       is_dir = 1;
     } else {
@@ -3020,7 +3158,8 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
       is_dir = last_was_sep;
       delta = 0;
       file = make_protected_sized_offset_path(no_up || is_dir, 
-					      s, 0, len - last_was_sep + delta, 1, 0);
+					      s, 0, len - last_was_sep + delta, 1, 0,
+                                              kind);
     }
     
     return MAKE_SPLIT(dir, file, is_dir);
@@ -3028,32 +3167,31 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
   
   /* Check for 'up and 'same: */
   if (!no_up && (s[p + 1] == '.') && (s[p + 2] == '.')
-      && (p + 3 >= len || IS_A_SEP(s[p + 3]))) {
+      && (p + 3 >= len || IS_A_SEP(kind, s[p + 3]))) {
     file = up_symbol;
     is_dir = 1;
-  } else if (!no_up && (s[p + 1] == '.') && (p + 2 >= len || IS_A_SEP(s[p + 2]))) {
+  } else if (!no_up && (s[p + 1] == '.') && (p + 2 >= len || IS_A_SEP(kind, s[p + 2]))) {
     file = same_symbol;
     is_dir = 1;
   } else {
     int protected;
-#ifdef DOS_FILE_SYSTEM
-    protected = no_up || last_was_sep;
-#endif
-#ifdef UNIX_FILE_SYSTEM
-    protected = 1;
-#endif
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
+      protected = no_up || last_was_sep;
+    } else  {
+      protected = 1;
+    }
     file = make_protected_sized_offset_path(protected,
 					    s,
 					    p + 1, 
 					    len - p - last_was_sep - 1, 
-					    1, 0);
+					    1, 0, kind);
     is_dir = last_was_sep;
   }
   
   /* Check directory */
   if (p > 0) {
     Scheme_Object *ss;
-    ss = make_exposed_sized_offset_path(no_up, s, 0, p + 1, 1);
+    ss = make_exposed_sized_offset_path(no_up, s, 0, p + 1, 1, kind);
     return MAKE_SPLIT(ss, 
 		      file, 
 		      is_dir);
@@ -3062,14 +3200,14 @@ static Scheme_Object *do_split_path(const char *path, int len, Scheme_Object **b
   /* p = 0; this means root dir. */
   {
     Scheme_Object *ss;
-    ss = scheme_make_sized_path(s, 1, 1);
+    ss = scheme_make_sized_offset_kind_path(s, 0, 1, 1, kind);
     return MAKE_SPLIT(ss, file, is_dir);
   }
 }
 
-Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base_out, int *id_out)
+Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base_out, int *id_out, int kind)
 {
-  return do_split_path(path, len, base_out, id_out, NULL);
+  return do_split_path(path, len, base_out, id_out, NULL, kind);
 }
 
 #ifndef NO_FILE_SYSTEM_UTILS
@@ -3081,8 +3219,8 @@ static Scheme_Object *split_path(int argc, Scheme_Object **argv)
 
   inpath = argv[0];
 
-  if (!SCHEME_PATH_STRINGP(inpath))
-    scheme_wrong_type("split-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(inpath))
+    scheme_wrong_type("split-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
 
   inpath = TO_PATH(inpath);
 
@@ -3097,7 +3235,7 @@ static Scheme_Object *split_path(int argc, Scheme_Object **argv)
   if (has_null(s, len))
     raise_null_error("split-path", inpath, "");
 
-  three[1] = scheme_split_path(s, len, &three[0], &is_dir);
+  three[1] = scheme_split_path(s, len, &three[0], &is_dir, SCHEME_PATH_KIND(inpath));
 
   three[2] = is_dir ? scheme_true : scheme_false;
 
@@ -3105,61 +3243,63 @@ static Scheme_Object *split_path(int argc, Scheme_Object **argv)
 }
 #endif
 
-int scheme_is_relative_path(const char *s, long len)
+int scheme_is_relative_path(const char *s, long len, int kind)
 {
   if (!len)
     return 0;
 
-#ifdef UNIX_FILE_SYSTEM
-  return !((s[0] == '/') || (s[0] == '~'));
-#endif
-#ifdef DOS_FILE_SYSTEM
-  {
+  if (kind == SCHEME_UNIX_PATH_KIND) {
+    return !((s[0] == '/') || (s[0] == '~'));
+  } else {
     int dlen;
     if (check_dos_slashslash_qm(s, len, &dlen, NULL, NULL)
-	&& (dlen < 0))
-      return 1; /* It's a \\?\REL\ path */
+	&& (dlen < 0)) {
+      if (dlen == -1)
+        return 1; /* It's a \\?\REL\ path */
+      else
+        return 0; /* It's a \\?\RED\ path */
+    }
+
+    if (IS_A_DOS_SEP(s[0])
+        || ((len >= 2) 
+            && is_drive_letter(s[0])
+            && (s[1] == ':')))
+      return 0;
+    else
+      return 1;
   }
-  if (IS_A_SEP(s[0])
-      || ((len >= 2) 
-	  && is_drive_letter(s[0])
-	  && (s[1] == ':')))
-    return 0;
-  else
-    return 1;
-#endif
 }
 
-int scheme_is_complete_path(const char *s, long len)
+int scheme_is_complete_path(const char *s, long len, int kind)
 {
   if (!len)
     return 0;
 
-  if (!scheme_is_relative_path(s, len)) {
-#ifdef DOS_FILE_SYSTEM
-    if (IS_A_SEP(s[0]) && IS_A_SEP(s[1])) {
-      if (check_dos_slashslash_qm(s, len, NULL, NULL, NULL)) /* not relative */
-	return 1;
-      else if (check_dos_slashslash_drive(s, 0, len, NULL, 0, 0))
-	return 1;
-      else
-	return 0;
-    } else if ((len >= 2) 
-	       && is_drive_letter(s[0])
-	       && (s[1] == ':')) {
-      return 1;
+  if (!scheme_is_relative_path(s, len, kind)) {
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
+      if (IS_A_DOS_SEP(s[0]) && IS_A_DOS_SEP(s[1])) {
+        int dlen;
+        if (check_dos_slashslash_qm(s, len, &dlen, NULL, NULL)) { /* not relative */
+          return (dlen >= 0);
+        } else if (check_dos_slashslash_drive(s, 0, len, NULL, 0, 0))
+          return 1;
+        else
+          return 0;
+      } else if ((len >= 2) 
+                 && is_drive_letter(s[0])
+                 && (s[1] == ':')) {
+        return 1;
+      } else
+        return 0;
     } else
-      return 0;
-#else
-    return 1;
-#endif
+      return 1;
   } else 
     return 0;
 }
 
-static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt, long wlen)
+static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt, long wlen, int kind)
 {
-  if (!scheme_is_complete_path(filename, ilen)) {
+  if (!scheme_is_complete_path(filename, ilen, kind)) {
     char *naya;
     int skip_sep = 0;
 
@@ -3171,44 +3311,42 @@ static char *do_path_to_complete_path(char *filename, long ilen, const char *wrt
       scheme_security_check_file("path->complete-path", NULL, SCHEME_GUARD_FILE_EXISTS);
     }
 
-#ifdef DOS_FILE_SYSTEM
-    if (!scheme_is_relative_path(filename, ilen)) {
-      /* Absolute, not complete. Fill in the disk */
-      wrt = get_drive_part(wrt, wlen);
-      wlen = strlen(wrt);
-      /* drop trailing separator */
-      if (IS_A_SEP(wrt[wlen - 1]) 
-	  && !check_dos_slashslash_qm(wrt, wlen, NULL, NULL, NULL)) {
-	wlen--;
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
+      if (!scheme_is_relative_path(filename, ilen, kind)) {
+        /* Absolute, not complete. Fill in the disk */
+        wrt = get_drive_part(wrt, wlen);
+        wlen = strlen(wrt);
+        /* drop trailing separator */
+        if (IS_A_DOS_SEP(wrt[wlen - 1]) 
+            && !check_dos_slashslash_qm(wrt, wlen, NULL, NULL, NULL)) {
+          wlen--;
+        }
+        skip_sep = 1;
       }
-      skip_sep = 1;
-    }
 
-    if (check_dos_slashslash_qm(wrt, wlen, NULL, NULL, NULL) /* wrt is never relative */
-	|| check_dos_slashslash_qm(filename, ilen, NULL, NULL, NULL)) { /* filename might be \\?\REL\ */
-      /* For \\?\, give up on fast path and use build-path */
-      Scheme_Object *a[2], *p;
-      p = scheme_make_sized_path((char *)wrt, wlen, 1);
-      a[0] = p;
-      p = scheme_make_sized_path(filename, ilen, 1);
-      a[1] = p;
-      p = do_build_path(2, a, 0);
-      return SCHEME_PATH_VAL(p);
+      if (check_dos_slashslash_qm(wrt, wlen, NULL, NULL, NULL) /* wrt is never relative */
+          || check_dos_slashslash_qm(filename, ilen, NULL, NULL, NULL)) { /* filename might be \\?\REL\ */
+        /* For \\?\, give up on fast path and use build-path */
+        Scheme_Object *a[2], *p;
+        p = scheme_make_sized_offset_kind_path((char *)wrt, 0, wlen, 1, SCHEME_WINDOWS_PATH_KIND);
+        a[0] = p;
+        p = scheme_make_sized_offset_kind_path(filename, 0, ilen, 1, SCHEME_WINDOWS_PATH_KIND);
+        a[1] = p;
+        p = do_build_path(2, a, 0, 0, SCHEME_WINDOWS_PATH_KIND);
+        return SCHEME_PATH_VAL(p);
+      }
     }
-#endif
 
     naya = (char *)scheme_malloc_atomic(ilen + wlen + 2);
     memcpy(naya, wrt, wlen);
     if (!skip_sep)
-      if (!IS_A_SEP(naya[wlen - 1]))
-	naya[wlen++] = FN_SEP;
-#ifdef DOS_FILE_SYSTEM
-    {
+      if (!IS_A_SEP(kind, naya[wlen - 1]))
+	naya[wlen++] = FN_SEP(kind);
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
       int w = wlen;
       strip_trailing_spaces(naya, &w, 0, 1);
       wlen = w;
     }
-#endif
     memcpy(naya + wlen, filename, ilen);
     naya[wlen + ilen] = 0;
     
@@ -3222,19 +3360,32 @@ static Scheme_Object *path_to_complete_path(int argc, Scheme_Object **argv)
 {
   Scheme_Object *p, *wrt;
   char *s;
-  int len;
+  int len, kind;
 
   p = argv[0];
-  if (!SCHEME_PATH_STRINGP(p))
-    scheme_wrong_type("path->complete-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(p))
+    scheme_wrong_type("path->complete-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
   p = TO_PATH(p);
   if (argc > 1) {
     wrt = argv[1];
-    if (!SCHEME_PATH_STRINGP(wrt))
-      scheme_wrong_type("path->complete-path", SCHEME_PATH_STRING_STR, 1, argc, argv);
+    if (!SCHEME_GENERAL_PATH_STRINGP(wrt))
+      scheme_wrong_type("path->complete-path", SCHEME_GENERAL_PATH_STRING_STR, 1, argc, argv);
     wrt = TO_PATH(wrt);
   } else
     wrt = NULL;
+
+  kind = SCHEME_PATH_KIND(p);
+  if (wrt) {
+    if (SCHEME_PATH_KIND(wrt) != kind) {
+      scheme_arg_mismatch("path->complete-path",
+                          "convention of first path incompatible with convention of second path: ",
+                          argv[1]);
+    }
+  } else if (kind != SCHEME_PLATFORM_PATH_KIND) {
+    scheme_arg_mismatch("path->complete-path",
+                        "no second path supplied, and given path is not for the current platform: ",
+                        argv[0]);
+  }
 
   s = SCHEME_PATH_VAL(p);
   len = SCHEME_PATH_LEN(p);
@@ -3252,19 +3403,19 @@ static Scheme_Object *path_to_complete_path(int argc, Scheme_Object **argv)
     if (has_null(ws, wlen))
       raise_null_error("path->complete-path", p, "");
 
-    if (!scheme_is_complete_path(ws, wlen))
+    if (!scheme_is_complete_path(ws, wlen, kind))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 		       "path->complete-path: second argument is not a complete path: \"%q\"",
 		       ws);
 
-    if (!scheme_is_complete_path(s, len)) {
-      s = do_path_to_complete_path(s, len, ws, wlen);
-      return scheme_make_sized_path(s, strlen(s), 0);
+    if (!scheme_is_complete_path(s, len, kind)) {
+      s = do_path_to_complete_path(s, len, ws, wlen, kind);
+      return scheme_make_sized_offset_kind_path(s, 0, strlen(s), 0, kind);
     }
-  } else if (!scheme_is_complete_path(s, len)) {
-    s = do_path_to_complete_path(s, len, NULL, 0);
+  } else if (!scheme_is_complete_path(s, len, kind)) {
+    s = do_path_to_complete_path(s, len, NULL, 0, kind);
 
-    return scheme_make_sized_path(s, strlen(s), 0);
+    return scheme_make_sized_offset_kind_path(s, 0, strlen(s), 0, kind);
   }
    
   return p;
@@ -3278,7 +3429,7 @@ static char *filename_for_error(Scheme_Object *p)
 			    NULL,
 			    NULL,
 			    1, 1,
-			    0);
+			    0, SCHEME_PLATFORM_PATH_KIND);
 }
 
 static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
@@ -3498,8 +3649,8 @@ static Scheme_Object *relative_path_p(int argc, Scheme_Object **argv)
   int len;
   Scheme_Object *bs;
 
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("relative-path?", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("relative-path?", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
 
   bs = TO_PATH(argv[0]);
 
@@ -3509,7 +3660,7 @@ static Scheme_Object *relative_path_p(int argc, Scheme_Object **argv)
   if (has_null(s, len))
     return scheme_false;
 
-  return (scheme_is_relative_path(s, len)
+  return (scheme_is_relative_path(s, len, SCHEME_PATH_KIND(bs))
 	  ? scheme_true
 	  : scheme_false);
 }
@@ -3520,8 +3671,8 @@ static Scheme_Object *complete_path_p(int argc, Scheme_Object **argv)
   int len;
   Scheme_Object *bs;
 
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("complete-path?", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("complete-path?", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
 
   bs = TO_PATH(argv[0]);
 
@@ -3531,7 +3682,7 @@ static Scheme_Object *complete_path_p(int argc, Scheme_Object **argv)
   if (has_null(s, len))
     return scheme_false;
 
-  return (scheme_is_complete_path(s, len)
+  return (scheme_is_complete_path(s, len, SCHEME_PATH_KIND(bs))
 	  ? scheme_true
 	  : scheme_false);
 }
@@ -3542,8 +3693,8 @@ static Scheme_Object *absolute_path_p(int argc, Scheme_Object **argv)
   int len;
   Scheme_Object *bs;
 
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("absolute-path?", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("absolute-path?", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
 
   bs = TO_PATH(argv[0]);
 
@@ -3553,7 +3704,7 @@ static Scheme_Object *absolute_path_p(int argc, Scheme_Object **argv)
   if (has_null(s, len))
     return scheme_false;
 
-  return (!scheme_is_relative_path(s, len)
+  return (!scheme_is_relative_path(s, len, SCHEME_PATH_KIND(bs))
 	  ? scheme_true
 	  : scheme_false);
 }
@@ -3571,8 +3722,8 @@ static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[])
   char *filename;
   int expanded;
 
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("resolve-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("resolve-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
 
   filename = do_expand_filename(argv[0],
 				NULL,
@@ -3580,21 +3731,22 @@ static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[])
 				"resolve-path",
 				&expanded,
 				1, 0,
-				SCHEME_GUARD_FILE_EXISTS);
+				SCHEME_GUARD_FILE_EXISTS,
+                                SCHEME_PLATFORM_PATH_KIND);
 
 #ifndef NO_READLINK
   {
     char *fullfilename = filename;
 
     len = strlen(fullfilename);
-    if (!scheme_is_complete_path(fullfilename, len)) {
-      fullfilename = do_path_to_complete_path(fullfilename, len, NULL, 0);
+    if (!scheme_is_complete_path(fullfilename, len, SCHEME_PLATFORM_PATH_KIND)) {
+      fullfilename = do_path_to_complete_path(fullfilename, len, NULL, 0, SCHEME_PLATFORM_PATH_KIND);
       copied = 1;
     }
 
     /* Make sure path doesn't have trailing separator: */
     len = strlen(fullfilename);
-    while (len && IS_A_SEP(fullfilename[len - 1])) {
+    while (len && IS_A_SEP(SCHEME_PLATFORM_PATH_KIND, fullfilename[len - 1])) {
       if (!expanded && !copied) {
 	fullfilename = scheme_strdup(fullfilename);
 	copied = 1;
@@ -3622,7 +3774,6 @@ static Scheme_Object *resolve_path(int argc, Scheme_Object *argv[])
     return scheme_make_sized_path(filename, strlen(filename), 1);
 }
 
-#ifdef DOS_FILE_SYSTEM
 static Scheme_Object *convert_literal_relative(Scheme_Object *file)
 {
   int ln;
@@ -3648,7 +3799,7 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
 
   if ((s[len - 1] == '\\')
       && (s[len - 2] != '\\')
-      && do_path_to_directory_path(s, 0, len - 1, scheme_true, 1)) {
+      && do_path_to_directory_path(s, 0, len - 1, scheme_true, 1, SCHEME_WINDOWS_PATH_KIND)) {
     --len;
     fixed = 1;
   }
@@ -3660,12 +3811,18 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
     /* Maybe don't need \\?\ for \\?\C:\... */
     start_special_check = 7;
     drive_end = 4;
+  } else if (drive_end == -2) {
+    /* \\?\RED\ */
+    int lit_start;
+    get_slashslash_qm_dot_ups_end(s, len, &lit_start);
+    start_special_check = lit_start;
+    drive_end = lit_start - 1;
   } else if (drive_end < 0) {
     int lit_start, dots_end;
     dots_end = get_slashslash_qm_dot_ups_end(s, len, &lit_start);
     if (lit_start == len) {
       /* just keep the dots */
-      return scheme_make_sized_offset_path(s, 8, dots_end - 8, 1);
+      return scheme_make_sized_offset_kind_path(s, 8, dots_end - 8, 1, SCHEME_WINDOWS_PATH_KIND);
     }
     start_special_check = lit_start;
     if (dots_end < 9)
@@ -3706,7 +3863,8 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
 	  v = make_protected_sized_offset_path(1, 
 					       s, element_start, i - element_start,
 					       1, 
-					       (any_more ? 2 : 1));
+					       (any_more ? 2 : 1),
+                                               SCHEME_WINDOWS_PATH_KIND);
 	  if (SCHEME_TRUEP(v)) {
 	    found_bad = 1;
 	    break;
@@ -3721,7 +3879,7 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
 
   if (found_bad) {
     if (fixed)
-      return scheme_make_sized_path(s, len, 1);
+      return scheme_make_sized_offset_kind_path(s, 0, len, 1, SCHEME_WINDOWS_PATH_KIND);
     else
       return path;
   } else {
@@ -3739,14 +3897,14 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
       memcpy(naya, s, len);
       s[set_slash] = '\\';
     }
-    return scheme_make_sized_offset_path(s, drive_end, len - drive_end, 1);
+    return scheme_make_sized_offset_kind_path(s, drive_end, len - drive_end, 1, SCHEME_WINDOWS_PATH_KIND);
   }
 }
-#endif
 
 static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle_check, int skip, 
 				       int use_filesystem, 
-                                       int force_rel_up)
+                                       int force_rel_up,
+                                       int kind)
      /* When !use_filesystem, the result can be #f for an empty relative
 	path, and it can contain leading ".."s, or ".."s after an initial
         "~" path.
@@ -3756,27 +3914,36 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
   int isdir, cleaned_slashes = 0, must_be_dir = 0, did_first = 0;
   Scheme_Object *file = scheme_false, *base;
 
-#if defined(DOS_FILE_SYSTEM)
   /* For Windows, expand-path doesn't actually touch the
      filesystem. Always start with that, to get things basically tidy. */
-  {
+  if (kind == SCHEME_WINDOWS_PATH_KIND) {
     char *s;
-    int expanded;
+    int expanded, add_sep = 0;
     s = do_expand_filename(path, SCHEME_PATH_VAL(path), SCHEME_PATH_LEN(path),
-                           NULL, &expanded, 0, 0, 0);
+                           NULL, &expanded, 0, 0, 0, kind);
     if (expanded) {
-      path = scheme_make_path_without_copying(s);
+      path = scheme_make_sized_offset_kind_path(s, 0, -1, 0, SCHEME_WINDOWS_PATH_KIND);
     }
-    if (!check_dos_slashslash_qm(SCHEME_PATH_VAL(path), SCHEME_PATH_LEN(path), NULL, NULL, NULL)) {
+    if (!check_dos_slashslash_qm(SCHEME_PATH_VAL(path), SCHEME_PATH_LEN(path), NULL, NULL, &add_sep)) {
       int len = SCHEME_PATH_LEN(path);
       s = strip_trailing_spaces(SCHEME_PATH_VAL(path), &len, 0, 0);
       if (s != SCHEME_PATH_VAL(path))
-        path = scheme_make_path_without_copying(s);
+        path = scheme_make_sized_offset_kind_path(s, 0, -1, 0, SCHEME_WINDOWS_PATH_KIND);
+    } else if (add_sep) {
+      int len = SCHEME_PATH_LEN(path);
+      if ((add_sep < len) && (s[add_sep] != '\\')) {
+        /* Add a \, as in \\?\c -> \\?\\c */
+        char *naya;
+        naya = (char *)scheme_malloc_atomic(len + 2);
+        memcpy(naya, s, add_sep);
+        naya[add_sep] = '\\';
+        memcpy(naya + add_sep + 1, s + add_sep, len + 1 - add_sep);
+        len++;
+        path = scheme_make_sized_offset_kind_path(naya, 0, len, 0, SCHEME_WINDOWS_PATH_KIND);
+      }
     }
   }
-#endif
 
-#if defined(UNIX_FILE_SYSTEM) || defined(DOS_FILE_SYSTEM)
   /* Fast check; avoids split operations, if possible.
      Also responsible for determing whether there's a
      redundant or missing trailing slash in the case that
@@ -3787,47 +3954,47 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
     s = SCHEME_PATH_VAL(path);
     len = SCHEME_PATH_LEN(path);
 
-# ifdef DOS_FILE_SYSTEM
-    if (!skip && check_dos_slashslash_qm(s, len, NULL, NULL, NULL)) {
-      if (!force_rel_up)
-	return simplify_qm_path(path);
-      else
-	return path;
-    }
-    if (!skip && check_dos_slashslash_drive(s, 0, len, NULL, 1, 0)) {
-      /* Remove trailing slashes, if any: */
-      for (i = len; IS_A_SEP(s[i-1]); i--) { }
-      if (i != len) {
-	path = scheme_make_sized_path(s, i, 1);
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
+      if (!skip && check_dos_slashslash_qm(s, len, NULL, NULL, NULL)) {
+        if (!force_rel_up)
+          return simplify_qm_path(path);
+        else
+          return path;
       }
-    }
+      if (!skip && check_dos_slashslash_drive(s, 0, len, NULL, 1, 0)) {
+        /* Remove trailing slashes, if any: */
+        for (i = len; IS_A_DOS_SEP(s[i-1]); i--) { }
+        if (i != len) {
+          path = scheme_make_sized_offset_kind_path(s, 0, i, 1, SCHEME_WINDOWS_PATH_KIND);
+        }
+      }
 
-    if (skip) {
-      while (s[skip] == '\\') {
-	skip++;
+      if (skip) {
+        while (s[skip] == '\\') {
+          skip++;
+        }
       }
     }
-# endif
 
     i = skip;
-# ifdef DOS_FILE_SYSTEM
-    if (!i && (len >= 2) && is_drive_letter(s[0]) && s[1] == ':') {
-      i = 2;
-    } else if (!i) {
-      int drive_end;
-      if (check_dos_slashslash_drive(s, 0, len, &drive_end, 0, 0)) {
-        i = drive_end;
+    if (kind == SCHEME_WINDOWS_PATH_KIND) {
+      if (!i && (len >= 2) && is_drive_letter(s[0]) && s[1] == ':') {
+        i = 2;
+      } else if (!i) {
+        int drive_end;
+        if (check_dos_slashslash_drive(s, 0, len, &drive_end, 0, 0)) {
+          i = drive_end;
+        }
       }
     }
-# endif
 
     for (; i < len; i++) {
       if (s[i] == '.')
 	saw_dot++;
-      else if (IS_A_SEP(s[i])) {
+      else if (IS_A_SEP(kind, s[i])) {
 	if ((saw_dot == 1) || (saw_dot == 2))
 	  break;
-        if ((i + 1 < len) && (IS_A_SEP(s[i]))) {
+        if ((i + 1 < len) && (IS_A_SEP(kind, s[i]))) {
           /* Double slash to clean up... */
           break;
         }
@@ -3838,28 +4005,26 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 
     if (i == len) {
       if ((saw_dot != 1) && (saw_dot != 2)) {
-# ifdef UNIX_FILE_SYSTEM
-        /* Double-check for a redundant trailing slash */
-        if (!skip && (s[0] == '~') && IS_A_SEP(s[len - 1])) {
-          for (i = 1; i < len - 1; i++) {
-            if (IS_A_SEP(s[i]))
-              break;
+        if (kind == SCHEME_UNIX_PATH_KIND) {
+          /* Double-check for a redundant trailing slash */
+          if (!skip && (s[0] == '~') && IS_A_UNIX_SEP(s[len - 1])) {
+            for (i = 1; i < len - 1; i++) {
+              if (IS_A_UNIX_SEP(s[i]))
+                break;
+            }
+            /* If we find any slash, then the last one
+               isn't redundant. */
+            i = ((i < len - 1) ? 1 : 0);
+            if (!i)
+              cleaned_slashes = 1;
           }
-          /* If we find any slash, then the last one
-             isn't redundant. */
-          i = ((i < len - 1) ? 1 : 0);
-          if (!i)
-            cleaned_slashes = 1;
         }
-# endif
         if (i)
           return path;
       }
     }
-    /* There's a ., .., or // in the path. Switch to 
-       slower (but reliable across platforms) mode */
+    /* There's a ., .., or // in the path... */
   }
-#endif
 
   /* Check whether it can be simplified: */
   if (!cleaned_slashes) {
@@ -3871,15 +4036,15 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
       len = SCHEME_PATH_LEN(base);
       if (len <= skip)
         break;
-      file = do_split_path(s, len, &base, &isdir, &cleaned_slashes);
-#ifdef DOS_FILE_SYSTEM
-      if (force_rel_up) {
-        file = convert_literal_relative(file);
+      file = do_split_path(s, len, &base, &isdir, &cleaned_slashes, kind);
+      if (kind == SCHEME_WINDOWS_PATH_KIND) {
+        if (force_rel_up) {
+          file = convert_literal_relative(file);
+        }
       }
-#endif
       if (SCHEME_SYMBOLP(file) || cleaned_slashes)
         break;
-    } while (SCHEME_PATHP(base));
+    } while (SCHEME_GENERAL_PATHP(base));
   } else
     file = scheme_false;
 
@@ -3893,7 +4058,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
     len = SCHEME_PATH_LEN(path);
 
     if (use_filesystem
-	&& !scheme_is_complete_path(s, len)) {
+	&& !scheme_is_complete_path(s, len, kind)) {
       /* Make it absolute */
       s = scheme_expand_string_filename(path,
 					"simplify-path", NULL,
@@ -3925,18 +4090,18 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
     /* Split the path into a list. */
     while (1) {
       if (len <= skip) {
-	accum = scheme_make_pair(scheme_make_sized_path(s, len, 0), accum);
+	accum = scheme_make_pair(scheme_make_sized_offset_kind_path(s, 0, len, 0, kind), accum);
 	break;
       }
 
-      file = scheme_split_path(s, len, &base, &isdir);
-#ifdef DOS_FILE_SYSTEM
-      if (force_rel_up) {
-	file = convert_literal_relative(file);
-	if (SCHEME_SYMBOLP(file))
-	  isdir = 1;
+      file = scheme_split_path(s, len, &base, &isdir, kind);
+      if (kind == SCHEME_WINDOWS_PATH_KIND) {
+        if (force_rel_up) {
+          file = convert_literal_relative(file);
+          if (SCHEME_SYMBOLP(file))
+            isdir = 1;
+        }
       }
-#endif
 
       if (!did_first) {
         must_be_dir = isdir;
@@ -3948,7 +4113,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
       } else
 	accum = scheme_make_pair(file, accum);
       
-      if (SCHEME_PATHP(base)) {
+      if (SCHEME_GENERAL_PATHP(base)) {
 	s = SCHEME_PATH_VAL(base);
 	len = SCHEME_PATH_LEN(base);
       } else {
@@ -3987,21 +4152,23 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	    if (result != new_result) {
 	      /* It was a link. Is the new result relative? */
 	      if (!scheme_is_complete_path(SCHEME_PATH_VAL(new_result),
-					   SCHEME_PATH_LEN(new_result))) {
+					   SCHEME_PATH_LEN(new_result),
+                                           kind)) {
 		Scheme_Object *aa[2], *result_base;
 		/* Yes - resolve it relative to result's base: */
 		scheme_split_path(SCHEME_PATH_VAL(result),
 				  SCHEME_PATH_LEN(result),
 				  &result_base,
-				  &isdir);
+				  &isdir,
+                                  kind);
 		aa[0] = result_base;
 		aa[1] = new_result;
-		new_result = do_build_path(2, aa, 0);
+		new_result = do_build_path(2, aa, 0, 0, SCHEME_PLATFORM_PATH_KIND);
 	      }
 	    
 	      /* Simplify the new result */
 	      result = do_simplify_path(new_result, cycle_check, skip, 
-					use_filesystem, force_rel_up);
+					use_filesystem, force_rel_up, kind);
 	      cycle_check = scheme_make_pair(new_result, cycle_check);
 	    } else
 	      break;
@@ -4014,32 +4181,32 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	  if (SCHEME_FALSEP(result)) {
 	    /* Empty relative path so far */
 	    if (skip) /* => input was a \\?\ path, and it must be relative */
-	      result = scheme_make_sized_path("\\\\?\\REL\\..", 10, 0);
+	      result = scheme_make_sized_offset_kind_path("\\\\?\\REL\\..", 0, 10, 0, SCHEME_WINDOWS_PATH_KIND);
 	    else
-	      result = scheme_make_sized_path("..", 2, 0);
+	      result = scheme_make_sized_offset_kind_path("..", 0, 2, 0, kind);
 	  } else {
 	    Scheme_Object *next, *to_go;
 	    to_go = scheme_split_path(SCHEME_PATH_VAL(result),
 				      SCHEME_PATH_LEN(result),
 				      &next,
-				      &isdir);
+				      &isdir,
+                                      kind);
 	    if (SAME_OBJ(to_go, up_symbol)) {
 	      /* We're building a sequence of ups... */
 	      Scheme_Object *a[2];
 	      a[0] = result;
 	      a[1] = up_symbol;
-	      result = do_build_path(2, a, 1);
-#ifdef UNIX_FILE_SYSTEM
-	    } else if (SCHEME_FALSEP(next)
-                       && SCHEME_PATHP(to_go)
+	      result = do_build_path(2, a, 0, 1, kind);
+	    } else if ((kind == SCHEME_UNIX_PATH_KIND)
+                       && SCHEME_FALSEP(next)
+                       && SCHEME_GENERAL_PATHP(to_go)
                        && SCHEME_PATH_VAL(to_go)[0] == '~') {
 	      /* Can't delete a leading ~ for .. */
 	      Scheme_Object *a[2];
 	      a[0] = result;
 	      a[1] = up_symbol;
-	      result = do_build_path(2, a, 1);
-#endif
-	    } else if (!SCHEME_PATH_STRINGP(next)) {
+	      result = do_build_path(2, a, 0, 1, kind);
+	    } else if (!SCHEME_GENERAL_PATH_STRINGP(next)) {
 	      if (SCHEME_FALSEP(next)) {
 		/* Result is already a root, so we just drop the .. */
 	      } else {
@@ -4058,7 +4225,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 	  Scheme_Object *a[2];
 	  a[0] = result;
 	  a[1] = SCHEME_CAR(accum);
-	  result = do_build_path(2, a, 0);
+	  result = do_build_path(2, a, 0, 0, kind);
 	}
 	accum = SCHEME_CDR(accum);
       }
@@ -4076,11 +4243,11 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 static Scheme_Object *simplify_path(int argc, Scheme_Object *argv[])
 {
   char *s;
-  int len, use_fs;
+  int len, use_fs, kind;
   Scheme_Object *bs, *r;
 
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_type("simplify-path", SCHEME_PATH_STRING_STR, 0, argc, argv);
+  if (!SCHEME_GENERAL_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("simplify-path", SCHEME_GENERAL_PATH_STRING_STR, 0, argc, argv);
 
   bs = TO_PATH(argv[0]);
 
@@ -4091,12 +4258,19 @@ static Scheme_Object *simplify_path(int argc, Scheme_Object *argv[])
     raise_null_error("simplify-path", argv[0], "");
 
   use_fs = ((argc <= 1) || SCHEME_TRUEP(argv[1]));
+  kind = SCHEME_PATH_KIND(bs);
 
-  r = do_simplify_path(bs, scheme_null, 0, use_fs, 0);
+  if (use_fs && (kind != SCHEME_PLATFORM_PATH_KIND)) {
+    scheme_arg_mismatch("simplify-path",
+                        "in use-filesystem mode, path is not for the current platform: ",
+                        argv[0]);
+  }
+  
+  r = do_simplify_path(bs, scheme_null, 0, use_fs, 0, kind);
 
   if (SCHEME_FALSEP(r)) {
     /* Input was just 'same: */
-    return scheme_make_path(".");
+    return scheme_make_sized_offset_kind_path(".", 0, 1, 0, kind);
   }
 
   return r;
@@ -4130,7 +4304,8 @@ static Scheme_Object *expand_path(int argc, Scheme_Object *argv[])
 				"expand-path",
 				&expanded,
 				1, 0,
-				SCHEME_GUARD_FILE_EXISTS);
+				SCHEME_GUARD_FILE_EXISTS, 
+                                SCHEME_PLATFORM_PATH_KIND);
 
   if (!expanded && SCHEME_PATHP(argv[0]))
     return argv[0];
@@ -4172,7 +4347,8 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
       filename = do_expand_filename(path, NULL, 0, 
 				    break_ok ? "directory-list" : NULL, 
 				    NULL, 1, 259 - 4 /* leave room for \*.* in Windows */, 
-				    break_ok ? SCHEME_GUARD_FILE_READ : 0);
+				    break_ok ? SCHEME_GUARD_FILE_READ : 0, 
+                                    SCHEME_PLATFORM_PATH_KIND);
       if (!filename)
 	return NULL;
 # ifdef USE_FINDFIRST
@@ -4211,7 +4387,7 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
     char *nf;
     int is_unc = 0, d, nd;
     len = strlen(filename);
-    if ((len > 1) && IS_A_SEP(filename[0]) && check_dos_slashslash_drive(filename, 0, len, NULL, 0, 0))
+    if ((len > 1) && IS_A_DOS_SEP(filename[0]) && check_dos_slashslash_drive(filename, 0, len, NULL, 0, 0))
       is_unc = 1;
     nf = scheme_normal_path_seps(filename, &len, 0);
     pattern = (char *)scheme_malloc_atomic(len + 14);
@@ -4239,7 +4415,7 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
     }
     memcpy(pattern + d, nf + nd, len - nd);
     len += (d - nd);
-    if (len && !IS_A_SEP(pattern[len - 1]))
+    if (len && !IS_A_DOS_SEP(pattern[len - 1]))
       pattern[len++] = '\\';      
     memcpy(pattern + len, "*.*", 4);
   }
@@ -4292,7 +4468,7 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
     if (nlen == 2 && e->d_name[0] == '.' && e->d_name[1] == '.')
       continue;
 #  endif
-    n = make_protected_sized_offset_path(1, e->d_name, 0, nlen, 1, 0);
+    n = make_protected_sized_offset_path(1, e->d_name, 0, nlen, 1, 0, SCHEME_PLATFORM_PATH_KIND);
     elem = scheme_make_pair(n, scheme_null);
     if (last)
       SCHEME_CDR(last) = elem;
@@ -4333,7 +4509,7 @@ char *scheme_find_completion(char *fn)
   if (!len)
     return NULL;
   
-  f = scheme_split_path(fn, len, &base, &isdir);
+  f = scheme_split_path(fn, len, &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
   if (isdir) {
     /* Look for single file/prefix in directory: */
     base = scheme_make_sized_path(fn, len, 0);
@@ -4371,11 +4547,11 @@ char *scheme_find_completion(char *fn)
       /* Add trailing separator if one is not there */
       fn = SCHEME_PATH_VAL(p);
       len = SCHEME_PATH_LEN(p);
-      if (!IS_A_SEP(fn[len-1])) {
+      if (!IS_A_SEP(SCHEME_PLATFORM_PATH_KIND, fn[len-1])) {
 	char *naya;
 	naya = (char *)scheme_malloc_atomic(len + 2);
 	memcpy(naya, fn, len);
-	naya[len++] = FN_SEP;
+	naya[len++] = FN_SEP(SCHEME_PLATFORM_PATH_KIND);
 	naya[len] = 0;
 	fn = naya;
       }
@@ -4420,7 +4596,7 @@ static Scheme_Object *explode_path(Scheme_Object *p)
   int isdir;
 
   while (1) {
-    name = scheme_split_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), &base, &isdir);
+    name = scheme_split_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), &base, &isdir, SCHEME_PATH_KIND(p));
     l = scheme_make_pair(name, l);
 
     if (!SCHEME_PATHP(base)) {
@@ -4536,7 +4712,7 @@ static Scheme_Object *make_directory(int argc, Scheme_Object *argv[])
   
   /* Make sure path doesn't have trailing separator: */
   len = strlen(filename);
-  while (len && IS_A_SEP(filename[len - 1])) {
+  while (len && IS_A_SEP(SCHEME_PLATFORM_PATH_KIND, filename[len - 1])) {
     if (!copied) {
       filename = scheme_strdup(filename);
       copied = 1;
@@ -4983,7 +5159,7 @@ static Scheme_Object *cwd_check(int argc, Scheme_Object **argv)
     ed = scheme_make_sized_path(expanded, strlen(expanded), 1);
 
 # ifndef NO_FILE_SYSTEM_UTILS
-    ed = do_simplify_path(ed, scheme_null, 0, 1, 0);
+    ed = do_simplify_path(ed, scheme_null, 0, 1, 0, SCHEME_PLATFORM_PATH_KIND);
 # endif
 
     return ed;
@@ -5021,10 +5197,12 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel)
       return NULL;
     s = TO_PATH(s);
     if (rel && !scheme_is_relative_path(SCHEME_PATH_VAL(s),
-					SCHEME_PATH_LEN(s)))
+					SCHEME_PATH_LEN(s),
+                                        SCHEME_PLATFORM_PATH_KIND))
       return NULL;
     if (!rel && !scheme_is_complete_path(SCHEME_PATH_VAL(s),
-					 SCHEME_PATH_LEN(s)))
+					 SCHEME_PATH_LEN(s),
+                                         SCHEME_PLATFORM_PATH_KIND))
       return NULL;
     v = SCHEME_CDR(v);
   }

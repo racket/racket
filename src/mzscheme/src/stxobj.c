@@ -72,8 +72,6 @@ static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
 
 static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv);
 
-static Scheme_Object *barrier_symbol;
-
 static Scheme_Object *source_symbol; /* uninterned! */
 static Scheme_Object *share_symbol; /* uninterned! */
 static Scheme_Object *origin_symbol;
@@ -218,10 +216,6 @@ static Module_Renames *krn;
          second <midx>; the <export-registry> part is for finding
          modules to unmarshal import renamings
 
-   - A wrap-elem '* is a mark barrier, which is applied to the
-         result of an expansion so that top-level marks do not
-         break re-expansions
-
      [Don't add a pair case, because sometimes we test for element 
       versus list-of-element.]
 
@@ -360,7 +354,7 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(scheme_datum_to_syntax_proc);
   scheme_datum_to_syntax_proc = scheme_make_folding_prim(datum_to_syntax,
 							 "datum->syntax-object",
-							 2, 4, 1);
+							 2, 5, 1);
   scheme_add_global_constant("datum->syntax-object", 
 			     scheme_datum_to_syntax_proc,
 			     env);
@@ -487,9 +481,6 @@ void scheme_init_stx(Scheme_Env *env)
 						    "syntax-recertify",
 						    4, 4),
 			     env);
-
-  REGISTER_SO(barrier_symbol);
-  barrier_symbol = scheme_intern_symbol("*");
 
   REGISTER_SO(source_symbol);
   REGISTER_SO(share_symbol);
@@ -1397,11 +1388,6 @@ Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib)
 #endif
 
   return scheme_add_rename(o, rib);
-}
-
-Scheme_Object *scheme_add_mark_barrier(Scheme_Object *o)
-{
-  return scheme_add_rename(o, barrier_symbol);
 }
 
 Scheme_Object *scheme_stx_phase_shift_as_rename(long shift, Scheme_Object *old_midx, Scheme_Object *new_midx,
@@ -2455,10 +2441,10 @@ Scheme_Object *scheme_stx_activate_certs(Scheme_Object *o)
 /*                           stx comparison                               */
 /*========================================================================*/
 
-XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, int ignore_barrier, 
+XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl,
 				     Scheme_Object *barrier_env, Scheme_Object *ignore_rib)
 /* Compares the marks in two wraps lists. A result of 2 means that the
-   result depended on a mark barrier or barrier env. Use #f for barrier_env
+   result depended on a barrier env. Use #f for barrier_env
    to treat no rib envs as barriers; we check for barrier_env only in ribs
    because simpliciation eliminates the need for these checks(?). */
 {
@@ -2487,9 +2473,6 @@ XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, int ignore_
 	  acur_mark = WRAP_POS_FIRST(awl);
 	  WRAP_POS_INC(awl);
 	}
-      } else if (!ignore_barrier && SAME_OBJ(WRAP_POS_FIRST(awl), barrier_symbol)) {
-	WRAP_POS_INIT_END(awl);
-	used_barrier = 1;
       } else if (SCHEME_RIBP(WRAP_POS_FIRST(awl))) {
 	if (SAME_OBJ(ignore_rib, WRAP_POS_FIRST(awl))) {
 	  WRAP_POS_INC(awl);
@@ -2529,9 +2512,6 @@ XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, int ignore_
 	  bcur_mark = WRAP_POS_FIRST(bwl);
 	  WRAP_POS_INC(bwl);
 	}
-      } else if (!ignore_barrier && SAME_OBJ(WRAP_POS_FIRST(bwl), barrier_symbol)) {
-	WRAP_POS_INIT_END(bwl);
-	used_barrier = 1;
       } else if (SCHEME_RIBP(WRAP_POS_FIRST(bwl))) {
 	if (SAME_OBJ(ignore_rib, WRAP_POS_FIRST(bwl))) {
 	  WRAP_POS_INC(bwl);
@@ -3017,7 +2997,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	      {
 		WRAP_POS w2;
 		WRAP_POS_INIT(w2, ((Scheme_Stx *)renamed)->wraps);
-		same = same_marks(&w2, &wraps, SCHEME_FALSEP(other_env), other_env, WRAP_POS_FIRST(wraps));
+		same = same_marks(&w2, &wraps, other_env, WRAP_POS_FIRST(wraps));
 	      }
 	    }
 	    
@@ -3057,8 +3037,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	  rib = rib->next; /* First rib record has no rename */
 	}
       }
-    } else if (SCHEME_NUMBERP(WRAP_POS_FIRST(wraps))
-	       || SAME_OBJ(WRAP_POS_FIRST(wraps), barrier_symbol)) {
+    } else if (SCHEME_NUMBERP(WRAP_POS_FIRST(wraps))) {
       did_rib = NULL;
     } else if (SCHEME_HASHTP(WRAP_POS_FIRST(wraps))) {
       Scheme_Hash_Table *ht = (Scheme_Hash_Table *)WRAP_POS_FIRST(wraps);
@@ -3328,7 +3307,7 @@ int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *u
     WRAP_POS bw;
     WRAP_POS_INIT(aw, ((Scheme_Stx *)a)->wraps);
     WRAP_POS_INIT(bw, ((Scheme_Stx *)b)->wraps);
-    if (!same_marks(&aw, &bw, SCHEME_FALSEP(ae), ae, NULL))
+    if (!same_marks(&aw, &bw, ae, NULL))
       return 0;
   }
 
@@ -3482,7 +3461,7 @@ Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *a, Scheme_Object *re
   WRAP_POS_INIT(aw, ((Scheme_Stx *)a)->wraps);
   WRAP_POS_INIT(bw, ((Scheme_Stx *)relative_to)->wraps);
 
-  if (!same_marks(&aw, &bw, 0, NULL, NULL)) {
+  if (!same_marks(&aw, &bw, NULL, NULL)) {
     return prune_marks((Scheme_Stx *)a,
                        scheme_stx_extract_marks(relative_to));
   }
@@ -3818,7 +3797,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 	    
 	      /* Check marks (now that we have the correct barriers). */
 	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
-	      if (!same_marks(&w2, &w, SCHEME_FALSEP(other_env), other_env, (Scheme_Object *)init_rib)) {
+	      if (!same_marks(&w2, &w, other_env, (Scheme_Object *)init_rib)) {
 		other_env = NULL;
 	      }
 	      
@@ -3851,7 +3830,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 		ok = NULL;
 	    } else {
 	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
-	      if (same_marks(&w2, &w, 1, scheme_false, (Scheme_Object *)init_rib))
+	      if (same_marks(&w2, &w, scheme_false, (Scheme_Object *)init_rib))
 		ok = SCHEME_VEC_ELS(v)[0];
 	      else
 		ok = NULL;
@@ -5487,7 +5466,7 @@ static int pos_exact_or_false_p(Scheme_Object *o)
 
 static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *src = scheme_false, *properties = NULL;
+  Scheme_Object *src = scheme_false, *properties = NULL, *certs = NULL;
   
   if (!SCHEME_FALSEP(argv[0]) && !SCHEME_STXP(argv[0]))
     scheme_wrong_type("datum->syntax-object", "syntax or #f", 0, argc, argv);
@@ -5512,6 +5491,14 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
 	if (!SCHEME_STXP(argv[3]))
 	  scheme_wrong_type("datum->syntax-object", "syntax or #f", 3, argc, argv);
 	properties = ((Scheme_Stx *)argv[3])->props;
+      }
+      
+      if (argc > 4) {
+        if (!SCHEME_FALSEP(argv[4])) {
+          if (!SCHEME_STXP(argv[4]))
+            scheme_wrong_type("datum->syntax-object", "syntax or #f", 4, argc, argv);
+          certs = (Scheme_Object *)INACTIVE_CERTS((Scheme_Stx *)argv[4]);
+        }
       }
     }
 
@@ -5549,11 +5536,18 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
     }
   }
 
+  if (SCHEME_STXP(argv[1]))
+    return argv[1];
+
   src = scheme_datum_to_syntax(argv[1], src, argv[0], 1, 0);
 
   if (properties) {
-    if (!((Scheme_Stx *)src)->props)
-      ((Scheme_Stx *)src)->props = properties;
+    ((Scheme_Stx *)src)->props = properties;
+  }
+
+  if (certs) {
+    certs = scheme_make_raw_pair(NULL, certs);
+    ((Scheme_Stx *)src)->certs = certs;
   }
 
   return src;
@@ -5683,7 +5677,7 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
   WRAP_POS_INIT(awl, stx->wraps);
   WRAP_POS_INIT_END(ewl);
 
-  if (same_marks(&awl, &ewl, 1, scheme_false, NULL))
+  if (same_marks(&awl, &ewl, scheme_false, NULL))
     return scheme_true;
   else
     return scheme_false;

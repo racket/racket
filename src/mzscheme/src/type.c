@@ -127,7 +127,8 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_thread_type, "<thread>");
   set_name(scheme_char_string_type, "<string>");
   set_name(scheme_byte_string_type, "<byte-string>");
-  set_name(scheme_path_type, "<path>");
+  set_name(scheme_unix_path_type, "<unix-path>");
+  set_name(scheme_windows_path_type, "<windows-path>");
   set_name(scheme_struct_property_type, "<struct-property>");
   set_name(scheme_structure_type, "<struct>");
 #ifdef USE_SENORA_GC
@@ -456,7 +457,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_complex_type, complex_obj);
   GC_REG_TRAV(scheme_char_string_type, string_obj);
   GC_REG_TRAV(scheme_byte_string_type, bstring_obj);
-  GC_REG_TRAV(scheme_path_type, bstring_obj);
+  GC_REG_TRAV(scheme_unix_path_type, bstring_obj);
+  GC_REG_TRAV(scheme_windows_path_type, bstring_obj);
   GC_REG_TRAV(scheme_symbol_type, symbol_obj);
   GC_REG_TRAV(scheme_keyword_type, symbol_obj);
   GC_REG_TRAV(scheme_null_type, char_obj); /* small */

@@ -266,7 +266,7 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
 #   include "mzeqchk.inc"
     return vector_equal(obj1, obj2);
   } else if (SCHEME_BYTE_STRINGP(obj1)
-	     || SCHEME_PATHP(obj1)) {
+	     || SCHEME_GENERAL_PATHP(obj1)) {
     int l1, l2;
     l1 = SCHEME_BYTE_STRTAG_VAL(obj1);
     l2 = SCHEME_BYTE_STRTAG_VAL(obj2);

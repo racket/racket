@@ -198,7 +198,7 @@ static Scheme_Object *do_load_extension(const char *filename,
   void *handle;
   int comppath;
 
-  comppath = scheme_is_complete_path(filename, strlen(filename));
+  comppath = scheme_is_complete_path(filename, strlen(filename), SCHEME_PLATFORM_PATH_KIND);
 
   reload_f = NULL;
   modname_f = NULL;

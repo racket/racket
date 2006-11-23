@@ -432,6 +432,7 @@
   scheme_extension_table->scheme_make_path = scheme_make_path;
   scheme_extension_table->scheme_make_sized_path = scheme_make_sized_path;
   scheme_extension_table->scheme_make_sized_offset_path = scheme_make_sized_offset_path;
+  scheme_extension_table->scheme_make_sized_offset_kind_path = scheme_make_sized_offset_kind_path;
   scheme_extension_table->scheme_make_path_without_copying = scheme_make_path_without_copying;
 #ifdef MACINTOSH_EVENTS
   scheme_extension_table->scheme_mac_spec_to_path = scheme_mac_spec_to_path;

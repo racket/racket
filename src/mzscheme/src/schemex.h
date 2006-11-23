@@ -646,12 +646,13 @@ char *(*scheme_expand_string_filename)(Scheme_Object *f, const char *errorin, in
 char *(*scheme_os_getcwd)(char *buf, int buflen, int *actlen, int noexn);
 int (*scheme_os_setcwd)(char *buf, int noexn);
 char *(*scheme_getdrive)(void);
-Scheme_Object *(*scheme_split_path)(const char *path, int len, Scheme_Object **base, int *isdir);
+Scheme_Object *(*scheme_split_path)(const char *path, int len, Scheme_Object **base, int *isdir, int kind);
 Scheme_Object *(*scheme_build_path)(int argc, Scheme_Object **argv);
 Scheme_Object *(*scheme_path_to_directory_path)(Scheme_Object *p);
 Scheme_Object *(*scheme_make_path)(const char *chars);
 Scheme_Object *(*scheme_make_sized_path)(char *chars, long len, int copy);
 Scheme_Object *(*scheme_make_sized_offset_path)(char *chars, long d, long len, int copy);
+Scheme_Object *(*scheme_make_sized_offset_kind_path)(char *chars, long d, long len, int copy, int kind);
 Scheme_Object *(*scheme_make_path_without_copying)(char *chars);
 #ifdef MACINTOSH_EVENTS
 char *(*scheme_mac_spec_to_path)(mzFSSpec *spec);

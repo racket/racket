@@ -264,6 +264,8 @@ extern Scheme_Object *scheme_stack_dump_key;
 
 extern Scheme_Object *scheme_default_prompt_tag;
 
+extern Scheme_Object *scheme_system_idle_channel;
+
 /*========================================================================*/
 /*                    thread state and maintenance                        */
 /*========================================================================*/
@@ -593,7 +595,6 @@ void scheme_drop_first_rib_rename(Scheme_Object *ro);
 
 Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename);
 Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib);
-Scheme_Object *scheme_add_mark_barrier(Scheme_Object *o);
 
 Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to);
 
@@ -1162,6 +1163,8 @@ extern Scheme_Object *scheme_always_ready_evt;
 
 void scheme_get_outof_line(Scheme_Channel_Syncer *ch_w);
 void scheme_post_syncing_nacks(Syncing *syncing);
+
+int scheme_try_channel_get(Scheme_Object *ch);
 
 /*========================================================================*/
 /*                                 numbers                                */
@@ -2409,8 +2412,8 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure);
 /*                         filesystem utilities                           */
 /*========================================================================*/
 
-int scheme_is_relative_path(const char *s, long len);
-int scheme_is_complete_path(const char *s, long len);
+int scheme_is_relative_path(const char *s, long len, int kind);
+int scheme_is_complete_path(const char *s, long len, int kind);
 
 Scheme_Object *scheme_get_file_directory(const char *filename);
 

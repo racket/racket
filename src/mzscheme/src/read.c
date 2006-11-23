@@ -2504,7 +2504,8 @@ honu_add_module_wrapper(Scheme_Object *list, Scheme_Object *stxsrc, Scheme_Objec
   if (SCHEME_PATHP(name)) {
     Scheme_Object *base;
     int isdir, i;
-    name = scheme_split_path(SCHEME_BYTE_STR_VAL(name), SCHEME_BYTE_STRLEN_VAL(name), &base, &isdir);
+    name = scheme_split_path(SCHEME_BYTE_STR_VAL(name), SCHEME_BYTE_STRLEN_VAL(name), &base, &isdir,
+                             SCHEME_PLATFORM_PATH_KIND);
     for (i = SCHEME_BYTE_STRLEN_VAL(name); i--; ) {
       if (SCHEME_BYTE_STR_VAL(name)[i] == '.')
 	break;
@@ -4373,7 +4374,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	v = scheme_make_sized_path(s, l, l < BLK_BUF_SIZE);
 	l = read_compact_number(port); /* symtab index */
 
-	if (scheme_is_relative_path(SCHEME_PATH_VAL(v), SCHEME_PATH_LEN(v))) {
+	if (scheme_is_relative_path(SCHEME_PATH_VAL(v), SCHEME_PATH_LEN(v), SCHEME_PLATFORM_PATH_KIND)) {
 	  /* Resolve relative path using the current load-relative directory: */
 	  Scheme_Object *dir;
 	  dir = scheme_get_param(scheme_current_config(), MZCONFIG_LOAD_DIRECTORY);

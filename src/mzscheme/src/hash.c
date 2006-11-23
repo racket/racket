@@ -923,7 +923,8 @@ static long equal_hash_key(Scheme_Object *o, long k)
       break;
     }
   case scheme_byte_string_type:
-  case scheme_path_type:
+  case scheme_unix_path_type:
+  case scheme_windows_path_type:
     {
       int i = SCHEME_BYTE_STRLEN_VAL(o);
       char *s = SCHEME_BYTE_STR_VAL(o);
@@ -1146,7 +1147,8 @@ long scheme_equal_hash_key2(Scheme_Object *o)
       return k;
     }
   case scheme_byte_string_type:
-  case scheme_path_type:
+  case scheme_unix_path_type:
+  case scheme_windows_path_type:
     {
       int k = 0, i = SCHEME_BYTE_STRLEN_VAL(o);
       char *s = SCHEME_BYTE_STR_VAL(o);

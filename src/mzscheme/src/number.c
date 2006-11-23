@@ -65,6 +65,7 @@ static Scheme_Object *even_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_or (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_not (int argc, Scheme_Object *argv[]);
+static Scheme_Object *integer_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gcd (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lcm (int argc, Scheme_Object *argv[]);
 static Scheme_Object *floor_prim (int argc, Scheme_Object *argv[]);
@@ -283,6 +284,12 @@ scheme_init_number (Scheme_Env *env)
   p = scheme_make_folding_prim(scheme_bitwise_shift, "arithmetic-shift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("arithmetic-shift", p, env);
+
+  scheme_add_global_constant("integer-length",
+                             scheme_make_folding_prim(integer_length, 
+                                                      "integer-length", 
+                                                      1, 1, 1), 
+                             env);
 
   scheme_add_global_constant("gcd", 
 			     scheme_make_folding_prim(gcd,
@@ -2423,4 +2430,55 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
   }
 
   return scheme_bignum_shift(v, shift);
+}
+
+static Scheme_Object *
+integer_length(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o = argv[0];
+  unsigned long n;
+  int base;
+
+  if (SCHEME_INTP(o)) {
+    long a = SCHEME_INT_VAL(o);
+
+    if (a < 0)
+      a = ~a;
+    
+    n = a;
+    base = 0;
+  } else if (_SCHEME_TYPE(o) == scheme_bignum_type) {
+    bigdig d;
+
+    if (!SCHEME_BIGPOS(o)) {
+      /* Maybe we could do better... */
+      o = scheme_bignum_not(o);
+    }
+
+    base = ((Scheme_Bignum *)o)->len;
+    d = ((Scheme_Bignum *)o)->digits[base - 1];
+    base = (base - 1) * (sizeof(bigdig) * 8);
+
+#ifdef USE_LONG_LONG_FOR_BIGDIG
+    n = (unsigned long)d;
+    if ((bigdig)n != d) {
+      /* Must have been overflow */
+      d >>= (sizeof(unsigned long) * 8);
+      base += (sizeof(unsigned long) * 8);
+      n = (unsigned long)d;
+    }
+#else
+    n = d;
+#endif
+  } else {
+    scheme_wrong_type("integer-length", "exact integer", 0, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
+
+  while (n) {
+    n >>= 1;
+    base++;
+  }
+
+  return scheme_make_integer(base);
 }

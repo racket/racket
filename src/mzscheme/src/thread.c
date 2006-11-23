@@ -3157,6 +3157,11 @@ void scheme_cancel_sleep()
   needs_sleep_cancelled = 1;
 }
 
+static int post_system_idle()
+{
+  return scheme_try_channel_get(scheme_system_idle_channel);
+}
+
 void scheme_check_threads(void)
 /* Signals should be suspended. */
 {
@@ -3663,8 +3668,10 @@ void scheme_thread_block(float sleep_time)
     scheme_on_atomic_timeout();
   } else {
     /* If all processes are blocked, check for total process sleeping: */
-    if (p->block_descriptor != NOT_BLOCKED)
-      check_sleep(1, 1);
+    if (p->block_descriptor != NOT_BLOCKED) {
+      if (!post_system_idle())
+        check_sleep(1, 1);
+    }
   }
 
   if (p->block_descriptor == SLEEP_BLOCKED) {

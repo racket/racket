@@ -3422,10 +3422,10 @@ static void filename_exn(char *name, char *msg, char *filename, int err)
 
   len = strlen(filename);
 
-  if (scheme_is_relative_path(filename, len)) {
+  if (scheme_is_relative_path(filename, len, SCHEME_PLATFORM_PATH_KIND)) {
     dir = scheme_os_getcwd(NULL, 0, NULL, 1);
     drive = NULL;
-  } else if (scheme_is_complete_path(filename, len)) {
+  } else if (scheme_is_complete_path(filename, len, SCHEME_PLATFORM_PATH_KIND)) {
     dir = NULL;
     drive = NULL;
   } else {

@@ -395,11 +395,15 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_MUTABLE_BYTE_STRINGP(obj)  (SCHEME_BYTE_STRINGP(obj) && SCHEME_MUTABLEP(obj))
 #define SCHEME_IMMUTABLE_BYTE_STRINGP(obj)  (SCHEME_BYTE_STRINGP(obj) && SCHEME_IMMUTABLEP(obj))
 
-#define SCHEME_PATHP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_path_type)
+#define SCHEME_PATHP(obj)  SAME_TYPE(SCHEME_TYPE(obj), SCHEME_PLATFORM_PATH_KIND)
+#define SCHEME_GENERAL_PATHP(obj)  ((SCHEME_TYPE(obj) >= scheme_unix_path_type) && (SCHEME_TYPE(obj) <= scheme_windows_path_type))
   /* A path is guranteed to have the same shape as a byte string */
 
 #define SCHEME_PATH_STRINGP(x) (SCHEME_CHAR_STRINGP(x) || SCHEME_PATHP(x))
 #define SCHEME_PATH_STRING_STR "path or string"
+
+#define SCHEME_GENERAL_PATH_STRINGP(x) (SCHEME_CHAR_STRINGP(x) || SCHEME_GENERAL_PATHP(x))
+#define SCHEME_GENERAL_PATH_STRING_STR "path (for any platform) or string"
 
 #define SCHEME_SYMBOLP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_symbol_type)
 #define SCHEME_KEYWORDP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_keyword_type)
@@ -470,6 +474,17 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define GUARANTEE_CHAR_STRING(fname, argnum) GUARANTEE_TYPE (fname, argnum, SCHEME_CHAR_STRINGP, "string")
 #define GUARANTEE_STRSYM(fname, argnum)      GUARANTEE_TYPE (fname, argnum, SCHEME_STRSYMP, "string or symbol")
 #define GUARANTEE_SYMBOL(fname, argnum)      GUARANTEE_TYPE (fname, argnum, SCHEME_SYMBOLP, "symbol")
+
+#define SCHEME_UNIX_PATH_KIND scheme_unix_path_type
+#define SCHEME_WINDOWS_PATH_KIND scheme_windows_path_type
+
+#ifdef DOS_FILE_SYSTEM
+# define SCHEME_PLATFORM_PATH_KIND SCHEME_WINDOWS_PATH_KIND
+#else
+# define SCHEME_PLATFORM_PATH_KIND SCHEME_UNIX_PATH_KIND
+#endif
+
+#define SCHEME_PATH_KIND(p) SCHEME_TYPE(p)
 
 /*========================================================================*/
 /*                        basic Scheme accessors                          */
