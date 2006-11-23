@@ -1,3 +1,16 @@
+Version 360.2
+Added support for manipulating filesystem paths that work on 
+ other platforms
+Added integer-length
+Added optional argument to tcp-addresses to get port numbers
+Added system-idle-evt
+MzLib: serialized path includes the path's convention
+
+Version 360.1
+Changed macro expansion of bound identifiers so that `local-expand'
+ works with an empty stop list
+
+
 Version 360, November 2006
 Continuations:
  Added delimited continuations: call-with-continuation-prompt,
