@@ -7,7 +7,8 @@
 ;; included below.
 
 (module |60| mzscheme
-  (provide (all-defined-except logical:ash-4))
+  (provide (all-defined-except logical:ash-4)
+           integer-length)
 
   ;; SRFI 60 defines several procedures which are already provided by
   ;; MzScheme and thus they are not provided by this module, namely
@@ -189,6 +190,7 @@
 	    (quotient n k)))
       (* (expt 2 count) n)))
 ;@
+#;
 (define integer-length
   (letrec ((intlen (lambda (n tot)
 		     (case n
