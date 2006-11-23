@@ -34,6 +34,7 @@
 (require (lib "66.ss" "srfi"))
 (require (lib "67.ss" "srfi"))
 (require (lib "69.ss" "srfi"))
+(require (lib "71.ss" "srfi"))
 (require (lib "74.ss" "srfi"))
 (require (lib "78.ss" "srfi"))
 
@@ -68,5 +69,6 @@
 (require (lib "66.ss" "srfi" "66"))
 (require (lib "compare.ss" "srfi" "67"))
 (require (lib "hash.ss" "srfi" "69"))
+(require (lib "letvalues.ss" "srfi" "71"))
 (require (lib "74.ss" "srfi" "74"))
 (require (lib "check.ss" "srfi" "78"))
