@@ -354,14 +354,14 @@
     (define final-y 0)
     (define t-result #f)
     
-    ; (printf "n: ~s~n" n)
+    ; (printf "n: ~s\n" n)
 
     (let/ec return
 
 #|
 (if (= n 270)
     (step 0 < n add1
-	     (lambda (i) (printf "b[~a] = ~a~n" i (vector-ref b i)))))
+	     (lambda (i) (printf "b[~a] = ~a\n" i (vector-ref b i)))))
 |#
 
       (step 0 < n add1
@@ -370,14 +370,14 @@
 		(vector-set! c pos (add1 (vector-ref c pos))))))
 
       (when (= n (vector-ref c 0))
-	; (printf "zero~n")
+	; (printf "zero\n")
 	(return #f 0 #t))
 
 #|
 (when (= n 270)
   (step 0 <= BMAX add1
 	(lambda (i)
-	  (printf "c[~s]: ~s~n" i (vector-ref c i)))))
+	  (printf "c[~s]: ~s\n" i (vector-ref c i)))))
 |#
 
       ; /* Find minimum and maximum length, bound m-result by those */
@@ -397,7 +397,7 @@
 	     [g i]
 	     [l (min (max m j) i)]
 	     [m-result l])
-	; (printf "min: ~s max: ~s~n" k g)
+	; (printf "min: ~s max: ~s\n" k g)
 	; /* Adjust last length count to fill out codes, if needed */
 	(let-values ([(y j)
 		      (let loop ([y (arithmetic-shift 1 j)][j j])
@@ -410,12 +410,12 @@
 					   "bad input: more codes than bits")
 				    (return null m-result #f))
 				  (loop (* new-y 2) (add1 j))))))])
-	  ; (printf "loop y: ~s~n" y)
+	  ; (printf "loop y: ~s\n" y)
 	  (let ([y (- y (vector-ref c i))])
 	    (when (negative? y)
 	      (error 'inflate "bad input: more codes than bits")
 	      (return #f m-result #f))
-	    ; (printf "set c[~s] ~s + ~s~n" i (vector-ref c i) y)
+	    ; (printf "set c[~s] ~s + ~s\n" i (vector-ref c i) y)
 	    (vector-set! c i (+ (vector-ref c i) y))
 	    (set! final-y y)))
 	; /* Generate starting offsets into the value table for each length */
@@ -449,23 +449,23 @@
 		[r (make-huft 0 0 0)]) ; /* table entry for structure assignment */
 	    ; /* go through the bit lengths (k already is bits in shortest code) */
 	    (let k-loop ([k k])
-	      ; (printf "k: ~s~n" k)
+	      ; (printf "k: ~s\n" k)
 	      (when (<= k g)
 		(let ([a (vector-ref c k)])
 		  (let a-loop ([a (sub1 a)])
 		    (unless (negative? a)
-		      ; (printf "a: ~s~n" a)
+		      ; (printf "a: ~s\n" a)
 		      ; /* here i is the Huffman code of length k bits for value *p */
 		      ; /* make tables up to required level */
 		      (let kwl-loop ()
 			(when (> k (+ w l))
 			  (set! h (add1 h))
 			  (set! w (+ w l)) ; /* previous table always l bits */
-			  
+
 			  ; /* compute minimum size table less than or equal to l bits */
 			  (set! z (min (- g w) l)) ; /* upper limit on table size */
 
-			  ; (printf "z: ~s k: ~s w: ~s~n" z k w)
+			  ; (printf "z: ~s k: ~s w: ~s\n" z k w)
 			  
 			  (let* ([j (- k w)]
 				 [f (arithmetic-shift 1 j)])
@@ -485,9 +485,9 @@
 					  (set! f (- f cv)) ; /* else deduct codes from patterns */
 					  (loop c-pos)))))))
 			    (set! z (arithmetic-shift 1 j)) ; /* table entries for j-bit table */
-			    
+
 			    ; /* allocate and link in new table */
-			    ; (printf "alloc: ~a~n" z)
+			    ; (printf "alloc: ~a\n" z)
 			    (set! q (build-vector z (lambda (i) (make-huft 0 0 0))))
 			    
 			    (when (not t-result)
@@ -511,7 +511,7 @@
 		      (if (>= v-pos n)
 			  (set-huft-e! r 99) ; /* out of values--invalid code */
 			  (let ([vv (vector-ref v v-pos)])
-			    ; (printf "*p: ~s s: ~s~n" vv s)
+			    ; (printf "*p: ~s s: ~s\n" vv s)
 			    (if (< vv s)
 				(begin
 				  (set-huft-e! r (if (< vv 256) 16 15)) ; /* 256 is end-of-block code */
@@ -521,7 +521,7 @@
 				  (set-huft-v! r (vector-ref d (- vv s)))))
 			    (set! v-pos (add1 v-pos))))
 		      ; /* fill code-like entries with r */
-		      ; (printf "i: ~s w: ~s k: ~s~n" i w k)
+		      ; (printf "i: ~s w: ~s k: ~s\n" i w k)
 		      (let ([f (arithmetic-shift 1 (- k w))]) ; /* i repeats in table every f entries */
 			(let loop ([j (arithmetic-shift i (- w))])
 			  (when (< j z)
@@ -545,7 +545,7 @@
 		  (k-loop (add1 k)))))
 	    
 	    ; /* Return #f as third if we were given an incomplete table */
-	    ; (printf "done: ~s ~s~n" final-y g)
+	    ; (printf "done: ~s ~s\n" final-y g)
 	    (let ([ok? (or incomp-ok?
 			   (not (and (not (zero? final-y))
 				     (not (= g 1)))))])
@@ -589,12 +589,12 @@
       (let loop () ; /* do until end of block */
 	(NEEDBITS bl)
 	(set! t (vector-ref tl (bitwise-and bb ml)))
-	; (printf "t->e: ~s t->b: ~s~n" (huft-e t) (huft-b t))
+	; (printf "t->e: ~s t->b: ~s\n" (huft-e t) (huft-b t))
 	(set! e (huft-e t))
 	(if (> e 16)
 	    (jump-to-next))
 	(DUMPBITS (huft-b t))
-	; (printf "e: ~s~n" e)
+	; (printf "e: ~s\n" e)
 	(if (= e 16) ; /* then it's a literal */
 	    (begin
 	      (bytes-set! slide wp (huft-v t))
@@ -609,24 +609,24 @@
 	      (NEEDBITS e)
 	      (set! n (+ (huft-v t) (bitwise-and bb (vector-ref mask_bits e))))
 	      (DUMPBITS e)
-	      ; (printf "n: ~s bb: ~s md: ~s~n" n bb md)
+	      ; (printf "n: ~s bb: ~s md: ~s\n" n bb md)
 	      
 	      ; /* decode distance of block to copy */
 	      (NEEDBITS bd)
 	      (set! t (vector-ref td (bitwise-and bb md)))
-	      ; (printf "t->e: ~s t->b: ~s~n" (huft-e t) (huft-b t))
+	      ; (printf "t->e: ~s t->b: ~s\n" (huft-e t) (huft-b t))
 	      (set! e (huft-e t))
-	      ; (printf "e: ~s~n" e)
+	      ; (printf "e: ~s\n" e)
 	      (when (> e 16)
 		(jump-to-next))
 	      (DUMPBITS (huft-b t))
-	      ; (printf "e: ~s~n" e)
+	      ; (printf "e: ~s\n" e)
 	      
 	      (NEEDBITS e)
 	      (set! d (modulo (- wp (huft-v t) (bitwise-and bb (vector-ref mask_bits e))) WSIZE))
 	      (DUMPBITS e)
 	      
-	      ; (printf "wp: ~s t->v: ~s d: ~s~n" wp (huft-v t) d)
+	      ; (printf "wp: ~s t->v: ~s d: ~s\n" wp (huft-v t) d)
 	      
 	      ; /* do the copy */
 	      (let loop ()
@@ -707,14 +707,14 @@
     (begin ; let/ec return
 
       ; /* read in table lengths */
-      ; (define junk1 (begin (NEEDBITS 5) (printf "~s ~s~n" bb bk)))
+      ; (define junk1 (begin (NEEDBITS 5) (printf "~s ~s\n" bb bk)))
       (define nl (+ 257 (bitwise-and (GETBITS 5) #x1f)))
-      ; (define junk2 (begin (NEEDBITS 5) (printf "~s ~s~n" bb bk)))
+      ; (define junk2 (begin (NEEDBITS 5) (printf "~s ~s\n" bb bk)))
       (define nd (+ 1 (bitwise-and (GETBITS 5) #x1f)))
-      ; (define junk3 (begin (NEEDBITS 4) (printf "~s ~s~n" bb bk)))
+      ; (define junk3 (begin (NEEDBITS 4) (printf "~s ~s\n" bb bk)))
       (define nb (+ 4 (bitwise-and (GETBITS 4) #xf)))
 
-      ; (define junk8 (printf "~s ~s ~s~n" nl nd nb))
+      ; (define junk8 (printf "~s ~s ~s\n" nl nd nb))
 
       (define ll (make-vector (+ 286 30)))
       (define i 0)
@@ -742,7 +742,7 @@
 		    ; /* read in literal and distance code lengths */
 		    (let ([n (+ nl nd)]
 			  [m (vector-ref mask_bits bl)])
-		      ; (printf "bl: ~s~n" bl)
+		      ; (printf "bl: ~s\n" bl)
 		      (set! i 0)
 		      (set! l 0)
 		      (let loop ()
@@ -763,7 +763,7 @@
 					(set! i (add1 i))
 					(loop (sub1 j)))))])
 			    (DUMPBITS dmp)
-			    ; (printf "pos: ~s j: ~s l: ~s i: ~s~n" pos j l i)
+			    ; (printf "pos: ~s j: ~s l: ~s i: ~s\n" pos j l i)
 			    (cond
 			      [(< j 16) ; /* length of code in bits (0..15) */
 			       (vector-set! ll i j)
