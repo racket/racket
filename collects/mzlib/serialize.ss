@@ -414,7 +414,7 @@
 	(char? v)
 	(symbol? v)
 	(string? v)
-	(path? v)
+	(path-for-some-system? v)
 	(bytes? v)
 	(vector? v)
 	(pair? v)
@@ -557,7 +557,7 @@
 	      (for-each loop (vector->list ((serialize-info-vectorizer info) v))))]
 	   [(or (string? v)
 		(bytes? v)
-		(path? v))
+		(path-for-some-system? v))
 	    ;; No sub-structure
 	    (void)]
 	   [(vector? v)
@@ -611,8 +611,8 @@
        [(or (string? v)
 	    (bytes? v))
 	(cons 'u v)]
-       [(path? v)
-	(cons 'p (path->bytes v))]
+       [(path-for-some-system? v)
+	(list* 'p+ (path->bytes v) (path-convention-type v))]
        [(vector? v)
 	(cons (if (immutable? v) 'v 'v!)
 	      (map (serial #t) (vector->list v)))]
@@ -733,6 +733,7 @@
 		  [(string? x) (string-copy x)]
 		  [(bytes? x) (bytes-copy x)]))]
 	  [(p) (bytes->path (cdr v))]
+	  [(p+) (bytes->path (cadr v) (cddr v))]
 	  [(c) (cons-immutable (loop (cadr v)) (loop (cddr v)))]
 	  [(c!) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(v) (apply vector-immutable (map loop (cdr v)))]
