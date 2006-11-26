@@ -45,7 +45,7 @@
     `(a ((href ,(string-append "mailto:" addr))) ,addr))
 
   (define (rtrim s)
-    (let* ([presult (pregexp-replace* trailing-regexp s "")]
+    (let* ([presult (regexp-replace* trailing-regexp s "")]
 	   [plen (string-length presult)]
 	   [qlen (sub1 plen)])
       (if (and (> qlen 0) (char=? (string-ref presult qlen) #\.))
