@@ -4991,11 +4991,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	name = SCHEME_CAR(v);
 	protected = SCHEME_TRUEP(SCHEME_CDR(v));
 
-	if (SCHEME_STXP(name)) {
-	  prnt_name = SCHEME_STX_VAL(name);
+        prnt_name = name;
+	if (SCHEME_STXP(name))
 	  name = scheme_tl_id_sym(env->genv, name, NULL, 0);
-	} else
-	  prnt_name = name;
 
 	if (scheme_lookup_in_table(env->genv->toplevel, (const char *)name)) {
 	  /* Defined locally */
