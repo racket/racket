@@ -338,7 +338,8 @@ void wxApp::doMacMouseDown(void)
     }
   }
 
-  if (windowPart != inContent) {
+  if ((windowPart != inContent)
+      && (windowPart != inMenuBar)) {
     /* We've gotten far enough handling the mouse-down event that
        mouse-up events are ok to receive again: */
     wxMouseEventHandled();
@@ -363,6 +364,8 @@ void wxApp::doMacMouseDown(void)
 	  if (theMacWxFrame)
 	    theMacWxFrame->OnMenuClick();
 	}
+
+        wxMouseEventHandled();
 
 	wxTracking();
 	wxPrepareMenuDraw();
