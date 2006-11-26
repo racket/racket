@@ -45,6 +45,7 @@ extern WindowPtr MrEdMouseWindow(Point where);
 extern WindowPtr MrEdKeyWindow();
 
 extern void wxCheckRootFrame(WindowPtr w);
+extern void wxMouseEventHandled(void);
 
 int wxTranslateRawKey(int key);
 
@@ -329,11 +330,18 @@ void wxApp::doMacMouseDown(void)
 #endif
 
 	if (modal) {
+          wxMouseEventHandled();
 	  SysBeep(0);
 	  return;
 	}
       }
     }
+  }
+
+  if (windowPart != inContent) {
+    /* We've gotten far enough handling the mouse-down event that
+       mouse-up events are ok to receive again: */
+    wxMouseEventHandled();
   }
 
   switch (windowPart)
@@ -365,6 +373,7 @@ void wxApp::doMacMouseDown(void)
       break;
     case inContent:
       doMacInContent(window); 
+      wxMouseEventHandled();
       break;
     case inDrag:
       doMacInDrag(window); 
@@ -1197,10 +1206,9 @@ void wxApp::doMacInContent(WindowPtr window)
 {
   wxFrame* theMacWxFrame;
   theMacWxFrame = findMacWxFrame(window);
-  if (theMacWxFrame)
-    {
-      doMacContentClick(theMacWxFrame);
-    }
+  if (theMacWxFrame) {
+    doMacContentClick(theMacWxFrame);
+  }
 }
 
 //-----------------------------------------------------------------------------

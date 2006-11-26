@@ -466,7 +466,7 @@ void wxMediaEdit::OnEvent(wxMouseEvent *event)
 	snip = NULL;
     } else
       snip = NULL;
-    sequenced = (PTRNE(snip, caretSnip));
+    sequenced = 0 && (PTRNE(snip, caretSnip));
     if (sequenced)
       BeginEditSequence();
     SetCaretOwner(snip);

@@ -2394,8 +2394,8 @@ void wxMediaEdit::Redraw()
     return;
 
   if (admin->DelayRefresh()) {
-    /* Do we know the refresh box already? */
-    if (!delayedscroll && !delayedscrollbox && (refreshAll || refreshUnset)) {
+    /* Does the admin know the refresh box already? */
+    if ((delayedscroll != -1) && !delayedscrollbox && (refreshAll || refreshUnset)) {
       /* Yes ... */
       if (!refreshAll && refreshBoxUnset)
 	return; /* Nothing to do */
@@ -2425,8 +2425,11 @@ void wxMediaEdit::Redraw()
 
   dc = admin->GetDC(&x, &y);
 
-  if (!dc)
+  if (!dc) {
+    delayedscroll = -1;
+    delayedscrollbox = FALSE;
     return;
+  }
 
   origx = x;
   origy = y;
@@ -2691,10 +2694,7 @@ void wxMediaEdit::NeedRefresh(long start, long end)
 
   drawCachedInBitmap = FALSE;
 
-  if (!delayRefresh && !printing && (!admin || !admin->DelayRefresh()))
-    Redraw();
-  else if (admin && !admin->standard)
-    admin->Resized(FALSE);
+  ContinueRefresh();
 }
 
 void wxMediaEdit::RefreshByLineDemand(void)
@@ -2702,10 +2702,30 @@ void wxMediaEdit::RefreshByLineDemand(void)
   if (!graphicMaybeInvalid)
     graphicMaybeInvalid = TRUE;
 
+  ContinueRefresh();
+}
+
+void wxMediaEdit::ContinueRefresh(void)
+{
   if (!delayRefresh && !printing && (!admin || !admin->DelayRefresh()))
     Redraw();
-  else if (admin && !admin->standard)
-    admin->Resized(FALSE);
+  else {
+    int rs = 1;
+    if (!delayRefresh && ((delayedscroll != -1)
+                          || delayedscrollbox)) {
+      if (!printing && admin) {
+        /* Although the administrator says to delay,
+           we can't just drop scroll requests. */
+        Redraw();
+        rs =  0;
+      } else {
+        delayedscroll = -1;
+        delayedscrollbox = NULL;
+      }
+    }
+    if (admin && !admin->standard)
+      admin->Resized(FALSE);
+  }
 }
 
 void wxMediaEdit::NeedCaretRefresh(void)

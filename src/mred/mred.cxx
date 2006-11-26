@@ -117,6 +117,7 @@ wxFrame *mred_real_main_frame;
 static Scheme_Thread *user_main_thread;
 
 extern void wxMediaIOCheckLSB(void);
+extern void wxMouseEventHandled(void);
 
 #include "mred.h"
 
@@ -1681,6 +1682,9 @@ Scheme_Object *wxDispatchEventsUntilWaitable(wxDispatch_Check_Fun f, void *data,
   Scheme_Object *result = scheme_void;
 
   c = MrEdGetContext();
+#ifdef wx_mac
+  wxMouseEventHandled();
+#endif
 
   if (c->ready_to_go
       || (c->handler_running != scheme_current_thread)) {

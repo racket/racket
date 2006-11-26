@@ -18,6 +18,7 @@
 #include "PSDC.h"
 
 void wxCleanUp(void);
+extern void wxMouseEventHandled(void);
 
 ///////////////////////////////////////////////////////////////////////////////
 // The procedure CreateApp initializes the whole application.
@@ -91,6 +92,8 @@ void wxCleanUp(void)
 //-----------------------------------------------------------------------------
 Bool wxYield(void)
 { // Yield to incoming messages
+
+  wxMouseEventHandled();
 
   while (wxTheApp->Pending()) {
     wxTheApp->Dispatch();

@@ -645,6 +645,7 @@ class wxMediaEdit : public wxMediaBuffer
   void NeedRefresh(long start, long end = -1);
   void NeedRefresh(double, double, double, double);
   void RefreshByLineDemand(void);
+  void ContinueRefresh(void);
   void RefreshBox(double x, double y, double w, double h);
 
   void NeedCaretRefresh(void);
