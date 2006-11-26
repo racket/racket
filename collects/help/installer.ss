@@ -63,7 +63,7 @@
 	      (if (>= n prefix-len)
 		  p
 		  (loop (cdr p) (add1 n))))])
-      (fold-into-web-path (map path->string relative-exp-path))))
+      (fold-into-web-path relative-exp-path)))
   
   ; (listof string) -> string
   ; result is forward-slashed web path
@@ -71,8 +71,8 @@
   (define (fold-into-web-path lst)
     (foldr (lambda (s a)
              (if a
-                 (bytes-append (path->bytes s) #"/" a)
-                 (path->bytes s)))
+               (bytes-append (path->bytes s) #"/" a)
+               (path->bytes s)))
            #f
            lst))
   
