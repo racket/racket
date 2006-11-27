@@ -19,7 +19,7 @@
       (with-input-from-file a-path
         (lambda ()
           (let loop ()
-            (match (read-line)
+            (match (read-line (current-input-port) 'any)
               [(? eof-object?)
                (void)]
               [(regexp #"^([^\t ]+)[\t ]+(.+)$"
