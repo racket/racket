@@ -35,7 +35,7 @@
       (inherit get-admin)
       (define/override (on-event dc x y editorx editory evt)
         (cond
-          [(send evt get-right-down)
+          [(eq? (send evt get-event-type) 'right-down)
            (let ([sx (- (send evt get-x) x)]
                  [sy (- (send evt get-y) y)]
                  [bil (box 0)]
