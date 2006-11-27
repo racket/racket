@@ -252,6 +252,8 @@ an appropriate subdirectory.
                                            (pkg->diamond-key pkg)
                                            (lambda () '()))))
       (begin
+        (unless (list? loaded-packages)
+          (error 'PLaneT "Inconsistent state: expected loaded-packages to be a list, received: ~s" loaded-packages))
         (for-each
          (lambda (already-loaded-pkg)
            (unless (can-be-loaded-together? pkg already-loaded-pkg)
@@ -430,9 +432,10 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
            void
            (λ (x) x)))))
   
-  ;; save-to-uninstalled-pkg-cache! : uninstalled-pkg -> void
-  ;; copies the given uninstalled package into the uninstalled-package cache.
-  ;; replaces any old file that might be there
+  ;; save-to-uninstalled-pkg-cache! : uninstalled-pkg -> path[file]
+  ;; copies the given uninstalled package into the uninstalled-package cache,
+  ;; replacing any old file that might be there. Returns the path it copied
+  ;; the file into.
   (define (save-to-uninstalled-pkg-cache! uninst-p)
     (let* ([pspec (uninstalled-pkg-spec uninst-p)]
            [owner (car (pkg-spec-path pspec))]
@@ -445,9 +448,11 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                             (number->string maj)
                             (number->string min))]
            [full-pkg-path (build-path dir name)])
-      (make-directory* dir)
-      (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
-      (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path)))
+      (unless (equal? (normalize-path (uninstalled-pkg-path uninst-p)) (normalize-path full-pkg-path))
+        (make-directory* dir)
+        (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
+        (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path))
+      full-pkg-path))
 
   ; ==========================================================================================
   ; PHASE 3: SERVER RETRIEVAL
@@ -467,10 +472,13 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; uninstalled-packages cache, then returns a promise for it   
   (define (get-package-from-server pkg)
     (match (download-package pkg)
-      [(#t path maj min) 
-       (let ([upkg (make-uninstalled-pkg path pkg maj min)])
-         (save-to-uninstalled-pkg-cache! upkg)
-         upkg)]
+      [(#t tmpfile-path maj min) 
+       (let* ([upkg (make-uninstalled-pkg tmpfile-path pkg maj min)]
+              [cached-path (save-to-uninstalled-pkg-cache! upkg)]
+              [final (make-uninstalled-pkg cached-path pkg maj min)])
+         (unless (equal? (normalize-path tmpfile-path) (normalize-path cached-path))
+           (delete-file tmpfile-path)) ;; remove the tmp file, we're done with it
+         final)]
       [(#f str) (string-append "PLaneT could not find the requested package: " str)]
       [(? string? s) (string-append "PLaneT could not download the requested package: " s)]))
   
