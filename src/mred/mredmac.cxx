@@ -757,13 +757,15 @@ static int CheckForMouseOrKey(EventRecord *e, MrQueueRef osq, int check_only,
 	    /* Handle bring-window-to-front click immediately */
 	    if (!osq->half_done) {
 	      if (fc && (!fc->modal_window || (fr == fc->modal_window))) {
-		SelectWindow(window);
+                if ((part == inContent) || !(e->modifiers & cmdKey))
+                  SelectWindow(window);
 		cont_mouse_context = NULL;
 	      } else if (fc && fc->modal_window) {
 		wxFrame *mfr;
 		mfr = (wxFrame *)fc->modal_window;
 		cont_mouse_context = NULL;
-		SelectWindow(mfr->macWindow());
+                if ((part == inContent) || !(e->modifiers & cmdKey))
+                  SelectWindow(mfr->macWindow());
 	      }
 	      osq->half_done = 1;
 	    }
