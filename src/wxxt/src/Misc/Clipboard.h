@@ -63,7 +63,7 @@ class wxClipboard : public wxObject
   wxBitmap *GetClipboardBitmap(long time);
 
   /* Get data from the clipboard */
-  char *GetClipboardData(char *format, long *length, long time);
+  char *GetClipboardData(char *format, long *length, long time, int alt_sel = 0);
 
   /* Get the clipboard client directly. Will be NULL if clipboard data
      is a string, or if some other application owns the clipboard. 

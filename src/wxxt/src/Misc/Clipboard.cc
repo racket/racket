@@ -455,14 +455,14 @@ static void abandoned_clip(void *_cb)
     cb->in_progress = -1;
 }
 
-char *wxClipboard::GetClipboardData(char *format, long *length, long time)
+char *wxClipboard::GetClipboardData(char *format, long *length, long time, int alt_sel)
 {
-  if (clipOwner)  {
+  if (clipOwner && !alt_sel)  {
     if (clipOwner->formats->Member(format))
       return wxsGetDataInEventspace(clipOwner, format, length);
     else
       return NULL;
-  } else if (cbString) {
+  } else if (cbString && !alt_sel) {
     if (!strcmp(format, "TEXT"))
       return copystring(cbString);
     else
@@ -482,7 +482,7 @@ char *wxClipboard::GetClipboardData(char *format, long *length, long time)
     receivedString = NULL;
     receivedTargets = NULL;
 
-    XtGetSelectionValue(getClipWindow, is_sel ? XA_PRIMARY : xa_clipboard,
+    XtGetSelectionValue(getClipWindow, alt_sel ? alt_sel : (is_sel ? XA_PRIMARY : xa_clipboard),
 			xa_targets, wxGetTargets, (XtPointer)saferef, time);
 
     start_time = scheme_get_inexact_milliseconds();
@@ -517,7 +517,7 @@ char *wxClipboard::GetClipboardData(char *format, long *length, long time)
       return NULL;
     }
 
-    XtGetSelectionValue(getClipWindow, is_sel ? XA_PRIMARY : xa_clipboard,
+    XtGetSelectionValue(getClipWindow, alt_sel ? alt_sel : (is_sel ? XA_PRIMARY : xa_clipboard),
 			xa, wxGetSelection, (XtPointer)saferef, 0);
     
     start_time = scheme_get_inexact_milliseconds();

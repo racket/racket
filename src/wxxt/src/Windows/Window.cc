@@ -38,6 +38,7 @@
 #define  Uses_wxItem
 #define  Uses_wxCanvas
 #define  Uses_wxApp
+#define  Uses_wxClipboard
 #include "wx.h"
 #define  Uses_ScrollWinWidget
 #define  Uses_Scrollbar
@@ -48,6 +49,8 @@
 #define  Uses_MultiListWidget
 #define  Uses_ScrollbarWidget
 #include "widgets.h"
+
+#include "xdnd.h"
 
 #include <X11/Xatom.h>
 #include <X11/keysym.h> // needed for IsFunctionKey, etc.
@@ -60,10 +63,16 @@ static Atom utf8_atom = 0, net_wm_name_atom, net_wm_icon_name_atom;
 extern void wxSetSensitive(Widget, Bool enabled);
 extern int wxLocaleStringToChar(char *str, int slen);
 extern int wxUTF8StringToChar(char *str, int slen);
+extern wxWindow *wxLocationToWindow(int x, int y);
 
 static wxWindow *grabbing_panel;
 static Time grabbing_panel_time;
 static Bool grabbing_panel_regsitered;
+
+#include "xdnd.c"
+
+static int dnd_inited = 0;
+static DndClass dnd;
 
 #ifndef NO_XMB_LOOKUP_STRING
 static XIM the_im;
@@ -146,7 +155,9 @@ wxWindow::~wxWindow(void)
     // destroy widgets
     wxSetSensitive(X->frame, TRUE);
 
-    *saferef = NULL; /* MATTHEW */
+    *saferef = NULL;
+
+    dndTarget = NULL; /* just in case */
 
     if (X->frame) XtDestroyWidget(X->frame); X->frame = X->handle = X->scroll = NULL;
     DELETE_OBJ constraints; constraints = NULL;
@@ -1397,6 +1408,91 @@ void wxWindow::FrameEventHandler(Widget w,
       if (win->OnClose())
 	win->Show(FALSE);
     }
+    if (dnd_inited) {
+      if (xev->xclient.message_type == dnd.XdndEnter) {
+	/* Ok... */
+      } else if (xev->xclient.message_type == dnd.XdndPosition) {
+	wxWindow *target = NULL;
+        
+	/* Find immediate target window: */
+        {
+          Display *dpy  = XtDisplay(w);
+          Screen  *scn  = XtScreen(w);
+          Window  root  = RootWindowOfScreen(scn);
+          Window  xwin  = XtWindow(w);
+          Window  child = 0;
+          int cx, cy;
+	  cx = XDND_POSITION_ROOT_X(xev);
+	  cy = XDND_POSITION_ROOT_Y(xev);
+	  while (1) {
+	    if (XTranslateCoordinates(dpy, root, xwin, cx, cy,
+				      &cx, &cy, &child)) {
+	      if (!child)
+		break;
+	      else {
+		root = xwin;
+		xwin = child;
+	      }
+	    } else
+	      break;
+	  }
+	  if (xwin) {
+	    Widget cw;
+	    cw = XtWindowToWidget(dpy, xwin);
+	    if (cw) {
+	      target = win->FindChildByWidget(cw);
+	    }
+          }
+        }
+
+	/* Does this window (if found) accept drops? Or maybe a parent? */
+        while (target && !target->drag_accept) {
+          if (wxSubType(target->__type, wxTYPE_FRAME)
+	      || wxSubType(target->__type, wxTYPE_DIALOG_BOX)) {
+            target = NULL;
+            break;
+          } else {
+            target = target->GetParent();
+          }
+        }
+
+	xdnd_send_status(&dnd, XDND_ENTER_SOURCE_WIN(xev), xev->xclient.window, 
+                         !!target,
+			 0, 0, 0, 10, 10, dnd.XdndActionPrivate);
+        
+	win->dndTarget = target;
+      } else if (xev->xclient.message_type == dnd.XdndDrop) {
+	if (win->dndTarget) {
+	  wxWindow *target = win->dndTarget;
+	  win->dndTarget = NULL;
+	  if (!xdnd_convert_selection(&dnd, XDND_DROP_SOURCE_WIN(xev), xev->xclient.window, dnd.text_uri_list)) {
+	    long len;
+	    char *data;
+	    data = wxTheClipboard->GetClipboardData("text/uri-list", &len, XDND_DROP_TIME(xev), dnd.XdndSelection);
+	    if (data) {
+              /* If file://... prefix (then drop it) */
+              if (!strncmp(data, "file://", 7)) {
+                int i = 7;
+                char *data2;
+                while ((i < len) && (data[i] != '/')) {
+                  i++;
+                }
+                if (i < len) {
+                  data2 = new WXGC_ATOMIC char[len - i + 1];
+                  memcpy(data2, data + i, len - i);
+                  data2[len - i] = 0;
+                  target->OnDropFile(data2);
+                }
+              }
+	    }
+	  }
+	}
+        xdnd_send_finished(&dnd, XDND_DROP_SOURCE_WIN(xev), XtWindow(w), 0);
+      } else if (xev->xclient.message_type == dnd.XdndLeave) {
+	win->dndTarget = NULL;
+        xdnd_send_finished(&dnd, XDND_LEAVE_SOURCE_WIN(xev), XtWindow(w), 0);
+      }
+    }
     break;
   case CreateNotify:
     break;
@@ -2255,4 +2351,65 @@ void wxWindow::ForEach(void (*foreach)(wxWindow *w, void *data), void *data)
 long wxWindow::GetWindowHandle()
 {
   return (long)X->handle;
+}
+
+//-----------------------------------------------------------------------------
+// drag & drop
+//-----------------------------------------------------------------------------
+
+void wxWindow::DragAcceptFiles(Bool accept)
+{
+  wxWindow *p;
+
+  if (!drag_accept == !accept)
+    return;
+
+  drag_accept = accept;
+  
+  if (!dnd_inited) {
+    xdnd_init(&dnd, wxAPP_DISPLAY);
+    dnd_inited = 1;
+  }
+
+  /* Declare drag-and-drop possible at this
+     window's top-level frame: */
+
+  p = this;
+  while (p) {
+    if (wxSubType(p->__type, wxTYPE_FRAME)
+	|| wxSubType(p->__type, wxTYPE_DIALOG_BOX))
+      break;
+    p = p->GetParent();
+  }
+  
+  {
+    Atom l[2];
+    l[0] = dnd.text_uri_list;
+    l[1] = 0;
+    xdnd_set_dnd_aware(&dnd, XtWindow(p->X->frame), l);
+  }
+}
+
+wxWindow *wxWindow::FindChildByWidget(Widget w)
+{
+  wxChildNode *node, *next;
+  wxWindow *r;
+
+  if ((w == X->frame)
+      || (w == X->handle))
+    return this;
+
+
+  for (node = children->First(); node; node = next) {
+    wxWindow *child;
+    next = node->Next();
+    child = (wxWindow*)(node->Data());
+    if (child) {
+      r = child->FindChildByWidget(w);
+      if (r)
+        return r;
+    }
+  }
+
+  return NULL;
 }
