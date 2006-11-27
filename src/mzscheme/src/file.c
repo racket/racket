@@ -1567,7 +1567,7 @@ static int is_special_filename(const char *f, int offset, int len, int not_nul, 
   for (i = not_nul; special_filenames[i]; i++) {
     const char *sf = special_filenames[i];
     for (j = 0; sf[j] && f[delta + j]; j++) {
-      if (scheme_toupper((unsigned char)f[delta + j]) != sf[j])
+      if (scheme_toupper((mzchar)(unsigned char)f[delta + j]) != sf[j])
 	break;
     }
     if (j && !sf[j]) {
@@ -1666,6 +1666,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
   if (kind == SCHEME_UNIX_PATH_KIND) {
     /* User home lookup strategy taken from wxWindows: */
 
+#ifdef UNIX_FILE_SYSTEM
     if (filename[0] == '~') {
       char user[256], *home = NULL, *naya;
       struct passwd *who = NULL;
@@ -1730,6 +1731,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       filename = naya;
       ilen = len + flen + 1;
     }
+#endif
 
     /* Remove redundant slashes */
     {
@@ -4356,7 +4358,7 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
       if (SAME_OBJ(path, argv[0])) {
 	Scheme_Object *old;
 	old = scheme_make_path(filename);
-	path = do_simplify_path(old, scheme_null, 0, 1, 0);
+	path = do_simplify_path(old, scheme_null, 0, 1, 0, SCHEME_WINDOWS_PATH_KIND);
 	if (SAME_OBJ(path, old))
 	  break;
       } else
