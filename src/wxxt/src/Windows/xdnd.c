@@ -49,7 +49,9 @@
 
 #endif
 
-
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
 
 void
 xdnd_reset(DndClass * dnd)
@@ -92,8 +94,7 @@ xdnd_init(DndClass * dnd, Display * display)
   dnd->XdndActionPrivate=XInternAtom(dnd->display,"XdndActionPrivate",False);
   dnd->XdndTypeList = XInternAtom (dnd->display, "XdndTypeList", False);
   dnd->XdndActionList = XInternAtom (dnd->display, "XdndActionList", False);
-  dnd->XdndActionDescription = XInternAtom(dnd->display,
-    "XdndActionDescription", False);
+  dnd->XdndActionDescription = XInternAtom(dnd->display, "XdndActionDescription", False);
   dnd->text_uri_list = XInternAtom(dnd->display, "text/uri-list", False);
   xdnd_reset(dnd);
 }
@@ -371,6 +372,10 @@ xdnd_set_type_list(DndClass * dnd, Window window, Atom * typelist)
     PropModeReplace, (unsigned char *) typelist, n);
 }
 
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+
 void
 xdnd_get_type_list(DndClass * dnd, Window window, Atom ** typelist)
 {
@@ -394,8 +399,9 @@ xdnd_get_type_list(DndClass * dnd, Window window, Atom ** typelist)
   tl = (Atom *)(new WXGC_ATOMIC char[(count + 1) * sizeof (Atom)]);
   *typelist = tl;
   a = (Atom *) data;
-  for (i = 0; i < count; i++)
+  for (i = 0; i < count; i++) {
     (*typelist)[i] = a[i];
+  }
   (*typelist)[count] = 0;
 
   XFree (data);
