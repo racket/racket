@@ -16,6 +16,8 @@
   ;;  - A list of archives
 
   (define (parse-cmdline argv)
+    
+    (define x-specific-planet-packages '())
     (define x-flags null)
     (define (add-flags l)
       (set! x-flags (append (reverse l) x-flags)))
@@ -24,6 +26,12 @@
       (command-line
        "setup-plt"
        argv
+       (multi
+        [("-P") owner package-name maj min
+         "Setup specified PLaneT packages only"
+         (set! 
+          x-specific-planet-packages
+          (cons (list owner package-name maj min) x-specific-planet-packages))])
        (once-each
 	[("-c" "--clean") "Delete existing compiled files; implies -nxi"
 	 (add-flags '((clean #t)
@@ -74,4 +82,4 @@
 	  (printf "If no <archive> or -l <collection> is specified, all collections are setup~n")
 	  (exit 0)))))
 
-    (values x-flags x-specific-collections x-archives)))
+    (values x-flags x-specific-collections x-specific-planet-packages x-archives)))

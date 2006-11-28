@@ -11,7 +11,7 @@
   (define-values/invoke-unit/sig setup-option^
     setup:option@)
 
-  (define-values (x-flags x-specific-collections x-archives)
+  (define-values (x-flags x-specific-collections x-specific-planet-packages x-archives)
     (parse-cmdline (current-command-line-arguments)))
 
   ;; Pseudo-option:
@@ -46,7 +46,7 @@
 
   (specific-collections x-specific-collections)
   (archives x-archives)
-  (specific-planet-dirs '())
+  (specific-planet-dirs x-specific-planet-packages)
 
   (require (lib "launcher-sig.ss" "launcher")
 	   (lib "launcher-unit.ss" "launcher")

@@ -11,6 +11,7 @@
 	   (lib "port.ss")
            (lib "match.ss")
            (lib "planet-archives.ss" "planet")
+           (lib "planet-shared.ss" "planet" "private")
            
 	   "option-sig.ss"
 	   (lib "sig.ss" "compiler")
@@ -144,6 +145,19 @@
       ;; returns the non-false elements of l in order
       (define (remove-falses l) (filter (lambda (x) x) l))
       
+      ;; planet-spec->planet-list : (list string string nat nat) -> (list path string string (listof string) nat nat) | #f
+      ;; converts a planet package spec into the information needed to create a cc structure
+      (define (planet-spec->planet-list spec)
+        (let-values ([(owner pkg-name maj-str min-str) (apply values spec)])
+          (let ([maj (string->number maj-str)]
+                [min (string->number min-str)])
+            (unless maj (error 'setup-plt "Bad major version for PLaneT package: ~s" maj-str))
+            (unless min (error 'setup-plt "Bad minor version for PLaneT package: ~s" min-str))
+            (let ([pkg (lookup-package-by-keys owner pkg-name maj min min)])
+              (if pkg
+                  pkg
+                  (error 'setup-plt "Not an installed PLaneT package: (~s ~s ~s ~s)" owner pkg-name maj min))))))
+      
       (define (planet->cc path owner pkg-file extra-path maj min)
         (unless (path? path)
             (error 'path->cc "non-path when building package ~a" pkg-file))
@@ -155,9 +169,10 @@
                                     (when x
                                       (unless (string? x)
                                         (error 
-                                         (format 
-                                          "'name' result from directory ~s is not a string:"
-                                          path)
+                                         (string->immutable-string
+                                          (format 
+                                           "'name' result from directory ~s is not a string:"
+                                           path))
                                          x)))))])
             (make-cc
              #f
@@ -192,7 +207,7 @@
          (map (lambda (spec) (apply planet->cc spec))
               (if (and (null? x-specific-collections) (null? x-specific-planet-dirs))
                   (get-all-planet-packages)
-                  x-specific-planet-dirs))))
+                  (remove-falses (map planet-spec->planet-list x-specific-planet-dirs))))))
       
       (define collections-to-compile
 	(sort
