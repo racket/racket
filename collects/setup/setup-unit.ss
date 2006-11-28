@@ -83,6 +83,10 @@
 			   (current-target-plt-directory-getter)))
 	      (archives))))
       
+      ;; specific-planet-dir ::=
+      ;;    - (list path[directory] string[owner] string[package-name] (listof string[extra package path]) Nat[maj] Nat[min]), or
+      ;;    - (list string[owner] string[package-name] string[maj as string] string[min as string])
+      ;; x-specific-planet-dir ::= (listof specific-planet-dir)
       (define x-specific-planet-dirs (specific-planet-dirs))
       
       (define (done)
@@ -148,15 +152,17 @@
       ;; planet-spec->planet-list : (list string string nat nat) -> (list path string string (listof string) nat nat) | #f
       ;; converts a planet package spec into the information needed to create a cc structure
       (define (planet-spec->planet-list spec)
-        (let-values ([(owner pkg-name maj-str min-str) (apply values spec)])
-          (let ([maj (string->number maj-str)]
-                [min (string->number min-str)])
-            (unless maj (error 'setup-plt "Bad major version for PLaneT package: ~s" maj-str))
-            (unless min (error 'setup-plt "Bad minor version for PLaneT package: ~s" min-str))
-            (let ([pkg (lookup-package-by-keys owner pkg-name maj min min)])
-              (if pkg
-                  pkg
-                  (error 'setup-plt "Not an installed PLaneT package: (~s ~s ~s ~s)" owner pkg-name maj min))))))
+        (match spec
+          [(owner pkg-name maj-str min-str)
+           (let ([maj (string->number maj-str)]
+                 [min (string->number min-str)])
+             (unless maj (error 'setup-plt "Bad major version for PLaneT package: ~s" maj-str))
+             (unless min (error 'setup-plt "Bad minor version for PLaneT package: ~s" min-str))
+             (let ([pkg (lookup-package-by-keys owner pkg-name maj min min)])
+               (if pkg
+                   pkg
+                   (error 'setup-plt "Not an installed PLaneT package: (~s ~s ~s ~s)" owner pkg-name maj min))))]
+          [_ spec]))
       
       (define (planet->cc path owner pkg-file extra-path maj min)
         (unless (path? path)

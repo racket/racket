@@ -448,8 +448,8 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
                             (number->string maj)
                             (number->string min))]
            [full-pkg-path (build-path dir name)])
+      (make-directory* dir)
       (unless (equal? (normalize-path (uninstalled-pkg-path uninst-p)) (normalize-path full-pkg-path))
-        (make-directory* dir)
         (when (file-exists? full-pkg-path) (delete-file full-pkg-path))
         (copy-file (uninstalled-pkg-path uninst-p) full-pkg-path))
       full-pkg-path))
