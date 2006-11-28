@@ -25,6 +25,13 @@
          (read-request-line ip))
        (define headers 
          (read-headers ip))
+       (define _
+         (match (headers-assq* #"Content-Length" headers)
+              [(struct header (f v))
+               ; Give it one second per byte
+               (adjust-connection-timeout! conn (string->number (bytes->string/utf-8 v)))]
+              [#f
+               (void)]))
        (define-values (host-ip client-ip)
          (port-addresses ip))
        (define-values (bindings raw-post-data)
