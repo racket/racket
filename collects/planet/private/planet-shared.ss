@@ -75,6 +75,32 @@ Various common pieces of code that both the client and server need to access
       [(pkg dir)
        (let* ((at (build-assoc-table pkg dir)))
          (get-best-match at pkg))]))
+
+  ;; lookup-package-by-keys : string string nat nat nat -> (list path string string (listof string) nat nat) | #f
+  ;; looks up and returns a list representation of the package named by the given owner,
+  ;; package name, major and (exact) minor version.
+  ;; this function is intended to be useful for setup-plt and other applications that need to know where planet
+  ;; packages live
+  (define (lookup-package-by-keys owner name maj min-lo min-hi)
+    (let ([result
+           (lookup-package
+            (make-pkg-spec
+             name
+             maj
+             min-lo
+             min-hi
+             (list owner)
+             #f
+             (version)))])
+      (if result
+          (list (pkg-path result)
+                (car (pkg-route result))
+                (pkg-name result)
+                (cdr (pkg-route result))
+                (pkg-maj result)
+                (pkg-min result))
+          #f)))
+     
   
   ; build-assoc-table : FULL-PKG-SPEC path -> assoc-table
   ; returns a version-number -> directory association table for the given package

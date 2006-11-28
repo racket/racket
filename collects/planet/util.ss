@@ -24,6 +24,7 @@
    get-hard-linked-packages
    remove-pkg
    unlink-all
+   lookup-package-by-keys
    
    resolve-planet-path)
   
@@ -168,6 +169,16 @@
        (lambda (x) (cons (car x) (map (lambda (y) (drop-last (cadr y))) (cdr x))))
        buckets)))
   
+  ;; regexp->filter : (string | regexp) -> (path -> bool)
+  ;; computes a filter that accepts paths that match the given regexps and rejects other paths
+  (define (regexp->filter re-s)
+    (let ([re (cond
+                [(string? re-s) (regexp re-s)]
+                [(regexp? re-s) re-s]
+                [else (error 'regexp->filter "not a regular expression")])])
+      (lambda (p) (regexp-match re (path->bytes p)))))
+  
+  
   ;; make-planet-archive: directory [file] -> file
   ;; Makes a .plt archive file suitable for PLaneT whose contents are
   ;; all files in the given directory and returns that file's name.
@@ -187,7 +198,9 @@
                "archive" 
                (list ".")
                null
-               std-filter
+               (if (PLANET-ARCHIVE-FILTER)
+                   (regexp->filter (PLANET-ARCHIVE-FILTER))
+                   std-filter)
                #t
                'file
                #f
