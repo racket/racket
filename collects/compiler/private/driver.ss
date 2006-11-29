@@ -226,10 +226,8 @@
 				   (when (compiler:option:debug)
 				     (debug "~a[~a.~a]_"
 					    n
-					    (zodiac:location-line
-					     (zodiac:zodiac-start sexp))
-					    (zodiac:location-column
-					     (zodiac:zodiac-start sexp))))
+					    (syntax-line sexp)
+					    (syntax-column sexp)))
 				   (cons sexp (loop (+ n 1))))))))])
 	    (unless (null? compiler:messages) (when (compiler:option:verbose) (newline)))
 	    (compiler:report-messages! #t)
