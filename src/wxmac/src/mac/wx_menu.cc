@@ -194,11 +194,13 @@ wxMenu::~wxMenu(void)
   wxNode* node;
   wxMenuItem* item;
 
-  if (menu_bar) // may have to remove menu from the current mac menu bar
-    {
-      menu_bar->Delete(this);
-    } else if (window_parent)
-      ((wxMenu *)window_parent)->Delete(this, 0, -1);
+  if (menu_bar) { // may have to remove menu from the current mac menu bar
+    menu_bar->Delete(this);
+    menu_bar = NULL;
+  } else if (window_parent) {
+    ((wxMenu *)window_parent)->Delete(this, 0, -1);
+    window_parent = NULL;
+  }
 
   ::DisposeMenu(cMacMenu); // does not dispose of submenus
 

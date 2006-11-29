@@ -115,11 +115,15 @@ wxPrintData::wxPrintData(void)
 
 wxPrintData::~wxPrintData(void)
 {
-  if (cPrintSettings)
+  if (cPrintSettings) {
     PMRelease(cPrintSettings);
+    cPrintSettings = NULL;
+  }
 
-  if (cPageFormat)
+  if (cPageFormat) {
     PMRelease(cPageFormat);
+    cPageFormat = NULL;
+  }
 
   if (cPrintSession) {
     PMRelease(cPrintSession);

@@ -153,6 +153,8 @@ wxbMenu::wxbMenu (char *Title, wxFunction WXUNUSED(func))
 // The wxWindow destructor will take care of deleting the submenus.
 wxbMenu::~wxbMenu (void)
 {
+  menu_bar= NULL;
+  top_level_menu = NULL;
 }
 
 wxMenuItem *wxbMenu::FindItemForId (long itemId, wxMenu ** itemMenu, int * pos)
@@ -252,6 +254,7 @@ wxbMenuBar::wxbMenuBar (int N, wxMenu * Menus[], char *Titles[])
 
 wxbMenuBar::~wxbMenuBar (void)
 {
+  menu_bar_frame = NULL;
 }
 
 void wxbMenuBar::Append (wxMenu * menu, char *title)

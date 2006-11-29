@@ -466,6 +466,7 @@ wxCombo::wxCombo(wxWindow *for_canvas,
 
 wxCombo::~wxCombo(void)
 {
+  forCanvas = NULL;
 }
 
 Bool wxCombo::PreOnEvent(wxWindow *win, wxMouseEvent *e)

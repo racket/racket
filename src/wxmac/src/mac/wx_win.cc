@@ -363,6 +363,11 @@ wxWindow::~wxWindow(void) // Destructor
     DisposeControl(cPaintControl);
     cPaintControl = NULL;
   }
+
+  /* Must zero out fieldsd that are WXGC_IGNOREd: */
+  cParentArea = NULL;
+  cMacDC = NULL;
+  window_parent = NULL;
 }
 
 //=============================================================================
