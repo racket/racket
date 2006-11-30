@@ -343,16 +343,16 @@ The _"hdindex"_ File
 
 The "hdindex" file is similar to the "keywords" file; it must contain
 one S-expression (not evaluated), which is a list of index entries.
-Each index entry is a list of four values:
+Each index entry is a list of four strings:
 
-  * indexed item - a string, e.g., "creating help desk documents"
+  * indexed item - e.g., "creating help desk documents"
 
-  * HTML file - a file name (represented as a bytes)
-    relative to the manual's directory, e.g., #"node198.htm"
+  * HTML file - a file name (represented as a string)
+    relative to the manual's directory, e.g., "node198.htm"
 
-  * HTML label - a string representing a label within the HTML file
+  * HTML label - a label within the HTML file
 
-  * page title - a string presenting the title of the HTML page, e.g.,
+  * page title - the title of the HTML page, e.g.,
     "How to Create Help Desk Documents"
 
 See plt/collects/doc/mzscheme/hdindex for an example.
