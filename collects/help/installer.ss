@@ -15,15 +15,13 @@
   (define dest-dir (build-path (find-doc-dir) "help"))
 
   (define (create-index-file)
-    (when (file-exists? index-file)
-      (delete-file index-file))
     (gen-index servlet-dir)
-    (with-output-to-file )
-    (let ([output-port (open-output-file (build-path dest-dir index-file))])
-      (fprintf output-port "(\n")
-      (for-each (lambda (x) (fprintf output-port "~s\n" x)) index)
-      (close-output-port output-port)
-      (fprintf output-port ")\n")))
+    (with-output-to-file (build-path dest-dir index-file)
+      (lambda ()
+        (printf "(\n")
+        (for-each (lambda (x) (printf "~s\n" x)) index)
+        (printf ")\n"))
+      'truncate))
 
   (define servlet-dir (normalize-path
                        (build-path (collection-path "help") "servlets")))
@@ -38,10 +36,9 @@
             (map (lambda (f) (build-path dir f))
                  (directory-list dir))]
            [servlet-files
-            (filter
-             (lambda (s)
-               (regexp-match #rx#"[.]ss$" (path->bytes s)))
-             all-files)]
+            (filter (lambda (s)
+                      (regexp-match #rx#"[.]ss$" (path->bytes s)))
+                    all-files)]
            [dirs
             (filter directory-exists? all-files)])
       (apply append servlet-files
@@ -52,31 +49,27 @@
     (let* ([exp-path (explode-path path)]
            [prefix-len (sub1 exploded-servlet-dir-len)]
            [relative-exp-path
-            (let loop ([p exp-path]
-                       [n 0])
+            (let loop ([p exp-path] [n 0])
               ; leave off prefix up to servlet dir
               (if (>= n prefix-len)
-                  p
-                  (loop (cdr p) (add1 n))))])
+                p
+                (loop (cdr p) (add1 n))))])
       (fold-into-web-path relative-exp-path)))
 
   ; (listof string) -> string
   ; result is forward-slashed web path
   ;  e.g. ("foo" "bar") -> "foo/bar"
   (define (fold-into-web-path lst)
-    (foldr (lambda (s a)
-             (if a
-               (bytes-append (path->bytes s) #"/" a)
-               (path->bytes s)))
-           #f
-           lst))
+    (apply string-append
+           (cdr (apply append (map (lambda (x) (list "/" (path->string x)))
+                                   lst)))))
 
   (define index '())
 
   (define (add-index-entry! val file name title)
     (set! index
           (cons (list val
-                      (bytes-append #"/" (relativize-and-slashify file))
+                      (string-append "/" (relativize-and-slashify file))
                       name
                       title)
                 index)))
