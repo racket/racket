@@ -81,7 +81,7 @@
         (lambda (name value)
           (unless (and (cookie-string? name #f)
                        (cookie-string? value))
-            (raise (make-cookie-error (format "Invalid NAME/VALUE pair: ~a / ~a" name value) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Invalid NAME/VALUE pair: ~a / ~a" name value))))
           (make-cookie name value
                        #f;; comment
                        #f;; current domain
@@ -102,7 +102,7 @@
       (define print-cookie
         (lambda (cookie)
           (unless (cookie? cookie)
-            (raise (make-cookie-error (format "Cookie expected, received: ~a" cookie) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
           (string-join
            (filter (lambda (s)
                      (not (string-null? s)))
@@ -118,54 +118,54 @@
       (define cookie:add-comment
         (lambda (cookie comment)
           (unless (cookie-string? comment)
-            (raise (make-cookie-error (format "Invalid comment: ~a" comment) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Invalid comment: ~a" comment))))
           (unless (cookie? cookie)
-            (raise (make-cookie-error (format "Cookie expected, received: ~a" cookie) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
           (set-cookie-comment! cookie comment)
           cookie))
 
       (define cookie:add-domain
         (lambda (cookie domain)
           (unless (valid-domain? domain)
-            (raise (make-cookie-error (format "Invalid domain: ~a" domain) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Invalid domain: ~a" domain))))
           (unless (cookie? cookie)
-            (raise (make-cookie-error (format "Cookie expected, received: ~a" cookie) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
           (set-cookie-domain! cookie domain)
           cookie))
 
       (define cookie:add-max-age
         (lambda (cookie seconds)
           (unless (and (integer? seconds) (not (negative? seconds)))
-            (raise (make-cookie-error (format "Invalid Max-Age for cookie: ~a" seconds) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Invalid Max-Age for cookie: ~a" seconds))))
           (unless (cookie? cookie)
-            (raise (make-cookie-error (format "Cookie expected, received: ~a" cookie) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
           (set-cookie-max-age! cookie seconds)
           cookie))
 
       (define cookie:add-path
         (lambda (cookie path)
           (unless (string? path)
-            (raise (make-cookie-error (format "Invalid path: ~a" path) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Invalid path: ~a" path))))
           (unless (cookie? cookie)
-            (raise (make-cookie-error (format "Cookie expected, received: ~a" cookie) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
           (set-cookie-path! cookie path)
           cookie))
    
       (define cookie:secure
         (lambda (cookie secure?)
           (unless (boolean? secure?)
-            (raise (make-cookie-error (format "Invalid argument (boolean expected), received: ~a" secure?) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Invalid argument (boolean expected), received: ~a" secure?))))
           (unless (cookie? cookie)
-            (raise (make-cookie-error (format "Cookie expected, received: ~a" cookie) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
           (set-cookie-secure! cookie secure?)
           cookie))
 
       (define cookie:version
         (lambda (cookie version)
           (unless (integer? version)
-            (raise (make-cookie-error (format "Unsupported version: ~a" version) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Unsupported version: ~a" version))))
           (unless (cookie? cookie)
-            (raise (make-cookie-error (format "Cookie expected, received: ~a" cookie) (current-continuation-marks))))
+            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
           (set-cookie-version! cookie version)
           cookie))
 
@@ -267,7 +267,7 @@
       (define cookie-string?
         (opt-lambda (s (value? #t))
           (unless (string? s)
-            (raise (make-cookie-error (format "String expected, received: ~a" s) (current-continuation-marks))))
+            (raise (build-cookie-error (format "String expected, received: ~a" s))))
           (if value?
               ;; value: token | quoted-string
               (or (string-every char-set:token s)
@@ -291,7 +291,12 @@
            ;; The rest are tokens-like strings separated by dots
            (string-every char-set:hostname dom)
            (<= (string-length dom) 76))))
-      ))
+      
+      ;; build-cookie-error : string -> cookie-error
+      ;; constructs a cookie-error struct from the given error message
+      ;; (added to fix exceptions-must-take-immutable-strings bug)
+      (define (build-cookie-error msg)
+        (make-cookie-error (string->immutable-string msg) (current-continuation-marks)))))
   )
 
 ;;; cookie-unit.ss ends here
