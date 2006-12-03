@@ -63,7 +63,7 @@
       (import)
   
       (define-struct cookie (name value comment domain max-age path secure version))
-      (define-struct (cookie-error exn) ())
+      (define-struct (cookie-error exn:fail) ())
   
       ;; The syntax for the Set-Cookie response header is
       ;; set-cookie      =       "Set-Cookie:" cookies
@@ -78,18 +78,18 @@
       ;; 		      |       "Secure"
       ;; 		      |       "Version" "=" 1*DIGIT
       (define set-cookie
-        (lambda (name value)
-          (unless (and (cookie-string? name #f)
-                       (cookie-string? value))
-            (raise (build-cookie-error (format "Invalid NAME/VALUE pair: ~a / ~a" name value))))
-          (make-cookie name value
-                       #f;; comment
-                       #f;; current domain
-                       #f;; at the end of session
-                       #f;; current path
-                       #f;; normal (non SSL)
-                       #f;; default version
-                       )))
+        (lambda (name pre-value)
+          (let ([value (to-rfc2109:value pre-value)])
+            (unless (rfc2068:token? name)
+              (raise (build-cookie-error (format "Invalid cookie name: ~a / ~a" name value))))
+            (make-cookie name value
+                         #f;; comment
+                         #f;; current domain
+                         #f;; at the end of session
+                         #f;; current path
+                         #f;; normal (non SSL)
+                         #f;; default version
+                         ))))
 
       ;;!
       ;;
@@ -116,13 +116,12 @@
            "; ")))
 
       (define cookie:add-comment
-        (lambda (cookie comment)
-          (unless (cookie-string? comment)
-            (raise (build-cookie-error (format "Invalid comment: ~a" comment))))
-          (unless (cookie? cookie)
-            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-          (set-cookie-comment! cookie comment)
-          cookie))
+        (lambda (cookie pre-comment)
+          (let ([comment (to-rfc2109:value pre-comment)])
+            (unless (cookie? cookie)
+              (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
+            (set-cookie-comment! cookie comment)
+            cookie)))
 
       (define cookie:add-domain
         (lambda (cookie domain)
@@ -143,13 +142,12 @@
           cookie))
 
       (define cookie:add-path
-        (lambda (cookie path)
-          (unless (string? path)
-            (raise (build-cookie-error (format "Invalid path: ~a" path))))
-          (unless (cookie? cookie)
-            (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-          (set-cookie-path! cookie path)
-          cookie))
+        (lambda (cookie pre-path)
+          (let ([path (to-rfc2109:value pre-path)])
+            (unless (cookie? cookie)
+              (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
+            (set-cookie-path! cookie path)
+            cookie)))
    
       (define cookie:secure
         (lambda (cookie secure?)
@@ -236,26 +234,74 @@
       ;;	            | "{" | "}" | SP | HT
       (define char-set:tspecials
         (char-set-union
-         (char-set-difference char-set:punctuation (string->char-set "_"))
-         char-set:whitespace))
+         (string->char-set "()<>@,;:\\\"/[]?={}")
+         char-set:whitespace
+         (char-set #\tab)))
+      
       (define char-set:control (char-set-union char-set:iso-control
                                                (char-set (integer->char 127))));; DEL
       (define char-set:token (char-set-difference char-set:ascii char-set:tspecials char-set:control))
-
+      
+      ;; token? : string -> boolean
+      ;; 
+      ;; returns #t if s is an RFC 2068 token (see definition above), #f otherwise.
+      (define rfc2068:token?
+        (lambda (s) (string-every char-set:token s)))
+      
       ;;!
       ;;
       ;; (function (quoted-string? s))
       ;;
       ;; (param s String "The string to check")
       ;;
-      ;; Returns #t only if the string is surrounded by double quotes.  As in:
+      ;; Returns s if the string is an RFC 2068 quoted-string, #f otherwise. As in:
       ;; quoted-string  = ( <"> *(qdtext) <"> )
       ;; qdtext         = <any TEXT except <">>
-      (define quoted-string?
+      ;; 
+      ;; The backslash character ("\") may be used as a single-character quoting
+      ;; mechanism only within quoted-string and comment constructs.
+      ;;
+      ;; quoted-pair    = "\" CHAR
+      ;;
+      ;; implementation note: I have chosen to use a regular expression rather than
+      ;; a character set for this definition because of two dependencies: CRLF must appear
+      ;; as a block to be legal, and " may only appear as \"
+      (define rfc2068:quoted-string?
         (lambda (s)
-          (and (string=? (string-take s 1) "\"")
-               (string=? (string-take-right s 1) "\""))))
-
+          (if (regexp-match #rx"^\"([^\"#\u0000-#\u001F]| |#\return#\newline|#\tab|\\\\\")*\"$" s)
+              s
+              #f)))
+      
+      ;; value: token | quoted-string
+      (define (rfc2109:value? s)
+        (or (rfc2068:token? s) (rfc2068:quoted-string? s)))
+      
+      ;; convert-to-quoted : string -> quoted-string?
+      ;; takes the given string as a particular message, and converts the given string to that
+      ;; representatation
+      (define (convert-to-quoted str)
+        (string-append "\"" (regexp-replace* #rx"\"" str "\\\\\"") "\""))
+      
+      ;; string -> rfc2109:value? 
+      (define (to-rfc2109:value s)
+        (cond
+          [(not (string? s)) 
+           (raise (build-cookie-error (format "Expected string, given: ~e" s)))] 
+          
+          ; for backwards compatibility, just use the given string if it will work
+          [(rfc2068:token? s) s]
+          [(rfc2068:quoted-string? s) s]
+          
+          ; ... but if it doesn't work (i.e., it's just a normal message) then try to
+          ; convert it into a representation that will work
+          [(rfc2068:quoted-string? (convert-to-quoted s))
+           => (λ (x) x)]
+          [else
+           (raise 
+            (build-cookie-error 
+             (format "Could not convert the given string to an acceptable RFC 2109 value: ~s" s)))]))
+      
+      
       ;;!
       ;;
       ;; (function (cookie-string? s))
@@ -269,11 +315,9 @@
           (unless (string? s)
             (raise (build-cookie-error (format "String expected, received: ~a" s))))
           (if value?
-              ;; value: token | quoted-string
-              (or (string-every char-set:token s)
-                  (quoted-string? s))
+              (rfc2109:value? s)
               ;; name:  token
-              (string-every char-set:token s))))
+              (rfc2068:token? s))))
 
       ;; Host names as per RFC 1123 and RFC952, more or less, anyway. :-)
       (define char-set:hostname
@@ -291,6 +335,10 @@
            ;; The rest are tokens-like strings separated by dots
            (string-every char-set:hostname dom)
            (<= (string-length dom) 76))))
+            
+      (define (valid-path? v)
+        (and (string? v)
+             (rfc2109:value? v)))
       
       ;; build-cookie-error : string -> cookie-error
       ;; constructs a cookie-error struct from the given error message
