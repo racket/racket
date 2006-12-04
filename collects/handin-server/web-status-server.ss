@@ -48,21 +48,22 @@
                                   [else #f]))
             (file-root "htdocs")
             (servlet-root ,web-dir)
-            (mime-types ,(path->string (build-path (collection-path "web-server")
-                                                   "default-web-root"
-                                                   "mime.types")))
-            (password-authentication ,(path->string (build-path (current-directory) "web-status-passwords"))))))
+            (mime-types ,(path->string
+                          (build-path (collection-path "web-server")
+                                      "default-web-root"
+                                      "mime.types")))
+            (password-authentication "unused"))))
         (virtual-host-table)))
 
-    (define config@
+    (define configuration
       (load-configuration-sexpr
        web-dir config
        #:make-servlet-namespace
        (make-make-servlet-namespace
         #:to-be-copied-module-specs
-        '((lib "logger.ss" "handin-server" "private")
-          (lib "config.ss" "handin-server" "private")
-          (lib "md5.ss"    "handin-server" "private")))))
+        '((lib "md5.ss"    "handin-server" "private")
+          (lib "logger.ss" "handin-server" "private")
+          (lib "config.ss" "handin-server" "private")))))
 
     (define-values/invoke-unit/sig web-server^
       (compound-unit/sig
@@ -70,11 +71,9 @@
        (link [T : net:tcp^ ((make-ssl-tcp@
                              "server-cert.pem" "private-key.pem" #f #f
                              #f #f #f))]
-             [C : web-config^ (config@)]
+             [C : web-config^ (configuration)]
              [S : web-server^ (web-server@ T C)])
        (export (open S)))
       #f)
-
-    (putenv "HANDIN_SERVER_DIR" (path->string (current-directory)))
 
     (serve)))
