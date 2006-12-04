@@ -54,18 +54,15 @@
             (password-authentication ,(path->string (build-path (current-directory) "web-status-passwords"))))))
         (virtual-host-table)))
 
-    #; ; old version
-    (define config@
-      (let ([file (make-temporary-file)])
-        (with-output-to-file file (lambda () (write config)) 'truncate)
-        (begin0 (load-configuration file) (delete-file file))))
     (define config@
       (load-configuration-sexpr
        web-dir config
        #:make-servlet-namespace
        (make-make-servlet-namespace
         #:to-be-copied-module-specs
-        '((lib "logger.ss" "handin-server" "private")))))
+        '((lib "logger.ss" "handin-server" "private")
+          (lib "config.ss" "handin-server" "private")
+          (lib "md5.ss"    "handin-server" "private")))))
 
     (define-values/invoke-unit/sig web-server^
       (compound-unit/sig

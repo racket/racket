@@ -464,8 +464,9 @@ sub-directories:
         (id time-str msg-str)
         [<id>|<time>] <msg>
     where `<id>' is an integer representing the connection (numbered
-    consecutively from 1 when the server starts) or "-" for a message
-    without a connection.
+    consecutively from 1 when the server starts), "-" for a message
+    without a connection, and "wN" for a message from the status
+    servlet.
 
   * "[in]active/<assignment>/<user>/<filename>" (if submitted) --- the
     most recent submission for <assignment> by <user> where <filename>
