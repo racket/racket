@@ -475,11 +475,7 @@ If present, this field should be a list of strings representing
 subdirectories of your package. These directories will be used by
 Help Desk as HTML documentation for your package. See
 _Creating Help Desk Documentation in HTML format_ for more information
-<<<<<<< .mine
 on how to write useful HTML Help Desk documentation.
-=======
-on how to use HTML Help Desk documentation.
->>>>>>> .r4715
 
 The _'homepage field_
 
