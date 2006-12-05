@@ -1,6 +1,6 @@
 
 (module stacktrace mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "kerncase.ss" "syntax")
            (lib "stx.ss" "syntax"))
   
@@ -14,10 +14,10 @@
   
   (define-struct stx-protector (stx))
   
-  (define stacktrace@
-    (unit/sig stacktrace^
-      (import stacktrace-imports^)
-  
+  (define-unit stacktrace@
+    (import stacktrace-imports^)
+    (export stacktrace^)
+   
       ;; TEMPLATE FUNCTIONS:
       ;;  these functions' definitions follow the data definitions presented in the Syntax
       ;;  chapter of the MzScheme Manual. 
@@ -174,4 +174,4 @@
            (loop #'rest (cons #'var so-far))])))
       
       
-      (define (annotate x) (top-level-expr-iterator x)))))
+      (define (annotate x) (top-level-expr-iterator x))))

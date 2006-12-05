@@ -1,6 +1,6 @@
 
 (module link-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "include.ss")
 	   (lib "process.ss")
 	   (lib "sendevent.ss")
@@ -12,9 +12,9 @@
 
   (provide dynext:link@)
 
-  (define dynext:link@
-    (unit/sig dynext:link^
+  (define-unit dynext:link@
       (import)
+      (export dynext:link^)
 
       (define (path-string->string s)
 	(if (string? s) s (path->string s)))
@@ -425,4 +425,4 @@
 		  (loop (add1 n))
 		  f)))))
 
-      (include (build-path "private" "macinc.ss")))))
+      (include (build-path "private" "macinc.ss"))))

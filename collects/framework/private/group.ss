@@ -1,25 +1,21 @@
 
-(module group mzscheme
+(module group (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
            (lib "class.ss")
            "sig.ss"
 	   "../gui-utils.ss"
            (lib "mred-sig.ss" "mred")
            (lib "list.ss")
            (lib "file.ss"))
-  
-  (provide group@)
-  
-  (define group@
-    (unit/sig framework:group^
-      (import mred^
-              [application : framework:application^]
-              [frame : framework:frame^]
-              [preferences : framework:preferences^]
-              [text : framework:text^]
-              [canvas : framework:canvas^]
-              [menu : framework:menu^])
+    
+  (import mred^
+          [prefix application: framework:application^]
+          [prefix frame: framework:frame^]
+          [prefix preferences: framework:preferences^]
+          [prefix text: framework:text^]
+          [prefix canvas: framework:canvas^]
+          [prefix menu: framework:menu^])
+  (export framework:group^)
       
       (define-struct frame (frame id))
       
@@ -322,4 +318,4 @@
           (internal-get-the-frame-group)))
       
       (define (get-the-frame-group)
-        (internal-get-the-frame-group)))))
+        (internal-get-the-frame-group)))

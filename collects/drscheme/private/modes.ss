@@ -1,17 +1,13 @@
-(module modes mzscheme
-  (require (lib "unitsig.ss")
-           (lib "string-constant.ss" "string-constants")
+(module modes (lib "a-unit.ss")
+  (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            (lib "list.ss")
            (lib "framework.ss" "framework")
            "drsig.ss")
   
-  (provide modes@)
-  
-  (define modes@
-    (unit/sig drscheme:modes^
-      (import)
-      
+  (import)
+  (export drscheme:modes^)
+    
       (define-struct mode (name surrogate repl-submit matches-language))
       (define modes (list))
       
@@ -47,4 +43,4 @@
          (λ (l) 
            (and l
                 (or (not-a-language-language? l)
-                    (ormap (λ (x) (regexp-match #rx"Algol" x)) l)))))))))
+                    (ormap (λ (x) (regexp-match #rx"Algol" x)) l)))))))

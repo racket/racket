@@ -7,6 +7,7 @@ to give better error messages when the test-case is not at the top level.
 
 (module test-case mzscheme
   
+  (require-for-syntax (lib "shared.ss" "stepper" "private"))
   (provide test-case test-error-case)
   
   ;; STATUS : Abstract these two syntaxes and use string constant for the error  
@@ -15,30 +16,32 @@ to give better error messages when the test-case is not at the top level.
       [(_ test to-test-stx exp-stx record set-actuals)
        (case (syntax-local-context)
          [(module top-level)
-          (syntax-property
+          (stepper-syntax-property
            #`(define-values ()
                (let ([to-test-values (call-with-values
-                                      (lambda () #,(syntax-property #`to-test-stx
-                                                                    'stepper-test-suite-hint
-                                                                    #t))
-                                                       list)]
+                                      (lambda () #,(stepper-syntax-property #`to-test-stx
+                                                                            'stepper-test-suite-hint
+                                                                            #t))
+                                      list)]
                      [exp-values (call-with-values (lambda () exp-stx) list)])
                  (record (and (= (length to-test-values) (length exp-values))
                               (andmap test to-test-values exp-values)))
                  (set-actuals to-test-values)
                  (values)))
            'stepper-skipto
-           (list ;define-values
-            syntax-e cdr cdr car 
-            ; let-values
-            syntax-e cdr car 
-            ; clauses
-            syntax-e car syntax-e cdr car
-            ; call-with-values
-            syntax-e cdr syntax-e cdr car 
-            ; lambda
-            syntax-e cdr cdr car
-            ))]
+           (append 
+            ;; define-values->body
+            skipto/third
+            ;; rhs of first binding of let-values: 
+            skipto/second
+            skipto/first
+            skipto/second
+            ;; 2nd arg of call-with-values application:
+            skipto/cdr
+            skipto/second
+            ;; first (only) body of lambda:
+            skipto/cddr
+            skipto/first))]
          [else (raise-syntax-error #f
                                    "test case not at toplevel"
                                    (syntax/loc stx (test-case to-test-stx exp-stx)))])]))
@@ -48,7 +51,7 @@ to give better error messages when the test-case is not at the top level.
       [(_ to-test-stx exn-pred exn-handler record set-actuals)
        (case (syntax-local-context)
          [(module top-level)
-          (syntax-property
+          (stepper-syntax-property
            #'(define-values ()
                (with-handlers ([exn-pred
                                 (lambda (v)
@@ -64,11 +67,10 @@ to give better error messages when the test-case is not at the top level.
                  (record #f)
                  (values)))
            'stepper-skipto
-           (list ;; define-values
-            syntax-e cdr cdr car
-            ;; with-handlers
-            syntax-e cdr cdr cdr car
-            ))]
+           `(,@skipto/third
+             ;; with-handlers:
+             ,@skipto/fourth
+             ))]
          [else (raise-syntax-error #f
                                    "test case not at toplevel"
                                    (syntax/loc stx (test-case to-test-stx exp-stx)))])]))

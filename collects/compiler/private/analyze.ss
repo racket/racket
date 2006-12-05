@@ -39,7 +39,7 @@
 ;;; ------------------------------------------------------------
 
 (module analyze mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
 
@@ -49,12 +49,11 @@
   (require "../sig.ss")
 
   (provide analyze@)
-  (define analyze@
-    (unit/sig compiler:analyze^
-      (import (compiler:option : compiler:option^)
+  (define-unit analyze@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:prephase^
 	      compiler:anorm^
@@ -63,6 +62,7 @@
 	      compiler:rep^
 	      compiler:vm2c^
 	      compiler:driver^)
+      (export compiler:analyze^)
       
       (define-struct mod-glob (cname   ;; a made-up name that encodes module + var
 			       modname
@@ -1385,4 +1385,4 @@
 			captured-vars
 			codes
 			max-arity
-			multi)))))))))
+			multi))))))))

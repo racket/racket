@@ -1,9 +1,14 @@
 (module graphics mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "mred-sig.ss" "mred")
-	   (lib "mred.ss" "mred")
+	   (lib "mred-unit.ss" "mred")
 	   "graphics-sig.ss"
 	   "graphics-unit.ss")
-  (provide-signature-elements graphics^)
+  (provide-signature-elements graphics^ graphics:posn^)
 
-  (define-values/invoke-unit/sig graphics^ graphics@ #f mred^))
+  (define-compound-unit/infer graphics+mred@
+    (import)
+    (export graphics^ graphics:posn^)
+    (link standard-mred@ graphics@))
+  
+  (define-values/invoke-unit/infer graphics+mred@))

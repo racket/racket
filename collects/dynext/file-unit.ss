@@ -1,15 +1,15 @@
 
 (module file-unit mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
   (require (lib "include.ss"))
 
   (require "file-sig.ss")
 
   (provide dynext:file@)
 
-  (define dynext:file@
-    (unit/sig dynext:file^
+  (define-unit dynext:file@
       (import)
+      (export dynext:file^)
 
       (define (append-zo-suffix s)
 	(path-replace-suffix s #".zo"))
@@ -82,5 +82,5 @@
 		 [(macos macosx) #"[dD][yY][lL][iI][bB]"]
 		 [(windows) #"[dD][lL][lL]"])
 	       "MzScheme extension"
-	       (extract-suffix append-extension-suffix))))))))
+	       (extract-suffix append-extension-suffix)))))))
 

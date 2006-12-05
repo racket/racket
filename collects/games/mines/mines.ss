@@ -12,7 +12,7 @@
   
   (require (lib "etc.ss") ; defines build-vector
 	   (lib "class.ss")
-           (lib "unit.ss")
+           (lib "unit200.ss")
 	   (lib "mred.ss" "mred"))
   
   (provide game-unit)

@@ -1,11 +1,6 @@
 
-(module mred-sig mzscheme
-  (require (lib "unitsig.ss"))
-
-  (provide mred^)
-  (define-signature
-    mred^
-    (add-color<%>
+(module mred-sig (lib "a-signature.ss")
+     add-color<%>
      add-editor-keymap-functions
      add-pasteboard-keymap-functions
      add-text-keymap-functions
@@ -206,5 +201,5 @@
      write-editor-version
      write-resource
      yield
-     )))
+     )
 

@@ -5,17 +5,16 @@
   (require
    (lib "class.ss") (lib "contract.ss")
    (lib "mred.ss" "mred") 
-   (lib "unitsig.ss")
+   (lib "unit.ss")
    (lib "string-constant.ss" "string-constants")
    (lib "tool.ss" "drscheme")
    "private/example-box.ss"
    "private/interactions-box.ss"
    (lib "text-syntax-object.ss" "test-suite" "private"))
   
-  (define extentions@
-    (unit/sig drscheme:tool-exports^
-      (import drscheme:tool^ example-box^ interactions-box^)
-      
+  (define-unit extentions@
+    (import drscheme:tool^ example-box^ interactions-box^)
+    (export drscheme:tool-exports^)
       (define (phase1) (void))
       (define (phase2) (void))
       
@@ -61,15 +60,11 @@
           ))
 
       (drscheme:get/extend:extend-unit-frame frame-mixin)
-      (drscheme:language:register-capability 'profj:special:java-examples-box (flat-contract boolean?) #f)))
+      (drscheme:language:register-capability 'profj:special:java-examples-box (flat-contract boolean?) #f))
   
   (define tool@
-    (compound-unit/sig
-      (import (TOOL : drscheme:tool^))
-      (link (EXT : drscheme:tool-exports^ (extentions@ TOOL EXAMPLES INTERACTIONS))
-            (EXAMPLES : example-box^ (example-box@ TOOL))
-            (INTERACTIONS : interactions-box^ (interactions-box@ TOOL SYNTAX))
-            (SYNTAX : text->syntax-object^ (text->syntax-object@ TOOL)))
-      (export (var (EXT phase1))
-              (var (EXT phase2)))))
+    (compound-unit/infer
+      (import drscheme:tool^)
+      (export drscheme:tool-exports^)
+      (link extentions@ example-box@ interactions-box@ text->syntax-object@)))
   )

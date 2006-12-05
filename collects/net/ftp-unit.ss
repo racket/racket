@@ -1,4 +1,4 @@
-(module ftp-unit mzscheme
+(module ftp-unit (lib "a-unit.ss")
   ;; Version 0.2
   ;;   Version 0.1a 
   ;;   Micah Flatt 
@@ -6,13 +6,9 @@
   (require (lib "date.ss")
 	   (lib "file.ss")
 	   (lib "port.ss")
-	   "ftp-sig.ss"
-           (lib "unitsig.ss"))
-
-  (provide net:ftp@)
-  (define net:ftp@
-    (unit/sig net:ftp^
-      (import)
+	   "ftp-sig.ss")
+  (import)
+  (export ftp^)
 
       ;; opqaue record to represent an FTP connection:
       (define-struct tcp-connection (in out))
@@ -216,4 +212,4 @@
 	  (rename-file-or-directory tmpfile (build-path folder filename) #t)))
 
       ;; (printf "FTP Client Installed...~n")
-      )))
+      )

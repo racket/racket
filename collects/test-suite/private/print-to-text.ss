@@ -5,7 +5,7 @@
    (lib "etc.ss")
    (lib "class.ss")
    (lib "contract.ss")
-   (lib "unitsig.ss")
+   (lib "unit.ss")
    (lib "mred.ss" "mred")
    (lib "framework.ss" "framework")
    (lib "tool.ss" "drscheme"))
@@ -16,10 +16,10 @@
   (define-signature print-to-text^
     (print-to-text))
 
-  (define print-to-text@
-    (unit/sig print-to-text^
+  (define-unit print-to-text@
+    
       (import drscheme:tool^)
-
+      (export print-to-text^)
       ;; Using the current languages print operations, print the list of values to the text
       (define (print-to-text atext vals)
 	(unless (empty? vals)
@@ -59,4 +59,4 @@
 	       (newline port)
 	       (print-one val))
 	     (rest vals)))
-	  (send atext end-edit-sequence))))))
+	  (send atext end-edit-sequence)))))

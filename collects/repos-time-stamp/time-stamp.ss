@@ -1,7 +1,7 @@
 
 (module time-stamp mzscheme
   (require (lib "tool.ss" "drscheme")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "framework.ss" "framework"))
   
   (require "stamp.ss")
@@ -11,8 +11,9 @@
   (require "stamp.ss")
   
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
+      (export drscheme:tool-exports^)
       (define (phase1) (void))
       (define (phase2) (void))
       (version:add-spec '-svn stamp))))

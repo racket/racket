@@ -1,6 +1,6 @@
 
 (module hierlist-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (all-except (lib "unit.ss") rename)
 	   (lib "class.ss")
 	   (lib "class100.ss")
 	   (lib "mred-sig.ss" "mred")
@@ -16,10 +16,11 @@
   (define turn-down-click (include-bitmap "../icons/turn-down-click.png" 'png))
 
   (provide hierlist@)
-  (define hierlist@
-    (unit/sig hierlist^
-      (import mred^)
-
+  (define-unit hierlist@
+    (import mred^)
+    (export hierlist^)
+    (init-depend mred^)
+    
       (define-local-member-name 
 	;; In hierarchical-list%
 	ensure-not-selected)
@@ -838,4 +839,4 @@
 	    (allow-tab-exit #t)
             (send top-buffer set-cursor arrow-cursor) 
             (min-width 150)
-            (min-height 200)))))))
+            (min-height 200))))))

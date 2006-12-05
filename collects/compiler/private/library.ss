@@ -3,7 +3,7 @@
 ;; (c) 1997-8 PLT, Rice University
 
 (module library mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
 
@@ -12,9 +12,9 @@
   (require "sig.ss")
 
   (provide library@)
-  (define library@
-    (unit/sig compiler:library^
-      (import (zodiac : zodiac^))
+  (define-unit library@
+      (import (prefix zodiac: zodiac^))
+      (export compiler:library^)
 
       (define logical-inverse
 	(lambda (fun)
@@ -332,4 +332,4 @@
 	 " "))
 
       (define (global-defined-value* v)
-	(and v (namespace-variable-value v))))))
+	(and v (namespace-variable-value v)))))

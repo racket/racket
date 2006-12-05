@@ -1,6 +1,6 @@
 
 (module slide mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "contract.ss")
 	   (lib "mrpict.ss" "texpict")
 	   (lib "utils.ss" "texpict")
@@ -19,10 +19,11 @@
   ;;  "slides-to-picts.ss". Such namespace games are not necessary if
   ;;  talks are written as units and linked to the core.ss unit.
 
-  (define-values/invoke-unit/sig ((open core^) 
-				  (unit config : config^) 
-				  (unit viewer : viewer^))
-    ((current-slideshow-linker) core@))
+  (define-values/invoke-unit ((current-slideshow-linker) core@)
+    (import)
+    (export core^
+            (prefix config: config^)
+            (prefix viewer: viewer^)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                Contracts                      ;;

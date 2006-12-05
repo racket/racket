@@ -1,25 +1,24 @@
 
 (module htmltext mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "class.ss")
-           "private/sig.ss"
+           "browser-sig.ss"
            "private/html.ss"
            "private/bullet.ss"
 	   (lib "url.ss" "net")
 	   (lib "url-sig.ss" "net")
            (lib "mred.ss" "mred")
+           (lib "mred-unit.ss" "mred")
            (lib "mred-sig.ss" "mred")
 	   (lib "external.ss" "browser"))
            
-  (define-values/invoke-unit/sig 
-     html^
-     (compound-unit/sig
-       (import (MRED : mred^) (URL : net:url^))
-       (link [HTML : html^ (html@ MRED URL)])
-       (export (open HTML)))
-     #f
-     mred^
-     net:url^)
+  (define-unit-from-context url@ url^)
+  
+  (define-values/invoke-unit 
+     (compound-unit/infer (import) (export html^)
+       (link standard-mred@ url@ html@))
+     (import)
+     (export html^))
   
   (define html-text<%>
     (interface ((class->interface text%))

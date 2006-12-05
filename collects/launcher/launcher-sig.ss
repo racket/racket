@@ -1,11 +1,6 @@
 
-(module launcher-sig mzscheme
-  (require (lib "unitsig.ss"))
-  
-  (provide launcher^)
-
-  (define-signature launcher^
-    (make-mred-launcher
+(module launcher-sig (lib "a-signature.ss")
+     make-mred-launcher
      make-mzscheme-launcher
 
      make-mred-program-launcher
@@ -35,4 +30,4 @@
      build-aux-from-path
      current-launcher-variant
      available-mred-variants
-     available-mzscheme-variants)))
+     available-mzscheme-variants)

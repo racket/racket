@@ -1,24 +1,18 @@
 
-(module comment-box mzscheme
+(module comment-box (lib "a-unit.ss")
   (require (lib "class.ss")
            (lib "etc.ss")
 	   (lib "mred.ss" "mred")
-           (lib "unitsig.ss")
            "sig.ss"
            "../decorated-editor-snip.ss"
            (lib "include-bitmap.ss" "mrlib")
            (lib "string-constant.ss" "string-constants"))
   
-  (provide comment-box@)
-  
-  (define comment-box@
-    (unit/sig framework:comment-box^
-      (import [text : framework:text^]
-              [scheme : framework:scheme^]
-              [keymap : framework:keymap^])
-      
-      (rename [-snip% snip%]
-	      [-text% text%])
+  (import [prefix text: framework:text^]
+          [prefix scheme: framework:scheme^]
+          [prefix keymap: framework:keymap^])
+  (export (rename framework:comment-box^
+                  (-snip% snip%)))
 
       (define snipclass%
         (class decorated-editor-snipclass%
@@ -127,4 +121,4 @@
             (make-special-comment "comment"))
           (super-instantiate ())
           (inherit set-snipclass)
-          (set-snipclass snipclass))))))
+          (set-snipclass snipclass))))

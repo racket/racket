@@ -1,11 +1,8 @@
-
 (module dns mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss")
+           "dns-sig.ss"
+           "dns-unit.ss")
 
-  (require "dns-sig.ss")
-  (require "dns-unit.ss")
+  (define-values/invoke-unit/infer dns@)
 
-  (define-values/invoke-unit/sig net:dns^
-    net:dns@)
-
-  (provide-signature-elements net:dns^))
+  (provide-signature-elements dns^))

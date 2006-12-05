@@ -7,7 +7,7 @@
    (lib "list.ss")
    (lib "embedded-gui.ss" "embedded-gui")
    (lib "match.ss")
-   (lib "unitsig.ss")
+   (lib "unit.ss")
    (lib "tool.ss" "drscheme")
    (lib "framework.ss" "framework")
    (lib "parser.ss" "profj")
@@ -24,9 +24,9 @@
   (define min-field-width 50)
   
   (define-signature example-box^ (example-box%))
-  (define example-box@
-    (unit/sig example-box^
-      (import drscheme:tool^)
+  (define-unit example-box@
+    (import drscheme:tool^)
+    (export example-box^)
       
       ;; A readable-snip<%> of an examples box to allow GUI contruction of data examples.
       (define example-box%
@@ -249,4 +249,4 @@
           (send (get-pasteboard) lock-alignment false)
           ))
       ))
-  )
+  

@@ -7,7 +7,7 @@
            (lib "string-constant.ss" "string-constants")
            (lib "async-channel.ss")
            (prefix frame: (lib "framework.ss" "framework"))
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "class.ss")
            (lib "list.ss")
            (prefix model: "private/model.ss")
@@ -15,7 +15,8 @@
            (prefix x: "private/mred-extensions.ss")
            "private/shared.ss"
            "private/model-settings.ss"
-           "stepper-language-interface.ss")
+           "stepper-language-interface.ss"
+           "xml-sig.ss")
 
   ;; hidden invariant: this list should be a sublist of the language-level
   ;; dialog (i.e., same order):
@@ -29,9 +30,9 @@
 
   (provide stepper-tool@)
 
-  (define stepper-tool@
-    (unit/sig drscheme:tool-exports^
-      (import drscheme:tool^ (xml-snip% scheme-snip%))
+  (define-unit stepper-tool@
+    (import drscheme:tool^ xml^)
+    (export drscheme:tool-exports^)
 
       ;; tool magic here:
       (define (phase1)
@@ -683,4 +684,4 @@
       (drscheme:get/extend:extend-definitions-text
        stepper-definitions-text-mixin)
       
-      )))
+      ))

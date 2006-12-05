@@ -1,5 +1,5 @@
 (module stacktrace mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "kerncase.ss" "syntax")
            (lib "stx.ss" "syntax"))
 
@@ -25,10 +25,10 @@
      st-mark-source
      st-mark-bindings))
 
-  (define stacktrace@
-    (unit/sig stacktrace^
-      (import stacktrace-imports^)
-
+  (define-unit stacktrace@
+    (import stacktrace-imports^)
+    (export stacktrace^)
+      
       (define (short-version v depth)
         (cond
          [(identifier? v) (syntax-e v)]
@@ -549,4 +549,4 @@
       (define annotate (make-annotate #f #f))
       (define annotate-top (make-annotate #t #f))
       (define (annotate-named name expr trans?)
-        ((make-annotate #t name) expr trans?)))))
+        ((make-annotate #t name) expr trans?))))

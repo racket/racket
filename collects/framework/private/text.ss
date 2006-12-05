@@ -5,9 +5,8 @@ WARNING: printf is rebound in the body of the unit to always
 
 |#
 
-(module text mzscheme
+(module text (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
 	   (lib "class.ss")
            (lib "match.ss")
 	   "sig.ss"
@@ -16,21 +15,19 @@ WARNING: printf is rebound in the body of the unit to always
            (lib "interactive-value-port.ss" "mrlib")
 	   (lib "list.ss")
 	   (lib "etc.ss"))
-  (provide text@)
 
-  (define text@
-    (unit/sig framework:text^
-      (import mred^
-              [icon : framework:icon^]
-              [editor : framework:editor^]
-              [preferences : framework:preferences^]
-              [keymap : framework:keymap^]
-              [color-model : framework:color-model^]
-              [frame : framework:frame^]
-              [scheme : framework:scheme^]
-              [number-snip : framework:number-snip^])
-      
-      (rename [-keymap% keymap%])
+  (import mred^
+          [prefix icon: framework:icon^]
+          [prefix editor: framework:editor^]
+          [prefix preferences: framework:preferences^]
+          [prefix keymap: framework:keymap^]
+          [prefix color-model: framework:color-model^]
+          [prefix frame: framework:frame^]
+          [prefix scheme: framework:scheme^]
+          [prefix number-snip: framework:number-snip^])
+  (export (rename framework:text^
+                  [-keymap% keymap%]))
+  (init-depend framework:editor^)
       
       (define original-output-port (current-output-port))
       (define (printf . args) 
@@ -2005,4 +2002,4 @@ WARNING: printf is rebound in the body of the unit to always
       (define clever-file-format% (clever-file-format-mixin file%))
       (define backup-autosave% (editor:backup-autosave-mixin clever-file-format%))
       (define searching% (searching-mixin backup-autosave%))
-      (define info% (info-mixin (editor:info-mixin searching%))))))
+      (define info% (info-mixin (editor:info-mixin searching%))))

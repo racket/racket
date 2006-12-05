@@ -91,7 +91,14 @@
    finished-xml-box-table
    language-level->name
    
-   stepper-syntax-property)
+   stepper-syntax-property
+
+   skipto/cdr
+   skipto/cddr
+   skipto/first
+   skipto/second
+   skipto/third
+   skipto/fourth)
   
     
   ;; stepper-syntax-property : like syntax property, but adds properties to an association
@@ -402,20 +409,22 @@
   (define second-arg (lambda (dc y) y))
   
   (define (up-mapping traversal fn)
+    (unless (symbol? fn)
+      (error 'up-mapping "expected symbol for stepper traversal, given: ~v" fn))
     (case traversal
       [(rebuild) (case fn 
                    [(car) (lambda (stx new) (cons new (cdr stx)))]
                    [(cdr) (lambda (stx new) (cons (car stx) new))]
                    [(syntax-e) (swap-args rebuild-stx)]
                    [(both-l both-r) (lambda (stx a b) (cons a b))]
-                   [else (error 'up-mapping "unexpected symbol in up-mapping (1)")])]
+                   [else (error 'up-mapping "unexpected symbol in up-mapping (1): ~v" fn)])]
       [(discard) (case fn
                    [(car) second-arg]
                    [(cdr) second-arg]
                    [(syntax-e) second-arg]
                    [(both-l) (lambda (stx a b) a)]
                    [(both-r) (lambda (stx a b) b)]
-                   [else (error 'up-mapping "unexpected symbol in up-mapping (2)")])]))
+                   [else (error 'up-mapping "unexpected symbol in up-mapping (2): ~v" fn)])]))
   
   (define (down-mapping fn)
     (case fn
@@ -434,6 +443,14 @@
                                  (update (caddr fn-list) (cdr val) fn traversal))]
             [else (let ([down (down-mapping (car fn-list))])
                     (up val (update (cdr fn-list) (down val) fn traversal)))]))))
+  
+  ;; commonly used patterns:
+  (define skipto/cdr `(syntax-e cdr))
+  (define skipto/cddr `(syntax-e cdr cdr))
+  (define skipto/first `(syntax-e car))
+  (define skipto/second `(syntax-e cdr car))
+  (define skipto/third `(syntax-e cdr cdr car))
+  (define skipto/fourth `(syntax-e cdr cdr cdr car))
   
   #;(display (equal? (update '(cdr cdr car both-l (car) (cdr))
                            `(a . (b ((1) c . 2) d))

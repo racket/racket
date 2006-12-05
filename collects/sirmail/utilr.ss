@@ -1,6 +1,6 @@
 
 (module utilr mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "class.ss")
 	   (lib "mred-sig.ss" "mred")
 	   (lib "qp-sig.ss" "net")
@@ -12,11 +12,11 @@
   (require "sirmails.ss")
 
   (provide util@)
-  (define util@
-    (unit/sig sirmail:utils^
+  (define-unit util@
       (import mred^
-	      net:base64^
-	      net:qp^)
+	      base64^
+	      qp^)
+      (export sirmail:utils^)
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;  Utilities                                              ;;
@@ -264,4 +264,4 @@
 
       (define generalize-encoding unihead:generalize-encoding)
       (define parse-encoded unihead:decode-for-header)
-      (define encode-for-header unihead:encode-for-header))))
+      (define encode-for-header unihead:encode-for-header)))

@@ -1,26 +1,23 @@
 
-(module keymap mzscheme
+(module keymap (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
 	   (lib "class.ss")
 	   (lib "list.ss")
 	   (lib "mred-sig.ss" "mred")
            (lib "match.ss")
            "sig.ss")
   
-  (provide keymap@)
+   
+  (import mred^
+          [prefix preferences: framework:preferences^]
+          [prefix finder: framework:finder^]
+          [prefix handler: framework:handler^]
+          [prefix frame: framework:frame^]
+          [prefix editor: framework:editor^])
+  (export (rename framework:keymap^
+                  [-get-file get-file]))
+  (init-depend mred^)
   
-  (define keymap@ 
-    (unit/sig framework:keymap^
-      (import mred^
-	      [preferences : framework:preferences^]
-	      [finder : framework:finder^]
-	      [handler : framework:handler^]
-	      [frame : framework:frame^]
-              [editor : framework:editor^])
-      
-      (rename [-get-file get-file])
-
       (define user-keybindings-files (make-hash-table 'equal))
       
       (define (add-user-keybindings-file spec)
@@ -1342,4 +1339,4 @@
 			  (λ (keymap)
 			    (send keymap chain-to-keymap global #t)
 			    (ctki keymap))])
-	    (thunk)))))))
+	    (thunk)))))

@@ -1,11 +1,11 @@
 
 (module make mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require "make-sig.ss"
 	  "make-unit.ss")
   
-  (define-values/invoke-unit/sig make^ make@)
+  (define-values/invoke-unit/infer make@)
 
   (provide-signature-elements make^)
 

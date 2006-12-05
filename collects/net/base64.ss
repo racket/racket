@@ -1,12 +1,8 @@
-
-
 (module base64 mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss")
+           "base64-sig.ss"
+           "base64-unit.ss")
 
-  (require "base64-sig.ss")
-  (require "base64-unit.ss")
+  (define-values/invoke-unit/infer base64@)
 
-  (define-values/invoke-unit/sig net:base64^
-    net:base64@)
-
-  (provide-signature-elements net:base64^))
+  (provide-signature-elements base64^))

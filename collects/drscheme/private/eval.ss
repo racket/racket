@@ -1,7 +1,7 @@
 
 (module eval mzscheme
   (require (lib "mred.ss" "mred")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "port.ss")
            (lib "class.ss")
 	   (lib "toplevel.ss" "syntax")
@@ -15,14 +15,14 @@
   (define (oprintf . args) (apply fprintf op args))
   
   (provide eval@)
-  (define eval@
-    (unit/sig drscheme:eval^
-      (import [drscheme:language-configuration : drscheme:language-configuration/internal^]
-              [drscheme:rep : drscheme:rep^]
-              [drscheme:init : drscheme:init^]
-              [drscheme:language : drscheme:language^]
-              [drscheme:teachpack : drscheme:teachpack^])
-      
+  (define-unit eval@
+    (import [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
+            [prefix drscheme:rep: drscheme:rep^]
+            [prefix drscheme:init: drscheme:init^]
+            [prefix drscheme:language: drscheme:language^]
+            [prefix drscheme:teachpack: drscheme:teachpack^])
+    (export drscheme:eval^)
+
       (define (traverse-program/multiple language-settings
                                          init
                                          kill-termination)
@@ -226,4 +226,4 @@
                (when (and (equal? #\# (car chars))
                           (equal? #\! (cadr chars)))
                  (read-line port))
-               (values port filename))]))))))
+               (values port filename))])))))

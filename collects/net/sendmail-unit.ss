@@ -1,14 +1,9 @@
+(module sendmail-unit (lib "a-unit.ss")
+  (require (lib "process.ss")
+           "sendmail-sig.ss")
 
-(module sendmail-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "process.ss"))
-
-  (require "sendmail-sig.ss")
-
-  (provide net:sendmail@)
-  (define net:sendmail@
-    (unit/sig net:sendmail^
-      (import)
+  (import)
+  (export sendmail^)
 
       (define-struct (no-mail-recipients exn) ())
 
@@ -121,4 +116,4 @@
 			(display s writer)	; We use -i, so "." is not a problem
 			(newline writer))
 		      text)
-	    (close-output-port writer)))))))
+	    (close-output-port writer)))))

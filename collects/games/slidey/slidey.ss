@@ -2,7 +2,7 @@
 (module slidey mzscheme
   (require (lib "etc.ss")
            (lib "class.ss")
-           (lib "unit.ss")
+           (lib "unit200.ss")
            (lib "mred.ss" "mred"))
   
   (provide game-unit)

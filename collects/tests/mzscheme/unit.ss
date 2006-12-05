@@ -2,7 +2,7 @@
 (load-relative "loadtest.ss")
 
 (Section 'unit)
-(require (lib "unit.ss"))
+(require (lib "unit200.ss"))
 
 (syntax-test #'(unit))
 (syntax-test #'(unit (import)))

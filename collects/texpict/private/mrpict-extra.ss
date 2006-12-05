@@ -1,7 +1,6 @@
 
-(module mrpict-extra mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module mrpict-extra (lib "a-unit.ss")
+  (require (lib "class.ss")
            (lib "etc.ss"))
 
   (require (lib "mred-sig.ss" "mred"))
@@ -9,13 +8,11 @@
   (require "mrpict-sig.ss"
 	   "common-sig.ss")
 
-  (provide mrpict-extra@)
-  (define mrpict-extra@
-    (unit/sig ((open mrpict-extra^)
-	       (open texpict-common-setup^))
-      (import mred^
-	      ((open texpict-common^)
-	       (open texpict-internal^)))
+  (import mred^
+          texpict-common^
+          texpict-internal^)
+  (export mrpict-extra^
+          texpict-common-setup^)
 
       (define show-pict
         (opt-lambda (p [w #f] [h #f])
@@ -418,4 +415,4 @@
 		    dx 0))))
 
       (define (draw-pict p dc dx dy)
-	((make-pict-drawer p) dc dx dy)))))
+	((make-pict-drawer p) dc dx dy)))

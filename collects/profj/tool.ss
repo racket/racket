@@ -1,6 +1,7 @@
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme") (lib "contract.ss")
-           (lib "mred.ss" "mred") (lib "framework.ss" "framework") (lib "unitsig.ss") 
+           (lib "mred.ss" "mred") (lib "framework.ss" "framework")
+           (prefix u: (lib "unit.ss")) 
            (lib "file.ss")
            (lib "include-bitmap.ss" "mrlib") (lib "etc.ss")
            (lib "class.ss")
@@ -18,9 +19,9 @@
   (preferences:set-default 'profj:classpath null (lambda (v) (and (list? v) (andmap string? v))))
   
   (define tool@
-    (unit/sig drscheme:tool-exports^
-      (import drscheme:tool^)
-
+    (u:unit
+      (u:import drscheme:tool^)
+      (u:export drscheme:tool-exports^)
       ;Set the Java editing colors
       (define color-prefs-table
         `((keyword ,(make-object color% "black") ,(string-constant profj-java-mode-color-keyword))

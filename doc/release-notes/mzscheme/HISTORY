@@ -1,3 +1,8 @@
+Version 360.3
+Changed dyanmic-require to expand requests for exported syntax
+ bindings
+Added vector->values
+
 Version 360.2
 Added support for manipulating filesystem paths that work on 
  other platforms

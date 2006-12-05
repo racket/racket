@@ -1,6 +1,6 @@
 
 (module sirmailr mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "mred-sig.ss" "mred"))
 
   (require "sirmails.ss")
@@ -22,33 +22,20 @@
   ;; The sirmail@ unit implements a single reader window. See
   ;; "sirmail.ss" for its use: 
   (provide sirmail@)
-  (define sirmail@
-    (compound-unit/sig
-     (import (ENV : sirmail:environment^)
-	     (MRED : mred^)
-	     (IMAP : net:imap^)
-	     (SMTP : net:smtp^)
-	     (HEAD : net:head^)
-	     (BASE64 : net:base64^)
-	     (MIME : net:mime^)
-	     (QP : net:qp^)
-	     (HIER : hierlist^))
-     (link [UTILS : sirmail:utils^
-		  (util@
-		   MRED
-		   BASE64
-		   QP)]
-	   [OPTIONS : sirmail:options^
-		    (option@
-		     ENV
-		     IMAP
-                     MRED)]
-	   [READ : sirmail:read^
-		 (read@
-		  OPTIONS ENV UTILS SEND
-		  MRED IMAP SMTP HEAD BASE64 MIME QP HIER)]
-	   [SEND : sirmail:send^
-		 (send@
-		  (ENV : (exit-sirmail)) UTILS OPTIONS READ ENV
-		  MRED IMAP SMTP HEAD BASE64 QP HIER)])
-     (export))))
+  (define-compound-unit/infer sirmail@
+    (import (ENV : sirmail:environment^)
+            mred^
+            imap^
+            smtp^
+            head^
+            base64^
+            mime^
+            qp^
+            hierlist^)
+    (export)
+
+    (link util@
+          option@
+          read@
+          [() send@ ENV])))
+

@@ -2,7 +2,6 @@
 (module viewer mzscheme
   (require (lib "class.ss")
            (lib "unit.ss")
-           (lib "unitsig.ss")
 	   (lib "file.ss")
 	   (lib "etc.ss")
 	   (lib "contract.ss")
@@ -21,14 +20,14 @@
   ;; Needed for browsing
   (define original-security-guard (current-security-guard))
       
-  (define viewer@
-    (unit/sig viewer^
-      (import (config : cmdline^) core^)
-      (rename (viewer:set-use-background-frame! set-use-background-frame!)
-	      (viewer:enable-click-advance! enable-click-advance!)
-	      (viewer:set-page-numbers-visible! set-page-numbers-visible!)
-	      (viewer:done-making-slides done-making-slides))
-
+  (define-unit viewer@
+      (import (prefix config: cmdline^) core^)
+      (export (rename viewer^
+                      (viewer:set-use-background-frame! set-use-background-frame!)
+                      (viewer:enable-click-advance! enable-click-advance!)
+                      (viewer:set-page-numbers-visible! set-page-numbers-visible!)
+                      (viewer:done-making-slides done-making-slides)))
+              
       (define-accessor margin get-margin)
       (define-accessor client-w get-client-w)
       (define-accessor client-h get-client-h)
@@ -1158,4 +1157,4 @@
 	     (send f-both show #f))
 	   (when background-f
 	     (send background-f show #f))
-	   (eh exn)))))))
+	   (eh exn))))))

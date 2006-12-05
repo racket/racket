@@ -1,18 +1,15 @@
 
-(module panel mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module panel (lib "a-unit.ss")
+  (require (lib "class.ss")
 	   "sig.ss"
 	   (lib "mred-sig.ss" "mred")
 	   (lib "list.ss")
 	   (lib "etc.ss"))
   
-  (provide panel@)
-  
-  (define panel@
-    (unit/sig framework:panel^
-      (import [icon : framework:icon^]
-              mred^)
+  (import [prefix icon: framework:icon^]
+          mred^)
+  (export framework:panel^)
+  (init-depend mred^)
       
       (define single<%> (interface (area-container<%>) active-child))
       (define single-mixin
@@ -422,5 +419,5 @@
         
        (define vertical-dragable% (vertical-dragable-mixin (dragable-mixin vertical-panel%)))
  
-       (define horizontal-dragable% (horizontal-dragable-mixin (dragable-mixin horizontal-panel%))))))
+       (define horizontal-dragable% (horizontal-dragable-mixin (dragable-mixin horizontal-panel%))))
 

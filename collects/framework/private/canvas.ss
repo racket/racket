@@ -1,19 +1,15 @@
-(module canvas mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module canvas (lib "a-unit.ss")
+  (require (lib "class.ss")
 	   "sig.ss"
 	   (lib "mred-sig.ss" "mred"))
 
-  (provide canvas@)
+  (import mred^
+          [prefix preferences: framework:preferences^]
+          [prefix frame: framework:frame^]
+          [prefix text: framework:text^])
 
-  (define canvas@
-    (unit/sig framework:canvas^
-      (import mred^
-	      [preferences : framework:preferences^]
-	      [frame : framework:frame^]
-              [text : framework:text^])
-      
-      (rename [-color% color%])
+  (export (rename framework:canvas^
+                  (-color% color%)))
       
       (define basic<%> (interface ((class->interface editor-canvas%))))
       (define basic-mixin
@@ -182,4 +178,4 @@
       (define -color% (color-mixin basic%))
       (define info% (info-mixin basic%))
       (define delegate% (delegate-mixin basic%))
-      (define wide-snip% (wide-snip-mixin basic%)))))
+      (define wide-snip% (wide-snip-mixin basic%)))

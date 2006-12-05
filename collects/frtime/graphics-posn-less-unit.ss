@@ -4,9 +4,8 @@
 ;
 ; modified by Gregory Cooper to support FrTime
 
-(module graphics-posn-less-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "mred-sig.ss" "mred")
+(module graphics-posn-less-unit (lib "a-unit.ss")
+  (require (lib "mred-sig.ss" "mred")
 	   (lib "class.ss")
 	   (lib "class100.ss")
 	   (lib "etc.ss")
@@ -16,13 +15,10 @@
            ;(rename "frp-core.ss" send-event send-event)
            (lib "frp-core.ss" "frtime")
 	   "graphics-sig.ss")
-  (provide graphics-posn-less@)
 
-(define graphics-posn-less@
-
-(unit/sig graphics:posn-less^
-  (import (mred : mred^)
+  (import (prefix mred: mred^)
           graphics:posn^)
+  (export graphics:posn-less^)
   
   (define send/proc
     (lambda (class method . args)
@@ -1124,4 +1120,4 @@
     (lambda (TST)
       (andmap (lambda (p) (p TST)) preds)))
   )
-))
+

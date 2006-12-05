@@ -40,9 +40,8 @@ for the last one, need a global "no more initialization can happen" flag.
 
 |#
 
-(module preferences mzscheme
+(module preferences (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
 	   (lib "class.ss")
            (lib "file.ss")
 	   (lib "etc.ss")
@@ -52,16 +51,13 @@ for the last one, need a global "no more initialization can happen" flag.
 	   (lib "pretty.ss")
 	   (lib "list.ss"))
   
-  (provide preferences@)
-  (define preferences@
-    (unit/sig framework:preferences^
-      (import mred^
-              [exn : framework:exn^]
-              [exit : framework:exit^]
-              [panel : framework:panel^]
-              [frame : framework:frame^])
-
-      (rename [-read read])
+  (import mred^
+          [prefix exn: framework:exn^]
+          [prefix exit: framework:exit^]
+          [prefix panel: framework:panel^]
+          [prefix frame: framework:frame^])
+  (export framework:preferences^)
+                
       
       (define main-preferences-symbol 'plt:framework-prefs)
       
@@ -922,4 +918,4 @@ for the last one, need a global "no more initialization can happen" flag.
       
       (define (add-font-panel) (local-add-font-panel))
       
-      (-read))))
+      (-read))

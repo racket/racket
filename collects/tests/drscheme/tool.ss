@@ -3,7 +3,7 @@
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
            (lib "list.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework"))
@@ -11,9 +11,9 @@
   (provide tool@)
 
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
-            
+      (export drscheme:tool-exports^)
       (define (phase1) (void))
       (define (phase2) (void))
       

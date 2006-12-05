@@ -1,0 +1,28 @@
+(module a-unit mzscheme
+  (require-for-syntax "private/unit-compiletime.ss"
+                      "private/unit-syntax.ss")
+  (require "unit.ss")
+  
+  (provide (rename module-begin #%module-begin)
+           (all-from-except mzscheme #%module-begin)
+           (all-from "unit.ss"))
+  
+  (define-for-syntax (make-name s)
+    (string->symbol
+     (string-append (regexp-replace "-unit$" (symbol->string s) "")
+                    "@")))
+
+  (define-syntax (module-begin stx)
+    (parameterize ((error-syntax stx))
+      (with-syntax ((name (make-name (syntax-property stx 'enclosing-module-name))))
+        (syntax-case stx ()
+          ((_ . x)
+           (with-syntax ((((reqs ...) . (body ...))
+                          (split-requires (checked-syntax->list #'x))))
+             (datum->syntax-object 
+              stx
+              (syntax-e #'(#%module-begin
+                           reqs ...
+                           (provide name)
+                           (define-unit name body ...)))
+              stx))))))))

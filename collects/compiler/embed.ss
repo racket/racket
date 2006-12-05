@@ -1,6 +1,6 @@
 
 (module embed mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "contract.ss"))
   
   (require "sig.ss")
@@ -8,9 +8,7 @@
   (require "embed-unit.ss"
 	   "embed-sig.ss")
   
-  (define-values/invoke-unit/sig compiler:embed^
-                                 compiler:embed@
-                                 #f)
+  (define-values/invoke-unit/infer compiler:embed@)
   
   (provide/contract [make-embedding-executable
                      (opt-> (path-string?

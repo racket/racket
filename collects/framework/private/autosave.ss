@@ -1,29 +1,27 @@
 
-(module autosave mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module autosave (lib "a-unit.ss")
+  (require (lib "class.ss")
            (lib "file.ss")
 	   "sig.ss"
 	   "../gui-utils.ss"
 	   (lib "mred-sig.ss" "mred")
            (lib "mred.ss" "mred") ;; remove this!
            (lib "list.ss")
-           (lib "string-constant.ss" "string-constants"))
-
-  (provide autosave@)
+           (lib "string-constant.ss" "string-constants")
+           (lib "unit.ss"))
   
-  (define autosave@
-    (unit/sig framework:autosave^
-      (import mred^
-	      [exit : framework:exit^]
-	      [preferences : framework:preferences^]
-              [frame : framework:frame^]
-              [scheme : framework:scheme^]
-              [editor : framework:editor^]
-              [text : framework:text^]
-              [finder : framework:finder^]
-              [group : framework:group^])
-      
+  (import mred^
+          [prefix exit: framework:exit^]
+          [prefix preferences: framework:preferences^]
+          [prefix frame: framework:frame^]
+          [prefix scheme: framework:scheme^]
+          [prefix editor: framework:editor^]
+          [prefix text: framework:text^]
+          [prefix finder: framework:finder^]
+          [prefix group: framework:group^])
+  
+  (export framework:autosave^)
+  
       (define autosavable<%>
 	(interface ()
 	  do-autosave))
@@ -316,4 +314,4 @@
                    (delete-file autosave-name)
                    (when tmp-name
                      (delete-file tmp-name))
-                   orig-name))))))))
+                   orig-name))))))

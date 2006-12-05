@@ -2,7 +2,7 @@
 (module slides-to-picts mzscheme
   (require (lib "mred.ss" "mred")
 	   (lib "class.ss")
-	   (lib "unitsig.ss")
+	   (lib "unit.ss")
 	   (lib "etc.ss")
 	   "sig.ss"
 	   "param.ss"
@@ -26,40 +26,42 @@
 	  (namespace-attach-module orig-ns core))
 	(current-slideshow-linker
 	 (lambda (core@)
-	   (compound-unit/sig
+	   (compound-unit
 	    (import)
-	    (link [CONFIG : config^ ((unit/sig config^
-				       (import)
-				       (define base-font-size 32)
-				       (define screen-w 1024)
-				       (define screen-h 768)
-				       (define use-screen-w w)
-				       (define use-screen-h h)
-				       (define pixel-scale 1)
-				       (define condense? c?)
-				       (define printing? #f)
-                                       (define smoothing? #t)
-                                       (define commentary-on-slide? #f)))]
-		  [CORE : core^ (core@ CONFIG (VIEWER : viewer^))]
-		  [VIEWER : viewer^ ((unit/sig viewer^
-				       (import)
-				       (define (add-talk-slide! s)
-					 (set! slides (cons s slides))
-					 (when (and stop-after
-						    ((length slides) . >= . stop-after))
-					   (escape (void))))
-				       (define (retract-talk-slide!)
-					 (set! slides (cdr slides)))
-				       (define (most-recent-talk-slide)
-					 (and (pair? slides) (car slides)))
-				       (define display-progress void)
-				       (define set-init-page! void)
-				       (define set-use-background-frame! void)
-				       (define enable-click-advance! void)
-				       (define set-page-numbers-visible! void)
-				       (define add-click-region! void)
-				       (define done-making-slides void)))])
-	    (export (open CORE) (unit CONFIG config) (unit VIEWER viewer)))))
+	    (export CORE CONFIG VIEWER)
+	    (link [((CONFIG : config^)) (unit 
+                                          (import)
+                                          (export config^)
+                                          (define base-font-size 32)
+                                          (define screen-w 1024)
+                                          (define screen-h 768)
+                                          (define use-screen-w w)
+                                          (define use-screen-h h)
+                                          (define pixel-scale 1)
+                                          (define condense? c?)
+                                          (define printing? #f)
+                                          (define smoothing? #t)
+                                          (define commentary-on-slide? #f))]
+		  [((CORE : core^)) core@ CONFIG VIEWER]
+		  [((VIEWER : viewer^)) (unit
+                                          (import)
+                                          (export viewer^)
+                                          (define (add-talk-slide! s)
+                                            (set! slides (cons s slides))
+                                            (when (and stop-after
+                                                       ((length slides) . >= . stop-after))
+                                              (escape (void))))
+                                          (define (retract-talk-slide!)
+                                            (set! slides (cdr slides)))
+                                          (define (most-recent-talk-slide)
+                                            (and (pair? slides) (car slides)))
+                                          (define display-progress void)
+                                          (define set-init-page! void)
+                                          (define set-use-background-frame! void)
+                                          (define enable-click-advance! void)
+                                          (define set-page-numbers-visible! void)
+                                          (define add-click-region! void)
+                                          (define done-making-slides void))]))))
 	(parameterize ([current-namespace ns])
 	  (let/ec k
 	    (set! escape k)

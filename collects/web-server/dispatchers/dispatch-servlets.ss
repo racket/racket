@@ -2,7 +2,7 @@
   (require (lib "url.ss" "net")
            (lib "kw.ss")
            (lib "plt-match.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
            "../private/web-server-structs.ss"
@@ -281,7 +281,10 @@
     (define (load-servlet/path a-path)
       (define (v0.servlet->v1.lambda servlet)
         (lambda (initial-request)
-          (invoke-unit/sig servlet servlet^)))
+          (invoke-unit
+           (compound-unit (import) (export)
+            (link (((S : servlet^)) (unit-from-context servlet^))
+                  (() servlet S))))))
       (define (v0.response->v1.lambda response-path response)
         (define go
           (box
@@ -301,7 +304,7 @@
         (cond
           ;; signed-unit servlet
           ; MF: I'd also like to test that s has the correct import signature.
-          [(unit/sig? s) 
+          [(unit? s) 
            (make-servlet (current-custodian)
                          (current-namespace)
                          (create-timeout-manager

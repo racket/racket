@@ -1,17 +1,13 @@
-(module icon mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module icon (lib "a-unit.ss")
+  (require (lib "class.ss")
            (lib "include-bitmap.ss" "mrlib")
 	   "bday.ss"
            "sig.ss"
 	   (lib "mred-sig.ss" "mred"))
+    
+  (import mred^)
+  (export framework:icon^)
   
-  (provide icon@)
-  
-  (define icon@
-    (unit/sig framework:icon^
-      (import mred^)
-
       (define eof-bitmap (delay (include-bitmap (lib "eof.gif" "icons"))))
       (define (get-eof-bitmap) (force eof-bitmap))
       
@@ -73,4 +69,4 @@
         (force
          (if (mrf-bday?)
              mrf-off-bitmap
-             gc-off-bitmap))))))
+             gc-off-bitmap))))

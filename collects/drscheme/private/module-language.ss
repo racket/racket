@@ -1,7 +1,7 @@
 
 (module module-language mzscheme
   (provide module-language@)
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "embed.ss" "compiler")
@@ -14,12 +14,12 @@
   (define op (current-output-port))
   (define (oprintf . args) (apply fprintf op args))
   
-  (define module-language@
-    (unit/sig drscheme:module-language^
-      (import [drscheme:language-configuration : drscheme:language-configuration/internal^]
-              [drscheme:language : drscheme:language^]
-              [drscheme:unit : drscheme:unit^]
-              [drscheme:rep : drscheme:rep^])
+  (define-unit module-language@
+    (import [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
+            [prefix drscheme:language: drscheme:language^]
+            [prefix drscheme:unit: drscheme:unit^]
+            [prefix drscheme:rep: drscheme:rep^])
+    (export drscheme:module-language^)
 
       (define module-language<%> 
         (interface ()
@@ -554,4 +554,4 @@
                   [else
                    (loop (+ pos 1))]))))
           
-          (super-instantiate ()))))))
+          (super-instantiate ())))))

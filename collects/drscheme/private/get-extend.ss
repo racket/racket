@@ -1,21 +1,18 @@
 
-(module get-extend mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module get-extend (lib "a-unit.ss")
+  (require (lib "class.ss")
            "drsig.ss"
 	   (lib "mred.ss" "mred")
            (lib "etc.ss"))
   
-  (provide get-extend@)
   
-  (define get-extend@
-    (unit/sig drscheme:get/extend^
 
-      (import [drscheme:unit : drscheme:unit^]
-	      [drscheme:frame : drscheme:frame^]
-	      [drscheme:rep : drscheme:rep^]
-              [drscheme:debug : drscheme:debug^])
-      
+  (import [prefix drscheme:unit: drscheme:unit^]
+          [prefix drscheme:frame: drscheme:frame^]
+          [prefix drscheme:rep: drscheme:rep^]
+          [prefix drscheme:debug: drscheme:debug^])
+  (export drscheme:get/extend^)
+  
       (define make-extender
         (λ (get-base% name)
           (let ([extensions (λ (x) x)]
@@ -87,4 +84,4 @@
           (drscheme:unit:get-definitions-text%))))
 
       (define-values (extend-definitions-text get-definitions-text)
-        (make-extender get-base-definitions-text% 'definitions-text%)))))
+        (make-extender get-base-definitions-text% 'definitions-text%)))

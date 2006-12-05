@@ -3,7 +3,7 @@
   
   (require
    (lib "tool.ss" "drscheme")
-   (lib "unitsig.ss")
+   (lib "unit.ss")
    (lib "list.ss")
    (lib "class.ss")
    (lib "mred.ss" "mred")
@@ -20,9 +20,9 @@
   (provide tool@)
   
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit 
       (import drscheme:tool^)
-      
+      (export drscheme:tool-exports^) 
       ; INTERFACE WITH LANGUAGES
       (define mrflow-language-extension-interface<%>
         (interface ()

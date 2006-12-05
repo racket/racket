@@ -1,14 +1,10 @@
-(module mode mzscheme
+(module mode (lib "a-unit.ss")
   (require (lib "surrogate.ss")
-           (lib "unitsig.ss")
 	   (lib "class.ss")
            "sig.ss")
   
-  (provide mode@)
-  
-  (define mode@
-    (unit/sig framework:mode^
-      (import)
+  (import)
+  (export framework:mode^)
       
       (define-values (host-text-mixin host-text<%> surrogate-text% surrogate-text<%>)
         (surrogate
@@ -51,4 +47,4 @@
          (augment #t can-set-size-constraint? ())
          (override can-do-edit-operation? (op) (op recursive?))
          (augment #t can-load-file? (filename format))
-         (augment #t can-save-file? (filename format)))))))
+         (augment #t can-save-file? (filename format)))))

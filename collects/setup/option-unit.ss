@@ -1,14 +1,14 @@
 
 (module option-unit mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require "option-sig.ss")
 
   (provide setup:option@)
 
-  (define setup:option@
-    (unit/sig setup-option^
+  (define-unit setup:option@
       (import)
+      (export setup-option^)
 
       (define verbose (make-parameter #f))
       (define make-verbose (make-parameter #f))
@@ -31,4 +31,4 @@
       (define current-target-directory-getter (make-parameter current-directory))
       (define current-target-plt-directory-getter 
 	(make-parameter 
-	 (lambda (preferred main-collects-parent-dir choices) preferred))))))
+	 (lambda (preferred main-collects-parent-dir choices) preferred)))))

@@ -3,7 +3,7 @@
 ;;  function creates a compose-window instance.
 
 (module sendr mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "class.ss")
 	   (lib "mred-sig.ss" "mred")
            (lib "framework.ss" "framework"))
@@ -29,20 +29,20 @@
   (define smtp-passwords (make-hash-table 'equal))
 
   (provide send@)
-  (define send@
-    (unit/sig sirmail:send^
-      (import (exit-sirmail)
+  (define-unit send@
+      (import sirmail:exit^
 	      sirmail:utils^
 	      sirmail:options^
 	      sirmail:read^
-	      (env : sirmail:environment^)
+	      (prefix env: sirmail:environment^)
 	      mred^
-	      net:imap^
-	      net:smtp^
-	      net:head^
-	      net:base64^
-	      net:qp^
+	      imap^
+	      smtp^
+	      head^
+	      base64^
+	      qp^
 	      hierlist^)
+      (export sirmail:send^)
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;  Constants                                             ;;
@@ -946,7 +946,7 @@
 	      (lambda () 
 		(send edit end-edit-sequence)
 		(send edit set-wordbreak-map wbm)))
-	  #t))))
+	  #t)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  Uptime                                                ;;

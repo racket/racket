@@ -1,6 +1,6 @@
 
 (module teachpack mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "list.ss")
            (lib "file.ss")
            (lib "etc.ss")
@@ -14,9 +14,9 @@
   (define o (current-output-port))
   (define (oprintf . args) (apply fprintf o args))
   
-  (define teachpack@
-    (unit/sig drscheme:teachpack^
-      (import)
+  (define-unit teachpack@
+    (import)
+    (export drscheme:teachpack^)
 
       ;; type teachpack-cache = (make-teachpack-cache (listof cache-entry))
       ;; the timestamp indicates the last time this teachpack was loaded
@@ -166,4 +166,4 @@
           ;; should check for error trace and use that here (somehow)
           (if (exn? exn)
               (format "~a" (exn-message exn))
-              (format "uncaught exception: ~s" exn))))))))
+              (format "uncaught exception: ~s" exn)))))))

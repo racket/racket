@@ -1,8 +1,7 @@
 (module handin-multi mzscheme
   (require (lib "class.ss") (lib "list.ss") (lib "string.ss") (lib "port.ss")
-           (lib "unitsig.ss") (lib "mred.ss" "mred")
-           (lib "framework.ss" "framework") (lib "external.ss" "browser")
-           "info.ss" "client-gui.ss")
+           (lib "mred.ss" "mred") (lib "framework.ss" "framework")
+           (lib "external.ss" "browser") "info.ss" "client-gui.ss")
 
   (define handin-name     (#%info-lookup 'name))
   (define this-collection (#%info-lookup 'collection))

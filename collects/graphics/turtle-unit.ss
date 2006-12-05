@@ -1,17 +1,15 @@
-(module turtle-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "mred-sig.ss" "mred")
+(module turtle-unit (lib "a-unit.ss")
+  (require (lib "mred-sig.ss" "mred")
 	   (lib "class.ss")
 	   (lib "class100.ss")
 	   (lib "list.ss")
 	   (lib "etc.ss")
 	   "turtle-sig.ss")
-  (provide turtle@)
   
-  (define turtle@
-    (unit/sig turtle^
-      (import [mred : mred^])
-      
+  (import [prefix mred: mred^])
+  (export turtle^)
+  (init-depend mred^)
+    
       (define turtles:window #f)
       (define turtles:shown? #f)
       
@@ -464,4 +462,4 @@
              (send dc end-doc))]
           [else
            (mred:message-box "Turtles"
-                             "Printing is not supported on this platform")])))))
+                             "Printing is not supported on this platform")])))

@@ -1,9 +1,8 @@
 (module cookie mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            "cookie-sig.ss"
            "cookie-unit.ss")
 
-  (provide-signature-elements net:cookie^)
+  (provide-signature-elements cookie^)
 
-  (define-values/invoke-unit/sig net:cookie^
-    cookie@))
+  (define-values/invoke-unit/infer cookie@))

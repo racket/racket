@@ -15,7 +15,7 @@
 ;;; ------------------------------------------------------------
 
 (module rep mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require (lib "zodiac-sig.ss" "syntax"))
 
@@ -23,16 +23,16 @@
   (require "../sig.ss")
 
   (provide rep@)
-  (define rep@
-    (unit/sig compiler:rep^
+  (define-unit rep@
       (import compiler:library^
 	      compiler:cstructs^
 	      compiler:analyze^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:const^
 	      compiler:vehicle^
 	      compiler:driver^)
+      (export compiler:rep^)
 
       ;;----------------------------------------------------------------------------
       ;; REPRESENTATION (TYPE) LANGUAGE
@@ -230,4 +230,4 @@
 	      (set-closure-code-rep! code struct)
 	      (set-closure-code-alloc-rep! code alloc-struct)))))
 
-      )))
+      ))

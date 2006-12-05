@@ -81,8 +81,8 @@
   ; : identifier -> identifier
   (define (make-mark-binding-stx id)
     #`(case-lambda
-        [() #,(syntax-property id 'stepper-dont-check-for-function #t)]
-        [(v) (set! #,(syntax-property id 'stepper-dont-check-for-function #t) v)]))
+        [() #,id ]
+        [(v) (set! #,id v)]))
   
   (define (mark-bindings mark)
     (map list 
@@ -169,13 +169,13 @@
        (let*-2vals ([kept-vars (binding-set-varref-set-intersect tail-bound free-vars)])
          (if lifting?
              (let*-2vals ([let-bindings (filter (lambda (var) 
-                                                  (case (syntax-property var 'stepper-binding-type)
+                                                  (case (stepper-syntax-property var 'stepper-binding-type)
                                                     ((let-bound macro-bound) #t)
                                                     ((lambda-bound stepper-temp non-lexical) #f)
                                                     (else (error 'make-debug-info 
                                                                  "varref ~a's binding-type info was not recognized: ~a"
                                                                  (syntax-e var)
-                                                                 (syntax-property var 'stepper-binding-type)))))
+                                                                 (stepper-syntax-property var 'stepper-binding-type)))))
                                                 kept-vars)]
                           [lifter-syms (map get-lifted-var let-bindings)])
                (make-full-mark source label (append kept-vars lifter-syms)))

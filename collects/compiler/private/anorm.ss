@@ -30,7 +30,7 @@
 ;;; ------------------------------------------------------------
 
 (module anorm mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
 
@@ -40,15 +40,14 @@
   (require "../sig.ss")
 
   (provide anorm@)
-  (define anorm@
-    (unit/sig
-	compiler:anorm^
-      (import (compiler:option : compiler:option^)
+  (define-unit anorm@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:driver^)
+      (export compiler:anorm^)
 
       (define compiler:a-value?
 	(one-of zodiac:quote-form? zodiac:varref? zodiac:quote-syntax-form?))
@@ -369,4 +368,4 @@
 			      (k wcm))))))]
 
 		     [else (error 'a-normalize "unsupported ~a" ast)]))])
-	  a-normalize)))))
+	  a-normalize))))

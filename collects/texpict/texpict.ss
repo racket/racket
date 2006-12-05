@@ -1,12 +1,13 @@
 
 (module texpict mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require "texpict-sig.ss"
 	   "texpict-unit.ss")
+  (require "private/texpict-sig.ss"
+	   "private/common-sig.ss")
+  (define-values/invoke-unit/infer texpict@)
 
-  (define-values/invoke-unit/sig texpict^
-    texpict@)
-
-  (provide-signature-elements texpict^))
+  (provide-signature-elements texpict-common^
+                              texpict-extra^))
 

@@ -1,5 +1,5 @@
 (module configuration-structures mzscheme
-  (require (lib "unitsig.ss")
+  (require (only (lib "unit.ss") unit?)
            (lib "contract.ss")
            (lib "url.ss" "net"))
   (require "configuration-table-structs.ss"
@@ -8,7 +8,7 @@
   ; configuration is now a unit.  See sig.ss
   ; XXX contract
   (define configuration?
-    unit/sig?)
+    unit?)
   
   ; host = (make-host (listof str) sym string
   ;                   passwords responders timeouts paths)

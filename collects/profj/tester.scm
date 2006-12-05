@@ -2,7 +2,7 @@
   
   (require (lib "mred.ss" "mred")
            (lib "tool.ss" "drscheme")
-           (lib "unitsig.ss")
+           (prefix u: (lib "unit.ss"))
            (lib "framework.ss" "framework")
            (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
@@ -577,9 +577,9 @@
   (define-local-member-name toggle-test-status test-froze-colorer? begin-test-color end-test-color)
   
   (define test-tool@
-    (unit/sig drscheme:tool-exports^
-      (import drscheme:tool^)
-      
+    (u:unit
+      (u:import drscheme:tool^)
+      (u:export drscheme:tool-exports^)
       (define (phase1) (void))
       (define (phase2) (void))
       

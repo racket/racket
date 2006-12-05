@@ -1,7 +1,7 @@
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
            (lib "mred.ss" "mred")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "class.ss")
            "parse.ss"
            "simplify.ss"
@@ -16,13 +16,13 @@
 					     'base-importing-stx))
 
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit 
       (import drscheme:tool^)
+      (export drscheme:tool-exports^)
       
-      (define-values/invoke-unit/sig drscheme:tool-exports^
-	bd:tool@
-	bd
-	drscheme:tool^)
+      (define-values/invoke-unit bd:tool@
+        (import drscheme:tool^)
+        (export (prefix bd: drscheme:tool-exports^)))
 
       (define (phase1) (bd:phase1))
       (define (phase2) 

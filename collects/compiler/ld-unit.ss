@@ -1,6 +1,6 @@
 
 (module ld-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "list.ss"))
 
   (require "sig.ss")
@@ -11,13 +11,13 @@
 
   (provide ld@)
 
-  (define ld@
-    (unit/sig compiler:linker^
+  (define-unit ld@
       (import dynext:compile^
 	      dynext:link^
 	      dynext:file^
-	      (compiler:option : compiler:option^))
-      (rename (link-extension* link-extension))
+	      (prefix compiler:option: compiler:option^))
+      (export (rename compiler:linker^
+                      [link-extension* link-extension]))
 
 
       ;; Copied from library.ss; please fix me!
@@ -308,4 +308,4 @@
 		    (delete-file (build-path dest-dir _loader.o)))
 		  
 		  (printf " [output to \"~a\"]~n" (build-path dest-dir _loader.so)))
-		(printf " [output to \"~a\"]~n" (build-path dest-dir _loader.o)))))))))
+		(printf " [output to \"~a\"]~n" (build-path dest-dir _loader.o))))))))

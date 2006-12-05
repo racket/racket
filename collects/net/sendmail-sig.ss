@@ -1,11 +1,5 @@
-
-(module sendmail-sig mzscheme
-  (require (lib "unitsig.ss"))
-
-  (provide net:sendmail^)
-  
-  (define-signature net:sendmail^
-    (send-mail-message/port
-     send-mail-message
-     (struct no-mail-recipients ()))))
+(module sendmail-sig (lib "a-signature.ss")
+  send-mail-message/port
+  send-mail-message
+  (struct no-mail-recipients ()))
 

@@ -1,6 +1,6 @@
 #cs(module draw-sig mzscheme
      (provide core-draw^ draw^)
-     (require (lib "unitsig.ss"))
+     (require (lib "unit.ss"))
      
      ;; xxx-solid-rect cannot be called xxx-solid-rectangle because that
      ;; interferes with the existing xxx-solid-rectangle name in our unit
@@ -43,5 +43,5 @@
         end-of-time     ; -> World
         ))
      
-     (define-signature draw^ core-draw^))
+     (define-signature draw^ extends core-draw^ ()))
    

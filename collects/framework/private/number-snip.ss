@@ -1,18 +1,15 @@
 
-(module number-snip mzscheme
-  (require (lib "unitsig.ss")
-           "sig.ss"
+(module number-snip (lib "a-unit.ss")
+  (require "sig.ss"
 	   (lib "mred-sig.ss" "mred")
 	   (lib "class.ss")
            (lib "string-constant.ss" "string-constants"))
   
-  (provide number-snip@)
-  
-  (define number-snip@
-    (unit/sig framework:number-snip^
-      (import mred^
-              [preferences : framework:preferences^])
-      (rename [-snip-class% snip-class%])
+  (import mred^
+          [prefix preferences: framework:preferences^])
+  (export (rename framework:number-snip^
+                  [-snip-class% snip-class%]))
+  (init-depend mred^)
       
       ;; make-repeating-decimal-snip : number boolean -> snip
       (define (make-repeating-decimal-snip number e-prefix?)
@@ -518,4 +515,4 @@
       (define (hash-table-bound? ht key)
         (let/ec k
           (hash-table-get ht key (λ () (k #f)))
-          #t)))))
+          #t)))

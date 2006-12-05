@@ -3,8 +3,7 @@
 
 (Section 'pconvert)
 
-(require (lib "unit.ss")
-         (lib "file.ss")
+(require (lib "file.ss")
          (lib "class.ss")
          (lib "pconvert.ss"))
 
@@ -12,7 +11,6 @@
 (quasi-read-style-printing #f)
 
 (define (xl) 1)
-(define (xu) (unit (import) (export)))
 (define (xc) (class object% () (sequence (super-init))))
 
 (let ()
@@ -174,7 +172,6 @@
      (make-pctest null 'empty 'empty 'empty '`() '`() '`() 'empty)
      (make-same-test add1 'add1)
      (make-same-test (void) '(void))
-     (make-same-test (unit (import) (export)) '(unit ...))
      (make-same-test (make-weak-box 12) '(make-weak-box 12))
      (make-same-test (regexp "1") '(regexp "1"))
      (make-same-test (module-path-index-join #f #f) '(module-path-index-join false false))
@@ -190,12 +187,6 @@
      (make-same-test (letrec ([xc-ID-BETTER-NOT-BE-DEFINED (class object% ())]) 
                        xc-ID-BETTER-NOT-BE-DEFINED)
                      '(class ...))
-     (make-same-test xu 'xu)
-     (make-same-test (letrec ([xu (unit (import) (export))]) xu)
-                     '(unit ...))
-     (make-same-test (letrec ([xu-ID-BETTER-NOT-BE-DEFINED (unit (import) (export))]) 
-                       xu-ID-BETTER-NOT-BE-DEFINED)
-                     '(unit ...))
      (make-same-test (lambda (x) x) '(lambda (a1) ...))
      (make-same-test (lambda x x) '(lambda args ...))
      (make-same-test (lambda (a b . c) a) '(lambda (a1 a2 . args) ...))
@@ -360,7 +351,6 @@
   (test-shared (lambda (x) x) '(lambda (a1) ...))
   (test-shared (delay 1) '(delay ...))
   (test-shared (class object% ()) '(class ...))
-  (test-shared (unit (import) (export)) '(unit ...))
   (test-shared (new (class object% (super-new))) '(instantiate (class ...) ...))
   
   (test-shared "abc" "abc")

@@ -1,7 +1,6 @@
 
-(module help-desk mzscheme
-  (require (lib "unitsig.ss")
-           (lib "string-constant.ss" "string-constants")
+(module help-desk (lib "a-unit.ss")
+  (require (lib "string-constant.ss" "string-constants")
            (lib "mred.ss" "mred")
            (lib "external.ss" "browser")
            (lib "help-desk.ss" "help")
@@ -10,15 +9,14 @@
            (lib "list.ss")
            "drsig.ss")
   
-  (provide help-desk@)
+
+   
+      (import [prefix drscheme:frame: drscheme:frame^]
+              [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
+              [prefix drscheme:teachpack: drscheme:teachpack^])
+  (export (rename drscheme:help-desk^
+                  [-add-help-desk-font-prefs add-help-desk-font-prefs]))
   
-  (define help-desk@
-    (unit/sig drscheme:help-desk^
-      (import [drscheme:frame : drscheme:frame^]
-              [drscheme:language-configuration : drscheme:language-configuration/internal^]
-              [drscheme:teachpack : drscheme:teachpack^])
-      
-      (rename [-add-help-desk-font-prefs add-help-desk-font-prefs])
       (define (-add-help-desk-font-prefs b) (add-help-desk-font-prefs b))
       
       ;; : -> string
@@ -190,4 +188,4 @@
       ;; open-url : string -> void
       (define (open-url x) (send-url x))
       
-      (add-help-desk-mixin drscheme-help-desk-mixin))))
+      (add-help-desk-mixin drscheme-help-desk-mixin))

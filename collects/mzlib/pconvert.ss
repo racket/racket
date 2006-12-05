@@ -4,9 +4,8 @@
   (require (only "string.ss" expr->string)
            (only "list.ss" sort)
 	   "etc.ss"
-	   "pconvert-prop.ss")
-  (require "class.ss")
-  (require "unit.ss")
+	   "pconvert-prop.ss"
+           "class.ss")
   
   (provide show-sharing
            constructor-style-printing
@@ -129,7 +128,6 @@
                          (not (procedure? expr))
                          (not (promise? expr))
                          (not (object? expr))
-                         (not (unit? expr))
                          (not (port? expr))
                          (not (class? expr))
                          (object-name expr))
@@ -382,10 +380,6 @@
                                                   ...)]
                                [(void? expr) '(void)]
                                [(promise? expr) '(delay ...)]
-                               [(unit? expr) (build-named 
-                                              expr
-                                              (lambda () 
-                                                '(unit ...)))]
                                [(and (number? expr) (exact? expr))
                                 (let-values ([(whole frac whole-i frac-i) (get-whole/frac expr)])
                                   (cond

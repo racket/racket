@@ -1,7 +1,7 @@
 #cs(module draw mzscheme
   (require (lib "big-draw.ss" "htdp")
            (lib "draw-sig.ss" "htdp")
-           (lib "unitsig.ss"))
+           (lib "unit.ss"))
 
      (define-syntax (draw s)
        (syntax-case s (produce)

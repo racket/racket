@@ -1,7 +1,7 @@
 (module client-gui mzscheme
   (require (lib "mred.ss" "mred")
 	   (lib "class.ss")
-	   (lib "unitsig.ss")
+	   (lib "unit.ss")
 	   (lib "tool.ss" "drscheme")
 	   (lib "etc.ss")
 	   (lib "file.ss")
@@ -641,8 +641,9 @@
        (new handin-frame% [parent parent] [content content]))))
 
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
+      (export drscheme:tool-exports^)
 
       (define phase1 void)
       (define phase2

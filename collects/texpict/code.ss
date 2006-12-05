@@ -3,7 +3,7 @@
 	   (lib "class.ss")
 	   (lib "list.ss")
            (lib "mred.ss" "mred")
-	   (lib "unitsig.ss"))
+	   (lib "unit.ss"))
 
   (provide define-code code^ code-params^ code@)
 
@@ -117,9 +117,9 @@
 	       [(x (... ...)) ,illegal-use-of-once]
 	       [x (get-val)])))]))
   
-  (define code@
-    (unit/sig code^
+  (define-unit code@
       (import code-params^)
+      (export code^)
       
       (define (default-tt s)
 	(text s `(bold . modern) (current-font-size)))
@@ -528,4 +528,4 @@
 					   (tt (format "~s" (syntax-e stx))) ))
 			closes)])))
       
-      )))
+      ))

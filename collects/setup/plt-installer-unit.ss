@@ -1,18 +1,17 @@
 
 (module plt-installer-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "mred-sig.ss" "mred")
            (lib "class.ss")
            (lib "etc.ss")
            "plt-installer-sig.ss"
            (prefix single: "plt-single-installer.ss")
            (lib "string-constant.ss" "string-constants"))
-  
+
   (provide plt-installer@)
-  
-  (define plt-installer@
-    (unit/sig setup:plt-installer^
-      (import mred^)
+  (define-unit plt-installer@
+    (import mred^)
+    (export setup:plt-installer^)
       
       (define on-installer-run
         (make-parameter void))
@@ -129,4 +128,4 @@
                     (printf ">>> Cancelled <<<~n"))
                   (begin-busy-cursor)
                   d))))
-           cleanup-thunk))))))
+           cleanup-thunk)))))

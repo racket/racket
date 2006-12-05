@@ -1,6 +1,6 @@
 
 (module texpict-sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (provide texpict-extra^)
   (define-signature texpict-extra^

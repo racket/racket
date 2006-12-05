@@ -1,14 +1,9 @@
+(module pop3-unit (lib "a-unit.ss")
+  (require (lib "etc.ss")
+           "pop3-sig.ss")
 
-(module pop3-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "etc.ss"))
-
-  (require "pop3-sig.ss")
-
-  (provide net:pop3@)
-  (define net:pop3@
-    (unit/sig net:pop3^
-      (import)
+  (import)
+  (export pop3^)
 
       ;; Implements RFC 1939, Post Office Protocol - Version 3, Myers & Rose
 
@@ -411,5 +406,5 @@
 			       (regexp-match matcher first))
 			     desireds)
 		      (cons first (loop rest))
-		      (loop rest))))))))))
+		      (loop rest))))))))
 

@@ -1,7 +1,7 @@
 
 (module core mzscheme
   (require (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
 	   (lib "file.ss")
 	   (lib "etc.ss")
 	   (lib "contract.ss")
@@ -30,11 +30,11 @@
 
   (define zero-inset (make-sinset 0 0 0 0))
       
-  (define core@
-    (unit/sig core^
-      (import config^ (viewer : viewer^))
-      (rename (local:condense? condense?)
-	      (local:printing? printing?))
+  (define-unit core@
+      (import config^ (prefix viewer: viewer^))
+      (export (rename core^ 
+                      (local:condense? condense?)
+                      (local:printing? printing?)))
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;                    Setup                      ;;
@@ -851,4 +851,4 @@
 				     'done
 				     (begin
 				       (set! done? #t)
-				       time)))))))))))
+				       time))))))))))

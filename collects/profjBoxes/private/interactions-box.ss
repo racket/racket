@@ -7,7 +7,7 @@
    (lib "list.ss")
    (lib "embedded-gui.ss" "embedded-gui")
    (lib "match.ss")
-   (lib "unitsig.ss")
+   (lib "unit.ss")
    (lib "tool.ss" "drscheme")
    (lib "framework.ss" "framework")
    (lib "readerr.ss" "syntax")
@@ -23,10 +23,9 @@
   
   (define-signature interactions-box^ (interactions-box%))
   
-  (define interactions-box@
-    (unit/sig interactions-box^
+  (define-unit interactions-box@
       (import drscheme:tool^ text->syntax-object^)
-      
+      (export interactions-box^)
       (define interactions-box%
         (class* editor-snip% (readable-snip<%>)
           (inherit set-snipclass)
@@ -252,4 +251,4 @@
           (super-new)
           ))
       ))
-  )
+  

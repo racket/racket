@@ -1,8 +1,5 @@
-(module btree mzscheme
-  (require "sig.ss"
-           (lib "unitsig.ss"))
-  
-  (provide btree@)
+(module btree (lib "a-unit.ss")
+  (require "../browser-sig.ss")
   
 ;; Implements a red-black tree with relative indexing along right
 ;; splines. This allows the usual O(log(n)) operations, plus a
@@ -10,10 +7,9 @@
   
 ;; (This is the same data structure as used for lines by MrEd's text%
 ;; class, but that one is implemented in C++.)
-  (define btree@
-    (unit/sig relative-btree^
-      (import)
-      (rename (create-btree make-btree))
+  (import)
+  (export (rename relative-btree^
+                  (create-btree make-btree)))
       
       (define-struct btree (root))
       
@@ -222,4 +218,4 @@
                   (loop (node-right n)
                         here
                         (+ v (node-pos n))))))
-          (cdr start))))))
+          (cdr start))))

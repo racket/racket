@@ -1,13 +1,9 @@
-(module path-utils mzscheme
-  (require (lib "unitsig.ss")
-	   "sig.ss"
+(module path-utils (lib "a-unit.ss")
+  (require "sig.ss"
 	   (lib "mred-sig.ss" "mred"))
   
-  (provide path-utils@)
-  
-  (define path-utils@
-    (unit/sig framework:path-utils^
-      (import)
+  (import)
+  (export framework:path-utils^)
       
       (define (generate-autosave-name name)
         (let-values ([(base name dir?)
@@ -58,5 +54,5 @@
                 [(eq? (system-type) 'windows)
                  (build-path base (bytes->path-element (bytes-append name-bytes #".bak")))]
                 [else
-                 (build-path base (bytes->path-element (bytes-append name-bytes #"~")))]))))))))
+                 (build-path base (bytes->path-element (bytes-append name-bytes #"~")))]))))))
 

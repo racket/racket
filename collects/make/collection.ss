@@ -1,6 +1,6 @@
 
 (module collection mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require (lib "file-sig.ss" "dynext")
 	  (lib "file.ss" "dynext")
@@ -13,12 +13,6 @@
 	  "collection-sig.ss"
 	  "collection-unit.ss")
   
-  (define-values/invoke-unit/sig make:collection^ 
-    make:collection@
-    #f
-    make^
-    dynext:file^
-    compiler:option^
-    compiler^)
+  (define-values/invoke-unit/infer make:collection@)
 
   (provide-signature-elements make:collection^))

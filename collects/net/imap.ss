@@ -1,13 +1,10 @@
-
 (module imap mzscheme
-  (require (lib "unitsig.ss")
-           (lib "contract.ss"))
-  
-  (require "imap-sig.ss"
+  (require (lib "unit.ss")
+           (lib "contract.ss")
+           "imap-sig.ss"
            "imap-unit.ss")
   
-  (define-values/invoke-unit/sig net:imap^
-                                 net:imap@)
+  (define-values/invoke-unit/infer imap@)
   
   (provide/contract
    [imap-get-hierarchy-delimiter (imap-connection? . -> . bytes?)]

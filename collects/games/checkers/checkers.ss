@@ -7,7 +7,7 @@
            (prefix gl- (lib "sgl.ss" "sgl"))
            (lib "gl.ss" "sgl")
            (lib "array.ss" "srfi" "25")
-           (lib "unit.ss")
+           (lib "unit200.ss")
            (lib "include-bitmap.ss" "mrlib")
            "honu-bitmaps.ss")
   

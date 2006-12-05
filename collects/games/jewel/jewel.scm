@@ -3,7 +3,7 @@
 
 (module jewel mzscheme
 
-  (require (lib "unit.ss")
+  (require (lib "unit200.ss")
 	   (lib "string.ss")
            (lib "class.ss")
 	   (lib "file.ss")

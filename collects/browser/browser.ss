@@ -1,5 +1,5 @@
 (module browser mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "mred.ss" "mred")
            (lib "mred-sig.ss" "mred")
            (lib "plt-installer-sig.ss" "setup")
@@ -10,10 +10,6 @@
            "browser-sig.ss"
            "browser-unit.ss")
   
-  (provide-signature-elements browser^)
+  (provide-signature-elements hyper^ html-export^ bullet-export^)
   
-  (define-values/invoke-unit/sig browser^ browser@ #f
-                                 setup:plt-installer^
-                                 mred^
-                                 net:tcp^
-                                 net:url^))
+  (define-values/invoke-unit/infer browser@))

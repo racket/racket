@@ -26,14 +26,12 @@
 ;; Commentary:
 
 (module qp mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss")
+           "qp-sig.ss"
+           "qp-unit.ss")
 
-  (require "qp-sig.ss")
-  (require "qp-unit.ss")
+  (define-values/invoke-unit/infer qp@)
 
-  (define-values/invoke-unit/sig net:qp^
-    net:qp@)
-
-  (provide-signature-elements net:qp^))
+  (provide-signature-elements qp^))
 
 ;;; qp.ss ends here

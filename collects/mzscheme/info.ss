@@ -1,4 +1,4 @@
 
 (module info (lib "infotab.ss" "setup")
   (define name "MzScheme")
-  (define version '(300)))
+  (define version '(370)))

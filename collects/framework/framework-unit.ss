@@ -1,10 +1,8 @@
-
 (module framework-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "mred-sig.ss" "mred"))
+  (require (lib "unit.ss")
+           (lib "mred-sig.ss" "mred"))
 
-  (require "framework-sig.ss"
-	   "private/sig.ss"
+  (require "private/sig.ss"
            "private/number-snip.ss"
            "private/comment-box.ss"
            "private/application.ss"
@@ -33,78 +31,69 @@
 	   "private/main.ss"
            "private/mode.ss")
 
-  (provide framework@)
+  (provide framework-separate@ framework@)
 
-  (define framework@
-    (compound-unit/sig
-      (import [mred : mred^])
-      (link [application : framework:application^ (application@)]
-	    [version : framework:version^ (version@)]
-	    [color-model : framework:color-model^ (color-model@ )]
-	    [exn : framework:exn^ (exn@)]
-	    [mode : framework:mode^ (mode@)]
-            [exit : framework:exit^ (exit@ mred preferences)]
-	    [menu : framework:menu^ (menu@ mred preferences)]
-	    [preferences : framework:preferences^ (preferences@ mred exn exit panel frame)]
-            [number-snip : framework:number-snip^ (number-snip@ mred preferences)]
-	    [autosave : framework:autosave^ (autosave@ mred exit preferences frame
-                                                     scheme editor text finder group)]
-	    [path-utils : framework:path-utils^ (path-utils@)]
-	    [icon : framework:icon^ (icon@ mred)]
-
-	    [keymap : framework:keymap^
-		    (keymap@ mred preferences finder handler frame editor)]
-	    [editor : framework:editor^
-		    (editor@ mred autosave finder path-utils keymap icon
-			     preferences text pasteboard frame handler)]
-	    [pasteboard : framework:pasteboard^ (pasteboard@ mred editor)]
-	    [text : framework:text^
-		  (text@ mred icon editor preferences keymap 
-                         color-model frame scheme number-snip)]
-            [color : framework:color^ (color@ preferences icon mode text color-prefs scheme)]
-            [color-prefs : framework:color-prefs^ (color-prefs@ preferences editor panel canvas)]
-            [comment-box : framework:comment-box^
-                         (comment-box@ text scheme keymap)]
-	    [finder : framework:finder^ (finder@ mred preferences keymap)]
-	    [group : framework:group^ 
-                   (group@ mred application frame preferences text canvas menu)]
-	    [canvas : framework:canvas^ (canvas@ mred preferences frame text)]
-	    [panel : framework:panel^ (panel@ icon mred)]
-	    [frame : framework:frame^ 
-		   (frame@ mred group preferences icon handler application panel
-                           finder keymap text pasteboard editor canvas menu scheme exit
-                           comment-box)]
-	    [handler : framework:handler^
-		     (handler@ mred finder group text preferences frame)]
-
-	    [scheme : framework:scheme^ 
-		    (scheme@ mred preferences 
-                           icon keymap text editor frame comment-box mode color color-prefs)]
-	    [main : framework:main^ (main@ mred preferences exit group handler editor color-prefs scheme)])
-      (export (unit number-snip)
-              (unit menu)
-              (unit application)
-              (unit version)
-              (unit color-model)
-              (unit exn)
-              (unit exit)
-              (unit preferences)
-              (unit autosave)
-              (unit handler) 
-              (unit keymap)
-              (unit path-utils)
-              (unit icon)
-              (unit editor)
-              (unit pasteboard)
-              (unit text)
-              (unit color)
-              (unit color-prefs)
-              (unit comment-box)
-              (unit finder)
-              (unit group)
-              (unit canvas)
-              (unit panel)
-              (unit frame)
-              (unit scheme)
-              (unit mode)
-              (unit main)))))
+  (define-compound-unit/infer framework-separate@
+    (import mred^)
+    (export framework:application^ 
+            framework:version^
+            framework:color-model^
+            framework:exn^
+	    framework:mode^
+            framework:exit^
+            framework:menu^
+            framework:preferences^
+            framework:number-snip^
+            framework:autosave^
+            framework:path-utils^
+            framework:icon^
+	    framework:keymap^
+            framework:editor^
+            framework:pasteboard^
+            framework:text^
+            framework:color^
+            framework:color-prefs^
+            framework:comment-box^
+            framework:finder^
+            framework:group^ 
+	    framework:canvas^
+            framework:panel^
+	    framework:frame^ 
+	    framework:handler^
+            framework:scheme^ 
+            framework:main^)
+    (link
+     application@ version@ color-model@ exn@ mode@ exit@ menu@
+     preferences@ number-snip@ autosave@ path-utils@ icon@ keymap@
+     editor@ pasteboard@ text@ color@ color-prefs@ comment-box@ 
+     finder@ group@ canvas@ panel@ frame@ handler@ scheme@ main@))
+  
+  (define-unit/new-import-export framework@ (import mred^) (export framework^)
+    (((prefix application: framework:application^)
+      (prefix version: framework:version^)
+      (prefix color-model: framework:color-model^)
+      (prefix exn: framework:exn^)
+      (prefix mode: framework:mode^)
+      (prefix exit: framework:exit^)
+      (prefix menu: framework:menu^)
+      (prefix preferences: framework:preferences^)
+      (prefix number-snip: framework:number-snip^)
+      (prefix autosave: framework:autosave^)
+      (prefix path-utils: framework:path-utils^)
+      (prefix icon: framework:icon^)
+      (prefix keymap: framework:keymap^)
+      (prefix editor: framework:editor^)
+      (prefix pasteboard: framework:pasteboard^)
+      (prefix text: framework:text^)
+      (prefix color: framework:color^)
+      (prefix color-prefs: framework:color-prefs^)
+      (prefix comment-box: framework:comment-box^)
+      (prefix finder: framework:finder^)
+      (prefix group: framework:group^)
+      (prefix canvas: framework:canvas^)
+      (prefix panel: framework:panel^)
+      (prefix frame: framework:frame^)
+      (prefix handler: framework:handler^)
+      (prefix scheme: framework:scheme^)
+      (prefix main: framework:main^))
+     framework-separate@ mred^)))

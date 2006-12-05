@@ -1,15 +1,11 @@
-(module menu mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module menu (lib "a-unit.ss")
+  (require (lib "class.ss")
 	   "sig.ss"
 	   (lib "mred-sig.ss" "mred"))
   
-  (provide menu@)
-  
-  (define menu@
-    (unit/sig framework:menu^
-      (import mred^
-              [preferences : framework:preferences^])
+  (import mred^
+          [prefix preferences: framework:preferences^])
+  (export framework:menu^)
       
       (define can-restore<%>
         (interface (selectable-menu-item<%>)
@@ -49,4 +45,4 @@
       
       (define can-restore-menu-item% (can-restore-mixin menu-item%))
       (define can-restore-checkable-menu-item% (can-restore-mixin checkable-menu-item%))
-      (define can-restore-underscore-menu% (can-restore-underscore-mixin menu%)))))
+      (define can-restore-underscore-menu% (can-restore-underscore-mixin menu%)))

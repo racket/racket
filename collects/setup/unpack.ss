@@ -5,7 +5,6 @@
 	   (lib "inflate.ss")
 	   (lib "file.ss")
            (lib "list.ss")
-	   (lib "unit.ss")
 	   (lib "base64.ss" "net")
 	   (lib "getinfo.ss" "setup")
 	   "dirs.ss")
@@ -144,7 +143,7 @@
             (let* ([n (make-namespace)]
                    [info (let ([orig (current-namespace)])
                            (parameterize ([current-namespace n])
-                             (namespace-require '(lib "unit.ss"))
+                             (namespace-require '(lib "unit200.ss"))
                              (eval (read p))))])
               (unless (and (procedure? info)
                            (procedure-arity-includes? info 2))
@@ -286,7 +285,7 @@
                     (print-status (format "Unpacking ~a from ~a" name archive))
                     (let ([u (eval (read p) n)])
                       (unless (eval `(unit? ,u) n)
-                        (error "expected a unit, got" u))
+                        (error "expected a v200 unit, got" u))
                       (make-directory* (car target-dir-info))
                       (let ([unmztar (lambda (filter)
                                        (unmztar p filter 

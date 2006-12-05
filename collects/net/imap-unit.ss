@@ -1,14 +1,10 @@
-
-(module imap-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "list.ss")
+(module imap-unit (lib "a-unit.ss")
+  (require (lib "list.ss")
 	   "imap-sig.ss"
 	   "private/rbtree.ss")
   
-  (provide net:imap@)
-  (define net:imap@
-    (unit/sig net:imap^
-      (import)
+  (import)
+  (export imap^)
 
       (define debug-via-stdio? #f)
 
@@ -572,4 +568,4 @@
 				    (cons 
 				     (list flags name)
 				     sub-folders))))))))
-          (reverse sub-folders))))))
+          (reverse sub-folders))))

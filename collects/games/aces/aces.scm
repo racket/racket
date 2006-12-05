@@ -9,7 +9,7 @@ possible to remap single click (instead of double click)?
   
   (require (lib "cards.ss" "games" "cards")
            (lib "class.ss")
-           (lib "unit.ss")
+           (lib "unit200.ss")
            (lib "mred.ss" "mred")
            (lib "list.ss")
            (lib "string-constant.ss" "string-constants")

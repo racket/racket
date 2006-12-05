@@ -25,15 +25,12 @@
 ;;
 ;; Commentary:
 
-(module qp-unit mzscheme
+(module qp-unit (lib "a-unit.ss")
   (require "qp-sig.ss"
-           (lib "unitsig.ss")
            (lib "etc.ss"))
 
-  (provide net:qp@)
-  (define net:qp@
-    (unit/sig net:qp^
-      (import)
+  (import)
+  (export qp^)
       
       ;; Exceptions:
       ;; String or input-port expected:
@@ -171,6 +168,6 @@
 	  (vector-set! hex-values (+ i 65) (+ 10 i))
 	  (vector-set! hex-values (+ i 97) (+ 10 i))
 	  (vector-set! hex-bytes (+ 10 i) (+ i 65))
-	  (loop (add1 i)))))))
+	  (loop (add1 i)))))
 
 ;;; qp-unit.ss ends here

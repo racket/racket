@@ -11,7 +11,7 @@
 
 (module url-unit mzscheme
   (require (lib "file.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "port.ss")
            (lib "string.ss")
            (lib "list.ss")
@@ -26,9 +26,9 @@
   (define url:os-type (system-type))
   (define (set-url:os-type! new) (set! url:os-type new))
 
-  (define url@
-    (unit/sig net:url^
-      (import net:tcp^)
+  (define-unit url@
+    (import tcp^)
+    (export url^)
 
       (define-struct (url-exception exn:fail) ())
 
@@ -445,4 +445,4 @@
                    (apply string-append (reverse! r))
                    (loop (cdr strings) (list* (car strings) sep r))))]))
 
-      )))
+      ))

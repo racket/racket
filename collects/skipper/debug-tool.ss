@@ -5,7 +5,7 @@
            (prefix srfi: (lib "search.ss" "srfi" "1"))
            ;(lib "math.ss")
            (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            ;(lib "contract.ss")
            (lib "mred.ss" "mred")
            (prefix drscheme:arrow: (lib "arrow.ss" "drscheme"))
@@ -20,9 +20,9 @@
   (provide tool@)
   
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
-      
+      (export drscheme:tool-exports^)
       (define phase1 void)
       (define phase2 void)
       

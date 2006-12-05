@@ -9,7 +9,7 @@
            (only (lib "drsig.ss" "drscheme" "private") drscheme:language-configuration^)
            (lib "framework.ss" "framework")
            (lib "mred.ss" "mred")
-           (lib "unitsig.ss") 
+           (lib "unit.ss") 
            (lib "etc.ss")
            (lib "class.ss")
 	   (lib "string-constant.ss" "string-constants")
@@ -22,9 +22,9 @@
   (define INSERT-JAVA-UNION "Insert Java Union")
   
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
-      
+      (export drscheme:tool-exports^) 
       (define (phase1) (void))
       (define (phase2) (void))
       

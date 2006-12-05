@@ -21,7 +21,7 @@
 ;;; ------------------------------------------------------------
 
 (module lift mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
 
@@ -31,12 +31,11 @@
   (require "../sig.ss")
 
   (provide lift@)
-  (define lift@
-    (unit/sig compiler:lift^
-      (import (compiler:option : compiler:option^)
+  (define-unit lift@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:known^
 	      compiler:top-level^
@@ -44,6 +43,7 @@
 	      compiler:const^
 	      compiler:closure^
 	      compiler:driver^)
+      (export compiler:lift^)
 
       (define lifting-allowed? #t)
       (define mutual-lifting-allowed? #t)
@@ -618,4 +618,4 @@
 
 	    (set! globals empty-set)
 	    (let ([ast (lift! ast code)])
-	      (cons ast globals))))))))
+	      (cons ast globals)))))))

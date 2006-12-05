@@ -22,7 +22,7 @@
 # define GOEXE L"mred.exe"
 # define sGOEXE "mred.exe"
 # define GOEXE3M L"mred3m.exe"
-# define WAITTILLDONE 0
+# define WAITTILDONE 0
 #endif
 
 #ifdef MZSTART

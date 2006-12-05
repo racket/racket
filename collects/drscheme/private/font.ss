@@ -1,5 +1,5 @@
 (module font mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "class.ss")
            "drsig.ss"
            (lib "mred.ss" "mred")
@@ -14,10 +14,10 @@
   
   (provide font@)
   
-  (define font@
-    (unit/sig drscheme:font^
-      (import [drscheme:language-configuration : drscheme:language-configuration/internal^])
-      
+  (define-unit font@
+    (import [prefix drscheme:language-configuration: drscheme:language-configuration/internal^])
+    (export drscheme:font^)
+  
       (define (setup-preferences)
         (preferences:add-panel
          (list (string-constant font-prefs-panel-title)
@@ -185,4 +185,4 @@
              (send options-panel stretchable-height #f)
              (send options-panel set-alignment 'center 'top)
              (send text lock #t)
-             main)))))))
+             main))))))

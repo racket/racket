@@ -17,7 +17,7 @@
 ;;; ------------------------------------------------------------
 
 (module closure mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
 
@@ -27,16 +27,15 @@
   (require "../sig.ss")
 
   (provide closure@)
-  (define closure@
-    (unit/sig
-	compiler:closure^
-      (import (compiler:option : compiler:option^)
+  (define-unit closure@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:const^
 	      compiler:driver^)
+      (export compiler:closure^)
 
       (define compiler:closure-list null)
       (define compiler:add-closure!
@@ -281,4 +280,4 @@
 			ast 
 			(format
 			 "closure-expression: form not supported: ~a" ast))]))])
-	  (lambda (ast) (transform! ast)))))))
+	  (lambda (ast) (transform! ast))))))

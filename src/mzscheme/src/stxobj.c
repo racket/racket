@@ -133,7 +133,7 @@ typedef struct Module_Renames {
 } Module_Renames;
 
 typedef struct Scheme_Cert {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso;
   Scheme_Object *mark;
   Scheme_Object *modidx;
   Scheme_Object *insp;
@@ -150,6 +150,9 @@ typedef struct Scheme_Cert {
   int depth;
   struct Scheme_Cert *next;
 } Scheme_Cert;
+
+#define CERT_NO_KEY(c) (MZ_OPT_HASH_KEY(&(c)->iso) & 0x1)
+#define CERT_SET_NO_KEY(c) (MZ_OPT_HASH_KEY(&(c)->iso) |= 0x1)
 
 /* Certs encoding:
     - NULL: no inactive or active certs; 
@@ -1803,13 +1806,17 @@ static Scheme_Cert *cons_cert(Scheme_Object *mark, Scheme_Object *modidx,
   Scheme_Cert *cert;
 
   cert = MALLOC_ONE_RT(Scheme_Cert);
-  cert->so.type = scheme_certifications_type;
+  cert->iso.so.type = scheme_certifications_type;
   cert->mark = mark;
   cert->modidx = modidx;
   cert->insp = insp;
   cert->key = key;
   cert->next = next_cert;
   cert->depth = (next_cert ? next_cert->depth + 1 : 1);
+
+  if (!key && (!next_cert || CERT_NO_KEY(next_cert))) {
+    CERT_SET_NO_KEY(cert);
+  }
 
   return cert;
 }
@@ -1905,7 +1912,7 @@ static int cert_in_chain(Scheme_Object *mark, Scheme_Object *key, Scheme_Cert *c
 
 static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Object *use_key, int active)
 {
-  Scheme_Cert *orig_certs, *cl, *now_certs;
+  Scheme_Cert *orig_certs, *cl, *now_certs, *next_certs;
   Scheme_Stx *stx = (Scheme_Stx *)o, *res;
   Scheme_Object *pr;
   int copy_on_write;
@@ -1945,7 +1952,8 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
     orig_certs = INACTIVE_CERTS(stx);
   now_certs = orig_certs;
   
-  for (; certs; certs = certs->next) {
+  for (; certs; certs = next_certs) {
+    next_certs = certs->next;
     if (!cert_in_chain(certs->mark, use_key, now_certs)) {
       if (copy_on_write) {
 	res = (Scheme_Stx *)scheme_make_stx(stx->val, 
@@ -1964,8 +1972,13 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
 	stx = res;
 	copy_on_write = 0;
       }
-      cl = cons_cert(certs->mark, certs->modidx, certs->insp, use_key, 
-		     active ? ACTIVE_CERTS(stx) : INACTIVE_CERTS(stx));
+      if (!now_certs && !use_key && CERT_NO_KEY(certs)) {
+        cl = certs;
+        next_certs = NULL;
+      } else {
+        cl = cons_cert(certs->mark, certs->modidx, certs->insp, use_key, 
+                       active ? ACTIVE_CERTS(stx) : INACTIVE_CERTS(stx));
+      }
       now_certs = cl;
       if (!active) {
 	SCHEME_CDR(stx->certs) = (Scheme_Object *)cl;

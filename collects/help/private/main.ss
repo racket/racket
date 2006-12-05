@@ -1,6 +1,5 @@
-(module main mzscheme
-  (require (lib "unitsig.ss")
-           (lib "sig.ss" "web-server")
+(module main (lib "a-unit.ss")
+  (require (lib "sig.ss" "web-server")
            (lib "framework.ss" "framework")
            (lib "mred.ss" "mred")
            (lib "class.ss")
@@ -11,12 +10,9 @@
            (prefix home: "../servlets/home.ss")
            "sig.ss")
   
-  (provide main@)
+  (import)
+  (export main^)
   
-  (define main@
-    (unit/sig main^
-      (import)
-      
       ;; where should the pref stuff really go?
       (preferences:set-default 'drscheme:help-desk:last-url-string "" string?)
       (preferences:set-default 'drscheme:help-desk:frame-width 350 number?)
@@ -170,4 +166,4 @@
                       (close-output-port out)))
                    (render-html-to-text in text #f #t))))
                     
-             vp)))))))
+             vp)))))

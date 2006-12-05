@@ -1,14 +1,11 @@
 
-(module common-unit mzscheme
-  (require (lib "unitsig.ss")
-           (lib "etc.ss"))
+(module common-unit (lib "a-unit.ss")
+  (require (lib "etc.ss"))
 
   (require "common-sig.ss")
 
-  (provide common@)
-  (define common@
-    (unit/sig ((open texpict-common^) (open texpict-internal^))
-      (import texpict-common-setup^)
+  (import texpict-common-setup^)
+  (export texpict-common^ texpict-internal^)
 
       (define default-seg 5)
       (define recordseplinespace 4)
@@ -954,4 +951,4 @@
 		  [(prog)
 		   `((prog ,(cadr s) ,(caddr s)))]
 		  [else (error 'pict->commands "bad tag: ~s" tag)])))))
-      )))
+      )

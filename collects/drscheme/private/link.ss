@@ -8,7 +8,7 @@
            "module-language.ss"
            "teachpack.ss"
 	   "tools.ss"
-           (lib "unitsig.ss")
+           (lib "unit.ss")
 	   "language.ss"
            "language-configuration.ss"
            "drsig.ss"
@@ -23,56 +23,36 @@
            "help-desk.ss")
   (provide drscheme@)
   
-  (define drscheme@
-    (compound-unit/sig
-      (import)
-      (link [init : drscheme:init^ (init@)]
-            [tools : drscheme:tools^ 
-                   (tools@ frame unit rep get/extend language
-                           (language-configuration : drscheme:language-configuration^)
-                           help-desk init debug eval teachpack modes)]
-            [modes : drscheme:modes^ (modes@)]
-            [text : drscheme:text^ (text@)]
-            [teachpack : drscheme:teachpack^ (teachpack@)]
-            [eval : drscheme:eval^ (eval@ language-configuration rep init language teachpack)]
-            [frame : drscheme:frame^ (frame@ unit app help-desk multi-file-search init)]
-            [rep : drscheme:rep^
-                 (rep@ init language-configuration language app 
-                     frame unit text help-desk teachpack debug eval)]
-            [language : drscheme:language^ (language@ debug teachpack tools help-desk)]
-            [module-overview : drscheme:module-overview^ 
-                             (module-overview@ frame eval language-configuration language)]
-            [unit : drscheme:unit^ 
-                  (unit@ help-desk app frame text rep language-configuration language
-                       get/extend teachpack module-overview tools eval init
-                       module-language modes)]
-            [debug : drscheme:debug^
-                   (debug@ rep frame unit language language-configuration init)]
-            [multi-file-search : drscheme:multi-file-search^ (multi-file-search@ frame unit)]
-            [get/extend : drscheme:get/extend^ (get-extend@ unit frame rep debug)]
-            [language-configuration : drscheme:language-configuration/internal^ 
-                                    (language-configuration@ unit rep teachpack
-                                                           init language app
-                                                           tools help-desk)]
-            [font : drscheme:font^ (font@ language-configuration)]
-            [module-language : drscheme:module-language^ 
-                             (module-language@ language-configuration language unit rep)]
-            [help-desk : drscheme:help-desk^ (help-desk@ frame language-configuration teachpack)]
-	    [app : drscheme:app^ (app@ unit frame language-configuration help-desk tools)]
-            [main : () (main@ 
-                        app unit get/extend language-configuration language teachpack
-                        module-language tools debug frame font
-                        modes
-                        help-desk)])
-      (export
-       (unit debug drscheme:debug)
-       (unit unit drscheme:unit)
-       (unit rep drscheme:rep)
-       (unit frame drscheme:frame)
-       (unit get/extend drscheme:get/extend)
-       (unit language-configuration drscheme:language-configuration)
-       (unit language drscheme:language)
-       (unit help-desk drscheme:help-desk)
-       (unit eval drscheme:eval)
-       (unit teachpack drscheme:teachpack)
-       (unit modes drscheme:modes)))))
+  
+(define-compound-unit/infer drscheme-unit@
+    (import)
+    (export drscheme:debug^
+            drscheme:unit^
+            drscheme:rep^
+            drscheme:frame^
+            drscheme:get/extend^
+            drscheme:language-configuration^
+            drscheme:language^
+            drscheme:help-desk^
+            drscheme:eval^
+            drscheme:teachpack^
+            drscheme:modes^)
+    (link init@ tools@ modes@ text@ teachpack@ eval@ frame@ rep@ language@
+          module-overview@ unit@ debug@ multi-file-search@ get-extend@
+          language-configuration@ font@ module-language@ help-desk@ app@ main@))
+  
+  (define-unit/new-import-export drscheme@
+    (import) (export drscheme:tool^)
+    (((prefix drscheme:debug: drscheme:debug^)
+      (prefix drscheme:unit: drscheme:unit^)
+      (prefix drscheme:rep: drscheme:rep^)
+      (prefix drscheme:frame: drscheme:frame^)
+      (prefix drscheme:get/extend: drscheme:get/extend^)
+      (prefix drscheme:language-configuration: drscheme:language-configuration^)
+      (prefix drscheme:language: drscheme:language^)
+      (prefix drscheme:help-desk: drscheme:help-desk^)
+      (prefix drscheme:eval: drscheme:eval^)
+      (prefix drscheme:teachpack: drscheme:teachpack^)
+      (prefix drscheme:modes: drscheme:modes^))
+     drscheme-unit@)))
+      

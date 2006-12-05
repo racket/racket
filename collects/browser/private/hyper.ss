@@ -28,10 +28,8 @@ A test case:
 	 #f))
 |#
 
-(module hyper mzscheme
-  (require (lib "unitsig.ss")
-           (lib "class.ss")
-           "sig.ss"
+(module hyper (lib "a-unit.ss")
+  (require (lib "class.ss")
            "../browser-sig.ss"
            (lib "file.ss")
            (lib "list.ss")
@@ -45,15 +43,14 @@ A test case:
            (lib "string-constant.ss" "string-constants")
            (lib "plt-installer-sig.ss" "setup"))
   
-  (provide hyper@)
   
-  (define hyper@
-    (unit/sig hyper^
-      (import html^
-              mred^
-              setup:plt-installer^
-              net:url^)
-      
+  (import html^
+          mred^
+          setup:plt-installer^
+          url^)
+  (export hyper^)
+  (init-depend mred^)
+  
       (define-struct (exn:file-saved-instead exn) (pathname))
       (define-struct (exn:cancelled exn) ())
       (define-struct (exn:tcp-problem exn) ())
@@ -1158,4 +1155,4 @@ A test case:
         (eq? (car a) (car b)))
       
       (define (open-url file)
-        (make-object hyper-frame% file (string-constant browser) #f 500 450)))))
+        (make-object hyper-frame% file (string-constant browser) #f 500 450)))

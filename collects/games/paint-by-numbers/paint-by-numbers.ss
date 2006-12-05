@@ -7,7 +7,7 @@
            "../show-help.ss"
            (lib "framework.ss" "framework")
            (lib "class.ss")
-           (lib "unit.ss")
+           (lib "unit200.ss")
            (lib "pretty.ss")
            (lib "list.ss")
            (lib "mred.ss" "mred"))

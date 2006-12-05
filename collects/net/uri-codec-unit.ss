@@ -167,21 +167,17 @@ JALQefhDMCATcl2/bZL0bw==
 ;; Draws inspiration from encode-decode.scm by Kurt Normark and a code
 ;; sample provided by Eli Barzilay
 
-(module uri-codec-unit mzscheme
+(module uri-codec-unit (lib "a-unit.ss")
 
-  (require (lib "unitsig.ss")
-           (lib "match.ss")
+  (require (lib "match.ss")
            (lib "string.ss")
            (lib "list.ss")
            (lib "etc.ss")
            "uri-codec-sig.ss")
 
-  (provide uri-codec@)
-
-  (define uri-codec@
-    (unit/sig net:uri-codec^
-      (import)
-
+  (import)
+  (export uri-codec^)
+  
       (define (self-map-char ch) (cons ch ch))
       (define (self-map-chars str) (map self-map-char (string->list str)))
 
@@ -375,6 +371,6 @@ JALQefhDMCATcl2/bZL0bw==
                             (raise-type-error 'current-alist-separator-mode
                                               "'amp, 'semi, or 'amp-or-semi"
                                               s))
-                          s))))))
+                          s))))
 
 ;;; uri-codec-unit.ss ends here

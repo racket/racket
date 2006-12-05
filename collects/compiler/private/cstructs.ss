@@ -5,7 +5,7 @@
 ;; Mostly structure definitions, mostly for annotations.
 
 (module cstructs mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
 
@@ -15,11 +15,11 @@
   (require "../sig.ss")
 
   (provide cstructs@)
-  (define cstructs@
-    (unit/sig compiler:cstructs^
+  (define-unit cstructs@
       (import compiler:library^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^)
+      (export compiler:cstructs^)
 
       ;;----------------------------------------------------------------------------
       ;; VARREF ATTRIBUTES
@@ -226,4 +226,4 @@
       (define-struct (compiler:error-msg compiler:message) ())
       (define-struct (compiler:fatal-error-msg compiler:message) ())
       (define-struct (compiler:internal-error-msg compiler:message) ())
-      (define-struct (compiler:warning-msg compiler:message) ()))))
+      (define-struct (compiler:warning-msg compiler:message) ())))

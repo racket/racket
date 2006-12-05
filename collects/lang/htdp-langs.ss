@@ -16,7 +16,7 @@ tracing todo:
            (prefix tr: (lib "stacktrace.ss" "trace"))
            (lib "pretty.ss")
            (prefix pc: (lib "pconvert.ss"))
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "class.ss")
            (lib "list.ss")
            (lib "file.ss")
@@ -48,9 +48,9 @@ tracing todo:
   (define init-eventspace (current-eventspace))
   
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit 
       (import drscheme:tool^)
-
+      (export drscheme:tool-exports^)
       (define-local-member-name
         get-tracing-text
         show-tracing
@@ -693,7 +693,8 @@ tracing todo:
             (let ([v (hash-table-get ht key)])
               (set-car! v #t)))))
       
-      (define-values/invoke-unit/sig et:stacktrace^ et:stacktrace@ et et:stacktrace-imports^)
+      (define-values/invoke-unit et:stacktrace@
+        (import et:stacktrace-imports^) (export (prefix et: et:stacktrace^)))
 
       (define calltrace-key #`(quote #,(gensym 'drscheme-calltrace-key)))
       
@@ -746,7 +747,8 @@ tracing todo:
 			  ;;  matters, again, for infinite loops)
 			  (semaphore-wait sema)))))))))))
 
-      (define-values/invoke-unit/sig tr:stacktrace^ tr:stacktrace@ tr tr:stacktrace-imports^)
+      (define-values/invoke-unit tr:stacktrace@
+        (import tr:stacktrace-imports^) (export (prefix tr: tr:stacktrace^)))
       
       ;; add-annotation : boolean (sexp -> value) -> sexp -> value
       ;; adds debugging and test coverage information to `sexp' and calls `oe'
@@ -846,7 +848,7 @@ tracing todo:
             (cond
               [(eq? tracing-visible? (send new get-tracing-visible?))
                (void)]
-              [(send new tracing-visible?)
+              [(send new get-tracing-visible?)
                (show-tracing)]
               [else
                (hide-tracing)]))

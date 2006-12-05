@@ -1,6 +1,6 @@
 
 (module compile-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "include.ss")
 	   (lib "process.ss")
 	   (lib "sendevent.ss")
@@ -11,9 +11,9 @@
 
   (provide dynext:compile@)
 
-  (define dynext:compile@
-    (unit/sig dynext:compile^ 
+  (define-unit dynext:compile@
       (import)
+      (export dynext:compile^)
       
       (define (get-unix-compile)
 	(or (find-executable-path "gcc" #f)
@@ -289,4 +289,5 @@
       (define compile-extension (make-compile-extension
 				 current-extension-compiler-flags))
       (define preprocess-extension (make-compile-extension
-				    current-extension-compiler-flags)))))
+				    current-extension-compiler-flags))))
+

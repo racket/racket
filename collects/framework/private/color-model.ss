@@ -1,16 +1,11 @@
-(module color-model mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module color-model (lib "a-unit.ss")
+  (require (lib "class.ss")
 	   "sig.ss"
 	   (lib "mred-sig.ss" "mred")
 	   (lib "list.ss"))
 
-  (provide color-model@)
-
-  (define color-model@
-    (unit/sig framework:color-model^
-      (import)
-
+  (import)
+  (export framework:color-model^)
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;;                                 ;;;
   ;;;           matrix ops            ;;;
@@ -270,4 +265,4 @@
       ;; (print-struct #t)
       ;; (xyz->luv (make-xyz 95.0 100.0 141.0))
       ;; (xyz->luv (make-xyz 60.0 80.0 20.0))
-      )))
+      )

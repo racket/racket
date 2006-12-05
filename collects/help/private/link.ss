@@ -2,7 +2,7 @@
   (require (lib "web-server-unit.ss" "web-server")
            (lib "sig.ss" "web-server")
            
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            
            (lib "tcp-sig.ss" "net")
            (lib "url-sig.ss" "net")
@@ -14,7 +14,7 @@
            (lib "plt-installer-sig.ss" "setup")
            (lib "plt-installer.ss" "setup")   
 
-           (lib "mred.ss" "mred")
+           (lib "mred-unit.ss" "mred")
            (lib "mred-sig.ss" "mred")
            
            "tcp-intercept.ss"
@@ -24,34 +24,26 @@
            "main.ss"
            "config.ss")
   
-  (define help-desk@
-    (compound-unit/sig
-      (import [plt-installer : setup:plt-installer^]
-              [mred : mred^]
-              [real-tcp : net:tcp^])
-      (link
-       [config : web-config^ (config)]
-       [real-url : net:url^ (url@ real-tcp)]
-       [web-server : web-server^ (web-server@ real-tcp config)]
-       
-       [ic-tcp : net:tcp^ (tcp-intercept@ web-server)]
-       [pre-ic-url : net:url^ (url@ ic-tcp)]
-       [ic-url : net:url^ (url-intercept@ pre-ic-url)]
-       [browser : browser^ (browser@ plt-installer mred ic-tcp ic-url)]
-       [gui : gui^ (gui@ browser ic-url)]
+  (define-unit-from-context inst@ setup:plt-installer^)
+  (define-unit-from-context real-tcp@ tcp^)
+  (define-unit-binding config@ config (import) (export web-config^))
+  
+  (define-compound-unit/infer help-desk@
+    (import)
+    (export gui^ main^ web-server^)
+    (link inst@
+          standard-mred@
+          (((real-tcp : tcp^)) real-tcp@)
+          config@
+          (((real-url : url^)) url@ real-tcp)
+          (() web-server@ real-tcp)
+          (((ic-tcp : tcp^)) tcp-intercept@)
+          (((pre-ic-url : url^)) url@ ic-tcp)
+          (((ic-url : url^)) url-intercept@ pre-ic-url)
+          (() browser@ ic-tcp ic-url)
+          (() gui@ ic-url)
+          main@))
 
-       [main : main^ (main@)])
-      (export (open gui)
-              (open main)
-              (open web-server))))
-  
-  (define-values/invoke-unit/sig ((open gui^) (open web-server^) (open main^))
-                                 help-desk@
-                                 #f
-                                 setup:plt-installer^
-                                 mred^
-                                 net:tcp^)
-  
-  (provide-signature-elements gui^)
-  (provide-signature-elements main^)
-  (provide-signature-elements web-server^))
+  (define-values/invoke-unit/infer help-desk@)
+
+  (provide-signature-elements gui^ main^ web-server^))

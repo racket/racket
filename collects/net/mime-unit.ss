@@ -27,23 +27,18 @@
 ;; Commentary: MIME support for PLT Scheme: an implementation of
 ;; rfc2045, rfc2046, rfc2047, rfc2048, and rfc2049.
 
-(module mime-unit mzscheme
+(module mime-unit (lib "a-unit.ss")
   (require "mime-sig.ss"
            "qp-sig.ss"
            "base64-sig.ss"
 	   "head-sig.ss"
            "mime-util.ss"
-           (lib "unitsig.ss")
            (lib "etc.ss")
            (lib "string.ss")
            (lib "port.ss"))
 
-  (provide net:mime@)
-  (define net:mime@
-    (unit/sig net:mime^
-      (import net:base64^
-              net:qp^
-	      net:head^)
+  (import base64^ qp^ head^)
+  (export mime^)
 
       ;; Constants:
       (define discrete-alist '(("text" . text)
@@ -783,4 +778,4 @@
       
       (define disp-quoted-data-time date-time)
       
-      )))
+      )

@@ -1,5 +1,5 @@
 (module stepper+xml-tool mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "tool.ss" "drscheme")
            "stepper-tool.ss"
            "xml-tool.ss")
@@ -15,9 +15,8 @@
   ;; stepper-tool phase1 is the non-void one. -- JBC, 2006-09-28
 
   (define tool@
-    (compound-unit/sig
-      (import (TOOL-IMPORTS : drscheme:tool^))
-      (link (XML-TOOL : (xml-snip% scheme-snip%) (xml-tool@ TOOL-IMPORTS))
-            (STEPPER-TOOL :  drscheme:tool-exports^
-                             (stepper-tool@ TOOL-IMPORTS XML-TOOL)))
-      (export (open STEPPER-TOOL)))))
+    (compound-unit/infer
+      (import drscheme:tool^)
+      (export STEPPER-TOOL)
+      (link xml-tool@ 
+            (((STEPPER-TOOL : drscheme:tool-exports^)) stepper-tool@)))))

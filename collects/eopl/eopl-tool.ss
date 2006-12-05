@@ -9,7 +9,7 @@ wraps the load of the module.)
 |#
 
 (module eopl-tool mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "class.ss")
 	   (lib "tool.ss" "drscheme")
            (lib "string-constant.ss" "string-constants"))
@@ -17,9 +17,9 @@ wraps the load of the module.)
   (provide tool@)
 
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
-
+      (export drscheme:tool-exports^)
       (define language-base%
 	(class* object% (drscheme:language:simple-module-based-language<%>)
 	  (define/public (get-language-numbers)

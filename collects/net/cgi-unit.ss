@@ -1,10 +1,9 @@
-(module cgi-unit mzscheme
-  (require (lib "unitsig.ss") "cgi-sig.ss" (lib "etc.ss"))
+(module cgi-unit (lib "a-unit.ss")
+  (require (lib "etc.ss")
+           "cgi-sig.ss")
 
-  (provide net:cgi@)
-  (define net:cgi@
-    (unit/sig net:cgi^
-      (import)
+  (import)
+  (export cgi^)
 
       ;; type bindings = list ((symbol . string))
 
@@ -239,5 +238,5 @@
       (define (generate-link-text url anchor-text)
         (string-append "<a href=\"" url "\">" anchor-text "</a>"))
 
-      )))
+      )
 

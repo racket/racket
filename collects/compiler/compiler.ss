@@ -1,6 +1,6 @@
 
 (module compiler mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
   
   (require "sig.ss")
 
@@ -16,13 +16,7 @@
 
   (require "compiler-unit.ss")
 
-  (define-values/invoke-unit/sig compiler^
-    compiler@
-    #f
-    compiler:option^
-    dynext:compile^
-    dynext:link^
-    dynext:file^)
+  (define-values/invoke-unit/infer compiler@)
 
   (provide-signature-elements compiler^))
 

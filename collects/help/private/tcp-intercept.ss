@@ -1,7 +1,7 @@
 (module tcp-intercept mzscheme
   (provide tcp-intercept@ url-intercept@)
   
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "etc.ss")
            (lib "sig.ss" "web-server")
            (lib "tcp-sig.ss" "net")
@@ -24,10 +24,8 @@
                                       (syntax->list (syntax (names ...))))])
          (syntax (begin defs ...)))]))
   
-  (define url-intercept@
-    (unit/sig net:url^
-      (import (raw : net:url^))
-      
+  (define-unit url-intercept@ (import (prefix raw: url^)) (export url^)
+    (init-depend url^)
       (redefine url->string
                 get-pure-port
                 get-impure-port
@@ -40,7 +38,7 @@
                 call/input-url
                 combine-url/relative
                 url-exception?
-                current-proxy-servers)))
+                current-proxy-servers))
   
   (define raw:tcp-abandon-port tcp-abandon-port)
   (define raw:tcp-accept tcp-accept) 
@@ -58,9 +56,7 @@
   ; primitive for bad inputs.
   
   ; : (listof nat) -> (unit/sig () -> net:tcp^)
-  (define tcp-intercept@
-    (unit/sig net:tcp^
-      (import web-server^)
+  (define-unit tcp-intercept@ (import web-server^) (export tcp^)
       
       ; : port -> void
       (define (tcp-abandon-port tcp-port)
@@ -112,4 +108,4 @@
       (define tcp-listen raw:tcp-listen)
       
       ; : tst -> bool
-      (define tcp-listener? raw:tcp-listener?))))
+      (define tcp-listener? raw:tcp-listener?)))

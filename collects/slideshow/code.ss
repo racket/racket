@@ -1,14 +1,11 @@
 
 (module code "slideshow.ss"
   (require (lib "code.ss" "texpict")
-	   (lib "unitsig.ss"))
+	   (lib "unit.ss"))
   (require-for-syntax (lib "to-string.ss" "syntax")
                       (lib "list.ss"))
 
-  (define-values/invoke-unit/sig code^
-    code@
-    #f
-    code-params^)
+  (define-values/invoke-unit/infer code@)
 
   (define-code code typeset-code)
 

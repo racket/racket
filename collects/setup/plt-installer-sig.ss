@@ -1,5 +1,5 @@
 (module plt-installer-sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
   (provide setup:plt-installer^)
   (define-signature setup:plt-installer^
     (run-installer

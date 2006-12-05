@@ -10,7 +10,7 @@
 ;;  to macro uses (where the macros are defined in mzc.h).
 
 (module vmphase mzscheme 
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "list.ss")
 	   (lib "etc.ss"))
 
@@ -21,12 +21,11 @@
 	   "../sig.ss")
 
   (provide vmphase@)
-  (define vmphase@
-    (unit/sig compiler:vmphase^
-      (import (compiler:option : compiler:option^)
+  (define-unit vmphase@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:analyze^
 	      compiler:const^
@@ -35,6 +34,7 @@
 	      compiler:closure^
 	      compiler:vehicle^
 	      compiler:driver^)
+      (export compiler:vmphase^)
 
       ;; vm:convert-bound-varref takes a bound-varref and turns it 
       ;; into a vm:local-varref, taking into account its representation.
@@ -1006,4 +1006,4 @@
 		     (zodiac:zodiac-stx ast)
 		     (convert ast
 			      multi? (or leaf list) tail-pos tail? (not tail?)))
-		    new-locals)))))))
+		    new-locals))))))

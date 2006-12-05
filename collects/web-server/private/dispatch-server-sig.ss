@@ -1,5 +1,5 @@
 (module dispatch-server-sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (define-signature dispatch-server^
     (serve

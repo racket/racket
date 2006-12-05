@@ -17,7 +17,7 @@ If the namespace does not, they are colored the unbound color.
 
 (module syncheck mzscheme
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "contract.ss")
            (lib "tool.ss" "drscheme")
            (lib "class.ss")
@@ -67,9 +67,11 @@ If the namespace does not, they are colored the unbound color.
           
     update-button-visibility/settings)
   
-  (define tool@
-    (unit/sig drscheme:tool-exports^
+  (define tool@ 
+    (unit 
       (import drscheme:tool^)
+      (export drscheme:tool-exports^)
+      
 
       (define (phase1) 
         (drscheme:unit:add-to-program-editor-mixin clearing-text-mixin))

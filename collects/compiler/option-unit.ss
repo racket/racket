@@ -1,14 +1,14 @@
 
 (module option-unit mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require "sig.ss")
 
   (provide compiler:option@)
 
-  (define compiler:option@
-    (unit/sig compiler:option^
+  (define-unit compiler:option@
       (import)
+      (export compiler:option^)
       
       (define propagate-constants (make-parameter #t))
       (define assume-primitives (make-parameter #f))
@@ -39,4 +39,4 @@
       (define compile-for-embedded (make-parameter #f))
       
       ;; Maybe #f helps for register-poor architectures?
-      (define unpack-environments (make-parameter #f)))))
+      (define unpack-environments (make-parameter #f))))

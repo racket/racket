@@ -1,22 +1,16 @@
-(module dispatch-server-unit mzscheme
+(module dispatch-server-unit (lib "a-unit.ss")
   (require (lib "tcp-sig.ss" "net")
-           (lib "unitsig.ss")
            (lib "thread.ss")
            (lib "contract.ss")
            (lib "kw.ss"))
   (require "web-server-structs.ss"
            "connection-manager.ss"
            "dispatch-server-sig.ss")
-  
-  (provide/contract
-   ; XXX contract
-   [dispatch-server@ unit/sig?]) 
-  
+    
   ;; ****************************************  
-  (define dispatch-server@
-    (unit/sig dispatch-server^
-      (import net:tcp^ (config : dispatch-server-config^))
-      
+  (import tcp^ (prefix config: dispatch-server-config^))
+  (export dispatch-server^) 
+  
       ;; serve: -> -> void
       ;; start the server and return a thunk to shut it down
       (define (serve)
@@ -78,4 +72,4 @@
               (set-connection-close?! conn close?))
             (cond
               [(connection-close? conn) (kill-connection! conn)]
-              [else (connection-loop)])))))))
+              [else (connection-loop)])))))

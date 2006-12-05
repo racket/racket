@@ -1,7 +1,6 @@
 
-(module tools mzscheme
-  (require (lib "unitsig.ss")
-           (lib "getinfo.ss" "setup")
+(module tools (lib "a-unit.ss")
+  (require (lib "getinfo.ss" "setup")
            (lib "mred.ss" "mred")
            (lib "class.ss")
            (lib "list.ss")
@@ -11,22 +10,19 @@
            (lib "framework.ss" "framework")
            (lib "string-constant.ss" "string-constants"))
   
-  (provide tools@)  
-
-  (define tools@
-    (unit/sig drscheme:tools^
-      (import [drscheme:frame : drscheme:frame^]
-              [drscheme:unit : drscheme:unit^]
-              [drscheme:rep : drscheme:rep^]
-              [drscheme:get/extend : drscheme:get/extend^]
-              [drscheme:language : drscheme:language^]
-              [drscheme:language-configuration : drscheme:language-configuration^]
-	      [drscheme:help-desk : drscheme:help-desk^]
-              [drscheme:init : drscheme:init^]
-	      [drscheme:debug : drscheme:debug^]
-              [drscheme:eval : drscheme:eval^]
-              [drscheme:teachpack : drscheme:teachpack^]
-              [drscheme:modes : drscheme:modes^])
+  (import [prefix drscheme:frame: drscheme:frame^]
+          [prefix drscheme:unit: drscheme:unit^]
+          [prefix drscheme:rep: drscheme:rep^]
+          [prefix drscheme:get/extend: drscheme:get/extend^]
+          [prefix drscheme:language: drscheme:language^]
+          [prefix drscheme:language-configuration: drscheme:language-configuration^]
+          [prefix drscheme:help-desk: drscheme:help-desk^]
+          [prefix drscheme:init: drscheme:init^]
+          [prefix drscheme:debug: drscheme:debug^]
+          [prefix drscheme:eval: drscheme:eval^]
+          [prefix drscheme:teachpack: drscheme:teachpack^]
+          [prefix drscheme:modes: drscheme:modes^])
+    (export drscheme:tools^)
       
       ;; successful-tool = (make-successful-tool module-spec 
       ;;                                         (union #f (instanceof bitmap%))
@@ -211,9 +207,11 @@
       ;; invoke-tool : unit/sig string -> (values (-> void) (-> void))
       ;; invokes the tools and returns the two phase thunks.
       (define (invoke-tool unit tool-name)
+        (define-unit-binding unit@ unit (import drscheme:tool^) (export drscheme:tool-exports^))
 	(wrap-tool-inputs 
          (let ()
-           (define-values/invoke-unit/sig drscheme:tool-exports^ unit #f drscheme:tool^)
+           (define-values/invoke-unit unit@
+             (import drscheme:tool^) (export drscheme:tool-exports^))
            (values phase1 phase2))
          tool-name))
 
@@ -365,4 +363,4 @@
           (error func "can only be called in phase: ~a"
                  (apply string-append 
                         (map (lambda (x) (format "~e " x))
-                             (filter (lambda (x) x) phases)))))))))
+                             (filter (lambda (x) x) phases)))))))

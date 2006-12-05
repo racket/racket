@@ -191,7 +191,7 @@ installing a single .plt file:
  -------------------
 
 The _setup-unit.ss_ library in the setup collection exports a _setup@_
-signed unit that imports
+unit that imports
 
   setup-option^ - described below
   compiler^ - from "sig.ss" in the "compiler" collection

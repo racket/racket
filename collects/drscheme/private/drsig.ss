@@ -1,6 +1,6 @@
 
 (module drsig mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
   
   (provide drscheme:eval^
            drscheme:debug^
@@ -35,7 +35,7 @@
      add-initial-modes
      (struct mode (name surrogate repl-submit matches-language) 
              -setters
-             (- make-mode))))
+             -constructor)))
   
   (define-signature drscheme:font^
     (setup-preferences))
@@ -97,10 +97,9 @@
      language-dialog
      fill-language-dialog))
   
-  (define-signature drscheme:language-configuration/internal^
+  (define-signature drscheme:language-configuration/internal^ extends drscheme:language-configuration^
     (add-info-specified-languages
      get-default-language-settings
-     (open drscheme:language-configuration^)
      settings-preferences-symbol
 
      add-built-in-languages
@@ -269,14 +268,14 @@
      phase2))
   
   (define-signature drscheme:tool^
-    ((unit drscheme:debug : drscheme:debug^)
-     (unit drscheme:unit : drscheme:unit^)
-     (unit drscheme:rep : drscheme:rep^)
-     (unit drscheme:frame : drscheme:frame^)
-     (unit drscheme:get/extend : drscheme:get/extend^)
-     (unit drscheme:language-configuration : drscheme:language-configuration^)
-     (unit drscheme:language : drscheme:language^)
-     (unit drscheme:help-desk : drscheme:help-desk^)
-     (unit drscheme:eval : drscheme:eval^)
-     (unit drscheme:teachpack : drscheme:teachpack^)
-     (unit drscheme:modes : drscheme:modes^))))
+    ((open (prefix drscheme:debug: drscheme:debug^))
+     (open (prefix drscheme:unit: drscheme:unit^))
+     (open (prefix drscheme:rep: drscheme:rep^))
+     (open (prefix drscheme:frame: drscheme:frame^))
+     (open (prefix drscheme:get/extend: drscheme:get/extend^))
+     (open (prefix drscheme:language-configuration: drscheme:language-configuration^))
+     (open (prefix drscheme:language: drscheme:language^))
+     (open (prefix drscheme:help-desk: drscheme:help-desk^))
+     (open (prefix drscheme:eval: drscheme:eval^))
+     (open (prefix drscheme:teachpack: drscheme:teachpack^))
+     (open (prefix drscheme:modes: drscheme:modes^)))))

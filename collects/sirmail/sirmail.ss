@@ -2,7 +2,7 @@
 ;;          (with a mail composer, too)
 
 (module sirmail mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "class.ss")
 	   (lib "mred-sig.ss" "mred")
 	   (lib "mred.ss" "mred")
@@ -84,17 +84,16 @@
      [(mailbox-name mailbox-options)
       (start-new-window
        (lambda ()
-	 (invoke-unit/sig
-	  sirmail@
-	  sirmail:environment^
-	  mred^
-	  net:imap^
-	  net:smtp^
-	  net:head^
-	  net:base64^
-	  net:mime^
-	  net:qp^
-	  hierlist^)))]))
+	 (invoke-unit sirmail@
+                      (import sirmail:environment^
+                              mred^
+                              imap^
+                              smtp^
+                              head^
+                              base64^
+                              mime^
+                              qp^
+                              hierlist^))))]))
 
   ;; There's only one Folders window ----------------------------------------
   
@@ -126,32 +125,23 @@
              (start-new-window
               (lambda ()
                 (set! folders-window
-                      (invoke-unit/sig
-                       (compound-unit/sig
-                         (import [env : sirmail:environment^]
-                                 [s : (shutdown-folders-window)]
-                                 [mred : mred^]
-                                 [imap : net:imap^]
-                                 [hierlist : hierlist^])
-                         (link [options : sirmail:options^
-                                        (option@
-                                         env
-                                         imap
-                                         mred)]
-                               [folder : ()
-                                       (folder@
-                                        env
-                                        s
-                                        options
-                                        mred imap
-                                        hierlist)])
-                         (export))
-                       sirmail:environment^
-                       (shutdown-folders-window)
-                       mred^
-                       net:imap^
-                       hierlist^)))))))))
-     
+                      (let ()
+                        (define-compound-unit/infer together@
+                          (import [env : sirmail:environment^]
+                                  [s : sirmail:shutdown-folder^]
+                                  [mred : mred^]
+                                  [imap : imap^]
+                                  [hierlist : hierlist^])
+                          (export)
+                          (link option@ folder@))
+                        (invoke-unit together@
+                                     (import
+                                      sirmail:environment^
+                                      sirmail:shutdown-folder^
+                                      mred^
+                                      imap^
+                                      hierlist^)))))))))))
+  
   (define (get-active-folder)
     (with-folders-lock
      (lambda ()

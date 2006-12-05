@@ -1,6 +1,5 @@
-(module exit mzscheme
-  (require (lib "unitsig.ss")
-           (lib "string-constant.ss" "string-constants")
+(module exit (lib "a-unit.ss")
+  (require (lib "string-constant.ss" "string-constants")
 	   (lib "class.ss")
 	   "sig.ss"
 	   "../gui-utils.ss"
@@ -8,13 +7,10 @@
 	   (lib "file.ss")
            (lib "etc.ss"))
 
-  (provide exit@)
-
-  (define exit@
-    (unit/sig framework:exit^
-      (import mred^
-	      [preferences : framework:preferences^])
-      (rename (-exit exit))
+  (import mred^
+          [prefix preferences: framework:preferences^])
+  (export (rename framework:exit^
+                  (-exit exit)))
       
       (define can?-callbacks '())
       (define on-callbacks '())
@@ -79,4 +75,4 @@
               (exit)
               (set! is-exiting? #f)))]
           [else
-           (set! is-exiting? #f)])))))
+           (set! is-exiting? #f)])))

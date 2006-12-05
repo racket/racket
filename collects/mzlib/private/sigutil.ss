@@ -8,7 +8,7 @@
 	   (lib "context.ss" "syntax"))
 
   (require "sigmatch.ss")
-  (require "../unit.ss")
+  (require "../unit200.ss")
   (require "../list.ss")
 
   (define-struct signature (name      ; sym

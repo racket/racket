@@ -2,19 +2,15 @@
 ;;  for programs that used to manipulate the
 ;;  output of zodiac elaboration.
 
-(module zodiac-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "list.ss"))
-  (require "kerncase.ss")
-
-  (require "zodiac-sig.ss"
+(module zodiac-unit (lib "a-unit.ss")
+  (require (lib "unit.ss")
+	   (lib "list.ss")
+           "kerncase.ss"
+           "zodiac-sig.ss"
 	   "stx.ss")
 
-  (provide zodiac@)
-
-  (define zodiac@
-    (unit/sig zodiac^
       (import)
+      (export zodiac^)
       
       (define (stx-bound-assq ssym l)
 	(ormap (lambda (p)
@@ -784,4 +780,4 @@
       (define-struct arglist (vars))
       (define-struct (sym-arglist arglist) ())
       (define-struct (list-arglist arglist) ())
-      (define-struct (ilist-arglist arglist) ()))))
+      (define-struct (ilist-arglist arglist) ()))

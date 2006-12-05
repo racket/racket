@@ -1,18 +1,14 @@
+(module dns-unit (lib "a-unit.ss")
+  (require (lib "list.ss")
+           (lib "process.ss")
+           "dns-sig.ss")
 
-(module dns-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "list.ss")
-           (lib "process.ss"))
 
-  (require "dns-sig.ss")
+  (import)
+  (export dns^)
 
-  ;; UDP retry timeout:
-  (define INIT-TIMEOUT 50)
-
-  (provide net:dns@)
-  (define net:dns@
-    (unit/sig net:dns^
-      (import)
+      ;; UDP retry timeout:
+      (define INIT-TIMEOUT 50)
 
       (define types
 	'((a 1)
@@ -365,5 +361,5 @@
                                               line))
                            => (lambda (m) (loop name (cadr m) #f))]
                           [else (loop name ip #f)]))))))]
-      [else #f])))))
+      [else #f])))
 

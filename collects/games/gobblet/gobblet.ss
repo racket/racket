@@ -1,6 +1,6 @@
 (module gobblet mzscheme
   (require (lib "unitsig.ss")
-	   (lib "unit.ss")
+	   (lib "unit200.ss")
 	   (lib "file.ss")
 	   (lib "mred.ss" "mred")
 	   "sig.ss"

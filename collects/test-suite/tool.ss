@@ -6,7 +6,7 @@
    (lib "etc.ss")
    (lib "class.ss")
    (lib "mred.ss" "mred")
-   (lib "unitsig.ss")
+   (lib "unit.ss")
    (lib "tool.ss" "drscheme")
    (lib "framework.ss" "framework")
    (lib "string-constant.ss" "string-constants")
@@ -17,10 +17,10 @@
    "private/print-to-text.ss")
   
   (define-signature menu-extentions^ ())
-  (define menu-extentions@
-    (unit/sig menu-extentions^;drscheme:tool-exports^
-      (import drscheme:tool^ test-case-box^)
-      
+  (define-unit menu-extentions@
+    (import drscheme:tool^ test-case-box^)
+    (export menu-extentions^;drscheme:tool-exports^
+             )
       ;; This delay is set up because reset-highlighting is called immediately
       ;; after execution where I don't want the test-cases to be cleared.
       ;; STATUS: It appears that the problem this flag was created to fix has been
@@ -165,15 +165,11 @@
               (namespace-require '(lib "test-case.ss" "test-suite" "private"))))
           (super-new)))
       
-      (drscheme:get/extend:extend-interactions-text require-macro-mixin)))
+      (drscheme:get/extend:extend-interactions-text require-macro-mixin))
   
   (define tool@
-    (compound-unit/sig
-     (import (TOOL : drscheme:tool^))
-     (link (MENU   : menu-extentions^ (menu-extentions@ TOOL CASE))
-           (CASE   : test-case-box^ (test-case-box@ TOOL SYNTAX PRINT))
-           (SYNTAX : text->syntax-object^ (text->syntax-object@ TOOL))
-           (PRINT  : print-to-text^ (print-to-text@ TOOL)))
-     (export (var (CASE phase1))
-             (var (CASE phase2)))))
+    (compound-unit/infer
+     (import drscheme:tool^)
+     (export drscheme:tool-exports^)
+     (link menu-extentions@ test-case-box@ text->syntax-object@ print-to-text@)))
   )

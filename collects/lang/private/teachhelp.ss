@@ -27,7 +27,8 @@
 			   (list 'quote (syntax id))
 			   tmp-id))
 		    'stepper-skipto
-		    '(syntax-e cdr syntax-e cdr cdr car))
+                    (append skipto/cdr
+                            skipto/third))
 		   (syntax args))
 	     stx)]
 	   [id
@@ -39,7 +40,8 @@
                     tmp-id)
               stx)
              'stepper-skipto
-             '(syntax-e cdr syntax-e cdr cdr car))]))))) ; this may make other stepper-skipto annotations obsolete.
+             (append skipto/cdr
+                     skipto/third))])))))
     
   (define (appropriate-use what)
     (case what

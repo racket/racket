@@ -10,7 +10,6 @@
            (lib "string-constant.ss" "string-constants")
            (lib "graph.ss" "mrlib")
            "drsig.ss"
-           (lib "unitsig.ss")
            (lib "unit.ss")
            (lib "async-channel.ss"))
   
@@ -24,12 +23,12 @@
   (define adding-file (string-constant module-browser-adding-file))
   (define unknown-module-name "? unknown module name")
       
-  (define module-overview@
-    (unit/sig drscheme:module-overview^
-      (import [drscheme:frame : drscheme:frame^]
-              [drscheme:eval : drscheme:eval^]
-              [drscheme:language-configuration : drscheme:language-configuration/internal^]
-              [drscheme:language : drscheme:language^])
+  (define-unit module-overview@
+    (import [prefix drscheme:frame: drscheme:frame^]
+            [prefix drscheme:eval: drscheme:eval^]
+            [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
+            [prefix drscheme:language: drscheme:language^])
+    (export drscheme:module-overview^)
       
       (define filename-constant (string-constant module-browser-filename-format))
       (define font-size-gauge-label (string-constant module-browser-font-size-gauge-label))
@@ -738,10 +737,9 @@
         (define progress-channel (make-async-channel))
         (define connection-channel (make-async-channel))
         
-        (define-values/invoke-unit (add-connections) process-program-unit 
-          #f
-          progress-channel
-          connection-channel)
+        (define-values/invoke-unit process-program-unit
+          (import process-program-import^)
+          (export process-program-export^))
         
         ;; =user thread=
         (define (iter sexp continue)
@@ -864,7 +862,7 @@
             (preferences:set 'drscheme:module-overview:window-width w)
             (preferences:set 'drscheme:module-overview:window-height h)
             (super on-size w h))
-          (super-instantiate ())))))
+          (super-instantiate ()))))
   
   
         
@@ -886,11 +884,15 @@
 ;   ;                                                    ;                    ;;;;   
 
 
-  (define process-program-unit
-    (unit 
-      (import progress-channel
-              connection-channel)
-      (export add-connections)
+  (define-signature process-program-import^
+    (progress-channel connection-channel))
+  
+  (define-signature process-program-export^
+    (add-connections))
+  
+  (define-unit process-program-unit
+    (import process-program-import^)
+    (export process-program-export^)
       
       (define visited-hash-table (make-hash-table 'equal))
       
@@ -1003,4 +1005,4 @@
              (let-values ([(a b) (module-path-index-split dr)])
                (and (pair? a)
                     (symbol? (car a))
-                    (car a))))))))
+                    (car a)))))))

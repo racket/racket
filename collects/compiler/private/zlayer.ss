@@ -3,7 +3,7 @@
 ;; (c)1997-2001 PLT
 
 (module zlayer mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
   
@@ -13,12 +13,12 @@
   (require "sig.ss")
   
   (provide zlayer@)
-  (define zlayer@
-    (unit/sig compiler:zlayer^
-      (import (compiler:option : compiler:option^)
-	      (zodiac : zodiac^)
+  (define-unit zlayer@
+      (import (prefix compiler:option: compiler:option^)
+	      (prefix zodiac: zodiac^)
 	      compiler:cstructs^
 	      compiler:driver^)
+      (export compiler:zlayer^)
 
       ;;----------------------------------------------------------------------------
       ;; ANNOTATIONS
@@ -245,5 +245,4 @@
 	    `(module ... ,(zodiac->sexp/annotate (zodiac:module-form-body ast)))]
 
 	   [else
-	    (error 'zodiac->sexp/annotate "unsupported ~s" ast)]))))))
-
+	    (error 'zodiac->sexp/annotate "unsupported ~s" ast)])))))

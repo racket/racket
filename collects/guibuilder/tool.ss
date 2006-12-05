@@ -2,7 +2,7 @@
 (module tool mzscheme
   (require (lib "tool.ss" "drscheme")
            (lib "mred.ss" "mred")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "class.ss")
 	   (lib "string-constant.ss" "string-constants")
 	   (lib "contract.ss")
@@ -13,9 +13,9 @@
   (provide tool@)
 
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
-      
+      (export drscheme:tool-exports^) 
       (define (phase1) (void))
       (define (phase2) 
 	(drscheme:get/extend:extend-unit-frame 

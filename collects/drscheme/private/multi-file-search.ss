@@ -1,8 +1,7 @@
 
-(module multi-file-search mzscheme
+(module multi-file-search (lib "a-unit.ss")
   (require (lib "framework.ss" "framework")
            (lib "class.ss")
-           (lib "unitsig.ss")
            (lib "mred.ss" "mred")
            (lib "file.ss")
            (lib "thread.ss")
@@ -10,13 +9,10 @@
            (lib "string-constant.ss" "string-constants")
            "drsig.ss")
   
-  (provide multi-file-search@)
-  
-  (define multi-file-search@
-    (unit/sig drscheme:multi-file-search^
-      (import [drscheme:frame : drscheme:frame^]
-              [drscheme:unit : drscheme:unit^])
-      
+  (import [prefix drscheme:frame: drscheme:frame^]
+          [prefix drscheme:unit: drscheme:unit^])
+  (export drscheme:multi-file-search^)
+
       ;; multi-file-search : -> void
       ;; opens a dialog to configure the search and initiates the search
       (define (multi-file-search)
@@ -715,4 +711,4 @@
                                             (car pos)
                                             (- (cdr pos) (car pos))))))
                            (loop (+ line-number 1))]))))
-                  'text))))))))
+                  'text))))))

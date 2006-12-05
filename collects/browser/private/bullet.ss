@@ -1,7 +1,5 @@
 (module bullet mzscheme 
-  (require (lib "unitsig.ss")
-           (lib "mred.ss" "mred")
-           "sig.ss"
+  (require (lib "mred.ss" "mred")
            (lib "class.ss"))
   
   (provide bullet-snip%

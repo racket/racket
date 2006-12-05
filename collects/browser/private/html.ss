@@ -1,7 +1,5 @@
-
-(module html mzscheme
-  (require (lib "unitsig.ss")
-           "sig.ss"
+(module html (lib "a-unit.ss")
+  (require "../browser-sig.ss"
            (lib "mred-sig.ss" "mred")
            (lib "file.ss")
            (lib "etc.ss")
@@ -16,14 +14,12 @@
 	   "bullet.ss"
 	   "option-snip.ss"
 	   "entity-names.ss")
-
-  (provide html@)
-
-  (define html@
-    (unit/sig html^
-      (import mred^
-              net:url^)
-      
+  
+  
+  (import mred^ url^)
+  (export html^)
+  (init-depend mred^)    
+  
       ;; CACHE
       (define NUM-CACHED 10)
       (define cached (make-vector 10 'no-image))
@@ -1262,4 +1258,4 @@
                   (f))
                 (send a-text add-tag "top" 0)
                 (update-image-maps image-map-snips image-maps)
-                (send a-text set-position 0)))))))))
+                (send a-text set-position 0)))))))

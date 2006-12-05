@@ -1,7 +1,7 @@
 (module games mzscheme
   (require (lib "mred.ss" "mred")
 	   (lib "class.ss")
-           (lib "unit.ss")
+           (lib "unit200.ss")
 	   (lib "list.ss")
            (lib "getinfo.ss" "setup")
 	   (lib "bitmap-label.ss" "mrlib")

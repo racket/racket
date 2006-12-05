@@ -1,7 +1,6 @@
 
-(module editor mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module editor (lib "a-unit.ss")
+  (require (lib "class.ss")
            (lib "string-constant.ss" "string-constants")
 	   "sig.ss"
 	   "../gui-utils.ss"
@@ -9,24 +8,21 @@
 	   (lib "mred-sig.ss" "mred")
 	   (lib "file.ss"))
 
-  (provide editor@)
-
-  (define editor@
-    (unit/sig framework:editor^
-      (import mred^
-	      [autosave : framework:autosave^]
-	      [finder : framework:finder^]
-	      [path-utils : framework:path-utils^]
-	      [keymap : framework:keymap^]
-	      [icon : framework:icon^]
-	      [preferences : framework:preferences^]
-	      [text : framework:text^]
-	      [pasteboard : framework:pasteboard^]
-	      [frame : framework:frame^]
-              [handler : framework:handler^])
-
-      (rename [-keymap<%> keymap<%>])
-
+  (import mred^
+          [prefix autosave: framework:autosave^]
+          [prefix finder: framework:finder^]
+          [prefix path-utils: framework:path-utils^]
+          [prefix keymap: framework:keymap^]
+          [prefix icon: framework:icon^]
+          [prefix preferences: framework:preferences^]
+          [prefix text: framework:text^]
+          [prefix pasteboard: framework:pasteboard^]
+          [prefix frame: framework:frame^]
+          [prefix handler: framework:handler^])
+  (export (rename framework:editor^
+                  [-keymap<%> keymap<%>]))
+  (init-depend mred^ framework:autosave^)
+  
       ;; renaming, for editor-mixin where get-file is shadowed by a method.
       (define mred:get-file get-file) 
 
@@ -600,4 +596,4 @@
                       (set! callback-running? #f))
                     #f))))
              'framework:update-lock-icon))
-          (super-instantiate ()))))))
+          (super-instantiate ()))))

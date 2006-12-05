@@ -77,9 +77,8 @@
   (define (mark-source mark)
     (full-mark-struct-source (mark)))
     
-  ; : identifier -> identifier
   (define (make-mark-binding-stx id)
-    #`(lambda () #,(stepper-syntax-property id 'stepper-dont-check-for-function #t)))
+    #`(lambda () #,id))
   
   (define (mark-bindings mark)
     (map list 

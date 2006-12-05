@@ -1,8 +1,9 @@
 
 (module framework mzscheme
-  (require (lib "unitsig.ss")
-           (lib "mred.ss" "mred")
+  (require (lib "unit.ss")
+           (lib "mred-unit.ss" "mred")
            (lib "mred-sig.ss" "mred")
+           (lib "mred.ss" "mred")
            (lib "class.ss")
            
            "test.ss"
@@ -10,11 +11,38 @@
            "decorated-editor-snip.ss"
            
            "framework-unit.ss"
-           "framework-sig.ss"
+           "private/sig.ss"
            
            (lib "contract.ss"))
   
-  (provide-signature-elements framework-class^)
+  (provide-signature-elements
+   (prefix application: framework:application-class^)
+   (prefix version: framework:version-class^)
+   (prefix color-model: framework:color-model-class^)
+   (prefix exn: framework:exn-class^)
+   (prefix mode: framework:mode-class^)
+   (prefix exit: framework:exit-class^)
+   (prefix menu: framework:menu-class^)
+   (prefix preferences: framework:preferences-class^)
+   (prefix number-snip: framework:number-snip-class^)
+   (prefix autosave: framework:autosave-class^)
+   (prefix path-utils: framework:path-utils-class^)
+   (prefix icon: framework:icon-class^)
+   (prefix keymap: framework:keymap-class^)
+   (prefix editor: framework:editor-class^)
+   (prefix pasteboard: framework:pasteboard-class^)
+   (prefix text: framework:text-class^)
+   (prefix color: framework:color-class^)
+   (prefix color-prefs: framework:color-prefs-class^)
+   (prefix comment-box: framework:comment-box-class^)
+   (prefix finder: framework:finder-class^)
+   (prefix group: framework:group-class^)
+   (prefix canvas: framework:canvas-class^)
+   (prefix panel: framework:panel-class^)
+   (prefix frame: framework:frame-class^)
+   (prefix handler: framework:handler-class^)
+   (prefix scheme: framework:scheme-class^)
+   (prefix main: framework:main-class^))
 
   (provide (all-from "test.ss")
            (all-from "gui-utils.ss")
@@ -27,13 +55,15 @@
     (syntax-case stx ()
       [(_ (name contract docs ...) ...)
        (syntax (provide/contract (name contract) ...))]))
-
-  (define-values/invoke-unit/sig 
-   framework^ 
-   framework@ 
-   #f
-   mred^)
+    
+  (define-compound-unit/infer framework+mred@
+    (import)
+    (export framework^)
+    (link standard-mred@ framework@))
+     
   
+  (define-values/invoke-unit/infer framework+mred@)
+    
   (provide/contract/docs
    
    (number-snip:make-repeating-decimal-snip

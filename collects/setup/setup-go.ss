@@ -1,15 +1,14 @@
 
 (module setup-go mzscheme
   (require "setup-cmdline.ss"
-	   (lib "unitsig.ss")
+	   (lib "unit.ss")
 
 	    "option-sig.ss"
 	    "setup-unit.ss"
 	    "option-unit.ss"
 	    (lib "cm.ss"))
 
-  (define-values/invoke-unit/sig setup-option^
-    setup:option@)
+  (define-values/invoke-unit/infer setup:option@)
 
   (define-values (x-flags x-specific-collections x-specific-planet-packages x-archives)
     (parse-cmdline (current-command-line-arguments)))
@@ -58,23 +57,10 @@
 	   (lib "option-unit.ss" "compiler")
 	   (lib "compiler-unit.ss" "compiler"))
 
-  (invoke-unit/sig
-   (compound-unit/sig
+  (invoke-unit
+   (compound-unit/infer
     (import (SOPTION : setup-option^))
-    (link [launcher : launcher^ (launcher@ dcompile dlink)]
-	  [dcompile : dynext:compile^ (dynext:compile@)]
-	  [dlink : dynext:link^ (dynext:link@)]
-	  [dfile : dynext:file^ (dynext:file@)]
-	  [option : compiler:option^ (compiler:option@)]
-	  [compiler : compiler^ (compiler@
-				 option
-				 dcompile
-				 dlink
-				 dfile)]
-	  [setup : () (setup@
-		       SOPTION
-		       compiler
-		       option
-		       launcher)])
-    (export))
-   setup-option^))
+    (export)
+    (link launcher@ dynext:compile@ dynext:link@ dynext:file@
+          compiler:option@ compiler@ setup@))
+   (import setup-option^)))

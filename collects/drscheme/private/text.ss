@@ -1,15 +1,11 @@
 
-(module text mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module text (lib "a-unit.ss")
+  (require (lib "class.ss")
            "drsig.ss"
            (lib "framework.ss" "framework"))
   
-  (provide text@)
-  
-  (define text@
-    (unit/sig drscheme:text^
-      (import)
+  (import)
+  (export drscheme:text^)
       (define text<%>
         (interface (scheme:text<%>)
           printing-on
@@ -35,4 +31,4 @@
           ;			    (get-filename)
           ;			    "Untitled"))])
           ;	      (send dc draw-text str dx dy)))])
-          (super-new))))))
+          (super-new))))

@@ -862,6 +862,10 @@
                                                      (wcm-pre-break-wrap debug-info begin-form))
                                                  free-vars-all))]))
                     
+                      ;; temporary hack for ProfJ stepper, 2006-12-4, JBC
+                      [(begin0 first-body . bodies-stx)
+                       #`(error "shouldn't get evaluated, please.\n")]
+                      
                     #;[(begin0 first-body . bodies-stx)
                      (let*-2vals ([(annotated-first free-vars-first) (result-recur first-body)])
                        #`(let ([,begin0-temp #,annotated-first])

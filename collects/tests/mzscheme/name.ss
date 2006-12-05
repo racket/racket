@@ -4,7 +4,7 @@
 (load-relative "loadtest.ss")
 
 (require (lib "class.ss"))
-(require (lib "unit.ss"))
+(require (lib "unit200.ss"))
 
 (Section 'names)
 

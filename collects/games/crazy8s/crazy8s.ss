@@ -3,7 +3,7 @@
   (require (lib "cards.ss" "games" "cards")
 	   (lib "mred.ss" "mred")
 	   (lib "class.ss")
-           (lib "unit.ss")
+           (lib "unit200.ss")
            (lib "etc.ss")
 	   (lib "list.ss")
            (lib "async-channel.ss")

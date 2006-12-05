@@ -1,7 +1,7 @@
 (module web-server-unit mzscheme
   (require (lib "tcp-sig.ss" "net")
            (lib "contract.ss")
-           (lib "unitsig.ss"))
+           (lib "unit.ss"))
   (require "sig.ss"
            "private/dispatch-server-unit.ss"
            "private/dispatch-server-sig.ss"
@@ -17,13 +17,17 @@
            (prefix path-procedure: "dispatchers/dispatch-pathprocedure.ss")
            (prefix log: "dispatchers/dispatch-log.ss")
            (prefix host: "dispatchers/dispatch-host.ss"))  
-  (provide/contract
+ 
+  (provide web-server@)
+  
+  #;(provide/contract
    ; XXX contract
-   [web-server@ unit/sig?])  
+   [web-server@ unit?])  
     
-  (define web-config@->dispatch-server-config@
-    (unit/sig dispatch-server-config^
-      (import (config : web-config^))
+  (define-unit web-config@->dispatch-server-config@
+    (import (prefix config: web-config^))
+    (export dispatch-server-config^)
+    (init-depend web-config^)
       (define read-request the-read-request)
       
       (define port config:port)
@@ -67,14 +71,10 @@
          (files:make #:htdocs-path (paths-htdocs (host-paths host-info))
                      #:mime-types-path (paths-mime-types (host-paths host-info))
                      #:indices (host-indices host-info)
-                     #:file-not-found-responder (responders-file-not-found (host-responders host-info)))))))
+                     #:file-not-found-responder (responders-file-not-found (host-responders host-info))))))
   
-  (define web-server@
-    (compound-unit/sig 
-      (import (TCP : net:tcp^)
-              (CONFIG : web-config^))
-      (link (DISPATCH-CONFIG : dispatch-server-config^
-                             (web-config@->dispatch-server-config@ CONFIG))
-            (DISPATCH : dispatch-server^
-                      (dispatch-server@ TCP DISPATCH-CONFIG)))
-      (export (open (DISPATCH : web-server^))))))
+  (define-compound-unit/infer web-server@
+    (import tcp^ web-config^)
+    (export web-server^)
+    (link web-config@->dispatch-server-config@ dispatch-server@)))
+  

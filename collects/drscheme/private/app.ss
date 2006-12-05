@@ -1,7 +1,6 @@
 
-(module app mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module app (lib "a-unit.ss")
+  (require (lib "class.ss")
            (lib "list.ss")
            (lib "file.ss")
            (lib "string-constant.ss" "string-constants")
@@ -12,14 +11,12 @@
            "drsig.ss"
            "../acks.ss")
   
-  (provide app@)
-  (define app@
-    (unit/sig drscheme:app^
-      (import [drscheme:unit : drscheme:unit^]
-              [drscheme:frame : drscheme:frame^]
-              [drscheme:language-configuration : drscheme:language-configuration/internal^]
-              [help-desk : drscheme:help-desk^]
-              [drscheme:tools : drscheme:tools^])
+  (import [prefix drscheme:unit: drscheme:unit^]
+          [prefix drscheme:frame: drscheme:frame^]
+          [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
+          [prefix help-desk: drscheme:help-desk^]
+          [prefix drscheme:tools: drscheme:tools^])
+  (export drscheme:app^)
 
       (define about-frame%
         (class (drscheme:frame:basics-mixin (frame:standard-menus-mixin frame:basic%))
@@ -503,4 +500,4 @@
                               (cdr strs)
                               (cons lang good-langs)
                               (cons str good-strs))
-                        (loop (cdr langs) (cdr strs) good-langs good-strs)))]))))))
+                        (loop (cdr langs) (cdr strs) good-langs good-strs)))]))))

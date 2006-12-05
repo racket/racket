@@ -2,7 +2,7 @@
 
 ;; This allows adding a Swindle icon on startup.
 (module tool mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "tool.ss" "drscheme")
            (lib "class.ss")
            (lib "list.ss")
@@ -11,7 +11,7 @@
            (lib "string-constant.ss" "string-constants"))
   (provide tool@)
   (define tool@
-    (unit/sig drscheme:tool-exports^ (import drscheme:tool^)
+    (unit (import drscheme:tool^) (export drscheme:tool-exports^) 
       ;; Swindle languages
       (define (swindle-language module* name* entry-name* num* one-line* url*)
         (class (drscheme:language:module-based-language->language-mixin

@@ -3,13 +3,12 @@
 ;;          user's io ports, to aid any debugging printouts.
 ;;          (esp. useful when debugging the users's io)
 
-(module language mzscheme
+(module language (lib "a-unit.ss")
   (require "drsig.ss"
            (lib "string-constant.ss" "string-constants")
            (lib "pconvert.ss")
            (lib "pretty.ss")
            (lib "etc.ss")
-	   (lib "unitsig.ss")
 	   (lib "struct.ss")
            (lib "class.ss")
            (lib "file.ss")
@@ -22,15 +21,12 @@
            (lib "distribute.ss" "compiler")
            (lib "bundle-dist.ss" "compiler"))
 
-  (provide language@)
+  (import [prefix drscheme:debug: drscheme:debug^]
+          [prefix drscheme:teachpack: drscheme:teachpack^]
+          [prefix drscheme:tools: drscheme:tools^]
+          [prefix drscheme:help-desk: drscheme:help-desk^])
+  (export drscheme:language^)
 
-  (define language@
-    (unit/sig drscheme:language^
-      (import [drscheme:debug : drscheme:debug^]
-              [drscheme:teachpack : drscheme:teachpack^]
-              [drscheme:tools : drscheme:tools^]
-              [drscheme:help-desk : drscheme:help-desk^])
-      
       (define original-output-port (current-output-port))
       (define (printf . args) (apply fprintf original-output-port args)) 
       
@@ -1199,5 +1195,5 @@
          'drscheme:language:extend-language-interface
          'phase1)
         (set! default-mixin (compose default-impl default-mixin))
-        (set! language-extensions (cons extension<%> language-extensions))))))
+        (set! language-extensions (cons extension<%> language-extensions))))
 

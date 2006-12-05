@@ -188,6 +188,9 @@ static void finish_expstart_module(Scheme_Env *menv, Scheme_Env *env, int with_t
 static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *env);
 static void eval_module_body(Scheme_Env *menv);
 
+static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Object *argv[], 
+                                           int for_exp, int copy, int etonly);
+
 static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv);
 
 static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Object **exss, char *exps,
@@ -835,11 +838,30 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	    if (i < srcm->me->num_var_provides) {
 	      break;
 	    } else {
-	      if (fail_with_error)
-		scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-				 "%s: name is provided as syntax: %V by module: %V",
-				 errname,
-				 name, srcm->modname);
+	      if (fail_with_error) {
+                if (!phase) {
+                  /* Evaluate id in a fresh namespace */
+                  Scheme_Object *a[3], *ns;
+                  start_module(m, env, 0, modidx, 1, 0, scheme_null);
+                  a[0] = scheme_intern_symbol("empty");
+                  ns = scheme_make_namespace(1, a);
+                  a[0] = (Scheme_Object *)env;
+                  a[1] = srcm->modname;
+                  a[2] = ns;
+                  namespace_attach_module(3, a);
+                  a[0] = scheme_make_pair(scheme_intern_symbol("only"),
+                                          scheme_make_pair(srcm->modname,
+                                                           scheme_make_pair(name,
+                                                                            scheme_null)));
+                  do_namespace_require((Scheme_Env *)ns, 1, a, 0, 0, 0);
+                  return scheme_eval(name, (Scheme_Env *)ns);
+                } else {
+                  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                                   "%s: name is provided as syntax: %V by module: %V",
+                                   errname,
+                                   name, srcm->modname);
+                }
+              }
 	      return NULL;
 	    }
 	  }
@@ -956,12 +978,13 @@ static Scheme_Object *dynamic_require_for_syntax(int argc, Scheme_Object *argv[]
   return _dynamic_require(argc, argv, scheme_get_env(NULL), 0, 1, 0, 0, 1, -1);
 }
 
-static Scheme_Object *do_namespace_require(int argc, Scheme_Object *argv[], int for_exp, int copy, int etonly)
+static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Object *argv[], 
+                                           int for_exp, int copy, int etonly)
 {
   Scheme_Object *form, *rn, *brn;
-  Scheme_Env *env;
 
-  env = scheme_get_env(NULL);
+  if (!env)
+    env = scheme_get_env(NULL);
   if (for_exp) {
     scheme_prepare_exp_env(env);
     env = env->exp_env;
@@ -989,22 +1012,22 @@ static Scheme_Object *do_namespace_require(int argc, Scheme_Object *argv[], int 
 
 static Scheme_Object *namespace_require(int argc, Scheme_Object *argv[])
 {
-  return do_namespace_require(argc, argv, 0, 0, 0);
+  return do_namespace_require(NULL, argc, argv, 0, 0, 0);
 }
 
 static Scheme_Object *namespace_trans_require(int argc, Scheme_Object *argv[])
 {
-  return do_namespace_require(argc, argv, 1, 0, 0);
+  return do_namespace_require(NULL, argc, argv, 1, 0, 0);
 }
 
 static Scheme_Object *namespace_require_copy(int argc, Scheme_Object *argv[])
 {
-  return do_namespace_require(argc, argv, 0, 1, 0);
+  return do_namespace_require(NULL, argc, argv, 0, 1, 0);
 }
 
 static Scheme_Object *namespace_require_etonly(int argc, Scheme_Object *argv[])
 {
-  return do_namespace_require(argc, argv, 0, 0, 1);
+  return do_namespace_require(NULL, argc, argv, 0, 0, 1);
 }
 	
 static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])

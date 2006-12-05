@@ -1,5 +1,5 @@
 (module url mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "contract.ss")
 	   "url-structs.ss"
            "url-sig.ss"
@@ -7,14 +7,11 @@
            "tcp-sig.ss"
            "tcp-unit.ss")
 
-  (define-values/invoke-unit/sig
-   net:url^
-   (compound-unit/sig
-     (import)
-     (link
-      [T : net:tcp^ (tcp@)]
-      [U : net:url^ (url@ T)])
-     (export (open U))))
+  (define-compound-unit/infer url+tcp@
+    (import) (export url^)
+    (link tcp@ url@))
+  
+  (define-values/invoke-unit/infer url+tcp@)
 
   (provide
    (struct url (scheme

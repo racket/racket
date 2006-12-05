@@ -1,6 +1,6 @@
 (module servlet-env mzscheme
   (require (lib "sendurl.ss" "net")
-           (lib "unitsig.ss"))
+           (lib "unit.ss"))
   (require "../configuration.ss"
            "../web-server.ss"
            "../sig.ss"
@@ -53,7 +53,9 @@
   (define (build-standalone-servlet-configuration the-port the-path the-servlet)
     (let ([basic-configuration@ (load-developer-configuration default-configuration-table-path)]
           [the-scripts (make-cache-table)])
-      (define-values/invoke-unit/sig web-config^ basic-configuration@ i)
+      (define-values/invoke-unit basic-configuration@ 
+        (import) 
+        (export (prefix i: web-config^)))
       (cache-table-lookup! the-scripts
                            (string->symbol
                             (path->string
@@ -69,8 +71,9 @@
                                                     (body (p "Return to the interaction window."))))
                                              30 30)
                                            the-servlet)))
-      (unit/sig web-config^
+      (unit
         (import)
+        (export web-config^)
         (define port the-port)
         (define max-waiting i:max-waiting)
         (define listen-ip i:listen-ip)

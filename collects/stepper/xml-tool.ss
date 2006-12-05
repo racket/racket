@@ -1,7 +1,8 @@
 
 (module xml-tool mzscheme
   (require "private/xml-snip-helpers.ss"
-           (lib "unitsig.ss")
+           "xml-sig.ss"
+           (lib "unit.ss")
            (lib "contract.ss")
            (lib "class.ss")
            (lib "mred.ss" "mred")
@@ -13,10 +14,9 @@
   (provide xml-tool@)
   
   (define orig (current-output-port))
-  (define xml-tool@
-    (unit/sig (xml-snip% scheme-snip%)
-      (import drscheme:tool^)
-      
+  (define-unit xml-tool@
+    (import drscheme:tool^)
+    (export xml^)
       (define (phase1) (void))
       (define (phase2) (void))
       
@@ -424,4 +424,4 @@
       
       (drscheme:language:register-capability 'drscheme:special:xml-menus (flat-contract boolean?) #t)
       
-      (drscheme:get/extend:extend-unit-frame xml-box-frame-extension))))
+      (drscheme:get/extend:extend-unit-frame xml-box-frame-extension)))

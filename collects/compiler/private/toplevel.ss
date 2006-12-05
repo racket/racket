@@ -3,16 +3,15 @@
 ;; (c) 1997-2001 PLT
 
 (module toplevel mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require "sig.ss")
 
   (provide toplevel@)
-  (define toplevel@
-    (unit/sig
-	compiler:top-level^
+  (define-unit toplevel@
       (import compiler:library^
 	      compiler:cstructs^)
+      (export compiler:top-level^)
       
       ;;-------------------------------------------------------------
       ;; This contains information about a top-level block, either at
@@ -82,5 +81,5 @@
       ;;   remove-code-captured-vars - parent handling is the same
       ;;                               as remove-code-free-vars
 
-      )))
+      ))
 

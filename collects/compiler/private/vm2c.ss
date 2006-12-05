@@ -3,7 +3,7 @@
 ;; (c) 1997-2001 PLT
 
 (module vm2c mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "list.ss"))
 
   (require (lib "zodiac-sig.ss" "syntax")
@@ -13,13 +13,11 @@
   (require "../sig.ss")
 
   (provide vm2c@)
-  (define vm2c@
-    (unit/sig
-	compiler:vm2c^
-      (import (compiler:option : compiler:option^)
+  (define-unit vm2c@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:analyze^
 	      compiler:const^
@@ -28,6 +26,7 @@
 	      compiler:vehicle^
 	      compiler:vmstructs^
 	      compiler:driver^)
+      (export compiler:vm2c^)
 
       (define local-vars-at-top? #f)
 
@@ -1581,4 +1580,4 @@
 			  ast
 			  (format "vm:build-constant: not supported ~a" ast))]))]
 	       
-	       [else (compiler:internal-error #f (format "vm2c: ~a not supported" ast))]))))))))
+	       [else (compiler:internal-error #f (format "vm2c: ~a not supported" ast))])))))))

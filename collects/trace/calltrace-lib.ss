@@ -6,7 +6,7 @@
   (require "stacktrace.ss"
            (lib "list.ss") 
            (lib "etc.ss")
-           (lib "unitsig.ss"))
+           (lib "unit.ss"))
 
 
   
@@ -68,8 +68,9 @@
   
   (define calltrace-key #`(quote #,(gensym 'key)))
   
-  (define-values/invoke-unit/sig stacktrace^ stacktrace@ #f stacktrace-imports^)
-
+  (define-values/invoke-unit stacktrace@
+    (import stacktrace-imports^) (export stacktrace^))
+  
   (provide calltrace-eval-handler
            instrumenting-enabled
            annotate))

@@ -1,6 +1,6 @@
 
 (module optionr mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "string.ss"))
 
   (require (lib "imap-sig.ss" "net")
@@ -17,11 +17,11 @@
   ;; (which is only instantiated once).
   
   (provide option@)
-  (define option@
-    (unit/sig sirmail:options^
-      (import sirmail:environment^
-	      net:imap^
+  (define-unit option@
+     (import sirmail:environment^
+	      imap^
               mred^)
+      (export sirmail:options^)
 
       (define (parse-server-name s default-port)
 	(let ([m (regexp-match "^([^:]*):([^:]*)$" s)])
@@ -92,4 +92,4 @@
 
       (define (WARN-DOWNLOAD-SIZE) (get-pref 'sirmail:warn-download-size))
       
-      (define (SHOW-URLS) (get-pref 'sirmail:show-urls?)))))
+      (define (SHOW-URLS) (get-pref 'sirmail:show-urls?))))

@@ -3,13 +3,8 @@
 ;;  for programs that used to manipulate the
 ;;  output of zodiac elaboration.
 
-(module zodiac-sig mzscheme
-  (require (lib "unitsig.ss"))
-  
-  (provide zodiac^)
-
-  (define-signature  zodiac^
-    (;; Syntax -> zodiac compatibility:
+(module zodiac-sig (lib "a-signature.ss")
+     ;; Syntax -> zodiac compatibility:
      syntax->zodiac
      ;; Zodiac compatibility -> syntax:
      zodiac->syntax
@@ -110,4 +105,5 @@
      (struct ilist-arglist ())
 
      make-empty-back-box
-     register-client)))
+     register-client)
+

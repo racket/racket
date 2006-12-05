@@ -1,5 +1,5 @@
 (module web-status-server mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "ssl-tcp-unit.ss" "net")
            (lib "tcp-sig.ss" "net")
            (lib "tcp-unit.ss" "net")
@@ -65,15 +65,14 @@
           (lib "logger.ss" "handin-server" "private")
           (lib "config.ss" "handin-server" "private")))))
 
-    (define-values/invoke-unit/sig web-server^
-      (compound-unit/sig
-       (import)
-       (link [T : net:tcp^ ((make-ssl-tcp@
-                             "server-cert.pem" "private-key.pem" #f #f
-                             #f #f #f))]
-             [C : web-config^ (configuration)]
-             [S : web-server^ (web-server@ T C)])
-       (export (open S)))
-      #f)
+    (define-unit-binding config@ configuration (import) (export web-config^))
+    (define-unit-binding ssl-tcp@
+      (make-ssl-tcp@ "server-cert.pem" "private-key.pem" #f #f #f #f #f)
+      (import) (export tcp^))
+    (define-compound-unit/infer status-server@
+      (import)
+      (link ssl-tcp@ config@ web-server@)
+      (export web-server^))
+    (define-values/invoke-unit/infer status-server@)
 
     (serve)))

@@ -1,18 +1,15 @@
 
-(module texpict-extra mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "etc.ss")
+(module texpict-extra (lib "a-unit.ss")
+  (require (lib "etc.ss")
 	   (lib "list.ss"))
 
   (require "texpict-sig.ss"
 	   "common-sig.ss")
 
-  (provide texpict-extra@)
-  (define texpict-extra@
-    (unit/sig ((open texpict-extra^)
-	       (open texpict-common-setup^))
-      (import ((open texpict-common^)
-	       (open texpict-internal^)))
+  (import texpict-common^
+          texpict-internal^)
+  (export texpict-extra^
+          texpict-common-setup^)
 
       (define using-pict2e-package
 	(make-parameter #f
@@ -466,5 +463,5 @@
 		   (error 'pict->string "cannot handle prog pict")]
 		  [else (error 'pict->string "bad tag: ~s" tag)])))))
 
-      (define pict->commands pict->command-list))))
+      (define pict->commands pict->command-list))
 

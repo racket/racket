@@ -1,5 +1,6 @@
 (module lazy mzscheme
 
+  (require-for-syntax (lib "shared.ss" "stepper" "private"))
   ;; ~ = lazy (or delayed)
   ;; ! = strict (or forced)
   ;; (See below for app-related names)
@@ -190,18 +191,27 @@
 
   (define-syntax (hidden-! stx)
     (syntax-case stx (!)
-      [(_ arg) (syntax-property #'(! arg)
-                 'stepper-skipto '(syntax-e cdr syntax-e cdr car))]))
+      [(_ arg) (stepper-syntax-property 
+                #'(! arg)
+                'stepper-skipto 
+                (append skipto/cdr
+                        skipto/second))]))
 
   (define-syntax (!*app stx)
     (syntax-case stx ()
       [(_ f x ...)
        (let ([$$ (lambda (stx)
-                   (syntax-property stx
-                     'stepper-skipto '(syntax-e cdr cdr both-l () (car))))]
+                   (stepper-syntax-property 
+                    stx
+                    'stepper-skipto
+                    (append skipto/cddr
+                            `(both-l () (car)))))]
              [$  (lambda (stx)
-                   (syntax-property stx
-                     'stepper-skipto '(syntax-e cdr syntax-e car)))])
+                   (stepper-syntax-property
+                    stx
+                    'stepper-skipto
+                    (append skipto/cdr 
+                            skipto/first)))])
          (with-syntax ([(y ...) (generate-temporaries #'(x ...))])
            ;; use syntax/loc for better errors etc
            (with-syntax ([lazy   (syntax/loc stx (p y     ...))]
@@ -226,8 +236,8 @@
          (with-syntax ([(f x ...) (rec #'(f x ...))])
            #'(f x ...))]))
     (define (stepper-annotate stx)
-      (let* ([stx (syntax-property stx 'stepper-hint unwinder)]
-             [stx (syntax-property stx 'stepper-skip-double-break #t)])
+      (let* ([stx (stepper-syntax-property stx 'stepper-hint unwinder)]
+             [stx (stepper-syntax-property stx 'stepper-skip-double-break #t)])
         stx))
     (syntax-case stx (~ ! !! !list !!list !values !!values)
       ;; the usual () shorthand for null

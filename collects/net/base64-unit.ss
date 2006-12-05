@@ -1,14 +1,8 @@
-
-
-(module base64-unit mzscheme
-  (require (lib "unitsig.ss"))
-
+(module base64-unit (lib "a-unit.ss")
   (require "base64-sig.ss")
 
-  (provide net:base64@)
-  (define net:base64@
-    (unit/sig net:base64^
-      (import)
+  (import)
+  (export base64^)
 
       (define base64-digit (make-vector 256))
       (let loop ([n 0])
@@ -142,5 +136,5 @@
 	(let ([s (open-output-bytes)])
 	  (base64-encode-stream (open-input-bytes src) s
 				(bytes 13 10))
-	  (get-output-bytes s))))))
+	  (get-output-bytes s))))
 

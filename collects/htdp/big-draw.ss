@@ -5,19 +5,20 @@
            (lib "etc.ss")
            (lib "posn.ss" "lang")
            (lib "prim.ss" "lang")           
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (prefix mred: (lib "mred.ss" "mred"))
            (lib "class.ss")
            (lib "mred-sig.ss" "mred")
+           (lib "mred-unit.ss" "mred")           
            (lib "graphics-sig.ss" "graphics")
            (lib "graphics-posn-less-unit.ss" "graphics"))
   
-  (define-values/invoke-unit/sig graphics:posn-less^
-    graphics-posn-less@ #f 
-    (mred : mred^)
-    graphics:posn^)
+  (define-unit-from-context p@ graphics:posn^)
+  (define-compound-unit/infer g@ (import) (export graphics^)
+    (link standard-mred@ p@ graphics-posn-less@))
+  (define-values/invoke-unit/infer g@)
   
-  (provide-signature-elements graphics:posn-less^)
+  (provide-signature-elements graphics^)
   
   (define-primitive stop stop/proc)
 

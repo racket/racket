@@ -2,7 +2,7 @@
   (require (lib "tool.ss" "drscheme")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "class.ss")
 	   (lib "contract.ss")
            (lib "string-constant.ss" "string-constants")
@@ -34,9 +34,9 @@
       x))
   
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit 
       (import drscheme:tool^)
-      
+      (export drscheme:tool-exports^) 
       (define (phase1) (void))
       (define (phase2) (void))
       

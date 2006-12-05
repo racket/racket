@@ -1,19 +1,17 @@
-
-(module gui mzscheme
+(module gui (lib "a-unit.ss")
   (require (lib "framework.ss" "framework")
            (lib "mred.ss" "mred")
            
            (lib "class.ss")
            (lib "contract.ss")
            (lib "etc.ss")
-           (lib "unitsig.ss")
            (lib "list.ss")
            (lib "file.ss")
            
            (lib "string-constant.ss" "string-constants")
            (lib "external.ss" "browser")
            
-           (lib "browser-sig.ss" "browser")
+           (prefix browser: (lib "browser-sig.ss" "browser"))
            (lib "url-sig.ss" "net")
            (lib "url-structs.ss" "net")
            (lib "uri-codec.ss" "net")
@@ -28,12 +26,8 @@
            
            "internal-hp.ss")
   
-  (provide gui@)
-  
-  (define gui@
-    (unit/sig gui^
-      (import browser^
-              net:url^)
+  (import browser:hyper^ browser:html-export^ browser:bullet-export^ url^)
+  (export gui^)
       
       (define help-desk-frame<%>
         (interface (frame:standard-menus<%>)
@@ -636,4 +630,4 @@
         (send d center)
         (send t focus)
         (send d show #t)
-        result))))
+        result))

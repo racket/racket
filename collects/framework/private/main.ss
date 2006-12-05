@@ -1,24 +1,22 @@
-(module main mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module main (lib "a-unit.ss")
+  (require (lib "class.ss")
 	   "sig.ss"
 	   "../gui-utils.ss"
            (lib "string-constant.ss" "string-constants")
 	   (lib "mred-sig.ss" "mred"))
   
-  (provide main@)
+  (import mred^
+          [prefix preferences: framework:preferences^]
+          [prefix exit: framework:exit^]
+          [prefix group: framework:group^]
+          [prefix handler: framework:handler^]
+          [prefix editor: framework:editor^]
+          [prefix color-prefs: framework:color-prefs^]
+          [prefix scheme: framework:scheme^])
+  (export framework:main^)
+  (init-depend framework:preferences^ framework:exit^ framework:editor^
+               framework:color-prefs^ framework:scheme^)
 
-  (define main@
-    (unit/sig framework:main^
-      (import mred^
-	      [preferences : framework:preferences^]
-	      [exit : framework:exit^]
-	      [group : framework:group^]
-              [handler : framework:handler^]
-              [editor : framework:editor^]
-              [color-prefs : framework:color-prefs^]
-              [scheme : framework:scheme^])
-      
       (application-preferences-handler (λ () (preferences:show-dialog)))
       
       (preferences:set-default 'framework:square-bracket:cond/offset
@@ -319,4 +317,4 @@
       ;; the application.
       ;(preferences:set 'framework:file-dialogs 'std)
       
-      (void))))
+      (void))

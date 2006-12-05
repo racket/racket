@@ -1,6 +1,6 @@
 #cs(module graphing mzscheme
   (require (lib "error.ss" "htdp")
-	   (lib "unitsig.ss")
+	   (lib "unit.ss")
 	   (lib "draw-sig.ss" "htdp")
 	   (lib "big-draw.ss" "htdp")
 	   (lib "posn.ss" "lang")

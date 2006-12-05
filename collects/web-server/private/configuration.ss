@@ -1,5 +1,5 @@
 (module configuration mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "kw.ss")
            (lib "list.ss")
            (lib "contract.ss"))
@@ -37,8 +37,9 @@
                                   #:key
                                   [make-servlet-namespace default-make-servlet-namespace])
     (define the-make-servlet-namespace make-servlet-namespace)
-    (unit/sig web-config^
+    (unit
       (import)
+      (export web-config^)
       (define port (configuration-table-port table))
       (define max-waiting (configuration-table-max-waiting table))
       (define listen-ip #f) ; more here - add to configuration table

@@ -1,6 +1,6 @@
 
 (module frtime-tool mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "etc.ss")
@@ -11,9 +11,9 @@
   (provide tool@)
 
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
-
+      (export drscheme:tool-exports^)
       #;(define basic-frtime-language%
 	(class* object% (drscheme:language:simple-module-based-language<%>)
 	  (define/public (get-language-numbers)

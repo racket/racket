@@ -1,7 +1,6 @@
 
-(module finder mzscheme
+(module finder (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
 	   "sig.ss"
 	   "../gui-utils.ss"
            (lib "class.ss")
@@ -11,16 +10,14 @@
 	   (lib "file.ss")
 	   (lib "etc.ss"))
 
-  (provide finder@)
 
-  (define finder@
-    (unit/sig framework:finder^
-      (import mred^
-              [preferences : framework:preferences^]
-	      [keymap : framework:keymap^])
+  (import mred^
+          [prefix preferences: framework:preferences^]
+          [prefix keymap: framework:keymap^])
 
-      (rename [-put-file put-file]
-	      [-get-file get-file])
+  (export (rename framework:finder^
+                  [-put-file put-file]
+                  [-get-file get-file]))
 
       (define dialog-parent-parameter (make-parameter #f))
 
@@ -106,4 +103,4 @@
 	  (apply (case (preferences:get 'framework:file-dialogs)
 		   [(std) std-get-file]
 		   [(common) common-get-file])
-                 args))))))
+                 args))))

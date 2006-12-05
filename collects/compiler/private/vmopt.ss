@@ -8,7 +8,7 @@
 
 (module vmopt mzscheme
   
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
 
@@ -18,19 +18,19 @@
   (require "../sig.ss")
 
   (provide vmopt@)
-  (define vmopt@
-    (unit/sig
-	compiler:vmopt^
-      (import (compiler:option : compiler:option^)
+  (define-unit vmopt@
+    
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:vmstructs^
 	      compiler:known^
 	      compiler:rep^
 	      compiler:vmphase^
 	      compiler:driver^)
+      (export compiler:vmopt^)
 
       (define satisfies-arity?
 	(lambda (arity L arglist)
@@ -583,4 +583,4 @@
 	      (set! new-locs empty-set)
 	      (values
 	       (process! ast)
-	       new-locs))))))))
+	       new-locs)))))))

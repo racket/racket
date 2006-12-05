@@ -3,7 +3,7 @@
 	   "draw-sig.ss"
 	   "big-draw.ss"
 	   (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "etc.ss")
            (lib "prim.ss" "lang")
 	   (lib "mred.ss" "mred"))

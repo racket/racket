@@ -86,8 +86,8 @@
   ; : identifier -> identifier
   (define (make-mark-binding-stx id)
     #`(case-lambda
-        [() #,(syntax-property id 'stepper-dont-check-for-function #t)]
-        [(v) (set! #,(syntax-property id 'stepper-dont-check-for-function #t) v)]))
+        [() #,id]
+        [(v) (set! #,id v)]))
   
   (define (mark-bindings mark)
     (map list 

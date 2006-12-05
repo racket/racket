@@ -25,7 +25,7 @@ pict snip :
   (require (lib "tool.ss" "drscheme")
            (lib "mred.ss" "mred")
            (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "contract.ss")
            (lib "string-constant.ss" "string-constants")
            (lib "framework.ss" "framework")
@@ -52,9 +52,9 @@ pict snip :
 		       #f))]))
 
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit 
       (import drscheme:tool^)
-      
+      (export drscheme:tool-exports^)
       (define original-output-port (current-output-port))
       (define (oprintf . args) (apply fprintf original-output-port args))
       

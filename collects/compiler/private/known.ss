@@ -21,7 +21,7 @@
 ;;; ------------------------------------------------------------
 
 (module known mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	  (lib "list.ss")
 	  (lib "etc.ss"))
 
@@ -31,12 +31,11 @@
   (require "../sig.ss")
 
   (provide known@)
-  (define known@
-    (unit/sig compiler:known^
-      (import (compiler:option : compiler:option^)
+  (define-unit known@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:prephase^
 	      compiler:anorm^
@@ -44,6 +43,7 @@
 	      compiler:closure^
 	      compiler:rep^
 	      compiler:driver^)
+      (export compiler:known^)
       
       ;; helper functions to create a binding annotation
       (define make-known-binding
@@ -584,4 +584,4 @@
 					ast)))]))])
 	  
 	  (lambda (ast)
-	    (analyze! ast)))))))
+	    (analyze! ast))))))

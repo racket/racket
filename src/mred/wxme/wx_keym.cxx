@@ -590,7 +590,7 @@ void wxKeymap::MapFunction(char *keys, char *fname)
 #endif
 	      code = toupper(code);
 	} else if (isupper(code))
-	  shift = TRUE;
+	  shift = 1;
       } 
 
       num_new_keys = num_keys;

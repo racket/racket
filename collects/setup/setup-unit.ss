@@ -3,8 +3,7 @@
 ; Calls `exit' when done.
 
 (module setup-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "unit.ss")
+  (require (lib "unit.ss")
 	   (lib "file.ss")
 	   (lib "list.ss")
 	   (lib "cm.ss")
@@ -24,12 +23,12 @@
   
   (provide setup@)
   
-  (define setup@
-    (unit/sig ()
+  (define-unit setup@
       (import setup-option^
 	      compiler^
-	      (compiler:option : compiler:option^)
+	      (prefix compiler:option: compiler:option^)
 	      launcher^)
+      (export)
       
       (define setup-fprintf
 	(lambda (p s . args)
@@ -849,4 +848,4 @@
           (read-line))
         (exit 1))
       
-      (exit 0))))
+      (exit 0)))

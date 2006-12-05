@@ -6,7 +6,7 @@
 
 (module vmscheme mzscheme
   
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "list.ss")
 	   (lib "etc.ss"))
 
@@ -16,13 +16,13 @@
   (require "../sig.ss")
 
   (provide vmscheme@)
-  (define vmscheme@
-    (unit/sig compiler:vmstructs^
+  (define-unit vmscheme@
       (import compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:driver^)
+      (export compiler:vmstructs^)
 
       ;; Block statements
       (define-struct (vm:sequence zodiac:zodiac) (vals))
@@ -131,7 +131,7 @@
 			  void?
 			  undefined?)])
 	  (lambda (i)
-	    (p? (syntax-e (zodiac:zodiac-stx i)))))))))
+	    (p? (syntax-e (zodiac:zodiac-stx i))))))))
 
 #|
 

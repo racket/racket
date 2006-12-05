@@ -1,6 +1,6 @@
 
 (module sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require "../sig.ss")
   (require (lib "zodiac-sig.ss" "syntax"))
@@ -358,10 +358,8 @@
     (vm-optimize!))
 
   (provide compiler:driver^)
-  (define-signature compiler:driver^
-    ((open compiler:inner^)
-
-     compiler:error
+  (define-signature compiler:driver^ extends compiler:inner^
+    (compiler:error
      compiler:fatal-error
      compiler:internal-error
      compiler:warning
@@ -420,11 +418,4 @@
      vm->c:emit-case-prologue
      vm->c:emit-case-epilogue
      vm->c:emit-function-epilogue
-     vm->c-expression))
-
-  (provide compiler:basic-link^)
-  (define-signature compiler:basic-link^
-    ((unit ZODIAC : zodiac^)
-     (unit ZLAYER : compiler:zlayer^)
-     (unit DRIVER : compiler:driver^)
-     (unit LIBRARY : compiler:library^))))
+     vm->c-expression)))

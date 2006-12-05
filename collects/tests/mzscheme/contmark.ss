@@ -2,7 +2,7 @@
 
 (load-relative "loadtest.ss")
 
-(require (lib "unit.ss"))
+(require (lib "unit200.ss"))
 
 (Section 'continuation-marks)
 

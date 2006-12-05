@@ -1,6 +1,6 @@
 
 (module folderr mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "class.ss")
            (lib "framework.ss" "framework")
            (lib "mred-sig.ss" "mred"))
@@ -18,14 +18,14 @@
   (require (lib "mzssl.ss" "openssl"))
   
   (provide folder@)
-  (define folder@
-    (unit/sig ()
+  (define-unit folder@
       (import sirmail:environment^
-              (shutdown-folders-window)
+              sirmail:shutdown-folder^
               sirmail:options^
               mred^
-              net:imap^
+              imap^
               hierlist^)
+      (export)
   
       (define (show-error x frame)
 	(message-box "Error" 
@@ -469,4 +469,4 @@
       (current-exception-handler
        (initial-exception-handler))
       
-      frame)))
+      frame))

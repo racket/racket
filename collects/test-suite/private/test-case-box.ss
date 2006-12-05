@@ -10,7 +10,7 @@
    (lib "class.ss")
    (lib "list.ss")
    (lib "mred.ss" "mred")
-   (lib "unitsig.ss")
+   (lib "unit.ss")
    (lib "tool.ss" "drscheme")
    (lib "etc.ss")
    (lib "match.ss")
@@ -18,6 +18,7 @@
    (lib "readerr.ss" "syntax")
    (lib "string-constant.ss" "string-constants")
    (lib "embedded-gui.ss" "embedded-gui")
+   (lib "shared.ss" "stepper" "private")
    "make-snipclass.ss"
    "convert-to-string.ss"
    "text-syntax-object.ss"
@@ -25,11 +26,10 @@
    "test-case.ss"
    (only (lib  "teachprims.ss" "lang" "private") beginner-equal?))
   
-  (define-signature test-case-box^ (test-case-box% phase1 phase2))
-  (define test-case-box@
-    (unit/sig test-case-box^
-      (import drscheme:tool^ text->syntax-object^ print-to-text^)
-      
+  (define-signature test-case-box^ extends drscheme:tool-exports^ (test-case-box%))
+  (define-unit test-case-box@
+    (import drscheme:tool^ text->syntax-object^ print-to-text^)
+    (export test-case-box^)
       (define test-case:program-editor% false)
       
       (define (phase1) (void))
@@ -88,9 +88,9 @@
                                       (syntax-span next))]))
 	       (syntax-property
 		(if enabled?
-		    (with-syntax ([to-test-stx (syntax-property (text->syntax-object to-test #f)
-								'stepper-test-suite-hint
-								true)]
+		    (with-syntax ([to-test-stx (stepper-syntax-property (text->syntax-object to-test #f)
+                                                                        'stepper-test-suite-hint
+                                                                        true)]
 				  [update-stx (lambda (x) (update x))] ; eta public method
 				  [set-actuals-stx set-actuals]
 				  [w printf])
@@ -120,9 +120,9 @@
 					 exp-stx
 					 update-stx
 					 set-actuals-stx)))))
-		    (syntax-property #'(define-values () (values))
-				     'stepper-skip-completely
-				     true))
+		    (stepper-syntax-property #'(define-values () (values))
+                                            'stepper-skip-completely
+                                            true))
 		'test-case-box #t)))
            
            #;(boolean? . -> . void?)
@@ -477,7 +477,7 @@
                   (predicate predicate)
                   (should-raise should-raise)
                   (error-message error-message))))))
-      ))
+      )
   
   #;((-> void?) (-> void?) (symbols 'up 'down) . -> . snip%)
   ;; a snip which acts as a toggle button for rolling a window up and down

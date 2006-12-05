@@ -1,7 +1,7 @@
 (module text-syntax-object mzscheme
   
   (require
-   (lib "unitsig.ss")
+   (lib "unit.ss")
    (lib "class.ss")
    (lib "list.ss")
    (lib "tool.ss" "drscheme")
@@ -15,10 +15,10 @@
   
   (define-signature text->syntax-object^ (text->syntax-objects))
   
-  (define text->syntax-object@
-    (unit/sig text->syntax-object^
-      (import drscheme:tool^)
-      
+  (define-unit text->syntax-object@
+    
+    (import drscheme:tool^)
+    (export text->syntax-object^)   
       #;((is-a?/c text%) . -> . (listof syntax-object?))
       ;; a syntax object representing the text with the color of the given object
       (define (text->syntax-objects text default-v)
@@ -56,4 +56,4 @@
                   (error 'text->syntax-object "Invalid language settings"))))
           (read-all-syntax)))
       ))
-  )
+  

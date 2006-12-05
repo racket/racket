@@ -1,16 +1,13 @@
 
-(module init mzscheme
+(module init (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
            "drsig.ss"
            (lib "list.ss")
 	   (lib "mred.ss" "mred"))
   
-  (provide init@)
-  
-  (define init@
-    (unit/sig drscheme:init^
-      (import)
+
+  (import)
+  (export drscheme:init^)
       
       (define original-output-port (current-output-port))
       (define original-error-port (current-error-port))
@@ -53,4 +50,4 @@
                                 [current-custodian system-custodian])
                    (queue-callback
                     (λ ()
-                      (message-box title text #f '(stop ok)))))))))))))
+                      (message-box title text #f '(stop ok)))))))))))

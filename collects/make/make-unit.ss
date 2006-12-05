@@ -1,14 +1,9 @@
 
-(module make-unit mzscheme
-  (require (lib "unitsig.ss"))
-  
+(module make-unit (lib "a-unit.ss")
   (require "make-sig.ss")
 
-  (provide make@)
-
-  (define make@
-    (unit/sig make^
       (import)
+      (export make^)
 
       (define-struct (exn:fail:make exn:fail) (target orig-exn))
       
@@ -169,5 +164,4 @@
       (define make/proc
 	(case-lambda
 	 [(spec) (make/proc/helper spec #())]
-	 [(spec argv) (make/proc/helper spec argv)])))))
-
+	 [(spec argv) (make/proc/helper spec argv)])))

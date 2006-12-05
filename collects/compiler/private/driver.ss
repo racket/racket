@@ -60,7 +60,7 @@
 ;;    the binding.
 
 (module driver mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "list.ss")
 	   (lib "file.ss")
 	   (lib "port.ss")
@@ -82,12 +82,11 @@
 
   (provide driver@)
 
-  (define driver@
-    (unit/sig compiler:driver^
-      (import (compiler:option : compiler:option^)
+  (define-unit driver@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:prephase^
 	      compiler:anorm^
@@ -106,7 +105,8 @@
 	      dynext:compile^
 	      dynext:link^
 	      dynext:file^)
-      (rename (compile-extension* compile-extension))
+      (export (rename compiler:driver^
+                      [compile-extension* compile-extension]))
       
       (define debug:file "dump.txt")
       (define debug:port #f)
@@ -1433,4 +1433,4 @@
 	(when (compiler:option:verbose)
 	  (printf " finished [cpu ~a, real ~a].~n"
 		  total-cpu-time
-		  total-real-time))))))))
+		  total-real-time)))))))

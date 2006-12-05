@@ -1,15 +1,10 @@
+(module smtp-unit (lib "a-unit.ss")
+  (require (lib "kw.ss")
+	   "base64.ss"
+           "smtp-sig.ss")
 
-(module smtp-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "kw.ss")
-	   "base64.ss")
-
-  (require "smtp-sig.ss")
-
-  (provide net:smtp@)
-  (define net:smtp@
-    (unit/sig net:smtp^
-      (import)
+  (import)
+  (export smtp^)
 
       (define smtp-sending-server (make-parameter "localhost"))
 
@@ -133,4 +128,4 @@
 				  (values (current-input-port) (current-output-port))
 				  (tcp-connect server opt-port-no))])
 	    (smtp-send-message* r w sender recipients header message-lines
-				auth-user auth-passwd)))))))
+				auth-user auth-passwd)))))

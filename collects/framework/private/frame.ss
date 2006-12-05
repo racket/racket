@@ -1,7 +1,6 @@
 
-(module frame mzscheme
+(module frame (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
 	   (lib "class.ss")
 	   (lib "include.ss")
 	   "sig.ss"
@@ -12,32 +11,31 @@
 	   (lib "file.ss")
 	   (lib "etc.ss"))
   
-  (provide frame@)
+  (import mred^
+          [prefix group: framework:group^]
+          [prefix preferences: framework:preferences^]
+          [prefix icon: framework:icon^]
+          [prefix handler: framework:handler^]
+          [prefix application: framework:application^]
+          [prefix panel: framework:panel^]
+          [prefix finder: framework:finder^]
+          [prefix keymap: framework:keymap^]
+          [prefix text: framework:text^]
+          [prefix pasteboard: framework:pasteboard^]
+          [prefix editor: framework:editor^]
+          [prefix canvas: framework:canvas^]
+          [prefix menu: framework:menu^]
+          [prefix scheme: framework:scheme^]
+          [prefix exit: framework:exit^]
+          [prefix comment-box: framework:comment-box^])
   
-  (define frame@
-    (unit/sig framework:frame^
-      (import mred^
-              [group : framework:group^]
-              [preferences : framework:preferences^]
-              [icon : framework:icon^]
-              [handler : framework:handler^]
-              [application : framework:application^]
-              [panel : framework:panel^]
-              [finder : framework:finder^]
-              [keymap : framework:keymap^]
-              [text : framework:text^]
-              [pasteboard : framework:pasteboard^]
-              [editor : framework:editor^]
-              [canvas : framework:canvas^]
-              [menu : framework:menu^]
-              [scheme : framework:scheme^]
-              [exit : framework:exit^]
-              [comment-box : framework:comment-box^])
+  (export (rename framework:frame^ 
+                  [-editor<%> editor<%>]
+                  [-pasteboard% pasteboard%]
+                  [-text% text%]))
 
-      (rename [-editor<%> editor<%>]
-              [-pasteboard% pasteboard%]
-              [-text% text%])
-
+  (init-depend mred^ framework:text^)
+  
       (define (reorder-menus frame)
         (define items (send (send frame get-menu-bar) get-items))
         (define (find-menu name)
@@ -2374,4 +2372,4 @@
       (define searchable% (searchable-text-mixin (searchable-mixin -text%)))
       (define delegate% (delegate-mixin searchable%))
       
-      (define -pasteboard% (pasteboard-mixin open-here%)))))
+      (define -pasteboard% (pasteboard-mixin open-here%)))

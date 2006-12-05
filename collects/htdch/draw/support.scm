@@ -4,7 +4,7 @@
            (lib "posn.ss" "lang")
            (lib "class.ss")
            (lib "mred.ss" "mred")
-           (lib "unit.ss") (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "String.ss" "profj" "libs" "java" "lang")
            (lib "Throwable.ss" "profj" "libs""java""lang")
            (lib "RuntimeException.ss" "profj" "libs" "java" "lang"))
@@ -49,10 +49,10 @@
                               (send exn RuntimeException-constructor-java.lang.String str))
                             (current-continuation-marks))))
   
-  (define canvas-native@
-    (unit/sig canvas-native^
-      (import support^)
-      
+  (define-unit canvas-native@
+    (import support^)
+    (export canvas-native^)
+          
       (define-syntax (wrap-start-check stx)
 	(syntax-case stx ()
 	  [(_ body ...)
@@ -165,12 +165,12 @@
       (define (clearLine-geometry.Posn-geometry.Posn-colors.Color-native this accs gets privates p0 p1 c)
 	(wrap-start-check 
          ([hash-table-get privates '%clear-solid-line] (build-posn p0) (build-posn p1) (color->symbol c))))
-      ))
+      )
   
   
-  (define world-native@
-    (unit/sig world-native^
-      (import support^)
+  (define-unit world-native@
+    (import support^)
+    (export world-native^)
       
       (define (bigBangO-double-native this accs gets privates i)
         (define theCanvas ((hash-table-get accs 'theCanvas) this))
@@ -211,5 +211,5 @@
         (define _ (check-string s "endOfWorld(String)" "first"))
         (message-box "end of world" (send s get-mzscheme-string))
         (send theCanvas stop)
-        this)))
+        this))
   )

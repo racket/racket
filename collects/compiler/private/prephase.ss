@@ -40,7 +40,7 @@
 ;;; ------------------------------------------------------------
 
 (module prephase mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require (lib "zodiac-sig.ss" "syntax"))
 
@@ -48,15 +48,14 @@
   (require "../sig.ss")
 
   (provide prephase@)
-  (define prephase@
-    (unit/sig
-	compiler:prephase^
-      (import (compiler:option : compiler:option^)
+  (define-unit prephase@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:driver^)
+      (export compiler:prephase^)
 
       (define-struct binding-properties (mutable? unit-i/e? ivar? anchor known-val))
 
@@ -687,4 +686,4 @@
 			    ast 
 			    (format "unsupported syntactic form ~a" ast))
 			   ast]))])
-	  prephase!)))))
+	  prephase!))))

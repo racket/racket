@@ -13,7 +13,7 @@ module browser threading seems wrong.
 
 (module unit mzscheme
   (require (lib "contract.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "class.ss")
            (lib "file.ss")
            (lib "etc.ss")
@@ -42,26 +42,25 @@ module browser threading seems wrong.
   (define show-planet-paths (string-constant module-browser-show-planet-paths/short))
   (define refresh (string-constant module-browser-refresh))
   
-  (define unit@
-    (unit/sig drscheme:unit^
-      (import [help-desk : drscheme:help-desk^]
-              [drscheme:app : drscheme:app^]
-              [drscheme:frame : drscheme:frame^]
-              [drscheme:text : drscheme:text^]
-              [drscheme:rep : drscheme:rep^]
-              [drscheme:language-configuration : drscheme:language-configuration/internal^]
-              [drscheme:language : drscheme:language^]
-              [drscheme:get/extend : drscheme:get/extend^]
-              [drscheme:teachpack : drscheme:teachpack^]
-              [drscheme:module-overview : drscheme:module-overview^]
-              [drscheme:tools : drscheme:tools^]
-              [drscheme:eval : drscheme:eval^]
-              [drscheme:init : drscheme:init^]
-              [drscheme:module-language : drscheme:module-language^]
-              [drscheme:modes : drscheme:modes^])
-      
-      (rename [-frame% frame%]
-              [-frame<%> frame<%>])
+  (define-unit unit@
+    (import [prefix help-desk: drscheme:help-desk^]
+            [prefix drscheme:app: drscheme:app^]
+            [prefix drscheme:frame: drscheme:frame^]
+            [prefix drscheme:text: drscheme:text^]
+            [prefix drscheme:rep: drscheme:rep^]
+            [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
+            [prefix drscheme:language: drscheme:language^]
+            [prefix drscheme:get/extend: drscheme:get/extend^]
+            [prefix drscheme:teachpack: drscheme:teachpack^]
+            [prefix drscheme:module-overview: drscheme:module-overview^]
+            [prefix drscheme:tools: drscheme:tools^]
+            [prefix drscheme:eval: drscheme:eval^]
+            [prefix drscheme:init: drscheme:init^]
+            [prefix drscheme:module-language: drscheme:module-language^]
+            [prefix drscheme:modes: drscheme:modes^])
+    (export (rename drscheme:unit^
+                    [-frame% frame%]
+                    [-frame<%> frame<%>]))
     
       (define-local-member-name
         get-visible-defs
@@ -3167,4 +3166,4 @@ module browser threading seems wrong.
                [frame (new drs-frame% (filename filename))])
           (send (send frame get-interactions-text) initialize-console)
           (send frame show #t)
-          frame)))))
+          frame))))

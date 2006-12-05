@@ -20,7 +20,7 @@
 ;;; ------------------------------------------------------------
 
 (module vehicle mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require (lib "zodiac-sig.ss" "syntax"))
 
@@ -28,18 +28,18 @@
   (require "../sig.ss")
 
   (provide vehicle@)
-  (define vehicle@
-    (unit/sig
-	compiler:vehicle^
-      (import (compiler:option : compiler:option^)
+  (define-unit vehicle@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:zlayer^
 	      compiler:const^
 	      compiler:known^
 	      compiler:closure^
 	      compiler:driver^)
+      (export compiler:vehicle^)
+
 
       ;; Used for union-find for lambda vehicles:
       (define (get-vehicle-top code)
@@ -241,5 +241,5 @@
 	  (lambda (current-lambda ast) (relate! current-lambda ast))))
 
       (define (vehicle:only-code-in-vehicle? code)
-	(= (vehicle-total-labels (get-vehicle (closure-code-vehicle code))) 1)))))
+	(= (vehicle-total-labels (get-vehicle (closure-code-vehicle code))) 1))))
 

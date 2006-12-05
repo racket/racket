@@ -1,16 +1,19 @@
 
 (module mrpict mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require (lib "mred-sig.ss" "mred")
-	   (lib "mred.ss" "mred"))
-
+	   (lib "mred-unit.ss" "mred"))
+  (require "private/mrpict-sig.ss"
+	   "private/common-sig.ss")
   (require "mrpict-sig.ss"
 	   "mrpict-unit.ss")
 
-  (define-values/invoke-unit/sig mrpict^
-    mrpict@
-    #f
-    mred^)
+  (define-compound-unit/infer mrpict+mred@
+    (import)
+    (export texpict-common^ mrpict-extra^)
+    (link standard-mred@ mrpict@))
+  
+  (define-values/invoke-unit/infer mrpict+mred@)
 
-  (provide-signature-elements mrpict^))
+  (provide-signature-elements texpict-common^ mrpict-extra^))

@@ -12,7 +12,7 @@
 
   (provide deflate gzip-through-ports gzip)
 
-  (require "unit.ss")
+  (require "unit200.ss")
 
   (define-syntax INSERT_STRING
     (syntax-rules ()

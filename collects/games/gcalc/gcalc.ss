@@ -5,7 +5,7 @@
 
 (module gcalc mzscheme
   (require (lib "class.ss") (lib "mred.ss" "mred") (lib "etc.ss")
-           "../show-help.ss" (lib "unit.ss"))
+           "../show-help.ss" (lib "unit200.ss"))
   (provide game-unit)
 
   (define customs '())

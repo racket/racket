@@ -1,6 +1,6 @@
 
 (module collection-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "list.ss")
 	   (lib "file.ss"))
 
@@ -12,13 +12,12 @@
 
   (provide make:collection@)
 
-  (define make:collection@
-    (unit/sig
-	make:collection^
-      (import make^
+  (define-unit make:collection@
+	(import make^
 	      dynext:file^
-	      (compiler:option : compiler:option^)
+	      (prefix compiler:option: compiler:option^)
 	      compiler^)
+        (export make:collection^)
 
       (define (make-collection
 	       collection-name
@@ -105,5 +104,4 @@
 	    ss->zo-list
 	    ss->c-list
 	    c->o-list)
-	   argv))))))
-
+	   argv)))))

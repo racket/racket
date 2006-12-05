@@ -1,13 +1,9 @@
-(module nntp-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "etc.ss"))
+(module nntp-unit (lib "a-unit.ss")
+  (require (lib "etc.ss")
+           "nntp-sig.ss")
 
-  (require "nntp-sig.ss")
-
-  (provide net:nntp@)
-  (define net:nntp@
-    (unit/sig net:nntp^
-      (import)
+  (import)
+  (export nntp^)
 
       ;; sender : oport
       ;; receiver : iport
@@ -337,5 +333,5 @@
 			       (regexp-match matcher first))
 			     desireds)
 		      (cons first (loop rest))
-		      (loop rest))))))))))
+		      (loop rest))))))))
 

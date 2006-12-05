@@ -304,7 +304,7 @@
     (define (ensure-expression stx k)
       (if (memq (syntax-local-context) '(expression))
 	  (k)
-	  (stepper-syntax-property #`(begin0 #,stx) 'stepper-skipto '(syntax-e cdr car))))
+	  (stepper-syntax-property #`(begin0 #,stx) 'stepper-skipto skipto/second)))
 
     ;; Use to generate nicer error messages than direct pattern
     ;; matching. The `where' argument is an English description
@@ -1350,7 +1350,7 @@
 	    (stepper-syntax-property
 	     #`(let () expr)
 	     'stepper-skipto
-	     '(syntax-e cdr cdr car))]
+             skipto/third)]
 	   [(_ ([name0 rhs-expr0] [name rhs-expr] ...) expr)
 	    (let ([names (syntax->list (syntax (name0 name ...)))])
 	      (andmap identifier/non-kw? names))
@@ -1695,7 +1695,18 @@
 	    (stepper-syntax-property 
 	     (syntax/loc stx (time . exprs))
 	     'stepper-skipto
-             '(syntax-e cdr car syntax-e car syntax-e cdr car syntax-e cdr syntax-e cdr car syntax-e cdr cdr syntax-e car))]
+             (append 
+              ;; let-values-bindings
+              skipto/second
+              ;; rhs of first binding
+              skipto/first
+              skipto/second
+              ;; 2nd term of application:
+              skipto/cdr
+              skipto/second
+              ;; lambda-body:
+              skipto/cddr
+              skipto/first))]
 	   [_else
 	    (bad-use-error 'time stx)]))))
 
@@ -1873,7 +1884,8 @@
 			     (stepper-syntax-property
 			      (syntax/loc stx (begin (set! id expr ...) set!-result))
 			      'stepper-skipto
-			      '(syntax-e cdr syntax-e car))
+                              (append skipto/cdr
+                                      skipto/first))
 			     (stepper-ignore-checker (syntax/loc stx (#%app values (advanced-set!-continue id expr ...))))))]
 		      [(_ id . __)
 		       (teach-syntax-error

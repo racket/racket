@@ -1,6 +1,6 @@
 (module web-server mzscheme
   (require (lib "tcp-sig.ss" "net")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "contract.ss")
            "sig.ss"
            "web-server-unit.ss"
@@ -21,17 +21,17 @@
       [(config port listen-ip)
        (run-the-server (update-configuration config `((port . ,port) (ip-address . ,listen-ip))))]))
   
+  (define-unit-from-context tcp@ tcp^)
+  
+  (define-unit m@ (import web-server^) (export)
+    (init-depend web-server^)
+    (serve))
+  
   ; : configuration -> -> void
   (define (run-the-server config)
-    (invoke-unit/sig
-     (compound-unit/sig
-       (import (t : net:tcp^))
-       (link
-        [c : web-config^ (config)]
-        [s : web-server^ (web-server@ t c)]
-        [m : () ((unit/sig ()
-                   (import web-server^)
-                   (serve))
-                 s)])
-       (export))
-     net:tcp^)))
+    (define-unit-binding c@ config (import) (export web-config^))
+    (invoke-unit
+     (compound-unit/infer
+       (import)
+       (link tcp@ c@ web-server@ m@)
+       (export)))))

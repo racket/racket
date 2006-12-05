@@ -1,14 +1,14 @@
 (module tool mzscheme
   (require (lib "external.ss" "browser")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "tool.ss" "drscheme"))
   (provide tool@)
 
   ;; to add a preference pannel to drscheme that sets the browser preference
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit
       (import drscheme:tool^)
-      
+      (export drscheme:tool-exports^)
       (define phase1 void)
       (define phase2 void)
       

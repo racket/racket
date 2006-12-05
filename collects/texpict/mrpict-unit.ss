@@ -1,6 +1,6 @@
 
 (module mrpict-unit mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (require (lib "mred-sig.ss" "mred"))
 
@@ -10,18 +10,7 @@
 	   "private/mrpict-extra.ss")
 	
   (provide mrpict@)
-  (define mrpict@
-    (compound-unit/sig
-     (import (MRED : mred^))
-     (link [COMMON : ((open texpict-common^)
-		      (open texpict-internal^))
-		   (common@
-		    (MRPICTX : texpict-common-setup^))]
-	   [MRPICTX : ((open mrpict-extra^)
-		       (open texpict-common-setup^))
-		    (mrpict-extra@
-		     MRED
-		     COMMON)])
-     (export (open (COMMON : texpict-common^))
-	     (open (MRPICTX : mrpict-extra^))))))
-
+  (define-compound-unit/infer mrpict@
+    (import mred^)
+    (export texpict-common^ mrpict-extra^)
+    (link common@ mrpict-extra@)))

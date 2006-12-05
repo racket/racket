@@ -1,16 +1,16 @@
 (module graphics-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "mred-sig.ss" "mred")
 	   "graphics-sig.ss"
 	   "graphics-posn-less-unit.ss")
   (provide graphics@)
 
-  (define graphics@
-    (compound-unit/sig
-      (import [mred : mred^])
-      (link [p : graphics:posn^ 
-	       ((unit/sig graphics:posn^ (import) (define-struct posn (x y))))]
-	    [g : graphics:posn-less^ (graphics-posn-less@ mred p)])
-      (export
-       (open p)
-       (open g)))))
+  (define-unit p@
+    (import)
+    (export graphics:posn^)
+    (define-struct posn (x y)))
+  
+  (define-compound-unit/infer graphics@
+    (import mred^)
+    (export graphics:posn^ graphics^)
+    (link p@ graphics-posn-less@)))

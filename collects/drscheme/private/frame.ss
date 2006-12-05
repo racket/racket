@@ -1,8 +1,8 @@
 
-(module frame mzscheme
+(module frame (lib "a-unit.ss")
   (require (lib "name-message.ss" "mrlib")
            (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "match.ss")
            (lib "class.ss")
            (lib "string.ss")
@@ -17,16 +17,13 @@
            (prefix mzlib:file: (lib "file.ss")) (lib "file.ss")
            (prefix mzlib:list: (lib "list.ss")))
   
-  (provide frame@)
-  (define frame@
-    (unit/sig drscheme:frame^
-      (import [drscheme:unit : drscheme:unit^]
-              [drscheme:app : drscheme:app^]
-              [help : drscheme:help-desk^]
-              [drscheme:multi-file-search : drscheme:multi-file-search^]
-              [drscheme:init : drscheme:init^])
-      
-      (rename [-mixin mixin])
+  (import [prefix drscheme:unit: drscheme:unit^]
+          [prefix drscheme:app: drscheme:app^]
+          [prefix help: drscheme:help-desk^]
+          [prefix drscheme:multi-file-search: drscheme:multi-file-search^]
+          [prefix drscheme:init: drscheme:init^])
+  (export (rename drscheme:frame^
+                  [-mixin mixin]))
       
       (define basics<%> (interface (frame:standard-menus<%>)))
       
@@ -560,4 +557,4 @@
             #t)))
       
       
-      )))
+      )

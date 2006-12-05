@@ -1,16 +1,11 @@
+(module head-unit (lib "a-unit.ss")
+  (require (lib "date.ss")
+	   (lib "string.ss")
+           "head-sig.ss")
 
-(module head-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "date.ss")
-	   (lib "string.ss"))
+  (import)
+  (export head^)
 
-  (require "head-sig.ss")
-
-  (provide net:head@)
-  (define net:head@
-    (unit/sig net:head^
-      (import)
-      
       ;; NB: I've done a copied-code adaptation of a number of these definitions into 
       ;; "bytes-compatible" versions.  Finishing the rest will require some kind of interface
       ;; decision---that is, when you don't supply a header, should the resulting operation
@@ -402,4 +397,4 @@
 			      alen)
 			(loop (cdr addresses)
 			      (format "~a, ~a" s addr)
-			      (+ len alen 2)))))))))))
+			      (+ len alen 2)))))))))

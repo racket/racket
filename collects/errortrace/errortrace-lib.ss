@@ -6,7 +6,7 @@
   (require "stacktrace.ss"
            "errortrace-key.ss"
            (lib "list.ss")
-           (lib "unitsig.ss"))
+           (lib "unit.ss"))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Test coverage run-time support
@@ -122,8 +122,7 @@
             loc
           expr)))))
 
-  (define-values/invoke-unit/sig
-    stacktrace^ stacktrace@ #f stacktrace-imports^)
+  (define-values/invoke-unit/infer stacktrace@)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Execute counts

@@ -1,5 +1,5 @@
 (module plt-single-installer mzscheme 
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "etc.ss")
            
 	   ;; All the rest are to get the imports for setup@:
@@ -42,51 +42,40 @@
         (let ([thd
                (thread
                 (lambda ()
-                  (invoke-unit/sig
-                   (compound-unit/sig
+                  (define-unit set-options@
+                    (import setup-option^ compiler^)
+                    (export)
+                    ;; >>>>>>>>>>>>>> <<<<<<<<<<<<<<<
+                    ;; Here's where we tell setup the archive file!
+                    (unless clean? 
+                      (archives (list file)))
+                    
+                    ;; Here's where we make get a directory:
+                    (current-target-directory-getter
+                     get-target-dir)
+                    
+                    (when planet-spec
+                      (specific-planet-dirs (list planet-spec)))
+                    
+                    (when clean?
+                      (clean #t)
+                      (make-zo #f)
+                      (make-so #f)
+                      (make-launchers #f)
+                      (make-info-domain #t)
+                      (call-install #f)))
+                  (invoke-unit
+                   (compound-unit/infer
                      (import)
-                     (link [launcher : launcher^ (launcher@ dcompile dlink)]
-                           [dcompile : dynext:compile^ (dynext:compile@)]
-                           [dlink : dynext:link^ (dynext:link@)]
-                           [dfile : dynext:file^ (dynext:file@)]
-                           [option : compiler:option^ (compiler:option@)]
-                           [compiler : compiler^ (compiler@
-                                                  option
-                                                  dcompile
-                                                  dlink
-                                                  dfile)]
-                           [soption : setup-option^ (setup:option@)]
-                           [set-options : () ((unit/sig ()
-                                                (import setup-option^ compiler^)
-                                                ;; >>>>>>>>>>>>>> <<<<<<<<<<<<<<<
-                                                ;; Here's where we tell setup the archive file!
-                                                (unless clean? 
-                                                  (archives (list file)))
-                                                
-                                                ;; Here's where we make get a directory:
-                                                (current-target-directory-getter
-                                                 get-target-dir)
-                                                
-                                                (when planet-spec
-                                                  (specific-planet-dirs (list planet-spec)))
-                                                
-                                                (when clean?
-                                                  (clean #t)
-                                                  (make-zo #f)
-                                                  (make-so #f)
-                                                  (make-launchers #f)
-                                                  (make-info-domain #t)
-                                                  (call-install #f))
-                                                  
-                                                
-                                                )
-                                              soption
-                                              compiler)]
-                           [setup : () (setup@
-                                        soption
-                                        compiler
-                                        option
-                                        launcher)])
-                     (export)))))])
+                     (export)
+                     (link launcher@
+                           dynext:compile@
+                           dynext:link@
+                           dynext:file@
+                           compiler:option@
+                           compiler@
+                           setup:option@
+                           set-options@
+                           setup@)))))])
           (thread-wait thd)
           (custodian-shutdown-all cust))))))

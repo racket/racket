@@ -1,17 +1,18 @@
 
 (module hierlist mzscheme
-  (require (lib "unitsig.ss")
-	  (lib "mred-sig.ss" "mred")
-	  (lib "mred.ss" "mred"))
-
+  (require (lib "unit.ss")
+           (lib "mred-sig.ss" "mred")
+           (lib "mred-unit.ss" "mred"))
+  
   (require "hierlist-sig.ss"
-	  "hierlist-unit.ss")
-
-
-  (define-values/invoke-unit/sig hierlist^
-    hierlist@
-    #f
-    mred^)
+           "hierlist-unit.ss")
+    
+  (define-compound-unit/infer hl
+    (import)
+    (export hierlist^)
+    (link standard-mred@ hierlist@))
+  
+  (define-values/invoke-unit/infer hl)
 
   (provide-signature-elements hierlist^))
 

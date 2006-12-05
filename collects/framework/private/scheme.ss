@@ -1,10 +1,9 @@
 ;; originally by Dan Grossman
 ;; 6/30/95
 
-(module scheme mzscheme
+(module scheme (lib "a-unit.ss")
   (require "collapsed-snipclass-helpers.ss"
            (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
 	   (lib "class.ss")
 	   "sig.ss"
 	   (lib "mred-sig.ss" "mred")
@@ -16,31 +15,31 @@
            (lib "scheme-lexer.ss" "syntax-color")
            "../gui-utils.ss")
   
-  (provide scheme@)
-
-  (define (scheme-paren:get-paren-pairs)
-    '(("(" . ")")
-      ("[" . "]")
-      ("{" . "}")))
   
-  
-  (define scheme@
-    (unit/sig framework:scheme^
-      (import mred^
-              [preferences : framework:preferences^]
-              [icon : framework:icon^]
-              [keymap : framework:keymap^]
-              [text : framework:text^]
-              [editor : framework:editor^]
-              [frame : framework:frame^]
-              [comment-box : framework:comment-box^]
-              [mode : framework:mode^]
-              [color : framework:color^]
-              [color-prefs : framework:color-prefs^])
+  (import mred^
+          [prefix preferences: framework:preferences^]
+          [prefix icon: framework:icon^]
+          [prefix keymap: framework:keymap^]
+          [prefix text: framework:text^]
+          [prefix editor: framework:editor^]
+          [prefix frame: framework:frame^]
+          [prefix comment-box: framework:comment-box^]
+          [prefix mode: framework:mode^]
+          [prefix color: framework:color^]
+          [prefix color-prefs: framework:color-prefs^])
       
-      (rename [-text-mode<%> text-mode<%>]
-              [-text<%> text<%>]
-              [-text% text%])
+  (export (rename framework:scheme^
+                  [-text-mode<%> text-mode<%>]
+                  [-text<%> text<%>]
+                  [-text% text%]))
+  
+  (init-depend mred^ framework:keymap^ framework:color^ framework:mode^
+               framework:text^ framework:editor^)
+      
+        (define (scheme-paren:get-paren-pairs)
+          '(("(" . ")")
+            ("[" . "]")
+            ("{" . "}")))
       
       (define text-balanced? 
         (opt-lambda (text [start 0] [in-end #f])
@@ -1651,4 +1650,5 @@
         (preferences:add-callback 'framework:tabify (λ (p v) (update-gui v)))
         main-panel)
       
-      )))
+      )
+

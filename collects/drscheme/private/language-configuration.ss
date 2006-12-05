@@ -1,6 +1,6 @@
 
 (module language-configuration mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "hierlist.ss" "hierlist")
            (lib "class.ss")
 	   (lib "contract.ss")
@@ -21,17 +21,17 @@
   
   (provide language-configuration@)
   
-  (define language-configuration@
-    (unit/sig drscheme:language-configuration/internal^
-      (import [drscheme:unit : drscheme:unit^]
-              [drscheme:rep : drscheme:rep^]
-              [drscheme:teachpack : drscheme:teachpack^]
-              [drscheme:init : drscheme:init^]
-              [drscheme:language : drscheme:language^]
-              [drscheme:app : drscheme:app^]
-              [drscheme:tools : drscheme:tools^]
-              [drscheme:help-desk : drscheme:help-desk^])
-      
+  (define-unit language-configuration@
+    (import [prefix drscheme:unit: drscheme:unit^]
+            [prefix drscheme:rep: drscheme:rep^]
+            [prefix drscheme:teachpack: drscheme:teachpack^]
+            [prefix drscheme:init: drscheme:init^]
+            [prefix drscheme:language: drscheme:language^]
+            [prefix drscheme:app: drscheme:app^]
+            [prefix drscheme:tools: drscheme:tools^]
+            [prefix drscheme:help-desk: drscheme:help-desk^])
+    (export drscheme:language-configuration/internal^)
+
       ;; settings-preferences-symbol : symbol
       ;; this pref used to depend on `version', but no longer does.
       (define settings-preferences-symbol 'drscheme:language-settings)
@@ -1869,4 +1869,4 @@
       (define (find-parent-from-snip snip)
         (let* ([admin (send snip get-admin)]
                [ed (send admin get-editor)])
-          (find-parent-from-editor ed))))))
+          (find-parent-from-editor ed)))))

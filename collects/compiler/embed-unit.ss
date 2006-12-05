@@ -1,6 +1,6 @@
 
 (module embed-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "file.ss")
 	   (lib "list.ss")
 	   (lib "etc.ss")
@@ -19,9 +19,9 @@
 
   (provide compiler:embed@)
 
-  (define compiler:embed@
-    (unit/sig compiler:embed^
+  (define-unit compiler:embed@
       (import)
+      (export compiler:embed^)
 
       (define (embedding-executable-is-directory? mred?)
 	#f)
@@ -846,5 +846,5 @@
 	 [(not p) #f]
 	 [(list? p) (map mac-mred-collects-path-adjust p)]
 	 [(relative-path? p) (build-path 'up 'up 'up p)]
-	 [else p])))))
+	 [else p]))))
 

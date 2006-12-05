@@ -18,13 +18,13 @@ TODO
 ;;          user's io ports, to aid any debugging printouts.
 ;;          (esp. useful when debugging the users's io)
 (module rep mzscheme
-  (require (lib "unitsig.ss")
-           (lib "class.ss")
+  (require (lib "class.ss")
            (lib "file.ss")
            (lib "pretty.ss")
            (lib "etc.ss")
            (lib "list.ss")
            (lib "port.ss")
+           (lib "unit.ss")
            "drsig.ss"
            (lib "string-constant.ss" "string-constants")
 	   (lib "mred.ss" "mred")
@@ -60,22 +60,21 @@ TODO
      #f
      (current-break-parameterization)))
   
-  (define rep@
-    (unit/sig drscheme:rep^
-      (import (drscheme:init : drscheme:init^)
-              (drscheme:language-configuration : drscheme:language-configuration/internal^)
-	      (drscheme:language : drscheme:language^)
-              (drscheme:app : drscheme:app^)
-              (drscheme:frame : drscheme:frame^)
-              (drscheme:unit : drscheme:unit^)
-              (drscheme:text : drscheme:text^)
-              (drscheme:help-desk : drscheme:help-desk^)
-              (drscheme:teachpack : drscheme:teachpack^)
-              (drscheme:debug : drscheme:debug^)
-              [drscheme:eval : drscheme:eval^])
-      
-      (rename [-text% text%]
-              [-text<%> text<%>])
+  (define-unit rep@
+    (import (prefix drscheme:init: drscheme:init^)
+            (prefix drscheme:language-configuration: drscheme:language-configuration/internal^)
+            (prefix drscheme:language: drscheme:language^)
+            (prefix drscheme:app: drscheme:app^)
+            (prefix drscheme:frame: drscheme:frame^)
+            (prefix drscheme:unit: drscheme:unit^)
+            (prefix drscheme:text: drscheme:text^)
+            (prefix drscheme:help-desk: drscheme:help-desk^)
+            (prefix drscheme:teachpack: drscheme:teachpack^)
+            (prefix drscheme:debug: drscheme:debug^)
+            [prefix drscheme:eval: drscheme:eval^])
+    (export (rename drscheme:rep^
+                    [-text% text%]
+                    [-text<%> text<%>]))
 
       (define -text<%>
         (interface ((class->interface text%)
@@ -1787,4 +1786,4 @@ TODO
                 (text:nbsp->space-mixin
                  (mode:host-text-mixin
                   (text:foreground-color-mixin
-                   text:clever-file-format%)))))))))))))))
+                   text:clever-file-format%))))))))))))))

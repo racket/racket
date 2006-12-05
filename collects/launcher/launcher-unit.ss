@@ -1,7 +1,6 @@
 
-(module launcher-unit mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "file.ss")
+(module launcher-unit (lib "a-unit.ss")
+  (require (lib "file.ss")
 	   (lib "string.ss")
 	   (lib "etc.ss")
 
@@ -14,12 +13,9 @@
 
 	   (lib "winutf16.ss" "compiler" "private"))
 
-  (provide launcher@)
-
-  (define launcher@
-    (unit/sig launcher^
-      (import [c : dynext:compile^]
-	      [l : dynext:link^])
+      (import (prefix c: dynext:compile^)
+	      (prefix l: dynext:link^))
+      (export launcher^)
 
       (define current-launcher-variant
 	(make-parameter 'normal
@@ -695,4 +691,4 @@
 	(make-mred-program-launcher file collection (mred-program-launcher-path name)))
       
       (define (install-mzscheme-program-launcher file collection name)
-	(make-mzscheme-program-launcher file collection (mzscheme-program-launcher-path name))))))
+	(make-mzscheme-program-launcher file collection (mzscheme-program-launcher-path name))))

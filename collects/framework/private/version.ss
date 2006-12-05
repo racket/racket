@@ -1,16 +1,11 @@
-(module version mzscheme
-  (require (lib "unitsig.ss")
-           "sig.ss"
-           (lib "mred-sig.ss" "mred")
-           (lib "string.ss")
-           (lib "list.ss"))
-
-  (provide version@)
-
-  (define version@
-    (unit/sig framework:version^
-      (import)
-      (rename [-version version])
+(module version (lib "a-unit.ss")
+  (require "sig.ss"
+	   (lib "mred-sig.ss" "mred")
+	   (lib "string.ss")
+	   (lib "list.ss"))
+  (import)
+  (export (rename framework:version^
+                  [-version version]))
 
       (define specs null)
 
@@ -24,4 +19,4 @@
 
       (define (add-spec sep num)
         (set! specs (cons (list (expr->string sep) (format "~a" num))
-                          specs))))))
+                          specs))))

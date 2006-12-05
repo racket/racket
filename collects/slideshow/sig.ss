@@ -1,6 +1,6 @@
 
 (module sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (provide config^ viewer^ core^
 	   cmdline^)
@@ -81,9 +81,8 @@
   ;; ----------------------------------------
 
   ;; Extra cmdline inputs to a viewer:
-  (define-signature cmdline^
-    ((open config^)
-     file-to-load ; #f or a path/string
+  (define-signature cmdline^ extends config^
+    (file-to-load ; #f or a path/string
      init-page
      use-transitions? 
      print-slide-seconds?

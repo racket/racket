@@ -1,7 +1,6 @@
 
-(module handler mzscheme
-  (require (lib "unitsig.ss")
-	   (lib "class.ss")
+(module handler (lib "a-unit.ss")
+  (require (lib "class.ss")
            (lib "list.ss")
            (lib "hierlist.ss" "hierlist")
 	   "sig.ss"
@@ -10,17 +9,16 @@
 	   (lib "file.ss")
            (lib "string-constant.ss" "string-constants"))
 
-  (provide handler@)
-
-  (define handler@
-    (unit/sig framework:handler^
-      (import mred^
-	      [finder : framework:finder^]
-	      [group : framework:group^]
-	      [text : framework:text^]
-	      [preferences : framework:preferences^]
-	      [frame : framework:frame^])
-      
+    
+  (import mred^
+          [prefix finder: framework:finder^]
+          [prefix group: framework:group^]
+          [prefix text: framework:text^]
+          [prefix preferences: framework:preferences^]
+          [prefix frame: framework:frame^])
+  (export framework:handler^)
+  (init-depend framework:frame^)
+  
       (define-struct handler (name extension handler))
 
       (define format-handlers '())
@@ -392,4 +390,4 @@
 	      (send *open-directory*
 		    set-from-file! file))
 	    (and file
-		 (edit-file file))))))))
+		 (edit-file file))))))

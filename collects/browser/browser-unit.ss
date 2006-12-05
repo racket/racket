@@ -1,5 +1,5 @@
 (module browser-unit mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "mred-sig.ss" "mred")
            (lib "plt-installer-sig.ss" "setup")
            (lib "tcp-sig.ss" "net")
@@ -8,37 +8,16 @@
            "browser-sig.ss"
            "private/bullet.ss"
            "private/html.ss"
-           "private/hyper.ss"
-           "private/sig.ss")
+           "private/hyper.ss")
   
   (provide browser@)
   
-  (define pre-browser@
-    (compound-unit/sig
-      (import (plt-installer : setup:plt-installer^)
-              (mred : mred^)
-              (tcp : net:tcp^)
-              (url : net:url^))
-      (link [html : html^ (html@ mred url)]
-            [hyper : hyper^ (hyper@ html mred plt-installer url)]
-	    [bullet-size : bullet-export^ ((unit/sig bullet-export^
-					     (import)
-					     (rename (html:bullet-size bullet-size))
-					     (define html:bullet-size bullet-size)))])
-      (export (open hyper)
-	      (open bullet-size)
-              (open (html : html-export^)))))
+  (define-unit-from-context bullet@ bullet-export^)
   
+  (define-compound-unit/infer browser@
+    (import setup:plt-installer^
+            mred^
+            url^)
+    (export hyper^ html-export^ bullet-export^)
+    (link html@ hyper@ bullet@)))
   
-  ;; this extra layer of wrapper here is only to
-  ;; ensure that the browser^ signature actually matches
-  ;; the export of the pre-browser@ unit.
-  ;; (it didn't before, so now we check.)
-  (define browser@
-    (compound-unit/sig
-      (import  (plt-installer : setup:plt-installer^)
-               (mred : mred^)
-               (tcp : net:tcp^)
-               (url : net:url^))
-      (link [pre-browser : browser^ (pre-browser@ plt-installer mred tcp url)])
-      (export (open pre-browser)))))

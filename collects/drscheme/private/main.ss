@@ -1,13 +1,11 @@
 
-(module main mzscheme
+(module main (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-           (lib "unitsig.ss")
            (lib "cmdline.ss")
            (lib "contract.ss")
            "drsig.ss"
 	   (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
-           (lib "unitsig.ss")
            (lib "class.ss")
            (prefix pretty-print: (lib "pretty.ss"))
            (prefix print-convert: (lib "pconvert.ss"))
@@ -17,24 +15,21 @@
            (lib "external.ss" "browser")
            (lib "plt-installer.ss" "setup"))
   
-  (provide main@)
-  
-  (define main@
-    (unit/sig ()
-      (import [drscheme:app : drscheme:app^]
-              [drscheme:unit : drscheme:unit^]
-              [drscheme:get/extend : drscheme:get/extend^]
-              [drscheme:language-configuration : drscheme:language-configuration/internal^]
-	      [drscheme:language : drscheme:language^]
-              [drscheme:teachpack : drscheme:teachpack^]
-              [drscheme:module-language : drscheme:module-language^]
-              [drscheme:tools : drscheme:tools^]
-              [drscheme:debug : drscheme:debug^]
-              [drscheme:frame : drscheme:frame^]
-              [drscheme:font : drscheme:font^]
-              [drscheme:modes : drscheme:modes^]
-              [drscheme:help-desk : drscheme:help-desk^])
-
+  (import [prefix drscheme:app: drscheme:app^]
+          [prefix drscheme:unit: drscheme:unit^]
+          [prefix drscheme:get/extend: drscheme:get/extend^]
+          [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
+          [prefix drscheme:language: drscheme:language^]
+          [prefix drscheme:teachpack: drscheme:teachpack^]
+          [prefix drscheme:module-language: drscheme:module-language^]
+          [prefix drscheme:tools: drscheme:tools^]
+          [prefix drscheme:debug: drscheme:debug^]
+          [prefix drscheme:frame: drscheme:frame^]
+          [prefix drscheme:font: drscheme:font^]
+          [prefix drscheme:modes: drscheme:modes^]
+          [prefix drscheme:help-desk: drscheme:help-desk^])
+  (export)
+    
       (application-file-handler
        (let ([default (application-file-handler)])
          (λ (name)
@@ -414,4 +409,4 @@
 				(λ () (drscheme:unit:open-drscheme-window f))))
 		   no-dups)])
 	(when (null? (filter (λ (x) x) frames))
-	  (make-basic))))))
+	  (make-basic))))

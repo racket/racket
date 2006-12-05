@@ -1,6 +1,6 @@
 
 (module mrpict-sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
   (provide mrpict-extra^)
   (define-signature mrpict-extra^

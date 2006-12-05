@@ -1,12 +1,12 @@
 (module graphics-sig mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss"))
 
-  (provide graphics^ graphics:posn-less^ graphics:posn^)
+  (provide graphics^ graphics:posn^)
 
   (define-signature graphics:posn^
-    (make-posn posn? posn-x posn-y))
+    ((struct posn (x y) -setters)))
 
-  (define-signature graphics:posn-less^
+  (define-signature graphics^
     (viewport?
 
      open-graphics 
@@ -69,7 +69,7 @@
      
      viewport-dc viewport-buffer-dc))
   
-  (define-signature graphics^
+  #;(define-signature graphics^
     ((open graphics:posn-less^)
      (open graphics:posn^)))
 )

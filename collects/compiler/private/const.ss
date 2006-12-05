@@ -11,7 +11,7 @@
 ;  that is prefixed onto the beginning of the program.
 
 (module const mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "list.ss")
 	   (lib "etc.ss"))
 
@@ -22,17 +22,17 @@
   (require "../sig.ss")
 
   (provide const@)
-  (define const@
-    (unit/sig compiler:const^
-      (import (compiler:option : compiler:option^)
+  (define-unit const@
+      (import (prefix compiler:option: compiler:option^)
 	      compiler:library^
 	      compiler:cstructs^
-	      (zodiac : zodiac^)
+	      (prefix zodiac: zodiac^)
 	      compiler:analyze^
 	      compiler:zlayer^
 	      compiler:vmstructs^
 	      compiler:top-level^
 	      compiler:driver^)
+      (export compiler:const^)
       
       (define const:symbol-table (make-hash-table))
       (define const:symbol-counter 0)
@@ -432,5 +432,5 @@
 		      (bytes? (zodiac:zread-object ast)))
 	      (const:intern-string (zodiac:zread-object ast)))
 	    (compiler:add-const! (compiler:re-quote ast) 
-				 varref:static)]))))))
+				 varref:static)])))))
 

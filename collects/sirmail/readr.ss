@@ -11,7 +11,7 @@
 ;;
 
 (module readr mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
 	   (lib "class.ss")
            (lib "file.ss")
 	   (lib "mred-sig.ss" "mred")
@@ -45,20 +45,20 @@
   (define no-subject-string "<No subject>")
 
   (provide read@)
-  (define read@
-    (unit/sig sirmail:read^
+  (define-unit read@
       (import sirmail:options^
 	      sirmail:environment^
 	      sirmail:utils^
 	      sirmail:send^
 	      mred^
-	      net:imap^
-	      net:smtp^
-	      net:head^
-	      net:base64^
-	      (mime : net:mime^)
-	      net:qp^
+	      imap^
+	      smtp^
+	      head^
+	      base64^
+	      (prefix mime: mime^)
+	      qp^
 	      hierlist^)
+      (export sirmail:read^)
       
       ;; This will be set to the frame object
       (define main-frame #f)
@@ -3167,4 +3167,4 @@
                     (loop eou-pos)))))))
         (hilite-urls/prefix "http:")
         (hilite-urls/prefix "https:")
-        (hilite-urls/prefix "ftp:")))))
+        (hilite-urls/prefix "ftp:"))))

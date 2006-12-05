@@ -7,7 +7,7 @@ profile todo:
 |#
 
 (module debug mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "stacktrace.ss" "errortrace")
            (lib "class.ss")
            (lib "list.ss")
@@ -23,14 +23,15 @@ profile todo:
   (define orig (current-output-port))
   
   (provide debug@)
-  (define debug@
-    (unit/sig drscheme:debug^
-      (import [drscheme:rep : drscheme:rep^]
-              [drscheme:frame : drscheme:frame^]
-              [drscheme:unit : drscheme:unit^]
-              [drscheme:language : drscheme:language^]
-              [drscheme:language-configuration : drscheme:language-configuration/internal^]
-              [drscheme:init : drscheme:init^])
+  (define-unit debug@
+    (import [prefix drscheme:rep: drscheme:rep^]
+            [prefix drscheme:frame: drscheme:frame^]
+            [prefix drscheme:unit: drscheme:unit^]
+            [prefix drscheme:language: drscheme:language^]
+            [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
+            [prefix drscheme:init: drscheme:init^])
+    (export drscheme:debug^)
+
 
       (define (oprintf . args) (apply fprintf orig args))
       
@@ -1931,6 +1932,5 @@ profile todo:
  ;   ;   ;      ;     ;   ;   ;      ;   ;  ;     ;   ;  ;   ;  ;   ; 
   ;;;   ;;;;   ;;;;    ;;;   ;;;;     ;;;  ;;;;    ;;; ;  ;;;    ;;;  
                                                                       
-                                                                      
-                                                                      
-      (define-values/invoke-unit/sig stacktrace^ stacktrace@ #f stacktrace-imports^))))
+    
+    (define-values/invoke-unit/infer stacktrace@)))
