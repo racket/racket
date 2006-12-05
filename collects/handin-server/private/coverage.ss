@@ -1,8 +1,6 @@
 ;; Use the stacktrace interface from errortrace to find uncovered expressions.
 (module coverage mzscheme
-  (require (lib "stacktrace.ss" "errortrace")
-           (lib "unitsig.ss")
-           (lib "list.ss"))
+  (require (lib "stacktrace.ss" "errortrace") (lib "unit.ss") (lib "list.ss"))
 
   ;; Test coverage run-time support
   (define test-coverage-enabled (make-parameter #t))
@@ -48,8 +46,7 @@
   ;; no marks
   (define (with-mark mark expr) expr)
 
-  (define-values/invoke-unit/sig
-    stacktrace^ stacktrace@ #f stacktrace-imports^)
+  (define-values/invoke-unit/infer stacktrace@)
 
   (define errortrace-compile-handler
     (let ([orig (current-compile)]
