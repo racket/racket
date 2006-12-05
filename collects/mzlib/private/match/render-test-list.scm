@@ -7,18 +7,13 @@
            "render-test-list-impl.ss"
            "getbindings.ss"
            "ddk-handlers.ss"
-           (lib "unitsig.ss"))
+           (lib "unit.ss"))
   
-  (define rtl@ 
-    (compound-unit/sig
-      (import)
-      (link (RTL : render-test-list^ (render-test-list@ DDK GET))
-            (GET : getbindings^ (getbindings@ RTL))
-            (DDK : ddk-handlers^ (ddk-handlers@ GET RTL))
-            )
-      (export (var (RTL render-test-list)))
-      ))
+  (define-compound-unit/infer rtl@
+    (import)
+    (export render-test-list^)
+    (link render-test-list@ getbindings@ ddk-handlers@))
   
-  (define-values/invoke-unit/sig render-test-list^ rtl@)
-  
+  (define-values/invoke-unit/infer rtl@)
+
   )
