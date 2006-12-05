@@ -1,11 +1,8 @@
-
 (module ftp mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss")
+           "ftp-sig.ss"
+           "ftp-unit.ss")
 
-  (require "ftp-sig.ss")
-  (require "ftp-unit.ss")
+  (define-values/invoke-unit/infer ftp@)
 
-  (define-values/invoke-unit/sig net:ftp^
-    net:ftp@)
-
-  (provide-signature-elements net:ftp^))
+  (provide-signature-elements ftp^))

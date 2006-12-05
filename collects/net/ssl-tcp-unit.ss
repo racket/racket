@@ -1,6 +1,6 @@
 (module ssl-tcp-unit mzscheme
   (provide make-ssl-tcp@)
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            "tcp-sig.ss"
 	   (lib "mzssl.ss" "openssl")
 	   (lib "etc.ss"))
@@ -8,9 +8,10 @@
   (define (make-ssl-tcp@ 
 	   server-cert-file server-key-file server-root-cert-files server-suggest-auth-file
 	   client-cert-file client-key-file client-root-cert-files)
-    (unit/sig net:tcp^
+    (unit 
       (import)
-
+      (export tcp^)
+      
       (define ctx (ssl-make-client-context))
       (when client-cert-file
 	(ssl-load-certificate-chain! ctx client-cert-file))

@@ -1,11 +1,8 @@
-
 (module sendmail mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss")
+           "sendmail-sig.ss"
+           "sendmail-unit.ss")
 
-  (require "sendmail-sig.ss")
-  (require "sendmail-unit.ss")
+  (define-values/invoke-unit/infer sendmail@)
 
-  (define-values/invoke-unit/sig net:sendmail^
-    net:sendmail@)
-
-  (provide-signature-elements net:sendmail^))
+  (provide-signature-elements sendmail^))

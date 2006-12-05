@@ -1,14 +1,11 @@
-
 (module pop3 mzscheme
-  (require (lib "unitsig.ss"))
+  (require (lib "unit.ss")
+           "pop3-sig.ss"
+           "pop3-unit.ss")
 
-  (require "pop3-sig.ss")
-  (require "pop3-unit.ss")
+  (define-values/invoke-unit/infer pop3@)
 
-  (define-values/invoke-unit/sig net:pop3^
-    net:pop3@)
-
-  (provide-signature-elements net:pop3^))
+  (provide-signature-elements pop3^))
 
 #|
 

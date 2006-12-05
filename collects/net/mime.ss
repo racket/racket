@@ -27,9 +27,8 @@
 ;; Commentary:
 
 (module mime mzscheme
-  (require (lib "unitsig.ss"))
-
-  (require "mime-sig.ss"
+  (require (lib "unit.ss")
+           "mime-sig.ss"
            "mime-unit.ss"
            "qp-sig.ss"
            "qp.ss"
@@ -38,11 +37,15 @@
 	   "head-sig.ss"
 	   "head.ss")
 
-  (define-values/invoke-unit/sig net:mime^
-    net:mime@
-    #f
-    net:base64^ net:qp^ net:head^)
+  (define-unit-from-context base64@ base64^)
+  (define-unit-from-context qp@ qp^)
+  (define-unit-from-context head@ head^)
 
-  (provide-signature-elements net:mime^))
+  (define-compound-unit/infer mime@2 (import) (export mime^)
+    (link base64@ qp@ head@ mime@))
+  
+  (define-values/invoke-unit/infer mime@2)
+
+  (provide-signature-elements mime^))
 
 ;;; mime.ss ends here

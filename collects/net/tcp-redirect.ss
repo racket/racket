@@ -1,7 +1,7 @@
 (module tcp-redirect mzscheme
   (provide tcp-redirect)
   
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "async-channel.ss")
            (lib "etc.ss")
            "tcp-sig.ss")
@@ -24,9 +24,9 @@
   ; : (listof nat) -> (unit/sig () -> net:tcp^)
   (define tcp-redirect
     (opt-lambda (redirected-ports [redirected-address "127.0.0.1"])
-      (unit/sig net:tcp^
+      (unit
         (import)
-        
+        (export tcp^)
         ; : (make-pipe-listener nat (channel (cons iport oport)))
         (define-struct pipe-listener (port channel))
         
