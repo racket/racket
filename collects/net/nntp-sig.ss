@@ -5,7 +5,7 @@
   head-of-message body-of-message
   newnews-since generic-message-command
   make-desired-header extract-desired-headers
-  
+
   (struct nntp ())
   (struct unexpected-response (code text))
   (struct bad-status-line (line))
@@ -16,5 +16,3 @@
   (struct no-group-selected ())
   (struct article-not-found (article))
   (struct authentication-rejected ()))
-
-

@@ -8,7 +8,7 @@
   (struct empty-type () -setters -constructor)
   (struct empty-subtype () -setters -constructor)
   (struct empty-disposition-type () -setters -constructor)
-  
+
   ;; -- basic mime structures --
   (struct message (version entity fields))
   (struct entity
@@ -20,7 +20,7 @@
           (type filename creation
                 modification read
                 size params))
-  
+
   ;; -- mime methods --
   mime-analyze
   )

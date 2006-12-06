@@ -2,7 +2,7 @@
 ;;; <cookie-unit.ss> ---- HTTP cookies library
 ;;; Time-stamp: <03/04/25 10:50:05 noel>
 ;;;
-;;; Copyright (C) 2002 by Francisco Solsona. 
+;;; Copyright (C) 2002 by Francisco Solsona.
 ;;;
 ;;; This file is part of net.
 
@@ -49,9 +49,9 @@
 
 (module cookie-unit (lib "a-unit.ss")
   (require (lib "etc.ss")
-	   (lib "list.ss")
-	   (lib "string.ss" "srfi" "13")
-	   (lib "char-set.ss" "srfi" "14")
+           (lib "list.ss")
+           (lib "string.ss" "srfi" "13")
+           (lib "char-set.ss" "srfi" "14")
            "cookie-sig.ss")
 
   (import)
@@ -60,6 +60,14 @@
   (define-struct cookie (name value comment domain max-age path secure version))
   (define-struct (cookie-error exn:fail) ())
 
+  ;; cookie-error : string args ... -> raises a cookie-error exception
+  ;; constructs a cookie-error struct from the given error message
+  ;; (added to fix exceptions-must-take-immutable-strings bug)
+  (define (cookie-error fmt . args)
+    (make-cookie-error
+     (string->immutable-string (apply format fmt args))
+     (current-continuation-marks)))
+
   ;; The syntax for the Set-Cookie response header is
   ;; set-cookie      =       "Set-Cookie:" cookies
   ;; cookies         =       1#cookie
@@ -67,24 +75,23 @@
   ;; NAME            =       attr
   ;; VALUE           =       value
   ;; cookie-av       =       "Comment" "=" value
-  ;; 		      |       "Domain" "=" value
-  ;; 		      |       "Max-Age" "=" value
-  ;; 		      |       "Path" "=" value
-  ;; 		      |       "Secure"
-  ;; 		      |       "Version" "=" 1*DIGIT
-  (define set-cookie
-    (lambda (name pre-value)
-      (let ([value (to-rfc2109:value pre-value)])
-        (unless (rfc2068:token? name)
-          (raise (build-cookie-error (format "Invalid cookie name: ~a / ~a" name value))))
-        (make-cookie name value
-                     #f;; comment
-                     #f;; current domain
-                     #f;; at the end of session
-                     #f;; current path
-                     #f;; normal (non SSL)
-                     #f;; default version
-                     ))))
+  ;;                  |       "Domain" "=" value
+  ;;                  |       "Max-Age" "=" value
+  ;;                  |       "Path" "=" value
+  ;;                  |       "Secure"
+  ;;                  |       "Version" "=" 1*DIGIT
+  (define (set-cookie name pre-value)
+    (let ([value (to-rfc2109:value pre-value)])
+      (unless (rfc2068:token? name)
+        (cookie-error "Invalid cookie name: ~a / ~a" name value))
+      (make-cookie name value
+                   #f ; comment
+                   #f ; current domain
+                   #f ; at the end of session
+                   #f ; current path
+                   #f ; normal (non SSL)
+                   #f ; default version
+                   )))
 
   ;;!
   ;;
@@ -94,73 +101,65 @@
   ;;
   ;; Formats the cookie contents in a string ready to be appended to a
   ;; "Set-Cookie: " header, and sent to a client (browser).
-  (define print-cookie
-    (lambda (cookie)
-      (unless (cookie? cookie)
-        (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-      (string-join
-       (filter (lambda (s)
-                 (not (string-null? s)))
-               (list (format "~a=~a" (cookie-name cookie) (cookie-value cookie))
-                     (let ((c (cookie-comment cookie))) (if c (format "Comment=~a" c) ""))
-                     (let ((d (cookie-domain cookie))) (if d (format "Domain=~a" d) ""))
-                     (let ((age (cookie-max-age cookie))) (if age (format "Max-Age=~a" age) ""))
-                     (let ((p (cookie-path cookie))) (if p (format "Path=~a" p) ""))
-                     (let ((s (cookie-secure cookie))) (if s "Secure" ""))
-                     (let ((v (cookie-version cookie))) (format "Version=~a" (if v v 1)))))
-       "; ")))
+  (define (print-cookie cookie)
+    (unless (cookie? cookie)
+      (cookie-error "Cookie expected, received: ~a" cookie))
+    (string-join
+     (filter (lambda (s) (not (string-null? s)))
+             (list (format "~a=~a" (cookie-name cookie) (cookie-value cookie))
+                   (let ([c (cookie-comment cookie)]) (if c (format "Comment=~a" c) ""))
+                   (let ([d (cookie-domain cookie)]) (if d (format "Domain=~a" d) ""))
+                   (let ([age (cookie-max-age cookie)]) (if age (format "Max-Age=~a" age) ""))
+                   (let ([p (cookie-path cookie)]) (if p (format "Path=~a" p) ""))
+                   (let ([s (cookie-secure cookie)]) (if s "Secure" ""))
+                   (let ([v (cookie-version cookie)]) (format "Version=~a" (if v v 1)))))
+     "; "))
 
-  (define cookie:add-comment
-    (lambda (cookie pre-comment)
-      (let ([comment (to-rfc2109:value pre-comment)])
-        (unless (cookie? cookie)
-          (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-        (set-cookie-comment! cookie comment)
-        cookie)))
-
-  (define cookie:add-domain
-    (lambda (cookie domain)
-      (unless (valid-domain? domain)
-        (raise (build-cookie-error (format "Invalid domain: ~a" domain))))
+  (define (cookie:add-comment cookie pre-comment)
+    (let ([comment (to-rfc2109:value pre-comment)])
       (unless (cookie? cookie)
-        (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-      (set-cookie-domain! cookie domain)
+        (cookie-error "Cookie expected, received: ~a" cookie))
+      (set-cookie-comment! cookie comment)
       cookie))
 
-  (define cookie:add-max-age
-    (lambda (cookie seconds)
-      (unless (and (integer? seconds) (not (negative? seconds)))
-        (raise (build-cookie-error (format "Invalid Max-Age for cookie: ~a" seconds))))
+  (define (cookie:add-domain cookie domain)
+    (unless (valid-domain? domain)
+      (cookie-error "Invalid domain: ~a" domain))
+    (unless (cookie? cookie)
+      (cookie-error "Cookie expected, received: ~a" cookie))
+    (set-cookie-domain! cookie domain)
+    cookie)
+
+  (define (cookie:add-max-age cookie seconds)
+    (unless (and (integer? seconds) (not (negative? seconds)))
+      (cookie-error "Invalid Max-Age for cookie: ~a" seconds))
+    (unless (cookie? cookie)
+      (cookie-error "Cookie expected, received: ~a" cookie))
+    (set-cookie-max-age! cookie seconds)
+    cookie)
+
+  (define (cookie:add-path cookie pre-path)
+    (let ([path (to-rfc2109:value pre-path)])
       (unless (cookie? cookie)
-        (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-      (set-cookie-max-age! cookie seconds)
+        (cookie-error "Cookie expected, received: ~a" cookie))
+      (set-cookie-path! cookie path)
       cookie))
 
-  (define cookie:add-path
-    (lambda (cookie pre-path)
-      (let ([path (to-rfc2109:value pre-path)])
-        (unless (cookie? cookie)
-          (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-        (set-cookie-path! cookie path)
-        cookie)))
+  (define (cookie:secure cookie secure?)
+    (unless (boolean? secure?)
+      (cookie-error "Invalid argument (boolean expected), received: ~a" secure?))
+    (unless (cookie? cookie)
+      (cookie-error "Cookie expected, received: ~a" cookie))
+    (set-cookie-secure! cookie secure?)
+    cookie)
 
-  (define cookie:secure
-    (lambda (cookie secure?)
-      (unless (boolean? secure?)
-        (raise (build-cookie-error (format "Invalid argument (boolean expected), received: ~a" secure?))))
-      (unless (cookie? cookie)
-        (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-      (set-cookie-secure! cookie secure?)
-      cookie))
-
-  (define cookie:version
-    (lambda (cookie version)
-      (unless (integer? version)
-        (raise (build-cookie-error (format "Unsupported version: ~a" version))))
-      (unless (cookie? cookie)
-        (raise (build-cookie-error (format "Cookie expected, received: ~a" cookie))))
-      (set-cookie-version! cookie version)
-      cookie))
+  (define (cookie:version cookie version)
+    (unless (integer? version)
+      (cookie-error "Unsupported version: ~a" version))
+    (unless (cookie? cookie)
+      (cookie-error "Cookie expected, received: ~a" cookie))
+    (set-cookie-version! cookie version)
+    cookie)
 
 
   ;; Parsing the Cookie header:
@@ -177,27 +176,26 @@
   ;;
   ;; Auxiliar procedure that returns all values associated with
   ;; `name' in the association list (cookies).
-  (define get-all-results
-    (lambda (name cookies)
-      (let loop ((c cookies))
-        (cond ((null? c) ())
-              (else
-               (let ((pair (car c)))
-                 (if (string=? name (car pair))
-                   ;; found an instance of cookie named `name'
-                   (cons (cadr pair) (loop (cdr c)))
-                   (loop (cdr c)))))))))
+  (define (get-all-results name cookies)
+    (let loop ([c cookies])
+      (if (null? c)
+        '()
+        (let ([pair (car c)])
+          (if (string=? name (car pair))
+            ;; found an instance of cookie named `name'
+            (cons (cadr pair) (loop (cdr c)))
+            (loop (cdr c)))))))
 
-  ;; which tipically looks like: (cookie . "test5=\"5\"; test1=\"1\"; test0=\"0\"; test1=\"20\"")
-  ;; note that it can be multi-valued: `test1' has values: "1", and "20".
-  ;; Of course, in the same spirit, we only receive the "string content".
-  (define get-cookie
-    (lambda (name cookies)
-      (let ((cookies (map (lambda (p)
-                            (map string-trim-both
-                                 (string-tokenize p char-set:all-but=)))
-                          (string-tokenize cookies char-set:all-but-semicolon))))
-        (get-all-results name cookies))))
+  ;; which typically looks like:
+  ;;   (cookie . "test5=\"5\"; test1=\"1\"; test0=\"0\"; test1=\"20\"")
+  ;; note that it can be multi-valued: `test1' has values: "1", and "20".  Of
+  ;; course, in the same spirit, we only receive the "string content".
+  (define (get-cookie name cookies)
+    (let ([cookies (map (lambda (p)
+                          (map string-trim-both
+                               (string-tokenize p char-set:all-but=)))
+                        (string-tokenize cookies char-set:all-but-semicolon))])
+      (get-all-results name cookies)))
 
   ;;!
   ;;
@@ -207,11 +205,9 @@
   ;; (param cookies String "The string (from the environment) with the content of the cookie header.")
   ;;
   ;; Returns the first name associated with the cookie named `name', if any, or #f.
-  (define get-cookie/single
-    (lambda (name cookies)
-      (let ((cookies (get-cookie name cookies)))
-        (and (not (null? cookies))
-             (car cookies)))))
+  (define (get-cookie/single name cookies)
+    (let ([cookies (get-cookie name cookies)])
+      (and (not (null? cookies)) (car cookies))))
 
 
   ;;;;;
@@ -221,9 +217,9 @@
   ;; token          = 1*<any CHAR except CTLs or tspecials>
   ;;
   ;; tspecials      = "(" | ")" | "<" | ">" | "@"
-  ;;	            | "," | ";" | ":" | "\" | <">
-  ;;	            | "/" | "[" | "]" | "?" | "="
-  ;;	            | "{" | "}" | SP | HT
+  ;;                | "," | ";" | ":" | "\" | <">
+  ;;                | "/" | "[" | "]" | "?" | "="
+  ;;                | "{" | "}" | SP | HT
   (define char-set:tspecials
     (char-set-union (string->char-set "()<>@,;:\\\"/[]?={}")
                     char-set:whitespace
@@ -232,13 +228,14 @@
   (define char-set:control
     (char-set-union char-set:iso-control
                     (char-set (integer->char 127))));; DEL
-  (define char-set:token (char-set-difference char-set:ascii char-set:tspecials char-set:control))
+  (define char-set:token
+    (char-set-difference char-set:ascii char-set:tspecials char-set:control))
 
   ;; token? : string -> boolean
   ;;
   ;; returns #t if s is an RFC 2068 token (see definition above), #f otherwise.
-  (define rfc2068:token?
-    (lambda (s) (string-every char-set:token s)))
+  (define (rfc2068:token? s)
+    (string-every char-set:token s))
 
   ;;!
   ;;
@@ -256,29 +253,30 @@
   ;; quoted-pair    = "\" CHAR
   ;;
   ;; implementation note: I have chosen to use a regular expression rather than
-  ;; a character set for this definition because of two dependencies: CRLF must appear
-  ;; as a block to be legal, and " may only appear as \"
-  (define rfc2068:quoted-string?
-    (lambda (s)
-      (if (regexp-match #rx"^\"([^\"#\u0000-#\u001F]| |#\return#\newline|#\tab|\\\\\")*\"$" s)
-        s
-        #f)))
+  ;; a character set for this definition because of two dependencies: CRLF must
+  ;; appear as a block to be legal, and " may only appear as \"
+  (define (rfc2068:quoted-string? s)
+    (if (regexp-match
+         #rx"^\"([^\"#\u0000-#\u001F]| |#\return#\newline|#\tab|\\\\\")*\"$"
+         s)
+      s
+      #f))
 
   ;; value: token | quoted-string
   (define (rfc2109:value? s)
     (or (rfc2068:token? s) (rfc2068:quoted-string? s)))
 
   ;; convert-to-quoted : string -> quoted-string?
-  ;; takes the given string as a particular message, and converts the given string to that
-  ;; representatation
+  ;; takes the given string as a particular message, and converts the given
+  ;; string to that representatation
   (define (convert-to-quoted str)
     (string-append "\"" (regexp-replace* #rx"\"" str "\\\\\"") "\""))
 
-  ;; string -> rfc2109:value? 
+  ;; string -> rfc2109:value?
   (define (to-rfc2109:value s)
     (cond
-      [(not (string? s)) 
-       (raise (build-cookie-error (format "Expected string, given: ~e" s)))] 
+      [(not (string? s))
+       (cookie-error "Expected string, given: ~e" s)]
 
       ;; for backwards compatibility, just use the given string if it will work
       [(rfc2068:token? s) s]
@@ -289,9 +287,7 @@
       [(rfc2068:quoted-string? (convert-to-quoted s))
        => (λ (x) x)]
       [else
-       (raise 
-        (build-cookie-error 
-         (format "Could not convert the given string to an acceptable RFC 2109 value: ~s" s)))]))
+       (cookie-error "Could not convert the given string to an acceptable RFC 2109 value: ~s" s)]))
 
   ;;!
   ;;
@@ -304,7 +300,7 @@
   (define cookie-string?
     (opt-lambda (s (value? #t))
       (unless (string? s)
-        (raise (build-cookie-error (format "String expected, received: ~a" s))))
+        (cookie-error "String expected, received: ~a" s))
       (if value?
         (rfc2109:value? s)
         ;; name:  token
@@ -312,31 +308,21 @@
 
   ;; Host names as per RFC 1123 and RFC952, more or less, anyway. :-)
   (define char-set:hostname
-    (let ((a-z-lowercase (ucs-range->char-set #x61 #x7B))
-          (a-z-uppercase (ucs-range->char-set #x41 #x5B)))
+    (let ([a-z-lowercase (ucs-range->char-set #x61 #x7B)]
+          [a-z-uppercase (ucs-range->char-set #x41 #x5B)])
       (char-set-adjoin!
        (char-set-union char-set:digit a-z-lowercase a-z-uppercase)
-       #\. )))
+       #\.)))
 
-  (define valid-domain?
-    (lambda (dom)
-      (and
-       ;; Domain must start with a dot (.)
-       (string=? (string-take dom 1) ".")
-       ;; The rest are tokens-like strings separated by dots
-       (string-every char-set:hostname dom)
-       (<= (string-length dom) 76))))
+  (define (valid-domain? dom)
+    (and ;; Domain must start with a dot (.)
+         (string=? (string-take dom 1) ".")
+         ;; The rest are tokens-like strings separated by dots
+         (string-every char-set:hostname dom)
+         (<= (string-length dom) 76)))
 
   (define (valid-path? v)
-    (and (string? v)
-         (rfc2109:value? v)))
-
-  ;; build-cookie-error : string -> cookie-error
-  ;; constructs a cookie-error struct from the given error message
-  ;; (added to fix exceptions-must-take-immutable-strings bug)
-  (define (build-cookie-error msg)
-    (make-cookie-error (string->immutable-string msg)
-                       (current-continuation-marks)))
+    (and (string? v) (rfc2109:value? v)))
 
   )
 

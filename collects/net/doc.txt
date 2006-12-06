@@ -31,7 +31,7 @@ TYPES ----------------------------------------------------------------
 
 _url struct_
  (define-struct url (scheme user host port path-absolute? path query fragment))
-> url-scheme : url -> (union false/c string?) 
+> url-scheme : url -> (union false/c string?)
 > url-user : url -> (union false/c string?)
 > url-host : url -> (union false/c string?)
 > url-port : url -> (union false/c number?)
@@ -497,12 +497,12 @@ EXCEPTIONS -----------------------------------------------------------
 PROCEDURES -----------------------------------------------------------
 
 > (smtp-send-message server-string from-string to-list-of-strings header
-                     message-list-of-strings/bytes 
-		     [#:port-no k] 
-		     [#:auth-user user-string-or-#f]
-		     [#:auth-passwd pw-string-or-#f]
-		     [#:tcp-connect proc]
-		     [port-no]) -> void
+                     message-list-of-strings/bytes
+                     [#:port-no k]
+                     [#:auth-user user-string-or-#f]
+                     [#:auth-passwd pw-string-or-#f]
+                     [#:tcp-connect proc]
+                     [port-no]) -> void
 
   The first argument is the IP address of the SMTP server. The
   `from-string' argument specifies the mail address of the sender, and
@@ -2234,7 +2234,7 @@ PROCEDURES -----------------------------------------------------------
 
   The `separator-mode-sym' argument must be either 'amp or 'semi to
   select the separator. The default is 'semi.
- 
+
 
 > (form-urlencoded->alist string [separator-mode-sym])
   : String -> alist

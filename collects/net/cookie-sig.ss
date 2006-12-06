@@ -1,5 +1,4 @@
 (module cookie-sig (lib "a-signature.ss")
-
   set-cookie
   cookie:add-comment
   cookie:add-domain

@@ -1,410 +1,405 @@
 (module pop3-unit (lib "a-unit.ss")
-  (require (lib "etc.ss")
-           "pop3-sig.ss")
+  (require (lib "etc.ss") "pop3-sig.ss")
 
   (import)
   (export pop3^)
 
-      ;; Implements RFC 1939, Post Office Protocol - Version 3, Myers & Rose
+  ;; Implements RFC 1939, Post Office Protocol - Version 3, Myers & Rose
 
-      ;; sender : oport
-      ;; receiver : iport
-      ;; server : string
-      ;; port : number
-      ;; state : symbol = (disconnected, authorization, transaction)
+  ;; sender : oport
+  ;; receiver : iport
+  ;; server : string
+  ;; port : number
+  ;; state : symbol = (disconnected, authorization, transaction)
 
-      (define-struct communicator (sender receiver server port state))
+  (define-struct communicator (sender receiver server port state))
 
-      (define-struct (pop3 exn) ())
-      (define-struct (cannot-connect pop3) ())
-      (define-struct (username-rejected pop3) ())
-      (define-struct (password-rejected pop3) ())
-      (define-struct (not-ready-for-transaction pop3) (communicator))
-      (define-struct (not-given-headers pop3) (communicator message))
-      (define-struct (illegal-message-number pop3) (communicator message))
-      (define-struct (cannot-delete-message exn) (communicator message))
-      (define-struct (disconnect-not-quiet pop3) (communicator))
-      (define-struct (malformed-server-response pop3) (communicator))
+  (define-struct (pop3 exn) ())
+  (define-struct (cannot-connect pop3) ())
+  (define-struct (username-rejected pop3) ())
+  (define-struct (password-rejected pop3) ())
+  (define-struct (not-ready-for-transaction pop3) (communicator))
+  (define-struct (not-given-headers pop3) (communicator message))
+  (define-struct (illegal-message-number pop3) (communicator message))
+  (define-struct (cannot-delete-message exn) (communicator message))
+  (define-struct (disconnect-not-quiet pop3) (communicator))
+  (define-struct (malformed-server-response pop3) (communicator))
 
-      ;; signal-error :
-      ;; (exn-args ... -> exn) x format-string x values ... ->
-      ;;   exn-args -> ()
+  ;; signal-error :
+  ;; (exn-args ... -> exn) x format-string x values ... ->
+  ;;   exn-args -> ()
 
-      (define signal-error
-	(lambda (constructor format-string . args)
-	  (lambda exn-args
-	    (raise (apply constructor
-			  (string->immutable-string
-			   (apply format format-string args))
-			  (current-continuation-marks)
-			  exn-args)))))
+  (define signal-error
+    (lambda (constructor format-string . args)
+      (lambda exn-args
+        (raise (apply constructor
+                      (string->immutable-string
+                       (apply format format-string args))
+                      (current-continuation-marks)
+                      exn-args)))))
 
-      ;; signal-malformed-response-error :
-      ;; exn-args -> ()
+  ;; signal-malformed-response-error :
+  ;; exn-args -> ()
 
-      ;; -- in practice, it takes only one argument: a communicator.
+  ;; -- in practice, it takes only one argument: a communicator.
 
-      (define signal-malformed-response-error
-	(signal-error make-malformed-server-response
-		      "malformed response from server"))
+  (define signal-malformed-response-error
+    (signal-error make-malformed-server-response
+                  "malformed response from server"))
 
-      ;; confirm-transaction-mode :
-      ;; communicator x string -> ()
+  ;; confirm-transaction-mode :
+  ;; communicator x string -> ()
 
-      ;; -- signals an error otherwise.
+  ;; -- signals an error otherwise.
 
-      (define confirm-transaction-mode
-	(lambda (communicator error-message)
-	  (unless (eq? (communicator-state communicator) 'transaction)
-	    ((signal-error make-not-ready-for-transaction error-message)
-	     communicator))))
+  (define confirm-transaction-mode
+    (lambda (communicator error-message)
+      (unless (eq? (communicator-state communicator) 'transaction)
+        ((signal-error make-not-ready-for-transaction error-message)
+         communicator))))
 
-      ;; default-pop-port-number :
-      ;; number
+  ;; default-pop-port-number :
+  ;; number
 
-      (define default-pop-port-number 110)
+  (define default-pop-port-number 110)
 
-      (define-struct server-responses ())
-      (define-struct (+ok server-responses) ())
-      (define-struct (-err server-responses) ())
+  (define-struct server-responses ())
+  (define-struct (+ok server-responses) ())
+  (define-struct (-err server-responses) ())
 
-      ;; connect-to-server*:
-      ;; input-port output-port -> communicator
+  ;; connect-to-server*:
+  ;; input-port output-port -> communicator
 
-      (define connect-to-server*
-	(case-lambda
-	  [(receiver sender) (connect-to-server* receiver sender "unspecified" "unspecified")]
-	  [(receiver sender server-name port-number)
-	   (let ((communicator  (make-communicator sender receiver server-name port-number
-				  'authorization)))
-	     (let ((response (get-status-response/basic communicator)))
-	       (cond
-		 ((+ok? response) communicator)
-		 ((-err? response)
-		  ((signal-error make-cannot-connect
-		     "cannot connect to ~a on port ~a"
-		     server-name port-number))))))]))
-      
-      ;; connect-to-server :
-      ;; string [x number] -> communicator
+  (define connect-to-server*
+    (case-lambda
+      [(receiver sender) (connect-to-server* receiver sender "unspecified" "unspecified")]
+      [(receiver sender server-name port-number)
+       (let ([communicator (make-communicator sender receiver server-name port-number
+                                              'authorization)])
+         (let ([response (get-status-response/basic communicator)])
+           (cond
+             [(+ok? response) communicator]
+             [(-err? response)
+              ((signal-error make-cannot-connect
+                             "cannot connect to ~a on port ~a"
+                             server-name port-number))])))]))
 
-      (define connect-to-server
-	(opt-lambda (server-name (port-number default-pop-port-number))
-	  (let-values (((receiver sender) (tcp-connect server-name port-number)))
-	    (connect-to-server* receiver sender server-name port-number))))
+  ;; connect-to-server :
+  ;; string [x number] -> communicator
 
-      ;; authenticate/plain-text :
-      ;; string x string x communicator -> ()
+  (define connect-to-server
+    (opt-lambda (server-name (port-number default-pop-port-number))
+      (let-values ([(receiver sender) (tcp-connect server-name port-number)])
+        (connect-to-server* receiver sender server-name port-number))))
 
-      ;; -- if authentication succeeds, sets the communicator's state to
-      ;; transaction.
+  ;; authenticate/plain-text :
+  ;; string x string x communicator -> ()
 
-      (define authenticate/plain-text
-	(lambda (username password communicator)
-	  (let ((sender (communicator-sender communicator)))
-	    (send-to-server communicator "USER ~a" username)
-	    (let ((status (get-status-response/basic communicator)))
-	      (cond
-	       ((+ok? status)
-		(send-to-server communicator "PASS ~a" password)
-		(let ((status (get-status-response/basic communicator)))
-		  (cond
-		   ((+ok? status)
-		    (set-communicator-state! communicator 'transaction))
-		   ((-err? status)
-		    ((signal-error make-password-rejected
-				   "password was rejected"))))))
-	       ((-err? status)
-		((signal-error make-username-rejected
-			       "username was rejected"))))))))
+  ;; -- if authentication succeeds, sets the communicator's state to
+  ;; transaction.
 
-      ;; get-mailbox-status :
-      ;; communicator -> number x number
+  (define authenticate/plain-text
+    (lambda (username password communicator)
+      (let ([sender (communicator-sender communicator)])
+        (send-to-server communicator "USER ~a" username)
+        (let ([status (get-status-response/basic communicator)])
+          (cond
+            [(+ok? status)
+             (send-to-server communicator "PASS ~a" password)
+             (let ([status (get-status-response/basic communicator)])
+               (cond
+                 [(+ok? status)
+                  (set-communicator-state! communicator 'transaction)]
+                 [(-err? status)
+                  ((signal-error make-password-rejected
+                                 "password was rejected"))]))]
+            [(-err? status)
+             ((signal-error make-username-rejected
+                            "username was rejected"))])))))
 
-      ;; -- returns number of messages and number of octets.
+  ;; get-mailbox-status :
+  ;; communicator -> number x number
 
-      (define get-mailbox-status
-        (lambda (communicator)
-          (confirm-transaction-mode
-           communicator
-           "cannot get mailbox status unless in transaction mode")
-          (send-to-server communicator "STAT")
-          (apply values
-                 (map string->number
-                      (let-values (((status result)
-                                    (get-status-response/match
-                                     communicator
-                                     #rx"([0-9]+) ([0-9]+)"
-                                     #f)))
-                        result)))))
+  ;; -- returns number of messages and number of octets.
 
-      ;; get-message/complete :
-      ;; communicator x number -> list (string) x list (string)
+  (define get-mailbox-status
+    (lambda (communicator)
+      (confirm-transaction-mode
+       communicator
+       "cannot get mailbox status unless in transaction mode")
+      (send-to-server communicator "STAT")
+      (apply values
+             (map string->number
+                  (let-values ([(status result)
+                                (get-status-response/match
+                                 communicator
+                                 #rx"([0-9]+) ([0-9]+)"
+                                 #f)])
+                    result)))))
 
-      (define get-message/complete
-	(lambda (communicator message)
-	  (confirm-transaction-mode communicator
-				    "cannot get message headers unless in transaction state")
-	  (send-to-server communicator "RETR ~a" message)
-	  (let ((status (get-status-response/basic communicator)))
-	    (cond
-	     ((+ok? status)
-	      (split-header/body (get-multi-line-response communicator)))
-	     ((-err? status)
-	      ((signal-error make-illegal-message-number
-			     "not given message ~a" message)
-	       communicator message))))))
+  ;; get-message/complete :
+  ;; communicator x number -> list (string) x list (string)
 
-      ;; get-message/headers :
-      ;; communicator x number -> list (string)
+  (define get-message/complete
+    (lambda (communicator message)
+      (confirm-transaction-mode communicator
+                                "cannot get message headers unless in transaction state")
+      (send-to-server communicator "RETR ~a" message)
+      (let ([status (get-status-response/basic communicator)])
+        (cond
+          [(+ok? status)
+           (split-header/body (get-multi-line-response communicator))]
+          [(-err? status)
+           ((signal-error make-illegal-message-number
+                          "not given message ~a" message)
+            communicator message)]))))
 
-      (define get-message/headers
-	(lambda (communicator message)
-	  (confirm-transaction-mode communicator
-				    "cannot get message headers unless in transaction state")
-	  (send-to-server communicator "TOP ~a 0" message)
-	  (let ((status (get-status-response/basic communicator)))
-	    (cond
-	     ((+ok? status)
-	      (let-values (((headers body)
-			    (split-header/body
-			     (get-multi-line-response communicator))))
-		headers))
-	     ((-err? status)
-	      ((signal-error make-not-given-headers
-			     "not given headers to message ~a" message)
-	       communicator message))))))
+  ;; get-message/headers :
+  ;; communicator x number -> list (string)
 
-      ;; get-message/body :
-      ;; communicator x number -> list (string)
+  (define get-message/headers
+    (lambda (communicator message)
+      (confirm-transaction-mode communicator
+                                "cannot get message headers unless in transaction state")
+      (send-to-server communicator "TOP ~a 0" message)
+      (let ([status (get-status-response/basic communicator)])
+        (cond
+          [(+ok? status)
+           (let-values ([(headers body)
+                         (split-header/body
+                          (get-multi-line-response communicator))])
+             headers)]
+          [(-err? status)
+           ((signal-error make-not-given-headers
+                          "not given headers to message ~a" message)
+            communicator message)]))))
 
-      (define get-message/body
-	(lambda (communicator message)
-	  (let-values (((headers body)
-			(get-message/complete communicator message)))
-	    body)))
+  ;; get-message/body :
+  ;; communicator x number -> list (string)
 
-      ;; split-header/body :
-      ;; list (string) -> list (string) x list (string)
+  (define get-message/body
+    (lambda (communicator message)
+      (let-values ([(headers body) (get-message/complete communicator message)])
+        body)))
 
-      ;; -- returns list of headers and list of body lines.
+  ;; split-header/body :
+  ;; list (string) -> list (string) x list (string)
 
-      (define split-header/body
-	(lambda (lines)
-	  (let loop ((lines lines) (header null))
-	    (if (null? lines)
-		(values (reverse header) null)
-		(let ((first (car lines))
-		      (rest (cdr lines)))
-		  (if (string=? first "")
-		      (values (reverse header) rest)
-		      (loop rest (cons first header))))))))
+  ;; -- returns list of headers and list of body lines.
 
-      ;; delete-message :
-      ;; communicator x number -> ()
+  (define split-header/body
+    (lambda (lines)
+      (let loop ([lines lines] [header null])
+        (if (null? lines)
+          (values (reverse header) null)
+          (let ([first (car lines)]
+                [rest (cdr lines)])
+            (if (string=? first "")
+              (values (reverse header) rest)
+              (loop rest (cons first header))))))))
 
-      (define delete-message
-	(lambda (communicator message)
-	  (confirm-transaction-mode communicator
-				    "cannot delete message unless in transaction state")
-	  (send-to-server communicator "DELE ~a" message)
-	  (let ((status (get-status-response/basic communicator)))
-	    (cond
-	     ((-err? status)
-	      ((signal-error make-cannot-delete-message
-			     "no message numbered ~a available to be deleted" message)
-	       communicator message))
-	     ((+ok? status)
-	      'deleted)))))
+  ;; delete-message :
+  ;; communicator x number -> ()
 
-      ;; regexp for UIDL responses
+  (define delete-message
+    (lambda (communicator message)
+      (confirm-transaction-mode communicator
+                                "cannot delete message unless in transaction state")
+      (send-to-server communicator "DELE ~a" message)
+      (let ([status (get-status-response/basic communicator)])
+        (cond
+          [(-err? status)
+           ((signal-error make-cannot-delete-message
+                          "no message numbered ~a available to be deleted" message)
+            communicator message)]
+          [(+ok? status)
+           'deleted]))))
 
-      (define uidl-regexp #rx"([0-9]+) (.*)")
+  ;; regexp for UIDL responses
 
-      ;; get-unique-id/single :
-      ;; communicator x number -> string
+  (define uidl-regexp #rx"([0-9]+) (.*)")
 
-      (define (get-unique-id/single communicator message)
-	(confirm-transaction-mode communicator
-				  "cannot get unique message id unless in transaction state")
-	(send-to-server communicator "UIDL ~a" message)
-	(let-values (((status result)
-		      (get-status-response/match communicator
-						 uidl-regexp
-						 ".*")))
-	  ;; The server response is of the form
-	  ;; +OK 2 QhdPYR:00WBw1Ph7x7
-	  (cond
-	   ((-err? status)
-	    ((signal-error make-illegal-message-number
-			   "no message numbered ~a available for unique id" message)
-	     communicator message))
-	   ((+ok? status)
-	    (cadr result)))))
+  ;; get-unique-id/single :
+  ;; communicator x number -> string
 
-      ;; get-unique-id/all :
-      ;; communicator -> list(number x string)
+  (define (get-unique-id/single communicator message)
+    (confirm-transaction-mode communicator
+                              "cannot get unique message id unless in transaction state")
+    (send-to-server communicator "UIDL ~a" message)
+    (let-values ([(status result)
+                  (get-status-response/match communicator uidl-regexp ".*")])
+      ;; The server response is of the form
+      ;; +OK 2 QhdPYR:00WBw1Ph7x7
+      (cond
+        [(-err? status)
+         ((signal-error make-illegal-message-number
+                        "no message numbered ~a available for unique id" message)
+          communicator message)]
+        [(+ok? status)
+         (cadr result)])))
 
-      (define (get-unique-id/all communicator)
-	(confirm-transaction-mode communicator
-				  "cannot get unique message ids unless in transaction state")
-	(send-to-server communicator "UIDL")
-	(let ((status (get-status-response/basic communicator)))
-	  ;; The server response is of the form
-	  ;; +OK
-	  ;; 1 whqtswO00WBw418f9t5JxYwZ
-	  ;; 2 QhdPYR:00WBw1Ph7x7
-	  ;; .
-	  (map (lambda (l)
-		 (let ((m (regexp-match uidl-regexp l)))
-		   (cons (string->number (cadr m)) (caddr m))))
-	       (get-multi-line-response communicator))))
+  ;; get-unique-id/all :
+  ;; communicator -> list(number x string)
 
-      ;; close-communicator :
-      ;; communicator -> ()
+  (define (get-unique-id/all communicator)
+    (confirm-transaction-mode communicator
+                              "cannot get unique message ids unless in transaction state")
+    (send-to-server communicator "UIDL")
+    (let ([status (get-status-response/basic communicator)])
+      ;; The server response is of the form
+      ;; +OK
+      ;; 1 whqtswO00WBw418f9t5JxYwZ
+      ;; 2 QhdPYR:00WBw1Ph7x7
+      ;; .
+      (map (lambda (l)
+             (let ([m (regexp-match uidl-regexp l)])
+               (cons (string->number (cadr m)) (caddr m))))
+           (get-multi-line-response communicator))))
 
-      (define close-communicator
-	(lambda (communicator)
-	  (close-input-port (communicator-receiver communicator))
-	  (close-output-port (communicator-sender communicator))))
+  ;; close-communicator :
+  ;; communicator -> ()
 
-      ;; disconnect-from-server :
-      ;; communicator -> ()
+  (define close-communicator
+    (lambda (communicator)
+      (close-input-port (communicator-receiver communicator))
+      (close-output-port (communicator-sender communicator))))
 
-      (define disconnect-from-server
-	(lambda (communicator)
-	  (send-to-server communicator "QUIT")
-	  (set-communicator-state! communicator 'disconnected)
-	  (let ((response (get-status-response/basic communicator)))
-	    (close-communicator communicator)
-	    (cond
-	     ((+ok? response) (void))
-	     ((-err? response)
-	      ((signal-error make-disconnect-not-quiet
-			     "got error status upon disconnect")
-	       communicator))))))
+  ;; disconnect-from-server :
+  ;; communicator -> ()
 
-      ;; send-to-server :
-      ;; communicator x format-string x list (values) -> ()
+  (define disconnect-from-server
+    (lambda (communicator)
+      (send-to-server communicator "QUIT")
+      (set-communicator-state! communicator 'disconnected)
+      (let ([response (get-status-response/basic communicator)])
+        (close-communicator communicator)
+        (cond
+          [(+ok? response) (void)]
+          [(-err? response)
+           ((signal-error make-disconnect-not-quiet
+                          "got error status upon disconnect")
+            communicator)]))))
 
-      (define send-to-server
-	(lambda (communicator message-template . rest)
-	  (apply fprintf (communicator-sender communicator)
-		 (string-append message-template "\r\n")
-		 rest)
-	  (flush-output (communicator-sender communicator))))
+  ;; send-to-server :
+  ;; communicator x format-string x list (values) -> ()
 
-      ;; get-one-line-from-server :
-      ;; iport -> string
+  (define send-to-server
+    (lambda (communicator message-template . rest)
+      (apply fprintf (communicator-sender communicator)
+             (string-append message-template "\r\n")
+             rest)
+      (flush-output (communicator-sender communicator))))
 
-      (define get-one-line-from-server
-	(lambda (server->client-port)
-	  (read-line server->client-port 'return-linefeed)))
+  ;; get-one-line-from-server :
+  ;; iport -> string
 
-      ;; get-server-status-response :
-      ;; communicator -> server-responses x string
+  (define get-one-line-from-server
+    (lambda (server->client-port)
+      (read-line server->client-port 'return-linefeed)))
 
-      ;; -- provides the low-level functionality of checking for +OK
-      ;; and -ERR, returning an appropriate structure, and returning the
-      ;; rest of the status response as a string to be used for further
-      ;; parsing, if necessary.
+  ;; get-server-status-response :
+  ;; communicator -> server-responses x string
 
-      (define get-server-status-response
-	(lambda (communicator)
-          (let* ((receiver (communicator-receiver communicator))
-                 (status-line (get-one-line-from-server receiver))
-                 (r (regexp-match #rx"^\\+OK(.*)" status-line)))
+  ;; -- provides the low-level functionality of checking for +OK
+  ;; and -ERR, returning an appropriate structure, and returning the
+  ;; rest of the status response as a string to be used for further
+  ;; parsing, if necessary.
+
+  (define get-server-status-response
+    (lambda (communicator)
+      (let* ([receiver (communicator-receiver communicator)]
+             [status-line (get-one-line-from-server receiver)]
+             [r (regexp-match #rx"^\\+OK(.*)" status-line)])
+        (if r
+          (values (make-+ok) (cadr r))
+          (let ([r (regexp-match #rx"^\\-ERR(.*)" status-line)])
             (if r
-              (values (make-+ok) (cadr r))
-              (let ((r (regexp-match #rx"^\\-ERR(.*)" status-line)))
-                (if r
-                  (values (make--err) (cadr r))
-                  (signal-malformed-response-error communicator)))))))
+              (values (make--err) (cadr r))
+              (signal-malformed-response-error communicator)))))))
 
-      ;; get-status-response/basic :
-      ;; communicator -> server-responses
+  ;; get-status-response/basic :
+  ;; communicator -> server-responses
 
-      ;; -- when the only thing to determine is whether the response
-      ;; was +OK or -ERR.
+  ;; -- when the only thing to determine is whether the response
+  ;; was +OK or -ERR.
 
-      (define get-status-response/basic
-	(lambda (communicator)
-	  (let-values (((response rest)
-			(get-server-status-response communicator)))
-	    response)))
+  (define get-status-response/basic
+    (lambda (communicator)
+      (let-values ([(response rest)
+                    (get-server-status-response communicator)])
+        response)))
 
-      ;; get-status-response/match :
-      ;; communicator x regexp x regexp -> (status x list (string))
+  ;; get-status-response/match :
+  ;; communicator x regexp x regexp -> (status x list (string))
 
-      ;; -- when further parsing of the status response is necessary.
-      ;; Strips off the car of response from regexp-match.
+  ;; -- when further parsing of the status response is necessary.
+  ;; Strips off the car of response from regexp-match.
 
-      (define get-status-response/match
-	(lambda (communicator +regexp -regexp)
-	  (let-values (((response rest)
-			(get-server-status-response communicator)))
-	    (if (and +regexp (+ok? response))
-		(let ((r (regexp-match +regexp rest)))
-		  (if r (values response (cdr r))
-		      (signal-malformed-response-error communicator)))
-		(if (and -regexp (-err? response))
-		    (let ((r (regexp-match -regexp rest)))
-		      (if r (values response (cdr r))
-			  (signal-malformed-response-error communicator)))
-		    (signal-malformed-response-error communicator))))))
+  (define get-status-response/match
+    (lambda (communicator +regexp -regexp)
+      (let-values ([(response rest)
+                    (get-server-status-response communicator)])
+        (if (and +regexp (+ok? response))
+          (let ([r (regexp-match +regexp rest)])
+            (if r (values response (cdr r))
+                (signal-malformed-response-error communicator)))
+          (if (and -regexp (-err? response))
+            (let ([r (regexp-match -regexp rest)])
+              (if r (values response (cdr r))
+                  (signal-malformed-response-error communicator)))
+            (signal-malformed-response-error communicator))))))
 
-      ;; get-multi-line-response :
-      ;; communicator -> list (string)
+  ;; get-multi-line-response :
+  ;; communicator -> list (string)
 
-      (define get-multi-line-response
-	(lambda (communicator)
-	  (let ((receiver (communicator-receiver communicator)))
-	    (let loop ()
-	      (let ((l (get-one-line-from-server receiver)))
-		(cond
-		 ((eof-object? l)
-		  (signal-malformed-response-error communicator))
-		 ((string=? l ".")
-		  '())
-		 ((and (> (string-length l) 1)
-		       (char=? (string-ref l 0) #\.))
-		  (cons (substring l 1 (string-length l)) (loop)))
-		 (else
-		  (cons l (loop)))))))))
+  (define get-multi-line-response
+    (lambda (communicator)
+      (let ([receiver (communicator-receiver communicator)])
+        (let loop ()
+          (let ([l (get-one-line-from-server receiver)])
+            (cond
+              [(eof-object? l)
+               (signal-malformed-response-error communicator)]
+              [(string=? l ".")
+               '()]
+              [(and (> (string-length l) 1)
+                    (char=? (string-ref l 0) #\.))
+               (cons (substring l 1 (string-length l)) (loop))]
+              [else
+               (cons l (loop))]))))))
 
-      ;; make-desired-header :
-      ;; string -> desired
+  ;; make-desired-header :
+  ;; string -> desired
 
-      (define make-desired-header
-	(lambda (raw-header)
-	  (regexp
-	   (string-append
-	    "^"
-	    (list->string
-	     (apply append
-		    (map (lambda (c)
-			   (cond
-			    ((char-lower-case? c)
-			     (list #\[ (char-upcase c) c #\]))
-			    ((char-upper-case? c)
-			     (list #\[ c (char-downcase c) #\]))
-			    (else
-			     (list c))))
-			 (string->list raw-header))))
-	    ":"))))
+  (define make-desired-header
+    (lambda (raw-header)
+      (regexp
+       (string-append
+        "^"
+        (list->string
+         (apply append
+                (map (lambda (c)
+                       (cond
+                         [(char-lower-case? c)
+                          (list #\[ (char-upcase c) c #\])]
+                         [(char-upper-case? c)
+                          (list #\[ c (char-downcase c) #\])]
+                         [else
+                          (list c)]))
+                     (string->list raw-header))))
+        ":"))))
 
-      ;; extract-desired-headers :
-      ;; list (string) x list (desired) -> list (string)
+  ;; extract-desired-headers :
+  ;; list (string) x list (desired) -> list (string)
 
-      (define extract-desired-headers
-	(lambda (headers desireds)
-	  (let loop ((headers headers))
-	    (if (null? headers) null
-		(let ((first (car headers))
-		      (rest (cdr headers)))
-		  (if (ormap (lambda (matcher)
-			       (regexp-match matcher first))
-			     desireds)
-		      (cons first (loop rest))
-		      (loop rest))))))))
-
+  (define extract-desired-headers
+    (lambda (headers desireds)
+      (let loop ([headers headers])
+        (if (null? headers) null
+            (let ([first (car headers)]
+                  [rest (cdr headers)])
+              (if (ormap (lambda (matcher)
+                           (regexp-match matcher first))
+                         desireds)
+                (cons first (loop rest))
+                (loop rest))))))))

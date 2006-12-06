@@ -3,7 +3,7 @@
   (struct cgi-error ())
   (struct incomplete-%-suffix (chars))
   (struct invalid-%-suffix (char))
-  
+
   ;; -- cgi methods --
   get-bindings
   get-bindings/post
@@ -15,9 +15,8 @@
   extract-bindings
   extract-binding/single
   get-cgi-method
-  
+
   ;; -- general HTML utilities --
   string->html
   generate-link-text
   )
-

@@ -6,9 +6,9 @@
   get-message/complete get-message/headers get-message/body
   delete-message
   get-unique-id/single get-unique-id/all
-  
+
   make-desired-header extract-desired-headers
-  
+
   (struct pop3 ())
   (struct cannot-connect ())
   (struct username-rejected ())

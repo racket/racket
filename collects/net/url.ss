@@ -1,7 +1,7 @@
 (module url mzscheme
   (require (lib "unit.ss")
            (lib "contract.ss")
-	   "url-structs.ss"
+           "url-structs.ss"
            "url-sig.ss"
            "url-unit.ss"
            "tcp-sig.ss"
@@ -10,7 +10,7 @@
   (define-compound-unit/infer url+tcp@
     (import) (export url^)
     (link tcp@ url@))
-  
+
   (define-values/invoke-unit/infer url+tcp@)
 
   (provide
@@ -36,10 +36,10 @@
    (purify-port (input-port? . -> . string?))
    (netscape/string->url (string? . -> . url?))
    (call/input-url (opt->* (url?
-			    (opt-> (url?) ((listof string?)) input-port?)
-			    (input-port? . -> . any))
-			   ((listof string?))
-			   any))
+                            (opt-> (url?) ((listof string?)) input-port?)
+                            (input-port? . -> . any))
+                           ((listof string?))
+                           any))
    (combine-url/relative (url? string? . -> . url?))
    (url-exception? (any/c . -> . boolean?))
    (current-proxy-servers

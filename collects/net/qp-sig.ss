@@ -3,7 +3,7 @@
   (struct qp-error () -setters -constructor)
   (struct qp-wrong-input () -setters -constructor)
   (struct qp-wrong-line-size (size) -setters -constructor)
-  
+
   ;; -- qp methods --
   qp-encode
   qp-decode
