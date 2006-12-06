@@ -60,10 +60,10 @@
   (define-struct cookie (name value comment domain max-age path secure version))
   (define-struct (cookie-error exn:fail) ())
 
-  ;; cookie-error : string args ... -> raises a cookie-error exception
+  ;; error* : string args ... -> raises a cookie-error exception
   ;; constructs a cookie-error struct from the given error message
   ;; (added to fix exceptions-must-take-immutable-strings bug)
-  (define (cookie-error fmt . args)
+  (define (error* fmt . args)
     (make-cookie-error
      (string->immutable-string (apply format fmt args))
      (current-continuation-marks)))
@@ -83,7 +83,7 @@
   (define (set-cookie name pre-value)
     (let ([value (to-rfc2109:value pre-value)])
       (unless (rfc2068:token? name)
-        (cookie-error "Invalid cookie name: ~a / ~a" name value))
+        (error* "invalid cookie name: ~a / ~a" name value))
       (make-cookie name value
                    #f ; comment
                    #f ; current domain
@@ -103,7 +103,7 @@
   ;; "Set-Cookie: " header, and sent to a client (browser).
   (define (print-cookie cookie)
     (unless (cookie? cookie)
-      (cookie-error "Cookie expected, received: ~a" cookie))
+      (error* "cookie expected, received: ~a" cookie))
     (string-join
      (filter (lambda (s) (not (string-null? s)))
              (list (format "~a=~a" (cookie-name cookie) (cookie-value cookie))
@@ -118,46 +118,46 @@
   (define (cookie:add-comment cookie pre-comment)
     (let ([comment (to-rfc2109:value pre-comment)])
       (unless (cookie? cookie)
-        (cookie-error "Cookie expected, received: ~a" cookie))
+        (error* "cookie expected, received: ~a" cookie))
       (set-cookie-comment! cookie comment)
       cookie))
 
   (define (cookie:add-domain cookie domain)
     (unless (valid-domain? domain)
-      (cookie-error "Invalid domain: ~a" domain))
+      (error* "invalid domain: ~a" domain))
     (unless (cookie? cookie)
-      (cookie-error "Cookie expected, received: ~a" cookie))
+      (error* "cookie expected, received: ~a" cookie))
     (set-cookie-domain! cookie domain)
     cookie)
 
   (define (cookie:add-max-age cookie seconds)
     (unless (and (integer? seconds) (not (negative? seconds)))
-      (cookie-error "Invalid Max-Age for cookie: ~a" seconds))
+      (error* "invalid Max-Age for cookie: ~a" seconds))
     (unless (cookie? cookie)
-      (cookie-error "Cookie expected, received: ~a" cookie))
+      (error* "cookie expected, received: ~a" cookie))
     (set-cookie-max-age! cookie seconds)
     cookie)
 
   (define (cookie:add-path cookie pre-path)
     (let ([path (to-rfc2109:value pre-path)])
       (unless (cookie? cookie)
-        (cookie-error "Cookie expected, received: ~a" cookie))
+        (error* "cookie expected, received: ~a" cookie))
       (set-cookie-path! cookie path)
       cookie))
 
   (define (cookie:secure cookie secure?)
     (unless (boolean? secure?)
-      (cookie-error "Invalid argument (boolean expected), received: ~a" secure?))
+      (error* "invalid argument (boolean expected), received: ~a" secure?))
     (unless (cookie? cookie)
-      (cookie-error "Cookie expected, received: ~a" cookie))
+      (error* "cookie expected, received: ~a" cookie))
     (set-cookie-secure! cookie secure?)
     cookie)
 
   (define (cookie:version cookie version)
     (unless (integer? version)
-      (cookie-error "Unsupported version: ~a" version))
+      (error* "unsupported version: ~a" version))
     (unless (cookie? cookie)
-      (cookie-error "Cookie expected, received: ~a" cookie))
+      (error* "cookie expected, received: ~a" cookie))
     (set-cookie-version! cookie version)
     cookie)
 
@@ -276,7 +276,7 @@
   (define (to-rfc2109:value s)
     (cond
       [(not (string? s))
-       (cookie-error "Expected string, given: ~e" s)]
+       (error* "expected string, given: ~e" s)]
 
       ;; for backwards compatibility, just use the given string if it will work
       [(rfc2068:token? s) s]
@@ -287,7 +287,7 @@
       [(rfc2068:quoted-string? (convert-to-quoted s))
        => (λ (x) x)]
       [else
-       (cookie-error "Could not convert the given string to an acceptable RFC 2109 value: ~s" s)]))
+       (error* "could not convert the given string to an acceptable RFC 2109 value: ~s" s)]))
 
   ;;!
   ;;
@@ -300,7 +300,7 @@
   (define cookie-string?
     (opt-lambda (s (value? #t))
       (unless (string? s)
-        (cookie-error "String expected, received: ~a" s))
+        (error* "string expected, received: ~a" s))
       (if value?
         (rfc2109:value? s)
         ;; name:  token
