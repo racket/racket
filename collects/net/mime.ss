@@ -1,8 +1,8 @@
 ;;;
 ;;; <mime.ss> ---- MIME support
 ;;;
-;;; Copyright (C) 2002 by PLT. 
-;;; Copyright (C) 2001 by Wish Computing. 
+;;; Copyright (C) 2002 by PLT.
+;;; Copyright (C) 2001 by Wish Computing.
 ;;;
 ;;; This file is part of mime
 
@@ -34,8 +34,8 @@
            "qp.ss"
            "base64-sig.ss"
            "base64.ss"
-	   "head-sig.ss"
-	   "head.ss")
+           "head-sig.ss"
+           "head.ss")
 
   (define-unit-from-context base64@ base64^)
   (define-unit-from-context qp@ qp^)
@@ -43,7 +43,7 @@
 
   (define-compound-unit/infer mime@2 (import) (export mime^)
     (link base64@ qp@ head@ mime@))
-  
+
   (define-values/invoke-unit/infer mime@2)
 
   (provide-signature-elements mime^))

@@ -1,7 +1,5 @@
 (module pop3 mzscheme
-  (require (lib "unit.ss")
-           "pop3-sig.ss"
-           "pop3-unit.ss")
+  (require (lib "unit.ss") "pop3-sig.ss" "pop3-unit.ss")
 
   (define-values/invoke-unit/infer pop3@)
 
@@ -29,5 +27,4 @@
  "Status: RO")
 ("some body" "text" "goes" "." "here" "." "")
 > (disconnect-from-server c)
-
 |#
