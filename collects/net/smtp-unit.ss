@@ -8,8 +8,6 @@
 
   (define debug-via-stdio? #f)
 
-  (define crlf (string #\return #\linefeed))
-
   (define (log . args)
     ;; (apply printf args)
     (void))
@@ -61,7 +59,7 @@
                             (raise x))])
       (check-reply r 220 w)
       (log "hello\n")
-      (fprintf w "EHLO ~a~a" (smtp-sending-server) crlf)
+      (fprintf w "EHLO ~a\r\n" (smtp-sending-server))
       (check-reply r 250 w)
 
       (when auth-user
@@ -74,36 +72,36 @@
         (check-reply r 235 w))
 
       (log "from\n")
-      (fprintf w "MAIL FROM:<~a>~a" sender crlf)
+      (fprintf w "MAIL FROM:<~a>\r\n" sender)
       (check-reply r 250 w)
 
       (log "to\n")
       (for-each
        (lambda (dest)
-         (fprintf w "RCPT TO:<~a>~a" dest crlf)
+         (fprintf w "RCPT TO:<~a>\r\n" dest)
          (check-reply r 250 w))
        recipients)
 
       (log "header\n")
-      (fprintf w "DATA~a" crlf)
+      (fprintf w "DATA\r\n")
       (check-reply r 354 w)
       (fprintf w "~a" header)
       (for-each
        (lambda (l)
          (log "body: ~a\n" l)
-         (fprintf w "~a~a" (protect-line l) crlf))
+         (fprintf w "~a\r\n" (protect-line l)))
        message-lines)
 
       ;; After we send the ".", then only break in an emergency
       ((smtp-sending-end-of-message))
 
       (log "dot\n")
-      (fprintf w ".~a" crlf)
+      (fprintf w ".\r\n")
       (flush-output w)
       (check-reply r 250 w)
 
       (log "quit\n")
-      (fprintf w "QUIT~a" crlf)
+      (fprintf w "QUIT\r\n")
       (check-reply r 221 w)
 
       (close-output-port w)
