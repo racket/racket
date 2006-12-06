@@ -85,3 +85,6 @@ Changes for v360:
 Stepper supports 'begin'.  You'll never know it unless you use the
 PLTSTEPPERUNSAFE environment variable, though.
 
+Changes for v361:
+
+Bug fix for test cases
