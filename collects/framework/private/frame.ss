@@ -1354,7 +1354,8 @@
             (super on-event evt)
             (when delegate-frame
               (let ([text (get-editor)])
-                (when (is-a? text text%)
+                (when (and (is-a? text text%)
+                           (send delegate-frame delegated-text-shown?))
                   (cond
                     [(send evt button-down?)
                      (let-values ([(editor-x editor-y)
@@ -1382,7 +1383,7 @@
                             (send delegate-frame update-status-line 'plt:delegate #f)])))]
                     [(send evt leaving?)
                      (send delegate-frame update-status-line 'plt:delegate #f)])))))
-          (super-instantiate ())))
+          (super-new)))
       
       (define (at-most-200 s)
         (cond
