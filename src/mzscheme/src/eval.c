@@ -5128,8 +5128,12 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       if (SCHEME_STX_PAIRP(result)) {
 	if (!start)
 	  start = scheme_null;
-	if (stx_start && !(rec[drec].comp || (rec[drec].depth == -1)))
-	  stx_start = scheme_null;
+        
+	/* I think the following was intended as an optimization for `expand',
+           since the syntax definition will be dropped. But it breaks
+           `local-expand':
+           if (stx_start && !(rec[drec].comp || (rec[drec].depth == -1)))
+             stx_start = scheme_null; */
 	if (stx_start) {
 	  result = scheme_make_immutable_pair(letrec_syntaxes_symbol,
 					      scheme_make_immutable_pair(stx_start,

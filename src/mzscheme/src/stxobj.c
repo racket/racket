@@ -3667,7 +3667,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
   WRAP_POS prev;
   WRAP_POS w2;
   Scheme_Object *stack = scheme_null, *key, *old_key;
-  Scheme_Object *v, *v2, *v2l, *stx, *name;
+  Scheme_Object *v, *v2, *v2l, *stx, *name, *svl;
   long size, vsize, psize, i, j, pos;
 
   /* Although it makes no sense to simplify the rename table itself,
@@ -3765,7 +3765,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 	} else
 	  vsize = SCHEME_RENAME_LEN(v);
 
-	/* Initial size; may shrink: */
+        /* Initial size; may shrink: */
 	size = vsize;
 
 	v2 = scheme_make_vector(2 + (2 * size), NULL);
@@ -3790,14 +3790,16 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 	  stx = SCHEME_VEC_ELS(v)[2+ii];
 	  name = SCHEME_STX_VAL(stx);
 	  SCHEME_VEC_ELS(v2)[2+pos] = name;
-	  
+
 	  {
 	    /* Either this name is in prev, in which case the answer
 	       must match this rename's target, or this rename's
 	       answer applies. */
-	    Scheme_Object *ok = NULL;
+	    Scheme_Object *ok = NULL, *ok_replace = NULL;
+            int ok_replace_index = 0;
 
-	    if (!WRAP_POS_END_P(prev)) {
+	    if (!WRAP_POS_END_P(prev)
+                || SCHEME_PAIRP(v2l)) {
 	      WRAP_POS w3;
 	      Scheme_Object *vp;
 	      Scheme_Object *other_env;
@@ -3807,51 +3809,74 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 		other_env = resolve_env(NULL, stx, 0, 0, NULL, skip_ribs);
 		SCHEME_VEC_ELS(v)[2+vvsize+ii] = other_env;
 	      }
-	    
-	      /* Check marks (now that we have the correct barriers). */
+
+              /* Check marks (now that we have the correct barriers). */
 	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
 	      if (!same_marks(&w2, &w, other_env, (Scheme_Object *)init_rib)) {
 		other_env = NULL;
 	      }
-	      
-	      if (other_env) {
-		WRAP_POS_COPY(w3, prev);
-		for (; !WRAP_POS_END_P(w3); WRAP_POS_INC(w3)) {
-		  vp = WRAP_POS_FIRST(w3);
-		  if (SCHEME_VECTORP(vp)) {
-		    psize = SCHEME_RENAME_LEN(vp);
-		    for (j = 0; j < psize; j++) {
-		      if (SAME_OBJ(SCHEME_VEC_ELS(vp)[2+j], name)) {
-			if (SAME_OBJ(SCHEME_VEC_ELS(vp)[2+psize+j], other_env)) {
-			  ok = SCHEME_VEC_ELS(v)[0];
-			} else {
-			  ok = NULL; 
-			  /* Alternate time/space tradeoff: could be
-			     SCHEME_VEC_ELS(vp)[2+psize+j],
-			     which is the value from prev */
-			}
-			break;
-		      }
-		    }
-		    if (j < psize)
-		      break;
-		  }
-		}
-		if (WRAP_POS_END_P(w3) && SCHEME_FALSEP(other_env))
-		  ok = SCHEME_VEC_ELS(v)[0];
-	      } else
-		ok = NULL;
+
+              if (other_env) {
+                /* First, check simplications in v2l.
+                   If not in v2l, try prev. */
+                if (!ok) {
+                  WRAP_POS_COPY(w3, prev);
+                  svl = v2l;
+                  for (; SCHEME_PAIRP(svl) || !WRAP_POS_END_P(w3); ) {
+                    if (SCHEME_PAIRP(svl))
+                      vp = SCHEME_CAR(svl);
+                    else
+                      vp = WRAP_POS_FIRST(w3);
+                    if (SCHEME_VECTORP(vp)) {
+                      psize = SCHEME_RENAME_LEN(vp);
+                      for (j = 0; j < psize; j++) {
+                        if (SAME_OBJ(SCHEME_VEC_ELS(vp)[2+j], name)) {
+                          if (SAME_OBJ(SCHEME_VEC_ELS(vp)[2+psize+j], other_env)) {
+                            ok = SCHEME_VEC_ELS(v)[0];
+                          } else {
+                            ok = NULL; 
+                            /* Alternate time/space tradeoff: could be
+                               SCHEME_VEC_ELS(vp)[2+psize+j],
+                               which is the value from prev */
+                          }
+                          if (ok && SCHEME_PAIRP(svl)) {
+                            /* Need to overwrite old map, instead
+                               of adding a new one. */
+                            ok_replace = vp;
+                            ok_replace_index = 2 + psize + j;
+                          }
+                          break;
+                        }
+                      }
+                      if (j < psize)
+                        break;
+                    }
+                    if (SCHEME_PAIRP(svl))
+                      svl = SCHEME_CDR(svl);
+                    else {
+                      WRAP_POS_INC(w3);
+                    }
+                  }
+                  if (WRAP_POS_END_P(w3) && SCHEME_NULLP(svl) && SCHEME_FALSEP(other_env))
+                    ok = SCHEME_VEC_ELS(v)[0];
+                } else
+                  ok = NULL;
+              }
 	    } else {
 	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
 	      if (same_marks(&w2, &w, scheme_false, (Scheme_Object *)init_rib))
-		ok = SCHEME_VEC_ELS(v)[0];
+                ok = SCHEME_VEC_ELS(v)[0];
 	      else
 		ok = NULL;
 	    }
 
 	    if (ok) {
-	      SCHEME_VEC_ELS(v2)[2+size+pos] = ok;
-	      pos++;
+              if (ok_replace) {
+                SCHEME_VEC_ELS(ok_replace)[ok_replace_index] = ok;
+              } else {
+                SCHEME_VEC_ELS(v2)[2+size+pos] = ok;
+                pos++;
+              }
 	    }
 	  }
 	  ii++;
@@ -3875,8 +3900,6 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 	SCHEME_VEC_ELS(v2)[1] = scheme_false;
 
 	v2l = CONS(v2, v2l);
-
-	WRAP_POS_COPY(prev, w);
       }
 
       WRAP_POS_DEC(w);

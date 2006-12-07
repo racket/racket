@@ -2219,7 +2219,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   /* Need to know the phase being compiled */
   phase = env->genv->phase;
-  
+
   /* Walk through the compilation frames */
   for (frame = env; frame->next != NULL; frame = frame->next) {
     int i;
