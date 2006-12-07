@@ -238,19 +238,7 @@
     ", "
     "@flink preferences:set %"
     ".")
-   (preferences:save
-    (-> boolean?)
-    ()
-    "\\rawscm{(preferences:save-user-preferences)} saves the user's preferences to disk,"
-    "potentially marshalling some of the preferences."
-    ""
-    "Returns \\scm{\\#f} if saving the preferences fails and \\scm{\\#t} otherwise.")
-   (preferences:silent-save
-    (-> boolean?)
-    ()
-    "Same as"
-    "@flink preferences:save"
-    "except that it does not put display a message if it fails.")
+   
    (preferences:restore-defaults
     (-> void?)
     ()

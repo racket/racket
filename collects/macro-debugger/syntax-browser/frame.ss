@@ -47,7 +47,6 @@
             (pref:width (send this get-width))
             (pref:height (send this get-height))
             (send widget save-prefs)
-            (preferences:save)
             (inner (void) on-close))
           ))
       

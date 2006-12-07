@@ -92,10 +92,10 @@
                                (lambda (x) (or (not x) (path? x))))
       (preferences:set-un/marshall 
        'drscheme:multi-file-search:directory
-       (λ (v) (path->string v))
+       (λ (v) (and v (path->string v)))
        (λ (p) (if (path-string? p)
-                       (string->path p)
-                       #f)))
+                  (string->path p)
+                  #f)))
       
       
       ;; open-search-window : search-info -> void

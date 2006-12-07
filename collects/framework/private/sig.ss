@@ -80,8 +80,6 @@
      set-default
      set-un/marshall
 
-     save
-     silent-save
      restore-defaults
      
      add-panel

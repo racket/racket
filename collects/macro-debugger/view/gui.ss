@@ -70,7 +70,6 @@
             (pref:width (send this get-width))
             (pref:height (send this get-height))
             (send widget shutdown)
-            (preferences:save)
             (inner (void) on-close))
           
           (override/return-false file-menu:create-new?

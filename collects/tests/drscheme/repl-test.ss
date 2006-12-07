@@ -1,11 +1,4 @@
-#|
 
-add this test:
-
-
-There shouldn't be any error (but add in a bug that triggers one to be sure!)
-
-|#
 (module repl-test mzscheme
   (require "drscheme-test-util.ss"
            (lib "class.ss")
@@ -55,7 +48,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
   
   (define test-data
     (list
-
+#|
      ;; basic tests
      (make-test "1"
                 "1"
@@ -514,7 +507,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
       #f
       void
       void)
-     
+     |#
      ; fraction snip test
      ;; this test depends on the state of the 'framework:fraction-snip-style preference
      ;; make sure this preference is set to the default when running this test.
@@ -527,7 +520,7 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
 		#f
                 void
                 void)
-     
+     #|
      ;; should produce a syntax object with a turn-down triangle.
      (make-test "(write (list (syntax x)))" 
                 "({embedded \".#<syntax:1:21>\"})"
@@ -753,6 +746,28 @@ There shouldn't be any error (but add in a bug that triggers one to be sure!)
                 #f
                 void
                 void)
+     
+     (make-test
+      (string-append
+       "(define p (open-output-string))\n"
+       "(parameterize ([current-error-port p])\n"
+       "(dynamic-wind\n"
+       "void\n"
+       "(lambda ()\n"
+       "((error-display-handler)\n"
+       "\"x\"\n"
+       "(with-handlers ((void values)) (eval '(lambda ())))))\n"
+       "(lambda ()\n"
+       "(display (get-output-string p)))))\n")
+      "x in: (lambda ())"
+      "x in: (lambda ())"
+      "x in: (lambda ())"
+      "x in: (lambda ())"
+      'interactions
+      #f
+      void 
+      void)
+|#
      ))
   
   (define backtrace-image-string "{bug09.gif}")

@@ -1127,28 +1127,33 @@ profile todo:
                                         (prof-info-time info)))))))
         (void))
 
-      ;; get-color-value : number number -> (is-a?/c color%)
-      ;; returns the profiling color
-      ;; for `val' if `max-val' is the largest
-      ;; of any profiling amount.
-      (define (get-color-value val max-val)
-        (let* ([color-min (preferences:get 'drscheme:profile:low-color)]
-               [color-max (preferences:get 'drscheme:profile:high-color)]
-               [adjust
-                (case (preferences:get 'drscheme:profile:scale)
-                  [(sqrt) sqrt]
-                  [(square) (λ (x) (* x x))]
-                  [(linear) (λ (x) x)])]
-               [factor (adjust (if (zero? max-val) 0 (/ val max-val)))]
-               [get-rgb-value
-                (λ (sel)
-                  (let ([small (sel color-min)]
-                        [big (sel color-max)])
-                    (inexact->exact (floor (+ (* factor (- big small)) small)))))])
-          (make-object color% 
-            (get-rgb-value (λ (x) (send x red)))
-            (get-rgb-value (λ (x) (send x green)))
-            (get-rgb-value (λ (x) (send x blue))))))
+    (define (get-color-value/pref val max-val drscheme:profile:low-color drscheme:profile:high-color drscheme:profile:scale)
+      (let* ([adjust
+              (case drscheme:profile:scale
+                [(sqrt) sqrt]
+                [(square) (λ (x) (* x x))]
+                [(linear) (λ (x) x)])]
+             [factor (adjust (if (zero? max-val) 0 (/ val max-val)))]
+             [get-rgb-value
+              (λ (sel)
+                (let ([small (sel drscheme:profile:low-color)]
+                      [big (sel drscheme:profile:high-color)])
+                  (inexact->exact (floor (+ (* factor (- big small)) small)))))])
+        (make-object color% 
+          (get-rgb-value (λ (x) (send x red)))
+          (get-rgb-value (λ (x) (send x green)))
+          (get-rgb-value (λ (x) (send x blue))))))
+    
+    ;; get-color-value : number number -> (is-a?/c color%)
+    ;; returns the profiling color
+    ;; for `val' if `max-val' is the largest
+    ;; of any profiling amount.
+    (define (get-color-value val max-val)
+      (get-color-value/pref val 
+                            max-val
+                            (preferences:get 'drscheme:profile:low-color)
+                            (preferences:get 'drscheme:profile:high-color)
+                            (preferences:get 'drscheme:profile:scale)))
       
       ;; extract-maximum : (listof prof-info) -> number
       ;; gets the maximum value of the currently preferred profiling info.
@@ -1877,11 +1882,15 @@ profile todo:
           (define/override (on-paint)
             (set! in-on-paint? #t)
             (let* ([dc (get-dc)]
-                   [dummy-pen (send dc get-pen)])
+                   [dummy-pen (send dc get-pen)]
+                   [drscheme:profile:low-color (preferences:get 'drscheme:profile:low-color)]
+                   [drscheme:profile:high-color (preferences:get 'drscheme:profile:high-color)]
+                   [drscheme:profile:scale (preferences:get 'drscheme:profile:scale)])
               (let-values ([(w h) (get-client-size)])
                 (let loop ([n 0])
                   (when (n . <= . w)
-                    (send pen set-color (get-color-value n w))
+                    (send pen set-color 
+                          (get-color-value/pref n w drscheme:profile:low-color drscheme:profile:high-color drscheme:profile:scale))
                     (send dc set-pen pen)
                     (send dc draw-line n 0 n h)
                     (send dc set-pen dummy-pen)

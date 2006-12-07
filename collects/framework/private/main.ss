@@ -296,22 +296,8 @@
       
       (exit:insert-on-callback
        (λ ()
-         (send (group:get-the-frame-group) on-close-all)
-         (preferences:silent-save) ;; the prefs may have changed as a result of closing the windows...
-         ))
+         (send (group:get-the-frame-group) on-close-all)))
       
-      (exit:insert-can?-callback 
-       (λ ()
-         (or (preferences:save)
-             (exit-anyway?))))
-      
-      (define (exit-anyway?)
-        (gui-utils:get-choice
-         (string-constant still-locked-exit-anyway?)
-         (string-constant yes)
-         (string-constant no)
-         (string-constant drscheme)))
-
       ;; reset these -- they are only for the test suite.
       ;; they do not need to be set across starting up and shutting down
       ;; the application.

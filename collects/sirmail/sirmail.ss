@@ -49,7 +49,6 @@
       (semaphore-wait exit-sema)
       (set! exit-eventspaces (remq evtsp exit-eventspaces))
       (when (null? exit-eventspaces)
-	(save-prefs)
 	(prim-exit 0))
       (semaphore-post exit-sema)))
 

@@ -49,8 +49,7 @@
                                              (lambda (f) (f))
                                              (lambda (v) (lambda () v)))
                 (begin0 ((preferences:get ',marshalling-pref-sym))
-                        (preferences:set ',marshalling-pref-sym (lambda () 2))
-                        (preferences:save))))
+                        (preferences:set ',marshalling-pref-sym (lambda () 2)))))
   (shutdown-mred)
   (test 'preference-marshalling
         (check-eq? 2)
@@ -79,13 +78,11 @@
         (check-eq? 'stage1)
         `(begin (preferences:set-default ',default-test-sym 'default symbol?)
                 (preferences:set ',default-test-sym 'new-value)
-                (preferences:save)
                 'stage1))
   (shutdown-mred)
   (test 'preference-no-set-default-stage2
         (check-eq? 'stage2)
-        `(begin (preferences:save)
-                'stage2))
+        `(begin 'stage2))
   (shutdown-mred)
   (test 'preference-no-set-default-stage3
         (check-eq? 'new-value)

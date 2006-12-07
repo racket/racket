@@ -3655,6 +3655,15 @@
      'd-c-s/attr-4
      `(,node-r (,node-r (,node-r ,t)))))
   
+  ;; NOT YET RELEASED
+  #|
+
+need a test that will revisit a node a second time (when it already has a wrapper)
+with a new parent. make sure the new parent is recorded in the parents field
+so that propagation occurs.
+
+|#
+  
 
   
   ;; test the predicate

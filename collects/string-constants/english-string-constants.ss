@@ -380,7 +380,11 @@ please adhere to these guidelines:
  ;;; preferences
  (preferences "Preferences")
  (error-saving-preferences "Error saving preferences: ~a")
+ (error-saving-preferences-title "Error saving preferences")
  (error-reading-preferences "Error reading preferences")
+ (prefs-file-locked "The preferences file is locked (because the file ~a exists), so your preference change could not be saved. Cancel preference change?")
+ (try-again "Try again") ;; button label
+ (prefs-file-still-locked "The preferences file is still locked (because the file ~a exists), so your preference change will not be saved.")
  (scheme-prefs-panel-label "Scheme")
  (warnings-prefs-panel-label "Warnings")
  (editor-prefs-panel-label "Editing")

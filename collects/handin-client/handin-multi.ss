@@ -105,7 +105,6 @@
         (preferences:set geometry-key
                          (list (send this get-width) (send this get-height)
                                (send this get-x) (send this get-y)))
-        (preferences:save)
         (send this show #f))
       (define/augment (on-close) (close))
 

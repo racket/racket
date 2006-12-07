@@ -11,7 +11,7 @@
   ;; IMPORTANT! All preferences operations outside this
   ;; file should go through the following exports.
   ;; DO NOT use preferences:... elsewhere.
-  (provide get-pref put-pref save-prefs
+  (provide get-pref put-pref
 	   show-pref-dialog
 	   add-preferences-menu-items)
 
@@ -151,9 +151,6 @@
   (define (put-pref id val)
     (in-preferences-eventspace (lambda ()
 				 (preferences:set id val))))
-
-  (define (save-prefs)
-    (in-preferences-eventspace preferences:save))
 
   (define (add-preferences-menu-items edit-menu)
     (make-object separator-menu-item% edit-menu)
