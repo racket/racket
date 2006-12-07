@@ -114,17 +114,19 @@
      (cond [(syntax-keyword? #'name)
             (raise-syntax-error #f "cannot redefine a keyword" stx #'name)]
            [top-level?
-            #'(begin (define-values (name) (void)) (set! name expr))]
+            (syntax/loc stx
+              (begin (define-values (name) (void)) (set! name expr)))]
            [else
-            #'(define-values (name) expr)])]
+            (syntax/loc stx (define-values (name) expr))])]
     [(_ (values name ...) expr)
      (cond [(ormap (lambda (id) (and (syntax-keyword? id) id))
                    (syntax->list #'(name ...)))
             => (lambda (id)
                  (raise-syntax-error #f "cannot redefine a keyword" stx id))]
            [top-level?
-            #'(begin (define name (void)) ... (set!-values (name ...) expr))]
-           [else #'(define-values (name ...) expr)])]
+            (syntax/loc stx
+              (begin (define name (void)) ... (set!-values (name ...) expr)))]
+           [else (syntax/loc stx (define-values (name ...) expr))])]
     [(_ names body0 body ...) (pair? (syntax-e #'names))
      (let loop ([s #'names] [args '()])
        (syntax-case s ()
