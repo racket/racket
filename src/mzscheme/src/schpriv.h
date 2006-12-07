@@ -596,7 +596,8 @@ void scheme_drop_first_rib_rename(Scheme_Object *ro);
 Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename);
 Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib);
 
-Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to);
+Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to,
+                                             Scheme_Object *uid);
 
 #define mzMOD_RENAME_TOPLEVEL 0
 #define mzMOD_RENAME_NORMAL   1

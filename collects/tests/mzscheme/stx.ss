@@ -1095,6 +1095,18 @@
 (require @!$m)
 (test '(10 20 #t) '@!$get @!$get)
 
+(unless building-flat-tests?
+  (test '(12)
+        eval
+        (expand
+         #'(let ([b 12])
+             (let-syntax ([goo (lambda (stx)
+                                 #`(let ()
+                                     (define #,(syntax-local-introduce #'b) 1)
+                                     (define z (list b))
+                                     z))])
+               (goo))))))
+  
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test lazy unmarshaling of renamings and module-name resolution
 

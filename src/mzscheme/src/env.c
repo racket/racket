@@ -2274,7 +2274,13 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	    }
 	    /* Looks ok; return a lexical reference */
             if (_lexical_binding_id) {
-              val = scheme_stx_remove_extra_marks(find_id, frame->values[i]);
+              if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME))
+                val = scheme_stx_remove_extra_marks(find_id, frame->values[i],
+                                                    ((frame->flags & SCHEME_CAPTURE_LIFTED)
+                                                     ? NULL
+                                                     : uid));
+              else
+                val = find_id;
               *_lexical_binding_id = val;
             }
 	    if (flags & SCHEME_DONT_MARK_USE)
