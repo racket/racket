@@ -3,7 +3,7 @@
   (require (lib "cmdline.ss")
            (lib "pregexp.ss")
            (lib "contract.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "tcp-sig.ss" "net"))
   (require "util.ss"           
            "configuration-structures.ss"
@@ -51,14 +51,17 @@
         flags))
      '()))
 
-  (define-values/invoke-unit/sig web-server^
-    (compound-unit/sig
-     (import (T : net:tcp^))
-     (link
-      [C : web-config^ (configuration@)]
-      [S : web-server^ (web-server@ T C)])
-     (export (open S)))
-    #f net:tcp^)
+  (define-compound-unit launch@
+    (import (T : tcp^))
+    (export S)
+    (link 
+     [((C : web-config^)) configuration@]
+     [((S : web-server^)) web-server@ T C]))
+  
+  (define-values/invoke-unit
+    launch@
+    (import tcp^)
+    (export web-server^))
 
   (provide ; XXX contract
    serve))
