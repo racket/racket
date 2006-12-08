@@ -1,50 +1,28 @@
-#|
-
-todo:
-
-  -read
-
-|#
 
 #|
 
-save needs contracts
+There are three attributes for each preference:
 
-showing the dialog needs preferences.
-
-There are four attributes for each preference (technically, "read from 
-disk" is global, but we can just think of it happening to each one 
-independently, but simultaneously):
-
-  - read from disk, or not
   - default set, or not
   - marshalling function set, or not
   - initialization still okay, or not
 
 the state transitions / contracts are:
 
-  get(true, true, _, _) -> (true, true, _, false)
-  get(false, _, _, _) -> error not yet read from disk
-  get(_, false, _, _) -> error default not yet set
+  get(true, _, _) -> (true, _, false)
+  get(false, _, _) -> error default not yet set
 
   set is just like get.
 
-  set-default(true, false, true, true) -> set-default(true, true, _, true)
-  set-default(false, _, _, _) -> error not yet read from disk
-  set-default(_, true, _, _) -> error default already set
-  set-default(_, _, _, false) -> initialization not okay anymore  /* cannot happen, I think */
+  set-default(false, _, true) -> set-default(true, _, true)
+  set-default(true, _, _) -> error default already set
+  set-default(_, _, false) -> initialization not okay anymore  /* cannot happen, I think */
 
-  set-un/marshall(true, true, false, true) -> (true, true, true, true)
+  set-un/marshall(true, false, true) -> (true, true, true)
   .. otherwise error
 
-  read(false, _, _, true) -> (true, _, _, true)
-  read(true, _, _, _) -> error, already read from disk
-  read(_, _, _, false) -> initialization phase over /* cannot happen */
-
   for all syms: 
-   prefs-snapshot(true, _, _, _) -> (true, _, _, false) 
-
-for the last one, need a global "no more initialization can happen" flag.
+   prefs-snapshot(_, _, _) -> (_, _, false) 
 
 |#
 
@@ -116,12 +94,11 @@ for the last one, need a global "no more initialization can happen" flag.
   (define (get p)
     (cond
       [(pref-default-set? p)
-       (let/ec k
-         (unmarshall
-          p
-          (get-preference (add-pref-prefix p)
-                          (λ ()
-                            (k (default-value (hash-table-get defaults p)))))))]
+       (let* ([g (gensym)]
+	      [pref (get-preference (add-pref-prefix p) (λ () g))])
+	 (if (eq? g pref)
+	     (default-value (hash-table-get defaults p))
+	     (unmarshall p pref)))]
       [(not (pref-default-set? p))
        (raise-unknown-preference-error
         'preferences:get

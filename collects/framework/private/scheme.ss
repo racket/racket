@@ -420,7 +420,8 @@
           (define (tabify-on-return?) #t)
           (define tabify    
             (opt-lambda ([pos (get-start-position)])
-              (let* ([last-pos (last-position)]
+              (let* ([tabify-prefs (preferences:get 'framework:tabify)]
+		     [last-pos (last-position)]
                      [para (position-paragraph pos)]
 		     [is-tabbable? (and (> para 0)
 					(not (memq (classify-position (sub1 (paragraph-start-position para)))
@@ -486,7 +487,7 @@
 			(let ([id-end (get-forward-sexp contains)])
 			  (if (and id-end (> id-end contains))
 			      (let* ([text (get-text contains id-end)])
-                                (or (get-keyword-type text)
+                                (or (get-keyword-type text tabify-prefs)
                                     'other)))))]
                      [procedure-indent
                       (λ ()
@@ -1027,25 +1028,29 @@
             (send text set-styles-fixed #t)
 	    (send text end-edit-sequence))
           
-          (super-new (get-token scheme-lexer-wrapper)
+	  (define tabify-pref (preferences:get 'framework:tabify))
+	  (preferences:add-callback
+	   'framework:tabify
+	   (lambda (k v) (set! tabify-pref v)))
+	  (define/private (scheme-lexer-wrapper in)
+	    (let-values (((lexeme type paren start end) (scheme-lexer in)))
+	      (cond
+		((and (eq? type 'symbol)
+		      (get-keyword-type lexeme tabify-pref))
+		 (values lexeme 'keyword paren start end))
+		(else
+		 (values lexeme type paren start end)))))
+
+          (super-new (get-token (lambda (in) (scheme-lexer-wrapper in)))
                      (token-sym->style short-sym->style-name)
                      (matches '((|(| |)|)
                                 (|[| |]|)
                                 (|{| |}|))))))
       
-      (define (scheme-lexer-wrapper in)
-        (let-values (((lexeme type paren start end) (scheme-lexer in)))
-          (cond
-            ((and (eq? type 'symbol)
-                  (get-keyword-type lexeme))
-             (values lexeme 'keyword paren start end))
-            (else
-             (values lexeme type paren start end)))))
-      
-      ;; get-keyword-type : string -> (union #f 'lambda 'define 'begin)
-      (define (get-keyword-type text)
-        (let* ([pref (preferences:get 'framework:tabify)]
-               [ht (car pref)]
+      ;; get-keyword-type : string (list ht regexp regexp regexp)
+      ;;                 -> (union #f 'lambda 'define 'begin)
+      (define (get-keyword-type text pref)
+        (let* ([ht (car pref)]
                [beg-reg (cadr pref)]
                [def-reg (caddr pref)]
                [lam-reg (cadddr pref)])
