@@ -159,6 +159,8 @@
     "\\var{symbol} to \\var{value}. This should be called when the"
     "users requests a change to a preference."
     ""
+    "This function immediately writes the preference value to disk."
+    ""
     "It raises"
     "\\scmindex{exn:unknown-preference}\\rawscm{exn:unknown-preference}"
     "if the preference's default has not been set.")
