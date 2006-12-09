@@ -372,7 +372,8 @@ TODO
                  obj
                  (λ (frame) (send frame prev-tab))))))
       
-      (send drs-bindings-keymap map-function "c:x;o" "toggle-focus-between-definitions-and-interactions")
+    (send drs-bindings-keymap map-function "c:x;o" "toggle-focus-between-definitions-and-interactions")
+    (send drs-bindings-keymap map-function "c:f6" "toggle-focus-between-definitions-and-interactions")
       (send drs-bindings-keymap map-function "f5" "execute")
       (send drs-bindings-keymap map-function "f1" "search-help-desk")
       (send drs-bindings-keymap map-function "c:tab" "next-tab")

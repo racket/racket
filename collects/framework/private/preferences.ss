@@ -44,6 +44,9 @@ the state transitions / contracts are:
           [prefix frame: framework:frame^])
   (export framework:preferences^)
   
+  (define pref-debug? (getenv "PLTDRPREFDEBUG"))
+  (when pref-debug?
+    (printf "PLTDRPREFDEBUG: showing get and set calls\n"))
   
   (define main-preferences-symbol 'plt:framework-prefs)
   
@@ -92,6 +95,8 @@ the state transitions / contracts are:
   ;; return the current value of the preference `p'
   ;; exported
   (define (get p)
+    (when pref-debug?
+      (printf "get ~s\n" p))
     (cond
       [(pref-default-set? p)
        (let* ([g (gensym)]
@@ -108,7 +113,10 @@ the state transitions / contracts are:
   ;; set : symbol any -> void
   ;; updates the preference
   ;; exported
-  (define (set p value) (multi-set (list p) (list value)))
+  (define (set p value) 
+    (when pref-debug?
+      (printf "set ~s\n" p))
+    (multi-set (list p) (list value)))
   
   ;; set : symbol any -> void
   ;; updates the preference
