@@ -44,11 +44,12 @@ the state transitions / contracts are:
           [prefix frame: framework:frame^])
   (export framework:preferences^)
   
-  (define pref-debug? (getenv "PLTDRPREFDEBUG"))
-  (when pref-debug?
-    (printf "PLTDRPREFDEBUG: showing get and set calls\n"))
-  
-  (define main-preferences-symbol 'plt:framework-prefs)
+  (define old-preferences-symbol 'plt:framework-prefs)
+  (define old-preferences (make-hash-table))
+  (let ([old-prefs (get-preference old-preferences-symbol (λ () '()))])
+    (for-each
+     (λ (line) (hash-table-put! old-preferences (car line) (cadr line)))
+     old-prefs))
   
   (define (add-pref-prefix p) (string->symbol (format "plt:framework-pref:~a" p)))
   
@@ -95,15 +96,29 @@ the state transitions / contracts are:
   ;; return the current value of the preference `p'
   ;; exported
   (define (get p)
-    (when pref-debug?
-      (printf "get ~s\n" p))
     (cond
       [(pref-default-set? p)
-       (let* ([g (gensym)]
-	      [pref (get-preference (add-pref-prefix p) (λ () g))])
-	 (if (eq? g pref)
-	     (default-value (hash-table-get defaults p))
-	     (unmarshall p pref)))]
+       
+       ;; unmarshall, if required
+       (when (hash-table-bound? marshalled p)
+         (hash-table-put! preferences p (unmarshall-pref p (hash-table-get marshalled p)))
+         (hash-table-remove! marshalled p))
+       
+       ;; if there is no value in the preferences table, but there is one
+       ;; in the old version preferences file, take that:
+       (unless (hash-table-bound? preferences p)
+         (when (hash-table-bound? old-preferences p)
+           (hash-table-put! preferences p (unmarshall-pref p (hash-table-get old-preferences p)))))
+       
+       ;; clear the pref from the old table (just in case it was taking space -- we don't need it anymore)
+       (when (hash-table-bound? old-preferences p)
+         (hash-table-remove! old-preferences p))
+       
+       ;; if it still isn't set, take the default value
+       (unless (hash-table-bound? preferences p)
+         (hash-table-put! preferences p (default-value (hash-table-get defaults p))))
+       
+       (hash-table-get preferences p)]
       [(not (pref-default-set? p))
        (raise-unknown-preference-error
         'preferences:get
@@ -113,10 +128,7 @@ the state transitions / contracts are:
   ;; set : symbol any -> void
   ;; updates the preference
   ;; exported
-  (define (set p value) 
-    (when pref-debug?
-      (printf "set ~s\n" p))
-    (multi-set (list p) (list value)))
+  (define (set p value) (multi-set (list p) (list value)))
   
   ;; set : symbol any -> void
   ;; updates the preference
@@ -133,6 +145,7 @@ the state transitions / contracts are:
                      "tried to set preference ~e to ~e but it does not meet test from preferences:set-default"
                      p value))
             (check-callbacks p value)
+            (hash-table-put! preferences p value)
             (void))]
          [(not (pref-default-set? p))
           (raise-unknown-preference-error
@@ -142,7 +155,7 @@ the state transitions / contracts are:
      ps values)
     
     (put-preferences/gui (map add-pref-prefix ps) 
-                         (map (λ (p value) (cadr (marshall-pref p value)))
+                         (map (λ (p value) (marshall-pref p value))
                               ps
                               values))
     
@@ -188,9 +201,9 @@ the state transitions / contracts are:
             (string->immutable-string (string-append (format "~a: " sym) (apply format fmt args)))
             (current-continuation-marks))))
   
-  ;; unmarshall : symbol marshalled -> any
+  ;; unmarshall-pref : symbol marshalled -> any
   ;; unmarshalls a preference read from the disk
-  (define (unmarshall p data)
+  (define (unmarshall-pref p data)
     (let/ec k
       (let* ([unmarshall-fn (un/marshall-unmarshall
                              (hash-table-get marshall-unmarshall
@@ -274,11 +287,10 @@ the state transitions / contracts are:
       (hash-table-get ht s (λ () (k #f)))
       #t))
   
-  (define restore-defaults
-    (λ ()
-      (hash-table-for-each
-       defaults
-       (λ (p v) (set p v)))))
+  (define (restore-defaults)
+    (hash-table-for-each
+     defaults
+     (λ (p def) (set p (default-value def)))))
   
   ;; set-default : (sym TST (TST -> boolean) -> void
   (define (set-default p default-value checker)
@@ -289,7 +301,12 @@ the state transitions / contracts are:
          (unless default-okay?
            (error 'set-default "~s: checker (~s) returns ~s for ~s, expected #t~n"
                   p checker default-okay? default-value))
-         (hash-table-put! defaults p (make-default default-value checker)))]
+         (hash-table-put! defaults p (make-default default-value checker))
+         (let/ec k
+           (let ([m (get-preference (add-pref-prefix p) (λ () (k (void))))])
+             ;; if there is no preference saved, we just don't do anything.
+             ;; `get' notices this case.
+             (hash-table-put! marshalled p m))))]
       [(not (pref-can-init? p))
        (error 'preferences:set-default
               "tried to call set-default for preference ~e but it cannot be configured any more"
@@ -306,10 +323,8 @@ the state transitions / contracts are:
     (let/ec k
       (let* ([marshaller
               (un/marshall-marshall
-               (hash-table-get marshall-unmarshall p
-                               (λ () (k (list p value)))))]
-             [marshalled (marshaller value)])
-        (list p marshalled))))
+               (hash-table-get marshall-unmarshall p (λ () (k value))))])
+        (marshaller value))))
   
   (define (read-err input msg)
     (message-box 
