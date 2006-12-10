@@ -26,63 +26,41 @@
   (define string-lowercase! (make-string-do! char-downcase))
   (define string-uppercase! (make-string-do! char-upcase))
 
-  (define eval-string
-    (let ([do-eval
-           (lambda (str)
-             (let ([p (open-input-string str)])
-               (apply
-                values
-                (let loop ()
-                  (let ([e (read p)])
-                    (if (eof-object? e)
-                      '()
-                      (call-with-values
-                          (lambda () (eval e))
-                        (case-lambda
-                          [() (loop)]
-                          [(only) (cons only (loop))]
-                          [multi (append multi (loop))]))))))))])
-      (lambda/kw (str #:optional error-display error-result)
-        (if (or error-display error-result)
-          (with-handlers ([void
-                           (lambda (exn)
-                             ((or error-display
-                                  (lambda (x)
-                                    ((error-display-handler) x exn)))
-                              (exn-message exn))
-                             (if error-result
-                               (error-result)
-                               #f))])
-            (do-eval str))
-          (do-eval str)))))
+  ;; helper for eval-string and read-from-string-one-or-all
+  (define-syntax wrap-errors
+    (syntax-rules ()
+      [(wrap-errors error-display error-result body ...)
+       (if (or error-display error-result)
+         (with-handlers
+             ([void (lambda (exn)
+                      ((or error-display
+                           (lambda (x) ((error-display-handler) x exn)))
+                       (exn-message exn))
+                      (and error-result (error-result)))])
+           body ...)
+         (begin body ...))]))
 
-  (define/kw (read-from-string-one-or-all
-              k all? str #:optional error-display error-result)
-    (let* ([p (open-input-string str)]
-           [go (lambda ()
-                 (let loop ()
-                   (let ([v (read p)])
-                     (if (eof-object? v)
-                       '()
-                       (cons v (if all? (loop) '()))))))])
-      (if error-display
-        (with-handlers ([void
-                         (lambda (exn)
-                           ((or error-display
-                                (lambda (x) ((error-display-handler) x exn)))
-                            (exn-message exn))
-                           (k (if error-result (error-result) #f)))])
-          (go))
-        (go))))
+  (define/kw (eval-string str #:optional error-display error-result)
+    (wrap-errors error-display error-result
+      (let ([p (open-input-string str)])
+        (apply values
+               (let loop ()
+                 (let ([e (read p)])
+                   (if (eof-object? e)
+                     '()
+                     (call-with-values
+                       (lambda () (eval e))
+                       (lambda vals (append vals (loop)))))))))))
 
-  (define (read-from-string . args)
-    (let/ec k
-      (let ([l (apply read-from-string-one-or-all k #f args)])
-        (if (null? l) eof (car l)))))
+  (define/kw (read-from-string str #:optional error-display error-result)
+    (wrap-errors error-display error-result (read (open-input-string str))))
 
-  (define (read-from-string-all . args)
-    (let/ec k
-      (apply read-from-string-one-or-all k #t args)))
+  (define/kw (read-from-string-all str #:optional error-display error-result)
+    (let ([p (open-input-string str)])
+      (wrap-errors error-display error-result
+        (let loop ([r '()])
+          (let ([v (read p)])
+            (if (eof-object? v) (reverse! r) (loop (cons v r))))))))
 
   (define (expr->string v)
     (let ([port (open-output-string)])
