@@ -7,11 +7,13 @@
            "private/linkage.ss"
            "resolver.ss"
            (lib "url.ss" "net")
-           (lib "pack.ss" "setup")
+           (lib "xml.ss" "xml")
            (lib "contract.ss")
            (lib "file.ss")
            (lib "list.ss")
-           (lib "plt-single-installer.ss" "setup"))
+           (lib "pack.ss" "setup")
+           (lib "plt-single-installer.ss" "setup")
+           (lib "getinfo.ss" "setup"))
 
   #| The util collection provides a number of useful functions for interacting with the PLaneT system. |#
   
@@ -194,18 +196,169 @@
                       (string-append (path->string name) ".plt"))))]
       [(dir archive-name)
        (parameterize ((current-directory dir))
-         (pack archive-name
-               "archive" 
-               (list ".")
-               null
-               (if (PLANET-ARCHIVE-FILTER)
-                   (regexp->filter (PLANET-ARCHIVE-FILTER))
-                   std-filter)
-               #t
-               'file
-               #f
-               #f))
-       (normalize-path archive-name)]))
+         (let ([announcements '()]
+               [warnings '()]
+               [critical-errors '()])
+           (check-info.ss-sanity 
+            dir
+            (λ (msg . args) (set! announcements (cons (apply format msg args) announcements)))
+            (λ (bad) (set! warnings (cons bad warnings)))
+            (λ (err) (set! critical-errors (cons err critical-errors))))
+           
+           (unless (null? critical-errors) (error '|PLaneT packager| "~a Refusing to continue packaging." (car critical-errors)))
+           
+           (pack archive-name
+                 "archive" 
+                 (list ".")
+                 null
+                 (if (PLANET-ARCHIVE-FILTER)
+                     (regexp->filter (PLANET-ARCHIVE-FILTER))
+                     std-filter)
+                 #t
+                 'file
+                 #f
+                 #f)
+         
+           (for-each display (reverse announcements))
+           (newline)
+           (for-each
+            (λ (s) (fprintf (current-error-port) "WARNING:\n\t~a\n" s))
+            (reverse warnings)))
+         
+         (normalize-path archive-name))]))
+ 
+  ;; check-info.ss-sanity : path (string -> void) (string -> void) (string -> void) -> void
+  ;; gets all the info.ss fields that planet will use (using the info.ss file
+  ;; from the current directory) and calls the announce, warn, and fail functions with strings
+  ;; that describe how PLaneT sees the info.ss file. NOTA BENE: if this function calls fail, it may 
+  ;; also warn on the same field, and the warning may not make sense. This is based on the
+  ;; assumption that errors will be turned into some kind of critical failure that obliterates
+  ;; all the other information produced.
+  (define (check-info.ss-sanity dir announce warn fail)
+    (with-handlers ([exn:fail:read? 
+                     (λ (e) (fail (format "Package has an unreadable info.ss file. ~a" (exn-message e))))]
+                    [exn:fail:syntax? 
+                     (λ (e) (fail (format "Package's info.ss has an syntactically ill-formed info.ss file: ~a" (exn-message e))))]) 
+      (let ([i* (get-info/full dir)])
+        (cond
+          [(not i*) 
+           (warn "Package has no info.ss file. This means it will not have a description or documentation on the PLaneT web site.")]
+          [else
+           (let ([i (λ (field) (i* field (λ () #f)))])
+             (checkinfo i fail
+                        [name     ; field name 
+                         string?  ; check
+                         (announce "Name: ~a\n" name)  ; success action
+                         (warn "Package's info.ss file has no name field. Without a name, PLT Scheme will not compile your package.") ;failure action
+                         ]
+                        [blurb 
+                         (λ (b) (and (list? b) (andmap xexpr? b)))
+                         (announce "Blurb: ~s\n" blurb)
+                         (unless blurb
+                           (warn "Package's info.ss does not contain a blurb field. Without a blurb field, the package will have no description on planet.plt-scheme.org."))]
+                        [categories
+                         (λ (s) (and (list? s) (andmap symbol? s)))
+                         (cond
+                           [(ormap illegal-category categories)
+                            =>
+                            (λ (bad-cat)
+                              (fail (format "Package's info.ss file contains illegal category \"~a\". The legal categories are: ~a\n" 
+                                            bad-cat
+                                            legal-categories)))]
+                           [else (announce "Categories: ~a\n" categories)])
+                         (unless categories
+                           (warn "Package's info.ss file does not contain a category listing. It will be placed in the Miscellaneous category."))]
+                        [doc.txt
+                         string?
+                         (announce "doc.txt file: ~a\n" doc.txt)
+                         (unless doc.txt
+                           (warn "Package's info.ss does not contain a doc.txt entry. Without a doc.txt entry, the package will not have any documentation on planet.plt-scheme.org."))]
+                        [html-docs
+                         string?
+                         (announce "HTML documentation: yes\n")]
+                        [homepage 
+                         string?
+                         (cond
+                           [(url-string? homepage)
+                            (announce "Home page: ~a\n" homepage)]
+                           [else
+                            (fail (format "The value of the package's info.ss homepage field, ~s, does not appear to be a legal URL." homepage))])]
+                        [primary-file
+                         string?
+                         (begin
+                           (unless (file-in-current-directory? primary-file)
+                             (warn (format "Package's info.ss primary-file field is ~s, a file that does not exist in the package." primary-file)))
+                           (announce "Primary file: ~a\n" primary-file))
+                         (unless primary-file
+                           (warn "Package's info.ss does not contain a primary-file field. The package's listing on planet.plt-scheme.org will not have a valid require line for your package."))]
+                        [required-core-version 
+                         core-version?
+                         (announce "Required mzscheme version: ~a\n" required-core-version)]
+                        [version
+                         string?
+                         (announce "Version description: ~a\n" version)]))]))))
+  
+  ;; legal-categories : (listof symbol)
+  (define legal-categories
+    '(devtools net media xml datastructures io scientific
+      system ui metaprogramming planet misc))
+
+  ;; legal-category : symbol -> boolean
+  ;; determine if the given symbol is a legal category
+  (define (legal-category? x) (memq x legal-categories))
+  
+  ;; illegal-category : symbol -> (union symbol false)
+  ;; returns #f if the symbol is a legal category, or the symbol itself if it isn't
+  (define (illegal-category s) (if (legal-category? s) #f s)) 
+
+  ;; url-string? : string -> boolean
+  ;; determines if the given string is a reasonable homepage url
+  (define (url-string? s)
+    (and (string? s)
+         (let ([u (string->url s)])
+           (and (url-scheme u)
+                (url-host u)))))
+  
+  ;; file-in-current-directory? : string -> boolean
+  ;; determines if the given string represents a file in the current directory
+  (define (file-in-current-directory? f)
+    (and (string? f) (file-exists? f)))
+  
+  ;; core-version : string -> boolean
+  ;; determines if the given string is something that (version) could've produced
+  (define (core-version? s)
+    (and (string? s)
+         (regexp-match #rx"^[0-9]+(\\.[0-9]*)?$" s)))
+            
+  ;; checkinfo: syntax
+  ;; given an info.ss function, a failure function, and a bunch of fields to check,
+  ;; goes through the checklist calling either the success or the failure branch
+  ;; of each check as appropriate
+  (define-syntax checkinfo
+    (syntax-rules ()
+      [(checkinfo fn fail clauses ...)
+       (let ([fn* fn] [fail* fail])
+         (checkinfo* () fn* fail* clauses ...))]))
+  
+  (define-syntax checkinfo*
+    (syntax-rules ()
+      [(checkinfo* () fn fail) (void)]
+      [(checkinfo* (handler1 handler ...) fn fail) (begin handler1 handler ...)]
+      [(checkinfo* (handler ...) fn fail [id check on-success] clauses ...)
+       (checkinfo* (handler ...) fn fail [id check on-success void] clauses ...)]
+      [(checkinfo* (handler ...) fn fail [id check on-success on-fail] clauses ...)
+       (checkinfo*
+        (handler ...
+         (let ([id (fn 'id)])
+           (cond
+             [id
+              (let ([checked (check id)])
+                (unless checked
+                  on-fail
+                  (fail (format "Package's info.ss contained a malformed ~a field." 'id)))
+                on-success)]
+             [else on-fail])))
+         fn fail clauses ...)]))
   
   ;; ============================================================
   ;; HARD LINKS (aka development links)

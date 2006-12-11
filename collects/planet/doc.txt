@@ -504,18 +504,18 @@ clients.
 
 The _'version field_
 
-If present, the version field should describe the version number of
-this code that should be presented to users (e.g., "0.15 alpha").
-This field does not override or in any way interact with your
-package's package version number, which is assigned by PLaneT, but may
-be useful to users.
+If present, the version field should be a string that describes the 
+version number of this code that should be presented to users (e.g., 
+"0.15 alpha"). This field does not override or in any way interact 
+with your package's package version number, which is assigned by 
+PLaneT, but may be useful to users.
 
 
 In addition, PLaneT uses the setup-plt installer to install packages
 on client machines, so most fields it looks for can be included with
-their usual effects. In particular, adding a name field indicates that
+their usual effects. In particular, adding a 'name field indicates that
 the Scheme files in the package should be compiled during
-installation; it is probably a good idea to add it.
+installation; it is a good idea to add it.
 
 An example info.ss file looks like this:
 
