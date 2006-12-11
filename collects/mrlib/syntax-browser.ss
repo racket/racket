@@ -36,8 +36,8 @@ needed to really make this work:
   (define syntax-snipclass%
     (class snip-class%
       (define/override (read stream)
-        (let ([str (send stream get-bytes)])
-          (make-object syntax-snip% (unmarshall-syntax (read-from-string (bytes->string/utf-8 str))))))
+        (make-object syntax-snip%
+          (unmarshall-syntax (read-from-string (send stream get-bytes)))))
       (super-instantiate ())))
   
   (define snip-class (make-object syntax-snipclass%))

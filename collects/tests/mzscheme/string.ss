@@ -11,6 +11,30 @@
   (string-uppercase! s1)
   (test "HELLO!" 'uppercase s1))
 
+
+(test 1 read-from-string "1")
+(test #f read-from-string "#f (2 3) (")
+(test #f read-from-string #"#f (2 3) (")
+(test 1 read-from-string "(" (lambda () 1))
+(test 1 read-from-string "(" (lambda (_) 1))
+(test '(1) read-from-string-all "1")
+(test '(#f (2 3)) read-from-string-all "#f (2 3)")
+(test '(#f (2 3)) read-from-string-all #"#f (2 3)")
+(test 1 read-from-string-all "(" (lambda () 1))
+(test 1 read-from-string-all "(" (lambda (_) 1))
+
+
+(test '1 eval-string "1")
+(test-values '(1 2 3) (lambda () (eval-string "1 2 3")))
+(test-values '(1 2 3) (lambda () (eval-string #"1 2 3")))
+(test-values '(1 2 3) (lambda () (eval-string "(values 1 2 3)")))
+(test-values '()      (lambda () (eval-string "(values)")))
+(test-values '(1 2 3) (lambda () (eval-string "1 (values 2 3)")))
+(test-values '(1 2 3) (lambda () (eval-string "(values 1 2) 3")))
+(test-values '(1 2 3 4 5)
+             (lambda ()
+               (eval-string "(values 1 2) 3 (values) (values 4 5)")))
+
 (let ([s (list->string
 	  (let loop ([i 0])
 	    (if (= i 256)

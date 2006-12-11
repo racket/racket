@@ -26,23 +26,28 @@
   (define string-lowercase! (make-string-do! char-downcase))
   (define string-uppercase! (make-string-do! char-upcase))
 
-  ;; helper for eval-string and read-from-string-one-or-all
+  ;; helpers for eval-string and read-from-string-one-or-all
   (define-syntax wrap-errors
     (syntax-rules ()
-      [(wrap-errors error-display error-result body ...)
-       (if (or error-display error-result)
+      [(wrap-errors who error-handler body ...)
+       (if error-handler
          (with-handlers
-             ([void (lambda (exn)
-                      ((or error-display
-                           (lambda (x) ((error-display-handler) x exn)))
-                       (exn-message exn))
-                      (and error-result (error-result)))])
+             ([void
+               (cond [(not (procedure? error-handler))
+                      (error who "bad error handler: ~e" error-handler)]
+                     [(procedure-arity-includes? error-handler 1)
+                      error-handler]
+                     [(procedure-arity-includes? error-handler 0)
+                      (lambda (exn) (error-handler))]
+                     [else (error who "bad error handler: ~e" error-handler)])])
            body ...)
          (begin body ...))]))
+  (define (open-input-bstring s)
+    (if (bytes? s) (open-input-bytes s) (open-input-string s)))
 
-  (define/kw (eval-string str #:optional error-display error-result)
-    (wrap-errors error-display error-result
-      (let ([p (open-input-string str)])
+  (define/kw (eval-string str #:optional error-handler)
+    (wrap-errors 'eval-string error-handler
+      (let ([p (open-input-bstring str)])
         (apply values
                (let loop ()
                  (let ([e (read p)])
@@ -52,12 +57,13 @@
                        (lambda () (eval e))
                        (lambda vals (append vals (loop)))))))))))
 
-  (define/kw (read-from-string str #:optional error-display error-result)
-    (wrap-errors error-display error-result (read (open-input-string str))))
+  (define/kw (read-from-string str #:optional error-handler)
+    (wrap-errors 'read-from-string error-handler
+      (read (open-input-bstring str))))
 
-  (define/kw (read-from-string-all str #:optional error-display error-result)
-    (let ([p (open-input-string str)])
-      (wrap-errors error-display error-result
+  (define/kw (read-from-string-all str #:optional error-handler)
+    (let ([p (open-input-bstring str)])
+      (wrap-errors 'read-from-string-all error-handler
         (let loop ([r '()])
           (let ([v (read p)])
             (if (eof-object? v) (reverse! r) (loop (cons v r))))))))
@@ -85,10 +91,10 @@
   ;; Regexp helpers
 
   (define (bstring-length s)
-    (if (string? s) (string-length s) (bytes-length s)))
+    (if (bytes? s) (bytes-length s) (string-length s)))
 
   (define (subbstring s st e)
-    (if (string? s) (substring s st e) (subbytes s st e)))
+    (if (bytes? s) (subbytes s st e) (substring s st e)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Regexp helpers

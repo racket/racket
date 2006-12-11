@@ -139,20 +139,18 @@
   ;;
   ;; snip-class
   ;;
-  
+
   (define cache-image-snip-class%
     (class snip-class%
       (define/override (read f)
-        (let ([data (read-from-string (bytes->string/utf-8 (send f get-bytes))
-                                      void
-                                      (lambda (x) #f))])
+        (let ([data (read-from-string (send f get-bytes) (lambda () #f))])
           (if data
-              (argb->cache-image-snip (make-argb (first data) (second data))
-                                      (third data)
-                                      (fourth data))
-              (make-null-cache-image-snip))))
+            (argb->cache-image-snip (make-argb (first data) (second data))
+                                    (third data)
+                                    (fourth data))
+            (make-null-cache-image-snip))))
       (super-new)))
-  
+
   (define snip-class (new cache-image-snip-class%))
   (send snip-class set-version 1)
   (send snip-class set-classname (format "~s" `(lib "cache-image-snip.ss" "mrlib")))
