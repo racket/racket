@@ -106,7 +106,10 @@ PLANNED FEATURES:
          "Remove all linkage the given module has, forcing it to upgrade"
          ...)))
 
-    (for-each (lambda (f) (f)) actions))
+    (cond
+      ; make showing the installed packages the default thing to do.
+      [(null? actions) (show-installed-packages)]
+      [else (for-each (lambda (f) (f)) actions)]))
   
   ;; ============================================================
   ;; FEATURE IMPLEMENTATIONS
