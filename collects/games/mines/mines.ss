@@ -13,16 +13,26 @@
   (require (lib "etc.ss") ; defines build-vector
 	   (lib "class.ss")
            (lib "unit200.ss")
-	   (lib "mred.ss" "mred"))
+	   (lib "mred.ss" "mred")
+           (lib "include-bitmap.ss" "mrlib"))
   
   (provide game-unit)
+
+  (define tile-bm (include-bitmap "images/tile.png"))
+  (define lclick-bm (include-bitmap "images/lclick-tile.png"))
+  (define rclick-bm (include-bitmap "images/rclick-tile.png"))
+  (define local-bm (include-bitmap "images/local-tile.png"))
+  (define near-bm (include-bitmap "images/near-tile.png"))
+  (define bomb-bm (include-bitmap "images/bomb.png"))
+  (define explode-bm (include-bitmap "images/explode.png"))
+  (define flag-bm (include-bitmap "images/flag.png"))
   
   ;; The game is implemented in a unit so it can be started multiple times
   (define game-unit
     (unit
       (import)
       (export)
-      
+
       (define TILE-HW 24)        ; height/width of a tile
       (define B-WIDTH 16)        ; number of tiles across
       (define B-HEIGHT 16)       ; number of tiles down
@@ -30,7 +40,7 @@
       
       (define DIGIT-COLOR-NAMES
         ;; 0th is background; 8th is foreground
-        (vector "LIGHT GRAY"  "BLUE"  "GREEN"  "RED"  "PURPLE" 
+        (vector "WHITE"  "BLUE"  "FORESTGREEN"  "RED"  "PURPLE" 
                 "ORANGE"  "YELLOW"  "BROWN"  "BLACK"))
       
       (define DIGIT-COLORS
@@ -40,7 +50,8 @@
       
       (define BG-COLOR (vector-ref DIGIT-COLORS 0))
       (define FG-COLOR (vector-ref DIGIT-COLORS 8))
-      (define EXPLODE-COLOR (send the-color-database find-color "RED"))
+
+      (define BLACK-COLOR (send the-color-database find-color "BLACK"))
       
       (define BG-PEN (make-object pen% BG-COLOR 1 'solid))
       (define FG-PEN (make-object pen% FG-COLOR 1 'solid))
@@ -57,8 +68,9 @@
       ;; Class for a tile object
       (define tile:plain%
         (class object%
-          (define state 'covered)    ; 'covered, 'flagged, 'semi-flagged, or 'uncovered
+          (define state 'covered)     ; 'covered, 'flagged, 'semi-flagged, or 'uncovered
           (define neighbor-bomb-count 0) ; 0 to 8
+          (define area-hilite 'none)  ; 'none, 'local, 'near
           
           (public*
            [set-state
@@ -73,29 +85,42 @@
            [get-neighbor-bomb-count
             (lambda ()
               neighbor-bomb-count)]
+           [set-area-hilite
+            (lambda (mode)
+              (set! area-hilite mode))]
            [draw-text-tile
-            (lambda (dc x y w h hilite? border? str color)
+            (lambda (dc x y w h hilite border? str color)
               (if border?
-                  (send dc set-pen FG-PEN)
-                  (send dc set-pen BG-PEN))
-              (send dc draw-rectangle x y w h)
-              (when hilite?
-                (send dc draw-rectangle 
-                      (add1 x) (add1 y) 
-                      (- w 2) (- h 2)))
+                  (send dc draw-bitmap 
+                        (case hilite
+                          [(left) lclick-bm]
+                          [(right) rclick-bm]
+                          [else (case area-hilite
+                                  [(near) near-bm]
+                                  [(local) local-bm]
+                                  [else tile-bm])])
+                        x y)
+                  (begin
+                    (send dc set-pen BG-PEN)
+                    (send dc draw-rectangle x y w h)))
               (when str
-                (send dc set-text-foreground (or color FG-COLOR))
-                ;; Draw text centered in the tile's box:
-                (let-values ([(tw th d a) (send dc get-text-extent str)])
-                  (send dc draw-text str 
-                        (+ x (/ (- w tw) 2))
-                        (+ y (/ (- h th) 2))))))]
+                (cond
+                 [(string? str)
+                  (send dc set-text-foreground (or color FG-COLOR))
+                  ;; Draw text centered in the tile's box:
+                  (let-values ([(tw th d a) (send dc get-text-extent str)])
+                    (send dc draw-text str 
+                          (+ x (/ (- w tw) 2))
+                          (+ y (/ (- h (- th d)) 2))))]
+                 [else
+                  (send dc draw-bitmap str x y 'solid BLACK-COLOR
+                        (send str get-loaded-mask))])))]
            [draw
-            (lambda (dc x y w h hilite?)
+            (lambda (dc x y w h hilite)
               (case state
-                [(covered) (draw-text-tile dc x y w h hilite? #t #f #f)]
-                [(flagged) (draw-text-tile dc x y w h hilite? #t "X" #f)]
-                [(semi-flagged) (draw-text-tile dc x y w h hilite? #t "?" #f)]
+                [(covered) (draw-text-tile dc x y w h hilite #t #f #f)]
+                [(flagged) (draw-text-tile dc x y w h hilite #t flag-bm #f)]
+                [(semi-flagged) (draw-text-tile dc x y w h hilite #t "?" #f)]
                 [(uncovered) (draw-text-tile 
                               dc x y w h #f #f
                               (if (zero? neighbor-bomb-count)
@@ -118,11 +143,11 @@
           
           (override*
            [draw
-            (lambda (dc x y w h hilite?)
+            (lambda (dc x y w h hilite)
               (if (eq? (get-state) 'uncovered)
-                  (draw-text-tile dc x y w h #f #f "*"
-                                  (and explode-source? EXPLODE-COLOR))
-                  (super draw dc x y w h hilite?)))])
+                  (draw-text-tile dc x y w h #f #f 
+                                  (if explode-source? explode-bm bomb-bm) #f)
+                  (super draw dc x y w h hilite)))])
           
           (super-instantiate ())))
       
@@ -208,7 +233,7 @@
 			      (inner () on-close))])
                           (super-instantiate ()))
                       ("Minesweeper") 
-                      [style '(no-resize-border)]))
+                      [style '(no-resize-border metal)]))
       
       ;; Make the row of controls at the top of the frame:
       (define panel (make-object horizontal-panel% frame))
@@ -236,13 +261,16 @@
           (inherit get-dc min-client-width min-client-height 
                    stretchable-width stretchable-height)
           
-          (define clicking #f)    ; #t => click in progress
-          (define clicking-x 0)   ; x position of click in progress
-          (define clicking-y 0)   ; y position of click in progress
-          (define ready? #t)      ; #t => accept clicks
-          (define start-time #f)  ; time of first click
-          (define elapsed-time 0) ; seconds since first click
-          (define timer #f)       ; a timer that updates elapsed-time
+          (define clicking #f)        ; #t => click in progress
+          (define clicking-x 0)       ; x position of click in progress
+          (define clicking-y 0)       ; y position of click in progress
+          (define clicking-right? #f) ; #t => right-click in progress
+          (define area-hilite #f)     ; tile with mouse pointer over it
+          (define area-hilites null)  ; tiles+locs hilited due to mouse-over
+          (define ready? #t)          ; #t => accept clicks
+          (define start-time #f)      ; time of first click
+          (define elapsed-time 0)     ; seconds since first click
+          (define timer #f)           ; a timer that updates elapsed-time
           (define bomb-count THE-BOMB-COUNT) ; number of bombs minus the number of flags
           (define cover-count (* B-HEIGHT B-WIDTH)) ; number of uncovered tiles
           
@@ -354,8 +382,9 @@
                   (if bomb?
                       (explode)
                       (begin
-                        (when (zero? nc)
-                          (autoclick-surrounding x y))))
+                        (if (zero? nc)
+                            (autoclick-surrounding x y)
+                            (set-near-hilite t x y))))
                   (when (and ready? (= cover-count THE-BOMB-COUNT))
                     (win)))))]
            [paint-one        ; draw one tile
@@ -363,8 +392,32 @@
               (let ([xloc (* x TILE-HW)]
                     [yloc (* y TILE-HW)])
                 (send t draw dc xloc yloc TILE-HW TILE-HW
-                      (eq? t clicking))))])
-          
+                      (and (eq? t clicking)
+                           (if clicking-right? 'right 'left)))))]
+           [set-near-hilite
+            (lambda (t x y)
+              (set! area-hilite t)
+              (set! area-hilites
+                    (do-surrounding x y append null null
+                                    (lambda (dx dy)
+                                      (let* ([x (+ x dx)]
+                                             [y (+ y dy)]
+                                             [t (get-tile x y)])
+                                        (if (not (eq? (send t get-state) 'uncovered))
+                                            (begin
+                                              (send t set-area-hilite 'near)
+                                              (paint-one t x y)
+                                              (list (list t x y)))
+                                            null))))))]
+           [clear-area-hilite
+            (lambda ()
+              (when area-hilite
+                (set! area-hilite #f)
+                (for-each (lambda (p)
+                            (send (car p) set-area-hilite 'none)
+                            (paint-one (car p) (cadr p) (caddr p)))
+                          area-hilites)
+                (set! area-hilites null)))])
           (override*
            [on-event        ; handle a click
             (lambda (e)
@@ -398,18 +451,39 @@
                                    (= x clicking-x)
                                    (= y clicking-y))))
                      ;; Start a click on a covered tile
+                     (clear-area-hilite)
                      (set! clicking t)
                      (set! clicking-x x)
                      (set! clicking-y y)
+                     (when (send e button-down?)
+                       (set! clicking-right? (or (send e button-down? 'right)
+                                                 (send e get-control-down)
+                                                 (send e get-alt-down)
+                                                 (send e get-meta-down))))
                      (paint-one t x y)]
-                    [(send e button-down?) 
-                     ;; fallthough to here => clicking, but not on a tile
-                     (set! clicking-x -1)]
                     [(and clicking (send e button-up?))
                      ;; User released the button
                      (set! clicking #f)
-                     (do-select x y (send e button-up? 'right))]
-                    [else 'ok]))))]
+                     (do-select x y clicking-right?)]
+                    [(and (not (send e leaving?))
+                          t
+                          (eq? (send t get-state) 'uncovered)
+                          (positive? (send t get-neighbor-bomb-count)))
+                     ;; Moving over uncovered number
+                     (unless (eq? t area-hilite)
+                       (clear-area-hilite)
+                       (set-near-hilite t x y))]
+                    [(and (not (send e leaving?))
+                          t
+                          (not (eq? (send t get-state) 'uncovered)))
+                     ;; Moving over tile
+                     (unless (eq? t area-hilite)
+                       (clear-area-hilite)
+                       (set! area-hilite t)
+                       (set! area-hilites (list (list t x y)))
+                       (send t set-area-hilite 'local)
+                       (paint-one t x y))]
+                    [else (clear-area-hilite)]))))]
            [on-paint       ; refresh the board
             (lambda ()
               (for-each-tile (lambda (tile x y) (paint-one tile x y))))])
@@ -425,6 +499,7 @@
           (define dc (get-dc))
           
           (reset)  ; initialize the game
+          (send dc set-font (make-object font% 16 'swiss 'normal 'bold #f 'default #t))
           (send dc set-text-background BG-COLOR)
           (send dc set-brush (send the-brush-list find-or-create-brush 
                                    BG-COLOR 'solid))))
