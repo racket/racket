@@ -1,4 +1,4 @@
- (module frtime-no-mred (lib "mzscheme-utils.ss" "frtime")
+(module frtime-lang-only (lib "mzscheme-utils.ss" "frtime")
   (require (lib "lang-ext.ss" "frtime"))
   (require (lib "ft-qq.ss" "frtime"))
   (require (as-is:unchecked (lib "frp-core.ss" "frtime")
