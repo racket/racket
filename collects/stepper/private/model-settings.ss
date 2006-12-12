@@ -16,7 +16,8 @@
   ; the reconstructor gets the right invocation of the unit, it needs to be a 
   ; unit as well.  Pretty soon, everything is units.
 
-  (define-struct render-settings (true-false-printed? constructor-style-printing? abbreviate-cons-as-list? render-to-sexp lifting?))
+  (define-struct render-settings (true-false-printed? constructor-style-printing? abbreviate-cons-as-list? render-to-sexp lifting?
+                                                      all-bindings-mutable?))
   
   (provide/contract [check-global-defined (-> symbol? boolean?)]
                     [global-lookup (-> any/c any)]
@@ -26,7 +27,8 @@
                              [constructor-style-printing? boolean?]
                              [abbreviate-cons-as-list? boolean?]
                              [render-to-sexp (any/c . -> . any)]
-                             [lifting? boolean?])]
+                             [lifting? boolean?]
+                             [all-bindings-are-mutable? boolean?])]
                     
                     
                     
@@ -57,10 +59,10 @@
   
     ; FIXME : #f totally unacceptable as 'render-to-string'
   (define fake-beginner-render-settings
-    (make-render-settings #t #t #f (make-fake-render-to-sexp #t #t #f) #t))
+    (make-render-settings #t #t #f (make-fake-render-to-sexp #t #t #f) #t #f))
   
   (define fake-beginner-wla-render-settings
-    (make-render-settings #t #t #t (make-fake-render-to-sexp #t #t #t) #t))
+    (make-render-settings #t #t #t (make-fake-render-to-sexp #t #t #t) #t #f))
   
   (define fake-intermediate-render-settings
     fake-beginner-wla-render-settings)
@@ -77,6 +79,7 @@
                           (constructor-style-printing) 
                           (abbreviate-cons-as-list) 
                           print-convert
+                          #f
                           #f))
   
   (define-struct test-struct () (make-inspector))
@@ -97,7 +100,8 @@
        constructor-style-printing?
        abbreviate-cons-as-list?
        render-to-sexp
-       lifting?)))
+       lifting?
+       #f)))
   
   (define (check-global-defined identifier)
     (with-handlers

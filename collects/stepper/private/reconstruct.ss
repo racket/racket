@@ -403,38 +403,39 @@
                               [var-stx
                                (identifier? expr)
                                (let* ([var (syntax var-stx)])
-                                 var
-                                 (cond [(eq? (identifier-binding var) 'lexical)
-                                        ; has this varref's binding not been evaluated yet?
-                                        ; (and this varref isn't in the list of must-lookups?)
-                                        (if (and (ormap (lambda (binding)
-                                                     (bound-identifier=? binding var))
-                                                   dont-lookup)
-                                                 (not (ormap (lambda (binding)
-                                                               (bound-identifier=? binding var))
-                                                             use-lifted-names)))
-                                            var
-
-                                            (case (stepper-syntax-property var 'stepper-binding-type)
-                                              ((lambda-bound) 
-                                               (recon-value (lookup-binding mark-list var) render-settings))
-                                              ((macro-bound)
-                                               ; for the moment, let-bound vars occur only in and/or :
-                                               (recon-value (lookup-binding mark-list var) render-settings))
-                                              ((let-bound)
-                                               (stepper-syntax-property var
-                                                                        'stepper-lifted-name
-                                                                        (binding-lifted-name mark-list var)))
-                                              ((stepper-temp)
-                                               (error 'recon-source-expr "stepper-temp showed up in source?!?"))
-                                              ((non-lexical)
-                                               (error 'recon-source-expr "can't get here: lexical identifier labeled as non-lexical"))
-                                              (else
-                                               (error 'recon-source-expr "unknown 'stepper-binding-type property: ~a" 
-                                                      (stepper-syntax-property var 'stepper-binding-type)))))]
-                                       [else ; top-level-varref
-                                        (fixup-name
-                                         var)]))]
+                                 (if (render-settings-all-bindings-mutable? render-settings)
+                                     var
+                                     (cond [(eq? (identifier-binding var) 'lexical)
+                                            ; has this varref's binding not been evaluated yet?
+                                            ; (and this varref isn't in the list of must-lookups?)
+                                            (if (and (ormap (lambda (binding)
+                                                              (bound-identifier=? binding var))
+                                                            dont-lookup)
+                                                     (not (ormap (lambda (binding)
+                                                                   (bound-identifier=? binding var))
+                                                                 use-lifted-names)))
+                                                var
+                                                
+                                                (case (stepper-syntax-property var 'stepper-binding-type)
+                                                  ((lambda-bound) 
+                                                   (recon-value (lookup-binding mark-list var) render-settings))
+                                                  ((macro-bound)
+                                                   ; for the moment, let-bound vars occur only in and/or :
+                                                   (recon-value (lookup-binding mark-list var) render-settings))
+                                                  ((let-bound)
+                                                   (stepper-syntax-property var
+                                                                            'stepper-lifted-name
+                                                                            (binding-lifted-name mark-list var)))
+                                                  ((stepper-temp)
+                                                   (error 'recon-source-expr "stepper-temp showed up in source?!?"))
+                                                  ((non-lexical)
+                                                   (error 'recon-source-expr "can't get here: lexical identifier labeled as non-lexical"))
+                                                  (else
+                                                   (error 'recon-source-expr "unknown 'stepper-binding-type property: ~a" 
+                                                          (stepper-syntax-property var 'stepper-binding-type)))))]
+                                           [else ; top-level-varref
+                                            (fixup-name
+                                             var)])))]
                               [(#%top . var)
                                (syntax var)]
                               
