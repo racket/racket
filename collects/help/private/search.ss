@@ -3,6 +3,7 @@
            "colldocs.ss"
            "path.ss"
            "manuals.ss"
+           (lib "getinfo.ss" "setup")
            (lib "list.ss")
            (lib "plt-match.ss")
            (lib "contract.ss")
@@ -287,6 +288,8 @@
        (string->list s)))))
       
   (define (doc-collections-changed)
+    (reset-relevant-directories-state!)
+    (reset-doc-lists)
     (set! doc-collection-dates (map (lambda (x) #f) doc-dirs))
     (set! html-keywords (make-hash-table 'equal))
     (set! html-indices (make-hash-table 'equal))

@@ -435,6 +435,10 @@ The _getinfo.ss_ module defines the following procedures:
    same name, find-relevant-directories will only search the one that 
    occurs first in the PLT_COLLECTION_PATHS environment variable.
 
+> (reset-relevant-directories-state!)
+
+   Resets the cache used by `find-relevant-directories'.
+
 _.plt_ Archive Internals
 ==========================================================
 

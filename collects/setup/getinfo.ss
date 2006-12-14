@@ -50,23 +50,27 @@
                         paths    ; listof path
                         ))
   
-  (define preferred-table 
-    (make-table 
-     (lambda (i l)
-       (cond
-         [(null? l)
-          (list i)]
-         [else 
-          (match-let ([(_ _ my-maj my-min) i]
-                      [(_ _ their-maj their-min) (car l)])
-            (if
-             (or (> my-maj their-maj)
-                 (and (= my-maj their-maj) (>= my-min their-min)))
-               (list i)
-               l))]))
-     #f #f))
+  (define preferred-table #f)
+  (define all-available-table #f)
   
-  (define all-available-table (make-table cons #f #f))
+  (define (reset-relevant-directories-state!)
+    (set! preferred-table 
+          (make-table 
+           (lambda (i l)
+             (cond
+               [(null? l)
+                (list i)]
+               [else 
+                (match-let ([(_ _ my-maj my-min) i]
+                            [(_ _ their-maj their-min) (car l)])
+                  (if
+                   (or (> my-maj their-maj)
+                       (and (= my-maj their-maj) (>= my-min their-min)))
+                   (list i)
+                   l))]))
+           #f #f))
+    (set! all-available-table (make-table cons #f #f)))
+  (reset-relevant-directories-state!)
   
   (define (populate-table! t)
     ;; Use the colls ht because a collection might be in multiple
@@ -175,6 +179,7 @@
         [else (path->bytes name)])))
   
   (provide/contract
+   (reset-relevant-directories-state! (-> any))
    (get-info ((listof path-or-string?) . -> . (or/c info? boolean?)))
    (get-info/full (path? . -> . (or/c info? boolean?)))
    (find-relevant-directories (opt-> ((listof symbol?))
