@@ -19,11 +19,16 @@
   
   (define-struct syntax-dummy (val))
   
-  ;; syntax->datum/tables : stx [partition% num boolean]
+  ;; A SuffixOption is one of
+  ;; - 'never             -- never
+  ;; - 'always            -- suffix > 0
+  ;; - 'over-limit        -- suffix > limit
+  ;; - 'all-if-over-limit -- suffix > 0 if any over limit
+  
+  ;; syntax->datum/tables : stx [partition% num SuffixOption]
   ;;                        -> (values s-expr hashtable hashtable)
   ;; When partition is not false, tracks the partititions that subterms belong to
   ;; When limit is a number, restarts processing with numbering? set to true
-  ;; When numbering? is true, suffixes identifiers with partition numbers.
   ;; 
   ;; Returns three values:
   ;;   - an S-expression
@@ -32,18 +37,23 @@
   ;; Syntax objects which are eq? will map to same flat values
   (define syntax->datum/tables
     (case-lambda
-      [(stx) (table stx #f #f #f)]
-      [(stx partition limit numbering?) (table stx partition limit numbering?)]))
+      [(stx) (table stx #f #f 'never)]
+      [(stx partition limit suffixopt) (table stx partition limit suffixopt)]))
   
-  ;; table : syntax partition%-or-#f num-or-#f -> (values s-expr hashtable hashtable)
-  (define (table stx partition limit numbering?)
+  ;; table : syntax maybe-partition% maybe-num SuffixOption -> (values s-expr hashtable hashtable)
+  (define (table stx partition limit suffixopt)
     (define (make-identifier-proxy id)
-      (let ([n (send partition get-partition id)])
-        (cond [(or (zero? n) (not numbering?))
-               (string->uninterned-symbol (symbol->string (syntax-e id)))]
-              [else
-               (string->uninterned-symbol
-                (format "~a:~a" (syntax-e id) n))])))
+      (case suffixopt
+        ((never) (unintern (syntax-e id)))
+        ((always)
+         (let ([n (send partition get-partition id)])
+           (if (zero? n) (unintern (syntax-e id)) (suffix (syntax-e id) n))))
+        ((over-limit)
+         (let ([n (send partition get-partition id)])
+           (if (<= n limit)
+               (unintern (syntax-e id))
+               (suffix (syntax-e id) n))))))
+    
     (let/ec escape
       (let ([flat=>stx (make-hash-table)]
             [stx=>flat (make-hash-table)])
@@ -51,10 +61,11 @@
           (cond [(hash-table-get stx=>flat obj (lambda _ #f))
                  => (lambda (datum) datum)]
                 [(and partition (identifier? obj))
+                 (when (and (eq? suffixopt 'all-if-over-limit)
+                            (> (send partition count) limit))
+                   (call-with-values (lambda () (table stx partition #f 'always))
+                                     escape))
                  (let ([lp-datum (make-identifier-proxy obj)])
-                   (when (and limit (> (send partition count) limit))
-                     (call-with-values (lambda () (table stx partition #f #t))
-                       escape))
                    (hash-table-put! flat=>stx lp-datum obj)
                    (hash-table-put! stx=>flat obj lp-datum)
                    lp-datum)]
@@ -69,8 +80,7 @@
                 [(vector? obj) 
                  (list->vector (map loop (vector->list obj)))]
                 [(symbol? obj)
-                 ;(make-syntax-dummy obj)
-                 (string->uninterned-symbol (symbol->string obj))]
+                 (unintern obj)]
                 [(number? obj)
                  (make-syntax-dummy obj)]
                 [(box? obj)
@@ -90,4 +100,11 @@
         (values (loop stx)
                 flat=>stx
                 stx=>flat))))
+
+  (define (unintern sym)
+    (string->uninterned-symbol (symbol->string sym)))
+  
+  (define (suffix sym n)
+    (string->uninterned-symbol (format "~a:~a" sym n)))
+
   )

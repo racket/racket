@@ -29,7 +29,9 @@
 
       ;; Primitives
       [(struct p:variable (e1 e2 rs))
-       null]
+       (if (bound-identifier=? e1 e2)
+           null
+           (list (walk e1 e2 "Resolve variable (remove extra marks)")))]
       [(IntQ p:module (e1 e2 rs #f body))
        (with-syntax ([(?module name language . BODY) e1])
          (let ([ctx (lambda (x) (d->so e1 `(,#'?module ,#'name ,#'language ,x)))]
@@ -42,21 +44,19 @@
          (let ([ctx (lambda (x) (d->so e1 `(,#'?module ,#'name ,#'language ,x)))])
            (with-context ctx
              (reductions body))))]
-      [(IntQ p:#%module-begin (e1 e2 rs pass1 pass2))
-       #;(R e1 (?module-begin . MBODY)
-            [! exni 'blah]
-            [ModulePass1 MBODY pass1]
-            => (lambda (e1prime)
-                 (R e1prime (?module-begin2 . MBODY2)
-                    [ModulePass2 MBODY2 pass2])))
+      [(AnyQ p:#%module-begin (e1 e2 rs pass1 pass2))
        (with-syntax ([(?#%module-begin form ...) e1])
-         (let-values ([(reductions1 final-stxs1)
-                       (with-context (lambda (x) (d->so e1 (cons #'?#%module-begin x)))
-                         (mbrules-reductions pass1 (syntax->list #'(form ...)) #t))])
-           (let-values ([(reductions2 final-stxs2)
-                         (with-context (lambda (x) (d->so e1 (cons #'?#%module-begin x)))
-                           (mbrules-reductions pass2 final-stxs1 #f))])
-             (append reductions1 reductions2))))]
+         (let ([frame (lambda (x) (d->so e1 (cons #'?#%module-begin x)))])
+           (let-values ([(reductions1 final-stxs1)
+                         (with-context frame
+                           (mbrules-reductions pass1 (syntax->list #'(form ...)) #t))])
+             (let-values ([(reductions2 final-stxs2)
+                           (with-context frame
+                             (mbrules-reductions pass2 final-stxs1 #f))])
+               (if (error-wrap? d)
+                   (append reductions1 reductions2 
+                           (list (stumble (frame final-stxs2) (error-wrap-exn d))))
+                   (append reductions1 reductions2))))))]
       [(AnyQ p:define-syntaxes (e1 e2 rs rhs) exni)
        (R e1 _
           [! exni]
@@ -269,7 +269,8 @@
       
       [#f null]
       
-      #;[else (error 'reductions "unmatched case: ~s" d)]))
+      #;
+      [else (error 'reductions "unmatched case: ~s" d)]))
 
   ;; reductions-transformation : Transformation -> ReductionSequence
   (define (reductions-transformation tx)
@@ -279,6 +280,8 @@
                (list (walk e1 e2 "Macro transformation")))]
       [(IntW transformation (e1 e2 rs me1 me2 locals) 'locals)
        (reductions-locals e1 locals)]
+      [(ErrW transformation (e1 e2 rs me1 me2 locals) 'bad-transformer exn)
+       (list (stumble e1 exn))]
       [(ErrW transformation (e1 e2 rs me1 me2 locals) 'transform exn)
        (append (reductions-locals e1 locals)
                (list (stumble e1 exn)))]))
@@ -374,7 +377,9 @@
         [(cons (struct b:splice (renames head tail)) next)
          (loop next tail prefix
                (cons (list (walk/foci (deriv-e2 head)
-                                      (take-until tail (stx-cdr suffix))
+                                      (stx-take tail
+                                                (- (stx-improper-length tail)
+                                                   (stx-improper-length (stx-cdr suffix))))
                                       (E (revappend prefix 
                                                     (cons (deriv-e2 head) (stx-cdr suffix))))
                                       (E (revappend prefix tail))

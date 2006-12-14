@@ -9,10 +9,7 @@
            identifier=-choices)
   
   (define (new-bound-partition)
-    #;(define p (new partition% (relation id:same-marks?)))
-    (define p (new bound-partition%))
-    (send p get-partition (datum->syntax-object #f 'no-marks))
-    p)
+    (new bound-partition%))
   
   ;; representative-symbol : symbol
   ;; Must be fresh---otherwise, using it could detect rename wraps 
@@ -74,7 +71,8 @@
          rep=>num
          (lambda (k v)
            (printf "~s => ~s~n" k v))))
-      
+
+      (get-partition unmarked-syntax)
       (super-new)
       ))
   
@@ -90,8 +88,9 @@
                [n (bound-identifier-mapping-get numbers r (lambda _ #f))])
           (or n
               (begin0 next-number
-                      (bound-identifier-mapping-put! numbers r next-number)
-                      (set! next-number (add1 next-number))))))
+                (bound-identifier-mapping-put! numbers r next-number)
+                #;(printf "primary partition new stx:~n~s~n~s~n" stx (syntax-object->datum stx))
+                (set! next-number (add1 next-number))))))
       
       (define/public (same-partition? a b)
         (= (get-partition a) (get-partition b)))
@@ -101,7 +100,8 @@
       
       (define/private (representative stx)
         (datum->syntax-object stx representative-symbol))
-      
+
+      (get-partition unmarked-syntax)
       (super-new)))
   
   ;; Different identifier relations for highlighting.

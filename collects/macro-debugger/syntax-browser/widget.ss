@@ -13,12 +13,12 @@
            "properties.ss"
            "util.ss")
   (provide widget@
+           widget-keymap-extension@
            widget-context-menu-extension@)
 
   (define widget@
     (unit/sig widget^
-      (import keymap^
-              context-menu^)
+      (import keymap^)
       
       ;; syntax-widget%
       ;; A syntax-widget creates its own syntax-controller.
@@ -39,12 +39,11 @@
             (new syntax-controller%
                  (properties-controller this)))
           
-          (define/public (make-context-menu)
-            (new context-menu% (widget this)))
-          
-          (new syntax-keymap% 
-               (editor -text)
-               (context-menu (make-context-menu)))
+          (define/public (make-keymap text)
+            (new syntax-keymap% 
+                 (editor text)
+                 (widget this)))
+          (make-keymap -text)
           
           (send -text lock #t)
           (send -split-panel set-percentages 
@@ -56,32 +55,27 @@
           (define/public (set-syntax stx)
             (send props set-syntax stx))
           
-          (define/public (show ?)
-            (if ? (show-props) (hide-props)))
-          
           (define/public (props-shown?)
             (send -props-panel is-shown?))
           
           (define/public (toggle-props)
-            (if (send -props-panel is-shown?)
-                (hide-props)
-                (show-props)))
+            (show-props (not (send -props-panel is-shown?))))
           
-          (define/public (hide-props)
-            (when (send -props-panel is-shown?)
-              (set! props-percentage (cadr (send -split-panel get-percentages)))
-              (send -split-panel delete-child -props-panel)
-              (send -props-panel show #f)))
-          
-          (define/public (show-props)
-            (unless (send -props-panel is-shown?)
-              (send -split-panel add-child -props-panel)
-              (send -split-panel set-percentages
-                    (list (- 1 props-percentage) props-percentage))
-              (send -props-panel show #t)))
-          
+          (define/public (show-props show?)
+            (if show?
+                (unless (send -props-panel is-shown?)
+                  (send -split-panel add-child -props-panel)
+                  (send -split-panel set-percentages
+                        (list (- 1 props-percentage) props-percentage))
+                  (send -props-panel show #t))
+                (when (send -props-panel is-shown?)
+                  (set! props-percentage
+                        (cadr (send -split-panel get-percentages)))
+                  (send -split-panel delete-child -props-panel)
+                  (send -props-panel show #f))))
+
           ;;
-          
+
           (define/public (get-controller) controller)
           
           ;;
@@ -145,32 +139,41 @@
       
       ))
 
+  (define widget-keymap-extension@
+    (unit/sig keymap^
+      (import (pre : keymap^))
+      
+      (define syntax-keymap%
+        (class pre:syntax-keymap%
+          (init-field widget)
+          (super-new (controller (send widget get-controller)))
+          (inherit add-function)
+          
+          (add-function "show-syntax-properties"
+                        (lambda (i e)
+                          (send widget toggle-props)))
+          
+          (define/public (get-widget) widget)
+          ))))
+  
   (define widget-context-menu-extension@
     (unit/sig context-menu^
       (import (pre : context-menu^))
       
       (define context-menu%
         (class pre:context-menu%
-          (init-field widget)
-          
-          (define props-menu #f)
-
-          (define/override (after-selection-items)
-            (super after-selection-items)
-            (set! props-menu
-                  (new menu-item% (label "Show/hide syntax properties")
-                       (parent this)
-                       (callback (lambda _ (send widget toggle-props)))))
-            (void))
+          (inherit-field keymap)
+          (inherit-field props-menu)
           
           (define/override (on-demand)
             (send props-menu set-label
-                  (if (send widget props-shown?)
+                  (if (send (send keymap get-widget) props-shown?)
                       "Hide syntax properties"
                       "Show syntax properties"))
             (super on-demand))
-          
-          (super-new (controller (send widget get-controller)))))))
-
-  (define browser-text% (editor:standard-style-list-mixin text:basic%))
+          (super-new)))))
+  
+  (define browser-text%
+    (text:hide-caret/selection-mixin
+     (editor:standard-style-list-mixin text:basic%)))
   )

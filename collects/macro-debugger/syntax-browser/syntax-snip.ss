@@ -9,7 +9,7 @@
            "properties.ss"
            "typesetter.ss")
   (provide snip@
-           snip-context-menu-extension@)
+           snip-keymap-extension@)
   
   (define snip@
     (unit/sig snip^
@@ -48,7 +48,7 @@
           (send -outer change-style (make-object style-delta% 'change-alignment 'top))
           (new syntax-keymap%
                (editor -outer)
-               (context-menu (new context-menu% (snip this))))
+               (snip this))
           (refresh)
           
           (define/public (get-controller) controller)
@@ -200,6 +200,21 @@
           (super-new)))
       ))
 
+  (define snip-keymap-extension@
+    (unit/sig keymap^
+      (import (pre : keymap^))
+      
+      (define syntax-keymap%
+        (class pre:syntax-keymap%
+          (init-field snip)
+          (inherit add-function)
+          (super-new (controller (send snip get-controller)))
+          
+          (add-function "show-syntax-properties"
+                        (lambda (i e)
+                          (send snip show-props)))))))
+  
+  #;
   (define snip-context-menu-extension@
     (unit/sig context-menu^
       (import (pre : context-menu^))

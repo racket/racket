@@ -80,15 +80,6 @@
     (cond [(zero? n) null]
           [else (cons (stx-car items) (stx-take (stx-cdr items) (sub1 n)))]))
 
-  (define *args* #f)
-  
-  (define (take-until stxs tail)
-    (set! *args* (list stxs tail))
-    (let loop ([stxs stxs])
-      (if (eq? stxs tail)
-          null
-          (cons (stx-car stxs) (loop (stx-cdr stxs))))))
-  
   (define (stx-improper-length stx)
     (if (stx-pair? stx)
         (add1 (stx-improper-length (stx-cdr stx)))

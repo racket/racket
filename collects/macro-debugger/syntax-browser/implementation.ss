@@ -9,6 +9,8 @@
            "prefs.ss")
   (provide global-prefs@
            global-snip@
+           widget-keymap@
+           widget-context-menu@
            implementation@)
   (provide-signature-elements snip^)
   (provide-signature-elements snipclass^)
@@ -16,15 +18,22 @@
   ;; prefs@ and snip@ should only be invoked once
   ;; We create a new unit/sig out of their invocation
 
+  (define snip-keymap@
+    (compound-unit/sig
+      (import [MENU : context-menu^]
+              [SNIP : snip^])
+      (link [KEYMAP : keymap^ (keymap@ MENU SNIP)]
+            [SNIP-KEYMAP : keymap^ (snip-keymap-extension@ KEYMAP)])
+      (export (open SNIP-KEYMAP))))
+  
   (define snip-implementation@
     (compound-unit/sig 
       (import)
-      (link [PREFS      : prefs^ (prefs@)]
-            [KEYMAP     : keymap^ (keymap@)]
-            [MENU       : context-menu^ (context-menu@ SNIP)]
-            [SNIP-CLASS : snipclass^ (snipclass@ SNIP)]
-            [SNIP-MENU  : context-menu^ (snip-context-menu-extension@ MENU)]
-            [SNIP       : snip^ (snip@ PREFS KEYMAP SNIP-MENU SNIP-CLASS)])
+      (link [PREFS       : prefs^ (prefs@)]
+            [MENU        : context-menu^ (context-menu@)]
+            [KEYMAP      : keymap^ (snip-keymap@ MENU SNIP)]
+            [SNIP-CLASS  : snipclass^ (snipclass@ SNIP)]
+            [SNIP        : snip^ (snip@ PREFS KEYMAP MENU SNIP-CLASS)])
       (export (open PREFS) (open SNIP) (open SNIP-CLASS))))
   (define-values/invoke-unit/sig ((open snip^) (open prefs^) (open snipclass^))
     snip-implementation@)
@@ -49,16 +58,30 @@
 
   ;; Everyone else re-uses the global-snip@ unit
   
-  ;; implementation@ : prefs^ -> implementation^
+  (define widget-keymap@
+    (compound-unit/sig
+      (import [MENU : context-menu^]
+              [SNIP : snip^])
+      (link [KEYMAP : keymap^ (keymap@ MENU SNIP)]
+            [WKEYMAP : keymap^ (widget-keymap-extension@ KEYMAP)])
+      (export (open WKEYMAP))))
+  
+  (define widget-context-menu@
+    (compound-unit/sig
+      (import)
+      (link [MENU : context-menu^ (context-menu@)]
+            [WMENU : context-menu^ (widget-context-menu-extension@ MENU)])
+      (export (open WMENU))))
+  
+  ;; implementation@ : implementation^
   (define implementation@
     (compound-unit/sig
       (import)
-      (link [KEYMAP        : keymap^       (keymap@)]
-            [MENU          : context-menu^ (context-menu@ SNIP)]
-            [SNIP          : snip^         (global-snip@)]
-            [WIDGET-MENU   : context-menu^ (widget-context-menu-extension@ MENU)]
-            [WIDGET        : widget^       (widget@ KEYMAP WIDGET-MENU)])
+      (link [SNIP          : snip^         (global-snip@)]
+            [MENU          : context-menu^ (widget-context-menu@)]
+            [KEYMAP        : keymap^       (widget-keymap@ MENU SNIP)]
+            [WIDGET        : widget^       (widget@ KEYMAP)])
       (export (unit SNIP snip)
               (unit WIDGET widget))))
-
+  
   )

@@ -97,7 +97,9 @@
       ;; recompute-tables : -> void
       (define/private (recompute-tables)
         (set!-values (datum ht:flat=>stx ht:stx=>flat)
-                     (syntax->datum/tables main-stx primary-partition 12 #f))
+                     (syntax->datum/tables main-stx primary-partition
+                                           (length (current-colors))
+                                           (current-suffix-option)))
         (set! identifier-list 
               (filter identifier? (hash-table-map ht:stx=>flat (lambda (k v) k)))))
 

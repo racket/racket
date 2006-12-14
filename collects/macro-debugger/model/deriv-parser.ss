@@ -60,6 +60,8 @@
         $2]
        [(visit (? TaggedPrimStep 'prim) return)
         ($2 $1)]
+       [(visit VariableStep return)
+        ($2 $1 $3)]
        [((? EE/Macro))
         $1])
       (EE/Macro
@@ -127,9 +129,10 @@
       ;; MacroStep Answer = Transformation (I,E)
       (MacroStep 
        [(Resolves enter-macro 
+         (! 'bad-transformer)
          macro-pre-transform (? LocalActions 'locals) (! 'transform) macro-post-transform 
          exit-macro)
-        (make-transformation $2 $7 $1 $3 $6 $4)])
+        (make-transformation $2 $8 $1 $4 $7 $5)])
 
       ;; Local actions taken by macro
       ;; LocalAction Answer = (list-of LocalAction)
@@ -163,16 +166,22 @@
       (PrimStep
        (#:no-wrap)
        [(Resolves NoError enter-prim (? Prim) exit-prim)
-        ($4 $3 $5 $1)]
-       [(Resolves variable)
-        (make-p:variable (car $2) (cdr $2) $1)])
+        ($4 $3 $5 $1)])
 
+      (VariableStep
+       (#:no-wrap)
+       (#:args e1 e2)
+       [(Resolves variable)
+        (make-p:variable e1 e2 $1)])
+      
       ;; Tagged Primitive syntax
       ;; TaggedPrimStep Answer = syntax -> PRule
       (TaggedPrimStep
        (#:no-wrap)
        (#:args orig-stx)
        [(Resolves ! IMPOSSIBLE)
+        (make-p:unknown orig-stx #f $1)]
+       [(Resolves NoError enter-prim ! IMPOSSIBLE)
         (make-p:unknown orig-stx #f $1)]
        [(Resolves NoError enter-prim (? TaggedPrim) exit-prim)
         ($4 orig-stx $5 $1 $3)])
@@ -234,7 +243,10 @@
 
       (Prim#%ModuleBegin
        (#:args e1 e2 rs)
-       [(prim-#%module-begin ! (? ModulePass1 'pass1) next-group (? ModulePass2 'pass2))
+       [(prim-#%module-begin (! 'malformed)
+                             (? ModulePass1 'pass1) next-group 
+                             (? ModulePass2 'pass2)
+                             (! 'provides))
         (make-p:#%module-begin e1 e2 rs $3 $5)])
 
       (ModulePass1

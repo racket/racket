@@ -1,22 +1,23 @@
 
 (module warning mzscheme
   (require (lib "class.ss")
-           (lib "mred.ss" "mred"))
+           (lib "mred.ss" "mred")
+           (lib "framework.ss" "framework"))
   (provide warnings-frame%)
-  
+
   ;; warnings-frame%
   (define warnings-frame%
     (class frame%
       (super-new (label "Macro stepper warnings") (width 400) (height 300))
-      
-      (define text (new text% (auto-wrap #t)))
+
+      (define text (new text:hide-caret/selection% (auto-wrap #t)))
       (define ec (new editor-canvas% (parent this) (editor text)))
       (send text lock #t)
-      
+
       (define -nonlinearity-text #f)
       (define -localactions-text #f)
       (define -lifts-text #f)
-      
+
       (define/private (add-nonlinearity-text)
         (unless -nonlinearity-text
           (set! -nonlinearity-text #t)

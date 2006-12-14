@@ -14,21 +14,20 @@
            "../model/deriv-util.ss"
            "../model/trace.ss"
            "../model/hide.ss"
-           "../model/hiding-policies.ss"
            "../model/steps.ss"
            "cursor.ss"
            "util.ss")
 
-  (provide catch-errors?
-           pre-stepper@
+  (provide pre-stepper@
            view@
            context-menu-extension@
-           browser-extension@)
+           browser-extension@
 
-  ;; Configuration
+           catch-errors?)
+
+  ;; Debugging parameters / Not user configurable
 
   (define catch-errors? (make-parameter #t))
-  (define show-rename-steps? (make-parameter #f))
 
   ;; Macro Stepper
 
@@ -37,117 +36,147 @@
       (import prefs^
               view-base^
               (sb : sb:widget^))
-      
-      (define (default-policy)
-        (let ([p (new-hiding-policy)])
-          (set-hiding-policy-opaque-kernel! p (pref:hide-primitives?))
-          (set-hiding-policy-opaque-libs!   p (pref:hide-libs?))
-          p))
-      
+
+      (define macro-stepper-config%
+        (class object%
+          (field/notify width (notify-box/pref pref:width))
+          (field/notify height (notify-box/pref pref:height))
+          (field/notify macro-hiding? (notify-box/pref pref:macro-hiding?))
+          (field/notify show-syntax-properties?
+                        (notify-box/pref pref:show-syntax-properties?))
+          (field/notify show-hiding-panel?
+                        (notify-box/pref pref:show-hiding-panel?))
+          (field/notify hide-primitives?
+                        (notify-box/pref pref:hide-primitives?))
+          (field/notify hide-libs?
+                        (notify-box/pref pref:hide-libs?))
+          (field/notify highlight-foci?
+                        (notify-box/pref pref:highlight-foci?))
+          (field/notify show-rename-steps?
+                        (notify-box/pref pref:show-rename-steps?))
+          (field/notify suppress-warnings?
+                        (notify-box/pref pref:suppress-warnings?))
+          (super-new)))
+
       (define macro-stepper-frame%
         (class base-frame%
-          (init (policy (default-policy))
-                (macro-hiding? (pref:macro-hiding?))
-                (show-hiding-panel? (pref:show-hiding-panel?))
-                (identifier=? (pref:identifier=?))
-                (width (pref:width))
-                (height (pref:height)))
+          (init (identifier=? (pref:identifier=?)))
+          (init-field (config (new macro-stepper-config%)))
+
           (inherit get-menu%
                    get-menu-item%
                    get-menu-bar
                    get-file-menu
                    get-edit-menu
                    get-help-menu)
-          
+
           (super-new (label "Macro stepper")
-                     (width width)
-                     (height height))
+                     (width (send config get-width))
+                     (height (send config get-height)))
 
           (define/override (on-size w h)
+            (send config set-width w)
+            (send config set-height h)
             (send widget update/preserve-view))
-          
+
           (define/augment (on-close)
-            (pref:width (send this get-width))
-            (pref:height (send this get-height))
             (send widget shutdown)
             (inner (void) on-close))
-          
+
           (override/return-false file-menu:create-new?
                                  file-menu:create-open?
                                  file-menu:create-open-recent?
                                  file-menu:create-revert?
                                  file-menu:create-save?
                                  file-menu:create-save-as?
-                                        ;file-menu:create-print?
+                                 ;file-menu:create-print?
                                  edit-menu:create-undo?
                                  edit-menu:create-redo?
-                                        ;edit-menu:create-cut?
-                                        ;edit-menu:create-paste?
+                                 ;edit-menu:create-cut?
+                                 ;edit-menu:create-paste?
                                  edit-menu:create-clear?
-                                        ;edit-menu:create-find?
-                                        ;edit-menu:create-find-again?
+                                 ;edit-menu:create-find?
+                                 ;edit-menu:create-find-again?
                                  edit-menu:create-replace-and-find-again?)
-          
+
           (define file-menu (get-file-menu))
           (define edit-menu (get-edit-menu))
-          (define syntax-menu
-            (new (get-menu%) (parent (get-menu-bar)) (label "Syntax")))
           (define stepper-menu
             (new (get-menu%) (parent (get-menu-bar)) (label "Stepper")))
           (define help-menu (get-help-menu))
-          
-          (define (mk-register-action menu)
-            (lambda (label callback)
-              (if label
-                  (new (get-menu-item%)
-                       (label label) (parent menu) (callback (lambda _ (callback))))
-                  (new separator-menu-item% (parent menu)))))
-          
+
           (define widget
             (new macro-stepper-widget%
                  (parent (send this get-area-container))
-                 (policy policy)
-                 (macro-hiding? macro-hiding?)
-                 (show-hiding-panel? show-hiding-panel?)))
+                 (config config)))
+
           (define/public (get-widget) widget)
 
-          (begin
-            (new (get-menu-item%) (label "Show/hide syntax properties") (parent syntax-menu)
-                 (callback (lambda _ (send (send widget get-view) toggle-props))))
-            (define id-menu
-              (new (get-menu%) (label "Identifier=?") (parent syntax-menu)))
+          ;; Set up menus
+
+          (menu-option/notify-box stepper-menu
+                                  "Show syntax properties"
+                                  (get-field show-syntax-properties? config))
+
+          ;; FIXME: rewrite with notify-box
+          (let ([id-menu
+                 (new (get-menu%)
+                      (label "Identifier=?")
+                      (parent stepper-menu))])
             (for-each (lambda (p)
                         (let ([this-choice
                                (new checkable-menu-item%
                                     (label (car p)) 
                                     (parent id-menu)
-                                    (callback (lambda _ 
-                                                (send (send widget get-controller)
-                                                      on-update-identifier=?
-                                                      (car p)
-                                                      (cdr p)))))])
+                                    (callback
+                                     (lambda _ 
+                                       (send (send widget get-controller)
+                                             on-update-identifier=?
+                                             (car p)
+                                             (cdr p)))))])
                           (send (send widget get-controller)
                                 add-identifier=?-listener
                                 (lambda (new-name new-func)
-                                  (send this-choice check (eq? new-name (car p)))))))
-                      (sb:identifier=-choices))
-            (new (get-menu-item%) (label "Clear selection") (parent syntax-menu)
-                 (callback
-                  (lambda _ (send (send widget get-controller) select-syntax #f))))
-            (new (get-menu-item%)
-                 (label "Show/hide macro hiding configuration")
-                 (parent stepper-menu)
-                 (callback (lambda _ (send widget show/hide-macro-hiding-prefs)))))
+                                  (send this-choice check
+                                        (eq? new-name (car p)))))))
+                      (sb:identifier=-choices)))
+          (when identifier=?
+            (let ([p (assoc identifier=? (sb:identifier=-choices))])
+              (when p
+                (send (send widget get-controller)
+                      on-update-identifier=?
+                      (car p)
+                      (cdr p)))))
 
-          (begin
-            (when identifier=?
-              (let ([p (assoc identifier=? (sb:identifier=-choices))])
-                (when p
-                  (send (send widget get-controller)
-                        on-update-identifier=?
-                        (car p)
-                        (cdr p))))))
-          
+          (new (get-menu-item%) (label "Clear selection") (parent stepper-menu)
+               (callback
+                (lambda _
+                  (send (send widget get-controller) select-syntax #f))))
+          (new separator-menu-item% (parent stepper-menu))
+
+          (menu-option/notify-box stepper-menu
+                                  "Show macro hiding panel"
+                                  (get-field show-hiding-panel? config))
+          (let ([extras-menu
+                 (new (get-menu%)
+                      (label "Extra options")
+                      (parent stepper-menu))])
+            (menu-option/notify-box extras-menu
+                                    "Highlight redex/contractum"
+                                    (get-field highlight-foci? config))
+            (menu-option/notify-box extras-menu
+                                    "Include renaming steps"
+                                    (get-field show-rename-steps? config))
+            (menu-option/notify-box extras-menu
+                                    "Suppress warnings"
+                                    (get-field suppress-warnings? config))
+            (new checkable-menu-item%
+                 (label "(Debug) Catch internal errors?")
+                 (parent extras-menu)
+                 (checked (catch-errors?))
+                 (callback
+                  (lambda (c e) (catch-errors? (send c is-checked?))))))
+
           (frame:reorder-menus this)
           ))
 
@@ -155,9 +184,7 @@
       (define macro-stepper-widget%
         (class* object% ()
           (init-field parent)
-          (init policy)
-          (init macro-hiding?)
-          (init show-hiding-panel?)
+          (init-field config)
 
           ;; derivs : (list-of Derivation)
           (define derivs null)
@@ -168,16 +195,26 @@
           ;; derivs-prefix : (list-of (cons Derivation Derivation))
           (define derivs-prefix null)
 
+          ;; steps : cursor
           (define steps #f)
+
+          ;; zoomed? : boolean
+          (define zoomed? #f)
 
           (define warnings-frame #f)
 
           (define/public (add-deriv d)
             (set! derivs (append derivs (list d)))
-            (when (and (not (send updown-navigator is-shown?))
+            (when (and (not (send nav:up is-shown?))
                        (pair? (cdr (append derivs-prefix derivs))))
-              (send super-navigator add-child updown-navigator)
-              (send updown-navigator show #t))
+              (send navigator change-children
+                    (lambda (_)
+                      (list nav:up
+                            nav:start
+                            nav:previous
+                            nav:next
+                            nav:end
+                            nav:down))))
             (if (null? (cdr derivs))
                 ;; There is nothing currently displayed
                 (refresh)
@@ -188,41 +225,51 @@
           (define/public (get-macro-hiding-prefs) macro-hiding-prefs)
 
           (define area (new vertical-panel% (parent parent)))
-          (define super-navigator
+          (define navigator
             (new horizontal-panel%
                  (parent area)
                  (stretchable-height #f)
                  (alignment '(center center))))
-          (define navigator
+          #;
+          (define advanced-navigator
             (new horizontal-panel%
-                 (parent super-navigator)
+                 (parent area)
                  (stretchable-height #f)
                  (alignment '(center center))))
-          (define updown-navigator
-            (new horizontal-panel%
-                 (parent super-navigator)
-                 (style '(deleted))
-                 (stretchable-height #f)
-                 (alignment '(center center))))
-
+          
           (define sbview (new sb:syntax-widget% 
                               (parent area)
                               (macro-stepper this)
                               (pref:props-percentage pref:props-percentage)))
+          (send sbview show-props (send config get-show-syntax-properties?))
+          (send config listen-show-syntax-properties?
+                (lambda (show?) (send sbview show-props show?)))
+
           (define sbc (send sbview get-controller))
           (define control-pane
             (new vertical-panel% (parent area) (stretchable-height #f)))
           (define macro-hiding-prefs
             (new macro-hiding-prefs-widget%
-                 (policy policy)
                  (parent control-pane)
                  (stepper this)
-                 (enabled? macro-hiding?)))
+                 (config config)))
+          (send config listen-show-hiding-panel?
+                (lambda (show?) (show-macro-hiding-prefs show?)))
+          (show-macro-hiding-prefs (send config get-show-hiding-panel?))
+
           (send sbc add-selection-listener
                 (lambda (stx) (send macro-hiding-prefs set-syntax stx)))
-          (unless show-hiding-panel?
-            (show/hide-macro-hiding-prefs))
-          
+
+          (send config listen-highlight-foci?
+                (lambda (_) (update/preserve-view)))
+
+          (send config listen-show-rename-steps?
+                (lambda (_) (refresh)))
+
+          (define nav:up
+            (new button% (label "Previous term") (parent navigator) (style '(deleted))
+                 (callback (lambda (b e) (navigate-up)))))
+
           (define nav:start
             (new button% (label "<-- Start") (parent navigator)
                  (callback (lambda (b e) (navigate-to-start)))))
@@ -236,20 +283,30 @@
             (new button% (label "End -->") (parent navigator)
                  (callback (lambda (b e) (navigate-to-end)))))
           
-          (define nav:up
-            (new button% (label "Previous term") (parent updown-navigator)
-                 (callback (lambda (b e) (navigate-up)))))
           (define nav:down
-            (new button% (label "Next term") (parent updown-navigator)
+            (new button% (label "Next term") (parent navigator) (style '(deleted))
                  (callback (lambda (b e) (navigate-down)))))
 
-          (define/public (show/hide-macro-hiding-prefs)
+          #;
+          (define nav:zoom-in
+            (new button% (label "Zoom in") (parent advanced-navigator)
+                 (callback (lambda (b e) (navigate-zoom-in)))))
+          #;
+          (define nav:zoom-out
+            (new button% (label "Zoom out") (parent advanced-navigator)
+                 (callback (lambda (b e) (navigate-zoom-out)))))
+          #;
+          (define nav:jump-to
+            (new button% (label "Skip to") (parent advanced-navigator)
+                 (callback (lambda (b e) (navigate-skip-to)))))
+          
+          (define/public (show-macro-hiding-prefs show?)
             (send area change-children
                   (lambda (children)
-                    (if (memq control-pane children)
-                        (remq control-pane children)
-                        (append children (list control-pane))))))
-          
+                    (if show?
+                        (append (remq control-pane children) (list control-pane))
+                        (remq control-pane children)))))
+
           ;; Navigate
 
           (define/private (navigate-to-start)
@@ -278,6 +335,17 @@
               (set! synth-deriv #f))
             (refresh))
 
+          (define/private (navigate-zoom-in)
+            (set! zoomed? #t)
+            (update))
+
+          (define/private (navigate-zoom-out)
+            (set! zoomed? #f)
+            (update))
+          
+          (define/private (navigate-skip-to)
+            '...)
+
           (define/private (insert-step-separator text)
             (send sbview add-text "\n    ")
             (send sbview add-text
@@ -296,6 +364,64 @@
             (send text get-visible-position-range start-box end-box)
             (update)
             (send text scroll-to-position (unbox start-box) #f (unbox end-box)))
+          
+          (define (update:show-prefix)
+            ;; Show the final terms from the cached synth'd derivs
+            (for-each (lambda (d+sd)
+                        (let ([e2 (lift/deriv-e2 (cdr d+sd))])
+                          (if e2
+                              (send sbview add-syntax e2)
+                              (send sbview add-text "Error\n"))))
+                      (reverse derivs-prefix)))
+          
+          (define (update:show-current-step)
+            (when steps
+              (let ([step (cursor:current steps)])
+                (cond [(step? step)
+                       (update:show-step step)]
+                      [(misstep? step)
+                       (update:show-misstep step)]
+                      [(not step)
+                       (update:show-final)]))))
+          
+          (define (update:show-step step)
+            (unless zoomed?
+              (when (pair? (step-lctx step))
+                (for-each (lambda (bc)
+                            (send sbview add-text "While executing macro transformer in:\n")
+                            (insert-syntax/redex (cdr bc) (car bc)))
+                          (step-lctx step))
+                (send sbview add-text "\n"))
+              (insert-syntax/redex (step-e1 step) (foci (step-redex step)))
+              (insert-step-separator (step-note step))
+              (insert-syntax/contractum (step-e2 step) (foci (step-contractum step))))
+            (when zoomed?
+              (for-each (lambda (s) (insert-syntax s)) (foci (step-redex step)))
+              (insert-step-separator (step-note step))
+              (for-each (lambda (s) (insert-syntax s)) (foci (step-contractum step)))))
+          
+          (define (update:show-misstep step)
+            (insert-syntax/redex (misstep-e1 step) (foci (misstep-redex step)))
+            (insert-step-separator "Error")
+            (send sbview add-text (exn-message (misstep-exn step)))
+            (send sbview add-text "\n")
+            (when (exn:fail:syntax? (misstep-exn step))
+              (for-each (lambda (e) (send sbview add-syntax e))
+                        (exn:fail:syntax-exprs (misstep-exn step)))))
+          
+          (define (update:show-final)
+            (let ([result (lift/deriv-e2 synth-deriv)])
+              (when result
+                (send sbview add-text "Expansion finished\n")
+                (send sbview add-syntax result))
+              (unless result
+                (send sbview add-text "Error\n"))))
+
+          (define (update:show-suffix)
+            (when (pair? derivs)
+              (for-each (lambda (suffix-deriv)
+                          (send sbview add-syntax (lift/deriv-e1 suffix-deriv)))
+                        (cdr derivs))))
 
           ;; update : -> void
           ;; Updates the terms in the syntax browser to the current step
@@ -304,48 +430,13 @@
             (define position-of-interest 0)
             (send text begin-edit-sequence)
             (send sbview erase-all)
-            (when (pair? derivs-prefix)
-              ;; Show the final terms from the cached synth'd derivs
-              (for-each (lambda (d+sd)
-                          (let ([e2 (lift/deriv-e2 (cdr d+sd))])
-                            (if e2
-                                (send sbview add-syntax e2)
-                                (send sbview add-text "Error\n"))))
-                        (reverse derivs-prefix))
-              (send sbview add-separator))
+
+            (unless zoomed? (update:show-prefix))
+            (send sbview add-separator)
             (set! position-of-interest (send text last-position))
-            (when steps
-              (let ([step (cursor:current steps)])
-                (unless step
-                  (let ([result (lift/deriv-e2 synth-deriv)])
-                    (when result
-                      (send sbview add-text "Expansion finished\n")
-                      (send sbview add-syntax result))
-                    (unless result
-                      (send sbview add-text "Error\n"))))
-                (when (step? step)
-                  (when (pair? (step-lctx step))
-                    (for-each (lambda (bc)
-                                (send sbview add-text "While executing macro transformer in:\n")
-                                (insert-syntax/redex (cdr bc) (car bc)))
-                              (step-lctx step))
-                    (send sbview add-text "\n"))
-                  (insert-syntax/redex (step-e1 step) (foci (step-redex step)))
-                  (insert-step-separator (step-note step))
-                  (insert-syntax/contractum (step-e2 step) (foci (step-contractum step))))
-                (when (misstep? step)
-                  (insert-syntax/redex (misstep-e1 step) (foci (misstep-redex step)))
-                  (insert-step-separator "Error")
-                  (send sbview add-text (exn-message (misstep-exn step)))
-                  (send sbview add-text "\n")
-                  (when (exn:fail:syntax? (misstep-exn step))
-                    (for-each (lambda (e) (send sbview add-syntax e))
-                              (exn:fail:syntax-exprs (misstep-exn step)))))))
-            (when (and (pair? derivs) (pair? (cdr derivs)))
-              (send sbview add-separator)
-              (for-each (lambda (suffix-deriv)
-                          (send sbview add-syntax (lift/deriv-e1 suffix-deriv)))
-                        (cdr derivs)))
+            (update:show-current-step)
+            (send sbview add-separator)
+            (update:show-suffix)
             (send text end-edit-sequence)
             (send text scroll-to-position
                   position-of-interest
@@ -354,14 +445,22 @@
                   'start)
             (enable/disable-buttons))
 
+          ;; insert-syntax : syntax -> void
+          (define/private (insert-syntax stx)
+            (send sbview add-syntax stx))
+          
           ;; insert-syntax/redex : syntax syntaxes -> void
           (define/private (insert-syntax/redex stx foci)
-            (send sbview add-syntax stx foci "MistyRose"))
-          
-          ; insert-syntax/contractum : syntax syntaxes -> void
+            (if (send config get-highlight-foci?)
+                (send sbview add-syntax stx foci "MistyRose")
+                (send sbview add-syntax stx)))
+
+          ;; insert-syntax/contractum : syntax syntaxes -> void
           (define/private (insert-syntax/contractum stx foci)
-            (send sbview add-syntax stx foci "LightCyan"))
-          
+            (if (send config get-highlight-foci?)
+                (send sbview add-syntax stx foci "LightCyan")
+                (send sbview add-syntax stx)))
+
           ;; enable/disable-buttons : -> void
           (define/private (enable/disable-buttons)
             (send nav:start enable (and steps (cursor:can-move-previous? steps)))
@@ -370,9 +469,17 @@
             (send nav:end enable (and steps (cursor:can-move-next? steps)))
             (send nav:up enable (and (pair? derivs-prefix)))
             (send nav:down enable 
-                  (and (pair? derivs))))
+                  (and (pair? derivs)))
+            #;
+            (send nav:zoom-in enable 
+                  (and (not zoomed?) steps (step? (cursor:current steps))))
+            #;
+            (send nav:zoom-out enable zoomed?)
+            #;
+            (send nav:jump-to enable #f))
+
           ;; --
-          
+
           ;; refresh/resynth : -> void
           ;; Resynth all of the derivations in prefix and refresh
           (define/public (refresh/resynth)
@@ -411,28 +518,25 @@
             (let ([show-macro? (get-show-macro?)])
               (if show-macro?
                   (with-handlers ([(lambda (e) (catch-errors?))
-                                   (lambda (e) (no-synthesize deriv))])
+                                   (lambda (e) (disable-hiding) deriv)])
                     (parameterize ((current-hiding-warning-handler
                                     (lambda (tag message)
-                                      (unless warnings-frame
-                                        (set! warnings-frame (new warnings-frame%)))
-                                      (send warnings-frame add-warning tag)
-                                      #;
-                                      (send warnings-frame add-text
-                                            (format "Warning: ~a~n" message)))))
+                                      (unless (send config get-suppress-warnings?)
+                                        (unless warnings-frame
+                                          (set! warnings-frame (new warnings-frame%)))
+                                        (send warnings-frame add-warning tag)))))
                       (let-values ([(d s) (hide/policy deriv show-macro?)])
                         d)))
                   deriv)))
 
-          (define/private (no-synthesize deriv)
+          (define/private (disable-hiding)
             (message-box
              "Macro Debugger"
              (string-append
               "This expansion triggers an error in the macro hiding code. "
               "Trying again with macro hiding disabled."))
-            (send macro-hiding-prefs enable-hiding #f)
-            (synthesize deriv))
-          
+            (queue-callback (lambda () (send config set-macro-hiding? #f))))
+
           ;; reduce : Derivation -> ReductionSequence
           (define/private (reduce d)
             (with-handlers ([(lambda (e) (catch-errors?))
@@ -442,31 +546,22 @@
                                 "Internal error in macro stepper (reductions)")
                                (set! synth-deriv #f)
                                (set! steps #f))])
-              (if (show-rename-steps?)
+              (if (send config get-show-rename-steps?)
                   (reductions d)
                   (filter (lambda (x) (not (rename-step? x)))
                           (reductions d)))))
-          
+
           (define/private (foci x) (if (list? x) x (list x)))
 
           ;; Hiding policy
 
-          (define/private (get-policy)
-            (and (send macro-hiding-prefs get-enabled?)
-                 (send macro-hiding-prefs get-policy)))
-
           (define/private (get-show-macro?)
-            (let ([policy (get-policy)])
-              (and policy (lambda (id) (policy-show-macro? policy id)))))
+            (and (send config get-macro-hiding?)
+                 (send macro-hiding-prefs get-show-macro?)))
 
           ;; --
 
           (define/public (shutdown)
-            (let ([policy (get-policy)])
-              (pref:macro-hiding? (and policy #t))
-              (pref:hide-primitives? (and policy (hiding-policy-opaque-kernel policy)))
-              (pref:hide-libs? (and policy (hiding-policy-opaque-libs policy))))
-            (pref:show-hiding-panel? (send control-pane is-shown?))
             (when warnings-frame (send warnings-frame show #f)))
 
           ;; Initialization
@@ -476,18 +571,10 @@
 
       ;; Main entry points
 
-      (define make-macro-stepper
-        (case-lambda
-          [(policy hiding?)
-           (let ([f (new macro-stepper-frame%
-                         (policy policy)
-                         (macro-hiding? hiding?))])
-             (send f show #t)
-             (send f get-widget))]
-          [(policy)
-           (make-macro-stepper policy #t)]
-          [()
-           (make-macro-stepper (new-hiding-policy) #f)]))
+      (define (make-macro-stepper)
+        (let ([f (new macro-stepper-frame%)])
+          (send f show #t)
+          (send f get-widget)))
 
       (define (go stx)
         (let ([stepper (make-macro-stepper)])
@@ -499,8 +586,37 @@
           (send w add-deriv deriv)
           (send f show #t)
           w))
+
       ))
   
+  ;; Extensions
+  
+  (define keymap-extension@
+    (unit/sig sb:keymap^
+      (import (pre : sb:keymap^))
+      
+      (define syntax-keymap%
+        (class pre:syntax-keymap%
+          (init-field macro-stepper)
+          (inherit-field controller)
+          (inherit add-function)
+          
+          (super-new)
+          
+          (define/public (get-hiding-panel)
+            (send macro-stepper get-macro-hiding-prefs))
+          
+          (add-function "hiding:show-macro"
+                        (lambda (i e)
+                          (send* (get-hiding-panel)
+                            (add-show-identifier)
+                            (refresh))))
+          
+          (add-function "hiding:hide-macro"
+                        (lambda (i e)
+                          (send* (get-hiding-panel)
+                            (add-hide-identifier)
+                            (refresh))))))))
   
   (define context-menu-extension@
     (unit/sig sb:context-menu^
@@ -508,55 +624,35 @@
       
       (define context-menu%
         (class pre:context-menu%
-          (init-field macro-stepper)
-          (inherit-field controller)
+          (inherit-field keymap)
           (inherit add-separator)
           
-          (define/private (get-prefs-panel)
-            (send macro-stepper get-macro-hiding-prefs))
-
-          (define show-macro #f)
-          (define hide-macro #f)
-          (define remove-macro #f)
+          (field [show-macro #f]
+                 [hide-macro #f])
           
           (define/override (after-selection-items)
             (super after-selection-items)
             (add-separator)
             (set! show-macro
                   (new menu-item% (label "Show this macro") (parent this)
-                       (callback (lambda _ (do-show)))))
+                       (callback (lambda (i e)
+                                   (send keymap call-function "hiding:show-macro" i e)))))
             (set! hide-macro
                   (new menu-item% (label "Hide this macro") (parent this)
-                       (callback (lambda _ (do-hide)))))
-            #;(set! remove-macro
-                    (new menu-item% (label "Remove macro from policy") (parent this)
-                         (callback (lambda _ (do-remove)))))
+                       (callback (lambda (i e)
+                                   (send keymap call-function "hiding:hide-macro" i e)))))
             (void))
           
-          (define/private (do-show)
-            (send* (get-prefs-panel)
-              (add-show-identifier)
-              (refresh)))
-            
-          (define/private (do-hide)
-            (send* (get-prefs-panel)
-              (add-hide-identifier)
-              (refresh)))
-          
           (define/override (on-demand)
-            (define-values (opaque transparent)
-              (let ([policy (send (get-prefs-panel) get-policy)])
-                (values (hiding-policy-opaque-ids policy)
-                        (hiding-policy-transparent-ids policy))))
+            (define hiding-panel (send keymap get-hiding-panel))
+            (define controller (send keymap get-controller))
             (define stx (send controller get-selected-syntax))
             (define id? (identifier? stx))
-            (define transparent?
-              (and id? (module-identifier-mapping-get transparent stx (lambda () #f))))
-            (define opaque?
-              (and id? (module-identifier-mapping-get opaque stx (lambda () #f))))
+            (define show-macro? (send hiding-panel get-show-macro?))
+            (define transparent? (and id? (show-macro? stx)))
+            (define opaque? (and id? (not (show-macro? stx))))
             (send show-macro enable (and id? (not transparent?)))
             (send hide-macro enable (and id? (not opaque?)))
-            #;(send remove-macro enable (and id? (or opaque? transparent?)))
             (super on-demand))
 
           (super-new)))))
@@ -564,31 +660,53 @@
   (define browser-extension@
     (unit/sig sb:widget^
       (import (pre : sb:widget^)
-              sb:context-menu^)
+              sb:keymap^)
       
       (define syntax-widget%
         (class pre:syntax-widget%
           (init-field macro-stepper)
           
-          (define/override (make-context-menu)
-            (new context-menu%
+          (define/override (make-keymap text)
+            (new syntax-keymap%
+                 (editor text)
                  (widget this)
                  (macro-stepper macro-stepper)))
           (super-new)))))
+  
+  ;; Linking
+  
+  (define context-menu@
+    (compound-unit/sig
+      (import)
+      (link [SB:MENU : sb:context-menu^ (sb:widget-context-menu@)]
+            [V:MENU : sb:context-menu^ (context-menu-extension@ SB:MENU)])
+      (export (open V:MENU))))
+  
+  (define keymap@
+    (compound-unit/sig
+      (import [MENU : sb:context-menu^]
+              [SNIP : sb:snip^])
+      (link [SB:KEYMAP : sb:keymap^ (sb:widget-keymap@ MENU SNIP)]
+            [V:KEYMAP : sb:keymap^ (keymap-extension@ SB:KEYMAP)])
+      (export (open V:KEYMAP))))
+  
+  (define widget@
+    (compound-unit/sig
+      (import [KEYMAP : sb:keymap^]
+              [MENU : sb:context-menu^])
+      (link [SB:WIDGET : sb:widget^ (sb:widget@ KEYMAP)]
+            [V:WIDGET : sb:widget^ (browser-extension@ SB:WIDGET KEYMAP)])
+      (export (open V:WIDGET))))
   
   (define pre-stepper@
     (compound-unit/sig
       (import [BASE : view-base^])
       (link [PREFS : prefs^ (prefs@)]
-            [SBKEYMAP : sb:keymap^ (sb:keymap@)]
-            [SBMENU : sb:context-menu^ (sb:context-menu@ SBSNIP)]
-            [SBSNIP : sb:snip^ (sb:global-snip@)]
-            [SBWMENU : sb:context-menu^ (sb:widget-context-menu-extension@ SBMENU)]
-            [VMENU : sb:context-menu^ (context-menu-extension@ SBWMENU)]
-            [SBWIDGET : sb:widget^ (sb:widget@ SBKEYMAP SBWMENU)]
-            [VWIDGET : sb:widget^ (browser-extension@ SBWIDGET VMENU)]
-            [VIEW : view^ (view@ PREFS BASE VWIDGET)])
+            [MENU : sb:context-menu^ (context-menu@)]
+            [KEYMAP : sb:keymap^ (keymap@ MENU SNIP)]
+            [SNIP : sb:snip^ (sb:global-snip@)]
+            [WIDGET : sb:widget^ (widget@ KEYMAP MENU)]
+            [VIEW : view^ (view@ PREFS BASE WIDGET)])
       (export (open VIEW))))
-    
   
   )

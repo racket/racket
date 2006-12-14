@@ -25,7 +25,7 @@
                  (format "~s" (car mps))]
                 [(null? mps) "self"]))
         (format "~s" mpi)))
-
+  
   (define (mpi->list mpi)
     (if mpi
         (let-values ([(path rel) (module-path-index-split mpi)])

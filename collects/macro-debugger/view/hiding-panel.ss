@@ -4,6 +4,7 @@
            (lib "mred.ss" "mred")
            (lib "list.ss")
            (lib "boundmap.ss" "syntax")
+           "util.ss"
            "../model/hiding-policies.ss"
            "../syntax-browser/util.ss")
   (provide macro-hiding-prefs-widget%)
@@ -13,13 +14,24 @@
     (class object%
       (init parent)
       (init-field stepper)
-      (init-field policy)
-      (init-field (enabled? #f))
-      
+      (init-field config)
+
+      (define policy (new-hiding-policy))
+      (set-hiding-policy-opaque-kernel! policy (send config get-hide-primitives?))
+      (set-hiding-policy-opaque-libs! policy (send config get-hide-libs?))
+      (send config listen-hide-primitives?
+            (lambda (value)
+              (set-hiding-policy-opaque-kernel! policy value)
+              (refresh)))
+      (send config listen-hide-libs?
+            (lambda (value)
+              (set-hiding-policy-opaque-libs! policy value)
+              (refresh)))
+
       (define stx #f)
       (define stx-name #f)
       (define stx-module #f)
-      
+
       (define super-pane
         (new horizontal-pane%
              (parent parent)
@@ -32,38 +44,24 @@
       (define right-pane
         (new vertical-pane%
              (parent super-pane)))
-      
+
       (define enable-ctl
-        (new check-box% 
-             (label "Enable macro hiding?")
-             (parent left-pane)
-             (value enabled?) 
-             (callback
-              (lambda _
-                (set! enabled? (send enable-ctl get-value))
-                (force-refresh)))))
-      
+        (check-box/notify-box left-pane
+                              "Enable macro hiding?"
+                              (get-field macro-hiding? config)))
+      (send config listen-macro-hiding?
+            (lambda (value) (force-refresh)))
+
       (define kernel-ctl
-        (new check-box%
-             (label "Hide mzscheme syntax")
-             (parent left-pane)
-             (value (hiding-policy-opaque-kernel policy))
-             (callback (lambda _
-                         (if (send kernel-ctl get-value)
-                             (policy-hide-kernel policy)
-                             (policy-unhide-kernel policy))
-                         (refresh)))))
+        (check-box/notify-box left-pane
+                              "Hide mzscheme syntax"
+                              (get-field hide-primitives? config)))
+
       (define libs-ctl
-        (new check-box%
-             (label "Hide library syntax")
-             (parent left-pane)
-             (value (hiding-policy-opaque-libs policy))
-             (callback (lambda _
-                         (if (send libs-ctl get-value)
-                             (policy-hide-libs policy)
-                             (policy-unhide-libs policy))
-                         (refresh)))))
-      
+        (check-box/notify-box left-pane
+                              "Hide library syntax"
+                              (get-field hide-libs? config)))
+
       (define look-pane
         (new horizontal-pane% (parent right-pane) (stretchable-height #f)))
       (define look-ctl
@@ -97,23 +95,14 @@
       
       ;; Methods
       
-      ;; enable-hiding : boolean -> void
-      ;; Called only by stepper, which does it's own refresh
-      (define/public (enable-hiding ok?)
-        (send enable-ctl set-value ok?)
-        (set! enabled? ok?))
-      
-      ;; get-enabled?
-      (define/public (get-enabled?) enabled?)
-      
-      ;; get-policy
-      (define/public (get-policy) policy)
+      (define/public (get-show-macro?)
+        (lambda (id) (policy-show-macro? policy id)))
       
       ;; refresh
       (define/public (refresh)
-        (when enabled?
+        (when (send config get-macro-hiding?)
           (send stepper refresh/resynth)))
-      
+
       ;; force-refresh
       (define/private (force-refresh)
         (send stepper refresh/resynth))

@@ -8,72 +8,30 @@
   (provide keymap@
            context-menu@)
   
-  (define keymap@
-    (unit/sig keymap^
-      (import)
-      
-      (define syntax-keymap%
-        (class keymap%
-          (init editor)
-          (init-field context-menu)
-          
-          (inherit add-function
-                   map-function
-                   chain-to-keymap)
-          (super-new)
-          
-          ;; Initialization
-          (map-function "rightbutton" "popup-context-window")
-          (add-function "popup-context-window"
-                        (lambda (editor event)
-                          (do-popup-context-window editor event)))
-          
-          ;; Attach to editor
-          (chain-to-keymap (send editor get-keymap) #t)
-          (send editor set-keymap this)
-          
-          (define/private (do-popup-context-window editor event)
-            (define-values (x y)
-              (send editor dc-location-to-editor-location
-                    (send event get-x)
-                    (send event get-y)))
-            (define admin (send editor get-admin))
-            (send admin popup-menu context-menu x y))))))
-  
   (define context-menu@
     (unit/sig context-menu^
-      (import snip^)
+      (import)
 
       (define context-menu%
         (class popup-menu%
+          (init-field keymap)
           (init-field controller)
           (super-new)
-
-          (define copy-menu #f)
-          (define copy-syntax-menu #f)
-          (define clear-menu #f)
+          
+          (field [copy-menu #f]
+                 [copy-syntax-menu #f]
+                 [clear-menu #f]
+                 [props-menu #f])
           
           (define/public (add-edit-items)
             (set! copy-menu
                   (new menu-item% (label "Copy") (parent this)
                        (callback (lambda (i e)
-                                   (define stx (send controller get-selected-syntax))
-                                   (send the-clipboard set-clipboard-string
-                                         (if stx 
-                                             (format "~s" (syntax-object->datum stx))
-                                             "")
-                                         (send e get-time-stamp))))))
+                                   (send keymap call-function "copy-text" i e)))))
             (set! copy-syntax-menu
                   (new menu-item% (label "Copy syntax") (parent this)
                        (callback (lambda (i e)
-                                   (define stx (send controller get-selected-syntax))
-                                   (define t (new text%))
-                                   (send t insert
-                                         (new syntax-snip%
-                                              (syntax stx)
-                                              #;(controller controller)))
-                                   (send t select-all)
-                                   (send t copy)))))
+                                   (send keymap call-function "copy-syntax" i e)))))
             (void))
 
           (define/public (after-edit-items)
@@ -84,7 +42,16 @@
                   (new menu-item%
                        (label "Clear selection")
                        (parent this)
-                       (callback (lambda _ (send controller select-syntax #f)))))
+                       (callback 
+                        (lambda (i e)
+                          (send keymap call-function "clear-syntax-selection" i e)))))
+            (set! props-menu
+                  (new menu-item%
+                       (label "Show syntax properties")
+                       (parent this)
+                       (callback 
+                        (lambda (i e) 
+                          (send keymap call-function "show-syntax-properties" i e)))))
             (void))
           
           (define/public (after-selection-items)
@@ -113,7 +80,7 @@
 
           (define/public (add-separator)
             (new separator-menu-item% (parent this)))
-
+          
           (define/override (on-demand)
             (define stx (send controller get-selected-syntax))
             (send copy-menu enable (and stx #t))
@@ -134,4 +101,75 @@
           (after-partition-items)
 
           ))))
+  
+  (define keymap@
+    (unit/sig keymap^
+      (import context-menu^ snip^)
+      
+      (define syntax-keymap%
+        (class keymap%
+          (init editor)
+          (init-field controller)
+          
+          (inherit add-function
+                   map-function
+                   chain-to-keymap)
+          (super-new)
+          
+          (define context-menu (make-context-menu))
+          
+          (define/public (make-context-menu)
+            (new context-menu% (controller controller) (keymap this)))
+          
+          ;; Key mappings
+
+          (map-function "rightbutton" "popup-context-window")
+          
+          ;; Functionality
+          
+          (add-function "popup-context-window"
+                        (lambda (editor event)
+                          (do-popup-context-window editor event)))
+          
+          (add-function "copy-text"
+                        (lambda (_ event)
+                          (define stx (send controller get-selected-syntax))
+                          (send the-clipboard set-clipboard-string
+                                (if stx 
+                                    (format "~s" (syntax-object->datum stx))
+                                    "")
+                                (send event get-time-stamp))))
+          
+          (add-function "copy-syntax"
+                        (lambda (_ event)
+                          (define stx (send controller get-selected-syntax))
+                          (define t (new text%))
+                          (send t insert
+                                (new syntax-snip%
+                                     (syntax stx)))
+                          (send t select-all)
+                          (send t copy)))
+          
+          (add-function "clear-syntax-selection"
+                        (lambda (i e)
+                          (send controller select-syntax #f)))
+          
+          (add-function "show-syntax-properties"
+                        (lambda (i e)
+                          (error 'show-syntax-properties "not provided by this keymap")))
+          
+          ;; Attach to editor
+
+          (chain-to-keymap (send editor get-keymap) #t)
+          (send editor set-keymap this)
+          
+          (define/public (get-controller) controller)
+          
+          (define/private (do-popup-context-window editor event)
+            (define-values (x y)
+              (send editor dc-location-to-editor-location
+                    (send event get-x)
+                    (send event get-y)))
+            (define admin (send editor get-admin))
+            (send admin popup-menu context-menu x y))))))
   )

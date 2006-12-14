@@ -489,10 +489,11 @@
          (parameterize ((subterms-table subterms))
            (match (seek d)
              [(and (struct error-wrap (exn tag inner)) ew)
-              (values ew (deriv-e2 inner))]
+              (values ew #f)
+              #;(values ew (deriv-e2 inner))]
              [deriv
               (values (rewrap d deriv) (lift/deriv-e2 deriv))])))]))
-
+  
   ;; seek : Derivation -> Derivation
   ;; Expects macro-policy, subterms-table to be set up already
   (define (seek d)
@@ -513,7 +514,7 @@
           [subterms (filter (lambda (x) (not (error? x))) subterm-derivs)])
       ;(printf "subterm paths:~n~s~n" (map s:subterm-path subterm-derivs))
       ;(printf "subterms:~n~s~n" subterm-derivs)
-      (let ([e2 (substitute-subterms e1 subterms)])
+      (let ([e2 (and (null? errors) (substitute-subterms e1 subterms))])
         (let ([d (make-p:synth e1 e2 null subterms)])
           (if (pair? errors)
               (rewrap (car errors) d)
@@ -529,7 +530,7 @@
         [(AnyQ deriv (e1 e2))
          (let ([paths (table-get (subterms-table) e1)])
            (cond [(null? paths)
-                  (for-unlucky-deriv d)]
+                  (for-unlucky-deriv/record-error d)]
                  [(null? (cdr paths))
                   (let-values ([(d _) (hide d)])
                     (list (make-s:subterm (car paths) d)))]
@@ -541,6 +542,14 @@
                   (raise (make-nonlinearity "nonlinearity in original term" paths))]))]
         [#f null]))
 
+    ;; for-unluck-deriv/record-error -> (list-of Subterm)
+    ;; Guarantee: (deriv-e1 deriv) is not in subterms table
+    (define (for-unlucky-deriv/record-error d)
+      (if (error-wrap? d)
+          (append (for-unlucky-deriv d)
+                  (list (make-s:subterm #f d)))
+          (for-unlucky-deriv d)))
+    
     ;; for-unlucky-deriv : Derivation -> (list-of Subterm)
     ;; Guarantee: (deriv-e1 deriv) is not in subterms table
     (define (for-unlucky-deriv d)
@@ -638,7 +647,7 @@
         [(AnyQ mrule (e1 e2 (and ew (struct error-wrap (_ _ _))) next))
          (list (make-s:subterm #f ew))]
 
-        
+
         [(AnyQ lift-deriv (e1 e2 first lifted-stx next))
          (>>Seek (for-deriv first)
                  (for-deriv next))]
