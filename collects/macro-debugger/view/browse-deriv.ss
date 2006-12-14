@@ -2,7 +2,7 @@
 (module browse-deriv mzscheme
   (require (lib "class.ss")
            (lib "plt-match.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "hierlist.ss" "hierlist"))
@@ -25,8 +25,9 @@
      ))
 
   (define deriv@
-    (unit/sig node^
+    (unit
       (import)
+      (export node^)
       
       ;; Node = (union Derivation Transformation)
 
@@ -76,8 +77,9 @@
       ))
   
   (define browser@
-    (unit/sig browser^
+    (unit
       (import node^)
+      (export browser^)
       
       (define callback-hierlist%
         (class hierarchical-list%
@@ -131,11 +133,11 @@
   
   
   (define app@
-    (compound-unit/sig
+    (compound-unit
       (import)
-      (link [NODE : node^ (deriv@)]
-            [BROWSER : browser^ (browser@ NODE)])
-      (export (open BROWSER))))
+      (link [((NODE node^)) deriv@]
+            [((BROWSER browser^)) browser@ NODE])
+      (export BROWSER)))
   
-  (define-values/invoke-unit/sig browser^ app@)
+  (define-values/invoke-unit app@ (export browser^))
   )

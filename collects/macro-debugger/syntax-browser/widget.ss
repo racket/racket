@@ -1,7 +1,7 @@
 
 (module widget mzscheme
   (require (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "list.ss")
@@ -17,9 +17,10 @@
            widget-context-menu-extension@)
 
   (define widget@
-    (unit/sig widget^
+    (unit
       (import keymap^)
-      
+      (export widget^)
+
       ;; syntax-widget%
       ;; A syntax-widget creates its own syntax-controller.
       (define syntax-widget%
@@ -140,9 +141,10 @@
       ))
 
   (define widget-keymap-extension@
-    (unit/sig keymap^
-      (import (pre : keymap^))
-      
+    (unit
+      (import (prefix pre: keymap^))
+      (export keymap^)
+
       (define syntax-keymap%
         (class pre:syntax-keymap%
           (init-field widget)
@@ -157,14 +159,15 @@
           ))))
   
   (define widget-context-menu-extension@
-    (unit/sig context-menu^
-      (import (pre : context-menu^))
-      
+    (unit
+      (import (prefix pre: context-menu^))
+      (export context-menu^)
+
       (define context-menu%
         (class pre:context-menu%
           (inherit-field keymap)
           (inherit-field props-menu)
-          
+
           (define/override (on-demand)
             (send props-menu set-label
                   (if (send (send keymap get-widget) props-shown?)

@@ -1,6 +1,6 @@
 
 (module browser mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            "interfaces.ss"
            "frame.ss"
            "implementation.ss")
@@ -8,12 +8,14 @@
   (provide-signature-elements snip^)
   
   (define browser@
-    (compound-unit/sig 
+    (compound-unit
       (import)
-      (link [PREFS : prefs^          (global-prefs@)]
-            [IMPL  : implementation^ (implementation@)]
-            [FRAME : browser^        (frame@ PREFS (IMPL widget))])
-      (export (open FRAME))))
-  
-  (define-values/invoke-unit/sig browser^ browser@)
+      (link [((PREFS : prefs^))    global-prefs@]
+            [((WIDGET : widget^)) implementation@]
+            [((FRAME : browser^))  frame@ PREFS WIDGET])
+      (export FRAME)))
+
+  (define-values/invoke-unit browser@
+    (import)
+    (export browser^))
   )

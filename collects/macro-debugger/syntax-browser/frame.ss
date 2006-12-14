@@ -1,7 +1,7 @@
 
 (module frame mzscheme
   (require (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "list.ss")
@@ -10,10 +10,11 @@
   (provide frame@)
   
   (define frame@
-    (unit/sig browser^
+    (unit
       (import prefs^
               widget^)
-      
+      (export browser^)
+
       ;; browse-syntax : syntax -> void
       (define (browse-syntax stx)
         (browse-syntaxes (list stx)))

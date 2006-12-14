@@ -1,7 +1,7 @@
 
 (module syntax-snip mzscheme
   (require (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            "interfaces.ss"
@@ -12,12 +12,13 @@
            snip-keymap-extension@)
   
   (define snip@
-    (unit/sig snip^
+    (unit
       (import prefs^
               keymap^
               context-menu^
               snipclass^)
-      
+      (export snip^)
+
       ;; syntax-snip : syntax -> snip
       (define (syntax-snip stx)
         (new syntax-snip% (syntax stx)))
@@ -201,9 +202,10 @@
       ))
 
   (define snip-keymap-extension@
-    (unit/sig keymap^
-      (import (pre : keymap^))
-      
+    (unit
+      (import (prefix pre: keymap^))
+      (export keymap^)
+
       (define syntax-keymap%
         (class pre:syntax-keymap%
           (init-field snip)
@@ -214,23 +216,6 @@
                         (lambda (i e)
                           (send snip show-props)))))))
   
-  #;
-  (define snip-context-menu-extension@
-    (unit/sig context-menu^
-      (import (pre : context-menu^))
-      
-      (define context-menu%
-        (class pre:context-menu%
-          (init-field snip)
-
-          (define/override (after-selection-items)
-            (super after-selection-items)
-            (new menu-item% (label "Show syntax properties")
-                 (parent this)
-                 (callback (lambda _ (send snip show-props))))
-            (void))
-          
-          (super-new (controller (send snip get-controller)))))))
   
   
   (define style:normal (make-object style-delta% 'change-normal))

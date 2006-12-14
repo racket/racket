@@ -1,7 +1,7 @@
 
 (module keymap mzscheme
   (require (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "mred.ss" "mred")
            "interfaces.ss"
            "partition.ss")
@@ -9,8 +9,9 @@
            context-menu@)
   
   (define context-menu@
-    (unit/sig context-menu^
+    (unit
       (import)
+      (export context-menu^)
 
       (define context-menu%
         (class popup-menu%
@@ -103,8 +104,9 @@
           ))))
   
   (define keymap@
-    (unit/sig keymap^
+    (unit
       (import context-menu^ snip^)
+      (export keymap^)
       
       (define syntax-keymap%
         (class keymap%

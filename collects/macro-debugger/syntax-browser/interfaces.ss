@@ -1,7 +1,7 @@
 
 (module interfaces mzscheme
   (require (lib "class.ss")
-           (lib "unitsig.ss"))
+           (lib "unit.ss"))
   (provide (all-defined))
 
   ;; Signatures
@@ -55,10 +55,6 @@
     (;; syntax-widget%
      syntax-widget%))
 
-  (define-signature implementation^
-    ([unit widget : widget^]
-     [unit snip : snip^]))
-  
   ;; Class Interfaces
 
   ;; syntax-controller<%>

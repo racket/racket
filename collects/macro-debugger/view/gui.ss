@@ -1,7 +1,7 @@
 
 (module gui mzscheme
   (require (lib "class.ss")
-           (lib "unitsig.ss")
+           (lib "unit.ss")
            (lib "list.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
@@ -32,10 +32,11 @@
   ;; Macro Stepper
 
   (define view@
-    (unit/sig view^
+    (unit
       (import prefs^
               view-base^
-              (sb : sb:widget^))
+              (prefix sb: sb:widget^))
+      (export view^)
 
       (define macro-stepper-config%
         (class object%
@@ -592,8 +593,9 @@
   ;; Extensions
   
   (define keymap-extension@
-    (unit/sig sb:keymap^
-      (import (pre : sb:keymap^))
+    (unit
+      (import (prefix pre: sb:keymap^))
+      (export sb:keymap^)
       
       (define syntax-keymap%
         (class pre:syntax-keymap%
@@ -619,8 +621,9 @@
                             (refresh))))))))
   
   (define context-menu-extension@
-    (unit/sig sb:context-menu^
-      (import (pre : sb:context-menu^))
+    (unit
+      (import (prefix pre: sb:context-menu^))
+      (export sb:context-menu^)
       
       (define context-menu%
         (class pre:context-menu%
@@ -658,9 +661,10 @@
           (super-new)))))
   
   (define browser-extension@
-    (unit/sig sb:widget^
-      (import (pre : sb:widget^)
+    (unit
+      (import (prefix pre: sb:widget^)
               sb:keymap^)
+      (export sb:widget^)
       
       (define syntax-widget%
         (class pre:syntax-widget%
@@ -676,37 +680,35 @@
   ;; Linking
   
   (define context-menu@
-    (compound-unit/sig
+    (compound-unit
       (import)
-      (link [SB:MENU : sb:context-menu^ (sb:widget-context-menu@)]
-            [V:MENU : sb:context-menu^ (context-menu-extension@ SB:MENU)])
-      (export (open V:MENU))))
+      (link [((SB:MENU : sb:context-menu^)) sb:widget-context-menu@]
+            [((V:MENU : sb:context-menu^)) context-menu-extension@ SB:MENU])
+      (export V:MENU)))
   
   (define keymap@
-    (compound-unit/sig
+    (compound-unit
       (import [MENU : sb:context-menu^]
               [SNIP : sb:snip^])
-      (link [SB:KEYMAP : sb:keymap^ (sb:widget-keymap@ MENU SNIP)]
-            [V:KEYMAP : sb:keymap^ (keymap-extension@ SB:KEYMAP)])
-      (export (open V:KEYMAP))))
-  
+      (link [((SB:KEYMAP : sb:keymap^)) sb:widget-keymap@ MENU SNIP]
+            [((V:KEYMAP : sb:keymap^)) keymap-extension@ SB:KEYMAP])
+      (export V:KEYMAP)))
+
   (define widget@
-    (compound-unit/sig
-      (import [KEYMAP : sb:keymap^]
-              [MENU : sb:context-menu^])
-      (link [SB:WIDGET : sb:widget^ (sb:widget@ KEYMAP)]
-            [V:WIDGET : sb:widget^ (browser-extension@ SB:WIDGET KEYMAP)])
-      (export (open V:WIDGET))))
+    (compound-unit
+      (import [KEYMAP : sb:keymap^])
+      (link [((SB:WIDGET : sb:widget^)) sb:widget@ KEYMAP]
+            [((V:WIDGET : sb:widget^)) browser-extension@ SB:WIDGET KEYMAP])
+      (export V:WIDGET)))
   
   (define pre-stepper@
-    (compound-unit/sig
+    (compound-unit
       (import [BASE : view-base^])
-      (link [PREFS : prefs^ (prefs@)]
-            [MENU : sb:context-menu^ (context-menu@)]
-            [KEYMAP : sb:keymap^ (keymap@ MENU SNIP)]
-            [SNIP : sb:snip^ (sb:global-snip@)]
-            [WIDGET : sb:widget^ (widget@ KEYMAP MENU)]
-            [VIEW : view^ (view@ PREFS BASE WIDGET)])
-      (export (open VIEW))))
-  
+      (link [((PREFS : prefs^)) prefs@]
+            [((MENU : sb:context-menu^)) context-menu@]
+            [((KEYMAP : sb:keymap^)) keymap@ MENU SNIP]
+            [((SNIP : sb:snip^)) sb:global-snip@]
+            [((WIDGET : sb:widget^)) widget@ KEYMAP]
+            [((VIEW : view^)) view@ PREFS BASE WIDGET])
+      (export VIEW)))
   )

@@ -3,10 +3,6 @@
   (require (lib "class.ss")
            (lib "list.ss")
            (lib "unit.ss")
-           (only (lib "unitsig.ss") 
-                 unit/sig 
-                 compound-unit/sig
-                 define-values/invoke-unit/sig)
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "tool.ss" "drscheme")
@@ -19,28 +15,20 @@
            (prefix sb: "syntax-browser/embed.ss"))
 
   (define view-base/tool@
-    (unit/sig view:view-base^
-        (import)
+    (unit
+      (import)
+      (export view:view-base^)
       (define base-frame%
         (frame:standard-menus-mixin frame:basic%))))
 
   (define stepper@
-    (compound-unit/sig
+    (compound-unit
       (import)
-      (link [BASE : view:view-base^ (view-base/tool@)]
-            [STEPPER : view:view^ (view:pre-stepper@ BASE)])
-      (export (open STEPPER))))
+      (link [((BASE : view:view-base^)) view-base/tool@]
+            [((STEPPER : view:view^)) view:pre-stepper@ BASE])
+      (export STEPPER)))
 
-  #;(define stepper@
-      (compound-unit/sig
-        (import)
-        (link (PREFS : view:prefs^ (view:prefs@))
-              (SB   : sb:implementation^ (sb:implementation@))
-              (BASE : view:view-base^ (view-base/tool@))
-              (VIEW : view:view^ (view:view@ PREFS BASE SB)))
-        (export (open VIEW))))
-  
-  (define-values/invoke-unit/sig view:view^ stepper@)
+  (define-values/invoke-unit stepper@ (import) (export view:view^))
 
   (provide tool@)
 

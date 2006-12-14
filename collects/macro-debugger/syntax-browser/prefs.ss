@@ -1,6 +1,6 @@
 
 (module prefs mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "framework.ss" "framework")
            "interfaces.ss")
   (provide prefs@)
@@ -14,8 +14,9 @@
            [(newval) (preferences:set 'prop newval)]))]))
 
   (define prefs@
-    (unit/sig prefs^
+    (unit
       (import)
+      (export prefs^)
       
       (preferences:set-default 'SyntaxBrowser:Width 700 number?)
       (preferences:set-default 'SyntaxBrowser:Height 600 number?)

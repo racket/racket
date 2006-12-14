@@ -1,6 +1,6 @@
 
 (module view mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            "interfaces.ss"
@@ -8,15 +8,19 @@
   (provide (all-defined))
 
   (define view-base@
-    (unit/sig view-base^
+    (unit
       (import)
+      (export view-base^)
+
       (define base-frame%
         (frame:standard-menus-mixin (frame:basic-mixin frame%)))))
 
-  (define-values/invoke-unit/sig view^
-    (compound-unit/sig
+  (define-values/invoke-unit
+    (compound-unit
       (import)
-      (link [BASE : view-base^ (view-base@)]
-            [STEPPER : view^ (pre-stepper@ BASE)])
-      (export (open STEPPER))))
+      (link [((BASE : view-base^)) view-base@]
+            [((STEPPER : view^)) pre-stepper@ BASE])
+      (export STEPPER))
+    (import)
+    (export view^))
   )
