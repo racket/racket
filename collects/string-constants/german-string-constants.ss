@@ -276,7 +276,11 @@
  ;;; preferences
  (preferences "Einstellungen")
  (error-saving-preferences "Fehler beim Speichern der Einstellungen für ~a")
+ (error-saving-preferences-title "Fehler beim Speichern der Einstellungen")
  (error-reading-preferences "Fehler beim Lesen der Einstellungen")
+ (prefs-file-locked "Die Datei mit den Einstellungen ist gesperrt (weil die Datei ~a existiert), weshalb die Änderungen an den Einstellungen nicht gespeichert werden konnten. Änderung an den Einstellungen rückgängig machen?")
+ (try-again "Nochmal versuchen") ;; button label
+ (prefs-file-still-locked "Die Datei mit den Einstellungen ist immer noch gesperrt (weil die Datei ~a existiert), weshalb die Änderungen an den Einstellungen nicht gespeichert werden konnten.")
  (scheme-prefs-panel-label "Scheme")
  (warnings-prefs-panel-label "Warnmeldungen")
  (editor-prefs-panel-label "Editieren")
