@@ -274,7 +274,7 @@
                          (unless doc.txt
                            (warn "Package's info.ss does not contain a doc.txt entry. Without a doc.txt entry, the package will not have any documentation on planet.plt-scheme.org."))]
                         [html-docs
-                         string?
+                         (lambda (s) (and (list? s) (andmap string? s)))
                          (announce "HTML documentation: yes\n")]
                         [homepage 
                          string?
