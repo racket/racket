@@ -1294,6 +1294,8 @@
               (string->symbol (apply string-append (name-func s)))
               _TYPE-stx))
            slot-names))
+    (define (safe-id=? x y)
+      (and (identifier? x) (identifier? y) (module-identifier=? x y)))
     (with-syntax
         ([has-super?           has-super?]
          [name-string          name]
@@ -1319,8 +1321,8 @@
                                (ids (lambda (s) `(,s"-offset"))))])
       (with-syntax ([get-super-info
                      ;; the 1st-type might be a pointer to this type
-                     (if (or (module-identifier=? 1st-type #'_TYPE-pointer/null)
-                             (module-identifier=? 1st-type #'_TYPE-pointer))
+                     (if (or (safe-id=? 1st-type #'_TYPE-pointer/null)
+                             (safe-id=? 1st-type #'_TYPE-pointer))
                        #'(values #f '() #f #f #f #f)
                        #`(cstruct-info #,1st-type
                            (lambda () (values #f '() #f #f #f #f))))])
