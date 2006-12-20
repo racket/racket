@@ -250,7 +250,7 @@ static Scheme_Type mred_eventspace_hop_type;
 static Scheme_Object *def_dispatch;
 int mred_ps_setup_param;
 #ifdef NEED_HET_PARAM
-int mred_het_param;
+Scheme_Object *mred_het_key;
 #endif
 
 typedef struct Nested_Wait {
@@ -778,10 +778,6 @@ static MrEdContext *MakeContext(MrEdContext *c)
 				mred_eventspace_param, 
 				(Scheme_Object *)c);
 
-#ifdef NEED_HET_PARAM
-  config = scheme_extend_config(config, mred_het_param, scheme_false);
-#endif
-
   c->main_config = config;
   cells = scheme_inherit_cells(NULL);
   c->main_cells = cells;
@@ -1037,12 +1033,12 @@ int mred_current_thread_is_handler(void *ctx)
 int mred_in_restricted_context()
 {
 #ifdef NEED_HET_PARAM
-  /* see wxHiEventTrampoline for info on mred_het_param: */
+  /* see wxHiEventTrampoline for info on mred_het_key: */
   Scheme_Object *v;
   if (!scheme_current_thread) 
     return 1;
-  v = scheme_get_param(scheme_current_thread->init_config, mred_het_param);
-  if (SCHEME_TRUEP(v))
+  v = scheme_extract_one_cc_mark(NULL, mred_het_key);
+  if (v && SCHEME_BOX_VAL(v))
     return 1;
 #endif
   return 0;
@@ -1219,11 +1215,11 @@ static Scheme_Object *MrEdDoNextEvent(MrEdContext *c, wxDispatch_Check_Fun alt, 
   int restricted = 0;
 
 #ifdef NEED_HET_PARAM
-  /* see wxHiEventTrampoline for info on mred_het_param: */
+  /* see wxHiEventTrampoline for info on mred_het_key: */
   {
     Scheme_Object *v;
-    v = scheme_get_param(scheme_current_thread->init_config, mred_het_param);
-    if (SCHEME_TRUEP(v))
+    v = scheme_extract_one_cc_mark(NULL, mred_het_key);
+    if (v && SCHEME_BOX_VAL(v))
       restricted = 1;
   }
 #endif
@@ -1335,11 +1331,11 @@ int MrEdEventReady(MrEdContext *c)
   int restricted = 0;
 
 #ifdef NEED_HET_PARAM
-  /* see wxHiEventTrampoline for info on mred_het_param: */
+  /* see wxHiEventTrampoline for info on mred_het_key: */
   {
     Scheme_Object *v;
-    v = scheme_get_param(scheme_current_thread->init_config, mred_het_param);
-    if (SCHEME_TRUEP(v))
+    v = scheme_extract_one_cc_mark(NULL, mred_het_key);
+    if (v && SCHEME_BOX_VAL(v))
       restricted = 1;
   }
 #endif
@@ -3271,7 +3267,8 @@ wxFrame *MrEdApp::OnInit(void)
   mred_event_dispatch_param = scheme_new_param();
   mred_ps_setup_param = scheme_new_param();
 #ifdef NEED_HET_PARAM
-  mred_het_param = scheme_new_param();
+  wxREGGLOB(mred_het_key);
+  mred_het_key = scheme_make_symbol("het"); /* uninterned */
 #endif
 
   wxInitSnips(); /* and snip classes */
@@ -3608,50 +3605,26 @@ extern "C" {
 
 static unsigned long get_deeper_base();
 
-static void pre_het(void *d)
-{
-  HiEventTramp *het = (HiEventTramp *)d;
-
-  het->old_param = scheme_get_param(het->config, mred_het_param);
-  scheme_set_param(het->config, mred_het_param, scheme_make_raw_pair((Scheme_Object *)het, scheme_null));
-}
-
-static Scheme_Object *act_het(void *d)
-{
-  HiEventTramp * het = (HiEventTramp *)d;
-  HiEventTrampProc wha_f = het->wrap_het_around_f;
-
-  het->val = wha_f(het->wha_data);
-
-  return scheme_void;
-}
-
-static void post_het(void *d)
-{
-  HiEventTramp *het = (HiEventTramp *)d;
-
-  scheme_set_param(het->config, mred_het_param, het->old_param);
-}
-
-int wxHiEventTrampoline(int (*wha_f)(void *), void *wha_data)
+int wxHiEventTrampoline(int (*_wha_f)(void *), void *wha_data)
 {
   HiEventTramp *het;
+  HiEventTrampProc wha_f = (HiEventTrampProc)_wha_f;
+  Scheme_Cont_Frame_Data cframe;
+  Scheme_Object *bx;
 
   het = new WXGC_PTRS HiEventTramp;
-  het->wrap_het_around_f = wha_f;
-  het->wha_data = wha_data;
-  het->val = 0;
-  het->config = scheme_current_thread->init_config;
+
+  bx = scheme_make_raw_pair((Scheme_Object *)het, NULL);
+
+  scheme_push_continuation_frame(&cframe);
+  scheme_set_cont_mark(mred_het_key, bx);
 
   het->progress_cont = scheme_new_jmpupbuf_holder();
 
   scheme_init_jmpup_buf(&het->progress_cont->buf);
 
   scheme_start_atomic();
-  scheme_dynamic_wind(CAST_DW_PRE pre_het,
-		      CAST_DW_RUN act_het,
-		      CAST_DW_POST post_het,
-		      NULL, het);
+  het->val = wha_f(wha_data);
 
   if (het->timer_on) {
     het->timer_on = 0;
@@ -3666,6 +3639,7 @@ int wxHiEventTrampoline(int (*wha_f)(void *), void *wha_data)
        point might be trying to suspend the thread (and that should
        complete before any swap). */
     scheme_end_atomic_no_swap();
+    SCHEME_CAR(bx) = NULL;
     het->in_progress = 0;
     het->progress_is_resumed = 1;
     if (!scheme_setjmp(het->progress_base)) {
@@ -3678,9 +3652,10 @@ int wxHiEventTrampoline(int (*wha_f)(void *), void *wha_data)
     scheme_end_atomic();
   }
 
+  scheme_pop_continuation_frame(&cframe);
+
   het->old_param = NULL;
   het->progress_cont = NULL;
-  het->wha_data = NULL;
   het->do_data = NULL;
 
   return het->val;
@@ -3692,7 +3667,7 @@ static void suspend_het_progress(void)
 
   {
     Scheme_Object *v;
-    v = scheme_get_param(scheme_current_thread->init_config, mred_het_param);
+    v = scheme_extract_one_cc_mark(NULL, mred_het_key);
     het = (HiEventTramp *)SCHEME_CAR(v);
   }
 
@@ -3770,8 +3745,8 @@ int mred_het_run_some(HiEventTrampProc do_f, void *do_data)
 
   {
     Scheme_Object *v;
-    v = scheme_get_param(scheme_current_thread->init_config, mred_het_param);
-    if (SCHEME_RPAIRP(v))
+    v = scheme_extract_one_cc_mark(NULL, mred_het_key);
+    if (v)
       het = (HiEventTramp *)SCHEME_CAR(v);
     else
       het = NULL;

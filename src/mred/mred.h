@@ -134,8 +134,6 @@ typedef int (*HiEventTrampProc)(void *);
 
 class HiEventTramp {
 public:
-  HiEventTrampProc wrap_het_around_f;
-  void *wha_data;
   HiEventTrampProc do_f;
   void *do_data;
   int val;
@@ -156,7 +154,7 @@ public:
 
 int mred_het_run_some(HiEventTrampProc do_f, void *do_data);
 
-extern int mred_het_param;
+extern Scheme_Object *mred_het_key;
 
 int wxHiEventTrampoline(HiEventTrampProc wha_f, void *wha_data);
 
