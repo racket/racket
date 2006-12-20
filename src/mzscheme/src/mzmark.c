@@ -884,6 +884,7 @@ static int cont_proc_MARK(void *p) {
   gcMARK(c->dw);
   gcMARK(c->prompt_tag);
   gcMARK(c->meta_continuation);
+  gcMARK(c->common_dw);
   gcMARK(c->save_overflow);
   gcMARK(c->runstack_copied);
   gcMARK(c->runstack_owner);
@@ -898,8 +899,11 @@ static int cont_proc_MARK(void *p) {
   MARK_jmpup(&c->buf);
   MARK_cjs(&c->cjs);
   MARK_stack_state(&c->ss);
+  gcMARK(c->barrier_prompt);
   gcMARK(c->runstack_start);
   gcMARK(c->runstack_saved);
+
+  gcMARK(c->prompt_id);
 
   /* These shouldn't actually persist across a GC, but
      just in case... */
@@ -907,6 +911,7 @@ static int cont_proc_MARK(void *p) {
   gcMARK(c->resume_to);
   gcMARK(c->use_next_cont);
   gcMARK(c->extra_marks);
+  gcMARK(c->shortcut_prompt);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont));
@@ -918,6 +923,7 @@ static int cont_proc_FIXUP(void *p) {
   gcFIXUP(c->dw);
   gcFIXUP(c->prompt_tag);
   gcFIXUP(c->meta_continuation);
+  gcFIXUP(c->common_dw);
   gcFIXUP(c->save_overflow);
   gcFIXUP(c->runstack_copied);
   gcFIXUP(c->runstack_owner);
@@ -932,8 +938,11 @@ static int cont_proc_FIXUP(void *p) {
   FIXUP_jmpup(&c->buf);
   FIXUP_cjs(&c->cjs);
   FIXUP_stack_state(&c->ss);
+  gcFIXUP(c->barrier_prompt);
   gcFIXUP(c->runstack_start);
   gcFIXUP(c->runstack_saved);
+
+  gcFIXUP(c->prompt_id);
 
   /* These shouldn't actually persist across a GC, but
      just in case... */
@@ -941,6 +950,7 @@ static int cont_proc_FIXUP(void *p) {
   gcFIXUP(c->resume_to);
   gcFIXUP(c->use_next_cont);
   gcFIXUP(c->extra_marks);
+  gcFIXUP(c->shortcut_prompt);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont));
@@ -1090,6 +1100,7 @@ static int escaping_cont_proc_MARK(void *p) {
   gcMARK(c->native_trace);
 #endif
 
+  gcMARK(c->barrier_prompt);
   MARK_stack_state(&c->envss);
 
   return
@@ -1103,6 +1114,7 @@ static int escaping_cont_proc_FIXUP(void *p) {
   gcFIXUP(c->native_trace);
 #endif
 
+  gcFIXUP(c->barrier_prompt);
   FIXUP_stack_state(&c->envss);
 
   return
@@ -1574,7 +1586,6 @@ static int thread_val_MARK(void *p) {
   gcMARK(pr->runstack_swapped);
   pr->spare_runstack = NULL; /* just in case */
 
-  gcMARK(pr->barrier_prompt);
   gcMARK(pr->meta_prompt);
   gcMARK(pr->meta_continuation);
   
@@ -1664,7 +1675,6 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->runstack_swapped);
   pr->spare_runstack = NULL; /* just in case */
 
-  gcFIXUP(pr->barrier_prompt);
   gcFIXUP(pr->meta_prompt);
   gcFIXUP(pr->meta_continuation);
   
@@ -1740,8 +1750,9 @@ static int prompt_val_SIZE(void *p) {
 static int prompt_val_MARK(void *p) {
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcMARK(pr->boundary_overflow_id);
-  gcMARK(pr->boundary_dw_id);
   gcMARK(pr->runstack_boundary_start);
+  gcMARK(pr->tag);
+  gcMARK(pr->id);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Prompt));
 }
@@ -1749,8 +1760,9 @@ static int prompt_val_MARK(void *p) {
 static int prompt_val_FIXUP(void *p) {
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcFIXUP(pr->boundary_overflow_id);
-  gcFIXUP(pr->boundary_dw_id);
   gcFIXUP(pr->runstack_boundary_start);
+  gcFIXUP(pr->tag);
+  gcFIXUP(pr->id);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Prompt));
 }

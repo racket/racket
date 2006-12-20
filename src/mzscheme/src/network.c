@@ -2286,15 +2286,15 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
   Scheme_Object *result[4];
   int with_ports = 0;
 
-  if (SCHEME_OUTPORTP(argv[0])) {
+  if (SCHEME_OUTPUT_PORTP(argv[0])) {
     Scheme_Output_Port *op;
-    op = (Scheme_Output_Port *)argv[0];
+    op = scheme_output_port_record(argv[0]);
     if (op->sub_type == scheme_tcp_output_port_type)
       tcp = op->port_data;
     closed = op->closed;
-  } else if (SCHEME_INPORTP(argv[0])) {
+  } else if (SCHEME_INPUT_PORTP(argv[0])) {
     Scheme_Input_Port *ip;
-    ip = (Scheme_Input_Port *)argv[0];
+    ip = scheme_input_port_record(argv[0]);
     if (ip->sub_type == scheme_tcp_input_port_type)
       tcp = ip->port_data;
     closed = ip->closed;
@@ -2375,9 +2375,9 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
 static Scheme_Object *tcp_abandon_port(int argc, Scheme_Object *argv[])
 {
 #ifdef USE_TCP
-  if (SCHEME_OUTPORTP(argv[0])) {
+  if (SCHEME_OUTPUT_PORTP(argv[0])) {
     Scheme_Output_Port *op;
-    op = (Scheme_Output_Port *)argv[0];
+    op = scheme_output_port_record(argv[0]);
     if (op->sub_type == scheme_tcp_output_port_type) {
       if (!op->closed) {
 	((Scheme_Tcp *)op->port_data)->flags |= MZ_TCP_ABANDON_OUTPUT;
@@ -2385,11 +2385,11 @@ static Scheme_Object *tcp_abandon_port(int argc, Scheme_Object *argv[])
       }
       return scheme_void;
     }
-  } else if (SCHEME_INPORTP(argv[0])) {
+  } else if (SCHEME_INPUT_PORTP(argv[0])) {
     /* Abandon is not really useful on input ports from the Schemer's
        perspective, but it's here for completeness. */
     Scheme_Input_Port *ip;
-    ip = (Scheme_Input_Port *)argv[0];
+    ip = scheme_input_port_record(argv[0]);
     if (ip->sub_type == scheme_tcp_input_port_type) {
       if (!ip->closed) {
 	((Scheme_Tcp *)ip->port_data)->flags |= MZ_TCP_ABANDON_INPUT;
@@ -2408,12 +2408,16 @@ static Scheme_Object *tcp_abandon_port(int argc, Scheme_Object *argv[])
 static Scheme_Object *tcp_port_p(int argc, Scheme_Object *argv[])
 {
 #ifdef USE_TCP
-  if (SCHEME_OUTPORTP(argv[0])) {
-    if (((Scheme_Output_Port *)argv[0])->sub_type == scheme_tcp_output_port_type) {
+  if (SCHEME_OUTPUT_PORTP(argv[0])) {
+    Scheme_Output_Port *op;
+    op = scheme_output_port_record(argv[0]);
+    if (op->sub_type == scheme_tcp_output_port_type) {
       return scheme_true;
     }
-  } else if (SCHEME_INPORTP(argv[0])) {
-    if (((Scheme_Input_Port *)argv[0])->sub_type == scheme_tcp_input_port_type) {
+  } else if (SCHEME_INPUT_PORTP(argv[0])) {
+    Scheme_Input_Port *ip;
+    ip = scheme_input_port_record(argv[0]);
+    if (ip->sub_type == scheme_tcp_input_port_type) {
       return scheme_true;
     }
   }
@@ -2462,18 +2466,18 @@ int scheme_get_port_socket(Scheme_Object *p, long *_s)
   tcp_t s = 0;
   int s_ok = 0;
 
-  if (SCHEME_OUTPORTP(p)) {
+  if (SCHEME_OUTPUT_PORTP(p)) {
     Scheme_Output_Port *op;
-    op = (Scheme_Output_Port *)p;
+    op = scheme_output_port_record(p);
     if (op->sub_type == scheme_tcp_output_port_type) {
       if (!op->closed) {
 	s = ((Scheme_Tcp *)op->port_data)->tcp;
 	s_ok = 1;
       }
     }
-  } else if (SCHEME_INPORTP(p)) {
+  } else if (SCHEME_INPUT_PORTP(p)) {
     Scheme_Input_Port *ip;
-    ip = (Scheme_Input_Port *)p;
+    ip = scheme_input_port_record(p);
     if (ip->sub_type == scheme_tcp_input_port_type) {
       if (!ip->closed) {
 	s = ((Scheme_Tcp *)ip->port_data)->tcp;

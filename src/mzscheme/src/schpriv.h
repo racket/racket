@@ -92,6 +92,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 
 extern long scheme_total_gc_time;
 extern int scheme_cont_capture_count;
+extern int scheme_continuation_application_count;
 
 int scheme_num_types(void);
 
@@ -266,6 +267,8 @@ extern Scheme_Object *scheme_default_prompt_tag;
 
 extern Scheme_Object *scheme_system_idle_channel;
 
+extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
+
 /*========================================================================*/
 /*                    thread state and maintenance                        */
 /*========================================================================*/
@@ -402,6 +405,7 @@ struct Scheme_Config {
 };
 
 extern Scheme_Object *scheme_parameterization_key;
+extern Scheme_Object *scheme_exn_handler_key;
 extern Scheme_Object *scheme_break_enabled_key;
 
 extern void scheme_flatten_config(Scheme_Config *c);
@@ -940,7 +944,6 @@ typedef struct Scheme_Stack_State {
   long runstack_offset;
   MZ_MARK_POS_TYPE cont_mark_pos;
   MZ_MARK_STACK_TYPE cont_mark_stack;
-  struct Scheme_Prompt *barrier_prompt;
 } Scheme_Stack_State;
 
 typedef struct Scheme_Dynamic_Wind {
@@ -952,29 +955,25 @@ typedef struct Scheme_Dynamic_Wind {
   void (*pre)(void *);
   void (*post)(void *);
   mz_jmp_buf *saveerr;
-  int next_meta; /* amount to move forward in the meta-continuation chain */
+  int next_meta; /* amount to move forward in the meta-continuation chain, starting with next */
   struct Scheme_Stack_State envss;
   struct Scheme_Dynamic_Wind *prev;
 } Scheme_Dynamic_Wind;
 
 typedef struct Scheme_Cont {
   Scheme_Object so;
-  short composable;
-  Scheme_Object *value; /* Set just before jump */
-  struct Scheme_Overflow *resume_to; /* Set just before jump */
-  struct Scheme_Cont *use_next_cont; /* Set just before jump */
-  int common_dw_depth; /* Set just before jump; id common dw record */
-  Scheme_Object *extra_marks; /* Set just before jump; vector extra keys and marks to add to meta-cont */
+  char composable, has_prompt_dw;
   struct Scheme_Meta_Continuation *meta_continuation;
   Scheme_Jumpup_Buf buf;
   Scheme_Dynamic_Wind *dw;
+  int next_meta;
   Scheme_Continuation_Jump_State cjs;
   Scheme_Stack_State ss;
+  struct Scheme_Prompt *barrier_prompt; /* NULL if no barrier between cont and prompt */
   Scheme_Object **runstack_start;
   long runstack_size;
   Scheme_Saved_Stack *runstack_saved;
   Scheme_Object *prompt_tag;
-  int prompt_depth;
   mz_jmp_buf *prompt_buf; /* needed for meta-prompt */
   MZ_MARK_POS_TYPE meta_tail_pos; /* to recognize opportunity for meta-tail calls */
   MZ_MARK_POS_TYPE cont_mark_pos_bottom; /* to splice cont mark values with meta-cont */
@@ -985,6 +984,7 @@ typedef struct Scheme_Cont {
   Scheme_Thread **cont_mark_stack_owner;
   long cont_mark_shareable, cont_mark_offset;
   void *stack_start;
+  Scheme_Object *prompt_id; /* allows direct-jump optimization */
   Scheme_Config *init_config;
   Scheme_Object *init_break_cell;
 #ifdef MZ_USE_JIT
@@ -992,11 +992,22 @@ typedef struct Scheme_Cont {
 #endif
   struct Scheme_Overflow *save_overflow;
   mz_jmp_buf *savebuf; /* save old error buffer here */
+
+  /* Arguments passed to a continuation invocation to the continuation restorer: */
+  Scheme_Object *value; /* argument(s) to continuation */
+  struct Scheme_Overflow *resume_to; /* meta-continuation return */
+  struct Scheme_Cont *use_next_cont; /* more meta-continuation return */
+  int common_dw_depth; /* id for common dw record */
+  Scheme_Dynamic_Wind *common_dw; /* shared part with source cont */
+  int common_next_meta; /* for common_dw */
+  Scheme_Object *extra_marks; /* vector of extra keys and marks to add to meta-cont */
+  struct Scheme_Prompt *shortcut_prompt; /* prompt common to save and restore enabling shortcut */
 } Scheme_Cont;
 
 typedef struct Scheme_Escaping_Cont {
   Scheme_Object so;
   struct Scheme_Stack_State envss;
+  struct Scheme_Prompt *barrier_prompt;
 #ifdef MZ_USE_JIT
   Scheme_Object *native_trace;
 #endif
@@ -1009,12 +1020,10 @@ int scheme_escape_continuation_ok(Scheme_Object *);
 
 #define scheme_save_env_stack_w_thread(ss, p) \
     (ss.runstack_offset = MZ_RUNSTACK - MZ_RUNSTACK_START, \
-     ss.cont_mark_stack = MZ_CONT_MARK_STACK, ss.cont_mark_pos = MZ_CONT_MARK_POS, \
-     ss.barrier_prompt = p->barrier_prompt)
+     ss.cont_mark_stack = MZ_CONT_MARK_STACK, ss.cont_mark_pos = MZ_CONT_MARK_POS)
 #define scheme_restore_env_stack_w_thread(ss, p) \
     (MZ_RUNSTACK = MZ_RUNSTACK_START + ss.runstack_offset, \
-     MZ_CONT_MARK_STACK = ss.cont_mark_stack, MZ_CONT_MARK_POS = ss.cont_mark_pos, \
-     p->barrier_prompt = ss.barrier_prompt)
+     MZ_CONT_MARK_STACK = ss.cont_mark_stack, MZ_CONT_MARK_POS = ss.cont_mark_pos)
 #define scheme_save_env_stack(ss) \
     scheme_save_env_stack_w_thread(ss, scheme_current_thread)
 #define scheme_restore_env_stack(ss) \
@@ -1052,6 +1061,7 @@ typedef struct Scheme_Meta_Continuation {
   char cm_caches; /* cached info in copied cm */
   char cm_shared; /* cm is shared, so copy before setting cache entries */
   int copy_after_captured; /* for mutating a meta-continuation in set_cont_stack_mark */
+  int depth;
   Scheme_Object *prompt_tag;
   /* The C stack: */
   Scheme_Overflow *overflow;
@@ -1068,15 +1078,15 @@ typedef struct Scheme_Meta_Continuation {
 
 typedef struct Scheme_Prompt {
   Scheme_Object so;
-  char is_barrier, is_captured;
-  int depth;
+  char is_barrier;
+  Scheme_Object *tag;
+  Scheme_Object *id;                  /* created as needed; allows direct-jump optimization for cont app */
   void *stack_boundary;               /* where to stop copying the C stack */
   void *boundary_overflow_id;         /* indicates the C stack segment */
   MZ_MARK_STACK_TYPE mark_boundary;   /* where to stop copying cont marks */
   MZ_MARK_POS_TYPE boundary_mark_pos; /* mark position of prompt */
   Scheme_Object **runstack_boundary_start; /* which stack has runstack_boundary */
   long runstack_boundary_offset;      /* where to stop copying the Scheme stack */
-  void *boundary_dw_id;               /* where to stop copying the dynamic-wind stack */
   mz_jmp_buf *prompt_buf;             /* to jump directly to the prompt */
   long runstack_size;                 /* needed for restore */
 } Scheme_Prompt;
@@ -1087,12 +1097,23 @@ typedef struct Scheme_Prompt {
 Scheme_Object *scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, 
                                                     Scheme_Object *key,
                                                     Scheme_Object *prompt_tag,
-                                                    Scheme_Meta_Continuation **meta_cont);
+                                                    Scheme_Meta_Continuation **_meta_cont,
+                                                    MZ_MARK_POS_TYPE *_pos);
 Scheme_Object *scheme_compose_continuation(Scheme_Cont *c, int num_rands, Scheme_Object *value);
 Scheme_Overflow *scheme_get_thread_end_overflow(void);
 void scheme_end_current_thread(void);
 void scheme_ensure_dw_id(Scheme_Dynamic_Wind *dw);
-void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post, int mc_depth);
+void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post, int mc_depth, struct Scheme_Cont *recheck);
+
+void scheme_drop_prompt_meta_continuations(Scheme_Object *prompt_tag);
+
+struct Scheme_Prompt *scheme_get_barrier_prompt(struct Scheme_Meta_Continuation **_meta_cont,
+                                                MZ_MARK_POS_TYPE *_pos);
+int scheme_is_cm_deeper(struct Scheme_Meta_Continuation *m1, MZ_MARK_POS_TYPE p1,
+                        struct Scheme_Meta_Continuation *m2, MZ_MARK_POS_TYPE p2);
+void scheme_recheck_prompt_and_barrier(struct Scheme_Cont *c);
+
+void scheme_about_to_move_C_stack(void);
 
 /*========================================================================*/
 /*                         semaphores and locks                           */
@@ -1850,7 +1871,8 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 #define DEFINE_FOR_SYNTAX_EXPD 9
 #define REF_EXPD           10
 #define APPVALS_EXPD       11
-#define _COUNT_EXPD_       12
+#define SPLICE_EXPD        12
+#define _COUNT_EXPD_       13
 
 #define scheme_register_syntax(i, fo, fr, fv, fe, fj, cl, sh, pa)        \
      (scheme_syntax_optimizers[i] = fo, \

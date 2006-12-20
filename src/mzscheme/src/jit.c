@@ -120,6 +120,7 @@ static void *struct_pred_branch_code;
 static void *struct_get_code;
 static void *bad_app_vals_target;
 static void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
+static void *finish_tail_call_code, *finish_tail_call_fixup_code;
 
 typedef struct {
   MZTAG_IF_REQUIRED
@@ -1280,7 +1281,9 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
 }
 
 static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs)
-/* If num_rands < 0, then argc is in LOCAL2 and arguments are already below RUNSTACK_BASE */
+/* If num_rands < 0, then argc is in LOCAL2 and arguments are already below RUNSTACK_BASE.
+   If direct_native == 2, then some arguments are already in place (shallower in the runstack
+   than the arguments to move). */
 {
   int i;
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref4, *ref5;
@@ -1389,6 +1392,23 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   } else {
     mz_get_local_p(JIT_R0, JIT_LOCAL2);    
   }
+  /* Since we've overwritten JIT_RUNSTACK, if this is not shared
+     code, and if this is 3m, then the runstack no longer
+     has a pointer to the closure for this code. To ensure that
+     an appropriate return point exists, jump to static code
+     for the rest. (This is the slow path, anyway.) */
+   __END_SHORT_JUMPS__(num_rands < 100);
+   if (direct_native > 1) {
+     (void)jit_jmpi(finish_tail_call_fixup_code);
+   } else {
+     (void)jit_jmpi(finish_tail_call_code);
+   }
+
+   return 1;
+}
+
+static int generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
+{
   mz_prepare(3);
   CHECK_LIMIT();
   jit_pusharg_p(JIT_RUNSTACK);
@@ -1399,13 +1419,12 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   } else {
     (void)mz_finish(_scheme_tail_apply_from_native);
   }
+  CHECK_LIMIT();
   /* Pop saved runstack val and return: */
   mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
   jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
   mz_pop_locals();
   jit_ret();
-
-  __END_SHORT_JUMPS__(num_rands < 100);
 
   return 1;
 }
@@ -4113,6 +4132,11 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  END_JIT_DATA(9);
 	}
 	break;
+      case SPLICE_EXPD:
+        {
+          scheme_signal_error("cannot JIT a top-level splice form");
+        }
+        break;
       default:
 	{
 	  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -4993,6 +5017,31 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_ret();
   CHECK_LIMIT();
 
+  /* *** app_values_tail_slow_code *** */
+  /* RELIES ON jit_prolog(3) FROM ABOVE */
+  /* Rator in V1, arguments are in thread's multiple-values cells. */
+  app_values_tail_slow_code = jit_get_ip().ptr;
+  JIT_UPDATE_THREAD_RSPTR();
+  mz_prepare(1);
+  jit_pusharg_p(JIT_V1);
+  (void)mz_finish(tail_call_with_values_from_multiple_result);
+  jit_retval(JIT_R0);
+  /* Pop saved runstack val and return: */
+  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
+  jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
+  mz_pop_locals();
+  jit_ret();  
+  CHECK_LIMIT();
+
+  /* *** finish_tail_call_[fixup_]code *** */
+  /* RELIES ON jit_prolog(3) FROM ABOVE */
+  finish_tail_call_code = jit_get_ip().ptr;
+  generate_finish_tail_call(jitter, 0);
+  CHECK_LIMIT();
+  finish_tail_call_fixup_code = jit_get_ip().ptr;
+  generate_finish_tail_call(jitter, 2);
+  CHECK_LIMIT();
+
   /* *** get_stack_pointer_code *** */
   get_stack_pointer_code = jit_get_ip().ptr;
   jit_leaf(0);
@@ -5065,21 +5114,6 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     mz_epilog(JIT_R1);
     CHECK_LIMIT();
   }
-
-  /* *** app_values_tail_slow_code *** */
-  /* Rator in V1, arguments are in thread's multiple-values cells. */
-  app_values_tail_slow_code = jit_get_ip().ptr;
-  JIT_UPDATE_THREAD_RSPTR();
-  mz_prepare(1);
-  jit_pusharg_p(JIT_V1);
-  (void)mz_finish(tail_call_with_values_from_multiple_result);
-  jit_retval(JIT_R0);
-  /* Pop saved runstack val and return: */
-  mz_get_local_p(JIT_NOT_RET, JIT_LOCAL1);
-  jit_sti_p(&scheme_current_runstack, JIT_NOT_RET);
-  mz_pop_locals();
-  jit_ret();  
-  CHECK_LIMIT();
 
   /* *** {vector,string,bytes}_{ref,set}_[check_index_]code *** */
   /* R0 is vector/string/bytes, R1 is index (Scheme number in check-index mode), 

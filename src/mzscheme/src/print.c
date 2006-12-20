@@ -2765,7 +2765,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
 
   if (!SCHEME_OUTPORTP(argv[1])) {
     scheme_wrong_type(notdisplay ? "write/recusrive" : "display/recursive",
-		      "output port", 1, argc, argv);
+		      "output-port", 1, argc, argv);
     return NULL;
   }
 

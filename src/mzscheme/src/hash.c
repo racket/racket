@@ -310,7 +310,7 @@ static Scheme_Object *do_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, 
   return val;
 }
 
-static Scheme_Object *do_hash_get(Scheme_Hash_Table *table, Scheme_Object *key)
+XFORM_NONGCING static Scheme_Object *do_hash_get(Scheme_Hash_Table *table, Scheme_Object *key)
 {
   Scheme_Object *tkey, **keys;
   hash_v_t h, h2;
@@ -364,6 +364,15 @@ Scheme_Object *scheme_hash_get(Scheme_Hash_Table *table, Scheme_Object *key)
     return NULL;
   else if (table->make_hash_indices)
     return do_hash(table, key, 0, NULL);
+  else
+    return do_hash_get(table, key);
+}
+
+Scheme_Object *scheme_eq_hash_get(Scheme_Hash_Table *table, Scheme_Object *key)
+/* Specialized to allow XFORM_NONGCING */
+{
+  if (!table->vals)
+    return NULL;
   else
     return do_hash_get(table, key);
 }

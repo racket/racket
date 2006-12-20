@@ -49,10 +49,10 @@ static void *wxbDCToBuffer(wxMediaBuffer *b, double x, double y)
 @MACRO rFALSE = return FALSE;
 @MACRO rZERO = return 0;
 
-@MACRO ubiPort[who] = (SCHEME_INPORTP({x}) ? {x} : (scheme_wrong_type(METHODNAME("editor<%>",<who>), "input port", -1, 1, &{x}), (Scheme_Object *)NULL))
-@MACRO ciPort = SCHEME_INPORTP({x})
-@MACRO uboPort[who] = (SCHEME_OUTPORTP({x}) ? {x} : (scheme_wrong_type(METHODNAME("editor<%>",<who>), "output port", -1, 1, &{x}), (Scheme_Object *)NULL))
-@MACRO coPort = SCHEME_OUTPORTP({x})
+@MACRO ubiPort[who] = (SCHEME_INPUT_PORTP({x}) ? {x} : (scheme_wrong_type(METHODNAME("editor<%>",<who>), "input port", -1, 1, &{x}), (Scheme_Object *)NULL))
+@MACRO ciPort = SCHEME_INPUT_PORTP({x})
+@MACRO uboPort[who] = (SCHEME_OUTPUT_PORTP({x}) ? {x} : (scheme_wrong_type(METHODNAME("editor<%>",<who>), "output port", -1, 1, &{x}), (Scheme_Object *)NULL))
+@MACRO coPort = SCHEME_OUTPUT_PORTP({x})
 
 @INCLUDE wxs_eds.xci
 

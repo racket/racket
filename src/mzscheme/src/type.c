@@ -355,12 +355,10 @@ static void FIXUP_cjs(Scheme_Continuation_Jump_State *cjs)
 
 static void MARK_stack_state(Scheme_Stack_State *ss)
 {
-  gcMARK(ss->barrier_prompt);
 }
 
 static void FIXUP_stack_state(Scheme_Stack_State *ss)
 {
-  gcFIXUP(ss->barrier_prompt);
 }
 
 static void MARK_jmpup(Scheme_Jumpup_Buf *buf)

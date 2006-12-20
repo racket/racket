@@ -312,7 +312,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	save = p->error_buf;
 	p->error_buf = &newbuf;
 	if (!scheme_setjmp(newbuf))
-	  scheme_eval_string_all(fa->evals_and_loads[i], fa->global_env, 0);
+	  scheme_eval_string_all_with_prompt(fa->evals_and_loads[i], fa->global_env, 0);
 	else {
 	  exit_val = 1;
 	  p->error_buf = save;
@@ -327,11 +327,11 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	if (!scheme_setjmp(newbuf)) {
 	  Scheme_Object *a[1], *m, *fn;
 	  
-	  m = scheme_eval_string("main", fa->global_env);
+	  m = scheme_eval_string_with_prompt("main", fa->global_env);
 	  fn = scheme_make_locale_string(fa->evals_and_loads[i]);
 	  SCHEME_SET_CHAR_STRING_IMMUTABLE(fn);
 	  a[0] = scheme_make_pair(fn, scheme_vector_to_list(fa->main_args));
-	  (void)scheme_apply(m, 1, a);
+	  (void)scheme_apply_multi_with_prompt(m, 1, a);
 	} else {
 	  exit_val = 1;
 	  p->error_buf = save;
@@ -358,7 +358,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
       if (SAME_OBJ(f, SCHEME_MULTIPLE_VALUES)
 	  && (scheme_multiple_count == 2)) {
 	f = scheme_multiple_array[0];
-	_scheme_apply(f, 0, NULL);
+	scheme_apply_multi_with_prompt(f, 0, NULL);
       }
     } else {
       exit_val = 1;

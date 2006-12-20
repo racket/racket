@@ -74,6 +74,8 @@ static Scheme_Object *begin_syntax (Scheme_Object *form, Scheme_Comp_Env *env, S
 static Scheme_Object *begin_expand (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *begin0_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *begin0_expand (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
+static Scheme_Object *expression_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *expression_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 
 static Scheme_Object *unquote_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *unquote_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
@@ -98,6 +100,7 @@ static Scheme_Object *define_for_syntaxes_execute(Scheme_Object *expr);
 static Scheme_Object *case_lambda_execute(Scheme_Object *expr);
 static Scheme_Object *begin0_execute(Scheme_Object *data);
 static Scheme_Object *apply_values_execute(Scheme_Object *data);
+static Scheme_Object *splice_execute(Scheme_Object *data);
 
 static Scheme_Object *bangboxenv_execute(Scheme_Object *data);
 static Scheme_Object *bangboxvalue_execute(Scheme_Object *data);
@@ -110,16 +113,19 @@ static Scheme_Object *define_for_syntaxes_optimize(Scheme_Object *expr, Optimize
 static Scheme_Object *case_lambda_optimize(Scheme_Object *expr, Optimize_Info *info);
 static Scheme_Object *begin0_optimize(Scheme_Object *data, Optimize_Info *info);
 static Scheme_Object *apply_values_optimize(Scheme_Object *data, Optimize_Info *info);
+static Scheme_Object *splice_optimize(Scheme_Object *data, Optimize_Info *info);
 
 static Scheme_Object *begin0_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 static Scheme_Object *set_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 static Scheme_Object *apply_values_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
+static Scheme_Object *splice_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 
 static Scheme_Object *begin0_shift(Scheme_Object *data, int delta, int after_depth);
 static Scheme_Object *set_shift(Scheme_Object *data, int delta, int after_depth);
 static Scheme_Object *ref_shift(Scheme_Object *data, int delta, int after_depth);
 static Scheme_Object *case_lambda_shift(Scheme_Object *data, int delta, int after_depth);
 static Scheme_Object *apply_values_shift(Scheme_Object *data, int delta, int after_depth);
+static Scheme_Object *splice_shift(Scheme_Object *data, int delta, int after_depth);
 
 static Scheme_Object *define_values_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *ref_resolve(Scheme_Object *data, Resolve_Info *info);
@@ -129,6 +135,7 @@ static Scheme_Object *define_for_syntaxes_resolve(Scheme_Object *expr, Resolve_I
 static Scheme_Object *case_lambda_resolve(Scheme_Object *expr, Resolve_Info *info);
 static Scheme_Object *begin0_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *apply_values_resolve(Scheme_Object *data, Resolve_Info *info);
+static Scheme_Object *splice_resolve(Scheme_Object *data, Resolve_Info *info);
 
 static void define_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                    char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
@@ -162,6 +169,10 @@ static void apply_values_validate(Scheme_Object *data, Mz_CPort *port,
                                   char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
                                   int depth, int letlimit, int delta,
                                   int num_toplevels, int num_stxes, int num_lifts);
+static void splice_validate(Scheme_Object *data, Mz_CPort *port, 
+                            char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                            int depth, int letlimit, int delta,
+                            int num_toplevels, int num_stxes, int num_lifts);
 static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
                                 char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
                                 int depth, int letlimit, int delta,
@@ -179,6 +190,7 @@ static Scheme_Object *define_for_syntaxes_jit(Scheme_Object *expr);
 static Scheme_Object *case_lambda_jit(Scheme_Object *expr);
 static Scheme_Object *begin0_jit(Scheme_Object *data);
 static Scheme_Object *apply_values_jit(Scheme_Object *data);
+static Scheme_Object *splice_jit(Scheme_Object *data);
 static Scheme_Object *bangboxvalue_jit(Scheme_Object *data);
 
 static Scheme_Object *expand_lam(int argc, Scheme_Object **argv);
@@ -293,6 +305,12 @@ scheme_init_syntax (Scheme_Env *env)
 			 apply_values_execute, apply_values_jit, 
 			 apply_values_clone, apply_values_shift, 1);
 
+  scheme_register_syntax(SPLICE_EXPD,
+			 splice_optimize,
+			 splice_resolve, splice_validate,
+			 splice_execute, splice_jit, 
+			 splice_clone, splice_shift, 0);
+
   scheme_register_syntax(BOXENV_EXPD, 
 			 NULL, NULL, bangboxenv_validate,
 			 bangboxenv_execute, NULL, 
@@ -355,6 +373,11 @@ scheme_init_syntax (Scheme_Env *env)
   scheme_add_global_keyword("#%variable-reference", 
 			    scheme_make_compiled_syntax(ref_syntax,
 							ref_expand), 
+			    env);
+
+  scheme_add_global_keyword("#%expression", 
+			    scheme_make_compiled_syntax(expression_syntax,
+							expression_expand), 
 			    env);
 
   scheme_add_global_keyword("case-lambda", 
@@ -4186,6 +4209,12 @@ do_begin_syntax(char *name,
 
   forms = scheme_make_sequence_compilation(body, zero ? -1 : 1);
 
+  if (!zero
+      && SAME_TYPE(SCHEME_TYPE(forms), scheme_sequence_type)
+      && scheme_is_toplevel(env)) {
+    return scheme_make_syntax_compiled(SPLICE_EXPD, forms);
+  }
+
   if (!zero || (NOT_SAME_TYPE(SCHEME_TYPE(forms), scheme_begin0_sequence_type)))
     return forms;
 
@@ -4290,6 +4319,134 @@ begin0_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
   SCHEME_EXPAND_OBSERVE_PRIM_BEGIN0(erec[drec].observer);
   return do_begin_expand("begin0", form, env, erec, drec, 1);
 }
+
+/**********************************************************************/
+/*                    top-level splicing begin                        */
+/**********************************************************************/
+
+static Scheme_Object *splice_one_expr(void *expr, int argc, Scheme_Object **argv)
+{
+  return _scheme_eval_linked_expr_multi((Scheme_Object *)expr);
+}
+
+static Scheme_Object *splice_execute(Scheme_Object *data)
+{
+  Scheme_Sequence *seq = (Scheme_Sequence *)data;
+  int i, cnt = seq->count - 1;
+
+  for (i = 0; i < cnt; i++) {
+    (void)_scheme_call_with_prompt_multi(splice_one_expr, seq->array[i]);
+  }
+
+  return _scheme_eval_linked_expr_multi(seq->array[cnt]);
+}
+
+static Scheme_Object *splice_jit(Scheme_Object *data)
+{
+  return scheme_jit_expr(data);
+}
+
+static Scheme_Object *
+splice_optimize(Scheme_Object *data, Optimize_Info *info)
+{
+  data = scheme_optimize_expr(data, info);
+  
+  if (SCHEME_TYPE(data) != scheme_sequence_type)
+    return data;
+
+  return scheme_make_syntax_compiled(SPLICE_EXPD, data);
+}
+
+static Scheme_Object *
+splice_resolve(Scheme_Object *data, Resolve_Info *rslv)
+{
+  return scheme_make_syntax_resolved(SPLICE_EXPD, 
+                                     scheme_resolve_expr(data, rslv));
+}
+
+static Scheme_Object *
+splice_shift(Scheme_Object *data, int delta, int after_depth)
+{
+  return scheme_make_syntax_compiled(SPLICE_EXPD,
+                                     scheme_optimize_shift(data, delta, after_depth));
+}
+
+static Scheme_Object *
+splice_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth)
+{
+  data = scheme_optimize_clone(dup_ok, data, info, delta, closure_depth);
+  if (!data) return NULL;
+  return scheme_make_syntax_compiled(SPLICE_EXPD, data);
+}
+
+static void splice_validate(Scheme_Object *data, Mz_CPort *port, 
+                            char *stack, Scheme_Hash_Table *ht, Scheme_Object **tls,
+                            int depth, int letlimit, int delta, 
+                            int num_toplevels, int num_stxes, int num_lifts)
+{
+  scheme_validate_expr(port, data, stack, ht, tls,
+                       depth, letlimit, delta, 
+                       num_toplevels, num_stxes, num_lifts,
+                       NULL, 0);
+}
+
+/**********************************************************************/
+/*                    #%non-module and #%expression                   */
+/**********************************************************************/
+
+static Scheme_Object *check_single(Scheme_Object *form, Scheme_Comp_Env *top_only)
+{
+  Scheme_Object *rest;
+
+  check_form(form, form);
+
+  rest = SCHEME_STX_CDR(form);
+  if (!(SCHEME_STX_PAIRP(rest) && SCHEME_STX_NULLP(SCHEME_STX_CDR(rest))))
+    scheme_wrong_syntax(NULL, NULL, form, "bad syntax (wrong number of parts)");
+
+  if (top_only && !scheme_is_toplevel(top_only))
+    scheme_wrong_syntax(NULL, NULL, form, "illegal use (not at top-level)");
+
+  return SCHEME_STX_CAR(rest);
+}
+
+static Scheme_Object *
+single_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec, int top_only)
+{
+  return scheme_compile_expr(check_single(form, top_only ? env: NULL), env, rec, drec);
+}
+
+static Scheme_Object *
+single_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec, 
+              int top_only, int simplify)
+{
+  Scheme_Object *expr, *form_name;
+
+  expr = check_single(form, top_only ? env : NULL);
+  expr = scheme_expand_expr(expr, env, erec, drec);
+
+  if (simplify && (erec[drec].depth == -1)) {
+    return expr;
+  }
+
+  form_name = SCHEME_STX_CAR(form);
+
+  return scheme_datum_to_syntax(icons(form_name, icons(expr, scheme_null)), 
+				form, form,
+				0, 2);
+}
+
+static Scheme_Object *expression_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+{
+  return single_syntax(form, scheme_no_defines(env), rec, drec, 0);
+}
+
+static Scheme_Object *expression_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
+{
+  return single_expand(form, scheme_no_defines(env), erec, drec, 0,
+                       !scheme_is_toplevel(env));
+}
+
 
 /**********************************************************************/
 /*                      unquote, unquote-splicing                     */

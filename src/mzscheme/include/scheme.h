@@ -441,6 +441,9 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_INPORTP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_input_port_type)
 #define SCHEME_OUTPORTP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_output_port_type)
 
+#define SCHEME_INPUT_PORTP(obj)  scheme_is_input_port(obj)
+#define SCHEME_OUTPUT_PORTP(obj) scheme_is_output_port(obj)
+
 #define SCHEME_THREADP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_thread_type)
 #define SCHEME_CUSTODIANP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_custodian_type)
 #define SCHEME_SEMAP(obj)   SAME_TYPE(SCHEME_TYPE(obj), scheme_sema_type)
@@ -936,7 +939,6 @@ typedef struct Scheme_Thread {
   struct Scheme_Thread **cont_mark_stack_owner;
   struct Scheme_Cont_Mark *cont_mark_stack_swapped;
 
-  struct Scheme_Prompt *barrier_prompt; /* a pseudo-prompt */
   struct Scheme_Prompt *meta_prompt; /* a pseudo-prompt */
   
   struct Scheme_Meta_Continuation *meta_continuation;
@@ -957,6 +959,7 @@ typedef struct Scheme_Thread {
   Scheme_Jumpup_Buf jmpup_buf; /* For jumping back to this thread */
 
   struct Scheme_Dynamic_Wind *dw;
+  int next_meta;  /* amount to move forward in the meta-continuaiton chain, starting with dw */
 
   int running;
   Scheme_Object *suspended_box; /* contains pointer to thread when it's suspended */
@@ -1087,7 +1090,6 @@ enum {
 
   MZCONFIG_EXIT_HANDLER,
 
-  MZCONFIG_EXN_HANDLER,
   MZCONFIG_INIT_EXN_HANDLER,
 
   MZCONFIG_EVAL_HANDLER,

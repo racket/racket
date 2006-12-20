@@ -1113,7 +1113,7 @@ static int output_ready(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Output_Port *op;
 
-  op = (Scheme_Output_Port *)port;
+  op = scheme_output_port_record(port);
 
   if (op->closed)
     return 1;
@@ -1144,7 +1144,7 @@ static void output_need_wakeup (Scheme_Object *port, void *fds)
   /* If this is a user output port and its evt needs a wakeup, we
      shouldn't get here. The target use above will take care of it. */
 
-  op = (Scheme_Output_Port *)port;
+  op = scheme_output_port_record(port);
   if (op->need_wakeup_fun) {
     Scheme_Need_Wakeup_Output_Fun f;
     f = op->need_wakeup_fun;
@@ -1154,7 +1154,9 @@ static void output_need_wakeup (Scheme_Object *port, void *fds)
 
 int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info *sinfo)
 {
-  Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
+  Scheme_Input_Port *ip;
+
+  ip = scheme_input_port_record(p);
 
   if (ip->closed)
     return 1;
@@ -1185,7 +1187,10 @@ XFORM_NONGCING static int pipe_char_count(Scheme_Object *p)
 {
   if (p) {
     Scheme_Pipe *pipe;
-    pipe = (Scheme_Pipe *)((Scheme_Input_Port *)p)->port_data;
+    Scheme_Input_Port *ip;
+
+    ip = (Scheme_Input_Port *)p;
+    pipe = (Scheme_Pipe *)ip->port_data;
 
     if (pipe->bufstart <= pipe->bufend)
       return pipe->bufend - pipe->bufstart;
@@ -1357,7 +1362,7 @@ long scheme_get_byte_string_unless(const char *who,
   if (!peek_skip)
     peek_skip = scheme_make_integer(0);
 
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   gs = ip->get_string_fun;
   ps = ip->peek_string_fun;
@@ -1769,7 +1774,9 @@ static void elect_new_main(Scheme_Input_Port *ip)
 
 static void release_input_lock_and_elect_new_main(void *_ip)
 {
-  Scheme_Input_Port *ip = (Scheme_Input_Port *)_ip;
+  Scheme_Input_Port *ip;
+
+  ip = scheme_input_port_record(_ip);
 
   release_input_lock(ip);
   elect_new_main(ip);
@@ -1783,8 +1790,10 @@ static void check_suspended()
 
 static void remove_extra(void *ip_v)
 {
-  Scheme_Input_Port *ip = (Scheme_Input_Port *)SCHEME_CAR(ip_v);
+  Scheme_Input_Port *ip;
   Scheme_Object *v = SCHEME_CDR(ip_v), *ll, *prev;
+
+  ip = scheme_input_port_record(SCHEME_CAR(ip_v));
 
   prev = NULL;
   for (ll = ip->input_extras; ll; prev = ll, ll = SCHEME_CDR(ll)) {
@@ -2040,7 +2049,7 @@ int scheme_peeked_read(Scheme_Object *port,
   Scheme_Input_Port *ip;
   Scheme_Peeked_Read_Fun pr;
   
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   unless_evt = SCHEME_PTR2_VAL(unless_evt);
 
@@ -2067,7 +2076,7 @@ Scheme_Object *scheme_progress_evt(Scheme_Object *port)
 {  
   Scheme_Input_Port *ip;
   
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
   
   if (ip->progress_evt_fun) {
     Scheme_Progress_Evt_Fun ce;
@@ -2260,7 +2269,7 @@ long get_one_byte(const char *who,
 
   special_is_ok = 0;
 
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   CHECK_PORT_CLOSED(who, "input", port, ip->closed);
 
@@ -2554,7 +2563,7 @@ int scheme_peekc_is_ungetc(Scheme_Object *port)
 {
   Scheme_Input_Port *ip;
 
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   return !ip->peek_string_fun;
 }
@@ -2589,8 +2598,13 @@ static int rw_evt_ready(Scheme_Object *_rww, Scheme_Schedule_Info *sinfo)
   }
   
   if (rww->v) {
-    Scheme_Write_Special_Fun ws = ((Scheme_Output_Port *)rww->port)->write_special_fun;
-    v = ws((Scheme_Output_Port *)rww->port, rww->v, 1);
+    Scheme_Output_Port *op;
+    Scheme_Write_Special_Fun ws;
+
+    op = scheme_output_port_record(rww->port);
+    ws = op->write_special_fun;
+
+    v = ws(op, rww->v, 1);
     if (v) {
       scheme_set_sync_target(sinfo, scheme_true, NULL, NULL, 0, 0);
       return 1;
@@ -2640,7 +2654,9 @@ Scheme_Object *scheme_write_special_evt_via_write_special(Scheme_Output_Port *po
 Scheme_Object *scheme_make_write_evt(const char *who, Scheme_Object *port,
 				     Scheme_Object *special, char *str, long start, long size)
 {
-  Scheme_Output_Port *op = (Scheme_Output_Port *)port;
+  Scheme_Output_Port *op;
+
+  op = scheme_output_port_record(port);
 
   if (!special) {
     if (op->write_string_evt_fun) {
@@ -2666,7 +2682,7 @@ scheme_ungetc (int ch, Scheme_Object *port)
 {
   Scheme_Input_Port *ip;
 
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   CHECK_PORT_CLOSED("#<primitive:peek-port-char>", "input", port, ip->closed);
 
@@ -2716,7 +2732,7 @@ scheme_byte_ready (Scheme_Object *port)
   Scheme_Input_Port *ip;
   int retval;
 
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   CHECK_PORT_CLOSED("char-ready?", "input", port, ip->closed);
 
@@ -2756,7 +2772,7 @@ Scheme_Object *scheme_get_special(Scheme_Object *port,
 
   SCHEME_USE_FUEL(1);
 
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   /* Only `read' and similar internals should call this function. A
      caller must should ensure that there are no ungotten
@@ -2815,7 +2831,9 @@ static Scheme_Object *do_get_ready_special(Scheme_Object *port,
   long line, col, pos;
 
   if (!stxsrc) {
-    stxsrc = ((Scheme_Input_Port *)port)->name;
+    Scheme_Input_Port *ip;
+    ip = scheme_input_port_record(port);
+    stxsrc = ip->name;
   }
 
   /* Don't use scheme_tell_all(), because we always want the
@@ -2880,7 +2898,7 @@ Scheme_Object *scheme_get_special_proc(Scheme_Object *inport)
   Scheme_Object *special, **sbox;
   Scheme_Input_Port *ip;
 
-  ip = (Scheme_Input_Port *)inport;
+  ip = scheme_input_port_record(inport);
   special = ip->special;
   ip->special = NULL;
   
@@ -2896,7 +2914,7 @@ scheme_need_wakeup (Scheme_Object *port, void *fds)
 {
   Scheme_Input_Port *ip;
 
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   if (ip->need_wakeup_fun) {
     Scheme_Need_Wakeup_Input_Fun f = ip->need_wakeup_fun;
@@ -2905,7 +2923,7 @@ scheme_need_wakeup (Scheme_Object *port, void *fds)
 }
 
 #define CHECK_IOPORT_CLOSED(who, port) \
-        if (SCHEME_INPORTP(port)) { \
+        if (SCHEME_INPORTP((Scheme_Object *)port)) {                          \
           CHECK_PORT_CLOSED(who, "input", port, ((Scheme_Input_Port *)port)->closed); \
         } else { \
           CHECK_PORT_CLOSED(who, "output", port, ((Scheme_Output_Port *)port)->closed); \
@@ -2917,9 +2935,9 @@ scheme_tell (Scheme_Object *port)
   Scheme_Port *ip;
   long pos;
 
-  ip = (Scheme_Port *)port;
+  ip = scheme_port_record(port);
   
-  CHECK_IOPORT_CLOSED("get-file-position", port);
+  CHECK_IOPORT_CLOSED("get-file-position", ip);
 
   if (!ip->count_lines || (ip->position < 0))
     pos = ip->position;
@@ -2935,12 +2953,12 @@ scheme_tell_line (Scheme_Object *port)
   Scheme_Port *ip;
   long line;
 
-  ip = (Scheme_Port *)port;
+  ip = scheme_port_record(port);
 
   if (!ip->count_lines || (ip->position < 0))
     return -1;
 
-  CHECK_IOPORT_CLOSED("get-file-line", port);
+  CHECK_IOPORT_CLOSED("get-file-line", ip);
 
   line = ip->lineNumber;
 
@@ -2953,12 +2971,12 @@ scheme_tell_column (Scheme_Object *port)
   Scheme_Port *ip;
   long col;
 
-  ip = (Scheme_Port *)port;
+  ip = scheme_port_record(port);
 
   if (!ip->count_lines || (ip->position < 0))
     return -1;
   
-  CHECK_IOPORT_CLOSED("get-file-column", port);
+  CHECK_IOPORT_CLOSED("get-file-column", ip);
 
   col = ip->column;
 
@@ -2968,9 +2986,11 @@ scheme_tell_column (Scheme_Object *port)
 void
 scheme_tell_all (Scheme_Object *port, long *_line, long *_col, long *_pos)
 {
-  Scheme_Port *ip = (Scheme_Port *)port;
+  Scheme_Port *ip;
   long line = -1, col = -1, pos = -1;
   
+  ip = scheme_port_record(port);
+
   if (ip->count_lines && ip->location_fun) {
     Scheme_Location_Fun location_fun;
     Scheme_Object *r, *a[3];
@@ -3039,7 +3059,9 @@ scheme_tell_all (Scheme_Object *port, long *_line, long *_col, long *_pos)
 void
 scheme_count_lines (Scheme_Object *port)
 {
-  Scheme_Port *ip = (Scheme_Port *)port;
+  Scheme_Port *ip;
+
+  ip = scheme_port_record(port);
 
   if (!ip->count_lines) {
     ip->count_lines = 1;
@@ -3055,7 +3077,7 @@ scheme_close_input_port (Scheme_Object *port)
 {
   Scheme_Input_Port *ip;
 
-  ip = (Scheme_Input_Port *)port;
+  ip = scheme_input_port_record(port);
 
   if (!ip->closed) {
     if (ip->close_fun) {
@@ -3103,10 +3125,12 @@ scheme_put_byte_string(const char *who, Scheme_Object *port,
      have to deal with peeks and specials, so it's a thin wrapper on
      the port's function. */
 
-  Scheme_Output_Port *op = (Scheme_Output_Port *)port;
+  Scheme_Output_Port *op;
   Scheme_Write_String_Fun ws;
   long out, llen, oout;
   int enable_break;
+
+  op = scheme_output_port_record(port);
 
   CHECK_PORT_CLOSED(who, "output", port, op->closed);
 
@@ -3203,7 +3227,7 @@ scheme_close_output_port(Scheme_Object *port)
 {
   Scheme_Output_Port *op;
 
-  op = (Scheme_Output_Port *)port;
+  op = scheme_output_port_record(port);
 
   if (!op->closed) {
     /* call close function first; it might raise an exception */
@@ -3255,8 +3279,10 @@ scheme_file_stream_port_p (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *p = argv[0];
 
-  if (SCHEME_INPORTP(p)) {
-    Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
+  if (SCHEME_INPUT_PORTP(p)) {
+    Scheme_Input_Port *ip;
+
+    ip = scheme_input_port_record(p);
 
     if (SAME_OBJ(ip->sub_type, file_input_port_type))
       return scheme_true;
@@ -3264,8 +3290,10 @@ scheme_file_stream_port_p (int argc, Scheme_Object *argv[])
     else if (SAME_OBJ(ip->sub_type, fd_input_port_type))
       return scheme_true;
 #endif
-  } else if (SCHEME_OUTPORTP(p)) {
-    Scheme_Output_Port *op = (Scheme_Output_Port *)p;
+  } else if (SCHEME_OUTPUT_PORTP(p)) {
+    Scheme_Output_Port *op;
+
+    op = scheme_output_port_record(p);
 
     if (SAME_OBJ(op->sub_type, file_output_port_type))
       return scheme_true;
@@ -3285,8 +3313,10 @@ int scheme_get_port_file_descriptor(Scheme_Object *p, long *_fd)
   long fd = 0;
   int fd_ok = 0;
 
-  if (SCHEME_INPORTP(p)) {
-    Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
+  if (SCHEME_INPUT_PORTP(p)) {
+    Scheme_Input_Port *ip;
+
+    ip = scheme_input_port_record(p);
 
     if (!ip->closed) {
       if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
@@ -3300,8 +3330,10 @@ int scheme_get_port_file_descriptor(Scheme_Object *p, long *_fd)
       }
 #endif
     }
-  } else if (SCHEME_OUTPORTP(p)) {
-    Scheme_Output_Port *op = (Scheme_Output_Port *)p;
+  } else if (SCHEME_OUTPUT_PORTP(p)) {
+    Scheme_Output_Port *op;
+
+    op = scheme_output_port_record(p);
 
     if (!op->closed) {
       if (SAME_OBJ(op->sub_type, file_output_port_type))  {
@@ -3336,12 +3368,16 @@ Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
 
   if (!fd_ok) {
     /* Maybe failed because it was closed... */
-    if (SCHEME_INPORTP(p)) {
-      Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
+    if (SCHEME_INPUT_PORTP(p)) {
+      Scheme_Input_Port *ip;
+
+      ip = scheme_input_port_record(p);
       
       CHECK_PORT_CLOSED("port-file-identity", "input", p, ip->closed);
-    } else if (SCHEME_OUTPORTP(p)) {
-      Scheme_Output_Port *op = (Scheme_Output_Port *)p;
+    } else if (SCHEME_OUTPUT_PORTP(p)) {
+      Scheme_Output_Port *op;
+      
+      op = scheme_output_port_record(p);
       
       CHECK_PORT_CLOSED("port-file-identity", "output", p, op->closed);
     }
@@ -3374,8 +3410,10 @@ Scheme_Object *scheme_terminal_port_p(int argc, Scheme_Object *argv[])
 
   p = argv[0];
 
-  if (SCHEME_INPORTP(p)) {
-    Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
+  if (SCHEME_INPUT_PORTP(p)) {
+    Scheme_Input_Port *ip;
+
+    ip = scheme_input_port_record(p);
 
     if (ip->closed)
       return scheme_false;
@@ -3390,8 +3428,10 @@ Scheme_Object *scheme_terminal_port_p(int argc, Scheme_Object *argv[])
       fd_ok = 1;
     }
 #endif
-  } else if (SCHEME_OUTPORTP(p)) {
-    Scheme_Output_Port *op = (Scheme_Output_Port *)p;
+  } else if (SCHEME_OUTPUT_PORTP(p)) {
+    Scheme_Output_Port *op;
+
+    op = scheme_output_port_record(p);
 
     if (op->closed)
       return scheme_false;
@@ -3999,7 +4039,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 #endif
   int wis;
 
-  if (!SCHEME_OUTPORTP(argv[0]) && !SCHEME_INPORTP(argv[0]))
+  if (!SCHEME_OUTPUT_PORTP(argv[0]) && !SCHEME_INPUT_PORTP(argv[0]))
     scheme_wrong_type("file-position", "port", 0, argc, argv);
   if (argc == 2) {
     if (!SCHEME_EOFP(argv[1])) {
@@ -4026,10 +4066,11 @@ scheme_file_position(int argc, Scheme_Object *argv[])
   had_fd = 0;
 #endif
 
-  if (SCHEME_OUTPORTP(argv[0])) {
+  if (!SCHEME_INPUT_PORTP(argv[0])) {
     Scheme_Output_Port *op;
 
-    op = (Scheme_Output_Port *)argv[0];
+    op = scheme_output_port_record(argv[0]);
+
     if (SAME_OBJ(op->sub_type, file_output_port_type)) {
       f = ((Scheme_Output_File *)op->port_data)->f;
 #ifdef MZ_FDS
@@ -4042,10 +4083,11 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       wis = 1;
     } else if (argc < 2)
       return scheme_make_integer(scheme_output_tell(argv[0]));
-  } else if (SCHEME_INPORTP(argv[0])) {
+  } else {
     Scheme_Input_Port *ip;
 
-    ip = (Scheme_Input_Port *)argv[0];
+    ip = scheme_input_port_record(argv[0]);
+
     if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
       f = ((Scheme_Input_File *)ip->port_data)->f;
 #ifdef MZ_FDS
@@ -4057,7 +4099,7 @@ scheme_file_position(int argc, Scheme_Object *argv[])
       is = (Scheme_Indexed_String *)ip->port_data;
     else if (argc < 2) {
       long pos;
-      pos = ((Scheme_Input_Port *)argv[0])->p.position;
+      pos = ip->p.position;
       if (pos < 0) {
 	scheme_raise_exn(MZEXN_FAIL,
 			 "the port's current position is not known: %v",
@@ -4106,8 +4148,8 @@ scheme_file_position(int argc, Scheme_Object *argv[])
     } else if (had_fd) {
       long lv;
       
-      if (SCHEME_OUTPORTP(argv[0])) {
-	flush_fd((Scheme_Output_Port *)argv[0], NULL, 0, 0, 0, 0);
+      if (!SCHEME_INPUT_PORTP(argv[0])) {
+	flush_fd(scheme_output_port_record(argv[0]), NULL, 0, 0, 0, 0);
       }
       
 # ifdef WINDOWS_FILE_HANDLES
@@ -4138,14 +4180,16 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 			 errno);
       }
 
-      if (SCHEME_INPORTP(argv[0])) {
+      if (SCHEME_INPUT_PORTP(argv[0])) {
 	/* Get rid of buffered data: */
 	Scheme_FD *sfd;
-	sfd = (Scheme_FD *)((Scheme_Input_Port *)argv[0])->port_data;
+        Scheme_Input_Port *ip;
+        ip = scheme_input_port_record(argv[0]);
+	sfd = (Scheme_FD *)ip->port_data;
 	sfd->bufcount = 0;
 	sfd->buffpos = 0;
 	/* 1 means no pending eof, but can set: */
-	((Scheme_Input_Port *)argv[0])->pending_eof = 1;
+	ip->pending_eof = 1;
       }
 #endif
     } else {
@@ -4182,9 +4226,9 @@ scheme_file_position(int argc, Scheme_Object *argv[])
     }
 
     /* Remove any chars saved from peeks: */
-    if (SCHEME_INPORTP(argv[0])) {
+    if (SCHEME_INPUT_PORTP(argv[0])) {
       Scheme_Input_Port *ip;
-      ip = (Scheme_Input_Port *)argv[0];
+      ip = scheme_input_port_record(argv[0]);
       ip->ungotten_count = 0;
       if (pipe_char_count(ip->peeked_read)) {
 	ip->peeked_read = NULL;
@@ -4216,16 +4260,20 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 #  endif
 # endif
       if (p < 0) {
-	if (SCHEME_INPORTP(argv[0])) {
+	if (SCHEME_INPUT_PORTP(argv[0])) {
 	  p = scheme_tell(argv[0]);
 	} else {
 	  p = scheme_output_tell(argv[0]);
 	}
       } else {
-	if (SCHEME_OUTPORTP(argv[0])) {
-	  p += ((Scheme_FD *)((Scheme_Output_Port *)argv[0])->port_data)->bufcount;
+	if (SCHEME_INPUT_PORTP(argv[0])) {          
+          Scheme_Input_Port *ip;
+          ip = scheme_input_port_record(argv[0]);
+	  p -= ((Scheme_FD *)ip->port_data)->bufcount;
 	} else {
-	  p -= ((Scheme_FD *)((Scheme_Input_Port *)argv[0])->port_data)->bufcount;
+          Scheme_Output_Port *op;
+          op = scheme_output_port_record(argv[0]);
+	  p += ((Scheme_FD *)op->port_data)->bufcount;
 	}
       }
 #endif
@@ -4240,9 +4288,9 @@ scheme_file_position(int argc, Scheme_Object *argv[])
     }
 
     /* Back up for un-gotten & peeked chars: */
-    if (SCHEME_INPORTP(argv[0])) {
+    if (SCHEME_INPUT_PORTP(argv[0])) {
       Scheme_Input_Port *ip;
-      ip = (Scheme_Input_Port *)argv[0];
+      ip = scheme_input_port_record(argv[0]);
       p -= ip->ungotten_count;
       p -= pipe_char_count(ip->peeked_read);
     }
@@ -4272,10 +4320,10 @@ scheme_file_buffer(int argc, Scheme_Object *argv[])
 {
   Scheme_Port *p = NULL;
 
-  if (!SCHEME_OUTPORTP(argv[0]) && !SCHEME_INPORTP(argv[0]))
+  if (!SCHEME_OUTPUT_PORTP(argv[0]) && !SCHEME_INPUT_PORTP(argv[0]))
     scheme_wrong_type("file-stream-buffer-mode", "port", 0, argc, argv);
 
-  p = (Scheme_Port *)argv[0];
+  p = scheme_port_record(argv[0]);
 
   if (argc == 1) {
     Scheme_Buffer_Mode_Fun bm;
@@ -4302,7 +4350,7 @@ scheme_file_buffer(int argc, Scheme_Object *argv[])
 	&& !SAME_OBJ(s, scheme_none_symbol))
       scheme_wrong_type("file-stream-buffer-mode", "'none, 'line, or 'block", 1, argc, argv);
 
-    if (SCHEME_INPORTP(argv[0]) && SAME_OBJ(s, scheme_line_symbol))
+    if (SCHEME_INPUT_PORTP(argv[0]) && SAME_OBJ(s, scheme_line_symbol))
       scheme_arg_mismatch("file-stream-buffer-mode", 
 			  "'line buffering not supported for an input port: ",
 			  argv[0]);
@@ -4393,10 +4441,13 @@ file_buffer_mode(Scheme_Port *p, int mode)
   if (mode < 0)
     return -1; /* unknown mode */
 
-  if (SCHEME_INPORTP(p))
-    f = ((Scheme_Output_File *)((Scheme_Input_Port *)p)->port_data)->f;
-  else
-    f = ((Scheme_Output_File *)((Scheme_Output_Port *)p)->port_data)->f;
+  if (SCHEME_INPORTP((Scheme_Object *)p)) {
+    Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
+    f = ((Scheme_Output_File *)ip->port_data)->f;
+  } else {
+    Scheme_Output_Port *op = (Scheme_Output_Port *)p;
+    f = ((Scheme_Output_File *)op->port_data)->f;
+  }
   
   if (mode == MZ_FLUSH_NEVER)
     bad = setvbuf(f, NULL, _IOFBF, 0);
@@ -4945,8 +4996,9 @@ fd_need_wakeup(Scheme_Input_Port *port, void *fds)
 static int fd_input_buffer_mode(Scheme_Port *p, int mode)
 {
   Scheme_FD *fd;
+  Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
     
-  fd = (Scheme_FD *)((Scheme_Input_Port *)p)->port_data;
+  fd = (Scheme_FD *)ip->port_data;
 
   if (mode < 0) {
     return fd->flush;
@@ -5447,8 +5499,11 @@ static int
 fd_flush_done(Scheme_Object *port)
 {
   Scheme_FD *fop;
+  Scheme_Output_Port *op;
 
-  fop = (Scheme_FD *)((Scheme_Output_Port *)port)->port_data;
+  op = scheme_output_port_record(port);
+
+  fop = (Scheme_FD *)op->port_data;
 
   return !fop->flushing;
 }
@@ -5506,10 +5561,12 @@ fd_write_ready (Scheme_Object *port)
      the port has been flushed. */
 
   Scheme_FD *fop;
+  Scheme_Output_Port *op;
 
-  fop = (Scheme_FD *)((Scheme_Output_Port *)port)->port_data;
+  op = scheme_output_port_record(port);
+  fop = (Scheme_FD *)op->port_data;
 
-  if (fop->regfile || ((Scheme_Output_Port *)port)->closed)
+  if (fop->regfile || op->closed)
     return 1;
 
 #ifdef WINDOWS_FILE_HANDLES
@@ -5568,6 +5625,7 @@ fd_write_ready (Scheme_Object *port)
 static void
 fd_write_need_wakeup(Scheme_Object *port, void *fds)
 {
+  Scheme_Output_Port *op;
   Scheme_FD *fop;
 
 #ifdef WINDOWS_FILE_HANDLES
@@ -5579,7 +5637,8 @@ fd_write_need_wakeup(Scheme_Object *port, void *fds)
 # endif
 #endif
 
-  fop = (Scheme_FD *)((Scheme_Output_Port *)port)->port_data;
+  op = scheme_output_port_record(port);
+  fop = (Scheme_FD *)op->port_data;
 
 #ifdef WINDOWS_FILE_HANDLES
   if (fop->oth && !fd_write_ready(port))
@@ -6150,8 +6209,9 @@ fd_close_output(Scheme_Output_Port *port)
 static int fd_output_buffer_mode(Scheme_Port *p, int mode)
 {
   Scheme_FD *fd;
-    
-  fd = (Scheme_FD *)((Scheme_Output_Port *)p)->port_data;
+  Scheme_Output_Port *op = (Scheme_Output_Port *)p;
+
+  fd = (Scheme_FD *)op->port_data;
   
   if (mode < 0) {
     return fd->flush;
@@ -6160,7 +6220,7 @@ static int fd_output_buffer_mode(Scheme_Port *p, int mode)
     go = (mode > fd->flush);
     fd->flush = mode;
     if (go)
-      flush_fd((Scheme_Output_Port *)p, NULL, 0, 0, 0, 0);
+      flush_fd(op, NULL, 0, 0, 0, 0);
     return mode;
   }
 }
@@ -6232,8 +6292,9 @@ make_fd_output_port(int fd, Scheme_Object *name, int regfile, int win_textmode, 
 
 static void flush_if_output_fds(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
 {
-  if (SCHEME_OUTPORTP(o)) {
-    Scheme_Output_Port *op = (Scheme_Output_Port *)o;
+  if (SCHEME_OUTPUT_PORTP(o)) {
+    Scheme_Output_Port *op;
+    op = scheme_output_port_record(o);
     if (SAME_OBJ(op->sub_type, fd_output_port_type)) {
       scheme_flush_output(o);
     }
@@ -6606,7 +6667,8 @@ scheme_make_redirect_output_port(Scheme_Object *port)
   Scheme_Output_Port *op;
   int can_write_special;
 
-  can_write_special = !!((Scheme_Output_Port *)port)->write_special_fun;
+  op = scheme_output_port_record(port);
+  can_write_special = !!op->write_special_fun;
 
   op = scheme_make_output_port(scheme_redirect_output_port_type,
 			       port,
@@ -6959,9 +7021,11 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
   if (SCHEME_TRUEP(args[0])) {
     outport = args[0];
-    if (SCHEME_OUTPORTP(outport) && SCHEME_TRUEP(scheme_file_stream_port_p(1, &outport))) {
+    if (SCHEME_OUTPUT_PORTP(outport) && SCHEME_TRUEP(scheme_file_stream_port_p(1, &outport))) {
 #ifdef PROCESS_FUNCTION
-      Scheme_Output_Port *op = (Scheme_Output_Port *)outport;
+      Scheme_Output_Port *op;
+
+      op = scheme_output_port_record(outport);
 
       if (SAME_OBJ(op->sub_type, file_output_port_type)) {
 	int tmp;
@@ -6980,9 +7044,11 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
   if (SCHEME_TRUEP(args[1])) {
     inport = args[1];
-    if (SCHEME_INPORTP(inport) && SCHEME_TRUEP(scheme_file_stream_port_p(1, &inport))) {
+    if (SCHEME_INPUT_PORTP(inport) && SCHEME_TRUEP(scheme_file_stream_port_p(1, &inport))) {
 #ifdef PROCESS_FUNCTION
-      Scheme_Input_Port *ip = (Scheme_Input_Port *)inport;
+      Scheme_Input_Port *ip;
+
+      ip = scheme_input_port_record(inport);
 
       if (SAME_OBJ(ip->sub_type, file_input_port_type)) {
 	int tmp;
@@ -7001,9 +7067,11 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
   if (SCHEME_TRUEP(args[2])) {
     errport = args[2];
-    if (SCHEME_OUTPORTP(errport) && SCHEME_TRUEP(scheme_file_stream_port_p(1, &errport))) {
+    if (SCHEME_OUTPUT_PORTP(errport) && SCHEME_TRUEP(scheme_file_stream_port_p(1, &errport))) {
 #ifdef PROCESS_FUNCTION
-      Scheme_Output_Port *op = (Scheme_Output_Port *)errport;
+      Scheme_Output_Port *op;
+
+      op = scheme_output_port_record(errport);
 
       if (SAME_OBJ(op->sub_type, file_output_port_type)) {
 	int tmp;
@@ -8016,7 +8084,9 @@ void scheme_start_itimer_thread(long usec)
 void scheme_count_input_port(Scheme_Object *port, long *s, long *e,
 			     Scheme_Hash_Table *ht)
 {
-  Scheme_Input_Port *ip = (Scheme_Input_Port *)port;
+  Scheme_Input_Port *ip;
+
+  ip = scheme_input_port_record(port);
 
   *e = (ht ? scheme_count_memory(ip->read_handler, ht) : 0);
   *s = sizeof(Scheme_Input_Port);
@@ -8053,7 +8123,9 @@ void scheme_count_input_port(Scheme_Object *port, long *s, long *e,
 void scheme_count_output_port(Scheme_Object *port, long *s, long *e,
 			      Scheme_Hash_Table *ht)
 {
-  Scheme_Output_Port *op = (Scheme_Output_Port *)port;
+  Scheme_Output_Port *op;
+
+  op = scheme_output_port_record(port);
 
   *e = 0;
   *s = sizeof(Scheme_Output_Port);

@@ -108,6 +108,8 @@ EXPORTS
  scheme_uchar_combining_classes
  scheme_eval
  scheme_eval_multi
+ scheme_eval_with_prompt
+ scheme_eval_multi_with_prompt
  scheme_eval_compiled
  scheme_eval_compiled_multi
  scheme_apply
@@ -115,9 +117,16 @@ EXPORTS
  scheme_apply_no_eb
  scheme_apply_multi_no_eb
  scheme_apply_to_list
+ scheme_apply_with_prompt
+ scheme_apply_multi_with_prompt
  scheme_eval_string
  scheme_eval_string_multi
  scheme_eval_string_all
+ scheme_eval_string_with_prompt
+ scheme_eval_string_multi_with_prompt
+ scheme_eval_string_all_with_prompt
+ scheme_call_with_prompt
+ scheme_call_with_prompt_multi
  scheme_values
  scheme_check_one_value
  scheme_tail_apply
@@ -171,6 +180,7 @@ EXPORTS
  scheme_make_hash_table_equal
  scheme_hash_set
  scheme_hash_get
+ scheme_eq_hash_get
  scheme_hash_table_equal
  scheme_is_hash_table_equal
  scheme_clone_hash_table
@@ -340,6 +350,11 @@ EXPORTS
  scheme_write_special
  scheme_write_special_nonblock
  scheme_make_write_evt
+ scheme_port_record
+ scheme_input_port_record
+ scheme_output_port_record
+ scheme_is_input_port
+ scheme_is_output_port
  scheme_make_port_type
  scheme_make_input_port
  scheme_make_output_port

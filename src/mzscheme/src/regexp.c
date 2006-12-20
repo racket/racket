@@ -4845,13 +4845,13 @@ static Scheme_Object *gen_compare(char *name, int pos,
       && !SCHEME_CHAR_STRINGP(argv[0]))
     scheme_wrong_type(name, "regexp, byte-regexp, string, or byte string", 0, argc, argv);
   if ((peek || (!SCHEME_BYTE_STRINGP(argv[1]) && !SCHEME_CHAR_STRINGP(argv[1])))
-      && !SCHEME_INPORTP(argv[1]))
+      && !SCHEME_INPUT_PORTP(argv[1]))
     scheme_wrong_type(name, peek ? "input-port" : "string, byte string, or input port", 1, argc, argv);
   
   if (SCHEME_CHAR_STRINGP(argv[1])) {
     iport = NULL;
     endset = SCHEME_CHAR_STRLEN_VAL(argv[1]);
-  } else if (SCHEME_INPORTP(argv[1])) {
+  } else if (SCHEME_INPUT_PORTP(argv[1])) {
     iport = argv[1];
     endset = -2;
   } else {
@@ -4917,8 +4917,8 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	  }
 	} else {
 	  if (SCHEME_TRUEP(argv[4])) {
-	    if (!SCHEME_OUTPORTP(argv[4]))
-	      scheme_wrong_type(name, "output-port or #f", 4, argc, argv);
+	    if (!SCHEME_OUTPUT_PORTP(argv[4]))
+	      scheme_wrong_type(name, "output port or #f", 4, argc, argv);
 	    oport = argv[4];
 	  }
 	}

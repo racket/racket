@@ -331,6 +331,7 @@ cont_proc {
   gcMARK(c->dw);
   gcMARK(c->prompt_tag);
   gcMARK(c->meta_continuation);
+  gcMARK(c->common_dw);
   gcMARK(c->save_overflow);
   gcMARK(c->runstack_copied);
   gcMARK(c->runstack_owner);
@@ -345,8 +346,11 @@ cont_proc {
   MARK_jmpup(&c->buf);
   MARK_cjs(&c->cjs);
   MARK_stack_state(&c->ss);
+  gcMARK(c->barrier_prompt);
   gcMARK(c->runstack_start);
   gcMARK(c->runstack_saved);
+
+  gcMARK(c->prompt_id);
 
   /* These shouldn't actually persist across a GC, but
      just in case... */
@@ -354,6 +358,7 @@ cont_proc {
   gcMARK(c->resume_to);
   gcMARK(c->use_next_cont);
   gcMARK(c->extra_marks);
+  gcMARK(c->shortcut_prompt);
   
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont));
@@ -417,6 +422,7 @@ escaping_cont_proc {
   gcMARK(c->native_trace);
 #endif
 
+  gcMARK(c->barrier_prompt);
   MARK_stack_state(&c->envss);
 
  size:
@@ -610,7 +616,6 @@ thread_val {
   gcMARK(pr->runstack_swapped);
   pr->spare_runstack = NULL; /* just in case */
 
-  gcMARK(pr->barrier_prompt);
   gcMARK(pr->meta_prompt);
   gcMARK(pr->meta_continuation);
   
@@ -678,8 +683,9 @@ prompt_val {
  mark: 
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcMARK(pr->boundary_overflow_id);
-  gcMARK(pr->boundary_dw_id);
   gcMARK(pr->runstack_boundary_start);
+  gcMARK(pr->tag);
+  gcMARK(pr->id);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Prompt));
 }

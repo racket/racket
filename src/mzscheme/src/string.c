@@ -1835,7 +1835,7 @@ sch_printf(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 sch_fprintf(int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_OUTPORTP(argv[0]))
+  if (!SCHEME_OUTPUT_PORTP(argv[0]))
     scheme_wrong_type("fprintf", "output-port", 0, argc, argv);
 
   scheme_do_format("fprintf", argv[0], NULL, 0, 1, 2, argc, argv);

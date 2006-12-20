@@ -143,6 +143,7 @@
 /* globals */
 Scheme_Object *scheme_eval_waiting;
 Scheme_Object *scheme_multiple_values;
+int scheme_continuation_application_count;
 
 volatile int scheme_fuel_counter;
 
@@ -152,6 +153,7 @@ void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 static Scheme_Object *app_symbol;
 static Scheme_Object *datum_symbol;
 static Scheme_Object *top_symbol;
+static Scheme_Object *top_level_symbol;
 
 static Scheme_Object *app_expander;
 static Scheme_Object *datum_expander;
@@ -222,7 +224,6 @@ static Scheme_Object *internal_define_symbol;
 static Scheme_Object *module_symbol;
 static Scheme_Object *module_begin_symbol;
 static Scheme_Object *expression_symbol;
-static Scheme_Object *top_level_symbol;
 
 static Scheme_Object *protected_symbol;
 
@@ -233,6 +234,8 @@ int scheme_overflow_count;
 static Scheme_Object *scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env, 
 						 Scheme_Compile_Expand_Info *rec, int drec, 
 						 int app_position);
+
+static Scheme_Object *_eval_compiled_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env);
 
 #define cons(x,y) scheme_make_pair(x,y)
 
@@ -517,6 +520,8 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
   Scheme_Overflow *overflow;
   Scheme_Overflow_Jmp *jmp;
 
+  scheme_about_to_move_C_stack();
+
   scheme_overflow_k = k;
   scheme_overflow_count++;
   
@@ -550,6 +555,11 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
         /* Jump directly to prompt: */
         Scheme_Prompt *prompt = (Scheme_Prompt *)p->cjs.jumping_to_continuation;
         scheme_longjmp(*prompt->prompt_buf, 1);
+      } else if (p->cjs.jumping_to_continuation
+                 && SCHEME_CONTP(p->cjs.jumping_to_continuation)) {
+        Scheme_Cont *c = (Scheme_Cont *)p->cjs.jumping_to_continuation;
+        p->cjs.jumping_to_continuation = NULL;
+        scheme_longjmpup(&c->buf);
       } else {
         /* Continue normal escape: */
         scheme_longjmp(scheme_error_buf, 1);
@@ -1454,7 +1464,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
     if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1)) {
       /* We can't optimize (begin0 expr cont) to expr because
 	 exp is not in tail position in the original (so we'd mess
-	 up continuation marks. */
+	 up continuation marks). */
       addconst = 1;
     } else
       return good;
@@ -3574,7 +3584,6 @@ static Scheme_Object *call_compile_handler(Scheme_Object *form, int immediate_ev
   return o;
 }
 
-
 static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env *genv)
 {
   if (genv->rename) {
@@ -3804,7 +3813,7 @@ static void *compile_k(void)
     if (SCHEME_PAIRP(tl_queue)) {
       /* This compile is interleaved with evaluation,
 	 and we need to eval now before compiling more. */
-      _scheme_eval_compiled_multi((Scheme_Object *)top, genv);
+      _eval_compiled_multi_with_prompt((Scheme_Object *)top, genv);
 
       form = SCHEME_CAR(tl_queue);
       tl_queue = SCHEME_CDR(tl_queue);
@@ -5591,28 +5600,34 @@ static void make_tail_buffer_safe()
 }
 
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
-                                         Scheme_Object *prompt_tag, int *_common_depth)
+                                         Scheme_Object *prompt_tag, int b_has_tag, int *_common_depth)
 {
   int alen = 0, blen = 0;
-  int prompt_delta = 0;
+  int a_has_tag = 0, a_prompt_delta = 0, b_prompt_delta = 0;
+  Scheme_Dynamic_Wind *dw;
 
-  if (prompt_tag) {
-    Scheme_Dynamic_Wind *dw;
-    for (dw = a; dw && (dw->prompt_tag != prompt_tag); dw = dw->prev) {
-    }
-    if (dw)
-      prompt_delta = dw->depth + 1;
+  for (dw = a; dw && (dw->prompt_tag != prompt_tag); dw = dw->prev) {
+  }
+  if (dw) {
+    /* Cut off `a' below the prompt dw. */
+    a_prompt_delta = dw->depth;
+    a_has_tag = 1;
   }
 
-  alen = (a ? a->depth + 1 : 0) - prompt_delta;
-  blen = (b ? b->depth + 1 : 0);
+  if (a_has_tag)
+    a_prompt_delta += 1;
+  if (b_has_tag)
+    b_prompt_delta += 1;
+
+  alen = (a ? a->depth + 1 : 0) - a_prompt_delta;
+  blen = (b ? b->depth + 1 : 0) - b_prompt_delta;
 
   while (alen > blen) {
     --alen;
     a = a->prev;
   }
   if (!alen) {
-    *_common_depth = -1;
+    *_common_depth = b_prompt_delta - 1;
     return a;
   }
   while (blen > alen) {
@@ -5633,6 +5648,124 @@ static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_
   *_common_depth = (b ? b->depth : -1);
 
   return a;
+}
+
+static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c, 
+                                         Scheme_Meta_Continuation **_prompt_mc,
+                                         MZ_MARK_POS_TYPE *_prompt_pos,
+                                         const char *msg)
+{
+  Scheme_Prompt *prompt;
+
+  prompt = (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, 
+                                                                 SCHEME_PTR_VAL(c->prompt_tag),
+                                                                 NULL,
+                                                                 _prompt_mc,
+                                                                 _prompt_pos);
+  if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, c->prompt_tag)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                     msg);
+  }
+
+  return prompt;
+}
+
+#define LOOKUP_NO_PROMPT "continuation application: no corresponding prompt in the current continuation"
+
+static Scheme_Prompt *check_barrier(Scheme_Prompt *prompt, 
+                                    Scheme_Meta_Continuation *prompt_cont, MZ_MARK_POS_TYPE prompt_pos,
+                                    Scheme_Cont *c)
+/* A continuation barrier is analogous to a dynamic-wind. A jump is
+   allowed if no dynamic-wind-like barriers would be executed for
+   the jump. */
+{
+  Scheme_Prompt *barrier_prompt, *b1, *b2;
+  Scheme_Meta_Continuation *barrier_cont;
+  MZ_MARK_POS_TYPE barrier_pos;
+
+  barrier_prompt = scheme_get_barrier_prompt(&barrier_cont, &barrier_pos);
+  b1 = barrier_prompt;
+  if (b1) {
+    if (!b1->is_barrier)
+      b1 = NULL;
+    else if (prompt
+             && scheme_is_cm_deeper(barrier_cont, barrier_pos,
+                                    prompt_cont, prompt_pos))
+      b1 = NULL;
+  }
+  b2 = c->barrier_prompt;
+  if (b2) {
+    if (!b2->is_barrier)
+      b2 = NULL;
+  }
+  
+  if (b1 != b2) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                     "continuation application: attempt to cross a continuation barrier");
+  }
+
+  return barrier_prompt;
+}
+
+void scheme_recheck_prompt_and_barrier(Scheme_Cont *c)
+/* Check for prompt & barrier, again. We need to
+   call this function like a d-w thunk, so that the meta
+   continuation is right in case of an error. */
+{
+  Scheme_Prompt *prompt;
+  Scheme_Meta_Continuation *prompt_cont;
+  MZ_MARK_POS_TYPE prompt_pos;
+  prompt = lookup_cont_prompt(c, &prompt_cont, &prompt_pos,
+                              LOOKUP_NO_PROMPT
+                              " on return from `dynamic-wind' post thunk");
+  check_barrier(prompt, prompt_cont, prompt_pos, c);
+}
+
+static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int common_depth)
+{
+  int meta_depth;
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Dynamic_Wind *dw;
+  int old_cac = scheme_continuation_application_count;
+
+  for (dw = p->dw; 
+       ((common && common->id) ? dw->id != common->id : dw != common); 
+       ) {
+    meta_depth = p->next_meta;
+    p->next_meta += dw->next_meta;
+    p->dw = dw->prev;
+    if (dw->post) {
+      if (meta_depth > 0) {
+        scheme_apply_dw_in_meta(dw, 1, meta_depth, c);
+      } else {
+        DW_PrePost_Proc post = dw->post;
+        
+        MZ_CONT_MARK_POS = dw->envss.cont_mark_pos;
+        MZ_CONT_MARK_STACK = dw->envss.cont_mark_stack;
+        post(dw->data);
+
+        if (scheme_continuation_application_count != old_cac) {
+          scheme_recheck_prompt_and_barrier(c);
+        }
+      }
+      p = scheme_current_thread;
+      /* p->dw might not match dw if the post thunk captures a
+         continuation that is later restored in a different 
+         meta continuation: */
+      dw = p->dw;
+
+      /* If any continuations were applied, then the set of dynamic
+         winds may be different now than before Re-compute the
+         intersection. */
+      if (scheme_continuation_application_count != old_cac) {
+        old_cac = scheme_continuation_application_count;
+        
+        common = intersect_dw(p->dw, c->dw, c->prompt_tag, c->has_prompt_dw, &common_depth);
+      }
+    } else
+      dw = dw->prev;
+  }
+  return common_depth;
 }
 
 #ifdef REGISTER_POOR_MACHINE
@@ -6061,10 +6194,11 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 #endif
     } else if (type == scheme_cont_type) {
       Scheme_Cont *c;
-      Scheme_Dynamic_Wind *dw, *common;
+      Scheme_Dynamic_Wind *common;
       Scheme_Object *value;
       Scheme_Meta_Continuation *prompt_mc;
-      Scheme_Prompt *prompt;
+      MZ_MARK_POS_TYPE prompt_pos;
+      Scheme_Prompt *prompt, *barrier_prompt;
       int common_depth;
       
       if (num_rands != 1) {
@@ -6098,85 +6232,39 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       if (c->composable) {
         /* Composable continuation. Jump right in... */
+        scheme_continuation_application_count++;
         RUNSTACK = old_runstack;
 	RUNSTACK_CHANGED();
         UPDATE_THREAD_RSPTR();
         v = scheme_compose_continuation(c, num_rands, value);
       } else {
         /* Aborting (Scheme-style) continuation. */
+        int orig_cac = scheme_continuation_application_count;
 
-        prompt = (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, 
-                                                                       SCHEME_PTR_VAL(c->prompt_tag),
-                                                                       NULL,
-                                                                       &prompt_mc);
-        if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, c->prompt_tag)) {
-          scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
-                           "continuation application: no corresponding prompt in the current continuation");
-        }
+        UPDATE_THREAD_RSPTR();
 
-        /* A continuation barrier is analogous to a dynamic-wind. A jump is
-           allowed if no dynamic-wind-like barriers would be executed for
-           the jump. */
-        {
-          Scheme_Prompt *b1, *b2;
+        scheme_about_to_move_C_stack();
 
-          b1 = p->barrier_prompt;
-          if (b1) {
-            if (!b1->is_barrier)
-              b1 = NULL;
-            else if (prompt && (prompt->depth > b1->depth))
-              b1 = NULL;
-          }
-          b2 = c->ss.barrier_prompt;
-          if (b2) {
-            if (!b2->is_barrier)
-              b2 = NULL;
-            else if (c->prompt_depth > b2->depth)
-              b2 = NULL;
-          }
-        
-          if (b1 != b2) {
-            UPDATE_THREAD_RSPTR_FOR_ERROR();
-            scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
-                             "continuation application: attempt to cross a continuation barrier");
-          }
-        }
+        prompt = lookup_cont_prompt(c, &prompt_mc, &prompt_pos, LOOKUP_NO_PROMPT);
+        barrier_prompt = check_barrier(prompt, prompt_mc, prompt_pos, c);
 
         p->suspend_break++; /* restored at call/cc destination */
 
         /* Find `common', the intersection of dynamic-wind chain for 
            the current continuation and the given continuation, looking
            no further back in the current continuation than a prompt. */
-        common = intersect_dw(p->dw, c->dw, c->prompt_tag, &common_depth);
+        common = intersect_dw(p->dw, c->dw, c->prompt_tag, c->has_prompt_dw, &common_depth);
 
         /* For dynamic-winds after `common' in this
            continuation, execute the post-thunks */
-        {
-          int meta_depth = 0;
-          
-          for (dw = p->dw; 
-               ((common && common->id) ? dw->id != common->id : dw != common); 
-               ) {
-            if (dw->post) {
-              p->dw = dw->prev;
-              meta_depth += dw->next_meta;
-              if (meta_depth) {
-                scheme_apply_dw_in_meta(dw, 1, meta_depth);
-              } else {
-                DW_PrePost_Proc post = dw->post;
+        common_depth = exec_dyn_wind_posts(common, c, common_depth);
+        p = scheme_current_thread;
 
-                MZ_CONT_MARK_POS = dw->envss.cont_mark_pos;
-                MZ_CONT_MARK_STACK = dw->envss.cont_mark_stack;
-                post(dw->data);
-              }
-              p = scheme_current_thread;
-              /* p->dw might not match dw if the post thunk captures a
-                 continuation that is later restored in a different 
-                 meta continuation: */
-              dw = p->dw;
-            } else
-              dw = dw->prev;
-          }
+        if (orig_cac != scheme_continuation_application_count) {
+          /* We checked for a barrier in exec_dyn_wind_posts, but
+             get prompt & barrier again. */
+          prompt = lookup_cont_prompt(c, &prompt_mc, &prompt_pos, "shouldn't fail!");
+          barrier_prompt = scheme_get_barrier_prompt(NULL, NULL);
         }
 
         c->common_dw_depth = common_depth;
@@ -6189,7 +6277,10 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
           c->value = vals;
         }
 
-        p->dw = common;
+        c->common_dw = common;
+        c->common_next_meta = p->next_meta;
+
+        scheme_continuation_application_count++;
 
         if (!prompt) {
           /* Invoke the continuation directly. If there's no prompt,
@@ -6197,7 +6288,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
              created with a new thread or a barrier prompt. */
           p->meta_continuation = NULL; /* since prompt wasn't in any meta-continuation */
           p->meta_prompt = NULL;
-          if (c->ss.barrier_prompt == p->barrier_prompt) {
+          if (c->barrier_prompt == barrier_prompt) {
             /* Barrier determines continuation end. */
             c->resume_to = NULL;
             p->stack_start = c->stack_start;
@@ -6211,6 +6302,32 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
             p->stack_start = c->prompt_stack_start;
           }
           scheme_longjmpup(&c->buf);
+        } else if (prompt->id
+                   && (prompt->id == c->prompt_id)
+                   && !prompt_mc) {
+          /* The current prompt is the same as the one in place when
+             capturing the continuation, so we can jump directly. */
+          scheme_drop_prompt_meta_continuations(c->prompt_tag);
+          c->shortcut_prompt = prompt;
+          if ((!prompt->boundary_overflow_id && !p->overflow)
+              || (prompt->boundary_overflow_id
+                  && (prompt->boundary_overflow_id == p->overflow->id))) {
+            scheme_longjmpup(&c->buf);
+          } else {
+            /* Need to unwind overflows... */
+            Scheme_Overflow *overflow;
+            overflow = p->overflow;
+            while (overflow->prev
+                   && (!overflow->prev->id
+                       || (overflow->prev->id != prompt->boundary_overflow_id))) {
+              overflow = overflow->prev;
+            }
+            /* Immediate destination is in scheme_handle_stack_overflow(). */
+            p->cjs.jumping_to_continuation = (Scheme_Object *)c;
+            p->overflow = overflow;
+            p->stack_start = overflow->stack_start;
+            scheme_longjmpup(&overflow->jmp->cont);
+          }
         } else {
           p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
           p->cjs.num_vals = 1;
@@ -6223,18 +6340,36 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
                and continue from there. Immediate destination is
                in compose_continuation() in fun.c; the ultimate
                destination is in scheme_finish_apply_for_prompt()
-               in fun.c. */
+               in fun.c.
+               We need to adjust the meta-continuation offsets in
+               common, based on the number that we're discarding
+               here. */
+            {
+              Scheme_Meta_Continuation *xmc;
+              int offset = 1;
+              for (xmc = p->meta_continuation; 
+                   xmc->prompt_tag != prompt_mc->prompt_tag; 
+                   xmc = xmc->next) {
+                if (xmc->overflow)
+                  offset++;
+              }
+              c->common_next_meta -= offset;
+            }
             p->meta_continuation = prompt_mc->next;
             p->stack_start = prompt_mc->overflow->stack_start;
             scheme_longjmpup(&prompt_mc->overflow->jmp->cont);
           } else if ((!prompt->boundary_overflow_id && !p->overflow)
-                     || (prompt->boundary_overflow_id == p->overflow->id)) {
+                     || (prompt->boundary_overflow_id
+                         && (prompt->boundary_overflow_id == p->overflow->id))) {
             /* Jump directly to the prompt: destination is in
                scheme_finish_apply_for_prompt() in fun.c. */
+            scheme_drop_prompt_meta_continuations(c->prompt_tag);
             scheme_longjmp(*prompt->prompt_buf, 1);
           } else {
             /* Need to unwind overflows to get to the prompt. */
-            Scheme_Overflow *overflow = p->overflow;
+            Scheme_Overflow *overflow;
+            scheme_drop_prompt_meta_continuations(c->prompt_tag);
+            overflow = p->overflow;
             while (overflow->prev
                    && (!overflow->prev->id
                        || (overflow->prev->id != prompt->boundary_overflow_id))) {
@@ -6955,6 +7090,34 @@ Scheme_Object *scheme_eval_multi(Scheme_Object *obj, Scheme_Env *env)
   return scheme_eval_compiled_multi(scheme_compile_for_eval(obj, env), env);
 }
 
+static Scheme_Object *finish_eval_with_prompt(void *_data, int argc, Scheme_Object **argv)
+{
+  Scheme_Object *data = (Scheme_Object *)_data;
+  return _scheme_eval_compiled(SCHEME_CAR(data), (Scheme_Env *)SCHEME_CDR(data));
+}
+
+Scheme_Object *scheme_eval_with_prompt(Scheme_Object *obj, Scheme_Env *env)
+{
+  Scheme_Object *expr;
+  expr = scheme_compile_for_eval(obj, env);
+  return scheme_call_with_prompt(finish_eval_with_prompt, 
+                                 scheme_make_pair(expr, (Scheme_Object *)env));
+}
+
+static Scheme_Object *finish_eval_multi_with_prompt(void *_data, int argc, Scheme_Object **argv)
+{
+  Scheme_Object *data = (Scheme_Object *)_data;
+  return _scheme_eval_compiled_multi(SCHEME_CAR(data), (Scheme_Env *)SCHEME_CDR(data));
+}
+
+Scheme_Object *scheme_eval_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env)
+{
+  Scheme_Object *expr;
+  expr = scheme_compile_for_eval(obj, env);
+  return scheme_call_with_prompt(finish_eval_multi_with_prompt, 
+                                 scheme_make_pair(expr, (Scheme_Object *)env));
+}
+
 static void *eval_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -7072,6 +7235,18 @@ Scheme_Object *_scheme_eval_compiled(Scheme_Object *obj, Scheme_Env *env)
 Scheme_Object *_scheme_eval_compiled_multi(Scheme_Object *obj, Scheme_Env *env)
 {
   return _eval(obj, env, 0, 1, 0, 0);
+}
+
+static Scheme_Object *finish_compiled_multi_with_prompt(void *_data, int argc, Scheme_Object **argv)
+{
+  Scheme_Object *data = (Scheme_Object *)_data;
+  return _eval(SCHEME_CAR(data), (Scheme_Env *)SCHEME_CDR(data), 0, 1, 0, 0);
+}
+
+Scheme_Object *_eval_compiled_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env)
+{
+  return _scheme_call_with_prompt_multi(finish_compiled_multi_with_prompt,
+                                        scheme_make_pair(obj, (Scheme_Object *)env));
 }
 
 Scheme_Object *scheme_eval_linked_expr(Scheme_Object *obj)
@@ -7672,7 +7847,7 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 1, -1, 1, 1, 0, NULL);
 }
 
-Scheme_Object *scheme_eval_string_all(const char *str, Scheme_Env *env, int cont)
+static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int cont, int w_prompt)
 {
   Scheme_Object *port, *expr, *result = scheme_void;
 
@@ -7681,23 +7856,50 @@ Scheme_Object *scheme_eval_string_all(const char *str, Scheme_Env *env, int cont
     expr = scheme_read_syntax(port, scheme_false);
     if (SAME_OBJ(expr, scheme_eof))
       cont = 0;
-    else if (cont < 0)
-      result = scheme_eval(expr, env);
-    else
-      result = scheme_eval_multi(expr, env);
+    else if (cont < 0) {
+      if (w_prompt)
+        result = scheme_eval_with_prompt(expr, env);
+      else
+        result = scheme_eval(expr, env);
+    } else {
+      if (w_prompt)
+        result = scheme_eval_multi_with_prompt(expr, env);
+      else
+        result = scheme_eval_multi(expr, env);
+    }
   } while (cont > 0);
 
   return result;
 }
 
+Scheme_Object *scheme_eval_string_all(const char *str, Scheme_Env *env, int cont)
+{
+  return do_eval_string_all(str, env, cont, 0);
+}
+
 Scheme_Object *scheme_eval_string(const char *str, Scheme_Env *env)
 {
-  return scheme_eval_string_all(str, env, -1);
+  return do_eval_string_all(str, env, -1, 0);
 }
 
 Scheme_Object *scheme_eval_string_multi(const char *str, Scheme_Env *env)
 {
-  return scheme_eval_string_all(str, env, 0);
+  return do_eval_string_all(str, env, 0, 0);
+}
+
+Scheme_Object *scheme_eval_string_all_with_prompt(const char *str, Scheme_Env *env, int cont)
+{
+  return do_eval_string_all(str, env, cont, 1);
+}
+
+Scheme_Object *scheme_eval_string_with_prompt(const char *str, Scheme_Env *env)
+{
+  return do_eval_string_all(str, env, -1, 1);
+}
+
+Scheme_Object *scheme_eval_string_multi_with_prompt(const char *str, Scheme_Env *env)
+{
+  return do_eval_string_all(str, env, 0, 1);
 }
 
 static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv)

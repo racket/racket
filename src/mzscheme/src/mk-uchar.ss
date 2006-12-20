@@ -344,7 +344,7 @@
 		     #f
 		     ;; whitespace
 		     (or (member cat space-cats)
-			 (member code '(#x9 #xa #xb #xc #xd)))
+			 (member code '(#x9 #xa #xb #xc #xd #x85)))
 		     ;; control
 		     (or (<= #x0000 code #x001F)
 			 (<= #x007F code #x009F))

@@ -193,6 +193,8 @@ unsigned char *scheme_uchar_combining_classes;
 /*========================================================================*/
 Scheme_Object *(*scheme_eval)(Scheme_Object *obj, Scheme_Env *env);
 Scheme_Object *(*scheme_eval_multi)(Scheme_Object *obj, Scheme_Env *env);
+Scheme_Object *(*scheme_eval_with_prompt)(Scheme_Object *obj, Scheme_Env *env);
+Scheme_Object *(*scheme_eval_multi_with_prompt)(Scheme_Object *obj, Scheme_Env *env);
 Scheme_Object *(*scheme_eval_compiled)(Scheme_Object *obj, Scheme_Env *env);
 Scheme_Object *(*scheme_eval_compiled_multi)(Scheme_Object *obj, Scheme_Env *env);
 Scheme_Object *(*_scheme_eval_compiled)(Scheme_Object *obj, Scheme_Env *env);
@@ -202,9 +204,16 @@ Scheme_Object *(*scheme_apply_multi)(Scheme_Object *rator, int num_rands, Scheme
 Scheme_Object *(*scheme_apply_no_eb)(Scheme_Object *rator, int num_rands, Scheme_Object **rands);
 Scheme_Object *(*scheme_apply_multi_no_eb)(Scheme_Object *rator, int num_rands, Scheme_Object **rands);
 Scheme_Object *(*scheme_apply_to_list)(Scheme_Object *rator, Scheme_Object *argss);
+Scheme_Object *(*scheme_apply_with_prompt)(Scheme_Object *rator, int num_rands, Scheme_Object **rands);
+Scheme_Object *(*scheme_apply_multi_with_prompt)(Scheme_Object *rator, int num_rands, Scheme_Object **rands);
+Scheme_Object *(*_scheme_apply_with_prompt)(Scheme_Object *rator, int num_rands, Scheme_Object **rands);
+Scheme_Object *(*_scheme_apply_multi_with_prompt)(Scheme_Object *rator, int num_rands, Scheme_Object **rands);
 Scheme_Object *(*scheme_eval_string)(const char *str, Scheme_Env *env);
 Scheme_Object *(*scheme_eval_string_multi)(const char *str, Scheme_Env *env);
 Scheme_Object *(*scheme_eval_string_all)(const char *str, Scheme_Env *env, int all);
+Scheme_Object *(*scheme_eval_string_with_prompt)(const char *str, Scheme_Env *env);
+Scheme_Object *(*scheme_eval_string_multi_with_prompt)(const char *str, Scheme_Env *env);
+Scheme_Object *(*scheme_eval_string_all_with_prompt)(const char *str, Scheme_Env *env, int all);
 Scheme_Object *(*_scheme_apply_known_prim_closure)(Scheme_Object *rator, int argc,
 							  Scheme_Object **argv);
 Scheme_Object *(*_scheme_apply_known_prim_closure_multi)(Scheme_Object *rator, int argc,
@@ -213,6 +222,10 @@ Scheme_Object *(*_scheme_apply_prim_closure)(Scheme_Object *rator, int argc,
 						    Scheme_Object **argv);
 Scheme_Object *(*_scheme_apply_prim_closure_multi)(Scheme_Object *rator, int argc,
 							  Scheme_Object **argv);
+Scheme_Object *(*scheme_call_with_prompt)(Scheme_Closed_Prim f, void *data);
+Scheme_Object *(*scheme_call_with_prompt_multi)(Scheme_Closed_Prim f, void *data);
+Scheme_Object *(*_scheme_call_with_prompt)(Scheme_Closed_Prim f, void *data);
+Scheme_Object *(*_scheme_call_with_prompt_multi)(Scheme_Closed_Prim f, void *data);
 Scheme_Object *(*scheme_values)(int c, Scheme_Object **v);
 Scheme_Object *(*scheme_check_one_value)(Scheme_Object *v);
 /* Tail calls - only use these when you're writing new functions/syntax */
@@ -310,6 +323,7 @@ Scheme_Hash_Table *(*scheme_make_hash_table)(int type);
 Scheme_Hash_Table *(*scheme_make_hash_table_equal)();
 void (*scheme_hash_set)(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_hash_get)(Scheme_Hash_Table *table, Scheme_Object *key);
+Scheme_Object *(*scheme_eq_hash_get)(Scheme_Hash_Table *table, Scheme_Object *key);
 int (*scheme_hash_table_equal)(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
 int (*scheme_is_hash_table_equal)(Scheme_Object *o);
 Scheme_Hash_Table *(*scheme_clone_hash_table)(Scheme_Hash_Table *bt);
@@ -588,6 +602,11 @@ Scheme_Object *(*scheme_write_special)(int argc, Scheme_Object *argv[]);
 Scheme_Object *(*scheme_write_special_nonblock)(int argc, Scheme_Object *argv[]);
 Scheme_Object *(*scheme_make_write_evt)(const char *who, Scheme_Object *port,
 					       Scheme_Object *special, char *str, long start, long size);
+Scheme_Port *(*scheme_port_record)(Scheme_Object *port);
+Scheme_Input_Port *(*scheme_input_port_record)(Scheme_Object *port);
+Scheme_Output_Port *(*scheme_output_port_record)(Scheme_Object *port);
+int (*scheme_is_input_port)(Scheme_Object *port);
+int (*scheme_is_output_port)(Scheme_Object *port);
 Scheme_Object *(*scheme_make_port_type)(const char *name);
 Scheme_Input_Port *(*scheme_make_input_port)(Scheme_Object *subtype, void *data,
 						    Scheme_Object *name,

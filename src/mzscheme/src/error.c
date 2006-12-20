@@ -631,9 +631,8 @@ call_error(char *buffer, int len, Scheme_Object *exn)
 					scheme_make_pair(v, exn),
 					"nested-exception-handler", 
 					1, 1);
-    config = scheme_extend_config(orig_config,
-				  MZCONFIG_EXN_HANDLER,
-				  v);
+
+    config = orig_config;
     if (SAME_OBJ(display_handler, default_display_handler))
       config = scheme_extend_config(config,
 				    MZCONFIG_ERROR_DISPLAY_HANDLER,
@@ -645,6 +644,7 @@ call_error(char *buffer, int len, Scheme_Object *exn)
     
     scheme_push_continuation_frame(&cframe);
     scheme_install_config(config);
+    scheme_set_cont_mark(scheme_exn_handler_key, v);
     scheme_push_break_enable(&cframe2, 0, 0);
 
     p[0] = scheme_make_immutable_sized_utf8_string(buffer, len);
@@ -656,9 +656,7 @@ call_error(char *buffer, int len, Scheme_Object *exn)
 					scheme_make_pair(v, exn),
 					"nested-exception-handler", 
 					1, 1);
-    config = scheme_extend_config(orig_config,
-				  MZCONFIG_EXN_HANDLER,
-				  v);
+    
     config = scheme_extend_config(config,
 				  MZCONFIG_ERROR_DISPLAY_HANDLER,
 				  default_display_handler);
@@ -670,6 +668,7 @@ call_error(char *buffer, int len, Scheme_Object *exn)
     scheme_pop_continuation_frame(&cframe);
 
     scheme_push_continuation_frame(&cframe);
+    scheme_set_cont_mark(scheme_exn_handler_key, v);
     scheme_install_config(config);
     scheme_push_break_enable(&cframe2, 0, 0);
 
@@ -2236,7 +2235,17 @@ def_error_value_string_proc(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *
 def_error_escape_proc(int argc, Scheme_Object *argv[])
-{
+{  
+  Scheme_Object *prompt;
+  Scheme_Thread *p = scheme_current_thread;
+
+  prompt = scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(scheme_default_prompt_tag));
+
+  if (prompt) {
+    p->cjs.jumping_to_continuation = prompt;
+    p->cjs.num_vals = 1;
+    p->cjs.val = scheme_void_proc;
+  }
   scheme_longjmp(scheme_error_buf, 1);
 
   return scheme_void; /* Never get here */
@@ -2417,18 +2426,9 @@ def_exn_handler(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-exn_handler(int argc, Scheme_Object *argv[])
-{
-  return scheme_param_config("current-exception-handler",
-			     scheme_make_integer(MZCONFIG_EXN_HANDLER),
-			     argc, argv,
-			     1, NULL, NULL, 0);
-}
-
-static Scheme_Object *
 init_exn_handler(int argc, Scheme_Object *argv[])
 {
-  return scheme_param_config("initial-exception-handler",
+  return scheme_param_config("uncaught-exception-handler",
 			     scheme_make_integer(MZCONFIG_INIT_EXN_HANDLER),
 			     argc, argv,
 			     1, NULL, NULL, 0);
@@ -2486,7 +2486,6 @@ static Scheme_Object *
 do_raise(Scheme_Object *arg, int return_ok, int need_debug)
 {
  Scheme_Object *v, *p[1], *h;
- Scheme_Config *config;
  Scheme_Cont_Frame_Data cframe, cframe2;
 
  if (scheme_current_thread->skip_error) {
@@ -2499,8 +2498,10 @@ do_raise(Scheme_Object *arg, int return_ok, int need_debug)
    ((Scheme_Structure *)arg)->slots[1] = marks;
  }
 
- config = scheme_current_config();
- h = scheme_get_param(config, MZCONFIG_EXN_HANDLER);
+ h = scheme_extract_one_cc_mark(NULL, scheme_exn_handler_key);
+ if (!h) {
+   h = scheme_get_param(scheme_current_config(), MZCONFIG_INIT_EXN_HANDLER);
+ }
 
  v = scheme_make_byte_string_without_copying("exception handler");
  v = scheme_make_closed_prim_w_arity(nested_exn_handler,
@@ -2508,12 +2509,8 @@ do_raise(Scheme_Object *arg, int return_ok, int need_debug)
 				     "nested-exception-handler", 
 				     1, 1);
 
- config = scheme_extend_config(config,
-			       MZCONFIG_EXN_HANDLER,
-			       v);
-
  scheme_push_continuation_frame(&cframe);
- scheme_install_config(config);
+ scheme_set_cont_mark(scheme_exn_handler_key, v);
  scheme_push_break_enable(&cframe2, 0, 0);
 
  p[0] = arg;
@@ -2702,15 +2699,9 @@ void scheme_init_exn(Scheme_Env *env)
     }
   }
 
-  scheme_add_global_constant("current-exception-handler",
-			     scheme_register_parameter(exn_handler,
-						       "current-exception-handler",
-						       MZCONFIG_EXN_HANDLER),
-			     env);
-
-  scheme_add_global_constant("initial-exception-handler",
+  scheme_add_global_constant("uncaught-exception-handler",
 			     scheme_register_parameter(init_exn_handler,
-						       "initial-exception-handler",
+						       "uncaught-exception-handler",
 						       MZCONFIG_INIT_EXN_HANDLER),
 			     env);
 
@@ -2731,7 +2722,6 @@ void scheme_init_exn_config(void)
 			       "default-exception-handler",
 			       1, 1);
 
-  scheme_set_root_param(MZCONFIG_EXN_HANDLER, h);
   scheme_set_root_param(MZCONFIG_INIT_EXN_HANDLER, h);
 }
 

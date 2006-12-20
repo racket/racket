@@ -150,6 +150,7 @@ static Scheme_Object *set_stx;
 static Scheme_Object *with_continuation_mark_stx;
 static Scheme_Object *letrec_syntaxes_stx;
 static Scheme_Object *var_ref_stx;
+static Scheme_Object *expression_stx;
 
 static Scheme_Env *initial_modules_env;
 static int num_initial_modules;
@@ -483,6 +484,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   REGISTER_SO(with_continuation_mark_stx);
   REGISTER_SO(letrec_syntaxes_stx);
   REGISTER_SO(var_ref_stx);
+  REGISTER_SO(expression_stx);
 
   w = scheme_sys_wraps0;
   scheme_module_stx = scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, w, 0, 0);
@@ -507,6 +509,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   with_continuation_mark_stx = scheme_datum_to_syntax(scheme_intern_symbol("with-continuation-mark"), scheme_false, w, 0, 0);
   letrec_syntaxes_stx = scheme_datum_to_syntax(scheme_intern_symbol("letrec-syntaxes+values"), scheme_false, w, 0, 0);
   var_ref_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%variable-reference"), scheme_false, w, 0, 0);
+  expression_stx = scheme_datum_to_syntax(scheme_intern_symbol("#%expression"), scheme_false, w, 0, 0);
 
   REGISTER_SO(prefix_symbol);
   REGISTER_SO(only_symbol);
@@ -2112,7 +2115,8 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
   symbol = scheme_tl_id_sym(env, symbol, NULL, 0);
 
   if ((env == scheme_initial_env)
-      || (env->module->primitive)
+      || ((env->module->primitive
+           && !env->module->provide_protects))
       /* For now[?], we're pretending that all definitions exists for
 	 non-0 local phase. */
       || env->mod_phase) {
@@ -2129,7 +2133,8 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
     int need_cert = 0;
 
     if (position < env->module->me->num_var_provides) {
-      if (SCHEME_FALSEP(env->module->me->provide_srcs[position]))
+      if (!env->module->me->provide_srcs
+          || SCHEME_FALSEP(env->module->me->provide_srcs[position]))
 	isym = env->module->me->provide_src_names[position];
       else
 	isym = NULL;
@@ -2203,7 +2208,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
       }
 
       if (want_pos)
-	return pos;
+        return pos;
       else
 	return symbol;
     }
@@ -2779,6 +2784,8 @@ void scheme_finish_primitive_module(Scheme_Env *env)
   m->me->num_provides = count;
   m->me->num_var_provides = count;
 
+  qsort_provides(exs, NULL, NULL, NULL, 0, count, 1);
+
   env->running = 1;
 }
 
@@ -2788,12 +2795,16 @@ void scheme_protect_primitive_provide(Scheme_Env *env, Scheme_Object *name)
   int i;
 
   if (!m->provide_protects) {
+    Scheme_Hash_Table *ht;
     char *exps;
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
     exps = MALLOC_N_ATOMIC(char, m->me->num_provides);
     for (i = m->me->num_provides; i--; ) {
       exps[i] = 0;
+      scheme_hash_set(ht, m->me->provides[i], scheme_make_integer(i));
     }
     m->provide_protects = exps;
+    m->accessible = ht;
   }
 
   if (name) {
@@ -3883,7 +3894,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   {
     Scheme_Object *stop;
     stop = scheme_get_stop_expander();
-    scheme_add_local_syntax(20, xenv);
+    scheme_add_local_syntax(21, xenv);
     scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv);
     scheme_set_local_syntax(1, scheme_define_values_stx, stop, xenv);
     scheme_set_local_syntax(2, scheme_define_syntaxes_stx, stop, xenv);
@@ -3904,6 +3915,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_set_local_syntax(17, with_continuation_mark_stx, stop, xenv);
     scheme_set_local_syntax(18, letrec_syntaxes_stx, stop, xenv);
     scheme_set_local_syntax(19, var_ref_stx, stop, xenv);
+    scheme_set_local_syntax(20, expression_stx, stop, xenv);
   }
 
   first = scheme_null;

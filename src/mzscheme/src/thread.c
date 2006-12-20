@@ -178,6 +178,7 @@ static Scheme_Custodian *last_custodian;
 static Scheme_Object *scheduled_kills;
 
 Scheme_Object *scheme_parameterization_key;
+Scheme_Object *scheme_exn_handler_key;
 Scheme_Object *scheme_break_enabled_key;
 
 long scheme_total_gc_time;
@@ -754,8 +755,10 @@ void scheme_init_parameterization(Scheme_Env *env)
   Scheme_Object *v;
   Scheme_Env *newenv;
 
+  REGISTER_SO(scheme_exn_handler_key);
   REGISTER_SO(scheme_parameterization_key);
   REGISTER_SO(scheme_break_enabled_key);
+  scheme_exn_handler_key = scheme_make_symbol("exnh");
   scheme_parameterization_key = scheme_make_symbol("paramz");
   scheme_break_enabled_key = scheme_make_symbol("break-on?");
   
@@ -765,6 +768,9 @@ void scheme_init_parameterization(Scheme_Env *env)
   v = scheme_intern_symbol("#%paramz");
   newenv = scheme_primitive_module(v, env);
   
+  scheme_add_global_constant("exception-handler-key", 
+			     scheme_exn_handler_key,
+			     newenv);
   scheme_add_global_constant("parameterization-key", 
 			     scheme_parameterization_key,
 			     newenv);
@@ -786,6 +792,7 @@ void scheme_init_parameterization(Scheme_Env *env)
 
 
   scheme_finish_primitive_module(newenv);
+  scheme_protect_primitive_provide(newenv, NULL);
 }
 
 static Scheme_Object *collect_garbage(int c, Scheme_Object *p[])
@@ -2526,11 +2533,6 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
       maybe_recycle_cell = NULL;
   }
 
-  config = scheme_init_error_escape_proc(config);
-  config = scheme_extend_config(config, MZCONFIG_EXN_HANDLER,
-				scheme_get_thread_param(config, cells,
-							MZCONFIG_INIT_EXN_HANDLER));
-  
   child = make_thread(config, cells, break_cell, mgr);
 
   /* Use child_thunk name, if any, for the thread name: */
@@ -2884,15 +2886,6 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
   {
     Scheme_Config *config;
     config = scheme_current_config();
-    config = scheme_init_error_escape_proc(config);
-    if (!nested_exn_handler) {
-      REGISTER_SO(nested_exn_handler);
-      nested_exn_handler = scheme_make_prim_w_arity(def_nested_exn_handler,
-						    "nested-thread-exception-handler",
-						    1, 1);
-    }
-    config = scheme_extend_config(config, MZCONFIG_EXN_HANDLER, nested_exn_handler);
-
     np->init_config = config;
   }
   {
@@ -2945,6 +2938,14 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 
   if (p != scheme_main_thread)
     scheme_weak_suspend_thread(p);
+
+  if (!nested_exn_handler) {
+    REGISTER_SO(nested_exn_handler);
+    nested_exn_handler = scheme_make_prim_w_arity(def_nested_exn_handler,
+                                                  "nested-thread-exception-handler",
+                                                  1, 1);
+  }
+  scheme_set_cont_mark(scheme_exn_handler_key, nested_exn_handler);
 
   /* Call thunk, catch escape: */
   np->error_buf = &newbuf;
@@ -3967,6 +3968,11 @@ void scheme_weak_resume_thread(Scheme_Thread *r)
       scheme_check_tail_buffer_size(r);
     }
   }
+}
+
+void scheme_about_to_move_C_stack(void)
+{
+  wait_until_suspend_ok();
 }
 
 static Scheme_Object *
@@ -5533,7 +5539,19 @@ static Scheme_Object *do_param(void *data, int argc, Scheme_Object *argv[]);
 
 Scheme_Config *scheme_current_config()
 {
-  return (Scheme_Config *)scheme_extract_one_cc_mark(NULL, scheme_parameterization_key);
+  Scheme_Object *v;
+
+  v = scheme_extract_one_cc_mark(NULL, scheme_parameterization_key);
+
+  if (!SAME_TYPE(scheme_config_type, SCHEME_TYPE(v))) {
+    /* Someone has grabbed parameterization-key out of #%paramz
+       and misused it.
+       Printing an error message requires consulting parameters,
+       so just escape. */
+    scheme_longjmp(scheme_error_buf, 1);
+  }
+
+  return (Scheme_Config *)v;
 }
 
 static Scheme_Config *do_extend_config(Scheme_Config *c, Scheme_Object *key, Scheme_Object *cell)

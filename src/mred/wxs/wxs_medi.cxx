@@ -2143,7 +2143,7 @@ static Scheme_Object *os_wxMediaBufferInsertPort(int n,  Scheme_Object *p[])
   VAR_STACK_PUSH(1, x0);
 
   
-  x0 = (SCHEME_INPORTP(p[POFFSET+0]) ? p[POFFSET+0] : (scheme_wrong_type(METHODNAME("editor<%>","insert-port"), "input port", -1, 1, &p[POFFSET+0]), (Scheme_Object *)NULL));
+  x0 = (SCHEME_INPUT_PORTP(p[POFFSET+0]) ? p[POFFSET+0] : (scheme_wrong_type(METHODNAME("editor<%>","insert-port"), "input port", -1, 1, &p[POFFSET+0]), (Scheme_Object *)NULL));
   if (n > (POFFSET+1)) {
     x1 = WITH_VAR_STACK(unbundle_symset_fileType(p[POFFSET+1], "insert-port in editor<%>"));
   } else
@@ -2177,7 +2177,7 @@ static Scheme_Object *os_wxMediaBufferSavePort(int n,  Scheme_Object *p[])
   VAR_STACK_PUSH(1, x0);
 
   
-  x0 = (SCHEME_OUTPORTP(p[POFFSET+0]) ? p[POFFSET+0] : (scheme_wrong_type(METHODNAME("editor<%>","save-port"), "output port", -1, 1, &p[POFFSET+0]), (Scheme_Object *)NULL));
+  x0 = (SCHEME_OUTPUT_PORTP(p[POFFSET+0]) ? p[POFFSET+0] : (scheme_wrong_type(METHODNAME("editor<%>","save-port"), "output port", -1, 1, &p[POFFSET+0]), (Scheme_Object *)NULL));
   if (n > (POFFSET+1)) {
     x1 = WITH_VAR_STACK(unbundle_symset_fileType(p[POFFSET+1], "save-port in editor<%>"));
   } else

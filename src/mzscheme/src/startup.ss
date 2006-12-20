@@ -1906,20 +1906,17 @@
   (-define (catch-ellipsis-error thunk sexp sloc)
       ((let/ec esc
 	 (with-continuation-mark
-	     parameterization-key
-	     (extend-parameterization
-	      (continuation-mark-set-first #f parameterization-key)
-	      current-exception-handler
-	      (lambda (exn)
-		(esc
-		 (lambda ()
-		   (if (exn:break? exn)
-		       (raise exn)
-		       (raise-syntax-error
-			'syntax
-			"incompatible ellipsis match counts for template"
-			sexp
-			sloc))))))
+	     exception-handler-key
+             (lambda (exn)
+               (esc
+                (lambda ()
+                  (if (exn:break? exn)
+                      (raise exn)
+                      (raise-syntax-error
+                       'syntax
+                       "incompatible ellipsis match counts for template"
+                       sexp
+                       sloc)))))
 	   (let ([v (thunk)])
 	     (lambda () v))))))
 
@@ -3142,6 +3139,8 @@
       (error 'with-handlers
              "exception handler used out of context")))
 
+  (define handler-prompt-key (make-continuation-prompt-tag))
+
   (define-syntaxes (with-handlers with-handlers*)
     (let ([wh 
 	   (lambda (disable-break?)
@@ -3155,8 +3154,7 @@
 									       (syntax->list #'(handler ...))))])
 		    (quasisyntax/loc stx
 		      (let ([pred-name pred] ...
-			    [handler-name handler] ...
-                            [handler-prompt-key (make-continuation-prompt-tag)])
+			    [handler-name handler] ...)
 			;; Capture current break parameterization, so we can use it to
 			;;  evaluate the body
 			(let ([bpz (continuation-mark-set-first #f break-enabled-key)])
@@ -3176,23 +3174,30 @@
 			       (with-continuation-mark 
 				   break-enabled-key
 				   bpz
-				 (parameterize ([current-exception-handler
-						 (lambda (e)
-                                                   (check-with-handlers-in-context handler-prompt-key)
-						   ;; Deliver a thunk to the escape handler:
-						   (abort-current-continuation
-                                                    handler-prompt-key
-						    (lambda ()
-						      (#,(if disable-break?
-							     #'select-handler/no-breaks
-							     #'select-handler/breaks-as-is)
-						       e bpz
-						       (list (cons pred-name handler-name) ...)))))])
-				   expr1 expr ...)))
+                                 (with-continuation-mark 
+                                     exception-handler-key
+                                     (lambda (e)
+                                       ;; Deliver a thunk to the escape handler:
+                                       (abort-current-continuation
+                                        handler-prompt-key
+                                        (lambda ()
+                                          (#,(if disable-break?
+                                                 #'select-handler/no-breaks
+                                                 #'select-handler/breaks-as-is)
+                                           e bpz
+                                           (list (cons pred-name handler-name) ...)))))
+                                   (let ()
+                                     expr1 expr ...))))
                              handler-prompt-key
 			     ;; On escape, apply the handler thunk
 			     (lambda (thunk) (thunk))))))))])))])
       (values (wh #t) (wh #f))))
+
+  (define (call-with-exception-handler exnh thunk)
+    (with-continuation-mark
+        exception-handler-key
+        exnh
+      (thunk)))
 
   (define-syntax set!-values
     (lambda (stx)
@@ -3268,7 +3273,8 @@
   (provide case do delay force promise?
 	   parameterize current-parameterization call-with-parameterization
 	   parameterize-break current-break-parameterization call-with-break-parameterization
-	   with-handlers with-handlers* set!-values
+	   with-handlers with-handlers* call-with-exception-handler
+           set!-values
 	   let/cc let-struct fluid-let time))
 
 ;;----------------------------------------------------------------------
@@ -3360,30 +3366,30 @@
 	   [else (find-between lo hi)])))))
 
   (define (read-eval-print-loop)
-    (let* ([jump-key (gensym)]
-	   [repl-error-escape-handler
-	    (lambda ()
-	      (let ([jump-k (continuation-mark-set-first #f jump-key)])
-		(if jump-k
-		    (jump-k)
-		    (error 'repl-error-escape-handler "used out of context"))))])
-      ;; This parameterize is outside the loop so that
-      ;;  expressions evaluated in the REPL can set the
-      ;;  error escape handler. That's why we communicate the
-      ;;  actual escape target through a continuation mark.
-      (parameterize ([error-escape-handler repl-error-escape-handler])
-	(let/ec done-k
-	  (let repl-loop ()
-	    (let/ec k
-	      (with-continuation-mark jump-key k
-		(let ([v ((current-prompt-read))])
-		  (when (eof-object? v) (done-k (void)))
-		  (call-with-values
-		      (lambda () ((current-eval) (if (syntax? v)
-						     (namespace-syntax-introduce v)
-						     v)))
-		    (lambda results (for-each (current-print) results))))))
-	    (repl-loop))))))
+    (let repl-loop ()
+      ;; This prompt catches all error escapes, including from read and print.
+      (call-with-continuation-prompt
+       (lambda ()
+         (let ([v ((current-prompt-read))])
+           (unless (eof-object? v)
+             (call-with-values
+                 (lambda () 
+                   ;; This prompt catches escapes during evaluation.
+                   ;; Unlike the outer prompt, the handler prints
+                   ;; the results.
+                   (call-with-continuation-prompt
+                    (lambda ()
+                      (let ([w (cons '#%top-interaction v)])
+                        ((current-eval) (if (syntax? v)
+                                            (namespace-syntax-introduce 
+                                             (datum->syntax-object #f w v))
+                                            w))))
+                    (default-continuation-prompt-tag)))
+               (lambda results (for-each (current-print) results)))
+             ;; Abort to loop. (Calling `repl-loop' directory would not be a tail call.)
+             (abort-current-continuation (default-continuation-prompt-tag)))))
+       (default-continuation-prompt-tag)
+       (lambda args (repl-loop)))))
 
   (define load/cd
     (lambda (n)
@@ -4046,7 +4052,18 @@
 	   stx)
 	  (raise-syntax-error #f "bad syntax" stx))))
 
-  (provide mzscheme-in-stx-module-begin))
+  (define-syntax #%top-interaction
+    (lambda (stx)
+      (if (eq? 'top-level (syntax-local-context))
+          'ok
+          (raise-syntax-error
+           #f
+           "not at top level"
+           stx))
+      (datum->syntax-object stx (stx-cdr stx) stx stx)))
+
+  (provide mzscheme-in-stx-module-begin
+           #%top-interaction))
 
 ;;----------------------------------------------------------------------
 ;; mzscheme: provide everything
@@ -4068,6 +4085,7 @@
 	   (all-from #%qqstx)
 	   (all-from #%define)
 	   (all-from-except #%kernel #%module-begin)
+           #%top-interaction
 	   (rename mzscheme-in-stx-module-begin #%module-begin)
 	   (rename #%module-begin #%plain-module-begin)))
 
@@ -4116,7 +4134,7 @@
 
 	   ;; We have to include the following MzScheme-isms to do anything,
 	   ;; but they're not legal R5RS names, anyway.
-	   #%app #%datum #%top))
+	   #%app #%datum #%top #%top-interaction))
 
 ;;----------------------------------------------------------------------
 ;; init namespace

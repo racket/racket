@@ -26,6 +26,7 @@
 Scheme_Object *scheme_arity_at_least, *scheme_date;
 Scheme_Object *scheme_make_arity_at_least;
 Scheme_Object *scheme_source_property;
+Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 
 /* locals */
 
@@ -60,6 +61,8 @@ static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
 static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_struct_type(int argc, Scheme_Object *argv[]);
 
@@ -98,6 +101,8 @@ Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write_specia
 static Scheme_Object *evt_property;
 static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int is_evt_struct(Scheme_Object *);
+
+static Scheme_Object *proc_property;
 
 static int wrapped_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int nack_guard_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
@@ -229,7 +234,7 @@ scheme_init_struct (Scheme_Env *env)
   {
     Scheme_Object *guard, *a[2], *pred, *access;
     guard = scheme_make_prim_w_arity(check_write_property_value_ok,
-				     "prop:custom-write-guard",
+				     "guard-for-prop:custom-write",
 				     2, 2);
 
     a[0] = scheme_intern_symbol("custom-write");
@@ -247,16 +252,43 @@ scheme_init_struct (Scheme_Env *env)
   {
     Scheme_Object *guard;
     guard = scheme_make_prim_w_arity(check_evt_property_value_ok,
-				     "prop:evt-guard",
+				     "guard-for-prop:evt",
 				     2, 2);
     evt_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("evt"),
-								 guard);
+                                                            guard);
     scheme_add_global_constant("prop:evt", evt_property, env);
 
     scheme_add_evt(scheme_structure_type,
 		   (Scheme_Ready_Fun)evt_struct_is_ready,
 		   NULL,
 		   is_evt_struct, 1);
+  }
+
+  {
+    REGISTER_SO(proc_property);
+    proc_property = scheme_make_struct_type_property(scheme_intern_symbol("procedure"));
+    scheme_add_global_constant("prop:procedure", proc_property, env);
+  }
+
+  {
+    Scheme_Object *guard;
+    REGISTER_SO(scheme_input_port_property);
+    REGISTER_SO(scheme_output_port_property);
+
+    guard = scheme_make_prim_w_arity(check_input_port_property_value_ok,
+				     "guard-for-prop:input-port",
+				     2, 2);
+    scheme_input_port_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("input-port"),
+                                                                          guard);
+    
+    guard = scheme_make_prim_w_arity(check_output_port_property_value_ok,
+				     "guard-for-prop:output-port",
+				     2, 2);
+    scheme_output_port_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("output-port"),
+                                                                           guard);
+    
+    scheme_add_global_constant("prop:input-port", scheme_input_port_property, env);
+    scheme_add_global_constant("prop:output-port", scheme_output_port_property, env);
   }
 
   REGISTER_SO(scheme_recur_symbol);
@@ -451,7 +483,7 @@ scheme_init_struct (Scheme_Env *env)
   {
     Scheme_Object *guard;
     guard = scheme_make_prim_w_arity(check_exn_source_property_value_ok,
-				     "prop:exn:srclocs-guard",
+				     "guard-for-prop:exn:srclocs",
 				     2, 2);
     scheme_source_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("prop:exn:srclocs"),
 								      guard);
@@ -587,7 +619,7 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
   return scheme_false;
 }
 
-static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg, int error_ok, const char *name)
+XFORM_NONGCING static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg)
 {
   Scheme_Struct_Type *stype;
 
@@ -601,7 +633,7 @@ static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg, 
   if (stype) {
     if (stype->num_props < 0) {
       Scheme_Object *v;
-      v = (Scheme_Object *)scheme_hash_get((Scheme_Hash_Table *)stype->props, prop);
+      v = (Scheme_Object *)scheme_eq_hash_get((Scheme_Hash_Table *)stype->props, prop);
       if (v)
 	return v;
     } else {
@@ -613,17 +645,21 @@ static Scheme_Object *do_prop_accessor(Scheme_Object *prop, Scheme_Object *arg, 
     }
   }
   
-  if (error_ok) /* hack; see scheme_struct_type_property_ref */
-    scheme_wrong_type(name ? name : "property accessor", 
-		      "struct or struct-type with property", 
-		      0, 1, (Scheme_Object **)&arg);
   return NULL;
 }
 
 static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
-  return do_prop_accessor(SCHEME_PRIM_CLOSURE_ELS(prim)[0], args[0], 1, 
-			  ((Scheme_Primitive_Proc *)prim)->name);
+  Scheme_Object *v;
+
+  v = do_prop_accessor(SCHEME_PRIM_CLOSURE_ELS(prim)[0], args[0]);
+  
+  if (!v)
+    scheme_wrong_type(((Scheme_Primitive_Proc *)prim)->name, 
+		      "struct or struct-type with property",
+                      0, 1, args);
+  
+  return v;
 }
 
 static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
@@ -693,7 +729,7 @@ Scheme_Object *scheme_make_struct_type_property(Scheme_Object *name)
 
 Scheme_Object *scheme_struct_type_property_ref(Scheme_Object *prop, Scheme_Object *s)
 {
-  return do_prop_accessor(prop, s, 0, NULL);
+  return do_prop_accessor(prop, s);
 }
 
 static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[])
@@ -726,10 +762,20 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
 /*                            evt structs                                 */
 /*========================================================================*/
 
+static int extract_accessor_offset(Scheme_Object *acc)
+{
+  Struct_Proc_Info *i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(acc)[0];
+
+  if (i->struct_type->name_pos)
+    return i->struct_type->parent_types[i->struct_type->name_pos - 1]->num_slots;
+  else
+    return 0;
+}
+
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[])
 /* This is the guard for prop:evt */
 {
-  Scheme_Object *v, *l;
+  Scheme_Object *v, *l, *acc;
   int pos, num_islots;
 
   v = argv[0];
@@ -742,7 +788,7 @@ static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[
   
   if (!((SCHEME_INTP(v) && (SCHEME_INT_VAL(v) >= 0))
 	|| (SCHEME_BIGNUMP(v) && SCHEME_BIGPOS(v))))
-    scheme_arg_mismatch("prop:evt-guard",
+    scheme_arg_mismatch("guard-for-prop:evt",
 			"property value is not a evt, procedure (arity 1), or exact non-negative integer: ",
 			v);
 
@@ -751,6 +797,7 @@ static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[
   num_islots = SCHEME_INT_VAL(SCHEME_CAR(l));
   l = SCHEME_CDR(l);
   l = SCHEME_CDR(l);
+  acc = SCHEME_CAR(l);
   l = SCHEME_CDR(l);
   l = SCHEME_CDR(l);
   l = SCHEME_CAR(l);
@@ -761,7 +808,7 @@ static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[
     pos = SCHEME_INT_VAL(v);
 
   if (pos >= num_islots) {
-    scheme_arg_mismatch("evt-property-guard",
+    scheme_arg_mismatch("guard-for-prop:evt",
 			"field index >= initialized-field count for structure type: ",
 			v);
   }
@@ -772,10 +819,13 @@ static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[
   }
 
   if (!SCHEME_PAIRP(l)) {
-    scheme_arg_mismatch("evt-property-guard",
+    scheme_arg_mismatch("guard-for-prop:evt",
 			"field index not declared immutable: ",
 			v);
   }
+
+  pos += extract_accessor_offset(acc);
+  v = scheme_make_integer(pos);
 
   return v;
 }
@@ -785,6 +835,17 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
   Scheme_Object *v;
 
   v = scheme_struct_type_property_ref(evt_property, o);
+
+  if (!v) {
+    /* Must be an input or output port: */
+    if (SCHEME_INPUT_PORTP(o)) {
+      v = (Scheme_Object *)scheme_input_port_record(o);
+    } else {
+      v = (Scheme_Object *)scheme_output_port_record(o);
+    }
+    scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 1);
+    return 0;
+  }
 
   if (SCHEME_INTP(v))
     v = ((Scheme_Structure *)o)->slots[SCHEME_INT_VAL(v)];
@@ -825,7 +886,85 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 
 static int is_evt_struct(Scheme_Object *o)
 {
-  return !!scheme_struct_type_property_ref(evt_property, o);
+  if (scheme_struct_type_property_ref(evt_property, o))
+    return 1;
+  if (scheme_struct_type_property_ref(scheme_input_port_property, o))
+    return 1;
+  if (scheme_struct_type_property_ref(scheme_output_port_property, o))
+    return 1;
+  return 0;
+}
+
+/*========================================================================*/
+/*                            port structs                                */
+/*========================================================================*/
+
+static Scheme_Object *check_port_property_value_ok(const char *name, int input, int argc, Scheme_Object *argv[])
+/* This is the guard for prop:input-port and prop:output-port */
+{
+  Scheme_Object *v, *l, *acc;
+  int pos, num_islots;
+
+  v = argv[0];
+
+  if ((input && SCHEME_INPUT_PORTP(v))
+      || (!input && SCHEME_OUTPUT_PORTP(v)))
+    return v;
+
+  if (!((SCHEME_INTP(v) && (SCHEME_INT_VAL(v) >= 0))
+	|| (SCHEME_BIGNUMP(v) && SCHEME_BIGPOS(v))))
+    scheme_arg_mismatch(name,
+                        (input
+                         ? "property value is not an input port or exact non-negative integer: "
+                         : "property value is not an output port or exact non-negative integer: "),
+			v);
+  
+  l = argv[1];
+  l = SCHEME_CDR(l);
+  num_islots = SCHEME_INT_VAL(SCHEME_CAR(l));
+  l = SCHEME_CDR(l);
+  l = SCHEME_CDR(l);
+  acc = SCHEME_CAR(l);
+  l = SCHEME_CDR(l);
+  l = SCHEME_CDR(l);
+  l = SCHEME_CAR(l);
+
+  if (SCHEME_BIGNUMP(v))
+    pos = num_islots; /* too big */
+  else
+    pos = SCHEME_INT_VAL(v);
+
+  if (pos >= num_islots) {
+    scheme_arg_mismatch(name,
+			"field index >= initialized-field count for structure type: ",
+			v);
+  }
+
+  for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+    if (SCHEME_INT_VAL(SCHEME_CAR(l)) == pos)
+      break;
+  }
+
+  if (!SCHEME_PAIRP(l)) {
+    scheme_arg_mismatch(name,
+			"field index not declared immutable: ",
+			v);
+  }
+
+  pos += extract_accessor_offset(acc);
+  v = scheme_make_integer(pos);
+
+  return v;
+}
+
+static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  return check_port_property_value_ok("guard-for-prop:input-port", 1, argc, argv);
+}
+
+static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  return check_port_property_value_ok("guard-for-prop:output-port", 0, argc, argv);
 }
 
 /*========================================================================*/
@@ -839,7 +978,7 @@ static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *arg
   v = argv[0];
 
   if (!scheme_check_proc_arity(NULL, 3, 0, argc, argv)) {
-    scheme_arg_mismatch("prop:custom-write-guard",
+    scheme_arg_mismatch("guard-for-prop:custom-write",
 			"not a procedure of arity 3: ",
 			v); 
   }
@@ -2255,14 +2394,15 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 {
   Scheme_Struct_Type *struct_type, *parent_type;
   int j, depth;
+  int props_delta = 0, prop_needs_const = 0;
   
   parent_type = (Scheme_Struct_Type *)parent;
 
   depth = parent_type ? (1 + parent_type->name_pos) : 0;
 
-  struct_type =(Scheme_Struct_Type *)scheme_malloc_tagged(sizeof(Scheme_Struct_Type)
-							  + (depth 
-							     * sizeof(Scheme_Struct_Type *)));
+  struct_type = (Scheme_Struct_Type *)scheme_malloc_tagged(sizeof(Scheme_Struct_Type)
+                                                           + (depth 
+                                                              * sizeof(Scheme_Struct_Type *)));
 
   /* defeats optimizer bug in gcc 2.7.2.3: */
   depth = parent_type ? (1 + parent_type->name_pos) : 0;
@@ -2317,23 +2457,43 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
   }
 
   /* In principle, we should check for duplicate properties here
-   to keep the mismatch exceptions in the right order. */
+     to keep the mismatch exceptions in the right order. */
 
   if (!uninit_val)
     uninit_val = scheme_false;
   struct_type->uninit_val = uninit_val;
 
+  if (props) {
+    Scheme_Object *l;
+    for (l = props; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      if (SAME_OBJ(SCHEME_CAAR(l), proc_property)) {
+        if (proc_attr) {
+          scheme_arg_mismatch("make-struct-type", 
+                              "given both a prop:procedure property value and a procedure specification: ", 
+                              proc_attr);
+        }
+        proc_attr = SCHEME_CDR(SCHEME_CAR(l));
+        if (SCHEME_INTP(proc_attr))
+          prop_needs_const = 1;
+        props_delta = 1;
+        break;
+      }
+    }
+  }
+
   if (proc_attr) {
-    if (SCHEME_INTP(proc_attr) || SCHEME_BIGNUMP(proc_attr)) {
+    Scheme_Object *pa = proc_attr;
+
+    if (SCHEME_INTP(pa) || SCHEME_BIGNUMP(pa)) {
       long pos;
 
-      if (SCHEME_INTP(proc_attr))
-	pos = SCHEME_INT_VAL(proc_attr);
+      if (SCHEME_INTP(pa))
+	pos = SCHEME_INT_VAL(pa);
       else
 	pos = struct_type->num_slots; /* too big */
 
       if (pos >= struct_type->num_islots) {
-	scheme_arg_mismatch("make-struct-type", "index for procedure >= initialized-field count: ", proc_attr);
+	scheme_arg_mismatch("make-struct-type", "index for procedure >= initialized-field count: ", pa);
 	return NULL;
       }
 
@@ -2341,16 +2501,16 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 	if (parent_type->proc_attr) {
 	  scheme_arg_mismatch("make-struct-type", 
 			      "parent type already has procedure specification, new one disallowed: ",
-			      proc_attr);
+			      pa);
 	  return NULL;
 	}
 
 	pos += parent_type->num_slots;
-	proc_attr = scheme_make_integer(pos);
+	pa = scheme_make_integer(pos);
       }
     }
 
-    struct_type->proc_attr = proc_attr;
+    struct_type->proc_attr = pa;
   }
 
   if ((struct_type->proc_attr && SCHEME_INTP(struct_type->proc_attr))
@@ -2365,12 +2525,9 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
     ims = (char *)scheme_malloc_atomic(n);
     memset(ims, 0, n);
 
-    if (SCHEME_INTP(struct_type->proc_attr)) {
-      p = SCHEME_INT_VAL(struct_type->proc_attr);
-      if (parent_type)
-	p -= parent_type->num_slots;
-      if (p >= 0)
-	ims[p] = 1;
+    if (proc_attr && SCHEME_INTP(proc_attr) && !prop_needs_const) {
+      p = SCHEME_INT_VAL(proc_attr);
+      ims[p] = 1;
     }
 
     for (l = immutable_pos_list; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
@@ -2396,6 +2553,15 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 
       ims[p] = 1;
     }
+
+    if (proc_attr && SCHEME_INTP(proc_attr) && prop_needs_const) {
+      p = SCHEME_INT_VAL(proc_attr);
+      if (!ims[p]) {
+        scheme_arg_mismatch("make-struct-type", 
+                            "field is not specified as immutable for a prop:procedure index: ", 
+                            proc_attr);
+      }
+    }
     
     struct_type->immutables = ims;
   }
@@ -2410,7 +2576,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 
     can_override = scheme_make_hash_table(SCHEME_hash_ptr);
 
-    num_props = scheme_list_length(props);
+    num_props = scheme_list_length(props) - props_delta;
     if ((struct_type->num_props < 0) || (struct_type->num_props + num_props > PROP_USE_HT_COUNT)) {
       Scheme_Hash_Table *ht;
 
@@ -2438,17 +2604,24 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
       for (l = props; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
 	a = SCHEME_CAR(l);
 	prop = SCHEME_CAR(a);
-	if (scheme_hash_get(ht, prop)) {
-	  /* Property is already in the superstruct_type */
-	  if (!scheme_hash_get(can_override, prop))
-	    break;
-	  /* otherwise we override */
-	  scheme_hash_set(can_override, prop, NULL);
-	}
-	
-	propv = guard_property(prop, SCHEME_CDR(a), struct_type);
-	
-	scheme_hash_set(ht, prop, propv);
+        if (SAME_OBJ(prop, proc_property)) {
+          if (props_delta)
+            props_delta = 0;
+          else
+            break;
+        } else {
+          if (scheme_hash_get(ht, prop)) {
+            /* Property is already in the superstruct_type */
+            if (!scheme_hash_get(can_override, prop))
+              break;
+            /* otherwise we override */
+            scheme_hash_set(can_override, prop, NULL);
+          }
+          
+          propv = guard_property(prop, SCHEME_CDR(a), struct_type);
+          
+          scheme_hash_set(ht, prop, propv);
+        }
       }
 
       struct_type->props = (Scheme_Object **)ht;
@@ -2474,25 +2647,32 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 
 	prop = SCHEME_CAR(a);
 
-	/* Check whether already in table: */
-	for (j = 0; j < num_props; j++) {
-	  if (SAME_OBJ(SCHEME_CAR(pa[j]), prop))
-	    break;
-	}
-	if (j < num_props) {
-	  /* already there */
-	  if (!scheme_hash_get(can_override, prop))
-	    break; 
-	  /* overriding it: */
-	  scheme_hash_set(can_override, prop, NULL);
-	} else {
-	  num_props++;
-	}
+        if (SAME_OBJ(prop, proc_property)) {
+          if (props_delta)
+            props_delta = 0;
+          else
+            break;
+        } else {
+          /* Check whether already in table: */
+          for (j = 0; j < num_props; j++) {
+            if (SAME_OBJ(SCHEME_CAR(pa[j]), prop))
+              break;
+          }
+          if (j < num_props) {
+            /* already there */
+            if (!scheme_hash_get(can_override, prop))
+              break; 
+            /* overriding it: */
+            scheme_hash_set(can_override, prop, NULL);
+          } else {
+            num_props++;
+          }
 
-	propv = guard_property(prop, SCHEME_CDR(a), struct_type);
+          propv = guard_property(prop, SCHEME_CDR(a), struct_type);
 
-	a = scheme_make_pair(prop, propv);
-	pa[j] = a;
+          a = scheme_make_pair(prop, propv);
+          pa[j] = a;
+        }
       }
       
       struct_type->num_props = num_props;
@@ -2849,7 +3029,7 @@ static Scheme_Object *exn_source_get(int argc, Scheme_Object **argv)
 static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object *argv[])
      /* This is the guard for prop:exn:srclocs */
 {
-  scheme_check_proc_arity("prop:exn:srclocs-guard", 1, 0, argc, argv);
+  scheme_check_proc_arity("guard-for-prop:exn:srclocs", 1, 0, argc, argv);
 
   return argv[0];
 }
