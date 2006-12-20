@@ -1,3 +1,5 @@
+;; Wed Dec 20 18:17:03 EST 2060: recording events and creating images,
+;;        including an animated gif; todo: documentation 
 ;; Sun Dec 09 23:17:41 EST 2006: add-line fixed so it cuts off lines before drawing
 ;; Mon Mar 27 10:29:28 EST 2006: integrated Felix's mouse events
 ;; Wed Jan 25 13:38:42 EST 2006: on-redraw: proc is now called on installation
@@ -21,34 +23,43 @@
            (lib "string-constant.ss" "string-constants"))
   
   ;; --- provide ---------------------------------------------------------------
+  
+  
+  ;                                                   
+  ;                                                   
+  ;   ;;;;                         ;         ;        
+  ;   ;   ;                                  ;        
+  ;   ;   ;                                  ;        
+  ;   ;   ;  ; ;;;   ;;;   ;   ; ;;;      ;;;;   ;;;  
+  ;   ;  ;   ;;  ;  ;   ;  ;   ;   ;     ;   ;  ;   ; 
+  ;   ;;;    ;      ;   ;   ; ;    ;     ;   ;  ;;;;; 
+  ;   ;      ;      ;   ;   ; ;    ;     ;   ;  ;     
+  ;   ;      ;      ;   ;   ; ;    ;     ;  ;;  ;     
+  ;   ;      ;       ;;;     ;     ;;;    ;; ;   ;;;; 
+  ;                                                   
+  ;                                                   
+  ;                                                   
+  
+  
+  ;; image manipulation functions:
+  ;; =============================
   (provide (all-from-except (lib "image.ss" "htdp") add-line))
   
-  (provide      ;; forall(World):
-   big-bang	;; Number Number Number World -> true
-   begin-recording ;; String -> true
-   end-of-time	    ;; String u Symbol -> World
-   
+  (provide
    nw:rectangle ;; Number Number Mode Color -> Image
    place-image  ;; Image Number Number Scence -> Scene
    empty-scene  ;; Number Number -> Scene 
-   run-movie    ;; (Listof Image) -> true 
    (rename add-line-to-scene add-line)
    ;; Scene Number Number Number Number Color -> Scene 
    ;; cut all pieces that are outside the given rectangle 
    )
   
-  (provide-higher-order-primitive
-   run-simulation (_ _ _ create-scene) ;; (Nat Nat Number (Nat -> Image) -> true)
+  ;; world manipulation functions: 
+  ;; =============================
+  (provide      ;; forall(World):
+   big-bang	;; Number Number Number World -> true
+   end-of-time  ;; String u Symbol -> World
    )
-  
-  (define (run-simulation width height rate f)
-    (check-pos 'run-simulation width "first")
-    (check-pos 'run-simulation height "second")
-    (check-arg 'run-simulation (number? rate) 'number "third" rate)
-    (check-proc 'run-simulation f 1 "fourth" "one argument")
-    (big-bang width height rate 1)
-    (on-redraw f)
-    (on-tick-event add1))
   
   (provide-higher-order-primitive
    on-tick-event (tock) ;; (World -> World) -> true
@@ -62,9 +73,8 @@
   ;; -- Char 
   ;; -- Symbol 
   
-  (provide-higher-order-primitive ;; (World KeyEvent -> World) -> true 
-   on-key-event 
-   (draw)
+  (provide-higher-order-primitive
+   on-key-event (draw) ;; (World KeyEvent -> World) -> true
    )
   
   ;; A MouseEventType is one of:
@@ -75,32 +85,34 @@
   ;; - 'enter
   ;; - 'leave
   
-  (provide-higher-order-primitive ;; (World Number Number MouseEvent -> World) -> true 
-   on-mouse-event 
-   (clack)
+  (provide-higher-order-primitive
+   on-mouse-event (clack)  ;; (World Number Number MouseEvent -> World) -> true
+   )
+  
+  (provide-higher-order-primitive
+   run-simulation (_ _ _ create-scene) ; (Nat Nat Number (Nat -> Image) -> true)
+   )
+  
+  (provide
+   run-movie ;; [Listof Image] -> true 
    )
   
   ;; ---------------------------------------------------------------------------
   
-  ;; Symbol Any String -> Void
-  (define (check-pos tag c rank)
-    (check-arg tag (and (number? c) (integer? c) (>= c 0)) "positive integer" rank c))
-  
-  ;; Symbol Any String [String] -> Void
-  (define (check-image tag i rank . other-message)
-    (if (and (pair? other-message) (string? (car other-message)))
-        (check-arg tag (beg:image? i) (car other-message) rank i)
-        (check-arg tag (beg:image? i) "image" rank i)))
-  
-  ;; Symbol Any String -> Void
-  (define (check-color tag width rank)
-    (check-arg tag (or (symbol? width) (string? width)) "color symbol or string" rank width))
-  
-  (define (check-mode tag s rank)
-    (check-arg tag (or (eq? s 'solid)
-		       (eq? s 'outline)
-		       (string=? "solid" s)
-		       (string=? "outline" s)) "mode (solid or outline)" rank s))
+  ;                                                                             
+  ;                                                                             
+  ;   ;;;;;                                                  ;;;;;               
+  ;   ;                                    ;                  ;                 
+  ;   ;                                    ;                  ;                 
+  ;   ;      ;  ;   ; ;;    ;;;   ; ;;;  ;;;;;   ;            ;   ;;; ;    ;;;; 
+  ;   ;;;;;  ;  ;   ;;  ;  ;   ;  ;;  ;    ;     ;            ;   ; ;;;   ;   ; 
+  ;   ;       ;;    ;   ;  ;   ;  ;        ;                  ;   ; ; ;   ;   ; 
+  ;   ;       ;;    ;   ;  ;   ;  ;        ;                  ;   ; ; ;   ;   ; 
+  ;   ;      ;  ;   ;   ;  ;   ;  ;        ;     ;            ;   ; ; ;   ;  ;; 
+  ;   ;;;;;  ;  ;   ;;;;    ;;;   ;         ;;   ;          ;;;;; ; ; ;    ;; ; 
+  ;                 ;                                                         ; 
+  ;                 ;                                                      ;;;; 
+  ;                                                                              
   
   (define (nw:rectangle width height mode color)
     (check-pos 'rectangle width "first")
@@ -125,7 +137,14 @@
 	  ns
 	  (shrink ns 0 0 sw sh))))
   
-  (define (number->integer x) (inexact->exact (floor x)))
+  (define (empty-scene width height)
+    (check-pos 'empty-scene width "first")
+    (check-pos 'empty-scene height "second")    
+    (put-pinhole
+      (overlay
+	(rectangle width height 'outline 'black)
+	(rectangle width height 'solid 'white))
+      0 0))
   
   (define (add-line-to-scene img x0 y0 x1 y1 c)
     #|
@@ -169,6 +188,165 @@
                 [(and (number? low) (number? rgt)) (add-line img low h w rgt c)]
                 [(and (number? lft) (number? rgt)) (add-line img 0 lft w rgt c)]
                 [else img])]))])))
+  
+  
+  ;                                                                        
+  ;                                                                        
+  ;   ;;;;;                                           ;  ;  ;;;;         ; 
+  ;   ;                                    ;          ;  ;  ;  ;         ; 
+  ;   ;                                    ;          ;  ;  ;  ;         ; 
+  ;   ;      ;  ;   ; ;;    ;;;   ; ;;;  ;;;;;        ; ; ; ;  ;      ;;;; 
+  ;   ;;;;;  ;  ;   ;;  ;  ;   ;  ;;  ;    ;          ; ; ; ;  ;     ;   ; 
+  ;   ;       ;;    ;   ;  ;   ;  ;        ;           ;; ;;   ;     ;   ; 
+  ;   ;       ;;    ;   ;  ;   ;  ;        ;           ;   ;   ;     ;   ; 
+  ;   ;      ;  ;   ;   ;  ;   ;  ;        ;           ;   ;   ;     ;  ;; 
+  ;   ;;;;;  ;  ;   ;;;;    ;;;   ;         ;;         ;   ;   ;;;    ;; ; 
+  ;                 ;                                                      
+  ;                 ;                                                      
+  ;                                                                        
+  
+  ;; Number Number Number World -> true
+  ;; create the visible world (canvas)
+  (define (big-bang w h delta world)
+    (check-pos 'big-bang w "first")
+    (check-pos 'big-bang h "second")
+    (check-arg 'big-bang
+               (and (number? delta) (<= 0 delta 1000))
+               "number [of seconds] between 0 and 1000"
+               "first"
+               delta)
+    (unless (eq? void visible-world)
+      (error 'big-bang "big-bang already called once"))
+    ;; call first: 
+    (install-world delta world)
+    ;; followed by 
+    (set-and-show-frame w h)
+    #t)
+  
+  (define (end-of-time s)
+    (printf "end of time: ~a~n" s)
+    (stop-it)
+    the-world)
+  
+  (define (on-tick-event f)
+    (check-proc 'on-tick-event f 1 "on-tick-event" "one argument")
+    (check-world 'on-tick-event)
+    (if (eq? timer-callback void)
+        (set! timer-callback (make-timer-callback f))          
+        (error 'on-tick "the timing action has been set already"))
+    (send the-time start
+          (let* ([w (ceiling (* 1000 the-delta))])
+            (if (exact? w) w (inexact->exact w))))
+    #t)
+  
+  (define (on-redraw f)
+    (check-proc 'on-redraw f 1 "on-redraw" "one argument")
+    (check-world 'on-redraw)
+    (if (eq? redraw-callback void)
+        (begin
+          (set! redraw-callback (make-redraw-callback f))
+          (redraw-callback)
+          #t)
+        (error 'on-redraw "the redraw function has already been specified")))
+  
+  (define (on-key-event f)
+    (check-proc 'on-key-event f 2 "on-key-event" "two arguments")
+    (check-world 'on-key-event)
+    (let ([esp (current-eventspace)])
+      (if (eq? key-callback void)
+          (begin 
+            (set! key-callback (make-keyevent-callback f esp))
+            #t)
+          (error 'on-event "the event action has been set already"))))
+  
+  (define (on-mouse-event f)
+    (check-proc 'on-mouse-event f 4 "on-mouse-event" "four arguments")
+    (check-world 'on-mouse-event)
+    (let ([esp (current-eventspace)])
+      (if (eq? mouse-callback void)
+          (begin
+            (set! mouse-callback (make-mouse-callback f esp))
+            #t)
+          (error 'on-mouse-event "the mouse event action has been set already"))))
+  
+  (define (run-movie movie)
+    (check-arg 'run-movie (list? movie) "list (of images)" "first" movie)
+    (for-each (lambda (cand) 
+                (check-image 'run-movie cand "first" "list of images"))
+              movie)
+    (let run-movie ([movie movie])
+      (cond [(null? movie) #t]
+            [(pair? movie)
+             (update-frame (car movie))
+             (sleep/yield .05)
+             (run-movie (cdr movie))])))
+  
+  (define (run-simulation width height rate f)
+    (check-pos 'run-simulation width "first")
+    (check-pos 'run-simulation height "second")
+    (check-arg 'run-simulation (number? rate) 'number "third" rate)
+    (check-proc 'run-simulation f 1 "fourth" "one argument")
+    (big-bang width height rate 1)
+    (on-redraw f)
+    (on-tick-event add1))
+  
+  ;; ---------------------------------------------------------------------------
+  
+  ;                                     
+  ;                                     
+  ;     ;;;  ;                    ;     
+  ;    ;     ;                    ;     
+  ;   ;      ;                    ;     
+  ;   ;      ; ;;    ;;;    ;;;;  ;   ; 
+  ;   ;      ;;  ;  ;   ;  ;      ;  ;  
+  ;   ;      ;   ;  ;;;;;  ;      ; ;   
+  ;   ;      ;   ;  ;      ;      ;;;   
+  ;    ;     ;   ;  ;      ;      ;  ;  
+  ;     ;;;  ;   ;   ;;;;   ;;;;  ;   ; 
+  ;                                     
+  ;                                     
+  ;                                     
+  
+  ;; Symbol Any String -> Void
+  (define (check-pos tag c rank)
+    (check-arg tag (and (number? c) (integer? c) (>= c 0)) 
+               "positive integer" rank c))
+  
+  ;; Symbol Any String [String] -> Void
+  (define (check-image tag i rank . other-message)
+    (if (and (pair? other-message) (string? (car other-message)))
+        (check-arg tag (beg:image? i) (car other-message) rank i)
+        (check-arg tag (beg:image? i) "image" rank i)))
+  
+  ;; Symbol Any String -> Void
+  (define (check-color tag width rank)
+    (check-arg tag (or (symbol? width) (string? width)) 
+               "color symbol or string" rank width))
+  
+  (define (check-mode tag s rank)
+    (check-arg tag (or (eq? s 'solid)
+		       (eq? s 'outline)
+		       (string=? "solid" s)
+		       (string=? "outline" s)) "mode (solid or outline)" rank s))
+  
+  (define (number->integer x) (inexact->exact (floor x)))
+  
+  
+  ;                                                                        
+  ;                                                                        
+  ;   ;;;;;                                     ;;;;;                      
+  ;     ;                                       ;                          
+  ;     ;                                       ;                          
+  ;     ;   ;;; ;    ;;;;   ;;;;   ;;;          ;      ;   ;  ; ;;    ;;;  
+  ;     ;   ; ;;;   ;   ;  ;   ;  ;   ;         ;;;;;  ;   ;  ;;  ;  ;   ; 
+  ;     ;   ; ; ;   ;   ;  ;   ;  ;;;;;         ;      ;   ;  ;   ;   ;;   
+  ;     ;   ; ; ;   ;   ;  ;   ;  ;             ;      ;   ;  ;   ;     ;  
+  ;     ;   ; ; ;   ;  ;;  ;  ;;  ;             ;      ;  ;;  ;   ;  ;   ; 
+  ;   ;;;;; ; ; ;    ;; ;   ;; ;   ;;;;         ;       ;; ;  ;   ;   ;;;  
+  ;                            ;                                           
+  ;                        ;;;;                                            
+  ;                                                                        
+  
   
   ;; Nat Nat -> Nat 
   ;; y if in [0,h], otherwise the closest boundary
@@ -244,205 +422,276 @@
            list)
           (list false false 10 80))
   
-  ;; -----------------------------------------------------------------------------
-  
-  (define (empty-scene width height)
-    (check-pos 'empty-scene width "first")
-    (check-pos 'empty-scene height "second")    
-    (move-pinhole 
-     (rectangle width height 'outline 'black)
-     (/ width -2) (/ height -2)))
-  
-  ;; display all images in list in the canvas
-  (define (run-movie movie)
-    (check-arg 'run-movie (list? movie) "list (of images)" "first" movie)
-    (for-each (lambda (cand) (check-image 'run-movie cand "first" "list of images"))
-              movie)
-    (let run-movie ([movie movie])
-      (cond [(null? movie) #t]
-            [(pair? movie)
-             (update-frame (car movie))
-             (sleep/yield .05)
-             (run-movie (cdr movie))])))
-  
   ;; ---------------------------------------------------------------------------
   
-  ;; The One and Only Visible World
-  (define the-frame #f)
-  (define the-button #f)
-  (define txt (new text%))
   
-  ;; World (type parameter)
-  (define the-world0 (cons 1 1))
-  [define the-world the-world0]
+  ;                                     
+  ;                                     
+  ;  ;  ;  ;              ;;;         ; 
+  ;  ;  ;  ;                ;         ; 
+  ;  ;  ;  ;                ;         ; 
+  ;  ; ; ; ;  ;;;   ; ;;;   ;      ;;;; 
+  ;  ; ; ; ; ;   ;  ;;  ;   ;     ;   ; 
+  ;   ;; ;;  ;   ;  ;       ;     ;   ; 
+  ;   ;   ;  ;   ;  ;       ;     ;   ; 
+  ;   ;   ;  ;   ;  ;       ;     ;  ;; 
+  ;   ;   ;   ;;;   ;       ;;;    ;; ; 
+  ;                                     
+  ;                                     
+  ;                                     
   
+  (define unique-world (cons 1 1))
   (define (check-world tag)
-    (when (eq? the-world0 the-world) (error tag SEQUENCE-ERROR)))
+    (when (eq? unique-world the-world) 
+      (error tag "evaluate (big-bang Number Number Number World) first")))
+  
+  (define the-world unique-world)
+  (define the-world0 unique-world)
+  
+  ;; Nat World -> Void
+  ;; effects: init event-history, the-delta, the-world, the-world0
+  (define (install-world delta w)
+    (set! event-history '())
+    (set! the-delta delta)
+    (set! the-world w)
+    (set! the-world0 w)
+    (set! visible-world (new text%)))
   
   ;; Number > 0
-  [define the-delta 1000]
+  ;; the rate of at which the clock ticks 
+  (define the-delta 1000)
   
-  ;; Amount of space around the image in the world window:
-  (define INSET 5)
+  ;; The One and Only Visible World
+  (define visible-world void)
   
-  ;; Number Number Number World -> true
-  ;; create the visible world (canvas)
-  (define (big-bang w h delta world)
-    (check-pos 'big-bang w "first")
-    (check-pos 'big-bang h "second")
-    (check-arg 'big-bang
-               (and (number? delta) (<= 0 delta 1000))
-               "number [of seconds] between 0 and 1000"
-               "first"
-               delta)
-    (when the-frame (error 'big-bang "big-bang already called once"))
-    (set! the-delta delta) 
-    (set! the-world world)
-    (set! the-frame
-          (new (class frame%
-                 (super-new)
-                 (define/augment (on-close)        
-                   ;; shut down the timer when the window is destroyed
-                   (send the-time stop)
-                   (inner (void) on-close)))
-               (label "DrScheme")
-               (stretchable-width #f)
-               (stretchable-height #f)
-               (style '(no-resize-border metal))))
-    (let ([p (new horizontal-pane% [parent the-frame][alignment '(center center)])])
-      (new button% 
-           [parent p]
-           [label ((bitmap-label-maker (string-constant break-button-label) (build-path (collection-path "icons") "break.png")) '___)]
-           [style '(border)]
+  ;; Nat Nat -> Void
+  ;; effect: create, show and set the-frame
+  ;; assume: visible-world is a text%, i.e., install-world has been called. 
+  (define (set-and-show-frame w h)
+    (define the-play-back-thread #f)
+    (define frame 
+      (new (class frame%
+             (super-new)
+             (define/augment (on-close)        
+               (when the-play-back-thread 
+                 (kill-thread the-play-back-thread))
+               (stop-it)
+               (inner (void) on-close)))
+           (label "DrScheme")
+           (stretchable-width #f)
+           (stretchable-height #f)
+           (style '(no-resize-border metal))))
+    ;; add Stop and Images buttons to frame 
+    (define p (new horizontal-pane% [parent frame][alignment '(center center)]))
+    (define l-stop ((bitmap-label-maker 
+                     (string-constant break-button-label) 
+                     (build-path (collection-path "icons") "break.png")) '___))
+    (define l-imgs ((bitmap-label-maker 
+                     "Images"
+                     (build-path (collection-path "icons") "file.gif")) '___))
+    (define stop-button
+      (new button% [parent p] [label l-stop] [style '(border)]
            [callback (lambda (this-button e) 
-                       (send the-frame on-close)
+                       (stop-it)
                        (send this-button enable #f)
-                       (send the-button enable #t))])                       
-      (set! the-button (new button% 
-                            [parent p]
-                            [enabled #f]
-                            [label ((bitmap-label-maker "Images" (build-path (collection-path "icons") "file.gif")) '___)]
-                            [style '(border)]
-                            [callback (lambda (x e) (printf "hello world\n"))])))
+                       (send image-button enable #t))]))
+    (define image-button 
+      (new button% [parent p] [enabled #f] [label l-imgs] [style '(border)]
+           [callback (lambda (b e)
+                       (send b enable #f)
+                       (set! the-play-back-thread (thread play-back)))]))
+    ;; add Editor to frame 
     (let ([c (new (class editor-canvas%
 		    (super-new)
 		    (define/override (on-char e)
-		      (on-char-proc (send e get-key-code)))
+		      (key-callback (send e get-key-code)))
 		    (define/override (on-event e)
-		      (on-mouse-proc e)))
-                  (parent the-frame) 
-                  (editor txt)
+                      (mouse-callback e)))
+                  (parent frame) 
+                  (editor visible-world)
                   (style '(no-hscroll no-vscroll))
                   (horizontal-inset INSET)
                   (vertical-inset INSET))])
       (send c min-client-width (+ w INSET INSET))
       (send c min-client-height (+ h INSET INSET))
       (send c focus))
-    (send txt set-cursor (make-object cursor% 'arrow))
-    (send txt hide-caret #t)
-    (send the-frame show #t)
-    #t)
+    ;; setting up the cursor ... 
+    (send visible-world set-cursor (make-object cursor% 'arrow))
+    (send visible-world hide-caret #t)
+    (send frame show #t))
   
-  ;; --- time events 
-  [define the-time (new timer% [notify-callback (lambda () (timer-callback))])]
+  ;; Image -> Void
+  ;; insert the image into the frame 
+  (define (update-frame pict)
+    (send visible-world begin-edit-sequence)
+    (send visible-world lock #f)
+    (send visible-world delete 0 (send visible-world last-position) #f)
+    (send visible-world insert (send pict copy) 0 0 #f)
+    (send visible-world lock #t)
+    (send visible-world end-edit-sequence))
+  
+  ;; Amount of space around the image in the world window:
+  (define INSET 5)
+  
+  
+  ;                                                                 
+  ;                                                                 
+  ;   ;;;;;                                     ;   ;      ; ;;;    
+  ;   ;                             ;           ;   ;      ;   ;    
+  ;   ;                             ;           ;   ;      ;   ;    
+  ;   ;      ;   ;   ;;;   ; ;;   ;;;;;         ;   ;   ;;;;   ;    
+  ;   ;;;;;  ;   ;  ;   ;  ;;  ;    ;           ;;;;;  ;   ;   ;    
+  ;   ;       ; ;   ;;;;;  ;   ;    ;           ;   ;  ;   ;   ;    
+  ;   ;       ; ;   ;      ;   ;    ;           ;   ;  ;   ;   ;    
+  ;   ;       ; ;   ;      ;   ;    ;           ;   ;  ;  ;;   ;    
+  ;   ;;;;;    ;     ;;;;  ;   ;     ;;         ;   ;   ;; ;   ;;;  
+  ;                                                                 
+  ;                                                                 
+  ;                                                                 
+  
+  
+  (define TICK 'tick)
+  (define MOUSE 'mouse)
+  (define KEY 'key)
+  ;; Evt =   (list utick) 
+  ;;       | (list KEY (union Char Symbol)) 
+  ;;       | (list MOUSE MouseEventType)
+  ;; [Listof Evt]
+  (define event-history '())
+  ;; reset to '() by big-bang
+  
+  ;; Symbol  Any *-> Void
+  (define (add-event type . stuff)
+    (set! event-history (cons (cons type stuff) event-history)))
+  
+  ;; --> Void
+  (define (play-back)
+    (define target:dir
+      (let* ([cd (current-directory)]
+             [dd (get-directory "Select directory for images" #f cd)])
+        (if dd dd cd)))
+    (define (world-transition world fst)
+      (case (car fst)
+        [(tick)  (timer-callback0 world)]
+        [(key)   (key-callback0 world (cadr fst))]
+        [(mouse) (mouse-callback0 world (cadr fst) (caddr fst) (cadddr fst))]
+        [else (error 'play-back "bad type of event: ~s" fst)]))
+    (define image-count 0)
+    (define (save-image img)
+      (define total (length event-history))
+      (define bm (send img get-bitmap))
+      (set! image-count (+ image-count 1))
+      (send bm save-file (format "i~a.png" image-count) 'png)
+      (update-frame (text (format "~a/~a created" image-count total) 18 'red)))
+    (define (create-animated-gif-on-my-mac)
+      (define files:dir (map path->string (directory-list)))
+      (define files:str
+        (filter (lambda (x) (regexp-match #rx"i[0-9]*.png" x)) files:dir))
+      (define files:s+i 
+        (map (lambda (f)
+               (cons f (string->number (car (regexp-match #rx"[0-9]+" f)))))
+             files:str))
+      (define files:sorted
+        (sort files:s+i (lambda (x y) (<= (cdr x) (cdr y)))))
+      (define files:pln 
+        (map (lambda (f) (format " ~a" (car f))) files:sorted))
+      (define files (apply string-append files:pln))
+      (define cmdline (format "convert -delay 5 ~a i-animated.gif" files))
+      (define status? (process cmdline))
+      ((fifth status?) 'wait))      
+    ;; re-play the history of events, creating a png per step, 
+    ;; summing them into an animated gif at the end 
+    (parameterize ([current-directory target:dir])
+      (let pb ([ev event-history][world the-world0][img (circle 1 'solid 'red)])
+        (cond
+          [(null? ev) (begin 
+                        (create-animated-gif-on-my-mac)
+                        (update-frame img))]
+          [else 
+           (let* ([w (world-transition world (car ev))]
+                  [i (redraw-callback0 w)])
+             (save-image i)
+             (pb (cdr ev) w i))]))))
+  
+  ;; Timer
+  (define the-time (new timer% [notify-callback (lambda () (timer-callback))]))
   
   ;; (World -> World)
-  [define timer-callback void]
+  (define timer-callback void)
+  (define timer-callback0 void)
   
-  [define (on-tick-event f)
-    (check-proc 'on-tick-event f 1 "on-tick-event" "one argument")
-    (check-world 'on-tick-event)
-    (if (eq? timer-callback void)
-        (set! timer-callback 
-              (lambda ()
-                (with-handlers ([exn:break? break-handler]
-                                [exn? exn-handler])
-                  (set! the-world (f the-world))
-                  (on-redraw-proc))))          
-        (error 'on-tick "the timing action has been set already"))
-    (send the-time start
-          (let* ([w (ceiling (* 1000 the-delta))])
-            (if (exact? w) w (inexact->exact w))))
-    #t]
+  ;; [World -> World] -> [-> Void]
+  (define (make-timer-callback f)
+    (set! timer-callback0 f)
+    (lambda ()
+      (with-handlers ([exn:break? break-handler][exn? exn-handler])
+        (set! the-world (f the-world))
+        (add-event TICK)
+        (redraw-callback))))
   
-  ;; --- key and mouse events 
+  ;; [-> Void]
+  (define redraw-callback void)
+  (define redraw-callback0 void)
+  
+  ;; [World -> Image] -> [-> Void]
+  (define (make-redraw-callback f)
+    (set! redraw-callback0 f)
+    (lambda ()
+      (with-handlers ([exn:break? break-handler][exn? exn-handler])
+        (define img (f the-world))
+        (check-result 'on-redraw (lambda (x) (beg:image? x)) "image" img)
+        (update-frame img))))
   
   ;; KeyEvent -> Void
-  [define on-char-proc void]
+  (define key-callback void)
+  (define key-callback0 void)
   
-  [define (on-key-event f)
-    (check-proc 'on-key-event f 2 "on-key-event" "two arguments")
-    (check-world 'on-key-event)
-    (let ([esp (current-eventspace)])
-      (if (eq? on-char-proc void)
-          (begin 
-            (set! on-char-proc 
-                  (lambda (e)
-                    (parameterize ([current-eventspace esp])
-                      (queue-callback 
-                       (lambda ()
-                         (with-handlers ([exn:break? break-handler]
-                                         [exn? exn-handler])
-                           (set! the-world (f the-world e))
-                           (on-redraw-proc))))
-                      #t)))
-            #t)
-          (error 'on-event "the event action has been set already")))]
-  
-  (define (end-of-time s)
-    (printf "end of time: ~a~n" s)
-    (stop-it)
-    the-world)
+  ;; [World KeyEvent] EventSpace -> [KeyEvent -> Void]
+  (define (make-keyevent-callback f esp)
+    (set! key-callback0 f)
+    (lambda (e)
+      (parameterize ([current-eventspace esp])
+        (queue-callback 
+         (lambda ()
+           (with-handlers ([exn:break? break-handler][exn? exn-handler])
+             (set! the-world (f the-world e))
+             (add-event KEY e)
+             (redraw-callback)))))))
   
   ;; MouseEvent -> Void
-  (define on-mouse-proc void)
+  (define mouse-callback void)
+  (define mouse-callback0 void)
   
-  (define (on-mouse-event f)
-    (check-proc 'on-mouse-event f 4 "on-mouse-event" "four arguments")
-    (check-world 'on-mouse-event)
-    (let ([esp (current-eventspace)])
-      (if (eq? on-mouse-proc void)
-          (begin
-            (set! on-mouse-proc 
-                  (lambda (e)
-                    (parameterize ([current-eventspace esp])
-                      (queue-callback
-                       (lambda ()
-                         (with-handlers ([exn:break? break-handler]
-                                         [exn? exn-handler])
-                           (set! the-world (f the-world 
-                                              (- (send e get-x) INSET)
-                                              (- (send e get-y) INSET)
-                                              (cond [(send e button-down?) 'button-down]
-                                                    [(send e button-up?)   'button-up]
-                                                    [(send e dragging?)    'drag]
-                                                    [(send e moving?)      'move]
-                                                    [(send e entering?)    'enter]
-                                                    [(send e leaving?)     'leave]
-                                                    [else ; (send e get-event-type)
-                                                     (error 'on-mouse-event
-                                                            (format 
-                                                             "Unknown event type: ~a"
-                                                             (send e get-event-type)))]
-                                                    )))
-                           (on-redraw-proc))))
-                      #t)))
-            #t)
-          (error 'on-mouse-event "the mouse event action has been set already"))))
-  #|
-  Note an alternative to the above cond is to just
-  send get-event-type, which produces one of the following:
-
-  ? 'enter -- mouse pointer entered the window
-  ? 'leave -- mouse pointer left the window
-  ? 'left-down -- left mouse button pressed
-  ? 'left-up -- left mouse button released
-  ? 'middle-down -- middle mouse button pressed
-  ? 'middle-up -- middle mouse button released
-  ? 'right-down -- right mouse button pressed (Mac OS: click with control key pressed)
-  ? 'right-up -- right mouse button released (Mac OS: release with control key pressed)
-  ? 'motion -- mouse moved, with or without button(s) pressed
-  |#                             
+  ;; [World Nat Nat MouseEventType -> World] EventSpace -> [MouseEvent -> Void]
+  ;; create a mouse event handler from the current event space 
+  ;; and a user-supplied function 
+  (define (make-mouse-callback f esp)
+    (set! mouse-callback0 f)
+    (lambda (e)
+      (parameterize ([current-eventspace esp])
+        (queue-callback
+         (lambda ()
+           (with-handlers ([exn:break? break-handler][exn? exn-handler])
+             (define x (- (send e get-x) INSET))
+             (define y (- (send e get-y) INSET))
+             (define m (mouse-event->symbol e))
+             (set! the-world (f the-world x y m))
+             (add-event MOUSE x y m)
+             (redraw-callback)))))))
+  
+  ;; MouseEvent -> MouseEventType
+  (define (mouse-event->symbol e)
+    (cond [(send e button-down?) 'button-down]
+          [(send e button-up?)   'button-up]
+          [(send e dragging?)    'drag]
+          [(send e moving?)      'move]
+          [(send e entering?)    'enter]
+          [(send e leaving?)     'leave]
+          [else ; (send e get-event-type)
+           (error 'on-mouse-event
+                  (format 
+                   "Unknown event type: ~a"
+                   (send e get-event-type)))]))
   
   ;; --- library 
   (define (exn-handler e)
@@ -457,74 +706,9 @@
   ;; -> Void
   (define (stop-it)
     (send the-time stop)
-    (stop-recording "blah")
-    (set! on-char-proc void)
+    (set! mouse-callback void)
+    (set! key-callback void)
+    (set! redraw-callback void)
     (set! timer-callback void))
-  
-  (define on-redraw-proc void)
-  
-  (define (on-redraw f)
-    (check-proc 'on-redraw f 1 "on-redraw" "one argument")
-    (check-world 'on-redraw)
-    (if (eq? on-redraw-proc void)
-        (begin
-          (set! on-redraw-proc
-                (lambda ()
-                  (with-handlers ([exn:break? break-handler]
-                                  [exn? exn-handler])
-                    (define img (f the-world))
-                    (check-result 'on-redraw (lambda (x) (beg:image? x)) "image" img)
-                    (when recording? (save-image img))
-                    (update-frame img)
-                    #t)))
-          (on-redraw-proc))
-        (error 'on-redraw "the redraw function has already been specified")))
-  
-  (define (update-frame pict)
-    (send txt begin-edit-sequence)
-    (send txt lock #f)
-    (send txt delete 0 (send txt last-position) #f)
-    (send txt insert (send pict copy) 0 0 #f)
-    (send txt lock #t)
-    (send txt end-edit-sequence))
-  
-  ;; -------------------------------------------------------------------------
-  ;; recording a sequence of interactions via images 
-  (define recording? #f)
-  (define rec-where "")
-  ;; String -> true
-  (define (begin-recording d)
-    (check-arg 'record! (string? d) 'string "first" d)
-    (set! rec-where d)
-    (set! recording? #t)
-    #t)
-  ;; String -> true
-  (define (stop-recording d)
-    (check-arg 'record! (string? d) 'string "first" d)
-    (set! recording? #f)
-    (let ()
-      (define files 
-	(sort
-         (filter (lambda (x) (regexp-match #rx"i[0-9]*.png" x))
-                 (map path->string (directory-list)))
-         (lambda (x y)
-           (<= (string->number (car (regexp-match #rx"[0-9]+" x)))
-               (string->number (car (regexp-match #rx"[0-9]+" y)))))))
-      #;
-      (define cmdline (format "convert -delay 5 ~a ~a.gif" 
-                              (apply string-append (map (lambda (x) (format " ~a" x)) files))
-                              d))
-      #;
-      (system cmdline)
-      #t))
-  
-  (define image-count 0)
-  ;; Image -> Void
-  ;; save image in a file named i<number>.png 
-  (define (save-image img)
-    (send (send img get-bitmap) save-file (format "i~a.png" image-count) 'png)
-    (set! image-count (+ image-count 1)))
-  
-  (define SEQUENCE-ERROR "evaluate (big-bang Number Number Number World) first")
   )
 
