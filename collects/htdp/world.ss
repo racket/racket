@@ -7,37 +7,40 @@
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 (module world mzscheme
   (require
-    (lib "class.ss")
-    (lib "etc.ss")
-    (lib "list.ss")
-    (lib "process.ss")
-    (lib "mred.ss" "mred")
-    (lib "error.ss" "htdp")
-    (lib "image.ss" "htdp")
-    (prefix beg: (lib "htdp-beginner.ss" "lang"))
-    (lib "prim.ss" "lang"))
+   (lib "class.ss")
+   (lib "etc.ss")
+   (lib "list.ss")
+   (lib "process.ss")
+   (lib "mred.ss" "mred")
+   (lib "error.ss" "htdp")
+   (lib "image.ss" "htdp")
+   (prefix beg: (lib "htdp-beginner.ss" "lang"))
+   (lib "prim.ss" "lang"))
+  
+  (require (lib "bitmap-label.ss" "mrlib")
+           (lib "string-constant.ss" "string-constants"))
   
   ;; --- provide ---------------------------------------------------------------
   (provide (all-from-except (lib "image.ss" "htdp") add-line))
   
   (provide      ;; forall(World):
-    big-bang	;; Number Number Number World -> true
-    begin-recording ;; String -> true
-    end-of-time	    ;; String u Symbol -> World
+   big-bang	;; Number Number Number World -> true
+   begin-recording ;; String -> true
+   end-of-time	    ;; String u Symbol -> World
    
-    nw:rectangle ;; Number Number Mode Color -> Image
-    place-image  ;; Image Number Number Scence -> Scene
-    empty-scene  ;; Number Number -> Scene 
-    run-movie    ;; (Listof Image) -> true 
-    (rename add-line-to-scene add-line)
-    ;; Scene Number Number Number Number Color -> Scene 
-    ;; cut all pieces that are outside the given rectangle 
-    )
+   nw:rectangle ;; Number Number Mode Color -> Image
+   place-image  ;; Image Number Number Scence -> Scene
+   empty-scene  ;; Number Number -> Scene 
+   run-movie    ;; (Listof Image) -> true 
+   (rename add-line-to-scene add-line)
+   ;; Scene Number Number Number Number Color -> Scene 
+   ;; cut all pieces that are outside the given rectangle 
+   )
   
   (provide-higher-order-primitive
-    run-simulation (_ _ _ create-scene) ;; (Nat Nat Number (Nat -> Image) -> true)
-    )
-
+   run-simulation (_ _ _ create-scene) ;; (Nat Nat Number (Nat -> Image) -> true)
+   )
+  
   (define (run-simulation width height rate f)
     (check-pos 'run-simulation width "first")
     (check-pos 'run-simulation height "second")
@@ -46,23 +49,23 @@
     (big-bang width height rate 1)
     (on-redraw f)
     (on-tick-event add1))
-    
-  (provide-higher-order-primitive
-    on-tick-event (tock) ;; (World -> World) -> true
-    )
   
   (provide-higher-order-primitive
-    on-redraw (world-image) ;; (World -> Image) -> true
-    )
+   on-tick-event (tock) ;; (World -> World) -> true
+   )
+  
+  (provide-higher-order-primitive
+   on-redraw (world-image) ;; (World -> Image) -> true
+   )
   
   ;; KeyEvent is one of: 
   ;; -- Char 
   ;; -- Symbol 
   
   (provide-higher-order-primitive ;; (World KeyEvent -> World) -> true 
-    on-key-event 
-    (draw)
-    )
+   on-key-event 
+   (draw)
+   )
   
   ;; A MouseEventType is one of:
   ;; - 'button-down
@@ -73,9 +76,9 @@
   ;; - 'leave
   
   (provide-higher-order-primitive ;; (World Number Number MouseEvent -> World) -> true 
-    on-mouse-event 
-    (clack)
-    )
+   on-mouse-event 
+   (clack)
+   )
   
   ;; ---------------------------------------------------------------------------
   
@@ -121,7 +124,7 @@
       (if (and (= sw nw) (= sh nh)) 
 	  ns
 	  (shrink ns 0 0 sw sh))))
-
+  
   (define (number->integer x) (inexact->exact (floor x)))
   
   (define (add-line-to-scene img x0 y0 x1 y1 c)
@@ -143,29 +146,29 @@
         [(= y0 y1) ;; horizontal 
          (if (<= 0 y0 h) (add-line img (app x0 w) y0 (app x1 w) y0 c) img)]
         [else 
-	  (local ((define lin (points->line x0 y0 x1 y1))
-		  (define dir (direction x0 y0 x1 y1))
-		  (define-values (upp low lft rgt) (intersections lin w h))
-		  (define (add x y) (add-line img x0 y0 x y c)))
-	    (cond
-	      [(and (< 0 x0 w) (< 0 y0 h)) ;; (x0,y0) is in the interior
-	       (case dir
-		 [(upper-left)  (if (number? upp) (add upp 0) (add 0 lft))]
-		 [(lower-left)  (if (number? low) (add low h) (add 0 lft))]
-		 [(upper-right) (if (number? upp) (add upp 0) (add h rgt))]
-		 [(lower-right) (if (number? low) (add low h) (add w rgt))]
-		 [else (error 'dir "contract violation: ~e" dir)])]
-	      [(and (< 0 x1 w) (< 0 y1 h)) ;; (x1,y1) in interior; symmetry!
-	       (add-line-to-scene img x1 y1 x0 y0 c)]
-	      [else 
-		(cond
-		  [(and (number? upp) (number? low)) (add-line img upp 0 low h c)]
-		  [(and (number? upp) (number? lft)) (add-line img upp 0 0 lft c)]
-		  [(and (number? upp) (number? rgt)) (add-line img upp 0 w rgt c)]
-		  [(and (number? low) (number? lft)) (add-line img low h 0 lft c)]
-		  [(and (number? low) (number? rgt)) (add-line img low h w rgt c)]
-		  [(and (number? lft) (number? rgt)) (add-line img 0 lft w rgt c)]
-		  [else img])]))])))
+         (local ((define lin (points->line x0 y0 x1 y1))
+                 (define dir (direction x0 y0 x1 y1))
+                 (define-values (upp low lft rgt) (intersections lin w h))
+                 (define (add x y) (add-line img x0 y0 x y c)))
+           (cond
+             [(and (< 0 x0 w) (< 0 y0 h)) ;; (x0,y0) is in the interior
+              (case dir
+                [(upper-left)  (if (number? upp) (add upp 0) (add 0 lft))]
+                [(lower-left)  (if (number? low) (add low h) (add 0 lft))]
+                [(upper-right) (if (number? upp) (add upp 0) (add h rgt))]
+                [(lower-right) (if (number? low) (add low h) (add w rgt))]
+                [else (error 'dir "contract violation: ~e" dir)])]
+             [(and (< 0 x1 w) (< 0 y1 h)) ;; (x1,y1) in interior; symmetry!
+              (add-line-to-scene img x1 y1 x0 y0 c)]
+             [else 
+              (cond
+                [(and (number? upp) (number? low)) (add-line img upp 0 low h c)]
+                [(and (number? upp) (number? lft)) (add-line img upp 0 0 lft c)]
+                [(and (number? upp) (number? rgt)) (add-line img upp 0 w rgt c)]
+                [(and (number? low) (number? lft)) (add-line img low h 0 lft c)]
+                [(and (number? low) (number? rgt)) (add-line img low h w rgt c)]
+                [(and (number? lft) (number? rgt)) (add-line img 0 lft w rgt c)]
+                [else img])]))])))
   
   ;; Nat Nat -> Nat 
   ;; y if in [0,h], otherwise the closest boundary
@@ -179,8 +182,8 @@
   ;; how to get to (x1,y1) from (x0,y0)
   (define (direction x0 y0 x1 y1)
     (string->symbol
-      (string-append 
-	(if (<= y0 y1) "lower" "upper") "-" (if (<= x0 x1) "right" "left"))))
+     (string-append 
+      (if (<= y0 y1) "lower" "upper") "-" (if (<= x0 x1) "right" "left"))))
   
   'direction 
   (equal? (direction 10 10 0 0) 'upper-left)
@@ -212,7 +215,7 @@
   ;;  when a field is false, the line doesn't interesect with that side 
   (define (intersections l w h)
     (values
-      (opt (X l 0) w) (opt (X l h) w) (opt (lyne-y0 l) h) (opt (of l w) h)))
+     (opt (X l 0) w) (opt (X l h) w) (opt (lyne-y0 l) h) (opt (of l w) h)))
   
   ;; Number Number -> [Opt Number]
   (define (opt z lft) (if (<= 0 z lft) z false))
@@ -233,13 +236,13 @@
   (= (X (make-lyne 1 0) 100) 100)
   
   (equal? (call-with-values 
-	    (lambda () (intersections (points->line -10 -10 110 110) 100 100))
-	    list)
-    (list 0 100 0 100))
+           (lambda () (intersections (points->line -10 -10 110 110) 100 100))
+           list)
+          (list 0 100 0 100))
   (equal? (call-with-values 
-	    (lambda () (intersections (points->line 0 10 100 80) 100 100))
-	    list)
-    (list false false 10 80))
+           (lambda () (intersections (points->line 0 10 100 80) 100 100))
+           list)
+          (list false false 10 80))
   
   ;; -----------------------------------------------------------------------------
   
@@ -247,25 +250,26 @@
     (check-pos 'empty-scene width "first")
     (check-pos 'empty-scene height "second")    
     (move-pinhole 
-      (rectangle width height 'outline 'black)
-      (/ width -2) (/ height -2)))
+     (rectangle width height 'outline 'black)
+     (/ width -2) (/ height -2)))
   
   ;; display all images in list in the canvas
   (define (run-movie movie)
     (check-arg 'run-movie (list? movie) "list (of images)" "first" movie)
     (for-each (lambda (cand) (check-image 'run-movie cand "first" "list of images"))
-      movie)
+              movie)
     (let run-movie ([movie movie])
       (cond [(null? movie) #t]
-	[(pair? movie)
-	 (update-frame (car movie))
-	 (sleep/yield .05)
-	 (run-movie (cdr movie))])))
+            [(pair? movie)
+             (update-frame (car movie))
+             (sleep/yield .05)
+             (run-movie (cdr movie))])))
   
   ;; ---------------------------------------------------------------------------
   
   ;; The One and Only Visible World
   (define the-frame #f)
+  (define the-button #f)
   (define txt (new text%))
   
   ;; World (type parameter)
@@ -287,35 +291,50 @@
     (check-pos 'big-bang w "first")
     (check-pos 'big-bang h "second")
     (check-arg 'big-bang
-      (and (number? delta) (<= 0 delta 1000))
-      "number [of seconds] between 0 and 1000"
-      "first"
-      delta)
+               (and (number? delta) (<= 0 delta 1000))
+               "number [of seconds] between 0 and 1000"
+               "first"
+               delta)
     (when the-frame (error 'big-bang "big-bang already called once"))
     (set! the-delta delta) 
     (set! the-world world)
     (set! the-frame
-      (new (class frame%
-	     (super-new)
-	     (define/augment (on-close)        
-	       ;; shut down the timer when the window is destroyed
-	       (send the-time stop)
-	       (inner (void) on-close)))
-	(label "DrScheme")
-	(stretchable-width #f)
-	(stretchable-height #f)
-	(style '(no-resize-border metal))))
+          (new (class frame%
+                 (super-new)
+                 (define/augment (on-close)        
+                   ;; shut down the timer when the window is destroyed
+                   (send the-time stop)
+                   (inner (void) on-close)))
+               (label "DrScheme")
+               (stretchable-width #f)
+               (stretchable-height #f)
+               (style '(no-resize-border metal))))
+    (let ([p (new horizontal-pane% [parent the-frame][alignment '(center center)])])
+      (new button% 
+           [parent p]
+           [label ((bitmap-label-maker (string-constant break-button-label) (build-path (collection-path "icons") "break.png")) '___)]
+           [style '(border)]
+           [callback (lambda (this-button e) 
+                       (send the-frame on-close)
+                       (send this-button enable #f)
+                       (send the-button enable #t))])                       
+      (set! the-button (new button% 
+                            [parent p]
+                            [enabled #f]
+                            [label ((bitmap-label-maker "Images" (build-path (collection-path "icons") "file.gif")) '___)]
+                            [style '(border)]
+                            [callback (lambda (x e) (printf "hello world\n"))])))
     (let ([c (new (class editor-canvas%
 		    (super-new)
 		    (define/override (on-char e)
 		      (on-char-proc (send e get-key-code)))
 		    (define/override (on-event e)
 		      (on-mouse-proc e)))
-	       (parent the-frame) 
-	       (editor txt)
-	       (style '(no-hscroll no-vscroll))
-	       (horizontal-inset INSET)
-	       (vertical-inset INSET))])
+                  (parent the-frame) 
+                  (editor txt)
+                  (style '(no-hscroll no-vscroll))
+                  (horizontal-inset INSET)
+                  (vertical-inset INSET))])
       (send c min-client-width (+ w INSET INSET))
       (send c min-client-height (+ h INSET INSET))
       (send c focus))
@@ -335,15 +354,15 @@
     (check-world 'on-tick-event)
     (if (eq? timer-callback void)
         (set! timer-callback 
-	  (lambda ()
-	    (with-handlers ([exn:break? break-handler]
-			    [exn? exn-handler])
-	      (set! the-world (f the-world))
-	      (on-redraw-proc))))          
+              (lambda ()
+                (with-handlers ([exn:break? break-handler]
+                                [exn? exn-handler])
+                  (set! the-world (f the-world))
+                  (on-redraw-proc))))          
         (error 'on-tick "the timing action has been set already"))
     (send the-time start
-      (let* ([w (ceiling (* 1000 the-delta))])
-	(if (exact? w) w (inexact->exact w))))
+          (let* ([w (ceiling (* 1000 the-delta))])
+            (if (exact? w) w (inexact->exact w))))
     #t]
   
   ;; --- key and mouse events 
@@ -358,15 +377,15 @@
       (if (eq? on-char-proc void)
           (begin 
             (set! on-char-proc 
-	      (lambda (e)
-		(parameterize ([current-eventspace esp])
-		  (queue-callback 
-		    (lambda ()
-		      (with-handlers ([exn:break? break-handler]
-				      [exn? exn-handler])
-			(set! the-world (f the-world e))
-			(on-redraw-proc))))
-		  #t)))
+                  (lambda (e)
+                    (parameterize ([current-eventspace esp])
+                      (queue-callback 
+                       (lambda ()
+                         (with-handlers ([exn:break? break-handler]
+                                         [exn? exn-handler])
+                           (set! the-world (f the-world e))
+                           (on-redraw-proc))))
+                      #t)))
             #t)
           (error 'on-event "the event action has been set already")))]
   
@@ -385,29 +404,29 @@
       (if (eq? on-mouse-proc void)
           (begin
             (set! on-mouse-proc 
-	      (lambda (e)
-		(parameterize ([current-eventspace esp])
-		  (queue-callback
-		    (lambda ()
-		      (with-handlers ([exn:break? break-handler]
-				      [exn? exn-handler])
-			(set! the-world (f the-world 
-					   (- (send e get-x) INSET)
-					   (- (send e get-y) INSET)
-					   (cond [(send e button-down?) 'button-down]
-					     [(send e button-up?)   'button-up]
-					     [(send e dragging?)    'drag]
-					     [(send e moving?)      'move]
-					     [(send e entering?)    'enter]
-					     [(send e leaving?)     'leave]
-					     [else ; (send e get-event-type)
-					       (error 'on-mouse-event
-						 (format 
-						   "Unknown event type: ~a"
-						   (send e get-event-type)))]
-					     )))
-			(on-redraw-proc))))
-		  #t)))
+                  (lambda (e)
+                    (parameterize ([current-eventspace esp])
+                      (queue-callback
+                       (lambda ()
+                         (with-handlers ([exn:break? break-handler]
+                                         [exn? exn-handler])
+                           (set! the-world (f the-world 
+                                              (- (send e get-x) INSET)
+                                              (- (send e get-y) INSET)
+                                              (cond [(send e button-down?) 'button-down]
+                                                    [(send e button-up?)   'button-up]
+                                                    [(send e dragging?)    'drag]
+                                                    [(send e moving?)      'move]
+                                                    [(send e entering?)    'enter]
+                                                    [(send e leaving?)     'leave]
+                                                    [else ; (send e get-event-type)
+                                                     (error 'on-mouse-event
+                                                            (format 
+                                                             "Unknown event type: ~a"
+                                                             (send e get-event-type)))]
+                                                    )))
+                           (on-redraw-proc))))
+                      #t)))
             #t)
           (error 'on-mouse-event "the mouse event action has been set already"))))
   #|
@@ -450,14 +469,14 @@
     (if (eq? on-redraw-proc void)
         (begin
           (set! on-redraw-proc
-	    (lambda ()
-	      (with-handlers ([exn:break? break-handler]
-			      [exn? exn-handler])
-		(define img (f the-world))
-		(check-result 'on-redraw (lambda (x) (beg:image? x)) "image" img)
-		(when recording? (save-image img))
-		(update-frame img)
-		#t)))
+                (lambda ()
+                  (with-handlers ([exn:break? break-handler]
+                                  [exn? exn-handler])
+                    (define img (f the-world))
+                    (check-result 'on-redraw (lambda (x) (beg:image? x)) "image" img)
+                    (when recording? (save-image img))
+                    (update-frame img)
+                    #t)))
           (on-redraw-proc))
         (error 'on-redraw "the redraw function has already been specified")))
   
@@ -486,15 +505,15 @@
     (let ()
       (define files 
 	(sort
-	  (filter (lambda (x) (regexp-match #rx"i[0-9]*.png" x))
-	    (map path->string (directory-list)))
-	  (lambda (x y)
-	    (<= (string->number (car (regexp-match #rx"[0-9]+" x)))
-		(string->number (car (regexp-match #rx"[0-9]+" y)))))))
+         (filter (lambda (x) (regexp-match #rx"i[0-9]*.png" x))
+                 (map path->string (directory-list)))
+         (lambda (x y)
+           (<= (string->number (car (regexp-match #rx"[0-9]+" x)))
+               (string->number (car (regexp-match #rx"[0-9]+" y)))))))
       #;
       (define cmdline (format "convert -delay 5 ~a ~a.gif" 
-			(apply string-append (map (lambda (x) (format " ~a" x)) files))
-			d))
+                              (apply string-append (map (lambda (x) (format " ~a" x)) files))
+                              d))
       #;
       (system cmdline)
       #t))
