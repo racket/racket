@@ -66,15 +66,17 @@
     (let ([buffer  #f]
           [skip    #f]
           [blen    #f]
+          [closed? #f]
           [LF      (bytes-ref #"\n" 0)])
-      (define (close!) (set! buffer eof) (save-history))
+      (define (close!) (set! closed? #t) (save-history))
       (define (reader tgt)
         (let loop ()
-          (cond [(eof-object? buffer) eof]
+          (cond [closed? eof]
+                [(eof-object? buffer) (set! buffer #f) eof]
                 [(not buffer)
                  (set! buffer (readline-bytes/hist (get-current-prompt)))
                  (if (eof-object? buffer)
-                   (begin (save-history) buffer)
+                   (begin (save-history) (set! buffer #f) eof)
                    (begin (set! skip 0)
                           (set! blen (bytes-length buffer))
                           (reader tgt)))]
