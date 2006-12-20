@@ -189,7 +189,8 @@ _struct.ss_: generating the same names as `define-struct'
 
 > (generate-struct-declaration orig-stx name-id super-id-or-false
                                field-id-list current-context
-			       make-make-struct-type)
+			       make-make-struct-type
+                               [omit-sel? omit-set?])
 
   This procedure implements the core of a `define-struct' expansion.
 
@@ -198,7 +199,9 @@ _struct.ss_: generating the same names as `define-struct'
   `super-id-or-false', and `field-id-list' arguments provide the main
   parameters. The `current-context' argument is normally the result of
   `syntax-local-context'. The `orig-stx' argument is used for syntax
-  errors.
+  errors. The optional `omit-sel?' and `omit-set?' arguments default
+  to #f; a #t value suppresses definitions of field selectors or
+  mutators, respectively.
 
   The `make-struct-type' procedure is called to generate the
   expression to actually create the struct type. Its arguments are

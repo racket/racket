@@ -31,6 +31,7 @@
 	   ;; (rename intermediate-contract contract)
 	   ;; (rename intermediate-define-data define-data)
 	   #%datum
+           #%top-interaction
 	   empty true false)
 
   ;; procedures:

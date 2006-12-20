@@ -1149,8 +1149,8 @@
 	(when config:printing?
 	  (do-print)))
 
-      (let ([eh (current-exception-handler)])
-	(current-exception-handler
+      (let ([eh (uncaught-exception-handler)])
+	(uncaught-exception-handler
 	 (lambda (exn)
 	   (send f show #f)
 	   (when f-both

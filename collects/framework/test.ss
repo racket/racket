@@ -156,11 +156,11 @@
                       (install-timer (run-interval) return)
                       (unless (is-exn?)
                         (begin-action)
-                        (parameterize ([current-exception-handler
-                                        (λ (exn)
-                                          (end-action-with-error exn)
-                                          ((error-escape-handler)))])
-                          (thunk))
+                        (call-with-exception-handler
+                          (λ (exn)
+                            (end-action-with-error exn)
+                            ((error-escape-handler)))
+                          thunk)
                         (end-action)))]
                    
                    [return (λ () (semaphore-post sem))])

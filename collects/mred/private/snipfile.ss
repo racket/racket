@@ -208,7 +208,12 @@
 		    (let ([exp (read-syntax src in-port)])
 		      (if (eof-object? exp)
 			  (apply values last-time-values)
-			  (call-with-values (lambda () (eval exp))
+			  (call-with-values (lambda () (call-with-continuation-prompt
+                                                        (lambda () (eval 
+                                                                    (datum->syntax-object
+                                                                     #f
+                                                                     (cons '#%top-interaction exp)
+                                                                     exp)))))
 			    (lambda x (loop x)))))))))
 	  (lambda ()
 	    (close-input-port in-port)))))

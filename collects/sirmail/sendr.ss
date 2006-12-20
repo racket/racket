@@ -700,12 +700,10 @@
         
         (send mailer-frame show #t)
         
-        (initial-exception-handler
+        (uncaught-exception-handler
          (lambda (x)
            (show-error x mailer-frame)
            ((error-escape-handler))))
-        (current-exception-handler
-         (initial-exception-handler))
         
         mailer-frame)
 

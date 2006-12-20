@@ -568,7 +568,7 @@
                 (run-in-evaluation-thread
                  (lambda ()
                    (let ([self (current-thread)]
-                         [oeh (current-exception-handler)]
+                         [oeh (uncaught-exception-handler)]
                          [err-hndlr (error-display-handler)])
                      (error-display-handler
                       (lambda (msg exn)
@@ -589,7 +589,7 @@
                        (lambda (ccm kind info)
                          (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
                            (send parent suspend oeh (cons info debug-marks) kind)))))
-                     (current-exception-handler
+                     (uncaught-exception-handler
                       (lambda (exn)
                         (if (and (exn:break? exn) (send parent suspend-on-break?))
                             (let ([marks (exn-continuation-marks exn)]

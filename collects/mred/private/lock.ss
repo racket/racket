@@ -50,16 +50,16 @@
 	     (lambda () 
 	       (set! old-paramz (current-parameterization))
 	       (set! old-break-paramz (current-break-parameterization))
-	       (parameterize ([error-value->string-handler entered-err-string-handler]
-			      [current-exception-handler
-			       (lambda (exn)
-				 ;; Get out of atomic region before letting
-				 ;;  an exception handler work
-				 (k (lambda () (raise exn))))])
-		 (parameterize-break #f
-		   (call-with-values 
-		       f 
-		     (lambda args (lambda () (apply values args)))))))
+	       (parameterize ([error-value->string-handler entered-err-string-handler])
+                 (with-handlers ([void (lambda (exn)
+                                         ;; Get out of atomic region before letting
+                                         ;;  an exception handler work
+                                         (k (lambda () (raise exn))))])
+                   (parameterize-break 
+                    #f
+                    (call-with-values 
+                        f 
+                      (lambda args (lambda () (apply values args))))))))
 	     (lambda ()
 	       (set! monitor-owner #f)
 	       (semaphore-post monitor-sema)

@@ -404,6 +404,7 @@
            #%datum
            #%plain-module-begin
            #%module-begin
+           #%top-interaction
            (rename frp:if if)
            (rename frp:lambda lambda)
            (rename frp:case-lambda case-lambda)

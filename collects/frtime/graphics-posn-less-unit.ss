@@ -978,7 +978,7 @@
     (lambda (name show?)
       (unless sixlib-eventspace
 	(set! sixlib-eventspace 
-	      (parameterize ([current-exception-handler
+	      (parameterize ([uncaught-exception-handler
 			      (lambda (x)
 				((error-display-handler)
 				 (format "internal error in graphics library: ~a"

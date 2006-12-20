@@ -85,8 +85,8 @@
   
   (namespace-set-variable-value! 'eopl:error-stop #f #t)
   (define (install-eopl-exception-handler)
-    (current-exception-handler 
-     (let ([eh (current-exception-handler)]
+    (uncaught-exception-handler 
+     (let ([eh (uncaught-exception-handler)]
 	   [orig-namespace (current-namespace)])
        (lambda (x)
 	 (let ([v (with-handlers ([void (lambda (x) #f)])
@@ -181,7 +181,7 @@
 
 	   ;; We have to include the following MzScheme-isms to do anything,
 	   ;; but they're not legal R5RS names, anyway.
-	   #%app #%datum #%top 
+	   #%app #%datum #%top #%top-interaction
 	   (rename synrule-in-stx-module-begin #%module-begin))
 
   (define-syntax synrule-in-stx-module-begin

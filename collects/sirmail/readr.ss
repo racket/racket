@@ -83,13 +83,10 @@
 				       '(app)))
 	    (show-pref-dialog))))
 
-      (initial-exception-handler
+      (uncaught-exception-handler
        (lambda (x)
 	 (show-error x)
 	 ((error-escape-handler))))
-
-      (current-exception-handler
-       (initial-exception-handler))
 
       ;; Install std bindings global for file dialog, etc.
       (let ([km (make-object keymap%)])

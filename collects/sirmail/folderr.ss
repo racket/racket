@@ -462,11 +462,9 @@
       (send top-list set-mailbox-name (ROOT-MAILBOX-FOR-LIST))
       (update-gui (read-mailbox-folder))
 
-      (initial-exception-handler
+      (uncaught-exception-handler
          (lambda (x)
            (show-error x frame)
            ((error-escape-handler))))
-      (current-exception-handler
-       (initial-exception-handler))
       
       frame))

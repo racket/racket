@@ -29,6 +29,7 @@
 	   (rename intermediate-unquote-splicing unquote-splicing)
 	   (rename beginner-module-begin #%module-begin)
 	   #%datum
+           #%top-interaction
 	   empty true false)
 
   ;; procedures:

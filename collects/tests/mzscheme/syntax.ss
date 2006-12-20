@@ -922,14 +922,14 @@
 (test 5 'parameterize (parameterize () 5))
 (test 6 'parameterize (parameterize ([error-print-width 10]) 6))
 (test 7 'parameterize (parameterize ([error-print-width 10]
-				     [current-exception-handler void]) 
-				    7))
+				     [uncaught-exception-handler void]) 
+                        7))
 (define oepw (error-print-width))
 (error-test #'(parameterize ([error-print-width 777]) (error 'bad)) exn:fail?)
 (test oepw 'parameterize (error-print-width))
 (error-test #'(parameterize ([error-print-width 777]
-			    [current-output-port (current-error-port)])
-			   (error 'bad)) 
+                             [current-output-port (current-error-port)])
+                (error 'bad)) 
 	    exn:fail?)
 (error-test #'(parameterize ([error-print-width 'a]) 10))
 

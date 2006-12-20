@@ -42,6 +42,7 @@
 	   ;; (rename advanced-contract contract)
 	   ;; (rename advanced-define-data define-data)
 	   #%datum
+           #%top-interaction
 	   empty true false)
 
   ;; procedures:

@@ -9,9 +9,10 @@
   (lambda ()
     (let ([err  (current-error-port)]
           [exit (exit-handler)]
-          [errh (current-exception-handler)]
+          [errh (uncaught-exception-handler)]
           [esch (error-escape-handler)]
-          [cust (current-custodian)])
+          [cust (current-custodian)]
+          [orig-thread (current-thread)])
       (namespace-set-variable-value! 'real-error-port err)
       ;; we're loading this for the first time:
       ;; -- make real errors show
@@ -19,12 +20,10 @@
       ;;     handler is overridden to avoid running off, so use the first to
       ;;     save the data and the second to show it)
       (let ([last-error #f])
-        (current-exception-handler (lambda (e) (set! last-error e) (errh e)))
-        (error-escape-handler
-         (lambda ()
-           (fprintf err "ERROR: ~a\n"
-                    (if (exn? last-error) (exn-message last-error) last-error))
-           (exit 2))))
+        (uncaught-exception-handler (lambda (e) 
+                                      (when (eq? (current-thread) orig-thread)
+                                        (set! last-error e))
+                                      (errh e))))
       ;; -- set up a timeout
       (thread (lambda ()
                 (sleep 600)
@@ -37,6 +36,14 @@
 (let ([p (make-output-port
           'quiet always-evt (lambda (str s e nonblock? breakable?) (- e s))
           void)])
-  (parameterize ([current-output-port p] [current-error-port p])
-    (load-relative quiet-load))
+  (call-with-continuation-prompt
+   (lambda ()
+     (parameterize ([current-output-port p] [current-error-port p])
+       (load-relative quiet-load)))
+   (default-continuation-prompt-tag)
+   (lambda ()
+     (when last-error
+       (fprintf err "ERROR: ~a\n"
+                (if (exn? last-error) (exn-message last-error) last-error))
+       (exit 2))))
   (report-errs #t))

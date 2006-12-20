@@ -515,7 +515,7 @@
                  (lambda ()
                    ;(print-struct #t)
                    (let ([self (current-thread)]
-                         [oeh (current-exception-handler)]
+                         [oeh (uncaught-exception-handler)]
                          [err-hndlr (error-display-handler)])
                      (error-display-handler
                       (lambda (msg exn)
@@ -546,7 +546,7 @@
                           (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
                             (apply values
 				   (send (get-tab) suspend oeh (cons top-mark debug-marks) (cons 'exit-break vals))))])))
-                     (current-exception-handler
+                     (uncaught-exception-handler
                       (lambda (exn)
                         (if (and (exn:break? exn) (send (get-tab) suspend-on-break?))
                             (let ([marks (exn-continuation-marks exn)]

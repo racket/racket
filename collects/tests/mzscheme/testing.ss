@@ -120,11 +120,7 @@ transcript.
     (flush-output)
     (call/ec (lambda (escape)
 	       (let* ([old-esc-handler (error-escape-handler)]
-		      [old-handler (current-exception-handler)]
 		      [orig-err-port (current-error-port)]
-		      [test-handler
-		       (lambda ()
-			 (escape #t))]
 		      [test-exn-handler
 		       (lambda (e)
 			 (when (and exn? (not (exn? e)))
@@ -148,22 +144,30 @@ transcript.
 					      (record-error (list e (cons 'exn-elem sel) expr)))))))
 			  exn-table)
 
-			 (old-handler e))])
+                         ((error-display-handler)
+                          (if (exn? e)
+                              (exn-message e)
+                              (format "misc. exn: ~s" e))
+                          e)
+
+                         (escape #t))])
 		 (dynamic-wind
 		  (lambda ()
-		    (current-error-port (current-output-port))
-		    (current-exception-handler test-exn-handler)
-		    (error-escape-handler test-handler))
+		    (current-error-port (current-output-port)))
 		  (lambda ()
-		    (let ([v (call-with-values th list)])
-		      (write (cons 'values v))
-		      (display " BUT EXPECTED ERROR")
-		      (record-error (list v 'Error expr))
-		      (newline)
-		      #f))
+                    (call-with-continuation-prompt
+                     (lambda ()
+                       (call-with-exception-handler
+                        test-exn-handler
+                        (lambda ()
+                          (let ([v (call-with-values th list)])
+                            (write (cons 'values v))
+                            (display " BUT EXPECTED ERROR")
+                            (record-error (list v 'Error expr))
+                            (newline)
+                            #f))))))
 		  (lambda ()
 		    (current-error-port orig-err-port)
-		    (current-exception-handler old-handler)
 		    (error-escape-handler old-esc-handler))))))]))
 
 (defvar error-test

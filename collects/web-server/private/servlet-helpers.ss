@@ -86,7 +86,7 @@
   ; to report exceptions that occur later to the browser
   ; this must be called at the begining of a servlet
   (define (report-errors-to-browser send/finish-or-back)
-    (current-exception-handler
+    (uncaught-exception-handler
      (lambda (exn)
        (send/finish-or-back
         `(html (head (title "Servlet Error"))

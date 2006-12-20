@@ -67,7 +67,7 @@
   ;; Return (map cdr lists). 
   ;; However, if any element of LISTS is empty, just abort and return '().
   (define (%cdrs lists)
-	(call-with-current-continuation
+	(call-with-escape-continuation
 	 (lambda (abort)
 	   (let recur ((lists lists))
 		 (if (pair? lists)
@@ -85,7 +85,7 @@
   ;; However, if any of the lists is empty, just abort and return [() ()].
   
   (define (%cars+cdrs lists)
-	(call-with-current-continuation
+	(call-with-escape-continuation
 	 (lambda (abort)
 	   (let recur ((lists lists))
 		 (if (pair? lists)
@@ -99,7 +99,7 @@
   ;; Like %CARS+CDRS, but we pass in a final elt tacked onto the end of the
   ;; cars list. What a hack.
   (define (%cars+cdrs+ lists cars-final)
-	(call-with-current-continuation
+	(call-with-escape-continuation
 	 (lambda (abort)
 	   (let recur ((lists lists))
 		 (if (pair? lists)

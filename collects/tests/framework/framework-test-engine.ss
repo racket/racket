@@ -63,13 +63,17 @@
 	[port (current-output-port)])
     (event-dispatch-handler
      (lambda (evt)
-       (parameterize ([current-exception-handler
-		       (let ([oe (current-exception-handler)])
+       (parameterize ([uncaught-exception-handler
+		       (let ([oe (uncaught-exception-handler)])
 			 (lambda (exn)
 			   (protect
 			    (lambda ()
 			      (set! errs (cons exn errs))))
 			   (oe exn)))])
-	 (od evt)))))
+         (call-with-exception-handler
+          (lambda (exn)
+            ((uncaught-exception-handler) exn))
+          (lambda ()
+            (od evt)))))))
 
   (yield (make-semaphore 0)))

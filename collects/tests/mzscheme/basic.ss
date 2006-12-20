@@ -1574,12 +1574,14 @@
   (test '((10 11 12) (13 . 14) (10 11 12) (13 . 14))
 	ra-b-a-b r10-11-12 r13.14)
 
+  (test 10 call/cc (lambda (k) (k 10)))
+  
   (test '((enter exit enter exit)
 	  (exit enter exit enter)
 	  (enter exit enter exit)
 	  (exit enter exit enter))
 	ra-b-a-b 
-	(lambda () (ra-b-a-b (lambda () 'enter) (lambda () 'exit)))
+        (lambda () (ra-b-a-b (lambda () 'enter) (lambda () 'exit)))
 	(lambda () (ra-b-a-b (lambda () 'exit) (lambda () 'enter))))
 
   (test '(enter exit enter exit)

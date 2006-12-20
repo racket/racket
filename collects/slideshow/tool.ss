@@ -831,6 +831,9 @@ pict snip :
            (with-syntax ([(rewritten-expr ...) (map (lambda (x) (add-send-over (rewrite-expr x) x 1)) 
                                                     (syntax->list (syntax (expr ...))))])
              (syntax/cert stx (#%app rewritten-expr ...)))]
+          [(#%expression e)
+           (with-syntax ([e (add-send-over (rewrite-expr #'x) #'x 1)])
+             (syntax/cert stx (#%expression e)))]
           [(#%datum . datum) stx]
           [(#%top . variable) stx]))
       

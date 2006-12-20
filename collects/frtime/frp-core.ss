@@ -183,7 +183,7 @@
                     (add1 (apply max 0 (append (map safe-signal-depth producers)
                                                (map safe-signal-depth cust-sigs))))
                     ccm
-                    (parameterize ([current-exception-handler
+                    (parameterize ([uncaught-exception-handler
                                     (lambda (exn) (exn-handler exn))]
                                    [extra-cont-marks ccm])
                       (current-parameterization))
@@ -209,7 +209,7 @@
                     (add1 (apply max 0 (append (map safe-signal-depth producers)
                                                (map safe-signal-depth cust-sigs))))
                     ccm
-                    (parameterize ([current-exception-handler
+                    (parameterize ([uncaught-exception-handler
                                     (lambda (exn) (exn-handler exn))]
                                    [extra-cont-marks ccm])
                       (current-parameterization))
@@ -270,7 +270,7 @@
                       (add1 (apply max 0 (append (map safe-signal-depth args)
                                                  (map safe-signal-depth cust-sigs))))
                       ccm
-                      (parameterize ([current-exception-handler
+                      (parameterize ([uncaught-exception-handler
                                       (lambda (exn) (exn-handler exn))]
                                      [extra-cont-marks ccm])
                         (current-parameterization))
@@ -757,7 +757,7 @@
                                 (undef cur-beh)
                                 #;(kill-signal cur-beh)))
                             (outer))])
-           (set! exn-handler (current-exception-handler))
+           ;; (set! exn-handler (current-exception-handler)) <-- FIXME!
            (let inner ()
              
              ;; process external messages until there is an internal update

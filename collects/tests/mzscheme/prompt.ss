@@ -199,6 +199,29 @@
 
 (test-breaks-ok)
 
+;; Abort to a prompt in a d-w post that is deeper than a
+;;  prompt with the same tag at the continuation-jump site:
+(test 0
+      values
+      (let ([p1 (make-continuation-prompt-tag)]
+            [p2 (make-continuation-prompt-tag)])
+        (let/cc k
+          (call-with-continuation-prompt
+           (lambda ()
+             (call-with-continuation-prompt
+              (lambda ()
+                (dynamic-wind
+                    void
+                    (lambda ()
+                      (call-with-continuation-prompt
+                       (lambda ()
+                         (k 0))
+                       p2))
+                    (lambda ()
+                      (abort-current-continuation p1 (lambda () 0)))))
+              p1))
+           p2))))
+
 ;; ----------------------------------------
 ;; Continuations
 
@@ -470,9 +493,20 @@
 ;; ----------------------------------------
 ;; Composable continuations
 
-(err/rt-test (call-with-composable-continuation
-              (lambda (x) x))
+(err/rt-test (call-with-continuation-barrier
+              ;; When the test is not run in a REPL but is run in the
+              ;; main thread, then it should fail without the barrier,
+              ;; too.  But we don't have enough control over the test
+              ;; environment to assume that.
+              (lambda ()
+                (call-with-composable-continuation
+                 (lambda (x) x))))
              exn:fail:contract:continuation?)
+
+(err/rt-test (call-with-composable-continuation
+              (lambda (x) x)
+              (make-continuation-prompt-tag 'px))
+             exn:fail:contract?)
 
 (let ([k (call-with-continuation-prompt
           (lambda ()
@@ -804,6 +838,7 @@
                 p2))
              (lambda () (out 'post1))))
        p1))
+    (printf "here ~a\n" count)
     (set! count (add1 count))
     (unless (= count 3)
       (call-with-continuation-prompt
@@ -811,6 +846,8 @@
          (k2 10))
        p2))
     (test '(post2 post2 post1 post2 pre2 pre1) values l))
+
+(printf "into post from escape\n")
 
 ;; Jump into post from an escape, rather than 
 ;;  from a result continuation
@@ -1069,6 +1106,7 @@
                              (k (lambda () (k3 (lambda () (esc)))))))))))))])
       (jump-in (lambda (f) (f (lambda () 10))) 10 88)
       (jump-in (lambda (f) (let/cc esc (f (lambda () (esc 20))))) 20 99)
+      (printf "here\n")
       (jump-in (lambda (f)
                     (let ([p1 (make-continuation-prompt-tag)])
                       (call-with-continuation-prompt
@@ -1297,6 +1335,342 @@
 (test-breaks-ok)
 
 ;; ----------------------------------------
+;; Some repeats, but ensure a continuation prompt
+;;  and check d-w interaction.
+
+(let ([output null])
+  (call-with-continuation-prompt
+   (lambda () 
+     (dynamic-wind
+         (lambda () (set! output (cons 'in output)))
+         (lambda ()
+           (let ([finished #f])
+             (define (go)
+               (let ([p1 (make-continuation-prompt-tag)]
+                     [counter 10])
+                 (let ([k (call-with-continuation-prompt
+                           (lambda ()
+                             ((call/cc (lambda (k) (lambda () k))
+                                       p1)))
+                           p1)])
+                   (let ([k2 (list
+                              (call-with-continuation-prompt
+                               (lambda ()
+                                 (k (lambda ()
+                                      ((let/cc k (lambda () k))))))
+                               p1))])
+                     (current-milliseconds)
+                     (if (procedure? (car k2))
+                         ((car k2) (lambda () 
+                                     (if (zero? counter)
+                                         10
+                                         (begin
+                                           (set! counter (sub1 counter))
+                                           ((let/cc k (lambda () k)))))))
+                         (values '(10) values k2))
+                     (set! finished 'finished)))))
+             (go)))
+         (lambda () (set! output (cons 'out output)))))
+   (default-continuation-prompt-tag)
+   void)
+  (test '(out in) values output))
+
+(let ([output null])
+  (call-with-continuation-prompt
+   (lambda () 
+     (dynamic-wind
+         (lambda () (set! output (cons 'in output)))
+         (lambda ()
+           (let ([p1 (make-continuation-prompt-tag)])
+             (let/cc esc
+               (let ([k
+                      (call-with-continuation-prompt
+                       (lambda ()
+                         ((call-with-composable-continuation
+                           (lambda (k)
+                             (lambda () k))
+                           p1)))
+                       p1)])
+                 (/ (k (lambda () (esc 0))))))))
+         (lambda () (set! output (cons 'out output)))))
+   (default-continuation-prompt-tag)
+   void)
+  (test '(out in) values output))
+
+;;----------------------------------------
+;; tests invoking delimited captures in dynamic-wind pre- and post-thunks
+
+;; Arrange for a post-thunk to remove a target
+;; for an escape:
+(err/rt-test
+ (let ([p1 (make-continuation-prompt-tag 'p1)]
+       [exit-k #f])
+   (let ([x (let/ec esc
+              (call-with-continuation-prompt
+               (lambda ()
+                 (dynamic-wind
+                     (lambda () (void))
+                     (lambda () (esc 'done))
+                     (lambda ()
+                       ((call/cc
+                         (lambda (k) 
+                           (set! exit-k k)
+                           (lambda () 10))
+                         p1))
+                       (printf "post\n"))))
+               p1))])
+     (call-with-continuation-barrier
+      (lambda ()
+        (call-with-continuation-prompt
+         (lambda ()
+           (exit-k (lambda () 'hi)))
+         p1)))))
+ exn:fail:contract:continuation?)
+
+;; Same thing, but escape via prompt:
+(err/rt-test
+ (let ([p1 (make-continuation-prompt-tag 'p1)]
+       [p2 (make-continuation-prompt-tag 'p2)]
+       [output null]
+       [exit-k #f])
+   (let ([x (call-with-continuation-prompt
+             (lambda ()
+               (call-with-continuation-prompt
+                (lambda ()
+                  (dynamic-wind
+                      (lambda () (void))
+                      (lambda () (abort-current-continuation p2 1 2 3))
+                      (lambda ()
+                        ((call/cc
+                          (lambda (k) 
+                            (set! exit-k k)
+                            (lambda () 10))
+                          p1))
+                        (set! output (cons 'post output)))))
+                p1))
+             p2
+             void)])
+     (call-with-continuation-barrier
+      (lambda ()
+        (call-with-continuation-prompt
+         (lambda ()
+           (exit-k (lambda () 'hi)))
+         p1)))))
+ exn:fail:contract?)
+
+;; Arrange for a barrier to interfere with a continuation
+;; jump after dynamic-winds are already being processed:
+(let ([p1 (make-continuation-prompt-tag 'p1)]
+      [output null]
+      [exit-k #f])
+  (let ([go
+         (lambda (launch)
+           (let ([k (let/cc esc
+                      (call-with-continuation-prompt
+                       (lambda ()
+                         (dynamic-wind
+                             (lambda () (void))
+                             (lambda ()
+                               (with-handlers ([void (lambda (exn)
+                                                       (test #f "should not be used!" #t))])
+                                 (launch esc)))
+                             (lambda ()
+                               ((call/cc
+                                 (lambda (k) 
+                                   (set! exit-k k)
+                                   (lambda () 10))
+                                 p1))
+                               (set! output (cons 'post output)))))
+                       p1))])
+             (call-with-continuation-barrier
+              (lambda ()
+                (call-with-continuation-prompt
+                 (lambda ()
+                   (exit-k (lambda () 'hi)))
+                 p1)))))])
+    (err/rt-test
+     (go (lambda (esc) (esc 'middle)))
+     exn:fail:contract:continuation?)
+    (test '(post post) values output)
+    (let ([meta (call-with-continuation-prompt
+                 (lambda ()
+                   ((call-with-composable-continuation
+                     (lambda (k) (lambda () k))))))])
+      (err/rt-test
+       (go (lambda (esc)
+             (meta
+              (lambda () (esc 'ok)))))
+       exn:fail:contract:continuation?))
+    (test '(post post post post) values output)))
+
+;; Similar, but more checking of dropped d-ws:
+(let ([p1 (make-continuation-prompt-tag 'p1)]
+      [output null]
+      [exit-k #f]
+      [done? #f])
+  ;; Capture a continuation w.r.t. the default prompt tag:
+  (call/cc
+   (lambda (esc)
+     (dynamic-wind
+         (lambda () (void))
+         (lambda () 
+           ;; Set a prompt for tag p1:
+           (call-with-continuation-prompt
+            (lambda ()
+              (dynamic-wind
+                  (lambda () (void))
+                  ;; inside d-w, jump out:
+                  (lambda () (esc 'done))
+                  (lambda ()
+                    ;; As we jump out, capture a continuation 
+                    ;; w.r.t. p1:
+                    ((call/cc
+                      (lambda (k) 
+                        (set! exit-k k)
+                        (lambda () 10))
+                      p1))
+                    (set! output (cons 'inner output)))))
+            p1))
+         (lambda ()
+           ;; This post thunk is not in the
+           ;;  delimited continuation captured
+           ;; via tag p1:
+           (set! output (cons 'outer output))))))
+  (unless done?
+    (set! done? #t)
+    ;; Now invoke the delimited continuation, which must
+    ;; somehow continue the jump to `esc':
+    (call-with-continuation-prompt
+     (lambda ()
+       (exit-k (lambda () 10)))
+     p1))
+  (test '(inner outer inner) values output))
+
+;; Again, more checking of output
+(let ([p1 (make-continuation-prompt-tag 'p1)]
+      [p2 (make-continuation-prompt-tag 'p2)]
+      [output null]
+      [exit-k #f])
+    ;; Set up a prompt tp jump to:
+    (call-with-continuation-prompt
+     (lambda ()
+       (dynamic-wind
+           (lambda () (void))
+           (lambda () 
+             ;; Set a prompt for tag p1:
+             (call-with-continuation-prompt
+              (lambda ()
+                (dynamic-wind
+                    (lambda () (void))
+                    ;; inside d-w, jump out:
+                    (lambda () (abort-current-continuation
+                                p2
+                                "done"))
+                    (lambda ()
+                      ;; As we jump out, capture a continuation 
+                      ;; w.r.t. p1:
+                      ((call/cc
+                        (lambda (k) 
+                          (set! exit-k k)
+                          (lambda () 10))
+                        p1))
+                      (set! output (cons 'inner output)))))
+              p1))
+           (lambda ()
+             ;; This post thunk is not in the
+             ;;  delimited continuation captured
+             ;; via tag p1:
+             (set! output (cons 'outer output)))))
+     p2
+     (lambda (v)
+       (set! output (cons 'orig output))))
+    ;; Now call, redirecting the escape to here:
+    (call-with-continuation-prompt
+     (lambda ()
+       (call-with-continuation-prompt
+        (lambda ()
+          (exit-k (lambda () 10)))
+        p1))
+     p2
+     (lambda (v)
+       (set! output (cons 'new output))))
+    (test '(new inner orig outer inner) values output))
+
+;; abort past a tag
+(test 10
+      values
+      (let ([p1 (make-continuation-prompt-tag)]
+            [p2 (make-continuation-prompt-tag)])
+        (call-with-continuation-prompt
+         (lambda ()
+           (call/cc
+            (lambda (k)
+              (call-with-continuation-prompt
+               (lambda ()
+                 (k 10))
+               p2))
+            p1))
+         p1)))
+
+;; Check that a prompt is not somehow tied to its original
+;;  barrier, so that jumps are not allowed when they should
+;;  be:
+(test 0
+      values
+      (let ([p1 (make-continuation-prompt-tag 'p1)]
+            [p2 (make-continuation-prompt-tag 'p2)])
+        (let ([k (call-with-continuation-prompt
+                  (lambda ()
+                    (call-with-continuation-prompt
+                     (lambda ()
+                       ((call-with-current-continuation
+                         (lambda (k) (lambda () k))
+                         p2)))
+                     p1))
+                  p2)])
+          (call-with-continuation-barrier
+           (lambda ()
+             (call-with-continuation-barrier
+              (lambda ()
+                (let ([k1
+                       (call-with-continuation-prompt
+                        (lambda ()
+                          (k
+                           (lambda ()
+                             ;; prompt for p1 has been restored
+                             (call/cc (lambda (k1) k1) p1))))
+                        p2)])
+                  (call-with-continuation-prompt
+                   (lambda ()
+                     (k1 0))
+                   p1)))))))))
+
+(test 12
+      values
+      (let ([p1 (make-continuation-prompt-tag 'p1)])
+        (let ([k (call-with-continuation-barrier
+                  (lambda ()
+                    (call-with-continuation-prompt
+                     (lambda ()
+                       ((call-with-current-continuation
+                         (lambda (k) (lambda () k))
+                         p1)))
+                     p1)))])
+          (call-with-continuation-barrier
+           (lambda ()
+             (call-with-continuation-barrier
+              (lambda ()
+                (call-with-continuation-barrier
+                 (lambda ()
+                   (call-with-continuation-prompt
+                    (lambda ()
+                      (let/cc w
+                        (call-with-continuation-prompt
+                         (lambda ()
+                           (k (lambda () (w 12))))
+                         p1)))))))))))))
+
+;; ----------------------------------------
 ;; Try long chain of composable continuations
 
 (let ([long-loop
@@ -1343,7 +1717,7 @@
       (k (lambda () 17)))
     (test #t procedure? once-k)
     (test k values 17)
-    (err/rt-test (call-with-continuation-prompt
+    (err/rt-test (call-with-continuation-barrier
                    (lambda ()
                      (once-k 18)))
                  exn:fail:contract:continuation?))
@@ -1361,6 +1735,26 @@
             (k (lambda () (abort-current-continuation
                            (default-continuation-prompt-tag)
                            (lambda () 45))))))))
+
+;; ----------------------------------------
+
+(unless (namespace-variable-value 'running-prompt-tests-in-thread? #f (lambda () #f))
+  ;; Run the whole thing in a thread with no prompts around evaluation.
+  ;; This tests the special case of the implicit prompt at the start
+  ;; of a thread.
+  (thread-wait
+   (thread
+    (lambda ()
+      (namespace-set-variable-value! 'running-prompt-tests-in-thread? #t)
+      (let ([p (open-input-file (build-path
+                                 (or (current-load-relative-directory)
+                                     (current-directory))
+                                 "prompt.ss"))])
+        (let loop ()
+          (let ([r (read-syntax (object-name p) p)])
+            (unless (eof-object? r)
+              (eval r)
+              (loop)))))))))
 
 ;; ----------------------------------------
 

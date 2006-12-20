@@ -1035,8 +1035,8 @@ If the namespace does not, they are colored the unbound color.
                                     (semaphore-post error-display-semaphore)))
                                  
                                  (error-print-source-location #f) ; need to build code to render error first
-                                 (current-exception-handler
-                                  (let ([oh (current-exception-handler)])
+                                 (uncaught-exception-handler
+                                  (let ([oh (uncaught-exception-handler)])
                                     (λ (exn)
                                       (uncaught-exception-raised)
                                       (oh exn))))

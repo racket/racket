@@ -116,7 +116,6 @@
        (display "  =e=> ")
        (call/ec (lambda (escape)
                   (let* ([old-esc-handler (error-escape-handler)]
-                         [old-handler (current-exception-handler)]
                          [orig-err-port (current-error-port)]
                          [test-handler
                           (lambda ()
@@ -144,22 +143,23 @@
                                        (record-error (list e (cons 'exn-elem sel) expr)))))))
                              exn-table)
                             
-                            (old-handler e))])
+                            (test-handler))])
                     (dynamic-wind
                      (lambda () 
                        (current-error-port (current-output-port))
-                       (current-exception-handler test-exn-handler)
                        (error-escape-handler test-handler))
                      (lambda ()
-                       (let ([v (th)])
-                         (write v)
-                         (display " BUT EXPECTED ERROR")
-                         (record-error (list v 'Error expr))
-                         (newline)
-                         #f))
+                       (call-with-exception-handler
+                        test-exn-handler
+                        (lambda ()
+                          (let ([v (th)])
+                            (write v)
+                            (display " BUT EXPECTED ERROR")
+                            (record-error (list v 'Error expr))
+                            (newline)
+                            #f))))
                      (lambda () 
                        (current-error-port orig-err-port)
-                       (current-exception-handler old-handler)
                        (error-escape-handler old-esc-handler))))))]))
 
   (define error-test

@@ -522,6 +522,9 @@
 		   (lambda (arg)
 		     (loop arg env trans?))
 		   (syntax->list (syntax (arg ...)))))]
+
+		[(#%expression e)
+		 (loop (syntax e) env trans?)]
 		
 		[_else
 		 (error 'syntax->zodiac

@@ -87,7 +87,7 @@
 
 	   ;; We have to include the following MzScheme-isms to do anything,
 	   ;; but they're not legal R5RS names, anyway.
-	   #%app #%datum #%top
+	   #%app #%datum #%top #%top-interaction
 	   (rename synrule-in-stx-module-begin #%module-begin)
 	   (rename require #%require)
 	   (rename provide #%provide))

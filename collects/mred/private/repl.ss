@@ -120,7 +120,10 @@
 	       void
 	       (lambda () 
 		 (call-with-values
-		     (lambda () (eval (read (open-input-string expr-str))))
+		     (lambda () (call-with-continuation-prompt
+                                 (lambda () (eval (cons
+                                                   '#%top-interaction
+                                                   (read (open-input-string expr-str)))))))
 		   (lambda results
 		     (for-each 
 		      (lambda (v) 

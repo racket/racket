@@ -9,7 +9,7 @@
 	     make-object call-with-values time-apply
 	     call-with-output-file call-with-input-file
 	     with-output-to-file with-input-from-file
-	     exit-handler current-eval current-exception-handler
+	     exit-handler current-eval initial-exception-handler
 	     current-prompt-read current-load
 	     call-with-escape-continuation call-with-current-continuation
 	     current-print port-display-handler port-write-handler

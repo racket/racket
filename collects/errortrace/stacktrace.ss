@@ -411,6 +411,10 @@
 			   (certify
 			    mb
 			    (rebuild mb (map cons bodys bodyl)))))))))]
+
+             [(#%expression e)
+              top?
+              (certify expr #`(#%expression #,(annotate (syntax e) trans?)))]
 		   
              ;; No way to wrap
              [(require i ...) expr]

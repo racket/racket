@@ -28,6 +28,7 @@
 	   ; (rename beginner-contract contract)
 	   ; (rename beginner-define-data define-data)
 	   #%datum
+           #%top-interaction
 	   empty true false)
 
   (require-for-syntax "private/firstorder.ss")

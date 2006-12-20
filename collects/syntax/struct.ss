@@ -303,24 +303,26 @@
 				#`(make-struct-field-mutator mutate #,n '#,(car field-names))
 				(loop (cdr field-names) (add1 n))))))))
 
-  (define (generate-struct-declaration orig-stx
-				       name super-id field-names 
-				       context 
-				       make-make-struct-type)
-    (let ([defined-names (build-struct-names name field-names #f #f name)])
-      (let-values ([(super-info stx-info) (get-stx-info orig-stx super-id defined-names)])
-	(let ([result
-	       #`(begin
-		   (define-values
-		     #,defined-names
-		     #,(make-core make-make-struct-type orig-stx defined-names super-info name field-names))
-		   (define-syntaxes (#,name)
-		     #,stx-info))])
-	  (if super-id
-	      (syntax-property result 
-			       'disappeared-use 
-			       (syntax-local-introduce super-id))
-	      result)))))
+  (define generate-struct-declaration 
+    (opt-lambda (orig-stx
+                 name super-id field-names 
+                 context 
+                 make-make-struct-type
+                 [no-sel? #f] [no-set? #f])
+      (let ([defined-names (build-struct-names name field-names no-sel? no-set? name)])
+        (let-values ([(super-info stx-info) (get-stx-info orig-stx super-id defined-names)])
+          (let ([result
+                 #`(begin
+                     (define-values
+                       #,defined-names
+                       #,(make-core make-make-struct-type orig-stx defined-names super-info name field-names))
+                     (define-syntaxes (#,name)
+                       #,stx-info))])
+            (if super-id
+                (syntax-property result 
+                                 'disappeared-use 
+                                 (syntax-local-introduce super-id))
+                result))))))
   
   (provide/contract
    [build-struct-names
