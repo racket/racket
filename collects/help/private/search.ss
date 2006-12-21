@@ -3,6 +3,7 @@
            "colldocs.ss"
            "path.ss"
            "manuals.ss"
+           (lib "port.ss")
            (lib "getinfo.ss" "setup")
            (lib "list.ss")
            (lib "plt-match.ss")
@@ -177,71 +178,73 @@
                       l)
             l)))))
     
-  (define (parse-txt-file doc ht handle-one)
+  (define (parse-txt-file doc ht handle-parsing)
     (with-hash-table
      ht
      doc
      (lambda ()
        (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
-	(with-input-from-file doc
-	  (lambda ()
-	    (let loop ([start 0])
-	      (let* ([r (read-line (current-input-port) 'any)]
-		     [next (if (eof-object? r)
-			       start
-			       (+ start (string-length r) 1))])
-		(cond
-		 [(eof-object? r) null]
-		 [(handle-one r start) => (lambda (vs) (append vs (loop next)))]
-		 [else (loop next)])))))))))
+         (call-with-input-file doc
+           handle-parsing)))))
   
-  (define re:keyword-line (regexp "^>"))
+  (define re:keyword-line (regexp "\n>"))
   (define text-keywords (make-hash-table 'equal))
   (define (load-txt-keywords doc)
     (parse-txt-file
      (apply build-path doc)
      text-keywords
-     (lambda (r start)
-       (cond
-	[(regexp-match re:keyword-line r)
-         (let/ec k
-           (let* ([p (open-input-string (substring r 1 (string-length r)))]
-                  [entry (parameterize ([read-accept-bar-quote #f])
-                           (with-handlers ([exn:fail:read?
-                                            (lambda (x)
-                                              (k null))])
-                             (read p)))]
-                  [key (let loop ([l-entry entry])
-                         (cond
-                           [(symbol? l-entry) l-entry]
-                           [(pair? l-entry) (if (and (eq? (car l-entry) 'quote)
-                                                   (pair? (cdr l-entry)))
-                                              (loop (cadr l-entry))
-                                              (loop (car l-entry)))]
-                           [else (error 'load-txt-keyworsd "bad entry in ~s: ~s" doc entry)]))]
-                  [content (if (symbol? entry)
-                               (with-handlers ([exn:fail:read? (lambda (x) #f)])
-                                 (let ([s (read p)])
-                                   (if (eq? s '::)
-                                       (read p)
-                                       #f)))
-                               #f)])
-             (list
-              ; Make the keyword entry:
-              (list (symbol->string key) ; the keyword name
-                    (let ([p (open-output-string)])
-                      (if content
-                          (display content p)
-                          (if (and (pair? entry) 
-                                   (pair? (cdr entry))
-                                   (eq? (car entry) 'quote))
-                              (fprintf p "'~s" (cadr entry))
-                              (display entry p)))
-                      (get-output-string p)) ; the text to display
-                    (cadr doc) ; file
-                    start ; label (a position in this case)
-                    "doc.txt"))))] ; title
-	[else #f]))))
+     (λ (p)
+       (port-count-lines! p)
+       (let loop ()
+         (let ([m (regexp-match re:keyword-line p)])
+           (cond
+             [m 
+              (let/ec k
+                (let* ([peek-port (peeking-input-port p)]
+                       [entry (parameterize ([read-accept-bar-quote #f])
+                                (with-handlers ([exn:fail:read?
+                                                 (lambda (x)
+                                                   (fprintf (current-error-port)
+                                                            "Found > line in ~s that did not parse properly: ~s\n"
+                                                            (path->string (apply build-path doc))
+                                                            (exn-message x))
+                                                   (k null))])
+                                  (read peek-port)))]
+                       [key (let loop ([l-entry entry])
+                              (cond
+                                [(symbol? l-entry) l-entry]
+                                [(pair? l-entry) (if (and (eq? (car l-entry) 'quote)
+                                                          (pair? (cdr l-entry)))
+                                                     (loop (cadr l-entry))
+                                                     (loop (car l-entry)))]
+                                [else (error 'load-txt-keyworsd "bad entry in ~s: ~s" doc entry)]))]
+                       [content (if (symbol? entry)
+                                    (with-handlers ([exn:fail:read? (lambda (x) #f)])
+                                      (let ([s (read peek-port)])
+                                        (if (eq? s '::)
+                                            (format "~s ~s ~s" entry s (read peek-port))
+                                            #f)))
+                                    #f)]
+                       [txt-to-display
+                        (let ([p (open-output-string)])
+                          (if content
+                              (display content p)
+                              (if (and (pair? entry) 
+                                       (pair? (cdr entry))
+                                       (eq? (car entry) 'quote))
+                                  (fprintf p "'~s" (cadr entry))
+                                  (display entry p)))
+                          (get-output-string p))]
+                       [kwd-entry
+                        ; Make the keyword entry:
+                        (list (symbol->string key) ; the keyword name
+                              txt-to-display ; the text to display
+                              (cadr doc) ; file
+                              (let-values ([(line col pos) (port-next-location p)])
+                                (- pos 2)) ; label (a position in this case)
+                              "doc.txt")])
+                  (cons kwd-entry (loop))))] ; title
+             [else null]))))))
       
   (define re:index-line (regexp "_([^_]*)_(.*)"))
   (define text-indices (make-hash-table 'equal))
@@ -249,20 +252,28 @@
     (parse-txt-file
      (apply build-path doc)
      text-indices
-     (lambda (r start)
-       (cond
-	[(regexp-match re:index-line r)
-	 => (lambda (m)
-	      (let loop ([m m])
-		(let ([s (cadr m)])
-		  (cons 
-                   ; Make an index entry:
-		   (cons s start)
-		   (let ([m (regexp-match re:index-line (caddr m))])
-		     (if m
-			 (loop m)
-			 null))))))]
-	[else #f]))))
+     (λ (p)
+       (let loop ([start 0])
+         (let* ([r (read-line p 'any)]
+                [next (if (eof-object? r)
+                          start
+                          (+ start (string-length r) 1))])
+           (cond
+             [(eof-object? r) null]
+             [(regexp-match re:index-line r)
+              => 
+              (lambda (m)
+                (append (let loop ([m m])
+                          (let ([s (cadr m)])
+                            (cons 
+                             ; Make an index entry:
+                             (cons s start)
+                             (let ([m (regexp-match re:index-line (caddr m))])
+                               (if m
+                                   (loop m)
+                                   null)))))
+                        (loop next)))]
+             [else (loop next)]))))))
   
   (define re:splitter (regexp "^ *([^ ]+)(.*)"))
   (define (split-words s)
