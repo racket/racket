@@ -1,12 +1,43 @@
-{ (define LIBNAME "Animated Images")
+{ (define LIBNAME "Animated Images, Simulating Worlds")
   (include "head.tinc") }
 
-<p>The teachpack provides two kinds of functions. The first four allow
+<p>The teachpack provides two kinds of functions. The first five allow
 students to simulate a small world of animated drawings and games: 
 <menu>
-<li><code>{(idx big-bang)} : Number Number Number World -> true</code><br>
+<li><code>{(idx run-simulation)} : Nat Nat Number [Nat -> Image] -> true</code><br>
+ <code>(run-simulation width height r create-image)</code>
+   creates and shows a <code>width</code> x <code>height</code> canvas, 
+   starts a clock, ticking every <code>r</code> (usually fractional) seconds, 
+   and, every time the clock ticks, it applies <code>create-image</code> to
+    the number of ticks passed since this function call. 
+
+<p>In addition, the function pops up a frame and displays the pictures that
+  <code>create-image</code> generates. The result is a simple animation. 
+</p>
+
+<p><b>Example:</b>
+<pre>
+<code>
+(define (create-UFO-scene height)
+  (place-image UFO 50 height (empty-scene 100 100)))
+
+(define UFO (overlay (circle 10 'solid 'green) (rectangle 40 4 'solid 'green)))
+
+(run-simulation 100 100 (/ 1 28) create-UFO-scene)
+</code>
+</pre>
+</p>
+
+<p>
+ The <code>Stop</code> button on the frame allows users to stop the clock
+ and thus the simulation. It also enables the <code>Images</code> button,
+ which then allows users to create images of all the steps taken since the
+ beginning of time. 
+</p>
+
+<li><code>{(idx big-bang)} : Nat Nat Number World -> true</code><br>
     <code>(big-bang width height n w)</code>
-   creates and shows a width x height canvas, 
+   creates and shows a <code>width</code> x <code>height</code> canvas,
    starts the clock, 
    makes it tick every n seconds, 
    and makes w the first world
@@ -33,7 +64,7 @@ students to simulate a small world of animated drawings and games:
    or the events of releasing a key on the keypad. 
 </pre>
 
-<li><code>{(idx on-mouse-event)} : (World Number Number MouseEvent ->
+<li><code>{(idx on-mouse-event)} : (World Nat Nat MouseEvent ->
    World) -> true</code><br> <code>(on-mouse-event clack)</code> means that
    DrScheme must call <code>clack</code> on the current world, the current
    <code>x</code> and <code>y</code> coordinates of the mouse, and and a
@@ -69,12 +100,12 @@ students to simulate a small world of animated drawings and games:
 
 <p>The rest are functions for creating scenes:
 <menu>
-<li><code>{(idx nw:rectangle)}   : Number Number Mode Color -> Image</code><br>
+<li><code>{(idx nw:rectangle)}   : Nat Nat Mode Color -> Image</code><br>
    <code>(nw:rectangle width height mode color)</code>
    creates a width x height rectangle, solid or outlined, 
    with its anchor in the NW corner
 
-<li><code>{(idx empty-scene)} : Number Number -> Scene</code><br>
+<li><code>{(idx empty-scene)} : Nat Nat -> Scene</code><br>
    <code>(empty-scene width height)</code>
    creates a width x height "scene" (frame with origin in NW)
 
