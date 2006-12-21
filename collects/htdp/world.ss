@@ -13,6 +13,7 @@
    (lib "etc.ss")
    (lib "list.ss")
    (lib "process.ss")
+   (lib "port.ss")
    (lib "mred.ss" "mred")
    (lib "error.ss" "htdp")
    (lib "image.ss" "htdp")
@@ -141,10 +142,10 @@
     (check-pos 'empty-scene width "first")
     (check-pos 'empty-scene height "second")    
     (put-pinhole
-      (overlay
-	(rectangle width height 'outline 'black)
-	(rectangle width height 'solid 'white))
-      0 0))
+     (overlay
+      (rectangle width height 'outline 'black)
+      (rectangle width height 'solid 'white))
+     0 0))
   
   (define (add-line-to-scene img x0 y0 x1 y1 c)
     #|
@@ -565,17 +566,15 @@
     (set! event-history (cons (cons type stuff) event-history)))
   
   ;; --> Void
-  (define (play-back)
-    (define target:dir
-      (let* ([cd (current-directory)]
-             [dd (get-directory "Select directory for images" #f cd)])
-        (if dd dd cd)))
+    (define (play-back)
+    ;; --- state transitions 
     (define (world-transition world fst)
       (case (car fst)
         [(tick)  (timer-callback0 world)]
         [(key)   (key-callback0 world (cadr fst))]
         [(mouse) (mouse-callback0 world (cadr fst) (caddr fst) (cadddr fst))]
         [else (error 'play-back "bad type of event: ~s" fst)]))
+    ;; --- creating images 
     (define image-count 0)
     (define (save-image img)
       (define total (length event-history))
@@ -583,6 +582,7 @@
       (set! image-count (+ image-count 1))
       (send bm save-file (format "i~a.png" image-count) 'png)
       (update-frame (text (format "~a/~a created" image-count total) 18 'red)))
+    ;; --- creating the animated gif on my mac
     (define (create-animated-gif-on-my-mac)
       (define files:dir (map path->string (directory-list)))
       (define files:str
@@ -594,13 +594,19 @@
       (define files:sorted
         (sort files:s+i (lambda (x y) (<= (cdr x) (cdr y)))))
       (define files:pln 
-        (map (lambda (f) (format " ~a" (car f))) files:sorted))
-      (define files (apply string-append files:pln))
-      (define cmdline (format "convert -delay 5 ~a i-animated.gif" files))
-      (define status? (process cmdline))
-      ((fifth status?) 'wait))      
+        (map (lambda (f) (format "~a" (car f))) files:sorted))
+      ; (define files (apply string-append files:pln))
+      (define convert (find-executable-path "convert"))
+      (define a* (append (list "-delay" "5") files:pln (list "i-animated.gif")))
+      (apply system* convert a*))
+    
     ;; re-play the history of events, creating a png per step, 
     ;; summing them into an animated gif at the end 
+    (define target:dir
+      (let* ([cd (current-directory)]
+             [dd (get-directory "Select directory for images" #f cd)])
+        
+        (if dd dd cd)))
     (parameterize ([current-directory target:dir])
       (let pb ([ev event-history][world the-world0][img (circle 1 'solid 'red)])
         (cond
