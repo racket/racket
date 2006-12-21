@@ -165,7 +165,7 @@
 				[hours (quotient delta 3600)]
 				[minutes (modulo (quotient delta 60) 60)])
 			   (list
-			    (if (negative? delta) "-" "")
+			    (if (negative? delta) "-" "+")
 			    (add-zero (abs hours))
 			    (add-zero minutes)))))]
 		[else (error 'date->string "unknown date-display-format: ~s"
