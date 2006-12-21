@@ -1,5 +1,5 @@
 #!/bin/sh
-#|
+#| -*- scheme -*-
 if [ -x "$PLTHOME/bin/mzscheme" ]; then
   exec "$PLTHOME/bin/mzscheme" -qgr "$0" "$@"
 else
@@ -15,7 +15,7 @@ fi
 ;; This list determines the order of libraries in the index file:
 (define libraries*
   '(#"Images"
-    #"Animated Images"
+    #"Animated Images, Simulating Worlds"
     #"Convert"
     #"Guess"
     #"Mastermind"
