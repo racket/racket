@@ -1,5 +1,17 @@
-;; Wed Dec 20 18:17:03 EST 2060: recording events and creating images,
-;;        including an animated gif; todo: documentation 
+#| TODO
+   - stress test the history mechanism
+     does it work when kids play games for several minutes?
+     when the mouse is used a lot?
+     it would mean tens of thousands of interactions or more. 
+
+   - change documentation teachpack :: arbitary numbers for image funcs, 
+        add-line's cut-off, buttons. 
+   - image manipulation functions should accept plain numbers, not insist on nat
+   - make scene distinct from image? 
+|#
+
+;; Thu Dec 21 13:59:23 EST 2006: fixed add-line and place-image to accept numbers
+;; Wed Dec 20 18:17:03 EST 2060: recording events and creating images
 ;; Sun Dec 09 23:17:41 EST 2006: add-line fixed so it cuts off lines before drawing
 ;; Mon Mar 27 10:29:28 EST 2006: integrated Felix's mouse events
 ;; Wed Jan 25 13:38:42 EST 2006: on-redraw: proc is now called on installation
@@ -129,67 +141,27 @@
     (check-image 'place-image scene "fourth" "scene")
     (let ([x (number->integer x)]
 	  [y (number->integer y)])
-      (define sw (image-width scene))
-      (define sh (image-height scene))
-      (define ns (overlay/xy scene x y image))
-      (define nw (image-width ns))
-      (define nh (image-height ns))
-      (if (and (= sw nw) (= sh nh)) 
-	  ns
-	  (shrink ns 0 0 sw sh))))
+      (place-image0 image x y scene)))
   
   (define (empty-scene width height)
     (check-pos 'empty-scene width "first")
     (check-pos 'empty-scene height "second")    
-    (put-pinhole
-     (overlay
-      (rectangle width height 'outline 'black)
-      (rectangle width height 'solid 'white))
+    (put-pinhole 
+     (overlay (rectangle width height 'solid 'white)
+              (rectangle width height 'outline 'black))
      0 0))
   
   (define (add-line-to-scene img x0 y0 x1 y1 c)
-    #|
-    (check-image 'add-line image "first")
-    (check-pos 'add-line x0 "second")
-    (check-pos 'add-line y0 "third")
-    (check-pos 'add-line x1 "fourth")
-    (check-pos 'add-line x2 "fifth")
-    (check-color 'add-line x2 "sixth")
-    |#
-    (local ((define w (image-width img))  
-            (define h (image-height img)))
-      (cond
-        [(and (<= 0 x0 w) (<= 0 x1 w) (<= 0 y0 w) (<= 0 y1 w)) 
-         (add-line img x0 y0 x1 y1 c)]
-        [(= x0 x1) ;; vertical 
-         (if (<= 0 x0 w) (add-line img x0 (app y0 h) x0 (app y1 h) c) img)]
-        [(= y0 y1) ;; horizontal 
-         (if (<= 0 y0 h) (add-line img (app x0 w) y0 (app x1 w) y0 c) img)]
-        [else 
-         (local ((define lin (points->line x0 y0 x1 y1))
-                 (define dir (direction x0 y0 x1 y1))
-                 (define-values (upp low lft rgt) (intersections lin w h))
-                 (define (add x y) (add-line img x0 y0 x y c)))
-           (cond
-             [(and (< 0 x0 w) (< 0 y0 h)) ;; (x0,y0) is in the interior
-              (case dir
-                [(upper-left)  (if (number? upp) (add upp 0) (add 0 lft))]
-                [(lower-left)  (if (number? low) (add low h) (add 0 lft))]
-                [(upper-right) (if (number? upp) (add upp 0) (add h rgt))]
-                [(lower-right) (if (number? low) (add low h) (add w rgt))]
-                [else (error 'dir "contract violation: ~e" dir)])]
-             [(and (< 0 x1 w) (< 0 y1 h)) ;; (x1,y1) in interior; symmetry!
-              (add-line-to-scene img x1 y1 x0 y0 c)]
-             [else 
-              (cond
-                [(and (number? upp) (number? low)) (add-line img upp 0 low h c)]
-                [(and (number? upp) (number? lft)) (add-line img upp 0 0 lft c)]
-                [(and (number? upp) (number? rgt)) (add-line img upp 0 w rgt c)]
-                [(and (number? low) (number? lft)) (add-line img low h 0 lft c)]
-                [(and (number? low) (number? rgt)) (add-line img low h w rgt c)]
-                [(and (number? lft) (number? rgt)) (add-line img 0 lft w rgt c)]
-                [else img])]))])))
-  
+    ;; img and c are checked via calls to add-line from image.ss
+    (check-arg 'add-line (number? x0) "number" "second" x0)
+    (check-arg 'add-line (number? y0) "number" "third" y0)
+    (check-arg 'add-line (number? x1) "number" "fourth" x1)
+    (check-arg 'add-line (number? y1) "number" "fifth" y1)
+    (let ([x0 (number->integer x0)]
+          [x1 (number->integer x1)]
+          [y0 (number->integer y0)]
+          [y1 (number->integer y1)])
+      (add-line-to-scene0 img x0 y0 x1 y1 c)))
   
   ;                                                                        
   ;                                                                        
@@ -216,12 +188,9 @@
                "number [of seconds] between 0 and 1000"
                "first"
                delta)
-    (unless (eq? void visible-world)
-      (error 'big-bang "big-bang already called once"))
-    ;; call first: 
-    (install-world delta world)
-    ;; followed by 
-    (set-and-show-frame w h)
+    (when (vw-init?) (error 'big-bang "big-bang already called once"))
+    (install-world delta world) ;; call first to establish a visible world
+    (set-and-show-frame w h) ;; now show it
     #t)
   
   (define (end-of-time s)
@@ -313,7 +282,7 @@
     (check-arg tag (and (number? c) (integer? c) (>= c 0)) 
                "positive integer" rank c))
   
-  ;; Symbol Any String [String] -> Void
+  ;; Symbol Any String String *-> Void
   (define (check-image tag i rank . other-message)
     (if (and (pair? other-message) (string? (car other-message)))
         (check-arg tag (beg:image? i) (car other-message) rank i)
@@ -324,14 +293,12 @@
     (check-arg tag (or (symbol? width) (string? width)) 
                "color symbol or string" rank width))
   
+  ;; Symbol (union Symbol String) Nat -> Void
   (define (check-mode tag s rank)
     (check-arg tag (or (eq? s 'solid)
 		       (eq? s 'outline)
 		       (string=? "solid" s)
 		       (string=? "outline" s)) "mode (solid or outline)" rank s))
-  
-  (define (number->integer x) (inexact->exact (floor x)))
-  
   
   ;                                                                        
   ;                                                                        
@@ -348,7 +315,50 @@
   ;                        ;;;;                                            
   ;                                                                        
   
+  ;; Image Number Number Image -> Image 
+  (define (place-image0 image x y scene)
+    (define sw (image-width scene))
+    (define sh (image-height scene))
+    (define ns (overlay/xy scene x y image))
+    (define nw (image-width ns))
+    (define nh (image-height ns))
+    (if (and (= sw nw) (= sh nh)) ns (shrink ns 0 0 sw sh)))
   
+  ;; Image Number Number Number Number Color -> Image
+  (define (add-line-to-scene0 img x0 y0 x1 y1 c)
+    (define w (image-width img))  
+    (define h (image-height img))
+    (cond
+      [(and (<= 0 x0 w) (<= 0 x1 w) (<= 0 y0 w) (<= 0 y1 w)) 
+       (add-line img x0 y0 x1 y1 c)]
+      [(= x0 x1) ;; vertical 
+       (if (<= 0 x0 w) (add-line img x0 (app y0 h) x0 (app y1 h) c) img)]
+      [(= y0 y1) ;; horizontal 
+       (if (<= 0 y0 h) (add-line img (app x0 w) y0 (app x1 w) y0 c) img)]
+      [else 
+       (local ((define lin (points->line x0 y0 x1 y1))
+               (define dir (direction x0 y0 x1 y1))
+               (define-values (upp low lft rgt) (intersections lin w h))
+               (define (add x y) (add-line img x0 y0 x y c)))
+         (cond
+           [(and (< 0 x0 w) (< 0 y0 h)) ;; (x0,y0) is in the interior
+            (case dir
+              [(upper-left)  (if (number? upp) (add upp 0) (add 0 lft))]
+              [(lower-left)  (if (number? low) (add low h) (add 0 lft))]
+              [(upper-right) (if (number? upp) (add upp 0) (add h rgt))]
+              [(lower-right) (if (number? low) (add low h) (add w rgt))]
+              [else (error 'dir "contract violation: ~e" dir)])]
+           [(and (< 0 x1 w) (< 0 y1 h)) ;; (x1,y1) in interior; symmetry!
+            (add-line-to-scene0 img x1 y1 x0 y0 c)]
+           [else 
+            (cond
+              [(and (number? upp) (number? low)) (add-line img upp 0 low h c)]
+              [(and (number? upp) (number? lft)) (add-line img upp 0 0 lft c)]
+              [(and (number? upp) (number? rgt)) (add-line img upp 0 w rgt c)]
+              [(and (number? low) (number? lft)) (add-line img low h 0 lft c)]
+              [(and (number? low) (number? rgt)) (add-line img low h w rgt c)]
+              [(and (number? lft) (number? rgt)) (add-line img 0 lft w rgt c)]
+              [else img])]))]))
   ;; Nat Nat -> Nat 
   ;; y if in [0,h], otherwise the closest boundary
   (define (app y h)
@@ -456,33 +466,62 @@
     (set! the-delta delta)
     (set! the-world w)
     (set! the-world0 w)
-    (set! visible-world (new text%)))
+    (vw-setup))
   
   ;; Number > 0
   ;; the rate of at which the clock ticks 
   (define the-delta 1000)
   
-  ;; The One and Only Visible World
+  ;; Text-- The One and Only Visible World
   (define visible-world void)
+  
+  ;; -> Void
+  (define (vw-setup)
+    (set! visible-world (new text%))
+    (send visible-world set-cursor (make-object cursor% 'arrow))
+    (send visible-world hide-caret #t))
+  
+  ;; -> Boolean 
+  (define (vw-init?) (not (eq? void visible-world)))
+  
+  ;; Image -> Void
+  ;; show the image in the visible world
+  (define (update-frame pict)
+    (send visible-world begin-edit-sequence)
+    (send visible-world lock #f)
+    (send visible-world delete 0 (send visible-world last-position) #f)
+    (send visible-world insert (send pict copy) 0 0 #f)
+    (send visible-world lock #t)
+    (send visible-world end-edit-sequence))
   
   ;; Nat Nat -> Void
   ;; effect: create, show and set the-frame
   ;; assume: visible-world is a text%, i.e., install-world has been called. 
   (define (set-and-show-frame w h)
-    (define the-play-back-thread #f)
-    (define frame 
-      (new (class frame%
-             (super-new)
-             (define/augment (on-close)        
-               (when the-play-back-thread 
-                 (kill-thread the-play-back-thread))
-               (stop-it)
-               (inner (void) on-close)))
-           (label "DrScheme")
-           (stretchable-width #f)
-           (stretchable-height #f)
-           (style '(no-resize-border metal))))
-    ;; add Stop and Images buttons to frame 
+    (define the-play-back-thread (box #f))
+    (define frame (create-frame the-play-back-thread))
+    (add-stop-and-image-buttons frame the-play-back-thread)
+    (add-editor-canvas frame visible-world w h)
+    (send frame show #t))
+  
+  ;; [Box (union false Thread)] -> Frame
+  (define (create-frame the-play-back-thread)
+    (new (class frame%
+           (super-new)
+           (define/augment (on-close)        
+             (define th (unbox the-play-back-thread))
+             (when th
+               (kill-thread th)
+               (set-box! the-play-back-thread #f))
+             (stop-it)
+             (inner (void) on-close)))
+         (label "DrScheme")
+         (stretchable-width #f)
+         (stretchable-height #f)
+         (style '(no-resize-border metal))))
+  
+  ;; Frame [Box (union false Thread)] -> Void
+  (define (add-stop-and-image-buttons  frame the-play-back-thread)
     (define p (new horizontal-pane% [parent frame][alignment '(center center)]))
     (define l-stop ((bitmap-label-maker 
                      (string-constant break-button-label) 
@@ -499,37 +538,26 @@
     (define image-button 
       (new button% [parent p] [enabled #f] [label l-imgs] [style '(border)]
            [callback (lambda (b e)
+                       (define th (thread play-back))
                        (send b enable #f)
-                       (set! the-play-back-thread (thread play-back)))]))
-    ;; add Editor to frame 
-    (let ([c (new (class editor-canvas%
-		    (super-new)
-		    (define/override (on-char e)
-		      (key-callback (send e get-key-code)))
-		    (define/override (on-event e)
-                      (mouse-callback e)))
-                  (parent frame) 
-                  (editor visible-world)
-                  (style '(no-hscroll no-vscroll))
-                  (horizontal-inset INSET)
-                  (vertical-inset INSET))])
-      (send c min-client-width (+ w INSET INSET))
-      (send c min-client-height (+ h INSET INSET))
-      (send c focus))
-    ;; setting up the cursor ... 
-    (send visible-world set-cursor (make-object cursor% 'arrow))
-    (send visible-world hide-caret #t)
-    (send frame show #t))
+                       (set-box! the-play-back-thread th))]))
+    (void))
   
-  ;; Image -> Void
-  ;; insert the image into the frame 
-  (define (update-frame pict)
-    (send visible-world begin-edit-sequence)
-    (send visible-world lock #f)
-    (send visible-world delete 0 (send visible-world last-position) #f)
-    (send visible-world insert (send pict copy) 0 0 #f)
-    (send visible-world lock #t)
-    (send visible-world end-edit-sequence))
+  ;; Frame Editor Nat Nat -> Void
+  (define (add-editor-canvas frame visible-world w h)
+    (define c 
+      (new (class editor-canvas%
+             (super-new)
+             (define/override (on-char e) (key-callback (send e get-key-code)))
+             (define/override (on-event e) (mouse-callback e)))
+           (parent frame)
+           (editor visible-world)
+           (style '(no-hscroll no-vscroll))
+           (horizontal-inset INSET)
+           (vertical-inset INSET)))
+    (send c min-client-width (+ w INSET INSET))
+    (send c min-client-height (+ h INSET INSET))
+    (send c focus))
   
   ;; Amount of space around the image in the world window:
   (define INSET 5)
@@ -566,7 +594,7 @@
     (set! event-history (cons (cons type stuff) event-history)))
   
   ;; --> Void
-    (define (play-back)
+  (define (play-back)
     ;; --- state transitions 
     (define (world-transition world fst)
       (case (car fst)
@@ -582,24 +610,6 @@
       (set! image-count (+ image-count 1))
       (send bm save-file (format "i~a.png" image-count) 'png)
       (update-frame (text (format "~a/~a created" image-count total) 18 'red)))
-    ;; --- creating the animated gif on my mac
-    (define (create-animated-gif-on-my-mac)
-      (define files:dir (map path->string (directory-list)))
-      (define files:str
-        (filter (lambda (x) (regexp-match #rx"i[0-9]*.png" x)) files:dir))
-      (define files:s+i 
-        (map (lambda (f)
-               (cons f (string->number (car (regexp-match #rx"[0-9]+" f)))))
-             files:str))
-      (define files:sorted
-        (sort files:s+i (lambda (x y) (<= (cdr x) (cdr y)))))
-      (define files:pln 
-        (map (lambda (f) (format "~a" (car f))) files:sorted))
-      ; (define files (apply string-append files:pln))
-      (define convert (find-executable-path "convert"))
-      (define a* (append (list "-delay" "5") files:pln (list "i-animated.gif")))
-      (apply system* convert a*))
-    
     ;; re-play the history of events, creating a png per step, 
     ;; summing them into an animated gif at the end 
     (define target:dir
@@ -610,14 +620,34 @@
     (parameterize ([current-directory target:dir])
       (let pb ([ev event-history][world the-world0][img (circle 1 'solid 'red)])
         (cond
-          [(null? ev) (begin 
-                        (create-animated-gif-on-my-mac)
-                        (update-frame img))]
+          [(null? ev) 
+           (when (regexp-match "/Users/matthias/" (path->string target:dir))
+             (create-animated-gif-on-my-mac))
+           (update-frame img)]
           [else 
            (let* ([w (world-transition world (car ev))]
                   [i (redraw-callback0 w)])
              (save-image i)
              (pb (cdr ev) w i))]))))
+  
+  ;; --- creating the animated gif on my mac
+  ;; This is for personal use only.  -- Matthias
+  (define (create-animated-gif-on-my-mac)
+    (define files:dir (map path->string (directory-list)))
+    (define files:str
+      (filter (lambda (x) (regexp-match #rx"i[0-9]*.png" x)) files:dir))
+    (define files:s+i 
+      (map (lambda (f)
+             (cons f (string->number (car (regexp-match #rx"[0-9]+" f)))))
+           files:str))
+    (define files:sorted
+      (sort files:s+i (lambda (x y) (<= (cdr x) (cdr y)))))
+    (define files:pln 
+      (map (lambda (f) (format "~a" (car f))) files:sorted))
+    ; (define files (apply string-append files:pln))
+    (define convert (find-executable-path "convert"))
+    (define a* (append (list "-delay" "5") files:pln (list "i-animated.gif")))
+    (if convert (apply system* convert a*) (printf "can't find convert")))
   
   ;; Timer
   (define the-time (new timer% [notify-callback (lambda () (timer-callback))]))
@@ -716,5 +746,9 @@
     (set! key-callback void)
     (set! redraw-callback void)
     (set! timer-callback void))
+  
+  ;; Number -> Integer
+  (define (number->integer x)
+    (inexact->exact (floor x)))
   )
 
