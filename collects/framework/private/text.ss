@@ -24,7 +24,8 @@ WARNING: printf is rebound in the body of the unit to always
           [prefix color-model: framework:color-model^]
           [prefix frame: framework:frame^]
           [prefix scheme: framework:scheme^]
-          [prefix number-snip: framework:number-snip^])
+          [prefix number-snip: framework:number-snip^]
+          [prefix finder: framework:finder^])
   (export (rename framework:text^
                   [-keymap% keymap%]))
   (init-depend framework:editor^)
@@ -52,7 +53,7 @@ WARNING: printf is rebound in the body of the unit to always
       
       (define basic-mixin
         (mixin (editor:basic<%> (class->interface text%)) (basic<%>)
-          (inherit get-canvases get-admin split-snip get-snip-position
+          (inherit get-canvas get-canvases get-admin split-snip get-snip-position
                    begin-edit-sequence end-edit-sequence
                    set-autowrap-bitmap
                    delete find-snip invalidate-bitmap-cache
@@ -350,7 +351,18 @@ WARNING: printf is rebound in the body of the unit to always
           (public initial-autowrap-bitmap)
           (define (initial-autowrap-bitmap) (icon:get-autowrap-bitmap))
           
-          (super-instantiate ())
+          (define/override (put-file directory default-name)
+            (let* ([canvas (get-canvas)]
+                   [parent (and canvas (send canvas get-top-level-window))])
+              (finder:put-file default-name
+                               directory
+                               #f
+                               (string-constant select-file)
+                               #f
+                               ""
+                               parent)))
+          
+          (super-new)
           (set-autowrap-bitmap (initial-autowrap-bitmap))))
       
       (define foreground-color<%>

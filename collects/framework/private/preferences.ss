@@ -101,7 +101,9 @@ the state transitions / contracts are:
        
        ;; unmarshall, if required
        (when (hash-table-bound? marshalled p)
-         (hash-table-put! preferences p (unmarshall-pref p (hash-table-get marshalled p)))
+         ;; if `preferences' is already bound, that means the unmarshalled value isn't useful.
+         (unless (hash-table-bound? preferences p)
+           (hash-table-put! preferences p (unmarshall-pref p (hash-table-get marshalled p))))
          (hash-table-remove! marshalled p))
        
        ;; if there is no value in the preferences table, but there is one

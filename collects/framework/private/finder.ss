@@ -65,24 +65,24 @@
                      #f]
                     [else f]))))))
 
-      (define (*get-file style)
-	(opt-lambda ([directory #f]
-		     [prompt (string-constant select-file)]
-		     [filter #f]
-		     [filter-msg (string-constant file-wrong-form)]
-		     [parent-win (dialog-parent-parameter)])
-	  (let ([f (get-file prompt parent-win directory #f #f style)])
-	    (and f (or (not filter) (filter-match? filter f filter-msg))
-                 (let ([f (normalize-path f)])
-                   (cond [(directory-exists? f)
-                          (message-box (string-constant error)
-                                       (string-constant that-is-dir-name))
-                          #f]
-                         [(not (file-exists? f))
-                          (message-box (string-constant error) 
-                                       (string-constant file-dne))
-                          #f]
-                         [else f]))))))
+  (define (*get-file style)
+    (opt-lambda ([directory #f]
+                 [prompt (string-constant select-file)]
+                 [filter #f]
+                 [filter-msg (string-constant file-wrong-form)]
+                 [parent-win (dialog-parent-parameter)])
+      (let ([f (get-file prompt parent-win directory #f #f style)])
+        (and f (or (not filter) (filter-match? filter f filter-msg))
+             (let ([f (normalize-path f)])
+               (cond [(directory-exists? f)
+                      (message-box (string-constant error)
+                                   (string-constant that-is-dir-name))
+                      #f]
+                     [(not (file-exists? f))
+                      (message-box (string-constant error) 
+                                   (string-constant file-dne))
+                      #f]
+                     [else f]))))))
 
       ;; external interfaces to file functions
 
@@ -94,13 +94,14 @@
 
       (define -put-file
 	(λ args
-	  (apply (case (preferences:get 'framework:file-dialogs)
+          (printf "put-file ~s\n" (preferences:get 'framework:file-dialogs))
+          (apply (case (preferences:get 'framework:file-dialogs)
                    [(std) std-put-file]
                    [(common) common-put-file])
                  args)))
       (define -get-file
 	(λ args
-	  (apply (case (preferences:get 'framework:file-dialogs)
+          (apply (case (preferences:get 'framework:file-dialogs)
 		   [(std) std-get-file]
 		   [(common) common-get-file])
                  args))))
