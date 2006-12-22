@@ -3,13 +3,11 @@
      does it work when kids play games for several minutes?
      when the mouse is used a lot?
      it would mean tens of thousands of interactions or more. 
-
-   - change documentation teachpack :: arbitary numbers for image funcs, 
-        add-line's cut-off, buttons. 
    - image manipulation functions should accept plain numbers, not insist on nat
    - make scene distinct from image? 
 |#
 
+;; Fri Dec 22 11:51:53 EST 2006: cleaned up the callback code with macro
 ;; Thu Dec 21 13:59:23 EST 2006: fixed add-line and place-image to accept numbers
 ;; Wed Dec 20 18:17:03 EST 2060: recording events and creating images
 ;; Sun Dec 09 23:17:41 EST 2006: add-line fixed so it cuts off lines before drawing
@@ -195,15 +193,13 @@
   
   (define (end-of-time s)
     (printf "end of time: ~a~n" s)
-    (stop-it)
+    (callback-stop!)
     the-world)
   
   (define (on-tick-event f)
     (check-proc 'on-tick-event f 1 "on-tick-event" "one argument")
     (check-world 'on-tick-event)
-    (if (eq? timer-callback void)
-        (set! timer-callback (make-timer-callback f))          
-        (error 'on-tick "the timing action has been set already"))
+    (set-timer-callback f)
     (send the-time start
           (let* ([w (ceiling (* 1000 the-delta))])
             (if (exact? w) w (inexact->exact w))))
@@ -212,32 +208,21 @@
   (define (on-redraw f)
     (check-proc 'on-redraw f 1 "on-redraw" "one argument")
     (check-world 'on-redraw)
-    (if (eq? redraw-callback void)
-        (begin
-          (set! redraw-callback (make-redraw-callback f))
-          (redraw-callback)
-          #t)
-        (error 'on-redraw "the redraw function has already been specified")))
+    (set-redraw-callback f)
+    (redraw-callback)
+    #t)
   
   (define (on-key-event f)
     (check-proc 'on-key-event f 2 "on-key-event" "two arguments")
     (check-world 'on-key-event)
-    (let ([esp (current-eventspace)])
-      (if (eq? key-callback void)
-          (begin 
-            (set! key-callback (make-keyevent-callback f esp))
-            #t)
-          (error 'on-event "the event action has been set already"))))
+    (set-key-callback f (current-eventspace))
+    #t)
   
   (define (on-mouse-event f)
     (check-proc 'on-mouse-event f 4 "on-mouse-event" "four arguments")
     (check-world 'on-mouse-event)
-    (let ([esp (current-eventspace)])
-      (if (eq? mouse-callback void)
-          (begin
-            (set! mouse-callback (make-mouse-callback f esp))
-            #t)
-          (error 'on-mouse-event "the mouse event action has been set already"))))
+    (set-mouse-callback f (current-eventspace))
+    #t)
   
   (define (run-movie movie)
     (check-arg 'run-movie (list? movie) "list (of images)" "first" movie)
@@ -473,7 +458,7 @@
   (define the-delta 1000)
   
   ;; Text-- The One and Only Visible World
-  (define visible-world void)
+  (define visible-world #f)
   
   ;; -> Void
   (define (vw-setup)
@@ -482,7 +467,7 @@
     (send visible-world hide-caret #t))
   
   ;; -> Boolean 
-  (define (vw-init?) (not (eq? void visible-world)))
+  (define (vw-init?) (procedure? visible-world))
   
   ;; Image -> Void
   ;; show the image in the visible world
@@ -498,30 +483,29 @@
   ;; effect: create, show and set the-frame
   ;; assume: visible-world is a text%, i.e., install-world has been called. 
   (define (set-and-show-frame w h)
-    (define the-play-back-thread (box #f))
-    (define frame (create-frame the-play-back-thread))
-    (add-stop-and-image-buttons frame the-play-back-thread)
+    (define the-play-back-custodian (make-custodian))
+    (define frame (create-frame the-play-back-custodian))
+    (add-stop-and-image-buttons frame the-play-back-custodian)
     (add-editor-canvas frame visible-world w h)
     (send frame show #t))
   
   ;; [Box (union false Thread)] -> Frame
-  (define (create-frame the-play-back-thread)
+  ;; create a frame that shuts down the custodian on close
+  (define (create-frame the-play-back-custodian)
     (new (class frame%
            (super-new)
-           (define/augment (on-close)        
-             (define th (unbox the-play-back-thread))
-             (when th
-               (kill-thread th)
-               (set-box! the-play-back-thread #f))
-             (stop-it)
-             (inner (void) on-close)))
+           (define/augment (on-close)  
+             (custodian-shutdown-all the-play-back-custodian)
+             (callback-stop!)))
          (label "DrScheme")
          (stretchable-width #f)
          (stretchable-height #f)
          (style '(no-resize-border metal))))
   
   ;; Frame [Box (union false Thread)] -> Void
-  (define (add-stop-and-image-buttons  frame the-play-back-thread)
+  ;; adds the stop animation and image creation button, 
+  ;; whose callbacks runs as a thread in the custodian
+  (define (add-stop-and-image-buttons  frame the-play-back-custodian)
     (define p (new horizontal-pane% [parent frame][alignment '(center center)]))
     (define l-stop ((bitmap-label-maker 
                      (string-constant break-button-label) 
@@ -532,18 +516,19 @@
     (define stop-button
       (new button% [parent p] [label l-stop] [style '(border)]
            [callback (lambda (this-button e) 
-                       (stop-it)
+                       (callback-stop!)
                        (send this-button enable #f)
                        (send image-button enable #t))]))
     (define image-button 
       (new button% [parent p] [enabled #f] [label l-imgs] [style '(border)]
            [callback (lambda (b e)
-                       (define th (thread play-back))
-                       (send b enable #f)
-                       (set-box! the-play-back-thread th))]))
+                       (parameterize ([current-custodian the-play-back-custodian])
+                         (define th (thread play-back))
+                         (send b enable #f)))]))
     (void))
   
   ;; Frame Editor Nat Nat -> Void
+  ;; adds the visible wold to the frame and hooks it up with the callbacks
   (define (add-editor-canvas frame visible-world w h)
     (define c 
       (new (class editor-canvas%
@@ -649,71 +634,100 @@
     (define a* (append (list "-delay" "5") files:pln (list "i-animated.gif")))
     (if convert (apply system* convert a*) (printf "can't find convert")))
   
+  
+  ;                                                                 
+  ;                                                                 
+  ;     ;;;        ;;;    ;;;     ;                    ;            
+  ;    ;             ;      ;     ;                    ;            
+  ;   ;              ;      ;     ;                    ;            
+  ;   ;       ;;;;   ;      ;     ; ;;    ;;;;   ;;;;  ;   ;   ;;;  
+  ;   ;      ;   ;   ;      ;     ;;  ;  ;   ;  ;      ;  ;   ;   ; 
+  ;   ;      ;   ;   ;      ;     ;   ;  ;   ;  ;      ; ;     ;;   
+  ;   ;      ;   ;   ;      ;     ;   ;  ;   ;  ;      ;;;       ;  
+  ;    ;     ;  ;;   ;      ;     ;   ;  ;  ;;  ;      ;  ;   ;   ; 
+  ;     ;;;   ;; ;   ;;;    ;;;   ;;;;    ;; ;   ;;;;  ;   ;   ;;;  
+  ;                                                                 
+  ;                                                                 
+  ;                                                                 
+  
+  ;; callbacks: timer, mouse, key, redraw
+  
+  ;; Definition = (define-callback Symbol String Symbol Expression ...)
+  ;; effect: (define-callback introduces three names: name, name0, set-name
+  (define-syntax (define-callback stx)
+    (syntax-case stx ()
+      [(_ n msg (f esp ...) para body ...)
+       (let* ([n:str (symbol->string (syntax-e (syntax n)))]
+              [callback (lambda (before after)
+                          (string->symbol 
+                           (string-append before n:str "-callback" after)))]
+              [name (datum->syntax-object stx (callback "" ""))]
+              [name0 (datum->syntax-object stx (callback "" "0"))]
+              [set-name (datum->syntax-object stx (callback "set-" ""))])
+         #`(define-values (#,name #,name0 #,set-name)
+             (values 
+              void void 
+              (lambda (f esp ...)
+                (when (callback-set? #,name) 
+                  (error (format "the ~a has already been specified") msg))
+                (set! #,name0 f)
+                (set! #,name (lambda para body ...))))))]))
+  
+  ;; -> Void
+  (define (callback-stop!)
+    (send the-time stop)
+    (set! timer-callback void)
+    (set! mouse-callback void)
+    (set! key-callback void)
+    (set! redraw-callback void))
+  
+  ;; Any -> Boolean
+  ;; is the callback set to the default value 
+  (define (callback-set? cb) (not (eq? cb void)))
+  
   ;; Timer
   (define the-time (new timer% [notify-callback (lambda () (timer-callback))]))
   
-  ;; (World -> World)
-  (define timer-callback void)
-  (define timer-callback0 void)
+  ;; f : [World -> World]
+  (define-callback timer "tick-event hander" (f) ()
+    (with-handlers ([exn:break? break-handler][exn? exn-handler])
+      (set! the-world (f the-world))
+      (add-event TICK)
+      (redraw-callback)))
   
-  ;; [World -> World] -> [-> Void]
-  (define (make-timer-callback f)
-    (set! timer-callback0 f)
-    (lambda ()
-      (with-handlers ([exn:break? break-handler][exn? exn-handler])
-        (set! the-world (f the-world))
-        (add-event TICK)
-        (redraw-callback))))
+  ;; f : [World -> Image]
+  (define-callback redraw "redraw function" (f) ()
+    (with-handlers ([exn:break? break-handler][exn? exn-handler])
+      (define img (f the-world))
+      (check-result 'on-redraw (lambda (x) (beg:image? x)) "image" img)
+      (update-frame img)))
   
-  ;; [-> Void]
-  (define redraw-callback void)
-  (define redraw-callback0 void)
+  ;; f : [World KeyEvent -> World]
+  ;; esp : EventSpace 
+  ;; e : KeyEvent 
+  (define-callback key "key-event handler" (f evt-space) (e)
+    (parameterize ([current-eventspace evt-space])
+      (queue-callback 
+       (lambda ()
+         (with-handlers ([exn:break? break-handler][exn? exn-handler])
+           (set! the-world (f the-world e))
+           (add-event KEY e)
+           (redraw-callback))))))
   
-  ;; [World -> Image] -> [-> Void]
-  (define (make-redraw-callback f)
-    (set! redraw-callback0 f)
-    (lambda ()
-      (with-handlers ([exn:break? break-handler][exn? exn-handler])
-        (define img (f the-world))
-        (check-result 'on-redraw (lambda (x) (beg:image? x)) "image" img)
-        (update-frame img))))
-  
-  ;; KeyEvent -> Void
-  (define key-callback void)
-  (define key-callback0 void)
-  
-  ;; [World KeyEvent] EventSpace -> [KeyEvent -> Void]
-  (define (make-keyevent-callback f esp)
-    (set! key-callback0 f)
-    (lambda (e)
-      (parameterize ([current-eventspace esp])
-        (queue-callback 
-         (lambda ()
-           (with-handlers ([exn:break? break-handler][exn? exn-handler])
-             (set! the-world (f the-world e))
-             (add-event KEY e)
-             (redraw-callback)))))))
-  
-  ;; MouseEvent -> Void
-  (define mouse-callback void)
-  (define mouse-callback0 void)
-  
-  ;; [World Nat Nat MouseEventType -> World] EventSpace -> [MouseEvent -> Void]
-  ;; create a mouse event handler from the current event space 
-  ;; and a user-supplied function 
-  (define (make-mouse-callback f esp)
-    (set! mouse-callback0 f)
-    (lambda (e)
-      (parameterize ([current-eventspace esp])
-        (queue-callback
-         (lambda ()
-           (with-handlers ([exn:break? break-handler][exn? exn-handler])
-             (define x (- (send e get-x) INSET))
-             (define y (- (send e get-y) INSET))
-             (define m (mouse-event->symbol e))
-             (set! the-world (f the-world x y m))
-             (add-event MOUSE x y m)
-             (redraw-callback)))))))
+  ;; f : [World Nat Nat MouseEventType -> World]
+  ;; esp : EventSpace 
+  ;; e : MouseEvent
+  (define-callback mouse "mouse event handler" (f evt-space) (e)
+    (parameterize ([current-eventspace evt-space])
+      (queue-callback
+       (lambda ()
+         (with-handlers ([exn:break? break-handler][exn? exn-handler])
+           (define x (- (send e get-x) INSET))
+           (define y (- (send e get-y) INSET))
+           (define m (mouse-event->symbol e))
+           (set! the-world (f the-world x y m))
+           (add-event MOUSE x y m)
+           (redraw-callback))))))
   
   ;; MouseEvent -> MouseEventType
   (define (mouse-event->symbol e)
@@ -731,24 +745,15 @@
   
   ;; --- library 
   (define (exn-handler e)
-    (stop-it)
+    (callback-stop!)
     (raise e))
   
   (define (break-handler . _) 
     (printf "animation stopped")
-    (stop-it)
+    (callback-stop!)
     the-world)
-  
-  ;; -> Void
-  (define (stop-it)
-    (send the-time stop)
-    (set! mouse-callback void)
-    (set! key-callback void)
-    (set! redraw-callback void)
-    (set! timer-callback void))
   
   ;; Number -> Integer
   (define (number->integer x)
     (inexact->exact (floor x)))
   )
-
