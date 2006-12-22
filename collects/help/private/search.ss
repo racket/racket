@@ -200,13 +200,19 @@
            (cond
              [m 
               (let/ec k
-                (let* ([peek-port (peeking-input-port p)]
+                (let* ([peek-port (let-values ([(line col pos) (port-next-location p)])
+                                    (let ([pp (peeking-input-port p)])
+                                      (port-count-lines! pp)
+                                      (let ([rp (relocate-input-port pp line col pos)])
+                                        (port-count-lines! rp)
+                                        rp)))]
                        [entry (parameterize ([read-accept-bar-quote #f])
                                 (with-handlers ([exn:fail:read?
                                                  (lambda (x)
                                                    (fprintf (current-error-port)
-                                                            "Found > line in ~s that did not parse properly: ~s\n"
+                                                            "found > line in ~s that did not parse properly\n  first-line: ~a\n  exn-msg: ~a\n"
                                                             (path->string (apply build-path doc))
+                                                            (read-line (peeking-input-port p))
                                                             (exn-message x))
                                                    (k null))])
                                   (read peek-port)))]
