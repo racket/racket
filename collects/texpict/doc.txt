@@ -66,9 +66,10 @@ MrEd (or PostScript) output
 ---------------------------
 
 The MrEd texpict function set is loaded by the _mrpict.ss_ library.
-The library is available in unit form via _mrpictr.ss_, which produces
-a unit importing mred^. The _mrpicts.ss_ library file defines the
-unit's signature.
+The library is available in unit form via _mrpict-unit.ss_, which
+exports a `mrpict@' unit that imports mred^ and exports
+`texpict-common^' and `mrpict-extra^'. The _mrpict-sig.ss_ library
+file provides both signatures.
 
 When creating a picture for a MrEd dc<%> that contains text, texpict
 needs a drawing context for measuring the text. Provide a dc<%> before
@@ -106,9 +107,10 @@ LaTeX output
 ------------
 
 The LaTeX texpict function set is loaded by the _texpict.ss_ library.
-The library is available in unit form via _texpictr.ss_, which
-produces a unit with no imports. The _texpicts.ss_ library file
-defines the unit's signature.
+The library is available in unit form via _texpict-unit.ss_, which
+provides a `texpict@' unit with no imports and taht exports
+`texpict-common^' and `texpict-extra^'. The _texpict-sig.ss_ library
+provides both signatures.
 
 Pictures created with this library are incompatible with Slideshow
 and MrEd-based output.
@@ -1095,8 +1097,8 @@ _code.ss_
 The "code.ss" module provides a unit for typesetting Scheme code a la
 SlaTeX.
 
-The _code@_ signed unit imports _code-params^_ and exports _code^_.
-The _code-params^_ signature contains two elements:
+The _code@_ unit imports _code-params^_ and exports _code^_.  The
+_code-params^_ signature contains two elements:
 
    current-font-size - a thunk to obtain the font size to use for
                        text
