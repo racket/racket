@@ -27,7 +27,7 @@
         (li "The " (b ,(string-constant home)) " button "
             "at the top of the page always takes "
             "you back to the starting page.")
-        (li "The " (b "Manuals") " link displays a list"
+        (li "The " (b "Manuals") " link (in the " (b "Software") " section on the main page) displays a list"
             " of manuals and other documentation.")
         (li "The " (b "Send a bug report")
              " link allows you to submit bug reports to PLT."))
