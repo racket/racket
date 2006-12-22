@@ -51,7 +51,7 @@
                            ;  e.g.: ((lambda () 0) 1 2 3)
    
       vehicles             ; Controls how closures are compiled:
-   			;  'vehicles:automatic,
+                           ;  'vehicles:automatic,
                            ;  'vehicles:functions,
                            ;  'vechicles:units, or
                            ;  'vehicles:monolithic.
