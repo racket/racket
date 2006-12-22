@@ -94,7 +94,6 @@
 
       (define -put-file
 	(λ args
-          (printf "put-file ~s\n" (preferences:get 'framework:file-dialogs))
           (apply (case (preferences:get 'framework:file-dialogs)
                    [(std) std-put-file]
                    [(common) common-put-file])
