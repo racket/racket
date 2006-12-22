@@ -216,8 +216,8 @@
                     (already-seen? v1 v2 visited-v1 visited-v2)
                     (cond 
                       ((and (number? v1) (number? v2))
-                       (if (or (inexact? v1) (inexact? v2))
-                           (<= (abs (- v1 v2)) range)                         
+                       (if (or (inexact? v1) (inexact? v2) (not (= range 0.0)))
+                           (<= (abs (- v1 v2)) range)
                            (= v1 v2)))
                       ((and (object? v1) (object? v2))
                        (cond
