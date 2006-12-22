@@ -72,6 +72,8 @@ static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
 
 static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv);
 
+static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active);
+
 static Scheme_Object *source_symbol; /* uninterned! */
 static Scheme_Object *share_symbol; /* uninterned! */
 static Scheme_Object *origin_symbol;
@@ -1514,7 +1516,10 @@ static void phase_shift_certs(Scheme_Object *o, Scheme_Object *owner_wraps, int 
 	icerts = first;
     }
 
-    if (icerts) {
+    /* Even if icerts is NULL, preserve the pair in ->certs, 
+       to indicate no nested inactive certs. */
+
+    if (icerts || SCHEME_RPAIRP(((Scheme_Stx *)o)->certs)) {
       nc = scheme_make_raw_pair((Scheme_Object *)acerts, (Scheme_Object *)icerts);
     } else
       nc = (Scheme_Object *)acerts;
@@ -1911,6 +1916,7 @@ static int cert_in_chain(Scheme_Object *mark, Scheme_Object *key, Scheme_Cert *c
 }
 
 static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Object *use_key, int active)
+/* If !active, then inactive certs must have been lifted already. */
 {
   Scheme_Cert *orig_certs, *cl, *now_certs, *next_certs;
   Scheme_Stx *stx = (Scheme_Stx *)o, *res;
@@ -1995,10 +2001,8 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
 Scheme_Object *scheme_stx_add_inactive_certs(Scheme_Object *o, Scheme_Object *certs)
   /* Also lifts existing inactive certs to the top. */
 {
-  if (!INACTIVE_CERTS((Scheme_Stx *)o)) {
-    /* Lift inactive certs*/
-    o = scheme_stx_activate_certs(o);
-  }
+  /* Lift inactive certs*/
+  o = lift_inactive_certs(o, 0);
 
   return add_certs(o, (Scheme_Cert *)certs, NULL, 0);
 }
@@ -2024,8 +2028,9 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
 	Also copy any certifications from plus_stx.
 	If active and mark is non-NULL, make inactive certificates active. */
 {
-  if (mark && active)
+  if (mark && active) {
     o = scheme_stx_activate_certs(o);
+  }
 
   if (plus_stx_or_certs) {
     Scheme_Cert *certs;
@@ -2033,11 +2038,16 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
       certs = ACTIVE_CERTS((Scheme_Stx *)plus_stx_or_certs);
     else
       certs = (Scheme_Cert *)plus_stx_or_certs;
-    if (certs)
+    if (certs) {
+      if (!active)
+        o = lift_inactive_certs(o, 0);
       o = add_certs(o, certs, key, active);
+    }
     /* Also copy over inactive certs, if any */
-    if (SCHEME_STXP(plus_stx_or_certs))
+    if (SCHEME_STXP(plus_stx_or_certs)) {
+      o = lift_inactive_certs(o, 0);
       o = add_certs(o, INACTIVE_CERTS((Scheme_Stx *)plus_stx_or_certs), key, 0);
+    }
   }
 
   if (menv && !menv->module->no_cert) {
@@ -2334,6 +2344,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
       Scheme_Object *np;
       Scheme_Stx *res;
       Scheme_Cert *certs, *cc;
+
       res = (Scheme_Stx *)scheme_make_stx(stx->val, 
 					  stx->srcloc,
 					  stx->props);
@@ -2388,9 +2399,10 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
       }
 
       o = stx_activate_certs(stx->val, cp, ht);
+
       if (!SAME_OBJ(o, stx->val)) {
 	Scheme_Stx *res;
-	res = (Scheme_Stx *)scheme_make_stx(stx->val, 
+	res = (Scheme_Stx *)scheme_make_stx(o, 
 					    stx->srcloc,
 					    stx->props);
 	res->wraps = stx->wraps;
@@ -2433,7 +2445,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
     return o;
 }
 
-Scheme_Object *scheme_stx_activate_certs(Scheme_Object *o)
+static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active)
 {
   Scheme_Cert *certs = NULL;
   Scheme_Hash_Table *ht = NULL;
@@ -2442,12 +2454,17 @@ Scheme_Object *scheme_stx_activate_certs(Scheme_Object *o)
   if (!certs)
     return o;
 
-  o = add_certs(o, certs, NULL, 1);
+  o = add_certs(o, certs, NULL, as_active);
 
   if (ht)
     o = scheme_resolve_placeholders(o, 0);
 
   return o;
+}
+
+Scheme_Object *scheme_stx_activate_certs(Scheme_Object *o)
+{
+  return lift_inactive_certs(o, 1);
 }
 
 /*========================================================================*/
@@ -5178,14 +5195,12 @@ Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o,
     ((Scheme_Stx *)v)->props = ((Scheme_Stx *)stx_src)->props;
 
   if (copy_props && (copy_props != 1)) {
-    Scheme_Object *certs;
-    certs = ((Scheme_Stx *)stx_src)->certs;
-    /* To be on the safe side, drop a "definitely no inactive certs"
-       indication, if any: */
-    if (certs && SCHEME_PAIRP(certs) && !SCHEME_CDR(certs)) {
-      certs = SCHEME_CAR(certs);
+    if (ACTIVE_CERTS(((Scheme_Stx *)stx_src)))
+      v = add_certs(v, ACTIVE_CERTS((Scheme_Stx *)stx_src), NULL, 1);
+    if (INACTIVE_CERTS((Scheme_Stx *)stx_src)) {
+      v = lift_inactive_certs(v, 0);
+      v = add_certs(v, INACTIVE_CERTS((Scheme_Stx *)stx_src), NULL, 0);
     }
-    ((Scheme_Stx *)v)->certs = certs;
   }
 
   return v;
@@ -5396,7 +5411,6 @@ static Scheme_Object *syntax_to_datum(int argc, Scheme_Object **argv)
       return scheme_syntax_to_datum(argv[0], 1, scheme_make_hash_table(SCHEME_hash_ptr));
 #endif
 
-
   return scheme_syntax_to_datum(argv[0], 0, NULL);
 }
 
@@ -5494,8 +5508,8 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
   }
 
   if (certs) {
-    certs = scheme_make_raw_pair(NULL, certs);
-    ((Scheme_Stx *)src)->certs = certs;
+    src = lift_inactive_certs(src, 0);
+    src = add_certs(src, (Scheme_Cert *)certs, NULL, 0);    
   }
 
   return src;
@@ -5978,6 +5992,9 @@ static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv)
       }
       
       if (!SAME_OBJ(orig_certs, new_certs)) {
+        if (i && !orig_certs)
+          stx = (Scheme_Stx *)lift_inactive_certs((Scheme_Object *)stx, 0);
+
 	res = (Scheme_Stx *)scheme_make_stx(stx->val, 
 					    stx->srcloc,
 					    stx->props);

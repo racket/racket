@@ -402,16 +402,15 @@ scheme_init_list (Scheme_Env *env)
 						    "box-immutable",
 						    1, 1),
 			     env);
-  scheme_add_global_constant(BOXP,
-			     scheme_make_folding_prim(box_p,
-						      BOXP,
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant(UNBOX,
-			     scheme_make_noncm_prim(unbox,
-						    UNBOX,
-						    1, 1),
-			     env);
+  
+  p = scheme_make_folding_prim(box_p, BOXP, 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
+  scheme_add_global_constant(BOXP, p, env);
+
+  p = scheme_make_noncm_prim(unbox, UNBOX, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
+  scheme_add_global_constant(UNBOX, p, env);
+
   scheme_add_global_constant(SETBOX,
 			     scheme_make_noncm_prim(set_box,
 						    SETBOX,

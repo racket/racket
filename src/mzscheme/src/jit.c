@@ -107,6 +107,7 @@ static void *call_original_binary_arith_for_branch_code;
 static void *call_original_binary_rev_arith_for_branch_code;
 static void *bad_car_code, *bad_cdr_code;
 static void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
+static void *bad_unbox_code;
 static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
 static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
@@ -2773,6 +2774,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "vector?")) {
     generate_inlined_type_test(jitter, app, scheme_vector_type, scheme_vector_type, for_branch, branch_short);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "box?")) {
+    generate_inlined_type_test(jitter, app, scheme_box_type, scheme_box_type, for_branch, branch_short);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "string?")) {
     generate_inlined_type_test(jitter, app, scheme_char_string_type, scheme_char_string_type, for_branch, branch_short);
     return 1;
@@ -2862,6 +2866,34 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       }
       __END_SHORT_JUMPS__(1);
 
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unbox")) {
+      GC_CAN_IGNORE jit_insn *reffail, *ref;
+
+      LOG_IT(("inlined unbox\n"));
+
+      mz_runstack_skipped(jitter, 1);
+
+      generate_non_tail(app->rand, jitter, 0, 1);
+      CHECK_LIMIT();
+
+      mz_runstack_unskipped(jitter, 1);
+
+      __START_SHORT_JUMPS__(1);
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      __END_SHORT_JUMPS__(1);
+
+      reffail = _jit.x.pc;
+      (void)jit_jmpi(bad_unbox_code);
+
+      __START_SHORT_JUMPS__(1);
+      mz_patch_branch(ref);
+      jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+      (void)jit_bnei_i(reffail, JIT_R1, scheme_box_type);
+      __END_SHORT_JUMPS__(1);
+
+      (void)jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_BOX_VAL(0x0));
+      
       return 1;
     } else if (IS_NAMED_PRIM(rator, "syntax-e")) {
       LOG_IT(("inlined syntax-e\n"));
@@ -4887,6 +4919,14 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     }
     CHECK_LIMIT();
   }
+
+  /* *** bad_unbox_code *** */
+  /* R0 is argument */
+  bad_unbox_code = jit_get_ip().ptr;
+  jit_prepare(1);
+  jit_pusharg_i(JIT_R0);
+  (void)mz_finish(scheme_unbox);
+  CHECK_LIMIT();
 
   /* *** call_original_unary_arith_code *** */
   /* R0 is arg, R2 is code pointer, V1 is return address */
