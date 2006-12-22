@@ -210,7 +210,9 @@
                                 (with-handlers ([exn:fail:read?
                                                  (lambda (x)
                                                    (fprintf (current-error-port)
-                                                            "found > line in ~s that did not parse properly\n  first-line: ~a\n  exn-msg: ~a\n"
+                                                            "found > on line ~a in ~s that did not parse properly\n  first-line: ~a\n  exn-msg: ~a\n"
+                                                            (let-values ([(line col pos) (port-next-location p)])
+                                                              line)
                                                             (path->string (apply build-path doc))
                                                             (read-line (peeking-input-port p))
                                                             (exn-message x))
