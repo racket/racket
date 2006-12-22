@@ -206,12 +206,12 @@
                            ((((vid ...) . vbody) ...) all-val-defs)
                            ((((sid ...) . sbody) ...) all-stx-defs))
                #`(begin
-                   (define x (gensym))
+                   (define signature-tag (gensym))
                    (define-syntax #,sigid
                      (make-set!-transformer
                       (make-signature
                        (make-siginfo (list #'#,sigid #'super-name ...)
-                                     (list ((syntax-local-certifier) (quote-syntax x))
+                                     (list ((syntax-local-certifier) (quote-syntax signature-tag))
                                            #'super-rtime
                                            ...))
                        (list (quote-syntax var) ...)
@@ -294,12 +294,26 @@
   (define-for-syntax (signature->identifiers sigids)
     (define provide-tagged-sigs (map process-tagged-import sigids))
     (define provide-sigs (map caddr provide-tagged-sigs))
-    (apply append (map sig-int-names provide-sigs)))
+    (map sig-int-names provide-sigs))
   
   (define-syntax/err-param (provide-signature-elements stx)
     (syntax-case stx ()
       ((_ . p)
-       (let* ((names (signature->identifiers (checked-syntax->list #'p)))
+       (let* ((sigs (checked-syntax->list #'p))
+              (nameses (signature->identifiers sigs))
+              ;; Export only the names that would be visible to uses
+              ;;  with the same lexical context as p. Otherwise, we
+              ;;  can end up with collisions with renamings that are
+              ;;  symbolically the same, such as those introduced by
+              ;;  `open'.
+              (nameses (map (lambda (sig names)
+                              (filter (lambda (name)
+                                        (bound-identifier=?
+                                         name
+                                         (datum->syntax-object sig (syntax-e name))))
+                                      names))
+                            sigs nameses))
+              (names (apply append nameses))
               (dup (check-duplicate-identifier names)))
          (when dup
            (raise-stx-err (format "duplicate binding for ~e" (syntax-e dup))))

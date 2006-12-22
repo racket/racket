@@ -10,6 +10,6 @@
            "browser-sig.ss"
            "browser-unit.ss")
   
-  (provide-signature-elements hyper^ html-export^ bullet-export^)
+  (provide-signature-elements browser^)
   
   (define-values/invoke-unit/infer browser@))

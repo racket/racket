@@ -4,13 +4,13 @@
            "board-size.ss"
            (lib "class.ss")
            (lib "class100.ss")
-           (lib "unit200.ss")
+           (all-except (lib "unit.ss") rename) ; rename collides with class100
            (lib "mred.ss" "mred")
            (prefix robot: "robot.ss"))
   
-  (provide game-unit)
+  (provide game@)
   
-  (define game-unit
+  (define game@
     (unit
       (import)
       (export)

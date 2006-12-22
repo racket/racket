@@ -3,7 +3,7 @@
 
 (module jewel mzscheme
 
-  (require (lib "unit200.ss")
+  (require (lib "unit.ss")
 	   (lib "string.ss")
            (lib "class.ss")
 	   (lib "file.ss")
@@ -17,10 +17,10 @@
 	   "../show-help.ss"
   )
 
-  (provide game-unit)
+  (provide game@)
 
 
-  (define game-unit
+  (define game@
     (unit
       (import)
       (export)

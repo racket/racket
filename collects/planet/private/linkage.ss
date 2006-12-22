@@ -3,8 +3,7 @@
   (require "planet-shared.ss"
            "../config.ss"
            (lib "file.ss")
-           (lib "match.ss")
-           (prefix srfi1: (lib "1.ss" "srfi")))
+           (lib "match.ss"))
 
   (provide get/linkage
            get-linkage 
@@ -173,9 +172,4 @@
   ; desuffix : path -> path
   ; removes the suffix from the given file
   (define (desuffix file)
-    (let ((the-extension    (filename-extension file))
-          (the-bytes (path->bytes file)))
-      (if the-extension
-          (bytes->path (list->bytes (reverse (srfi1:drop (reverse (bytes->list the-bytes))
-                                                         (add1 (bytes-length the-extension))))))
-          file))))
+    (path-replace-suffix file #"")))

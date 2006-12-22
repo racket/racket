@@ -1,7 +1,6 @@
 (module render-test-list-impl mzscheme
   
   (require (lib "stx.ss" "syntax"))
-  (require (rename (lib "1.ss" "srfi") map-append append-map))
   
   (require "match-error.ss"
            "match-helper.ss"
@@ -226,8 +225,10 @@
         ((app op pat)
          (render-test-list #'pat #`(#,(cert #'op) #,ae) cert stx))
         
-        [(and . pats) (map-append (lambda (pat) (render-test-list pat ae cert stx))
-                                  (syntax->list #'pats))]
+        [(and . pats) (apply 
+                       append
+                       (map (lambda (pat) (render-test-list pat ae cert stx))
+                            (syntax->list #'pats)))]
         
         ((or . pats)
          (list (make-act
@@ -372,24 +373,26 @@
                            ,(map syntax-object->datum parental-chain)
                            ,ae-datum)
              ae (lambda (exp) #`(struct-pred #,pred #,parental-chain #,exp)))
-            (map-append 
-             (lambda (cur-pat cur-mutator cur-accessor) 
-               (syntax-case cur-pat (set! get!)
-                 [(set! . rest)
-                  (unless cur-mutator (match:syntax-err cur-pat "Cannot use set! pattern with immutable fields"))
-                  (set/get-matcher 'set! ae p #'rest
-                                   #`(lambda (y)
-                                       (#,cur-mutator #,ae y)))]
-                 [(get! . rest)
-                  (set/get-matcher 'get! ae p #'rest
-                                   #`(lambda ()
-                                       (#,cur-accessor #,ae)))]
-                 [_ (render-test-list 
-                     cur-pat
-                     (quasisyntax/loc cur-pat (#,cur-accessor #,ae))
-                     cert
-                     stx)]))
-             field-pats mutators accessors))))
+            (apply
+             append
+             (map
+              (lambda (cur-pat cur-mutator cur-accessor) 
+                (syntax-case cur-pat (set! get!)
+                  [(set! . rest)
+                   (unless cur-mutator (match:syntax-err cur-pat "Cannot use set! pattern with immutable fields"))
+                   (set/get-matcher 'set! ae p #'rest
+                                    #`(lambda (y)
+                                        (#,cur-mutator #,ae y)))]
+                  [(get! . rest)
+                   (set/get-matcher 'get! ae p #'rest
+                                    #`(lambda ()
+                                        (#,cur-accessor #,ae)))]
+                  [_ (render-test-list 
+                      cur-pat
+                      (quasisyntax/loc cur-pat (#,cur-accessor #,ae))
+                      cert
+                      stx)]))
+              field-pats mutators accessors)))))
         
         ;; syntax checking
         ((struct ident ...)

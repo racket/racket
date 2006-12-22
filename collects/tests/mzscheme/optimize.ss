@@ -14,7 +14,7 @@
 							 real? number? boolean? 
 							 procedure? symbol?
 							 string? bytes?
-							 vector?
+							 vector? box?
 							 eof-object?))
 				  (let ([s (with-handlers ([exn? exn-message])
 					     (proc 'bad))]
@@ -101,6 +101,8 @@
     (un #f 'symbol? #f)
     (un #t 'vector? (vector 1 2 3))
     (un #f 'vector? #f)
+    (un #t 'box? (box 10))
+    (un #f 'box? #f)
     (un #t 'string? "apple")
     (un #f 'string? #"apple")
     (un #f 'bytes? "apple")

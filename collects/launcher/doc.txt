@@ -1,8 +1,12 @@
 
-The _launcherr.ss_ library in the "launcher" collection imports
-mzlib:file^, dynext:compile^, and dynext:link^, and exports the
-following procedures for creating MzScheme and MrEd launcher
-executables.
+The _launcher.ss_ library in the "launcher" collection provides the
+following procedures.
+
+The _launcher-sig.ss_ library provides `launcher^', which includes
+the same procedures.
+
+The _launcher-unit.ss_ library provides `launcher@', which imports
+`dynext:compile^' and `dynext:link^', and exports `launcher^'.
 
 ===== Launcher creation ========================================
 

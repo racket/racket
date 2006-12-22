@@ -88,8 +88,8 @@ Under MacOS, none of these options are used. The compiler always
 uses CodeWarrior if it can be found and the compilation options
 cannot be changed.
 
-The unit/sig form defined by _compiler.ss_ (signature in
-_compiles.ss_) requires no imports.
+The unit form _dynext:compile@_ from _compile-unit.ss_ requires no
+imports and exports _dynext:compile^_ from _compile-sig.ss_.
 
 _link.ss_
 ---------
@@ -162,8 +162,8 @@ Under MacOS, none of these options are used. The linker always uses
 CodeWarrior if it can be found and the linking options cannot be
 changed.
 
-The unit/sig form defined by _linkr.ss_ (signature in _links.ss_)
-requires no imports.
+The unit form _dynext:link@_ from _link-unit.ss_ requires no
+imports and exports _dynext:link^_ from _link-sig.ss_.
 
 _file.ss_
 ---------
@@ -201,5 +201,5 @@ _file.ss_
 > (extract-base-filename/ext s program) - same as
    extract-base-filename/ss, but for extension files.
 
-The unit/sig defined by _filer.ss_ (signature in _files.ss_) requires
-no imports.
+The unit form _dynext:file@_ from _file-unit.ss_ requires no
+imports and exports _dynext:file^_ from _file-sig.ss_.

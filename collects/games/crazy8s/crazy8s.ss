@@ -3,7 +3,7 @@
   (require (lib "cards.ss" "games" "cards")
 	   (lib "mred.ss" "mred")
 	   (lib "class.ss")
-           (lib "unit200.ss")
+           (lib "unit.ss")
            (lib "etc.ss")
 	   (lib "list.ss")
            (lib "async-channel.ss")
@@ -34,10 +34,16 @@
   (define SEL-WIDTH 32)
   (define SEL-HEIGHT 32)
             
-  (provide game-unit)
+  (provide game@)
+
+  (define-signature configuration^
+    (opponents-count 
+     init-hand-size
+     drag-mode?
+     new-game))
   
   ;; This unit drives multiple Crazy 8 instances:
-  (define game-unit
+  (define game@
     (unit
       (import)
       (export)
@@ -62,19 +68,15 @@
 	    (parameterize ([current-eventspace (make-eventspace)])
 	      (queue-callback
 	       (lambda ()
-		 (invoke-unit configured-game-unit 
-			      opponents-count 
-			      init-hand-size
-                              drag-mode?
-			      new-game)))))))
+		 (invoke-unit configured-game@ (import configuration^))))))))
 
       ;; Start the initial child game:
       (start-new-game opponents-count init-hand-size drag-mode?)))
   
   ;; This unit is for a particular Crazy 8 instance:
-  (define configured-game-unit
+  (define configured-game@
     (unit
-      (import opponents-count init-hand-size drag-mode? new-game)
+      (import configuration^)
       (export)
 
       ;; Randomize

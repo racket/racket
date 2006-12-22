@@ -9,15 +9,15 @@ possible to remap single click (instead of double click)?
   
   (require (lib "cards.ss" "games" "cards")
            (lib "class.ss")
-           (lib "unit200.ss")
+           (lib "unit.ss")
            (lib "mred.ss" "mred")
            (lib "list.ss")
            (lib "string-constant.ss" "string-constants")
            "../show-help.ss")
   
-  (provide game-unit)
+  (provide game@)
   
-  (define game-unit
+  (define game@
     (unit 
       (import)
       (export)

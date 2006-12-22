@@ -3,12 +3,12 @@
   (require (lib "cards.ss" "games" "cards")
 	   (lib "mred.ss" "mred")
 	   (lib "class.ss")
-           (lib "unit200.ss")
+           (lib "unit.ss")
 	   (lib "list.ss"))
   
-  (provide game-unit)
+  (provide game@)
   
-  (define game-unit
+  (define game@
     (unit
       (import)
       (export) 

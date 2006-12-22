@@ -3,6 +3,7 @@
   (require (lib "unit.ss")
            (lib "class.ss")
            "browser-sig.ss"
+           "private/sig.ss"
            "private/html.ss"
            "private/bullet.ss"
 	   (lib "url.ss" "net")

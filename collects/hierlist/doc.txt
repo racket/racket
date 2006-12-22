@@ -1,12 +1,9 @@
 
 _Hierarchical List Control_
 
-hierlists.ss defines hierlist^
-hierlistr.ss returns a unit/sig, imports mred^ and 
-mzlib:function^ and exports hierlist^
-hierlist.ss invoke-opens hierlistr.ss
-
-_hierlist_ defines three classes:
+hierlist.ss provides the classes and interfaces described below.
+hierlist-sig.ss provides hierlist^, which includes the same classes and interfaces.
+hierlist-unit.ss provide a unit that imports mred^ and exports hierlist^.
 
 --------------------------------------------------
 

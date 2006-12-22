@@ -1,11 +1,13 @@
 
 (module parcheesi mzscheme
-  (require (lib "unit200.ss")
-           (lib "class.ss"))
+  (require (lib "unit.ss")
+           (lib "class.ss")
+           "admin-gui.ss")
   
-  (provide game-unit)
-  (define game-unit
+  (provide game@)
+  (define game@
     (unit (import)
           (export)
-          (new (dynamic-require '(lib "admin-gui.ss" "games" "parcheesi") 'gui-game%)))))
+          (new gui-game%))))
+
 

@@ -1,23 +1,25 @@
 
 ;; An example implementation of the ever-popular Minesweeper game.
 
-;; The graphics are primitive, but the event-handling is general.  For
-;; example, clicking on a tile hilites the tile, but moving the mouse
-;; off the tile before releasing the mouse button unhilites the tile
-;; and ignores the click.
-
 ;;;;;;;;;;;;;;;;; Configuration ;;;;;;;;;;;;;;;;;;
 
 (module mines mzscheme
   
   (require (lib "etc.ss") ; defines build-vector
 	   (lib "class.ss")
-           (lib "unit200.ss")
+           (lib "unit.ss")
 	   (lib "mred.ss" "mred")
            (lib "include-bitmap.ss" "mrlib"))
   
-  (provide game-unit)
+  (provide game@)
 
+  ;; Layout constants
+  (define TILE-HW 24)        ; height/width of a tile
+  (define B-WIDTH 16)        ; number of tiles across
+  (define B-HEIGHT 16)       ; number of tiles down
+  (define THE-BOMB-COUNT 30) ; number of bombs to hide
+  
+  ;; Bitmap constants
   (define tile-bm (include-bitmap "images/tile.png"))
   (define lclick-bm (include-bitmap "images/lclick-tile.png"))
   (define rclick-bm (include-bitmap "images/rclick-tile.png"))
@@ -26,42 +28,37 @@
   (define bomb-bm (include-bitmap "images/bomb.png"))
   (define explode-bm (include-bitmap "images/explode.png"))
   (define flag-bm (include-bitmap "images/flag.png"))
+
+  (define DIGIT-COLOR-NAMES
+    ;; 0th is background; 8th is foreground
+    (vector "WHITE"  "BLUE"  "FORESTGREEN"  "RED"  "PURPLE" 
+            "ORANGE"  "YELLOW"  "BROWN"  "BLACK"))
   
-  ;; The game is implemented in a unit so it can be started multiple times
-  (define game-unit
+  (define DIGIT-COLORS
+    (build-vector 9 (lambda (i)
+                      (send the-color-database find-color 
+                            (vector-ref DIGIT-COLOR-NAMES i)))))
+  
+  (define BG-COLOR (vector-ref DIGIT-COLORS 0))
+  (define FG-COLOR (vector-ref DIGIT-COLORS 8))
+
+  (define BLACK-COLOR (send the-color-database find-color "BLACK"))
+  
+  (define BG-PEN (make-object pen% BG-COLOR 1 'solid))
+  (define FG-PEN (make-object pen% FG-COLOR 1 'solid))
+  
+  ;; A function for looping over numbers:
+  (define (step-while first test until  f accum init)
+    (let loop ([n first][a init])
+      (if (test n until)
+          (loop (add1 n) (accum a (f n)))
+          a)))
+  
+  ;; The rest of the game is implemented in a unit so it can be started multiple times
+  (define game@
     (unit
       (import)
       (export)
-
-      (define TILE-HW 24)        ; height/width of a tile
-      (define B-WIDTH 16)        ; number of tiles across
-      (define B-HEIGHT 16)       ; number of tiles down
-      (define THE-BOMB-COUNT 30) ; number of bombs to hide
-      
-      (define DIGIT-COLOR-NAMES
-        ;; 0th is background; 8th is foreground
-        (vector "WHITE"  "BLUE"  "FORESTGREEN"  "RED"  "PURPLE" 
-                "ORANGE"  "YELLOW"  "BROWN"  "BLACK"))
-      
-      (define DIGIT-COLORS
-        (build-vector 9 (lambda (i)
-                          (send the-color-database find-color 
-                                (vector-ref DIGIT-COLOR-NAMES i)))))
-      
-      (define BG-COLOR (vector-ref DIGIT-COLORS 0))
-      (define FG-COLOR (vector-ref DIGIT-COLORS 8))
-
-      (define BLACK-COLOR (send the-color-database find-color "BLACK"))
-      
-      (define BG-PEN (make-object pen% BG-COLOR 1 'solid))
-      (define FG-PEN (make-object pen% FG-COLOR 1 'solid))
-      
-      ;; A general function for looping over numbers:
-      (define (step-while first test until  f accum init)
-        (let loop ([n first][a init])
-          (if (test n until)
-              (loop (add1 n) (accum a (f n)))
-              a)))
       
       ;; ;;;;;;;;;;;;;;; Tiles ;;;;;;;;;;;;;;;;;;
       

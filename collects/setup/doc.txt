@@ -262,12 +262,12 @@ namespace.
 Link the options and setup units so that your option-setting code is
 initialized between them, e.g.:
 
-    (compound-unit/sig
+    (compound-unit
       ...
       (link ...
-            [OPTIONS : setup-option^ (setup:option@)]
-            [MY-CODE : () (my-init-options@ OPTIONS)]
-            [SETUP : () (setup@ OPTIONS ...)])
+            [(OPTIONS : setup-option^) setup:option@]
+            [() my-init-options@ OPTIONS]
+            [() setup@ OPTIONS ...])
       ...)
 
 
@@ -499,16 +499,17 @@ The raw format is
    The procedure is extracted from the archive using MzScheme's `read'
    and `eval' procedures (in a fresh namespace).
 
- * An unsigned unit that drives the unpacking process. The unit
-   accepts two imports: a path string for the parent of the main
-   "collects" directory and an `unmztar' procedure. The remainder of
-   the unpacking process consists of invoking this unit. It is
-   expected that the unit will call `unmztar' procedure to unpack
-   directories and files that are defined in the input archive after
-   this unit. The result of invoking the unit must be a list of
-   collection paths (where each collection path is a list of strings);
-   once the archive is unpacked, Setup PLT will compile and setup the
-   specified collections.
+ * An old-style, unsigned unit using `(lib "unit200.ss")' that drives
+   the unpacking process. The unit accepts two imports: a path string
+   for the parent of the main "collects" directory and an `unmztar'
+   procedure. The remainder of the unpacking process consists of
+   invoking this unit. It is expected that the unit will call
+   `unmztar' procedure to unpack directories and files that are
+   defined in the input archive after this unit. The result of
+   invoking the unit must be a list of collection paths (where each
+   collection path is a list of strings); once the archive is
+   unpacked, Setup PLT will compile and setup the specified
+   collections.
 
    The `unmztar' procedure takes one argument: a filter
    procedure. The filter procedure is called for each directory and
@@ -618,7 +619,7 @@ general functions to help make .plt archives:
             [#:file-filter filter-proc]
             [#:encode? encode?]
             [#:file-mode file-mode-sym]
-            [#:unpack-unit unit-expr-or-#f]
+            [#:unpack-unit unit200-expr-or-#f]
             [#:collections collection-list]
             [#:plt-relative? plt-relative?]
             [#:at-plt-home? at-plt-home?]
@@ -648,8 +649,8 @@ general functions to help make .plt archives:
   is 'file.
 
   The `unpack-unit' argument is usually #f. Otherwise, it must be an
-  S-expression for a unsigned unit that performs the work of
-  unpacking; see the above section on .plt internals for more
+  S-expression for a `(lib "unit200.ss")'-style unit that performs the
+  work of unpacking; see the above section on .plt internals for more
   information about the unit. If `unpack-unit' is #f, an appropriate
   unpacking unit is generated.
 
@@ -745,10 +746,8 @@ general functions to help make .plt archives:
    export of _plt-single-installer.ss_; see above for documentation.
 
       
- The _plt-installer-unit.ss_ library in the setup collection returns a unit/sig
- that imports mred^ and exports setup:plt-installer^. The signature
- setup:plt-installer^ has two names: run-installer and on-installer-run, as
- above.
-
  The _plt-installer-sig.ss_ library defines the setup:plt-installer^
  signature, which has two names: run-installer and on-installer-run.
+
+ The _plt-installer-unit.ss_ library in the setup collection returns a
+ unit that imports mred^ and exports setup:plt-installer^.

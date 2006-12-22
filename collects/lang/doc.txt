@@ -8,7 +8,7 @@ languages for other modules (i.e., as the initial import):
 
  * _plt-pretty-big-text.ss_ - provides MzScheme plus the
    following MzLib libraries: etc.ss, file.ss, list.ss,
-   class.ss, unit.ss, unitsig.ss, include.ss, defmacro.ss,
+   class.ss, unit.ss, include.ss, defmacro.ss,
    pretty.ss, string.ss, thread.ss, math.ss, match.ss, and
    shared.ss. It also provides the posn, color, and image
    functions of Beginning Student.

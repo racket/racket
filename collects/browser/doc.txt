@@ -360,8 +360,8 @@ matching the following signatures:
 
     setup:plt-installer^
     mred^
-    net:tcp^ (see "tcp-sig.ss" in the "net" collection)
-    net:url^ (see "url-sig.ss" in the "url" collection)
+    tcp^ (see "tcp-sig.ss" in the "net" collection)
+    url^ (see "url-sig.ss" in the "url" collection)
 
  It exports the browser^ signature.
  

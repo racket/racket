@@ -30,7 +30,7 @@ A test case:
 
 (module hyper (lib "a-unit.ss")
   (require (lib "class.ss")
-           "../browser-sig.ss"
+           "sig.ss"
            (lib "file.ss")
            (lib "list.ss")
            (lib "string.ss")

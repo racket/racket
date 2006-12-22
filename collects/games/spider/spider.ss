@@ -6,7 +6,7 @@
 	   (lib "mred.ss" "mred")
 	   (lib "list.ss")
 	   (lib "file.ss")
-	   (lib "unit200.ss")
+	   (lib "unit.ss")
 	   "../show-help.ss")
 
   (define (list-first-n l n)
@@ -16,9 +16,9 @@
   (define (vector-copy v)
     (list->vector (vector->list v)))
 
-  (provide game-unit)
+  (provide game@)
   
-  (define game-unit
+  (define game@
     (unit 
       (import)
       (export)

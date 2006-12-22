@@ -92,10 +92,10 @@ collection. If a sub-collection has an info.ss definition (see the mzc
 manual), the following fields of the collection's "info.ss" file are
 used:
 
- * `game' [required] : used as a library name in the sub-collection to
-    load for the game; the library must export a `game-unit' unsigned
-    unit (see MzLib's `unit' form); the unit is invoked with no
-    imports to start the game.
+ * `game' [required] : used as a module name in the sub-collection to
+    load for the game; the module must provide a `game@' unit (see
+    MzLib's "unit.ss" form) with no particular exports; the unit is
+    invoked with no imports to start the game.
 
  * `name' [defaults to the collection name] : used to label the
    game-starting button in the game console.

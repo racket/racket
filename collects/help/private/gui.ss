@@ -11,7 +11,7 @@
            (lib "string-constant.ss" "string-constants")
            (lib "external.ss" "browser")
            
-           (prefix browser: (lib "browser-sig.ss" "browser"))
+           (lib "browser-sig.ss" "browser")
            (lib "url-sig.ss" "net")
            (lib "url-structs.ss" "net")
            (lib "uri-codec.ss" "net")
@@ -26,7 +26,7 @@
            
            "internal-hp.ss")
   
-  (import browser:hyper^ browser:html-export^ browser:bullet-export^ url^)
+  (import browser^ url^)
   (export gui^)
       
       (define help-desk-frame<%>

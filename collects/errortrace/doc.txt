@@ -242,7 +242,7 @@ _Re-using errortrace stack tracing_
 -----------------------------------
 
 The errortrace collection also includes a _stacktrace.ss_ library.  It
-exports the _stacktrace@_ unit and it import signature
+exports the _stacktrace@_ unit, its import signature
 _stacktrace-imports^_, and its export signature _stacktrace^_.
 
 The export signature contains these names:

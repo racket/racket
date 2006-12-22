@@ -1,6 +1,6 @@
 (module gobblet mzscheme
   (require (lib "unitsig.ss")
-	   (lib "unit200.ss")
+	   (only (lib "unit.ss") unit import export)
 	   (lib "file.ss")
 	   (lib "mred.ss" "mred")
 	   "sig.ss"
@@ -10,9 +10,9 @@
 	   "explore.ss"
 	   "../show-help.ss")
 
-  (provide game-unit)
+  (provide game@)
 
-  (define game-unit 
+  (define game@
     (unit
       (import)
       (export)

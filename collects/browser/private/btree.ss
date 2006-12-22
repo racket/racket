@@ -1,5 +1,5 @@
 (module btree (lib "a-unit.ss")
-  (require "../browser-sig.ss")
+  (require "sig.ss")
   
 ;; Implements a red-black tree with relative indexing along right
 ;; splines. This allows the usual O(log(n)) operations, plus a

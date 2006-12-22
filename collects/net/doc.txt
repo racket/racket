@@ -17,8 +17,8 @@ _URL_ posting, _web clients_, _WWW_
 
 To load directly: (require (lib "url.ss" "net"))
 Module files: _url.ss_ - provides the procedures documented below
-              _url-unit.ss_ - provides unit net:url@
-              _url-sig.ss_ - provides signature net:url^
+              _url-unit.ss_ - provides unit url@
+              _url-sig.ss_ - provides signature url^
               _url-struct.ss_ - provides the url and path/param structs
 
 
@@ -234,10 +234,10 @@ EXAMPLE --------------------------------------------------------------
 
 UNITS ----------------------------------------------------------------
 
-The _url-sig.ss_ module exports the _net:url^_ signature which
+The _url-sig.ss_ module exports the _url^_ signature which
 contains the names documented above. the _url-unit.ss_ module exports
-_url@_, a unit that imports net:tcp^ (see "tcp-sig.ss", below) and
-exports the names in net:url^.
+_url@_, a unit that imports tcp^ (see "tcp-sig.ss", below) and
+exports the names in url^.
 
 ==========================================================================
 _URL viewing_
@@ -287,8 +287,8 @@ _CGI_ backends, _WWW_
 
 To load directly: (require (lib "cgi.ss" "net"))
 Module files: _cgi.ss_ - provides the procedures documented below
-              _cgi-unit.ss_ - provides unit net:cgi@
-              _cgi-sig.ss_ - provides signature net:cgi^
+              _cgi-unit.ss_ - provides unit cgi@
+              _cgi-sig.ss_ - provides signature cgi^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -416,8 +416,8 @@ _sending mail_, _sendmail_
 
 To load directly: (require (lib "sendmail.ss" "net"))
 Module files: _sendmail.ss_ - provides the procedures documented below
-              _sendmail-unit.ss_ - provides unit net:sendmail@
-              _sendmail-sig.ss_ - provides signature net:sendmail^
+              _sendmail-unit.ss_ - provides unit sendmail@
+              _sendmail-sig.ss_ - provides signature sendmail^
 
 
 ABSTRACT -------------------------------------------------------------
@@ -472,8 +472,8 @@ _sending mail_, _SMTP_
 
 To load directly: (require (lib "smtp.ss" "net"))
 Module files: _smtp.ss_ - provides the procedures documented below
-              _smtp-unit.ss_ - provides unit net:smtp@
-              _smtp-sig.ss_ - provides signature net:smtp^
+              _smtp-unit.ss_ - provides unit smtp@
+              _smtp-sig.ss_ - provides signature smtp^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -548,8 +548,8 @@ _NNTP_, _newsgroups_
 
 To load directly: (require (lib "nntp.ss" "net"))
 Module files: _nntp.ss_ - provides the procedures documented below
-              _nntp-unit.ss_ - provides unit net:nntp@
-              _nntp-sig.ss_ - provides signature net:nntp^
+              _nntp-unit.ss_ - provides unit nntp@
+              _nntp-sig.ss_ - provides signature nntp^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -695,8 +695,8 @@ _POP-3_, _reading mail_
 
 To load directly: (require (lib "pop3.ss" "net"))
 Module files: _pop3.ss_ - provides the procedures documented below
-              _pop3-unit.ss_ - provides unit net:pop3@
-              _pop3-sig.ss_ - provides signature net:pop3^
+              _pop3-unit.ss_ - provides unit pop3@
+              _pop3-sig.ss_ - provides signature pop3^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -874,8 +874,8 @@ _IMAP_, _reading mail_
 
 To load directly: (require (lib "imap.ss" "net"))
 Module files: _imap.ss_ - provides the procedures documented below
-              _imap-unit.ss_ - provides unit net:imap@
-              _imap-sig.ss_ - provides signature net:imap^
+              _imap-unit.ss_ - provides unit imap@
+              _imap-sig.ss_ - provides signature imap^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1249,8 +1249,8 @@ _mime headers_, _mail headers_, _http headers_
 
 To load directly: (require (lib "head.ss" "net"))
 Module files: _head.ss_ - provides the procedures documented below
-              _head-unit.ss_ - provides unit net:head@
-              _head-sig.ss_ - provides signature net:head^
+              _head-unit.ss_ - provides unit head@
+              _head-sig.ss_ - provides signature head^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1400,8 +1400,8 @@ _DNS_, _domain name service_
 
 To load directly: (require (lib "dns.ss" "net"))
 Module files: _dns.ss_ - provides the procedures documented below
-              _dns-unit.ss_ - provides unit net:dns@
-              _dns-sig.ss_ - provides signature net:dns^
+              _dns-unit.ss_ - provides unit dns@
+              _dns-sig.ss_ - provides signature dns^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1446,10 +1446,10 @@ _MIME support__
 
 To load directly: (require (lib "mime.ss" "net"))
 Module files: _mime.ss_ - provides the procedures documented below
-              _mime-unit.ss_ - provides unit net:mime@
-                               imports net:base64^ from "base64-sig.ss"
-                               and net:qp^ from "qp-sig.ss"
-              _mime-sig.ss_ - provides signature net:mime^
+              _mime-unit.ss_ - provides unit mime@
+                               imports base64^ from "base64-sig.ss"
+                               and qp^ from "qp-sig.ss"
+              _mime-sig.ss_ - provides signature mime^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1758,8 +1758,8 @@ _Base 64 Encoding_, _base64_
 
 To load directly: (require (lib "base64.ss" "net"))
 Module files: _base64.ss_ - provides the procedures documented below
-              _base64-unit.ss_ - provides unit net:base64@
-              _base64-sig.ss_ - provides signature net:base64^
+              _base64-unit.ss_ - provides unit base64@
+              _base64-sig.ss_ - provides signature base64^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1800,8 +1800,8 @@ _Quoted Printable Encoding_, _qp__
 
 To load directly: (require (lib "qp.ss" "net"))
 Module files: _qp.ss_ - provides the procedures documented below
-              _qp-unit.ss_ - provides unit net:qp@
-              _qp-sig.ss_ - provides signature net:qp^
+              _qp-unit.ss_ - provides unit qp@
+              _qp-sig.ss_ - provides signature qp^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1867,8 +1867,8 @@ _FTP client_
 
 To load directly: (require (lib "ftp.ss" "net"))
 Module files: _ftp.ss_ - provides the procedures documented below
-              _ftp-unit.ss_ - provides unit net:ftp@
-              _ftp-sig.ss_ - provides signature net:ftp^
+              _ftp-unit.ss_ - provides unit ftp@
+              _ftp-sig.ss_ - provides signature ftp^
 
 ABSTRACT -------------------------------------------------------------
 
@@ -1933,12 +1933,12 @@ _TCP redirect_
 ==========================================================================
 
 The "tcp-redirect.ss" library provides an function to generate a unit
-with the signature net:tcp^ that redirects certain port numbers to
-intra-process listeners that do not actually use TCP. The net:tcp^
+with the signature tcp^ that redirects certain port numbers to
+intra-process listeners that do not actually use TCP. The tcp^
 signature is imported, for example, by the url@ unit of "url-unit.ss".
 
 Module file: _tcp-redirect.ss_ - provides the `tcp-redirect-function
-             _tcp-sig.ss_ - defines _net:tcp^_, which contains the
+             _tcp-sig.ss_ - defines _tcp^_, which contains the
                             following:
                                  tcp-abandon-port
                                  tcp-accept
@@ -1950,7 +1950,7 @@ Module file: _tcp-redirect.ss_ - provides the `tcp-redirect-function
                                  tcp-listen
                                  tcp-listener?
              _tcp-unit.ss_ - defines _tcp@_ which implements
-                             net:tcp^ using the MzScheme functions of
+                             tcp^ using the MzScheme functions of
                              the same name
              ssl-tcp-unit.ss - see below
 
@@ -1958,7 +1958,7 @@ PROCEDURES -----------------------------------------------------------
 
 > (tcp-redirect port-number-list)
 
-  Returns a unit that implements net:tcp^ (from "tcp-sig.ss"). For
+  Returns a unit that implements tcp^ (from "tcp-sig.ss"). For
   port numbers not listed in `port-number-list', the unit's
   implementations are the MzScheme implementations.
 
@@ -1972,7 +1972,7 @@ _SSL redirect__
 ==========================================================================
 
 The _ssl-tcp-unit.ss_ library provides `make-ssl-tcp@', which returns
-a unit that implements net:tcp^ from "tcp-sig.ss"
+a unit that implements tcp^ from "tcp-sig.ss"
 
 PROCEDURES -----------------------------------------------------------
 
@@ -1981,7 +1981,7 @@ PROCEDURES -----------------------------------------------------------
    server-suggest-auth-file
    client-cert-file client-key-file client-root-cert-files)
 
-  Returns a unit that implements net:tcp^ using the SSL functions from
+  Returns a unit that implements tcp^ using the SSL functions from
   (lib "mzssl.ss" "openssl"). The arguments to `make-ssl-tcp@' control
   the certificates and keys uses by server and client connections:
 
@@ -2008,8 +2008,8 @@ _cookies_, HTTP _State Management_
 
 To load directly: (require (lib "cookie.ss" "net"))
 Module files: _cookie.ss_ - provides the procedures documented below
-              _cookie-unit.ss_ - provides unit net:cookie@
-              _cookie-sig.ss_ - provides signature net:cookie^
+              _cookie-unit.ss_ - provides unit cookie@
+              _cookie-sig.ss_ - provides signature cookie^
 
 
 ABSTRACT -------------------------------------------------------------
@@ -2147,8 +2147,8 @@ _URL encoding_, _URL decoding_, _application/x-www-form-urlencoded_
 
 To load directly: (require (lib "uri-codec.ss" "net"))
 Module files: _uri-codec.ss_ - provides the procedures documented below
-              _uri-codec-unit.ss_ - provides unit net:uri-codec@
-              _uri-codec-sig.ss_ - provides signature net:uri-codec^
+              _uri-codec-unit.ss_ - provides unit uri-codec@
+              _uri-codec-sig.ss_ - provides signature uri-codec^
 
 
 ABSTRACT -------------------------------------------------------------

@@ -249,8 +249,9 @@ _option.ss_ module. Options are set by the following parameters:
 > propagate-constants - #t improves the code by
      propagating constants.  Default = #t.
 
-> assume-primitives - #t equates X with #%X when
-     #%X exists.  This is useful only with non-unitized code.
+> assume-primitives - #t adds `(require mzscheme)'
+     to the beginning of the program. This is useful only 
+     with non-`module' code.
      Default = #f.
 
 > stupid - Allow obvious non-syntactic errors; e.g.:
@@ -259,7 +260,7 @@ _option.ss_ module. Options are set by the following parameters:
 > vehicles - Controls how closures are compiled.  The
     possible values are: 'vehicles:automatic - auto-groups
                          'vehicles:functions - groups by procedure
-                         'vehicles:units - groups by unit
+                         'vehicles:units - usupported
                          'vehicles:monolithic - groups randomly
     Default = 'vehicles:automatic.
 
@@ -287,7 +288,7 @@ the `dynext' collection . Those options control the actual C compiler
 and linker that are used. See doc.txt in the `dynext' collection for
 more information about those options.
 
-The _option-unit.ss_ library is a unit/sig matching the signature
+The _option-unit.ss_ library is a unit exporting the signature
 >    compiler:option^
 which contains these options. The _sig.ss_ library defines the
 `compiler:option^' signature.
@@ -297,9 +298,9 @@ which contains these options. The _sig.ss_ library defines the
 The Compiler as a Unit
 ======================
 
-The _compiler-unit.ss_ library provides a unit/sig 
+The _compiler-unit.ss_ library provides a unit
 >      compiler@
-matching the signature
+exporting the signature
 >      compiler^ 
 which provides the compiler.ss functions.  This signature and all
 auxiliary signatures needed by compiler@ are defined by the
@@ -320,7 +321,7 @@ Low-level Extension Compiler and Linker
 The high-level compiler.ss interface relies on low-level
 implementations of the extension compiler and linker.
 
-The _comp-unit.ss_ and _ld-unit.ss_ libraries define unit/sigs for the
+The _comp-unit.ss_ and _ld-unit.ss_ libraries define units for the
 low-level extension compiler and multi-file linker,
 > ld@
 and
@@ -359,7 +360,7 @@ The low-level linker functions from ld@ are:
     compiled object and .kp files into a multi-file extension.
 
 
-Both unit/sigs requires the following imports:
+Both units require the following imports:
 
    dynext:compile^ - From the `dynext' collection
    dynext:link^
@@ -390,7 +391,7 @@ prints the bundle to the current output port, instead; this stream can
 be `load'ed directly by a running program, as long as the
 `read-accept-compiled' parameter is true.
 
-The _embedr-unit.ss_ library provides a signed unit, _compiler:embed@_
+The _embedr-unit.ss_ library provides a unit, _compiler:embed@_
 that imports nothing and exports the functions below. The
 _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
 

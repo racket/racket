@@ -1,7 +1,6 @@
 (module simplify-patterns mzscheme
   
   (require (lib "stx.ss" "syntax"))
-  (require (rename (lib "1.ss" "srfi") map-append append-map))
   
   (require "match-error.ss"
            "match-helper.ss"
@@ -14,8 +13,7 @@
            "render-helpers.ss"
            "observe-step.ss")
   
-  (require "render-sigs.ss"
-           (lib "unitsig.ss"))
+  (require "render-sigs.ss")
   
   (require-for-syntax "match-helper.ss"
                       "match-expander-struct.ss"

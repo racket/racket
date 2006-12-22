@@ -1,6 +1,8 @@
 
 (load-relative "loadtest.ss")
 
+;; ----------------------------------------
+
 (test 0 'with-handlers (with-handlers () 0))
 (test 1 'with-handlers (with-handlers ([void void]) 1))
 (test 2 'with-handlers (with-handlers ([void void]) 1 2))
@@ -1074,6 +1076,45 @@
 (test '(1 . 2)
       (let ([x (cons 1 2)]) (let ([f (lambda (x) x)]) (f (lambda (y) x))))
       10)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check #%top-interaction
+
+(module quoting-top-interaction mzscheme
+  (provide (all-from-except mzscheme #%top-interaction)
+           (rename top-interaction #%top-interaction))
+  (define-syntax top-interaction 
+    (syntax-rules ()
+      [(_ . e) (quote e)])))
+
+(dynamic-require 'quoting-top-interaction #f)
+(let ([ns (make-namespace 'empty)])
+  (namespace-attach-module (current-namespace) 'quoting-top-interaction ns)
+  (parameterize ([current-namespace ns])
+    (namespace-require 'quoting-top-interaction))
+  (test 3 'non-top
+        (parameterize ([current-namespace ns])
+          (eval '(+ 1 2))))
+  (test '(+ 1 2) 'repl-top
+        (let ([s (open-output-bytes)])
+          (parameterize ([current-input-port (open-input-string "(+ 1 2)")]
+                         [current-namespace ns]
+                         [current-output-port s])
+            (read-eval-print-loop))
+          (let ([p (open-input-bytes (get-output-bytes s))])
+            (read p)
+            (read p))))
+  (let ([tmp-file "tmp1"])
+    (with-output-to-file tmp-file (lambda () (display '(+ 1 2))) 'truncate/replace)
+    (test '(+ 1 2) 'repl-top
+          (parameterize ([current-namespace ns])
+            (load tmp-file)))
+    (with-output-to-file tmp-file (lambda () (display '(module tmp1 mzscheme (provide x) (define x 12))))
+                         'truncate/replace)
+    (test 12 'module
+          (parameterize ([current-namespace ns])
+            (dynamic-require (build-path (current-directory) tmp-file) 'x)))
+    (delete-file tmp-file)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

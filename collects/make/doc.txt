@@ -118,9 +118,6 @@ The `target' field is a string or a list of strings naming
 the target(s), and the `orig-exn' field is the original
 exception.
 
-The maker.ss library is a signed unit that requires no
-imports and provides `make/proc'.
-
 make.ss also provides the following parameters:
 
 > (make-print-checking [on?]) - If #f, make only prints when
@@ -133,6 +130,12 @@ corresponding make line.  Default: #f.
 
 > (make-print-reasons [on?]) If #t, make prints the reason
 for each dependency that fires. Default: #t.
+
+The make-sig.ss library provides `make^' signature that includes all
+of the above.
+
+The make-unit.ss library provides a `make@' unit with no imports and the
+single export `make^'.
 
 _collection.ss_
 ---------------

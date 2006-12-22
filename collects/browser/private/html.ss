@@ -1,5 +1,5 @@
 (module html (lib "a-unit.ss")
-  (require "../browser-sig.ss"
+  (require "sig.ss"
            (lib "mred-sig.ss" "mred")
            (lib "file.ss")
            (lib "etc.ss")

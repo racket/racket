@@ -7,11 +7,11 @@
            (prefix gl- (lib "sgl.ss" "sgl"))
            (lib "gl.ss" "sgl")
            (lib "array.ss" "srfi" "25")
-           (lib "unit200.ss")
+           (lib "unit.ss")
            (lib "include-bitmap.ss" "mrlib")
            "honu-bitmaps.ss")
   
-  (provide game-unit)
+  (provide game@)
 
   (define-struct image (width height rgba))
   
@@ -65,10 +65,14 @@
   (define-struct piece-info (x y color king?) (make-inspector))
   (define-struct moves (list forced-jump?))
 
-  (define checkers-view@
-    (unit
-      (import move)
-      (export add-space add-piece remove-piece move-piece set-turn show)
+  (define-signature model^
+    (move))
+  (define-signature view^
+    (add-space add-piece remove-piece move-piece set-turn show))
+
+  (define-unit view@
+      (import model^)
+      (export view^)
 
       (define (get-space-draw-fn space)
         (let* ((list-id (get-square-dl (space-info-light? space)
@@ -298,12 +302,11 @@
           (getter (if light? light-square dark-square))))
                          
       (define (show)
-        (send f show #t))))
+        (send f show #t)))
   
-  (define checkers-model@
-    (unit
-      (import add-space add-piece remove-piece move-piece set-turn)
-      (export move)
+  (define-unit model@
+      (import view^)
+      (export model^)
 
       (define turn 'red)
       (define board (make-array (shape 0 8 0 8) #f))
@@ -467,14 +470,16 @@
                     (set-turn turn (get-moves))))))))))
 
       (set-turn turn (get-moves))
-      ))
+      )
+
+  (define-unit show@
+    (import view^)
+    (export)
+    (show))
               
-  (define game-unit
-   (compound-unit 
+  (define game@
+   (compound-unit/infer
      (import)
-     (link 
-      (VIEW (checkers-view@ (MODEL move)))
-      (MODEL (checkers-model@ (VIEW add-space add-piece remove-piece move-piece set-turn)))
-      (SHOW ((unit (import show) (export) (show)) (VIEW show))))
-     (export)))
+     (export)
+     (link view@ model@ show@)))
   )
