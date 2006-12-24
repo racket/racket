@@ -213,7 +213,13 @@
                                                                     (datum->syntax-object
                                                                      #f
                                                                      (cons '#%top-interaction exp)
-                                                                     exp)))))
+                                                                     exp)))
+                                                        (default-continuation-prompt-tag)
+                                                        (lambda args
+                                                          (apply
+                                                           abort-current-continuation
+                                                           (default-continuation-prompt-tag)
+                                                           args))))
 			    (lambda x (loop x)))))))))
 	  (lambda ()
 	    (close-input-port in-port)))))
