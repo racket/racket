@@ -299,8 +299,7 @@ Help Desk looks for html documentation in two places:
   2) Help Desk also looks inside each sub-directory in any
      `doc' collection (Help Desk searches all doc
      collections, not just the first one, unlike
-     `collection-path'). For example, the MzScheme manual is
-     in the directory plt/doc/mzscheme. 
+     `collection-path'). 
 
 The starting point for each manual must be called either:
 

@@ -1121,10 +1121,14 @@
 
       ;; module-based-language-front-end : (port reader -> (-> (union sexp syntax eof)))
       ;; type reader = type-spec-of-read-syntax (see mz manual for details)
-      (define (module-based-language-front-end port reader)
-        (λ () 
-          (reader (object-name port) port)))
-      
+     (define (module-based-language-front-end port reader)
+       (λ () 
+         (let ([s (reader (object-name port) port)])
+           (if (syntax? s)
+               (with-syntax ([s s]
+                             [t (namespace-syntax-introduce (datum->syntax-object #f '#%top-interaction))])
+                 (syntax (t . s)))
+               s))))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;

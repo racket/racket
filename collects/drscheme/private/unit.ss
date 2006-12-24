@@ -1051,8 +1051,6 @@ module browser threading seems wrong.
                    update-info
                    get-file-menu
                    file-menu:get-close-item
-                   file-menu:get-open-item
-                   file-menu:get-new-item
                    file-menu:get-save-item
                    file-menu:get-save-as-item
                    file-menu:get-revert-item
@@ -2191,15 +2189,11 @@ module browser threading seems wrong.
                     (for-each (λ (c r) (set-visible-region txt c r)) canvases regions)))))
             (define (set-visible-region txt canvas region)
               (let ([admin (send txt get-admin)])
-                ;(printf "setting to ~s\n" region)
                 (send admin scroll-to 
                       (first region)
                       (second region)
                       (third region)
-                      (fourth region))
-                #;
-                (let-values ([(x y w h _) (get-visible-region canvas)])
-                  (printf "    set to ~s\n" (list x y w h)))))
+                      (fourth region))))
             (let-values ([(vi is?) (send current-tab get-visible-ints)]
                          [(vd ds?) (send current-tab get-visible-defs)])
               (set! interactions-shown? is?)
@@ -3106,15 +3100,17 @@ module browser threading seems wrong.
             (inner (void) after-percentage-change))
           (super-new)))
 
-      (define drs-name-message%
-        (class name-message%
-          (define/override (on-choose-directory dir)
-            (let ([file (get-file (string-constant select-file)
-                                  (send this get-top-level-window)
-                                  dir)])
-              (when file
-                (handler:edit-file file))))
-          (super-new)))
+    (define drs-name-message%
+      (class name-message%
+        (define/override (on-choose-directory dir)
+          (let ([file (finder:get-file dir
+                                       (string-constant select-file)
+                                       #f
+                                       ""
+                                       (send this get-top-level-window))])
+            (when file
+              (handler:edit-file file))))
+        (super-new)))
 
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;

@@ -184,12 +184,6 @@ TODO
       ;; a port that accepts values for printing in the repl
       (define current-value-port (make-parameter #f))
 
-      ;; an error escape continuation that the user program can't
-      ;; change; DrScheme sets it, we use a parameter instead of an
-      ;; object field so that there's no non-weak pointer to the
-      ;; continuation from DrScheme.
-      (define current-error-escape-k (make-parameter void))
-            
       ;; drscheme-error-display-handler : (string (union #f exn) -> void
       ;; =User=
       ;; the timing is a little tricky here. 
@@ -1018,10 +1012,6 @@ TODO
           (define/public (set-submit-predicate p)
             (set! submit-predicate p))
           
-          ;; record this on an ivar in the class so that
-          ;; continuation jumps into old calls to evaluate-from-port
-          ;; continue to evaluate from the correct port.
-          (define get-sexp/syntax/eof #f)
           (define/public (evaluate-from-port port complete-program? cleanup) ; =Kernel=, =Handler=
             (send context disable-evaluation)
             (send context reset-offer-kill)
@@ -1039,59 +1029,43 @@ TODO
                (let* ([settings (current-language-settings)]
                       [lang (drscheme:language-configuration:language-settings-language settings)]
                       [settings (drscheme:language-configuration:language-settings-settings settings)]
-                      [dummy-value (box #f)])
-                 (set! get-sexp/syntax/eof 
+                      [dummy-value (box #f)]
+                      [get-sexp/syntax/eof 
                        (if complete-program?
                            (send lang front-end/complete-program port settings user-teachpack-cache)
-                           (send lang front-end/interaction port settings user-teachpack-cache)))
+                           (send lang front-end/interaction port settings user-teachpack-cache))])
                  
                  ; Evaluate the user's expression. We're careful to turn on
                  ;   breaks as we go in and turn them off as we go out.
                  ;   (Actually, we adjust breaks however the user wanted it.)
-                 ; A continuation hop might take us out of this instance of
-                 ;   evaluation and into another one, which is fine.
                  
-                 (let/ec k
-                   (let ([saved-error-escape-k (current-error-escape-k)]
-                         [cleanup? #f])
-                     (dynamic-wind
-                      (λ ()
-                        (set! cleanup? #f)
-                        (current-error-escape-k (λ () 
-                                                  (set! cleanup? #t)
-                                                  (k (void)))))
-                      
-                      (λ () 
-                        (let loop ()
-                          (let ([sexp/syntax/eof (with-stacktrace-name (get-sexp/syntax/eof))])
-                            (unless (eof-object? sexp/syntax/eof)
-                              (call-with-break-parameterization
-                               user-break-parameterization
-                               ;; a break exn may be raised right at this point,
-                               ;; in which case the stack won't be in a trimmable state
-                               ;; so we don't complain (above) when we find an untrimmable 
-                               ;; break exn.
-                               (λ ()
-                                 (call-with-values
-                                  (λ ()
-                                    (with-stacktrace-name (eval-syntax sexp/syntax/eof)))
-                                  (λ x (display-results x)))))
-                              (loop))))
-                        (set! cleanup? #t))
-                      
-                      (λ () 
-                        (current-error-escape-k saved-error-escape-k)
-                        (when cleanup?
-                          (set! in-evaluation? #f)
-                          (update-running #f)
-                          (cleanup)
-                          (flush-output (get-value-port))
-                          (queue-system-callback/sync
-                           (get-user-thread)
-                           (λ () ; =Kernel=, =Handler= 
-                             (after-many-evals)
-                             (cleanup-interaction)
-                             (insert-prompt))))))))))))
+                 (call-with-continuation-prompt
+                  (λ ()
+                    (call-with-break-parameterization
+                     user-break-parameterization
+                     (λ ()
+                       (let loop ()
+                         (let ([sexp/syntax/eof (with-stacktrace-name (get-sexp/syntax/eof))])
+                           (unless (eof-object? sexp/syntax/eof)
+                             (call-with-values
+                              (λ () 
+                                (call-with-continuation-prompt
+                                 (λ () (with-stacktrace-name (eval-syntax sexp/syntax/eof)))))
+                              (λ x (display-results x)))
+                             (loop)))))))
+                  (default-continuation-prompt-tag)
+                  (λ args (void)))
+                                  
+                 (set! in-evaluation? #f)
+                 (update-running #f)
+                 (cleanup)
+                 (flush-output (get-value-port))
+                 (queue-system-callback/sync
+                  (get-user-thread)
+                  (λ () ; =Kernel=, =Handler= 
+                    (after-many-evals)
+                    (cleanup-interaction)
+                    (insert-prompt)))))))
           
           (define/pubment (after-many-evals) (inner (void) after-many-evals))
           
@@ -1134,39 +1108,6 @@ TODO
                           (if need-interaction-cleanup?
                               (cleanup-interaction)
                               (cleanup)))))))))
-          
-          (define/private protect-user-evaluation ; =User=, =Handler=, =No-Breaks=
-            (λ (thunk cleanup)
-              
-              ;; We only run cleanup if thunk finishes normally or tries to
-              ;; error-escape. Otherwise, it must be a continuation jump
-              ;; into a different call to protect-user-evaluation.
-              
-              ;; `thunk' is responsible for ensuring that breaks are off when
-              ;; it returns or jumps out.
-              
-              (set! in-evaluation? #t)
-              (update-running #t)
-              
-              (let/ec k
-                (let ([saved-error-escape-k (current-error-escape-k)]
-                      [cleanup? #f])
-                  (dynamic-wind
-                   (λ ()
-                     (set! cleanup? #f)
-                     (current-error-escape-k (λ () 
-					       (set! cleanup? #t)
-					       (k (void)))))
-                   (λ () 
-                     (thunk) 
-                     ; Breaks must be off!
-                     (set! cleanup? #t))
-                   (λ () 
-                     (current-error-escape-k saved-error-escape-k)
-                     (when cleanup?
-                       (set! in-evaluation? #f)
-                       (update-running #f)
-                       (cleanup))))))))
           
           (define/public (run-in-evaluation-thread thunk) ; =Kernel=
             (semaphore-wait eval-thread-state-sema)
@@ -1238,11 +1179,6 @@ TODO
               (parameterize ([current-eventspace (get-user-eventspace)])
                 (queue-callback
                  (λ ()
-                   (let ([drscheme-error-escape-handler
-                          (λ ()
-                            ((current-error-escape-k)))])
-                     (error-escape-handler drscheme-error-escape-handler))
-                   
                    (set! in-evaluation? #f)
                    (update-running #f)
                    (send context set-breakables #f #f)
@@ -1391,26 +1327,23 @@ TODO
                            ;; at this point, we must not be in a nested dispatch, so we can
                            ;; just disable breaks and rely on call-with-break-parameterization
                            ;; to restore them to the user's setting.
-                           
                            (call-with-break-parameterization
                             no-breaks-break-parameterization
                             (λ ()
                               ; =No-Breaks=
                               (send context reset-offer-kill)
                               (send context set-breakables (get-user-thread) (get-user-custodian))
-                              (protect-user-evaluation
-                               ; Run the dispatch:
+                              (call-with-continuation-prompt
                                (λ () ; =User=, =Handler=, =No-Breaks=
                                  (call-with-break-parameterization
                                   user-break-parameterization
-                                  (λ () (primitive-dispatch-handler eventspace))))
-                               ; Cleanup after dispatch
-                               (λ ()
-                                 ;; in principle, the line below might cause
-                                 ;; a "race conditions" in the GUI. That is, there might
-                                 ;; be many little events that the user won't quite
-                                 ;; be able to break.
-                                 (send context set-breakables #f #f)))))]
+                                  (λ () (primitive-dispatch-handler eventspace)))))
+
+                              ;; in principle, the line below might cause
+                              ;; "race conditions" in the GUI. That is, there might
+                              ;; be many little events that the user won't quite
+                              ;; be able to break.
+                              (send context set-breakables #f #f)))]
                           [else
                            ; Nested dispatch; don't adjust interface
                            (primitive-dispatch-handler eventspace)])]

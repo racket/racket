@@ -48,7 +48,6 @@
   
   (define test-data
     (list
-#|
      ;; basic tests
      (make-test "1"
                 "1"
@@ -207,14 +206,6 @@
                 void
                 void)
 
-#|
-     ;; syntax error template
-     "{bug09.gif} "
-     "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: "
-     ""
-     "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: "
-     |#           
-     
      (make-test (string-append
                  "(module m mzscheme (provide e) (define e #'1))\n"
                  "(module n mzscheme (require-for-syntax m) (provide s) (define-syntax (s stx) e))\n"
@@ -250,75 +241,7 @@
 		#f
                 void
                 void)
-     
-     (make-test (list "#!\n" 
-                      '("Special" "Insert XML Box")
-                      "<a>")
-                "(a ())"
-                "(a ())"
-                "(a ())"
-                "(a ())"
-		'interactions
-                #f
-                void
-                void)
 
-  #|
-   ;; XML tests
-     (make-test
-      '(("Special" "Insert XML Box")
-        "<a>")
-      "(a ())"
-      "(a ())"
-      #f
-      'interactions
-      #f
-     #f
-      void
-      void)
-     
-     (make-test
-      '(("Special" "Insert XML Box")
-        "<a>"
-        ("Special" "Insert Scheme Box")
-        "1")
-      "(a () 1)"
-      "(a () 1)"
-      #f
-      'interactions
-      #f
-     #f
-      void
-      void)
-     
-     (make-test
-      '(("Special" "Insert XML Box")
-        "<a>"
-        ("Special" "Insert Scheme Splice Box")
-        "'(1)")
-      "(a () 1)"
-      "(a () 1)"
-      #f
-      'interactions
-      #f
-     #f
-      void
-      void)
-     
-     (make-test
-      '(("Special" "Insert XML Box")
-        "<a>"
-        ("Special" "Insert Scheme Splice Box")
-        "1")
-      "scheme-splice-box: expected a list, found: 1"
-      "scheme-splice-box: expected a list, found: 1"
-      #t
-      'definitions
-      #f
-     #f
-      void
-      void)
-|#     
      ;; eval tests
 
      (make-test "    (eval '(values 1 2))"
@@ -507,7 +430,7 @@
       #f
       void
       void)
-     |#
+
      ; fraction snip test
      ;; this test depends on the state of the 'framework:fraction-snip-style preference
      ;; make sure this preference is set to the default when running this test.
@@ -520,7 +443,7 @@
 		#f
                 void
                 void)
-     #|
+     
      ;; should produce a syntax object with a turn-down triangle.
      (make-test "(write (list (syntax x)))" 
                 "({embedded \".#<syntax:1:21>\"})"
@@ -767,8 +690,77 @@
       #f
       void 
       void)
-|#
+
      ))
+  ;; these tests aren't used at the moment.
+  (define xml-tests
+    (list
+          ;; XML tests
+     (make-test (list "#!\n" 
+                      '("Special" "Insert XML Box")
+                      "<a>")
+                "(a ())"
+                "(a ())"
+                "(a ())"
+                "(a ())"
+		'interactions
+                #f
+                void
+                void)
+
+     (make-test
+      '(("Special" "Insert XML Box")
+        "<a>")
+      "(a ())"
+      "(a ())"
+      #f
+      'interactions
+      #f
+     #f
+      void
+      void)
+     
+     (make-test
+      '(("Special" "Insert XML Box")
+        "<a>"
+        ("Special" "Insert Scheme Box")
+        "1")
+      "(a () 1)"
+      "(a () 1)"
+      #f
+      'interactions
+      #f
+     #f
+      void
+      void)
+     
+     (make-test
+      '(("Special" "Insert XML Box")
+        "<a>"
+        ("Special" "Insert Scheme Splice Box")
+        "'(1)")
+      "(a () 1)"
+      "(a () 1)"
+      #f
+      'interactions
+      #f
+     #f
+      void
+      void)
+     
+     (make-test
+      '(("Special" "Insert XML Box")
+        "<a>"
+        ("Special" "Insert Scheme Splice Box")
+        "1")
+      "scheme-splice-box: expected a list, found: 1"
+      "scheme-splice-box: expected a list, found: 1"
+      #t
+      'definitions
+      #f
+     #f
+      void
+      void)))
   
   (define backtrace-image-string "{bug09.gif}")
   (define file-image-string "{file.gif}")
@@ -838,6 +830,7 @@
     ; directly, and second, we use the load command.  We compare the
     ; the results of these operations against expected results.
     (define ((run-single-test execute-text-start escape raw?) in-vector)
+      (printf "\n>> testing ~s\n" (test-program in-vector))
       (let* ([program (test-program in-vector)]
              [execute-answer (if raw?
                                  (test-raw-execute-answer in-vector)
@@ -909,11 +902,13 @@
                                           (car error-ranges))])
                    (unless (and error-range
                                 (= (+ (srcloc-position error-range) -1) (loc-offset start))
-                                (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) (loc-offset finish)))
+                                (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
+                                   (loc-offset finish)))
                      (printf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
                              program
-                             (list (+ (srcloc-position error-range) -1)
-                                   (+ (srcloc-position error-range) -1 (srcloc-span error-range)))
+                             (and error-range
+                                  (list (+ (srcloc-position error-range) -1)
+                                        (+ (srcloc-position error-range) -1 (srcloc-span error-range))))
                              (list (loc-offset start)
                                    (loc-offset finish))))))]))
           
@@ -1076,14 +1071,69 @@
                [expected "{bug09.gif} reference to undefined identifier: x"])
           (unless (equal? output expected)
             (error 'callcc-test "expected ~s, got ~s" expected output)))))
-
+    
+    (define (top-interaction-test)
+      (clear-definitions drscheme-frame)
+      (do-execute drscheme-frame)
+      (wait-for-execute)
+      (let ([ints-just-after-welcome (+ 1 (send interactions-text last-position))])
+        
+        (type-in-definitions drscheme-frame "(define-syntax #%top-interaction (syntax-rules () [(_ . e) 'e]))\n(+ 1 2)\n")
+        (test:menu-select "File" "Save Definitions")
+        
+        (clear-definitions drscheme-frame)
+        (do-execute drscheme-frame)
+        (wait-for-execute)
+        
+        (for-each test:keystroke (string->list (format "(load ~s)" tmp-load-short-filename)))
+        (let ([start (+ 1 (send interactions-text last-position))])
+          (test:keystroke #\return)
+          (wait-for-execute)
+          (let* ([end (- (get-int-pos) 1)]
+                 [output (fetch-output drscheme-frame start end)]
+                 [expected "(+ 1 2)"])
+            (unless (equal? output expected)
+              (error 'top-interaction-test "expected ~s, got ~s" expected output))))
+        
+        (for-each test:keystroke (string->list "(+ 4 5)"))
+        (let ([start (+ 1 (send interactions-text last-position))])
+          (test:keystroke #\return)
+          (wait-for-execute)
+          (let* ([end (- (get-int-pos) 1)]
+                 [output (fetch-output drscheme-frame start end)]
+                 [expected "(+ 4 5)"])
+            (unless (equal? output expected)
+              (error 'top-interaction-test "expected ~s, got ~s" expected output))))
+        
+        (do-execute drscheme-frame)
+        (wait-for-execute)
+        (let ([start (+ 1 (send interactions-text last-position))])
+          (type-in-definitions drscheme-frame "(define-syntax #%top-interaction (syntax-rules () [(_ . e) 'e]))\n(+ 1 2)\n")
+          (do-execute drscheme-frame)
+          (wait-for-execute)
+          (let* ([end (- (get-int-pos) 1)]
+                 [output (fetch-output drscheme-frame ints-just-after-welcome end)]
+                 [expected "(+ 4 5)"])
+            (unless (equal? output expected)
+              (error 'top-interaction-test "expected ~s, got ~s" expected output))))
+        
+        (for-each test:keystroke (string->list "(+ 4 5)"))
+        (let ([start (+ 1 (send interactions-text last-position))])
+          (test:keystroke #\return)
+          (wait-for-execute)
+          (let* ([end (- (get-int-pos) 1)]
+                 [output (fetch-output drscheme-frame start end)]
+                 [expected "(+ 4 5)"])
+            (unless (equal? output expected)
+              (error 'top-interaction-test "expected ~s, got ~s" expected output))))))
     
     (when (file-exists? tmp-load-filename)
       (delete-file tmp-load-filename))
     (save-drscheme-window-as tmp-load-filename)
-    
+
     (run-test-in-language-level #t)
     (run-test-in-language-level #f)
     (kill-tests)
     (callcc-test)
+    (top-interaction-test)
     (final-report)))

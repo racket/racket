@@ -184,10 +184,16 @@
                         (label (string-constant keybindings-add-user-defined-keybindings))
                         (callback
                          (λ (x y)
-                           (let ([filename (get-file (string-constant keybindings-choose-user-defined-file)
-                                                     this)])
-                             (when filename
-                               (add-keybindings-item/update-prefs filename))))))
+                           (with-handlers ([exn? (λ (x)
+                                                   (printf "~a\n" (exn-message x)))])
+                             (let ([filename (finder:get-file
+                                              #f
+                                              (string-constant keybindings-choose-user-defined-file)
+                                              #f
+                                              ""
+                                              this)])
+                               (when filename
+                                 (add-keybindings-item/update-prefs filename)))))))
                    (new menu-item%
                         (parent keybindings-menu)
                         (label (string-constant keybindings-add-user-defined-keybindings/planet))
@@ -335,7 +341,7 @@
         ;; gets the name of a file from the user and
         ;; updates file-text-field
         (define (browse)
-          (let ([filename (get-file #f dialog)])
+          (let ([filename (finder:get-file #f "" #f "" dialog)])
             (when filename
               (send file-text-field set-value (path->string filename)))))
         
