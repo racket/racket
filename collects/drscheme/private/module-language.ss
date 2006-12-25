@@ -115,8 +115,9 @@
           
           (define/override (get-style-delta) module-language-style-delta)
           
+          (inherit get-reader)
           (define/override (front-end/complete-program port settings teachpack-cache)
-            (let* ([super-thunk (super front-end/complete-program port settings teachpack-cache)]
+            (let* ([super-thunk (λ () ((get-reader) (object-name port) port))]
                    [filename (get-filename port)]
                    [module-name #f]
                    [module-name-prefix (get-module-name-prefix filename)]
