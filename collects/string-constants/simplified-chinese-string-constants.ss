@@ -157,9 +157,9 @@
   (log-definitions-and-interactions "记录定义和交互的日至...")
   (stop-logging "不再记录日至")
   (please-choose-a-log-directory "请选择日志目录")
-  (logging-to "记录日至到：")
-  (erase-log-directory-contents "删除日至目录~a中的内容？")
-  (error-erasing-log-directory "删除日至出错。\n\n~a\n")
+  (logging-to "记录日志到：")
+  (erase-log-directory-contents "删除日志目录~a中的内容？")
+  (error-erasing-log-directory "删除日志出错。\n\n~a\n")
   
   ;; modes
   (mode-submenu-label "模式")
@@ -296,7 +296,11 @@
   ;;; preferences
   (preferences "参数设置")
   (error-saving-preferences "保存参数时出错:~a")
+  (error-saving-preferences-title "保存参数时出错")
   (error-reading-preferences "读取参数设置时出错")
+  (prefs-file-locked "存储参数的文件被锁定了（由于文件~a的存在），所以这些参数无法被保存。放弃修改？")
+  (try-again "重试") ;; button label
+  (prefs-file-still-locked "存储参数的文件仍然被锁定（由于文件~a的存在）, 所以这些参数将不会被保存。")
   (scheme-prefs-panel-label "Scheme")
   (warnings-prefs-panel-label "警告")
   (editor-prefs-panel-label "编辑")
@@ -820,18 +824,18 @@
   (beginning-student/abbrev "初级+缩写的表")
   (beginning/abbrev-one-line-summary "在初级的基础上，用缩写形式输出表")
   (intermediate-student "中级")
-  (intermediate-one-line-summary "在初级的基础上增加词法作用域")
+  (intermediate-one-line-summary "在初级的基础上增加了词法作用域")
   (intermediate-student/lambda "中级+lambda")
-  (intermediate/lambda-one-line-summary "在中级的基础上，增加高阶函数")
+  (intermediate/lambda-one-line-summary "在中级的基础上，增加了高阶函数")
   (advanced-student "高级")
-  (advanced-one-line-summary "在中级的基础上，增加lambda和赋值")
+  (advanced-one-line-summary "在中级的基础上，增加了lambda和赋值")
   (how-to-design-programs "程序设计方法/How to Design Programs") ;; should agree with MIT Press on this one...
   (pretty-big-scheme "Pretty Big (包括MrEd和高级)")
-  (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
+  (pretty-big-scheme-one-line-summary "增加了HtDP(程序设计方法)语言的语法和函数")
   (r5rs-lang-name "标准(R5RS)")
   (r5rs-one-line-summary "Scheme语言标准第5修改稿")
   (expander "Expander")
-  (expander-one-line-summary "Expands, rather than evaluates, expressions")
+  (expander-one-line-summary "展开表达式，而不是求值")
   (professional-languages "正式语言")
   (teaching-languages "教学语言")
   (experimental-languages "实验语言")
@@ -841,15 +845,34 @@
   
   ;;; debug language
   (unknown-debug-frame "[unknown]")
-  (backtrace-window-title "Backtrace - DrScheme")
-  (files-interactions "~a's interactions") ;; filled with a filename
-  (current-interactions "interactions")
-  (current-definitions "definitions")
+  (backtrace-window-title "向后跟踪 - DrScheme")
+  (files-interactions "~a的交互") ;; filled with a filename
+  (current-interactions "交互")
+  (current-definitions "定义")
   (mzscheme-w/debug "Textual (MzScheme, 包含R5RS)")
   (mzscheme-one-line-summary "PLT的Scheme实现")
   (mred-w/debug "Graphical (MrEd, 包含 MzScheme)")
   (mred-one-line-summary "在MzScheme的基础上增加GUI支持")
   
+ ;; test coverage
+ (test-coverage-clear? "改变定义窗口将导致测试覆盖信息失效。是否继续？")
+ (test-coverage-clear-and-do-not-ask-again "是，并且不再询问")
+ (test-coverage-ask? "询问清除测试覆盖")
+  
+ ;; tracing
+ (tracing-enable-tracing "启用跟踪")
+ (tracing-show-tracing-window "显示跟踪")
+ (tracing-hide-tracing-window "隐藏跟踪")
+ (tracing-tracing-nothing-to-show "暂时没有可用的跟踪结果。(请检查你所使用的语言是否支持跟踪以及是否启用了跟踪。)")
+
+ ;;; repl stuff
+ (evaluation-terminated "计算已终止")
+ (evaluation-terminated-explanation
+  "Evaluation线程已停止，在下一次执行之前不会进行计算。")
+ (last-stack-frame "显示最新的stack frame")
+ (last-stack-frames "显示前~a个stack frames")
+ (next-stack-frames "显示后~a个stack frames")
+ 
   ;;; welcoming message in repl
   (language "语言")
   (custom "自定义")
@@ -893,29 +916,29 @@
   (module-browser-open-file-format "打开~a")
   (module-browser "Module浏览器") ;; frame title
   (module-browser... "Module浏览器...") ;; menu item title
-  (module-browser-error-expanding "Error expanding the program:\n\n~a")
-  (module-browser-show-lib-paths "Show files loaded by (lib ..) paths")
+  (module-browser-error-expanding "展开程序时出错：\n\n~a")
+  (module-browser-show-lib-paths "显示通过(lib ..)加载的文件路径")
   (module-browser-progress "Module浏览器：~a") ;; prefix in the status line
   (module-browser-compiling-defns "Module浏览器：compiling definitions")
   (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
-  (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
+  (module-browser-refresh "刷新") ;; button label in show module browser pane in drscheme window.
   (module-browser-only-in-plt-and-module-langs
    "Module浏览器只能在PLT语言和module语言(并且要求程序中有module)中使用。")
-  (module-browser-name-length "Name length")
-  (module-browser-name-short "Short")
-  (module-browser-name-medium "Medium")
-  (module-browser-name-long "Long")
-  (module-browser-open-all "Open all files shown here")
+  (module-browser-name-length "名称长度")
+  (module-browser-name-short "短")
+  (module-browser-name-medium "中")
+  (module-browser-name-long "长")
+  (module-browser-open-all "打开所有这些文件")
   
-  (mrflow-using-default-language-title "Default Language Used")
-  (mrflow-using-default-language "The language currently used does not have a type table defined for its primitives. Using R5RS Scheme instead.")
+  (mrflow-using-default-language-title "正在使用默认语言")
+  (mrflow-using-default-language "当前使用的语言并不包含定义primitive类型的标。改用R5RS Scheme。")
   (mrflow-button-title "分析")
   ;(mrflow-unknown-style-delta-error-title "Unknown Box Style Delta")
   ;(mrflow-unknown-style-delta-error "Unknown box style delta: ~a")
-  (mrflow-popup-menu-show-type "Show Type")
-  (mrflow-popup-menu-hide-type "Hide Type")
-  (mrflow-popup-menu-show-errors "Show Errors")
-  (mrflow-popup-menu-hide-errors "Hide Errors")
+  (mrflow-popup-menu-show-type "显示类型")
+  (mrflow-popup-menu-hide-type "隐藏类型")
+  (mrflow-popup-menu-show-errors "显示错误")
+  (mrflow-popup-menu-hide-errors "隐藏错误")
   ;(mrflow-read-exception-title "Read Exception")
   ;(mrflow-read-exception "Read exception: ~a")
   ;(mrflow-syntax-exception-title "Syntax Exception")
@@ -940,7 +963,7 @@
   
   (show-recent-items-window-menu-item "在单独窗口中显示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
-  (number-of-open-recent-items "Number of recent items")
+  (number-of-open-recent-items "最近使用项目的数量")
   (switch-anyway "Switch File Anyway")
   
   (stepper-program-has-changed "注意：程序已改变。")
