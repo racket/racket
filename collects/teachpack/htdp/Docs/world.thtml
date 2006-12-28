@@ -127,7 +127,17 @@ students to simulate a small world of animated drawings and games:
    shows the list of images in loi, time-delayed
 </menu></p>
 
+<hr />
+
+<h3>Image Manipulation</h3>
+
 <p>Finally, the teachpack provides all the functions that image.ss provides
-except <code>add-line</code>, which has a slightly different functionality.</p>
+except <code>add-line</code>, which has a slightly different
+functionality. For completeness, the documentation of this teackpack is
+included here: 
+
+{(include "image-content.tinc")}
+
+</p>
 
 {(include "foot.tinc")}
