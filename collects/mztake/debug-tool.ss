@@ -51,7 +51,7 @@
             #f))
       
       (define (break-at bp p)
-        (hash-table-get bp p))
+        (hash-table-get bp p #f))
       
       (define (truncate str n)
         (if (< (string-length str) n)
@@ -529,7 +529,7 @@
                        (current-eval)
                        (lambda (pos)
                          (or (hash-table-get breakpoints -1)
-                             (let ([bp (hash-table-get breakpoints pos)])
+                             (let ([bp (hash-table-get breakpoints pos #f)])
                                (if (procedure? bp)
                                    (bp)
                                    bp))))
