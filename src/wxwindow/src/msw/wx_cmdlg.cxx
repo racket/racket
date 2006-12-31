@@ -4,7 +4,7 @@
  * Author:	Julian Smart
  * Created:	1995
  * Updated:	
- * Copyright:	(c) 2004-2006 PLT Scheme Inc.
+ * Copyright:	(c) 2004-2007 PLT Scheme Inc.
  * Copyright:	(c) 1995, Julian Smart
  *
  * Renovated by Matthew for MrEd, 1995-2000

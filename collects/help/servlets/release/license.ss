@@ -9,7 +9,7 @@
   (define timeout +inf.0)
   (define (make-item ss)
     `(ul (li ,@(map (lambda (s) `(div ,s (br))) ss))))
-  (define copyright-year 2006)
+  (define copyright-year 2007)
   (define (start initial-request)
     (report-errors-to-browser send/finish)
     `(html

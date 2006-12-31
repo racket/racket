@@ -295,7 +295,7 @@ please adhere to these guidelines:
   (plt:hd:refreshing-manuals-finished "Færdig.")
   (plt:hd:about-help-desk "Om hjælpebord")
   (plt:hd:help-desk-about-string
-   "Hjælpebordet er en fuldstændig kilde af information om PLT-software, inklusive DrScheme, MzScheme og MrEd.\n\nVersion ~a\nCopyright (c) 1995-2006 PLT")
+   "Hjælpebordet er en fuldstændig kilde af information om PLT-software, inklusive DrScheme, MzScheme og MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
   (plt:hd:help-on-help "Hjælp om hjælp")
   (plt:hd:help-on-help-details "For hjælp om Hjælpebord, følg linket `How to use Help Desk'-linket på hjælpebordets startside.")
   (reload "Opdater") ;; refresh the page in a web browser

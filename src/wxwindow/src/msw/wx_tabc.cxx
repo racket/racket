@@ -3,7 +3,7 @@
  * Purpose:	Tab choice implementation
  * Author:	Matthew
  * Created:	2002
- * Copyright:	(c) 2004-2006 PLT Scheme Inc.
+ * Copyright:	(c) 2004-2007 PLT Scheme Inc.
  * Copyright:	(c) 2002, PLT
  */
 

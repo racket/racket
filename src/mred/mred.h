@@ -182,7 +182,7 @@ MRED_EXTERN void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc);
 #else
 # define MRED3M ""
 #endif
-#define BANNER "MrEd" MRED3M " version " MZSCHEME_VERSION ", Copyright (c) 2004-2006 PLT Scheme Inc.\n"
+#define BANNER "MrEd" MRED3M " version " MZSCHEME_VERSION ", Copyright (c) 2004-2007 PLT Scheme Inc.\n"
 
 #ifndef WINDOW_STDIO
 /* Removing "|| defined(wx_msw)" below uses the Windows console.

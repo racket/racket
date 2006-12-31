@@ -46,7 +46,7 @@
             (message-box (string-constant plt:hd:about-help-desk)
                          (format 
                           (string-constant plt:hd:help-desk-about-string)
-                          (version:version) 1995 2006)
+                          (version:version) 1995 2007)
                          this))
           (define/override (help-menu:create-about?) #t)
           (define/override (help-menu:after-about menu)
