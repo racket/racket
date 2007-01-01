@@ -17,7 +17,7 @@
 ;           #                   #                    #######   
 ;                                                              
 (module simplified-chinese-string-constants "string-constant-lang.ss"
-  (is-this-your-native-language "你的母语是简体中文吗？")
+  (is-this-your-native-language "你的母语是繁体中文吗？")
   
   (are-you-sure-you-want-to-switch-languages
    "为了改变界面语言，现在需要重新启动DrScheme。你确定吗？")
@@ -66,18 +66,18 @@
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
   
   ;;; bug report form
-  (cancel-bug-report? "取消故障报告？")
+  (cancel-bug-report? "取消程序错误报告？")
   (are-you-sure-cancel-bug-report?
-   "你确定要取消报告故障吗？")
-  (bug-report-form "故障报告表")
+   "你确定要取消报告程序错误吗？")
+  (bug-report-form "程序错误报告表")
   (bug-report-field-name "姓名")
   (bug-report-field-email "电子邮件")
   (bug-report-field-summary "标题")
   (bug-report-field-severity "严重度")
   (bug-report-field-class "类别")
   (bug-report-field-description "详细描述")
-  (bug-report-field-reproduce1 "再现故障")
-  (bug-report-field-reproduce2 "的步骤")
+  (bug-report-field-reproduce1 "再现程序错")
+  (bug-report-field-reproduce2 "误的步骤")
   (bug-report-field-environment "环境")
   (bug-report-field-docs-installed "已安装文档")
   (bug-report-field-collections "Collections")
@@ -87,13 +87,13 @@
   (bug-report-synthesized-information "综合信息")  ;; dialog title
   (bug-report-show-synthesized-info "显示综合信息")
   (bug-report-submit "提交")
-  (bug-report-submit-menu-item "提交故障报告") ;; in Help Menu (drs & help desk)
-  (error-sending-bug-report "故障报告传输出错")
-  (error-sending-bug-report-expln "在传输故障报告的过程中出现了错误。如果你能够正常浏览网络，请访问：\n\n    http://bugs.plt-scheme.org/\n\n使用网页上的表单提交错误报告。对于由此产生的不便，我们表示抱歉。\n\n传输错误详情：\n~a")
-  (illegal-bug-report "非法的故障报告")
+  (bug-report-submit-menu-item "提交程序错误报告") ;; in Help Menu (drs & help desk)
+  (error-sending-bug-report "程序错误报告传输出错")
+  (error-sending-bug-report-expln "在传输程序错误报告的过程中出现了错误。如果你能够正常浏览网络，请访问：\n\n    http://bugs.plt-scheme.org/\n\n使用网页上的表单提交程序错误报告。对于由此产生的不便，我们表示抱歉。\n\n传输错误详情：\n~a")
+  (illegal-bug-report "非法的程序错误报告")
   (pls-fill-in-field "请填写\"~a\"栏目")
   (malformed-email-address "电子邮件地址不符合格式")
-  (pls-fill-in-either-description-or-reproduce "在“详细描述”和“再现故障的步骤”两栏中，请至少填写一项。")
+  (pls-fill-in-either-description-or-reproduce "在“详细描述”和“再现程序错误的步骤”两栏中，请至少填写一项。")
   
   ;;; check syntax
   (check-syntax "检查语法")
@@ -122,7 +122,7 @@
   (cs-imported-variable "导入变量")
   
   ;;; info bar at botttom of drscheme frame
-  (collect-button-label "垃圾收集")
+  (collect-button-label "垃圾回收")
   (read-only "只读")
   (read/write "读/写")
   (auto-extend-selection "自动扩展")
@@ -167,7 +167,7 @@
   (text-mode "文本模式")
   
   (scheme-mode-color-symbol "符号")
-  (scheme-mode-color-keyword "关键字")
+  (scheme-mode-color-keyword "关键词")
   (scheme-mode-color-comment "注释")
   (scheme-mode-color-string "字符串")
   (scheme-mode-color-constant "常量")
@@ -192,9 +192,9 @@
   (plt:hd:feeling-lucky "手气不错")
   (plt:hd:home "Help Desk首页") 
   ; next 3 are popup menu choices in help desk search frame
-  (plt:hd:search-for-keyword "关键字")
-  (plt:hd:search-for-keyword-or-index "关键字或索引")
-  (plt:hd:search-for-keyword-or-index-or-text "关键字、索引或普通文本")
+  (plt:hd:search-for-keyword "关键词")
+  (plt:hd:search-for-keyword-or-index "关键词或索引")
+  (plt:hd:search-for-keyword-or-index-or-text "关键词、索引或普通文本")
   (plt:hd:exact-match "精确匹配")
   (plt:hd:containing-match "包含")
   (plt:hd:regexp-match "正则表达式匹配")
@@ -315,10 +315,12 @@
   (map-delete-to-backspace "将delete转换成backspace")
   (verify-exit "退出时确认")
   (ask-before-changing-format "改变保存方式时确认")
-  (wrap-words-in-editor-buffers "在编辑器缓存中自动换行")
-  (show-status-line "显示状态行")
-  (count-columns-from-one "从一开始计算行号")
-  (display-line-numbers "在缓冲区中显示行号和列号")
+  (wrap-words-in-editor-buffers "在编辑器中自动换行")
+  (show-status-line "显示状态栏")
+  (count-columns-from-one "从1开始计算行号")
+  (display-line-numbers "在编辑器中显示行号")
+  (show-line-and-column-numbers "显示行号和列号") ; used for popup menu; right click on line/column box in bottom of drs window
+  (show-character-offsets "显示字符在文件中的位置") ; used for popup menu; right click on line/column box in bottom of drs window
   (enable-keybindings-in-menus "允许使用菜单中的快捷键")
   (automatically-to-ps "自动打印成postscript文件")
   (option-as-meta "将option键当作meta") ;; macos/macos x only
@@ -374,15 +376,15 @@
   (square-bracket-prefs-panel-label "中括号")
   
   ; filled with define, lambda, or begin
-  (enter-new-keyword "请输入一个类似于~a的关键字：")
-  (x-keyword "~a关键字")
-  (x-like-keywords "~a类型的关键字")
+  (enter-new-keyword "请输入一个类似于~a的关键词：")
+  (x-keyword "~a关键词")
+  (x-like-keywords "~a类型的关键词")
   
   ; used in Square bracket panel
   (skip-subexpressions "出现在中括号前的表达式数量")
   
   (expected-a-symbol "需要一个符号，得到a")
-  (already-used-keyword "“~a”已经是缩进关键字了")
+  (already-used-keyword "“~a”已经是缩进关键词了")
   (add-keyword "添加")
   (remove-keyword "删除")
   
@@ -437,10 +439,10 @@
   (file-does-not-exist "文件\"~a\"不存在。")
   (ask-because-file-exists "文件\"~a\"已存在。是否替换？")
   (dne-or-cycle "文件\"~a\"中包含一个不存在的目录，或者一个循环")
-  (get-file "Get file")
-  (put-file "Put file")
+  (get-file "Get文件")
+  (put-file "Put文件")
   (full-pathname "完整路径")
-  (show-dot-files "显示点号开始文件/目录名。")
+  (show-dot-files "显示从点号开始的文件/目录名。")
   (up-directory-button-label "上层目录")
   (add-button-label "添加") ;;; for multi-file selection
   (add-all-button-label "全部添加") ;;; for multi-file selection
@@ -460,7 +462,7 @@
   (file-menu "文件")
   (edit-menu "编辑")
   (help-menu "帮助")
-  (windows-menu "窗口")
+  (windows-menu "视窗")
   
   ;;; menus
   ;;; - in menu labels, the & indicates a alt-key based shortcut.
@@ -565,10 +567,10 @@
   
   (wrap-text-item "自动换行")
   
-  (windows-menu-label "窗口(&W)")
+  (windows-menu-label "视窗(&W)")
   (bring-frame-to-front "前端显示")       ;;; title of dialog
   (bring-frame-to-front... "前端显示...") ;;; corresponding title of menu item
-  (most-recent-window "最近的窗口")
+  (most-recent-window "最近的视窗")
   
   (view-menu-label "视图(&V)")
   (show-overview "显示程序轮廓") 
@@ -582,9 +584,9 @@
   
   ;; open here's new menu item
   (create-new-window-or-clear-current
-   "您是想打开一个新窗口，还是清空当前窗口？")
+   "您是想打开一个新视窗，还是清空当前视窗？")
   (clear-current "清空当前")
-  (new-window "新窗口")
+  (new-window "新视窗")
   
   ;;; exiting and quitting ``are you sure'' dialog
   ;;; exit is used on windows, quit on macos, in English. Other
@@ -728,22 +730,31 @@
   (save-a-mred-stand-alone-executable "保存为MrEd可执行程序")
   (save-a-mzscheme-stand-alone-executable "保存为MzScheme可执行程序")
   
-  (definitions-not-saved "当前定义窗口中的程序并没有被保存过。将使用最近保存过的版本来生成可执行程序。继续？")
+  (definitions-not-saved "当前定义窗口中的程序并没有被保存过。将使用最近保存过的版本来生成可执行程序。是否继续？")
+  ;; The "-explanatory-label" variants are the labels used for the radio buttons in
+  ;;  the "Create Executable..." dialog for the "(module ...)" language.
   (launcher "启动程序")
-  (stand-alone "独立的")
+  (launcher-explanatory-label "启动程序（仅在本机运行，运行源代码）")
+  (stand-alone "独立程序")
+  (stand-alone-explanatory-label "独立程序（仅在本机运行，运行编译代码）")
+  (distribution "可发布程序")
+  (distribution-explanatory-label "可发布程序（可以在其它计算机上安装并运行）")
   (executable-type "类型")
-  (executable-base "基")
+  (executable-base "基于")
   (filename "文件名：")
   (create "创建")
-  ;; "choose-an-executable" changed to "specify-a"
-  ; (please-choose-an-executable-filename "请选择可执行文件的名称。")
-  ;; Replaced by generic ~a-must-end-with-~a
-  ;(windows-executables-must-end-with-exe
-  ; "文件名\n\n  ~a\n\n不合法。Windows可执行文件必须以.exe结尾。")
-  ;(macosx-executables-must-end-with-app
-  ; "文件名\n\n  ~a\n\n不合法。MacOS X可执行文件必须以.app结尾。")
+  (please-specify-a-filename "请指定文件名。")
+  (~a-must-end-with-~a
+   "~a文件名\n\n  ~a\n\n不合法。文件名必须以\".~a\"结尾。")
+  (macosx-executables-must-end-with-app
+   "~a文件名\n\n  ~a\n\n不合法。在MacOS X中，文件名必须以.app结尾。")
   (warning-directory-will-be-replaced
    "警告：目录：\n\n  ~a\n\n将会被重置。继续操作？")
+  
+  (distribution-progress-window-title "发布进程")
+  (creating-executable-progress-status "创建可执行程序...")
+  (assembling-distribution-files-progress-status "汇编...")
+  (packing-distribution-progress-status "打包...")
   
   (create-servlet "创建Servlet...")
   
@@ -854,25 +865,25 @@
   (mred-w/debug "Graphical (MrEd, 包含 MzScheme)")
   (mred-one-line-summary "在MzScheme的基础上增加GUI支持")
   
- ;; test coverage
- (test-coverage-clear? "改变定义窗口将导致测试覆盖信息失效。是否继续？")
- (test-coverage-clear-and-do-not-ask-again "是，并且不再询问")
- (test-coverage-ask? "询问清除测试覆盖")
+  ;; test coverage
+  (test-coverage-clear? "改变定义窗口将导致测试覆盖信息失效。是否继续？")
+  (test-coverage-clear-and-do-not-ask-again "是，并且不再询问")
+  (test-coverage-ask? "询问清除测试覆盖")
   
- ;; tracing
- (tracing-enable-tracing "启用跟踪")
- (tracing-show-tracing-window "显示跟踪")
- (tracing-hide-tracing-window "隐藏跟踪")
- (tracing-tracing-nothing-to-show "暂时没有可用的跟踪结果。(请检查你所使用的语言是否支持跟踪以及是否启用了跟踪。)")
-
- ;;; repl stuff
- (evaluation-terminated "计算已终止")
- (evaluation-terminated-explanation
-  "Evaluation线程已停止，在下一次执行之前不会进行计算。")
- (last-stack-frame "显示最新的stack frame")
- (last-stack-frames "显示前~a个stack frames")
- (next-stack-frames "显示后~a个stack frames")
- 
+  ;; tracing
+  (tracing-enable-tracing "启用跟踪")
+  (tracing-show-tracing-window "显示跟踪")
+  (tracing-hide-tracing-window "隐藏跟踪")
+  (tracing-tracing-nothing-to-show "暂时没有可用的跟踪结果。(请检查你所使用的语言是否支持跟踪以及是否启用了跟踪。)")
+  
+  ;;; repl stuff
+  (evaluation-terminated "计算已终止")
+  (evaluation-terminated-explanation
+   "Evaluation线程已停止，在下一次执行之前不会进行计算。")
+  (last-stack-frame "显示最新的stack frame")
+  (last-stack-frames "显示前~a个stack frames")
+  (next-stack-frames "显示后~a个stack frames")
+  
   ;;; welcoming message in repl
   (language "语言")
   (custom "自定义")
@@ -972,7 +983,7 @@
   (stepper-home "还原")
   (stepper-name "单步执行器")
   (stepper-language-level-message
-   "您选择的语言是“~a”。目前，stepper只支持“~a”和“~a”之间的语言。")
+   "您选择的语言是“~a”。目前，单步执行只支持“~a”和“~a”之间的语言。")
   (stepper-button-label "单步执行")
   (stepper-previous-application "|< 调用")
   (stepper-previous "< 上一步")
@@ -991,7 +1002,7 @@
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "Java模式")
-  (profj-java-mode-color-keyword "关键字")
+  (profj-java-mode-color-keyword "关键词")
   (profj-java-mode-color-string "字符串")
   (profj-java-mode-color-literal "文字")
   (profj-java-mode-color-comment "注释")
