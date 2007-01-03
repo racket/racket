@@ -954,7 +954,8 @@ please adhere to these guidelines:
   
   ; next two are before and after a language
   (start-with-before "Start with ")
-
+  (start-with-after "")
+  
   (seasoned-plt-schemer? "Seasoned PLT Schemer?")
   (looking-for-standard-scheme? "Looking for standard Scheme?")
 

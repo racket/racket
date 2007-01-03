@@ -1776,7 +1776,8 @@
                   (label (car (last-pair lang)))
                   (color (send the-color-database find-color "blue"))
                   (callback (λ () (change-current-lang-to lang)))
-                  (font (get-font #:underlined #t))))))
+                  (font (get-font #:underlined #t)))
+             (new canvas-message% (parent panel2) (label (string-constant start-with-after))))))
         
         ;; get-text-pls : path -> (listof (list* string string (listof string))
         ;; gets the questions from an info.ss file.
