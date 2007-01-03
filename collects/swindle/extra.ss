@@ -8,7 +8,7 @@
 ;;; ---------------------------------------------------------------------------
 ;;; A convenient `defstruct'
 
-;; This makes it possible to create MzScheme structs using Swindle's `main' and
+;; This makes it possible to create MzScheme structs using Swindle's `make' and
 ;; keyword arguments.
 
 (define struct-to-slot-names (make-hash-table))
@@ -36,8 +36,9 @@
                 [keys (build-list
                        (length slots)
                        (lambda (n) (list (symbol-append ': (nth slots n)) n)))]
-                [setter! (4th (call-with-values
-                                  (thunk (struct-type-info stype)) list))])
+                [setter! (5th (call-with-values
+                                  (thunk (struct-type-info stype))
+                                  list))])
             (method ([obj this] initargs)
               (for-each (lambda (k)
                           (let ([v (getarg initargs (1st k) none)])
@@ -93,7 +94,8 @@
 (defsyntax* (defstruct stx)
   (define <>-re #rx"^<(.*)>$")
   (define (<>-id? id)
-    (and (identifier? id) (regexp-match <>-re (symbol->string (syntax-e id)))))
+    (and (identifier? id)
+         (regexp-match? <>-re (symbol->string (syntax-e id)))))
   (define (doit name super slots)
     (let* ([str (regexp-replace <>-re (symbol->string (syntax-e name)) "\\1")]
            [name-sans-<> (datum->syntax-object name (string->symbol str) name)]

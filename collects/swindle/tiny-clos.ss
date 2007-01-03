@@ -1822,7 +1822,7 @@
                method
                (let* ([psym (object-name (%method-procedure method))]
                       [pstr (and psym (symbol->string psym))])
-                 (if (or (not pstr) (regexp-match #rx":[0-9]*:[0-9]*$" pstr))
+                 (if (or (not pstr) (regexp-match? #rx":[0-9]*:[0-9]*$" pstr))
                    (compute-method-name (%method-specializers method)
                                         (%generic-name generic))
                    psym)))))

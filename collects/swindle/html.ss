@@ -132,11 +132,11 @@
 
 (define* (relativize-path path)
   (if (and (string? path) ; hack -- non-strings are just ignored
-           (not (regexp-match #rx"^[a-z]+://" path)))
+           (not (regexp-match? #rx"^[a-z]+://" path)))
     (let ([cur-path
            (cond [(*current-html-obj*) => (lambda (x) (getarg x :name))]
                  [else #f])])
-      (if (and cur-path (regexp-match #rx"/" cur-path))
+      (if (and cur-path (regexp-match? #rx"/" cur-path))
         (let loop ([path path] [cur-path cur-path])
           (let ([x (regexp-match #rx"^([^/]*/)(.*)" path)])
             (if (and x (>= (string-length cur-path) (string-length (cadr x)))
@@ -251,7 +251,7 @@
                            (substring str (caaddr x) (cdaddr x)))])
           (when (or scm?
                     (not split-lines?)
-                    (not (regexp-match #rx"^ *$" prefix)))
+                    (not (regexp-match? #rx"^ *$" prefix)))
             (disp prefix))
           (cond
            [(and (not scm?) token2
@@ -275,7 +275,7 @@
            [(equal? token meta-begin) (open)
             (loop suffix)]
            [(equal? token meta-end) (close)
-            (loop (if (and split-lines? (regexp-match #rx"^ *$" suffix))
+            (loop (if (and split-lines? (regexp-match? #rx"^ *$" suffix))
                     (begin (set! split-indent #f) (read-line))
                     suffix))]
            ;; remove one "\" (never happens -- see comment above)
@@ -315,7 +315,7 @@
                 (define re (if (regexp? (car x)) (car x) (regexp (car x))))
                 (cons re
                       (if (and (string? (cadr x))
-                               (regexp-match #rx"\\\\[0-9]" (cadr x)))
+                               (regexp-match? #rx"\\\\[0-9]" (cadr x)))
                         (lambda (str . rest)
                           (if (string? str)
                             (regexp-replace re str (cadr x))

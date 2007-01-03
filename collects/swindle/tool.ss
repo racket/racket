@@ -130,11 +130,11 @@
         (parameterize ([current-directory (collection-path "swindle")])
           (define counter 100)
           (define (do-customize file)
-            (when (regexp-match #rx"\\.ss$" file)
+            (when (regexp-match? #rx"\\.ss$" file)
               (with-input-from-file file
                 (lambda ()
                   (let ([l (read-line)])
-                    (when (regexp-match #rx"^;+ *CustomSwindle *$" l)
+                    (when (regexp-match? #rx"^;+ *CustomSwindle *$" l)
                       (let ([file (regexp-replace #rx"\\.ss$" file "")]
                             [name #f] [dname #f] [one-line #f] [url #f])
                         (let loop ([l (read-line)])
