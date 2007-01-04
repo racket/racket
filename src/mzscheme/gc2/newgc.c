@@ -41,7 +41,6 @@
 # define inline _inline
 #endif
 
-
 #if defined(sparc) || defined(__sparc) || defined(__sparc__)
 # define ALIGN_DOUBLES
 #endif
@@ -175,7 +174,7 @@ inline static void free_used_pages(size_t len)
 
 #if defined(__APPLE__) && defined(__MACH__)
 # define TEST 0
-void designate_modified(void *p);
+int designate_modified(void *p);
 # include "vm_osx.c"
 # define MALLOCATOR_DEFINED
 #endif
@@ -1792,14 +1791,18 @@ int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
 
 static int generations_available = 1;
 
-void designate_modified(void *p)
+int designate_modified(void *p)
 {
   struct mpage *page = find_page(p);
 
   if(page) {
     protect_pages(page, page->size, 1);
     page->back_pointers = 1;
-  } else GCERR((GCOUTF, "Seg fault (internal error) at %p\n", p));
+    return 1;
+  } else {
+    GCPRINT(GCOUTF, "Seg fault (internal error) at %p\n", p);
+    return 0;
+  }
 }
 
 #include "sighand.c"

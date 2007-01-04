@@ -2831,7 +2831,7 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       head2->iso.so.type = scheme_compiled_let_void_type;
       head2->count = head->count;
       head2->num_clauses = head->num_clauses;
-      SCHEME_LET_RECURSIVE(head2) = SCHEME_LET_RECURSIVE(head);
+      SCHEME_LET_FLAGS(head2) = SCHEME_LET_FLAGS(head);
 
       /* Build let-value change: */
       body = head->body;
@@ -7020,8 +7020,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  v = globs[i+p+1];
 	  if (!v) {
 	    v = globs[p];
-	    v = scheme_add_rename(((Scheme_Object **)SCHEME_CDR(v))[i], 
-				  SCHEME_CAR(v));
+	    v = scheme_delayed_rename((Scheme_Object **)v, i);
 	    globs[i+p+1] = v;
 	  }
 
@@ -7266,7 +7265,7 @@ Scheme_Object *scheme_load_compiled_stx_string(const char *str, long len)
 
   port = scheme_make_sized_byte_string_input_port(str, -len);
 
-  expr = scheme_internal_read(port, NULL, 1, 0, 0, 0, -1, NULL, NULL, NULL);
+  expr = scheme_internal_read(port, NULL, 1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
 
   expr = _scheme_eval_compiled(expr, scheme_get_env(NULL));
 
@@ -8068,10 +8067,13 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
       i = rp->num_toplevels;
       v = scheme_stx_phase_shift_as_rename(now_phase - src_phase, src_modidx, now_modidx, 
 					   genv ? genv->export_registry : NULL);
-      if (v) {
+      if (v || rp->delay_info) {
 	/* Put lazy-shift info in a[i]: */
-	v = scheme_make_raw_pair(v, (Scheme_Object *)rp->stxes);
-	a[i] = v;
+        Scheme_Object **ls;
+        ls = MALLOC_N(Scheme_Object *, 2);
+        ls[0] = v;
+        ls[1] = (Scheme_Object *)rp;
+	a[i] = (Scheme_Object *)ls;
 	/* Rest of a left zeroed, to be filled in lazily by quote-syntax evaluation */
       } else {
 	/* No shift, so fill in stxes immediately */
@@ -8563,7 +8565,6 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
   case scheme_let_value_type:
     {
       Scheme_Let_Value *lv = (Scheme_Let_Value *)expr;
-      Scheme_Object *rhs;
       int q, p, c, i;
 
       scheme_validate_expr(port, lv->value, stack, ht, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
@@ -8584,18 +8585,6 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
 	if (!SCHEME_LET_AUTOBOX(lv)) {
 	  stack[p] = VALID_VAL;
-
-	  /* Check for wrappers on the RHS that box the `i'th result: */
-	  for (rhs = lv->value; 
-	       SAME_TYPE(SCHEME_TYPE(rhs), scheme_syntax_type) && (SCHEME_PINT_VAL(rhs) == BOXVAL_EXPD);
-	       rhs = SCHEME_CDDR((Scheme_Object *)SCHEME_IPTR_VAL(rhs))) {
-	    int j = SCHEME_INT_VAL(SCHEME_CAR((Scheme_Object *)SCHEME_IPTR_VAL(rhs)));
-
-	    if (j == i) {
-	      stack[p] = VALID_BOX;
-	      break;
-	    }
-	  }
 	}
       }
 

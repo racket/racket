@@ -515,30 +515,6 @@ Scheme_Object *scheme_make_native_case_closure(Scheme_Native_Closure_Data *code)
   return do_make_native_closure(code, -(code->closure_size + 1));
 }
 
-static void box_multiple_array_element(int pos)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object **naya, **a;
-  int i;
-
-  a = p->ku.multiple.array;
-  if (SAME_OBJ(a, p->values_buffer))
-    p->values_buffer = NULL;
-
-  naya = MALLOC_N(Scheme_Object *, p->ku.multiple.count);
-  
-  for (i = p->ku.multiple.count; i--; ) {
-    naya[i] = a[i];
-  }
-  {
-    Scheme_Object *eb;
-    eb = scheme_make_envunbox(naya[pos]);
-    naya[pos] = eb;
-  }
-  
-  p->ku.multiple.array = naya;
-}
-
 static void call_set_global_bucket(Scheme_Bucket *b, Scheme_Object *val, int set_undef)
 {
   scheme_set_global_bucket("set!", b, val, set_undef);
@@ -4096,74 +4072,6 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  END_JIT_DATA(8);
 	}
 	break;
-      case BOXVAL_EXPD:
-	{
-	  Scheme_Object *p, *v;
-	  int pos, cnt;
-	  START_JIT_DATA();
-
-	  LOG_IT(("boxval\n"));
-
-	  p = (Scheme_Object *)SCHEME_IPTR_VAL(obj);
-	  v = SCHEME_CAR(p);
-	  pos = SCHEME_INT_VAL(v);
-	  p = SCHEME_CDR(p);
-	  v = SCHEME_CAR(p);
-	  cnt = SCHEME_INT_VAL(v);
-	  p = SCHEME_CDR(p);
-
-	  /* cnt is expected number of returns, and it will be
-	     consistent with multi_ok; do something only if the actual
-	     count is the same as cnt */
-
-	  generate_non_tail(p, jitter, cnt != 1, 1);
-	  CHECK_LIMIT();
-
-	  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-	  if (cnt != 1) {
-	    jit_insn *ref, *ref2, *ref3;
-
-	    __START_SHORT_JUMPS__(1);
-	    ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
-	    /* Handle multiple values: */
-	    jit_ldi_p(JIT_R2, &scheme_current_thread);
-	    jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);	  
-	    ref3 = jit_bnei_p(jit_forward(), JIT_R1, cnt);
-	    CHECK_LIMIT();
-	    /* Received results match expected results */
-	    (void)jit_movi_i(JIT_R0, pos);
-	    mz_prepare(1);
-	    jit_pusharg_p(JIT_R0);
-	    (void)mz_finish(box_multiple_array_element);
-	    CHECK_LIMIT();
-	    (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
-
-	    /* Jump over single-value handling: */
-	    ref2 = jit_jmpi(jit_forward());
-	    CHECK_LIMIT();
-
-	    /* Handle single value: */
-	    mz_patch_branch(ref);
-	    mz_prepare(1);
-	    jit_pusharg_p(JIT_R0);
-	    (void)mz_finish(scheme_make_envunbox);
-	    CHECK_LIMIT();
-	    jit_retval(JIT_R0);
-	    mz_patch_ucbranch(ref2);
-	    mz_patch_branch(ref3);
-	    CHECK_LIMIT();
-	    __END_SHORT_JUMPS__(1);
-	  } else {
-	    mz_prepare(1);
-	    jit_pusharg_p(JIT_R0);
-	    (void)mz_finish(scheme_make_envunbox);
-	    jit_retval(JIT_R0);
-	  }
-
-	  END_JIT_DATA(9);
-	}
-	break;
       case SPLICE_EXPD:
         {
           scheme_signal_error("cannot JIT a top-level splice form");
@@ -4831,23 +4739,20 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* Save global array: */
   mz_set_local_p(JIT_V1, JIT_LOCAL3);
 #endif
-  /* Compute i in JIT_V1: */
-  jit_subr_p(JIT_V1, JIT_R1, JIT_R2);
-  jit_subi_p(JIT_V1, JIT_V1, WORDS_TO_BYTES(1));
-  CHECK_LIMIT();
-  /* Load car & cdr of elements at p: */
-  jit_ldxi_p(JIT_R2, JIT_R0, &SCHEME_CAR((Scheme_Object *)0x0));
-  jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CDR((Scheme_Object *)0x0));
-  jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
   /* Move R1 to V1 to save it: */
   jit_movr_p(JIT_V1, JIT_R1);
-  /* Call scheme_add_rename: */
+  /* Compute i in JIT_R1: */
+  jit_subr_p(JIT_R1, JIT_R1, JIT_R2);
+  jit_subi_p(JIT_R1, JIT_R1, WORDS_TO_BYTES(1));
+  jit_rshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
+  CHECK_LIMIT();
+  /* Call scheme_delayed_rename: */
   JIT_UPDATE_THREAD_RSPTR();
   CHECK_LIMIT();
   mz_prepare(2);
-  jit_pusharg_p(JIT_R2);
+  jit_pusharg_l(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(scheme_add_rename);
+  (void)mz_finish(scheme_delayed_rename);
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   /* Restore global array into JIT_R1, and put computed element at i+p+1: */

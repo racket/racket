@@ -59,6 +59,7 @@ typedef struct Scheme_Print_Params {
   long print_position;
   long print_allocated;
   long print_maxlen;
+  long print_offset;
   Scheme_Object *print_port;
   mz_jmp_buf *print_escape;
 } PrintParams;
@@ -71,25 +72,25 @@ static void print_to_port(char *name, Scheme_Object *obj, Scheme_Object *port,
 			  int notdisplay, long maxl, int check_honu);
 static int print(Scheme_Object *obj, int notdisplay, int compact, 
 		 Scheme_Hash_Table *ht,
-		 Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht,
+                 Scheme_Marshal_Tables *mt,
 		 PrintParams *p);
 static void print_char_string(const char *s, int l, const mzchar *us, int delta, int ul, 
 			      int notdisplay, int honu_char, PrintParams *pp);
 static void print_byte_string(const char *s, int delta, int l, int notdisplay, PrintParams *pp);
 static void print_pair(Scheme_Object *pair, int notdisplay, int compact, 
 		       Scheme_Hash_Table *ht, 
-		       Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht, 
+                       Scheme_Marshal_Tables *mt,
 		       PrintParams *pp);
 static void print_vector(Scheme_Object *vec, int notdisplay, int compact, 
 			 Scheme_Hash_Table *ht, 
-			 Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht, 
+                         Scheme_Marshal_Tables *mt,
 			 PrintParams *pp);
 static void print_char(Scheme_Object *chobj, int notdisplay, PrintParams *pp);
 static char *print_to_string(Scheme_Object *obj, long * volatile len, int write,
 			     Scheme_Object *port, long maxl, int check_honu);
 
 static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht, 
-				Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht, 
+                                Scheme_Marshal_Tables *mt,
 				PrintParams *pp, int notdisplay);
 static Scheme_Object *writable_struct_subs(Scheme_Object *s, PrintParams *pp);
 
@@ -729,6 +730,7 @@ print_to_string(Scheme_Object *obj,
   ca = (char *)scheme_malloc_atomic(params.print_allocated);
   params.print_buffer = ca;
   params.print_position = 0;
+  params.print_offset = 0;
   params.print_maxlen = maxl;
   params.print_port = port;
 
@@ -807,7 +809,7 @@ print_to_string(Scheme_Object *obj,
 
   if ((maxl <= PRINT_MAXLEN_MIN) 
       || !scheme_setjmp(escape))
-    print(obj, write, 0, ht, NULL, NULL, (PrintParams *)&params);
+    print(obj, write, 0, ht, NULL, (PrintParams *)&params);
 
   params.print_buffer[params.print_position] = '\0';
 
@@ -854,6 +856,7 @@ static void print_this_string(PrintParams *pp, const char *str, int offset, int 
   if (!pp->print_buffer) {
     /* Just getting the length */
     pp->print_position += len;
+    pp->print_offset += len;
     return;
   }
 
@@ -874,6 +877,7 @@ static void print_this_string(PrintParams *pp, const char *str, int offset, int 
 
   memcpy(pp->print_buffer + pp->print_position, str + offset, len);
   pp->print_position += len;
+  pp->print_offset += len;
 
   /* ----------- Do not use str after this point --------------- */
   /*  It might be quick_buffer, and another thread might try to  */
@@ -919,40 +923,65 @@ void scheme_print_utf8(Scheme_Print_Params *pp, const char *str, int offset, int
   print_utf8_string(pp, str, offset, len);
 }
 
+static void print_number(PrintParams *pp, long n)
+{
+  unsigned char s[4];
+
+  s[0] = (unsigned char)(n & 0xFF);
+  s[1] = (unsigned char)((n >> 8) & 0xFF);
+  s[2] = (unsigned char)((n >> 16) & 0xFF);
+  s[3] = (unsigned char)((n >> 24) & 0xFF);  
+  
+  print_this_string(pp, (char *)s, 0, 4);
+}
+
+static void print_short_number(PrintParams *pp, long n)
+{
+  unsigned char s[2];
+
+  s[0] = (unsigned char)(n & 0xFF);
+  s[1] = (unsigned char)((n >> 8) & 0xFF);
+  
+  print_this_string(pp, (char *)s, 0, 2);
+}
+
+static void print_one_byte(PrintParams *pp, int n)
+{
+  unsigned char s[1];
+
+  s[0] = n;
+  
+  print_this_string(pp, (char *)s, 0, 1);
+}
+
 static void print_compact_number(PrintParams *pp, long n)
 {
-  unsigned char s[5];
+  unsigned char s[2];
 
   if (n < 0) {
-    if (n > -256) {
-      s[0] = 254;
-      s[1] = (unsigned char)(-n);
-      print_this_string(pp, (char *)s, 0, 2);
+    if (n > -32) {
+      s[0] = (unsigned char)(0xC0 | (-n));
+      print_this_string(pp, (char *)s, 0, 1);
       return;
     } else {
       n = -n;
-      s[0] = 255;
+      s[0] = 0xE0;
     }
-  } else if (n < 252) {
+  } else if (n < 128) {
     s[0] = (unsigned char)n;
     print_this_string(pp, (char *)s, 0, 1);
     return;
-  } else if (n < 0x10000) {
-    s[0] = 252;
-    s[1] = (unsigned char)(n & 0xFF);
-    s[2] = (unsigned char)((n >> 8) & 0xFF);
-    print_this_string(pp, (char *)s, 0, 3);
+  } else if (n < 0x4000) {
+    s[0] = (unsigned char)(0x80 | (n & 0x3F));
+    s[1] = (unsigned char)((n >> 6) & 0xFF);
+    print_this_string(pp, (char *)s, 0, 2);
     return;
   } else {
-    s[0] = 253;
+    s[0] = 0xF0;
   }
 
-  s[1] = (unsigned char)(n & 0xFF);
-  s[2] = (unsigned char)((n >> 8) & 0xFF);
-  s[3] = (unsigned char)((n >> 16) & 0xFF);
-  s[4] = (unsigned char)((n >> 24) & 0xFF);  
-  
-  print_this_string(pp, (char *)s, 0, 5);
+  print_this_string(pp, (char *)s, 0, 1);
+  print_number(pp, n);
 }
 
 static void do_print_string(int compact, int notdisplay, 
@@ -1006,8 +1035,7 @@ static Scheme_Object *print_k(void)
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)p->ku.k.p2;
-  Scheme_Hash_Table *symtab = (Scheme_Hash_Table *)p->ku.k.p3;
-  Scheme_Hash_Table *rnht = (Scheme_Hash_Table *)p->ku.k.p4;
+  Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p->ku.k.p3;
   PrintParams *pp = (PrintParams *)p->ku.k.p5;
   mz_jmp_buf * volatile save;
   mz_jmp_buf newbuf;
@@ -1015,7 +1043,6 @@ static Scheme_Object *print_k(void)
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
-  p->ku.k.p4 = NULL;
   p->ku.k.p5 = NULL;
 
   save = pp->print_escape;
@@ -1031,26 +1058,117 @@ static Scheme_Object *print_k(void)
 		 p->ku.k.i1, 
 		 p->ku.k.i2, 
 		 ht,
-		 symtab, rnht,
+                 mt,
 		 pp) 
       ? scheme_true : scheme_false;
   }
 }
 #endif
 
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
+#include "../gc2/my_qsort.c"
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
+
+static int compare_keys(const void *a, const void *b)
+{
+  Scheme_Object *av, *bv;
+
+  /* Atomic things first, because they could be used by
+     marshaled syntax. This cuts donw on recursive reads
+     at load time. */
+# define SCHEME_FIRSTP(v) (SCHEME_SYMBOLP(v) \
+                           || SCHEME_PATHP(v) \
+                           || SCHEME_KEYWORDP(v) \
+                           || SCHEME_CHAR_STRINGP(v) \
+                           || SCHEME_BYTE_STRINGP(v) \
+                           || SCHEME_CHARP(v) \
+                           || SAME_TYPE(SCHEME_TYPE(v), scheme_module_index_type))
+  av = ((Scheme_Object **)a)[0];
+  bv = ((Scheme_Object **)b)[0];
+  if (SCHEME_FIRSTP(av)) {
+    if (!SCHEME_FIRSTP(bv))
+      return -1;
+  } else if (SCHEME_FIRSTP(bv))
+    return 1;
+
+  return ((long *)a)[1] - ((long *)b)[1];
+}
+
+static void sort_referenced_keys(Scheme_Marshal_Tables *mt)
+{
+  long j, size, pos = 0;
+  Scheme_Object **keys;
+  Scheme_Hash_Table *key_map;
+
+  size = mt->st_refs->count;
+  keys = MALLOC_N(Scheme_Object *, (2 * size));
+
+  for (j = 0; j < mt->st_refs->size; j++) {
+    if (mt->st_refs->vals[j]) {
+      keys[pos] = mt->st_refs->keys[j];
+      keys[pos + 1] = mt->st_refs->vals[j];
+      pos += 2;
+    }
+  }
+
+  my_qsort(keys, size, 2 * sizeof(Scheme_Object *), compare_keys);
+
+  key_map = scheme_make_hash_table(SCHEME_hash_ptr);
+  for (j = 0; j < size; j++) {
+    scheme_hash_set(key_map, keys[(j << 1) + 1], scheme_make_integer(j+1));
+  }
+  mt->key_map = key_map;
+
+  mt->sorted_keys = keys;
+  mt->sorted_keys_count = size;
+}
+
+static void print_table_keys(int notdisplay, int compact, Scheme_Hash_Table *ht,
+                             Scheme_Marshal_Tables *mt,
+                             PrintParams *pp)
+{
+  long j, size, offset;
+  Scheme_Object **keys, *key, *obj;
+
+  size = mt->sorted_keys_count;
+  keys = mt->sorted_keys;
+
+  for (j = 0; j < size; j++) {
+    offset = pp->print_offset;
+    mt->shared_offsets[j] = offset;
+    key = keys[j << 1];
+    if (mt->rn_saved) {
+      obj = scheme_hash_get(mt->rn_saved, key);
+    } else {
+      obj = NULL;
+    }
+    if (!obj)
+      obj = key;
+    mt->print_now = j + 1;
+    print(obj ? obj : key, notdisplay, compact, ht, mt, pp);
+    mt->print_now = 0;
+  }
+}
+
 static int
 print_substring(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
-		Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht, 
-		PrintParams *pp, char **result, long *rlen)
+                Scheme_Marshal_Tables *mt,
+		PrintParams *pp, char **result, long *rlen,
+                int print_keys, long *klen)
 {
   int closed;
-  long save_alloc, save_pos, save_maxl;
+  long save_alloc, save_pos, save_off, save_maxl;
   char *save_buf;
   Scheme_Object *save_port;
 
   save_alloc = pp->print_allocated;
   save_buf = pp->print_buffer;
   save_pos = pp->print_position;
+  save_off = pp->print_offset;
   save_maxl = pp->print_maxlen;
   save_port = pp->print_port;
   
@@ -1065,9 +1183,20 @@ print_substring(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Tab
     pp->print_buffer = NULL;
   }
   pp->print_position = 0;
+  pp->print_offset = 0;
   pp->print_port = NULL;
 
-  closed = print(obj, notdisplay, compact, ht, symtab, rnht, pp);
+  if (print_keys < 0) {
+    print_table_keys(notdisplay, compact, ht, mt, pp);
+    *klen = pp->print_offset;
+  }
+
+  closed = print(obj, notdisplay, compact, ht, mt, pp);
+  
+  if (print_keys > 0) {
+    print_table_keys(notdisplay, compact, ht, mt, pp);
+    *klen = pp->print_offset;
+  }
 
   if (result)
     *result = pp->print_buffer;
@@ -1076,45 +1205,192 @@ print_substring(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Tab
   pp->print_allocated = save_alloc;
   pp->print_buffer = save_buf;
   pp->print_position = save_pos;
+  pp->print_offset = save_off;
   pp->print_maxlen = save_maxl;
   pp->print_port = save_port;
   
   return closed;
 }
 
+static Scheme_Object *get_symtab_idx(Scheme_Marshal_Tables *mt, Scheme_Object *obj)
+{
+  Scheme_Object *idx;
+
+  idx = scheme_hash_get(mt->symtab, obj);
+
+  if (idx) {
+    if (!mt->pass) {
+      /* Record that we're referencing it */
+      scheme_hash_set(mt->st_refs, obj, idx);
+    }
+  } else {
+    if (mt->pass && mt->print_now) {
+      idx = scheme_hash_get(mt->st_refs, obj);
+      if (idx) {
+        idx = scheme_hash_get(mt->key_map, idx);
+        if (SCHEME_INT_VAL(idx) != mt->print_now)
+          return idx; /* due to a cycle, we're refering to
+                         something before it is printed. */
+        idx = NULL; /* ok to print */
+      }
+    }
+  }
+
+  return idx;
+}
+
+static void set_symtab_shared(Scheme_Marshal_Tables *mt, Scheme_Object *obj)
+{
+  (void)get_symtab_idx(mt, obj);
+}
+
+static void print_general_symtab_ref(PrintParams *pp, Scheme_Object *idx, int cpt_id)
+{
+  int l;
+  print_compact(pp, cpt_id);
+  l = SCHEME_INT_VAL(idx);
+  print_compact_number(pp, l);
+}
+
+static void print_symtab_ref(PrintParams *pp, Scheme_Object *idx)
+{
+  print_general_symtab_ref(pp, idx, CPT_SYMREF);
+}
+
+static int add_symtab(Scheme_Marshal_Tables *mt, Scheme_Object *obj)
+{
+  if (!mt->pass) {
+    int l;
+    l = mt->symtab->count + 1;
+    scheme_hash_set(mt->symtab, obj, scheme_make_integer(l));
+    return l;
+  } else {
+    Scheme_Object *key, *l;
+
+    key = scheme_hash_get(mt->st_refs, obj);
+    for (l = mt->st_ref_stack; !key && SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      key = scheme_hash_get((Scheme_Hash_Table *)SCHEME_CAR(l), obj);
+    }
+
+    if (!key) {
+      /* There's no other reference to this object, so use dummy slot 0. */
+      return 0;
+    }
+
+    key = scheme_hash_get(mt->key_map, key);
+
+    scheme_hash_set(mt->symtab, obj, key);
+
+    return SCHEME_INT_VAL(key);
+  }
+}
+
+static void symtab_set(PrintParams *pp, Scheme_Marshal_Tables *mt, Scheme_Object *obj)
+{
+  (void)add_symtab(mt, obj);
+}
+
+static void print_symtab_set(PrintParams *pp, Scheme_Marshal_Tables *mt, Scheme_Object *obj)
+{
+  int l;
+  l = add_symtab(mt, obj);
+  print_compact_number(pp, l);
+}
+
+Scheme_Object *scheme_marshal_wrap_set(Scheme_Marshal_Tables *mt, Scheme_Object *obj, Scheme_Object *val)
+{
+  int l;
+  l = add_symtab(mt, obj);
+  if (l) {
+    if (!mt->rn_saved) {
+      Scheme_Hash_Table *rn_saved;
+      rn_saved = scheme_make_hash_table(SCHEME_hash_ptr);
+      mt->rn_saved = rn_saved;
+    }
+    if (mt->pass >= 2) {
+      /* REMOVEME */
+      obj = scheme_hash_get(mt->rn_saved, obj);
+      if (!scheme_equal(obj, val))
+        scheme_signal_error("marshaled form changed on third pass: %V versus %V",
+                            obj, val);
+    } else
+      scheme_hash_set(mt->rn_saved, obj, val);
+
+    if (mt->pass)
+      return scheme_make_integer(l);
+  }
+  return val;
+}
+
+Scheme_Object *scheme_marshal_lookup(Scheme_Marshal_Tables *mt, Scheme_Object *obj)
+{
+  return get_symtab_idx(mt, obj);
+}
+
+void scheme_marshal_using_key(Scheme_Marshal_Tables *mt, Scheme_Object *obj)
+{
+  set_symtab_shared(mt, obj);
+}
+
+void scheme_marshal_push_refs(Scheme_Marshal_Tables *mt)
+{
+  Scheme_Object *p;
+  Scheme_Hash_Table *st_refs;
+
+  p = scheme_make_pair((Scheme_Object *)mt->st_refs,
+                       mt->st_ref_stack);
+  mt->st_ref_stack = p;
+
+  st_refs = scheme_make_hash_table(SCHEME_hash_ptr);
+
+  mt->st_refs = st_refs;
+}
+
+void scheme_marshal_pop_refs(Scheme_Marshal_Tables *mt, int keep)
+{
+  Scheme_Hash_Table *st_refs = mt->st_refs;
+
+  mt->st_refs = (Scheme_Hash_Table *)SCHEME_CAR(mt->st_ref_stack);
+  mt->st_ref_stack = SCHEME_CDR(mt->st_ref_stack);
+  
+  if (keep) {
+    if (!mt->st_refs->count)
+      mt->st_refs = st_refs;
+    else {
+      long i;
+      for (i = 0; i < st_refs->size; i++) {
+        if (st_refs->vals[i]) {
+          scheme_hash_set(mt->st_refs, st_refs->keys[i], st_refs->vals[i]);
+        }
+      }
+    }
+  }
+}
+
 static void print_escaped(PrintParams *pp, int notdisplay, 
 			  Scheme_Object *obj, Scheme_Hash_Table *ht,
-                          Scheme_Hash_Table *symtab)
+                          Scheme_Marshal_Tables *mt, int shared)
 {
   char *r;
   long len;
   Scheme_Object *idx;
 
-  if (symtab) {
-    idx = scheme_hash_get(symtab, obj);
+  if (shared) {
+    idx = get_symtab_idx(mt, obj);
     if (idx) {
-      int l;
-      print_compact(pp, CPT_SYMREF);
-      l = SCHEME_INT_VAL(idx);
-      print_compact_number(pp, l);
+      print_symtab_ref(pp, idx);
       return;
     }
   }
 
-  print_substring(obj, notdisplay, 0, ht, NULL, NULL, pp, &r, &len);
+  print_substring(obj, notdisplay, 0, ht, NULL, pp, &r, &len, 0, NULL);
 
-  if (symtab)
-    print_compact(pp, CPT_HASHED_ESCAPE);
-  else
-    print_compact(pp, CPT_ESCAPE);
+  print_compact(pp, CPT_ESCAPE);
   print_compact_number(pp, len);
   print_this_string(pp, r, 0, len);
 
-  if (symtab) {
-    int l = symtab->count;
-    idx = scheme_make_integer(l);
-    scheme_hash_set(symtab, obj, idx);	
-    print_compact_number(pp, l);
+  if (mt) {
+    symtab_set(pp, mt, obj);
   }
 }
 
@@ -1169,7 +1445,7 @@ static void always_scheme(PrintParams *pp, int reset)
 
 static int
 print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
-      Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht, PrintParams *pp)
+      Scheme_Marshal_Tables *mt, PrintParams *pp)
 {
   int closed = 0;
   int save_honu_mode;
@@ -1197,8 +1473,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  p->ku.k.i1 = notdisplay;
 	  p->ku.k.i2 = compact;
 	  p->ku.k.p2 = (void *)ht;
-	  p->ku.k.p3 = symtab;
-	  p->ku.k.p4 = rnht;
+	  p->ku.k.p3 = mt;
 	  p->ku.k.p5 = pp2;
 
 	  obj = scheme_handle_stack_overflow(print_k);
@@ -1247,7 +1522,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     if (val) {
       if (val != 1) {
 	if (compact) {
-	  print_escaped(pp, notdisplay, obj, ht, NULL);
+	  print_escaped(pp, notdisplay, obj, ht, mt, 0);
 	  return 1;
 	} else {
 	  if (val > 0) {
@@ -1276,14 +1551,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       is_kw = SCHEME_KEYWORDP(obj);
 
       if (compact)
-	idx = scheme_hash_get(symtab, obj);
+	idx = get_symtab_idx(mt, obj);
       else
 	idx = NULL;
 
       if (idx) {
-	print_compact(pp, CPT_SYMREF);
-	l = SCHEME_INT_VAL(idx);
-	print_compact_number(pp, l);
+        print_symtab_ref(pp, idx);
       } else if (compact) {
 	int weird;
 
@@ -1307,11 +1580,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	}
 	print_this_string(pp, scheme_symbol_val(obj), 0, l);
 
-	idx = scheme_make_integer(symtab->count);
-	scheme_hash_set(symtab, obj, idx);
-	
-	l = SCHEME_INT_VAL(idx);
-	print_compact_number(pp, l);
+        symtab_set(pp, mt, obj);
       } else if (notdisplay) {
 	if (pp->honu_mode) {
 	  /* Honu symbol... */
@@ -1370,20 +1639,16 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	int l;
         Scheme_Object *idx;
 
-	idx = scheme_hash_get(symtab, obj);
+	idx = get_symtab_idx(mt, obj);
         if (idx) {
-          print_compact(pp, CPT_SYMREF);
-          l = SCHEME_INT_VAL(idx);
-          print_compact_number(pp, l);
+          print_symtab_ref(pp, idx);
         } else {
           print_compact(pp, CPT_BYTE_STRING);
           l = SCHEME_BYTE_STRTAG_VAL(obj);
           print_compact_number(pp, l);
           print_this_string(pp, SCHEME_BYTE_STR_VAL(obj), 0, l);
 
-          idx = scheme_make_integer(symtab->count);
-          scheme_hash_set(symtab, obj, idx);
-          print_compact_number(pp, SCHEME_INT_VAL(idx));
+          symtab_set(pp, mt, obj);
         }
       } else {
 	if (notdisplay) {
@@ -1400,25 +1665,19 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SCHEME_CHAR_STRINGP(obj))
     {
       Scheme_Object *idx;
-      int l;
 
       if (compact)
-        idx = scheme_hash_get(symtab, obj);
+        idx = get_symtab_idx(mt, obj);
       else
         idx = NULL;
 
       if (idx) {
-        print_compact(pp, CPT_SYMREF);
-        l = SCHEME_INT_VAL(idx);
-        print_compact_number(pp, l);
+        print_symtab_ref(pp, idx);
       } else {
         do_print_string(compact, notdisplay, pp, 
                         SCHEME_CHAR_STR_VAL(obj), 0, SCHEME_CHAR_STRTAG_VAL(obj));
-        if (compact) {
-          idx = scheme_make_integer(symtab->count);
-          scheme_hash_set(symtab, obj, idx);
-          print_compact_number(pp, SCHEME_INT_VAL(idx));
-        }
+        if (compact)
+          symtab_set(pp, mt, obj);
       }
       closed = 1;
     }
@@ -1460,7 +1719,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SCHEME_NUMBERP(obj))
     {
       if (compact) {
-	print_escaped(pp, notdisplay, obj, ht, symtab);
+	print_escaped(pp, notdisplay, obj, ht, mt, 1);
 	closed = 1;
       } else {
 	if (SCHEME_COMPLEXP(obj))
@@ -1482,18 +1741,18 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (SCHEME_PAIRP(obj))
     {
-      print_pair(obj, notdisplay, compact, ht, symtab, rnht, pp);
+      print_pair(obj, notdisplay, compact, ht, mt, pp);
       closed = 1;
     }
   else if (SCHEME_VECTORP(obj))
     {
-      print_vector(obj, notdisplay, compact, ht, symtab, rnht, pp);
+      print_vector(obj, notdisplay, compact, ht, mt, pp);
       closed = 1;
     }
   else if ((compact || pp->print_box) && SCHEME_BOXP(obj))
     {
       if (compact && !pp->print_box) {
-	closed = print(scheme_protect_quote(obj), notdisplay, compact, ht, symtab, rnht, pp);
+	closed = print(scheme_protect_quote(obj), notdisplay, compact, ht, mt, pp);
       } else {
 	if (compact)
 	  print_compact(pp, CPT_BOX);
@@ -1501,7 +1760,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  always_scheme(pp, 1);
 	  print_utf8_string(pp, "#&", 0, 2);
 	}
-	closed = print(SCHEME_BOX_VAL(obj), notdisplay, compact, ht, symtab, rnht, pp);
+	closed = print(SCHEME_BOX_VAL(obj), notdisplay, compact, ht, mt, pp);
       }
     }
   else if ((compact || pp->print_hash_table) && SCHEME_HASHTP(obj))
@@ -1539,10 +1798,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    print_utf8_string(pp, "(", 0, 1);
 	  }
 	  val = vals[i];
-	  print(keys[i], notdisplay, compact, ht, symtab, rnht, pp);
+	  print(keys[i], notdisplay, compact, ht, mt, pp);
 	  if (!compact)
 	    print_utf8_string(pp, " . ", 0, 3);
-	  print(val, notdisplay, compact, ht, symtab, rnht, pp);
+	  print(val, notdisplay, compact, ht, mt, pp);
 	  if (!compact)
 	    print_utf8_string(pp, ")", 0, 1);
 	  did_one++;
@@ -1581,7 +1840,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (compact || !pp->print_unreadable)
 	cannot_print(pp, notdisplay, obj, ht, compact);
       else if (scheme_is_writable_struct(obj)) {
-	custom_write_struct(obj, ht, symtab, rnht, pp, notdisplay);
+	custom_write_struct(obj, ht, mt, pp, notdisplay);
       } else {
 	int pb;
 
@@ -1589,7 +1848,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
 	if (pb) {
 	  obj = scheme_struct_to_vector(obj, NULL, pp->inspector);
-	  closed = print(obj, notdisplay, compact, ht, symtab, rnht, pp);
+	  closed = print(obj, notdisplay, compact, ht, mt, pp);
 	} else {
 	  Scheme_Object *src;
 
@@ -1617,7 +1876,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    PRINTADDRESS(pp, obj);
 	    print_utf8_string(pp, ">", 0, 1);
 	  } else {
-	    closed = print(src, notdisplay, compact, ht, symtab, rnht, pp);
+	    closed = print(src, notdisplay, compact, ht, mt, pp);
 	  }
 	}
       }
@@ -1631,17 +1890,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	Scheme_Object *idx;
 	int l;
 	
-	idx = scheme_hash_get(symtab, obj);
+	idx = get_symtab_idx(mt, obj);
 	if (idx) {
-	  print_compact(pp, CPT_SYMREF);
-	  l = SCHEME_INT_VAL(idx);
-	  print_compact_number(pp, l);
+          print_symtab_ref(pp, idx);
 	} else {
-	  Scheme_Object *dir;
-
-	  /* Hash before making relative */
-	  idx = scheme_make_integer(symtab->count);
-	  scheme_hash_set(symtab, obj, idx);
+	  Scheme_Object *orig_obj = obj, *dir;
 	  
 	  dir = scheme_get_param(scheme_current_config(),
 				 MZCONFIG_WRITE_DIRECTORY);
@@ -1655,8 +1908,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  print_compact_number(pp, l);
 	  print_this_string(pp, SCHEME_PATH_VAL(obj), 0, l);
 
-	  l = SCHEME_INT_VAL(idx);
-	  print_compact_number(pp, l);
+          symtab_set(pp, mt, orig_obj);
 	}
       } else if (!pp->print_unreadable) {
 	cannot_print(pp, notdisplay, obj, ht, compact);
@@ -1679,7 +1931,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	{
 	  Scheme_Object *str;
 	  str = scheme_path_to_char_string(obj);
-	  print(str, 0, 0, ht, symtab, rnht, pp);
+	  print(str, 0, 0, ht, mt, pp);
 	}
 	if (notdisplay) {
 	  PRINTADDRESS(pp, obj);
@@ -1730,17 +1982,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	      /* Print original `lambda' code. Closure conversion can cause
                  an empty closure to be duplicated in the code tree, so hash it. */
               Scheme_Object *idx;
-              idx = scheme_hash_get(symtab, obj);
+              idx = get_symtab_idx(mt, obj);
               if (idx) {
-                print_compact(pp, CPT_SYMREF);
-                print_compact_number(pp, SCHEME_INT_VAL(idx));
+                print_symtab_ref(pp, idx);
               } else {
-                idx = scheme_make_integer(symtab->count);
-                scheme_hash_set(symtab, obj, idx);
                 print_compact(pp, CPT_CLOSURE);
-                print_compact_number(pp, SCHEME_INT_VAL(idx));
-
-                print((Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(closure), notdisplay, compact, ht, symtab, rnht, pp);
+                print_symtab_set(pp, mt, obj);
+                print((Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(closure), notdisplay, compact, ht, mt, pp);
               }
               compact = 1;
               done = 1;
@@ -1749,7 +1997,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    obj = scheme_unclose_case_lambda(obj, 0);
 	    if (!SCHEME_PROCP(obj)) {
 	      /* Print original `case-lambda' code: */
-	      compact = print(obj, notdisplay, compact, ht, symtab, rnht, pp);
+	      compact = print(obj, notdisplay, compact, ht, mt, pp);
 	      done = 1;
 	    }
 	  }
@@ -1825,7 +2073,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_regexp_type))
     {
        if (compact) {
-	 print_escaped(pp, notdisplay, obj, ht, symtab);
+	 print_escaped(pp, notdisplay, obj, ht, mt, 1);
        } else {
 	 Scheme_Object *src;
 	 src = scheme_regexp_source(obj);
@@ -1834,7 +2082,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	     print_utf8_string(pp, "#px", 0, 3);
 	   else
 	     print_utf8_string(pp, "#rx", 0, 3);
-	   print(src, 1, 0, ht,symtab, rnht, pp);
+	   print(src, 1, 0, ht, mt, pp);
 	 } else if (compact || !pp->print_unreadable)
 	   cannot_print(pp, notdisplay, obj, ht, compact);
 	 else
@@ -1912,8 +2160,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  print_compact(pp, CPT_STX);
 	
 	/* "2" in scheme_syntax_to_datum() call preserves wraps. */
-	closed = print(scheme_syntax_to_datum(obj, 2, rnht), 
-		       notdisplay, 1, ht, symtab, rnht, pp);
+	closed = print(scheme_syntax_to_datum(obj, 2, mt), 
+		       notdisplay, 1, ht, mt, pp);
       } else if (pp->print_unreadable) {
 	Scheme_Stx *stx = (Scheme_Stx *)obj;
 	if ((stx->srcloc->line >= 0) || (stx->srcloc->pos >= 0)) {
@@ -1936,49 +2184,36 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type)) 
     {
-      int l;
       Scheme_Object *idx;
 
-      idx = scheme_hash_get(symtab, obj);
+      idx = get_symtab_idx(mt, obj);
       if (idx) {
-	print_compact(pp, CPT_SYMREF);
-	l = SCHEME_INT_VAL(idx);
-	print_compact_number(pp, l);
+        print_symtab_ref(pp, idx);
       } else {
-	idx = scheme_make_integer(symtab->count);
-	scheme_hash_set(symtab, obj, idx);	
-	l = SCHEME_INT_VAL(idx);
-
 	print_compact(pp, CPT_MODULE_INDEX);
-	print_compact_number(pp, l);
-	print(((Scheme_Modidx *)obj)->path, notdisplay, 1, ht, symtab, rnht, pp);
-	print(((Scheme_Modidx *)obj)->base, notdisplay, 1, ht, symtab, rnht, pp);
+	print(((Scheme_Modidx *)obj)->path, notdisplay, 1, ht, mt, pp);
+	print(((Scheme_Modidx *)obj)->base, notdisplay, 1, ht, mt, pp);
+        symtab_set(pp, mt, obj);
       }
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_variable_type)
 	   && !((Module_Variable *)obj)->mod_phase)
     {
-      int l;
       Scheme_Object *idx;
 
-      idx = scheme_hash_get(symtab, obj);
+      idx = get_symtab_idx(mt, obj);
       if (idx) {
-	print_compact(pp, CPT_SYMREF);
-	l = SCHEME_INT_VAL(idx);
-	print_compact_number(pp, l);
+        print_symtab_ref(pp, idx);
       } else {
 	Module_Variable *mv;
 
-	idx = scheme_make_integer(symtab->count);
-	scheme_hash_set(symtab, obj, idx);
-	l = SCHEME_INT_VAL(idx);
-
 	print_compact(pp, CPT_MODULE_VAR);
-	print_compact_number(pp, l);
 	mv = (Module_Variable *)obj;
-	print(mv->modidx, notdisplay, 1, ht, symtab, rnht, pp);
-	print(mv->sym, notdisplay, 1, ht, symtab, rnht, pp);
+	print(mv->modidx, notdisplay, 1, ht, mt, pp);
+	print(mv->sym, notdisplay, 1, ht, mt, pp);
 	print_compact_number(pp, mv->pos);
+
+        symtab_set(pp, mt, obj);
       }
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_variable_type)
@@ -2023,7 +2258,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       }
 
       for (i = 0; i < app->num_args + 1; i++) {
-	closed = print(scheme_protect_quote(app->args[i]), notdisplay, 1, NULL, symtab, rnht, pp);
+	closed = print(scheme_protect_quote(app->args[i]), notdisplay, 1, NULL, mt, pp);
       }
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_application2_type))
@@ -2036,8 +2271,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       s[0] = CPT_SMALL_APPLICATION_START + 1;
       print_this_string(pp, (char *)s, 0, 1);
 
-      print(scheme_protect_quote(app->rator), notdisplay, 1, NULL, symtab, rnht, pp);
-      closed = print(scheme_protect_quote(app->rand), notdisplay, 1, NULL, symtab, rnht, pp);
+      print(scheme_protect_quote(app->rator), notdisplay, 1, NULL, mt, pp);
+      closed = print(scheme_protect_quote(app->rand), notdisplay, 1, NULL, mt, pp);
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_application3_type))
     {
@@ -2049,9 +2284,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       s[0] = CPT_SMALL_APPLICATION_START + 2;
       print_this_string(pp, (char *)s, 0, 1);
 
-      print(scheme_protect_quote(app->rator), notdisplay, 1, NULL, symtab, rnht, pp);
-      print(scheme_protect_quote(app->rand1), notdisplay, 1, NULL, symtab, rnht, pp);
-      closed = print(scheme_protect_quote(app->rand2), notdisplay, 1, NULL, symtab, rnht, pp);
+      print(scheme_protect_quote(app->rator), notdisplay, 1, NULL, mt, pp);
+      print(scheme_protect_quote(app->rand1), notdisplay, 1, NULL, mt, pp);
+      closed = print(scheme_protect_quote(app->rand2), notdisplay, 1, NULL, mt, pp);
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_let_one_type))
     {
@@ -2060,8 +2295,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       lo = (Scheme_Let_One *)obj;
 
       print_compact(pp, CPT_LET_ONE);
-      print(scheme_protect_quote(lo->value), notdisplay, 1, NULL, symtab, rnht, pp);
-      closed = print(scheme_protect_quote(lo->body), notdisplay, 1, NULL, symtab, rnht, pp);
+      print(scheme_protect_quote(lo->value), notdisplay, 1, NULL, mt, pp);
+      closed = print(scheme_protect_quote(lo->body), notdisplay, 1, NULL, mt, pp);
     }
   else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_branch_type))
     {
@@ -2070,9 +2305,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       b = (Scheme_Branch_Rec *)obj;
 
       print_compact(pp, CPT_BRANCH);
-      print(scheme_protect_quote(b->test), notdisplay, 1, NULL, symtab, rnht, pp);
-      print(scheme_protect_quote(b->tbranch), notdisplay, 1, NULL, symtab, rnht, pp);
-      closed = print(scheme_protect_quote(b->fbranch), notdisplay, 1, NULL, symtab, rnht, pp);
+      print(scheme_protect_quote(b->test), notdisplay, 1, NULL, mt, pp);
+      print(scheme_protect_quote(b->tbranch), notdisplay, 1, NULL, mt, pp);
+      closed = print(scheme_protect_quote(b->fbranch), notdisplay, 1, NULL, mt, pp);
     }
   else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_quote_compilation_type))
     {
@@ -2105,7 +2340,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 #endif
       }
 
-      compact = print(v, notdisplay, 1, q_ht, symtab, rnht, pp);
+      compact = print(v, notdisplay, 1, q_ht, mt, pp);
 
       pp->print_hash_table = qpht;
       pp->print_box = qpb;
@@ -2148,6 +2383,32 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact_number(pp, n);
       }
 #endif
+    }
+  else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_delay_syntax_type))
+    {
+      /* wraps a syntax object that we might load on demand,
+         instead of when the using code is loaded */
+      Scheme_Object *idx;
+
+      if (!mt->pass) {
+        if (!mt->delay_map) {
+          Scheme_Hash_Table *delay_map;
+          delay_map = scheme_make_hash_table(SCHEME_hash_ptr);
+          mt->delay_map = delay_map;
+        }
+        scheme_hash_set(mt->delay_map, SCHEME_PTR_VAL(obj), obj);
+      } else
+        obj = scheme_hash_get(mt->delay_map, SCHEME_PTR_VAL(obj));
+
+      idx = get_symtab_idx(mt, obj);
+
+      if (idx) {
+        print_general_symtab_ref(pp, idx, CPT_DELAY_REF);
+      } else {
+        print(SCHEME_PTR_VAL(obj), notdisplay, 1, ht, mt, pp);
+        symtab_set(pp, mt, obj);
+        set_symtab_shared(mt, obj);
+      }
     }
   else if (scheme_type_writers[SCHEME_TYPE(obj)]
 #if !NO_COMPACT
@@ -2197,27 +2458,117 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       }
 
       if (compact)
-	closed = print(v, notdisplay, 1, NULL, symtab, rnht, pp);
+	closed = print(v, notdisplay, 1, NULL, mt, pp);
       else {
-	/* Symtab services both symbols and module paths (modidxs) */
-	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
-	rnht = scheme_make_hash_table(SCHEME_hash_ptr);
+        Scheme_Hash_Table *st_refs, *symtab, *rns;
+        long *shared_offsets;
+        long st_len, j, shared_offset, start_offset;
 
-	/* "print" the string once to get a measurement and symtab size */
-	print_substring(v, notdisplay, 1, NULL, symtab, rnht, pp, NULL, &slen);
+        mt = MALLOC_ONE_RT(Scheme_Marshal_Tables);
+        SET_REQUIRED_TAG(mt->type = scheme_rt_marshal_info);
+
+        /* Track which shared values are referenced: */
+        st_refs = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->st_refs = st_refs;
+        mt->st_ref_stack = scheme_null;
+
+	/* "Print" the string once to determine graph references. On this pass,
+           we first assume that everything is shared and make up sequential
+           keys, but we also keep track of which things are actually shared;
+           we'll map the original keys to a compacted set of keys for the
+           later passes. */
+	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->symtab = symtab;
+	rns = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->rns = rns;
+        mt->reverse_map = NULL;
+        mt->pass = 0;
+        scheme_hash_set(symtab, scheme_void, scheme_true); /* indicates registration phase */
+	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 0, NULL);
+
+        sort_referenced_keys(mt);
+        mt->rn_saved = NULL;
+
+	/* "Print" again, now that we know which values are actually
+           shared. On this pass, shared values that reference other shared values
+           are re-computed with the compacted keys. */
+        shared_offsets = MALLOC_N_ATOMIC(long, mt->st_refs->count);
+        mt->shared_offsets = shared_offsets;
+	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->symtab = symtab;
+	rns = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->rns = rns;
+        mt->reverse_map = NULL;
+        mt->top_map = NULL;
+        mt->pass = 1;
+	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 
+                        1, &st_len);
+
+        /* "Print" the string again to get a measurement and symtab size. */
+        symtab = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->symtab = symtab;
+	rns = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->rns = rns;
+        mt->reverse_map = NULL;
+        mt->top_map = NULL;
+        mt->pass = 2;
+	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 
+                        -1, &st_len);
 
 	/* Remember version: */
-	print_compact_number(pp, strlen(MZSCHEME_VERSION));
+        print_one_byte(pp, strlen(MZSCHEME_VERSION));
 	print_this_string(pp, MZSCHEME_VERSION, 0, -1);
 
-	print_compact_number(pp, symtab->count);
-	print_compact_number(pp, slen);
+        if (mt->st_refs->count != mt->sorted_keys_count)
+          scheme_signal_error("shared key count somehow changed");
 
-	/* Make symtab and rnht again to ensure the same results */
+	print_number(pp, mt->st_refs->count + 1);
+
+        /* Print shared-value offsets: */
+        {
+          int all_short = shared_offsets[mt->st_refs->count-1] < 0xFFFF;
+          print_one_byte(pp, all_short);
+          for (j = 0; j < mt->st_refs->count; j++) {
+            if (all_short)
+              print_short_number(pp, shared_offsets[j]);
+            else
+              print_number(pp, shared_offsets[j]);
+          }
+        }
+        
+	print_number(pp, st_len);
+	print_number(pp, slen);
+
+	/* Make symtab and rns again to ensure the same results 
+           for the final print: */
 	symtab = scheme_make_hash_table(SCHEME_hash_ptr);
-	rnht = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->symtab = symtab;
+	rns = scheme_make_hash_table(SCHEME_hash_ptr);
+        mt->rns = rns;
+        mt->reverse_map = NULL;
+        mt->top_map = NULL;
+        mt->pass = 3;
 
-	closed = print(v, notdisplay, 1, NULL, symtab, rnht, pp);
+        start_offset = pp->print_offset;
+
+        /* Print shared values first, so read can easily skip them
+           and load them lazily. */
+        print_table_keys(notdisplay, 1, NULL, mt, pp);
+        shared_offset = pp->print_offset;
+	closed = print(v, notdisplay, 1, NULL, mt, pp);
+
+        if (shared_offset - start_offset != st_len) {
+          scheme_signal_error("compiled code shared printed size changed on third pass:"
+                              " %ld versus %ld (total %ld)",
+                              st_len, shared_offset - start_offset, slen);
+        }
+        if (pp->print_offset - start_offset != slen) {
+          scheme_signal_error("compiled code printed size changed on third pass:"
+                              " %ld versus %ld",
+                              slen, pp->print_offset - start_offset);
+        }
+
+        mt = NULL;
       }
     } 
   else 
@@ -2408,7 +2759,7 @@ print_byte_string(const char *str, int delta, int len, int notdisplay, PrintPara
 static void
 print_pair(Scheme_Object *pair, int notdisplay, int compact, 
 	   Scheme_Hash_Table *ht, 
-	   Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht, 
+           Scheme_Marshal_Tables *mt, 
 	   PrintParams *pp)
 {
   Scheme_Object *cdr;
@@ -2458,11 +2809,11 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
     if (SCHEME_NULLP(cdr)) {
       /* Proper list without sharing. */
       print_utf8_string(pp, "list(", 0, 5);
-      (void)print(SCHEME_CAR(pair), notdisplay, compact, ht, symtab, rnht, pp);
+      (void)print(SCHEME_CAR(pair), notdisplay, compact, ht, mt, pp);
       cdr = SCHEME_CDR(pair);
       while (SCHEME_PAIRP(cdr)) {
 	print_utf8_string(pp, ", ", 0, 2);
-	(void)print(SCHEME_CAR(cdr), notdisplay, compact, ht, symtab, rnht, pp);
+	(void)print(SCHEME_CAR(cdr), notdisplay, compact, ht, mt, pp);
 	cdr = SCHEME_CDR(cdr);
       }
       print_utf8_string(pp, ")", 0, 1);
@@ -2470,25 +2821,25 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
       /* Use cons cells. */
       int cnt = 1;
       print_utf8_string(pp, "cons(", 0, 5);
-      (void)print(SCHEME_CAR(pair), notdisplay, compact, ht, symtab, rnht, pp);
+      (void)print(SCHEME_CAR(pair), notdisplay, compact, ht, mt, pp);
       cdr = SCHEME_CDR(pair);
       while (SCHEME_PAIRP(cdr)) {
 	print_utf8_string(pp, ", ", 0, 2);
 	if (ht) {
 	  if ((long)scheme_hash_get(ht, cdr) != 1) {
 	    /* This needs a tag */
-	    (void)print(cdr, notdisplay, compact, ht, symtab, rnht, pp);
+	    (void)print(cdr, notdisplay, compact, ht, mt, pp);
 	    break;
 	  }
 	}
 	 
 	print_utf8_string(pp, "cons(", 0, 5);
-	(void)print(SCHEME_CAR(cdr), notdisplay, compact, ht, symtab, rnht, pp);
+	(void)print(SCHEME_CAR(cdr), notdisplay, compact, ht, mt, pp);
 	cnt++;
 	cdr = SCHEME_CDR(cdr);
       }
       print_utf8_string(pp, ", ", 0, 2);
-      (void)print(cdr, notdisplay, compact, ht, symtab, rnht, pp);
+      (void)print(cdr, notdisplay, compact, ht, mt, pp);
       while (cnt--) {
 	print_utf8_string(pp, ")", 0, 1);
       }
@@ -2502,7 +2853,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
   } else
     print_utf8_string(pp, "(", 0, 1);
 
-  print(SCHEME_CAR(pair), notdisplay, compact, ht, symtab, rnht, pp);
+  print(SCHEME_CAR(pair), notdisplay, compact, ht, mt, pp);
 
   cdr = SCHEME_CDR (pair);
   while (SCHEME_PAIRP(cdr)) {
@@ -2511,7 +2862,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 	/* This needs a tag */
 	if (!compact)
 	  print_utf8_string(pp, " . ", 0, 3);
-	(void)print(cdr, notdisplay, compact, ht, symtab, rnht, pp);
+	(void)print(cdr, notdisplay, compact, ht, mt, pp);
 	if (!compact)
 	  print_utf8_string(pp, ")", 0, 1);
 	return;
@@ -2521,14 +2872,14 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
       print_compact(pp, CPT_PAIR);
     if (!compact)
       print_utf8_string(pp, " ", 0, 1);
-    print(SCHEME_CAR(cdr), notdisplay, compact, ht, symtab, rnht, pp);
+    print(SCHEME_CAR(cdr), notdisplay, compact, ht, mt, pp);
     cdr = SCHEME_CDR(cdr);
   }
 
   if (!SCHEME_NULLP(cdr)) {
     if (!compact)
       print_utf8_string(pp, " . ", 0, 3);
-    print(cdr, notdisplay, compact, ht, symtab, rnht, pp);
+    print(cdr, notdisplay, compact, ht, mt, pp);
   } else if (compact && (super_compact < 1))
     print_compact(pp, CPT_NULL);
 
@@ -2539,7 +2890,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 static void
 print_vector(Scheme_Object *vec, int notdisplay, int compact, 
 	     Scheme_Hash_Table *ht, 
-	     Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht, 
+             Scheme_Marshal_Tables *mt,
 	     PrintParams *pp)
 {
   int i, size, common = 0;
@@ -2577,7 +2928,7 @@ print_vector(Scheme_Object *vec, int notdisplay, int compact,
   }
 
   for (i = 0; i < size; i++) {
-    print(SCHEME_VEC_ELS(vec)[i], notdisplay, compact, ht, symtab, rnht, pp);
+    print(SCHEME_VEC_ELS(vec)[i], notdisplay, compact, ht, mt, pp);
     if (i < (size - 1)) {
       if (!compact) {
 	if (pp->honu_mode)
@@ -2756,9 +3107,8 @@ static void flush_from_byte_port(Scheme_Object *orig_port, PrintParams *pp)
 static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_Object **argv)
 {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(_vec)[0];
-  Scheme_Hash_Table *symtab = (Scheme_Hash_Table *)SCHEME_VEC_ELS(_vec)[1];
-  Scheme_Hash_Table *rnht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(_vec)[2];
-  PrintParams * volatile pp = (PrintParams *)SCHEME_VEC_ELS(_vec)[3];
+  Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)SCHEME_VEC_ELS(_vec)[1];
+  PrintParams * volatile pp = (PrintParams *)SCHEME_VEC_ELS(_vec)[2];
   Scheme_Object * volatile save_port;
   mz_jmp_buf escape, * volatile save;
   volatile long save_max;
@@ -2769,7 +3119,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
     return NULL;
   }
 
-  if (SCHEME_VEC_ELS(_vec)[4]) {
+  if (SCHEME_VEC_ELS(_vec)[3]) {
     /* Recur: */
     {
       if (pp->print_escape) {
@@ -2785,12 +3135,12 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
 	  || !scheme_setjmp(escape)) {
 	/* If printing to string, flush it and reset first: */
 	Scheme_Object *sp;
-	sp = SCHEME_VEC_ELS(_vec)[5];
+	sp = SCHEME_VEC_ELS(_vec)[4];
 	if (sp) {
 	  flush_from_byte_port(sp, pp);
 	  sp = scheme_make_byte_string_output_port();
-	  ((Scheme_Output_Port *)SCHEME_VEC_ELS(_vec)[6])->port_data = sp;
-	  SCHEME_VEC_ELS(_vec)[5] = sp;
+	  ((Scheme_Output_Port *)SCHEME_VEC_ELS(_vec)[5])->port_data = sp;
+	  SCHEME_VEC_ELS(_vec)[4] = sp;
 	}
 
 	/* If printing to a different output port, flush print cache,
@@ -2806,7 +3156,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
 	pp->print_port = argv[1];
 
 	/* Recur */
-	print(argv[0], notdisplay, 0, ht, symtab, rnht, pp);
+	print(argv[0], notdisplay, 0, ht, mt, pp);
 
 	/* Flush print cache, to ensure that future writes to the
 	   port go after printed data. */
@@ -2833,7 +3183,7 @@ static Scheme_Object *custom_display_recur(void *_vec, int argc, Scheme_Object *
 }
 
 static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht, 
-				Scheme_Hash_Table *symtab, Scheme_Hash_Table *rnht, 
+				Scheme_Marshal_Tables *mt,
 				PrintParams *orig_pp, int notdisplay)
 {
   Scheme_Object *v, *a[3], *o, *vec, *orig_port;
@@ -2855,14 +3205,13 @@ static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht,
   
   op = (Scheme_Output_Port *)o;
 
-  vec = scheme_make_vector(7, NULL);
+  vec = scheme_make_vector(6, NULL);
   SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)ht;
-  SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)symtab;
-  SCHEME_VEC_ELS(vec)[2] = (Scheme_Object *)rnht;
-  SCHEME_VEC_ELS(vec)[3] = (Scheme_Object *)pp;
-  SCHEME_VEC_ELS(vec)[4] = scheme_true;
-  SCHEME_VEC_ELS(vec)[5] = (pp->print_port ? NULL : orig_port);
-  SCHEME_VEC_ELS(vec)[6] = o;
+  SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)mt;
+  SCHEME_VEC_ELS(vec)[2] = (Scheme_Object *)pp;
+  SCHEME_VEC_ELS(vec)[3] = scheme_true;
+  SCHEME_VEC_ELS(vec)[4] = (pp->print_port ? NULL : orig_port);
+  SCHEME_VEC_ELS(vec)[5] = o;
 
   recur_write = scheme_make_closed_prim_w_arity(custom_write_recur,
 						vec,
@@ -2892,11 +3241,11 @@ static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht,
 
   memcpy(orig_pp, pp, sizeof(PrintParams));
 
-  SCHEME_VEC_ELS(vec)[4] = NULL;
+  SCHEME_VEC_ELS(vec)[3] = NULL;
 
   /* This must go last, because it might escape: */
   if (!orig_pp->print_port)
-    flush_from_byte_port(SCHEME_VEC_ELS(vec)[5], orig_pp);
+    flush_from_byte_port(SCHEME_VEC_ELS(vec)[4], orig_pp);
 }
 
 /*========================================================================*/
@@ -2913,6 +3262,7 @@ START_XFORM_SKIP;
 static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_rt_print_params, mark_print_params);
+  GC_REG_TRAV(scheme_rt_marshal_info, mark_marshal_tables);
 }
 
 END_XFORM_SKIP;

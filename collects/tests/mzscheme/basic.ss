@@ -1395,6 +1395,85 @@
 (test #f list-length '(a b . c))
 (test '() map cadr '())
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; exceptions
+
+(test 10 'exns
+      (with-handlers ([integer? (lambda (x) 10)])
+        (raise 12)))
+(test '(apple) 'exns
+      (with-handlers ([void (lambda (x) (list x))])
+        (with-handlers ([integer? (lambda (x) 10)])
+          (raise 'apple))))
+(test '((10)) 'exns
+      (with-handlers ([void (lambda (x) (list x))])
+        (with-handlers ([integer? (lambda (x) (raise (list x)))])
+          (raise 10))))
+(test '((10)) 'exns
+      (let/ec esc
+        (parameterize ([uncaught-exception-handler (lambda (x) (esc (list x)))])
+          (with-handlers ([integer? (lambda (x) (raise (list x)))])
+            (raise 10)))))
+(test '#((10)) 'exns
+      (let/ec esc
+        (with-handlers ([void (lambda (x) (vector x))])
+          (parameterize ([uncaught-exception-handler (lambda (x) (esc (list x)))])
+            (with-handlers ([integer? (lambda (x) (raise (list x)))])
+              (raise 10))))))
+
+(test '(except) 'escape
+      (let/ec k
+        (call-with-exception-handler
+         (lambda (exn)
+           (k (list exn)))
+         (lambda () (raise 'except)))))
+(test '#&except 'escape
+      (let/ec k
+        (call-with-exception-handler
+         (lambda (exn)
+           (k (list exn)))
+         (lambda ()
+           (call-with-exception-handler
+            (lambda (exn)
+              (k (box exn)))
+            (lambda ()
+              (raise 'except)))))))
+(test '#(except) 'escape
+      (with-handlers ([void (lambda (x) x)])
+        (values
+         (call-with-exception-handler
+          (lambda (exn)
+            (vector exn))
+          (lambda ()
+            (raise 'except))))))
+(test '(except) 'escape
+      (with-handlers ([void (lambda (x) x)])
+        (values
+         (call-with-exception-handler
+          (lambda (exn)
+            (vector exn))
+          (lambda ()
+            (call-with-exception-handler
+             (lambda (exn)
+               (list exn))
+             (lambda ()
+               (raise 'except))))))))
+(test '#((except)) 'escape
+      (with-handlers ([void (lambda (x) x)])
+        (values
+         (call-with-exception-handler
+          (lambda (exn)
+            (vector exn))
+          (lambda ()
+            (values
+             (call-with-exception-handler
+              (lambda (exn)
+                (list exn))
+              (lambda ()
+                (raise 'except)))))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;; This tests full conformance of call-with-current-continuation.  It
 ;;; is a separate test because some schemes do not support call/cc
 ;;; other than escape procedures.  I am indebted to
@@ -1726,6 +1805,18 @@
   (try 5 3)
   (try 3 5)
   (try 10 5))
+
+;; Make sure let doesn't allocate a mutatble cell too early:
+(test 2 'let+call/cc
+      (let ([count 0])
+        (let ([first-time? #t]
+              [k (call/cc values)])
+          (if first-time?
+              (begin
+                (set! first-time? #f)
+                (set! count (+ count 1))
+                (k values))))
+        count))
 
 (arity-test call/cc 1 2)
 (arity-test call/ec 1 1)

@@ -100,6 +100,9 @@ static Scheme_Object *load (int, Scheme_Object *[]);
 static Scheme_Object *current_load (int, Scheme_Object *[]);
 static Scheme_Object *current_load_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_write_directory(int argc, Scheme_Object *argv[]);
+#ifdef LOAD_ON_DEMAND
+static Scheme_Object *load_on_demand_enabled(int argc, Scheme_Object *argv[]);
+#endif
 static Scheme_Object *default_load (int, Scheme_Object *[]);
 static Scheme_Object *transcript_on(int, Scheme_Object *[]);
 static Scheme_Object *transcript_off(int, Scheme_Object *[]);
@@ -660,6 +663,13 @@ scheme_init_port_fun(Scheme_Env *env)
 						       "current-write-relative-directory",
 						       MZCONFIG_WRITE_DIRECTORY),
 			     env);
+#ifdef LOAD_ON_DEMAND
+  scheme_add_global_constant("load-on-demand-enabled",
+			     scheme_register_parameter(load_on_demand_enabled,
+						       "load-on-demand-enabled",
+						       MZCONFIG_LOAD_DELAY_ENABLED),
+			     env);
+#endif
 
   scheme_add_global_constant ("transcript-on",
 			      scheme_make_prim_w_arity(transcript_on,
@@ -2912,7 +2922,7 @@ static Scheme_Object *sch_default_read_handler(void *ignore, int argc, Scheme_Ob
   else
     src = NULL;
 
-  return scheme_internal_read(argv[0], src, -1, 0, 0, 0, -1, NULL, NULL, NULL);
+  return scheme_internal_read(argv[0], src, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
 }
 
 static int extract_recur_args(const char *who, int argc, Scheme_Object **argv, int delta, Scheme_Object **_readtable)
@@ -2966,7 +2976,8 @@ static Scheme_Object *do_read_f(const char *who, int argc, Scheme_Object *argv[]
     if (port == scheme_orig_stdin_port)
       scheme_flush_orig_outputs();
 
-    return scheme_internal_read(port, NULL, -1, 0, honu_mode, recur, pre_char, readtable, NULL, NULL);
+    return scheme_internal_read(port, NULL, -1, 0, honu_mode, recur, pre_char, readtable, 
+                                NULL, NULL, NULL);
   }
 }
 
@@ -3032,7 +3043,8 @@ static Scheme_Object *do_read_syntax_f(const char *who, int argc, Scheme_Object 
     if (port == scheme_orig_stdin_port)
       scheme_flush_orig_outputs();
 
-    return scheme_internal_read(port, src, -1, 0, honu_mode, recur, pre_char, readtable, NULL, NULL);
+    return scheme_internal_read(port, src, -1, 0, honu_mode, recur, pre_char, readtable, 
+                                NULL, NULL, NULL);
   }
 }
 
@@ -4201,6 +4213,7 @@ typedef struct {
   Scheme_Thread *p;
   Scheme_Object *stxsrc;
   Scheme_Object *expected_module;
+  Scheme_Object *delay_load_info;
 } LoadHandlerData;
 
 static void post_load_handler(void *data)
@@ -4220,7 +4233,8 @@ static Scheme_Object *do_load_handler(void *data)
   Scheme_Env *genv;
   int save_count = 0, got_one = 0;
 
-  while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL))
+  while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, 
+                                     NULL, NULL, lhd->delay_load_info))
 	 && !SCHEME_EOFP(obj)) {
     save_array = NULL;
     got_one = 1;
@@ -4297,7 +4311,7 @@ static Scheme_Object *do_load_handler(void *data)
       }
 
       /* Check no more expressions: */
-      d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL);
+      d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
       if (!SCHEME_EOFP(d)) {
         Scheme_Input_Port *ip;
         ip = scheme_input_port_record(port);
@@ -4373,7 +4387,7 @@ static Scheme_Object *do_load_handler(void *data)
 static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *port, *name, *expected_module, *v;
-  int ch;
+  int ch, use_delay_load;
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Config *config;
   LoadHandlerData *lhd;
@@ -4428,8 +4442,13 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
   }
 
   config = scheme_current_config();
+
+  v = scheme_get_param(config, MZCONFIG_LOAD_DELAY_ENABLED);
+  use_delay_load = SCHEME_TRUEP(v);
+
   if (SCHEME_TRUEP(expected_module)) {
-    config = scheme_extend_config(config, MZCONFIG_CASE_SENS, (scheme_case_sensitive ? scheme_true : scheme_false)); /* for legacy code */
+    config = scheme_extend_config(config, MZCONFIG_CASE_SENS, 
+                                  (scheme_case_sensitive ? scheme_true : scheme_false)); /* for legacy code */
     config = scheme_extend_config(config, MZCONFIG_SQUARE_BRACKETS_ARE_PARENS, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_CURLY_BRACES_ARE_PARENS, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_CAN_READ_GRAPH, scheme_true);
@@ -4452,6 +4471,10 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
   name = scheme_input_port_record(port)->name;
   lhd->stxsrc = name;
   lhd->expected_module = expected_module;
+  if (use_delay_load) {
+    v = scheme_path_to_complete_path(argv[0], NULL);
+    lhd->delay_load_info = v;
+  }
 
   if (SCHEME_TRUEP(expected_module)) {
     scheme_push_continuation_frame(&cframe);
@@ -4579,6 +4602,16 @@ current_write_directory(int argc, Scheme_Object *argv[])
 			     argc, argv,
 			     -1, wr_abs_directory_p, "path, string, or #f", 1);
 }
+
+#ifdef LOAD_ON_DEMAND
+static Scheme_Object *
+load_on_demand_enabled(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("load-on-demand-enabled", 
+                             scheme_make_integer(MZCONFIG_LOAD_DELAY_ENABLED), 
+                             argc, argv, -1, NULL, NULL, 1);
+}
+#endif
 
 Scheme_Object *scheme_load(const char *file)
 {

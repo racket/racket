@@ -1027,8 +1027,6 @@ typedef struct Scheme_Thread {
   Scheme_Simple_Object *list_stack;
   int list_stack_pos;
 
-  Scheme_Hash_Table *rn_memory;
-
   /* MzScheme client can use: */
   void (*on_kill)(struct Scheme_Thread *p);
   void *kill_data;
@@ -1170,6 +1168,9 @@ enum {
 
   MZCONFIG_THREAD_SET,
   MZCONFIG_THREAD_INIT_STACK_SIZE,
+
+  MZCONFIG_LOAD_DELAY_ENABLED,
+  MZCONFIG_DELAY_LOAD_INFO,
 
   MZCONFIG_EXPAND_OBSERVE,
 

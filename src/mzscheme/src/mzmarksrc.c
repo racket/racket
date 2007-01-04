@@ -654,8 +654,6 @@ thread_val {
   
   gcMARK(pr->list_stack);
   
-  gcMARK(pr->rn_memory);
-  
   gcMARK(pr->kill_data);
   gcMARK(pr->private_kill_data);
   gcMARK(pr->private_kill_next);
@@ -814,6 +812,7 @@ resolve_prefix_val {
   Resolve_Prefix *rp = (Resolve_Prefix *)p;
   gcMARK(rp->toplevels);
   gcMARK(rp->stxes);
+  gcMARK(rp->delay_info);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -1146,6 +1145,7 @@ mark_load_handler_data {
   gcMARK(d->p);
   gcMARK(d->stxsrc);
   gcMARK(d->expected_module);
+  gcMARK(d->delay_load_info);
   
  size:
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));
@@ -1314,6 +1314,26 @@ mark_print_params {
   gcMARK(pp->print_buffer);
  size:
   gcBYTES_TO_WORDS(sizeof(PrintParams));
+}
+
+mark_marshal_tables {
+ mark:
+  Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p;
+  gcMARK(mt->symtab);
+  gcMARK(mt->rns);
+  gcMARK(mt->rn_refs);
+  gcMARK(mt->st_refs);
+  gcMARK(mt->st_ref_stack);
+  gcMARK(mt->reverse_map);
+  gcMARK(mt->same_map);
+  gcMARK(mt->top_map);
+  gcMARK(mt->key_map);
+  gcMARK(mt->delay_map);
+  gcMARK(mt->rn_saved);
+  gcMARK(mt->shared_offsets);
+  gcMARK(mt->sorted_keys);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));
 }
 
 END print;
@@ -1715,10 +1735,13 @@ mark_cport {
   gcMARK(cp->start);
   gcMARK(cp->orig_port);
   gcMARK(cp->ht);
+  gcMARK(cp->ut);
   gcMARK(cp->symtab);
   gcMARK(cp->insp);
   gcMARK(cp->magic_sym);
   gcMARK(cp->magic_val);
+  gcMARK(cp->shared_offsets);
+  gcMARK(cp->delay_info);
  size:
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -1740,8 +1763,31 @@ mark_read_params {
   gcMARK(rp->table);
   gcMARK(rp->magic_sym);
   gcMARK(rp->magic_val);
+  gcMARK(rp->delay_load_info);
  size:
   gcBYTES_TO_WORDS(sizeof(ReadParams));
+}
+
+mark_delay_load {
+ mark:
+  Scheme_Load_Delay *ld = (Scheme_Load_Delay *)p;
+  gcMARK(ld->path);
+  gcMARK(ld->symtab);
+  gcMARK(ld->shared_offsets);
+  gcMARK(ld->insp);
+  gcMARK(ld->rn_memory);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
+}
+
+mark_unmarshal_tables {
+ mark:
+  Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
+  gcMARK(ut->rns);
+  gcMARK(ut->rp);
+  gcMARK(ut->decoded);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Unmarshal_Tables));
 }
 
 END read;

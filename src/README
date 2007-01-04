@@ -50,9 +50,9 @@ the Unix instructions below, but note the following:
    bundle MrEd.app that goes into the `plt' directory.  Installation
    creates a script, plt/bin/mred, that runs the bundle.
 
- * The --enable-shared flag for `configure' is redundant (i.e., builds
-   create and use frameworks by default), and --disable-shared is not
-   supported.
+ * The --enable-shared flag for `configure' should not be used,
+   because builds create and use frameworks by default. Furthermore,
+   --disable-shared is not supported.
 
  * To build an X11-based MrEd, run `configure' with the --enable-xonx
    flag. Frameworks are not used for such builds. The --enable-xonx

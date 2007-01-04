@@ -66,6 +66,9 @@ static Scheme_Object *read_decimal_as_inexact(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_dot(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_quasi(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_reader(int, Scheme_Object *[]);
+#ifdef LOAD_ON_DEMAND
+static Scheme_Object *read_delay_load(int, Scheme_Object *[]);
+#endif
 static Scheme_Object *print_graph(int, Scheme_Object *[]);
 static Scheme_Object *print_struct(int, Scheme_Object *[]);
 static Scheme_Object *print_box(int, Scheme_Object *[]);
@@ -124,6 +127,7 @@ typedef struct ReadParams {
   int honu_mode;
   Readtable *table;
   Scheme_Object *magic_sym, *magic_val;
+  Scheme_Object *delay_load_info;
 } ReadParams;
 
 #define THREAD_FOR_LOCALS scheme_current_thread
@@ -475,6 +479,13 @@ void scheme_init_read(Scheme_Env *env)
 						       "read-accept-reader",
 						       MZCONFIG_CAN_READ_READER),
 			     env);
+#ifdef LOAD_ON_DEMAND
+  scheme_add_global_constant("read-on-demand-source",
+			     scheme_register_parameter(read_delay_load,
+						       "read-on-demand-source",
+						       MZCONFIG_DELAY_LOAD_INFO),
+			     env);
+#endif
   scheme_add_global_constant("print-graph",
 			     scheme_register_parameter(print_graph,
 						       "print-graph",
@@ -711,6 +722,24 @@ print_honu(int argc, Scheme_Object *argv[])
 {
   DO_CHAR_PARAM("print-honu", MZCONFIG_HONU_MODE);
 }
+
+#ifdef LOAD_ON_DEMAND
+static Scheme_Object *rdl_check(int argc, Scheme_Object **argv)
+{
+  return argv[0];
+}
+
+static Scheme_Object *
+read_delay_load(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("read-on-demand-source",
+			     scheme_make_integer(MZCONFIG_DELAY_LOAD_INFO),
+			     argc, argv,
+			     -1, rdl_check, 
+			     "complete path or string, optionally paired with an exact integer", 1);
+
+}
+#endif
 
 /*========================================================================*/
 /*                             main read loop                             */
@@ -1840,7 +1869,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
 Scheme_Object *
 _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int honu_mode, 
 		      int recur, int extra_char, Scheme_Object *init_readtable,
-		      Scheme_Object *magic_sym, Scheme_Object *magic_val)
+		      Scheme_Object *magic_sym, Scheme_Object *magic_val,
+                      Scheme_Object *delay_load_info)
 {
   Scheme_Object *v, *v2;
   Scheme_Config *config;
@@ -1875,6 +1905,12 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int h
   params.can_read_quasi = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CAN_READ_DOT);
   params.can_read_dot = SCHEME_TRUEP(v);
+  if (!delay_load_info)
+    delay_load_info = scheme_get_param(config, MZCONFIG_DELAY_LOAD_INFO);
+  if (SCHEME_TRUEP(delay_load_info))
+    params.delay_load_info = delay_load_info;
+  else
+    params.delay_load_info = NULL;
   params.honu_mode = honu_mode;
   if (honu_mode)
     params.table = NULL;
@@ -1966,7 +2002,8 @@ static void *scheme_internal_read_k(void)
   Scheme_Object *stxsrc = (Scheme_Object *)p->ku.k.p2;
   Scheme_Object *init_readtable = (Scheme_Object *)p->ku.k.p3;
   Scheme_Object *magic_sym = (Scheme_Object *)p->ku.k.p4;
-  Scheme_Object *magic_val = (Scheme_Object *)p->ku.k.p5;
+  Scheme_Object *magic_val = NULL;
+  Scheme_Object *delay_load_info = (Scheme_Object *)p->ku.k.p5;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
@@ -1974,15 +2011,21 @@ static void *scheme_internal_read_k(void)
   p->ku.k.p4 = NULL;
   p->ku.k.p5 = NULL;
 
+  if (magic_sym) {
+    magic_val = SCHEME_CDR(magic_sym);
+    magic_sym = SCHEME_CAR(magic_sym);
+  }
+
   return (void *)_scheme_internal_read(port, stxsrc, p->ku.k.i1, p->ku.k.i2, 
 				       p->ku.k.i3, p->ku.k.i4, init_readtable,
-				       magic_sym, magic_val);
+				       magic_sym, magic_val, delay_load_info);
 }
 
 Scheme_Object *
 scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cantfail, int honu_mode, 
 		     int recur, int pre_char, Scheme_Object *init_readtable, 
-		     Scheme_Object *magic_sym, Scheme_Object *magic_val)
+		     Scheme_Object *magic_sym, Scheme_Object *magic_val,
+                     Scheme_Object *delay_load_info)
 {
   Scheme_Thread *p = scheme_current_thread;
 
@@ -1994,8 +2037,12 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
     scheme_alloc_list_stack(p);
 
   if (cantfail) {
-    return _scheme_internal_read(port, stxsrc, crc, honu_mode, recur, -1, NULL, magic_sym, magic_val);
+    return _scheme_internal_read(port, stxsrc, crc, honu_mode, recur, -1, NULL, 
+                                 magic_sym, magic_val, delay_load_info);
   } else {
+    if (magic_sym)
+      magic_sym = scheme_make_pair(magic_sym, magic_val);
+
     p->ku.k.p1 = (void *)port;
     p->ku.k.p2 = (void *)stxsrc;
     p->ku.k.i1 = crc;
@@ -2004,7 +2051,7 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
     p->ku.k.i4 = pre_char;
     p->ku.k.p3 = (void *)init_readtable;
     p->ku.k.p4 = (void *)magic_sym;
-    p->ku.k.p5 = (void *)magic_val;
+    p->ku.k.p5 = (void *)delay_load_info;
 
     return (Scheme_Object *)scheme_top_level_do(scheme_internal_read_k, 0);
   }
@@ -2012,12 +2059,12 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
 
 Scheme_Object *scheme_read(Scheme_Object *port)
 {
-  return scheme_internal_read(port, NULL, -1, 0, 0, 0, -1, NULL, NULL, NULL);
+  return scheme_internal_read(port, NULL, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
 }
 
 Scheme_Object *scheme_read_syntax(Scheme_Object *port, Scheme_Object *stxsrc)
 {
-  return scheme_internal_read(port, stxsrc, -1, 0, 0, 0, -1, NULL, NULL, NULL);
+  return scheme_internal_read(port, stxsrc, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
 }
 
 Scheme_Object *scheme_resolve_placeholders(Scheme_Object *obj, int mkstx)
@@ -3832,6 +3879,17 @@ static void pop_indentation(Scheme_Object *indentation)
 /*                               .zo reader                               */
 /*========================================================================*/
 
+typedef struct Scheme_Load_Delay {
+  MZTAG_IF_REQUIRED
+  Scheme_Object *path;
+  long file_offset, size;
+  unsigned long symtab_size;
+  Scheme_Object **symtab;
+  long *shared_offsets;
+  Scheme_Object *insp;
+  Scheme_Hash_Table *rn_memory;
+} Scheme_Load_Delay;
+
 #define ZO_CHECK(x) if (!(x)) scheme_ill_formed_code(port);
 #define RANGE_CHECK(x, y) ZO_CHECK (x y)
 #define RANGE_CHECK_GETS(x) RANGE_CHECK(x, <= port->size - port->pos)
@@ -3842,12 +3900,14 @@ typedef struct CPort {
   unsigned char *start;
   unsigned long symtab_size;
   long base;
-  int flags;
   Scheme_Object *orig_port;
   Scheme_Hash_Table **ht;
+  Scheme_Unmarshal_Tables *ut;
   Scheme_Object **symtab;
   Scheme_Object *insp; /* inspector for module-variable access */
   Scheme_Object *magic_sym, *magic_val;
+  long *shared_offsets;
+  Scheme_Load_Delay *delay_info;
 } CPort;
 #define CP_GETC(cp) ((int)(cp->start[cp->pos++]))
 #define CP_TELL(port) (port->pos + port->base)
@@ -3877,29 +3937,24 @@ void scheme_ill_formed(struct CPort *port
 
 XFORM_NONGCING static long read_compact_number(CPort *port)
 {
-  /* >>> See also read_compact_number_from_port(), below. <<< */
-
   long flag, v, a, b, c, d;
 
   NUM_ZO_CHECK(port->pos < port->size);
 
   flag = CP_GETC(port);
 
-  if (flag < 252)
+  if (flag < 128)
     return flag;
-  else if (flag == 252) {
-    NUM_ZO_CHECK(port->pos + 1 < port->size);
-
-    a = CP_GETC(port);
-    b = CP_GETC(port);
-
-    v = a
-      + (b << 8);
-    return v;
-  } else if (flag == 254) {
+  else if (!(flag & 0x40)) {
     NUM_ZO_CHECK(port->pos < port->size);
 
-    return -CP_GETC(port);
+    a = CP_GETC(port);
+
+    v = (flag & 0x3F)
+      + (a << 6);
+    return v;
+  } else if (!(flag & 0x20)) {
+    return -(flag & 0x1F);
   }
 
   NUM_ZO_CHECK(port->pos + 3 < port->size);
@@ -3914,7 +3969,7 @@ XFORM_NONGCING static long read_compact_number(CPort *port)
     + (c << 16)
     + (d << 24);
 
-  if (flag == 253)
+  if (flag & 0x10)
     return v;
   else
     return -v;
@@ -4005,7 +4060,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
     switch(cpt_branch[ch]) {
     case CPT_ESCAPE:
-    case CPT_HASHED_ESCAPE:
       {
 	int len;
 	Scheme_Object *ep;
@@ -4043,12 +4097,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	params.table = NULL;
 
 	v = read_inner(ep, NULL, port->ht, scheme_null, &params, 0);
-
-        if (ch == CPT_HASHED_ESCAPE) {
-          l = read_compact_number(port);
-          RANGE_CHECK(l, < port->symtab_size);
-          port->symtab[l] = v;
-        }
       }
       break;
     case CPT_SYMBOL:
@@ -4059,15 +4107,18 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
       if (SAME_OBJ(v, port->magic_sym))
 	v = port->magic_val;
-
-      l = read_compact_number(port);
-      RANGE_CHECK(l, < port->symtab_size);
-      port->symtab[l] = v;
       break;
     case CPT_SYMREF:
       l = read_compact_number(port);
       RANGE_CHECK(l, < port->symtab_size);
       v = port->symtab[l];
+      if (!v) {
+        long save_pos = port->pos;
+        port->pos = port->shared_offsets[l - 1];
+        v = read_compact(port, 0);
+        port->pos = save_pos;
+        port->symtab[l] = v;
+      }
       break;
     case CPT_WEIRD_SYMBOL:
       {
@@ -4083,11 +4134,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	  v = scheme_make_exact_symbol(s, l);
 	else
 	  v = scheme_intern_exact_parallel_symbol(s, l);
-
-	l = read_compact_number(port);
-	RANGE_CHECK(l, < port->symtab_size);
-	port->symtab[l] = v;
-	/* The fact that other uses of the symbol go through the table
+        
+	/* The fact that all uses of the symbol go through the table
 	   means that uninterned symbols are consistently re-created for
 	   a particular compiled expression. */
       }
@@ -4097,20 +4145,12 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       RANGE_CHECK_GETS(l);
       s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
       v = scheme_intern_exact_keyword(s, l);
-
-      l = read_compact_number(port);
-      RANGE_CHECK(l, < port->symtab_size);
-      port->symtab[l] = v;
       break;
     case CPT_BYTE_STRING:
       l = read_compact_number(port);
       RANGE_CHECK_GETS(l);
       s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
       v = scheme_make_immutable_sized_byte_string(s, l, l < BLK_BUF_SIZE);
-      
-      l = read_compact_number(port);
-      RANGE_CHECK(l, < port->symtab_size);
-      port->symtab[l] = v;
       break;
     case CPT_CHAR_STRING:
       {
@@ -4124,10 +4164,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	scheme_utf8_decode_all((const unsigned char *)s, el, us, 0);
 	us[l] = 0;
 	v = scheme_make_immutable_sized_char_string(us, l, 0);
-
-        l = read_compact_number(port);
-        RANGE_CHECK(l, < port->symtab_size);
-        port->symtab[l] = v;
       }
       break;
     case CPT_CHAR:
@@ -4218,7 +4254,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	  l = scheme_make_pair(scheme_make_pair(k, v), l);
 	}
 
-	/* Map an unintenred sym to l so that resolve_references
+	/* Map an uninterned sym to l so that resolve_references
 	   completes the table construction. */
 	scheme_hash_set(t, an_uninterned_symbol, l);
 	if (!(*port->ht)) {
@@ -4234,15 +4270,26 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_STX:
     case CPT_GSTX:
       {
-	if (!local_rename_memory) {
+	if (!port->ut) {
+          Scheme_Unmarshal_Tables *ut;
 	  Scheme_Hash_Table *rht;
+          char *decoded;
+
+          ut = MALLOC_ONE_RT(Scheme_Unmarshal_Tables);
+          SET_REQUIRED_TAG(ut->type = scheme_rt_unmarshal_info);
+          port->ut = ut;
+          ut->rp = port;
+
+          decoded = (char *)scheme_malloc_atomic(port->symtab_size);
+          memset(decoded, 0, port->symtab_size);
+          ut->decoded = decoded;
+
 	  rht = scheme_make_hash_table(SCHEME_hash_ptr);
-	  local_rename_memory = rht;
+	  port->ut->rns = rht;
 	}
 
 	v = read_compact(port, 1);
-	v = scheme_datum_to_syntax(v, scheme_false, (Scheme_Object *)local_rename_memory,
-				   ch == CPT_GSTX, 0);
+	v = scheme_unmarshal_datum_to_syntax(v, port->ut, ch == CPT_GSTX);
 	scheme_num_read_syntax_objects++;
 	if (!v)
 	  scheme_ill_formed_code(port);
@@ -4332,14 +4379,10 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	{
 	  Scheme_Object *path, *base;
 
-	  l = read_compact_number(port); /* symtab index */
 	  path = read_compact(port, 0);
 	  base = read_compact(port, 0);
 
 	  v = scheme_make_modidx(path, base, scheme_false);
-
-	  RANGE_CHECK(l, < port->symtab_size);
-	  port->symtab[l] = v;
 	}
 	break;
     case CPT_MODULE_VAR:
@@ -4348,7 +4391,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	Scheme_Object *mod, *var;
 	int pos;
 
-	l = read_compact_number(port); /* symtab index */
 	mod = read_compact(port, 0);
 	var = read_compact(port, 0);
 	pos = read_compact_number(port);
@@ -4361,9 +4403,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	mv->pos = pos;
 
 	v = (Scheme_Object *)mv;
-
-	RANGE_CHECK(l, < port->symtab_size);
-	port->symtab[l] = v;
       }
       break;
     case CPT_PATH:
@@ -4372,7 +4411,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	RANGE_CHECK_GETS(l);
 	s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
 	v = scheme_make_sized_path(s, l, l < BLK_BUF_SIZE);
-	l = read_compact_number(port); /* symtab index */
 
 	if (scheme_is_relative_path(SCHEME_PATH_VAL(v), SCHEME_PATH_LEN(v), SCHEME_PLATFORM_PATH_KIND)) {
 	  /* Resolve relative path using the current load-relative directory: */
@@ -4385,14 +4423,13 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	    v = scheme_build_path(2, a);
 	  }
 	}
-
-	port->symtab[l] = v;
       }
       break;
     case CPT_CLOSURE:
       {
         Scheme_Closure *cl;
         l = read_compact_number(port);
+        RANGE_CHECK(l, < port->symtab_size);
         cl = scheme_malloc_empty_closure();
         port->symtab[l] = (Scheme_Object *)cl;
         v = read_compact(port, 0);
@@ -4403,6 +4440,27 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         }
         cl->code = ((Scheme_Closure *)v)->code;
         v = (Scheme_Object *)cl;
+        break;
+      }
+    case CPT_DELAY_REF:
+      {
+        l = read_compact_number(port);
+        RANGE_CHECK(l, < port->symtab_size);
+        v = port->symtab[l];
+        if (!v) {
+          if (port->delay_info) {
+            /* This is where we construct information for
+               loading the syntax object on demand. */
+            v = scheme_make_raw_pair(scheme_make_integer(l),
+                                     (Scheme_Object *)port->delay_info);
+          } else {
+            long save_pos = port->pos;
+            port->pos = port->shared_offsets[l - 1];
+            v = read_compact(port, 0);
+            port->pos = save_pos;
+            port->symtab[l] = v;
+          }
+        }
         break;
       }
     case CPT_SMALL_LOCAL_START:
@@ -4441,10 +4499,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
 	if (SAME_OBJ(v, port->magic_sym))
 	  v = port->magic_val;
-
-	l = read_compact_number(port);
-	RANGE_CHECK(l, < port->symtab_size);
-	port->symtab[l] = v;
       }
       break;
     case CPT_SMALL_NUMBER_START:
@@ -4698,40 +4752,19 @@ static Scheme_Object *read_marshalled(int type, CPort *port)
   return l;
 }
 
-static long read_compact_number_from_port(Scheme_Object *port)
+static long read_simple_number_from_port(Scheme_Object *port)
 {
-  /* >>> See also read_compact_number(), above. <<< */
+  long a, b, c, d;
 
-  long flag, v, a, b, c, d;
+  a = (unsigned char)scheme_get_byte(port);
+  b = (unsigned char)scheme_get_byte(port);
+  c = (unsigned char)scheme_get_byte(port);
+  d = (unsigned char)scheme_get_byte(port);
 
-  flag = scheme_get_byte(port);
-
-  if (flag < 252)
-    return flag;
-  if (flag == 254)
-    return -scheme_get_byte(port);
-
-  a = scheme_get_byte(port);
-  b = scheme_get_byte(port);
-
-  if (flag == 252) {
-    v = a
-      + (b << 8);
-    return v;
-  }
-
-  c = scheme_get_byte(port);
-  d = scheme_get_byte(port);
-
-  v = a
-    + (b << 8)
-    + (c << 16)
-    + (d << 24);
-
-  if (flag == 253)
-    return v;
-  else
-    return -v;
+  return (a
+          + (b << 8)
+          + (c << 16)
+          + (d << 24));
 }
 
 /* "#~" has been read */
@@ -4743,10 +4776,13 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *result, *insp;
-  long size, got;
+  long size, shared_size, got, offset = 0;
   CPort *rp;
   long symtabsize;
   Scheme_Object **symtab;
+  long *so;
+  Scheme_Load_Delay *delay_info;
+  int all_short;
 
   if (USE_LISTSTACK(!p->list_stack))
     scheme_alloc_list_stack(p);
@@ -4780,8 +4816,16 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   if (!variable_references)
     variable_references = scheme_make_builtin_references_table();
 
+  /* Allow delays? */
+  if (params->delay_load_info) {
+    delay_info = MALLOC_ONE_RT(Scheme_Load_Delay);
+    SET_REQUIRED_TAG(delay_info->type = scheme_rt_delay_load_info);
+    delay_info->path = params->delay_load_info;
+  } else
+    delay_info = NULL;
+
   /* Check version: */
-  size = read_compact_number_from_port(port);
+  size = scheme_get_byte(port);
   {
     char buf[64];
 
@@ -4796,17 +4840,59 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 		      "read (compiled): code compiled for version %s, not %s",
 		      (buf[0] ? buf : "???"), MZSCHEME_VERSION);
   }
+  offset += size + 1;
 
-  symtabsize = read_compact_number_from_port(port);
+  symtabsize = read_simple_number_from_port(port);
+  offset += 4;
+  
+  /* Load table mapping symtab indices to stream positions: */
 
-  size = read_compact_number_from_port(port);
+  all_short = scheme_get_byte(port);
+  so = (long *)scheme_malloc_atomic(sizeof(long) * symtabsize);
+  if ((got = scheme_get_bytes(port, (all_short ? 2 : 4) * (symtabsize - 1), (char *)so, 0)) 
+      != ((all_short ? 2 : 4) * (symtabsize - 1)))
+    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+		    "read (compiled): ill-formed code (bad table count: %ld != %ld)",
+		    got, (all_short ? 2 : 4) * (symtabsize - 1));
+  offset += got;
+
+  {
+    /* This loop runs top to bottom, since sizeof(long) may be larger
+       than the decoded integers (but it's never shorter) */
+    long j, v;
+    unsigned char *so_c = (unsigned char *)so;
+    for (j = symtabsize - 1; j--; ) {
+      if (all_short) {
+        v = so_c[j * 2]
+          + (so_c[j * 2 + 1] << 8);
+      } else {
+        v = so_c[j * 4]
+          + (so_c[j * 4 + 1] << 8)
+          + (so_c[j * 4 + 2] << 16)
+          + (so_c[j * 4 + 3] << 24);
+      }
+      so[j] = v;
+    }
+  }
+
+  /* Continue reading content */
+
+  shared_size = read_simple_number_from_port(port);
+  size = read_simple_number_from_port(port);
+
+  if (shared_size >= size) {
+    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+		    "read (compiled): ill-formed code (shared size %ld >= total size %ld)",
+		    shared_size, size);
+  }
+
+  offset += 8;
+
   rp = MALLOC_ONE_RT(CPort);
-#ifdef MZ_PRECISE_GC
-  rp->type = scheme_rt_compact_port;
-#endif
+  SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
   {
     unsigned char *st;
-    st = (unsigned char *)scheme_malloc_atomic(size);
+    st = (unsigned char *)scheme_malloc_atomic(size + 1);
     rp->start = st;
   }
   rp->pos = 0;
@@ -4822,8 +4908,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 		    "read (compiled): ill-formed code (bad count: %ld != %ld, started at %ld)",
 		    got, size, rp->base);
 
-  local_rename_memory = NULL;
-
   symtab = MALLOC_N(Scheme_Object *, symtabsize);
   rp->symtab_size = symtabsize;
   rp->ht = ht;
@@ -4835,9 +4919,37 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   rp->magic_sym = params->magic_sym;
   rp->magic_val = params->magic_val;
 
-  result = read_marshalled(scheme_compilation_top_type, rp);
+  rp->shared_offsets = so;
+  rp->delay_info = delay_info;
 
-  local_rename_memory = NULL;
+  if (!delay_info) {
+    /* Read shared parts: */
+    long j, len;
+    Scheme_Object *v;
+    len = symtabsize;
+    for (j = 1; j < len; j++) {
+      if (!symtab[j]) {
+        v = read_compact(rp, 0);
+        symtab[j] = v;
+      } else {
+        if (j+1 < len)
+          rp->pos = so[j];
+        else
+          rp->pos = shared_size;
+      }
+    }
+  } else {
+    rp->pos = shared_size; /* skip shared part */
+    delay_info->file_offset = offset + 2; /* +2 is for #~ */
+    delay_info->size = shared_size;
+    delay_info->symtab_size = rp->symtab_size;
+    delay_info->symtab = rp->symtab;
+    delay_info->shared_offsets = rp->shared_offsets;
+    delay_info->insp = rp->insp;
+  }
+
+  /* Read main body: */
+  result = read_marshalled(scheme_compilation_top_type, rp);
 
   if (SAME_TYPE(SCHEME_TYPE(result), scheme_compilation_top_type)) {
     Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)result;
@@ -4853,6 +4965,100 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
     scheme_ill_formed_code(rp);
 
   return result;
+}
+
+Scheme_Object *scheme_load_delayed_code(int which, Scheme_Load_Delay *delay_info)
+{
+  CPort *rp;
+  char *filename;
+  long size, got;
+  unsigned char *st;
+  Scheme_Object *port, *v;
+  Scheme_Hash_Table **ht;
+
+  filename = scheme_expand_filename(SCHEME_PATH_VAL(delay_info->path),
+                                    SCHEME_PATH_LEN(delay_info->path),
+                                    NULL, NULL, 0);
+  port = scheme_open_input_file(filename, "on-demand-loader");
+
+  size = delay_info->size;
+
+  rp = MALLOC_ONE_RT(CPort);
+  SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
+  st = (unsigned char *)scheme_malloc_atomic(size + 1);
+  rp->start = st;
+  rp->pos = 0;
+  rp->base = 0;
+  rp->orig_port = port;
+  rp->size = size;
+
+  ht = MALLOC_N(Scheme_Hash_Table *, 1);
+
+  scheme_set_file_position(port, delay_info->file_offset);
+
+  if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
+    scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
+		    "on-demand load: ill-formed code (bad count: %ld != %ld, started at %ld)",
+		    got, size, rp->base);
+
+  scheme_close_input_port(port);
+
+  rp->symtab_size = delay_info->symtab_size;
+  rp->ht = ht;
+  rp->symtab = delay_info->symtab;
+  rp->insp = delay_info->insp;
+  rp->shared_offsets = delay_info->shared_offsets;
+  rp->delay_info = delay_info;
+  
+  rp->pos = delay_info->shared_offsets[which - 1];
+  v = read_compact(rp, 0);
+  
+  delay_info->symtab[which] = v;
+
+  if (*ht) {
+    resolve_references(v, NULL, 0);
+  }
+  
+  return v;
+}
+
+Scheme_Object *scheme_unmarshal_wrap_get(Scheme_Unmarshal_Tables *ut, 
+                                         Scheme_Object *wraps_key, 
+                                         int *_decoded)
+{
+  long l;
+  l = SCHEME_INT_VAL(wraps_key);
+
+  if ((l < 0) || (l >= ut->rp->symtab_size))
+    scheme_ill_formed_code(ut->rp);
+
+  if (!ut->rp->symtab[l]) {
+    Scheme_Object *v;
+    long save_pos;
+
+    if (!ut->rp->delay_info)
+      scheme_ill_formed_code(ut->rp);
+
+    save_pos = ut->rp->pos;
+    ut->rp->pos = ut->rp->shared_offsets[l - 1];
+    v = read_compact(ut->rp, 0);
+    ut->rp->pos = save_pos;
+    ut->rp->symtab[l] = v;
+  }
+
+  *_decoded = ut->decoded[l];
+  return ut->rp->symtab[l];
+}
+
+void scheme_unmarshal_wrap_set(Scheme_Unmarshal_Tables *ut, 
+                               Scheme_Object *wraps_key, 
+                               Scheme_Object *v)
+{
+  long l;
+  l = SCHEME_INT_VAL(wraps_key);
+
+  ut->rp->symtab[l] = v;
+  ut->decoded[l] = 1;
 }
 
 /*========================================================================*/
@@ -5499,6 +5705,8 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_compact_port, mark_cport);
   GC_REG_TRAV(scheme_readtable_type, mark_readtable);
   GC_REG_TRAV(scheme_rt_read_params, mark_read_params);
+  GC_REG_TRAV(scheme_rt_delay_load_info, mark_delay_load);
+  GC_REG_TRAV(scheme_rt_unmarshal_info, mark_unmarshal_tables);
 }
 
 END_XFORM_SKIP;

@@ -37,57 +37,69 @@
   (define old-paramz #f)
   (define old-break-paramz #f)
 
+  (define exited-key (gensym 'as-exit))
+  (define lock-tag (make-continuation-prompt-tag 'lock))
+
   (define (as-entry f)
     (cond
      [(eq? monitor-owner (current-thread))
       (f)]
      [else
-      ((let/ec k
-	 (dynamic-wind
-	     (lambda () 
-	       (wx:in-atomic-region monitor-sema)	     
-	       (set! monitor-owner (current-thread)))
-	     (lambda () 
-	       (set! old-paramz (current-parameterization))
-	       (set! old-break-paramz (current-break-parameterization))
-	       (parameterize ([error-value->string-handler entered-err-string-handler])
-                 (with-handlers ([void (lambda (exn)
-                                         ;; Get out of atomic region before letting
-                                         ;;  an exception handler work
-                                         (k (lambda () (raise exn))))])
+      (with-continuation-mark 
+          exited-key 
+          #f
+        (call-with-continuation-prompt
+         (lambda ()
+           (dynamic-wind
+               (lambda () 
+                 (wx:in-atomic-region monitor-sema)	     
+                 (set! monitor-owner (current-thread)))
+               (lambda () 
+                 (set! old-paramz (current-parameterization))
+                 (set! old-break-paramz (current-break-parameterization))
+                 (parameterize ([error-value->string-handler entered-err-string-handler])
                    (parameterize-break 
                     #f
-                    (call-with-values 
-                        f 
-                      (lambda args (lambda () (apply values args))))))))
-	     (lambda ()
-	       (set! monitor-owner #f)
-	       (semaphore-post monitor-sema)
-	       (wx:in-atomic-region #f)))))]))
-
-					; entry-point macros in macros.ss
+                    (call-with-exception-handler
+                     (lambda (exn)
+                       ;; Get out of atomic region before letting
+                       ;;  an exception handler work
+                       (if (continuation-mark-set-first #f exited-key)
+                           exn ; defer to previous exn handler
+                           (abort-current-continuation
+                            lock-tag
+                            (lambda () (raise exn)))))
+                     f))))
+               (lambda ()
+                 (set! monitor-owner #f)
+                 (semaphore-post monitor-sema)
+                 (wx:in-atomic-region #f))))
+         lock-tag))]))
 
   (define (as-exit f)
     ;; (unless (eq? monitor-owner (current-thread)) (error 'monitor-exit "not in monitored area"))
     (let ([paramz old-paramz]
 	  [break-paramz old-break-paramz])
-      (call-with-parameterization
-       paramz
-       (lambda ()
-	 (call-with-break-parameterization
-	  break-paramz
-	  (lambda ()
-	    (dynamic-wind
-		(lambda ()		
-		  (set! monitor-owner #f)	 
-		  (semaphore-post monitor-sema)
-		  (wx:in-atomic-region #f))
-		f
-		(lambda ()
-		  (set! old-paramz paramz)
-		  (set! old-break-paramz break-paramz)
-		  (wx:in-atomic-region monitor-sema)
-		  (set! monitor-owner (current-thread))))))))))
+      (with-continuation-mark 
+          exited-key 
+          #t ; disables special exception handling
+        (call-with-parameterization
+         paramz
+         (lambda ()
+           (call-with-break-parameterization
+            break-paramz
+            (lambda ()
+              (dynamic-wind
+                  (lambda ()		
+                    (set! monitor-owner #f)	 
+                    (semaphore-post monitor-sema)
+                    (wx:in-atomic-region #f))
+                  f
+                  (lambda ()
+                    (set! old-paramz paramz)
+                    (set! old-break-paramz break-paramz)
+                    (wx:in-atomic-region monitor-sema)
+                    (set! monitor-owner (current-thread)))))))))))
 
   (define-syntax entry-point 
     (lambda (stx)

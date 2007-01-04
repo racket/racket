@@ -99,6 +99,9 @@ fi
 if test "${enable_dynlib}" = "no" ; then
   enable_shared=no
 fi
+if test "${enable_dynlib}" = "yes" ; then
+  enable_shared=yes
+fi
 if test "${enable_shared}" != "yes" ; then
   enable_lt=no
 fi
@@ -107,6 +110,13 @@ if test "${enable_lt}" = "yes" ; then
   echo " Supply a program for --enable-lt, something like this:"
   echo "   --enable-lt=/usr/bin/libtool"
   exit 1
+fi
+
+if test "${enable_shared}" = "yes" ; then
+  if test "$OS" = "Darwin" ; then
+    echo "ERROR: don't use --enable-shared or --enable-dynlib under Mac OS X"
+    exit 1
+  fi
 fi
 
 enable_quartz=no
@@ -591,7 +601,6 @@ case $OS in
       DYN_CFLAGS=""
       enable_xrender=no
       enable_cairo=no
-      enable_shared=no
       enable_gl=no
       enable_pthread=no
       if test "${enable_libfw}" = "yes" ; then

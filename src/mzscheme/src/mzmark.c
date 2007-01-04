@@ -1624,8 +1624,6 @@ static int thread_val_MARK(void *p) {
   
   gcMARK(pr->list_stack);
   
-  gcMARK(pr->rn_memory);
-  
   gcMARK(pr->kill_data);
   gcMARK(pr->private_kill_data);
   gcMARK(pr->private_kill_next);
@@ -1712,8 +1710,6 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->ku.k.p5);
   
   gcFIXUP(pr->list_stack);
-  
-  gcFIXUP(pr->rn_memory);
   
   gcFIXUP(pr->kill_data);
   gcFIXUP(pr->private_kill_data);
@@ -2081,6 +2077,7 @@ static int resolve_prefix_val_MARK(void *p) {
   Resolve_Prefix *rp = (Resolve_Prefix *)p;
   gcMARK(rp->toplevels);
   gcMARK(rp->stxes);
+  gcMARK(rp->delay_info);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2090,6 +2087,7 @@ static int resolve_prefix_val_FIXUP(void *p) {
   Resolve_Prefix *rp = (Resolve_Prefix *)p;
   gcFIXUP(rp->toplevels);
   gcFIXUP(rp->stxes);
+  gcFIXUP(rp->delay_info);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2864,6 +2862,7 @@ static int mark_load_handler_data_MARK(void *p) {
   gcMARK(d->p);
   gcMARK(d->stxsrc);
   gcMARK(d->expected_module);
+  gcMARK(d->delay_load_info);
   
   return
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));
@@ -2877,6 +2876,7 @@ static int mark_load_handler_data_FIXUP(void *p) {
   gcFIXUP(d->p);
   gcFIXUP(d->stxsrc);
   gcFIXUP(d->expected_module);
+  gcFIXUP(d->delay_load_info);
   
   return
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));
@@ -3283,6 +3283,53 @@ static int mark_print_params_FIXUP(void *p) {
 
 #define mark_print_params_IS_ATOMIC 0
 #define mark_print_params_IS_CONST_SIZE 1
+
+
+static int mark_marshal_tables_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));
+}
+
+static int mark_marshal_tables_MARK(void *p) {
+  Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p;
+  gcMARK(mt->symtab);
+  gcMARK(mt->rns);
+  gcMARK(mt->rn_refs);
+  gcMARK(mt->st_refs);
+  gcMARK(mt->st_ref_stack);
+  gcMARK(mt->reverse_map);
+  gcMARK(mt->same_map);
+  gcMARK(mt->top_map);
+  gcMARK(mt->key_map);
+  gcMARK(mt->delay_map);
+  gcMARK(mt->rn_saved);
+  gcMARK(mt->shared_offsets);
+  gcMARK(mt->sorted_keys);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));
+}
+
+static int mark_marshal_tables_FIXUP(void *p) {
+  Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p;
+  gcFIXUP(mt->symtab);
+  gcFIXUP(mt->rns);
+  gcFIXUP(mt->rn_refs);
+  gcFIXUP(mt->st_refs);
+  gcFIXUP(mt->st_ref_stack);
+  gcFIXUP(mt->reverse_map);
+  gcFIXUP(mt->same_map);
+  gcFIXUP(mt->top_map);
+  gcFIXUP(mt->key_map);
+  gcFIXUP(mt->delay_map);
+  gcFIXUP(mt->rn_saved);
+  gcFIXUP(mt->shared_offsets);
+  gcFIXUP(mt->sorted_keys);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));
+}
+
+#define mark_marshal_tables_IS_ATOMIC 0
+#define mark_marshal_tables_IS_CONST_SIZE 1
 
 
 #endif  /* PRINT */
@@ -4248,10 +4295,13 @@ static int mark_cport_MARK(void *p) {
   gcMARK(cp->start);
   gcMARK(cp->orig_port);
   gcMARK(cp->ht);
+  gcMARK(cp->ut);
   gcMARK(cp->symtab);
   gcMARK(cp->insp);
   gcMARK(cp->magic_sym);
   gcMARK(cp->magic_val);
+  gcMARK(cp->shared_offsets);
+  gcMARK(cp->delay_info);
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -4261,10 +4311,13 @@ static int mark_cport_FIXUP(void *p) {
   gcFIXUP(cp->start);
   gcFIXUP(cp->orig_port);
   gcFIXUP(cp->ht);
+  gcFIXUP(cp->ut);
   gcFIXUP(cp->symtab);
   gcFIXUP(cp->insp);
   gcFIXUP(cp->magic_sym);
   gcFIXUP(cp->magic_val);
+  gcFIXUP(cp->shared_offsets);
+  gcFIXUP(cp->delay_info);
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -4312,6 +4365,7 @@ static int mark_read_params_MARK(void *p) {
   gcMARK(rp->table);
   gcMARK(rp->magic_sym);
   gcMARK(rp->magic_val);
+  gcMARK(rp->delay_load_info);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
@@ -4321,12 +4375,71 @@ static int mark_read_params_FIXUP(void *p) {
   gcFIXUP(rp->table);
   gcFIXUP(rp->magic_sym);
   gcFIXUP(rp->magic_val);
+  gcFIXUP(rp->delay_load_info);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
 
 #define mark_read_params_IS_ATOMIC 0
 #define mark_read_params_IS_CONST_SIZE 1
+
+
+static int mark_delay_load_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
+}
+
+static int mark_delay_load_MARK(void *p) {
+  Scheme_Load_Delay *ld = (Scheme_Load_Delay *)p;
+  gcMARK(ld->path);
+  gcMARK(ld->symtab);
+  gcMARK(ld->shared_offsets);
+  gcMARK(ld->insp);
+  gcMARK(ld->rn_memory);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
+}
+
+static int mark_delay_load_FIXUP(void *p) {
+  Scheme_Load_Delay *ld = (Scheme_Load_Delay *)p;
+  gcFIXUP(ld->path);
+  gcFIXUP(ld->symtab);
+  gcFIXUP(ld->shared_offsets);
+  gcFIXUP(ld->insp);
+  gcFIXUP(ld->rn_memory);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
+}
+
+#define mark_delay_load_IS_ATOMIC 0
+#define mark_delay_load_IS_CONST_SIZE 1
+
+
+static int mark_unmarshal_tables_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Unmarshal_Tables));
+}
+
+static int mark_unmarshal_tables_MARK(void *p) {
+  Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
+  gcMARK(ut->rns);
+  gcMARK(ut->rp);
+  gcMARK(ut->decoded);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Unmarshal_Tables));
+}
+
+static int mark_unmarshal_tables_FIXUP(void *p) {
+  Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
+  gcFIXUP(ut->rns);
+  gcFIXUP(ut->rp);
+  gcFIXUP(ut->decoded);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Unmarshal_Tables));
+}
+
+#define mark_unmarshal_tables_IS_ATOMIC 0
+#define mark_unmarshal_tables_IS_CONST_SIZE 1
 
 
 #endif  /* READ */

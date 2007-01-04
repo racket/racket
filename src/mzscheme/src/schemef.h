@@ -798,6 +798,7 @@ MZ_EXTERN char *scheme_getdrive(void);
 MZ_EXTERN Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base, int *isdir, int kind);
 MZ_EXTERN Scheme_Object *scheme_build_path(int argc, Scheme_Object **argv);
 MZ_EXTERN Scheme_Object *scheme_path_to_directory_path(Scheme_Object *p);
+MZ_EXTERN Scheme_Object *scheme_path_to_complete_path(Scheme_Object *path, Scheme_Object *relto_path);
 
 MZ_EXTERN Scheme_Object *scheme_make_path(const char *chars);
 MZ_EXTERN Scheme_Object *scheme_make_sized_path(char *chars, long len, int copy);

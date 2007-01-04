@@ -33,7 +33,7 @@ enum {
   CPT_MODULE_VAR, /* 30 */
   CPT_PATH,
   CPT_CLOSURE,
-  CPT_HASHED_ESCAPE,
+  CPT_DELAY_REF,
   _CPT_COUNT_
 };
 

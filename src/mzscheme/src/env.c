@@ -4228,7 +4228,7 @@ static Scheme_Object *read_local_unbox(Scheme_Object *obj)
 static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp = (Resolve_Prefix *)obj;
-  Scheme_Object *tv, *sv;
+  Scheme_Object *tv, *sv, *ds;
   int i;
 
   i = rp->num_toplevels;
@@ -4240,7 +4240,10 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   i = rp->num_stxes;
   sv = scheme_make_vector(i, NULL);
   while (i--) {
-    SCHEME_VEC_ELS(sv)[i] = rp->stxes[i];
+    ds = scheme_alloc_small_object();
+    ds->type = scheme_delay_syntax_type;
+    SCHEME_PTR_VAL(ds) = rp->stxes[i];
+    SCHEME_VEC_ELS(sv)[i] = ds;
   }
 
   return scheme_make_pair(scheme_make_integer(rp->num_lifts), scheme_make_pair(tv, sv));
@@ -4249,7 +4252,7 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
 static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp;
-  Scheme_Object *tv, *sv, **a;
+  Scheme_Object *tv, *sv, **a, *stx;
   int i;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
@@ -4279,7 +4282,15 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   i = rp->num_stxes;
   a = MALLOC_N(Scheme_Object *, i);
   while (i--) {
-    a[i] = SCHEME_VEC_ELS(sv)[i];
+    stx = SCHEME_VEC_ELS(sv)[i];
+    if (SCHEME_RPAIRP(stx)) {
+      rp->delay_info = (struct Scheme_Load_Delay *)SCHEME_CDR(stx);
+      rp->delay_refcount++;
+      stx = SCHEME_CAR(stx);
+    } else {
+      if (!SCHEME_STXP(stx)) return NULL;
+    }
+    a[i] = stx;
   }
   rp->stxes = a;
 

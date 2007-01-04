@@ -37,7 +37,7 @@
 #ifndef TEST
 # define TEST 1
 # include "my_qsort.c"
-void designate_modified(void *p);
+int designate_modified(void *p);
 #endif
 
 #ifdef __POWERPC__
@@ -236,8 +236,10 @@ kern_return_t catch_exception_raise(mach_port_t port,
   /* kernel return value is in exception_data[0], faulting address in
      exception_data[1] */
   if(exception_data[0] == KERN_PROTECTION_FAILURE) {
-    designate_modified((void*)exception_data[1]);
-    return KERN_SUCCESS;
+    if (designate_modified((void*)exception_data[1]))
+      return KERN_SUCCESS;
+    else
+      return KERN_FAILURE;
   } else 
 #endif
     return KERN_FAILURE;
@@ -355,18 +357,18 @@ static void macosx_init_exception_handler()
 char *normal_page = NULL;
 char *big_page = NULL;
 
-void designate_modified(void *p)
+int designate_modified(void *p)
 {
   if((p >= normal_page) && (p < (normal_page + MPAGE_SIZE))) {
     protect_pages(p, MPAGE_SIZE, 1);
-    return;
+    return 1;
   }
   if((p >= big_page) && (p < (big_page + BPAGE_SIZE))) {
     protect_pages(p, BPAGE_SIZE, 1);
-    return;
+    return 1;
   }
   printf("Unrecognized write: %p\n", p);
-  abort();
+  return 0;
 }
 
 int main(int argc, char **argv)

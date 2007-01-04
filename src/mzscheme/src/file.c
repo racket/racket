@@ -3423,6 +3423,14 @@ static Scheme_Object *path_to_complete_path(int argc, Scheme_Object **argv)
   return p;
 }
 
+Scheme_Object *scheme_path_to_complete_path(Scheme_Object *path, Scheme_Object *relto_path)
+{
+  Scheme_Object *a[2];
+  a[0] = path;
+  a[1] = relto_path;
+  return path_to_complete_path(relto_path ? 2 : 1, a);
+}
+
 #ifndef NO_FILE_SYSTEM_UTILS
 
 static char *filename_for_error(Scheme_Object *p)

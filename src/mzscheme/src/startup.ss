@@ -3383,8 +3383,7 @@
                         ((current-eval) (if (syntax? v)
                                             (namespace-syntax-introduce 
                                              (datum->syntax-object #f w v))
-                                            w))))
-                    (default-continuation-prompt-tag)))
+                                            w))))))
                (lambda results (for-each (current-print) results)))
              ;; Abort to loop. (Calling `repl-loop' directory would not be a tail call.)
              (abort-current-continuation (default-continuation-prompt-tag)))))

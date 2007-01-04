@@ -3891,7 +3891,6 @@ char *regsub(regexp *prog, char *src, int sourcelen, long *lenout, char *insrc,
 /* code points.                                             */
 /************************************************************/
 
-/* To avoid the broken qsort in Solaris: */
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif

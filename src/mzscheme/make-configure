@@ -8,7 +8,7 @@ echo "Creating $tgt from $src"
 if [ -e "$tgt" ]; then
   echo -n "overwriting $tgt, Ctrl-C to abort, enter to continue "; read R;
 fi
-autoconf "$src" | mzscheme -r "$0" > "$tgt"
+autoconf "$src" | mzscheme -qr "$0" > "$tgt"
 chmod +x "$tgt"
 exit 0
 |#

@@ -16,7 +16,8 @@
 # include <signal.h>
 void fault_handler(int sn, struct siginfo *si, void *ctx)
 {
-  designate_modified(si->si_addr);
+  if (!designate_modified(si->si_addr))
+    abort();
 #  define NEED_SIGACTION
 #  define USE_SIGACTON_SIGNAL_KIND SIGSEGV
 }
@@ -27,7 +28,8 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
 # include <signal.h>
 void fault_handler(int sn, siginfo_t *si, void *ctx)
 {
-  designate_modified(si->si_addr);
+  if (!designate_modified(si->si_addr))
+    abort();
 }
 #  define NEED_SIGACTION
 #  define USE_SIGACTON_SIGNAL_KIND SIGBUS
@@ -38,7 +40,8 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
 # include <signal.h>
 void fault_handler(int sn, struct siginfo *si, void *ctx)
 {
-  designate_modified(si->si_addr);
+  if (!designate_modified(si->si_addr))
+    abort();
 }
 # define NEED_SIGACTION
 # define USE_SIGACTON_SIGNAL_KIND SIGSEGV
@@ -50,9 +53,10 @@ LONG WINAPI fault_handler(LPEXCEPTION_POINTERS e)
 {
   if ((e->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
       && (e->ExceptionRecord->ExceptionInformation[0] == 1)) {
-    designate_modified((void *)e->ExceptionRecord->ExceptionInformation[1]);
-
-    return EXCEPTION_CONTINUE_EXECUTION;
+    if (designate_modified((void *)e->ExceptionRecord->ExceptionInformation[1]))
+      return EXCEPTION_CONTINUE_EXECUTION;
+    else
+      return EXCEPTION_CONTINUE_SEARCH;
   } else
     return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -75,7 +79,8 @@ typedef LONG (WINAPI*gcPVECTORED_EXCEPTION_HANDLER)(LPEXCEPTION_POINTERS e);
 # include <signal.h>
 void fault_handler(int sn, siginfo_t *si, void *ctx)
 {
-  designate_modified(si->si_addr);
+  if (!designate_modified(si->si_addr))
+    abort();
 #  define NEED_SIGACTION
 #  define USE_SIGACTON_SIGNAL_KIND SIGSEGV
 }

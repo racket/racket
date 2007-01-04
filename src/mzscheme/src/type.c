@@ -538,6 +538,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_thread_cell_values_type, small_object);
 
   GC_REG_TRAV(scheme_global_ref_type, small_object);
+
+  GC_REG_TRAV(scheme_delay_syntax_type, small_object);
 }
 
 END_XFORM_SKIP;

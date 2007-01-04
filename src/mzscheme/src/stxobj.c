@@ -1378,6 +1378,27 @@ Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename)
   return (Scheme_Object *)stx;
 }
 
+Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i)
+{
+  Scheme_Object *rename;
+  Resolve_Prefix *rp;
+
+  rename = o[0];
+  rp = (Resolve_Prefix *)o[1];
+
+  if (SCHEME_INTP(rp->stxes[i])) {
+    Scheme_Object *stx;
+    stx = scheme_load_delayed_code(SCHEME_INT_VAL(rp->stxes[i]),
+                                   rp->delay_info);
+    rp->stxes[i] = stx;
+    --rp->delay_refcount;
+    if (!rp->delay_refcount)
+      rp->delay_info = NULL;
+  }
+
+  return scheme_add_rename(rp->stxes[i], rename);
+}
+
 Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib)
 {
 #if 0
@@ -2451,13 +2472,12 @@ static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active)
   Scheme_Hash_Table *ht = NULL;
 
   o = stx_activate_certs(o, &certs, &ht);
-  if (!certs)
-    return o;
 
-  o = add_certs(o, certs, NULL, as_active);
+  if (certs)
+    o = add_certs(o, certs, NULL, as_active);
 
   if (ht)
-    o = scheme_resolve_placeholders(o, 0);
+    o = scheme_resolve_placeholders(o, 1);
 
   return o;
 }
@@ -3841,7 +3861,8 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 }
 
 static Scheme_Object *wraps_to_datum(Scheme_Object *w_in, 
-				     Scheme_Hash_Table *rns,
+				     Scheme_Marshal_Tables *mt,
+                                     Scheme_Hash_Table *rns,
 				     int just_simplify)
 {
   Scheme_Object *stack, *a, *old_key, *simplifies = scheme_null;
@@ -3849,12 +3870,26 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
   Scheme_Hash_Table *lex_cache, *reverse_map;
   int stack_size = 0;
 
-  a = scheme_hash_get(rns, w_in);
+  if (!rns)
+    rns = mt->rns;
+
+  if (just_simplify) {
+    a = scheme_hash_get(rns, w_in);
+  } else {
+    if (mt->pass && mt->same_map) {
+      a = scheme_hash_get(mt->same_map, w_in);
+      if (a)
+        w_in = a;
+    }
+    a = scheme_marshal_lookup(mt, w_in);
+  }
   if (a) {
     if (just_simplify)
-      return SCHEME_CDR(a);
-    else
-      return SCHEME_CAR(a);
+      return a;
+    else {
+      scheme_marshal_using_key(mt, w_in);
+      return a;
+    }
   }
 
   WRAP_POS_INIT(w, w_in);
@@ -3869,6 +3904,9 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 
   /* Ensures that all lexical tables in w have been simplified */
   simplify_lex_renames(w_in, lex_cache);
+
+  if (mt)
+    scheme_marshal_push_refs(mt);
 
   while (!WRAP_POS_END_P(w)) {
     a = WRAP_POS_FIRST(w);
@@ -3909,20 +3947,14 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 	  } else {
 	    Scheme_Object *local_key;
 	    
-	    local_key = scheme_hash_get(rns, a);
+	    local_key = scheme_marshal_lookup(mt, a);
 	    if (local_key) {
-	      stack = CONS(local_key, stack);
-	    } else {
-	      local_key = scheme_make_integer(rns->count);
-	      scheme_hash_set(rns, a, local_key);
-	      
-	      /* Since this is a simplified table, we can steal the first
-		 slot for local_key: */
-	      
-	      SCHEME_VEC_ELS(a)[0] = local_key;
-	      
-	      stack = CONS(a, stack);
-	    }
+              scheme_marshal_using_key(mt, a);
+              a = local_key;
+            } else {
+              a = scheme_marshal_wrap_set(mt, a, a);
+            }
+            stack = CONS(a, stack);
 	  }
 	  stack_size++;
 	}
@@ -3986,10 +4018,8 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 	  } else {
 	    Scheme_Object *local_key;
 	  
-	    local_key = scheme_hash_get(rns, (Scheme_Object *)mrn);
-	    if (local_key) {
-	      stack = CONS(local_key, stack);
-	    } else {
+	    local_key = scheme_marshal_lookup(mt, (Scheme_Object *)mrn);
+	    if (!local_key) {
 	      /* Convert hash table to vector: */
 	      int i, j, count = 0;
 	      Scheme_Object *l, *idi;
@@ -4019,9 +4049,6 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 		}
 	      }
 
-	      local_key = scheme_make_integer(rns->count);
-	      scheme_hash_set(rns, a, local_key);
-	    
 	      if (mrn->marked_names && mrn->marked_names->count) {
 		Scheme_Object *d = scheme_null, *p;
 
@@ -4046,10 +4073,17 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 		l = CONS(scheme_true,l);
 		/* note: information on nominals intentially omitted */
 	      }
-	      l = CONS(local_key, l);
 	    
-	      stack = CONS(l, stack);
-	    }
+              local_key = scheme_marshal_lookup(mt, a);
+              if (local_key)
+                scheme_marshal_using_key(mt, a);
+              else {
+                local_key = scheme_marshal_wrap_set(mt, a, l);
+              }
+	    } else {
+              scheme_marshal_using_key(mt, (Scheme_Object *)mrn);
+            }
+            stack = CONS(local_key, stack);
 	  }
 	}
 	stack_size++;
@@ -4106,30 +4140,57 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
       stack= scheme_null;
   }
   
-  /* Double-check for equivalent list in table (after simplificiation): */
-  reverse_map = (Scheme_Hash_Table *)scheme_hash_get(rns, scheme_undefined);
-  if (!reverse_map) {
-    reverse_map = scheme_make_hash_table_equal();
-    scheme_hash_set(rns, scheme_undefined, (Scheme_Object *)reverse_map);
-  }
-  old_key = scheme_hash_get(reverse_map, stack);
-  if (old_key) {
-    a = scheme_hash_get(rns, old_key);
-    if (just_simplify)
-      return SCHEME_CDR(a);
-    else
-      return SCHEME_CAR(a);
+  /* Double-check for equivalent list in table (after simplification): */
+  if (mt && mt->pass) {
+    /* No need to check for later passed, since mt->same_map
+       covers the equivalence. */
+  } else {
+    if (mt) {
+      reverse_map = mt->reverse_map;
+    } else {
+      reverse_map = (Scheme_Hash_Table *)scheme_hash_get(rns, scheme_undefined);
+    }
+    if (!reverse_map) {
+      reverse_map = scheme_make_hash_table_equal();
+      if (mt)
+        mt->reverse_map = reverse_map;
+      else
+        scheme_hash_set(rns, scheme_undefined, (Scheme_Object *)reverse_map);
+    }
+    old_key = scheme_hash_get(reverse_map, stack);
+    if (old_key) {
+      if (just_simplify) {
+        return scheme_hash_get(rns, old_key);
+      } else {
+        a = scheme_marshal_lookup(mt, old_key);
+        scheme_marshal_using_key(mt, old_key);
+        if (!mt->same_map) {
+          Scheme_Hash_Table *same_map;
+          same_map = scheme_make_hash_table(SCHEME_hash_ptr);
+          mt->same_map = same_map;
+        }
+        scheme_hash_set(mt->same_map, w_in, old_key);
+        /* nevermind references that we saw when creating `stack': */
+        scheme_marshal_pop_refs(mt, 0);
+        return a;
+      }
+    }
+
+    scheme_hash_set(reverse_map, stack, w_in);
   }
 
-  /* Create a key for this wrap set: */
-  a = scheme_make_integer(rns->count);
-  scheme_hash_set(rns, w_in, CONS(a, stack));
-  scheme_hash_set(reverse_map, stack, w_in);
+  if (mt) {
+    /* preserve references that we saw when creating `stack': */
+    scheme_marshal_pop_refs(mt, 1);
+  }
 
-  if (just_simplify)
+  /* Remember this wrap set: */
+  if (just_simplify) {
+    scheme_hash_set(rns, w_in, stack);
     return stack;
-  else
-    return CONS(a, stack);
+  } else {
+    return scheme_marshal_wrap_set(mt, w_in, stack);
+  }
 }
 
 /*========================================================================*/
@@ -4206,27 +4267,27 @@ static void lift_common_wraps(Scheme_Object *l, Scheme_Object *common_wraps, int
 static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
 					    Scheme_Hash_Table **ht,
 					    int with_marks,
-					    Scheme_Hash_Table *rns);
+					    Scheme_Marshal_Tables *mt);
 
 static Scheme_Object *syntax_to_datum_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
   Scheme_Hash_Table **ht = (Scheme_Hash_Table **)p->ku.k.p2;
-  Scheme_Hash_Table *rns = (Scheme_Hash_Table *)p->ku.k.p3;
+  Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p->ku.k.p3;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  return syntax_to_datum_inner(o, ht, p->ku.k.i1, rns);
+  return syntax_to_datum_inner(o, ht, p->ku.k.i1, mt);
 }
 #endif
 
 static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
 					    Scheme_Hash_Table **ht,
 					    int with_marks,
-					    Scheme_Hash_Table *rns)
+					    Scheme_Marshal_Tables *mt)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
   Scheme_Object *ph, *v, *result, *converted_wraps = NULL;
@@ -4239,7 +4300,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       p->ku.k.p1 = (void *)o;
       p->ku.k.p2 = (void *)ht;
       p->ku.k.i1 = with_marks;
-      p->ku.k.p3 = (void *)rns;
+      p->ku.k.p3 = (void *)mt;
       return scheme_handle_stack_overflow(syntax_to_datum_k);
     }
   }
@@ -4289,7 +4350,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 
       cnt++;
 
-      a = syntax_to_datum_inner(SCHEME_CAR(v), ht, with_marks, rns);
+      a = syntax_to_datum_inner(SCHEME_CAR(v), ht, with_marks, mt);
 
       p = CONS(a, scheme_null);
       
@@ -4312,13 +4373,13 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       }
     }
     if (!SCHEME_NULLP(v)) {
-      v = syntax_to_datum_inner(v, ht, with_marks, rns);
+      v = syntax_to_datum_inner(v, ht, with_marks, mt);
       SCHEME_CDR(last) = v;
 
       if (with_marks) {
         v = extract_for_common_wrap(v, 1, 0);
         if (v && SAME_OBJ(common_wraps, v)) {
-          converted_wraps = wraps_to_datum(stx->wraps, rns, 0);
+          converted_wraps = wraps_to_datum(stx->wraps, mt, NULL, 0);
           if (SAME_OBJ(common_wraps, converted_wraps))
             lift_common_wraps(first, common_wraps, cnt, 1);
           else
@@ -4336,7 +4397,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 	first = scheme_make_pair(scheme_make_integer(cnt), first);
       }
     } else if (with_marks && SCHEME_TRUEP(common_wraps)) {
-      converted_wraps = wraps_to_datum(stx->wraps, rns, 0);
+      converted_wraps = wraps_to_datum(stx->wraps, mt, NULL, 0);
       if (SAME_OBJ(common_wraps, converted_wraps))
         lift_common_wraps(first, common_wraps, cnt, 0);
       else
@@ -4349,7 +4410,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 
     result = first;
   } else if (SCHEME_BOXP(v)) {
-    v = syntax_to_datum_inner(SCHEME_BOX_VAL(v), ht, with_marks, rns);
+    v = syntax_to_datum_inner(SCHEME_BOX_VAL(v), ht, with_marks, mt);
     result = scheme_box(v);
   } else if (SCHEME_VECTORP(v)) {
     int size = SCHEME_VEC_SIZE(v), i;
@@ -4358,21 +4419,21 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     r = scheme_make_vector(size, NULL);
     
     for (i = 0; i < size; i++) {
-      a = syntax_to_datum_inner(SCHEME_VEC_ELS(v)[i], ht, with_marks, rns);
+      a = syntax_to_datum_inner(SCHEME_VEC_ELS(v)[i], ht, with_marks, mt);
       SCHEME_VEC_ELS(r)[i] = a;
     }
     
     result = r;
 #ifdef STX_DEBUG
   } else if ((with_marks == 1) && SCHEME_SYMBOLP(v)) {
-    result = CONS(v, stx->wraps); /* wraps_to_datum(stx->wraps, rns, 0)); */
+    result = CONS(v, stx->wraps); /* wraps_to_datum(stx->wraps, mt, 0)); */
 #endif
   } else
     result = v;
 
   if (with_marks > 1) {
     if (!converted_wraps)
-      converted_wraps = wraps_to_datum(stx->wraps, rns, 0);
+      converted_wraps = wraps_to_datum(stx->wraps, mt, NULL, 0);
     result = CONS(result, converted_wraps);
     if (stx->certs) {
       Scheme_Object *cert_marks = scheme_null, *icert_marks = scheme_null;
@@ -4410,37 +4471,40 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 }
 
 Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
-				      Scheme_Hash_Table *rns)
+				      Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Table *ht = NULL;
   Scheme_Object *v;
 
-  v = syntax_to_datum_inner(stx, &ht, with_marks, rns);
+  if (mt)
+    scheme_marshal_push_refs(mt);
 
-  if (with_marks > 1) {
-    if (SCHEME_PAIRP(v)
-        && SCHEME_SYMBOLP(SCHEME_CAR(v))
-        && SCHEME_INTP(SCHEME_CDR(v))) {
-      /* A symbol+wrap combination is likely to be used multiple
-         times. This is a relatively minor optimization in .zo size,
-         since v is already fairly compact, but it also avoids
-         allocating extra syntax objects at load time. */
-      Scheme_Hash_Table *reverse_map;
-      Scheme_Object *code;
-      
-      reverse_map = (Scheme_Hash_Table *)scheme_hash_get(rns, scheme_undefined);
-      if (reverse_map) {
-        code = scheme_hash_get(reverse_map, v);
-        if (code) {
-          return code;
-        } else {
-          code = scheme_make_integer(rns->count);
-          scheme_hash_set(rns, code, v);
-          scheme_hash_set(reverse_map, v, code);
-          v = scheme_make_vector(2, v);
-          SCHEME_VEC_ELS(v)[1] = code;
-        }
-      }
+  v = syntax_to_datum_inner(stx, &ht, with_marks, mt);
+
+  if (mt) {
+    /* A symbol+wrap combination is likely to be used multiple
+       times. This is a relatively minor optimization in .zo size,
+       since v is already fairly compact, but it also avoids
+       allocating extra syntax objects at load time. For consistency,
+       we try to reuse all combinations. */
+    Scheme_Hash_Table *top_map;
+    Scheme_Object *key;
+    
+    top_map = mt->top_map;
+    if (!top_map) {
+      top_map = scheme_make_hash_table_equal();
+      mt->top_map = top_map;
+    }
+    
+    key = scheme_hash_get(top_map, v);
+    if (key) {
+      scheme_marshal_pop_refs(mt, 0);
+      v = scheme_marshal_lookup(mt, key);
+      scheme_marshal_using_key(mt, key);
+    } else {
+      scheme_hash_set(top_map, stx, v);
+      v = scheme_marshal_wrap_set(mt, stx, v);
+      scheme_marshal_pop_refs(mt, 1);
     }
   }
 
@@ -4526,7 +4590,7 @@ int scheme_syntax_is_graph(Scheme_Object *stx)
 /*                            datum->wraps                                */
 /*========================================================================*/
 
-static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Hash_Table *rns)
+static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Unmarshal_Tables *ut)
 {
   Scheme_Object *n, *a = _a;
 
@@ -4536,7 +4600,7 @@ static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Hash_Table *rns)
     a = scheme_intern_symbol(scheme_number_to_string(10, a));
   
   /* Picked a mapping yet? */
-  n = scheme_hash_get(rns, a);
+  n = scheme_hash_get(ut->rns, a);
   if (!n) {
     /* Map marshaled mark to a new mark. */
     n = scheme_new_mark();
@@ -4544,7 +4608,7 @@ static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Hash_Table *rns)
       /* Map negative mark to negative mark: */
       n = negate_mark(n);
     }
-    scheme_hash_set(rns, a, n);
+    scheme_hash_set(ut->rns, a, n);
   }
   
   /* Really a mark? */
@@ -4557,33 +4621,33 @@ static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Hash_Table *rns)
 #define return_NULL return NULL
 
 static Scheme_Object *datum_to_wraps(Scheme_Object *w,
-				     Scheme_Hash_Table *rns)
+                                     Scheme_Unmarshal_Tables *ut)
 {
-  Scheme_Object *a, *wraps_key;
-  int stack_size;
+  Scheme_Object *a, *wraps_key, *local_key;
+  int stack_size, decoded;
   Wrap_Chunk *wc;
 
-  /* rns maps numbers (table indices) to renaming tables, and negative
+  /* ut->rns maps numbers (table indices) to renaming tables, and negative
      numbers (negated fixnum marks) and symbols (interned marks) to marks.*/
 
   /* This function has to be defensive, since `w' can originate in
      untrusted .zo bytecodes. Return NULL for bad wraps. */
 
   if (SCHEME_INTP(w)) {
-    w = scheme_hash_get(rns, w);
-    if (!w || !SCHEME_LISTP(w)) /* list => a wrap, as opposed to a mark, etc. */
+    wraps_key = w;
+    w = scheme_unmarshal_wrap_get(ut, wraps_key, &decoded);
+    if (decoded && (!w || !SCHEME_LISTP(w))) /* list => a wrap, as opposed to a mark, etc. */
       return_NULL;
-    return w;
+    if (decoded)
+      return w;
+  } else {
+    /* not shared */
+    wraps_key = NULL;
   }
-
-  if (!SCHEME_PAIRP(w)) return_NULL;
-
-  wraps_key = SCHEME_CAR(w);
-  w = SCHEME_CDR(w);
 
   stack_size = scheme_proper_list_length(w);
   if (stack_size < 1) {
-    scheme_hash_set(rns, wraps_key, scheme_null);
+    scheme_unmarshal_wrap_set(ut, wraps_key, scheme_null);
     return scheme_null;
   } else if (stack_size < 2) {
     wc = NULL;
@@ -4599,18 +4663,26 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
     a = SCHEME_CAR(w);
     if (SCHEME_NUMBERP(a)) {
       /* Re-use rename table or env rename */
-      a = scheme_hash_get(rns, a);
-      if (!a || SCHEME_LISTP(a)) /* list => a whole wrap, no good as an element */
+      local_key = a;
+      a = scheme_unmarshal_wrap_get(ut, local_key, &decoded);
+      if (decoded && (!a || SCHEME_LISTP(a))) /* list => a whole wrap, no good as an element */
 	return_NULL;
+    } else  {
+      /* Not shared */
+      local_key = NULL;
+      decoded = 0;
+    }
+
+    if (decoded) {
+      /* done */
     } else if (SCHEME_PAIRP(a) 
 	       && SCHEME_NULLP(SCHEME_CDR(a))
 	       && SCHEME_NUMBERP(SCHEME_CAR(a))) {
       /* Mark */
-      a = unmarshal_mark(SCHEME_CAR(a), rns);
+      a = unmarshal_mark(SCHEME_CAR(a), ut);
       if (!a) return_NULL;
     } else if (SCHEME_VECTORP(a)) {
-      /* A (simplified) rename table. First element is the key. */
-      Scheme_Object *local_key;
+      /* A (simplified) rename table. */
       int i = SCHEME_VEC_SIZE(a);
 
       /* Make sure that it's a well-formed rename table. */
@@ -4623,8 +4695,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
       }
 
       /* It's ok: */
-      local_key = SCHEME_VEC_ELS(a)[0];
-      scheme_hash_set(rns, local_key, a);
+      scheme_unmarshal_wrap_set(ut, local_key, a);
     } else if (SCHEME_PAIRP(a)) {
       /* A rename table:
            - ([#t] <index-num> <phase-num> <bool> [unmarshal] #(<table-elem> ...) 
@@ -4633,15 +4704,12 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
            - <exname> <modname>
            - <exname> (<modname> . <defname>)
       */
-      Scheme_Object *local_key, *mns;
+      Scheme_Object *mns;
       Module_Renames *mrn;
       Scheme_Object *p, *key;
       int plus_kernel, i, count, kind;
       long phase;
       
-      local_key = SCHEME_CAR(a);
-      a = SCHEME_CDR(a);
-
       if (!SCHEME_PAIRP(a)) return_NULL;
       
       /* Convert list to rename table: */
@@ -4676,37 +4744,37 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	Scheme_Object *ml = a, *mli;
 	while (SCHEME_PAIRP(ml)) {
 	  mli = SCHEME_CAR(ml);
-	  if (!SCHEME_PAIRP(mli)) return NULL;
+	  if (!SCHEME_PAIRP(mli)) return_NULL;
 
 	  /* A module path index: */
 	  p = SCHEME_CAR(mli);
 	  if (!(SCHEME_SYMBOLP(p)
 		|| SAME_TYPE(SCHEME_TYPE(p), scheme_module_index_type)))
-	    return NULL;
+	    return_NULL;
 
 	  mli = SCHEME_CDR(mli);
-	  if (!SCHEME_PAIRP(mli)) return NULL;
+	  if (!SCHEME_PAIRP(mli)) return_NULL;
 	  /* A list of symbols: */
 	  p = SCHEME_CAR(mli);
 	  while (SCHEME_PAIRP(p)) {
-	    if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) return NULL;
+	    if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) return_NULL;
 	    p = SCHEME_CDR(p);
 	  }
-	  if (!SCHEME_NULLP(p)) return NULL;
+	  if (!SCHEME_NULLP(p)) return_NULL;
 
 	  /* #f or a symbol: */
 	  p = SCHEME_CDR(mli);
-	  if (!SCHEME_SYMBOLP(p) && !SCHEME_FALSEP(p)) return NULL;
+	  if (!SCHEME_SYMBOLP(p) && !SCHEME_FALSEP(p)) return_NULL;
 
 	  ml = SCHEME_CDR(ml);
 	}
-	if (!SCHEME_NULLP(ml)) return NULL;
+	if (!SCHEME_NULLP(ml)) return_NULL;
 
 	mrn->unmarshal_info = a;
 	if (SCHEME_PAIRP(a))
 	  mrn->needs_unmarshal = 1;
 
-	if (!SCHEME_PAIRP(mns)) return NULL;
+	if (!SCHEME_PAIRP(mns)) return_NULL;
 	a = SCHEME_CAR(mns);
 	mns = SCHEME_CDR(mns);
       }
@@ -4777,7 +4845,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	    klast = NULL;
 	    a = SCHEME_CAR(a);
 	    if (SCHEME_MARKP(a)) {
-	      kfirst = unmarshal_mark(a, rns);
+	      kfirst = unmarshal_mark(a, ut);
 	    } else {
               Scheme_Object *bdg = NULL;
 
@@ -4789,7 +4857,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
               }
 
 	      for (; SCHEME_PAIRP(a); a = SCHEME_CDR(a)) {
-		kp = CONS(unmarshal_mark(SCHEME_CAR(a), rns), scheme_null);
+		kp = CONS(unmarshal_mark(SCHEME_CAR(a), ut), scheme_null);
 		if (!klast)
 		  kfirst = kp;
 		else
@@ -4798,7 +4866,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	      }
 	      if (!SCHEME_NULLP(a)) {
                 if (bdg && SCHEME_MARKP(a) && SCHEME_NULLP(kfirst))
-                  kfirst = unmarshal_mark(a, rns);
+                  kfirst = unmarshal_mark(a, ut);
                 else
                   return_NULL;
               }
@@ -4823,7 +4891,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	mrn->marked_names = ht;
       }
 
-      scheme_hash_set(rns, local_key, (Scheme_Object *)mrn);
+      scheme_unmarshal_wrap_set(ut, local_key, (Scheme_Object *)mrn);
 
       a = (Scheme_Object *)mrn;
     } else if (SAME_OBJ(a, scheme_true)) {
@@ -4865,7 +4933,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
     a = (Scheme_Object *)wc;
   a = CONS(a, scheme_null);
 
-  scheme_hash_set(rns, wraps_key, a);
+  scheme_unmarshal_wrap_set(ut, wraps_key, a);
 
   return a;
 }
@@ -4877,11 +4945,14 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 
 #ifdef DO_STACK_CHECK
 static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o, 
+					    Scheme_Unmarshal_Tables *ut,
 					    Scheme_Stx *stx_src,
 					    Scheme_Stx *stx_wraps,
-					    Scheme_Hash_Table *ht);
+                                            Scheme_Hash_Table *ht);
 
-Scheme_Object *cert_marks_to_certs(Scheme_Object *cert_marks, Scheme_Stx *stx_wraps, int *bad)
+Scheme_Object *cert_marks_to_certs(Scheme_Object *cert_marks, 
+                                   Scheme_Unmarshal_Tables *ut,
+                                   Scheme_Stx *stx_wraps, int *bad)
 {
   /* Need to convert a list of marks to certs */
   Scheme_Cert *certs = NULL;
@@ -4895,7 +4966,7 @@ Scheme_Object *cert_marks_to_certs(Scheme_Object *cert_marks, Scheme_Stx *stx_wr
       *bad = 1;
       return_NULL;
     }
-    a = unmarshal_mark(a, (Scheme_Hash_Table *)stx_wraps);
+    a = unmarshal_mark(a, ut);
     if (!a) { *bad = 1; return_NULL; }
     
     cert_marks = SCHEME_CDR(cert_marks);
@@ -4930,17 +5001,20 @@ static Scheme_Object *datum_to_syntax_k(void)
   Scheme_Stx *stx_src = (Scheme_Stx *)p->ku.k.p2;
   Scheme_Stx *stx_wraps = (Scheme_Stx *)p->ku.k.p3;
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)p->ku.k.p4;
-
+  Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p->ku.k.p5;
+					    
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
   p->ku.k.p4 = NULL;
+  p->ku.k.p5 = NULL;
 
-  return datum_to_syntax_inner(o, stx_src, stx_wraps, ht);
+  return datum_to_syntax_inner(o, ut, stx_src, stx_wraps, ht);
 }
 #endif
 
 static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o, 
+                                            Scheme_Unmarshal_Tables *ut,
 					    Scheme_Stx *stx_src,
 					    Scheme_Stx *stx_wraps, /* or rename table, or boxed precomputed wrap */
 					    Scheme_Hash_Table *ht)
@@ -4960,6 +5034,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       p->ku.k.p2 = (void *)stx_src;
       p->ku.k.p3 = (void *)stx_wraps;
       p->ku.k.p4 = (void *)ht;
+      p->ku.k.p5 = (void *)ut;
       return scheme_handle_stack_overflow(datum_to_syntax_k);
     }
   }
@@ -4985,7 +5060,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     }
   }
 
-  if (SCHEME_HASHTP(stx_wraps)) {
+  if (ut && !SCHEME_BOXP(stx_wraps)) {
     if (SCHEME_VECTORP(o)) {
       /* This one has certs */
       if (SCHEME_VEC_SIZE(o) == 2) {
@@ -5026,7 +5101,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
         /* Resolve wraps now, and then share it with
            all nested objects (as indicated by a box
            for stx_wraps). */
-        wraps = datum_to_wraps(wraps, (Scheme_Hash_Table *)stx_wraps);
+        wraps = datum_to_wraps(wraps, ut);
         do_not_unpack_wraps = 1;
         sub_stx_wraps = (Scheme_Stx *)scheme_box(wraps);
         o = SCHEME_CDR(o);
@@ -5048,7 +5123,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 	  }
 	}
 
-	a = datum_to_syntax_inner(SCHEME_CAR(o), stx_src, sub_stx_wraps, ht);
+	a = datum_to_syntax_inner(SCHEME_CAR(o), ut, stx_src, sub_stx_wraps, ht);
 	if (!a) return_NULL;
       
 	p = scheme_make_immutable_pair(a, scheme_null);
@@ -5063,7 +5138,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 	--cnt;
       }
       if (!SCHEME_NULLP(o)) {
-	o = datum_to_syntax_inner(o, stx_src, sub_stx_wraps, ht);
+	o = datum_to_syntax_inner(o, ut, stx_src, sub_stx_wraps, ht);
 	if (!o) return_NULL;
 	SCHEME_CDR(last) = o;
       }
@@ -5071,7 +5146,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       result = first;
     }
   } else if (SCHEME_BOXP(o)) {
-    o = datum_to_syntax_inner(SCHEME_PTR_VAL(o), stx_src, stx_wraps, ht);
+    o = datum_to_syntax_inner(SCHEME_PTR_VAL(o), ut, stx_src, stx_wraps, ht);
     if (!o) return_NULL;
     result = scheme_box(o);
     SCHEME_SET_BOX_IMMUTABLE(result);
@@ -5082,7 +5157,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     result = scheme_make_vector(size, NULL);
     
     for (i = 0; i < size; i++) {
-      a = datum_to_syntax_inner(SCHEME_VEC_ELS(o)[i], stx_src, stx_wraps, ht);
+      a = datum_to_syntax_inner(SCHEME_VEC_ELS(o)[i], ut, stx_src, stx_wraps, ht);
       if (!a) return_NULL;
       SCHEME_VEC_ELS(result)[i] = a;
     }
@@ -5100,7 +5175,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 
   if (wraps) {
     if (!do_not_unpack_wraps) {
-      wraps = datum_to_wraps(wraps, (Scheme_Hash_Table *)stx_wraps);
+      wraps = datum_to_wraps(wraps, ut);
       if (!wraps)
         return_NULL;
     }
@@ -5121,12 +5196,12 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 	    || SCHEME_NULLP(SCHEME_CAR(cert_marks)))) {
       /* Have both active and inactive certs */
       Scheme_Object *icerts;
-      certs = cert_marks_to_certs(SCHEME_CAR(cert_marks), stx_wraps, &bad);
-      icerts = cert_marks_to_certs(SCHEME_CDR(cert_marks), stx_wraps, &bad);
+      certs = cert_marks_to_certs(SCHEME_CAR(cert_marks), ut, stx_wraps, &bad);
+      icerts = cert_marks_to_certs(SCHEME_CDR(cert_marks), ut, stx_wraps, &bad);
       certs = scheme_make_raw_pair(certs, icerts);
     } else {
       /* Just active certs */
-      certs = cert_marks_to_certs(cert_marks, stx_wraps, &bad);
+      certs = cert_marks_to_certs(cert_marks, ut, stx_wraps, &bad);
     }
     if (bad)
       return_NULL;
@@ -5141,15 +5216,15 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
   return result;
 }
 
-Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o, 
-				      Scheme_Object *stx_src,
-				      Scheme_Object *stx_wraps,
-				      int can_graph, int copy_props)
+static Scheme_Object *general_datum_to_syntax(Scheme_Object *o, 
+                                              Scheme_Unmarshal_Tables *ut,
+                                              Scheme_Object *stx_src,
+                                              Scheme_Object *stx_wraps,
+                                              int can_graph, int copy_props)
      /* If stx_wraps is a hash table, then `o' includes marks and certs.
 	If copy_props > 0, properties are copied from src.
 	If copy_props != 1 or 0, then certs are copied from src, too. */
 {
-
   Scheme_Hash_Table *ht;
   Scheme_Object *v, *code = NULL;
 
@@ -5164,28 +5239,29 @@ Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o,
   else
     ht = NULL;
 
-  if (SCHEME_HASHTP(stx_wraps)) {
+  if (ut) {
     /* If o is just a number, look it up in the table. */
-    if (SCHEME_INTP(o))
-      return scheme_hash_get((Scheme_Hash_Table *)stx_wraps, o);
-    /* If it's a vector where the second element is a number, we'll need to hash. */
-    if (SCHEME_VECTORP(o) 
-        && (SCHEME_VEC_SIZE(o) == 2)
-        && SCHEME_INTP(SCHEME_VEC_ELS(o)[1])) {
-      code = SCHEME_VEC_ELS(o)[1];
-      o = SCHEME_VEC_ELS(o)[0];
+    if (SCHEME_INTP(o)) {
+      int decoded;
+      v = scheme_unmarshal_wrap_get(ut, o, &decoded);
+      if (!decoded) {
+        code = o;
+        o = v;
+      } else
+        return v;
     }
   }
 
   v = datum_to_syntax_inner(o, 
-			    (Scheme_Stx *)stx_src, 
+                            ut,
+			    (Scheme_Stx *)stx_src,
 			    (Scheme_Stx *)stx_wraps,
 			    ht);
 
   if (!v) return_NULL; /* only happens with bad wraps from a bad .zo */
 
   if (code) {
-    scheme_hash_set((Scheme_Hash_Table *)stx_wraps, code, v);
+    scheme_unmarshal_wrap_set(ut, code, v);
   }
 
   if (ht)
@@ -5204,6 +5280,21 @@ Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o,
   }
 
   return v;
+}
+
+Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o, 
+				      Scheme_Object *stx_src,
+				      Scheme_Object *stx_wraps,
+				      int can_graph, int copy_props)
+{
+  return general_datum_to_syntax(o, NULL, stx_src, stx_wraps, can_graph, copy_props);
+}
+
+Scheme_Object *scheme_unmarshal_datum_to_syntax(Scheme_Object *o,
+                                                struct Scheme_Unmarshal_Tables *ut,
+                                                int can_graph)
+{
+  return general_datum_to_syntax(o, ut, scheme_false, scheme_false, can_graph, 0);
 }
 
 /*========================================================================*/
@@ -5264,7 +5355,7 @@ static void simplify_syntax_inner(Scheme_Object *o,
   scheme_stx_content((Scheme_Object *)stx);
 
   if (rns) {
-    v = wraps_to_datum(stx->wraps, rns, 1);
+    v = wraps_to_datum(stx->wraps, NULL, rns, 1);
     stx->wraps = v;
   }
 

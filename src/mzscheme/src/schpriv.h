@@ -98,8 +98,10 @@ int scheme_num_types(void);
 
 #ifdef MZTAG_REQUIRED
 # define MZTAG_IF_REQUIRED  Scheme_Type type;
+# define SET_REQUIRED_TAG(e) e
 #else
 # define MZTAG_IF_REQUIRED /* empty */
+# define SET_REQUIRED_TAG(e) /* empty */
 #endif
 
 void scheme_reset_finalizations(void);
@@ -559,6 +561,9 @@ typedef struct Scheme_Stx_Offset {
   Scheme_Object *src;
 } Scheme_Stx_Offset;
 
+struct Scheme_Marshal_Tables;
+struct Scheme_Unmarshal_Tables;
+
 Scheme_Object *scheme_make_stx(Scheme_Object *val,
 			       Scheme_Stx_Srcloc *srcloc,
 			       Scheme_Object *props);
@@ -578,7 +583,10 @@ Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o, Scheme_Object *stx_src,
 				      Scheme_Object *stx_wraps,
 				      int cangraph, int copyprops);
 Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
-				      Scheme_Hash_Table *renames);
+				      struct Scheme_Marshal_Tables *mt);
+Scheme_Object *scheme_unmarshal_datum_to_syntax(Scheme_Object *o,
+                                                struct Scheme_Unmarshal_Tables *ut,
+                                                int can_graph);
 
 int scheme_syntax_is_graph(Scheme_Object *stx);
 
@@ -691,6 +699,8 @@ Scheme_Object *scheme_stx_add_inactive_certs(Scheme_Object *o, Scheme_Object *ce
 int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *certs,
 			      Scheme_Object *than_id, Scheme_Object *than_certs);
 
+Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i);
+
 /*========================================================================*/
 /*                   syntax run-time structures                           */
 /*========================================================================*/
@@ -747,7 +757,9 @@ typedef struct Scheme_Let_Header {
   Scheme_Object *body;
 } Scheme_Let_Header;
 
-#define SCHEME_LET_RECURSIVE(lh) MZ_OPT_HASH_KEY(&lh->iso)
+#define SCHEME_LET_FLAGS(lh) MZ_OPT_HASH_KEY(&lh->iso)
+#define SCHEME_LET_RECURSIVE 0x1
+#define SCHEME_LET_STAR 0x2
 
 typedef struct {
   Scheme_Object so;
@@ -1521,7 +1533,8 @@ Scheme_Object *_scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *
 
 Scheme_Object *scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cantfail, 
 				    int honu_mode, int recur, int pre_char, Scheme_Object *readtable,
-				    Scheme_Object *magic_sym, Scheme_Object *magic_val);
+				    Scheme_Object *magic_sym, Scheme_Object *magic_val,
+                                    Scheme_Object *delay_load_info);
 void scheme_internal_display(Scheme_Object *obj, Scheme_Object *port);
 void scheme_internal_write(Scheme_Object *obj, Scheme_Object *port);
 void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port);
@@ -1566,6 +1579,9 @@ Scheme_Object *scheme_force_value_same_mark(Scheme_Object *);
 Scheme_Object *scheme_force_one_value_same_mark(Scheme_Object *);
 
 void scheme_flush_stack_cache(void);
+
+struct Scheme_Load_Delay;
+Scheme_Object *scheme_load_delayed_code(int pos, struct Scheme_Load_Delay *ld);
 
 /*========================================================================*/
 /*                          compile and link                              */
@@ -1639,6 +1655,8 @@ typedef struct Resolve_Prefix
   int num_toplevels, num_stxes, num_lifts;
   Scheme_Object **toplevels;
   Scheme_Object **stxes; /* simplified */
+  int delay_refcount;
+  struct Scheme_Load_Delay *delay_info;
 } Resolve_Prefix;
 
 typedef struct Resolve_Info
@@ -1865,14 +1883,13 @@ int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 #define CASE_LAMBDA_EXPD   3
 #define BEGIN0_EXPD        4
 #define BOXENV_EXPD        5
-#define BOXVAL_EXPD        6
-#define MODULE_EXPD        7
-#define REQUIRE_EXPD       8
-#define DEFINE_FOR_SYNTAX_EXPD 9
-#define REF_EXPD           10
-#define APPVALS_EXPD       11
-#define SPLICE_EXPD        12
-#define _COUNT_EXPD_       13
+#define MODULE_EXPD        6
+#define REQUIRE_EXPD       7
+#define DEFINE_FOR_SYNTAX_EXPD 8
+#define REF_EXPD           9
+#define APPVALS_EXPD       10
+#define SPLICE_EXPD        11
+#define _COUNT_EXPD_       12
 
 #define scheme_register_syntax(i, fo, fr, fv, fe, fj, cl, sh, pa)        \
      (scheme_syntax_optimizers[i] = fo, \
@@ -2160,6 +2177,45 @@ extern Scheme_Object *scheme_inferred_name_symbol;
 Scheme_Object *scheme_check_name_property(Scheme_Object *stx, Scheme_Object *current_name);
 
 Scheme_Object *scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *env);
+
+typedef struct Scheme_Marshal_Tables {
+  MZTAG_IF_REQUIRED  
+  int pass, print_now;
+  Scheme_Hash_Table *symtab;
+  Scheme_Hash_Table *rns;
+  Scheme_Hash_Table *rn_refs;
+  Scheme_Hash_Table *st_refs;
+  Scheme_Object *st_ref_stack;
+  Scheme_Hash_Table *reverse_map; /* used on first pass */
+  Scheme_Hash_Table *same_map;    /* set on first pass, used on later passes */
+  Scheme_Hash_Table *top_map;     /* used on every pass */
+  Scheme_Hash_Table *key_map;     /* set after first pass, used on later passes */
+  Scheme_Hash_Table *delay_map;   /* set during first pass, used on later passes */
+  Scheme_Hash_Table *rn_saved;    /* maps each original object to generated marshaling */
+  long *shared_offsets;           /* set in second pass */
+  long sorted_keys_count;
+  Scheme_Object **sorted_keys;
+} Scheme_Marshal_Tables;
+
+void scheme_marshal_using_key(Scheme_Marshal_Tables *mt, Scheme_Object *key);
+Scheme_Object *scheme_marshal_lookup(Scheme_Marshal_Tables *mt, Scheme_Object *a);
+Scheme_Object *scheme_marshal_wrap_set(Scheme_Marshal_Tables *mt, Scheme_Object *a, Scheme_Object *v);
+void scheme_marshal_push_refs(Scheme_Marshal_Tables *mt);
+void scheme_marshal_pop_refs(Scheme_Marshal_Tables *mt, int keep);
+
+typedef struct Scheme_Unmarshal_Tables {
+  MZTAG_IF_REQUIRED  
+  Scheme_Hash_Table *rns;
+  struct CPort *rp;
+  char *decoded;
+} Scheme_Unmarshal_Tables;
+
+Scheme_Object *scheme_unmarshal_wrap_get(Scheme_Unmarshal_Tables *ut, 
+                                         Scheme_Object *wraps_key, 
+                                         int *_decoded);
+void scheme_unmarshal_wrap_set(Scheme_Unmarshal_Tables *ut, 
+                               Scheme_Object *wraps_key, 
+                               Scheme_Object *v);
 
 /*========================================================================*/
 /*                         namespaces and modules                         */

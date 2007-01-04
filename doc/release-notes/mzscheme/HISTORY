@@ -1,3 +1,7 @@
+Version 369.3
+Adjusted exception-handler calling to propagate any returned value
+ to the previous exception handler
+
 Version 369.2
 Removed current-exception-handler and initial-exception-handler
 Added uncaught-exception-handler
@@ -11,6 +15,11 @@ Changed top-level begin to insert a prompt around each sub-expression
 Added #%top-interaction and #%expression
 Added prop:input-port and prop:output-port
 Changed char-whitespace? to produce #t for #\u0085
+Inside MzScheme: use 
+ SCHEME_INPUT_PORTP() instead of SCHEME_INPORTP()
+ SCHEME_OUTPUT_PORTP() instead of SCHEME_OUTPORTP()
+ scheme_input_port_record() instead of casting to Scheme_Input_Port*
+ scheme_output_port_record() instead of casting to Scheme_Output_Port*
 
 Version 369.1
 Changed dyanmic-require to expand requests for exported syntax

@@ -63,7 +63,7 @@ static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_exit_handler_proc(int, Scheme_Object *[]);
 
-static Scheme_Object *do_raise(Scheme_Object *arg, int return_ok, int need_debug);
+static Scheme_Object *do_raise(Scheme_Object *arg, int need_debug);
 
 static Scheme_Object *nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
 
@@ -605,8 +605,6 @@ scheme_inescapeable_error(const char *a, const char *b)
 
   scheme_console_output(t, al + bl + 1);
 }
-
-#define RAISE_RETURNED "exception handler did not escape"
 
 static void
 call_error(char *buffer, int len, Scheme_Object *exn)
@@ -1838,7 +1836,7 @@ static Scheme_Object *do_error(int for_user, int argc, Scheme_Object *argv[])
   newargs[1] = TMP_CMARK_VALUE;
   do_raise(scheme_make_struct_instance(exn_table[for_user ? MZEXN_FAIL_USER : MZEXN_FAIL].type,
 				       2, newargs),
-	   0, 1);
+	   1);
 
   return scheme_void;
 #else
@@ -2387,7 +2385,7 @@ scheme_raise_exn(int id, ...)
 
   do_raise(scheme_make_struct_instance(exn_table[id].type,
 				       c, eargs),
-	   0, 1);
+	   1);
 #else
   call_error(buffer, alen, scheme_false);
 #endif
@@ -2439,22 +2437,30 @@ nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *arg = argv[0], *orig_arg = SCHEME_CDR((Scheme_Object *)old_exn);
   long len, mlen = -1, orig_mlen = -1, blen;
-  char *buffer, *msg, *orig_msg, *raisetype, *orig_raisetype, *who;
+  char *buffer, *msg, *orig_msg, *raisetype, *orig_raisetype, *who, *sep;
   
   buffer = init_buf(&len, &blen);
-  
-  who = SCHEME_BYTE_STR_VAL(SCHEME_CAR((Scheme_Object *)old_exn));
 
-  if (SCHEME_STRUCTP(arg)
-      && scheme_is_struct_instance(exn_table[MZEXN].type, arg)) {
-    Scheme_Object *str = ((Scheme_Structure *)arg)->slots[0];
-    raisetype = "exception raised";
-    str = scheme_char_string_to_byte_string(str);
-    msg = SCHEME_BYTE_STR_VAL(str);
-    mlen = SCHEME_BYTE_STRLEN_VAL(str);
+  if (SCHEME_FALSEP(SCHEME_CAR((Scheme_Object *)old_exn))) {
+    raisetype = "";
+    sep = "";
+    who = "handler for uncaught exceptions";
+    msg = "did not escape";
   } else {
-    msg = error_write_to_string_w_max(arg, len, NULL);
-    raisetype = "raise called (with non-exception value)";
+    who = SCHEME_BYTE_STR_VAL(SCHEME_CAR((Scheme_Object *)old_exn));
+    sep = " by ";
+
+    if (SCHEME_STRUCTP(arg)
+        && scheme_is_struct_instance(exn_table[MZEXN].type, arg)) {
+      Scheme_Object *str = ((Scheme_Structure *)arg)->slots[0];
+      raisetype = "exception raised";
+      str = scheme_char_string_to_byte_string(str);
+      msg = SCHEME_BYTE_STR_VAL(str);
+      mlen = SCHEME_BYTE_STRLEN_VAL(str);
+    } else {
+      msg = error_write_to_string_w_max(arg, len, NULL);
+      raisetype = "raise called (with non-exception value)";
+    }
   }
 
   if (SCHEME_STRUCTP(orig_arg)
@@ -2470,9 +2476,8 @@ nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
   }
 
 
-  blen = scheme_sprintf(buffer, blen, "%s by %s: %t; original %s: %t",
-			raisetype,
-			who,
+  blen = scheme_sprintf(buffer, blen, "%s%s%s: %t; original %s: %t",
+			raisetype, sep, who,
 			msg, mlen,
 			orig_raisetype,
 			orig_msg, orig_mlen);
@@ -2483,46 +2488,86 @@ nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-do_raise(Scheme_Object *arg, int return_ok, int need_debug)
+do_raise(Scheme_Object *arg, int need_debug)
 {
- Scheme_Object *v, *p[1], *h;
- Scheme_Cont_Frame_Data cframe, cframe2;
+  Scheme_Object *v, *p[1], *h, *marks;
+  Scheme_Cont_Mark_Chain *chain;
+  Scheme_Cont_Frame_Data cframe, cframe2;
 
  if (scheme_current_thread->skip_error) {
    scheme_longjmp (scheme_error_buf, 1);
  }
 
+ /* In case we need to chain to the previous exception
+    handler, collect all marks. In the common case, getting the
+    marks will be cheap, because we just got them for
+    the exception record (and they're cached) or we're getting
+    them now for the exception record.
+    Continuation jumps into an exception handler are
+    disallowed, so we don't have to worry about the
+    context changing by the time an exception handler
+    returns. */
+ marks = scheme_current_continuation_marks(NULL);
+ chain = NULL;
+
  if (need_debug) {
-   Scheme_Object *marks;
-   marks = scheme_current_continuation_marks(NULL);
    ((Scheme_Structure *)arg)->slots[1] = marks;
  }
 
  h = scheme_extract_one_cc_mark(NULL, scheme_exn_handler_key);
- if (!h) {
-   h = scheme_get_param(scheme_current_config(), MZCONFIG_INIT_EXN_HANDLER);
+
+ while (1) {
+   if (!h) {
+     h = scheme_get_param(scheme_current_config(), MZCONFIG_INIT_EXN_HANDLER);
+     marks = NULL;
+   }
+
+   v = scheme_make_byte_string_without_copying("exception handler");
+   v = scheme_make_closed_prim_w_arity(nested_exn_handler,
+                                       scheme_make_pair(v, arg),
+                                       "nested-exception-handler", 
+                                       1, 1);
+
+   scheme_push_continuation_frame(&cframe);
+   scheme_set_cont_mark(scheme_exn_handler_key, v);
+   scheme_push_break_enable(&cframe2, 0, 0);
+
+   p[0] = arg;
+   v = scheme_apply(h, 1, p);
+
+   scheme_pop_break_enable(&cframe2, 0);
+   scheme_pop_continuation_frame(&cframe);
+
+   /* Getting a value back means that we should chain to the
+      next exception handler; we supply the returned value to
+      the next exception handler (if any). */
+   if (marks) {
+     chain = ((Scheme_Cont_Mark_Set *)marks)->chain;
+     marks = NULL;
+     /* Init chain to position of the handler we just
+        called. */
+     while (chain->key != scheme_exn_handler_key) {
+       chain = chain->next;
+     }
+   }
+
+   if (chain) {
+     chain = chain->next;
+     while (chain && (chain->key != scheme_exn_handler_key)) {
+       chain = chain->next;
+     }
+
+     if (!chain)
+       h = NULL; /* use uncaught handler */
+     else
+       h = chain->val;
+     arg = v;
+   } else {
+     /* return from uncaught-exception handler */
+     p[0] = scheme_false;
+     return nested_exn_handler(scheme_make_pair(scheme_false, arg), 1, p);
+   }
  }
-
- v = scheme_make_byte_string_without_copying("exception handler");
- v = scheme_make_closed_prim_w_arity(nested_exn_handler,
-				     scheme_make_pair(v, arg),
-				     "nested-exception-handler", 
-				     1, 1);
-
- scheme_push_continuation_frame(&cframe);
- scheme_set_cont_mark(scheme_exn_handler_key, v);
- scheme_push_break_enable(&cframe2, 0, 0);
-
- p[0] = arg;
- v = scheme_apply(h, 1, (Scheme_Object **)p);
-
- scheme_pop_break_enable(&cframe2, 0);
- scheme_pop_continuation_frame(&cframe);
-
- if (return_ok)
-   return v;
-
- call_error(RAISE_RETURNED, -1, scheme_false);
 
  return scheme_void;
 }
@@ -2530,12 +2575,12 @@ do_raise(Scheme_Object *arg, int return_ok, int need_debug)
 static Scheme_Object *
 sch_raise(int argc, Scheme_Object *argv[])
 {
-  return do_raise(argv[0], 0, 0);
+  return do_raise(argv[0], 0);
 }
 
 void scheme_raise(Scheme_Object *exn)
 {
-  do_raise(exn, 0, 0);
+  do_raise(exn, 0);
 }
 
 typedef Scheme_Object (*Scheme_Struct_Field_Guard_Proc)(int argc, Scheme_Object *v);

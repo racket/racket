@@ -6122,6 +6122,11 @@ provide_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 /*                        marshal/unmarshal                           */
 /**********************************************************************/
 
+XFORM_NONGCING static Scheme_Object *wrap_mod_stx(Scheme_Object *stx)
+{
+  return (stx ? stx : scheme_false);
+}
+
 static Scheme_Object *write_module(Scheme_Object *obj)
 {
   Scheme_Module *m = (Scheme_Module *)obj;
@@ -6192,9 +6197,9 @@ static Scheme_Object *write_module(Scheme_Object *obj)
 
   l = cons(scheme_make_integer(m->max_let_depth), l);
 
-  l = cons(m->tt_rn_stx ? m->tt_rn_stx : scheme_false, l);
-  l = cons(m->et_rn_stx ? m->et_rn_stx : scheme_false, l);
-  l = cons(m->rn_stx ? m->rn_stx : scheme_false, l);
+  l = cons(wrap_mod_stx(m->tt_rn_stx), l);
+  l = cons(wrap_mod_stx(m->et_rn_stx), l);
+  l = cons(wrap_mod_stx(m->rn_stx), l);
 
   l = cons(m->me->src_modidx, l);
   l = cons(m->modname, l);

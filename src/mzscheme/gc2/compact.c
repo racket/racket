@@ -2655,7 +2655,7 @@ void protect_old_mpages()
 
 #if GENERATIONS
 
-static void designate_modified(void *p)
+static int designate_modified(void *p)
 {
   unsigned long g = ((unsigned long)p >> MAPS_SHIFT);
   MPage *map;
@@ -2675,7 +2675,7 @@ static void designate_modified(void *p)
       if (page->flags & MFLAG_CONTINUED) {
 	designate_modified(page->o.bigblock_start);
 	num_seg_faults++;
-	return;
+	return 1;
       } else if (page->age) {
 	page->flags |= MFLAG_MODIFIED;
 	p = (void *)((long)p & MPAGE_START);
@@ -2684,12 +2684,12 @@ static void designate_modified(void *p)
 	else
 	  protect_pages(p, MPAGE_SIZE, 1);
 	num_seg_faults++;
-	return;
+	return 1;
       }
 
       GCPRINT(GCOUTF, "Seg fault (internal error) at %lx [%ld]\n", 
 	      (long)p, num_seg_faults);
-      abort();
+      return 0;
     }
   }
 
@@ -2700,7 +2700,7 @@ static void designate_modified(void *p)
 #if defined(_WIN32) && defined(CHECKS)
   DebugBreak();
 #endif
-  abort();
+  return 0;
 }
 
 /* The platform-specific signal handlers, and initialization function: */
