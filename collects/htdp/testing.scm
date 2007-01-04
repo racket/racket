@@ -154,7 +154,6 @@
         (send my-frame resize 
               (min (+ 300 (* 3 (send my-text line-end-position num-failed-tests #f))) 900)
               (min (+ 200 (* 5 num-failed-tests)) 900)))
-      (printf "~a~n" (send my-text line-end-position num-failed-tests #f))
       (send my-text move-position 'home)
       (send my-text lock #t)
       (send my-frame show #t)
