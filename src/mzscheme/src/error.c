@@ -2493,33 +2493,27 @@ do_raise(Scheme_Object *arg, int need_debug)
   Scheme_Object *v, *p[1], *h, *marks;
   Scheme_Cont_Mark_Chain *chain;
   Scheme_Cont_Frame_Data cframe, cframe2;
+  int got_chain;
 
  if (scheme_current_thread->skip_error) {
    scheme_longjmp (scheme_error_buf, 1);
  }
 
- /* In case we need to chain to the previous exception
-    handler, collect all marks. In the common case, getting the
-    marks will be cheap, because we just got them for
-    the exception record (and they're cached) or we're getting
-    them now for the exception record.
-    Continuation jumps into an exception handler are
-    disallowed, so we don't have to worry about the
-    context changing by the time an exception handler
-    returns. */
- marks = scheme_current_continuation_marks(NULL);
- chain = NULL;
-
  if (need_debug) {
+   marks = scheme_current_continuation_marks(NULL);
    ((Scheme_Structure *)arg)->slots[1] = marks;
  }
 
  h = scheme_extract_one_cc_mark(NULL, scheme_exn_handler_key);
 
+ chain = NULL;
+ got_chain = 0;
+
  while (1) {
    if (!h) {
      h = scheme_get_param(scheme_current_config(), MZCONFIG_INIT_EXN_HANDLER);
-     marks = NULL;
+     chain = NULL;
+     got_chain = 1;
    }
 
    v = scheme_make_byte_string_without_copying("exception handler");
@@ -2541,7 +2535,8 @@ do_raise(Scheme_Object *arg, int need_debug)
    /* Getting a value back means that we should chain to the
       next exception handler; we supply the returned value to
       the next exception handler (if any). */
-   if (marks) {
+   if (!got_chain) {
+     marks = scheme_all_current_continuation_marks();
      chain = ((Scheme_Cont_Mark_Set *)marks)->chain;
      marks = NULL;
      /* Init chain to position of the handler we just
@@ -2549,6 +2544,7 @@ do_raise(Scheme_Object *arg, int need_debug)
      while (chain->key != scheme_exn_handler_key) {
        chain = chain->next;
      }
+     got_chain = 1;
    }
 
    if (chain) {

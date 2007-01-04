@@ -5720,6 +5720,8 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
 
   if (cont && SAME_OBJ(cont->prompt_tag, prompt_tag))
     found_tag = 1;
+  if (!prompt_tag)
+    found_tag = 1;
 
   do {
     if (econt) {
@@ -5968,6 +5970,14 @@ Scheme_Object *scheme_current_continuation_marks(Scheme_Object *prompt_tag)
 {
   return continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
                             prompt_tag ? prompt_tag : scheme_default_prompt_tag,
+                            "continuation-marks",
+                            0);
+}
+
+Scheme_Object *scheme_all_current_continuation_marks()
+{
+  return continuation_marks(scheme_current_thread, NULL, NULL, NULL, 
+                            NULL,
                             "continuation-marks",
                             0);
 }
