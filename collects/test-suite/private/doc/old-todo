@@ -1,0 +1,160 @@
+######################################################################
+                       Immediate TODO list:
+######################################################################
+  To highlight test-cases that are currently selected, use the same method
+as in test-text. Only color the snip though, not the editor. This will
+fill in the places in the snip that don't have children snips on it.
+--------------
+  To enable and disable the delete snip button use the on-focus or on
+not-focus of the test-cases. do something clever to avoid the blinking of
+the delete button between off-focus and on-focus.
+--------------
+make GUI-monkey test-suite for test-suite
+--------------
+make a better test-suite window using editor-mixin
+  and derive a controller from it, not the way I
+  am currently doing it. (this will give undo/redo)
+--------------
+figure out the problem with resized overloading
+  and a clean way to fix it.
+--------------
+override on-default-event of the pasteboard if it's not needed
+so that all the funny selection and movement doesn't happen.
+-------------------
+On Mon, Nov 18, 2002 at 03:03:49PM -0600, Robert Bruce Findler wrote:
+> Make deletion actually set the focus to another one of the snips, so I
+> can keep deleting.
+-------------------
+> Also, it may look better to remove the outer box entirely and just have
+> lines between the test case items (or even not, if you can figure out
+> the background colors)
+-------------------
+ * There's a problem with handling mouse-button releases. They seem to
+   be handled like clicks. For example, drag a selection in "Expected",
+   but release the mouse in "Call". The selection will move to "Call".
+
+Matthew
+-------------------
+   - after xcuting and receiving checks for all tests, edit an expected value
+     and see whether you get a save button
+------------------
+
+######################################################################
+                          Nonimmediate TODO:
+######################################################################
+disable the open button when there is no program to test in the text box
+-------------------
+make undo/redo work
+-------------------
+have the 'special' menu in the test-suite tool so that
+  one might add xml boxes to test-suites for instance.
+-------------------
+Disable the open button when there is nothing in the program to test box
+-------------------
+Refactor languaged frame unit so that it does not depend on the model but
+instread stores the language and teachpacks in it's own fields and may be
+used by DrScheme as a general mixin to add language support to windows.
+-------------------
+add support for the test definitions boxes.
+-------------------
+One thing I noticed about your tester: it doesn't seem to use Robby's
+string-constants system.  So all the menus and buttons and stuff you
+have will always be in English, which will look weird to people who
+use DrScheme with another language.
+
+Philippe
+-------------------
+Give better error message on bad file loading.(message box?)
+disallow newlines in program to file box
+-------------------
+It'd also be really nice to have a Stepper associated with individual
+test cases -- this is currently a pain with the stepper (I have to
+step through old runs to get to new ones, or putz around with
+commenting code).  With the testing facility you have just the right
+interface to make the stepper highly usable!
+----------------
+Programs aren't associated with the buffer that is open (like the REPL) They
+are associated with the saved file. This is confusing when you change a
+program and expect it's test to behave differently in the test window.
+Currently you must save it. Should there either be an "out of syn" warning
+or a way to read straight from the buffer?
+-----------------
+I think that there is too much whitespace around the boxes, too. It'd           
+be nicer to use color to separate the lines and get back some screen
+"real estate".                                 
+                                          
+Robby                                             
+-----------------
+make the test-suite not halt on a failure?
+-----------------
+   - we need to be able to associate a test suite with more than one
+     definitions window (say we reimplement a module to improve its
+     performance. it should pass the same functionality tests)
+------------------
+Pls add a checkbox so that you can turn off individual tests
+or skip tests that fail. -- Matthias
+------------------
+
+######################################################################
+                              Unknown:
+######################################################################
+I've done a first cut of io in the test suite. It doesn't do everything
+-- here are some TODOs for you:
+
+  - hide last newline (like in value printer)
+  - remove IO boxes when executing
+  - fix the `(lambda () (send this ...)' hack
+
+The last one needs some re-organization, I believe. I'll let you think
+about it.
+
+Also, I noticed that execute doesn't shutdown the old custodian, so
+frames and things created in previous tests are still around in the new
+test. (This also means that there is a memory leak!)
+
+That's already on your list, right?
+
+Robby
+-----------------
+For your TODO list, please. :)
+  
+It would be nice if there was a little turn down triangle in the test
+cases that would collapse the entire case to just the triangle. If
+adjacent test cases were collapsed, they would sit next to each other
+horizontally (ie, leave more vertical room). When executing, if the
+test case passes and it was closed, it stays closed, but if it fails
+and it was closed, it pops open.
+  
+What do you think?
+-----------------
+When I create a new case, the tester installs a huge big question
+mark.  It's cute [so are the cross and check -- these will probably be
+a big hit with kids -- whoever designed them did a great job!], but
+(a) I think they're too large; and (b) I think the ? is misleading.
+Something about ?'s shape, size and location makes me think it must be
+a button.  (Location, especially -- it's exactly where I would expect
+the "Submit" button on a Web form.) I clicked on it a few times, but
+nothing happened.  Then I remembered that there'd been an Execute
+button at the top, clicked on it, and saw the outcome.  In other
+words, I expected ? to play the role of Execute.
+-sk
+-------------------
+The box under Actual surprised me multiple times.  After entering a
+value for Call and for Expected, I was surprised to find tabbing and
+typing do nothing.  The color change just tells me "this is special"
+(eg, where you enter your SSN on a govt form); the box still tells me
+"this is a place you enter text".  Can you remove the box entirely
+from below Actual?  In fact, if Actual and the output never appeared
+until you executed the program, that may be even better.
+-sk
+----------------
+BUG: I wanted to make the second test case buggy (but not lose the
+subsequent ones).  So I clicked on the box around the first one, which
+showed me little highlight points around the box.  I tried to move it,
+but nothing happened.  Then I went to the scroll bar and tried to
+scroll somewhere in that region, but got a MrEd toolbox method error,
+and now the screen won't redraw.  I'll try to reproduce it. ... Okay,
+did so successfully, I'll send in a bug report.  Anyway, it'd be nice
+to reorder cases.  It'd be especially neat the reorder by
+success/failure.
+-------------------
