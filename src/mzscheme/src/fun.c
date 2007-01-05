@@ -5900,7 +5900,9 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
           find[pos].cache = (Scheme_Object *)pr;
         } else {
           cache = (Scheme_Object *)scheme_make_hash_table(SCHEME_hash_ptr);
-          scheme_hash_set((Scheme_Hash_Table *)cache, prompt_tag, (Scheme_Object *)pr);
+          scheme_hash_set((Scheme_Hash_Table *)cache, 
+                          prompt_tag ? prompt_tag : scheme_false, 
+                          (Scheme_Object *)pr);
           find[pos].cache = cache;
         }
         if (last)
