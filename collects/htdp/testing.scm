@@ -173,13 +173,13 @@
       [(unequal? fail)
        (send text insert "Actual value ")
        (insert-value text (unequal-test fail))
-       (send text insert " did not equal expected value ")
+       (send text insert " differs from ")
        (insert-value text (unequal-actual fail))
-       (send text insert ".\n")]
+       (send text insert ", the expected value.\n")]
       [(outofrange? fail)
        (send text insert "Actual value ")
        (insert-value text (outofrange-test fail))
-       (send text insert (format "was not within ~v of expected value " (outofrange-range fail)))
+       (send text insert (format "is not within ~v of expected value " (outofrange-range fail)))
        (insert-value text (outofrange-actual fail))
        (send text insert ".\n")]
       [(incorrect-error? fail) 
@@ -198,7 +198,7 @@
              (send value set-style (send (send text get-style-list)
                                    find-named-style "Standard"))
              value]
-            [(pair? value) 
+            [(or (pair? value) (struct? value))
              (parameterize ([constructor-style-printing #t]
                             [pretty-print-columns 40])
                (let* ([text* (new (editor:standard-style-list-mixin text%))]
@@ -266,7 +266,7 @@
   
   (define (format-src src)
     (string-append (cond
-                     ((path? (src-file src)) (string-append "in " (src-file src) " at "))
+                     ((path? (src-file src)) (string-append "in " (path->string (src-file src)) " at "))
                      ((is-a? (src-file src) editor<%>) "at "))
                    "line " (number->string (src-line src))
                    " column " (number->string (src-col src))))
