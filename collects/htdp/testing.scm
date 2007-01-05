@@ -3,6 +3,8 @@
   (require (lib "teachprims.ss" "lang" "private")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
+           (lib "pretty.ss")
+           (lib "pconvert.ss")
            (lib "class.ss"))
   
   (provide 
@@ -152,8 +154,8 @@
         (for-each (lambda (f) (report-check-failure f my-text)) 
                   (reverse failed-check))
         (send my-frame resize 
-              (min (+ 300 (* 3 (send my-text line-end-position num-failed-tests #f))) 900)
-              (min (+ 200 (* 5 num-failed-tests)) 900)))
+              (min (+ 300 (* 5 (send my-text line-end-position num-failed-tests #f))) 1000)
+              (min (+ 200 (* 5 num-failed-tests)) 1000)))
       (send my-text move-position 'home)
       (send my-text lock #t)
       (send my-frame show #t)
@@ -165,13 +167,13 @@
     (send text insert "\n   ")
     (cond
       [(unexpected-error? fail)
-       (send text insert "check encountered the following error instead of the expected value ")
+       (send text insert "check encountered the following error instead of the expected value, ")
        (insert-value text (unexpected-error-expected fail))
        (send text insert (format ". ~n   :: ~a~n" (unexpected-error-message fail)))]
       [(unequal? fail)
        (send text insert "Actual value ")
        (insert-value text (unequal-test fail))
-       (send text insert " was not equal to expected value ")
+       (send text insert " did not equal expected value ")
        (insert-value text (unequal-actual fail))
        (send text insert ".\n")]
       [(outofrange? fail)
@@ -191,12 +193,22 @@
   
   (define (insert-value text value)
     (send text insert
-          (if (is-a? value snip%)
-              (begin
-                (send value set-style (send (send text get-style-list)
-                                            find-named-style "Standard"))
-                value)
-              (format "~v" value))))
+          (cond
+            [(is-a? value snip%)
+             (send value set-style (send (send text get-style-list)
+                                   find-named-style "Standard"))
+             value]
+            [(pair? value) 
+             (parameterize ([constructor-style-printing #t]
+                            [pretty-print-columns 40])
+               (let* ([text* (new (editor:standard-style-list-mixin text%))]
+                      [text-snip (new editor-snip% [editor text*])])
+                 (pretty-print (print-convert value) (open-output-text-editor text*))
+                 (send text* lock #t)
+                 (send text-snip set-style (send (send text get-style-list)
+                                                 find-named-style "Standard"))
+                 text-snip))]
+            [else (format "~v" value)])))
   
   ;make-link: text% (listof (U string snip%)) src -> void
   (define (make-link text dest)
