@@ -65,7 +65,7 @@ public:
 	Bool OnClose(void);
 
 	virtual void Fit(void);
-	virtual void Centre(int d) { cFrame->Centre(d); }
+	virtual void Centre(int d = wxBOTH, wxWindow *p = NULL) { cFrame->Centre(d, p); }
 
 	void SetIcon(wxBitmap* icon) { cFrame->SetIcon(icon); }
 	void Iconize(Bool iconize) { cFrame->Iconize(iconize); }

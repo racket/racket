@@ -75,7 +75,7 @@ class wxbFrame: public wxWindow
   virtual void SetStatusText(char *text, int number = 0) = 0;
   virtual Bool StatusLineExists(void);
 
-  void Centre(int direction = wxBOTH);
+  void Centre(int direction = wxBOTH, wxWindow *parent = NULL);
 
   // Iconize
   virtual void Iconize(Bool iconize) = 0;

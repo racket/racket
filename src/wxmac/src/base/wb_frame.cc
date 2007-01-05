@@ -133,20 +133,27 @@ Bool wxbFrame::StatusLineExists(void)
   return status_line_exists;
 }
 
-void wxbFrame::Centre(int direction)
+void wxbFrame::Centre(int direction, wxWindow *parent)
 {
-  int display_width, display_height, width, height, x, y;
-  wxDisplaySize(&display_width, &display_height);
+  int display_width, display_height, width, height, x, y, offset_x, offset_y;
+
+  if (parent) {
+    parent->GetSize(&display_width, &display_height);
+    parent->GetPosition(&offset_x, &offset_y);
+  } else {
+    wxDisplaySize(&display_width, &display_height);
+    offset_x = offset_y = 0;
+  }
 
   GetSize(&width, &height);
   GetPosition(&x, &y);
-
+  
   if (direction & wxHORIZONTAL)
     x = (int)((display_width - width)/2);
   if (direction & wxVERTICAL)
     y = (int)((display_height - height)/2);
-
-  SetSize(x, y, width, height, wxPOS_USE_MINUS_ONE);
+  
+  SetSize(x + offset_x, y + offset_y, width, height, wxPOS_USE_MINUS_ONE);
 }
 
 // Call this to simulate a menu command

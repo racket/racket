@@ -126,13 +126,10 @@ class wxbWindow: public wxObject
   virtual void SetName(char *name);
 
   inline virtual void Fit(void) {};                  // Size window to fit contents
-  inline virtual void Centre(int direction) {};      // Centre item on panel,
-                                               // or frame on screen
+  inline virtual void Centre(int direction = wxBOTH, wxWindow *parent = NULL) {};
   // Renamed from GetWindowStyle since it clashed with a
   // macro in windowsx.h.
   inline long GetWindowStyleFlag(void) { return windowStyle; }
-  // A concession to our friends across the pond
-  inline void Center(int direction = wxHORIZONTAL) { Centre(direction); }
 
   inline virtual void EnablePainting(Bool enable) { paintingEnabled = enable; }
 

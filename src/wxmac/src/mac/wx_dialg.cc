@@ -180,7 +180,7 @@ static wxFrame *make_dlog_frame(wxWindow *parentFrame, char *windowTitle, int x,
 //-----------------------------------------------------------------------------
 wxDialogBox::wxDialogBox // Constructor (for dialog window)
 (
- wxWindow*	parentFrame,		// this is ignored, used to be wxFrame*
+ wxWindow*	parentFrame,
  char*		windowTitle,
  Bool		modal,
  int 		x,

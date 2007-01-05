@@ -116,7 +116,7 @@ public:
 	// Sizing methods
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	void DoSetSize(int x, int y, int width, int height);
-        void Centre(int direction);
+        void Centre(int direction = wxBOTH, wxWindow *p = NULL);
 	void Fit(void);
 
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

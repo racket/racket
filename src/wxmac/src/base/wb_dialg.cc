@@ -84,8 +84,8 @@ wxbDialogBox::~wxbDialogBox()
   tlw->DeleteObject(this);
 }
 
-void wxbDialogBox::Centre(int direction)
+void wxbDialogBox::Centre(int direction, wxWindow *p)
 {
-  ((wxDialogBox *)this)->cFrame->Centre(direction);
+  ((wxDialogBox *)this)->cFrame->Centre(direction, p);
 }
 

@@ -60,7 +60,7 @@ static ControlUserPaneDrawUPP userPaneDrawFunctionUPP = NewControlUserPaneDrawUP
 //-----------------------------------------------------------------------------
 wxFrame::wxFrame // Constructor (for frame window)
 (
- wxFrame*	parentFrame,		// this is ignored
+ wxFrame*	parentFrame,
  char*		windowTitle,
  int 		x,
  int			y,

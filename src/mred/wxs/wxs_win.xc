@@ -87,6 +87,15 @@ static long wxWindowGetHandle(wxWindow *w)
 #endif
 }
 
+static void CenterWParent(wxWindow *w, int direction, wxWindow *parent)
+{
+#ifdef wx_mac
+  w->Centre(direction, parent);
+#else
+  w->Centre(direction);
+#endif
+}
+
 @BEGINSYMBOLS sizeMode > ONE > PRED BUNDLE
 @SYM "auto" : wxSIZE_AUTO
 @SYM "use-exsiting" : wxSIZE_USE_EXISTING
@@ -128,7 +137,7 @@ static long wxWindowGetHandle(wxWindow *w)
 @ "refresh" : void Refresh();
 @ "get-parent" : wxWindow^ GetParent();
 @ "get-text-extent" : void GetTextExtent(string,double*,double*,double?=NULL,double?=NULL,wxFont^=NULL,bool=FALSE);
-@ "center" : void Center(SYM[direction]=wxBOTH);
+@ m "center" : void CenterWParent(SYM[direction]=wxBOTH, wxWindow^=NULL);
 
 @ "popup-menu" : void PopupMenu(wxMenu!, rint[0|10000], rint[0|10000]);
 

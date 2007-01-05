@@ -38,7 +38,7 @@ class wxbDialogBox: public wxFrame
   virtual void Iconize(Bool iconize) = 0;
   virtual Bool Iconized(void) = 0;
 
-  void Centre(int direction = wxBOTH);
+  void Centre(int direction = wxBOTH, wxWindow *parent = NULL);
 };
 
 #define wxOPEN 1

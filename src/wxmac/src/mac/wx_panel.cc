@@ -264,7 +264,7 @@ void wxPanel::DoSetSize(int x, int y, int width, int height)
 
 
 //-----------------------------------------------------------------------------
-void wxPanel::Centre(int direction)
+void wxPanel::Centre(int direction, wxWindow *)
 {
   int width, height, panel_width, panel_height, new_x, new_y;
   wxPanel* father;

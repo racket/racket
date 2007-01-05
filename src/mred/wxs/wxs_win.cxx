@@ -113,6 +113,15 @@ static long wxWindowGetHandle(wxWindow *w)
 #endif
 }
 
+static void CenterWParent(wxWindow *w, int direction, wxWindow *parent)
+{
+#ifdef wx_mac
+  w->Centre(direction, parent);
+#else
+  w->Centre(direction);
+#endif
+}
+
 static Scheme_Object *sizeMode_wxSIZE_AUTO_sym = NULL;
 static Scheme_Object *sizeMode_wxSIZE_USE_EXISTING_sym = NULL;
 static Scheme_Object *sizeMode_wxPOS_USE_MINUS_ONE_sym = NULL;
@@ -803,24 +812,30 @@ static Scheme_Object *os_wxWindowPopupMenu(int n,  Scheme_Object *p[])
   return scheme_void;
 }
 
-static Scheme_Object *os_wxWindowCenter(int n,  Scheme_Object *p[])
+static Scheme_Object *os_wxWindowCenterWParent(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   objscheme_check_valid(os_wxWindow_class, "center in window%", n, p);
   int x0;
+  class wxWindow* x1 INIT_NULLED_OUT;
 
-  SETUP_VAR_STACK_REMEMBERED(1);
+  SETUP_VAR_STACK_REMEMBERED(2);
   VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x1);
 
   
   if (n > (POFFSET+0)) {
     x0 = WITH_VAR_STACK(unbundle_symset_direction(p[POFFSET+0], "center in window%"));
   } else
     x0 = wxBOTH;
+  if (n > (POFFSET+1)) {
+    x1 = WITH_VAR_STACK(objscheme_unbundle_wxWindow(p[POFFSET+1], "center in window%", 1));
+  } else
+    x1 = NULL;
 
   
-  WITH_VAR_STACK(((wxWindow *)((Scheme_Class_Object *)p[0])->primdata)->Center(x0));
+  WITH_VAR_STACK(CenterWParent(((wxWindow *)((Scheme_Class_Object *)p[0])->primdata), x0, x1));
 
   
   
@@ -1369,7 +1384,7 @@ void objscheme_setup_wxWindow(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxWindow_class, "get-width" " method", (Scheme_Method_Prim *)os_wxWindowwxSchemeWindowGetWidth, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxWindow_class, "get-height" " method", (Scheme_Method_Prim *)os_wxWindowwxSchemeWindowGetHeight, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxWindow_class, "popup-menu" " method", (Scheme_Method_Prim *)os_wxWindowPopupMenu, 3, 3));
-  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxWindow_class, "center" " method", (Scheme_Method_Prim *)os_wxWindowCenter, 0, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxWindow_class, "center" " method", (Scheme_Method_Prim *)os_wxWindowCenterWParent, 0, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxWindow_class, "get-text-extent" " method", (Scheme_Method_Prim *)os_wxWindowGetTextExtent, 3, 7));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxWindow_class, "get-parent" " method", (Scheme_Method_Prim *)os_wxWindowGetParent, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxWindow_class, "refresh" " method", (Scheme_Method_Prim *)os_wxWindowRefresh, 0, 0));
