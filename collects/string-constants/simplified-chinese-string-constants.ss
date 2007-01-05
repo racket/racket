@@ -17,12 +17,12 @@
 ;           #                   #                    #######   
 ;                                                              
 (module simplified-chinese-string-constants "string-constant-lang.ss"
-  (is-this-your-native-language "你的母语是繁体中文吗？")
+  (is-this-your-native-language "你的母语是简体中文吗？")
   
   (are-you-sure-you-want-to-switch-languages
    "为了改变界面语言，现在需要重新启动DrScheme。你确定吗？")
   
-  (interact-with-drscheme-in-language "使用简体中文作为DrScheme界面语言")
+  (interact-with-drscheme-in-language "使用简体中文作DrScheme界面语言")
   
   ;; these two should probably be the same in all languages excepet English.
   ;; they are the button labels (under macos and windows, respectively)
@@ -146,16 +146,22 @@
   (no-full-name-since-not-saved
    "当前文件还没有被命名，因为从来没有对它进行保存。")
   (cannot-open-because-dne "无法打开~a，文件不存在。")
-  (interactions-out-of-sync
-   "警告：交互窗口和定义窗口不同步。请单击“运行”按钮。")
+  
+  (needs-execute-language-changed
+   "警告：选择的语言改变了。请单击“运行”。")
+  (needs-execute-teachpack-changed
+   "警告：教学包改变了。请单击“运行”。")
+  (needs-execute-defns-edited
+   "警告：定义窗口改变了。请单击“运行”。")
   (file-is-not-saved "文件\"~a\"还没有保存过")
+  
   (save "保存")
   (close-anyway "强制关闭")
   (clear-anyway "强制清空")
   
   ;; menu item title
-  (log-definitions-and-interactions "记录定义和交互的日至...")
-  (stop-logging "不再记录日至")
+  (log-definitions-and-interactions "记录定义和交互的日志...")
+  (stop-logging "不再记录日志")
   (please-choose-a-log-directory "请选择日志目录")
   (logging-to "记录日志到：")
   (erase-log-directory-contents "删除日志目录~a中的内容？")
@@ -233,6 +239,11 @@
   ;; in the help-desk standalone font preference dialog, on a check box
   (use-drscheme-font-size "使用和DrScheme相同的字号")
   
+  ;; in the preferences dialog in drscheme there is example text for help desk font size.
+  ;; clicking the links in that text produces a dialog with this message
+  (help-desk-this-is-just-example-text
+   "这里显示的只是示例字体大小的文字。要察看这些链接，请通过帮助菜单打开真正的Help Desk。")
+  
   ;; Help desk htty proxy
   (http-proxy "HTTP代理")
   (proxy-direct-connection "直接连接")
@@ -306,7 +317,6 @@
   (editor-prefs-panel-label "编辑")
   (general-prefs-panel-label "常规")
   (highlight-parens "加亮显示匹配的括号")
-  (fixup-open-parens "自动调整开括号")
   (fixup-close-parens "自动调整闭括号")
   (fixup-open-brackets "自动调整中括号")
   (flash-paren-match "高亮显示括号匹配")
@@ -399,6 +409,7 @@
   (forward "下一个")
   (backward "上一个")
   (hide "隐藏")
+  (find-case-sensitive "大小写敏感")  ;; the check box in both the docked & undocked search
   
   ;;; multi-file-search
   (mfs-multi-file-search-menu-item "在文件中搜索...")
@@ -549,8 +560,10 @@
   (keybindings-sort-by-key "按键名排序")
   (keybindings-add-user-defined-keybindings "添加自定义热键绑定...")
   (keybindings-add-user-defined-keybindings/planet "从PLaneT添加自定义热键绑定...")
-  (keybindings-menu-remove "取消~a")
+  (keybindings-menu-remove "移除~a")
   (keybindings-choose-user-defined-file "请选择一个包含热键绑定的文件")
+  (keybindings-planet-malformed-spec "错误的PLaneT名称：~a") ; the string will be what the user typed in
+  (keybindings-type-planet-spec "请输入正确的PLaneT名称（无需输入`require'）")
   
   ; first ~a will be a string naming the file or planet package where the keybindings come from;
   ; second ~a will be an error message
@@ -719,7 +732,7 @@
   (box-comment-out-menu-item-label "用注释框注释(&C)")
   (uncomment-menu-item-label "取消注释(&U)")
   
-  (convert-to-semicolon-comment "转化为分号注释")
+  (convert-to-semicolon-comment "转化为（分号）注释")
   
   ;;; executables
   (create-executable-menu-item-label "创建可执行程序...")
@@ -729,6 +742,8 @@
   (save-a-mzscheme-launcher "保存为MzScheme程序")
   (save-a-mred-stand-alone-executable "保存为MrEd可执行程序")
   (save-a-mzscheme-stand-alone-executable "保存为MzScheme可执行程序")
+  (save-a-mred-distribution "保存为MrEd可发布程序")
+  (save-a-mzscheme-distribution "保存为MzScheme可发布程序")
   
   (definitions-not-saved "当前定义窗口中的程序并没有被保存过。将使用最近保存过的版本来生成可执行程序。是否继续？")
   ;; The "-explanatory-label" variants are the labels used for the radio buttons in
@@ -850,12 +865,33 @@
   (professional-languages "正式语言")
   (teaching-languages "教学语言")
   (experimental-languages "实验语言")
+  (initial-language-category "初始语言")
+  (no-language-chosen "还没有选择语言")
   
   (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
   
+  ;;; from the `not a language language' used initially in drscheme.
+  (must-choose-language "在继续操作之前，你必须为DrScheme选择一种语言。")
+  
+  ; next two appear before and after the name of a text book (which will be in italics)
+  (using-a-textbook-before "使用")
+  (using-a-textbook-after "（教科书）？")
+  
+  ; next two are before and after a language
+  (start-with-before "由")
+  (start-with-after "开始？")
+  
+  (seasoned-plt-schemer? "PLT Scheme高手?")
+  (looking-for-standard-scheme? "标准的Scheme?")
+  
+  ; the three string constants are concatenated together and the middle
+  ; one is hyperlinked to the dialog that suggests various languages
+  (get-guidance-before "请通过“语言”菜单中的“选择语言”命名进行语言选择，或者")
+  (get-guidance-during "由DrScheme帮助你选择")
+  (get-guidance-after "。")
   
   ;;; debug language
-  (unknown-debug-frame "[unknown]")
+  (unknown-debug-frame "[未知]")
   (backtrace-window-title "向后跟踪 - DrScheme")
   (files-interactions "~a的交互") ;; filled with a filename
   (current-interactions "交互")
@@ -864,6 +900,31 @@
   (mzscheme-one-line-summary "PLT的Scheme实现")
   (mred-w/debug "Graphical (MrEd, 包含 MzScheme)")
   (mred-one-line-summary "在MzScheme的基础上增加GUI支持")
+  
+  ;; profiling
+  (profiling-low-color "低")
+  (profiling-high-color "高")
+  (profiling-choose-low-color "请选择代表低的颜色")
+  (profiling-choose-high-color "请选择代表高的颜色")
+  (profiling "Profiling")
+  (profiling-example-text "(define (whee) (whee))")
+  (profiling-color-config "Profiling色谱") 
+  (profiling-scale "Profiling颜色的比例")
+  (profiling-sqrt "平方根")
+  (profiling-linear "线性")
+  (profiling-square "平方")
+  (profiling-number "调用次数")
+  (profiling-time "累积次数")
+  (profiling-update "更新Profile")
+  (profiling-col-percent-time "% 次")
+  (profiling-col-function "函数")
+  (profiling-col-time-in-msec "毫秒")
+  (profiling-col-calls "调用")
+  (profiling-show-profile "显示Profile")
+  (profiling-hide-profile "隐藏Profile")
+  (profiling-unknown-src "<< 未知 >>")
+  (profiling-no-information-available "没有可用的profiling信息。请确定你（在语言设置中）启用了profiling，并且运行了当前程序。")
+  (profiling-clear? "改变定义窗口的内容将导致profiling信息失效。是否继续？")
   
   ;; test coverage
   (test-coverage-clear? "改变定义窗口将导致测试覆盖信息失效。是否继续？")
@@ -923,15 +984,16 @@
   (module-browser-font-size-gauge-label "字号")
   (module-browser-progress-label "Module overview progress")
   (module-browser-adding-file "添加文件: ~a...")
-  (module-browser-laying-out-graph-label "Laying out graph")
+  (module-browser-laying-out-graph-label "正在为图布局")
   (module-browser-open-file-format "打开~a")
   (module-browser "Module浏览器") ;; frame title
   (module-browser... "Module浏览器...") ;; menu item title
   (module-browser-error-expanding "展开程序时出错：\n\n~a")
-  (module-browser-show-lib-paths "显示通过(lib ..)加载的文件路径")
+  (module-browser-show-lib-paths "显示通过(lib ..)加载的文件的路径")
   (module-browser-progress "Module浏览器：~a") ;; prefix in the status line
-  (module-browser-compiling-defns "Module浏览器：compiling definitions")
-  (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
+  (module-browser-compiling-defns "Module浏览器：正在编译定义")
+  (module-browser-show-lib-paths/short "显示lib调用") ;; check box label in show module browser pane in drscheme window.
+  (module-browser-show-planet-paths/short "显示planet调用") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "刷新") ;; button label in show module browser pane in drscheme window.
   (module-browser-only-in-plt-and-module-langs
    "Module浏览器只能在PLT语言和module语言(并且要求程序中有module)中使用。")
@@ -1014,36 +1076,18 @@
   (profj-insert-java-interactions-box "插入Java交互框")
   
   ;; The Test Suite Tool
-  ;; Errors
-  (test-case-empty-error "Empty test case")
-  (test-case-too-many-expressions-error "Too many expressions in a test case.")
   ;; Dr. Scheme window menu items
   (test-case-insert "插入Test Case")
   (test-case-disable-all "禁用所有Test Cases")
   (test-case-enable-all "允许所有Test Cases")
   
   ;; Profj Boxes
-  (profjBoxes-empty-error "Empty interaction")
-  (profjBoxes-too-many-expressions-error "Too many expressions in a box")
-  (profjBoxes-interactions-label "Interactions")
-  (profjBoxes-bad-java-id-error "Malformed Java ID")
-  (profjBoxes-examples-label "Examples")
-  (profjBoxes-add-new-example-button "Add new example")
-  (profjBoxes-type "Type")
-  ;; The Java identifier of an example of data
-  (profjBoxes-name "Name")
-  (profjBoxes-value "Value")
   (profjBoxes-insert-java-examples "插入Java Examples")
   (profjBoxes-insert-java-interactions "插入Java Interactions")
   
   ;; Slideshow
   (slideshow-show-slideshow-panel "显示Slideshow面板")
   (slideshow-hide-slideshow-panel "隐藏Slideshow面板")
-  (slideshow-freeze-picts "Freeze These Picts")
-  (slideshow-thaw-picts "Show Picts Under Mouse")
-  (slideshow-hide-picts "Show Nested Boxes")
-  (slideshow-show-picts "Show Picts")
-  (slideshow-cannot-show-picts "Cannot show picts; run program to cache sizes first")
   (slideshow-insert-pict-box "插入Pict框") 
   
   ;; GUI Tool
