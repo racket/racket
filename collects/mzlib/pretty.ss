@@ -424,11 +424,11 @@
 			       (cond
 				[(vector? obj)
 				 (let ([len (vector-length obj)])
-				   (let loop ([i 0])
+				   (let vloop ([i 0])
 				     (if (= i len)
 					 #f
-					 (or (vector-ref obj i)
-					     (loop (add1 i))))))]
+					 (or (loop (vector-ref obj i))
+					     (vloop (add1 i))))))]
 				[(pair? obj)
 				 (or (loop (car obj))
 				     (loop (cdr obj)))]
