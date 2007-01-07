@@ -10,10 +10,6 @@
 	   "../posn.ss"
 	   "../imageeq.ss")
 
-  ;; Test-suite support (require is really an effect
-  ;;  to make sure that it's loaded)
-  (require (lib "test-case.ss" "test-suite" "private"))
-
   ;; procedures with documentation:
   (provide-and-document
     procedures
