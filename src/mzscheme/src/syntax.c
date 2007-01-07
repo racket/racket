@@ -262,7 +262,7 @@ scheme_init_syntax (Scheme_Env *env)
 			 define_values_optimize, 
 			 define_values_resolve, define_values_validate, 
 			 define_values_execute, define_values_jit, 
-			 NULL, NULL, 1);
+			 NULL, NULL, -2);
   scheme_register_syntax(SET_EXPD,
 			 set_optimize,
 			 set_resolve, set_validate,
@@ -277,12 +277,12 @@ scheme_init_syntax (Scheme_Env *env)
 			 define_syntaxes_optimize,
 			 define_syntaxes_resolve, define_syntaxes_validate,
 			 define_syntaxes_execute, define_syntaxes_jit, 
-			 NULL, NULL, 4);
+			 NULL, NULL, -2);
   scheme_register_syntax(DEFINE_FOR_SYNTAX_EXPD, 
 			 define_for_syntaxes_optimize, 
 			 define_for_syntaxes_resolve, define_for_syntaxes_validate,
 			 define_for_syntaxes_execute, define_for_syntaxes_jit, 
-			 NULL, NULL, 4);
+			 NULL, NULL, -2);
   scheme_register_syntax(CASE_LAMBDA_EXPD, 
 			 case_lambda_optimize,
 			 case_lambda_resolve, case_lambda_validate,

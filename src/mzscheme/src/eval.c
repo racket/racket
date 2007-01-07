@@ -8797,36 +8797,56 @@ static Scheme_Object *write_syntax(Scheme_Object *obj)
   protect_after = scheme_syntax_protect_afters[c];
 
   l = rest = (Scheme_Object *)SCHEME_IPTR_VAL(obj);
-  for (c = 0; SCHEME_PAIRP(l) && (c < protect_after); c++) {
-    l = SCHEME_CDR(l);
-  }
-  if (!SCHEME_NULLP(l) && (c == protect_after)) {
-    Scheme_Object *new_l;
-
-    new_l = scheme_protect_quote(l);
-
-    if (new_l != l) {
-      Scheme_Object *first = NULL, *last = NULL;
-      
-      while (rest != l) {
-	Scheme_Object *p;
-	
-	p = scheme_make_pair(SCHEME_CAR(rest), scheme_null);
-	if (last)
-	  SCHEME_CDR(last) = p;
-	else
-	  first = p;
-	last = p;
-
-	rest = SCHEME_CDR(rest);
+  if (protect_after == -2) {
+    /* -2 => protect first element of vector */
+    if (SCHEME_VECTORP(l)) {
+      l = scheme_protect_quote(SCHEME_VEC_ELS(rest)[0]);
+      if (!SAME_OBJ(l, SCHEME_VEC_ELS(rest)[0])) {
+        Scheme_Object *vec;
+        long i, len;
+        len = SCHEME_VEC_SIZE(rest);
+        vec = scheme_make_vector(len, NULL);
+        SCHEME_VEC_ELS(vec)[0] = l;
+        for (i = 1; i < len; i++) {
+          SCHEME_VEC_ELS(vec)[i] = SCHEME_VEC_ELS(rest)[i];
+        }
+        rest = vec;
       }
+    } else {
+      scheme_signal_error("expected a vector for syntax");
+    }
+  } else {
+    for (c = 0; SCHEME_PAIRP(l) && (c < protect_after); c++) {
+      l = SCHEME_CDR(l);
+    }
+    if (!SCHEME_NULLP(l) && (c == protect_after)) {
+      Scheme_Object *new_l;
+
+      new_l = scheme_protect_quote(l);
+
+      if (new_l != l) {
+        Scheme_Object *first = NULL, *last = NULL;
       
-      if (last)
-	SCHEME_CDR(last) = new_l;
-      else
-	first = new_l;
+        while (rest != l) {
+          Scheme_Object *p;
+	
+          p = scheme_make_pair(SCHEME_CAR(rest), scheme_null);
+          if (last)
+            SCHEME_CDR(last) = p;
+          else
+            first = p;
+          last = p;
+
+          rest = SCHEME_CDR(rest);
+        }
       
-      rest = first;
+        if (last)
+          SCHEME_CDR(last) = new_l;
+        else
+          first = new_l;
+      
+        rest = first;
+      }
     }
   }
 
