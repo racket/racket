@@ -9,9 +9,7 @@
 	   (lib "sendurl.ss" "net")
            (lib "bitmap-label.ss" "mrlib")
 	   "client.ss"
-	   "info.ss"
-	   ;; Temporary hack for test suite in separate window:
-	   (lib "extension.ss" "test-suite"))
+	   "info.ss")
 
   (provide tool@)
 
@@ -632,13 +630,6 @@
       (read-editor-global-header stream)
       (send defs read-from-file stream)
       (read-editor-global-footer stream)))
-
-  (add-test-suite-extension
-   "Handin"
-   handin-icon
-   (lambda (parent editor)
-     (let ([content (editors->string (list editor))])
-       (new handin-frame% [parent parent] [content content]))))
 
   (define tool@
     (unit
