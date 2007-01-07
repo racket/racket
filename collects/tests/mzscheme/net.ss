@@ -50,13 +50,13 @@
      ;; Test all ASCII chars
      (let ([p (let loop ([n 0])
 		(if (= n 128)
-		    null
-		    (let ([s (string (char-downcase (integer->char n)))])
-		      (cons (cons (string->symbol s) s)
-			    (loop (add1 n))))))])
+                  null
+                  (let ([s (string (char-downcase (integer->char n)))])
+                    (cons (cons (string->symbol s) s)
+                          (loop (add1 n))))))])
        (test p form-urlencoded->alist (alist->form-urlencoded p))
        (let ([l (apply string-append (map cdr p))])
-	 (test l uri-decode (uri-encode l)))))))
+         (test l uri-decode (uri-encode l)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -74,11 +74,10 @@
                  e
                  (unless (= i to)
                    (loop (+ i 1)))))]))
-  
-  
+
   (test "hello" uri-encode "hello")
   (test "hello%20there" uri-encode "hello there")
-  
+
   (let ((pad (lambda (str)
                (if (= (string-length str) 1)
                    (string-append "0" str)
@@ -94,16 +93,15 @@
              (test (string-append "%" (pad (string-upcase (number->string code 16))))
                    uri-encode
                    (string (integer->char code))))))
-  
-  
+
   (test "" alist->form-urlencoded '())
   (test "key=hello+there" alist->form-urlencoded '((key . "hello there")))
   (test "key1=hi;key2=hello" alist->form-urlencoded '((key1 . "hi") (key2 . "hello")))
   (test "key1=hello+there" alist->form-urlencoded '((key1 . "hello there")))
-  
+
   (test "hello" uri-decode "hello")
   (test "hello there" uri-decode "hello%20there")
-  
+
   (let* ((pad (lambda (str)
                 (if (= (string-length str) 1)
                     (string-append "0" str)
@@ -120,15 +118,15 @@
 
     ;; each of the next three of these were going from 0 to 255 in Noel's
     ;; original test suite. Those fail here, however.
-    
+
     (for (code 0 127)
          (test (string (integer->char code)) uri-decode (uppercase (hexcode code))))
     (for (code 0 127)
          (test (string (integer->char code)) uri-decode (lowercase (hexcode code)))))
-  
+
   (for (code 0 127)
        (test (string (integer->char code)) uri-decode (string (integer->char code))))
-  
+
   ;; form-urlencoded->alist
   (test '() form-urlencoded->alist "")
   (test '((key . "value")) form-urlencoded->alist "key=value")
@@ -146,29 +144,29 @@
   (define (test-s->u vec str)
     (test vec string->url/vec str)
     (test str url/vec->string vec))
-  
+
   (define (string->url/vec str) (url->vec (string->url str)))
   (define (url/vec->string vec) (url->string (vec->url vec)))
 
   (define (test-c-u/r expected base relative)
     (define (combine-url/relative-vec x y)
       (url->vec (combine-url/relative (vec->url x) y)))
-    (test (url->vec expected) combine-url/relative-vec (url->vec base) relative))
-  
+    (define (->vec x) (url->vec (if (string? x) (string->url x) x)))
+    (test (->vec expected) combine-url/relative-vec (->vec base) relative))
+
   (define (vec->url vec)
-    (make-url
-     (vector-ref vec 0)
-     (vector-ref vec 1)
-     (vector-ref vec 2)
-     (vector-ref vec 3)
-     (vector-ref vec 4)
-     (map (lambda (x)
-            (let ([lst (vector->list x)])
-              (make-path/param (car lst) (cdr lst))))
-          (vector-ref vec 5))
-     (vector-ref vec 6)
-     (vector-ref vec 7)))
-  
+    (make-url (vector-ref vec 0)
+              (vector-ref vec 1)
+              (vector-ref vec 2)
+              (vector-ref vec 3)
+              (vector-ref vec 4)
+              (map (lambda (x)
+                     (let ([lst (vector->list x)])
+                       (make-path/param (car lst) (cdr lst))))
+                   (vector-ref vec 5))
+              (vector-ref vec 6)
+              (vector-ref vec 7)))
+
   (define (url->vec url)
     (vector (url-scheme url)
             (url-user url)
@@ -179,188 +177,201 @@
                  (url-path url))
             (url-query url)
             (url-fragment url)))
-  
-  (test-s->u (vector #f #f #f #f #t '(#("")) '() #f)
+
+  (test-s->u #(#f #f #f #f #t (#("")) () #f)
              "/")
-  (test-s->u (vector #f #f #f #f #f '() '() #f)
+  (test-s->u #(#f #f #f #f #f () () #f)
              "")
-  (test-s->u (vector "http" #f #f #f #t '(#("")) '() #f)
+  (test-s->u #("http" #f #f #f #t (#("")) () #f)
              "http:/")
-  
-  (test-s->u (vector "http" #f "" #f #t '(#("")) '() #f)
+
+  (test-s->u #("http" #f "" #f #t (#("")) () #f)
              "http:///")
-  
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #f '() '() #f)
+
+  (test-s->u #("http" #f "www.drscheme.org" #f #f () () #f)
              "http://www.drscheme.org")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t '(#("")) '() #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("")) () #f)
              "http://www.drscheme.org/")
-  
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '() #f)
+
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) () #f)
              "http://www.drscheme.org/a/b/c")
-  (test-s->u (vector "http" "robby" "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '() #f)
+  (test-s->u #("http" "robby" "www.drscheme.org" #f #t (#("a") #("b") #("c")) () #f)
              "http://robby@www.drscheme.org/a/b/c")
-  (test-s->u (vector "http" #f "www.drscheme.org" 8080 #t (list #("a") #("b") #("c")) '() #f)
+  (test-s->u #("http" #f "www.drscheme.org" 8080 #t (#("a") #("b") #("c")) () #f)
              "http://www.drscheme.org:8080/a/b/c")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '() "joe")
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) () "joe")
              "http://www.drscheme.org/a/b/c#joe")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '((tim . "")) #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tim . "")) #f)
              "http://www.drscheme.org/a/b/c?tim=")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '((tim . "")) "joe")
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tim . "")) "joe")
              "http://www.drscheme.org/a/b/c?tim=#joe")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '((tim . "tim")) "joe")
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tim . "tim")) "joe")
              "http://www.drscheme.org/a/b/c?tim=tim#joe")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '((tam . "tom")) "joe")
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tam . "tom")) "joe")
              "http://www.drscheme.org/a/b/c?tam=tom#joe")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '((tam . "tom") (pam . "pom")) "joe")
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tam . "tom") (pam . "pom")) "joe")
              "http://www.drscheme.org/a/b/c?tam=tom;pam=pom#joe")
-  (parameterize ([current-alist-separator-mode 'semi])  
-    (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '((tam . "tom") (pam . "pom")) "joe")
-	       "http://www.drscheme.org/a/b/c?tam=tom;pam=pom#joe"))
-  (parameterize ([current-alist-separator-mode 'amp])  
-    (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '((tam . "tom") (pam . "pom")) "joe")
-	       "http://www.drscheme.org/a/b/c?tam=tom&pam=pom#joe"))
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c" "b")) '() #f)
+  (parameterize ([current-alist-separator-mode 'semi])
+    (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tam . "tom") (pam . "pom")) "joe")
+               "http://www.drscheme.org/a/b/c?tam=tom;pam=pom#joe"))
+  (parameterize ([current-alist-separator-mode 'amp])
+    (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((tam . "tom") (pam . "pom")) "joe")
+               "http://www.drscheme.org/a/b/c?tam=tom&pam=pom#joe"))
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c" "b")) () #f)
              "http://www.drscheme.org/a/b/c;b")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a" "x") #("b") #("c" "b")) '() #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a" "x") #("b") #("c" "b")) () #f)
              "http://www.drscheme.org/a;x/b/c;b")
-    
+
   ;; test unquoting for %
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a") #("b") #("c")) '((ti#m . "")) "jo e")
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((ti#m . "")) "jo e")
              "http://www.drscheme.org/a/b/c?ti%23m=#jo%20e")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a " " a") #(" b ") #(" c ")) '() #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a " " a") #(" b ") #(" c ")) () #f)
              "http://www.drscheme.org/a%20;%20a/%20b%20/%20c%20")
-  (test-s->u (vector "http" "robb y" "www.drscheme.org" #f #t '(#("")) '() #f)
+  (test-s->u #("http" "robb y" "www.drscheme.org" #f #t (#("")) () #f)
              "http://robb%20y@www.drscheme.org/")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("%a") #("b/") #("c")) '() #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("%a") #("b/") #("c")) () #f)
              "http://www.drscheme.org/%25a/b%2F/c")
-  
-  ;; test the characters that need to be encoded in paths vs those that do not need to 
+
+  ;; test the characters that need to be encoded in paths vs those that do not need to
   ;; be encoded in paths
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("a:@!$&'()*+,=z") #("/?#[];") #("")) '() #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a:@!$&'()*+,=z") #("/?#[];") #("")) () #f)
              "http://www.drscheme.org/a:@!$&'()*+,=z/%2F%3F%23%5B%5D%3B/")
-  
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #(".") #("..") '#(same) '#(up) #("...") #("abc.def")) '() #f)
+
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#(".") #("..") #(same) #(up) #("...") #("abc.def")) () #f)
              "http://www.drscheme.org/%2e/%2e%2e/./../.../abc.def")
-  (test-s->u (vector "http" #f "www.drscheme.org" #f #t (list #("." "") #(".." "") #(same "") #(up "") #("..." "") #("abc.def" "")) '() #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t (#("." "") #(".." "") #(same "") #(up "") #("..." "") #("abc.def" "")) () #f)
              "http://www.drscheme.org/%2e;/%2e%2e;/.;/..;/...;/abc.def;")
 
+  ;; test other scheme identifiers
+  (test-s->u #("blah" #f "www.foo.com" #f #t (#("")) () #f)
+             "blah://www.foo.com/")
+  (test-s->u #("blah99" #f "www.foo.com" #f #t (#("")) () #f)
+             "blah99://www.foo.com/")
+  (test-s->u #("blah+" #f "www.foo.com" #f #t (#("")) () #f)
+             "blah+://www.foo.com/")
+  (test-s->u #("a+b-c456.d" #f "www.foo.com" #f #t (#("")) () #f)
+             "a+b-c456.d://www.foo.com/")
+
+  ;; test bad schemes
+  (err/rt-test (string->url "://www.foo.com/") url-exception?)
+  (err/rt-test (string->url "9://www.foo.com/") url-exception?)
+  (err/rt-test (string->url "9a://www.foo.com/") url-exception?)
+  (err/rt-test (string->url "a*b://www.foo.com/") url-exception?)
+  (err/rt-test (string->url "a b://www.foo.com/") url-exception?)
+
   ;; test file: urls
-  (test-s->u (vector "file" #f #f #f #t '(#("abc") #("def.html")) '() #f)
+  (test-s->u #("file" #f #f #f #t (#("abc") #("def.html")) () #f)
              "file:/abc/def.html")
 
-  (test-s->u (vector "file" #f "localhost" #f #t '(#("abc") #("def.html")) '() #f)
+  (test-s->u #("file" #f "localhost" #f #t (#("abc") #("def.html")) () #f)
              "file://localhost/abc/def.html")
 
   ;; test files: urls with colons, and the different parsing on Windows
-  (test-s->u (vector "file" #f "localhost" 123 #t '(#("abc") #("def.html")) '() #f)
+  (test-s->u #("file" #f "localhost" 123 #t (#("abc") #("def.html")) () #f)
              "file://localhost:123/abc/def.html")
   (set-url:os-type! 'unix)
   ;; different parse for file://foo:/...
-  (test (vector "file" #f "foo" #f #t '(#("abc") #("def.html")) '() #f)
+  (test #("file" #f "foo" #f #t (#("abc") #("def.html")) () #f)
         string->url/vec
         "file://foo:/abc/def.html")
   (set-url:os-type! 'windows)
-  (test (vector "file" #f #f #f #f '(#("foo:") #("abc") #("def.html")) '() #f)
+  (test #("file" #f #f #f #f (#("foo:") #("abc") #("def.html")) () #f)
         string->url/vec
         "file://foo:/abc/def.html")
   (set-url:os-type! 'unix)
   ;; but no effect on http://foo:/...
-  (test (vector "http" #f "foo" #f #t '(#("abc") #("def.html")) '() #f)
+  (test #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)
         string->url/vec
         "http://foo:/abc/def.html")
   (set-url:os-type! 'windows)
-  (test (vector "http" #f "foo" #f #t '(#("abc") #("def.html")) '() #f)
+  (test #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)
         string->url/vec
         "http://foo:/abc/def.html")
   (set-url:os-type! 'unix)
 
   ;; test case sensitivity
-  (test (vector "http" "ROBBY" "www.drscheme.org" 80 #t '(#("INDEX.HTML" "XXX")) '((T . "P")) "YYY")
+  (test #("http" "ROBBY" "www.drscheme.org" 80 #t (#("INDEX.HTML" "XXX")) ((T . "P")) "YYY")
         string->url/vec
         "HTTP://ROBBY@WWW.DRSCHEME.ORG:80/INDEX.HTML;XXX?T=P#YYY")
-  
-  (test-s->u (vector "mailto" #f #f #f #f '(#("robby@plt-scheme.org")) '() #f)
+
+  (test-s->u #("mailto" #f #f #f #f (#("robby@plt-scheme.org")) () #f)
              "mailto:robby@plt-scheme.org")
-  
-  (test (vector "http" #f "www.drscheme.org" #f #f '() '((bar . "馨慧")) #f) 
+
+  (test #("http" #f "www.drscheme.org" #f #f () ((bar . "馨慧")) #f)
         string->url/vec
         "http://www.drscheme.org?bar=馨慧")
-  
-  (test (vector "http" #f "www.drscheme.org" #f #f '() '((bár . "é")) #f) 
+
+  (test #("http" #f "www.drscheme.org" #f #f () ((bár . "é")) #f)
         string->url/vec
         "http://www.drscheme.org?bár=é")
-  
-  (let ([empty-url (make-url #f #f #f #f #f '() '() #f)])
-    (test-c-u/r (string->url "http://www.drscheme.org")
-                empty-url
-                "http://www.drscheme.org"))
 
-  (test-c-u/r (string->url "http://www.drscheme.org")
-              (string->url "http://www.drscheme.org")
+  (test-c-u/r "http://www.drscheme.org"
+              (make-url #f #f #f #f #f '() '() #f)
+              "http://www.drscheme.org")
+
+  (test-c-u/r "http://www.drscheme.org"
+              "http://www.drscheme.org"
               "")
-  
-  (test-c-u/r (string->url "http://www.mzscheme.org")
-              (string->url "http://www.drscheme.org/")
+
+  (test-c-u/r "http://www.mzscheme.org"
+              "http://www.drscheme.org/"
               "http://www.mzscheme.org")
-  
-  (test-c-u/r (string->url "http://www.drscheme.org/index.html")
-              (string->url "http://www.drscheme.org/")
+
+  (test-c-u/r "http://www.drscheme.org/index.html"
+              "http://www.drscheme.org/"
               "index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/index.html")
-              (string->url "http://www.drscheme.org/")
+  (test-c-u/r "http://www.drscheme.org/index.html"
+              "http://www.drscheme.org/"
               "/index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/index.html")
-              (string->url "http://www.drscheme.org/a/b/c/")
+  (test-c-u/r "http://www.drscheme.org/index.html"
+              "http://www.drscheme.org/a/b/c/"
               "/index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/index.html")
-              (string->url "http://www.drscheme.org/a/b/c")
+  (test-c-u/r "http://www.drscheme.org/a/b/index.html"
+              "http://www.drscheme.org/a/b/c"
               "index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/c/index.html")
-              (string->url "http://www.drscheme.org/a/b/c/")
+  (test-c-u/r "http://www.drscheme.org/a/b/c/index.html"
+              "http://www.drscheme.org/a/b/c/"
               "index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/d/index.html")
-              (string->url "http://www.drscheme.org/a/b/c")
+  (test-c-u/r "http://www.drscheme.org/a/b/d/index.html"
+              "http://www.drscheme.org/a/b/c"
               "d/index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/c/d/index.html")
-              (string->url "http://www.drscheme.org/a/b/c/")
+  (test-c-u/r "http://www.drscheme.org/a/b/c/d/index.html"
+              "http://www.drscheme.org/a/b/c/"
               "d/index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/index.html")
-              (string->url "http://www.drscheme.org/a/b/c/")
+  (test-c-u/r "http://www.drscheme.org/a/b/index.html"
+              "http://www.drscheme.org/a/b/c/"
               "../index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/c/index.html")
-              (string->url "http://www.drscheme.org/a/b/c/")
+  (test-c-u/r "http://www.drscheme.org/a/b/c/index.html"
+              "http://www.drscheme.org/a/b/c/"
               "./index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/c/%2e%2e/index.html")
-              (string->url "http://www.drscheme.org/a/b/c/")
+  (test-c-u/r "http://www.drscheme.org/a/b/c/%2e%2e/index.html"
+              "http://www.drscheme.org/a/b/c/"
               "%2e%2e/index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/index.html")
-              (string->url "http://www.drscheme.org/a/b/../c/")
+  (test-c-u/r "http://www.drscheme.org/a/index.html"
+              "http://www.drscheme.org/a/b/../c/"
               "../index.html")
-  
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/c/d/index.html")
-              (string->url "http://www.drscheme.org/a/b/c/d/index.html#ghijkl")
+
+  (test-c-u/r "http://www.drscheme.org/a/b/c/d/index.html"
+              "http://www.drscheme.org/a/b/c/d/index.html#ghijkl"
               "index.html")
-  (test-c-u/r (string->url "http://www.drscheme.org/a/b/c/d/index.html#abcdef")
-              (string->url "http://www.drscheme.org/a/b/c/d/index.html#ghijkl")
+  (test-c-u/r "http://www.drscheme.org/a/b/c/d/index.html#abcdef"
+              "http://www.drscheme.org/a/b/c/d/index.html#ghijkl"
               "#abcdef")
 
-  (test-c-u/r (string->url "file:///a/b/c/d/index.html")
-              (string->url "file:///a/b/c/")
+  (test-c-u/r "file:///a/b/c/d/index.html"
+              "file:///a/b/c/"
               "d/index.html")
-  (test-c-u/r (string->url "file:///a/b/d/index.html")
-              (string->url "file:///a/b/c")
+  (test-c-u/r "file:///a/b/d/index.html"
+              "file:///a/b/c"
               "d/index.html")
-  
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; tests from rfc 3986
   ;;
-  
+
   (for-each
-   (λ (line)
-     (test-c-u/r (string->url (caddr line))
-                 (string->url "http://a/b/c/d;p?q")
-                 (car line)))
+   (λ (line) (test-c-u/r (caddr line) "http://a/b/c/d;p?q" (car line)))
    '(("g:h"           =  "g:h")
      ("g"             =  "http://a/b/c/g")
      ("./g"           =  "http://a/b/c/g")
@@ -384,9 +395,9 @@
      ("../.."         =  "http://a/")
      ("../../"        =  "http://a/")
      ("../../g"       =  "http://a/g")
-     
+
      ;; abnormal examples follow
-     
+
      ("../../../g"    =  "http://a/g")
      ("../../../../g" =  "http://a/g")
 
@@ -396,14 +407,14 @@
      (".g"            =  "http://a/b/c/.g")
      ("g.."           =  "http://a/b/c/g..")
      ("..g"           =  "http://a/b/c/..g")
-     
+
      ("./../g"        =  "http://a/b/g")
      ("./g/."         =  "http://a/b/c/g/")
      ("g/./h"         =  "http://a/b/c/g/h")
      ("g/../h"        =  "http://a/b/c/h")
      ("g;x=1/./y"     =  "http://a/b/c/g;x=1/y")
      ("g;x=1/../y"    =  "http://a/b/c/y")
-     
+
      ("g?y/./x"       =  "http://a/b/c/g?y/./x")
      ("g?y/../x"      =  "http://a/b/c/g?y/../x")
      ("g#s/./x"       =  "http://a/b/c/g#s/./x")
@@ -412,7 +423,6 @@
 
      ))
 
-  
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -499,7 +509,7 @@
 
 ;; cookie-test : (cookie -> cookie) string -> test
 (define (cookie-test fn  expected)
-  (test expected 
+  (test expected
         (λ (c) (print-cookie (fn c)))
         (set-cookie "a" "b")))
 
@@ -562,7 +572,7 @@
 (cookie-error-test (RC cookie:add-max-age -10))
 (cookie-error-test (RC cookie:add-domain "doesntstartwithadot.example.com"))
 (cookie-error-test (RC cookie:add-domain "bad domain.com"))
-(cookie-error-test (RC cookie:add-domain ".bad-domain;com"))         
+(cookie-error-test (RC cookie:add-domain ".bad-domain;com"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -584,7 +594,7 @@
 		 null
 		 (cons i (loop (add1 i))))))
 	  ;; Something that doesn't end with a LF:
-	  (bytes-append 
+	  (bytes-append
 	   (with-input-from-file (build-path dir "net.ss") (lambda () (read-bytes 500)))
 	   #"xxx")
 	  ;; CRLF:

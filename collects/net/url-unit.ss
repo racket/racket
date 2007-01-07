@@ -359,7 +359,7 @@
                "^"
                "[ \t\f\r\n]*"
                "(?:"                ; <A  front-opt
-               "(?:([a-zA-Z]*):)?"  ; =1  scheme-colon-opt
+               "(?:([^:]*):)?"      ; =1  scheme-colon-opt (see below)
                "(?:"                ; <B  slashslash-opt
                "//"
                "(?:([^:/@;?#]*)@)?" ; =2  user-at-opt
@@ -375,6 +375,9 @@
     (define (string->url str)
       (apply
        (lambda (scheme user host port path query fragment)
+         (when (and scheme (not (regexp-match? #rx"^[a-zA-Z][a-zA-Z0-9+-.]*$"
+                                               scheme)))
+           (url-error "Invalid URL string (bad scheme): ~e" str))
          ;; Windows => "file://xxx:/...." specifies a "xxx:/..." path
          (when (and (equal? "" port) (equal? "file" scheme)
                     (eq? 'windows url:os-type))
