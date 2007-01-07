@@ -198,8 +198,12 @@ profile todo:
                                  (apply values last-one)]
                                 [else 
                                  (i-loop (cdr exprs)
-                                         (call-with-values (λ () (loop (car exprs)))
-                                                           list))]))
+                                         (call-with-values 
+                                          (λ () 
+                                            (call-with-continuation-prompt
+                                             (λ ()
+                                               (loop (car exprs)))))
+                                          list))]))
                             
                             ;; the version below behaves properly wrt continuations
                             ;; but doesn't match mzscheme. So, we use the one above.
