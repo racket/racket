@@ -88,6 +88,8 @@
 
        [border-buttons null]
 
+       [parent-for-center parent]
+
        [show-ht (make-hash-table)])
       
       (override
@@ -370,7 +372,7 @@
 	[center (lambda (dir)
 		  (when pending-redraws? (force-redraw))
 		  (set! use-default-position? #f)
-		  (super center dir))]
+		  (super center dir parent-for-center))]
 	
 	;; on-size: ensures that size of frame matches size of content
 	;; input: new-width/new-height: new size of frame
