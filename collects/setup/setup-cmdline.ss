@@ -62,7 +62,7 @@
 	 (add-flags '((pause-on-errors #t)))]
 	[("--force") "Treat version mismatches for archives as mere warnings"
 	 (add-flags '((force-unpacks #t)))]
-	[("-a" "--all-users") "Install archives into the PLT collections, not user-specific directory"
+	[("-a" "--all-users") "Install archives to main (not user-specific) installation"
 	 (add-flags '((all-users #t)))]
 	[("--mode") mode "Select a compilation mode"
 	 (add-flags `((compile-mode ,mode)))]
