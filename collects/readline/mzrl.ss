@@ -46,9 +46,12 @@
 
 ;; need to capture the real input port below
 (define real-input-port (current-input-port))
-(unless (eq? 'stdin (object-name (current-input-port)))
-  (fprintf (current-output-port)
-           "mzrl warning: could not capture the real input port"))
+(unless (eq? 'stdin (object-name real-input-port))
+  (fprintf (current-error-port)
+           "mzrl warning: could not capture the real input port\n"))
+(unless (terminal-port? real-input-port)
+  (fprintf (current-error-port)
+           "mzrl warning: input port is not a terminal\n"))
 
 ;; make it possible to run Scheme threads while waiting for input
 (set-ffi-obj! "rl_event_hook" libreadline (_fun -> _int)
