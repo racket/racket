@@ -27,7 +27,7 @@
    (lib "mred.ss" "mred")
    (lib "error.ss" "htdp")
    (lib "image.ss" "htdp")
-   (prefix beg: (lib "htdp-beginner.ss" "lang"))
+   (only (lib "htdp-beginner.ss" "lang") image?)
    (lib "prim.ss" "lang"))
   
   (require (lib "bitmap-label.ss" "mrlib")
@@ -270,8 +270,8 @@
   ;; Symbol Any String String *-> Void
   (define (check-image tag i rank . other-message)
     (if (and (pair? other-message) (string? (car other-message)))
-        (check-arg tag (beg:image? i) (car other-message) rank i)
-        (check-arg tag (beg:image? i) "image" rank i)))
+        (check-arg tag (image? i) (car other-message) rank i)
+        (check-arg tag (image? i) "image" rank i)))
   
   ;; Symbol Any String -> Void
   (define (check-color tag width rank)
@@ -699,7 +699,7 @@
   (define-callback redraw "redraw function" (f) ()
     (with-handlers ([exn:break? break-handler][exn? exn-handler])
       (define img (f the-world))
-      (check-result 'on-redraw (lambda (x) (beg:image? x)) "image" img)
+      (check-result 'on-redraw (lambda (x) (image? x)) "image" img)
       (update-frame img)))
   
   ;; f : [World KeyEvent -> World]
