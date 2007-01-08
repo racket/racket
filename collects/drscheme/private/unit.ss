@@ -1605,72 +1605,81 @@ module browser threading seems wrong.
 
           
           (inherit get-edit-target-window)
+          
           (define/private (split)
-            (let* ([canvas-to-be-split (get-edit-target-window)]
-                   [update
-                    (λ (set-canvases! canvases canvas% text)
-                      (let-values ([(ox oy ow oh cursor-y)
-                                    (get-visible-region canvas-to-be-split)])
-                        (let ([orig-percentages (send resizable-panel get-percentages)]
-                              [orig-canvases (send resizable-panel get-children)]
-                              [new-canvas (new canvas% 
-                                            (parent resizable-panel)
-                                            (editor text)
-                                            (style '()))])
-                          
-                          (set-canvases!
-                           (let loop ([canvases canvases])
-                             (cond
-                               [(null? canvases) (error 'split "couldn't split; didn't find canvas")]
-                               [else
-                                (let ([canvas (car canvases)])
-                                  (if (eq? canvas canvas-to-be-split)
-                                      (list* new-canvas
-                                             canvas
-                                             (cdr canvases))
-                                      (cons canvas (loop (cdr canvases)))))])))
-                          
-                          (update-shown)
-                          
-                          ;; with-handlers prevents bad calls to set-percentages
-                          ;; might still leave GUI in bad state, however.
-                          (with-handlers ([exn:fail? (λ (x) (void))])
-                            (send resizable-panel set-percentages
-                                  (let loop ([canvases orig-canvases]
-                                             [percentages orig-percentages])
-                                    (cond
-                                      [(null? canvases)
-                                       (error 'split "couldn't split; didn't find canvas")]
-                                      [(null? percentages)
-                                       (error 'split "wrong number of percentages: ~s ~s"
-                                              orig-percentages
-                                              (send resizable-panel get-children))]
-                                      [else (let ([canvas (car canvases)])
-                                              (if (eq? canvas-to-be-split canvas)
-                                                  (list* (/ (car percentages) 2)
-                                                         (/ (car percentages) 2)
-                                                         (cdr percentages))
-                                                  (cons
-                                                   (car percentages)
-                                                   (loop (cdr canvases)
-                                                         (cdr percentages)))))]))))
-                          
-                          (set-visible-region new-canvas ox oy ow oh cursor-y)
-                          (set-visible-region canvas-to-be-split ox oy ow oh cursor-y)
-                          
-                          (send new-canvas focus))))])
+            (let ([canvas-to-be-split (get-edit-target-window)])
               (cond
                 [(memq canvas-to-be-split definitions-canvases)
-                 (update (λ (x) (set! definitions-canvases x))
-                         definitions-canvases
-                         (drscheme:get/extend:get-definitions-canvas)
-                         definitions-text)]
+                 (split-definitions canvas-to-be-split)]
                 [(memq canvas-to-be-split interactions-canvases)
-                 (update (λ (x) (set! interactions-canvases x))
-                         interactions-canvases
-                         (drscheme:get/extend:get-interactions-canvas)
-                         interactions-text)]
+                 (split-interactions canvas-to-be-split)]
                 [else (bell)])))
+          
+          (define/private (split-definitions canvas-to-be-split)
+            (handle-split canvas-to-be-split
+                          (λ (x) (set! definitions-canvases x))
+                          definitions-canvases
+                          (drscheme:get/extend:get-definitions-canvas)
+                          definitions-text))
+          
+          (define/private (split-interactions canvas-to-be-split)
+            (handle-split canvas-to-be-split
+                          (λ (x) (set! interactions-canvases x))
+                          interactions-canvases
+                          (drscheme:get/extend:get-interactions-canvas)
+                          interactions-text))
+          
+          (define/private (handle-split canvas-to-be-split set-canvases! canvases canvas% text)
+            (let-values ([(ox oy ow oh cursor-y)
+                          (get-visible-region canvas-to-be-split)])
+              (let ([orig-percentages (send resizable-panel get-percentages)]
+                    [orig-canvases (send resizable-panel get-children)]
+                    [new-canvas (new canvas% 
+                                     (parent resizable-panel)
+                                     (editor text)
+                                     (style '()))])
+                
+                (set-canvases!
+                 (let loop ([canvases canvases])
+                   (cond
+                     [(null? canvases) (error 'split "couldn't split; didn't find canvas")]
+                     [else
+                      (let ([canvas (car canvases)])
+                        (if (eq? canvas canvas-to-be-split)
+                            (list* new-canvas
+                                   canvas
+                                   (cdr canvases))
+                            (cons canvas (loop (cdr canvases)))))])))
+                
+                (update-shown)
+                
+                ;; with-handlers prevents bad calls to set-percentages
+                ;; might still leave GUI in bad state, however.
+                (with-handlers ([exn:fail? (λ (x) (void))])
+                  (send resizable-panel set-percentages
+                        (let loop ([canvases orig-canvases]
+                                   [percentages orig-percentages])
+                          (cond
+                            [(null? canvases)
+                             (error 'split "couldn't split; didn't find canvas")]
+                            [(null? percentages)
+                             (error 'split "wrong number of percentages: ~s ~s"
+                                    orig-percentages
+                                    (send resizable-panel get-children))]
+                            [else (let ([canvas (car canvases)])
+                                    (if (eq? canvas-to-be-split canvas)
+                                        (list* (/ (car percentages) 2)
+                                               (/ (car percentages) 2)
+                                               (cdr percentages))
+                                        (cons
+                                         (car percentages)
+                                         (loop (cdr canvases)
+                                               (cdr percentages)))))]))))
+                
+                (set-visible-region new-canvas ox oy ow oh cursor-y)
+                (set-visible-region canvas-to-be-split ox oy ow oh cursor-y)
+                
+                (send new-canvas focus))))
           
           ;; split-demand : menu-item -> void
           ;; enables the menu-item if splitting is allowed, disables otherwise
@@ -1752,82 +1761,89 @@ module browser threading seems wrong.
                       (unbox bh))))
           
           (define/private (collapse)
-            (let* ([target (get-edit-target-window)]
-                   [handle-collapse
-                    (λ (get-canvases set-canvases!)
-                      (if (= 1 (length (get-canvases)))
-                          (bell)
-                          (let* ([old-percentages (send resizable-panel get-percentages)]
-                                 [soon-to-be-bigger-canvas #f]
-                                 [percentages
-                                  (if (eq? (car (get-canvases)) target)
-                                      (begin
-                                        (set! soon-to-be-bigger-canvas (cadr (get-canvases)))
-                                        (cons (+ (car old-percentages)
-                                                 (cadr old-percentages))
-                                              (cddr old-percentages)))
-                                      (let loop ([canvases (cdr (get-canvases))]
-                                                 [prev-canvas (car (get-canvases))]
-                                                 [percentages (cdr old-percentages)]
-                                                 [prev-percentage (car old-percentages)])
-                                        (cond
-                                          [(null? canvases)
-                                           (error 'collapse "internal error.1")]
-                                          [(null? percentages)
-                                           (error 'collapse "internal error.2")]
-                                          [else
-                                           (if (eq? (car canvases) target)
-                                               (begin
-                                                 (set! soon-to-be-bigger-canvas prev-canvas)
-                                                 (cons (+ (car percentages)
-                                                          prev-percentage)
-                                                       (cdr percentages)))
-                                               (cons prev-percentage
-                                                     (loop (cdr canvases)
-                                                           (car canvases)
-                                                           (cdr percentages)
-                                                           (car percentages))))])))])
-                            (unless soon-to-be-bigger-canvas
-                              (error 'collapse "internal error.3"))
-                            (set-canvases! (remq target (get-canvases)))
-                            (update-shown)
-                            
-                            (let ([target-admin 
-                                   (send target call-as-primary-owner
-                                         (λ ()
-                                           (send (send target get-editor) get-admin)))]
-                                  [to-be-bigger-admin 
-                                   (send soon-to-be-bigger-canvas call-as-primary-owner
-                                         (λ ()
-                                           (send (send soon-to-be-bigger-canvas get-editor) get-admin)))])
-                              (let-values ([(bx by bw bh) (get-visible-area target-admin)])
-                                
-                                ;; this line makes the soon-to-be-bigger-canvas bigger
-                                ;; if it fails, we're out of luck, but at least we don't crash.
-                                (with-handlers ([exn:fail? (λ (x) (void))])
-                                  (send resizable-panel set-percentages percentages))
-                                
-                                (let-values ([(ax ay aw ah) (get-visible-area to-be-bigger-admin)])
-                                  (send soon-to-be-bigger-canvas scroll-to
-                                        bx
-                                        (- by (/ (- ah bh) 2))
-                                        aw
-                                        ah
-                                        #t))))
-                            
-                            (send soon-to-be-bigger-canvas focus))))])
+            (let* ([target (get-edit-target-window)])
               (cond
                 [(memq target definitions-canvases)
-                 (handle-collapse
-                  (λ () definitions-canvases)
-                  (λ (c) (set! definitions-canvases c)))]
+                 (collapse-definitions target)]
                 [(memq target interactions-canvases)
-                 (handle-collapse
-                  (λ () interactions-canvases)
-                  (λ (c) (set! interactions-canvases c)))]
+                 (collapse-interactions target)]
                 [else (bell)])))
           
-
+          (define/private (collapse-definitions target)
+            (handle-collapse
+             target
+             (λ () definitions-canvases)
+             (λ (c) (set! definitions-canvases c))))
+          
+          (define/private (collapse-interactions target)
+            (handle-collapse
+             target
+             (λ () interactions-canvases)
+             (λ (c) (set! interactions-canvases c))))
+          
+          (define/private (handle-collapse target get-canvases set-canvases!)
+            (if (= 1 (length (get-canvases)))
+                (bell)
+                (let* ([old-percentages (send resizable-panel get-percentages)]
+                       [soon-to-be-bigger-canvas #f]
+                       [percentages
+                        (if (eq? (car (get-canvases)) target)
+                            (begin
+                              (set! soon-to-be-bigger-canvas (cadr (get-canvases)))
+                              (cons (+ (car old-percentages)
+                                       (cadr old-percentages))
+                                    (cddr old-percentages)))
+                            (let loop ([canvases (cdr (get-canvases))]
+                                       [prev-canvas (car (get-canvases))]
+                                       [percentages (cdr old-percentages)]
+                                       [prev-percentage (car old-percentages)])
+                              (cond
+                                [(null? canvases)
+                                 (error 'collapse "internal error.1")]
+                                [(null? percentages)
+                                 (error 'collapse "internal error.2")]
+                                [else
+                                 (if (eq? (car canvases) target)
+                                     (begin
+                                       (set! soon-to-be-bigger-canvas prev-canvas)
+                                       (cons (+ (car percentages)
+                                                prev-percentage)
+                                             (cdr percentages)))
+                                     (cons prev-percentage
+                                           (loop (cdr canvases)
+                                                 (car canvases)
+                                                 (cdr percentages)
+                                                 (car percentages))))])))])
+                  (unless soon-to-be-bigger-canvas
+                    (error 'collapse "internal error.3"))
+                  (set-canvases! (remq target (get-canvases)))
+                  (update-shown)
+                  
+                  (let ([target-admin 
+                         (send target call-as-primary-owner
+                               (λ ()
+                                 (send (send target get-editor) get-admin)))]
+                        [to-be-bigger-admin 
+                         (send soon-to-be-bigger-canvas call-as-primary-owner
+                               (λ ()
+                                 (send (send soon-to-be-bigger-canvas get-editor) get-admin)))])
+                    (let-values ([(bx by bw bh) (get-visible-area target-admin)])
+                      
+                      ;; this line makes the soon-to-be-bigger-canvas bigger
+                      ;; if it fails, we're out of luck, but at least we don't crash.
+                      (with-handlers ([exn:fail? (λ (x) (void))])
+                        (send resizable-panel set-percentages percentages))
+                      
+                      (let-values ([(ax ay aw ah) (get-visible-area to-be-bigger-admin)])
+                        (send soon-to-be-bigger-canvas scroll-to
+                              bx
+                              (- by (/ (- ah bh) 2))
+                              aw
+                              ah
+                              #t))))
+                  
+                  (send target set-editor #f)
+                  (send soon-to-be-bigger-canvas focus))))
 ;                                                                          
 ;                                                                          
 ;                                                                          
@@ -2081,6 +2097,7 @@ module browser threading seems wrong.
           ;; change-to-tab : tab -> void
           ;; updates current-tab, definitions-text, and interactactions-text
           ;; to be the nth tab. Also updates the GUI to show the new tab
+          (inherit begin-container-sequence end-container-sequence)
           (define/private (change-to-tab tab)
             (let ([old-delegate (send definitions-text get-delegate)]
                   [old-tab current-tab])
@@ -2089,6 +2106,8 @@ module browser threading seems wrong.
               (set! definitions-text (send current-tab get-defs))
               (set! interactions-text (send current-tab get-ints))
               
+              
+              (begin-container-sequence)
               (for-each (λ (defs-canvas) (send defs-canvas set-editor definitions-text))
                         definitions-canvases)
               (for-each (λ (ints-canvas) (send ints-canvas set-editor interactions-text))
@@ -2101,7 +2120,8 @@ module browser threading seems wrong.
               
               (send definitions-text update-frame-filename)
               (send definitions-text set-delegate old-delegate)
-              (on-tab-change old-tab current-tab)))
+              (on-tab-change old-tab current-tab)
+              (end-container-sequence)))
           
           (define/pubment (on-tab-change from-tab to-tab)
             (let ([old-enabled (send from-tab get-enabled)]
@@ -2182,11 +2202,35 @@ module browser threading seems wrong.
                       'defs)))
           
           (define/private (restore-visible-tab-regions)
-            (define (set-visible-regions txt regions)
+            (define (set-visible-regions txt regions ints?)
               (when regions
-                (let* ([canvases (send txt get-canvases)])
-                  (when (equal? (length canvases) (length regions))
-                    (for-each (λ (c r) (set-visible-region txt c r)) canvases regions)))))
+                (let* ([canvases (send txt get-canvases)]
+                       [canvases-count (length canvases)]
+                       [regions-count (length regions)])
+                  (cond
+                    [(> canvases-count regions-count)
+                     (let loop ([i (- canvases-count regions-count)]
+                                [canvases canvases])
+                       (unless (zero? i)
+                         (if ints?
+                             (collapse-interactions (car canvases))
+                             (collapse-definitions (car canvases)))
+                         (loop (- i 1)
+                               (cdr canvases))))]
+                    [(= canvases-count regions-count)
+                     (void)]
+                    [(< canvases-count regions-count)
+                     (let loop ([i (- regions-count canvases-count)]
+                                [canvases canvases])
+                       (unless (zero? i)
+                         (if ints?
+                             (split-interactions (car canvases))
+                             (split-definitions (car canvases)))
+                         (loop (- i 1) 
+                               (cdr canvases))))]))
+                (for-each (λ (c r) (set-visible-region txt c r)) 
+                          (send txt get-canvases)
+                          regions)))
             (define (set-visible-region txt canvas region)
               (let ([admin (send txt get-admin)])
                 (send admin scroll-to 
@@ -2199,8 +2243,8 @@ module browser threading seems wrong.
               (set! interactions-shown? is?)
               (set! definitions-shown? ds?)
               (update-shown)
-              (set-visible-regions definitions-text vd)
-              (set-visible-regions interactions-text vi))
+              (set-visible-regions definitions-text vd #f)
+              (set-visible-regions interactions-text vi #t))
             (case (send current-tab get-focus-d/i)
               [(defs) (send (car definitions-canvases) focus)]
               [(ints) (send (car interactions-canvases) focus)]))
