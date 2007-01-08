@@ -85,6 +85,16 @@ it to #f).
 will keep track of text that is displayed without a trailing newline.)
 
 
+Warning
+-------
+
+The readline library uses the output port directly.  You should not
+use it when `current-input-port' has been modified, or when it was not
+a terminal port when MzScheme was started (eg, when reading input from
+a pipe).  Expect problems if you ignore this warning (not too bad,
+mostly problems with detecting an EOF).
+
+
 Direct bindings for readline hackers
 ------------------------------------
 
