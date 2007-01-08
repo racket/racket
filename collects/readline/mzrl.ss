@@ -9,11 +9,32 @@
 (define libtermcap  (with-handlers ([exn:fail? void]) (ffi-lib "libtermcap")))
 (define libreadline (ffi-lib "libreadline"))
 
+(define make-byte-string ; helper for the two types below
+  (get-ffi-obj "scheme_make_byte_string" #f (_fun _pointer -> _scheme)))
+
+(define _bytes/eof/free ; register a finalizer on the resulting bytes
+  (make-ctype _pointer
+    (lambda (x) (and (not (eof-object? x)) x))
+    (lambda (x)
+      (if x
+        (let ([b (make-byte-string x)])
+          (register-finalizer b (lambda (_) (free x)))
+          b)
+        eof))))
+
+(define _string/eof/free ; make a Scheme str from C str & free immediately
+  (make-ctype _pointer
+    (lambda (x) (and (not (eof-object? x)) (string->bytes/utf-8 x)))
+    (lambda (x)
+      (if x
+        (let ([s (bytes->string/utf-8 (make-byte-string x))]) (free x) s)
+        eof))))
+
 (define readline
-  (get-ffi-obj "readline" libreadline (_fun _string -> _string/eof)))
+  (get-ffi-obj "readline" libreadline (_fun _string -> _string/eof/free)))
 
 (define readline-bytes
-  (get-ffi-obj "readline" libreadline (_fun _bytes -> _bytes/eof)))
+  (get-ffi-obj "readline" libreadline (_fun _bytes -> _bytes/eof/free)))
 
 (define add-history
   (get-ffi-obj "add_history" libreadline (_fun _string -> _void)))
