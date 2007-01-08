@@ -9,6 +9,7 @@
            (lib "bitmap-label.ss" "mrlib")
            (lib "string-constant.ss" "string-constants")
            "model/trace.ss"
+           "model/deriv-util.ss"
            (prefix view: "view/interfaces.ss")
            (prefix view: "view/gui.ss")
            (prefix view: "view/prefs.ss")
@@ -143,9 +144,9 @@
                   [debugging? debugging?])
               (values
                (lambda (expr)
-                 (if (and debugging? (and (syntax? expr) (syntax-source expr)))
+                 (if (and debugging? (syntax? expr))
                      (let-values ([(e-expr deriv) (trace/result expr)])
-                       (show-deriv deriv stepper)
+                       (show-deriv/orig-parts deriv stepper)
                        (if (syntax? e-expr)
                            (parameterize ((current-eval original-eval-handler))
                              (original-eval-handler e-expr))
@@ -163,6 +164,11 @@
                        (lambda ()
                          (set! debugging? saved-debugging?)
                          (when eo (current-expand-observe eo)))))))))
+
+          (define/private (show-deriv/orig-parts deriv stepper-promise)
+            (for-each (lambda (d) (show-deriv d stepper-promise))
+                      (find-derivs/syntax (lambda (stx) (and (syntax? stx) (syntax-source stx)))
+                                          deriv)))
 
           (define/private (show-deriv deriv stepper-promise)
             (parameterize ([current-eventspace drscheme-eventspace])
