@@ -2525,7 +2525,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_number(pp, mt->st_refs->count + 1);
 
         /* Print shared-value offsets: */
-        {
+        if (mt->st_refs->count) {
           int all_short = shared_offsets[mt->st_refs->count-1] < 0xFFFF;
           print_one_byte(pp, all_short);
           for (j = 0; j < mt->st_refs->count; j++) {
@@ -2534,6 +2534,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
             else
               print_number(pp, shared_offsets[j]);
           }
+        } else {
+          print_one_byte(pp, 1);
         }
         
 	print_number(pp, st_len);
