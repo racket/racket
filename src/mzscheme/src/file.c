@@ -146,7 +146,7 @@ static int check_dos_slashslash_drive(const char *next, int delta, int len,
 static int check_dos_slashslash_qm(const char *next, int len, int *drive_end, 
 				   int *clean_start, int *add_sep);
 
-#define is_drive_letter(c) (((unsigned char)c < 128) && isalpha(c))
+#define is_drive_letter(c) (((unsigned char)c < 128) && isalpha((unsigned char)c))
 
 /* local */
 static Scheme_Object *path_p(int argc, Scheme_Object **argv);
