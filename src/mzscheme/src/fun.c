@@ -3917,7 +3917,7 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
   else
     depth = 0;
   for (naya = first; cnt--; naya = naya->next) {
-    first->depth = depth + cnt;
+    naya->depth = depth + cnt;
   }
 
   return first;
