@@ -4179,7 +4179,7 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   }
   scheme_cont_capture_count++;
 
-  if (!barrier_prompt || !barrier_prompt->is_barrier) {
+  if (!effective_barrier_prompt || !effective_barrier_prompt->is_barrier) {
     /* This continuation can be used by other threads,
        so we need to track ownership of the runstack */
     if (!p->runstack_owner) {
@@ -4211,9 +4211,12 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
     cont->runstack_copied = saved;
     if (!for_prompt && prompt) {
       /* Prune cont->runstack_saved to drop unneeded saves. */
-      saved = clone_runstack_saved(cont->runstack_saved, 
-                                   prompt->runstack_boundary_start,
-                                   NULL);
+      if (SAME_OBJ(prompt->runstack_boundary_start, MZ_RUNSTACK_START))
+        saved = NULL;
+      else
+        saved = clone_runstack_saved(cont->runstack_saved, 
+                                     prompt->runstack_boundary_start,
+                                     NULL);
       cont->runstack_saved = saved;
     }
   }
