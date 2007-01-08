@@ -761,8 +761,8 @@ Keywords for configuring `check:':
 
 * :output -- the name of the original handin file (unrelated to the
   text-converted files).  Defaults to "hw.scm".  (The suffix changes
-  the defaults of the following two entries.)  Can be #f for removing
-  the original file after processing.
+  the defaults of `:markup-prefix' and `:prefix-re' below.)  Can be #f
+  for removing the original file after processing.
 
 * :multi-file -- by default, this is set to #f, which means that only
   DrScheme is used to send submissions as usual.  See "Multiple-file
