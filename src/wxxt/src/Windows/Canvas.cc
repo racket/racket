@@ -348,11 +348,11 @@ void wxCanvas::SetScrollbars(int h_pixels, int v_pixels, int x_len, int y_len,
       a[0].name = XtNabs_height;
       a[0].value = v_pixels > 0 ? ((Dimension)v_size) : 0;
       a[1].name = XtNrel_height;
-      *(float *)&(a[1].value) = (float)(v_pixels > 0 ? 0.0 : 1.0);
+      *(float *)(void *)&(a[1].value) = (float)(v_pixels > 0 ? 0.0 : 1.0);
       a[2].name = XtNabs_width;
       a[2].value = h_pixels > 0 ? ((Dimension)h_size) : 0;
       a[3].name = XtNrel_width;
-      *(float *)&(a[3].value) = (float)(h_pixels > 0 ? 0.0 : 1.0);
+      *(float *)(void *)&(a[3].value) = (float)(h_pixels > 0 ? 0.0 : 1.0);
 
       XtSetValues(X->handle, a, 4);
 
@@ -372,19 +372,19 @@ void wxCanvas::SetScrollbars(int h_pixels, int v_pixels, int x_len, int y_len,
       a[0].name = XtNabs_height;
       a[0].value = 0;
       a[1].name = XtNrel_height;
-      *(float *)&(a[1].value) = 1.0;
+      *(float *)(void *)&(a[1].value) = 1.0;
       a[2].name = XtNabs_width;
       a[2].value = 0;
       a[3].name = XtNrel_width;
-      *(float *)&(a[3].value) = 1.0;
+      *(float *)(void *)&(a[3].value) = 1.0;
       a[4].name = XtNabs_x;
       a[4].value = 0;
       a[5].name = XtNabs_y;
       a[5].value = 0;
       a[6].name = XtNrel_x;
-      *(float *)&(a[6].value) = 0.0;
+      *(float *)(void *)&(a[6].value) = 0.0;
       a[7].name = XtNrel_y;
-      *(float *)&(a[7].value) = 0.0;
+      *(float *)(void *)&(a[7].value) = 0.0;
 
       XtSetValues(X->handle, a, 8);
 

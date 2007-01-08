@@ -2720,7 +2720,7 @@ void wxMediaEdit::ContinueRefresh(void)
         rs =  0;
       } else {
         delayedscroll = -1;
-        delayedscrollbox = NULL;
+        delayedscrollbox = 0;
       }
     }
     if (admin && !admin->standard)

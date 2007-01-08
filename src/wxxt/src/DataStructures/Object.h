@@ -37,28 +37,28 @@
 //-----------------------------------------------------------------------------
 
 #ifdef MZ_PRECISE_GC
-# define WXGC_IGNORE(base, ptr) GC_finalization_weak_ptr((void **)base, (void **)&(ptr) - (void **)base)
+# define WXGC_IGNORE(base, ptr) GC_finalization_weak_ptr((void **)(void *)base, (void **)(void *)&(ptr) - (void **)(void *)base)
 # define COPYSTRING_TO_ALIGNED(s, d) copystring_to_aligned(s, d)
 # define DELETE_OBJ delete_wxobject
 # define DELETE_VAL delete
 # define MALLOC_SAFEREF() (void *)GC_malloc_immobile_box(GC_malloc_weak_box(NULL, NULL, 0))
-# define FREE_SAFEREF(x) GC_free_immobile_box((void **)x)
+# define FREE_SAFEREF(x) GC_free_immobile_box((void **)(void *)x)
 typedef struct {
   short tag;
   short filler_used_for_hashing;
   void *val;
 } wxWeak_Box;
 # define SET_SAFEREF(x, v) (*(wxWeak_Box **)x)->val = gcOBJ_TO_PTR(v)
-# define GET_SAFEREF(x) ((*(void **)x) ? gcPTR_TO_OBJ((*(wxWeak_Box **)x)->val) : NULL)
+# define GET_SAFEREF(x) ((*(void **)(void *)x) ? gcPTR_TO_OBJ((*(wxWeak_Box **)(void *)x)->val) : NULL)
 #else
-# define WXGC_IGNORE(base, ptr) GC_general_register_disappearing_link((void **)&(ptr), NULL)
+# define WXGC_IGNORE(base, ptr) GC_general_register_disappearing_link((void **)(void *)&(ptr), NULL)
 # define COPYSTRING_TO_ALIGNED(s, d) (s + d)
 # define DELETE_OBJ delete
 # define DELETE_VAL delete
 # define MALLOC_SAFEREF() malloc(sizeof(void *))
 # define FREE_SAFEREF(x) free(x)
-# define SET_SAFEREF(x, v) (*(void **)x) = v
-# define GET_SAFEREF(x) (*(void **)x)
+# define SET_SAFEREF(x, v) (*(void **)(void *)x) = v
+# define GET_SAFEREF(x) (*(void **)(void *)x)
 #endif
 #define WXGC_NO_CLEANUP FALSE
 

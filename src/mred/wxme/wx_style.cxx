@@ -1268,9 +1268,9 @@ void *wxStyleList::NotifyOnChange(wxStyleNotifyFunc f, void *data, int weak)
   } else {
     void *weak_data;
     weak_data = (void *)scheme_box((Scheme_Object *)data);
-    GC_finalization_weak_ptr((void **)weak_data, 
-			     ((void **)&SCHEME_BOX_VAL(weak_data)
-			      - (void **)weak_data));
+    GC_finalization_weak_ptr((void **)(void *)weak_data, 
+			     ((void **)(void *)&SCHEME_BOX_VAL(weak_data)
+			      - (void **)(void *)weak_data));
     rec->data = weak_data;
   }
 #else
@@ -1280,7 +1280,7 @@ void *wxStyleList::NotifyOnChange(wxStyleNotifyFunc f, void *data, int weak)
     rec = new WXGC_PTRS NotificationRec;
   rec->data = data;
   if (weak)
-    scheme_weak_reference((void **)&rec->data);
+    scheme_weak_reference((void **)(void *)&rec->data);
   else
     WXGC_IGNORE(rec, rec->data);
 #endif

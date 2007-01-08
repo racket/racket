@@ -810,7 +810,7 @@ static MrEdContext *MakeContext(MrEdContext *c)
   }
   c->mr_hop = mr_hop;
 #ifndef MZ_PRECISE_GC
-  scheme_weak_reference((void **)&mr_hop->context);
+  scheme_weak_reference((void **)(void *)&mr_hop->context);
 #endif
 
   {

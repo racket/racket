@@ -2123,7 +2123,7 @@ void *wxSchemeYield(void *sema)
       return scheme_false;
   } else if (sema) {
     if (!scheme_is_evt((Scheme_Object *)sema))
-      scheme_wrong_type("yield", "evt or 'wait", -1, 0, (Scheme_Object **)&sema);
+      scheme_wrong_type("yield", "evt or 'wait", -1, 0, (Scheme_Object **)(void *)&sema);
 
     if (is_handler)
       return wxDispatchEventsUntilWaitable((wxDispatch_Check_Fun)NULL, NULL, (Scheme_Object *)sema);
