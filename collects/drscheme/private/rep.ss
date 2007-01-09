@@ -1050,7 +1050,12 @@ TODO
                              (call-with-values
                               (λ () 
                                 (call-with-continuation-prompt
-                                 (λ () (with-stacktrace-name (eval-syntax sexp/syntax/eof)))))
+                                 (λ () (with-stacktrace-name (eval-syntax sexp/syntax/eof)))
+                                 (default-continuation-prompt-tag)
+                                 (and complete-program?
+                                      (λ args
+                                        (abort-current-continuation 
+                                         (default-continuation-prompt-tag))))))
                               (λ x (display-results x)))
                              (loop)))))))
                   (default-continuation-prompt-tag)
