@@ -1,16 +1,43 @@
 (module config mzscheme
   (require (lib "file.ss"))
 
-  ;; This module should be invoked when in the server directory
+  ;; This module should be invoked when we're in the server directory
   (provide server-dir)
   (define server-dir (current-directory))
 
   (define config-file (path->complete-path "config.ss" server-dir))
 
-  (define (get-config* which default)
-    (if (file-exists? config-file)
-      (get-preference which (lambda () default) #f config-file)
-      default))
+  (define poll-freq 2000.0) ; poll at most once every two seconds
+
+  (define last-poll     #f)
+  (define last-filetime #f)
+  (define raw-config    #f)
+  (define config-cache  #f)
+
+  (provide get-config)
+  (define (get-config key)
+    (unless (and raw-config
+                 (< (- (current-inexact-milliseconds) last-poll) poll-freq))
+      (set! last-poll (current-inexact-milliseconds))
+      (printf "polling...\n")
+      (let ([filetime (file-or-directory-modify-seconds config-file)])
+        (unless (and filetime (equal? filetime last-filetime))
+          (set! last-filetime filetime)
+          (set! raw-config
+                (with-handlers ([void (lambda (_)
+                                        (error 'get-config
+                                               "could not read conf (~a)"
+                                               config-file))])
+                  (printf "reading...\n")
+                  (with-input-from-file config-file read)))
+          (set! config-cache (make-hash-table)))))
+    (hash-table-get config-cache key
+      (lambda ()
+        (let*-values ([(default translate) (config-default+translate key)]
+                      [(v) (translate (cond [(assq key raw-config) => cadr]
+                                            [else default]))])
+          (hash-table-put! config-cache key v)
+          v))))
 
   (define (id x) x)
   (define (rx s) (if (regexp? s) s (regexp s)))
@@ -44,7 +71,4 @@
                id)]
       [else (error 'get-config "unknown configuration entry: ~s" which)]))
 
-  (provide get-config)
-  (define (get-config which)
-    (let-values ([(default translate) (config-default+translate which)])
-      (translate (get-config* which default)))))
+  )
