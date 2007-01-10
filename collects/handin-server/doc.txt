@@ -169,7 +169,7 @@ sub-directories:
 
          ((<key> <val>) ...)
 
-    for the following keys:
+    The following keys can be used (without the preceding quote):
 
       'port-number : the port for the main handin server; the default
          is 7979
@@ -214,9 +214,9 @@ sub-directories:
          for no description; the default is "alphanumeric string"
          which matches the default user-regexp
 
-      'username-case-sensitive? : a boolean; when #f, usernames
-         are case-folded for all purposes; defaults to #f (note that
-         you should not set this to #t on Windows or when using other
+      'username-case-sensitive : a boolean; when #f, usernames are
+         case-folded for all purposes; defaults to #f (note that you
+         should not set this to #t on Windows or when using other
          case-insensitive filesystems, since usernames are used as
          directory names)
 
@@ -288,6 +288,18 @@ sub-directories:
          You should manually edit the "users.ss" file and fill in such
          information.  (The third element for such descriptors is
          ignored.)
+
+    Changes to "config.ss" are detected, the file will be re-read, and
+    options are reloaded.  A few options are fixed at startup time:
+    port numbers, log file specs, and the `web-base-dir' are as
+    configured at startup.  All other options will change the behavior
+    of the running server (but things like `username-case-sensitive?'
+    it would be unwise to do so).  (For safety, options are not
+    reloaded until the file parses correctly, but make sure that you
+    don't save a copy that has inconsistent options: it is best to
+    create a new configuration file and move it over the old one, or
+    use an editor that does so and not save until the new contents is
+    ready.)
 
   * "users.ss" (created if not present if a user is added) --- keeps
     the list of user accounts, along with the associated password
@@ -537,6 +549,10 @@ Checker Utilities
 
 The _utils.ss_ module provides utilities helpful in implementing
 `checker' functions:
+
+> (get-conf key)
+  Returns a value from the configuration file (useful for reading
+  things like field names etc)
 
 > (unpack-submission bytes)
   Returns two text% objects corresponding to the submitted definitions

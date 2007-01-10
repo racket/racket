@@ -16,7 +16,7 @@
 
     (define web-dir
       (path->string
-       (or (get-config 'web-base-dir)
+       (or (get-conf 'web-base-dir)
            (build-path (this-expression-source-directory) "status-web-root"))))
 
     (define config
@@ -44,7 +44,7 @@
            (paths
             (configuration-root "conf")
             (host-root ,web-dir)
-            (log-file-path ,(cond [(get-config 'web-log-file) => path->string]
+            (log-file-path ,(cond [(get-conf 'web-log-file) => path->string]
                                   [else #f]))
             (file-root "htdocs")
             (servlet-root ,web-dir)

@@ -3,13 +3,16 @@
            (lib "mred.ss" "mred")
            (lib "posn.ss" "lang")
            "private/run-status.ss"
+           "private/config.ss"
            (prefix pc: (lib "pconvert.ss"))
            (lib "pretty.ss")
            (lib "list.ss")
            (lib "string.ss")
            (only "handin-server.ss" timeout-control))
 
-  (provide unpack-submission
+  (provide get-conf
+
+           unpack-submission
 
            make-evaluator
            make-evaluator/submission

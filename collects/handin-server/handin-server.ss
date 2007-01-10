@@ -29,24 +29,6 @@
           [(pair? default) (car default)]
           [else (error (alist-name alist) "no value for `~s'" key)]))
 
-  (define PORT-NUMBER        (get-config 'port-number))
-  (define HTTPS-PORT-NUMBER  (get-config 'https-port-number))
-  (define SESSION-TIMEOUT    (get-config 'session-timeout))
-  (define SESSION-MEMORY-LIMIT (get-config 'session-memory-limit))
-  (define DEFAULT-FILE-NAME  (get-config 'default-file-name))
-  (define MAX-UPLOAD         (get-config 'max-upload))
-  (define MAX-UPLOAD-KEEP    (get-config 'max-upload-keep))
-  (define USER-REGEXP        (get-config 'user-regexp))
-  (define USER-DESC          (get-config 'user-desc))
-  (define USERNAME-CASE-SENSITIVE? (get-config 'username-case-sensitive?))
-  (define ALLOW-NEW-USERS?   (get-config 'allow-new-users))
-  (define ALLOW-CHANGE-INFO? (get-config 'allow-change-info))
-  (define MASTER-PASSWD      (get-config 'master-password))
-  (define EXTRA-FIELDS       (get-config 'extra-fields))
-  ;; separate user-controlled fields, and hidden fields
-  (define USER-FIELDS
-    (filter (lambda (f) (not (eq? '- (cadr f)))) EXTRA-FIELDS))
-
   (define orig-custodian (current-custodian))
 
   ;; On startup, check that the users file is not locked:
@@ -69,10 +51,9 @@
   (define (make-success-dir-available n)
     (let ([name (success-dir n)])
       (when (directory-exists? name)
-        (if (< n MAX-UPLOAD-KEEP)
-            (begin
-              (make-success-dir-available (add1 n))
-              (rename-file-or-directory name (success-dir (add1 n))))
+        (if (< n (get-conf 'max-upload-keep))
+            (begin (make-success-dir-available (add1 n))
+                   (rename-file-or-directory name (success-dir (add1 n))))
             (delete-directory/files name)))))
 
   (define ATTEMPT-RE (regexp (format "^~a$" ATTEMPT-DIR)))
@@ -189,10 +170,10 @@
     (set! len (read r-safe))
     (unless (and (number? len) (integer? len) (positive? len))
       (error 'handin "bad length: ~s" len))
-    (unless (len . < . MAX-UPLOAD)
+    (unless (len . < . (get-conf 'max-upload))
       (error 'handin
              "max handin file size is ~s bytes, file to handin is too big (~s bytes)"
-             MAX-UPLOAD len))
+             (get-conf 'max-upload) len))
     (parameterize ([current-directory (build-path "active" assignment)])
       (wait-for-lock dirname
         (let ([dir (build-path (current-directory) dirname)])
@@ -267,7 +248,7 @@
             (let ([part (if checker
                           (parameterize ([current-directory ATTEMPT-DIR])
                             (checker users s))
-                          DEFAULT-FILE-NAME)])
+                          (get-conf 'default-file-name))])
               (write+flush w 'confirm)
               (let ([v (read (make-limited-input-port r 50))])
                 (if (eq? v 'check)
@@ -360,20 +341,22 @@
   ;; Utility for the next two functions: reconstruct a full list of
   ;; extra-fields from user-fields, using "" for hidden fields
   (define (add-hidden-to-user-fields user-fields)
-    (let ([user-field-name->user-field (map cons USER-FIELDS user-fields)])
+    (let ([user-field-name->user-field
+           (map cons (get-conf 'user-fields) user-fields)])
       (map (lambda (f)
              (cond [(assq f user-field-name->user-field) => cdr]
                    [else ""]))
-           EXTRA-FIELDS)))
+           (get-conf 'extra-fields))))
 
   (define (add-new-user data)
     (define username     (a-ref data 'username/s))
     (define passwd       (a-ref data 'password))
     (define user-fields  (a-ref data 'user-fields))
     (define extra-fields (add-hidden-to-user-fields user-fields))
-    (unless ALLOW-NEW-USERS?
+    (unless (get-conf 'allow-new-users)
       (error 'handin "new users not allowed: ~a" username))
-    (check-field username USER-REGEXP "username" USER-DESC)
+    (check-field username (get-conf 'user-regexp) "username"
+                 (get-conf 'user-desc))
     ;; Since we're going to use the username in paths, and + to split names:
     (when (regexp-match #rx"[+/\\:|\"<>]" username)
       (error 'handin "username must not contain one of the following: + / \\ : | \" < >"))
@@ -389,9 +372,9 @@
       (error 'handin "the username \"checker.ss\" is reserved"))
     (when (get-user-data username)
       (error 'handin "username already exists: `~a'" username))
-    (for-each
-     (lambda (str info) (check-field str (cadr info) (car info) (caddr info)))
-     extra-fields EXTRA-FIELDS)
+    (for-each (lambda (str info)
+                (check-field str (cadr info) (car info) (caddr info)))
+              extra-fields (get-conf 'extra-fields))
     (wait-for-lock "+newuser+")
     (log-line "create user: ~a" username)
     (put-user-data username (cons passwd extra-fields)))
@@ -409,13 +392,14 @@
     ;; hidden fields)
     (let ([new-data (map (lambda (old new) (if (equal? "" new) old new))
                          (car user-datas) (cons passwd extra-fields))])
-      (unless (or ALLOW-CHANGE-INFO? (equal? (cdr new-data) (cdar user-datas)))
+      (unless (or (get-conf 'allow-change-info)
+                  (equal? (cdr new-data) (cdar user-datas)))
         (error 'handin "changing information not allowed: ~a" (car usernames)))
       (when (equal? new-data (car user-datas))
         (error 'handin "no fields changed: ~a" (car usernames)))
-      (for-each
-       (lambda (str info) (check-field str (cadr info) (car info) (caddr info)))
-       (cdr new-data) EXTRA-FIELDS)
+      (for-each (lambda (str info)
+                  (check-field str (cadr info) (car info) (caddr info)))
+                (cdr new-data) (get-conf 'extra-fields))
       (log-line "change info for ~a ~s -> ~s"
                 (car usernames) (car user-datas) new-data)
       (put-user-data (car usernames) new-data)))
@@ -426,8 +410,9 @@
       (error 'handin "cannot get user-info for multiple users: ~a" usernames))
     ;; filter out hidden fields
     (let ([all-data (cdar (a-ref data 'user-datas))])
-      (filter values (map (lambda (d f) (and (memq f USER-FIELDS) d))
-                          all-data EXTRA-FIELDS))))
+      (filter values (map (lambda (d f)
+                            (and (memq f (get-conf 'user-fields)) d))
+                          all-data (get-conf 'extra-fields)))))
 
   (define crypt
     (let ([c #f] [sema (make-semaphore 1)])
@@ -475,14 +460,14 @@
            (unless (symbol? key) (perror "bad key value: ~e" key))
            (unless (if (eq? 'user-fields key)
                      (and (list? val)
-                          (- (length val) (length USER-FIELDS))
+                          (- (length val) (length (get-conf 'user-fields)))
                           (andmap string? val))
                      (string? val))
              (perror "bad value for set: ~e" val))
            (when (a-ref data key #f) (perror "multiple values for ~e" key))
            (case key
              [(username/s)
-              (unless USERNAME-CASE-SENSITIVE?
+              (unless (get-conf 'username-case-sensitive)
                 (set! val (string-foldcase val)))
               (let ([usernames
                      ;; Username lists must always be sorted, and never empty
@@ -506,7 +491,7 @@
          (write+flush w active-assignments)
          (loop)]
         [(get-user-fields)
-         (write+flush w (map car USER-FIELDS))
+         (write+flush w (map car (get-conf 'user-fields)))
          (loop)]
         ;; ----------------------------------------
         ;; action handlers
@@ -525,7 +510,8 @@
                      (not (has-password?
                            (a-ref data 'raw-password)
                            (a-ref data 'password)
-                           (cons MASTER-PASSWD (map car user-datas)))))
+                           (cons (get-conf 'master-password)
+                                 (map car user-datas)))))
              (log-line "failed login: ~a" (a-ref data 'username/s))
              (error 'handin "bad username or password for ~a"
                     (a-ref data 'username/s)))
@@ -560,7 +546,7 @@
         (if (rational? msg)
           (set! timeout (+ (current-inexact-milliseconds) (* 1000 msg)))
           (case msg
-            [(reset) (timeout-control SESSION-TIMEOUT)]
+            [(reset) (timeout-control (get-conf 'session-timeout))]
             [(disable) (set! timeout #f)]
             [else (error 'timeout-control "bad argument: ~s" msg)])))
       (current-timeout-control timeout-control)
@@ -570,7 +556,9 @@
                          (lambda (x)
                            (set! no-limit-warning? #t)
                            (log-line "WARNING: per-session memory limit not supported by MrEd"))])
-          (custodian-limit-memory session-cust SESSION-MEMORY-LIMIT session-cust)))
+          (custodian-limit-memory session-cust
+                                  (get-conf 'session-memory-limit)
+                                  session-cust)))
       (let* ([watcher
               (parameterize ([current-custodian orig-custodian])
                 (thread
@@ -596,7 +584,8 @@
                            (and t ((current-inexact-milliseconds) . > . t)))
                          ;; Shutdown here to get the handin-terminated error
                          ;;  message, instead of relying on
-                         ;;  SESSION-TIMEOUT at the run-server level
+                         ;;  (get-conf 'session-timeout)
+                         ;;  at the run-server level
                          (custodian-shutdown-all session-cust)
                          (loop #t)]
                         [else
@@ -628,16 +617,16 @@
 
   (log-line "server started ------------------------------")
 
-  (define stop-status (serve-status HTTPS-PORT-NUMBER))
+  (define stop-status (serve-status (get-conf 'https-port-number)))
 
   (define session-count 0)
 
   (parameterize ([error-display-handler (lambda (msg exn) (log-line msg))])
     (run-server
-     PORT-NUMBER
+     (get-conf 'port-number)
      (lambda (r w)
        (set! connection-num (add1 connection-num))
-       (when ((current-memory-use) . > . SESSION-MEMORY-LIMIT)
+       (when ((current-memory-use) . > . (get-conf 'session-memory-limit))
          (collect-garbage))
        (parameterize ([current-session
                        (begin (set! session-count (add1 session-count))
@@ -668,7 +657,7 @@
                 (log-line "normal exit")
                 (kill-watcher)
                 ;; This close-output-port should not be necessary, and it's
-                ;; here due to a deficiency in the SLL binding.  The problem is
+                ;; here due to a deficiency in the SSL binding.  The problem is
                 ;; that a custodian shutdown of w is harsher for SSL output
                 ;; than a normal close. A normal close flushes an internal
                 ;; buffer that's not supposed to exist, while the shutdown

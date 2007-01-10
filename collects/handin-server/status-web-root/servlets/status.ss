@@ -14,8 +14,6 @@
   (define inactive-dir (build-path server-dir "inactive"))
   (define active/inactive-dirs (list active-dir inactive-dir))
 
-  (define master-password (get-config 'master-password))
-
   (define get-user-data
     (let ([users-file (build-path server-dir "users.ss")])
       (lambda (user)
@@ -251,7 +249,7 @@
                   (string? passwd)
                   (let ([pw (md5 passwd)])
                     (or (equal? pw (car user-data))
-                        (equal? pw master-password))))
+                        (equal? pw (get-conf 'master-password)))))
              (status-page user for-handin)]
             [else (login-page status for-handin "Bad username or password")])))
 

@@ -72,7 +72,6 @@
   (define (install-logger-port)
     (current-error-port
      (make-logger-port
-      (and (get-config 'log-output) (current-output-port))
-      (cond [(get-config 'log-file)
-             => (lambda (f) (open-output-file f 'append))]
+      (and (get-conf 'log-output) (current-output-port))
+      (cond [(get-conf 'log-file) => (lambda (f) (open-output-file f 'append))]
             [else #f])))))
