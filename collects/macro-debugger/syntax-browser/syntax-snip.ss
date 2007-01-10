@@ -10,7 +10,10 @@
            "typesetter.ss")
   (provide snip@
            snip-keymap-extension@)
-  
+
+  ;; Every snip has its own controller and properties-controller
+  ;; (because every snip now displays its own properties)
+
   (define snip@
     (unit
       (import prefs^
@@ -24,15 +27,6 @@
         (new syntax-snip% (syntax stx)))
       
       (define *syntax-controller* #f)
-      
-      (define (the-syntax-controller)
-        (let ([controller *syntax-controller*])
-          (or controller
-              (let* ([controller (new syntax-controller%)]
-                     [props (new independent-properties-controller% (controller controller))])
-                (send controller set-properties-controller props)
-                (set! *syntax-controller* controller)
-                controller))))
       
       ;; syntax-value-snip%
       (define syntax-value-snip%
@@ -93,16 +87,24 @@
                                     (list src line col pos 1))
             #`(force '#,(delay stx)))
           ))
-      
+
+
+      ;; syntax-snip%
       (define syntax-snip%
         (class* editor-snip% (readable-snip<%>)
           (init-field ((stx syntax)))
-          (init-field (controller (the-syntax-controller)))
           (inherit set-margin
                    set-inset
                    set-snipclass
                    set-tight-text-fit
                    show-border)
+          
+          (define controller (new syntax-controller%))
+          (define properties-controller
+            (new independent-properties-controller%
+                 (syntax stx)
+                 (controller controller)))
+          (send controller set-properties-controller properties-controller)
           
           (define -outer (new text%))
           (super-new (editor -outer) (with-border? #f))
@@ -110,10 +112,7 @@
           (set-inset 0 0 0 0)
           (set-snipclass snip-class)
           (send -outer select-all)
-          (send -outer change-style (make-object style-delta% 'change-alignment 'top)
-                0
-                (send -outer last-position))
-          
+
           (define the-syntax-snip
             (new syntax-value-snip% (syntax stx) (controller controller)))
           (define the-summary
@@ -146,7 +145,13 @@
             (outer:insert (hide-icon) style:hyper (lambda _ (hide-me)))
             (outer:insert " ")
             (outer:insert the-syntax-snip)
+            (outer:insert " ")
+            (outer:insert (show-properties-icon) style:hyper 
+                          (lambda _ (send properties-controller show #t)))
             (send* -outer
+              (change-style (make-object style-delta% 'change-alignment 'top)
+                            0
+                            (send -outer last-position))
               (lock #t)
               (end-edit-sequence)))
           
@@ -166,7 +171,7 @@
           
           ;; Snip methods
           (define/override (copy)
-            (new syntax-snip% (controller controller) (syntax stx)))
+            (new syntax-snip% (syntax stx)))
           (define/override (write stream)
             (send stream put (string->bytes/utf-8 (format "~s" (marshall-syntax stx)))))
           (define/public (read-special src line col pos)
@@ -181,11 +186,19 @@
       (define independent-properties-controller%
         (class* object% (syntax-properties-controller<%>)
           (init-field controller)
+          (init-field ((stx syntax) #f))
           
           ;; Properties display
           (define parent
             (new frame% (label "Properties") (height (pref:height))
                  (width (floor (* (pref:props-percentage) (pref:width))))))
+          ;(define vp (new panel:vertical-dragable% (parent parent)))
+          ;(define syntax-text (new text%))
+          ;(define syntax-canvas (new editor-canvas% (parent vp) (editor syntax-text)))
+          ;(let ([ss (new syntax-value-snip% (syntax stx) (controller controller))])
+          ;  (send syntax-text insert ss)
+          ;  ...)
+          ;(send syntax-text lock #t)
           (define pv (new properties-view% (parent parent)))
           
           (define/private (show-properties)
@@ -236,6 +249,10 @@
     (make-object image-snip%
       (build-path (collection-path "icons") "turn-down.png")))
   
+  (define (show-properties-icon)
+    (make-object image-snip%
+      (build-path (collection-path "icons") "syncheck.png")))
+
   ;; marshall-syntax : syntax -> printable
   (define (marshall-syntax stx)
     (unless (syntax? stx)
