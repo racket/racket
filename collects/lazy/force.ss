@@ -57,10 +57,10 @@
                   (set-car! x (loop (car x)))
                   (set-cdr! x (loop (cdr x)))]
                  [(vector? x)
-                  (let loop ([i 0])
+                  (let vloop ([i 0])
                     (when (< i (vector-length x))
-                      (vector-set! x (loop (vector-ref x i)))
-                      (loop (add1 i))))]
+                      (vector-set! x i (loop (vector-ref x i)))
+                      (vloop (add1 i))))]
                  [(box? x) (set-box! x (loop (unbox x)))]
                  [(struct? x)
                   (let-values ([(type skipped?) (struct-info x)])
