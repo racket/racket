@@ -1,29 +1,26 @@
 (module handin-multi mzscheme
   (require (lib "class.ss") (lib "list.ss") (lib "string.ss") (lib "port.ss")
            (lib "mred.ss" "mred") (lib "framework.ss" "framework")
-           (lib "external.ss" "browser") "info.ss" "client-gui.ss")
+           (lib "external.ss" "browser")
+           "info.ss" "client-gui.ss" "this-collection.ss")
 
-  (define handin-name     (#%info-lookup 'name))
-  (define this-collection (#%info-lookup 'collection))
-  (define web-address     (#%info-lookup 'web-address
-                            (lambda () "http://www.plt-scheme.org")))
-  (define selection-mode  (#%info-lookup 'selection-mode
-                            (lambda () 'extended)))
+  (define handin-name (#%info-lookup 'name))
+  (define web-address (#%info-lookup 'web-address
+                        (lambda () "http://www.plt-scheme.org")))
+  (define selection-mode (#%info-lookup 'selection-mode (lambda () 'extended)))
   (define selection-defaults
     (let ([sd (#%info-lookup 'selection-default (lambda () '("*.scm" "*.ss")))])
       (if (string? sd) (list sd) sd)))
-  (define (make-key sfx)
-    (string->symbol (format "~a:~a" (string-downcase this-collection) sfx)))
-  (define last-dir-key (make-key 'multifile:last-dir))
+  (define last-dir-key (make-my-key 'multifile:last-dir))
   (preferences:set-default last-dir-key "" string?)
-  (define last-auto-key (make-key 'multifile:last-auto))
+  (define last-auto-key (make-my-key 'multifile:last-auto))
   (preferences:set-default last-auto-key (car selection-defaults) string?)
-  (define geometry-key (make-key 'multifile:geometry))
+  (define geometry-key (make-my-key 'multifile:geometry))
   (preferences:set-default geometry-key #f void)
 
   (define update
     (and (#%info-lookup 'enable-auto-update (lambda () #f))
-         (dynamic-require `(lib "updater.ss" ,this-collection) 'update)))
+         (dynamic-require `(lib "updater.ss" ,this-collection-name) 'update)))
 
   ;; ==========================================================================
   (define magic #"<<<MULTI-SUBMISSION-FILE>>>")
@@ -105,14 +102,13 @@
         (preferences:set geometry-key
                          (list (send this get-width) (send this get-height)
                                (send this get-x) (send this get-y)))
+        ;; (preferences:save)
         (send this show #f))
       (define/augment (on-close) (close))
 
       ;; ----------------------------------------------------------------------
       (new button% [parent buttons-pane]
-           [label (make-object bitmap%
-                               (build-path (collection-path this-collection)
-                                           "icon.png"))]
+           [label (make-object bitmap% (in-this-collection "icon.png"))]
            [callback (lambda _ (send-url web-address))])
       (new pane% [parent buttons-pane])
       (let ([button (lambda (label callback)

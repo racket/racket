@@ -1,5 +1,5 @@
 (module client mzscheme
-  (require (lib "mzssl.ss" "openssl"))
+  (require (lib "mzssl.ss" "openssl") "this-collection.ss")
 
   (provide handin-connect
 	   handin-disconnect
@@ -25,23 +25,38 @@
     (let ([v (if (pair? reader) ((car reader)) (read r))])
       (unless (eq? v 'ok) (error 'handin-connect "~a error: ~a" who v))))
 
-  (define (handin-connect server port pem)
-    (let ([ctx (ssl-make-client-context)])
-      (ssl-set-verify! ctx #t)
-      (ssl-load-verify-root-certificates! ctx pem)
-      (let-values ([(r w) (ssl-connect server port ctx)])
-	;; Sanity check: server sends "handin", first:
-	(let ([s (read-bytes 6 r)])
-	  (unless (equal? #"handin" s)
-	    (error 'handin-connect "bad handshake from server: ~e" s)))
-	;; Tell server protocol = 'ver1:
-	(write+flush w 'ver1)
-	;; One more sanity check: server recognizes protocol:
-	(let ([s (read r)])
-	  (unless (eq? s 'ver1)
-	    (error 'handin-connect "bad protocol from server: ~e" s)))
-	;; Return connection:
-        (make-handin r w))))
+  ;; ssl connection, makes an easier error message if no connection
+  (define (connect-to server port)
+    (define pem (in-this-collection "server-cert.pem"))
+    (define ctx (ssl-make-client-context))
+    (ssl-set-verify! ctx #t)
+    (ssl-load-verify-root-certificates! ctx pem)
+    (with-handlers
+        ([exn:fail:network?
+          (lambda (e)
+            (let* ([msg
+                    "handin-connect: could not connect to the server (~a:~a)"]
+                   [msg (format msg server port)]
+                   #; ; un-comment to get the full message too
+                   [msg (string-append msg " (" (exn-message e) ")")]
+                   [msg (string->immutable-string msg)])
+              (raise (make-exn:fail:network msg (exn-continuation-marks e)))))])
+      (ssl-connect server port ctx)))
+
+  (define (handin-connect server port)
+    (let-values ([(r w) (connect-to server port)])
+      ;; Sanity check: server sends "handin", first:
+      (let ([s (read-bytes 6 r)])
+        (unless (equal? #"handin" s)
+          (error 'handin-connect "bad handshake from server: ~e" s)))
+      ;; Tell server protocol = 'ver1:
+      (write+flush w 'ver1)
+      ;; One more sanity check: server recognizes protocol:
+      (let ([s (read r)])
+        (unless (eq? s 'ver1)
+          (error 'handin-connect "bad protocol from server: ~e" s)))
+      ;; Return connection:
+      (make-handin r w)))
 
   (define (handin-disconnect h)
     (write+flush (handin-w h) 'bye)

@@ -1,9 +1,9 @@
 (module updater mzscheme
-  (require "info.ss" (lib "url.ss" "net") (lib "plt-installer.ss" "setup")
-           (lib "etc.ss") (lib "file.ss") (lib "port.ss")
-           (lib "mred.ss" "mred") (lib "framework.ss" "framework"))
+  (require (lib "file.ss") (lib "port.ss") (lib "url.ss" "net")
+           (lib "plt-installer.ss" "setup") (lib "mred.ss" "mred")
+           (lib "framework.ss" "framework")
+           "info.ss" "this-collection.ss")
   (define name        (#%info-lookup 'name))
-  (define collection  (#%info-lookup 'collection))
   (define web-address (#%info-lookup 'web-address))
   (define version-filename (#%info-lookup 'version-filename))
   (define package-filename (#%info-lookup 'package-filename))
@@ -12,8 +12,7 @@
     (get-pure-port
      (string->url
       (string-append (regexp-replace #rx"/?$" web-address "/") filename))))
-  (define update-key
-    (string->symbol (format "~a:update-check" (string-downcase collection))))
+  (define update-key (make-my-key 'update-check))
   (preferences:set-default update-key #t boolean?)
 
   (define (update!)
@@ -56,9 +55,7 @@
            ;; if the file was not there, we might have read some junk
            [web-version (if (integer? web-version) web-version 0)]
            [current-version
-            (with-input-from-file
-                (build-path (this-expression-source-directory) "version")
-              read)])
+            (with-input-from-file (in-this-collection "version") read)])
       (cond [(> web-version current-version) (maybe-update parent web-version)]
             [(and (pair? show-ok?) (car show-ok?))
              (message-box dialog-title "Your plugin is up-to-date" parent)])))

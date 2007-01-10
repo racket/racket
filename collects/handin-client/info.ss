@@ -4,7 +4,6 @@
   ;; Instead of uncommenting the definition of server:port, you
   ;; can set the PLT_HANDIN_SERVER_PORT environment variable.
   (define name "Course")
-  (define collection "handin-client")
   ;(define server:port "localhost:7979")
 
   ;; The following are optional. Uncomment and fill in
@@ -14,9 +13,9 @@
   ;(define web-menu-name "Course Homepage")
   ;(define web-address "http://www.university.edu/course/")
 
-  (define tools      `(("client-gui.ss")))
+  (define tools      `("client-gui.ss"))
   (define tool-names `(,name))
-  (define tool-icons `(("icon.png" ,collection)))
+  (define tool-icons `("icon.png"))
 
   (define requires '(("mred") ("openssl")))
 
