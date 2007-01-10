@@ -179,7 +179,7 @@
       [(outofrange? fail)
        (send text insert "Actual value ")
        (insert-value text (outofrange-test fail))
-       (send text insert (format "is not within ~v of expected value " (outofrange-range fail)))
+       (send text insert (format " is not within ~v of expected value " (outofrange-range fail)))
        (insert-value text (outofrange-actual fail))
        (send text insert ".\n")]
       [(incorrect-error? fail) 
@@ -187,7 +187,7 @@
              (format "check-error encountered the following error instead of the expected ~a~n   :: ~a ~n"
                      (incorrect-error-expected fail) (incorrect-error-message fail)))]
       [(expected-error? fail) 
-       (send text insert "check-error expected the following error, instead received value ")
+       (send text insert "check-error expected the following error, but instead received the value ")
        (insert-value text (expected-error-value fail))
        (send text insert (format ".~n ~a~n" (expected-error-message fail)))]))
   
