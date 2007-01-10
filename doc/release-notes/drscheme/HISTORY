@@ -1,4 +1,15 @@
 ------------------------------
+        Version 370
+------------------------------
+
+  . the framework preferences library now saves prefs each
+    time any one of them is changed, and works better when
+    multiple apps are both using the library. As a
+    consequence of this, preferences:save is no longer in
+    the library. Just remove any calls to it and your code
+    should work fine.
+
+------------------------------
         Version 353
 ------------------------------
 
