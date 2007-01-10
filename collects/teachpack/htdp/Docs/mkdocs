@@ -16,6 +16,7 @@ fi
 (define libraries*
   '(#"Images"
     #"Animated Images, Simulating Worlds"
+    #"Testing"
     #"Convert"
     #"Guess"
     #"Mastermind"

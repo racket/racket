@@ -1,0 +1,80 @@
+{ (define LIBNAME "Testing")
+  (include "head.tinc") }
+
+<div>
+    <p>
+      This teachpack provides four constructs for testing programs:
+    </p>
+    <p>
+      The first three forms create tests:
+      <menu>
+        <li>
+          <code>({(idx check-expect)} test-expression expected-value)</code>
+          where <code>test-expression</code> and
+          <code>expected-value</code> are both expressions.
+          <br/>
+          The form evaluates <code>test-expression</code> and then
+          verifies that its value is the same as
+          <code>expected-value</code>. 
+        </li>
+        <li>
+          <code>({(idx check-within)} test expected delta)</code>
+          where <code>test-expression</code>, <code>expected</code>, and
+          <code>delta</code> are expressions. 
+          <br/>
+          The form evaluates <code>test-expression</code> and verifies that
+          it produces a real number such that its value is equal to <code>
+	    expected</code> plus or minus <code>delta</code>. 
+        </li>
+        <li>
+          <code>({(idx check-error)} test message)</code>
+          where <code>test</code> and <code>expected-message</code> are expressions
+          <br/>
+          The form evaluates <code>test</code> and verifies that it signals
+          an error with <code>expected-message</code> as the error report. 
+        </li>
+      </menu>
+        You should place them below the relevant function
+        definitions in the Definitions Window. Eventually you should place
+        all tests, such as these, at the bottom of the window. 
+    </p>
+
+    <p>
+      Finally, <code>generate-report</code> is a function that displays
+      statistics of running tests: 
+      <menu>
+        <li>
+          <code>{(idx generate-report)} : -&gt; true</code>
+          <br/>
+          <code>(generate-report)</code> displays the results of all tests
+          created with <code>check-expect</code>, <code>check-within</code>,
+          and <code>check-error</code>.
+        </li>
+      </menu>
+      Place it at the end of the program or run the expression from the
+      Interactions window after clicking RUN. 
+    </p>
+
+<b>Example:</b> Place the following seven lines into the Definitions Window
+and click RUN: 
+<pre>
+<code>
+(check-expect (+ 1 1) 2)
+(check-expect (+ 1 1) 3)
+
+(check-within (+ 1 1) 2.1 .001)
+(check-within (+ 1 1) 2.1 .1)
+
+(check-error (+ 1 1) "3")
+(check-error (/ 1 0) "/: division by zero")
+
+(generate-report)
+</code>
+</pre>
+ Before you do so, try to figure out which of these tests succeed and which
+ fail. After clicking run, you see a separate frame that records how many
+ succeeded and failed and detail information about the failures, including
+ links for highlighting the source. 
+</div>
+
+{(include "foot.tinc")}
