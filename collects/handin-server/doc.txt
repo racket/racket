@@ -596,7 +596,7 @@ The _utils.ss_ module provides utilities helpful in implementing
   Like `load' on an input port.
 
 > (evaluate-submission bytes eval)
-  Like `load' on a non-test-suite submission byte string.
+  Like `load' on a submission byte string.
 
 > coverage-enabled
   Parameter that controls whether coverage testing is enabled.  If it
