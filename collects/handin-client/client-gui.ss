@@ -9,11 +9,10 @@
 
   (define uninstalled? #f)
 
-  (define server:port
-    (#%info-lookup 'server:port (lambda () (getenv "PLT_HANDIN_SERVER_PORT"))))
+  (define server:port (#%info-lookup 'server:port (lambda () #f)))
   (define-values (server port-no)
     (if server:port
-      (let ([m (regexp-match #rx"^(.+):([0-9]+)$" server:port)])
+      (let ([m (regexp-match #rx"^([^:]+):([0-9]+)$" server:port)])
         (unless m
           (error 'handin-client
                  "Bad configuration ~s, expecting \"server:port\""
