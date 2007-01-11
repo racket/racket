@@ -142,27 +142,49 @@ PROCEDURES -----------------------------------------------------------
   decoded information.
 
 > (get-pure-port url [list-of-strings]) -> input-port
+> (head-pure-port url [list-of-strings]) -> input-port
+> (delete-pure-port url [list-of-strings]) -> input-port
 
-  Takes a URL and returns a pure port corresponding to it.  Writes the
-  optional RFC 822 header-line strings to the server.  For the "file"
-  scheme, uses open-input-file, does not handle exceptions, and
+  Takes a URL, initiates a GET/HEAD/DELETE request and returns a pure
+  port corresponding to the body of the response. The optional list of
+  strings can be used to send header-lines to the server.
+
+  The GET method is used to retrieve whatever information is
+  identified by the url.
+
+  The HEAD method is identical to GET, except the server must not
+  return a message body. The metainformation returned in a response to
+  a HEAD request should be identical to the information in a response
+  to a GET request.
+
+  The DELETE method is used to delete the entity identified by the
+  url.
+
+  The file:// scheme is handled only by get-pure-port,
+  which uses open-input-file, does not handle exceptions, and
   ignores the optional strings.
 
+> (get-impure-port  url [list-of-strings]) -> input-port
+> (head-pure-port   url [list-of-strings]) -> input-port
+> (delete-pure-port url [list-of-strings]) -> input-port
+
+  Like <method>-pure-port above, but the port returned corresponds to
+  both the headers returned as well as the body. The file:// scheme is
+  handled by none of these functions.
+
 > (post-pure-port url post-byte-string [list-of-strings]) -> input-port
-
-  Like `get-pure-port', but issues a POST request (instead of a GET
-  request) to a web server using the given post data byte string.
-
-> (get-impure-port url [list-of-strings]) -> input-port
-
-  Takes a URL and returns an impure port corresponding to it.  Writes
-  the optional RFC 822 header-line strings to the server.  There are
-  no impure ports with scheme "file".
+> (put-pure-port  url put-byte-string  [list-of-strings]) -> input-port
+  
+  Takes a URL, initiates a POST/PUT request and sends the byte-string.
+  A pure port port corresponding to the body of the response is
+  returned.  The optional list of strings can be used to send
+  header-lines to the server.
 
 > (post-impure-port url post-byte-string [list-of-strings]) -> input-port
+> (put-impure-port  url put-byte-string  [list-of-strings]) -> input-port
 
-  Like `get-impure-port', but issues a POST request (instead of a GET
-  request) to a web server using the given post data string.
+  Like post-pure-port and put-pure-port above, but the port returned
+  corresponds to both the headers returned as well as the body.
 
 > (display-pure-port input-port) -> void
 

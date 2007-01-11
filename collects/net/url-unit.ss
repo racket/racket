@@ -446,5 +446,105 @@
                (if (null? strings)
                  (apply string-append (reverse! r))
                  (loop (cdr strings) (list* (car strings) sep r))))]))
+    
+    ;; delete-pure-port : url [x list (str)] -> in-port
+    (define delete-pure-port
+      (case-lambda
+        [(url) (delete-pure-port url '())]
+        [(url strings) (method-pure-port 'delete url #f strings)]))
+    
+    ;; delete-impure-port : url [x list (str)] -> in-port
+    (define delete-impure-port
+      (case-lambda
+        [(url) (delete-impure-port url '())]
+        [(url strings) (method-impure-port 'delete url #f strings)]))
 
+    ;; head-pure-port : url [x list (str)] -> in-port
+    (define head-pure-port
+      (case-lambda
+        [(url) (head-pure-port url '())]
+        [(url strings) (method-pure-port 'head url #f strings)]))
+    
+    ;; head-impure-port : url [x list (str)] -> in-port
+    (define head-impure-port
+      (case-lambda
+        [(url) (head-impure-port url '())]
+        [(url strings) (method-impure-port 'head url #f strings)]))
+    
+    ;; put-pure-port : url bytes [x list (str)] -> in-port
+    (define put-pure-port
+      (case-lambda
+        [(url put-data) (put-pure-port url put-data '())]
+        [(url put-data strings) (method-pure-port 'put url put-data strings)]))
+
+    ;; put-impure-port : url x bytes [x list (str)] -> in-port
+    (define put-impure-port
+      (case-lambda
+        [(url put-data) (put-impure-port url put-data '())]
+        [(url put-data strings)
+         (method-impure-port 'put url put-data strings)]))
+    
+    ;; method-impure-port : symbol x url x list (str) -> in-port
+    (define (method-impure-port method url data strings)
+      (let ([scheme (url-scheme url)])
+        (cond [(not scheme)
+               (schemeless-url url)]
+              [(or (string=? scheme "http")
+                   (string=? scheme "https"))
+               (http://method-impure-port method url data strings)]
+              [(string=? scheme "file")
+               (url-error "There are no impure file: ports")]
+              [else (url-error "Scheme ~a unsupported" scheme)])))
+    
+    ;; method-pure-port : symbol x url x list (str) -> in-port
+    (define (method-pure-port method url data strings)
+      (let ([scheme (url-scheme url)])
+        (cond [(not scheme)
+               (schemeless-url url)]
+              [(or (string=? scheme "http")
+                   (string=? scheme "https"))
+               (let ([port (http://method-impure-port
+                            method url data strings)])
+                 (with-handlers ([void (lambda (exn)
+                                         (close-input-port port)
+                                         (raise exn))])
+                   (purify-port port))
+                 port)]
+              [(string=? scheme "file")
+               (file://get-pure-port url)]
+              [else (url-error "Scheme ~a unsupported" scheme)])))
+    
+    ;; http://metod-impure-port : symbol x url x union (str, #f) x list (str) -> in-port
+    (define (http://method-impure-port method url data strings)
+      (define (method->string method)
+        (case method 
+          ((get) "GET") ((post) "POST") ((head) "HEAD")
+          ((put) "PUT") ((delete) "DELETE")
+          (else (url-error "unsupported method: ~a" method))))
+      (let*-values
+          ([(proxy) (assoc (url-scheme url) (current-proxy-servers))]
+           [(server->client client->server) (make-ports url proxy)]
+           [(access-string) (url->string
+                             (if proxy
+                               url
+                               (make-url #f #f #f #f
+                                         (url-path-absolute? url)
+                                         (url-path url)
+                                         (url-query url)
+                                         (url-fragment url))))])
+        (define (println . xs)
+          (for-each (lambda (x) (display x client->server)) xs)
+          (display "\r\n" client->server))
+        (println (method->string method) " " access-string " HTTP/1.0")
+        (println "Host: " (url-host url)
+                 (let ([p (url-port url)]) (if p (format ":~a" p) "")))
+        (when data (println "Content-Length: " (bytes-length data)))
+        (for-each println strings)
+        (println)
+        (when data (display data client->server))
+        (flush-output client->server)
+        (tcp-abandon-port client->server)
+        server->client))
+    
+    
     ))

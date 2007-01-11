@@ -31,6 +31,12 @@
                 get-impure-port
                 post-pure-port
                 post-impure-port
+                head-pure-port
+                head-impure-port
+                put-pure-port
+                put-impure-port
+                delete-pure-port
+                delete-impure-port
                 display-pure-port
                 purify-port
                 netscape/string->url
