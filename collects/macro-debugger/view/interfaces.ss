@@ -28,6 +28,7 @@
      pref:show-rename-steps?
      pref:highlight-foci?
      pref:suppress-warnings?
+     pref:one-by-one?
      ))
 
   ;; macro-stepper-config%

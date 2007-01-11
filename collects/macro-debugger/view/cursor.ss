@@ -46,9 +46,17 @@
     (make-cursor null items))
 
   (define (cursor:current c)
+    (cursor:next c))
+
+  (define (cursor:next c)
     (let ([suffix (cursor-suffix c)])
       (if (pair? suffix)
           (car suffix)
+          #f)))
+  (define (cursor:prev c)
+    (let ([prefix (cursor-prefix c)])
+      (if (pair? prefix)
+          (car prefix)
           #f)))
 
   (define (cursor:move-to-start c)

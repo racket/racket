@@ -30,6 +30,7 @@
       (preferences:set-default 'MacroStepper:HighlightFoci? #t boolean?)
       (preferences:set-default 'MacroStepper:ShowRenameSteps? #f boolean?)
       (preferences:set-default 'MacroStepper:SuppressWarnings? #f boolean?)
+      (preferences:set-default 'MacroStepper:OneByOne? #f boolean?)
       
       (pref:get/set pref:width MacroStepper:Frame:Width)
       (pref:get/set pref:height MacroStepper:Frame:Height)
@@ -43,6 +44,7 @@
       (pref:get/set pref:highlight-foci? MacroStepper:HighlightFoci?)
       (pref:get/set pref:show-rename-steps? MacroStepper:ShowRenameSteps?)
       (pref:get/set pref:suppress-warnings? MacroStepper:SuppressWarnings?)
+      (pref:get/set pref:one-by-one? MacroStepper:OneByOne?)
       
       ))
   )

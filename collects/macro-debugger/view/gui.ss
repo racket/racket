@@ -3,6 +3,7 @@
   (require (lib "class.ss")
            (lib "unit.ss")
            (lib "list.ss")
+           (lib "plt-match.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "boundmap.ss" "syntax")
@@ -28,6 +29,11 @@
   ;; Debugging parameters / Not user configurable
 
   (define catch-errors? (make-parameter #t))
+
+  ;; Struct for one-by-one stepping
+
+  (define-struct prestep (redex e1 lctx))
+  (define-struct poststep (contractum e2 note lctx))
 
   ;; Macro Stepper
 
@@ -57,6 +63,8 @@
                         (notify-box/pref pref:show-rename-steps?))
           (field/notify suppress-warnings?
                         (notify-box/pref pref:suppress-warnings?))
+          (field/notify one-by-one?
+                        (notify-box/pref pref:one-by-one?))
           (super-new)))
 
       (define macro-stepper-frame%
@@ -169,6 +177,9 @@
                                     "Include renaming steps"
                                     (get-field show-rename-steps? config))
             (menu-option/notify-box extras-menu
+                                    "One term at a time"
+                                    (get-field one-by-one? config))
+            (menu-option/notify-box extras-menu
                                     "Suppress warnings"
                                     (get-field suppress-warnings? config))
             (new checkable-menu-item%
@@ -231,12 +242,6 @@
                  (parent area)
                  (stretchable-height #f)
                  (alignment '(center center))))
-          #;
-          (define advanced-navigator
-            (new horizontal-panel%
-                 (parent area)
-                 (stretchable-height #f)
-                 (alignment '(center center))))
           
           (define sbview (new sb:syntax-widget% 
                               (parent area)
@@ -267,6 +272,9 @@
           (send config listen-show-rename-steps?
                 (lambda (_) (refresh)))
 
+          (send config listen-one-by-one?
+                (lambda (_) (refresh)))
+
           (define nav:up
             (new button% (label "Previous term") (parent navigator) (style '(deleted))
                  (callback (lambda (b e) (navigate-up)))))
@@ -288,19 +296,6 @@
             (new button% (label "Next term") (parent navigator) (style '(deleted))
                  (callback (lambda (b e) (navigate-down)))))
 
-          #;
-          (define nav:zoom-in
-            (new button% (label "Zoom in") (parent advanced-navigator)
-                 (callback (lambda (b e) (navigate-zoom-in)))))
-          #;
-          (define nav:zoom-out
-            (new button% (label "Zoom out") (parent advanced-navigator)
-                 (callback (lambda (b e) (navigate-zoom-out)))))
-          #;
-          (define nav:jump-to
-            (new button% (label "Skip to") (parent advanced-navigator)
-                 (callback (lambda (b e) (navigate-skip-to)))))
-          
           (define/public (show-macro-hiding-prefs show?)
             (send area change-children
                   (lambda (children)
@@ -343,12 +338,22 @@
           (define/private (navigate-zoom-out)
             (set! zoomed? #f)
             (update))
-          
+
           (define/private (navigate-skip-to)
             '...)
 
           (define/private (insert-step-separator text)
             (send sbview add-text "\n    ")
+            (send sbview add-text
+                  (make-object image-snip% 
+                               (build-path (collection-path "icons")
+                                           "red-arrow.bmp")))
+            (send sbview add-text "  ")
+            (send sbview add-text text)
+            (send sbview add-text "\n\n"))
+
+          (define/private (insert-step-separator/small text)
+            (send sbview add-text "    ")
             (send sbview add-text
                   (make-object image-snip% 
                                (build-path (collection-path "icons")
@@ -382,17 +387,24 @@
                        (update:show-step step)]
                       [(misstep? step)
                        (update:show-misstep step)]
+                      [(prestep? step)
+                       (update:show-prestep step)]
+                      [(poststep? step)
+                       (update:show-poststep step)]
                       [(not step)
                        (update:show-final)]))))
           
+          (define (update:show-lctx lctx)
+            (when (pair? lctx)
+              (for-each (lambda (bc)
+                          (send sbview add-text "While executing macro transformer in:\n")
+                          (insert-syntax/redex (cdr bc) (car bc)))
+                        lctx)
+              (send sbview add-text "\n")))
+
           (define (update:show-step step)
             (unless zoomed?
-              (when (pair? (step-lctx step))
-                (for-each (lambda (bc)
-                            (send sbview add-text "While executing macro transformer in:\n")
-                            (insert-syntax/redex (cdr bc) (car bc)))
-                          (step-lctx step))
-                (send sbview add-text "\n"))
+              (update:show-lctx (step-lctx step))
               (insert-syntax/redex (step-e1 step) (foci (step-redex step)))
               (insert-step-separator (step-note step))
               (insert-syntax/contractum (step-e2 step) (foci (step-contractum step))))
@@ -400,6 +412,16 @@
               (for-each (lambda (s) (insert-syntax s)) (foci (step-redex step)))
               (insert-step-separator (step-note step))
               (for-each (lambda (s) (insert-syntax s)) (foci (step-contractum step)))))
+
+          (define (update:show-prestep step)
+            (update:show-lctx (prestep-lctx step))
+            (insert-step-separator/small "Find redex")
+            (insert-syntax/redex (prestep-e1 step) (foci (prestep-redex step))))
+
+          (define (update:show-poststep step)
+            (update:show-lctx (poststep-lctx step))
+            (insert-step-separator/small (poststep-note step))
+            (insert-syntax/contractum (poststep-e2 step) (foci (poststep-contractum step))))
           
           (define (update:show-misstep step)
             (insert-syntax/redex (misstep-e1 step) (foci (misstep-redex step)))
@@ -546,11 +568,32 @@
                                 "Error"
                                 "Internal error in macro stepper (reductions)")
                                (set! synth-deriv #f)
-                               (set! steps #f))])
+                               #f)])
+              (reduce:sequence d)))
+
+          (define/private (reduce:sequence d)
+            (define raw-seq (reductions d))
+            (define filtered-seq
               (if (send config get-show-rename-steps?)
-                  (reductions d)
-                  (filter (lambda (x) (not (rename-step? x)))
-                          (reductions d)))))
+                  raw-seq
+                  (filter (lambda (x) (not (rename-step? x))) raw-seq)))
+            (if (send config get-one-by-one?)
+                (reduce:one-by-one filtered-seq)
+                filtered-seq))
+
+          (define/private (reduce:one-by-one rs)
+            (let loop ([rs rs])
+              (match rs
+                [(cons (struct step (redex contractum e1 e2 note lctx)) rs)
+                 (list* (make-prestep redex e1 lctx)
+                        (make-poststep contractum e2 note lctx)
+                        (loop rs))]
+                [(cons (struct misstep (redex e1 exn)) rs)
+                 (list* (make-prestep redex e1 null)
+                        (make-misstep redex e1 exn)
+                        (loop rs))]
+                ['()
+                 null])))
 
           (define/private (foci x) (if (list? x) x (list x)))
 
