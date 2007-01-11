@@ -7,9 +7,6 @@
            AnyQ
            IntQ
            
-           $$
-           $$I
-           $$E
            Wrap
            lift/wrap
            rewrap
@@ -48,74 +45,54 @@
   (define-match-expander AnyQ
     (syntax-rules ()
       [(AnyQ S (var ...))
-       (or (struct S (var ...))
-           (struct interrupted-wrap (_ (struct S (var ...))))
-           (struct error-wrap (_ _ (struct S (var ...)))))]
+       (app unwrap (struct S (var ...)))]
       [(AnyQ S (var ...) exni)
-       (or (and (struct S (var ...))
-                (app (lambda (_) #f) exni))
-           (and (struct interrupted-wrap (tag (struct S (var ...))))
-                (app (lambda (ew) (cons #f (interrupted-wrap-tag ew))) exni))
-           (and (struct error-wrap (exn tag (struct S (var ...))))
-                (app (lambda (ew) (cons (error-wrap-exn ew) (error-wrap-tag ew))) exni)))]))
-
+       (and (app unwrap (struct S (var ...)))
+            (app extract-exni exni))]))
+  
   ;; IntQ
   ;; Matches interrupted wraps and unwrapped structs
   (define-match-expander IntQ
     (syntax-rules ()
       [(IntQ S (var ...))
-       (or (struct S (var ...))
-           (struct interrupted-wrap (_ (struct S (var ...)))))]
+       (? not-error-wrap? (app unwrap (struct S (var ...))))]
       [(IntQ S (var ...) tag)
-       (or (and (struct S (var ...))
-                (app (lambda (_) #f) tag))
-           (struct interrupted-wrap (tag (struct S (var ...)))))]))
-
-  ;; $$ match form
-  ;; ($$ struct-name (var ...) info)
-  ;; If normal instance of struct-name, binds info to #f
-  ;; If interrupted-wrapped, binds info to (cons #f symbol/#f)
-  ;; If error-wrapped, binds info to (cons exn symbol/#f)
-  (define-match-expander $$
-    (lambda (stx)
-      (syntax-case stx ()
-        [($$ S (var ...) info)
-         #'(or (and (struct S (var ...))
-                    (app (lambda (_) #f) info))
-               (and (struct interrupted-wrap (tag (struct S (var ...))))
-                    (app (lambda (ew) (cons #f (interrupted-wrap-tag ew))) info))
-               (and (struct error-wrap (exn tag (struct S (var ...))))
-                    (app (lambda (ew) (cons (error-wrap-exn ew) (error-wrap-tag ew)))
-                         info)))]
-        [($$ S (var ...))
-         #'(struct S (var ...))])))
-  
-  (define-match-expander $$I
-    (lambda (stx)
-      (syntax-case stx ()
-        [($$I S (var ...))
-         #'(or (struct interrupted-wrap (tag (struct S (var ...))))
-               (struct S (var ...)))]
-        [($$I S (var ...) tag)
-         #'(or (struct interrupted-wrap (tag (struct S (var ...))))
-               (and (app (lambda (_) #f) tag)
-                    (struct S (var ...))))])))
-  
-  (define-match-expander $$E
-    (lambda (stx)
-      (syntax-case stx ()
-        [($$E S (var ...))
-         #'(or (struct interrupted-wrap (_tag (struct S (var ...))))
-               (struct error-wrap (_exn _tag (struct S (var ...))))
-               (struct S (var ...)))])))
+       (? not-error-wrap? 
+          (app unwrap (struct S (var ...)))
+          (app extract-tag tag))]))
 
   (define-match-expander Wrap
     (syntax-rules ()
       [(Wrap x)
-       (or (struct interrupted-wrap (_tag x))
-           (struct error-wrap (_exn _tag x))
-           x)]))
+       (app unwrap x)]))
   
+  (define (unwrap x)
+    (match x
+      [(struct interrupted-wrap (tag inner))
+       inner]
+      [(struct error-wrap (exn tag inner))
+       inner]
+      [else x]))
+
+  (define (extract-exni x)
+    (match x
+      [(struct interrupted-wrap (tag inner))
+       (cons #f tag)]
+      [(struct error-wrap (exn tag inner))
+       (cons exn tag)]
+      [else #f]))
+
+  (define (extract-tag x)
+    (match x
+      [(struct interrupted-wrap (tag inner))
+       tag]
+      [(struct error-wrap (exn tag inner))
+       tag]
+      [else #f]))
+
+  (define (not-error-wrap? x)
+    (not (error-wrap? x)))
+
   ;; lift/wrap : ('a -> 'b) boolean -> Wrap('a) -> Wrap('b)
   (define (lift/wrap f preserve-tag?)
     (lambda (x)
@@ -155,16 +132,6 @@
   (define (wrapped? x)
     (or (interrupted-wrap? x)
         (error-wrap? x)))
-
-;  (define-match-expander $$E
-;    (lambda (stx)
-;      (syntax-case stx (@)
-;        [($$E S (var ...))
-;         #'($$ S (var ...) _exni)]
-;        [($$E S (var ...) @ tag)
-;         #'($$ S (var ...) (cons #f tag))]
-;        [($$E S (var ...) @ tag exn)
-;         #'($$ S (var ...) (cons exn tag))])))
 
   ;; Utilities for finding subderivations
   

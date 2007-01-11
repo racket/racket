@@ -62,7 +62,7 @@
   
   (define (show-step step partition)
     (cond [(step? step)
-           (display (step-note step))
+           (display (step-type->string (protostep-type step)))
            (newline)
            (show-term (step-e1 step) partition)
            (display "  ==>")
@@ -73,7 +73,7 @@
            (display (exn-message (misstep-exn step)))
            (newline)
            (show-term (misstep-e1 step) partition)]))
-
+  
   (define (show-term stx partition)
     (define-values (datum flat=>stx stx=>flat)
       (table stx partition 0 'always))

@@ -32,9 +32,9 @@
 
   ;; Struct for one-by-one stepping
 
-  (define-struct prestep (redex e1 lctx))
-  (define-struct poststep (contractum e2 note lctx))
-
+  (define-struct (prestep protostep) (redex e1))
+  (define-struct (poststep protostep) (contractum e2))
+  
   ;; Macro Stepper
 
   (define view@
@@ -210,9 +210,6 @@
           ;; steps : cursor
           (define steps #f)
 
-          ;; zoomed? : boolean
-          (define zoomed? #f)
-
           (define warnings-frame #f)
 
           (define/public (add-deriv d)
@@ -331,17 +328,6 @@
               (set! synth-deriv #f))
             (refresh))
 
-          (define/private (navigate-zoom-in)
-            (set! zoomed? #t)
-            (update))
-
-          (define/private (navigate-zoom-out)
-            (set! zoomed? #f)
-            (update))
-
-          (define/private (navigate-skip-to)
-            '...)
-
           (define/private (insert-step-separator text)
             (send sbview add-text "\n    ")
             (send sbview add-text
@@ -371,7 +357,7 @@
             (update)
             (send text scroll-to-position (unbox start-box) #f (unbox end-box)))
           
-          (define (update:show-prefix)
+          (define/private (update:show-prefix)
             ;; Show the final terms from the cached synth'd derivs
             (for-each (lambda (d+sd)
                         (let ([e2 (lift/deriv-e2 (cdr d+sd))])
@@ -380,7 +366,7 @@
                               (send sbview add-text "Error\n"))))
                       (reverse derivs-prefix)))
           
-          (define (update:show-current-step)
+          (define/private (update:show-current-step)
             (when steps
               (let ([step (cursor:current steps)])
                 (cond [(step? step)
@@ -394,45 +380,50 @@
                       [(not step)
                        (update:show-final)]))))
           
-          (define (update:show-lctx lctx)
+          (define/private (update:show-lctx lctx)
             (when (pair? lctx)
               (for-each (lambda (bc)
                           (send sbview add-text "While executing macro transformer in:\n")
-                          (insert-syntax/redex (cdr bc) (car bc)))
+                          (insert-syntax/redex (cddr bc) (cadr bc)))
                         lctx)
               (send sbview add-text "\n")))
 
-          (define (update:show-step step)
-            (unless zoomed?
-              (update:show-lctx (step-lctx step))
-              (insert-syntax/redex (step-e1 step) (foci (step-redex step)))
-              (insert-step-separator (step-note step))
-              (insert-syntax/contractum (step-e2 step) (foci (step-contractum step))))
-            (when zoomed?
-              (for-each (lambda (s) (insert-syntax s)) (foci (step-redex step)))
-              (insert-step-separator (step-note step))
-              (for-each (lambda (s) (insert-syntax s)) (foci (step-contractum step)))))
+          (define/private (update:show-protostep step)
+            (update:show-lctx (protostep-lctx step)))
 
-          (define (update:show-prestep step)
-            (update:show-lctx (prestep-lctx step))
-            (insert-step-separator/small "Find redex")
+          (define/private (update:separator step)
+            (insert-step-separator (step-type->string (protostep-type step))))
+
+          (define/private (update:separator/small step)
+            (insert-step-separator/small (step-type->string (protostep-type step))))
+          
+          (define/private (update:show-step step)
+            (update:show-protostep step)
+            (insert-syntax/redex (step-e1 step) (foci (step-redex step)))
+            (update:separator step)
+            (insert-syntax/contractum (step-e2 step) (foci (step-contractum step))))
+          
+          (define/private (update:show-prestep step)
+            (update:show-protostep step)
+            (update:separator/small step)
             (insert-syntax/redex (prestep-e1 step) (foci (prestep-redex step))))
 
-          (define (update:show-poststep step)
-            (update:show-lctx (poststep-lctx step))
-            (insert-step-separator/small (poststep-note step))
+          (define/private (update:show-poststep step)
+            (update:show-protostep step)
+            (update:separator/small step)
             (insert-syntax/contractum (poststep-e2 step) (foci (poststep-contractum step))))
           
-          (define (update:show-misstep step)
+          (define/private (update:show-misstep step)
+            (update:show-protostep step)
             (insert-syntax/redex (misstep-e1 step) (foci (misstep-redex step)))
-            (insert-step-separator "Error")
+            (update:separator step)
             (send sbview add-text (exn-message (misstep-exn step)))
             (send sbview add-text "\n")
             (when (exn:fail:syntax? (misstep-exn step))
               (for-each (lambda (e) (send sbview add-syntax e))
                         (exn:fail:syntax-exprs (misstep-exn step)))))
           
-          (define (update:show-final)
+          (define/private (update:show-final)
             (let ([result (lift/deriv-e2 synth-deriv)])
               (when result
                 (send sbview add-text "Expansion finished\n")
@@ -440,7 +431,7 @@
               (unless result
                 (send sbview add-text "Error\n"))))
 
-          (define (update:show-suffix)
+          (define/private (update:show-suffix)
             (when (pair? derivs)
               (for-each (lambda (suffix-deriv)
                           (send sbview add-syntax (lift/deriv-e1 suffix-deriv)))
@@ -454,7 +445,7 @@
             (send text begin-edit-sequence)
             (send sbview erase-all)
 
-            (unless zoomed? (update:show-prefix))
+            (update:show-prefix)
             (send sbview add-separator)
             (set! position-of-interest (send text last-position))
             (update:show-current-step)
@@ -492,15 +483,8 @@
             (send nav:end enable (and steps (cursor:can-move-next? steps)))
             (send nav:up enable (and (pair? derivs-prefix)))
             (send nav:down enable 
-                  (and (pair? derivs)))
-            #;
-            (send nav:zoom-in enable 
-                  (and (not zoomed?) steps (step? (cursor:current steps))))
-            #;
-            (send nav:zoom-out enable zoomed?)
-            #;
-            (send nav:jump-to enable #f))
-
+                  (and (pair? derivs))))
+          
           ;; --
 
           ;; refresh/resynth : -> void
@@ -584,13 +568,13 @@
           (define/private (reduce:one-by-one rs)
             (let loop ([rs rs])
               (match rs
-                [(cons (struct step (redex contractum e1 e2 note lctx)) rs)
-                 (list* (make-prestep redex e1 lctx)
-                        (make-poststep contractum e2 note lctx)
+                [(cons (struct step (d l t redex contractum e1 e2)) rs)
+                 (list* (make-prestep d l "Find redex" redex e1)
+                        (make-poststep d l t contractum e2)
                         (loop rs))]
-                [(cons (struct misstep (redex e1 exn)) rs)
-                 (list* (make-prestep redex e1 null)
-                        (make-misstep redex e1 exn)
+                [(cons (struct misstep (d l t redex e1 exn)) rs)
+                 (list* (make-prestep d l "Find redex" redex e1)
+                        (make-misstep d l t redex e1 exn)
                         (loop rs))]
                 ['()
                  null])))

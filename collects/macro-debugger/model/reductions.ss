@@ -21,22 +21,31 @@
     (syntax-id-rules ()
       [Block (values block-reductions bderiv-es1 bderiv-es2)]))
 
+  ;; Syntax
+
+  (define-syntax match/with-derivation
+    (syntax-rules ()
+      [(match/with-derivation d . clauses)
+       (let ([dvar d])
+         (with-derivation dvar
+           (match dvar . clauses)))]))
+  
   ;; Reductions
 
   ;; reductions : Derivation -> ReductionSequence
   (define (reductions d)
-    (match d
+    (match/with-derivation d
 
       ;; Primitives
       [(struct p:variable (e1 e2 rs))
        (if (bound-identifier=? e1 e2)
            null
-           (list (walk e1 e2 "Resolve variable (remove extra marks)")))]
+           (list (walk e1 e2 'resolve-variable)))]
       [(IntQ p:module (e1 e2 rs #f body))
        (with-syntax ([(?module name language . BODY) e1])
          (let ([ctx (lambda (x) (d->so e1 `(,#'?module ,#'name ,#'language ,x)))]
-               [body-e1 (match body [($$ deriv (body-e1 _) _) body-e1])])
-           (cons (walk e1 (ctx body-e1) "Tag #%module-begin")
+               [body-e1 (match body [(AnyQ deriv (body-e1 _)) body-e1])])
+           (cons (walk e1 (ctx body-e1) 'tag-module-begin)
                  (with-context ctx
                    (reductions body)))))]
       [(IntQ p:module (e1 e2 rs #t body))
@@ -106,7 +115,7 @@
                  [List LDERIV lderiv])])
          (if (eq? tagged-stx e1)
              tail
-             (cons (walk e1 tagged-stx "Tag application") tail)))]
+             (cons (walk e1 tagged-stx 'tag-app) tail)))]
       [(AnyQ p:lambda (e1 e2 rs renames body) exni)
        (R e1 _
           [! exni]
@@ -114,7 +123,7 @@
           [#:pattern (?lambda ?formals . ?body)]
           [#:rename (syntax/skeleton e1 (?lambda ?formals* . ?body*))
                     #'?formals #'?formals*
-                    "Rename formal parameters"]
+                    'rename-lambda]
           [Block ?body body])]
       [(struct p:case-lambda (e1 e2 rs renames+bodies))
        #;
@@ -126,14 +135,14 @@
            (syntax/skeleton e1 (?case-lambda [?formals* . ?body*] ...))
            (syntax->list #'(?formals ...))
            (syntax->list #'(?formals* ...))
-           "Rename formal parameters"]
+           'rename-case-lambda]
           [Block (?body ...) (map cdr renames+bodies)])
        (with-syntax ([(?case-lambda [?formals . ?body] ...) e1]
                      [((?formals* . ?body*) ...) (map car renames+bodies)])
          (let ([mid (syntax/skeleton e1 (?case-lambda [?formals* . ?body*] ...))])
            (cons (walk/foci/E (syntax->list #'(?formals ...))
                               (syntax->list #'(?formals* ...))
-                              e1 mid "Rename formal parameters")
+                              e1 mid 'rename-case-lambda)
                  (R mid (CASE-LAMBDA [FORMALS . BODY] ...)
                     [Block (BODY ...) (map cdr renames+bodies)]))))]
       [(AnyQ p:let-values (e1 e2 rs renames rhss body) exni)
@@ -145,7 +154,7 @@
            (syntax/skeleton e1 (?let-values ([?vars* ?rhs*] ...) . ?body*))
            (syntax->list #'(?vars ...))
            (syntax->list #'(?vars* ...))
-           "Rename bound variables"]
+           'rename-let-values]
           [Expr (?rhs ...) rhss]
           [Block ?body body])]
       [(AnyQ p:letrec-values (e1 e2 rs renames rhss body) exni)
@@ -157,7 +166,7 @@
            (syntax/skeleton e1 (?letrec-values ([?vars* ?rhs*] ...) . ?body*))
            (syntax->list #'(?vars ...))
            (syntax->list #'(?vars* ...))
-           "Rename bound variables"]
+           'rename-letrec-values]
           [Expr (?rhs ...) rhss]
           [Block ?body body])]
       [(AnyQ p:letrec-syntaxes+values
@@ -172,34 +181,34 @@
                               . ?body*))
            (syntax->list #'(?svars ...))
            (syntax->list #'(?svars* ...))
-           "Rename bound variables"]
+           'rename-lsv]
           [Expr (?srhs ...) srhss]
           ;; If vrenames is #f, no var bindings to rename
           [#:if vrenames
                 [#:bind (([?vvars** ?vrhs**] ...) . ?body**) vrenames]
                 [#:rename
                  (syntax/skeleton e1 (?lsv ([?svars* ?srhs*] ...)
-                                           ([?vars** ?vrhs**] ...)
+                                           ([?vvars** ?vrhs**] ...)
                                         . ?body**))
                  (syntax->list #'(?vvars* ...))
                  (syntax->list #'(?vvars** ...))
-                 "Rename bound variables"]]
+                 'rename-lsv]]
           [Expr (?vrhs ...) vrhss]
           [Block ?body body]
           => (lambda (mid)
-               (list (walk mid e2 "Remove syntax bindings"))))]
+               (list (walk mid e2 'lsv-remove-syntax))))]
       ;; The auto-tagged atomic primitives
       [(AnyQ p:#%datum (e1 e2 rs tagged-stx) exni)
        (append (if (eq? e1 tagged-stx)
                    null
-                   (list (walk e1 tagged-stx "Tag datum")))
+                   (list (walk e1 tagged-stx 'tag-datum)))
                (if exni
                    (list (stumble tagged-stx (car exni)))
                    null))]
       [(AnyQ p:#%top (e1 e2 rs tagged-stx) exni)
        (append (if (eq? e1 tagged-stx)
                    null
-                   (list (walk e1 tagged-stx "Tag top-level variable")))
+                   (list (walk e1 tagged-stx 'tag-top)))
                (if exni
                    (list (stumble tagged-stx (car exni)))
                    null))]
@@ -262,7 +271,7 @@
       
       [(IntQ lift-deriv (e1 e2 first lifted-stx second))
        (append (reductions first)
-               (list (walk (deriv-e2 first) lifted-stx "Capture lifts"))
+               (list (walk (deriv-e2 first) lifted-stx 'capture-lifts))
                (reductions second))]
 
       ;; Skipped
@@ -277,7 +286,7 @@
     (match tx
       [(struct transformation (e1 e2 rs me1 me2 locals))
        (append (reductions-locals e1 locals)
-               (list (walk e1 e2 "Macro transformation")))]
+               (list (walk e1 e2 'macro-step)))]
       [(IntW transformation (e1 e2 rs me1 me2 locals) 'locals)
        (reductions-locals e1 locals)]
       [(ErrW transformation (e1 e2 rs me1 me2 locals) 'bad-transformer exn)
@@ -293,19 +302,19 @@
 
   ;; reductions-local : LocalAction -> ReductionSequence
   (define (reductions-local local)
-    (match local
+    (match/with-derivation local
       [(struct local-expansion (e1 e2 me1 me2 deriv))
        (reductions deriv)]
       [(struct local-lift (expr id))
-       (list (walk expr id "Macro lifted expression to top-level"))]
+       (list (walk expr id 'local-lift))]
       [(struct local-lift-end (decl))
-       (list (walk decl decl "Declaration lifted to end of module"))]
+       (list (walk decl decl 'module-lift))]
       [(struct local-bind (deriv))
        (reductions deriv)]))
 
   ;; list-reductions : ListDerivation -> ReductionSequence
   (define (list-reductions ld)
-    (match ld
+    (match/with-derivation ld
       [(IntQ lderiv (es1 es2 derivs))
        (let loop ([derivs derivs] [suffix es1])
          (cond [(pair? derivs)
@@ -323,7 +332,7 @@
 
   ;; block-reductions : BlockDerivation -> ReductionSequence
   (define (block-reductions bd)
-    (match bd
+    (match/with-derivation bd
       ;; If interrupted in pass1, skip pass2
       [(IntW bderiv (es1 es2 pass1 trans pass2) 'pass1)
        (let-values ([(reductions stxs) (brules-reductions pass1 es1)])
@@ -334,8 +343,8 @@
          (append reductions1
                  (if (eq? trans 'letrec)
                      (match pass2
-                       [($$ lderiv (pass2-es1 _ _) _exni)
-                        (list (walk stxs1 pass2-es1 "Transform block to letrec"))])
+                       [(AnyQ lderiv (pass2-es1 _ _))
+                        (list (walk stxs1 pass2-es1 'block->letrec))])
                      null)
                  (list-reductions pass2)))]
       [#f null]))
@@ -343,61 +352,63 @@
   ;; brules-reductions : (list-of-BRule) syntax-list -> ReductionSequence syntax-list
   (define (brules-reductions brules all-stxs)
     (let loop ([brules brules] [suffix all-stxs] [prefix null] [rss null])
-      (match brules
-        [(cons (struct b:expr (renames head)) next)
-         (let ([estx (deriv-e2 head)])
-           (loop next (stx-cdr suffix) (cons estx prefix)
-                 (cons (with-context (lambda (x)
-                                       (revappend prefix (cons x (stx-cdr suffix))))
-                         (reductions head))
-                       rss)))]
-        [(cons (IntW b:expr (renames head) tag) '())
-         (loop '() #f #f 
-               (cons (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                                   (reductions head))
-                     rss))]
-        [(cons (struct b:defvals (renames head)) next)
-         (let ([head-rs 
-                (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                  (reductions head))])
-           (loop next (stx-cdr suffix) (cons (deriv-e2 head) prefix)
-                 (cons head-rs rss)))]
-        [(cons ($$ b:defstx (renames head rhs) _exni) next)
-         (let* ([estx (deriv-e2 head)]
-                [estx2 (with-syntax ([(?ds ?vars ?rhs) estx]
-                                     [?rhs* (deriv-e2 rhs)])
-                         ;;FIXME
-                         #'(?ds ?vars ?rhs*))])
-           (loop next (cdr suffix) (cons estx2 prefix)
-                 (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                               (cons (with-context (CC (?ds ?vars ?rhs) estx ?rhs)
-                                                   (reductions rhs))
-                                     (cons (reductions head)
-                                           rss)))))]
-        [(cons (struct b:splice (renames head tail)) next)
-         (loop next tail prefix
-               (cons (list (walk/foci (deriv-e2 head)
-                                      (stx-take tail
-                                                (- (stx-improper-length tail)
-                                                   (stx-improper-length (stx-cdr suffix))))
-                                      (E (revappend prefix 
-                                                    (cons (deriv-e2 head) (stx-cdr suffix))))
-                                      (E (revappend prefix tail))
-                                      "Splice block-level begin"))
-                     (cons (with-context (lambda (x) 
-                                           (revappend prefix (cons x (stx-cdr suffix))))
-                             (reductions head))
-                           rss)))]
-        [(cons (struct b:begin (renames head derivs)) next)
-         ;; FIXME
-         (error 'unimplemented)]
-        [(cons (struct error-wrap (exn tag _inner)) '())
-         (values (list (make-misstep suffix (E (revappend prefix suffix)) exn))
-                 (revappend prefix suffix))]
-        ['()
-         (values (apply append (reverse rss))
-                 (revappend prefix suffix))])))
-
+      (cond [(pair? brules)
+             (let ([brule0 (car brules)]
+                   [next (cdr brules)])
+               (match/with-derivation brule0
+                 [(struct b:expr (renames head))
+                  (let ([estx (deriv-e2 head)])
+                    (loop next (stx-cdr suffix) (cons estx prefix)
+                          (cons (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
+                                  (reductions head))
+                                rss)))]
+                 [(IntW b:expr (renames head) tag)
+                  (loop next #f #f 
+                        (cons (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
+                                (reductions head))
+                              rss))]
+                 [(struct b:defvals (renames head))
+                  (let ([head-rs 
+                         (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
+                           (reductions head))])
+                    (loop next (stx-cdr suffix) (cons (deriv-e2 head) prefix)
+                          (cons head-rs rss)))]
+                 [(AnyQ b:defstx (renames head rhs))
+                  (let* ([estx (deriv-e2 head)]
+                         [estx2 (with-syntax ([(?ds ?vars ?rhs) estx]
+                                              [?rhs* (deriv-e2 rhs)])
+                                             ;;FIXME
+                                  (datum->syntax-object estx `(,#'?ds ,#'?vars ,#'?rhs*) estx estx))])
+                    (loop next (cdr suffix) (cons estx2 prefix)
+                          (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
+                            (cons (with-context (CC (?ds ?vars ?rhs) estx ?rhs)
+                                    (reductions rhs))
+                                  (cons (reductions head)
+                                        rss)))))]
+                 [(struct b:splice (renames head tail))
+                  (loop next tail prefix
+                        (cons (list (walk/foci (deriv-e2 head)
+                                               (stx-take tail
+                                                         (- (stx-improper-length tail)
+                                                            (stx-improper-length (stx-cdr suffix))))
+                                               (E (revappend prefix 
+                                                             (cons (deriv-e2 head) (stx-cdr suffix))))
+                                               (E (revappend prefix tail))
+                                               'splice-block))
+                              (cons (with-context (lambda (x) 
+                                                    (revappend prefix (cons x (stx-cdr suffix))))
+                                      (reductions head))
+                                    rss)))]
+                 [(struct b:begin (renames head derivs))
+                  ;; FIXME
+                  (error 'unimplemented)]
+                 [(struct error-wrap (exn tag _inner))
+                  (values (list (stumble/E suffix (E (revappend prefix suffix)) exn))
+                          (revappend prefix suffix))]))]
+            [(null? brules)
+             (values (apply append (reverse rss))
+                     (revappend prefix suffix))])))
+  
   ;; mbrules-reductions : MBRules (list-of syntax) -> ReductionSequence
   ;; The reprocess-on-lift? argument controls the behavior of a mod:lift event.
   ;; In Pass1, #t; in Pass2, #f.
@@ -408,71 +419,65 @@
             (let loop ([mbrules mbrules] [suffix all-stxs] [prefix null])
               (define (the-context x)
                 (revappend prefix (cons x (stx-cdr suffix))))
-              ;(printf "** MB loop~n")
-              ;(printf "  rules: ~s~n" mbrules)
-              ;(printf "  suffix: ~s~n" suffix)
-              ;(printf "  prefix: ~s~n" prefix)
-              (match mbrules
-                [(cons (struct mod:skip ()) next)
-                 (loop next (stx-cdr suffix) (cons (stx-car suffix) prefix))]
-                [(cons (struct mod:cons (head)) next)
-                 (append (with-context the-context (append (reductions head)))
-                         (let ([estx (and (deriv? head) (deriv-e2 head))])
-                           (loop next (stx-cdr suffix) (cons estx prefix))))]
-                [(cons (AnyQ mod:prim (head prim)) next)
-                 (append (with-context the-context
-                           (append (reductions head)
-                                   (reductions prim)))
-                         (let ([estx (and (deriv? head) (deriv-e2 head))])
-                           (loop next (stx-cdr suffix) (cons estx prefix))))]
-                [(cons (ErrW mod:splice (head stxs) exn) next)
-                 (append (with-context the-context (reductions head))
-                         (list (stumble (deriv-e2 head) exn)))]
-                [(cons (struct mod:splice (head stxs)) next)
-                 ;(printf "suffix is: ~s~n" suffix)
-                 ;(printf "stxs is: ~s~n" stxs)
-                 (append
-                  (with-context the-context (reductions head))
-                  (let ([suffix-tail (stx-cdr suffix)]
-                        [head-e2 (deriv-e2 head)])
-                    (cons (walk/foci head-e2
-                                     (stx-take stxs
-                                               (- (stx-improper-length stxs)
-                                                  (stx-improper-length suffix-tail)))
-                                     (E (revappend prefix (cons head-e2 suffix-tail)))
-                                     (E (revappend prefix stxs))
-                                     "Splice module-level begin")
+              (cond [(pair? mbrules)
+                     (let ([mbrule0 (car mbrules)]
+                           [next (cdr mbrules)])
+                       (match/with-derivation mbrule0
+                         [(struct mod:skip ())
+                          (loop next (stx-cdr suffix) (cons (stx-car suffix) prefix))]
+                         [(struct mod:cons (head))
+                          (append (with-context the-context (append (reductions head)))
+                                  (let ([estx (and (deriv? head) (deriv-e2 head))])
+                                    (loop next (stx-cdr suffix) (cons estx prefix))))]
+                         [(AnyQ mod:prim (head prim))
+                          (append (with-context the-context
+                                    (append (reductions head)
+                                            (reductions prim)))
+                                  (let ([estx (and (deriv? head) (deriv-e2 head))])
+                                    (loop next (stx-cdr suffix) (cons estx prefix))))]
+                         [(ErrW mod:splice (head stxs) exn)
+                          (append (with-context the-context (reductions head))
+                                  (list (stumble (deriv-e2 head) exn)))]
+                         [(struct mod:splice (head stxs))
+                          (append
+                           (with-context the-context (reductions head))
+                           (let ([suffix-tail (stx-cdr suffix)]
+                                 [head-e2 (deriv-e2 head)])
+                             (cons (walk/foci head-e2
+                                              (stx-take stxs
+                                                        (- (stx-improper-length stxs)
+                                                           (stx-improper-length suffix-tail)))
+                                              (E (revappend prefix (cons head-e2 suffix-tail)))
+                                              (E (revappend prefix stxs))
+                                              'splice-module)
                           (loop next stxs prefix))))]
-                [(cons (struct mod:lift (head stxs)) next)
-                 ;(printf "suffix is: ~s~n~n" suffix)
-                 ;(printf "stxs is: ~s~n" stxs)
-                 (append
-                  (with-context the-context (reductions head))
-                  (let ([suffix-tail (stx-cdr suffix)]
-                        [head-e2 (deriv-e2 head)])
-                    (let ([new-suffix (append stxs (cons head-e2 suffix-tail))])
-                      (cons (walk/foci null
-                                       stxs
-                                       (E (revappend prefix (cons head-e2 suffix-tail)))
-                                       (E (revappend prefix new-suffix))
-                                       "Splice definitions from lifted expressions")
-                            (loop next
-                                  new-suffix
-                                  prefix)))))]
-                [(cons (struct mod:lift-end (tail)) next)
-                 (append
-                  (if (pair? tail)
-                      (list (walk/foci null
-                                       tail
-                                       (E (revappend prefix suffix))
-                                       (E (revappend prefix tail))
-                                       "Splice lifted module declarations"))
-                      null)
-                  (loop next tail prefix))]
-                ['()
-                 (set! final-stxs (reverse prefix))
-                 null]))])
+                         [(struct mod:lift (head stxs))
+                          (append
+                           (with-context the-context (reductions head))
+                           (let ([suffix-tail (stx-cdr suffix)]
+                                 [head-e2 (deriv-e2 head)])
+                             (let ([new-suffix (append stxs (cons head-e2 suffix-tail))])
+                               (cons (walk/foci null
+                                                stxs
+                                                (E (revappend prefix (cons head-e2 suffix-tail)))
+                                                (E (revappend prefix new-suffix))
+                                                'splice-lifts)
+                                     (loop next
+                                           new-suffix
+                                           prefix)))))]
+                         [(struct mod:lift-end (tail))
+                          (append
+                           (if (pair? tail)
+                               (list (walk/foci null
+                                                tail
+                                                (E (revappend prefix suffix))
+                                                (E (revappend prefix tail))
+                                                'splice-module-lifts))
+                               null)
+                           (loop next tail prefix))]))]
+                    [(null? mbrules)
+                     (set! final-stxs (reverse prefix))
+                     null]))])
       (values reductions final-stxs)))
-  
   
   )

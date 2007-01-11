@@ -852,14 +852,9 @@
   ;; show-mrule? : MRule -> boolean
   (define (show-transformation? tx)
     (match tx
-      [($$ transformation (e1 e2 rs me1 me2 locals))
-       (let ([rs (reverse rs)])
-         (and (pair? rs) (show-macro? (car rs))))]
-      [($$ interrupted-wrap (tag inner))
-       (show-transformation? inner)]
-      [($$ error-wrap (exn tag inner))
-       (show-transformation? inner)]))
-
+      [(AnyQ transformation (e1 e2 rs me1 me2 locals))
+       (ormap show-macro? rs)]))
+  
   (define (map/2values f items)
     (if (null? items)
         (values null null)
@@ -983,7 +978,7 @@
                            (decompose-letrec letrec-deriv)])]
                        [(list)
                         (match pass2
-                          [($$ lderiv (_ _ derivs) _)
+                          [(AnyQ lderiv (_ _ derivs))
                            (values null null derivs)]
                           [#f
                            (values null null null)])])]

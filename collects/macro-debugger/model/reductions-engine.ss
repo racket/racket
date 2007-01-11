@@ -7,14 +7,17 @@
            (all-from "steps.ss"))
   
   ;; A Context is (syntax -> syntax)
-  ;; A BigContext is (list-of (cons Syntaxes Syntax))
-  ;;   local expansion contexts: pairs of foci, term
+  ;; A BigContext is (list-of (cons Derivation (cons Syntaxes Syntax)))
+  ;;   local expansion contexts: deriv, foci, term
   
   ;; context: parameter of Context
   (define context (make-parameter (lambda (x) x)))
 
   ;; big-context: parameter of BigContext
   (define big-context (make-parameter null))
+
+  ;; current-derivation : parameter of Derivation
+  (define current-derivation (make-parameter #f))
   
   (define-syntax with-context
     (syntax-rules ()
@@ -22,11 +25,18 @@
        (let ([E (context)])
          (parameterize ([context (lambda (x) (E (f x)))])
            . body))]))
+
+  (define-syntax with-derivation
+    (syntax-rules ()
+      [(with-derivation d . body)
+       (parameterize ((current-derivation d)) . body)]))
   
   (define-syntax with-new-local-context
     (syntax-rules ()
       [(with-new-local-context e . body)
-       (parameterize ([big-context (cons (cons (list e) (E e)) (big-context))]
+       (parameterize ([big-context 
+                       (cons (cons (current-derivation) (cons (list e) (E e)))
+                             (big-context))]
                       [context (lambda (x) x)])
          . body)]))
   
@@ -79,9 +89,9 @@
        #'(let-values ([(form2-var foci1-var foci2-var description-var)
                        (with-syntax ([p f])
                          (values form2 foci1 foci2 description))])
-           (cons (walk-rename/foci/E foci1-var foci2-var
-                                     f form2-var
-                                     description-var)
+           (cons (walk/foci/E foci1-var foci2-var
+                              f form2-var
+                              description-var)
                  (R** form2-var p . more)))]
       [(R** f p [#:walk form2 description] . more)
        #'(let-values ([(form2-var description-var)
@@ -106,7 +116,7 @@
                   ;; If this is the key, then insert the misstep here and stop.
                   ;; This stops processing *within* an error-wrapped prim.
                   (if (or (eq? key #f) (eq? key (cdr info)))
-                      (list (make-misstep f (E f) (car info)))
+                      (list (stumble f (car info)))
                       (continue))]
                  [else
                   (continue)]))]
@@ -115,16 +125,6 @@
        #'(let-values ([(reducer get-e1 get-e2) Generator])
            (R** f p [reducer get-e1 get-e2 hole0 fill0] . more))]
       
-;      ;; Expression case
-;      [(R** f p [hole0 fill0] . more)
-;       #'(R** f p [reductions deriv-e1 deriv-e2 hole0 fill0] . more)]
-;      ;; List case
-;      [(R** f p [List hole0 fill0] . more)
-;       #'(R** f p [list-reductions lderiv-es1 lderiv-es2 hole0 fill0] . more)]
-;      ;; Block case
-;      [(R** f p [Block hole0 fill0] . more)
-;       #'(R** f p [block-reductions bderiv-es1 bderiv-es2 hole0 fill0] . more)]
-
       ;; Implementation for (hole ...) sequences
       [(R** form-var pattern
             [f0 get-e1 get-e2 (hole0 :::) fill0s] . more)
@@ -168,33 +168,34 @@
   
   ;; -----------------------------------
   
-  ;; walk : syntax(s) syntax(s) [string] -> Reduction
+  ;; walk : syntax(s) syntax(s) StepType -> Reduction
   ;; Lifts a local step into a term step.
-  (define walk
-    (case-lambda
-      [(e1 e2) (walk e1 e2 #f)]
-      [(e1 e2 note) (make-rewrite-step e1 e2 (E e1) (E e2) note (big-context))]))
+  (define (walk e1 e2 type)
+    (make-step (current-derivation) (big-context) type
+               e1 e2 (E e1) (E e2)))
   
-  ;; walk/foci/E : syntax(s) syntax(s) syntax syntax string -> Reduction
-  (define (walk/foci/E focus1 focus2 e1 e2 note)
-    (walk/foci focus1 focus2 (E e1) (E e2) note))
-
-  ;; walk-rename/foci/E : syntax(s) syntax(s) syntax syntax string -> Reduction
-  (define (walk-rename/foci/E focus1 focus2 e1 e2 note)
-    (make-rename-step focus1 focus2 (E e1) (E e2) note (big-context)))
-
-  ;; walk/foci : syntax(s) syntax(s) syntax syntax string -> Reduction
-  (define (walk/foci focus1 focus2 Ee1 Ee2 note)
-    (make-rewrite-step focus1 focus2 Ee1 Ee2 note (big-context)))
-
+  ;; walk/foci/E : syntax(s) syntax(s) syntax syntax StepType -> Reduction
+  (define (walk/foci/E focus1 focus2 e1 e2 type)
+    (walk/foci focus1 focus2 (E e1) (E e2) type))
+  
+  ;; walk/foci : syntax(s) syntax(s) syntax syntax StepType -> Reduction
+  (define (walk/foci focus1 focus2 Ee1 Ee2 type)
+    (make-step (current-derivation) (big-context) type
+               focus1 focus2 Ee1 Ee2))
+  
   ;; stumble : syntax exception -> Reduction
   (define (stumble stx exn)
-    (make-misstep stx (E stx) exn))
+    (make-misstep (current-derivation) (big-context) 'error
+                  stx (E stx) exn))
+
+  ;; stumble/E : syntax(s) syntax exn -> Reduction
+  (define (stumble/E focus Ee1 exn)
+    (make-misstep (current-derivation) (big-context) 'error
+                  focus Ee1 exn))
+  
   ;; ------------------------------------
   
   (define (revappend a b)
     (cond [(pair? a) (revappend (cdr a) (cons (car a) b))]
           [(null? a) b]))
-  
-
   )
