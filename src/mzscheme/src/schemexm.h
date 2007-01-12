@@ -574,5 +574,5 @@
 #define scheme_signal_received (scheme_extension_table->scheme_signal_received)
 #define scheme_char_strlen (scheme_extension_table->scheme_char_strlen)
 #ifdef MZ_PRECISE_GC
-#pragma GC_VARIABLE_SATCK_THOUGH_TABLE
+#pragma GC_VARIABLE_STACK_THOUGH_TABLE
 #endif

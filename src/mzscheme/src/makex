@@ -176,7 +176,7 @@ if ($list) {
 
 if ($gcalert) {
   print "#ifdef MZ_PRECISE_GC\n";
-  print "#pragma GC_VARIABLE_SATCK_THOUGH_TABLE\n";
+  print "#pragma GC_VARIABLE_STACK_THOUGH_TABLE\n";
   print "#endif\n";
 }
 
