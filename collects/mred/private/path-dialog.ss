@@ -51,7 +51,7 @@
   (define (path->pname path isdir?)
     (let* ([name (if (member (path->string path) '("." ".."))
                    (path->string path) ; avoid segfault bug (PR8481)
-                   (bytes->string/utf-8 (path-element->bytes path)))]
+                   (bytes->string/locale (path-element->bytes path)))]
            [name (regexp-replace end-separators-rx name "")]
            [name (if (<= 199 (string-length name))
                    (string-append (substring name 0 195) "...")

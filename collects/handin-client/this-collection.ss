@@ -4,12 +4,9 @@
     (let* ([p (syntax-source stx)]
            [dir  (and (path? p) (let-values ([(b _1 _2) (split-path p)]) b))]
            [name (and (path? dir)
-                      ;; path->string + bytes->path is a hack to get a proper
-                      ;; string because there is no path-element->string
-                      (path->string
-                       (bytes->path
-                        (path-element->bytes
-                         (let-values ([(_1 p _2) (split-path dir)]) p)))))])
+                      (bytes->string/locale
+                       (path-element->bytes
+                        (let-values ([(_1 p _2) (split-path dir)]) p))))])
       ;; check that we are installed as a top-level collection (this is needed
       ;; because there are some code bits (that depend on bindings from this
       ;; file) that expect this to be true)
