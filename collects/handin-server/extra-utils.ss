@@ -30,8 +30,8 @@
 
 (provide submission-dir)
 (define submission-dir-re
-  (regexp (string-append "[/\\]active[/\\]([^/\\]+)[/\\](?:[^/\\]+)"
-                         "[/\\](?:SUCCESS-[0-9]+|ATTEMPT)[/\\]?$")))
+  (regexp (string-append "[/\\]([^/\\]+)[/\\](?:[^/\\]+)[/\\]"
+                         "(?:SUCCESS-[0-9]+|ATTEMPT)[/\\]?$")))
 (define (submission-dir)
   (let ([m (regexp-match submission-dir-re
                          (path->string (current-directory)))])
@@ -165,10 +165,9 @@
                     (read-bytes-line (current-input-port) 'any)))])
       (unless (eof-object? line)
         (let* ([line (regexp-replace #rx#"[ \t]+$" line #"")]
-               [line (if (and untabify?
-                              (regexp-match-positions #rx"\t" line))
+               [line (if (and untabify? (regexp-match? #rx"\t" line))
                        (untabify line) line)])
-          (when (and bad-re (regexp-match bad-re line))
+          (when (and bad-re (regexp-match? bad-re line))
             (error* "You cannot use \"~a\" in ~a!~a"
                     (if (regexp? bad-re) (object-name bad-re) bad-re)
                     (currently-processed-file-name)
@@ -285,14 +284,14 @@
   (let* ([files (read-multifile (open-input-bytes submission))]
          [names (map car files)])
     (cond [(ormap (lambda (f)
-                    (and (regexp-match #rx"^[.]|[/\\ ]" (car f)) (car f)))
+                    (and (regexp-match? #rx"^[.]|[/\\ ]" (car f)) (car f)))
                   files)
            => (lambda (file) (error* "bad filename: ~e" file))])
     (cond [(procedure? names-checker) (names-checker names)]
           [(or (regexp? names-checker)
                (string? names-checker) (bytes? names-checker))
            (cond [(ormap (lambda (n)
-                           (and (not (regexp-match names-checker n)) n))
+                           (and (not (regexp-match? names-checker n)) n))
                          names)
                   => (lambda (file) (error* "bad filename: ~e" file))])]
           [(and (list? names-checker) (andmap string? names-checker))
@@ -376,7 +375,7 @@
     (syntax-case stx ()
       [(key val x ...)
        (and (identifier? #'key)
-            (regexp-match #rx"^:" (symbol->string (syntax-e #'key))))
+            (regexp-match? #rx"^:" (symbol->string (syntax-e #'key))))
        (loop #'(x ...) (cons (list (syntax-e #'key) #'key #'val) keyvals))]
       [(body ...)
        (with-syntax
@@ -530,8 +529,8 @@
                                        [(not (string? user-error-message))
                                         (error*
                                          "badly configured user-error-message")]
-                                       [(regexp-match #rx"~[aesvAESV]"
-                                                      user-error-message)
+                                       [(regexp-match? #rx"~[aesvAESV]"
+                                                       user-error-message)
                                         (error* user-error-message m)]
                                        [else
                                         (error* "~a" user-error-message)])))])

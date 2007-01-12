@@ -51,9 +51,10 @@ Quick Start for a Test Drive:
                  "Chester Tester"
                  "123")))
 
- 5.  Make an "active" subdirectory in your new directory.
+ 5.  Make an "test" subdirectory in your new directory.
 
- 6.  Make a "test" subdirectory in "active".
+ 6.  Create a file "config.ss" with the following content:
+       ((active-dirs ("test")))
 
  7.  In your new directory, run
         mred -mvqM handin-server
@@ -65,7 +66,7 @@ Quick Start for a Test Drive:
  9.  Start DrScheme, click "Handin" to run the client, submit with
      username "tester" and password "pw".
 
-     The submitted file will be .../active/test/tester/handin.scm.
+     The submitted file will be .../test/tester/handin.scm.
 
  10. Check the status of your submission by pointing a web browser at
         https://localhost:7980/servlets/status.ss
@@ -164,12 +165,21 @@ sub-directories:
     students with the handin client, "private-key.pem" is kept
     private.
 
-  * "config.ss" (optional) --- configuration options.  The file format
-    is
+  * "config.ss" --- configuration options.  The file format is
 
          ((<key> <val>) ...)
 
     The following keys can be used (without the preceding quote):
+
+      'active-dirs : a list of directories that are active
+         submissions, relative to the current directory or absolute;
+         the last path element for each of these (and 'inactive-dirs
+         below) should be unique, and is used to identify the
+         submission (for example, in the client's submission dialog
+         and in the status servlet)
+
+      'inactive-dirs : a list of inactive submission directories (see
+         above for details)
 
       'port-number : the port for the main handin server; the default
          is 7979
@@ -299,7 +309,8 @@ sub-directories:
     don't save a copy that has inconsistent options: it is best to
     create a new configuration file and move it over the old one, or
     use an editor that does so and not save until the new contents is
-    ready.)
+    ready.)  This is most useful for closing & openning submission
+    directories.
 
   * "users.ss" (created if not present if a user is added) --- keeps
     the list of user accounts, along with the associated password
@@ -362,67 +373,81 @@ sub-directories:
     'plaintext symbol, which will be used without encryption.  This
     may be useful for manually resetting a forgotten passwords.
 
-  * "active/" --- sub-directory for active assignments. A list of
-    active assignments is sent to a client tool when a student clicks
-    "Handin", based on the contents of this directory. The student
-    then selects from the list.  The assignments are ordered in the
-    student's menu using `string<?', and the first assignment is the
-    default selection.
+  * "log" (or any other name that the 'log-file configuration option
+    specifies (if any), created if not present, appended otherwise)
+    --- records connections and actions, where each entry is of the
+    form
+        (id time-str msg-str)
+        [<id>|<time>] <msg>
+    where `<id>' is an integer representing the connection (numbered
+    consecutively from 1 when the server starts), "-" for a message
+    without a connection, and "wN" for a message from the status
+    servlet.
 
-    Within each directory, the student id is used for a sub-directory
-    name. Within each student sub-directory are directories for handin
-    attempts and successes. If a directory "ATTEMPT" exists, it
-    contains the most recent (unsuccessful) handin attempt.
-    Directories "SUCCESS-n" (where n counts from 0) contain successful
-    handins; the lowest numbered such directory represents the latest
-    handin.
+  * Active and inactive assignment directories (which you can put in a
+    nested directory for convenience, or specify a different absolute
+    directory), as specified by the configuration file using the
+    `active-dirs' and `inactive-dirs'.  A list of active assignment
+    directories (the last path element in each specified path is used
+    as a label) is sent to the client tool when a student clicks
+    "Handin".  The assignment labels are ordered in the student's menu
+    using `string<?', and the first assignment is the default
+    selection.
 
-    A cleanup process in the server copies successful submission to
+    Within each assignment directory, the student id is used for a
+    sub-directory name.  Within each student sub-directory are
+    directories for handin attempts and successes.  If a directory
+    "ATTEMPT" exists, it contains the most recent (unsuccessful or
+    currently-in-submission) handin attempt.  Directories "SUCCESS-n"
+    (where n counts from 0) contain successful handins; the lowest
+    numbered such directory represents the latest handin.
+
+    A cleanup process in the server copies successful submissions to
     the student directory -- one level up from the corresponding
     "SUCCESS-n" directory.  This is done only for files and
     directories that are newer in "SUCCESS-n" than in the submission
     root, other files and directories are left intact.  If external
     tools add new content to the student directory (eg, a "grade"
-    file, as described below) it will stay there. If the machine
+    file, as described below) it will stay there.  If the machine
     crashes or the server is stopped, the cleanup process might not
-    finish. When the server is started, it automatically runs the
+    finish.  When the server is started, it automatically runs the
     cleanup process for each student directory.
 
-    Within a student directory, a file "handin.scm" (or some other
-    name if `default-file-name' is set) contains the actual
-    submission. A `checker' procedure can change this default file
+    Within a student directory, a "handin.scm" file (or some other
+    name if the `default-file-name' option is set) contains the actual
+    submission.  A `checker' procedure can change this default file
     name, and it can create additional files in an "ATTEMPT" directory
-    (to be copied by the cleanup process); see below on "checker.ss"
-    for more details.
+    (to be copied by the cleanup process); see below for more details
+    on "checker.ss".
 
     For submissions from a normal DrScheme frame, a submission file
     contains a copy of the student's definitions and interactions
-    windows. The file is in a binary format (to support non-text
+    windows.  The file is in a binary format (to support non-text
     code), and opening the file directly in DrScheme shows the
-    definitions part. To get both the definitions and interactions
+    definitions part.  To get both the definitions and interactions
     parts, the file can be parsed with `unpack-submission' from
     "utils.ss" (see below).
 
     To submit an assignment as a group, students use a concatenation
     of usernames separated by "+" and any number of spaces (e.g.,
     "user1+user2").  The same syntax ("user1+user2") is used for the
-    directory for shared submissions, and the usernames are always
-    sorted so that the directory name is deterministic.  Multiple
+    directory for shared submissions, where the usernames are always
+    sorted so that directory names are deterministic.  Multiple
     submissions for a particular user in different groups will be
     rejected.
 
-  * "inactive/" --- sub-directory for inactive assignments, used by
-    the HTTPS status web server.
+    Inactive assignment directories are used by the the HTTPS status
+    web server.
 
-  * "active/<assignment>/checker.ss" (optional) --- a module that
-    exports a `checker' function.  This function receives two strings.
-    The first is a username list and the second is the submission as a
-    byte string.  (See also `unpack-submission', etc. from "util.ss",
-    below.)  To reject the submission, the `checker' function can
-    raise an exception; the exception message will be relayed back to
-    the student.  The module is loaded when the current directory is
-    the main server directory, so it can read information from
-    "config.ss".
+  * "<active-dir>/<assignment>/checker.ss" (optional) --- a module
+    that exports a `checker' function.  This function receives two
+    strings.  The first is a username list and the second is the
+    submission as a byte string.  (See also `unpack-submission',
+    etc. from "util.ss", below.)  To reject the submission, the
+    `checker' function can raise an exception; the exception message
+    will be relayed back to the student.  The module is loaded when
+    the current directory is the main server directory, so it can read
+    information from "config.ss".
 
     The first argument is a list of usernames with at least one
     username, and more than one if this is a joint submission (where
@@ -430,16 +455,16 @@ sub-directories:
     by "+").
 
     The `checker' function is called with the current directory as
-    "active/<assignment>/<username(s)>/ATTEMPT", and the submission is
+    "<active-assignment>/<username(s)>/ATTEMPT", and the submission is
     saved in the file "handin", and the timeout clock is reset to the
     value of the 'session-timeout configuration.  The checker function
     can change "handin", and it can create additional files in this
     directory.  (Extra files in the current directory will be
     preserved as it is later renamed to "SUCCESS-0", and copied to the
-    submission's root ("active/<assignment>/<user/s>/"), etc.)  To
-    hide generated files from the HTTPS status web server interface,
-    put the files in a subdirectory, which is preserved but hidden
-    from the status interface.
+    submission's root ("<active-assignment>/<username(s)>/"), etc.)
+    To hide generated files from the HTTPS status web server
+    interface, put the files in a subdirectory, it is preserved but
+    hidden from the status interface.
 
     The checker should return a string, such as "handin.scm", to use
     in naming the submission file, or #f to indicate that he file
@@ -469,31 +494,22 @@ sub-directories:
     To specify only pre/post-checker, use #f for the one you want to
     omit.
 
-  * "log" (or any other name that the 'log-file configuration option
-    specifies (if any), created if not present, appended otherwise)
-    --- records connections and actions, where each entry is of the
-    form
-        (id time-str msg-str)
-        [<id>|<time>] <msg>
-    where `<id>' is an integer representing the connection (numbered
-    consecutively from 1 when the server starts), "-" for a message
-    without a connection, and "wN" for a message from the status
-    servlet.
+  * "<[in]active-assignment>/<user(s)>/<filename>" (if submitted) ---
+    the most recent submission for <[in]active-assignment> by
+    <user(s)> where <filename> was returned by the checker (or the
+    value of the `default-file-name' configuration option if there's
+    no checker).  If the submission is from multiple users, then
+    "<user(s)>" is actually "<user1>+<user2>" etc.  Also, if the
+    cleanup process was interrupted (by a machine failure, etc.), the
+    submission may actually be in "SUCCESS-n" as described above, but
+    will move up when the server performs a cleanup (or when
+    restarted).
 
-  * "[in]active/<assignment>/<user>/<filename>" (if submitted) --- the
-    most recent submission for <assignment> by <user> where <filename>
-    was returned by the checker (or the value of the
-    `default-file-name' configuration option if there's no checker).
-    If the submission is from multiple users, then "<user>" is
-    actually "<user1>+<user2>" etc. Also, if the cleanup process was
-    interrupted (by a machine failure, etc.), the submission may
-    actually be in "SUCCESS-n" as described above.
+  * "<[in]active-assignment>/<user(s)>/grade" (optional) ---
+    <user(s)>'s grade for <assignment>, to be reported by the HTTPS
+    status web server
 
-  * "[in]active/<assignment>/<user>/grade" (optional) --- <user>'s
-    grade for <assignment>, to be reported by the HTTPS status web
-    server
-
-  * "[in]active/<assignment>/solution*" --- the solution to the
+  * "<[in]active-assignment>/solution*" --- the solution to the
     assignment, made available by the status server to any user who
     logs in.  The solution can be either a file or a directory with a
     name that begins with "solution".  In the first case, the status
@@ -510,7 +526,9 @@ related crashes.
 The server currently provides no mechanism for a graceful shutdown,
 but terminating the server is no worse than a network outage.  (In
 particular, no data should be lost.)  To reconfigure the server (e.g.,
-to change the set of active assignments), stop it and restart it.
+to change a checker module), stop it and restart it.  (Changing the
+configuration file is detected, and options are reloaded, so no
+restart is needed for that.)
 
 The client and server are designed to be robust against network
 problems and timeouts.  The client-side tool always provides a
@@ -691,7 +709,8 @@ The _utils.ss_ module provides utilities helpful in implementing
   Produces a line in the server log file, using the given format
   string and arguments.  All this actually does, is arrange to print
   the line fast (to avoid mixing lines from different threads) to the
-  error port, and flush it.
+  error port, and flush it.  (The log port will prefix all lines with
+  a time stamp and connection identifier.)
 
 > (timeout-control msg)
   Control the timeout for this session.  The timeout is initialized by
@@ -848,13 +867,12 @@ Keywords for configuring `check:':
   `current-value-printer' (see above).
 
 * :coverage? -- collect coverage information when evaluating the
-  submission.  This will
-  cause an error if some input is not covered.  This check happens
-  after checker tests are run, but the information is collected and
-  stored before, so checker tests do not change the result.  Also, you
-  can use the `!all-covered' procedure in the checker before other
-  tests, if you want that feedback earlier.
-  Does not work with non-textual submissions.
+  submission.  This will cause an error if some input is not covered.
+  This check happens after checker tests are run, but the information
+  is collected and stored before, so checker tests do not change the
+  result.  Also, you can use the `!all-covered' procedure in the
+  checker before other tests, if you want that feedback earlier.  Does
+  not work with non-textual submissions.
 
 Within the body of `check:', `users' and `submission' will be bound to
 the checker arguments -- a (sorted) list of usernames and the

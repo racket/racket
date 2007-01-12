@@ -10,10 +10,6 @@
            (lib "logger.ss" "handin-server" "private")
            (lib "config.ss" "handin-server" "private"))
 
-  (define active-dir   (build-path server-dir "active"))
-  (define inactive-dir (build-path server-dir "inactive"))
-  (define active/inactive-dirs (list active-dir inactive-dir))
-
   (define get-user-data
     (let ([users-file (build-path server-dir "users.ss")])
       (lambda (user)
@@ -40,7 +36,7 @@
             "/")))))
 
   (define (make-k k tag)
-    (format "~a~atag=~a" k (if (regexp-match #rx"^[^#]*[?]" k) "&" "?")
+    (format "~a~atag=~a" k (if (regexp-match? #rx"^[^#]*[?]" k) "&" "?")
             (uri-encode (regexp-replace handin-prefix-re
                                         (if (path? tag) (path->string tag) tag)
                                         ""))))
@@ -51,24 +47,22 @@
   ;; `look-for' can be a username as a string (will find "bar+foo" for "foo"),
   ;; or a regexp that should match the whole directory name (used with
   ;; "^solution" below)
-  (define (find-hi-entry hi look-for)
-    (define (find-submission top)
-      (let ([dir (build-path top hi)])
-        (and (directory-exists? dir)
-             (ormap
-              (lambda (d)
-                (let ([d (path->string d)])
-                  (and (cond [(string? look-for)
-                              (member look-for (regexp-split #rx" *[+] *" d))]
-                             [(regexp? look-for) (regexp-match look-for d)]
-                             [else (error 'find-hi-entry
-                                          "internal error: ~e" look-for)])
-                       (build-path dir d))))
-              (directory-list dir)))))
-    (ormap find-submission active/inactive-dirs))
+  (define (find-handin-entry hi look-for)
+    (let ([dir (assignment<->dir hi)])
+      (and (directory-exists? dir)
+           (ormap
+            (lambda (d)
+              (let ([d (path->string d)])
+                (and (cond [(string? look-for)
+                            (member look-for (regexp-split #rx" *[+] *" d))]
+                           [(regexp? look-for) (regexp-match? look-for d)]
+                           [else (error 'find-handin-entry
+                                        "internal error: ~e" look-for)])
+                     (build-path dir d))))
+            (directory-list dir)))))
 
   (define (handin-link k user hi)
-    (let* ([dir (find-hi-entry hi user)]
+    (let* ([dir (find-handin-entry hi user)]
            [l (and dir (with-handlers ([exn:fail? (lambda (x) null)])
                          (parameterize ([current-directory dir])
                            (sort (filter (lambda (f)
@@ -94,7 +88,8 @@
                       user hi)))))
 
   (define (solution-link k hi)
-    (let ([soln (find-hi-entry hi #rx"^solution")]
+    (let ([soln (and (member (assignment<->dir hi) (get-conf 'inactive-dirs))
+                     (find-handin-entry hi #rx"^solution"))]
           [none `((i "---"))])
       (cond [(not soln) none]
             [(file-exists? soln)
@@ -115,7 +110,7 @@
             [else none])))
 
   (define (handin-grade user hi)
-    (let* ([dir (find-hi-entry hi user)]
+    (let* ([dir (find-handin-entry hi user)]
            [grade (and dir
                        (let ([filename (build-path dir "grade")])
                          (and (file-exists? filename)
@@ -140,51 +135,42 @@
 
   (define re:base #rx"^([a-zA-Z]*)([0-9]+)")
   (define (all-status-page user)
-    (let* ([l (sort
-               (map path->string
-                    (append (directory-list active-dir)
-                            (with-handlers ([exn:fail? (lambda (x) null)])
-                              (directory-list inactive-dir))))
-               (lambda (a b)
-                 (let ([am (regexp-match re:base a)]
-                       [bm (regexp-match re:base b)])
-                   (if (and am bm
-                            (string=? (cadr am) (cadr bm)))
-                     (or (< (string->number (caddr am))
-                            (string->number (caddr bm)))
-                         (string<? a b))
-                     (string<? a b)))))]
-           [next
+    (define (cell  . texts) `(td ([bgcolor "white"]) ,@texts))
+    (define (rcell . texts) `(td ([bgcolor "white"] [align "right"]) ,@texts))
+    (define (header . texts) `(td ([bgcolor "#f0f0f0"]) (big (strong ,@texts))))
+    (define ((row k active?) dir)
+      (let ([hi (assignment<->dir dir)])
+        `(tr ([valign "top"])
+           ,(apply header hi
+                   (if active? `((br) (small (small "[active]"))) '()))
+           ,(apply cell (handin-link k user hi))
+           ,(rcell (handin-grade user hi))
+           ,(apply cell (solution-link k hi)))))
+    (let* ([next
             (send/suspend
              (lambda (k)
-               (define (header text)
-                 `(td ((bgcolor "#f0f0f0")) (big (strong ,text))))
                (make-page
                 (format "All Handins for ~a" user)
                 `(table ([bgcolor "#ddddff"] [cellpadding "6"] [align "center"])
                    (tr () ,@(map header '(nbsp "Files" "Grade" "Solution")))
-                   ,@(map (lambda (hi)
-                            `(tr ([valign "top"])
-                               ,(header hi)
-                               (td ([bgcolor "white"]) ,@(handin-link k user hi))
-                               (td ([bgcolor "white"] (align "right")) ,(handin-grade user hi))
-                               (td ([bgcolor "white"]) ,@(solution-link k hi))))
-                          l)))))]
+                   ,@(append (map (row k #t) (get-conf 'active-dirs))
+                             (map (row k #f) (get-conf 'inactive-dirs)))))))]
            [tag (select-k next)])
       (download user tag)))
 
   (define (download who tag)
-    (define (check path elts)
+    (define (check path elts allow-active?)
       (let loop ([path path] [elts (reverse elts)])
         (let*-values ([(base name dir?) (split-path path)]
                       [(name) (path->string name)]
                       [(check) (and (pair? elts) (car elts))])
           (if (null? elts)
-            ;; must be rooted in active/inactive (why build-path instead of
-            ;; using `path'? -- because path will have a trailing slash)
-            (member (build-path base name) active/inactive-dirs)
+            ;; must be rooted in a submission directory (why build-path instead
+            ;; of using `path'? -- because path will have a trailing slash)
+            (member (build-path base name)
+                    (get-conf (if allow-active? 'all-dirs 'inactive-dirs)))
             (and (cond [(eq? '* check) #t]
-                       [(regexp? check) (regexp-match check name)]
+                       [(regexp? check) (regexp-match? check name)]
                        [(string? check)
                         (or (equal? name check)
                             (member check (regexp-split #rx" *[+] *" name)))]
@@ -194,16 +180,16 @@
     (with-handlers ([exn:fail? (lambda (exn)
                                  (make-page "Error" "Illegal file access"))])
       ;; Make sure the user is allowed to read the requested file:
-      (or (check file `(* ,who *))
-          (check file `(* #rx"^solution"))
-          (check file `(* #rx"^solution" *))
+      (or (check file `(,who *) #t)
+          (check file `(#rx"^solution") #f)
+          (check file `(#rx"^solution" *) #f)
           (error "Boom!"))
       (log-line "Status file-get: ~s ~a" who file)
       ;; Return the downloaded file
       (let* ([data (with-input-from-file file
                      (lambda () (read-bytes (file-size file))))]
-             [html? (regexp-match #rx"[.]html?$" (string-foldcase tag))]
-             [wxme? (regexp-match #rx#"^WXME" data)])
+             [html? (regexp-match? #rx"[.]html?$" (string-foldcase tag))]
+             [wxme? (regexp-match? #rx#"^WXME" data)])
         (make-response/full 200 "Okay" (current-seconds)
           (cond [html? #"text/html"]
                 [wxme? #"application/data"]

@@ -15,6 +15,10 @@
 
   (install-logger-port)
 
+  ;; errors to the user: no need for a "foo: " prefix
+  (define (error* fmt . args)
+    (error (apply format fmt args)))
+
   (define (write+flush port . xs)
     (for-each (lambda (x) (write x port) (newline port)) xs)
     (flush-output port))
@@ -45,9 +49,8 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define ATTEMPT-DIR "ATTEMPT")
+  (define (success-dir n) (format "SUCCESS-~a" n))
 
-  (define (success-dir n)
-    (format "SUCCESS-~a" n))
   (define (make-success-dir-available n)
     (let ([name (success-dir n)])
       (when (directory-exists? name)
@@ -111,37 +114,29 @@
 
   (define (cleanup-all-submissions)
     (log-line "Cleaning up all submission directories")
-    (for-each (lambda (top)
-                (when (directory-exists? top)
-                  (parameterize ([current-directory top])
-                    (for-each (lambda (pset)
-                                (when (directory-exists? pset) ; filter non-dirs
-                                  (parameterize ([current-directory pset])
-                                    (for-each (lambda (sub)
-                                                (when (directory-exists? sub)
-                                                  (cleanup-submission sub)))
-                                              (directory-list)))))
+    (for-each (lambda (pset)
+                (when (directory-exists? pset) ; just in case
+                  (parameterize ([current-directory pset])
+                    (for-each (lambda (sub)
+                                (when (directory-exists? sub) ; filter non-dirs
+                                  (cleanup-submission sub)))
                               (directory-list)))))
-              '("active" "inactive")))
+              (get-conf 'all-dirs)))
 
   ;; On startup, we scan all submissions, then repeat at random intervals (only
   ;; if clients connected in that time), and check often for changes in the
   ;; active/inactive directories and run a cleanup if there was a change
   (define connection-num 0)
   (thread (lambda ()
-            (define last-active/inactive #f)
+            (define last-all-dirs #f)
             (define last-connection-num #f)
             (let loop ()
               (let loop ([n (+ 20 (random 20))]) ; 10-20 minute delay
                 (when (>= n 0)
-                  (let ([new (map (lambda (x)
-                                    (if (directory-exists? x)
-                                      (directory-list x)
-                                      null))
-                                  '("active" "inactive"))])
-                    (if (equal? new last-active/inactive)
+                  (let ([new (get-conf 'all-dirs)])
+                    (if (equal? new last-all-dirs)
                       (begin (sleep 30) (loop (sub1 n)))
-                      (begin (set! last-active/inactive new)
+                      (begin (set! last-all-dirs new)
                              (set! last-connection-num #f))))))
               (unless (equal? last-connection-num connection-num)
                 (cleanup-all-submissions)
@@ -154,27 +149,28 @@
     (with-output-to-file part
       (lambda () (display s))))
 
+  (define (users->dirname users)
+    (apply string-append (car users)
+           (map (lambda (u) (string-append "+" u)) (cdr users))))
+
   (define (accept-specific-submission data r r-safe w)
     ;; Note: users are always sorted
     (define users       (a-ref data 'usernames))
     (define assignments (a-ref data 'assignments))
     (define assignment  (a-ref data 'assignment))
-    (define dirname
-      (apply string-append (car users)
-             (map (lambda (u) (string-append "+" u)) (cdr users))))
+    (define dirname     (users->dirname users))
     (define len #f)
     (unless (member assignment assignments)
-      (error 'handin "not an active assignment: ~a" assignment))
+      (error* "not an active assignment: ~a" assignment))
     (log-line "assignment for ~a: ~a" users assignment)
     (write+flush w 'ok)
     (set! len (read r-safe))
     (unless (and (number? len) (integer? len) (positive? len))
-      (error 'handin "bad length: ~s" len))
+      (error* "bad length: ~s" len))
     (unless (len . < . (get-conf 'max-upload))
-      (error 'handin
-             "max handin file size is ~s bytes, file to handin is too big (~s bytes)"
-             (get-conf 'max-upload) len))
-    (parameterize ([current-directory (build-path "active" assignment)])
+      (error* "max handin file size is ~s bytes, file to handin is too big (~s bytes)"
+              (get-conf 'max-upload) len))
+    (parameterize ([current-directory (assignment<->dir assignment)])
       (wait-for-lock dirname
         (let ([dir (build-path (current-directory) dirname)])
           (lambda () (cleanup-submission dir))))
@@ -183,11 +179,11 @@
         (for-each wait-for-lock users))
       (write+flush w 'go)
       (unless (regexp-match #rx"[$]" r-safe)
-        (error 'handin "did not find start-of-content marker"))
+        (error* "did not find start-of-content marker"))
       (let ([s (read-bytes len r)])
         (unless (and (bytes? s) (= (bytes-length s) len))
-          (error 'handin "error uploading (got ~e, expected ~s bytes)"
-                 (if (bytes? s) (bytes-length s) s) len))
+          (error* "error uploading (got ~e, expected ~s bytes)"
+                  (if (bytes? s) (bytes-length s) s) len))
         ;; we have a submission, need to create a directory if needed, make
         ;; sure that no users submitted work with someone else
         (unless (directory-exists? dirname)
@@ -196,21 +192,20 @@
              (for-each
               (lambda (d)
                 (when (member d users)
-                  (error 'handin
-                         "bad submission: ~a has an existing submission (~a)"
-                         d dir)))
+                  (error* "bad submission: ~a has an existing submission (~a)"
+                          d dir)))
               (regexp-split #rx" *[+] *" (path->string dir))))
            (directory-list))
           (make-directory dirname))
         (parameterize ([current-directory dirname]
                        [current-messenger
                         (case-lambda
-                         [(msg) (write+flush w 'message msg)]
-                         [(msg styles)
-                          (if (eq? 'final styles)
-                            (write+flush w 'message-final msg)
-                            (begin (write+flush w 'message-box msg styles)
-                                   (read (make-limited-input-port r 50))))])])
+                          [(msg) (write+flush w 'message msg)]
+                          [(msg styles)
+                           (if (eq? 'final styles)
+                             (write+flush w 'message-final msg)
+                             (begin (write+flush w 'message-box msg styles)
+                                    (read (make-limited-input-port r 50))))])])
           ;; Clear out old ATTEMPT, if any, and make a new one:
           (when (directory-exists? ATTEMPT-DIR)
             (delete-directory/files ATTEMPT-DIR))
@@ -227,18 +222,18 @@
                     [(procedure? checker*) (values #f checker* #f)]
                     [(and (list? checker*) (= 3 (length checker*)))
                      (apply values checker*)]
-                    [else (error 'handin-configuration
-                                 "bad checker value: ~e" checker*)]))
+                    [else (error* "bad checker value: ~e" checker*)]))
             (when pre
               (let ([dir (current-directory)])
                 (with-handlers
                     ([void (lambda (e)
                              (parameterize ([current-directory dir])
-                               (unless (ormap
-                                        (lambda (d)
-                                          (and (directory-exists? d)
-                                               (regexp-match SUCCESS-RE d)))
-                                        (map path->string (directory-list)))
+                               (unless (ormap (lambda (d)
+                                                (and (directory-exists? d)
+                                                     (regexp-match
+                                                      SUCCESS-RE
+                                                      (path->string d))))
+                                              (directory-list))
                                  (parameterize ([current-directory ".."])
                                    (when (directory-exists? dirname)
                                      (delete-directory/files dirname)))))
@@ -265,23 +260,21 @@
                     (when post
                       (parameterize ([current-directory (success-dir 0)])
                         (post users s))))
-                  (error 'handin "upload not confirmed: ~s" v)))))))))
+                  (error* "upload not confirmed: ~s" v)))))))))
 
   (define (retrieve-specific-submission data w)
     ;; Note: users are always sorted
     (define users       (a-ref data 'usernames))
     (define assignments (a-ref data 'assignments))
     (define assignment  (a-ref data 'assignment))
-    (define dirname
-      (apply string-append (car users)
-             (map (lambda (u) (string-append "+" u)) (cdr users))))
-    (define submission-dir (build-path "active" assignment dirname))
+    (define dirname     (users->dirname users))
+    (define submission-dir (build-path (assignment<->dir assignment) dirname))
     (unless (member assignment assignments)
-      (error 'handin "not an active assignment: ~a" assignment))
+      (error* "not an active assignment: ~a" assignment))
     (unless (directory-exists? submission-dir)
-      (error 'handin "no ~a submission directory for ~a" assignment users))
+      (error* "no ~a submission directory for ~a" assignment users))
     (log-line "retrieving assignment for ~a: ~a" users assignment)
-    (parameterize ([current-directory (build-path "active" assignment dirname)])
+    (parameterize ([current-directory submission-dir])
       (define magics '(#"WXME" #"<<<MULTI-SUBMISSION-FILE>>>"))
       (define mlen (apply max (map bytes-length magics)))
       (define file
@@ -307,7 +300,7 @@
           (display "$" w)
           (display (with-input-from-file file (lambda () (read-bytes len))) w)
           (flush-output w))
-        (error 'handin "no ~a submission file found for ~a" assignment users))))
+        (error* "no ~a submission file found for ~a" assignment users))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -321,7 +314,7 @@
        (put-preferences
         (list (string->symbol username)) (list data)
         (lambda (f)
-          (error 'handin "user database busy; please try again, and alert the adminstrator if problems persist"))
+          (error* "user database busy; please try again, and alert the adminstrator if problems persist"))
         "users.ss"))
      orig-custodian))
 
@@ -333,10 +326,9 @@
                   [(list? field-re) (member value field-re)]
                   [(not field-re) #t]
                   [(eq? field-re '-) #t] ; -> hidden field, no check
-                  [else (error 'handin "bad spec: field-regexp is ~e"
-                               field-re)])
-      (error 'handin "bad ~a: \"~a\"~a" field-name value
-             (if field-desc (format "; need ~a" field-desc) ""))))
+                  [else (error* "bad spec: field-regexp is ~e" field-re)])
+      (error* "bad ~a: \"~a\"~a" field-name value
+              (if field-desc (format "; need ~a" field-desc) ""))))
 
   ;; Utility for the next two functions: reconstruct a full list of
   ;; extra-fields from user-fields, using "" for hidden fields
@@ -354,24 +346,24 @@
     (define user-fields  (a-ref data 'user-fields))
     (define extra-fields (add-hidden-to-user-fields user-fields))
     (unless (get-conf 'allow-new-users)
-      (error 'handin "new users not allowed: ~a" username))
+      (error* "new users not allowed: ~a" username))
     (check-field username (get-conf 'user-regexp) "username"
                  (get-conf 'user-desc))
     ;; Since we're going to use the username in paths, and + to split names:
     (when (regexp-match #rx"[+/\\:|\"<>]" username)
-      (error 'handin "username must not contain one of the following: + / \\ : | \" < >"))
+      (error* "username must not contain these characters: + / \\ : | \" < >"))
     (when (regexp-match
            #rx"^((nul)|(con)|(prn)|(aux)|(clock[$])|(com[1-9])|(lpt[1-9]))[.]?"
            (string-foldcase username))
-      (error 'handin "username must not be a Windows special file name"))
+      (error* "username must not be a Windows special file name"))
     (when (regexp-match #rx"^[ .]|[ .]$" username)
-      (error 'handin "username must not begin or end with a space or period"))
+      (error* "username must not begin or end with a space or period"))
     (when (regexp-match #rx"^solution" username)
-      (error 'handin "the username prefix \"solution\" is reserved"))
+      (error* "the username prefix \"solution\" is reserved"))
     (when (string=? "checker.ss" username)
-      (error 'handin "the username \"checker.ss\" is reserved"))
+      (error* "the username \"checker.ss\" is reserved"))
     (when (get-user-data username)
-      (error 'handin "username already exists: `~a'" username))
+      (error* "username already exists: `~a'" username))
     (for-each (lambda (str info)
                 (check-field str (cadr info) (car info) (caddr info)))
               extra-fields (get-conf 'extra-fields))
@@ -386,17 +378,16 @@
     (define user-fields  (a-ref data 'user-fields))
     (define extra-fields (add-hidden-to-user-fields user-fields))
     (unless (= 1 (length usernames))
-      (error 'handin "cannot change a password for multiple users: ~a"
-             usernames))
+      (error* "cannot change a password for multiple users: ~a" usernames))
     ;; the new data is the same as the old one for every empty string (includes
     ;; hidden fields)
     (let ([new-data (map (lambda (old new) (if (equal? "" new) old new))
                          (car user-datas) (cons passwd extra-fields))])
       (unless (or (get-conf 'allow-change-info)
                   (equal? (cdr new-data) (cdar user-datas)))
-        (error 'handin "changing information not allowed: ~a" (car usernames)))
+        (error* "changing information not allowed: ~a" (car usernames)))
       (when (equal? new-data (car user-datas))
-        (error 'handin "no fields changed: ~a" (car usernames)))
+        (error* "no fields changed: ~a" (car usernames)))
       (for-each (lambda (str info)
                   (check-field str (cadr info) (car info) (caddr info)))
                 (cdr new-data) (get-conf 'extra-fields))
@@ -407,7 +398,7 @@
   (define (get-user-info data)
     (define usernames  (a-ref data 'usernames))
     (unless (= 1 (length usernames))
-      (error 'handin "cannot get user-info for multiple users: ~a" usernames))
+      (error* "cannot get user-info for multiple users: ~a" usernames))
     ;; filter out hidden fields
     (let ([all-data (cdar (a-ref data 'user-datas))])
       (filter values (map (lambda (d f)
@@ -426,7 +417,7 @@
     (define (good? passwd)
       (define (bad-password msg)
         (log-line "ERROR: ~a -- ~s" msg passwd)
-        (error 'handin "bad password in user database"))
+        (error* "bad password in user database"))
       (cond [(string? passwd) (equal? md5 passwd)]
             [(and (list? passwd) (= 2 (length passwd))
                   (symbol? (car passwd)) (string? (cadr passwd)))
@@ -513,8 +504,8 @@
                            (cons (get-conf 'master-password)
                                  (map car user-datas)))))
              (log-line "failed login: ~a" (a-ref data 'username/s))
-             (error 'handin "bad username or password for ~a"
-                    (a-ref data 'username/s)))
+             (error* "bad username or password for ~a"
+                     (a-ref data 'username/s)))
            (log-line "login: ~a" usernames))
          (case msg
            [(change-user-info) (change-user-info data)]
@@ -525,7 +516,7 @@
     (write+flush w 'ok)) ; final confirmation for *all* actions
 
   (define (assignment-list)
-    (sort (map path->string (directory-list "active")) string<?))
+    (map assignment<->dir (get-conf 'active-dirs)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

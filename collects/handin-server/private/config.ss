@@ -19,7 +19,6 @@
     (unless (and raw-config
                  (< (- (current-inexact-milliseconds) last-poll) poll-freq))
       (set! last-poll (current-inexact-milliseconds))
-      (printf "polling...\n")
       (let ([filetime (file-or-directory-modify-seconds config-file)])
         (unless (and filetime (equal? filetime last-filetime))
           (set! last-filetime filetime)
@@ -28,7 +27,6 @@
                                         (error 'get-conf
                                                "could not read conf (~a)"
                                                config-file))])
-                  (printf "reading...\n")
                   (with-input-from-file config-file read)))
           (set! config-cache (make-hash-table)))))
     (hash-table-get config-cache key
@@ -46,9 +44,12 @@
   (define (rx s) (if (regexp? s) s (regexp s)))
   (define (path p) (path->complete-path p server-dir))
   (define (path/false p) (and p (path p)))
+  (define (path-list l) (map path l))
 
   (define (config-default+translate which)
     (case which
+      [(active-dirs)             (values '()                   path-list    )]
+      [(inactive-dirs)           (values '()                   path-list    )]
       [(port-number)             (values 7979                  id           )]
       [(https-port-number)       (values (add1 (get-conf 'port-number))  id )]
       [(session-timeout)         (values 300                   id           )]
@@ -73,10 +74,32 @@
                   "a valid email address"))
                id)]
       ;; computed from the above (mark by translate = #f)
+      [(all-dirs)
+       (values (append (get-conf 'active-dirs) (get-conf 'inactive-dirs)) #f)]
+      [(names-dirs) ; see below
+       (values (paths->map (get-conf 'all-dirs)) #f)]
       [(user-fields)
        (values (filter (lambda (f) (not (eq? '- (cadr f))))
                        (get-conf 'extra-fields))
                #f)]
       [else (error 'get-conf "unknown configuration entry: ~s" which)]))
+
+  ;; This is used below to map names to submission directory paths and back
+  ;; returns a (list-of (either (list name path) (list path name)))
+  (define (paths->map dirs)
+    (define (path->name dir)
+      (unless (directory-exists? dir)
+        (error 'get-conf
+               "directory entry for an inexistent directory: ~e" dir))
+      (let-values ([(_1 name _2) (split-path dir)])
+        (bytes->string/locale (path-element->bytes name))))
+    (let ([names (map path->name dirs)])
+      (append (map list names dirs) (map list dirs names))))
+
+  ;; Translates an assignment name to a directory path or back
+  (provide assignment<->dir)
+  (define (assignment<->dir a/d)
+    (cond [(assoc a/d (get-conf 'names-dirs)) => cadr]
+          [else (error 'assignment<->dir "internal error: ~e" a/d)]))
 
   )
