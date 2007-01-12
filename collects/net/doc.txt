@@ -164,9 +164,9 @@ PROCEDURES -----------------------------------------------------------
   which uses open-input-file, does not handle exceptions, and
   ignores the optional strings.
 
-> (get-impure-port  url [list-of-strings]) -> input-port
-> (head-pure-port   url [list-of-strings]) -> input-port
-> (delete-pure-port url [list-of-strings]) -> input-port
+> (get-impure-port    url [list-of-strings]) -> input-port
+> (head-impure-port   url [list-of-strings]) -> input-port
+> (delete-impure-port url [list-of-strings]) -> input-port
 
   Like <method>-pure-port above, but the port returned corresponds to
   both the headers returned as well as the body. The file:// scheme is
