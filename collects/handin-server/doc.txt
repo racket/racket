@@ -47,11 +47,9 @@ Quick Start for a Test Drive:
        NOTE: for real use, you need a new key.
 
  4.  Create a file "users.ss" with the following content:
-       ((tester ("8fe4c11451281c094a6578e6ddbf5eed"
-                 "Chester Tester"
-                 "123")))
+       ((tester ("8fe4c11451281c094a6578e6ddbf5eed")))
 
- 5.  Make an "test" subdirectory in your new directory.
+ 5.  Make a "test" subdirectory in your new directory.
 
  6.  Create a file "config.ss" with the following content:
        ((active-dirs ("test")))
@@ -78,13 +76,10 @@ Quick Start for a Test Drive:
  |- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|
  | If you obtained the server and client by installing a .plt file,  |
  | then the "handin-server" and "handin-client" directories          |
- | are likely in your PLT addon space:                               |
- |  Windows:                                                         |
- |   %USERPROFILE%\Application Data\PLT Scheme\<version>\collects    |
- |  Unix:                                                            |
- |   ~/.plt-scheme/<version>/collects                                |
- |  Mac OS X:                                                        |
- |   ~/Library/PLT Scheme/<version>/collects                         |
+ | might be in your PLT addon space.  Start MzScheme, and enter      |
+ |         (collection-path "handin-server")                         |
+ |         (collection-path "handin-client")                         |
+ | to find out where these collections are.                          |
   -------------------------------------------------------------------
 
 
@@ -109,10 +104,6 @@ To customize the client:
          of the name, since "Handin" is always added for button and
          menu names.
 
-       * For `collection', use the name that you chose for your
-         collection directory (i.e., whatever you changed
-         "handin-client" to).
-
        * For `server:port', uncomment the line, and use the hostname
          and port where the server will be running to accept handin
          submissions.
@@ -125,7 +116,8 @@ To customize the client:
       icon.  This icon is displayed on startup with DrScheme's splash
       screen, and it is included at half size on the "Handin" button.
       Again, choose a distinct icon for the benefit of students who
-      install multiple handin tools.
+      install multiple handin tools.  A school logo is typically
+      useful, as it provides a recognizably local visual cue.
 
    4. Replace "server-cert.pem" in your renamed directory with a
       server certificate.  The file "server-cert.pem" in
@@ -150,9 +142,11 @@ To customize the client:
 Server Setup
 ============================================
 
-The server must be run from a directory that is specially prepared to
-host the server.  This directory contains the following files and
-sub-directories:
+You must prepare a special directory to host the handin server.  To
+run the server, you should either be in this directory, or you should
+set the "PLT_HANDINSERVER_DIR" environment variable.
+
+This directory contains the following files and sub-directories:
 
   * "server-cert.pem" --- the server's certificate.  To create a
     certificate and key with openssl:
@@ -439,15 +433,15 @@ sub-directories:
     Inactive assignment directories are used by the the HTTPS status
     web server.
 
-  * "<active-dir>/<assignment>/checker.ss" (optional) --- a module
-    that exports a `checker' function.  This function receives two
-    strings.  The first is a username list and the second is the
-    submission as a byte string.  (See also `unpack-submission',
-    etc. from "util.ss", below.)  To reject the submission, the
-    `checker' function can raise an exception; the exception message
-    will be relayed back to the student.  The module is loaded when
-    the current directory is the main server directory, so it can read
-    information from "config.ss".
+  * "<active-assignment>/checker.ss" (optional) --- a module that
+    exports a `checker' function.  This function receives two strings.
+    The first is a username list and the second is the submission as a
+    byte string.  (See also `unpack-submission', etc. from "util.ss",
+    below.)  To reject the submission, the `checker' function can
+    raise an exception; the exception message will be relayed back to
+    the student.  The module is loaded when the current directory is
+    the main server directory, so it can read information from
+    "config.ss".
 
     The first argument is a list of usernames with at least one
     username, and more than one if this is a joint submission (where
@@ -506,8 +500,8 @@ sub-directories:
     restarted).
 
   * "<[in]active-assignment>/<user(s)>/grade" (optional) ---
-    <user(s)>'s grade for <assignment>, to be reported by the HTTPS
-    status web server
+    <user(s)>'s grade for <[in]active-assignment>, to be reported by
+    the HTTPS status web server
 
   * "<[in]active-assignment>/solution*" --- the solution to the
     assignment, made available by the status server to any user who

@@ -3,7 +3,7 @@
 
   ;; This module should be invoked when we're in the server directory
   (provide server-dir)
-  (define server-dir (current-directory))
+  (define server-dir (or (getenv "PLT_HANDINSERVER_DIR") (current-directory)))
 
   (define config-file (path->complete-path "config.ss" server-dir))
 
