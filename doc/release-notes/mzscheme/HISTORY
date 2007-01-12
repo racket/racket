@@ -1,4 +1,6 @@
 Version 369.4
+Default build uses 3m instead of CGC
+Added 'gc and 'so-suffix flags for system-type
 Changed path->directory-path, simplify-path, and split-path to include
  a trailing path separator even when the result would be a directory
  path without it
