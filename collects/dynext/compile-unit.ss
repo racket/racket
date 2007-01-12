@@ -73,6 +73,7 @@
 					(case (string->symbol (path->string (system-library-subpath #f)))
 					  [(ppc-macosx i386-macosx) '("-fno-common")]
 					  [(ppc-darwin) '("-fno-common")]
+					  [(win32\\i386) '("-DAS_MSVC_EXTENSION")]
 					  [else null])
 					gcc-cpp-flags))
 

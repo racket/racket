@@ -209,11 +209,14 @@
                                      [win-borland? "bcc"]
                                      [else "msvc"])
 				    f)))]
+	       [dllfile (lambda (f)
+			  (path->string
+			   (build-path std-library-dir f)))]
                [filethunk (lambda (f)
                             (lambda ()
 			      (map file (f))))]
 	       [wrap-xxxxxxx
-                (lambda (f)
+                (lambda (file f)
                   (lambda ()
                     (map (lambda (s)
                            (if (file-exists?
@@ -225,18 +228,21 @@
 	   [win-gcc? (append
 		      (if unix?
 			  null
-			  (list (wrap-xxxxxxx (wrap-3m "libmzsch~a~~a.lib"))
-				(wrap-xxxxxxx (drop-3m "libmzgc~a.lib"))))
+			  (list (wrap-xxxxxxx dllfile (wrap-3m "libmzsch~a~~a.dll"))
+				(wrap-xxxxxxx dllfile (drop-3m "libmzgc~a.dll"))))
 		      (list
-		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))
-		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.o")))
+		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))		       
+		       (mzdyn-maybe (filethunk (wrap-3m 
+						;; mzdyn.o is for Unix build, mzdynw.o for Windows
+						(format "mzdyn~a~~a.o"
+							(if unix? "" "w")))))
 		       (file "init.o")
 		       (file "fixup.o")))]
 	   [win-borland? (map file (if (current-use-mzdyn)
                                      (list "mzdynb.obj")
                                      null))]
-	   [else (list (wrap-xxxxxxx (wrap-3m "libmzsch~a~~a.lib"))
-		       (wrap-xxxxxxx (drop-3m "libmzgc~a.lib"))
+	   [else (list (wrap-xxxxxxx file (wrap-3m "libmzsch~a~~a.lib"))
+		       (wrap-xxxxxxx file (drop-3m "libmzgc~a.lib"))
 		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.exp")))
 		       (mzdyn-maybe (filethunk (wrap-3m "mzdyn~a.obj"))))])))
 
