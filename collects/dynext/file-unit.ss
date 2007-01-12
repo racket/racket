@@ -28,12 +28,7 @@
 	   [(windows) #".obj"])))
 
       (define (append-extension-suffix s)
-	(path-replace-suffix
-	 s
-	 (case (system-type)
-	   [(unix beos) #".so"]
-	   [(macos macosx) #".dylib"]
-	   [(windows) #".dll"])))
+	(path-replace-suffix s (system-type 'so-suffix)))
 
       (define (extract-suffix appender)
 	(subbytes
@@ -47,7 +42,7 @@
 		      extract-base-filename/ext)
 	(let ([mk
 	       (lambda (who pat kind simple)
-		 (let ([rx (byte-regexp 
+		 (let ([rx (byte-pregexp
 			    (string->bytes/latin-1 (format "^(.*)\\.(~a)$" pat)))])
 		   (letrec ([extract-base-filename
 			     (case-lambda
@@ -77,10 +72,7 @@
 	       "compiled object"
 	       (extract-suffix append-object-suffix))
 	   (mk 'extract-base-filename/ext
-	       (case (system-type)
-		 [(unix beos) #"[sS][oO]"]
-		 [(macos macosx) #"[dD][yY][lL][iI][bB]"]
-		 [(windows) #"[dD][lL][lL]"])
+               (string->bytes/latin-1 (format "(?i:~a)" (subbytes (system-type 'so-suffix) 1)))
 	       "MzScheme extension"
 	       (extract-suffix append-extension-suffix)))))))
 
