@@ -1,7 +1,8 @@
 
 (module file-unit mzscheme
-  (require (lib "unit.ss"))
-  (require (lib "include.ss"))
+  (require (lib "unit.ss")
+           (lib "include.ss")
+           (lib "string.ss"))
 
   (require "file-sig.ss")
 
@@ -72,7 +73,7 @@
 	       "compiled object"
 	       (extract-suffix append-object-suffix))
 	   (mk 'extract-base-filename/ext
-               (string->bytes/latin-1 (format "(?i:~a)" (subbytes (system-type 'so-suffix) 1)))
+               (regexp-quote (subbytes (system-type 'so-suffix) 1) #f)
 	       "MzScheme extension"
 	       (extract-suffix append-extension-suffix)))))))
 
