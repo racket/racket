@@ -17,7 +17,7 @@
   ;; - resolves is the list of identifiers resolved by the macro keyword
   ;; - me1 is the marked version of the input syntax
   ;; - me2 is the marked version of the output syntax
-  (define-struct transformation (e1 e2 resolves me1 me2 locals) #f)
+  (define-struct transformation (e1 e2 resolves me1 me2 locals seq) #f)
 
   ;; A LocalAction is one of
   ;;  - (make-local-expansion Syntax Syntax Syntax Syntax Derivation)

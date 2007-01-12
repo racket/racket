@@ -156,7 +156,7 @@
          (join (loop tx) (loop next))]
         [(AnyQ lift-deriv (_ _ first lift second))
          (join (loop first) (loop lift) (loop second))]
-        [(AnyQ transformation (_ _ _ _ _ locals))
+        [(AnyQ transformation (_ _ _ _ _ locals _))
          (loops locals)]
         [(struct local-expansion (_ _ _ _ deriv))
          (loop deriv)]

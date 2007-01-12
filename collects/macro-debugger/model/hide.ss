@@ -393,7 +393,7 @@
     #;
     (define (for-transformation tx)
       (match tx
-        [(IntQ transformation (e1 e2 rs me1 me2 locals))
+        [(IntQ transformation (e1 e2 rs me1 me2 locals _seq))
          (error 'unimplemented "hide: for-transformation")]))
     
     ;; for-rename : Rename -> (values Rename syntax)
@@ -663,7 +663,7 @@
     ;; for-transformation : Transformation -> (values (list-of Subterm) Table)
     (define (for-transformation tx)
       (match tx
-        [(struct transformation (e1 e2 rs me1 me2 locals))
+        [(struct transformation (e1 e2 rs me1 me2 locals _seq))
          ;; FIXME: We'll need to use e1/e2/me1/me2 to synth locals, perhaps
          ;; FIXME: and we'll also need to account for *that* marking, too...
          (unless (null? locals)
@@ -852,7 +852,7 @@
   ;; show-mrule? : MRule -> boolean
   (define (show-transformation? tx)
     (match tx
-      [(AnyQ transformation (e1 e2 rs me1 me2 locals))
+      [(AnyQ transformation (e1 e2 rs me1 me2 locals _seq))
        (ormap show-macro? rs)]))
   
   (define (map/2values f items)

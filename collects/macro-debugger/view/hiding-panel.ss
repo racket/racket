@@ -101,11 +101,11 @@
       ;; refresh
       (define/public (refresh)
         (when (send config get-macro-hiding?)
-          (send stepper refresh/resynth)))
+          (send stepper refresh)))
 
       ;; force-refresh
       (define/private (force-refresh)
-        (send stepper refresh/resynth))
+        (send stepper refresh/resynth-prefix))
       
       ;; set-syntax : syntax/#f -> void
       (define/public (set-syntax lstx)

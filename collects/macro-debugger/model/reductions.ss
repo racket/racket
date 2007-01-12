@@ -284,14 +284,14 @@
   ;; reductions-transformation : Transformation -> ReductionSequence
   (define (reductions-transformation tx)
     (match tx
-      [(struct transformation (e1 e2 rs me1 me2 locals))
+      [(struct transformation (e1 e2 rs me1 me2 locals seq))
        (append (reductions-locals e1 locals)
                (list (walk e1 e2 'macro-step)))]
-      [(IntW transformation (e1 e2 rs me1 me2 locals) 'locals)
+      [(IntW transformation (e1 e2 rs me1 me2 locals seq) 'locals)
        (reductions-locals e1 locals)]
-      [(ErrW transformation (e1 e2 rs me1 me2 locals) 'bad-transformer exn)
+      [(ErrW transformation (e1 e2 rs me1 me2 locals seq) 'bad-transformer exn)
        (list (stumble e1 exn))]
-      [(ErrW transformation (e1 e2 rs me1 me2 locals) 'transform exn)
+      [(ErrW transformation (e1 e2 rs me1 me2 locals seq) 'transform exn)
        (append (reductions-locals e1 locals)
                (list (stumble e1 exn)))]))
 

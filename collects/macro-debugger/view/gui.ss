@@ -12,6 +12,7 @@
            "warning.ss"
            "hiding-panel.ss"
            (prefix sb: "../syntax-browser/embed.ss")
+           "../model/deriv.ss"
            "../model/deriv-util.ss"
            "../model/trace.ss"
            "../model/hide.ss"
@@ -210,6 +211,9 @@
           ;; steps : cursor
           (define steps #f)
 
+          ;; saved-position : number/#f
+          (define saved-position #f)
+
           (define warnings-frame #f)
 
           (define/public (add-deriv d)
@@ -226,7 +230,7 @@
                             nav:down))))
             (if (null? (cdr derivs))
                 ;; There is nothing currently displayed
-                (refresh)
+                (refresh/move/cached-prefix)
                 (update)))
 
           (define/public (get-controller) sbc)
@@ -304,29 +308,29 @@
 
           (define/private (navigate-to-start)
             (cursor:move-to-start steps)
-            (update))
+            (update/save-position))
           (define/private (navigate-to-end)
             (cursor:move-to-end steps)
-            (update))
+            (update/save-position))
           (define/private (navigate-previous)
             (cursor:move-previous steps)
-            (update))
+            (update/save-position))
           (define/private (navigate-next)
             (cursor:move-next steps)
-            (update))
+            (update/save-position))
           
           (define/private (navigate-up)
             (let ([d+sd (car derivs-prefix)])
               (set! derivs (cons (car d+sd) derivs))
               (set! synth-deriv (cdr d+sd))
               (set! derivs-prefix (cdr derivs-prefix)))
-            (refresh))
+            (refresh/move/cached-prefix))
           (define/private (navigate-down)
             (let ([d0 (car derivs)])
               (set! derivs-prefix (cons (cons d0 synth-deriv) derivs-prefix))
               (set! derivs (cdr derivs))
               (set! synth-deriv #f))
-            (refresh))
+            (refresh/move/cached-prefix))
 
           (define/private (insert-step-separator text)
             (send sbview add-text "\n    ")
@@ -437,6 +441,11 @@
                           (send sbview add-syntax (lift/deriv-e1 suffix-deriv)))
                         (cdr derivs))))
 
+          ;; update/save-position : -> void
+          (define/private (update/save-position)
+            (save-position)
+            (update))
+
           ;; update : -> void
           ;; Updates the terms in the syntax browser to the current step
           (define/private (update)
@@ -487,9 +496,21 @@
           
           ;; --
 
-          ;; refresh/resynth : -> void
+          ;; refresh/move/cached-prefix : -> void
+          ;; Resynth current derivation,
+          ;; Create reductions for current derivation,
+          ;; Show first step
+          (define/private (refresh/move/cached-prefix)
+            (clear-saved-position)
+            (if (pair? derivs)
+                (refresh)
+                (begin (set! synth-deriv #f)
+                       (set! steps #f)
+                       (update))))
+
+          ;; refresh/resynth-prefix : -> void
           ;; Resynth all of the derivations in prefix and refresh
-          (define/public (refresh/resynth)
+          (define/public (refresh/resynth-prefix)
             (with-handlers ([(lambda (e) (catch-errors?))
                              (lambda (e)
                                (message-box "Error"
@@ -501,24 +522,75 @@
             (refresh))
 
           ;; refresh : -> void
-          ;; Resynth current derivation,
-          ;; Create reductions for current derivation,
-          ;; Show first step
-          (define/private (refresh)
-            (if (pair? derivs)
-                (refresh/nontrivial)
-                (begin (set! synth-deriv #f)
-                       (set! steps #f)
-                       (update))))
-
-          ;; refresh/nontrivial : -> void
-          (define/private (refresh/nontrivial)
+          (define/public (refresh)
             (let ([deriv (car derivs)])
               (let ([d (synthesize deriv)])
                 (let ([s (cursor:new (reduce d))])
                   (set! synth-deriv d)
                   (set! steps s))))
+            (restore-position)
             (update))
+
+          ;; update-saved-position : num -> void
+          (define/private (update-saved-position pos)
+            (when pos (set! saved-position pos)))
+
+          ;; clear-saved-position : -> void
+          (define/private (clear-saved-position)
+            (set! saved-position #f))
+
+          ;; save-position : -> void
+          (define/private (save-position)
+            (when steps
+              (let ([step (cursor:current steps)])
+                (cond [(not step)
+                       ;; At end; go to the end when restored
+                       (update-saved-position +inf.0)]
+                      [(protostep? step)
+                       (update-saved-position (extract-protostep-seq step))]))))
+
+;           ;; save-position : -> void
+;           (define (save-position)
+;             (define (steps-loop)
+;               (let ([step (cursor:current steps)])
+;                 (cond [(not step)
+;                        ;; At end; go to the end when restored
+;                        +inf.0]
+;                       [(protostep? step)
+;                        (or (extract-protostep-seq step)
+;                            ;; Go one previous, if possible, and try again
+;                            (if (cursor:can-move-previous? steps)
+;                                (begin (cursor:move-previous steps)
+;                                       (steps-loop))
+;                                #f))]
+;                       [else #f])))
+;             (update-saved-position (and steps (steps-loop))))
+
+          ;; restore-position : number -> void
+          (define (restore-position)
+            (define (advance)
+              (let ([step (cursor:current steps)])
+                (cond [(not step)
+                       ;; At end; stop
+                       (void)]
+                      [(protostep? step)
+                       (let ([step-pos (extract-protostep-seq step)])
+                         (cond [(not step-pos)
+                                (cursor:move-next steps)
+                                (advance)]
+                               [(< step-pos saved-position)
+                                (cursor:move-next steps)
+                                (advance)]
+                               [else (void)]))])))
+            (when saved-position
+              (when steps
+                (advance))))
+
+          (define/private (extract-protostep-seq step)
+            (match (protostep-deriv step)
+              [(AnyQ mrule (_ _ (AnyQ transformation (_ _ _ _ _ _ seq)) _))
+               seq]
+              [else #f]))
 
           ;; synthesize : Derivation -> Derivation
           (define/private (synthesize deriv)
@@ -595,7 +667,7 @@
           ;; Initialization
           
           (super-new)
-          (refresh)))
+          (refresh/move/cached-prefix)))
 
       ;; Main entry points
 

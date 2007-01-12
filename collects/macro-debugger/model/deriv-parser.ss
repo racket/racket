@@ -13,8 +13,18 @@
         (error 'derivation-parser "bad token #~a" start)))
   
   ;; PARSER
+
+  (define (parse-derivation x)
+    (parameterize ((current-sequence-number 0))
+      (parse-derivation* x)))
+
+  (define current-sequence-number (make-parameter #f))
+  (define (new-sequence-number)
+    (let ([seq (current-sequence-number)])
+      (current-sequence-number (add1 seq))
+      seq))
   
-  (define parse-derivation
+  (define parse-derivation*
     (parser
      (options (start Expansion)
               (src-pos)
@@ -132,7 +142,7 @@
          (! 'bad-transformer)
          macro-pre-transform (? LocalActions 'locals) (! 'transform) macro-post-transform 
          exit-macro)
-        (make-transformation $2 $8 $1 $4 $7 $5)])
+        (make-transformation $2 $8 $1 $4 $7 $5 (new-sequence-number))])
 
       ;; Local actions taken by macro
       ;; LocalAction Answer = (list-of LocalAction)
@@ -373,7 +383,7 @@
        ;; let*-values with bindings is "macro-like"
        [(prim-let*-values ! (? EE))
         (let ([next-e1 (lift/deriv-e1 $3)])
-          (make-mrule e1 e2 (make-transformation e1 next-e1 rs e1 next-e1 null) $3))]
+          (make-mrule e1 e2 (make-transformation e1 next-e1 rs e1 next-e1 null (new-sequence-number)) $3))]
        ;; No bindings... model as "let"
        [(prim-let*-values NoError renames-let (? NextEEs 'rhss) next-group (? EB 'body))
         (make-p:let-values e1 e2 rs $3 $4 $6)])
