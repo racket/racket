@@ -2128,7 +2128,11 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 # ifdef OS_X
       return scheme_make_byte_string(".dylib");
 # else
+#  ifdef USE_CYGWIN_SO_SUFFIX
+      return scheme_make_byte_string(".dll");
+#  else
       return scheme_make_byte_string(".so");
+#  endif
 # endif
 #endif
     }
