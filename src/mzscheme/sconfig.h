@@ -607,6 +607,8 @@
 # define USE_MZ_CYGWIN_SETJMP
 # define USE_MZ_SETJMP
 
+# define USE_CYGWIN_SO_SUFFIX
+
 # define USE_PLAIN_TIME
 # define USE_TOD_FOR_TIMEZONE
 
@@ -617,7 +619,9 @@
 
 # define REGISTER_POOR_MACHINE
 
-# define LINK_EXTENSIONS_BY_TABLE
+# ifndef AS_MSVC_EXTENSION
+#  define LINK_EXTENSIONS_BY_TABLE
+# endif
 
 # define MZ_USE_JIT_I386
 

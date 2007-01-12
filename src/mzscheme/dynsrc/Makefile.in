@@ -49,13 +49,10 @@ dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
 ../starter: $(srcdir)/ustart.c
 	$(PLAIN_CC) $(CFLAGS) -o ../starter $(srcdir)/ustart.c
 
+# Cygwin ########################################
+
 ILIBDIR = $(libpltdir)
 
-# Prefix might be relative to srcdir, or it might be absolute, so we
-# have to go up and install things from there.
-
-# The generated .lib files are useful only when building extensions to be
-# linked with the MSVC-built MzScheme
 cygwin-install:
 	gcc -c $(srcdir)/init.cc
 	gcc -c $(srcdir)/fixup.c
@@ -63,23 +60,22 @@ cygwin-install:
 	dlltool --def mzdynx.def --output-exp mzdyn.exp
 	cd ../..; mkdir -p $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/mzdynx.def $(ILIBDIR)/gcc/mzdyn.def
-	cd ../..; cp mzscheme/dynsrc/mzdyn.exp $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/init.o $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/fixup.o $(ILIBDIR)/gcc
 
 cygwin-install-cgc:
+	cd ../..; cp mzscheme/dynsrc/mzdyn.exp $(ILIBDIR)/gcc
 	gcc -c -O2 -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c
-	dlltool --input-def $(srcdir)/../include/mzwin.def --output-lib libmzschxxxxxxx.lib --dllname libmzschxxxxxxx.dll
-	dlltool --input-def $(srcdir)/../include/gmzwin.def --output-lib libmzgcxxxxxxx.lib --dllname libmzgcxxxxxxx.dll
+	gcc -c -O2 -DAS_MSVC_EXTENSION -I$(builddir)/.. -I$(srcdir)/../include -o mzdynw.o $(srcdir)/mzdyn.c
 	cd ../..; cp mzscheme/dynsrc/mzdyn.o $(ILIBDIR)/gcc
-	cd ../..; cp mzscheme/dynsrc/libmzschxxxxxxx.lib $(ILIBDIR)/gcc
-	cd ../..; cp mzscheme/dynsrc/libmzgcxxxxxxx.lib $(ILIBDIR)/gcc
+	cd ../..; cp mzscheme/dynsrc/mzdynw.o $(ILIBDIR)/gcc
 
 cygwin-install-3m:
+	cd ../..; cp mzscheme/dynsrc/mzdyn.exp $(ILIBDIR)/gcc/mzdyn3m.exp
 	gcc -c -O2 -DMZ_PRECISE_GC -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c -o mzdyn3m.o
-	dlltool --input-def $(srcdir)/../include/mzwin3m.def --output-lib libmzsch3mxxxxxxx.lib --dllname libmzsch3mxxxxxxx.dll
+	gcc -c -O2 -DAS_MSVC_EXTENSION -DMZ_PRECISE_GC -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c -o mzdynw3m.o
 	cd ../..; cp mzscheme/dynsrc/mzdyn3m.o $(ILIBDIR)/gcc
-	cd ../..; cp mzscheme/dynsrc/libmzsch3mxxxxxxx.lib $(ILIBDIR)/gcc
+	cd ../..; cp mzscheme/dynsrc/mzdynw3m.o $(ILIBDIR)/gcc
 
 clean:
 	/bin/rm -f *.o Makefile.bak
