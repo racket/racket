@@ -4,7 +4,7 @@
 	   (lib "file.ss")
 	   (lib "dirs.ss" "setup")
 	   (lib "list.ss")
-	   (prefix config: (lib "config.ss" "config"))
+	   (lib "variant.ss" "setup")
 	   (lib "filename-version.ss" "dynext")
 	   "private/macfw.ss"
 	   "private/windlldir.ss"
@@ -24,7 +24,7 @@
 			   (case (system-type)
 			     [(windows) #f]
 			     [(unix) "bin"]
-			     [(macosx) (if (memq type '(mred mred3m))
+			     [(macosx) (if (memq type '(mredcgc mred3m))
 					   #f
 					   "bin")]))
 			  binaries
@@ -39,7 +39,7 @@
 		       (make-directory dest-dir))
 		     (let-values ([(base name dir?) (split-path b)])
 		       (let ([dest (build-path dest-dir name)])
-			 (if (and (memq type '(mred mred3m))
+			 (if (and (memq type '(mredcgc mred3m))
 				  (eq? 'macosx (system-type)))
 			     (begin
 			       (copy-app b dest)
@@ -52,7 +52,7 @@
 		 types)]
 	   [single-mac-app? (and (eq? 'macosx (system-type))
 				 (= 1 (length types))
-				 (memq (car types) '(mred mred3m)))])
+				 (memq (car types) '(mredcgc mred3m)))])
       ;; Create directories for libs and collects:
       (let-values ([(lib-dir collects-dir relative-collects-dir)
 		    (if single-mac-app?
@@ -130,8 +130,8 @@
 	      (list
 	       "iconv.dll"
 	       "UnicoWS.dll"))
-	 (when (or (memq 'mzscheme types)
-		   (memq 'mred types))
+	 (when (or (memq 'mzschemecgc types)
+		   (memq 'mredcgc types))
 	   (map copy-dll
 		(list
 		 (versionize "libmzsch~a.dll")
@@ -141,7 +141,7 @@
 	   (map copy-dll
 		(list
 		 (versionize "libmzsch3m~a.dll"))))
-	 (when (memq 'mred types)
+	 (when (memq 'mredcgc types)
 	   (map copy-dll
 		(list
 		 (versionize "libmred~a.dll"))))
@@ -150,11 +150,11 @@
 		(list
 		 (versionize "libmred3m~a.dll")))))]
       [(macosx)
-       (when (memq 'mzscheme types)
+       (when (memq 'mzschemecgc types)
 	 (copy-framework "MzScheme" #f lib-dir))
        (when (memq 'mzscheme3m types)
 	 (copy-framework "MzScheme" #t lib-dir))
-       (when (memq 'mred types)
+       (when (memq 'mredcgc types)
 	 (copy-framework "MrEd" #f lib-dir))
        (when (memq 'mred3m types)
 	 (copy-framework "MrEd" #t lib-dir))]
@@ -163,29 +163,30 @@
 	 (unless (directory-exists? lib-plt-dir)
 	   (make-directory lib-plt-dir))
 	 (let ([copy-bin
-		(lambda (name)
-		  (copy-file* (build-path (find-console-bin-dir) name)
+		(lambda (name variant)
+		  (copy-file* (build-path (find-console-bin-dir) 
+                                          (format "~a~a" name (variant-suffix variant #f)))
 			      (build-path lib-plt-dir 
-					  (format "~a-~a" name (version)))))])
-	   (when (memq 'mzscheme types)
-	     (copy-bin "mzscheme"))
+					  (format "~a~a-~a" name variant (version)))))])
+	   (when (memq 'mzschemecgc types)
+	     (copy-bin "mzscheme" 'cgc))
 	   (when (memq 'mzscheme3m types)
-	     (copy-bin "mzscheme3m"))
-	   (when (memq 'mred types)
-	     (copy-bin "mred"))
+	     (copy-bin "mzscheme" '3m))
+	   (when (memq 'mredcgc types)
+	     (copy-bin "mred" 'cgc))
 	   (when (memq 'mred3m types)
-	     (copy-bin "mred3m")))
+	     (copy-bin "mred" '3m)))
 	 (when (shared-libraries?)
-	   (when (or (memq 'mzscheme types)
-		     (memq 'mred types))
+	   (when (or (memq 'mzschemecgc types)
+		     (memq 'mredcgc types))
 	     (copy-shared-lib "mzscheme" lib-dir)
 	     (copy-shared-lib "mzgc" lib-dir))
 	   (when (or (memq 'mzscheme3m types)
 		     (memq 'mred3m types))
 	     (copy-shared-lib "mzscheme3m" lib-dir))
-	   (when (memq 'mred types)
+	   (when (memq 'mredcgc types)
 	     (copy-shared-lib "mred" lib-dir))
-	   (when (memq 'mred types)
+	   (when (memq 'mred3m types)
 	     (copy-shared-lib "mred3m" lib-dir))))]))
 
   (define (search-dll dll-dir dll)
@@ -270,18 +271,18 @@
 		 binaries)]
       [(macosx)
        (if (and (= 1 (length types))
-		(memq (car types) '(mred mred3m)))
+		(memq (car types) '(mredcgc mred3m)))
 	   ;; Special case for single MrEd app:
 	   (update-framework-path "@executable_path/../Frameworks/"
 				  (car binaries)
 				  #t)
 	   ;; General case:
 	   (for-each (lambda (b type)
-		       (update-framework-path (if (memq type '(mzscheme mzscheme3m))
+		       (update-framework-path (if (memq type '(mzschemecgc mzscheme3m))
 						  "@executable_path/../lib/" 
 						  "@executable_path/../../../lib/" )
 					      b
-					      (memq type '(mred mred3m))))
+					      (memq type '(mredcgc mred3m))))
 		     binaries types))]
       [(unix)
        (for-each (lambda (b type)
@@ -295,6 +296,7 @@
 		 types)]))
 
   (define (patch-stub-exe-paths b exe shared-lib-dir)
+    ;; Adjust paths to executable and DLL that is embedded in the executable
     (let-values ([(config-pos start end prog-len dll-len rest)
 		  (with-input-from-file b
 		    (lambda ()
@@ -304,13 +306,13 @@
 			  (error 'patch-stub-exe-paths
 				 "cannot find config info"))
 			(read-byte i)
-			(read-one-int i) ; start of prog data
-			(let ([start (read-one-int i)]
-			      [end (read-one-int i)])
+			(read-one-int i) ; start of prog
+			(let ([start (read-one-int i)] ; start of data
+			      [end (read-one-int i)]) ; end of data
 			  (file-position i start)
 			  (let ([prog-len (next-bytes-length i)]
 				[dll-len (next-bytes-length i)])
-			    (values (+ (cdar m) 1)
+			    (values (+ (cdar m) 1) ; position after "cOnFiG:[" tag
 				    start
 				    end
 				    prog-len
@@ -321,13 +323,13 @@
 				  (path->bytes (to-path shared-lib-dir))
 				  #"")])
 	(let ([delta (- (+ prog-len dll-len)
-			(bytes-length exe-bytes)
-			(bytes-length shared-lib-bytes))])
+			(add1 (bytes-length exe-bytes))
+			(add1 (bytes-length shared-lib-bytes)))])
 	  (with-output-to-file b
 	    (lambda ()
 	      (let ([o (current-output-port)])
-		(file-position o (+ config-pos 8))
-		(write-one-int (+ end delta) o)
+		(file-position o (+ config-pos 8)) ; update the end of the program data
+		(write-one-int (- end delta) o)
 		(flush-output o)
 		(file-position o start)
 		(write-bytes exe-bytes o)
@@ -366,10 +368,10 @@
 		  (if (equal? (caddr m) #"r")
 		      (if 3m?
 			  'mred3m
-			  'mred)
+			  'mredcgc)
 		      (if 3m?
 			  'mzscheme3m
-			  'mzscheme))))
+			  'mzschemecgc))))
 	      (error 'assemble-distribution
 		     "file is not a PLT executable: ~e"
 		     b))))))

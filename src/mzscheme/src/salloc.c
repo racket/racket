@@ -61,6 +61,11 @@ extern MZ_DLLIMPORT unsigned long GC_get_stack_base();
 
 void scheme_set_stack_base(void *base, int no_auto_statics)
 {
+#ifdef MZ_PRECISE_GC
+  GC_init_type_tags(_scheme_last_type_, 
+                    scheme_pair_type, scheme_weak_box_type, 
+                    scheme_ephemeron_type, scheme_rt_weak_array);
+#endif
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
   GC_set_stack_base(base);
   /* no_auto_statics must always be true! */

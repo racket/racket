@@ -8,6 +8,7 @@
 	   (lib "moddep.ss" "syntax")
 	   (lib "plist.ss" "xml")
 	   (lib "dirs.ss" "setup")
+           (lib "variant.ss" "setup")
 	   (lib "kw.ss")
 	   "embed-sig.ss"
 	   "private/winicon.ss"
@@ -69,11 +70,9 @@
 	       [fail
 		(lambda ()
 		  (error 'create-embedding-executable
-			 "can't find ~a executable"
-			 (if mred? "MrEd" "MzScheme")))]
-	       [variant-suffix (case variant
-				 [(normal) ""]
-				 [(3m) "3m"])])
+			 "can't find ~a executable for variant ~a"
+			 (if mred? "MrEd" "MzScheme")
+                         variant))])
 	  (let ([exe (build-path
 		      base
 		      (case (system-type)
@@ -81,22 +80,23 @@
 			 (cond
 			  [(not mred?)
 			   ;; Need MzScheme:
-			   (string-append "mzscheme" variant-suffix)]
+			   (string-append "mzscheme" (variant-suffix variant #f))]
 			  [mred?
 			   ;; Need MrEd:
-			   (build-path (format "MrEd~a.app" variant-suffix)
-				       "Contents" "MacOS" 
-				       (format "MrEd~a" variant-suffix))])]
+                           (let ([sfx (variant-suffix variant #t)])
+                             (build-path (format "MrEd~a.app" sfx)
+                                         "Contents" "MacOS" 
+                                         (format "MrEd~a" sfx)))])]
 			[(windows)
 			 (format "~a~a.exe" (if mred?
-						"mred"
-						"mzscheme")
-				 variant-suffix)]
+						"MrEd"
+						"MzScheme")
+				 (variant-suffix variant #t))]
 			[(unix)
 			 (format "~a~a" (if mred?
 					    "mred"
 					    "mzscheme")
-				 variant-suffix)]))])
+				 (variant-suffix variant #f))]))])
 	    (unless (or (file-exists? exe)
 			(directory-exists? exe))
 	      (fail))
@@ -130,11 +130,8 @@
       (define (prepare-macosx-mred exec-name dest aux variant)
 	(let* ([name (let-values ([(base name dir?) (split-path dest)])
 		       (path-replace-suffix name #""))]
-	       [variant-suffix (case variant
-				 [(normal) ""]
-				 [(3m) "3m"])]
 	       [src (build-path (collection-path "launcher")
-				(format "Starter~a.app" variant-suffix))]
+				"Starter.app")]
 	       [creator (let ([c (assq 'creator aux)])
 			  (or (and c
 				   (cdr c))
@@ -178,11 +175,9 @@
 	  (let ([icon (or (let ([icon (assq 'icns aux)])
 			    (and icon
 				 (cdr icon)))
-			  (build-path src "Contents" "Resources" 
-				      (format "Starter~a.icns" variant-suffix)))])
+			  (build-path src "Contents" "Resources" "Starter.icns"))])
 	    (copy-file icon
-		       (build-path dest "Contents" "Resources" 
-				   (format "Starter~a.icns" variant-suffix))))
+		       (build-path dest "Contents" "Resources" "Starter.icns")))
 	  (let ([orig-plist (call-with-input-file (build-path src
 							      "Contents"
 							      "Info.plist")
@@ -570,7 +565,7 @@
 			  cmdline
 			  [aux null]
 			  [launcher? #f]
-			  [variant 'normal])
+			  [variant (system-type 'gc)])
 	  (create-embedding-executable dest
 				       #:mred? mred?
 				       #:verbose? verbose?
@@ -593,7 +588,7 @@
 					      [cmdline null]
 					      [aux null]
 					      [launcher? #f]
-					      [variant 'normal]
+					      [variant (system-type 'gc)]
 					      [collects-path #f]
 					      [collects-dest #f]
                                               [on-extension #f])
@@ -734,7 +729,7 @@
 					  (lambda () (find-cmdline 
 						      "configuration"
 						      #"cOnFiG:")))]
-				[typepos (and mred?
+				[typepos (and (or mred? (eq? variant '3m))
 					      (with-input-from-file dest-exe 
 						(lambda () (find-cmdline 
 							    "exeuctable type"
@@ -766,8 +761,12 @@
 				  void
 				  (lambda ()
 				    (when typepos
-				      (file-position out (+ typepos 13))
-				      (write-bytes #"r" out)
+                                      (when mred?
+                                        (file-position out (+ typepos 13))
+                                        (write-bytes #"r" out))
+                                      (when (eq? variant '3m)
+                                        (file-position out (+ typepos 15))
+                                        (write-bytes #"3" out))
 				      (flush-output out))
 				    (file-position out (+ numpos 7))
 				    (write-bytes #"!" out)

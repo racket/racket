@@ -1,6 +1,11 @@
 // event.cpp -- event-related functions
 
-#include "stdafx.h"
+#ifdef MYSTERX_3M
+// Created by xform.ss:
+# include "xsrc/htmlevent3m.cxx"
+#else
+
+#include "mysterx_pre.h"
 
 #include <objbase.h>
 #include <mshtml.h>
@@ -33,10 +38,13 @@ static void html_event_sem_fun(MX_Browser_Object *browser,void *fds) {
   scheme_add_fd_handle(browser->readSem,fds,TRUE);
 }
 
+typedef int (*mzPOLL_PROC)(Scheme_Object *);
+typedef void (*mzSLEEP_PROC)(Scheme_Object *,void *);
+
 Scheme_Object *mx_block_until_event(int argc,Scheme_Object **argv) {
   GUARANTEE_BROWSER ("block-until-event", 0);
-  scheme_block_until((int (*)(Scheme_Object *))html_event_available,
-  		     (void (*)(Scheme_Object *,void *))html_event_sem_fun,
+  scheme_block_until((mzPOLL_PROC)html_event_available,
+  		     (mzSLEEP_PROC)html_event_sem_fun,
   		     argv[0],0.0F);
 
   return scheme_void;
@@ -68,8 +76,10 @@ IEvent *getEventInterface(Scheme_Object *ev,char *fname) {
 Scheme_Object * mx_event_tag (int argc, Scheme_Object **argv)
 {
   BSTR tag;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-tag")->get_srcTag(&tag);
+  ev = getEventInterface(argv[0],"mx-event-tag");
+  ev->get_srcTag(&tag);
 
   return unmarshalBSTR (tag);
 }
@@ -77,8 +87,10 @@ Scheme_Object * mx_event_tag (int argc, Scheme_Object **argv)
 Scheme_Object * mx_event_id (int argc, Scheme_Object **argv)
 {
   BSTR id;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-id")->get_srcId(&id);
+  ev = getEventInterface(argv[0],"mx-event-id");
+  ev->get_srcId(&id);
 
   return unmarshalBSTR (id);
 }
@@ -86,8 +98,10 @@ Scheme_Object * mx_event_id (int argc, Scheme_Object **argv)
 Scheme_Object * mx_event_from_tag (int argc, Scheme_Object **argv)
 {
   BSTR tag;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-from-tag")->get_fromTag(&tag);
+  ev = getEventInterface(argv[0],"mx-event-from-tag");
+  ev->get_fromTag(&tag);
 
   return unmarshalBSTR (tag);
 }
@@ -95,8 +109,10 @@ Scheme_Object * mx_event_from_tag (int argc, Scheme_Object **argv)
 Scheme_Object * mx_event_from_id (int argc, Scheme_Object **argv)
 {
   BSTR id;
+  IEvent *ev;
 
-  getEventInterface (argv[0],"mx-event-from-id")->get_fromId (&id);
+  ev = getEventInterface (argv[0],"mx-event-from-id");
+  ev->get_fromId (&id);
 
   return unmarshalBSTR (id);
 }
@@ -104,8 +120,10 @@ Scheme_Object * mx_event_from_id (int argc, Scheme_Object **argv)
 Scheme_Object * mx_event_to_tag (int argc, Scheme_Object **argv)
 {
   BSTR tag;
+  IEvent *ev;
 
-  getEventInterface (argv[0],"mx-event-to-tag")->get_toTag (&tag);
+  ev = getEventInterface (argv[0],"mx-event-to-tag");
+  ev->get_toTag (&tag);
 
   return unmarshalBSTR (tag);
 }
@@ -113,64 +131,80 @@ Scheme_Object * mx_event_to_tag (int argc, Scheme_Object **argv)
 Scheme_Object * mx_event_to_id (int argc, Scheme_Object **argv)
 {
   BSTR id;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-to-id")->get_toId(&id);
+  ev = getEventInterface(argv[0],"mx-event-to-id");
+  ev->get_toId(&id);
 
   return unmarshalBSTR (id);
 }
 
 Scheme_Object *mx_event_keycode(int argc,Scheme_Object **argv) {
   long code;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-keycode")->get_keyCode(&code);
+  ev = getEventInterface(argv[0],"mx-event-keycode");
+  ev->get_keyCode(&code);
 
   return scheme_make_integer(code);
 }
 
 Scheme_Object *mx_event_shiftkey(int argc,Scheme_Object **argv) {
   VARIANT_BOOL vb;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-shiftkey")->get_shiftPressed(&vb);
+  ev = getEventInterface(argv[0],"mx-event-shiftkey");
+  ev->get_shiftPressed(&vb);
 
   return (vb == VARIANT_FALSE) ? scheme_false : scheme_true;
 }
 
 Scheme_Object *mx_event_altkey(int argc,Scheme_Object **argv) {
   VARIANT_BOOL vb;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-altkey")->get_altPressed(&vb);
+  ev = getEventInterface(argv[0],"mx-event-altkey");
+  ev->get_altPressed(&vb);
 
   return (vb == VARIANT_FALSE) ? scheme_false : scheme_true;
 }
 
 Scheme_Object *mx_event_ctrlkey(int argc,Scheme_Object **argv) {
   VARIANT_BOOL vb;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-ctrlkey")->get_ctrlPressed(&vb);
+  ev = getEventInterface(argv[0],"mx-event-ctrlkey");
+  ev->get_ctrlPressed(&vb);
 
   return (vb == VARIANT_FALSE) ? scheme_false : scheme_true;
 }
 
 Scheme_Object *mx_event_x(int argc,Scheme_Object **argv) {
   long x;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-x")->get_x(&x);
+  getEventInterface(argv[0],"mx-event-x");
+  ev->get_x(&x);
 
   return scheme_make_integer(x);
 }
 
 Scheme_Object *mx_event_y(int argc,Scheme_Object **argv) {
   long y;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-y")->get_y(&y);
+  ev = getEventInterface(argv[0],"mx-event-y");
+  ev->get_y(&y);
 
   return scheme_make_integer(y);
 }
 
 Scheme_Object *mx_event_type_pred(int argc,Scheme_Object **argv,WCHAR *evType) {
   EVENT_TYPE actualType;
+  IEvent *ev;
 
-  getEventInterface(argv[0],"event-<event-type>?")->get_eventType(&actualType);
+  ev = getEventInterface(argv[0],"event-<event-type>?");
+  ev->get_eventType(&actualType);
 
   return (wcscmp(evType,eventNames[actualType]) == 0)
       ? scheme_true
@@ -242,9 +276,9 @@ Scheme_Object *mx_get_event(int argc,Scheme_Object **argv) {
     codedComError("Error retrieving event",hr);
   }
 
-  event_object = (MX_Event *)scheme_malloc(sizeof(MX_Event));
+  event_object = (MX_Event *)scheme_malloc_tagged(sizeof(MX_Event));
 
-  event_object->type = mx_event_type;
+  event_object->so.type = mx_event_type;
   event_object->released = FALSE;
   event_object->pEvent = pEvent;
 
@@ -252,3 +286,5 @@ Scheme_Object *mx_get_event(int argc,Scheme_Object **argv) {
 
   return (Scheme_Object *)event_object;
 }
+
+#endif //MYSTERX_3M

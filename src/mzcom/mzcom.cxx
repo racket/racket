@@ -1,5 +1,8 @@
 // mzcom.cxx : Implementation of WinMain
 
+// This file is not xformed for 3m. There's just one
+// bit of conditional compilation on MZCOM_3M.
+
 #include "stdafx.h"
 #include "resource.h"
 #include <initguid.h>
@@ -104,8 +107,12 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
 
   lpCmdLine = GetCommandLine(); //this line necessary for _ATL_MIN_CRT
 
+#ifdef MZCOM_3M
+  load_delayed_dll(hInstance, "libmzsch3mxxxxxxx.dll");
+#else
   load_delayed_dll(hInstance, "libmzgcxxxxxxx.dll");
   load_delayed_dll(hInstance, "libmzschxxxxxxx.dll");
+#endif
 
 #if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
   HRESULT hRes = CoInitializeEx(NULL, COINIT_MULTITHREADED);
@@ -125,7 +132,7 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
       if (lstrcmpi(lpszToken, _T("UnregServer"))==0)
         {
 	  _Module.UpdateRegistryFromResource(IDR_MZCOM, FALSE);
-    nRet = _Module.UnregisterServer(TRUE);
+          nRet = _Module.UnregisterServer(TRUE);
 	  bRun = FALSE;
 	  break;
         }
@@ -163,7 +170,7 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
             DispatchMessage(&msg);
 
         _Module.RevokeClassObjects();
-        Sleep(dwPause); //wait for any threads to finish
+	Sleep(dwPause); //wait for any threads to finish
     }
 
     _Module.Term();

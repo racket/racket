@@ -5966,6 +5966,7 @@ static void make_initial_config(Scheme_Thread *p)
   {
     Scheme_Object *s;
     s = scheme_make_path(scheme_os_getcwd(NULL, 0, NULL, 1));
+    s = scheme_path_to_directory_path(s);
     init_param(cells, paramz, MZCONFIG_CURRENT_DIRECTORY, s);
     scheme_set_original_dir(s);
   }

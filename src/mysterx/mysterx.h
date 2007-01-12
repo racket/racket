@@ -51,7 +51,7 @@ typedef struct _mx_prim_ {
 } MX_PRIM;
 
 typedef struct _scheme_com_obj_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
   IDispatch *pIDispatch;
   ITypeInfo *pITypeInfo;
@@ -60,17 +60,18 @@ typedef struct _scheme_com_obj_ {
   IConnectionPoint *pIConnectionPoint;
   DWORD connectionCookie;
   ISink *pISink;
+  Scheme_Hash_Table *types;
 } MX_COM_Object;
 
 typedef struct _scheme_com_type_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
   ITypeInfo *pITypeInfo;
   CLSID clsId; // of coclass
 } MX_COM_Type;
 
 typedef struct _scheme_mx_event_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
   IEvent *pEvent;
 } MX_Event;
@@ -84,7 +85,7 @@ typedef  HRESULT (STDMETHODCALLTYPE *COMFUNPTR)(IDispatch *);
 #define NO_FUNPTR (-1)
 
 typedef struct _method_desc_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
   MEMBERID memID;
   ITypeInfo *pITypeInfo;
@@ -104,7 +105,7 @@ typedef struct _method_desc_ {
 } MX_TYPEDESC;
 
 typedef struct _mx_com_data_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
   union { // MS representations
     DATE date;
@@ -115,38 +116,39 @@ typedef struct _mx_com_data_ {
 } MX_COM_Data_Object;
 
 typedef struct _com_browser_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
-  BOOL destroy;
   HWND hwnd;
   IWebBrowser2 *pIWebBrowser2;
   ISink *pISink;
   IEventQueue *pIEventQueue;
   HANDLE readSem;
+  int *destroy; /* malloc()ed, free()ed by msg loop */
 } MX_Browser_Object;
 
 typedef struct _com_document_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
   IHTMLDocument2 *pIHTMLDocument2;
 } MX_Document_Object;
 
 typedef struct _mx_element_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
   BOOL valid;
   IHTMLElement *pIHTMLElement;
 } MX_Element;
 
 typedef struct _date_ {
-  Scheme_Type type;
+  Scheme_Object so;
 } MX_Date_Object;
 
 typedef struct _mx_omit_ {
-  Scheme_Type type;
+  Scheme_Object so;
 } MX_OMIT;
 
 typedef struct _mx_type_tbl_entry_ {
+  Scheme_Object so;
   IDispatch *pIDispatch;
   LPCTSTR name;
   INVOKEKIND invKind;
@@ -170,7 +172,7 @@ typedef struct _browser_window_ { // parameters a la MrEd frame% class
 typedef struct _browser_window_init_ {
   BROWSER_WINDOW browserWindow;
   IStream **ppIStream; // for passing COM interface back to main thread
-  MX_Browser_Object *browserObject;
+  int *destroy;
 } BROWSER_WINDOW_INIT;
 
 typedef struct _browser_window_style_option {
@@ -183,7 +185,7 @@ typedef struct _browser_window_style_option {
 // a managed object has a Scheme_Type, followed by a released flag
 
 typedef struct _managed_obj_ {
-  Scheme_Type type;
+  Scheme_Object so;
   BOOL released;
 } MX_MANAGED_OBJ;
 
@@ -263,6 +265,8 @@ extern Scheme_Type mx_com_scode_type;
 extern Scheme_Type mx_com_iunknown_type;
 extern Scheme_Type mx_com_omit_type;
 extern Scheme_Type mx_com_typedesc_type;
+
+extern Scheme_Type mx_tbl_entry_type;
 
 extern Scheme_Object *hash_table_get;
 extern Scheme_Object *hash_table_put;

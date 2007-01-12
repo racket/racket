@@ -49,24 +49,34 @@ LLVM_DIR = ../llvm
 ################################################################################
 
 bin: 
-	$(MAKE) g-c
-	$(MAKE) @FOREIGNTARGET@
-	$(MAKE) @LLVMTARGET@
 	$(MAKE) @MZBINTARGET@
 
 normal-bin:
-	$(MAKE) dynlib
-	$(MAKE) mzlibrary
-	$(MAKE) mzscheme 
+	$(MAKE) @MAIN_VARIANT@
 
-# OBSOLTE:
-cygwin-bin:
-	$(MAKE) starter
+common:
+	$(MAKE) g-c
+	$(MAKE) @FOREIGNTARGET@
+	$(MAKE) @LLVMTARGET@
+
+cgc:
+	$(MAKE) common
 	$(MAKE) dynlib
 	$(MAKE) mzlibrary
-	$(MAKE) mzscheme.exe
+	$(MAKE) mzscheme@CGC@ 
+
+3m:
+	$(MAKE) cgc
+	cd gc2; $(MAKE) all
+	cd dynsrc; $(MAKE) dynlib3m
+	cd gc2; $(MAKE) ../mzscheme@MMM@
+
+both:
+	$(MAKE) cgc
+	$(MAKE) 3m
 
 oskit: 
+	$(MAKE) common
 	$(MAKE) mzlibrary
 	$(MAKE) mzscheme.multiboot
 
@@ -86,14 +96,6 @@ dynexample:
 oe:
 	$(MAKE) dynlib
 	cd dynsrc; $(MAKE) oe
-
-# OBSOLTE:
-cygwin-dll-setup:
-	cd src; $(MAKE) mzheaders
-	$(MAKE) gmzwin.exp
-
-gmzwin.exp: $(srcdir)/include/gmzwin.def
-	dlltool --def $(srcdir)/include/gmzwin.def --output-exp gmzwin.exp --output-lib gmzwin.a --dllname mzscheme.exe
 
 g-c:
 	cd @GCDIR@; $(MAKE) ../libmzgc.@LIBSFX@ 
@@ -133,22 +135,8 @@ sproc.@LTO@: @GCDIR@/sproc.@LTO@
 
 # Unix ----------------------------------------
 
-mzscheme@NOT_OSX@: libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
-	@MZLINKER@ -o mzscheme main.@LTO@ $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
-
-# Cygwin ----------------------------------------
-# OBSOLTE:
-
-libmzgcxxxxxxx.dll : libmzgc.a
-	gcc -mdll -o libmzgcxxxxxxx.dll -Wl,--whole-archive libmzgc.a -Wl,--no-whole-archive
-	dlltool --dllname libmzgcxxxxxxx.dll --output-lib libmzgcdll.a libmzgc.a
-
-libmzschxxxxxxx.dll: libmzscheme.a libmzgcdll.a
-	gcc -mdll -o libmzschxxxxxxx.dll -Wl,--whole-archive libmzscheme.a -Wl,--no-whole-archive libmzgcdll.a
-	dlltool --dllname libmzschxxxxxxx.dll --output-lib libmzschdll.a libmzscheme.a
-
-mzscheme.exe: main.o libmzgcxxxxxxx.dll libmzschxxxxxxx.dll
-	gcc -o mzscheme.exe main.o libmzschdll.a libmzgcdll.a
+mzscheme@CGC@@NOT_OSX@: libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
+	@MZLINKER@ -o mzscheme@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
 
 # Mac OS ----------------------------------------
 
@@ -160,9 +148,9 @@ $(MZFW): libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
 	rm -f PLT_MzScheme.framework/PLT_MzScheme
 	ln -s Versions/$(FWVERSION)/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme
 
-mzscheme@OSX@: $(MZFW) main.@LTO@
-	$(CC) -o mzscheme @PROFFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
-	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" mzscheme
+mzscheme@CGC@@OSX@: $(MZFW) main.@LTO@
+	$(CC) -o mzscheme@CGC@ @PROFFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
+	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "mzscheme@CGC@"
 
 # OSKit ----------------------------------------
 
@@ -212,35 +200,19 @@ mark:
 	$(MAKE) $(srcdir)/src/mzmark.c
 
 headers:
-	./mzscheme -qr $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
-	$(MAKE) $(srcdir)/../../collects/mzscheme/lib/mzdyn.c
-
-# mzdyn.c, used for MacOS "library"
-$(srcdir)/../../collects/mzscheme/lib/mzdyn.c: $(srcdir)/dynsrc/mzdyn.c
-	rm -rf $(srcdir)/../../collects/mzscheme/lib/mzdyn.c
-	cp $(srcdir)/dynsrc/mzdyn.c $(srcdir)/../../collects/mzscheme/lib/mzdyn.c
+	./mzscheme@CGC@ -qr $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/exnsrc.ss $(srcdir)/src/makeexn
-	./mzscheme -gqr $(srcdir)/src/makeexn < $(srcdir)/src/exnsrc.ss > $(srcdir)/src/schexn.h
+	./mzscheme@CGC@ -gqr $(srcdir)/src/makeexn < $(srcdir)/src/exnsrc.ss > $(srcdir)/src/schexn.h
 
 $(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.ss $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	./mzscheme -qr $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) < $(srcdir)/src/startup.ss > $(srcdir)/src/$(CSTARTUPDEST)
+	./mzscheme@CGC@ -qr $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) < $(srcdir)/src/startup.ss > $(srcdir)/src/$(CSTARTUPDEST)
 
 $(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.ss
 	mzscheme -qr $(srcdir)/src/mkmark.ss < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
 
 cstartup.zo:
 	$(MAKE) startup CSTARTUPEXTRA='zo' CSTARTUPDEST="../cstartup.zo"
-
-3m:
-	$(MAKE) bin
-	cd gc2; $(MAKE) all
-	cd dynsrc; $(MAKE) dynlib3m
-	cd gc2; $(MAKE) ../mzscheme3m
-
-palmos:
-	$(MAKE) bin
-	cd palm; $(MAKE) all
 
 clean@NOT_OSX@:
 	/bin/rm -rf tmp[123456789] tests/tmp[123456789] tests/sub[123]
@@ -265,28 +237,36 @@ BUILDINFO=$(DESTDIR)$(libpltdir)/buildinfo
 ICP=@ICP@
 
 install:
+	$(MAKE) install-@MAIN_VARIANT@
+
+install-3m:
 	$(MAKE) headers
 	$(MAKE) @MZINSTALLTARGET@
+	$(MAKE) @MZINSTALLTARGET@-3m
+	$(MAKE) @MZINSTALLTARGET@-3m-final
 
-install-3m-basic:
-	cd ..; $(ICP) mzscheme/mzscheme3m "$(DESTDIR)$(bindir)/mzscheme3m"
-	cd ..; $(ICP) mzscheme/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme3m@EXE_SUFFIX@" @COLLECTS_PATH@
+install-cgc:
+	$(MAKE) headers
+	$(MAKE) @MZINSTALLTARGET@
+	$(MAKE) @MZINSTALLTARGET@-cgc
+	$(MAKE) @MZINSTALLTARGET@-cgc-final
 
-install-3m@NOT_OSX@:
-	$(MAKE) install-3m-basic
-	cd ..; $(ICP) mzscheme/libmzscheme3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme3m.@LIBSFX@"
+install-both:
+	$(MAKE) headers
+	$(MAKE) @MZINSTALLTARGET@
+	$(MAKE) @MZINSTALLTARGET@-3m
+	$(MAKE) @MZINSTALLTARGET@-cgc
+	$(MAKE) @MZINSTALLTARGET@-@MAIN_VARIANT@-final
+
+# Unix install ----------------------------------------
 
 # Prefix might be relative to srcdir, or it might be absolute, so we
 # have to go up and install things from there.
 
-unix-install:
-	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme"
-	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
-	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme.@LIBSFX@"
-	cd ..; $(ICP) mzscheme/mzscheme "$(DESTDIR)$(bindir)/mzscheme"
+unix-install:	
+	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@"
+	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@"
 	cd ..; cp mzscheme/starter "$(DESTDIR)$(libpltdir)/starter"
-	./mzscheme -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@EXE_SUFFIX@" @COLLECTS_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
@@ -294,31 +274,75 @@ unix-install:
 	cd ..; echo "LDFLAGS=@LDFLAGS@" >> "$(BUILDINFO)"
 	cd ..; echo 'LIBS=@LIBS@' >> "$(BUILDINFO)"
 
-normal-install:
-	$(MAKE) unix-install
+unix-install-cgc:
+	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
+	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme.@LIBSFX@"
+	cd ..; $(ICP) mzscheme/mzscheme@CGC@ "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@"
 	cd ..; cp mzscheme/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
+	./mzscheme@CGC@ -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+
+unix-install-cgc-final:
+	cd .
+
+unix-install-3m:
+	cd ..; $(ICP) mzscheme/mzscheme@MMM@ "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@"
+	cd ..; $(ICP) mzscheme/libmzscheme3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme3m.@LIBSFX@"
+	cd ..; $(ICP) mzscheme/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
+	./mzscheme@MMM@ -mvqu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+
+unix-install-3m-final:
+	cd .
+
+# OS X install ----------------------------------------
 
 MZFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MzScheme.framework
-
-osx-install:
-	$(MAKE) normal-install
-	rm -f $(MZFWDIR)/Versions/$(FWVERSION)/PLT_MzScheme
-	rm -f $(MZFWDIR)/PLT_MzScheme
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MZFWDIR) ; fi
-	mkdir -p @FRAMEWORK_INSTALL_DIR@ "$(MZFWDIR)/Versions/$(FWVERSION)"
-	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
-	ln -s Versions/$(FWVERSION)/PLT_MzScheme $(MZFWDIR)/
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(bindir)/mzscheme" ; fi
-
 MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
 
-install-3m@OSX@:
-	$(MAKE) install-3m-basic
-	rm -f $(MZFWDIR)/Versions/$(FWVERSION)_3m/PLT_MzScheme
+osx-install:
+	$(MAKE) unix-install
+	rm -f $(MZFWDIR)/PLT_MzScheme
+	rm -rf $(MZFWDIR)/Versions/$(FWVERSION)
+	rm -rf $(MZFWDIR)/Versions/$(FWVERSION)_3m
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MZFWDIR) ; fi
+	mkdir -p @FRAMEWORK_INSTALL_DIR@
+
+osx-install-cgc:
+	$(MAKE) unix-install-cgc
+	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)"
+	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(bindir)/mzscheme@CGC_INSTALLED@" ; fi
+
+osx-install-cgc-final:
+	$(MAKE) unix-install-cgc-final
+	ln -s Versions/$(FWVERSION)/PLT_MzScheme $(MZFWDIR)/
+
+osx-install-3m:
+	$(MAKE) unix-install-3m
 	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)_3m"
 	cp $(MZFWMMM) $(MZFWDIR)/Versions/$(FWVERSION)_3m/
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(bindir)/mzscheme3m" ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then /usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/../lib/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(bindir)/mzscheme@MMM_INSTALLED@" ; fi
+
+osx-install-3m-final:
+	$(MAKE) unix-install-3m-final
+	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme $(MZFWDIR)/
+
+
+# Cygwin install ----------------------------------------
 
 unix-cygwin-install:
 	$(MAKE) unix-install
 	cd dynsrc; $(MAKE) cygwin-install
+
+unix-cygwin-install-cgc:
+	$(MAKE) unix-install-cgc
+	cd dynsrc; $(MAKE) cygwin-install-cgc
+
+unix-cygwin-install-cgc-final:
+	$(MAKE) unix-install-cgc-final
+
+unix-cygwin-install-3m:
+	$(MAKE) unix-install-3m
+	cd dynsrc; $(MAKE) cygwin-install-3m
+
+unix-cygwin-install-3m-final:
+	$(MAKE) unix-install-3m-final

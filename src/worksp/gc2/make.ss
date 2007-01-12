@@ -196,7 +196,7 @@
 (compile "../../mzscheme/src/mzsj86.c" "xsrc/mzsj86.obj" '() mz-inc)
 
 (define dll "../../../lib/libmzsch3mxxxxxxx.dll")
-(define exe "../../../MzScheme3m.exe")
+(define exe "../../../MzScheme.exe")
 
 (define libs "kernel32.lib user32.lib wsock32.lib shell32.lib advapi32.lib")
 
@@ -236,6 +236,11 @@
 				     ""))))
 	(error 'winmake "~a link failed" (if exe? "EXE" "DLL"))))))
 
+(compile "../mzscheme/uniplt.c"
+	 "xsrc/uniplt.obj"
+	 null
+	 " -Dwx_msw")
+
 (let ([objs (list*
 	     "../libmzsch/Release/uniplt.obj"
 	     "xsrc/gc2.obj"
@@ -265,7 +270,7 @@
 (let ([objs (list
 	     "mzscheme.res"
 	     "xsrc/main.obj"
-	     "../mzscheme/Release/uniplt.obj"
+	     "xsrc/uniplt.obj"
 	     "../../../lib/msvc/libmzsch3mxxxxxxx.lib")])
   (link-dll objs 
 	    '("libmzsch3mxxxxxxx.dll")
@@ -425,11 +430,11 @@
 (wx-try "mzscheme/utils" "wxme" "xcglue" #f "c" #f)
 (compile "../../wxcommon/wxGC.cxx"
 	 "xsrc/wxGC.obj"
-	 (list "../wxme/Release/wxGC.obj")
+	 null
 	 (string-append wx-inc " -DMZ_PRECISE_GC -DGC2_AS_IMPORT -Dwx_msw"))
 
 (let ([objs (append (list
-		     "../libmred/Release/uniplt.obj"
+		     "xsrc/uniplt.obj"
 		     "xsrc/wxGC.obj"
 		     "xsrc/wxJPEG.obj"
 		     "xsrc/xcglue.obj")
@@ -461,7 +466,7 @@
 (let ([objs (list
 	     "mred.res"
 	     "xsrc/mrmain.obj"
-	     "../mred/Release/uniplt.obj"
+	     "xsrc/uniplt.obj"
 	     "../../../lib/msvc/libmzsch3mxxxxxxx.lib"
 	     "../../../lib/msvc/libmred3mxxxxxxx.lib")])
   (link-dll objs 
@@ -469,7 +474,7 @@
 	      "libmred3mxxxxxxx.dll")
 	    '("advapi32.lib" 
 	      "delayimp.lib") 
-	    "../../../MrEd3m.exe" " /subsystem:windows" #t))
+	    "../../../MrEd.exe" " /subsystem:windows" #t))
 
 (system- "cl.exe /MT /O2 /DMZ_PRECISE_GC /I../../mzscheme/include /I.. /c ../../mzscheme/dynsrc/mzdyn.c /Fomzdyn3m.obj")
 (system- "lib.exe -def:../../mzscheme/dynsrc/mzdyn.def -out:mzdyn3m.lib")

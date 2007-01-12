@@ -1,14 +1,21 @@
 This directory contains 
 
  - solution files and project files for building MzScheme and MrEd
-    with Microsoft Visual Studio 7.1 and up (which work with the .NET
-    and Express 2005 versions of Visual Studio);
+    with Microsoft Visual Studio 8.0 and up (which work with the
+    Express 2005 version of Visual Studio);
 
  - mzconfig.h which is a manual version of information that is
-    gathered automatically when using the "configure" script.
+    gathered automatically when using the "configure" script;
+
+ - scripts for building 3m variants of MzScheme and MrEd using
+    Visual Studio command-line tools; and
+
+ - solution files and project files for building MzCOM and MysterX
+    with Microsoft Visual Studio 8.0 (not Express, which doesn't
+    support ATL and MFC).
 
 Visual Studio Express is available for free from Microsoft, and it is
-the recommended compiler for building PLT Scheme.
+the recommended compiler for building MzScheme and MrEd.
 
 MzScheme and MrEd also compile with Cygwin gcc (a free compiler from
 GNU and Cygnus Solutions), but the result is a Unix-style
@@ -31,32 +38,49 @@ As always, please report bugs via one of the following:
  scheme@plt-scheme.org
 
 ----------------------------------------------------------------------
-Building MzScheme, MzCOM, and MrEd
+Building MzScheme and MrEd
 ----------------------------------------------------------------------
 
-The source code for MzScheme, MzCOM, and MrEd is split into several
-projects that are grouped into a few solutions. To make the `X'
+The CGC variants of MzScheme, MzCOM, MrEd, and MysterX can be built
+via Visual Studio projects. The 3m variants are built by a Scheme
+script that runs the MSVC command-line tools. (See "CGC versus 3m"
+in plt\src\README if you don't know about the two variants.)
+
+The 3m build requires some parts of the CGC build:
+       plt\src\worksp\mzscheme
+       plt\src\worksp\wxutils
+       plt\src\worksp\jpeg
+       plt\src\worksp\png
+       plt\src\worksp\zlib
+It's simplest to just build the main CGC solutions, which
+automatically build all of the above projects, and then build
+3m.
+
+Building MzSchemeCGC and MrEdCGC
+--------------------------------
+
+The CGC source code for MzSchemeCGC and MrEdCGC is split into several
+projects that are grouped into a few solutions. To build the `X'
 solution with Visual Studio, open the file plt\src\worksp\X\X.sln.
-[When you open a solution, the selected configuration will most likely
-be "Debug". Consider changing to "Release" before you build to enable
-optimization.]
 
-To build MzScheme, make the MzScheme solution in
-   plt\src\worksp\mzscheme - makes plt\mzscheme.exe
+To build MzSchemeCGC, build the MzScheme solution in
+   plt\src\worksp\mzscheme - makes plt\MzSchemeCGC.exe
 
-To build MzCOM, make the MzCOM solution in
-   plt\src\worksp\mzcom - makes plt\collects\mzcom\mzcom.exe
+   [When you open the solution, it may default to "Debug"configuration.
+    Switch to "Release" before building.]
 
-To build MrEd, make the MrEd solution:
-   plt\src\worksp\mred - makes plt\mred.exe
+To build MrEdCGC, build the MrEd solution:
+   plt\src\worksp\mred - makes plt\MrEdCGC.exe
 
-The make processes for MzScheme and MzCOM automatically build
+   [Again, switch to the "Release" configuration if necessary.]
+
+The build processes for MzSchemeCGC automatically builds
    libmzgc - makes plt\lib\libmzgcxxxxxxx.dll and
              plt\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
    mzsrc - makes plt\lib\libmzschxxxxxxx.dll and
                  plt\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
 
-The make process for MrEd automatically builds
+The build process for MrEdCGC automatically builds
    libmzgc - as above
    libmzsch - as above
    libmred - makes plt\lib\libmredxxxxxxx.dll and
@@ -69,17 +93,60 @@ The make process for MrEd automatically builds
    png  - makes plt\src\worksp\jpeg\Release\png.lib
    zlib  - makes plt\src\worksp\jpeg\Release\zlib.lib
 
-In addition, building MzScheme executes
+In addition, building MzSchemeCGC executes
    plt\src\mzscheme\dynsrc\mkmzdyn.bat
 which copies .exp, .obj, and .lib files into plt\lib\, and also copies
-DLLs from the extradlls directory to to plt\lib\.
+DLLs from the "extradlls" directory to to plt\lib\.
 
-To complete a build, run the versioning script described in the next
-section.
+Building MzScheme3m and MrEd3m
+------------------------------
 
-----------------------------------------------------------------------
+After MzSchemeCGC and MrEdCGC are built, you can can build 3m
+binaries:
+
+ 1. Ensure that the Visual Studio command-line tools are in your
+    path. You may need to run "vsvars32.bat" from your Visual Studio
+    installation, so that PATH and other environment variables are set.
+
+ 2. Change directories to plt\src\worksp\gc2 and run
+
+      ..\..\..\mzschemecgc.exe -r make.ss
+
+The resulting MzScheme.exe and MrEd.exe will appear in the "plt"
+directory, along with DLLs libmzsch3mxxxxxxx.dll and
+libmred3mxxxxxxx.dll in plt/lib. (There is no corresponding
+libmzgc3mxxxxxxx.dll.  Instead, it is merged with
+libmzsch3mxxxxxxx.dll.)
+
+Building Collections and Other Executables
+------------------------------------------
+
+If you're building from scratch, you'll also want the starter programs
+used by the launcher collection to create "Setup PLT.exe". Build the
+following solutions:
+
+   plt\src\worksp\mzstart - makes plt\collects\launcher\mzstart.exe
+   plt\src\worksp\mrstart - makes plt\collects\launcher\mrstart.exe
+
+   [The "mzstart" and "mrstart" programs have no CGC versus 3m
+    distinction.]
+
+Then, set up all the other executables (besides MrEd[CGC].exe and
+MzScheme[CGC].exe) by running
+
+   mzscheme.exe -mvqM- setup
+
+This last step makes the .zo files, too. To skip compiling .zos, add
+-n to the end of the above command.
+
+If you've already built before, then this step can be simplied: just
+re-run "Setup PLT.exe", which was created the first time.
+
 Versioning
-----------------------------------------------------------------------
+----------
+
+[If you're going to build MzCOM and/or MysterX, do that before running
+ the version-changing script. See instructions below.]
 
 The obnoxious "xxxxxxx" in the DLL names is a placeholder for a
 version number. Embedding a version number in a DLL name appears to
@@ -93,50 +160,80 @@ To replace the "xxxxxxx" with a specific version, run
 
   mzscheme -mvqL winvers.ss setup
 
-in a shell. The "winvers.ss" program will have to make a temporary
-copy of mzscheme.exe, libmzschxxxxxxx.dll, and libmzgcxxxxxxx.dll (in
-the temporary directory), and it will re-launch MzScheme a couple of
-times. The resulting conversions are
-  plt\mzscheme.exe -> plt\mzscheme.exe (updated)
-  plt\mred.exe -> plt\mred.exe         (updated)
-  plt\mzcom.exe -> plt\mzcom.exe       (updated)
-  plt\lib\libmzgcxxxxxxx.dll -> plt\lib\libmzgc<version>.dll
-  plt\lib\libmzschxxxxxxx.dll -> plt\lib\libmzsch<version>.dll
-  plt\lib\libmredxxxxxxx.dll -> plt\lib\libmred<version>.dll
-  plt\src\worksp\libmzsch\Release\libmzschxxxxxxx.lib
-                          -> plt\lib\win32\msvc\libmzsch<version>.lib
-  plt\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
-                          -> plt\lib\win32\msvc\libmzgc<version>.lib
+in a shell.
+
+The "winvers.ss" program will have to make a temporary copy of
+mzscheme.exe and the "lib" sub-directory (into the temporary
+directory), and it will re-launch MzScheme a couple of times. Every
+".exe", ".dll", ".lib", ".def", ".exp", and ".pdb" file within the
+"plt" tree is updated to replace "xxxxxxxx" with a specific version
+number.
 
 ----------------------------------------------------------------------
-Extra stuff for MzScheme and MrEd
+Building MzCOM and MysterX
 ----------------------------------------------------------------------
 
-If you're building from scratch, you'll also want the starter
-programs used by the launcher collection to make drscheme.exe
-and mzc.exe:
+Beware that MzCOM and MysterX do not build with Express versions of
+Visual Studio. Otherwise, building MzCOMCGC and MysterXCGC is similar
+to building MzSchemeCGC. Building the 3m variants is a little
+different.
 
-   mzstart - makes plt\collects\launcher\mzstart.exe
-   mrstart - makes plt\collects\launcher\mrstart.exe
+Building MzCOM
+--------------
 
-Then, set up all the other executables (besides mred.exe
-and mzscheme.exe) by running
+To build MzCOMCGC, make the MzCOM solution in
+   plt\src\worksp\mzcom - makes plt\MzCOMCGC.exe
 
-   mzscheme.exe -mvqM- setup
+Use the "Release" configuration.
 
-(This makes the .zo files, too. To skip compiling .zos, 
-add -n to the end of the above command.)
+After building MzCOMCGC, you can build the 3m variant by 
+
+ 1. Change directories to plt\src\worksp\mzcom and run
+
+      ..\..\..\mzschemecgc.exe -r xform.ss
+
+ 2. Switch to the "3m" configuration in the MzCOM solution
+    (in Visual Studio).
+
+ 3. Build (in Visual Studio).
+
+The result is plt\MzCOM.exe.
+
+Building MysterX
+----------------
+
+To build MysterXCGC, make the MysterX solution in
+   plt\src\worksp\libmysterx - makes plt\lib\myssink.dll,
+          plt\lib\myspage.dll, and mxmain.dll in
+          collects\mysterx\private\compiled\native\win32\i386
+
+Use the "Release" configuration.
+
+After building MysterXCGC, you can build the 3m variant by 
+
+ 1. Change directories to plt\src\worksp\libmysterx and run
+
+      ..\..\..\mzschemecgc.exe -r xform.ss
+
+ 2. Switch to the "3m" configuration in the libmysterx solution
+    (in Visual Studio).
+
+ 3. Build (in Visual Studio).
+
+The result is mxmain.dll (no 3m suffix) in
+  collects\mysterx\private\compiled\native\win32\i386\3m
 
 ----------------------------------------------------------------------
 Finding DLLs
 ----------------------------------------------------------------------
 
-Since the DLLs libmzgcxxxxxxx.dll, libmzschxxxxxxx.dll, and
-libmzmredxxxxxxx.dll are installed into plt\lib\ instead of just plt\,
-the normal search path for DLLs would not find them when running
-"MzScheme.exe" or "MrEd.exe". To find the DLLs, the executables are
-"delayload" linked with the DLLs, and the executables explicitly load
-the DLLs from plt\lib\ on start-up.
+Since the DLLs libmzsch3mxxxxxxx.dll (or libmzgcxxxxxxx.dll and
+libmzschxxxxxxx.dll) and libmred3mxxxxxxx.dll (or libmredxxxxxxx.dll)
+are installed into plt\lib\ instead of just plt\, the normal search
+path for DLLs would not find them when running "MzScheme.exe" or
+"MrEd.exe". To find the DLLs, the executables are "delayload" linked
+with the DLLs, and the executables explicitly load the DLLs from
+plt\lib\ on start-up.
 
 The relative DLL path is embedded in each executable, and it can be
 replaced with a path of up to 512 characters. The path is stored in
@@ -159,24 +256,19 @@ The MzScheme DLLs can be used within an embedding application.
 
 The libraries
 
+    plt\lib\win32\msvc\libmzsch3mxxxxxxx.lib
     plt\lib\win32\msvc\libmzschxxxxxxx.lib
     plt\lib\win32\msvc\libmzgcxxxxxxx.lib
 
 which are created by the mzsrc and gc projects, provide linking
-information for using the libmzschxxxxxxx.dll and libmzgcxxxxxxx.dll
-DLLs. The versioning script adjusts the names, as described above.
+information for using the libmzsch3mxxxxxxx.dll, libmzschxxxxxxx.dll,
+and libmzgcxxxxxxx.dll DLLs. The versioning script adjusts the names,
+as described above.
 
 See the "Inside PLT MzScheme" manual for more information about using
 these libraries to embed MzScheme in an application.
 
 
 If you need MzScheme to link to a DLL-based C library (instead of
-statically linking to the C library within the MzScheme DLL), then:
- 
- 1. Compile MzScheme with the /MD flag.
-
- 2. Define the pre-processor symbol USE_MSVC_MD_LIBRARY while
-    compiling the GC with /MD.
-
- 3. In your embedding application, call GC_pre_init() before calling
-    any MzScheme and GC function.
+statically linking to the C library within the MzScheme DLL), then
+compile MzScheme with the /MD flag.

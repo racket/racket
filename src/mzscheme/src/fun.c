@@ -5817,11 +5817,12 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
       if (cache) {
         if (SCHEME_FALSEP(cache))
           cache = NULL;
-        if (SCHEME_HASHTP(cache))
-          cache = scheme_hash_get((Scheme_Hash_Table *)cache, prompt_tag ? prompt_tag : scheme_false);
-        else if (prompt_tag != scheme_default_prompt_tag)
-          cache = NULL;
-
+        if (cache) {
+          if (SCHEME_HASHTP(cache))
+            cache = scheme_hash_get((Scheme_Hash_Table *)cache, prompt_tag ? prompt_tag : scheme_false);
+          else if (prompt_tag != scheme_default_prompt_tag)
+            cache = NULL;
+        }
         if (cache && SCHEME_VECTORP(cache)) {
           cache = SCHEME_VEC_ELS(cache)[0];
         }
@@ -5876,6 +5877,13 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
               /* cache must be a vector */
               SCHEME_VEC_ELS(cache)[0] = (Scheme_Object *)pr;
             }
+          } else if (!SCHEME_VECTORP(cache)) {
+            /* cache is a chain and the tag is not the default prompt tag */
+            Scheme_Hash_Table *ht;
+            ht = scheme_make_hash_table(SCHEME_hash_ptr);
+            scheme_hash_set(ht, scheme_default_prompt_tag, cache);
+            scheme_hash_set(ht, prompt_tag ? prompt_tag : scheme_false, (Scheme_Object *)pr);
+            find[pos].cache = (Scheme_Object *)ht;
           } else {
             /* cache must be a vector */
             if (prompt_tag == scheme_default_prompt_tag)
@@ -5896,7 +5904,7 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
                 SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)pr;
               else
                 scheme_hash_set(ht, prompt_tag, (Scheme_Object *)pr);
-              SCHEME_VEC_ELS(cache)[0] = (Scheme_Object *)ht;
+              find[pos].cache = (Scheme_Object *)ht;
             }
           }
         } else if (prompt_tag == scheme_default_prompt_tag) {
@@ -6360,7 +6368,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
                 Scheme_Object *vec;
                 if (SCHEME_VEC_ELS(cache)[0])
                   scheme_hash_set(cht, scheme_default_prompt_tag, SCHEME_VEC_ELS(cache)[0]);
-                /* Don't try to use cache just for the null key */
+                /* Don't try to re-use cache just for the null key */
                 vec = scheme_make_vector(4, NULL);
                 SCHEME_VEC_ELS(vec)[1] = SCHEME_VEC_ELS(cache)[1];
                 SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(cache)[2];

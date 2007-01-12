@@ -3562,11 +3562,7 @@
 			(cloop (cdr paths))))
 		  (cloop (cdr paths))))))))
 
-  (define dll-suffix
-    (case (system-type)
-      [(windows) #".dll"]
-      [(macosx macos) #".dylib"]
-      [else #".so"]))
+  (define dll-suffix (system-type 'so-suffix))
 
   (define _loader.so
     (path-replace-suffix

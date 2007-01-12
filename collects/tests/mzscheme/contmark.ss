@@ -6,6 +6,8 @@
 
 (Section 'continuation-marks)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define (extract-current-continuation-marks key)
   (continuation-mark-set->list (current-continuation-marks) key))
 
@@ -561,4 +563,90 @@
   (test '(1 2 4 5) values l))
 
   
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to test internal caching strategies
+
+(let ([ta (make-continuation-prompt-tag 'a)]
+      [tb (make-continuation-prompt-tag 'b)]
+      [tesc (make-continuation-prompt-tag 'esc)]
+      [default-prompt-tag (default-continuation-prompt-tag)])
+  (let ([mk-first
+         (lambda (key tag val)
+           (lambda ()
+             (test val continuation-mark-set-first #f key tag)))]
+        [mk-all
+         (lambda (key tag vals)
+           (lambda ()
+             (test vals continuation-mark-set->list
+                   (current-continuation-marks tag)
+                   key
+                   tag)))]
+        [deeper (lambda (thunk)
+                  (let loop ([n 32])
+                    (if (zero? n)
+                        (thunk)
+                        (values (loop (sub1 n))))))])
+    (let ([checks
+           (list (mk-first 'a ta 'a3)
+                 (mk-all 'a ta '(a3 a2 a1))
+                 (mk-first 'a tb 'a3)
+                 (mk-all 'a tb '(a3 a2))
+                 (mk-first 'b ta 'b2)
+                 (mk-all 'b ta '(b2 b1))
+                 (mk-first 'b tb 'b2)
+                 (mk-all 'b tb '(b2))
+                 (mk-first 'a default-prompt-tag 'a3)
+                 (mk-all 'a default-prompt-tag '(a3 a2 a1 a0))
+                 (mk-first 'b default-prompt-tag 'b2)
+                 (mk-all 'b default-prompt-tag '(b2 b1 b0))
+                 (lambda ()
+                   ;; trigger a first lookup using the NULL tag
+                   (call-with-continuation-prompt
+                    (lambda ()
+                      (call-with-exception-handler
+                       (lambda (exn) (abort-current-continuation tesc void))
+                       (lambda () (/ 0))))
+                    tesc))
+                 (lambda ()
+                   ;; trigger a mark-list lookup using the NULL tag by chaining
+                   ;; continuations
+                   (call-with-continuation-prompt
+                    (lambda ()
+                      (call-with-exception-handler
+                       (lambda (exn) (abort-current-continuation tesc void))
+                       (lambda ()
+                         (values
+                          (call-with-exception-handler
+                           (lambda (exn) 'again)
+                           (lambda () (/ 0)))))))
+                    tesc)))])
+      (for-each
+       (lambda (one)
+         (for-each
+          (lambda (two)
+            (with-continuation-mark 'a 'a0
+              (with-continuation-mark 'b 'b0
+                (call-with-continuation-prompt
+                 (lambda ()
+                   (with-continuation-mark 'a 'a1
+                     (with-continuation-mark 'b 'b1
+                       (deeper
+                        (lambda ()
+                          (call-with-continuation-prompt
+                           (lambda ()
+                             (with-continuation-mark 'a 'a2
+                               (deeper
+                                (lambda ()
+                                  (with-continuation-mark 'a 'a3
+                                    (with-continuation-mark 'b 'b2
+                                      (begin
+                                        (one)
+                                        (two))))))))
+                           tb))))))
+                 ta))))
+          checks))
+       checks))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

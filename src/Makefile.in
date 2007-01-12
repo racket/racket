@@ -1,5 +1,6 @@
 
-# Builds MzScheme and MrEd
+# Builds MzScheme and MrEd (if enabled), and
+#  drives the main install
 
 srcdir = @srcdir@
 prefix = @prefix@
@@ -22,96 +23,119 @@ ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(mandir)"
 
 all:
-	$(MAKE) mz
-	$(MAKE) mred-stub
-
-mred-stub: @MAKE_MRED@
-
+	$(MAKE) @MAIN_VARIANT@
 
 3m:
-	$(MAKE) mz3m
-	$(MAKE) mred3m-stub
+	cd mzscheme; $(MAKE) 3m
+	$(MAKE) @MAKE_MRED@-3m
 
-mred3m-stub: @MAKE_MRED3M@
+mred-3m:
+	cd mred; $(MAKE) 3m
+
+no-3m:
+	cd .
+
+cgc:
+	cd mzscheme; $(MAKE) cgc
+	$(MAKE) @MAKE_MRED@-cgc
+
+mred-cgc:
+	cd mred; $(MAKE) cgc
+
+no-cgc:
+	cd .
+
+both:
+	$(MAKE) cgc
+	$(MAKE) 3m
+
+# Install (common) ----------------------------------------
 
 SETUP_ARGS = -mvqX "$(DESTDIR)$(collectsdir)" -M setup
 
 install:
-	$(MAKE) plain-install
-	mzscheme/mzscheme $(SETUP_ARGS)
-	$(MAKE) fix-paths
+	$(MAKE) install-@MAIN_VARIANT@
 
-plain-install:
-	$(MAKE) install-normal
-
-install-normal:
+install-common-first:
 	mkdir -p $(ALLDIRINFO)
-	$(MAKE) mzinstall
-	$(MAKE) copytree-stub
-	$(MAKE) mredinstall-stub
+
+install-common-middle:
+	$(MAKE) @MAKE_COPYTREE@-run
 	$(MAKE) lib-finish
 
-mredinstall-stub: @MAKE_MREDINSTALL@
-
-plain-install-3m:
-	$(MAKE) install-normal
-	$(MAKE) mzinstall3m
-	$(MAKE) mredinstall3m-stub
-
-install-3m:
-	$(MAKE) plain-install-3m
-	mzscheme/mzscheme3m $(SETUP_ARGS)
+install-common-last:
 	$(MAKE) fix-paths
-
-mredinstall3m-stub: @MAKE_MREDINSTALL3M@
-
-
-clean:
-	cd mzscheme; $(MAKE) clean
-	if [ -d mred ]; then cd mred; $(MAKE) clean; fi
-
-
-mz:
-	cd mzscheme; $(MAKE)
-
-mz3m:
-	cd mzscheme; $(MAKE) 3m
-
-mr:
-	cd mred; $(MAKE)
-
-mr3m:
-	cd mred; $(MAKE) 3m
-
-
-mzinstall:
-	cd mzscheme; $(MAKE) install
-
-mzinstall3m:
-	cd mzscheme; $(MAKE) install-3m
-
-mrinstall:
-	cd mred; $(MAKE) install
-
-mrinstall3m:
-	cd mred; $(MAKE) install-3m
-
 
 lib-finish:
 	@LIBFINISH@ "$(libdir)"
 
-copytree-stub: @MAKE_COPYTREE@
+no-run:
+	cd .
 
-copytree:
-	mzscheme/mzscheme -mvxqu \
+copytree-run:
+	mzscheme/mzscheme@CGC@ -mvxqu \
           "$(srcdir)/../collects/setup/unixstyle-install.ss" \
           make-install-copytree "$(srcdir)/.." \
           $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
-          mzscheme/mzscheme -mvxqu \
+          mzscheme/mzscheme@CGC@ -mvxqu \
             "$(srcdir)/../collects/setup/unixstyle-install.ss" \
             make-install-destdir-fix "$(srcdir)/.." \
             $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
         fi
+
+# 3m install ----------------------------------------
+
+install-3m:
+	$(MAKE) install-common-first
+	cd mzscheme; $(MAKE) install-3m
+	$(MAKE) install-@MAKE_MRED@-3m
+	$(MAKE) install-common-middle
+	mzscheme/mzscheme@MMM@ $(SETUP_ARGS)
+	$(MAKE) install-common-last
+
+install-no-3m:
+	cd .
+
+install-mred-3m:
+	cd mred; $(MAKE) install-3m
+
+# CGC install ----------------------------------------
+
+install-cgc:
+	$(MAKE) install-common-first
+	cd mzscheme; $(MAKE) install-cgc
+	$(MAKE) install-@MAKE_MRED@-cgc
+	$(MAKE) install-common-middle
+	mzscheme/mzscheme@CGC@ $(SETUP_ARGS)
+	$(MAKE) install-common-last
+
+install-no-cgc:
+	cd .
+
+install-mred-cgc:
+	cd mred; $(MAKE) install-cgc
+
+# Both install ----------------------------------------
+
+install-both:
+	$(MAKE) install-common-first
+	cd mzscheme; $(MAKE) install-both
+	$(MAKE) install-@MAKE_MRED@-both
+	$(MAKE) install-common-middle
+	mzscheme/mzscheme@MAIN_VARIANT@ $(SETUP_ARGS)
+	$(MAKE) install-common-last
+
+install-no-both:
+	cd .
+
+install-mred-both:
+	cd mred; $(MAKE) install-both
+
+# Clean ----------------------------------------
+
+clean:
+	cd mzscheme; $(MAKE) clean
+	if [ -d mred ]; then cd mred; $(MAKE) clean; fi

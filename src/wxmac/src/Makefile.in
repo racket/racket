@@ -40,6 +40,40 @@ WXMAC_CXXFLAGS_NO_PRECOMP = $(CXXFLAGS) -MMD -DWX_CARBON -I$(XPMDIR) -I$(PLTSRCD
 WXMAC_CXXFLAGS = $(WXMAC_CXXFLAGS_NO_PRECOMP) @USE_WXPRECOMP@
 WXPRECOMP = @WXPRECOMP@
 
+MIN_OBJS = \
+   crbuffri.o \
+   crdatfri.o \
+   create.o \
+   crifrbuf.o \
+   crifrdat.o \
+   data.o \
+   hashtab.o \
+   miscellaneous.o \
+   parse.o \
+   rdftodat.o \
+   rdftoi.o \
+   rgb.o \
+   scan.o \
+   simx.o \
+   wrffrdat.o \
+   wrffri.o \
+\
+   ALBirthDeath.o \
+   ALKeyboard.o \
+   ALUserPane.o \
+   LongControls.o \
+   ALCellData.o \
+   ALMouse.o \
+   ALUtilities.o \
+   ALDrawing.o \
+   ALScrolling.o \
+   LongCoords.o \
+   ALEditing.o \
+   ALSelecting.o \
+   QDDrawingState.o \
+   ALHeirarchical.o \
+   ALSelectors.o
+
 OBJS = \
    wb_item.o \
    wb_panel.o \
@@ -113,42 +147,13 @@ OBJS = \
    wx_image.o \
    wx_xbm.o \
 \
-   crbuffri.o \
-   crdatfri.o \
-   create.o \
-   crifrbuf.o \
-   crifrdat.o \
-   data.o \
-   hashtab.o \
-   miscellaneous.o \
-   parse.o \
-   rdftodat.o \
-   rdftoi.o \
-   rgb.o \
-   scan.o \
-   simx.o \
-   wrffrdat.o \
-   wrffri.o \
-\
-   ALBirthDeath.o \
-   ALKeyboard.o \
-   ALUserPane.o \
-   LongControls.o \
-   ALCellData.o \
-   ALMouse.o \
-   ALUtilities.o \
-   ALDrawing.o \
-   ALScrolling.o \
-   LongCoords.o \
-   ALEditing.o \
-   ALSelecting.o \
-   QDDrawingState.o \
-   ALHeirarchical.o \
-   ALSelectors.o
-   
+   $(MIN_OBJS)
+
 libwxmac.a: $(OBJS)
 	$(AR) $(ARFLAGS) libwxmac.a $(OBJS)
 	$(RANLIB) libwxmac.a
+
+min: $(MIN_OBJS)
 
 clean:
 	rm -f *.o *.dep *.d libwxmac.a *.pfe

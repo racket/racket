@@ -4,14 +4,8 @@
 #include <stdio.h>
 #include <process.h>
 
-#include "escheme.h"
-#include "bstr.h"
 #include "myssink.h"
 #include "sink.h"
-#include "comtypes.h"
-
-#define scheme_current_thread (scheme_get_current_thread())
-#define scheme_false (scheme_make_false())
 
 /////////////////////////////////////////////////////////////////////////////
 // CSink
@@ -25,10 +19,9 @@ unsigned int CSink::getHashValue(DISPID dispId) {
   return (unsigned int)((ULONG)dispId % EVENT_HANDLER_TBL_SIZE);
 }
 
-EVENT_HANDLER_ENTRY *CSink::newEventHandlerEntry(DISPID dispId,Scheme_Object *handler) {
+EVENT_HANDLER_ENTRY *CSink::newEventHandlerEntry(DISPID dispId, void *handler) {
   EVENT_HANDLER_ENTRY *p;
-  p = (EVENT_HANDLER_ENTRY *)scheme_malloc(sizeof(EVENT_HANDLER_ENTRY));
-  scheme_dont_gc_ptr(p);
+  p = (EVENT_HANDLER_ENTRY *)malloc(sizeof(EVENT_HANDLER_ENTRY));
   p->dispId = dispId;
   p->handler = handler;
   p->next = NULL;
@@ -70,11 +63,12 @@ CSink::~CSink(void) {
     p = &eventHandlerTable[i];
     while (p != NULL) {
       if (p->handler) {
-	scheme_gc_ptr_ok(p->handler);
+	sink_release_handler(p->handler);
+	p->handler = NULL;
       }
       psave = p;
       p = p->next;
-      scheme_gc_ptr_ok(psave);
+      free(psave);
     }
   }
 }
@@ -88,15 +82,13 @@ STDMETHODIMP CSink::register_handler(DISPID dispId,void * handler) {
   unsigned int hashVal;
   EVENT_HANDLER_ENTRY *p;
 
-  scheme_dont_gc_ptr((Scheme_Object *)handler);
-
   hashVal = getHashValue(dispId);
 
   p = &eventHandlerTable[hashVal];
 
   if (p->dispId == (DISPID)0) {
     p->dispId = dispId;
-    p->handler = (Scheme_Object *)handler;
+    p->handler = handler;
     p->next = NULL;
   }
   else {
@@ -104,15 +96,16 @@ STDMETHODIMP CSink::register_handler(DISPID dispId,void * handler) {
     while (p != NULL) {
 
       if (p->dispId == dispId) { // update existing entry
-	scheme_gc_ptr_ok(p->handler);
-	p->handler = (Scheme_Object *)handler;
+	if (p->handler)
+	  sink_release_handler(p->handler);
+	p->handler = handler;
 	return S_OK;
       }
 
       p = p->next;
     }
 
-    p->next = newEventHandlerEntry(dispId,(Scheme_Object *)handler);
+    p->next = newEventHandlerEntry(dispId, handler);
   }
 
   return S_OK;
@@ -132,8 +125,10 @@ STDMETHODIMP CSink::unregister_handler(DISPID dispId) {
 
   while (p != NULL) {
     if (p->dispId == dispId) { // set existing entry to NULL
-      scheme_gc_ptr_ok(p->handler);
-      p->handler = NULL;
+      if (p->handler) {
+	sink_release_handler(p->handler);
+	p->handler = NULL;
+      }
       return S_OK;
     }
 
@@ -143,334 +138,12 @@ STDMETHODIMP CSink::unregister_handler(DISPID dispId) {
   return S_OK;
 }
 
-// different than the same-named function in mysterx.cxx
-// *here* we're coercing VARIANTARG's to be arguments to
-// Scheme procedures; *there*, we're coercing a VARIANT
-// return value to be the value of a method call, and
-// VARIANT's, unlike VARIANTARG's, cannot have VT_BYREF bit
-
-Scheme_Object *CSink::variantToSchemeObject(VARIANTARG *pVariantArg) {
-  char errBuff[128];
-
-  switch(pVariantArg->vt) {
-
-  case VT_NULL :
-
-    return scheme_make_void();
-
-  case VT_I1 :
-
-    return scheme_make_char(pVariantArg->cVal);
-
-  case VT_I1 | VT_BYREF :
-
-    return scheme_box(scheme_make_char(*pVariantArg->pcVal));
-
-  case VT_UI1 :
-
-    return scheme_make_char((char)(pVariantArg->bVal));
-
-  case VT_UI1 | VT_BYREF :
-
-    return scheme_box(scheme_make_char((char)(*pVariantArg->pbVal)));
-
-  case VT_UI2 :
-
-    return scheme_make_char((char)(pVariantArg->bVal));
-
-  case VT_UI2 | VT_BYREF :
-
-    return scheme_box(scheme_make_char((char)(*pVariantArg->pbVal)));
-
-  case VT_I2 :
-
-    return scheme_make_integer(pVariantArg->iVal);
-
-  case VT_I2 | VT_BYREF :
-
-    return scheme_box(scheme_make_integer(*pVariantArg->piVal));
-
-  case VT_I4 :
-
-    return scheme_make_integer_value(pVariantArg->lVal);
-
-  case VT_I4 | VT_BYREF :
-
-    return scheme_box(scheme_make_integer_value(*pVariantArg->plVal));
-
-  case VT_UI4 :
-
-    return scheme_make_integer_value_from_unsigned(pVariantArg->ulVal);
-
-  case VT_UI4 | VT_BYREF :
-
-    return scheme_box(scheme_make_integer_value_from_unsigned(*pVariantArg->pulVal));
-
-  case VT_INT :
-
-    return scheme_make_integer_value(pVariantArg->intVal);
-
-  case VT_INT | VT_BYREF :
-
-    return scheme_box(scheme_make_integer_value(*pVariantArg->pintVal));
-
-  case VT_UINT :
-
-    return scheme_make_integer_value_from_unsigned(pVariantArg->uintVal);
-
-  case VT_UINT | VT_BYREF :
-
-    return scheme_box(scheme_make_integer_value_from_unsigned(*pVariantArg->puintVal));
-
-  case VT_R4 :
-
-#ifdef MZ_USE_SINGLE_FLOATS
-    return scheme_make_float(pVariantArg->fltVal);
-#else
-    return scheme_make_double((double)(pVariantArg->fltVal));
-#endif
-
-  case VT_R4 | VT_BYREF :
-
-#ifdef MZ_USE_SINGLE_FLOATS
-    return scheme_box(scheme_make_float(*pVariantArg->pfltVal));
-#else
-    return scheme_box(scheme_make_double((double)(*pVariantArg->pfltVal)));
-#endif
-
-  case VT_R8 :
-
-    return scheme_make_double(pVariantArg->dblVal);
-
-  case VT_R8 | VT_BYREF :
-
-    return scheme_box(scheme_make_double(*pVariantArg->pdblVal));
-
-  case VT_BSTR :
-
-    return unmarshalBSTR (pVariantArg->bstrVal);
-
-  case VT_BSTR | VT_BYREF :
-
-    return scheme_box (unmarshalBSTR (*pVariantArg->pbstrVal));
-
-  case VT_CY :
-
-    return make_cy(&pVariantArg->cyVal);
-
-  case VT_CY | VT_BYREF :
-
-    return scheme_box(make_cy(pVariantArg->pcyVal));
-
-  case VT_DATE :
-
-    return make_date(&pVariantArg->date);
-
-  case VT_DATE | VT_BYREF :
-
-    return scheme_box(make_date(pVariantArg->pdate));
-
-  case VT_BOOL :
-
-    return make_bool(pVariantArg->boolVal);
-
-  case VT_BOOL | VT_BYREF :
-
-    return scheme_box(make_bool(*pVariantArg->pboolVal));
-
-  case VT_ERROR :
-
-    return make_scode(pVariantArg->scode);
-
-  case VT_ERROR | VT_BYREF :
-
-    return scheme_box(make_scode(*pVariantArg->pscode));
-
-  case VT_DISPATCH :
-
-    // event sources typically don't call AddRef()
-
-    pVariantArg->pdispVal->AddRef();
-    return make_idispatch(pVariantArg->pdispVal);
-
-  case VT_DISPATCH | VT_BYREF :
-
-    pVariantArg->pdispVal->AddRef();
-    return scheme_box(make_idispatch(*pVariantArg->ppdispVal));
-
-  case VT_UNKNOWN :
-
-    pVariantArg->punkVal->AddRef();
-    return make_iunknown(pVariantArg->punkVal);
-
-  case VT_UNKNOWN | VT_BYREF:
-
-    pVariantArg->punkVal->AddRef();
-    return scheme_box(make_iunknown(*pVariantArg->ppunkVal));
-
-  case VT_VARIANT | VT_BYREF:
-
-    return scheme_box(this->variantToSchemeObject(pVariantArg->pvarVal));
-
-  default :
-
-    wsprintf(errBuff,"Can't make Scheme value from VARIANT 0x%X",
-	     pVariantArg->vt);
-    scheme_signal_error(errBuff);
-  }
-
-  return NULL;
+void *CSink::variantToSchemeObject(VARIANTARG *pVariantArg) {
+  return sink_variant_to_scheme(pVariantArg);
 }
 
-void CSink::handlerUpdateError(char *s) {
-  scheme_signal_error("Handler updated box with value other than "
-		      "expected type: %s",s);
-}
-
-void CSink::unmarshalSchemeObject(Scheme_Object *obj,VARIANTARG *pVariantArg) {
-  Scheme_Object *val =
-      (pVariantArg->vt & VT_BYREF)
-      ? SCHEME_BOX_VAL(obj)
-      : NULL;
-
-  switch (pVariantArg->vt) {
-
-  case VT_UI1 | VT_BYREF :
-
-    if (SCHEME_CHARP(val) == FALSE) {
-      handlerUpdateError("character");
-    }
-
-    *(pVariantArg->pbVal) = SCHEME_CHAR_VAL(val);
-    break;
-
-  case VT_I2 | VT_BYREF :
-
-    if (isShortInt(val) == FALSE) {
-      handlerUpdateError("exact integer");
-    }
-
-    *(pVariantArg->piVal) = (short)SCHEME_INT_VAL(val);
-    break;
-
-  case VT_I4 | VT_BYREF :
-
-    long lVal;
-
-    if (SCHEME_EXACT_INTEGERP(val) == FALSE) {
-      handlerUpdateError("exact integer");
-    }
-
-    if (scheme_get_int_val(val,&lVal) == 0) {
-      scheme_signal_error("Handler updated box with too large an exact integer");
-    }
-
-    *(pVariantArg->plVal) = lVal;
-    break;
-
-  case VT_R4 | VT_BYREF :
-
-#ifdef MZ_USE_SINGLE_FLOATS
-    if (SCHEME_FLTP(val) == FALSE) {
-      handlerUpdateError("float");
-    }
-
-    *(pVariantArg->pfltVal) = SCHEME_FLT_VAL(val);
-#else
-    if (SCHEME_DBLP(val) == FALSE) {
-      handlerUpdateError("double");
-    }
-
-    *(pVariantArg->pfltVal) = (float)SCHEME_DBL_VAL(val);
-#endif
-    break;
-
-  case VT_R8 | VT_BYREF :
-
-    if (SCHEME_DBLP(val) == FALSE) {
-      handlerUpdateError("double");
-    }
-
-    *(pVariantArg->pdblVal) = SCHEME_DBL_VAL(val);
-
-  case VT_BSTR :
-
-    // string passed to Scheme can be updated in-place
-
-    BSTR bstr;
-
-    bstr = schemeToBSTR(obj);
-    wcscpy(pVariantArg->bstrVal,bstr);
-    SysFreeString(bstr);
-    break;
-
-  case VT_BSTR | VT_BYREF :
-
-    BSTR bstr2;
-
-    if (SCHEME_STRSYMP (val) == FALSE)
-      handlerUpdateError ("string or symbol");
-
-    bstr2 = schemeToBSTR(val);
-    wcscpy(*(pVariantArg->pbstrVal),bstr2);
-    SysFreeString(bstr2);
-    break;
-
-  case VT_CY | VT_BYREF :
-
-    if (cy_pred(val) == FALSE) {
-      handlerUpdateError("com-cy");
-    }
-
-    *(pVariantArg->pcyVal) = cy_val(val);
-    break;
-
-  case VT_DATE | VT_BYREF :
-
-    if (date_pred(val) == FALSE) {
-      handlerUpdateError("com-date");
-    }
-
-    *(pVariantArg->pdate) = date_val(val);
-    break;
-
-  case VT_BOOL | VT_BYREF :
-
-    *(pVariantArg->pboolVal) = (val == scheme_make_false()) ? 0 : -1;
-    break;
-
-  case VT_ERROR | VT_BYREF :
-
-    if (scode_pred(val) == FALSE) {
-      handlerUpdateError("com-scode");
-    }
-
-    *(pVariantArg->pscode) = scode_val(val);
-    break;
-
-  case VT_DISPATCH | VT_BYREF :
-
-    if (comobj_pred(val) == FALSE) {
-      handlerUpdateError("com-obj");
-    }
-
-    *(pVariantArg->ppdispVal) = comobj_val(val);
-    break;
-
-  case VT_UNKNOWN | VT_BYREF:
-
-    if (iunknown_pred(val) == FALSE) {
-      handlerUpdateError("com-iunknown");
-    }
-
-    *(pVariantArg->ppunkVal) = iunknown_val(val);
-    break;
-
-  default :
-
-    ; // no update needed
-
-  }
+void CSink::unmarshalSchemeObject(void *obj,VARIANTARG *pVariantArg) {
+  sink_unmarshal_scheme(obj, pVariantArg);
 }
 
 // effectively, override default implementation of IDispatch::QueryInterface
@@ -515,8 +188,6 @@ typedef struct _named_args_ {
   unsigned int index;
 } NAMEDARG;
 
-#define MAXINVOKEARGS 128
-
 int cmpNamedArgs(NAMEDARG *p1,NAMEDARG *p2) {
   return (int)p1->dispId - (int)p2->dispId;
 }
@@ -525,13 +196,12 @@ HRESULT CSink::Invoke(DISPID dispId, REFIID, LCID, WORD,
                       DISPPARAMS* pDispParams,
                       VARIANT*, EXCEPINFO*, UINT*) {
 
-  Scheme_Object *handler;
+  void *handler;
   EVENT_HANDLER_ENTRY *p;
   VARIANTARG *pCurrArg;
   NAMEDARG namedArgs[MAXINVOKEARGS];
   UINT numParams,actualParams,positionalParams,namedParams;
-  Scheme_Object *argv[MAXINVOKEARGS];
-  mz_jmp_buf jmpSave;
+  void *argv[MAXINVOKEARGS];
   UINT i;
   UINT j;
 
@@ -565,16 +235,6 @@ HRESULT CSink::Invoke(DISPID dispId, REFIID, LCID, WORD,
 	  (int (*)(const void *,const void *))cmpNamedArgs);
   }
 
-  // trap any local errors
-
-  memcpy(&jmpSave, &scheme_error_buf, sizeof(mz_jmp_buf));
-
-  if (scheme_setjmp(scheme_error_buf)) {
-    scheme_clear_escape();
-    memcpy(&scheme_error_buf, &jmpSave, sizeof(mz_jmp_buf));
-    return S_OK;
-  }
-
   /* memory layout of rgvargs:
 
     ---------------------------------
@@ -593,6 +253,12 @@ HRESULT CSink::Invoke(DISPID dispId, REFIID, LCID, WORD,
   for (i = 0; i < positionalParams; i++) {
     pCurrArg = &pDispParams->rgvarg[numParams - 1 - i];
     argv[i] = variantToSchemeObject(pCurrArg);
+    if (!argv[i]) {
+      for (i = 0; i < actualParams; i++) {
+	sink_release_arg(argv[i]);
+      }
+      return S_OK;
+    }
     actualParams++;
   }
 
@@ -615,11 +281,17 @@ HRESULT CSink::Invoke(DISPID dispId, REFIID, LCID, WORD,
     }
 
     argv[ii] = variantToSchemeObject(namedArgs[j].pVariantArg);
+    if (!argv[ii]) {
+      for (i = 0; i < actualParams; i++) {
+	sink_release_arg(argv[i]);
+      }
+      return S_OK;
+    }
     namedArgs[j].index = ii;
     ii++,j++,actualParams++;
   }
 
-  scheme_apply(handler,actualParams,argv);
+  (void)sink_apply(handler,actualParams,argv);
 
   // updating of boxes needs to be reflected in BYREF parameters
 
@@ -634,7 +306,6 @@ HRESULT CSink::Invoke(DISPID dispId, REFIID, LCID, WORD,
     unmarshalSchemeObject(argv[j],pCurrArg);
   }
 
-  memcpy(&scheme_error_buf, &jmpSave, sizeof(mz_jmp_buf));
   return S_OK;
 }
 

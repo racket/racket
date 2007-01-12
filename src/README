@@ -50,14 +50,14 @@ the Unix instructions below, but note the following:
    bundle MrEd.app that goes into the `plt' directory.  Installation
    creates a script, plt/bin/mred, that runs the bundle.
 
- * The --enable-shared flag for `configure' should not be used,
+ * The --enable-shared flag for `configure' must not be used,
    because builds create and use frameworks by default. Furthermore,
    --disable-shared is not supported.
 
  * To build an X11-based MrEd, run `configure' with the --enable-xonx
-   flag. Frameworks are not used for such builds. The --enable-xonx
-   flag also affects the MzScheme build so that `system-type' reports
-   'unix.
+   flag. Frameworks are not used for such builds (and shared libraries
+   are not supported). The --enable-xonx flag also affects the
+   MzScheme build so that `system-type' reports 'unix.
 
 ========================================================================
  Compiling for supported Unix variants (including Linux) or Cygwin
@@ -129,7 +129,8 @@ the Unix instructions below, but note the following:
     If you re-run `configure' after running `make', then products of
     the `make' may be incorrect due to changes in the compiler command
     line. To be safe, run `make clean' each time after running
-    `configure'.
+    `configure'. To be even safer, run `configure' in a fresh build
+    directory every time.
 
     When building for multiple platforms or configurations out of the
     same source directory, beware of cached `configure' information in
@@ -220,6 +221,27 @@ with the MESA GL implementation (but not the NVIDIA implementation,
 which does not need pthreads), `configure' cannot detect the need for
 pthreads. On these platforms, GL support will be included in MrEd,
 but it will not work properly unless --enable-pthread is specified.
+
+========================================================================
+ CGC versus 3m
+========================================================================
+
+MzScheme and MrEd have two variants: CGC and 3m. The CGC variant is
+older, and it cooperates more easily with extensions written in C.
+The 3m variant is now the default, and it usually provides better
+overall performance.
+
+The default build mode creates 3m binaries only. To create CGC
+binaries in addition, run `make cgc' in addition to `make', or run
+`make both'. To install both variants, use `make install-both' instead
+of just `make install'. Alternately, use just `make cgc' and `make
+install-cgc' to build and install just the CGC variants.
+
+CGC variants are installed with a "cgc" suffix. To swap the default
+build and install mode, supply --enable-cgcdefault to `configure'.  In
+that case, CGC variants are built by default, `make 3m' creates 3m
+binaries, and `make install-both' installs CGC variants without a
+suffix and 3m variants with a "3m" suffix.
 
 ========================================================================
  Embedded Paths in the Executables
@@ -344,40 +366,6 @@ The conservative garbage collector distributed with MzScheme (in the
 gc directory) has been modified slightly from Boehm's standard
 distribution. Mostly, the change modify the way that object
 finalization is handled.
-
-Precise GC
-----------
-
-MzScheme and MrEd can be compiled to an experimental form that uses a
-mmemory-moving garbage collector with precise tracking of pointers (as
-opposed to "conservation garbage collection"). The experimental forms
-are called MzScheme3m and MrEd3m, repsectively, where the "3m" stands
-for "moving memory manager".
-
-* Building for Unix and Mac OS X
-
-  Run `make 3m'. Building MzScheme3m and MrEd3m first builds the
-  normal MzScheme and MrEd executables, then uses them to build the 3m
-  versions. Run `make install-3m' to install the 3m binaries.
-
-  Note on OS X (actually, PowerPC and gcc): gcc version 2.x has an
-  optimizer bug that prevents 3m from building. Either use gcc 3.x or
-  supply --disable-opt to `configure'.
-
-* Windows
-
-  Build and install the normal MzScheme and MrEd executables using
-  Micsrosoft Visual C, and make sure that cl.exe is in your shell
-  path. Then, in a shell, change directories to plt\src\worksp\gc2 and
-  run
-
-   ..\..\..\mzscheme.exe -r make.ss
-
-  The resulting MzScheme3m.exe and MrEd3m.exe will appear in the "plt"
-  directory, along with DLLs libmzsch3mxxxxxxx.dll and
-  libmred3mxxxxxxx.dll in plt/lib. (There is no correspingd
-  libmzgc3mxxxxxxx.dll.  Instead, it is merged with
-  libmzsch3mxxxxxxx.dll.)
 
 Configuration Options
 ---------------------

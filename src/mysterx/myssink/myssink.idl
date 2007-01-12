@@ -9,7 +9,7 @@ import "ocidl.idl";
 
 	[
 		object,
-		uuid(DA064DCC-0881-11D3-B5CA-0060089002FE),
+		uuid(DA064DCC-0881-11D3-B5CA-0060089002FF),
 		dual,
 		helpstring("ISink Interface"),
 		pointer_default(unique),
@@ -22,7 +22,7 @@ import "ocidl.idl";
 	        [id(0xFFFFFCFD), helpstring("method unregister_handler")] HRESULT unregister_handler(DISPID);
     }
 [
-	uuid(DA064DC0-0881-11D3-B5CA-0060089002FE),
+	uuid(DA064DC0-0881-11D3-B5CA-0060089002FF),
 	version(1.0),
 	helpstring("myssink 1.0 Type Library")
 ]
@@ -32,7 +32,7 @@ library MYSSINKLib
 	importlib("stdole2.tlb");
 
 	[
-		uuid(DA064DCD-0881-11D3-B5CA-0060089002FE),
+		uuid(DA064DCD-0881-11D3-B5CA-0060089002FF),
 		helpstring("Sink Class")
 	]
 	coclass Sink

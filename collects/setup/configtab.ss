@@ -14,6 +14,9 @@
       include-dir
       include-search-dirs
       bin-dir))
+  (define-for-syntax string-exports
+    '(cgc-suffix
+      3m-suffix))
   (define-for-syntax flag-exports
     '(absolute-installation?))
 
@@ -58,6 +61,7 @@
 	     (raise-syntax-error #f "bad syntax" stx))
 	   (for-each (lambda (name)
 		       (unless (or (memq (syntax-e name) path-exports)
+                                   (memq (syntax-e name) string-exports)
                                    (memq (syntax-e name) flag-exports))
 			 (raise-syntax-error #f "not a config name" name)))
 		     names)
@@ -69,8 +73,12 @@
                      [else (loop (cdr names) (cdr syms))]))
 	     (with-syntax ([(expr ...)
                             (map (lambda (name val)
-                                   (if (memq (syntax-e name) path-exports)
-                                     #`(delay (to-path #,val)) val))
+                                   (cond
+                                    [(memq (syntax-e name) path-exports)
+                                     #`(delay (to-path #,val))]
+                                    [(memq (syntax-e name) string-exports)
+                                     #`(delay #,val)]
+                                    [else val]))
                                  (syntax->list #'(name ...))
                                  (syntax->list #'(val  ...)))])
                (define ((mkdef v) id)
@@ -79,9 +87,10 @@
                    (list #`(define #,(datum->syntax-object stx id stx) #,v))))
 	       (syntax-property
 		#`(#%plain-module-begin
-		   (provide #,@path-exports #,@flag-exports)
+		   (provide #,@path-exports #,@string-exports #,@flag-exports)
 		   (define name expr) ...
 		   #,@(apply append (map (mkdef #'use-default) path-exports))
+		   #,@(apply append (map (mkdef #'use-default) string-exports))
 		   #,@(apply append (map (mkdef #'#f) flag-exports)))
 		'certify-mode 'transparent))))])))
 

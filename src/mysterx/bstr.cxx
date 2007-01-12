@@ -1,8 +1,13 @@
 // bstr.cxx -- BSTR utility functions
 
-#include <windows.h>
+#ifdef MYSTERX_3M
+// Created by xform.ss:
+# include "xsrc/bstr3m.cxx"
+#else
 
-#include "escheme.h"
+#include "mysterx_pre.h"
+
+#include <windows.h>
 
 /* This indirection lets us delayload libmzsch.dll: */
 #define scheme_false (scheme_make_false())
@@ -25,7 +30,8 @@ static
 LPWSTR schemeUTF8ToUTF16 (const unsigned char * buffer, int buflen, long * result_length)
 {
   long nchars;
-  mzchar * ucs4 = scheme_utf8_decode_to_buffer_len (buffer, buflen, NULL, 0, &nchars);
+  mzchar * ucs4;
+  ucs4 = scheme_utf8_decode_to_buffer_len (buffer, buflen, NULL, 0, &nchars);
   return schemeUCS4ToUTF16 (ucs4, nchars, result_length);
 }
 
@@ -59,7 +65,8 @@ static
 BSTR schemeByteStringToBSTR (Scheme_Object * obj)
 {
   long nchars;
-  LPCWSTR widestring = schemeByteStringToWideChar (obj, &nchars);
+  LPCWSTR widestring;
+  widestring = schemeByteStringToWideChar (obj, &nchars);
   return SysAllocStringLen (widestring, nchars);
 }
 
@@ -67,7 +74,8 @@ static
 BSTR schemeCharStringToBSTR (Scheme_Object * obj)
 {
   long nchars;
-  LPCWSTR widestring = schemeCharStringToWideChar (obj, &nchars);
+  LPCWSTR widestring;
+  widestring= schemeCharStringToWideChar (obj, &nchars);
   return SysAllocStringLen (widestring, nchars);
 }
 
@@ -83,8 +91,10 @@ BSTR schemeSymbolToBSTR (Scheme_Object * obj)
 static
 LPSTR schemeWideStringToMultiByte (LPCWSTR string, long nchars)
 {
-  int chars_needed = WideCharToMultiByte (CP_ACP, 0, string, nchars, NULL, 0, NULL, NULL);
-  LPSTR result = (LPSTR) scheme_malloc_atomic (chars_needed + 1);
+  int chars_needed;
+  LPSTR result;
+  chars_needed = WideCharToMultiByte (CP_ACP, 0, string, nchars, NULL, 0, NULL, NULL);
+  result = (LPSTR) scheme_malloc_atomic (chars_needed + 1);
   WideCharToMultiByte (CP_ACP, 0, string, nchars, result, chars_needed, NULL, NULL);
   result [chars_needed] = '\0';
   return result;
@@ -94,7 +104,8 @@ static
 LPSTR schemeByteStringToMultiByte (Scheme_Object * obj)
 {
   long nchars;
-  LPCWSTR unicode = schemeByteStringToWideChar (obj, &nchars);
+  LPCWSTR unicode;
+  unicode = schemeByteStringToWideChar (obj, &nchars);
   return schemeWideStringToMultiByte (unicode, nchars);
 }
 
@@ -102,7 +113,8 @@ static
 LPSTR schemeCharStringToMultiByte (Scheme_Object * obj)
 {
   long nchars;
-  LPCWSTR unicode = schemeCharStringToWideChar (obj, &nchars);
+  LPCWSTR unicode;
+  unicode = schemeCharStringToWideChar (obj, &nchars);
   return schemeWideStringToMultiByte (unicode, nchars);
 }
 
@@ -110,28 +122,36 @@ static
 LPSTR schemeSymbolToMultiByte (Scheme_Object * obj)
 {
   long nchars;
-  LPCWSTR unicode = schemeSymbolToWideChar (obj, &nchars);
+  LPCWSTR unicode;
+  unicode = schemeSymbolToWideChar (obj, &nchars);
   return schemeWideStringToMultiByte (unicode, nchars);
 }
 
 Scheme_Object * multiByteToSchemeCharString (const char * mbstr)
 {
-  int len = (int) strlen (mbstr);
-  WCHAR * wide = (WCHAR *)scheme_malloc_atomic (len * sizeof (WCHAR));
-  HRESULT hr = MultiByteToWideChar (CP_ACP, (DWORD)0, mbstr, len, wide, len);
+  int len;
+  WCHAR * wide;
+  HRESULT hr;
+  long nchars;
+  mzchar * ucs4;
+
+  len = (int) strlen (mbstr);
+  wide = (WCHAR *)scheme_malloc_atomic (len * sizeof (WCHAR));
+  hr = MultiByteToWideChar (CP_ACP, (DWORD)0, mbstr, len, wide, len);
 
   if (hr == 0 && len > 0)
       scheme_signal_error("Error translating string parameter to Unicode");
 
-  long nchars;
-  mzchar * ucs4 = scheme_utf16_to_ucs4 ((pushort)wide, 0, len, NULL, 0, &nchars, 0);
+  ucs4 = scheme_utf16_to_ucs4 ((pushort)wide, 0, len, NULL, 0, &nchars, 0);
   return scheme_make_sized_char_string (ucs4, nchars, 0);
 }
 
 static
 BSTR multiByteToBSTR (LPCSTR text, UINT len)
 {
-  BSTR bstr = SysAllocStringLen (NULL, len);
+  BSTR bstr;
+
+  bstr = SysAllocStringLen (NULL, len);
   if (bstr == NULL)
       scheme_signal_error ("Error allocating string parameter");
 
@@ -154,21 +174,42 @@ BSTR textToBSTR (LPCTSTR text, UINT length)
 
 Scheme_Object * BSTRToSchemeString (BSTR bstr)
 {
-  UINT length = SysStringLen (bstr);
+  UINT length;
   long nchars;
-  mzchar * string = scheme_utf16_to_ucs4 ((pushort)bstr, 0, length,
-					  NULL, 0,
-					  &nchars, 0);
+  mzchar * string;
+
+  length = SysStringLen (bstr);
+  string = scheme_utf16_to_ucs4 ((pushort)bstr, 0, length,
+				 NULL, 0,
+				 &nchars, 0);
+
+  return scheme_make_sized_char_string (string, nchars, 0);
+}
+
+Scheme_Object * LPOLESTRToSchemeString (LPOLESTR str)
+{
+  UINT length;
+  long nchars;
+  mzchar * string;
+
+  length = wcslen (str);
+  string = scheme_utf16_to_ucs4 ((pushort)str, 0, length,
+				 NULL, 0,
+				 &nchars, 0);
+
   return scheme_make_sized_char_string (string, nchars, 0);
 }
 
 Scheme_Object * BSTRToSchemeSymbol (BSTR bstr)
 {
-  UINT length = SysStringLen (bstr);
+  UINT length;
   long nchars;
-  mzchar * string =  scheme_utf16_to_ucs4 ((pushort)bstr, 0, length,
-					   NULL, 0,
-					   &nchars, 0);
+  mzchar * string;
+
+  length = SysStringLen (bstr);
+  string =  scheme_utf16_to_ucs4 ((pushort)bstr, 0, length,
+                                  NULL, 0,
+                                  &nchars, 0);
   return scheme_intern_exact_char_symbol (string, nchars);
 }
 
@@ -187,15 +228,18 @@ Scheme_Object * unmarshalBSTR (BSTR bstr)
 static
 void updateSchemeByteStringFromBSTR (Scheme_Object * obj, BSTR bstr)
 {
-  UINT len = SysStringLen (bstr);
+  UINT len;
   long nchars;
-  mzchar * string = scheme_utf16_to_ucs4 ((pushort)bstr, 0, len,
-					  NULL, 0,
-					  &nchars, 0);
+  mzchar * string;
+  long ncodes;
+
+  len = SysStringLen (bstr);
+  string = scheme_utf16_to_ucs4 ((pushort)bstr, 0, len,
+                                 NULL, 0,
+                                 &nchars, 0);
   if (nchars > SCHEME_BYTE_STRLEN_VAL(obj))
       scheme_signal_error ("String updated with longer string");
 
-  long ncodes;
   scheme_utf8_encode_to_buffer_len (string, nchars, 
 				    SCHEME_BYTE_STR_VAL(obj), SCHEME_BYTE_STRLEN_VAL(obj), 
 				    &ncodes);
@@ -205,8 +249,10 @@ void updateSchemeByteStringFromBSTR (Scheme_Object * obj, BSTR bstr)
 static
 void updateSchemeCharStringFromBSTR (Scheme_Object * obj, BSTR bstr)
 {
-  UINT len = SysStringLen (bstr);
+  UINT len;
   long ulen;
+
+  len = SysStringLen (bstr);
 
   if (len > (unsigned int)SCHEME_CHAR_STRLEN_VAL(obj))
       scheme_signal_error("String updated with longer string");
@@ -226,19 +272,25 @@ void updateSchemeSymbolFromBSTR (Scheme_Object *, BSTR)
 
 void updateSchemeFromBSTR (Scheme_Object *obj, BSTR bstr)
 {
-  return
-      SCHEME_SYMBOLP (obj)        ? updateSchemeSymbolFromBSTR (obj, bstr)
-      : SCHEME_CHAR_STRINGP (obj) ? updateSchemeCharStringFromBSTR (obj, bstr)
-      : SCHEME_BYTE_STRINGP (obj) ? updateSchemeByteStringFromBSTR (obj, bstr)
-      : SCHEME_PATHP (obj)        ? updateSchemeByteStringFromBSTR (obj, bstr)
-      : (scheme_signal_error ("updateSchemeFromBSTR: argument is not a symbol, char string, or byte string"),
-	 (LPSTR) 0);
+  if (SCHEME_SYMBOLP (obj))
+    updateSchemeSymbolFromBSTR (obj, bstr);
+  else if (SCHEME_CHAR_STRINGP (obj))
+    updateSchemeCharStringFromBSTR (obj, bstr);
+  else if (SCHEME_BYTE_STRINGP (obj))
+    updateSchemeByteStringFromBSTR (obj, bstr);
+  else if (SCHEME_PATHP (obj))
+    updateSchemeByteStringFromBSTR (obj, bstr);
+  else {
+    scheme_signal_error ("updateSchemeFromBSTR: argument is not a symbol, char string, or byte string");
+  }
 }
 
 
 BSTR stringToBSTR (LPCSTR s, UINT len)
 {
-  BSTR bstr = SysAllocStringLen (NULL, len);
+  BSTR bstr;
+
+  bstr = SysAllocStringLen (NULL, len);
   if (bstr == NULL)
     scheme_signal_error ("Error allocating string parameter");
 
@@ -271,26 +323,36 @@ LPTSTR schemeSymbolToText (Scheme_Object * obj)
 // Returns a pointer to a Microsoft encoded MultiByte string.
 LPSTR schemeToMultiByte (Scheme_Object * obj)
 {
-  return
-      SCHEME_SYMBOLP (obj)        ? schemeSymbolToMultiByte (obj)
-      : SCHEME_CHAR_STRINGP (obj) ? schemeCharStringToMultiByte (obj)
-      : SCHEME_BYTE_STRINGP (obj) ? schemeByteStringToMultiByte (obj)
-      : SCHEME_PATHP (obj)        ? schemeByteStringToMultiByte (obj)
-      : (scheme_signal_error ("schemeToMultiByte: argument is not a symbol, char string, or byte string"),
-	 (LPSTR) 0);
+  if (SCHEME_SYMBOLP (obj))
+    return schemeSymbolToMultiByte (obj);
+  else if (SCHEME_CHAR_STRINGP (obj))
+    return schemeCharStringToMultiByte(obj);
+  else if (SCHEME_BYTE_STRINGP (obj))
+    return schemeByteStringToMultiByte(obj);
+  else if (SCHEME_PATHP (obj))
+    return schemeByteStringToMultiByte(obj);
+  else {
+    scheme_signal_error ("schemeToMultiByte: argument is not a symbol, char string, or byte string");
+    return NULL;
+  }
 }
 
 // Returns a pointer to a Microsoft encoded string suitable for
 // passing to OLE and COM.
 BSTR schemeToBSTR (Scheme_Object * obj)
 {
-  return
-      SCHEME_SYMBOLP (obj)        ? schemeSymbolToBSTR (obj)
-      : SCHEME_CHAR_STRINGP (obj) ? schemeCharStringToBSTR (obj)
-      : SCHEME_BYTE_STRINGP (obj) ? schemeByteStringToBSTR (obj)
-      : SCHEME_PATHP (obj)        ? schemeByteStringToBSTR (obj)
-      : (scheme_signal_error ("schemeToBSTR: argument is not a symbol, char string, or byte string"),
-	 (BSTR) 0);
+  if (SCHEME_SYMBOLP (obj))
+    return schemeSymbolToBSTR (obj);
+  else if (SCHEME_CHAR_STRINGP (obj))
+    return schemeCharStringToBSTR (obj);
+  else if (SCHEME_BYTE_STRINGP (obj))
+    return schemeByteStringToBSTR (obj);
+  else if (SCHEME_PATHP (obj))
+    return schemeByteStringToBSTR (obj);
+  else {
+    scheme_signal_error ("schemeToBSTR: argument is not a symbol, char string, or byte string");
+    return NULL;
+  }
 }
 
 // Returns a pointer to a Microsoft encoded string.  String will be
@@ -309,11 +371,19 @@ LPWSTR schemeToWideChar (Scheme_Object * obj)
 {
   long result_length;
 
-  return
-      SCHEME_SYMBOLP (obj)        ? schemeSymbolToWideChar (obj, &result_length)
-      : SCHEME_CHAR_STRINGP (obj) ? schemeCharStringToWideChar (obj, &result_length)
-      : SCHEME_BYTE_STRINGP (obj) ? schemeByteStringToWideChar (obj, &result_length)
-      : SCHEME_PATHP        (obj) ? schemeByteStringToWideChar (obj, &result_length)
-      : (scheme_signal_error ("schemeToWideChar: argument is not a symbol, char string, or byte string"),
-	 (LPWSTR) 0);
+  if (SCHEME_SYMBOLP (obj))
+    return schemeSymbolToWideChar (obj, &result_length);
+  else if (SCHEME_CHAR_STRINGP (obj))
+       return schemeCharStringToWideChar (obj, &result_length);
+  else if (SCHEME_BYTE_STRINGP (obj))
+    return schemeByteStringToWideChar (obj, &result_length);
+  if (SCHEME_PATHP(obj))
+    return schemeByteStringToWideChar (obj, &result_length);
+  else {
+    scheme_signal_error ("schemeToWideChar: argument is not a symbol, char string, or byte string");
+    return NULL;
+  }
 }
+
+#endif //MYSTERX_3M
+

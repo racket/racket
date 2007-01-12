@@ -912,6 +912,9 @@ void scheme_forget_thread(struct Scheme_Thread_Memory *tm)
   if (tm->next)
     tm->next->prev = tm->prev;
 
+  tm->next = NULL;
+  tm->prev = NULL;
+
 #ifdef MZ_PRECISE_GC
   free(tm);
 #endif
@@ -937,6 +940,10 @@ void scheme_suspend_remembered_threads(void)
 	  prev->next = tm->next;
 	else
 	  tm_start = tm->next;
+	if (tm->next)
+	  tm->next->prev = prev;
+	tm->next = NULL;
+	tm->prev = NULL;
 #ifdef MZ_PRECISE_GC
 	free(tm);
 #endif

@@ -132,12 +132,7 @@
 ;; ----------------------------------------------------------------------------
 ;; Getting and setting library objects
 
-(define lib-suffix
-  (case (system-type)
-    [(unix)    "so"]
-    [(macosx)  "dylib"]
-    [(windows) "dll"]
-    [else (error 'foreign "unknown system type: ~s" (system-type))]))
+(define lib-suffix (bytes->string/latin-1 (subbytes (system-type 'so-suffix) 1)))
 (define lib-suffix-re (regexp (string-append "\\." lib-suffix "$")))
 
 (provide (rename get-ffi-lib ffi-lib)

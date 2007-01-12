@@ -372,7 +372,7 @@
 	[center (lambda (dir)
 		  (when pending-redraws? (force-redraw))
 		  (set! use-default-position? #f)
-		  (super center dir #;parent-for-center))]
+		  (super center dir parent-for-center))] ; 2nd argument is for Mac OS X
 	
 	;; on-size: ensures that size of frame matches size of content
 	;; input: new-width/new-height: new size of frame

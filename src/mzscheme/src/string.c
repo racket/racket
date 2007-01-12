@@ -314,10 +314,7 @@ static char *string_to_from_locale(int to_bytes,
 #define portable_isspace(x) (((x) < 128) && isspace(x))
 
 static Scheme_Object *sys_symbol;
-static Scheme_Object *platform_path;
-#ifdef MZ_PRECISE_GC
-static Scheme_Object *platform_path_no_variant;
-#endif
+static Scheme_Object *platform_3m_path, *platform_cgc_path;
 static Scheme_Object *zero_length_char_string;
 static Scheme_Object *zero_length_byte_string;
 
@@ -350,23 +347,20 @@ scheme_init_string (Scheme_Env *env)
   aborts_symbol = scheme_intern_symbol("aborts");
   error_symbol = scheme_intern_symbol("error");
 
-  REGISTER_SO(platform_path);
-#ifdef MZ_PRECISE_GC
-# ifdef UNIX_FILE_SYSTEM
-#  define MZ3M_SUBDIR "/3m"
-# else
-#  ifdef DOS_FILE_SYSTEM
-#   define MZ3M_SUBDIR "\\3m"
-#  else
-#   define MZ3M_SUBDIR ":3m"
-#  endif
-# endif
-  REGISTER_SO(platform_path_no_variant);
-  platform_path_no_variant = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH);
+  REGISTER_SO(platform_3m_path);
+#ifdef UNIX_FILE_SYSTEM
+# define MZ3M_SUBDIR "/3m"
 #else
-# define MZ3M_SUBDIR /* empty */
+# ifdef DOS_FILE_SYSTEM
+#  define MZ3M_SUBDIR "\\3m"
+# else
+#  define MZ3M_SUBDIR ":3m"
+# endif
 #endif
-  platform_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH MZ3M_SUBDIR);
+  REGISTER_SO(platform_3m_path);
+  REGISTER_SO(platform_cgc_path);
+  platform_cgc_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH);
+  platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH MZ3M_SUBDIR);
 
   REGISTER_SO(putenv_str_table);
   REGISTER_SO(embedding_banner);
@@ -1875,13 +1869,13 @@ char *scheme_version(void)
   return MZSCHEME_VERSION;
 }
 
-#ifdef USE_SENORA_GC
-# define VERSION_SUFFIX " (sgc)"
+#ifdef MZ_PRECISE_GC
+# define VERSION_SUFFIX " [3m]"
 #else
-# ifdef USE_LOCALE_STRCMP
-#  define VERSION_SUFFIX " (using locale strcmp)"
+# ifdef USE_SENORA_GC
+#  define VERSION_SUFFIX " [cgc~]"
 # else
-#  define VERSION_SUFFIX /* empty */
+#  define VERSION_SUFFIX " [cgc]"
 # endif
 #endif
 
@@ -1891,10 +1885,7 @@ char *scheme_banner(void)
     return embedding_banner;
   else
     return "Welcome to MzScheme"
-#ifdef MZ_PRECISE_GC
-      "3m"
-#endif
-      " version " MZSCHEME_VERSION VERSION_SUFFIX
+      " v" MZSCHEME_VERSION VERSION_SUFFIX
       ", Copyright (c) 2004-2007 PLT Scheme Inc.\n";
 }
 
@@ -2120,9 +2111,31 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
       return scheme_make_utf8_string(buff);
     }
 
+    sym = scheme_intern_symbol("gc");
+    if (SAME_OBJ(argv[0], sym)) {
+#ifdef MZ_PRECISE_GC
+      return scheme_intern_symbol("3m");
+#else
+      return scheme_intern_symbol("cgc");
+#endif
+    }
+
+    sym = scheme_intern_symbol("so-suffix");
+    if (SAME_OBJ(argv[0], sym)) {
+#ifdef DOS_FILE_SYSTEM
+      return scheme_make_byte_string(".dll");
+#else
+# ifdef OS_X
+      return scheme_make_byte_string(".dylib");
+# else
+      return scheme_make_byte_string(".so");
+# endif
+#endif
+    }
+
     sym = scheme_intern_symbol("os");
     if (!SAME_OBJ(argv[0], sym)) {
-      scheme_wrong_type("system-type", "'os, 'link, or 'machine", 0, argc, argv);
+      scheme_wrong_type("system-type", "'os, 'link, 'machine, or 'gc", 0, argc, argv);
       return NULL;
     }
   }
@@ -2132,12 +2145,29 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *system_library_subpath(int argc, Scheme_Object *argv[])
 {
+  if (argc > 0) {
+    Scheme_Object *sym;
+
+    if (SCHEME_FALSEP(argv[0]))
+      return platform_cgc_path;
+    
+    sym = scheme_intern_symbol("cgc");
+    if (SAME_OBJ(sym, argv[0]))
+      return platform_cgc_path;
+
+    sym = scheme_intern_symbol("3m");
+    if (SAME_OBJ(sym, argv[0]))
+      return platform_3m_path;
+
+    scheme_wrong_type("system-library-subpath", "'cgc, '3m, or #f", 0, argc, argv);
+    return NULL;
+  } else {
 #ifdef MZ_PRECISE_GC
-  if ((argc > 0) && SCHEME_FALSEP(argv[0]))
-    return platform_path_no_variant;
-  else
+    return platform_3m_path;
+#else
+    return platform_cgc_path;
 #endif
-    return platform_path;
+  }
 }
 
 const char *scheme_system_library_subpath()

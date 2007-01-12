@@ -29,7 +29,9 @@ dynexample:
 
 HEADERS = $(builddir)/../mzconfig.h \
           $(srcdir)/../include/scheme.h $(srcdir)/../src/schemef.h \
-          $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h
+          $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h \
+          $(srcdir)/../include/escheme.h $(srcdir)/../src/stypes.h \
+          $(srcdir)/../src/schemex.h $(srcdir)/../src/schemexm.h $(srcdir)/../src/schvers.h
 
 MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/mzscheme.exp
 
@@ -52,36 +54,32 @@ ILIBDIR = $(libpltdir)
 # Prefix might be relative to srcdir, or it might be absolute, so we
 # have to go up and install things from there.
 
-# Not obsolete --- the following is still used for Unix-style Cygwin, although
-# the generated .lib files are useful only when building extensions to be
+# The generated .lib files are useful only when building extensions to be
 # linked with the MSVC-built MzScheme
 cygwin-install:
-	gcc -c -O2 -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c
 	gcc -c $(srcdir)/init.cc
 	gcc -c $(srcdir)/fixup.c
 	cp $(srcdir)/mzdyn.def mzdynx.def
 	dlltool --def mzdynx.def --output-exp mzdyn.exp
-	dlltool --input-def $(srcdir)/../include/mzwin.def --output-lib libmzschxxxxxxx.lib --dllname libmzschxxxxxxx.dll
-	dlltool --input-def $(srcdir)/../include/gmzwin.def --output-lib libmzgcxxxxxxx.lib --dllname libmzgcxxxxxxx.dll
 	cd ../..; mkdir -p $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/mzdynx.def $(ILIBDIR)/gcc/mzdyn.def
 	cd ../..; cp mzscheme/dynsrc/mzdyn.exp $(ILIBDIR)/gcc
-	cd ../..; cp mzscheme/dynsrc/mzdyn.o $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/init.o $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/fixup.o $(ILIBDIR)/gcc
+
+cygwin-install-cgc:
+	gcc -c -O2 -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c
+	dlltool --input-def $(srcdir)/../include/mzwin.def --output-lib libmzschxxxxxxx.lib --dllname libmzschxxxxxxx.dll
+	dlltool --input-def $(srcdir)/../include/gmzwin.def --output-lib libmzgcxxxxxxx.lib --dllname libmzgcxxxxxxx.dll
+	cd ../..; cp mzscheme/dynsrc/mzdyn.o $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/libmzschxxxxxxx.lib $(ILIBDIR)/gcc
 	cd ../..; cp mzscheme/dynsrc/libmzgcxxxxxxx.lib $(ILIBDIR)/gcc
 
+cygwin-install-3m:
+	gcc -c -O2 -DMZ_PRECISE_GC -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c -o mzdyn3m.o
+	dlltool --input-def $(srcdir)/../include/mzwin3m.def --output-lib libmzsch3mxxxxxxx.lib --dllname libmzsch3mxxxxxxx.dll
+	cd ../..; cp mzscheme/dynsrc/mzdyn3m.o $(ILIBDIR)/gcc
+	cd ../..; cp mzscheme/dynsrc/libmzsch3mxxxxxxx.lib $(ILIBDIR)/gcc
+
 clean:
 	/bin/rm -f *.o Makefile.bak
-
-# Note: 'make depend' is no longer required. As distributed, the below
-#       dependencies have been trimmed to include only dependencies
-#       on MzScheme files
-
-# DO NOT DELETE THIS LINE -- make depend depends on it.
-
-mzdyn.o: $(srcdir)/../include/escheme.h $(srcdir)/../include/scheme.h $(srcdir)/../src/stypes.h \
-         $(srcdir)/../src/schemex.h $(srcdir)/../src/schemexm.h $(srcdir)/../src/schvers.h
-
-dynexmpl.o: $(srcdir)/../include/escheme.h $(srcdir)/../include/scheme.h $(srcdir)/../src/schemexm.h 

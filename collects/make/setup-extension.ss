@@ -58,41 +58,44 @@
 				       extra-depends
 				       last-chance-k
 				       xform-src.c))
-      ;; Do normal mode:
-      (go file.c #f)
+      
+      (define avail (available-mzscheme-variants))
+
+      ;; Maybe do CGC mode:
+      (when (or (memq 'cgc avail)
+                (and (memq 'normal avail)
+                     (eq? 'cgc (system-type 'gc))))
+        (parameterize ([link-variant 'cgc])
+          (go file.c #f)))
       ;; Maybe do 3m mode:
       (when (and 3m-too?
-		 (memq '3m (available-mzscheme-variants)))
-	(let ([3m-dir (build-path collection-dir 
-				  "compiled" "native" 
-				  (system-library-subpath #f) "3m")])
+		 (or (memq '3m avail)
+                     (and (memq 'normal avail)
+                          (eq? '3m (system-type 'gc)))))
+	(parameterize ([link-variant '3m])
+          (let ([3m-dir (build-path collection-dir 
+                                    "compiled" "native" 
+                                    (system-library-subpath '3m))])
 	  (make-directory* 3m-dir)
-	  (parameterize ([link-variant '3m])
-	    (go (build-path 3m-dir (let-values ([(base name dir?) (split-path file.c)])
-				     name))
-		file.c))))))
+          (go (build-path 3m-dir (let-values ([(base name dir?) (split-path file.c)])
+                                   name))
+              file.c))))))
   
   (define (pre-install/check-precompiled main-collects-parent-dir collection-dir file.c . rest)
-    (let* ([base-dir (build-path collection-dir
-				 "precompiled"
-				 "native"
-				 (system-library-subpath #f))]
-	   [variant-dir (case (link-variant)
-			  [(3m) (build-path base-dir "3m")]
-			  [else base-dir])]
+    (let* ([pre-dir (build-path collection-dir
+                                "precompiled"
+                                "native")]
+	   [variant-dir (system-library-subpath (link-variant))]
 	   [base-file (extract-base-filename file.c)]
-	   [file.so (build-path variant-dir (append-extension-suffix base-file))])
+	   [file.so (build-path pre-dir variant-dir (append-extension-suffix base-file))])
       (if (file-exists? file.so)
 	  ;; Just copy pre-compiled file:
-	  (let* ([base-dir (build-path collection-dir
-				       "compiled"
-				       "native"
-				       (system-library-subpath #f))]
-		 [variant-dir (case (link-variant)
-				[(3m) (build-path base-dir "3m")]
-				[else base-dir])]
-		 [dest-file.so (build-path variant-dir (append-extension-suffix base-file))])
-	    (make-directory* variant-dir)
+	  (let* ([dest-dir (build-path collection-dir
+                                       "compiled"
+                                       "native"
+                                       variant-dir)]
+		 [dest-file.so (build-path dest-dir (append-extension-suffix base-file))])
+	    (make-directory* dest-dir)
 	    (printf "  Copying ~a~n       to ~a~n" file.so dest-file.so)
 	    (when (file-exists? dest-file.so) 
 	      (delete-file dest-file.so))
@@ -170,10 +173,7 @@
 			       (build-path mz-inc-dir name))
 			     '("scheme.h" "schvers.h" "schemef.h" "sconfig.h" "stypes.h")))
 	
-	(define dir (let ([std (build-path "compiled" "native" (system-library-subpath #f))])
-		      (case (link-variant)
-			[(3m) (build-path std "3m")]
-			[else std])))
+	(define dir (build-path "compiled" "native" (system-library-subpath (link-variant))))
 	(define base-file (extract-base-filename file.c))
 	(define file.so (build-path dir (append-extension-suffix base-file)))
 	(define file.o (build-path dir (append-object-suffix base-file)))

@@ -1744,7 +1744,7 @@ Scheme_Object *scheme_make_weak_box(Scheme_Object *v)
   obj->so.type = scheme_weak_box_type;
 
   obj->u.ptr_val = v;
-  scheme_weak_reference((void **)&obj->u.ptr_val);
+  scheme_weak_reference((void **)(void *)&obj->u.ptr_val);
 
   return (Scheme_Object *)obj;
 #endif

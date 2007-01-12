@@ -70,12 +70,12 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libmredxxxxxxx.dll"
 				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib delayimp.lib"
-				OutputFile="..\..\..\$(ProjectName).exe"
+				OutputFile="..\..\..\$(ProjectName)CGC.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
+				ProgramDatabaseFile="..\..\..\$(ProjectName)CGC.pdb"
 				SubSystem="2"
 			/>
 			<Tool
@@ -156,11 +156,11 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libmredxxxxxxx.dll"
 				AdditionalDependencies="Unicows.lib WSock32.lib User32.lib Advapi32.lib delayimp.lib"
-				OutputFile="..\..\..\$(ProjectName).exe"
+				OutputFile="..\..\..\$(ProjectName)CGC.exe"
 				SuppressStartupBanner="true"
 				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\$(ProjectName).pdb"
+				ProgramDatabaseFile="..\..\..\$(ProjectName)CGC.pdb"
 				SubSystem="2"
 			/>
 			<Tool

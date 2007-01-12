@@ -1,9 +1,43 @@
 // mzobj.cxx : Implementation of CMzObj
 
+#ifdef MZCOM_3M
+/* xform.ss converts this file to mzobj3m.cxx: */
+# define i64 /* ??? why does expansion produce i64? */
+# include "mzobj3m.cxx"
+#else
+
+#include "scheme.h"
+
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
 #include "stdafx.h"
 #include "resource.h"
+
 #include "mzcom.h"
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+
 #include "mzobj.h"
+
+#ifndef MZ_PRECISE_GC
+# define GC_CAN_IGNORE /* empty */
+#endif
+
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+static void ErrorBox(char *s) {
+  ::MessageBox(NULL,s,"MzCOM",MB_OK);
+}
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
 
 static THREAD_GLOBALS tg;
 
@@ -18,10 +52,6 @@ static HANDLE exitSem;
 static Scheme_Object *exn_catching_apply;
 static Scheme_Object *exn_p;
 static Scheme_Object *exn_message;
-
-static void ErrorBox(char *s) {
-  ::MessageBox(NULL,s,"MzCOM",MB_OK);
-}
 
 /* This indirection lets us delayload libmzsch.dll: */
 #define scheme_false (scheme_make_false())
@@ -85,7 +115,7 @@ OLECHAR *wideStringFromSchemeObj(Scheme_Object *obj,char *fmt,int fmtlen) {
   len = strlen(s);
   wideString = (OLECHAR *)scheme_malloc((len + 1) * sizeof(OLECHAR));
   MultiByteToWideChar(CP_ACP,(DWORD)0,s,len,wideString,len + 1);
-  wideString[len] = L'\0';
+  wideString[len] = 0;
   return wideString;
 }
 
@@ -97,6 +127,7 @@ void exitHandler(int) {
 void setupSchemeEnv(void) {
   char *wrapper;
   char exeBuff[260];
+  HMODULE mod;
   static BOOL registered;
 
   if (!registered) {
@@ -127,7 +158,8 @@ void setupSchemeEnv(void) {
 
   // set up collection paths, based on MzScheme startup
 
-  GetModuleFileName(GetModuleHandle("mzcom.exe"),exeBuff,sizeof(exeBuff));
+  mod = GetModuleHandle("mzcom.exe");
+  GetModuleFileName(mod,exeBuff,sizeof(exeBuff));
 
   scheme_add_global("mzcom-exe",scheme_make_utf8_string(exeBuff),env);
   scheme_set_exec_cmd(exeBuff);
@@ -160,12 +192,18 @@ DWORD WINAPI evalLoop(LPVOID args) {
   HANDLE resetSem;
   HANDLE resetDoneSem;
   BSTR **ppInput;
-  BSTR *pOutput;
+  BSTR *pOutput, po;
   MSG msg;
 
-  // make sure all MzScheme calls in this thread
+  // make sure all MzScheme calls are in this thread
 
-  scheme_set_stack_base(NULL,1);
+#ifdef MZ_PRECISE_GC
+# define STACK_BASE_ADDR __gc_var_stack__
+#else
+# define STACK_BASE_ADDR NULL
+#endif
+
+  scheme_set_stack_base(STACK_BASE_ADDR,1);
   setupSchemeEnv();
 
   scheme_set_exit(exitHandler);
@@ -248,12 +286,14 @@ DWORD WINAPI evalLoop(LPVOID args) {
 
     if (*pErrorState) {
       wideError = wideStringFromSchemeObj(outputObj,"MzScheme error: ~a",18);
-      *pOutput = SysAllocString(L"");
+      po = SysAllocString(L"");
+      *pOutput = po;
       *pHr = E_FAIL;
     }
     else {
       outputBuffer = wideStringFromSchemeObj(outputObj,"~s",2);
-      *pOutput = SysAllocString(outputBuffer);
+      po = SysAllocString(outputBuffer);
+      *pOutput = po;
       *pHr = S_OK;
     }
 
@@ -263,6 +303,10 @@ DWORD WINAPI evalLoop(LPVOID args) {
 
   return 0;
 }
+
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
 
 void CMzObj::startMzThread(void) {
   tg.pHr = &hr;
@@ -476,3 +520,9 @@ STDMETHODIMP CMzObj::Reset() {
   WaitForSingleObject(resetDoneSem,INFINITE);
   return S_OK;
 }
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+
+#endif // MZCOM_3M

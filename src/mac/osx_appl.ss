@@ -1,5 +1,3 @@
-#!/bin/sh
-
 #|
 
 # OS X pre-make script
@@ -7,10 +5,6 @@
 #
 # the script must be run from the mred build directory,
 # and srcdir must be provided as the first argument
-
-exec ${BUILDBASE}/mzscheme/mzscheme -qr "$0" "$1"
-echo "Couldn't start MzScheme!"
-exit 1
 
 |#
 
@@ -28,6 +22,7 @@ exit 1
   (define for-3m? (getenv "BUILDING_3M"))
 
   (define plthome (build-path (vector-ref (current-command-line-arguments) 0) 'up))
+  (define suffix (vector-ref (current-command-line-arguments) 1))
 
   ; Rez where needed:
   (let* ([cw-path (build-path plthome "src" "mac" "cw")]
@@ -127,21 +122,21 @@ exit 1
 	   (assoc-pair "CFBundleShortVersionString"
 		       ,(version))))
 
-    (create-app (current-directory)
-		(if for-3m? "../MrEd3m" "MrEd")
+    (create-app (build-path (current-directory) (if for-3m? 'up 'same))
+                (string-append "MrEd" suffix)
 		"MrEd"
 		"APPLmReD"
-		(make-info-plist (if for-3m? "MrEd3m" "MrEd") "mReD" #t))
+		(make-info-plist (string-append "MrEd" suffix) "mReD" #t))
 
     (create-fw (current-directory)
 	       "PLT_MrEd"
 		(make-info-plist "PLT_MrEd" "MrEd" #f))
 
-    (create-app (current-directory)
-		(if for-3m? "../Starter3m" "Starter")
-		"Starter"
-		"APPLMrSt"
-		(make-info-plist (if for-3m? "Starter3m" "Starter") "MrSt" #t)))
+    (create-app (build-path (current-directory) (if for-3m? 'up 'same))
+                "Starter"
+                "Starter"
+                "APPLMrSt"
+                (make-info-plist "Starter" "MrSt" #t)))
 
 (require osx_appl)
 

@@ -575,9 +575,9 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
    'run-file)' is still the embedding executable).
 
    The `variant' argument indicates which variant of the original
-   binary to use for embedding. The default is 'normal, and typically
-   the only other possibility is '3m. See `current-launcher-variant'
-   in the "launcher" collection for more information.
+   binary to use for embedding. The default is `(system-type 'gc)';
+   see `current-launcher-variant' in the "launcher" collection for
+   more information.
 
 > (make-embedding-executable dest mred? verbose? mod-list literal-file-list literal-sexpr cmdline-list [aux launcher? variant])
 

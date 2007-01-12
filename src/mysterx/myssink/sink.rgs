@@ -2,16 +2,16 @@ HKCR
 {
 	Myssink.Sink.1 = s 'Sink Class'
 	{
-		CLSID = s '{DA064DCD-0881-11D3-B5CA-0060089002FE}'
+		CLSID = s '{DA064DCD-0881-11D3-B5CA-0060089002FF}'
 	}
 	Myssink.Sink = s 'Sink Class'
 	{
-		CLSID = s '{DA064DCD-0881-11D3-B5CA-0060089002FE}'
+		CLSID = s '{DA064DCD-0881-11D3-B5CA-0060089002FF}'
 		CurVer = s 'Myssink.Sink.1'
 	}
 	NoRemove CLSID
 	{
-		ForceRemove {DA064DCD-0881-11D3-B5CA-0060089002FE} = s 'Sink Class'
+		ForceRemove {DA064DCD-0881-11D3-B5CA-0060089002FF} = s 'Sink Class'
 		{
 			ProgID = s 'Myssink.Sink.1'
 			VersionIndependentProgID = s 'Myssink.Sink'
@@ -20,7 +20,7 @@ HKCR
 			{
 				val ThreadingModel = s 'Apartment'
 			}
-			'TypeLib' = s '{DA064DC0-0881-11D3-B5CA-0060089002FE}'
+			'TypeLib' = s '{DA064DC0-0881-11D3-B5CA-0060089002FF}'
 		}
 	}
 }

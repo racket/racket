@@ -20,4 +20,5 @@ Scheme_Object *BSTRToSchemeString(BSTR);
 void updateSchemeFromBSTR(Scheme_Object *,BSTR);
 BSTR stringToBSTR(const char *,size_t);
 Scheme_Object * unmarshalBSTR (BSTR bstr);
+Scheme_Object * LPOLESTRToSchemeString (LPOLESTR str);
 

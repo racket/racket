@@ -4,15 +4,13 @@
 #define __SINK_H_
 
 #include "resource.h"       // main symbols
-#include "escheme.h"
-#include "bstr.h"
 #include "sinktbl.h"
 
 #define EVENT_HANDLER_TBL_SIZE (93)
 
 typedef struct _event_handler_entry_ { // entry in hash table
   DISPID dispId;
-  Scheme_Object *handler;
+  void *handler;
   _event_handler_entry_ *next;
 } EVENT_HANDLER_ENTRY;
 
@@ -27,12 +25,12 @@ class ATL_NO_VTABLE CSink :
 private:
   MYSSINK_TABLE *myssink_table;
 
-  Scheme_Object *variantToSchemeObject(VARIANTARG *);
-  void unmarshalSchemeObject(Scheme_Object *,VARIANTARG *);
+  void *variantToSchemeObject(VARIANTARG *);
+  void unmarshalSchemeObject(void *,VARIANTARG *);
   void handlerUpdateError(char *);
 
   unsigned int getHashValue(DISPID);
-  EVENT_HANDLER_ENTRY *newEventHandlerEntry(DISPID,Scheme_Object *);
+  EVENT_HANDLER_ENTRY *newEventHandlerEntry(DISPID,void *);
   EVENT_HANDLER_ENTRY *lookupHandler(DISPID);
 
   EVENT_HANDLER_ENTRY eventHandlerTable[EVENT_HANDLER_TBL_SIZE];

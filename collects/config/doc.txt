@@ -48,6 +48,16 @@ The "config.ss" module must export the following values:
   absolute-installation? - a (simple, non-delayed) boolean that is
    true if this installation is using absolute path names
 
+  cgc-suffix - a string used as the suffix (before the actual suffix,
+   such as ".exe") for a CGC executable; use Windows-style casing, and
+   the string will be downcased as appropriate (e.g., for a Unix
+   binary name); #f means that if the "mzscheme" binary identifies
+   itself as CGC, then the suffix is "", otherwise it is "CGC"
+
+  3m-suffix - analogous to `cgc-suffix', but for 3m; #f means that
+   if the "mzscheme" binary identifies itself as CGC, then the suffix
+   is "3m", otherwise it is ""
+
 In all cases, the value of an exported name can be a `delay'ed #f
 (instead of a path/string/bytes or list) to indicate the default.
 

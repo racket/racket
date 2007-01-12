@@ -36,8 +36,8 @@ The _launcher-unit.ss_ library provides `launcher@', which imports
               binary, like "Setup PLT.exe"; no other `aux'
               associations are used for an old-style launcher
 
-      -'exe-name_ (Mac OS X, MrEd 'script[-3m] variant) - provides the
-              base name for a 'normal variant launcher, which the
+      -'exe-name_ (Mac OS X, MrEd 'script[-3m,-cgc] variant) - provides the
+              base name for a '3m/'cgc variant launcher, which the
               script will call (ignoring `args'); if this name is not
               provided, the script will go through the MrEd executable
 
@@ -170,13 +170,18 @@ The _launcher-unit.ss_ library provides `launcher@', which imports
 
 > (current-launcher-variant [symbol]) - Gets or sets a symbol
    parameter that indicates a variant of MzScheme or MrEd to use for
-   launcher creation and for generating launcher names. The 'normal
-   variant is usually available. For Unix platforms, the only other
-   possibility is '3m. For Mac OS X, the '3m variant is available, and
-   the 'script and 'script-3m variants are available for MrEd.
+   launcher creation and for generating launcher names. The default is
+   the result of `(system-type 'gc)'. For Unix platforms, the
+   possibilities are 'cgc and '3m. For Mac OS X, the 'script-3m and
+   'script-cgc variants are also available for MrEd.
 
-> (available-mred-variants) - Returns a list of symbols
-  corresponding to available variants of MrEd.
+> (available-mred-variants) - Returns a list of symbols corresponding
+  to available variants of MrEd. The list normally includes at least
+  one of '3m or 'cgc --- whichever is the result of `(system-type
+  'gc)' --- and may include the other, as well as 'script-3m and/or
+  'script-cgc under Mac OS X.
 
 > (available-mzscheme-variants) - Returns a list of symbols
-  corresponding to available variants of MrEd.
+  corresponding to available variants of MrEd. The list normally
+  includes at least one of '3m or 'cgc --- whichever is the result of
+  `(system-type 'gc)' --- and may include the other.

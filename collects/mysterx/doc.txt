@@ -2,16 +2,14 @@
 _MysterX_
 =========
 
- MysterX is a toolkit for building Windows
- applications from ActiveX and COM components,
- using Scheme as glue code.  Dynamic HTML is used
- for component presentation and event-handling.
- MysterX requires Internet Explorer 4, 5, or 6 (IE) to
- be installed.  Distributed COM (DCOM) for your
- version of Windows is also required.  Recent versions 
- of Windows come with DCOM; DCOM packages for Windows 95 and 98 
- are made available separately.  IE is available for download 
- from Microsoft at
+ MysterX is a toolkit for building Windows applications from ActiveX
+ and COM components, using Scheme as glue code.  Dynamic HTML is used
+ for component presentation and event-handling.  MysterX requires
+ Internet Explorer 4, 5, or 6 (IE) to be installed.  Distributed COM
+ (DCOM) for your version of Windows is also required.  Recent versions
+ of Windows come with DCOM; DCOM packages for Windows 95 and 98 are
+ made available separately.  IE is available for download from
+ Microsoft at
 
    http://www.microsoft.com/windows/ie/downloads/default.asp
 
@@ -22,43 +20,35 @@ _MysterX_
  Installation
  ------------
 
- Three Windows .DLL's support low-level operations
- in MysterX.  Two of them, myspage.dll and
- myssink.dll, may need to be installed in the
- Registry, by entering `REGSVR32 <name-of-DLL>'.
- REGSVR32 is a Windows utility usually found in
- the Windows System directory.  The .DLL's are
- found in the dlls subdirectory of the MysterX
- collection.  Ordinarily, the PLT installation
- program registers these .DLL's, but if the files
- are copied, or Windows is installed in an unusual
- disk location, manual registration becomes
- necessary.  The third .DLL, mxmain.dll, is loaded
- as a MzScheme extension by the file `mysterx.ss'
- in the mysterx collection.
+ Two Windows .DLL's support low-level operations in MysterX:
+ "myspage.dll" and "myssink.dll".  Both are installed in the registry
+ (using `REGSVR32 <name-of-DLL>') when Setup PLT runs the the MysterX
+ post-installer. If you move the location of your PLT installation,
+ you may need to re-run Setup PLT to make MysterX work. Neither of
+ these DLLs is specific to a PLT Scheme version, so it's ok for one
+ version of PLT Scheme to use the DLLs registered by another. (Prior
+ to version 369.4, myssink.dll was version-specific; its GUID was
+ changed when it was made version-independent.)
 
  Loading
  -------
 
- As of PLT Scheme 200, MysterX is a module.
  Load the MysterX module with 
 
   (require (lib "mysterx.ss" "mysterx"))
 
- Because some MysterX code relies on the PLT 
- Scheme class system, you will likely need to
- run 
+ Because some MysterX code relies on the PLT Scheme class system, you
+ will likely need to run
 
   (require (lib "class.ss"))
 
  Using the xml collection
  ------------------------
 
- Several MysterX procedures take HTML strings as
- input.  The xml collection provides procedures
- that convert Scheme syntax into XML strings.  You
- may find using these procedures useful in
- creating HTML strings for use by MysterX.
+ Several MysterX procedures take HTML strings as input.  The xml
+ collection provides procedures that convert Scheme syntax into XML
+ strings.  You may find using these procedures useful in creating HTML
+ strings for use by MysterX.
 
  Version
  -------

@@ -2,7 +2,8 @@
   (require (lib "etc.ss") (lib "file.ss") (lib "list.ss")
            (lib "file.ss" "dynext") (lib "link.ss" "dynext")
            (lib "compile.ss" "dynext")
-           (lib "compiler.ss" "compiler"))
+           (lib "compiler.ss" "compiler")
+           (prefix option: (lib "option.ss" "compiler")))
 
   (define top-dir (this-expression-source-directory))
   (define src-dir (build-path top-dir "src"))
@@ -30,7 +31,10 @@
                                   [else '("-DHAVE_LIBPNG" "-DPLD_png")]))]
                        ;; we compile a simple .so, not an extension
                        [current-standard-link-libraries '()]
-                       ;[current-use-mzdyn #f]
+                       ;; no 3m transformation:
+                       [option:3m #f]
+                       [link-variant 'cgc]
+                       [compile-variant 'cgc]
                        )
           (define c-files (filter (lambda (f)
                                     (regexp-match "\\.[cC]$" (path->string f)))

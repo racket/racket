@@ -50,11 +50,11 @@ ZLIB_A = ../../wxcommon/zlib/libz.@LIBSFX@
 ZLIB_INC = -I$(srcdir)/../../wxcommon/zlib
 PNG_A = ../../wxcommon/libpng/libpng.@LIBSFX@
 
-XFORM_INC_wx_xt = -Dwx_xt -I$(WXDIR)/src/XWidgets -I$(WXDIR)/src
+XFORM_INC_wx_xt = -Dwx_xt @WX_MMD_FLAG@ -I$(WXDIR)/src/XWidgets -I$(WXDIR)/src
 XFORM_INC_wx_mac = -Dwx_mac -DOS_X -MMD -DWX_CARBON -I$(WXMACDIR)/../utils/image/src -I$(WXMACDIR)/../contrib/wxxpm/libxpm.34b/lib -I$(WXMACDIR)/../../mac/mzscheme
 
-MZMMM_wx_xt = ../../mzscheme/mzscheme3m
-MZMMM_wx_mac = ../../mzscheme/mzscheme3m
+MZMMM_wx_xt = ../../mzscheme/mzscheme@MMM@
+MZMMM_wx_mac = ../../mzscheme/mzscheme@MMM@
 MZMMM = $(MZMMM_@WXVARIANT@)
 
 XFORM_CMD = $(MZMMM) -rq $(srcdir)/../../mzscheme/gc2/xform.ss --setup 
@@ -71,136 +71,136 @@ MREDLDFLAGS = -L$(WXBDIR)/utils/image/src -L$(WXBDIR)/contrib/xpm/lib $(LDFLAGS)
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
-xsrc/Window.cc: $(WXDIR)/src/Windows/Window.cc $(WXBDIR)/src/Windows/Window.@LTO@ $(XFORMDEP)
+xsrc/Window.cc: $(WXDIR)/src/Windows/Window.cc $(XFORMDEP)
 	$(XFORM) xsrc/Window.cc $(WXDIR)/src/Windows/Window.cc
-xsrc/Button.cc: $(WXDIR)/src/Windows/Button.cc $(WXBDIR)/src/Windows/Button.@LTO@ $(XFORMDEP)
+xsrc/Button.cc: $(WXDIR)/src/Windows/Button.cc $(XFORMDEP)
 	$(XFORM) xsrc/Button.cc $(WXDIR)/src/Windows/Button.cc
-xsrc/Frame.cc: $(WXDIR)/src/Windows/Frame.cc $(WXBDIR)/src/Windows/Frame.@LTO@ $(XFORMDEP)
+xsrc/Frame.cc: $(WXDIR)/src/Windows/Frame.cc $(XFORMDEP)
 	$(XFORM) xsrc/Frame.cc $(WXDIR)/src/Windows/Frame.cc
-xsrc/Layout.cc: $(WXDIR)/src/Windows/Layout.cc $(WXBDIR)/src/Windows/Layout.@LTO@ $(XFORMDEP)
+xsrc/Layout.cc: $(WXDIR)/src/Windows/Layout.cc $(XFORMDEP)
 	$(XFORM) xsrc/Layout.cc $(WXDIR)/src/Windows/Layout.cc
-xsrc/MenuBar.cc: $(WXDIR)/src/Windows/MenuBar.cc $(WXBDIR)/src/Windows/MenuBar.@LTO@ $(XFORMDEP)
+xsrc/MenuBar.cc: $(WXDIR)/src/Windows/MenuBar.cc $(XFORMDEP)
 	$(XFORM) xsrc/MenuBar.cc $(WXDIR)/src/Windows/MenuBar.cc
-xsrc/RadioBox.cc: $(WXDIR)/src/Windows/RadioBox.cc $(WXBDIR)/src/Windows/RadioBox.@LTO@ $(XFORMDEP)
+xsrc/RadioBox.cc: $(WXDIR)/src/Windows/RadioBox.cc $(XFORMDEP)
 	$(XFORM) xsrc/RadioBox.cc $(WXDIR)/src/Windows/RadioBox.cc 
-xsrc/CheckBox.cc: $(WXDIR)/src/Windows/CheckBox.cc $(WXBDIR)/src/Windows/CheckBox.@LTO@ $(XFORMDEP)
+xsrc/CheckBox.cc: $(WXDIR)/src/Windows/CheckBox.cc $(XFORMDEP)
 	$(XFORM) xsrc/CheckBox.cc $(WXDIR)/src/Windows/CheckBox.cc 
-xsrc/Choice.cc: $(WXDIR)/src/Windows/Choice.cc $(WXBDIR)/src/Windows/Choice.@LTO@ $(XFORMDEP)
+xsrc/Choice.cc: $(WXDIR)/src/Windows/Choice.cc $(XFORMDEP)
 	$(XFORM) xsrc/Choice.cc $(WXDIR)/src/Windows/Choice.cc
-xsrc/Gauge.cc: $(WXDIR)/src/Windows/Gauge.cc $(WXBDIR)/src/Windows/Gauge.@LTO@ $(XFORMDEP)
+xsrc/Gauge.cc: $(WXDIR)/src/Windows/Gauge.cc $(XFORMDEP)
 	$(XFORM) xsrc/Gauge.cc $(WXDIR)/src/Windows/Gauge.cc  
-xsrc/ListBox.cc: $(WXDIR)/src/Windows/ListBox.cc $(WXBDIR)/src/Windows/ListBox.@LTO@ $(XFORMDEP)
+xsrc/ListBox.cc: $(WXDIR)/src/Windows/ListBox.cc $(XFORMDEP)
 	$(XFORM) xsrc/ListBox.cc $(WXDIR)/src/Windows/ListBox.cc
-xsrc/Message.cc: $(WXDIR)/src/Windows/Message.cc $(WXBDIR)/src/Windows/Message.@LTO@ $(XFORMDEP)
+xsrc/Message.cc: $(WXDIR)/src/Windows/Message.cc $(XFORMDEP)
 	$(XFORM) xsrc/Message.cc $(WXDIR)/src/Windows/Message.cc
-xsrc/Slider.cc: $(WXDIR)/src/Windows/Slider.cc $(WXBDIR)/src/Windows/Slider.@LTO@ $(XFORMDEP)
+xsrc/Slider.cc: $(WXDIR)/src/Windows/Slider.cc $(XFORMDEP)
 	$(XFORM) xsrc/Slider.cc $(WXDIR)/src/Windows/Slider.cc
-xsrc/Canvas.cc: $(WXDIR)/src/Windows/Canvas.cc $(WXBDIR)/src/Windows/Canvas.@LTO@ $(XFORMDEP)
+xsrc/Canvas.cc: $(WXDIR)/src/Windows/Canvas.cc $(XFORMDEP)
 	$(XFORM) xsrc/Canvas.cc $(WXDIR)/src/Windows/Canvas.cc
-xsrc/DialogBox.cc: $(WXDIR)/src/Windows/DialogBox.cc $(WXBDIR)/src/Windows/DialogBox.@LTO@ $(XFORMDEP)
+xsrc/DialogBox.cc: $(WXDIR)/src/Windows/DialogBox.cc $(XFORMDEP)
 	$(XFORM) xsrc/DialogBox.cc $(WXDIR)/src/Windows/DialogBox.cc 
-xsrc/Item.cc: $(WXDIR)/src/Windows/Item.cc $(WXBDIR)/src/Windows/Item.@LTO@ $(XFORMDEP)
+xsrc/Item.cc: $(WXDIR)/src/Windows/Item.cc $(XFORMDEP)
 	$(XFORM) xsrc/Item.cc $(WXDIR)/src/Windows/Item.cc
-xsrc/Menu.cc: $(WXDIR)/src/Windows/Menu.cc $(WXBDIR)/src/Windows/Menu.@LTO@ $(XFORMDEP)
+xsrc/Menu.cc: $(WXDIR)/src/Windows/Menu.cc $(XFORMDEP)
 	$(XFORM) xsrc/Menu.cc $(WXDIR)/src/Windows/Menu.cc
-xsrc/Panel.cc: $(WXDIR)/src/Windows/Panel.cc $(WXBDIR)/src/Windows/Panel.@LTO@ $(XFORMDEP)
+xsrc/Panel.cc: $(WXDIR)/src/Windows/Panel.cc $(XFORMDEP)
 	$(XFORM) xsrc/Panel.cc $(WXDIR)/src/Windows/Panel.cc
 
-xsrc/DC.cc: $(WXDIR)/src/DeviceContexts/DC.cc $(WXBDIR)/src/DeviceContexts/DC.@LTO@ $(XFORMDEP)
+xsrc/DC.cc: $(WXDIR)/src/DeviceContexts/DC.cc $(XFORMDEP)
 	$(XFORM) xsrc/DC.cc $(WXDIR)/src/DeviceContexts/DC.cc
-xsrc/WindowDC.cc: $(WXDIR)/src/DeviceContexts/WindowDC.cc $(WXBDIR)/src/DeviceContexts/WindowDC.@LTO@ $(XFORMDEP)
+xsrc/WindowDC.cc: $(WXDIR)/src/DeviceContexts/WindowDC.cc $(XFORMDEP)
 	$(XFORM) xsrc/WindowDC.cc $(WXDIR)/src/DeviceContexts/WindowDC.cc
-xsrc/MemoryDC.cc: $(WXDIR)/src/DeviceContexts/MemoryDC.cc $(WXBDIR)/src/DeviceContexts/MemoryDC.@LTO@ $(XFORMDEP)
+xsrc/MemoryDC.cc: $(WXDIR)/src/DeviceContexts/MemoryDC.cc $(XFORMDEP)
 	$(XFORM) xsrc/MemoryDC.cc $(WXDIR)/src/DeviceContexts/MemoryDC.cc
-xsrc/PSDC.cc: $(WXDIR)/src/DeviceContexts/PSDC.cc $(WXBDIR)/src/DeviceContexts/PSDC.@LTO@ $(XFORMDEP)
+xsrc/PSDC.cc: $(WXDIR)/src/DeviceContexts/PSDC.cc $(XFORMDEP)
 	$(XFORM) xsrc/PSDC.cc $(WXDIR)/src/DeviceContexts/PSDC.cc
 
-xsrc/Object.cc: $(WXDIR)/src/DataStructures/Object.cc $(WXBDIR)/src/DataStructures/Object.@LTO@ $(XFORMDEP)
+xsrc/Object.cc: $(WXDIR)/src/DataStructures/Object.cc $(XFORMDEP)
 	$(XFORM) xsrc/Object.cc $(WXDIR)/src/DataStructures/Object.cc
-xsrc/TypeTree.cc: $(WXDIR)/src/DataStructures/TypeTree.cc $(WXBDIR)/src/DataStructures/TypeTree.@LTO@ $(XFORMDEP)
+xsrc/TypeTree.cc: $(WXDIR)/src/DataStructures/TypeTree.cc $(XFORMDEP)
 	$(XFORM) xsrc/TypeTree.cc $(WXDIR)/src/DataStructures/TypeTree.cc
-xsrc/wb_list.cc: $(WXDIR)/src/DataStructures/wb_list.cc $(WXBDIR)/src/DataStructures/wb_list.@LTO@ $(XFORMDEP)
+xsrc/wb_list.cc: $(WXDIR)/src/DataStructures/wb_list.cc $(XFORMDEP)
 	$(XFORM) xsrc/wb_list.cc $(WXDIR)/src/DataStructures/wb_list.cc
-xsrc/wb_hash.cc: $(WXDIR)/src/DataStructures/wb_hash.cc $(WXBDIR)/src/DataStructures/wb_hash.@LTO@ $(XFORMDEP)
+xsrc/wb_hash.cc: $(WXDIR)/src/DataStructures/wb_hash.cc $(XFORMDEP)
 	$(XFORM) xsrc/wb_hash.cc $(WXDIR)/src/DataStructures/wb_hash.cc
 
-xsrc/AppMain.cc: $(WXDIR)/src/Application/AppMain.cc $(WXBDIR)/src/Application/AppMain.@LTO@ $(XFORMDEP)
+xsrc/AppMain.cc: $(WXDIR)/src/Application/AppMain.cc $(XFORMDEP)
 	$(XFORM) xsrc/AppMain.cc $(WXDIR)/src/Application/AppMain.cc
-xsrc/GlobalData.cc: $(WXDIR)/src/Application/GlobalData.cc $(WXBDIR)/src/Application/GlobalData.@LTO@ $(XFORMDEP)
+xsrc/GlobalData.cc: $(WXDIR)/src/Application/GlobalData.cc $(XFORMDEP)
 	$(XFORM) xsrc/GlobalData.cc $(WXDIR)/src/Application/GlobalData.cc
 
-xsrc/FileDialog.cc: $(WXDIR)/src/Dialogs/FileDialog.cc $(WXBDIR)/src/Dialogs/FileDialog.@LTO@ $(XFORMDEP)
+xsrc/FileDialog.cc: $(WXDIR)/src/Dialogs/FileDialog.cc $(XFORMDEP)
 	$(XFORM) xsrc/FileDialog.cc $(WXDIR)/src/Dialogs/FileDialog.cc
-xsrc/MessageBox.cc: $(WXDIR)/src/Dialogs/MessageBox.cc $(WXBDIR)/src/Dialogs/MessageBox.@LTO@ $(XFORMDEP)
+xsrc/MessageBox.cc: $(WXDIR)/src/Dialogs/MessageBox.cc $(XFORMDEP)
 	$(XFORM) xsrc/MessageBox.cc $(WXDIR)/src/Dialogs/MessageBox.cc
 
-xsrc/EvtHandler.cc: $(WXDIR)/src/EventHandling/EvtHandler.cc $(WXBDIR)/src/EventHandling/EvtHandler.@LTO@ $(XFORMDEP)
+xsrc/EvtHandler.cc: $(WXDIR)/src/EventHandling/EvtHandler.cc $(XFORMDEP)
 	$(XFORM) xsrc/EvtHandler.cc $(WXDIR)/src/EventHandling/EvtHandler.cc
-xsrc/wb_sysev.cc: $(WXDIR)/src/EventHandling/wb_sysev.cc $(WXBDIR)/src/EventHandling/wb_sysev.@LTO@ $(XFORMDEP)
+xsrc/wb_sysev.cc: $(WXDIR)/src/EventHandling/wb_sysev.cc $(XFORMDEP)
 	$(XFORM) xsrc/wb_sysev.cc $(WXDIR)/src/EventHandling/wb_sysev.cc
-xsrc/wb_stdev.cc: $(WXDIR)/src/EventHandling/wb_stdev.cc $(WXBDIR)/src/EventHandling/wb_stdev.@LTO@ $(XFORMDEP)
+xsrc/wb_stdev.cc: $(WXDIR)/src/EventHandling/wb_stdev.cc $(XFORMDEP)
 	$(XFORM) xsrc/wb_stdev.cc $(WXDIR)/src/EventHandling/wb_stdev.cc
 
-xsrc/Bitmap.cc: $(WXDIR)/src/GDI-Classes/Bitmap.cc $(WXBDIR)/src/GDI-Classes/Bitmap.@LTO@ $(XFORMDEP)
+xsrc/Bitmap.cc: $(WXDIR)/src/GDI-Classes/Bitmap.cc $(XFORMDEP)
 	$(XFORM) xsrc/Bitmap.cc $(WXDIR)/src/GDI-Classes/Bitmap.cc
-xsrc/Colour.cc: $(WXDIR)/src/GDI-Classes/Colour.cc $(WXBDIR)/src/GDI-Classes/Colour.@LTO@ $(XFORMDEP)
+xsrc/Colour.cc: $(WXDIR)/src/GDI-Classes/Colour.cc $(XFORMDEP)
 	$(XFORM) xsrc/Colour.cc $(WXDIR)/src/GDI-Classes/Colour.cc
-xsrc/Font.cc: $(WXDIR)/src/GDI-Classes/Font.cc $(WXBDIR)/src/GDI-Classes/Font.@LTO@ $(XFORMDEP)
+xsrc/Font.cc: $(WXDIR)/src/GDI-Classes/Font.cc $(XFORMDEP)
 	$(XFORM) xsrc/Font.cc $(WXDIR)/src/GDI-Classes/Font.cc
-xsrc/FontDirectory.cc: $(WXDIR)/src/GDI-Classes/FontDirectory.cc $(WXBDIR)/src/GDI-Classes/FontDirectory.@LTO@ $(XFORMDEP)
+xsrc/FontDirectory.cc: $(WXDIR)/src/GDI-Classes/FontDirectory.cc $(XFORMDEP)
 	$(XFORM) xsrc/FontDirectory.cc $(WXDIR)/src/GDI-Classes/FontDirectory.cc
-xsrc/Pen+Brush.cc: $(WXDIR)/src/GDI-Classes/Pen+Brush.cc $(WXBDIR)/src/GDI-Classes/Pen+Brush.@LTO@ $(XFORMDEP)
+xsrc/Pen+Brush.cc: $(WXDIR)/src/GDI-Classes/Pen+Brush.cc $(XFORMDEP)
 	$(XFORM) xsrc/Pen+Brush.cc $(WXDIR)/src/GDI-Classes/Pen+Brush.cc
 
-xsrc/Clipboard.cc: $(WXDIR)/src/Misc/Clipboard.cc $(WXBDIR)/src/Misc/Clipboard.@LTO@ $(XFORMDEP)
+xsrc/Clipboard.cc: $(WXDIR)/src/Misc/Clipboard.cc $(XFORMDEP)
 	$(XFORM) xsrc/Clipboard.cc $(WXDIR)/src/Misc/Clipboard.cc
-xsrc/Timer.cc: $(WXDIR)/src/Misc/Timer.cc $(WXBDIR)/src/Misc/Timer.@LTO@ $(XFORMDEP)
+xsrc/Timer.cc: $(WXDIR)/src/Misc/Timer.cc $(XFORMDEP)
 	$(XFORM) xsrc/Timer.cc $(WXDIR)/src/Misc/Timer.cc
 
-xsrc/Application.cc: $(WXDIR)/src/Utilities/Application.cc $(WXBDIR)/src/Utilities/Application.@LTO@ $(XFORMDEP)
+xsrc/Application.cc: $(WXDIR)/src/Utilities/Application.cc $(XFORMDEP)
 	$(XFORM) xsrc/Application.cc $(WXDIR)/src/Utilities/Application.cc
-xsrc/Assert.cc: $(WXDIR)/src/Utilities/Assert.cc $(WXBDIR)/src/Utilities/Assert.@LTO@ $(XFORMDEP)
+xsrc/Assert.cc: $(WXDIR)/src/Utilities/Assert.cc $(XFORMDEP)
 	$(XFORM) xsrc/Assert.cc $(WXDIR)/src/Utilities/Assert.cc
-xsrc/BusyCursor.cc: $(WXDIR)/src/Utilities/BusyCursor.cc $(WXBDIR)/src/Utilities/BusyCursor.@LTO@ $(XFORMDEP)
+xsrc/BusyCursor.cc: $(WXDIR)/src/Utilities/BusyCursor.cc $(XFORMDEP)
 	$(XFORM) xsrc/BusyCursor.cc $(WXDIR)/src/Utilities/BusyCursor.cc
-xsrc/Date+Time.cc: $(WXDIR)/src/Utilities/Date+Time.cc $(WXBDIR)/src/Utilities/Date+Time.@LTO@ $(XFORMDEP)
+xsrc/Date+Time.cc: $(WXDIR)/src/Utilities/Date+Time.cc $(XFORMDEP)
 	$(XFORM) xsrc/Date+Time.cc $(WXDIR)/src/Utilities/Date+Time.cc
-xsrc/Directory.cc: $(WXDIR)/src/Utilities/Directory.cc $(WXBDIR)/src/Utilities/Directory.@LTO@ $(XFORMDEP)
+xsrc/Directory.cc: $(WXDIR)/src/Utilities/Directory.cc $(XFORMDEP)
 	$(XFORM) xsrc/Directory.cc $(WXDIR)/src/Utilities/Directory.cc
-xsrc/Error.cc: $(WXDIR)/src/Utilities/Error.cc $(WXBDIR)/src/Utilities/Error.@LTO@ $(XFORMDEP)
+xsrc/Error.cc: $(WXDIR)/src/Utilities/Error.cc $(XFORMDEP)
 	$(XFORM) xsrc/Error.cc $(WXDIR)/src/Utilities/Error.cc
-xsrc/GDI.cc: $(WXDIR)/src/Utilities/GDI.cc $(WXBDIR)/src/Utilities/GDI.@LTO@ $(XFORMDEP)
+xsrc/GDI.cc: $(WXDIR)/src/Utilities/GDI.cc $(XFORMDEP)
 	$(XFORM) xsrc/GDI.cc $(WXDIR)/src/Utilities/GDI.cc
-xsrc/Home.cc: $(WXDIR)/src/Utilities/Home.cc $(WXBDIR)/src/Utilities/Home.@LTO@ $(XFORMDEP)
+xsrc/Home.cc: $(WXDIR)/src/Utilities/Home.cc $(XFORMDEP)
 	$(XFORM) xsrc/Home.cc $(WXDIR)/src/Utilities/Home.cc
-xsrc/Misc.cc: $(WXDIR)/src/Utilities/Misc.cc $(WXBDIR)/src/Utilities/Misc.@LTO@ $(XFORMDEP)
+xsrc/Misc.cc: $(WXDIR)/src/Utilities/Misc.cc $(XFORMDEP)
 	$(XFORM) xsrc/Misc.cc $(WXDIR)/src/Utilities/Misc.cc
-xsrc/Net.c: $(WXDIR)/src/Utilities/Net.c $(WXBDIR)/src/Utilities/Net.@LTO@ $(XFORMDEP)
+xsrc/Net.c: $(WXDIR)/src/Utilities/Net.c $(XFORMDEP)
 	$(XFORM) xsrc/Net.c $(WXDIR)/src/Utilities/Net.c
-xsrc/Path.cc: $(WXDIR)/src/Utilities/Path.cc $(WXBDIR)/src/Utilities/Path.@LTO@ $(XFORMDEP)
+xsrc/Path.cc: $(WXDIR)/src/Utilities/Path.cc $(XFORMDEP)
 	$(XFORM) xsrc/Path.cc $(WXDIR)/src/Utilities/Path.cc
-xsrc/Resources.cc: $(WXDIR)/src/Utilities/Resources.cc $(WXBDIR)/src/Utilities/Resources.@LTO@ $(XFORMDEP)
+xsrc/Resources.cc: $(WXDIR)/src/Utilities/Resources.cc $(XFORMDEP)
 	$(XFORM) xsrc/Resources.cc $(WXDIR)/src/Utilities/Resources.cc
-xsrc/String.cc: $(WXDIR)/src/Utilities/String.cc $(WXBDIR)/src/Utilities/String.@LTO@ $(XFORMDEP)
+xsrc/String.cc: $(WXDIR)/src/Utilities/String.cc $(XFORMDEP)
 	$(XFORM) xsrc/String.cc $(WXDIR)/src/Utilities/String.cc
-xsrc/TempFile.cc: $(WXDIR)/src/Utilities/TempFile.cc $(WXBDIR)/src/Utilities/TempFile.@LTO@ $(XFORMDEP)
+xsrc/TempFile.cc: $(WXDIR)/src/Utilities/TempFile.cc $(XFORMDEP)
 	$(XFORM) xsrc/TempFile.cc $(WXDIR)/src/Utilities/TempFile.cc
 
-xsrc/wx_image.cc: $(WXDIR)/utils/image/src/wx_image.cc $(WXBDIR)/utils/image/src/wx_image.@LTO@ $(XFORMDEP)
+xsrc/wx_image.cc: $(WXDIR)/utils/image/src/wx_image.cc $(XFORMDEP)
 	$(XFORM) xsrc/wx_image.cc $(WXDIR)/utils/image/src/wx_image.cc
-xsrc/wx_img.cc: $(WXDIR)/utils/image/src/wx_img.cc $(WXBDIR)/utils/image/src/wx_img.@LTO@ $(XFORMDEP)
+xsrc/wx_img.cc: $(WXDIR)/utils/image/src/wx_img.cc $(XFORMDEP)
 	$(XFORM) xsrc/wx_img.cc $(WXDIR)/utils/image/src/wx_img.cc
-xsrc/wx_24to8.cc: $(WXDIR)/utils/image/src/wx_24to8.cc $(WXBDIR)/utils/image/src/wx_24to8.@LTO@ $(XFORMDEP)
+xsrc/wx_24to8.cc: $(WXDIR)/utils/image/src/wx_24to8.cc $(XFORMDEP)
 	$(XFORM) xsrc/wx_24to8.cc $(WXDIR)/utils/image/src/wx_24to8.cc
-xsrc/wx_bmp.cc: $(WXDIR)/utils/image/src/wx_bmp.cc $(WXBDIR)/utils/image/src/wx_bmp.@LTO@ $(XFORMDEP)
+xsrc/wx_bmp.cc: $(WXDIR)/utils/image/src/wx_bmp.cc $(XFORMDEP)
 	$(XFORM) xsrc/wx_bmp.cc $(WXDIR)/utils/image/src/wx_bmp.cc
-xsrc/wx_gam.cc: $(WXDIR)/utils/image/src/wx_gam.cc $(WXBDIR)/utils/image/src/wx_gam.@LTO@ $(XFORMDEP)
+xsrc/wx_gam.cc: $(WXDIR)/utils/image/src/wx_gam.cc $(XFORMDEP)
 	$(XFORM) xsrc/wx_gam.cc $(WXDIR)/utils/image/src/wx_gam.cc
-xsrc/wx_gif.cc: $(WXDIR)/utils/image/src/wx_gif.cc $(WXBDIR)/utils/image/src/wx_gif.@LTO@ $(XFORMDEP)
+xsrc/wx_gif.cc: $(WXDIR)/utils/image/src/wx_gif.cc $(XFORMDEP)
 	$(XFORM) xsrc/wx_gif.cc $(WXDIR)/utils/image/src/wx_gif.cc
-xsrc/wx_gifwr.cc: $(WXDIR)/utils/image/src/wx_gifwr.cc $(WXBDIR)/utils/image/src/wx_gifwr.@LTO@ $(XFORMDEP)
+xsrc/wx_gifwr.cc: $(WXDIR)/utils/image/src/wx_gifwr.cc $(XFORMDEP)
 	$(XFORM) xsrc/wx_gifwr.cc $(WXDIR)/utils/image/src/wx_gifwr.cc
-xsrc/wx_xbm.cc: $(WXDIR)/utils/image/src/wx_xbm.cc $(WXBDIR)/utils/image/src/wx_xbm.@LTO@ $(XFORMDEP)
+xsrc/wx_xbm.cc: $(WXDIR)/utils/image/src/wx_xbm.cc $(XFORMDEP)
 	$(XFORM) xsrc/wx_xbm.cc $(WXDIR)/utils/image/src/wx_xbm.cc
 
 MACXPRECOMP = macxsrc/xform_precomp.h
@@ -214,267 +214,267 @@ wx_xt_XFORMWP = $(XFORMXX)
 wx_mac_XFORMWP = env XFORM_USE_PRECOMP=$(MACXPRECOMP) $(XFORMXX)
 XFORMWP = $(@WXVARIANT@_XFORMWP)
 
-macxsrc/wb_item.cc: $(WXMACDIR)/base/wb_item.cc $(WXMACBDIR)/wb_item.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_item.cc: $(WXMACDIR)/base/wb_item.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_item.cc $(WXMACDIR)/base/wb_item.cc
-macxsrc/wb_panel.cc: $(WXMACDIR)/base/wb_panel.cc $(WXMACBDIR)/wb_panel.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_panel.cc: $(WXMACDIR)/base/wb_panel.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_panel.cc $(WXMACDIR)/base/wb_panel.cc
-macxsrc/wb_timer.cc: $(WXMACDIR)/base/wb_timer.cc $(WXMACBDIR)/wb_timer.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_timer.cc: $(WXMACDIR)/base/wb_timer.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_timer.cc $(WXMACDIR)/base/wb_timer.cc
-macxsrc/wb_frame.cc: $(WXMACDIR)/base/wb_frame.cc $(WXMACBDIR)/wb_frame.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_frame.cc: $(WXMACDIR)/base/wb_frame.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_frame.cc $(WXMACDIR)/base/wb_frame.cc
-macxsrc/wb_list.cc: $(srcdir)/../../wxcommon/wb_list.cxx $(WXMACBDIR)/wb_list.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_list.cc: $(srcdir)/../../wxcommon/wb_list.cxx $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_list.cc $(WXMACDIR)/../../wxcommon/wb_list.cxx
-macxsrc/PSDC.cc: $(srcdir)/../../wxcommon/PSDC.cxx $(WXMACBDIR)/PSDC.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/PSDC.cc: $(srcdir)/../../wxcommon/PSDC.cxx $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/PSDC.cc $(WXMACDIR)/../../wxcommon/PSDC.cxx
-macxsrc/wb_types.cc: $(WXMACDIR)/base/wb_types.cc $(WXMACBDIR)/wb_types.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_types.cc: $(WXMACDIR)/base/wb_types.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_types.cc $(WXMACDIR)/base/wb_types.cc
-macxsrc/wb_canvs.cc: $(WXMACDIR)/base/wb_canvs.cc $(WXMACBDIR)/wb_canvs.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_canvs.cc: $(WXMACDIR)/base/wb_canvs.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_canvs.cc $(WXMACDIR)/base/wb_canvs.cc
-macxsrc/wb_gdi.cc: $(WXMACDIR)/base/wb_gdi.cc $(WXMACBDIR)/wb_gdi.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_gdi.cc: $(WXMACDIR)/base/wb_gdi.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_gdi.cc $(WXMACDIR)/base/wb_gdi.cc
-macxsrc/wb_main.cc: $(WXMACDIR)/base/wb_main.cc $(WXMACBDIR)/wb_main.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_main.cc: $(WXMACDIR)/base/wb_main.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_main.cc $(WXMACDIR)/base/wb_main.cc
-macxsrc/wb_utils.cc: $(WXMACDIR)/base/wb_utils.cc $(WXMACBDIR)/wb_utils.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_utils.cc: $(WXMACDIR)/base/wb_utils.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_utils.cc $(WXMACDIR)/base/wb_utils.cc
-macxsrc/wb_data.cc: $(WXMACDIR)/base/wb_data.cc $(WXMACBDIR)/wb_data.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_data.cc: $(WXMACDIR)/base/wb_data.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_data.cc $(WXMACDIR)/base/wb_data.cc
-macxsrc/wb_hash.cc: $(srcdir)/../../wxcommon/wb_hash.cxx $(WXMACBDIR)/wb_hash.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_hash.cc: $(srcdir)/../../wxcommon/wb_hash.cxx $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_hash.cc $(WXMACDIR)/../../wxcommon/wb_hash.cxx
-macxsrc/wb_stdev.cc: $(WXMACDIR)/base/wb_stdev.cc $(WXMACBDIR)/wb_stdev.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_stdev.cc: $(WXMACDIR)/base/wb_stdev.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_stdev.cc $(WXMACDIR)/base/wb_stdev.cc
-macxsrc/wb_win.cc: $(WXMACDIR)/base/wb_win.cc $(WXMACBDIR)/wb_win.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_win.cc: $(WXMACDIR)/base/wb_win.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_win.cc $(WXMACDIR)/base/wb_win.cc
-macxsrc/wb_dc.cc: $(WXMACDIR)/base/wb_dc.cc $(WXMACBDIR)/wb_dc.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_dc.cc: $(WXMACDIR)/base/wb_dc.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_dc.cc $(WXMACDIR)/base/wb_dc.cc
-macxsrc/wb_sysev.cc: $(WXMACDIR)/base/wb_sysev.cc $(WXMACBDIR)/wb_sysev.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_sysev.cc: $(WXMACDIR)/base/wb_sysev.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_sysev.cc $(WXMACDIR)/base/wb_sysev.cc
-macxsrc/wb_dialg.cc: $(WXMACDIR)/base/wb_dialg.cc $(WXMACBDIR)/wb_dialg.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_dialg.cc: $(WXMACDIR)/base/wb_dialg.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_dialg.cc $(WXMACDIR)/base/wb_dialg.cc
-macxsrc/wb_obj.cc: $(WXMACDIR)/base/wb_obj.cc $(WXMACBDIR)/wb_obj.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wb_obj.cc: $(WXMACDIR)/base/wb_obj.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wb_obj.cc $(WXMACDIR)/base/wb_obj.cc
-macxsrc/xfspline.cc: $(WXMACDIR)/base/xfspline.cc $(WXMACBDIR)/xfspline.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/xfspline.cc: $(WXMACDIR)/base/xfspline.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/xfspline.cc $(WXMACDIR)/base/xfspline.cc
-macxsrc/wx_choic.cc: $(WXMACDIR)/mac/wx_choic.cc $(WXMACBDIR)/wx_choic.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_choic.cc: $(WXMACDIR)/mac/wx_choic.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_choic.cc $(WXMACDIR)/mac/wx_choic.cc
-macxsrc/wx_main.cc: $(WXMACDIR)/mac/wx_main.cc $(WXMACBDIR)/wx_main.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_main.cc: $(WXMACDIR)/mac/wx_main.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_main.cc $(WXMACDIR)/mac/wx_main.cc
-macxsrc/wx_clipb.cc: $(WXMACDIR)/mac/wx_clipb.cc $(WXMACBDIR)/wx_clipb.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_clipb.cc: $(WXMACDIR)/mac/wx_clipb.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_clipb.cc $(WXMACDIR)/mac/wx_clipb.cc
-macxsrc/wx_menu.cc: $(WXMACDIR)/mac/wx_menu.cc $(WXMACBDIR)/wx_menu.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_menu.cc: $(WXMACDIR)/mac/wx_menu.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_menu.cc $(WXMACDIR)/mac/wx_menu.cc
-macxsrc/wx_messg.cc: $(WXMACDIR)/mac/wx_messg.cc $(WXMACBDIR)/wx_messg.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_messg.cc: $(WXMACDIR)/mac/wx_messg.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_messg.cc $(WXMACDIR)/mac/wx_messg.cc
-macxsrc/wxBorder.cc: $(WXMACDIR)/mac/wxBorder.cc $(WXMACBDIR)/wxBorder.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wxBorder.cc: $(WXMACDIR)/mac/wxBorder.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wxBorder.cc $(WXMACDIR)/mac/wxBorder.cc
-macxsrc/wx_dc.cc: $(WXMACDIR)/mac/wx_dc.cc $(WXMACBDIR)/wx_dc.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_dc.cc: $(WXMACDIR)/mac/wx_dc.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_dc.cc $(WXMACDIR)/mac/wx_dc.cc
-macxsrc/wxBorderArea.cc: $(WXMACDIR)/mac/wxBorderArea.cc $(WXMACBDIR)/wxBorderArea.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wxBorderArea.cc: $(WXMACDIR)/mac/wxBorderArea.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wxBorderArea.cc $(WXMACDIR)/mac/wxBorderArea.cc
-macxsrc/wx_dccan1.cc: $(WXMACDIR)/mac/wx_dccan1.cc $(WXMACBDIR)/wx_dccan1.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_dccan1.cc: $(WXMACDIR)/mac/wx_dccan1.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_dccan1.cc $(WXMACDIR)/mac/wx_dccan1.cc
-macxsrc/wx_mnuit.cc: $(WXMACDIR)/mac/wx_mnuit.cc $(WXMACBDIR)/wx_mnuit.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_mnuit.cc: $(WXMACDIR)/mac/wx_mnuit.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_mnuit.cc $(WXMACDIR)/mac/wx_mnuit.cc
-macxsrc/wxButtonBorder.cc: $(WXMACDIR)/mac/wxButtonBorder.cc $(WXMACBDIR)/wxButtonBorder.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wxButtonBorder.cc: $(WXMACDIR)/mac/wxButtonBorder.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wxButtonBorder.cc $(WXMACDIR)/mac/wxButtonBorder.cc
-macxsrc/wx_dccan2.cc: $(WXMACDIR)/mac/wx_dccan2.cc $(WXMACBDIR)/wx_dccan2.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_dccan2.cc: $(WXMACDIR)/mac/wx_dccan2.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_dccan2.cc $(WXMACDIR)/mac/wx_dccan2.cc
-macxsrc/wx_dccan3.cc: $(WXMACDIR)/mac/wx_dccan3.cc $(WXMACBDIR)/wx_dccan3.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_dccan3.cc: $(WXMACDIR)/mac/wx_dccan3.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_dccan3.cc $(WXMACDIR)/mac/wx_dccan3.cc
-macxsrc/wx_panel.cc: $(WXMACDIR)/mac/wx_panel.cc $(WXMACBDIR)/wx_panel.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_panel.cc: $(WXMACDIR)/mac/wx_panel.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_panel.cc $(WXMACDIR)/mac/wx_panel.cc
-macxsrc/wxLabelArea.cc: $(WXMACDIR)/mac/wxLabelArea.cc $(WXMACBDIR)/wxLabelArea.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wxLabelArea.cc: $(WXMACDIR)/mac/wxLabelArea.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wxLabelArea.cc $(WXMACDIR)/mac/wxLabelArea.cc
-macxsrc/wx_dcmem.cc: $(WXMACDIR)/mac/wx_dcmem.cc $(WXMACBDIR)/wx_dcmem.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_dcmem.cc: $(WXMACDIR)/mac/wx_dcmem.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_dcmem.cc $(WXMACDIR)/mac/wx_dcmem.cc
-macxsrc/wx_print.cc: $(WXMACDIR)/mac/wx_print.cc $(WXMACBDIR)/wx_print.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_print.cc: $(WXMACDIR)/mac/wx_print.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_print.cc $(WXMACDIR)/mac/wx_print.cc
-macxsrc/wxMacDC.cc: $(WXMACDIR)/mac/wxMacDC.cc $(WXMACBDIR)/wxMacDC.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wxMacDC.cc: $(WXMACDIR)/mac/wxMacDC.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wxMacDC.cc $(WXMACDIR)/mac/wxMacDC.cc
-macxsrc/wx_dcpr1.cc: $(WXMACDIR)/mac/wx_dcpr1.cc $(WXMACBDIR)/wx_dcpr1.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_dcpr1.cc: $(WXMACDIR)/mac/wx_dcpr1.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_dcpr1.cc $(WXMACDIR)/mac/wx_dcpr1.cc
-macxsrc/wx_rbox.cc: $(WXMACDIR)/mac/wx_rbox.cc $(WXMACBDIR)/wx_rbox.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_rbox.cc: $(WXMACDIR)/mac/wx_rbox.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_rbox.cc $(WXMACDIR)/mac/wx_rbox.cc
-macxsrc/wx_rbut.cc: $(WXMACDIR)/mac/wx_rbut.cc $(WXMACBDIR)/wx_rbut.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_rbut.cc: $(WXMACDIR)/mac/wx_rbut.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_rbut.cc $(WXMACDIR)/mac/wx_rbut.cc
-macxsrc/wx_sbar.cc: $(WXMACDIR)/mac/wx_sbar.cc $(WXMACBDIR)/wx_sbar.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_sbar.cc: $(WXMACDIR)/mac/wx_sbar.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_sbar.cc $(WXMACDIR)/mac/wx_sbar.cc
-macxsrc/wxMargin.cc: $(WXMACDIR)/mac/wxMargin.cc $(WXMACBDIR)/wxMargin.@LTO@ $(XFORMDEP)
+macxsrc/wxMargin.cc: $(WXMACDIR)/mac/wxMargin.cc $(XFORMDEP)
 	$(XFORM) macxsrc/wxMargin.cc $(WXMACDIR)/mac/wxMargin.cc
-macxsrc/wx_dialg.cc: $(WXMACDIR)/mac/wx_dialg.cc $(WXMACBDIR)/wx_dialg.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_dialg.cc: $(WXMACDIR)/mac/wx_dialg.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_dialg.cc $(WXMACDIR)/mac/wx_dialg.cc
-macxsrc/wx_screen.cc: $(WXMACDIR)/mac/wx_screen.cc $(WXMACBDIR)/wx_screen.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_screen.cc: $(WXMACDIR)/mac/wx_screen.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_screen.cc $(WXMACDIR)/mac/wx_screen.cc
-macxsrc/wxRectBorder.cc: $(WXMACDIR)/mac/wxRectBorder.cc $(WXMACBDIR)/wxRectBorder.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wxRectBorder.cc: $(WXMACDIR)/mac/wxRectBorder.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wxRectBorder.cc $(WXMACDIR)/mac/wxRectBorder.cc
-macxsrc/wx_slidr.cc: $(WXMACDIR)/mac/wx_slidr.cc $(WXMACBDIR)/wx_slidr.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_slidr.cc: $(WXMACDIR)/mac/wx_slidr.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_slidr.cc $(WXMACDIR)/mac/wx_slidr.cc
-macxsrc/wxScroll.cc: $(WXMACDIR)/mac/wxScroll.cc $(WXMACBDIR)/wxScroll.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wxScroll.cc: $(WXMACDIR)/mac/wxScroll.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wxScroll.cc $(WXMACDIR)/mac/wxScroll.cc
-macxsrc/wx_frame.cc: $(WXMACDIR)/mac/wx_frame.cc $(WXMACBDIR)/wx_frame.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_frame.cc: $(WXMACDIR)/mac/wx_frame.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_frame.cc $(WXMACDIR)/mac/wx_frame.cc
-macxsrc/wxScrollArea.cc: $(WXMACDIR)/mac/wxScrollArea.cc $(WXMACBDIR)/wxScrollArea.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wxScrollArea.cc: $(WXMACDIR)/mac/wxScrollArea.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wxScrollArea.cc $(WXMACDIR)/mac/wxScrollArea.cc
-macxsrc/wx_gauge.cc: $(WXMACDIR)/mac/wx_gauge.cc $(WXMACBDIR)/wx_gauge.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_gauge.cc: $(WXMACDIR)/mac/wx_gauge.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_gauge.cc $(WXMACDIR)/mac/wx_gauge.cc
-macxsrc/wxScrollData.cc: $(WXMACDIR)/mac/wxScrollData.cc $(WXMACBDIR)/wxScrollData.@LTO@ $(XFORMDEP)
+macxsrc/wxScrollData.cc: $(WXMACDIR)/mac/wxScrollData.cc $(XFORMDEP)
 	$(XFORM) macxsrc/wxScrollData.cc $(WXMACDIR)/mac/wxScrollData.cc
-macxsrc/wx_gdi.cc: $(WXMACDIR)/mac/wx_gdi.cc $(WXMACBDIR)/wx_gdi.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_gdi.cc: $(WXMACDIR)/mac/wx_gdi.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_gdi.cc $(WXMACDIR)/mac/wx_gdi.cc
-macxsrc/wx_app.cc: $(WXMACDIR)/mac/wx_app.cc $(WXMACBDIR)/wx_app.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_app.cc: $(WXMACDIR)/mac/wx_app.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_app.cc $(WXMACDIR)/mac/wx_app.cc
-macxsrc/wx_util.cc: $(WXMACDIR)/mac/wx_util.cc $(WXMACBDIR)/wx_util.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_util.cc: $(WXMACDIR)/mac/wx_util.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_util.cc $(WXMACDIR)/mac/wx_util.cc
-macxsrc/wx_area.cc: $(WXMACDIR)/mac/wx_area.cc $(WXMACBDIR)/wx_area.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_area.cc: $(WXMACDIR)/mac/wx_area.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_area.cc $(WXMACDIR)/mac/wx_area.cc
-macxsrc/wx_win.cc: $(WXMACDIR)/mac/wx_win.cc $(WXMACBDIR)/wx_win.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_win.cc: $(WXMACDIR)/mac/wx_win.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_win.cc $(WXMACDIR)/mac/wx_win.cc
-macxsrc/wx_buttn.cc: $(WXMACDIR)/mac/wx_buttn.cc $(WXMACBDIR)/wx_buttn.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_buttn.cc: $(WXMACDIR)/mac/wx_buttn.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_buttn.cc $(WXMACDIR)/mac/wx_buttn.cc
-macxsrc/wx_item.cc: $(WXMACDIR)/mac/wx_item.cc $(WXMACBDIR)/wx_item.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_item.cc: $(WXMACDIR)/mac/wx_item.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_item.cc $(WXMACDIR)/mac/wx_item.cc
-macxsrc/wximgfil.cc: $(WXMACDIR)/mac/wximgfil.cc $(WXMACBDIR)/wximgfil.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wximgfil.cc: $(WXMACDIR)/mac/wximgfil.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wximgfil.cc $(WXMACDIR)/mac/wximgfil.cc
-macxsrc/wx_canvs.cc: $(WXMACDIR)/mac/wx_canvs.cc $(WXMACBDIR)/wx_canvs.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_canvs.cc: $(WXMACDIR)/mac/wx_canvs.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_canvs.cc $(WXMACDIR)/mac/wx_canvs.cc
-macxsrc/wx_lbox.cc: $(WXMACDIR)/mac/wx_lbox.cc $(WXMACBDIR)/wx_lbox.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_lbox.cc: $(WXMACDIR)/mac/wx_lbox.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_lbox.cc $(WXMACDIR)/mac/wx_lbox.cc
-macxsrc/wx_check.cc: $(WXMACDIR)/mac/wx_check.cc $(WXMACBDIR)/wx_check.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_check.cc: $(WXMACDIR)/mac/wx_check.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_check.cc $(WXMACDIR)/mac/wx_check.cc
-macxsrc/wx_tabc.cc: $(WXMACDIR)/mac/wx_tabc.cc $(WXMACBDIR)/wx_tabc.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_tabc.cc: $(WXMACDIR)/mac/wx_tabc.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_tabc.cc $(WXMACDIR)/mac/wx_tabc.cc
-macxsrc/wx_gbox.cc: $(WXMACDIR)/mac/wx_gbox.cc $(WXMACBDIR)/wx_gbox.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_gbox.cc: $(WXMACDIR)/mac/wx_gbox.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_gbox.cc $(WXMACDIR)/mac/wx_gbox.cc
-macxsrc/wx_mac_utils.cc: $(WXMACDIR)/mac/wx_mac_utils.cc $(WXMACBDIR)/wx_mac_utils.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_mac_utils.cc: $(WXMACDIR)/mac/wx_mac_utils.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_mac_utils.cc $(WXMACDIR)/mac/wx_mac_utils.cc
 
-macxsrc/wx_bmp.cc: $(WXMACDIR)/../utils/image/src/wx_bmp.cc $(WXMACBDIR)/wx_bmp.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_bmp.cc: $(WXMACDIR)/../utils/image/src/wx_bmp.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_bmp.cc $(WXMACDIR)/../utils/image/src/wx_bmp.cc
-macxsrc/wx_24to8.cc: $(WXMACDIR)/../utils/image/src/wx_24to8.cc $(WXMACBDIR)/wx_24to8.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_24to8.cc: $(WXMACDIR)/../utils/image/src/wx_24to8.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_24to8.cc $(WXMACDIR)/../utils/image/src/wx_24to8.cc
-macxsrc/wx_image.cc: $(WXMACDIR)/../utils/image/src/wx_image.cc $(WXMACBDIR)/wx_image.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_image.cc: $(WXMACDIR)/../utils/image/src/wx_image.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_image.cc $(WXMACDIR)/../utils/image/src/wx_image.cc
-macxsrc/wx_xbm.cc: $(WXMACDIR)/../utils/image/src/wx_xbm.cc $(WXMACBDIR)/wx_xbm.@LTO@ $(XFORMDEP) $(MACXPRECOMP)
+macxsrc/wx_xbm.cc: $(WXMACDIR)/../utils/image/src/wx_xbm.cc $(XFORMDEP) $(MACXPRECOMP)
 	$(XFORMWP) macxsrc/wx_xbm.cc $(WXMACDIR)/../utils/image/src/wx_xbm.cc
-macxsrc/simpledrop.cc: $(srcdir)/../../mac/mzscheme/simpledrop.cpp ../simpledrop.@LTO@ $(XFORMDEP)
+macxsrc/simpledrop.cc: $(srcdir)/../../mac/mzscheme/simpledrop.cpp $(XFORMDEP)
 	$(XFORM) macxsrc/simpledrop.cc $(srcdir)/../../mac/mzscheme/simpledrop.cpp
 
 wx_xt_XFORMPRECOMP = 
 wx_mac_XFORMPRECOMP = $(MACXPRECOMP)
 XFORMPRECOMP = $(@WXVARIANT@_XFORMPRECOMP)
 
-xsrc/wx_media.cc: $(srcdir)/../wxme/wx_media.cxx ../wxme/wx_media.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_media.cc: $(srcdir)/../wxme/wx_media.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_media.cc $(srcdir)/../wxme/wx_media.cxx
 
-xsrc/wx_mpriv.cc: $(srcdir)/../wxme/wx_mpriv.cxx ../wxme/wx_mpriv.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_mpriv.cc: $(srcdir)/../wxme/wx_mpriv.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_mpriv.cc $(srcdir)/../wxme/wx_mpriv.cxx
 
-xsrc/wx_snip.cc: $(srcdir)/../wxme/wx_snip.cxx ../wxme/wx_snip.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_snip.cc: $(srcdir)/../wxme/wx_snip.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_snip.cc $(srcdir)/../wxme/wx_snip.cxx
 
-xsrc/wx_msnip.cc: $(srcdir)/../wxme/wx_msnip.cxx ../wxme/wx_msnip.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_msnip.cc: $(srcdir)/../wxme/wx_msnip.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_msnip.cc $(srcdir)/../wxme/wx_msnip.cxx
 
-xsrc/wx_mbuf.cc: $(srcdir)/../wxme/wx_mbuf.cxx ../wxme/wx_mbuf.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_mbuf.cc: $(srcdir)/../wxme/wx_mbuf.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_mbuf.cc $(srcdir)/../wxme/wx_mbuf.cxx
 
-xsrc/wx_mpbrd.cc: $(srcdir)/../wxme/wx_mpbrd.cxx ../wxme/wx_mpbrd.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_mpbrd.cc: $(srcdir)/../wxme/wx_mpbrd.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_mpbrd.cc $(srcdir)/../wxme/wx_mpbrd.cxx
 
-xsrc/wx_keym.cc: $(srcdir)/../wxme/wx_keym.cxx ../wxme/wx_keym.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_keym.cc: $(srcdir)/../wxme/wx_keym.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_keym.cc $(srcdir)/../wxme/wx_keym.cxx
 
-xsrc/wx_medio.cc: $(srcdir)/../wxme/wx_medio.cxx ../wxme/wx_medio.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_medio.cc: $(srcdir)/../wxme/wx_medio.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_medio.cc $(srcdir)/../wxme/wx_medio.cxx
 
-xsrc/wx_medad.cc: $(srcdir)/../wxme/wx_medad.cxx ../wxme/wx_medad.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_medad.cc: $(srcdir)/../wxme/wx_medad.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_medad.cc $(srcdir)/../wxme/wx_medad.cxx
 
-xsrc/wx_style.cc: $(srcdir)/../wxme/wx_style.cxx ../wxme/wx_style.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_style.cc: $(srcdir)/../wxme/wx_style.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_style.cc $(srcdir)/../wxme/wx_style.cxx
 
-xsrc/wx_mline.cc: $(srcdir)/../wxme/wx_mline.cxx ../wxme/wx_mline.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_mline.cc: $(srcdir)/../wxme/wx_mline.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_mline.cc $(srcdir)/../wxme/wx_mline.cxx
 
-xsrc/wx_cgrec.cc: $(srcdir)/../wxme/wx_cgrec.cxx ../wxme/wx_cgrec.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wx_cgrec.cc: $(srcdir)/../wxme/wx_cgrec.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wx_cgrec.cc $(srcdir)/../wxme/wx_cgrec.cxx
 
 
-xsrc/wxscheme.cc: $(srcdir)/../wxs/wxscheme.cxx ../wxs/wxscheme.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/wxscheme.cc: $(srcdir)/../wxs/wxscheme.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/wxscheme.cc $(srcdir)/../wxs/wxscheme.cxx
 
-xsrc/xcglue.c: $(srcdir)/../../mzscheme/utils/xcglue.c ../wxs/xcglue.@LTO@ $(XFORMDEP)
+xsrc/xcglue.c: $(srcdir)/../../mzscheme/utils/xcglue.c $(XFORMDEP)
 	$(XFORM) xsrc/xcglue.c $(srcdir)/../../mzscheme/utils/xcglue.c
 
 
-xsrc/mred.cc: $(srcdir)/../mred.cxx ../mred.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/mred.cc: $(srcdir)/../mred.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/mred.cc $(srcdir)/../mred.cxx
 
-xsrc/mrmain.cc: $(srcdir)/../mrmain.cxx ../mrmain.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/mrmain.cc: $(srcdir)/../mrmain.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/mrmain.cc $(DEF_COLLECTS_DIR) $(srcdir)/../mrmain.cxx
 
-xsrc/mredx.cc: $(srcdir)/../mredx.cxx ../mredx.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/mredx.cc: $(srcdir)/../mredx.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/mredx.cc $(srcdir)/../mredx.cxx
-xsrc/mredmac.cc: $(srcdir)/../mredmac.cxx ../mredmac.@LTO@ $(XFORMDEP) $(XPRECOMP)
+xsrc/mredmac.cc: $(srcdir)/../mredmac.cxx $(XFORMDEP) $(XPRECOMP)
 	$(XFORMWP) xsrc/mredmac.cc $(srcdir)/../mredmac.cxx
 
-xsrc/wxs_bmap.cc: $(srcdir)/../wxs/wxs_bmap.cxx ../wxs/wxs_bmap.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_bmap.cc: $(srcdir)/../wxs/wxs_bmap.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_bmap.cc $(srcdir)/../wxs/wxs_bmap.cxx
-xsrc/wxs_butn.cc: $(srcdir)/../wxs/wxs_butn.cxx ../wxs/wxs_butn.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_butn.cc: $(srcdir)/../wxs/wxs_butn.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_butn.cc $(srcdir)/../wxs/wxs_butn.cxx
-xsrc/wxs_chce.cc: $(srcdir)/../wxs/wxs_chce.cxx ../wxs/wxs_chce.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_chce.cc: $(srcdir)/../wxs/wxs_chce.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_chce.cc $(srcdir)/../wxs/wxs_chce.cxx
-xsrc/wxs_ckbx.cc: $(srcdir)/../wxs/wxs_ckbx.cxx ../wxs/wxs_ckbx.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_ckbx.cc: $(srcdir)/../wxs/wxs_ckbx.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_ckbx.cc $(srcdir)/../wxs/wxs_ckbx.cxx
-xsrc/wxs_cnvs.cc: $(srcdir)/../wxs/wxs_cnvs.cxx ../wxs/wxs_cnvs.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_cnvs.cc: $(srcdir)/../wxs/wxs_cnvs.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_cnvs.cc $(srcdir)/../wxs/wxs_cnvs.cxx
-xsrc/wxs_dc.cc: $(srcdir)/../wxs/wxs_dc.cxx ../wxs/wxs_dc.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_dc.cc: $(srcdir)/../wxs/wxs_dc.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_dc.cc $(srcdir)/../wxs/wxs_dc.cxx
-xsrc/wxs_evnt.cc: $(srcdir)/../wxs/wxs_evnt.cxx ../wxs/wxs_evnt.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_evnt.cc: $(srcdir)/../wxs/wxs_evnt.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_evnt.cc $(srcdir)/../wxs/wxs_evnt.cxx
-xsrc/wxs_fram.cc: $(srcdir)/../wxs/wxs_fram.cxx ../wxs/wxs_fram.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_fram.cc: $(srcdir)/../wxs/wxs_fram.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_fram.cc $(srcdir)/../wxs/wxs_fram.cxx
-xsrc/wxs_gage.cc: $(srcdir)/../wxs/wxs_gage.cxx ../wxs/wxs_gage.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_gage.cc: $(srcdir)/../wxs/wxs_gage.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_gage.cc $(srcdir)/../wxs/wxs_gage.cxx
-xsrc/wxs_gdi.cc: $(srcdir)/../wxs/wxs_gdi.cxx ../wxs/wxs_gdi.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_gdi.cc: $(srcdir)/../wxs/wxs_gdi.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_gdi.cc $(srcdir)/../wxs/wxs_gdi.cxx
-xsrc/wxs_glob.cc: $(srcdir)/../wxs/wxs_glob.cxx ../wxs/wxs_glob.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_glob.cc: $(srcdir)/../wxs/wxs_glob.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_glob.cc $(srcdir)/../wxs/wxs_glob.cxx
-xsrc/wxs_item.cc: $(srcdir)/../wxs/wxs_item.cxx ../wxs/wxs_item.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_item.cc: $(srcdir)/../wxs/wxs_item.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_item.cc $(srcdir)/../wxs/wxs_item.cxx
-xsrc/wxs_lbox.cc: $(srcdir)/../wxs/wxs_lbox.cxx ../wxs/wxs_lbox.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_lbox.cc: $(srcdir)/../wxs/wxs_lbox.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_lbox.cc $(srcdir)/../wxs/wxs_lbox.cxx
-xsrc/wxs_madm.cc: $(srcdir)/../wxs/wxs_madm.cxx ../wxs/wxs_madm.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_madm.cc: $(srcdir)/../wxs/wxs_madm.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_madm.cc $(srcdir)/../wxs/wxs_madm.cxx
-xsrc/wxs_mede.cc: $(srcdir)/../wxs/wxs_mede.cxx ../wxs/wxs_mede.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_mede.cc: $(srcdir)/../wxs/wxs_mede.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_mede.cc $(srcdir)/../wxs/wxs_mede.cxx
-xsrc/wxs_medi.cc: $(srcdir)/../wxs/wxs_medi.cxx ../wxs/wxs_medi.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_medi.cc: $(srcdir)/../wxs/wxs_medi.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_medi.cc $(srcdir)/../wxs/wxs_medi.cxx
-xsrc/wxs_menu.cc: $(srcdir)/../wxs/wxs_menu.cxx ../wxs/wxs_menu.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_menu.cc: $(srcdir)/../wxs/wxs_menu.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_menu.cc $(srcdir)/../wxs/wxs_menu.cxx
-xsrc/wxs_mio.cc: $(srcdir)/../wxs/wxs_mio.cxx ../wxs/wxs_mio.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_mio.cc: $(srcdir)/../wxs/wxs_mio.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_mio.cc $(srcdir)/../wxs/wxs_mio.cxx
-xsrc/wxs_misc.cc: $(srcdir)/../wxs/wxs_misc.cxx ../wxs/wxs_misc.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_misc.cc: $(srcdir)/../wxs/wxs_misc.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_misc.cc $(srcdir)/../wxs/wxs_misc.cxx
-xsrc/wxs_mpb.cc: $(srcdir)/../wxs/wxs_mpb.cxx ../wxs/wxs_mpb.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_mpb.cc: $(srcdir)/../wxs/wxs_mpb.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_mpb.cc $(srcdir)/../wxs/wxs_mpb.cxx
-xsrc/wxs_obj.cc: $(srcdir)/../wxs/wxs_obj.cxx ../wxs/wxs_obj.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_obj.cc: $(srcdir)/../wxs/wxs_obj.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_obj.cc $(srcdir)/../wxs/wxs_obj.cxx
-xsrc/wxs_panl.cc: $(srcdir)/../wxs/wxs_panl.cxx ../wxs/wxs_panl.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_panl.cc: $(srcdir)/../wxs/wxs_panl.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_panl.cc $(srcdir)/../wxs/wxs_panl.cxx
-xsrc/wxs_rado.cc: $(srcdir)/../wxs/wxs_rado.cxx ../wxs/wxs_rado.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_rado.cc: $(srcdir)/../wxs/wxs_rado.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_rado.cc $(srcdir)/../wxs/wxs_rado.cxx
-xsrc/wxs_slid.cc: $(srcdir)/../wxs/wxs_slid.cxx ../wxs/wxs_slid.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_slid.cc: $(srcdir)/../wxs/wxs_slid.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_slid.cc $(srcdir)/../wxs/wxs_slid.cxx
-xsrc/wxs_snip.cc: $(srcdir)/../wxs/wxs_snip.cxx ../wxs/wxs_snip.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_snip.cc: $(srcdir)/../wxs/wxs_snip.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_snip.cc $(srcdir)/../wxs/wxs_snip.cxx
-xsrc/wxs_styl.cc: $(srcdir)/../wxs/wxs_styl.cxx ../wxs/wxs_styl.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_styl.cc: $(srcdir)/../wxs/wxs_styl.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_styl.cc $(srcdir)/../wxs/wxs_styl.cxx
-xsrc/wxs_tabc.cc: $(srcdir)/../wxs/wxs_tabc.cxx ../wxs/wxs_tabc.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_tabc.cc: $(srcdir)/../wxs/wxs_tabc.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_tabc.cc $(srcdir)/../wxs/wxs_tabc.cxx
-xsrc/wxs_win.cc: $(srcdir)/../wxs/wxs_win.cxx ../wxs/wxs_win.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxs_win.cc: $(srcdir)/../wxs/wxs_win.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxs_win.cc $(srcdir)/../wxs/wxs_win.cxx
 
-xsrc/wxJPEG.cc: $(srcdir)/../../wxcommon/wxJPEG.cxx ../wxJPEG.@LTO@ $(XFORMDEP) $(XFORMPRECOMP)
+xsrc/wxJPEG.cc: $(srcdir)/../../wxcommon/wxJPEG.cxx $(XFORMDEP) $(XFORMPRECOMP)
 	$(XFORMWP) xsrc/wxJPEG.cc $(srcdir)/../../wxcommon/wxJPEG.cxx
 
 GCPREINC = -include $(srcdir)/../../mzscheme/gc2/gc2.h
@@ -1023,21 +1023,6 @@ MRED_wx_xt = mredx
 MRED_wx_mac = mredmac
 
 MRED_XSRCS = \
-  xsrc/wx_media.cc \
-  xsrc/wx_mpriv.cc \
-  xsrc/wx_snip.cc \
-  xsrc/wx_msnip.cc \
-  xsrc/wx_mbuf.cc \
-  xsrc/wx_mpbrd.cc \
-  xsrc/wx_keym.cc \
-  xsrc/wx_medio.cc \
-  xsrc/wx_medad.cc \
-  xsrc/wx_style.cc \
-  xsrc/wx_mline.cc \
-  xsrc/wx_cgrec.cc \
-\
-  xsrc/wxscheme.cc \
-\
   xsrc/wxs_bmap.cc \
   xsrc/wxs_butn.cc \
   xsrc/wxs_chce.cc \
@@ -1066,6 +1051,21 @@ MRED_XSRCS = \
   xsrc/wxs_styl.cc \
   xsrc/wxs_tabc.cc \
   xsrc/wxs_win.cc \
+\
+  xsrc/wxscheme.cc \
+\
+  xsrc/wx_media.cc \
+  xsrc/wx_mpriv.cc \
+  xsrc/wx_snip.cc \
+  xsrc/wx_msnip.cc \
+  xsrc/wx_mbuf.cc \
+  xsrc/wx_mpbrd.cc \
+  xsrc/wx_keym.cc \
+  xsrc/wx_medio.cc \
+  xsrc/wx_medad.cc \
+  xsrc/wx_style.cc \
+  xsrc/wx_mline.cc \
+  xsrc/wx_cgrec.cc \
 \
   xsrc/wxJPEG.cc \
 \
@@ -1222,21 +1222,6 @@ wx_mac_XOBJS = \
   simpledrop.@LTO@
 
 MRED_XOBJS = \
-  wx_media.@LTO@ \
-  wx_mpriv.@LTO@ \
-  wx_snip.@LTO@ \
-  wx_msnip.@LTO@ \
-  wx_mbuf.@LTO@ \
-  wx_mpbrd.@LTO@ \
-  wx_keym.@LTO@ \
-  wx_medio.@LTO@ \
-  wx_medad.@LTO@ \
-  wx_style.@LTO@ \
-  wx_mline.@LTO@ \
-  wx_cgrec.@LTO@ \
-\
-  wxscheme.@LTO@ \
-\
   wxs_bmap.@LTO@ \
   wxs_butn.@LTO@ \
   wxs_chce.@LTO@ \
@@ -1265,6 +1250,21 @@ MRED_XOBJS = \
   wxs_styl.@LTO@ \
   wxs_tabc.@LTO@ \
   wxs_win.@LTO@ \
+\
+  wxscheme.@LTO@ \
+\
+  wx_media.@LTO@ \
+  wx_mpriv.@LTO@ \
+  wx_snip.@LTO@ \
+  wx_msnip.@LTO@ \
+  wx_mbuf.@LTO@ \
+  wx_mpbrd.@LTO@ \
+  wx_keym.@LTO@ \
+  wx_medio.@LTO@ \
+  wx_medad.@LTO@ \
+  wx_style.@LTO@ \
+  wx_mline.@LTO@ \
+  wx_cgrec.@LTO@ \
 \
   wxJPEG.@LTO@ \
 \
@@ -1361,31 +1361,31 @@ MREDMZOBJS_la =
 	$(AR) $(ARFLAGS) ../libmred3m.@LIBSFX@ $(XOBJS) $(LIBMREDMZOBJS_@LIBSFX@) $(@WXVARIANT@_PLAIN_OBJS) $(EXTRA_MZ_OBJS) $(LIBMREDLIBS_@LIBSFX@)
 	$(RANLIB) ../libmred3m.@LIBSFX@
 
-../mred3m@NOT_OSX@: mrmain.@LTO@ ../libmred3m.@LIBSFX@
-	$(MREDLINKER) $(MREDLDFLAGS) -o ../mred3m mrmain.@LTO@ ../libmred3m.@LIBSFX@ $(MREDMZOBJS_@LIBSFX@) $(MREDLIBS_@LIBSFX@)
+../mred@MMM@@NOT_OSX@: mrmain.@LTO@ ../libmred3m.@LIBSFX@
+	$(MREDLINKER) $(MREDLDFLAGS) -o ../mred@MMM@ mrmain.@LTO@ ../libmred3m.@LIBSFX@ $(MREDMZOBJS_@LIBSFX@) $(MREDLIBS_@LIBSFX@)
 
 MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd
 MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
 
-../MrEd3m.app/Contents/MacOS/MrEd3m: $(MRFWRES) $(MRFW) mrmain.@LTO@
-	$(MREDLINKER) -o ../MrEd3m.app/Contents/MacOS/MrEd3m mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon
+../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@: $(MRFWRES) $(MRFW) mrmain.@LTO@
+	$(MREDLINKER) -o ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon
 	mkdir -p "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m"
 	cp "$(MRFW)" "../$(MRFW)"
 	rm -rf "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources"
 	cp -r "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources" "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources"
-	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "../MrEd3m.app/Contents/MacOS/MrEd3m"
+	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@"
 
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@
 	$(MREDLINKER) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@
 
 $(MRFWRES): $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../../mac/cw/MrEd.r
 	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd
-	env BUILDBASE=../.. BUILDING_3M=yes $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../..
+	env BUILDBASE=../.. BUILDING_3M=yes ../../mzscheme/mzscheme@CGC@ -qr $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../.. "@MMM@"
 	ln -s Versions/$(FWVERSION)_3m/PLT_MrEd PLT_MrEd.framework/PLT_MrEd
 	ln -s Versions/$(FWVERSION)_3m/Resources PLT_MrEd.framework/Resources
 
-../mred3m@OSX@ :
-	$(MAKE) ../MrEd3m.app/Contents/MacOS/MrEd3m
+../mred@MMM@@OSX@ :
+	$(MAKE) ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@
 
 xsrc:
 	mkdir xsrc
@@ -1396,4 +1396,177 @@ XSRC_EXTRA_DIR_wx_xt =
 XSRC_EXTRA_DIR_wx_mac = macxsrc
 
 3m: xsrc $(XSRC_EXTRA_DIR_@WXVARIANT@)
-	$(MAKE) ../mred3m
+	$(MAKE) ../mred@MMM@
+
+########################################
+#             Make Depends             #
+########################################
+
+gen-deps:
+	../../mzscheme/mzscheme@MMM@ -qr "$(srcdir)/gen-deps.ss"
+
+@INCLUDEDEP@ wb_item.dd
+@INCLUDEDEP@ wb_panel.dd
+@INCLUDEDEP@ wb_timer.dd
+@INCLUDEDEP@ wb_frame.dd
+@INCLUDEDEP@ wb_list.dd
+@INCLUDEDEP@ PSDC.dd
+@INCLUDEDEP@ wb_types.dd
+@INCLUDEDEP@ wb_canvs.dd
+@INCLUDEDEP@ wb_gdi.dd
+@INCLUDEDEP@ wb_main.dd
+@INCLUDEDEP@ wb_utils.dd
+@INCLUDEDEP@ wb_data.dd
+@INCLUDEDEP@ wb_hash.dd
+@INCLUDEDEP@ wb_stdev.dd
+@INCLUDEDEP@ wb_win.dd
+@INCLUDEDEP@ wb_dc.dd
+@INCLUDEDEP@ wb_sysev.dd
+@INCLUDEDEP@ wb_dialg.dd
+@INCLUDEDEP@ wb_obj.dd
+@INCLUDEDEP@ xfspline.dd
+@INCLUDEDEP@ wx_choic.dd
+@INCLUDEDEP@ wx_main.dd
+@INCLUDEDEP@ wx_clipb.dd
+@INCLUDEDEP@ wx_menu.dd
+@INCLUDEDEP@ wx_messg.dd
+@INCLUDEDEP@ wxBorder.dd
+@INCLUDEDEP@ wx_dc.dd
+@INCLUDEDEP@ wxBorderArea.dd
+@INCLUDEDEP@ wx_dccan1.dd
+@INCLUDEDEP@ wx_mnuit.dd
+@INCLUDEDEP@ wxButtonBorder.dd
+@INCLUDEDEP@ wx_dccan2.dd
+@INCLUDEDEP@ wx_dccan3.dd
+@INCLUDEDEP@ wx_panel.dd
+@INCLUDEDEP@ wxLabelArea.dd
+@INCLUDEDEP@ wx_dcmem.dd
+@INCLUDEDEP@ wx_print.dd
+@INCLUDEDEP@ wxMacDC.dd
+@INCLUDEDEP@ wx_dcpr1.dd
+@INCLUDEDEP@ wx_rbox.dd
+@INCLUDEDEP@ wx_rbut.dd
+@INCLUDEDEP@ wx_sbar.dd
+@INCLUDEDEP@ wxMargin.dd
+@INCLUDEDEP@ wx_dialg.dd
+@INCLUDEDEP@ wx_screen.dd
+@INCLUDEDEP@ wxRectBorder.dd
+@INCLUDEDEP@ wx_slidr.dd
+@INCLUDEDEP@ wxScroll.dd
+@INCLUDEDEP@ wx_frame.dd
+@INCLUDEDEP@ wxScrollArea.dd
+@INCLUDEDEP@ wx_gauge.dd
+@INCLUDEDEP@ wxScrollData.dd
+@INCLUDEDEP@ wx_gdi.dd
+@INCLUDEDEP@ wx_app.dd
+@INCLUDEDEP@ wx_util.dd
+@INCLUDEDEP@ wx_area.dd
+@INCLUDEDEP@ wx_win.dd
+@INCLUDEDEP@ wx_buttn.dd
+@INCLUDEDEP@ wx_item.dd
+@INCLUDEDEP@ wximgfil.dd
+@INCLUDEDEP@ wx_canvs.dd
+@INCLUDEDEP@ wx_lbox.dd
+@INCLUDEDEP@ wx_check.dd
+@INCLUDEDEP@ wx_tabc.dd
+@INCLUDEDEP@ wx_gbox.dd
+@INCLUDEDEP@ wx_mac_utils.dd
+@INCLUDEDEP@ wx_bmp.dd
+@INCLUDEDEP@ wx_24to8.dd
+@INCLUDEDEP@ wx_image.dd
+@INCLUDEDEP@ wx_xbm.dd
+@INCLUDEDEP@ AppMain.dd
+@INCLUDEDEP@ GlobalData.dd
+@INCLUDEDEP@ Object.dd
+@INCLUDEDEP@ TypeTree.dd
+@INCLUDEDEP@ wb_hash.dd
+@INCLUDEDEP@ wb_list.dd
+@INCLUDEDEP@ DC.dd
+@INCLUDEDEP@ MemoryDC.dd
+@INCLUDEDEP@ PSDC.dd
+@INCLUDEDEP@ WindowDC.dd
+@INCLUDEDEP@ FileDialog.dd
+@INCLUDEDEP@ MessageBox.dd
+@INCLUDEDEP@ wb_stdev.dd
+@INCLUDEDEP@ wb_sysev.dd
+@INCLUDEDEP@ EvtHandler.dd
+@INCLUDEDEP@ GDI-Bitmap.dd
+@INCLUDEDEP@ GDI-Colour.dd
+@INCLUDEDEP@ GDI-Font.dd
+@INCLUDEDEP@ GDI-FontDirectory.dd
+@INCLUDEDEP@ GDI-Pen+Brush.dd
+@INCLUDEDEP@ Timer.dd
+@INCLUDEDEP@ Clipboard.dd
+@INCLUDEDEP@ Application.dd
+@INCLUDEDEP@ Assert.dd
+@INCLUDEDEP@ BusyCursor.dd
+@INCLUDEDEP@ Date+Time.dd
+@INCLUDEDEP@ Directory.dd
+@INCLUDEDEP@ Error.dd
+@INCLUDEDEP@ GDI.dd
+@INCLUDEDEP@ Home.dd
+@INCLUDEDEP@ Misc.dd
+@INCLUDEDEP@ Net.dd
+@INCLUDEDEP@ Path.dd
+@INCLUDEDEP@ Resources.dd
+@INCLUDEDEP@ String.dd
+@INCLUDEDEP@ TempFile.dd
+@INCLUDEDEP@ Button.dd
+@INCLUDEDEP@ Canvas.dd
+@INCLUDEDEP@ CheckBox.dd
+@INCLUDEDEP@ Choice.dd
+@INCLUDEDEP@ DialogBox.dd
+@INCLUDEDEP@ Frame.dd
+@INCLUDEDEP@ Gauge.dd
+@INCLUDEDEP@ Item.dd
+@INCLUDEDEP@ Layout.dd
+@INCLUDEDEP@ ListBox.dd
+@INCLUDEDEP@ Menu.dd
+@INCLUDEDEP@ MenuBar.dd
+@INCLUDEDEP@ Message.dd
+@INCLUDEDEP@ Panel.dd
+@INCLUDEDEP@ RadioBox.dd
+@INCLUDEDEP@ Slider.dd
+@INCLUDEDEP@ Window.dd
+@INCLUDEDEP@ wx_style.dd
+@INCLUDEDEP@ wx_keym.dd
+@INCLUDEDEP@ wx_mbuf.dd
+@INCLUDEDEP@ wx_media.dd
+@INCLUDEDEP@ wx_mpriv.dd
+@INCLUDEDEP@ wx_msnip.dd
+@INCLUDEDEP@ wx_mline.dd
+@INCLUDEDEP@ wx_mpbrd.dd
+@INCLUDEDEP@ wx_medad.dd
+@INCLUDEDEP@ wx_snip.dd
+@INCLUDEDEP@ wx_cgrec.dd
+@INCLUDEDEP@ wx_medio.dd
+@INCLUDEDEP@ xcglue.dd
+@INCLUDEDEP@ wxs_bmap.dd
+@INCLUDEDEP@ wxs_butn.dd
+@INCLUDEDEP@ wxs_chce.dd
+@INCLUDEDEP@ wxs_ckbx.dd
+@INCLUDEDEP@ wxs_cnvs.dd
+@INCLUDEDEP@ wxs_dc.dd
+@INCLUDEDEP@ wxs_evnt.dd
+@INCLUDEDEP@ wxs_fram.dd
+@INCLUDEDEP@ wxs_gage.dd
+@INCLUDEDEP@ wxs_gdi.dd
+@INCLUDEDEP@ wxs_glob.dd
+@INCLUDEDEP@ wxs_item.dd
+@INCLUDEDEP@ wxs_lbox.dd
+@INCLUDEDEP@ wxs_madm.dd
+@INCLUDEDEP@ wxs_mede.dd
+@INCLUDEDEP@ wxs_medi.dd
+@INCLUDEDEP@ wxs_menu.dd
+@INCLUDEDEP@ wxs_mio.dd
+@INCLUDEDEP@ wxs_misc.dd
+@INCLUDEDEP@ wxs_mpb.dd
+@INCLUDEDEP@ wxs_obj.dd
+@INCLUDEDEP@ wxs_panl.dd
+@INCLUDEDEP@ wxs_rado.dd
+@INCLUDEDEP@ wxs_slid.dd
+@INCLUDEDEP@ wxs_snip.dd
+@INCLUDEDEP@ wxs_styl.dd
+@INCLUDEDEP@ wxs_tabc.dd
+@INCLUDEDEP@ wxs_win.dd
+@INCLUDEDEP@ wxscheme.dd

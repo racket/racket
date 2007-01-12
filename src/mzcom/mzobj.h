@@ -4,7 +4,6 @@
 #define __MZOBJ_H_
 
 #include "resource.h"       // main symbols
-#include "scheme.h"
 #include "MzCOMCP.h"
 
 typedef struct {
@@ -24,6 +23,11 @@ extern DWORD WINAPI evalLoop(LPVOID);
 
 /////////////////////////////////////////////////////////////////////////////
 // CMzObj
+
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
+
 class ATL_NO_VTABLE CMzObj : 
 	public CComObjectRootEx<CComSingleThreadModel>,
 	public CComCoClass<CMzObj, &CLSID_MzObj>,
@@ -78,6 +82,10 @@ public:
  STDMETHOD(About)(void);
  STDMETHOD(Eval)(BSTR input,/*[out,retval]*/BSTR *output);
 };
+
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
 
 #endif //__MZOBJ_H_
 

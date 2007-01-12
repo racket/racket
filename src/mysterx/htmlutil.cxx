@@ -1,6 +1,11 @@
 // htmlutil.cxx
 
-#include "stdafx.h"
+#ifdef MYSTERX_3M
+// Created by xform.ss:
+# include "xsrc/htmlutil3m.cxx"
+#else
+
+#include "mysterx_pre.h"
 
 #include <objbase.h>
 #include <mshtml.h>
@@ -206,8 +211,10 @@ Scheme_Object *mx_element_focus(int argc,Scheme_Object **argv) {
   HRESULT hr;
   IHTMLElement *pIHTMLElement;
   IHTMLElement2 *pIHTMLElement2;
+  Scheme_Object *v;
 
-  pIHTMLElement = MX_ELEMENT_VAL (GUARANTEE_ELEMENT ("element-focus", 0));
+  v = GUARANTEE_ELEMENT ("element-focus", 0);
+  pIHTMLElement = MX_ELEMENT_VAL (v);
 
   hr = pIHTMLElement->QueryInterface(IID_IHTMLElement2,
 				     (void **)&pIHTMLElement2);
@@ -230,8 +237,10 @@ Scheme_Object *mx_element_selection(int argc,Scheme_Object **argv) {
   IHTMLElement *pIHTMLElement;
   IHTMLSelectElement *pIHTMLSelectElement;
   BSTR selection;
+  Scheme_Object *v;
 
-  pIHTMLElement = MX_ELEMENT_VAL (GUARANTEE_ELEMENT ("element-selection", 0));
+  v = GUARANTEE_ELEMENT ("element-selection", 0);
+  pIHTMLElement = MX_ELEMENT_VAL (v);
 
   hr = pIHTMLElement->QueryInterface(IID_IHTMLSelectElement,
 				     (void **)&pIHTMLSelectElement);
@@ -568,8 +577,9 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
   BSTR bstr; \
-  Scheme_Object *retval; \
-  pIHTMLStyle = styleInterfaceFromElement (GUARANTEE_ELEMENT (scm_name, 0)); \
+  Scheme_Object *retval, *v; \
+  v = GUARANTEE_ELEMENT (scm_name, 0); \
+  pIHTMLStyle = styleInterfaceFromElement (v); \
   hr = pIHTMLStyle->dhtml_name(&bstr); \
   retval = unmarshalBSTR (bstr); \
   SysFreeString(bstr); \
@@ -897,7 +907,9 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
   VARIANT_BOOL boolVal; \
-  pIHTMLStyle = styleInterfaceFromElement (GUARANTEE_ELEMENT (scm_name, 0)); \
+  Scheme_Object *v; \
+  v = GUARANTEE_ELEMENT (scm_name, 0); \
+  pIHTMLStyle = styleInterfaceFromElement (v); \
   hr = pIHTMLStyle->dhtml_name(&boolVal); \
   pIHTMLStyle->Release(); \
   if (FAILED(hr)) { \
@@ -911,7 +923,9 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
   VARIANT_BOOL boolVal;	\
-  pIHTMLStyle = styleInterfaceFromElement (GUARANTEE_ELEMENT (scm_name, 0)); \
+  Scheme_Object *v; \
+  v = GUARANTEE_ELEMENT (scm_name, 0);\
+  pIHTMLStyle = styleInterfaceFromElement (v); \
   boolVal = (argv[1] == scheme_false) ? 0 : -1; \
   hr = pIHTMLStyle->dhtml_name(boolVal); \
   pIHTMLStyle->Release(); \
@@ -963,7 +977,9 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
   long val; \
-  pIHTMLStyle = styleInterfaceFromElement (GUARANTEE_ELEMENT (scm_name, 0)); \
+  Scheme_Object *v; \
+  v = GUARANTEE_ELEMENT (scm_name, 0); \
+  pIHTMLStyle = styleInterfaceFromElement (v); \
   hr = pIHTMLStyle->dhtml_name(&val); \
   pIHTMLStyle->Release(); \
   if (FAILED(hr)) { \
@@ -1027,7 +1043,9 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
   float val; \
-  pIHTMLStyle = styleInterfaceFromElement (GUARANTEE_ELEMENT (scm_name, 0)); \
+  Scheme_Object *v; \
+  v = GUARANTEE_ELEMENT (scm_name, 0); \
+  pIHTMLStyle = styleInterfaceFromElement (v); \
   hr = pIHTMLStyle->dhtml_name(&val); \
   pIHTMLStyle->Release(); \
   if (FAILED(hr)) { \
@@ -1056,7 +1074,9 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
   float val; \
-  pIHTMLStyle = styleInterfaceFromElement(GUARANTEE_ELEMENT (scm_name, 0)); \
+  Scheme_Object *v; \
+  v = GUARANTEE_ELEMENT (scm_name, 0); \
+  pIHTMLStyle = styleInterfaceFromElement(v); \
   hr = pIHTMLStyle->dhtml_name(&val); \
   pIHTMLStyle->Release(); \
   if (FAILED(hr)) { \
@@ -1116,7 +1136,9 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
   VARIANT variant; \
-  pIHTMLStyle = styleInterfaceFromElement (GUARANTEE_ELEMENT (scm_name, 0)); \
+  Scheme_Object *v; \
+  v = GUARANTEE_ELEMENT (scm_name, 0); \
+  pIHTMLStyle = styleInterfaceFromElement (v); \
   hr = pIHTMLStyle->dhtml_name(&variant); \
   pIHTMLStyle->Release(); \
   if (FAILED(hr)) { \
@@ -1130,7 +1152,9 @@ Scheme_Object *fun_name(int argc,Scheme_Object **argv) { \
   HRESULT hr; \
   IHTMLStyle *pIHTMLStyle; \
   VARIANT variant; \
-  pIHTMLStyle = styleInterfaceFromElement(GUARANTEE_ELEMENT (scm_name, 0)); \
+  Scheme_Object *v; \
+  v = GUARANTEE_ELEMENT (scm_name, 0); \
+  pIHTMLStyle = styleInterfaceFromElement(v); \
   marshalSchemeValueToVariant(argv[1],&variant); \
   hr = pIHTMLStyle->dhtml_name(variant); \
   pIHTMLStyle->Release(); \
@@ -1349,3 +1373,5 @@ elt_style_variant_getter(mx_element_z_index,
 elt_style_variant_setter(mx_element_set_z_index,
 			 "element-set-z-index",
 			 put_zIndex)
+
+#endif //MYSTERX_3M

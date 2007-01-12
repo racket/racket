@@ -278,18 +278,13 @@ int main(int argc, char *argv[])
 
   stack_start = (void *)&stack_start;
 
-#if defined(MZ_PRECISE_GC)
-# ifndef wx_msw
-  stack_start = (void *)&__gc_var_stack__;
-  GC_init_type_tags(_scheme_last_type_, scheme_pair_type, scheme_weak_box_type, scheme_ephemeron_type, scheme_rt_weak_array);
-# endif
-  /* For Windows, WinMain inits the type tags. */
-#endif
-
   /* Set stack base and turn off auto-finding of static variables ---
      unless this is Windows, where scheme_set_stack_base
      is called by wxWindows. */
 #ifndef wx_msw
+# if defined(MZ_PRECISE_GC)
+  stack_start = (void *)&__gc_var_stack__;
+# endif
   scheme_set_stack_base(stack_start, 1);
 #endif
 

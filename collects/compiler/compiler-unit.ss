@@ -142,7 +142,7 @@
                             dynext:link^
                             dynext:file^
                             compiler:option^))])
-	    (f source-files destination-directory))))
+            (f source-files destination-directory))))
 
       (define (link-extension-parts source-files destination-directory)
 	(link/glue-extension-parts #t #t source-files destination-directory))

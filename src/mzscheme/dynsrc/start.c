@@ -19,17 +19,15 @@
 
 #ifdef MRSTART
 # define GOSUBDIR L"\\"
-# define GOEXE L"mred.exe"
-# define sGOEXE "mred.exe"
-# define GOEXE3M L"mred3m.exe"
+# define GOEXE L"mred"
+# define sGOEXE "mred"
 # define WAITTILDONE 0
 #endif
 
 #ifdef MZSTART
 # define GOSUBDIR L"\\"
-# define GOEXE L"mzscheme.exe"
-# define sGOEXE "mzscheme.exe"
-# define GOEXE3M L"mzscheme3m.exe"
+# define GOEXE L"mzscheme"
+# define sGOEXE "mzscheme"
 # define WAITTILDONE 1
 #endif
 
@@ -88,7 +86,7 @@ static wchar_t *exedir = L"<Executable Directory: Replace This ********"
                       L"********************************************"
                       L"********************************************>";
 
-static char *variant = "<Executable Variant: Replace This>";
+static wchar_t *variant = L"<Executable Variant: Replace This>";
 
 static int wc_strlen(const wchar_t *ws)
 {
@@ -307,7 +305,9 @@ int wmain(int argc_in, wchar_t **argv_in)
 
   wc_strcpy(go, exedir);
   wc_strcat(go, GOSUBDIR);
-  wc_strcat(go, (variant[0] != '<') ? GOEXE3M : GOEXE);
+  wc_strcat(go, GOEXE);
+  wc_strcat(go, variant);
+  wc_strcat(go, L".exe");
 
   if (_wstat(go, &st)) {
 #ifdef MRSTART

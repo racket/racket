@@ -314,7 +314,7 @@ ac_subdirs_all="$ac_subdirs_all foreign/gcc/libffi"
 ac_subdirs_all="$ac_subdirs_all llvm/llvm"
 ac_subdirs_all="$ac_subdirs_all wxcommon/jpeg"
 ac_subdirs_all="$ac_subdirs_all wxxt/src/x/wbuild"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP CXX CXXFLAGS ac_ct_CXX CXXCPP RANLIB ac_ct_RANLIB PERL X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS EGREP PREFLAGS COMPFLAGS PROFFLAGS SED AS AR STATIC_AR ARFLAGS WBUILD CC_FOR_BUILD REZ MZLINKER PLAIN_CC DYN_CFLAGS x_includes x_libraries OPTIONS MZOPTIONS CGCOPTIONS GC2OPTIONS MROPTIONS GCDIR MZBINTARGET MZINSTALLTARGET EXTRA_GMP_OBJ OSX NOT_OSX FRAMEWORK_INSTALL_DIR FRAMEWORK_REL_INSTALL INSTALL_ORIG_TREE EXE_SUFFIX MREDLINKER LIBSFX WXLIBS WXVARIANT ICP MRLIBINSTALL LIBFINISH MAKE_MRED MAKE_MRED3M MAKE_MREDINSTALL MAKE_MREDINSTALL3M MAKE_WBUILD MAKE_COPYTREE MAKE_FINISH WXPRECOMP USE_WXPRECOMP INCLUDEDEP WX_MMD_FLAG JPEG_A JPEG_INC ZLIB_A ZLIB_INC PNG_A OSKHOME EXTRA_OSK_LIBS FOREIGN_OBJSLIB_IF_USED FOREIGN_LIB_IF_USED FOREIGN_OBJSLIB FOREIGN_CONVENIENCE FOREIGNTARGET LIBMZSCHEME_DEP LIBMRED_DEP LLVMTARGET LTO LTA collectsdir libpltdir includepltdir docdir COLLECTS_PATH subdirs LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP CXX CXXFLAGS ac_ct_CXX CXXCPP RANLIB ac_ct_RANLIB PERL X_CFLAGS X_PRE_LIBS X_LIBS X_EXTRA_LIBS EGREP PREFLAGS COMPFLAGS PROFFLAGS SED AS AR STATIC_AR ARFLAGS WBUILD CC_FOR_BUILD REZ MZLINKER PLAIN_CC DYN_CFLAGS x_includes x_libraries OPTIONS MZOPTIONS CGCOPTIONS GC2OPTIONS MROPTIONS GCDIR MZBINTARGET MZINSTALLTARGET EXTRA_GMP_OBJ OSX NOT_OSX FRAMEWORK_INSTALL_DIR FRAMEWORK_REL_INSTALL INSTALL_ORIG_TREE EXE_SUFFIX MREDLINKER LIBSFX WXLIBS WXVARIANT ICP MRLIBINSTALL LIBFINISH MAKE_MRED MAKE_WBUILD MAKE_COPYTREE MAKE_FINISH WXPRECOMP USE_WXPRECOMP INCLUDEDEP WX_MMD_FLAG JPEG_A JPEG_INC ZLIB_A ZLIB_INC PNG_A OSKHOME EXTRA_OSK_LIBS FOREIGN_OBJSLIB_IF_USED FOREIGN_LIB_IF_USED FOREIGN_OBJSLIB FOREIGN_CONVENIENCE FOREIGNTARGET LIBMZSCHEME_DEP LIBMRED_DEP LLVMTARGET LTO LTA collectsdir libpltdir includepltdir docdir COLLECTS_PATH MMM MMM_INSTALLED MMM_CAP_INSTALLED CGC CGC_INSTALLED CGC_CAP_INSTALLED MAIN_VARIANT subdirs LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -867,6 +867,7 @@ Optional Features:
   --enable-origtree       install with original directory structure
   --enable-foreign        compile foreign support (enabled by default)
   --enable-llvm           compile llvm support (disabled by default)
+  --enable-cgcdefault     use CGC (Boehm of Senora) as default build
   --enable-sgc            use Senora GC instead of the Boehm GC
   --enable-sgcdebug       use Senora GC for debugging
   --enable-account        3m: use memory-accounting GC (enabled by default)
@@ -1430,6 +1431,11 @@ if test "${enable_sgc+set}" = set; then
   enableval="$enable_sgc"
 
 fi;
+# Check whether --enable-sgc or --disable-sgc was given.
+if test "${enable_sgc+set}" = set; then
+  enableval="$enable_sgc"
+
+fi;
 # Check whether --enable-sgcdebug or --disable-sgcdebug was given.
 if test "${enable_sgcdebug+set}" = set; then
   enableval="$enable_sgcdebug"
@@ -1635,6 +1641,7 @@ if test "${mandir}" != '${prefix}/man' ; then
  unixstyle=yes
 fi
 
+MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
   if test "${prefix}" = "NONE" ; then
     inplacebuild=yes
@@ -1698,6 +1705,8 @@ show_explicitly_enabled()
   fi
 }
 
+show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
+
 show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
@@ -1749,7 +1758,7 @@ OPTIONS=
 GCDIR=gc
 
 MZBINTARGET=normal-bin
-MZINSTALLTARGET=normal-install
+MZINSTALLTARGET=unix-install
 
 MZOPTIONS=
 CGCOPTIONS=
@@ -1781,6 +1790,14 @@ XFT_EXTRA_FLAGS=
 XFT_EXTRA_LIBS=
 
 EXE_SUFFIX=
+
+MMM=3m
+MMM_INSTALLED=
+MMM_CAP_INSTALLED=
+CGC=cgc
+CGC_INSTALLED=cgc
+CGC_CAP_INSTALLED=CGC
+MAIN_VARIANT=3m
 
 ###### OSKit stuff #######
 
@@ -5138,15 +5155,9 @@ fi
 
   fi
 
-  MAKE_MRED=mr
-  MAKE_MRED3M=mr3m
-  MAKE_MREDINSTALL=mrinstall
-  MAKE_MREDINSTALL3M=mrinstall3m
+  MAKE_MRED=mred
 else
-  MAKE_MRED=
-  MAKE_MRED3M=
-  MAKE_MREDINSTALL=
-  MAKE_MREDINSTALL3M=
+  MAKE_MRED=no
 fi
 
 
@@ -5504,6 +5515,16 @@ case "$MACH" in
   *)
     ;;
 esac
+
+############## GC variant ################
+
+if test "${enable_cgcdefault}" ; then
+   MMM_INSTALLED=3m
+   MMM_CAP_INSTALLED=3m
+   CGC_INSTALLED=
+   CGC_CAP_INSTALLED=
+   MAIN_VARIANT=cgc
+fi
 
 ############## SGC ################
 
@@ -11281,6 +11302,11 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
+
+
+
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -12125,9 +12151,6 @@ s,@ICP@,$ICP,;t t
 s,@MRLIBINSTALL@,$MRLIBINSTALL,;t t
 s,@LIBFINISH@,$LIBFINISH,;t t
 s,@MAKE_MRED@,$MAKE_MRED,;t t
-s,@MAKE_MRED3M@,$MAKE_MRED3M,;t t
-s,@MAKE_MREDINSTALL@,$MAKE_MREDINSTALL,;t t
-s,@MAKE_MREDINSTALL3M@,$MAKE_MREDINSTALL3M,;t t
 s,@MAKE_WBUILD@,$MAKE_WBUILD,;t t
 s,@MAKE_COPYTREE@,$MAKE_COPYTREE,;t t
 s,@MAKE_FINISH@,$MAKE_FINISH,;t t
@@ -12157,6 +12180,13 @@ s,@libpltdir@,$libpltdir,;t t
 s,@includepltdir@,$includepltdir,;t t
 s,@docdir@,$docdir,;t t
 s,@COLLECTS_PATH@,$COLLECTS_PATH,;t t
+s,@MMM@,$MMM,;t t
+s,@MMM_INSTALLED@,$MMM_INSTALLED,;t t
+s,@MMM_CAP_INSTALLED@,$MMM_CAP_INSTALLED,;t t
+s,@CGC@,$CGC,;t t
+s,@CGC_INSTALLED@,$CGC_INSTALLED,;t t
+s,@CGC_CAP_INSTALLED@,$CGC_CAP_INSTALLED,;t t
+s,@MAIN_VARIANT@,$MAIN_VARIANT,;t t
 s,@subdirs@,$subdirs,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t

@@ -2465,12 +2465,13 @@
                                 (slurp-stream ent o)
                                 (get-output-bytes o)))]
 		     [generic (lambda (ent)
-				(let ([fn (or (let ([disp (mime:entity-disposition ent)])
-						(and (not (equal? "" (mime:disposition-filename disp)))
-						     (mime:disposition-filename disp)))
-					      (let ([l (mime:entity-params ent)])
-						(let ([a (assoc "name" l)])
-						  (and a (cdr a)))))]
+				(let ([fn (parse-encoded
+                                           (or (let ([disp (mime:entity-disposition ent)])
+                                                 (and (not (equal? "" (mime:disposition-filename disp)))
+                                                      (mime:disposition-filename disp)))
+                                               (let ([l (mime:entity-params ent)])
+                                                 (let ([a (assoc "name" l)])
+                                                   (and a (cdr a))))))]
 				      [sz (mime:disposition-size (mime:entity-disposition ent))]
 				      [content #f])
 				  (let ([to-file
@@ -2512,7 +2513,8 @@
 					      (send t change-style url-delta s e)))
 				    (when (eq? (system-type) 'macosx)
                                       (when fn
-                                        (let ([safer-fn (normalize-path (string-append "~/Desktop/" (regexp-replace #rx"/" fn "-")))])
+                                        (let ([safer-fn (normalize-path (string-append "~/Desktop/" 
+                                                                                       (regexp-replace* #rx"[/\"|:<>\\]" fn "-")))])
 					  (insert " " set-standard-style)
                                           (insert "[save to ~/Desktop/ & open]"
                                                   (lambda (t s e)

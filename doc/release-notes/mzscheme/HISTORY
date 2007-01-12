@@ -1,3 +1,10 @@
+Version 369.4
+Changed path->directory-path, simplify-path, and split-path to include
+ a trailing path separator even when the result would be a directory
+ path without it
+Changed simplify-path for Windows paths to replace / with \
+Changed current-directory to apply path->directory-path to given paths
+
 Version 369.3
 Adjusted exception-handler calling to propagate any returned value
  to the previous exception handler

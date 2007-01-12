@@ -1,9 +1,7 @@
 /* 
    The same as makeaddr.c, but revised and annotated so that it works
-   with 3m. All non-3m comments have been deleted (to better highlight
-   the 3m parts).
-
-   Using the --3m flag when compiling and linking with mzc.
+   with 3m without using --xform. All non-3m comments have been
+   deleted (to better highlight the 3m parts).
 */
 
 #include "escheme.h"

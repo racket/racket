@@ -1,6 +1,11 @@
 // comtypes.cxx
 
-#include "stdafx.h"
+#ifdef MYSTERX_3M
+// Created by xform.ss:
+# include "xsrc/comtypes3m.cxx"
+#else
+
+#include "mysterx_pre.h"
 
 #include <assert.h>
 
@@ -13,8 +18,6 @@
 #include <initguid.h>
 #include <winnls.h>
 #include <exdisp.h>
-
-#include "escheme.h"
 
 #include "myspage.h"
 #include "myssink.h"
@@ -35,6 +38,8 @@ Scheme_Type mx_com_iunknown_type;
 Scheme_Type mx_com_omit_type;
 Scheme_Type mx_com_typedesc_type;
 
+Scheme_Type mx_tbl_entry_type;
+
 Scheme_Object *mx_document_pred(int argc,Scheme_Object **argv)
 {
   return MX_DOCUMENTP (argv[0]) ? scheme_true : scheme_false;
@@ -44,9 +49,9 @@ Scheme_Object *mx_make_cy (CY *pCy)
 {
   MX_COM_Data_Object *retval;
 
-  retval = (MX_COM_Data_Object *)scheme_malloc_atomic (sizeof (MX_COM_Data_Object));
+  retval = (MX_COM_Data_Object *)scheme_malloc_atomic_tagged (sizeof (MX_COM_Data_Object));
 
-  retval->type = mx_com_cy_type;
+  retval->so.type = mx_com_cy_type;
   retval->cy = *pCy;
 
   return (Scheme_Object *)retval;
@@ -56,9 +61,9 @@ Scheme_Object *mx_make_date (DATE *pDate)
 {
   MX_COM_Data_Object *retval;
 
-  retval = (MX_COM_Data_Object *)scheme_malloc_atomic (sizeof (MX_COM_Data_Object));
+  retval = (MX_COM_Data_Object *)scheme_malloc_atomic_tagged (sizeof (MX_COM_Data_Object));
 
-  retval->type = mx_com_date_type;
+  retval->so.type = mx_com_date_type;
   retval->date = *pDate;
 
   return (Scheme_Object *)retval;
@@ -73,9 +78,9 @@ Scheme_Object *mx_make_scode(SCODE scode)
 {
   MX_COM_Data_Object *retval;
 
-  retval = (MX_COM_Data_Object *)scheme_malloc_atomic (sizeof (MX_COM_Data_Object));
+  retval = (MX_COM_Data_Object *)scheme_malloc_atomic_tagged (sizeof (MX_COM_Data_Object));
 
-  retval->type = mx_com_scode_type;
+  retval->so.type = mx_com_scode_type;
   retval->scode = scode;
 
   return (Scheme_Object *)retval;
@@ -87,9 +92,9 @@ Scheme_Object *mx_make_idispatch(IDispatch *pIDispatch)
 
   if (pIDispatch == NULL) return scheme_false;
 
-  retval = (MX_COM_Object *)scheme_malloc(sizeof(MX_COM_Object));
+  retval = (MX_COM_Object *)scheme_malloc_tagged(sizeof(MX_COM_Object));
 
-  retval->type = mx_com_object_type;
+  retval->so.type = mx_com_object_type;
   retval->pIDispatch = pIDispatch;
   retval->clsId = emptyClsId;
   retval->pITypeInfo = NULL;
@@ -109,6 +114,7 @@ Scheme_Object *mx_make_iunknown(IUnknown *pIUnknown) {
   IDispatch * pIDispatch = NULL;
   IUnknown * pUnk = NULL;
   HRESULT hr;
+  MX_COM_Data_Object *retval;
 
   // Ensure we have the canonical iunknown!
   pIUnknown->QueryInterface (IID_IUnknown, (void **)&pUnk);
@@ -124,11 +130,9 @@ Scheme_Object *mx_make_iunknown(IUnknown *pIUnknown) {
 
   // DebugBreak();
 
-  MX_COM_Data_Object *retval;
+  retval = (MX_COM_Data_Object *)scheme_malloc_tagged(sizeof(MX_COM_Data_Object));
 
-  retval = (MX_COM_Data_Object *)scheme_malloc(sizeof(MX_COM_Data_Object));
-
-  retval->type = mx_com_iunknown_type;
+  retval->so.type = mx_com_iunknown_type;
   retval->released = FALSE;
   retval->pIUnknown = pUnk;
 
@@ -189,12 +193,13 @@ CY mx_cy_val (Scheme_Object *obj)
 
 Scheme_Object *mx_currency_to_scheme_number(int argc,Scheme_Object **argv)
 {
-  CY cy;
+  GC_CAN_IGNORE CY cy;
   char buff[40];
   int len;
-  Scheme_Object *port;
+  Scheme_Object *port, *v;
 
-  cy = MX_CY_VAL (GUARANTEE_CY ("com-currency->number", 0));
+  v = GUARANTEE_CY ("com-currency->number", 0);
+  cy = MX_CY_VAL (v);
 
   sprintf(buff,"%I64d",cy);
 
@@ -254,14 +259,14 @@ _int64 scanNum64(char *s,_int64 (*combine)(_int64,int),
   last = cy = 0;
   while (*s) {
     cy *= 10;
-    cy = combine(cy,*s - '0');
+    cy = combine(cy,(*s) - '0');
     if (cmp(cy,last))
       scheme_signal_error("number->com-currency: "
 			  "number %V too big to fit in com-currency",
 			  obj);
 
     last = cy;
-    s++;
+    s = s XFORM_OK_PLUS 1;
   }
   return cy;
 }
@@ -294,22 +299,24 @@ Scheme_Object *scheme_number_to_mx_currency(int argc,Scheme_Object **argv) {
     neededZeroes = max(4 - numDecimals,0);
 
     memmove(p,p+1,min(numDecimals,4));
-    q = p + numDecimals;
+    q = p XFORM_OK_PLUS numDecimals;
   }
   else {
     q = buff + len;
     neededZeroes = 4;
   }
 
-  for (i = 0; i < neededZeroes; i++)
-    *q++ = '0';
+  for (i = 0; i < neededZeroes; i++) {
+    *q = '0';
+    q = q XFORM_OK_PLUS 1;
+  }
 
   *q = '\0';
 
   r = buff;
 
-  cy = (*r == '-')
-      ? scanNum64 (r+1, sub64, gt64, argv[0])
+  cy = ((*r) == '-')
+      ? scanNum64 (r XFORM_OK_PLUS 1, sub64, gt64, argv[0])
       : scanNum64 (r,   add64, lt64, argv[0]);
 
   return mx_make_cy((CY *)&cy);
@@ -329,11 +336,7 @@ BOOL isLeapYear(int year)
       : TRUE;
 }
 
-Scheme_Object *mx_date_to_scheme_date(int argc,Scheme_Object **argv) {
-  SYSTEMTIME sysTime;
-  Scheme_Object *p[10];
-  int yearDay;
-  static int offsets[12] =
+static int offsets[12] =
   { 0,   // Jan
     31,  // Feb
     59,  // Mar
@@ -348,6 +351,10 @@ Scheme_Object *mx_date_to_scheme_date(int argc,Scheme_Object **argv) {
     334, // Dec
   };
 
+Scheme_Object *mx_date_to_scheme_date(int argc,Scheme_Object **argv) {
+  SYSTEMTIME sysTime;
+  Scheme_Object *p[10];
+  int yearDay;
   GUARANTEE_DATE ("date->com-date", 0);
 
   if (VariantTimeToSystemTime(MX_DATE_VAL(argv[0]),&sysTime) == FALSE)
@@ -375,14 +382,15 @@ Scheme_Object *mx_date_to_scheme_date(int argc,Scheme_Object **argv) {
   return scheme_make_struct_instance(scheme_date_type,sizeray(p),p);
 }
 
+static char *fieldNames[] = {
+  "second","minute","hour","day","month","year","week-day",
+  "year-day","dst?","time-zone-offset"
+};
+
 Scheme_Object *scheme_date_to_mx_date(int argc,Scheme_Object **argv) {
   SYSTEMTIME sysTime;
   DATE vDate;
   Scheme_Object *date;
-  static char *fieldNames[] = {
-    "second","minute","hour","day","month","year","week-day",
-    "year-day","dst?","time-zone-offset"
-  };
   int i;
 
   if (scheme_is_struct_instance(scheme_date_type,argv[0]) == FALSE)
@@ -419,7 +427,9 @@ SCODE mx_scode_val (Scheme_Object *obj)
 
 Scheme_Object * mx_scode_to_scheme_number (int argc, Scheme_Object **argv)
 {
-  return scheme_make_integer_value (MX_SCODE_VAL (GUARANTEE_SCODE ("com-scode->number", 0)));
+  Scheme_Object *v;
+  v = GUARANTEE_SCODE ("com-scode->number", 0);
+  return scheme_make_integer_value (MX_SCODE_VAL (v));
 }
 
 Scheme_Object * scheme_number_to_mx_scode(int argc, Scheme_Object **argv)
@@ -444,3 +454,5 @@ IUnknown * mx_iunknown_val (Scheme_Object * obj)
 {
   return MX_IUNKNOWN_VAL (obj);
 }
+
+#endif // MYSTERX_3M

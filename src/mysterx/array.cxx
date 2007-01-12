@@ -1,6 +1,11 @@
 // array.cxx
 
-#include "stdafx.h"
+#ifdef MYSTERX_3M
+// Created by xform.ss:
+# include "xsrc/array3m.cxx"
+#else
+
+#include "mysterx_pre.h"
 
 #include <objbase.h>
 #include <mshtml.h>
@@ -142,8 +147,8 @@ Scheme_Object *safeArrayElementToSchemeObject(SAFEARRAY *theArray,
 }
 
 Scheme_Object *buildVectorFromArray(SAFEARRAY *theArray,long currDim,
-				    long *allIndices,long *currNdx) {
-  Scheme_Object *vec;
+				    long *allIndices,long *currNdx, long offset) {
+  Scheme_Object *vec, *v;
   long low,high,vecSize;
   long i,j;
 
@@ -155,17 +160,17 @@ Scheme_Object *buildVectorFromArray(SAFEARRAY *theArray,long currDim,
 
   if (currDim > 1) {
     for (i = 0,j = low; i < vecSize; i++,j++) {
-      currNdx[0] = j;
-      SCHEME_VEC_ELS(vec)[i] =
-	buildVectorFromArray(theArray,currDim - 1,
-			     allIndices,currNdx - 1);
+      currNdx[offset] = j;
+      v = buildVectorFromArray(theArray,currDim - 1,
+			       allIndices,currNdx, offset - 1);
+      SCHEME_VEC_ELS(vec)[i] = v;
     }
   }
   else {
     for (i = 0,j = low; i < vecSize; i++,j++) {
-      currNdx[0] = j;
-      SCHEME_VEC_ELS(vec)[i] =
-	safeArrayElementToSchemeObject(theArray,allIndices);
+      currNdx[offset] = j;
+      v = safeArrayElementToSchemeObject(theArray,allIndices);
+      SCHEME_VEC_ELS(vec)[i] = v;
     }
   }
 
@@ -179,10 +184,10 @@ Scheme_Object *safeArrayToSchemeVector(SAFEARRAY *theArray) {
 
   numDims = SafeArrayGetDim(theArray);
 
-  indices = (long *)scheme_malloc(numDims * sizeof(long));
+  indices = (long *)scheme_malloc_atomic(numDims * sizeof(long));
 
   retval = buildVectorFromArray(theArray,numDims,
-				indices,indices + numDims - 1);
+				indices,indices, numDims - 1);
 
   return retval;
 }
@@ -268,7 +273,7 @@ BOOL isRegularVector(Scheme_Object *vec) {
 }
 
 void doSetArrayElts(Scheme_Object *vec,SAFEARRAY *theArray,
-		    long *allIndices,long *currNdx) {
+		    long *allIndices,long *currNdx, long offset) {
   VARIANT variant;
   Scheme_Object *elt;
   int len;
@@ -276,17 +281,17 @@ void doSetArrayElts(Scheme_Object *vec,SAFEARRAY *theArray,
 
   len = SCHEME_VEC_SIZE(vec);
 
-  if (currNdx > allIndices) {
+  if (offset) {
     for (i = 0; i < len; i++) {
       elt = SCHEME_VEC_ELS(vec)[i];
-      currNdx[0] = i;
-      doSetArrayElts(elt,theArray,allIndices,currNdx - 1);
+      currNdx[offset] = i;
+      doSetArrayElts(elt,theArray,allIndices,currNdx, offset - 1);
     }
   }
   else {
     for (i = 0; i < len; i++) {
       elt = SCHEME_VEC_ELS(vec)[i];
-      currNdx[0] = i;
+      currNdx[offset] = i;
       marshalSchemeValueToVariant(elt,&variant);
       SafeArrayPutElement(theArray,allIndices,&variant);
     }
@@ -298,7 +303,7 @@ void setArrayElts(Scheme_Object *vec,SAFEARRAY *theArray,long numDims) {
 
   memset(indices,0,sizeof(indices));
 
-  doSetArrayElts(vec,theArray,indices,indices + numDims - 1);
+  doSetArrayElts(vec,theArray,indices,indices, numDims - 1);
 }
 
 SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *vec) {
@@ -321,7 +326,7 @@ SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *vec) {
     scheme_signal_error("Too many array dimensions");
   }
 
-  rayBounds = (SAFEARRAYBOUND *)scheme_malloc(numDims * sizeof(SAFEARRAYBOUND));
+  rayBounds = (SAFEARRAYBOUND *)malloc(numDims * sizeof(SAFEARRAYBOUND));
 
   for (i = 0; i < numDims; i++) {
     rayBounds[i].lLbound = 0L;
@@ -336,3 +341,5 @@ SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *vec) {
   return theArray;
 
 }
+
+#endif // MYSTERX_3M

@@ -1,6 +1,11 @@
 // browser.cxx
 
-#include "stdafx.h"
+#ifdef MYSTERX_3M
+// Created by xform.ss:
+# include "xsrc/browser3m.cxx"
+#else
+
+#include "mysterx_pre.h"
 
 #include <objbase.h>
 #include <mshtml.h>
@@ -59,6 +64,8 @@ void assignIntOrDefault(int *pVal,Scheme_Object **argv,int argc,int ndx) {
   }
 }
 
+typedef int (*COMP_PROC)(const void *,const void *);
+
 Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
   HRESULT hr;
   MX_Browser_Object *browser;
@@ -70,13 +77,17 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
   IStream *pIStream,*pBrowserStream;
   IWebBrowser2 *pIWebBrowser2;
   IEventQueue *pIEventQueue;
-  Scheme_Object *pSyms,*currSym;
+  Scheme_Object *pSyms,*currSym, *cust, *v;
   char *currStyleOption;
   BROWSER_WINDOW_INIT browserWindowInit;
   BROWSER_WINDOW_STYLE_OPTION *pBwso;
   DWORD cookie;
+  LPSTR lbl;
+  int *destroy;
 
-  browserWindowInit.browserWindow.label = schemeToMultiByte (GUARANTEE_STRSYM ("make-browser", 0));
+  v = GUARANTEE_STRSYM ("make-browser", 0);
+  lbl = schemeToMultiByte (v);
+  browserWindowInit.browserWindow.label = lbl;
 
   assignIntOrDefault(&browserWindowInit.browserWindow.width,argv,argc,1);
   assignIntOrDefault(&browserWindowInit.browserWindow.height,argv,argc,2);
@@ -105,7 +116,7 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
 		      styleOptions,
 		      sizeray(styleOptions),
 		      sizeof(styleOptions[0]),
-		      (int (*)(const void *,const void *))cmpBwso);
+		      (COMP_PROC)cmpBwso);
 
     if (pBwso == NULL) {
       scheme_signal_error("Invalid browser window style option: %s",
@@ -129,9 +140,13 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
   pBrowserStream = NULL;
   browserWindowInit.ppIStream = &pBrowserStream;
 
-  browser = (MX_Browser_Object *)scheme_malloc(sizeof(MX_Browser_Object));
-  browser->type = mx_browser_type;
-  browserWindowInit.browserObject = browser;
+  browser = (MX_Browser_Object *)scheme_malloc_tagged(sizeof(MX_Browser_Object));
+  browser->so.type = mx_browser_type;
+  browser->destroy = destroy;
+
+  destroy = (int *)malloc(sizeof(int)); /* freed by msg loop */
+  *destroy = 0;
+  browserWindowInit.destroy = destroy;
 
   // use _beginthread instead of CreateThread
   // because the use of HTMLHelp requires the use of
@@ -143,7 +158,6 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
 
   WaitForSingleObject(createHwndSem,INFINITE);
 
-  browser->destroy = FALSE;
   browser->hwnd = browserHwnd;
 
   if (!pBrowserStream)
@@ -248,12 +262,12 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
 
   browser->pIEventQueue = pIEventQueue;
 
-  scheme_add_managed((Scheme_Custodian *)scheme_get_param(scheme_current_config(),MZCONFIG_CUSTODIAN),
+  cust = scheme_get_param(scheme_current_config(),MZCONFIG_CUSTODIAN);
+
+  scheme_add_managed((Scheme_Custodian *)cust,
 		     (Scheme_Object *)browser,
 		     (Scheme_Close_Custodian_Client *)scheme_release_browser,
-		     (void *)TRUE,0);
-
-  scheme_register_finalizer(browser,scheme_release_browser,NULL,NULL,NULL);
+		     (void *)TRUE,1);
 
   ++browserCount;
   noBrowsersCache = FALSE;
@@ -284,10 +298,13 @@ Scheme_Object *mx_navigate(int argc,Scheme_Object **argv) {
   IWebBrowser2 *pIWebBrowser2;
   BSTR url;
   VARIANT vars[4];
+  Scheme_Object *v;
 
-  pIWebBrowser2 = MX_BROWSER_VAL (GUARANTEE_BROWSER ("navigate", 0));
+  v = GUARANTEE_BROWSER ("navigate", 0);
+  pIWebBrowser2 = MX_BROWSER_VAL (v);
 
-  url = schemeToBSTR (GUARANTEE_STRSYM ("navigate", 1));
+  v = GUARANTEE_STRSYM ("navigate", 1);
+  url = schemeToBSTR (v);
 
   memset(vars,0,sizeof(vars));
 
@@ -397,19 +414,20 @@ IHTMLDocument2 *IHTMLDocument2FromBrowser(Scheme_Object *obj) {
 Scheme_Object *mx_current_document(int argc,Scheme_Object **argv) {
   IHTMLDocument2 *pIHTMLDocument2;
   MX_Document_Object *doc;
+  Scheme_Object *v, *cust;
 
-  pIHTMLDocument2 = IHTMLDocument2FromBrowser (GUARANTEE_BROWSER ("current-document", 0));
+  v = GUARANTEE_BROWSER ("current-document", 0);
+  pIHTMLDocument2 = IHTMLDocument2FromBrowser (v);
 
-  doc = (MX_Document_Object *)scheme_malloc(sizeof(MX_Document_Object));
-  doc->type = mx_document_type;
+  doc = (MX_Document_Object *)scheme_malloc_tagged(sizeof(MX_Document_Object));
+  doc->so.type = mx_document_type;
   doc->pIHTMLDocument2 = pIHTMLDocument2;
 
-  scheme_add_managed((Scheme_Custodian *)scheme_get_param(scheme_current_config(),MZCONFIG_CUSTODIAN),
+  cust = scheme_get_param(scheme_current_config(),MZCONFIG_CUSTODIAN);
+  scheme_add_managed((Scheme_Custodian *)cust,
 		     (Scheme_Object *)doc,
 		     (Scheme_Close_Custodian_Client *)scheme_release_document,
-		     NULL,0);
-
-  scheme_register_finalizer(doc,scheme_release_document,NULL,NULL,NULL);
+		     NULL,1);
 
   return (Scheme_Object *)doc;
 }
@@ -418,8 +436,10 @@ Scheme_Object *mx_print(int argc,Scheme_Object **argv) {
   HRESULT hr;
   IWebBrowser2 *pIWebBrowser2;
   VARIANT varIn, varOut;
+  Scheme_Object *v;
 
-  pIWebBrowser2 = MX_BROWSER_VAL (GUARANTEE_BROWSER ("print", 0));
+  v = GUARANTEE_BROWSER ("print", 0);
+  pIWebBrowser2 = MX_BROWSER_VAL (v);
 
   VariantInit(&varIn);
   VariantInit(&varOut);
@@ -464,3 +484,5 @@ Scheme_Object *mx_current_url(int argc,Scheme_Object **argv) {
 
   return retval;
 }
+
+#endif // MYSTERX_3M

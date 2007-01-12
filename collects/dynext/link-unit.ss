@@ -85,17 +85,23 @@
       (define link-variant (make-parameter 
 			    'normal
 			    (lambda (s)
-			      (unless (memq s '(normal 3m))
-				(raise-type-error 'link-variant "'normal or '3m" s))
+			      (unless (memq s '(normal cgc 3m))
+				(raise-type-error 'link-variant "'normal, 'cgc, or '3m" s))
 			      s)))
+
+      (define (specific-link-variant)
+        (let ([v (link-variant)])
+          (if (eq? v 'normal)
+              (system-type 'gc)
+              v)))
 
       (define (wrap-3m s)
 	(lambda ()
-	  (list (format s (if (eq? '3m (link-variant)) "3m" "")))))
+	  (list (format s (if (eq? '3m (specific-link-variant)) "3m" "")))))
 
       (define (drop-3m s)
 	(lambda ()
-	  (if (eq? '3m (link-variant))
+	  (if (eq? '3m (specific-link-variant))
 	      null
 	      (list s))))
 

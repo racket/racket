@@ -186,6 +186,8 @@ _WX_C_FLAGS = @WX_MMD_FLAG@ -I$(srcdir)/XWidgets
 
 all: lib$(LIBNAME).@LIBSFX@
 
+min: $(COBJS) $(WOBJS)
+
 lib$(LIBNAME).@LIBSFX@: $(OBJS)
 	$(AR) $(ARFLAGS) lib$(LIBNAME).@LIBSFX@ $(OBJS)
 	$(RANLIB) $@

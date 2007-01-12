@@ -38,7 +38,10 @@
 	(lambda (s . args)
 	  (apply setup-fprintf (current-output-port) s args)))
       
-      (setup-printf "Setup version is ~a" (version))
+      (setup-printf "Setup version is ~a [~a]" (version) (system-type 'gc))
+      (setup-printf "Available variants:~a" (apply string-append
+                                                   (map (lambda (s) (format " ~a" s))
+                                                        (available-mzscheme-variants))))
       (setup-printf "Main collection path is ~a" (find-collects-dir))
       (setup-printf "Collection search path is ~a" (if (null? (current-library-collection-paths))
 						       "empty!"
@@ -787,9 +790,10 @@
 								 (path-replace-suffix (or mzll mzln) #""))))])
                                     (unless (up-to-date? p aux)
                                       (setup-printf "Installing ~a~a launcher ~a"
-                                                    kind (if (eq? (current-launcher-variant) 'normal)
-                                                             ""
-                                                             (current-launcher-variant))
+                                                    kind (let ([v (current-launcher-variant)])
+                                                           (if (eq? v (system-type 'gc))
+                                                               ""
+                                                               (format " ~a" v)))
                                                     (path->string p))
                                       (make-launcher
                                        (or mzlf

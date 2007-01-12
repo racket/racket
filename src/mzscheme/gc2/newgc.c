@@ -86,7 +86,7 @@
 #define LOG_APAGE_SIZE 14
 
 /* the number of tags to use for tagged objects */
-#define NUMBER_OF_TAGS 260
+#define NUMBER_OF_TAGS 512
 
 /* the size of a page we use for the internal mark stack */
 #define STACK_PART_SIZE (1 * 1024 * 1024)

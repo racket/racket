@@ -29,6 +29,7 @@
 
 static Scheme_Object *input_port_p (int, Scheme_Object *[]);
 static Scheme_Object *output_port_p (int, Scheme_Object *[]);
+static Scheme_Object *port_closed_p (int, Scheme_Object *[]);
 static Scheme_Object *current_input_port (int, Scheme_Object *[]);
 static Scheme_Object *current_output_port (int, Scheme_Object *[]);
 static Scheme_Object *current_error_port (int, Scheme_Object *[]);
@@ -240,6 +241,12 @@ scheme_init_port_fun(Scheme_Env *env)
 			     scheme_make_folding_prim(scheme_terminal_port_p,
 						      "terminal-port?",
 						      1, 1, 1),
+			     env);
+
+  scheme_add_global_constant("port-closed?",
+			     scheme_make_prim_w_arity(port_closed_p,
+						      "port-closed?",
+						      1, 1),
 			     env);
 
   scheme_add_global_constant("current-input-port",
@@ -2417,6 +2424,23 @@ static Scheme_Object *
 output_port_p (int argc, Scheme_Object *argv[])
 {
   return (SCHEME_OUTPUT_PORTP(argv[0]) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *port_closed_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v = argv[0];
+  if (SCHEME_INPUT_PORTP(v)) {
+    Scheme_Input_Port *ip;
+    ip = scheme_input_port_record(v);
+    return ip->closed ? scheme_true : scheme_false;
+  } else if (SCHEME_OUTPUT_PORTP(v)) {
+    Scheme_Output_Port *op;
+    op = scheme_output_port_record(v);
+    return op->closed ? scheme_true : scheme_false;
+  } else {
+    scheme_wrong_type("port-closed?", "input-port or output-port", 0, argc, argv);
+    return NULL;
+  }
 }
 
 static Scheme_Object *current_input_port(int argc, Scheme_Object *argv[])

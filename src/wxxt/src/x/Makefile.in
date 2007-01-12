@@ -19,6 +19,11 @@ all: @MAKE_WBUILD@ \
 	cd ../../utils/image/src/; $(MAKE)
 	cd ../../contrib/xpm/lib/; $(MAKE)
 
+min: @MAKE_WBUILD@ \
+		../XWidgets
+	cd ..; $(MAKE) min
+	cd ../../contrib/xpm/lib/; $(MAKE)
+
 clean:
 	cd ..; $(MAKE) clean
 	cd ../../contrib/xpm/lib; $(MAKE) clean

@@ -13,6 +13,11 @@ char *cmdline_exe_hack = "[Replace me for EXE hack                              
 # define GC_PRECISION_TYPE "c"
 #endif
 char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRECISION_TYPE;
+/* The format of bINARy tYPe is e?[zr]i[3c].
+   e indicates a starter executable
+   z/r indicates MzScheme or MrEd
+   i indicates ???
+   3/c indicates 3m or CGC */
 
 #ifndef INITIAL_COLLECTS_DIRECTORY
 # ifdef DOS_FILE_SYSTEM

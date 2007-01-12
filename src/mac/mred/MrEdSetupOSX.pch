@@ -1,8 +1,0 @@
-/* MrEdSetupOSX.h
- * precompiled header for MrEd OS X
- */
- 
- 
-#define OS_X 1
-
-#include "MrEdSetup.pch"

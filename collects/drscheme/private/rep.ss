@@ -1436,7 +1436,8 @@ TODO
             (insert/delta this (string-append (string-constant welcome-to) " ") welcome-delta)
             (let-values ([(before after)
                           (insert/delta this (string-constant drscheme) click-delta drs-font-delta)])
-              (insert/delta this (format (string-append ", " (string-constant version) " ~a.\n") (version:version))
+              (insert/delta this (format (string-append ", " (string-constant version) " ~a [~a].\n") 
+                                         (version:version) (system-type 'gc))
                             welcome-delta)
               (set-clickback before after 
                              (λ args (drscheme:app:about-drscheme))

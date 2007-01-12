@@ -42,6 +42,7 @@ AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original director
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 AC_ARG_ENABLE(llvm,    [  --enable-llvm           compile llvm support (disabled by default)], , enable_llvm=no)
 
+AC_ARG_ENABLE(sgc,     [  --enable-cgcdefault     use CGC (Boehm of Senora) as default build])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
 AC_ARG_ENABLE(account, [  --enable-account        3m: use memory-accounting GC (enabled by default)], , enable_account=yes)
@@ -170,6 +171,7 @@ if test "${mandir}" != '${prefix}/man' ; then
  unixstyle=yes
 fi
 
+MAKE_COPYTREE=no
 if test "${unixstyle}" = "no" ; then
   if test "${prefix}" = "NONE" ; then
     inplacebuild=yes
@@ -233,6 +235,8 @@ show_explicitly_enabled()
   fi
 }
 
+show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
+
 show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
@@ -284,7 +288,7 @@ OPTIONS=
 GCDIR=gc
 
 MZBINTARGET=normal-bin
-MZINSTALLTARGET=normal-install
+MZINSTALLTARGET=unix-install
 
 MZOPTIONS=
 CGCOPTIONS=
@@ -316,6 +320,14 @@ XFT_EXTRA_FLAGS=
 XFT_EXTRA_LIBS=
 
 EXE_SUFFIX=
+
+MMM=3m
+MMM_INSTALLED=
+MMM_CAP_INSTALLED=
+CGC=cgc
+CGC_INSTALLED=cgc
+CGC_CAP_INSTALLED=CGC
+MAIN_VARIANT=3m
 
 ###### OSKit stuff #######
 
@@ -418,15 +430,9 @@ if test "${enable_mred}" = "yes" ; then
    AC_PATH_XTRA
   fi
 
-  MAKE_MRED=mr
-  MAKE_MRED3M=mr3m
-  MAKE_MREDINSTALL=mrinstall
-  MAKE_MREDINSTALL3M=mrinstall3m
+  MAKE_MRED=mred
 else
-  MAKE_MRED=
-  MAKE_MRED3M=
-  MAKE_MREDINSTALL=
-  MAKE_MREDINSTALL3M=
+  MAKE_MRED=no
 fi
 
 AC_CHECK_LIB(m, cos)
@@ -638,6 +644,16 @@ case "$MACH" in
   *)
     ;;
 esac
+
+############## GC variant ################
+
+if test "${enable_cgcdefault}" ; then
+   MMM_INSTALLED=3m
+   MMM_CAP_INSTALLED=3m
+   CGC_INSTALLED=
+   CGC_CAP_INSTALLED=
+   MAIN_VARIANT=cgc
+fi
 
 ############## SGC ################
 
@@ -1258,9 +1274,6 @@ AC_SUBST(MRLIBINSTALL)
 AC_SUBST(LIBFINISH)
 
 AC_SUBST(MAKE_MRED)
-AC_SUBST(MAKE_MRED3M)
-AC_SUBST(MAKE_MREDINSTALL)
-AC_SUBST(MAKE_MREDINSTALL3M)
 AC_SUBST(MAKE_WBUILD)
 AC_SUBST(MAKE_COPYTREE)
 AC_SUBST(MAKE_FINISH)
@@ -1298,6 +1311,14 @@ AC_SUBST(libpltdir)
 AC_SUBST(includepltdir)
 AC_SUBST(docdir)
 AC_SUBST(COLLECTS_PATH)
+
+AC_SUBST(MMM)
+AC_SUBST(MMM_INSTALLED)
+AC_SUBST(MMM_CAP_INSTALLED)
+AC_SUBST(CGC)
+AC_SUBST(CGC_INSTALLED)
+AC_SUBST(CGC_CAP_INSTALLED)
+AC_SUBST(MAIN_VARIANT)
 
 mk_needed_dir()
 {

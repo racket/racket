@@ -71,13 +71,6 @@ START_XFORM_SUSPEND;
 #  include <Events.h>
 # endif
 #endif
-#ifdef MACINTOSH_SIOUX
-# include <console.h>
-# include <SIOUX.h>
-#endif
-#ifdef MACINTOSH_SET_STACK
-# include <Memory.h>
-#endif
 #ifdef MACINTOSH_EVENTS
 # ifndef OS_X
 #  include "simpledrop.h"
@@ -171,7 +164,6 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 /*========================================================================*/
 
 #ifndef NO_USER_BREAK_HANDLER
-# ifndef MAC_MZ_GUI_ENABLED
 
 static void user_break_hit(int ignore)
 {
@@ -189,7 +181,6 @@ static void user_break_hit(int ignore)
 #  endif
 }
 
-# endif
 #endif
 
 #if defined(_IBMR2)
@@ -267,7 +258,6 @@ static int main_after_dlls(int argc, MAIN_char **MAIN_argv)
 
 #if defined(MZ_PRECISE_GC)
   stack_start = (void *)&__gc_var_stack__;
-  GC_init_type_tags(_scheme_last_type_, scheme_pair_type, scheme_weak_box_type, scheme_ephemeron_type, scheme_rt_weak_array);
 #endif
 
   scheme_set_stack_base(stack_start, 1);
@@ -315,78 +305,8 @@ int actual_main(int argc, char *argv[])
 {
   int exit_val;
 
-#ifdef MACINTOSH_SET_STACK
-  long calcLimit;
-  THz zone;
-	
-  /* 1 MB stack: */
-  zone = GetZone();
-  calcLimit = ((long)LMGetCurStackBase()-(*(long *)zone)-sizeof(Zone)) - 1048576;
-  if (calcLimit % 2)
-    calcLimit++;
-  SetApplLimit((Ptr)((*(long *)zone)+sizeof(Zone)+calcLimit));
-#endif
-
-#ifdef MAC_MZ_GUI_ENABLED
-  MaxApplZone();
-	
-  InitGraf(&qd.thePort);		/* initialize Mac stuff */
-  InitFonts();
-  InitWindows();
-  InitMenus();
-  TEInit();
-  InitDialogs(NULL);
-  
-  MoreMasters();
-  MoreMasters();
-	
-# ifdef MACINTOSH_SIOUX
-  SIOUXSettings.initializeTB = 0;
-# endif
-
-  scheme_handle_aewait_event = handle_one;
-
-  scheme_sleep = MacSleep;
-
-  GC_out_of_memory = MacOutOfMemory;
-
-  Drop_GetArgs(&argc, &argv);
-#endif // MAC_MZ_GUI_ENABLED
-
-#ifdef MACINTOSH_SIOUX
-  { 
-    KeyMap keys;
-    GetKeys(keys);
-    if (keys[1] & 32768L) { /* Cmd key down */
-	    int argc2;
-	    char **argv2;
-	    argc2 = ccommand(&argv2);
-	    if (argc2 > 1) {
-	      int i, j;
-	      char **both = (char **)malloc(sizeof(char *) * (argc + argc2 - 1));
-	      for (i = 0; i < argc; i++) {
-	        both[i] = argv[i];
-	      }
-	      for (j = 1; j < argc2; j++, i++) {
-	        both[i] = argv2[j];
-	      }
-	        
-	      argv = both;
-	      argc += argc2 - 1;
-	    }
-	}
-  }
-  
-  SIOUXSettings.autocloseonquit = 0;
-  SIOUXSettings.asktosaveonclose = 0;
-#endif
-
 #ifndef NO_USER_BREAK_HANDLER
-# ifndef MAC_MZ_GUI_ENABLED
   MZ_SIGSET(SIGINT, user_break_hit);
-# else
-  scheme_check_for_break = check_break_flag;
-# endif
 #endif
 
   exit_val = run_from_cmd_line(argc, argv, scheme_basic_env, cont_run);
@@ -408,12 +328,6 @@ static int cont_run(FinishArgs *f)
 
 static void do_scheme_rep(Scheme_Env *env)
 {
-#ifndef NO_USER_BREAK_HANDLER
-# ifdef MAC_MZ_GUI_ENABLED
-  scheme_set_param(scheme_config, MZCONFIG_ENABLE_BREAK, scheme_true);
-# endif
-#endif
-
   /* enter read-eval-print loop */
   {
     Scheme_Object *rep;

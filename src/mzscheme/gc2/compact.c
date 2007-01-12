@@ -164,9 +164,9 @@ Type_Tag weak_box_tag = 42; /* set by client */
 Type_Tag ephemeron_tag = 42; /* set by client */
 Type_Tag weak_array_tag  = 42; /* set by client */
 
-#define gc_on_free_list_tag 257
+#define gc_on_free_list_tag 511
 
-#define _num_tags_ 260
+#define _num_tags_ 512
 
 Size_Proc size_table[_num_tags_];
 Mark_Proc mark_table[_num_tags_];

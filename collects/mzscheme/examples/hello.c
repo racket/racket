@@ -2,18 +2,21 @@
    MzScheme extension example that returns the string "Hello, world!"
    when loaded.
 
-   Compile with:
-     mzc --cc hello.c
-     mzc --ld hello.so hello.o
-   And load with
-     (load-extension "hello.so")
-
    For 3m, compile with:
      mzc --xform hello.c
      mzc --3m --cc hello.3m.c
      mzc --3m --ld hello.so hello.o
    And load with
-     (load-extension "hello.so")
+     (load-extension "hello.so") ; or "hello.dylib" for Mac OS X
+                                 ; or "hello.dll" for Windows
+
+   For CGC, compile with:
+     mzc --cgc --cc hello.c
+     mzc --cgc --ld hello.so hello.o
+   And load with
+     (load-extension "hello.so") ; or "hello.dylib" for Mac OS X
+                                 ; or "hello.dll" for Windows
+
 */
 
 #include "escheme.h"

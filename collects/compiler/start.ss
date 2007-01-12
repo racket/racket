@@ -155,7 +155,10 @@
 	 ("Skip eval of top-level syntax, etc. for -e/-c/-o/-z")]
 	[("--3m")
 	 ,(lambda (f) (compiler:option:3m #t))
-	 ("Compile/link for 3m, with -e/-c/-o/etc.")]
+	 ("Compile/link for 3m, with -e/-c/-o/--exe/etc.")]
+	[("--cgc")
+	 ,(lambda (f) (compiler:option:3m #f))
+	 ("Compile/link for CGC, with -e/-c/-o/--exe/etc.")]
 	[("--embedded")
 	 ,(lambda (f) (compiler:option:compile-for-embedded #t))
 	 ("Compile for embedded run-time engine, with -c/-o/-g")]
@@ -425,8 +428,9 @@
 		   (void)))))))
      (list "file/directory/collection" "file/directory/sub-collection")))
 
-  (printf "mzc version ~a, Copyright (c) 2004-2007 PLT Scheme Inc.~n"
-	  (version))
+  (printf "mzc v~a [~a], Copyright (c) 2004-2007 PLT Scheme Inc.~n"
+	  (version)
+          (system-type 'gc))
 
   (define-values (mode source-files prefix)
     (parse-options (current-command-line-arguments)))
@@ -439,9 +443,13 @@
     (when (compiler:option:compile-for-embedded)
       (error 'mzc "cannot ~a an extension for an embedded MzScheme" action)))
   
-  (when (compiler:option:3m)
-    (link-variant '3m)
-    (compile-variant '3m))
+  (if (compiler:option:3m)
+      (begin
+        (link-variant '3m)
+        (compile-variant '3m))
+      (begin
+        (link-variant 'cgc)
+        (compile-variant 'cgc)))
   
   (case mode
     [(compile)
@@ -545,7 +553,7 @@
 			 'mzc:create-embedding-executable)
 	dest
 	#:mred? (eq? mode 'gui-exe) 
-	#:variant (if (compiler:option:3m) '3m 'normal)
+	#:variant (if (compiler:option:3m) '3m 'cgc)
 	#:verbose? (compiler:option:verbose)
 	#:modules (cons
 		   `(#%mzc: (file ,(car source-files)))

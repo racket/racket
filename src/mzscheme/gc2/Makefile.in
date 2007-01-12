@@ -19,7 +19,7 @@ LIBS = @LIBS@
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
-XFORM_SETUP = ../mzscheme -rq $(srcdir)/xform.ss --setup
+XFORM_SETUP = ../mzscheme@CGC@ -rq $(srcdir)/xform.ss --setup
 XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" -o
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
@@ -305,8 +305,8 @@ EXTRA_OBJS_L = ../src/gmp.@LTO@ @FOREIGN_OBJSLIB_IF_USED@
 	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L)
 	$(RANLIB) ../libmzscheme3m.@LIBSFX@
 
-../mzscheme3m@NOT_OSX@: main.@LTO@ ../libmzscheme3m.@LIBSFX@
-	cd ..; @MZLINKER@ -o mzscheme3m @PROFFLAGS@ gc2/main.@LTO@ libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+../mzscheme@MMM@@NOT_OSX@: main.@LTO@ ../libmzscheme3m.@LIBSFX@
+	cd ..; @MZLINKER@ -o mzscheme@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
 # The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
 #  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative
 #  path.
@@ -319,15 +319,15 @@ $(MZFWMMM): ../libmzscheme3m.@LIBSFX@
 	rm -f PLT_MzScheme.framework/PLT_MzScheme
 	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme	
 
-../mzscheme3m@OSX@: $(MZFWMMM) main.@LTO@
-	$(CC) -o ../mzscheme3m @PROFFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
+../mzscheme@MMM@@OSX@: $(MZFWMMM) main.@LTO@
+	$(CC) -o ../mzscheme@MMM@ @PROFFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
 	mkdir -p "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m"
 	cp "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme"
-	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../mzscheme3m"
+	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../mzscheme@MMM@"
 
 
 clean:
-	/bin/rm -f ../mzscheme3m *.@LTO@ $(XSRCDIR)/*
+	/bin/rm -f ../mzscheme@MMM@ *.@LTO@ $(XSRCDIR)/*
 	/bin/rm -rf PLT_MzScheme.framework
 
 #--------------------------------------------------

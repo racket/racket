@@ -18,25 +18,16 @@
   ;; either a pathname or a pair with a pathname in its cdr; the
   ;; `path->main-collects-relative' pathname will itself be a pair.
 
-  ;; we need to compare paths to find when something is in the plt
+  ;; We need to compare paths to find when something is in the plt
   ;; tree -- this does some basic "normalization" that should work
-  ;; fine: getting rid of `.' and `..' (simplify-path) and collapsing
-  ;; `//' to `/' (expand-path).  Using `expand-path' also expands `~'
-  ;; and `~user', but this should not be a problem in practice.
-  (define (simplify-bytes-path bytes)
-    (path->bytes (simplify-path (expand-path (bytes->path bytes)))))
-  ;; on Windows, turn backslashes to forward slashes
-  (define simplify-path*
-    (if (eq? 'windows (system-type))
-	(lambda (bytes)
-          (simplify-bytes-path (regexp-replace* #rx#"\\\\" bytes #"/")))
-	simplify-bytes-path))
+  ;; fine: getting rid of `.' and `..', collapsing multiple
+  ;; `/'s to one `/', and converting '/'s to '\'s under Windows.
+  (define (simplify-path* bytes)
+    (path->bytes (simplify-path (bytes->path bytes))))
 
   (define main-collects-dir/
     (delay (let ([dir (find-collects-dir)])
-             (and dir (regexp-replace #rx#"/*$"
-                                      (simplify-path* (path->bytes dir))
-                                      #"/")))))
+             (and dir (simplify-path* (path->bytes (path->directory-path dir)))))))
 
   (define (maybe-cdr-op fname f)
     (lambda (x)

@@ -15,18 +15,25 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmzgc", "..\libmzgc\libmz
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Win32 = Debug|Win32
 		Release|Win32 = Release|Win32
+		Debug|Win32 = Debug|Win32
+		3m|Win32 = 3m|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{36F31050-55C6-41A3-A23E-3008EBFC1273}.3m|Win32.ActiveCfg = 3m|Win32
+		{36F31050-55C6-41A3-A23E-3008EBFC1273}.3m|Win32.Build.0 = 3m|Win32
 		{36F31050-55C6-41A3-A23E-3008EBFC1273}.Debug|Win32.ActiveCfg = Debug|Win32
 		{36F31050-55C6-41A3-A23E-3008EBFC1273}.Debug|Win32.Build.0 = Debug|Win32
 		{36F31050-55C6-41A3-A23E-3008EBFC1273}.Release|Win32.ActiveCfg = Release|Win32
 		{36F31050-55C6-41A3-A23E-3008EBFC1273}.Release|Win32.Build.0 = Release|Win32
+		{4894077C-B1DF-438E-9978-96628CD3F030}.3m|Win32.ActiveCfg = Release|Win32
+		{4894077C-B1DF-438E-9978-96628CD3F030}.3m|Win32.Build.0 = Release|Win32
 		{4894077C-B1DF-438E-9978-96628CD3F030}.Debug|Win32.ActiveCfg = Debug|Win32
 		{4894077C-B1DF-438E-9978-96628CD3F030}.Debug|Win32.Build.0 = Debug|Win32
 		{4894077C-B1DF-438E-9978-96628CD3F030}.Release|Win32.ActiveCfg = Release|Win32
 		{4894077C-B1DF-438E-9978-96628CD3F030}.Release|Win32.Build.0 = Release|Win32
+		{3FAA1824-F251-4A4F-A585-33308CCC51A8}.3m|Win32.ActiveCfg = Release|Win32
+		{3FAA1824-F251-4A4F-A585-33308CCC51A8}.3m|Win32.Build.0 = Release|Win32
 		{3FAA1824-F251-4A4F-A585-33308CCC51A8}.Debug|Win32.ActiveCfg = Debug|Win32
 		{3FAA1824-F251-4A4F-A585-33308CCC51A8}.Debug|Win32.Build.0 = Debug|Win32
 		{3FAA1824-F251-4A4F-A585-33308CCC51A8}.Release|Win32.ActiveCfg = Release|Win32
