@@ -24,11 +24,11 @@
   (define frtime-version "0.3b -- Tue Nov 9 13:39:45 2004")
   
   (define (compose-continuation-mark-sets2 s1 s2)
-    s2)
+    (append s1 s2))
   
   
-  
-  
+  (define (my-ccm)
+    (continuation-mark-set->list (current-continuation-marks) 'drscheme-debug-continuation-mark-key))
   
   ;;;;;;;;;;;;;;;;
   ;; Structures ;;
@@ -65,7 +65,7 @@
                     (lambda (fn . args)
                       (unregister #f fn) ; clear out stale dependencies from previous apps
                       (let* (; revisit error-reporting for switched behaviors
-                             [ccm (current-continuation-marks)]
+                             [ccm (my-ccm)]
                              [app-fun (lambda (cur-fn)
                                         (let ([res (apply cur-fn args)])
                                           (when (signal? res)
@@ -152,8 +152,8 @@
                                      "extra marks present!" (extra-cont-marks)))))
           (compose-continuation-mark-sets2
            (extra-cont-marks)
-           (current-continuation-marks)))
-        (current-continuation-marks)))
+           (my-ccm)))
+        (my-ccm)))
   
   ;; Simple Structure Combinators
   
@@ -678,7 +678,12 @@
        (let ([new-value (call-with-parameterization
                          params
                          thunk)])
-         (if (or (signal:unchanged? b) (not (eq? value new-value)))
+         (if (or (signal:unchanged? b)
+                 (not (or (boolean? new-value)
+                          (symbol? new-value)
+                          (number? new-value)
+                          (string? new-value)))
+                 (not (eq? value new-value)))
            (begin
              #;(if (signal? new-value)
                  (raise (make-exn:fail

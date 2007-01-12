@@ -267,6 +267,12 @@
           (loop (cdr lst) (cons (car lst) acc))
           acc)))
   
+  ;; This do-nothing function is only here so that frtime programs can
+  ;; mark segments of code that shouldn't be optimized in the frtime-opt
+  ;; language.  Ironically, frtime-opt has its *own* definition of this
+  ;; function; this one is just for source compatibility.
+  (define (dont-optimize x) x)
+
   (provide cond 
            and 
            or 
@@ -298,7 +304,7 @@
                    equal? eqv? < > <= >= 
                    add1 cos sin tan symbol->string symbol?
                    number->string string->symbol eof-object? exp expt even? odd? string-append eval ; list-ref
-                   sub1 sqrt not number? string? zero? min max modulo
+                   sub1 sqrt not number? string string? zero? min max modulo
                    string->number void? rational? char? char-upcase char-ci>=? char-ci<=?
                    string>=? char-upper-case? char-alphabetic?
                    string<? string-ci=? string-locale-ci>?
@@ -319,7 +325,7 @@
                    seconds->date
                    expand syntax-object->datum exn-message continuation-mark-set->list exn-continuation-marks
                    exn:fail? regexp-match
-                   list->vector make-vector)
+                   vector->list list->vector make-vector)
             
            (rename eq? mzscheme:eq?)
            make-exn:fail  current-inspector make-inspector
@@ -332,7 +338,7 @@
            error set! printf fprintf current-error-port for-each void
            procedure-arity-includes? raise-type-error raise thread
            current-continuation-marks
-           raise-mismatch-error require-for-syntax define-syntax syntax-rules syntax-case
+           raise-mismatch-error require-for-syntax define-syntax define-syntaxes syntax-rules syntax-case
           ; set-eventspace
 	   ;install-errortrace-key
            (lifted:nonstrict format)
@@ -359,9 +365,12 @@
            current-security-guard
            make-security-guard
            dynamic-require
+           path? complete-path? absolute-path? relative-path? path-string?
            path->complete-path
-           string->path
-           split-path
+           string->path path->string
+           bytes->path path->bytes
+           split-path simplify-path normal-case-path expand-path resolve-path
+           path-replace-suffix
            current-directory
            exit
            system-type 
@@ -377,6 +386,7 @@
            with-input-from-file
            read
          
+           dont-optimize
            
           ; null
         ;   make-struct-field-mutator

@@ -32,8 +32,8 @@
   ;  (syntax-rules ()
   ;    [(_ expr clause ...) (lift #t (match-lambda clause ...) expr)]))
   
-  (define (->boolean x)
-    (if x #t #f))
+  (define (frp:->boolean x)
+    (lift #t (lambda (x) (if x #t #f)) x))
   
   (define-syntax frp:if
     (syntax-rules ()
@@ -49,12 +49,12 @@
             [(undefined? b) undef-exp]
             [b then-exp]
             [else else-exp]))
-        (lift #t ->boolean test-exp))]))
+        (frp:->boolean test-exp))]))
   
-  (define (copy-list lst)
+  (define (frp:copy-list lst)
     (frp:if (null? lst)
             ()
-            (frp:cons (frp:car lst) (copy-list (frp:cdr lst)))))
+            (frp:cons (frp:car lst) (frp:copy-list (frp:cdr lst)))))
   
   (define-syntax frp:let-values
     (syntax-rules ()
@@ -78,7 +78,7 @@
        (let ([the-rest-arg (get-rest-arg #'bindings)])
          (if the-rest-arg
              #`(bindings
-                 (let ([#,the-rest-arg (copy-list #,the-rest-arg)])
+                 (let ([#,the-rest-arg (frp:copy-list #,the-rest-arg)])
                    body0 body1 ...))
              #'(bindings body0 body1 ...)))]))
   
@@ -426,4 +426,6 @@
            (rename frp:make-struct-field-mutator make-struct-field-mutator)
            (rename frp:define-struct define-struct)
            (rename frp:provide provide)
-           (rename frp:require require)))
+           (rename frp:require require)
+           frp:copy-list
+           frp:->boolean))

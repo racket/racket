@@ -1,16 +1,16 @@
 
 (module date mzscheme
 
-  (require (lib "list.ss")
-           (rename "frtime.ss" frtime:provide provide))
+  (require "list.ss")
+  (require (rename "frtime.ss" frtime:provide provide))
 
   (frtime:provide
-   (lifted date->string
-           date-display-format
-           find-seconds
-           
-           date->julian/scalinger
-           julian/scalinger->string))
+	(lifted date->string
+	  date-display-format
+	  find-seconds
+	  
+	  date->julian/scalinger
+	  julian/scalinger->string))
 
 
   ;; Support for Julian calendar added by Shriram;
@@ -117,14 +117,14 @@
 		[(chinese)
 		 (values
 		  (list year "/" num-month "/" day
-			" libai" (case (date-week-day date)
-				   [(0) "tian"]
-				   [(1) "yi"]
-				   [(2) "er"]
-				   [(3) "san"]
-				   [(4) "si"]
-				   [(5) "wu"]
-				   [(6) "liu"]
+			" \u661F\u671F" (case (date-week-day date)
+				   [(0) "\u5929"]
+				   [(1) "\u4E00"]
+				   [(2) "\u4E8C"]
+				   [(3) "\u4e09"]
+				   [(4) "\u56DB"]
+				   [(5) "\u4E94"]
+				   [(6) "\u516D"]
 				   [else ""]))
 		  (list " " hour24 ":" minute ":" second))]
 		[(indian) 
