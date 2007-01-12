@@ -1308,11 +1308,7 @@ Scheme_Object *scheme_marshal_wrap_set(Scheme_Marshal_Tables *mt, Scheme_Object 
       mt->rn_saved = rn_saved;
     }
     if (mt->pass >= 2) {
-      /* REMOVEME */
-      obj = scheme_hash_get(mt->rn_saved, obj);
-      if (!scheme_equal(obj, val))
-        scheme_signal_error("marshaled form changed on third pass: %V versus %V",
-                            obj, val);
+      /* Done already */
     } else
       scheme_hash_set(mt->rn_saved, obj, val);
 
