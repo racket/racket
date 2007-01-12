@@ -13,6 +13,10 @@
 
   (define-struct handin (r w))
 
+  ;; errors to the user: no need for a "foo: " prefix
+  (define (error* fmt . args)
+    (error (apply format fmt args)))
+
   (define (write+flush port . xs)
     (for-each (lambda (x) (write x port) (newline port)) xs)
     (flush-output port))
@@ -23,9 +27,9 @@
 
   (define (wait-for-ok r who . reader)
     (let ([v (if (pair? reader) ((car reader)) (read r))])
-      (unless (eq? v 'ok) (error 'handin-connect "~a error: ~a" who v))))
+      (unless (eq? v 'ok) (error* "~a error: ~a" who v))))
 
-  ;; ssl connection, makes an easier error message if no connection
+  ;; ssl connection, makes a readable error message if no connection
   (define (connect-to server port)
     (define pem (in-this-collection "server-cert.pem"))
     (define ctx (ssl-make-client-context))
@@ -67,8 +71,7 @@
       (write+flush w 'get-user-fields 'bye)
       (let ([v (read r)])
         (unless (and (list? v) (andmap string? v))
-          (error 'handin-connect
-                 "failed to get user-fields list from server"))
+          (error* "failed to get user-fields list from server"))
         (wait-for-ok r "get-user-fields")
         (close-handin-ports h)
         v)))
@@ -78,8 +81,7 @@
       (write+flush w 'get-active-assignments)
       (let ([v (read r)])
         (unless (and (list? v) (andmap string? v))
-          (error 'handin-connect
-                 "failed to get active-assignment list from server"))
+          (error* "failed to get active-assignment list from server"))
         v)))
 
   (define (submit-assignment h username passwd assignment content
@@ -101,8 +103,7 @@
       (wait-for-ok r "login")
       (write+flush w (bytes-length content))
       (let ([v (read r)])
-	(unless (eq? v 'go)
-	  (error 'handin-connect "upload error: ~a" v)))
+        (unless (eq? v 'go) (error* "upload error: ~a" v)))
       (display "$" w)
       (display content w)
       (flush-output w)
@@ -112,8 +113,7 @@
       ;; we expect a string and a style-list to be used with `message-box' and
       ;; the resulting value written back
       (let ([v (read/message)])
-        (unless (eq? 'confirm v)
-          (error (format "submit error: ~a" v))))
+        (unless (eq? 'confirm v) (error* "submit error: ~a" v)))
       (on-commit)
       (write+flush w 'check)
       (wait-for-ok r "commit" read/message)
@@ -128,7 +128,7 @@
         'get-submission)
       (let ([len (read r)])
         (unless (and (number? len) (integer? len) (positive? len))
-          (error 'handin-connect "bad response from server: ~a" len))
+          (error* "bad response from server: ~a" len))
         (let ([buf (begin (regexp-match #rx"[$]" r) (read-bytes len r))])
           (wait-for-ok r "get-submission")
           (close-handin-ports h)
@@ -164,7 +164,7 @@
         'get-user-info 'bye)
       (let ([v (read r)])
         (unless (and (list? v) (andmap string? v))
-          (error 'handin-connect "failed to get user-info list from server"))
+          (error* "failed to get user-info list from server"))
         (wait-for-ok r "get-user-info")
         (close-handin-ports h)
         v)))
