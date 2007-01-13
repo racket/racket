@@ -844,7 +844,9 @@
  (using-a-textbook-after "?")
  
  ;; next two are before and after a language
- (start-with-before "Anfangen mit ")
+ (start-with-before "Mit ")
+
+ (start-with-after "anfangen?")
 
  (seasoned-plt-schemer? "Erfahrener PLT-Schemer?")
  (looking-for-standard-scheme? "Wollen Sie Standard-Scheme?")
