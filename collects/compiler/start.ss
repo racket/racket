@@ -149,16 +149,19 @@
 	 ,(lambda (f name) (plt-output name) 'plt)
 	 (,(format "Create .plt <archive> containing relative files/dirs")
 	  "archive")]]
+       [once-any
+	[("--3m")
+	 ,(lambda (f) (compiler:option:3m #t))
+	 (,(format "Compile/link for 3m, with -e/-c/-o/--exe/etc.~a"
+                   (if (eq? '3m (system-type 'gc)) " [current default]" "")))]
+	[("--cgc")
+	 ,(lambda (f) (compiler:option:3m #f))
+	 (,(format "Compile/link for 3m, with -e/-c/-o/--exe/etc.~a"
+                   (if (eq? 'cgc (system-type 'gc)) " [current default]" "")))]]
        [once-each
 	[("-m" "--module")
 	 ,(lambda (f) (module-mode #t))
 	 ("Skip eval of top-level syntax, etc. for -e/-c/-o/-z")]
-	[("--3m")
-	 ,(lambda (f) (compiler:option:3m #t))
-	 ("Compile/link for 3m, with -e/-c/-o/--exe/etc.")]
-	[("--cgc")
-	 ,(lambda (f) (compiler:option:3m #f))
-	 ("Compile/link for CGC, with -e/-c/-o/--exe/etc.")]
 	[("--embedded")
 	 ,(lambda (f) (compiler:option:compile-for-embedded #t))
 	 ("Compile for embedded run-time engine, with -c/-o/-g")]
