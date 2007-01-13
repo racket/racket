@@ -331,7 +331,7 @@ osx-install-3m-final:
 
 unix-cygwin-install:
 	$(MAKE) unix-install
-	cd dynsrc; $(MAKE) cygwin-install
+	cd dynsrc; $(MAKE) cygwin-install-core
 
 unix-cygwin-install-cgc:
 	$(MAKE) unix-install-cgc

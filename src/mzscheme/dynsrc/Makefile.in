@@ -54,6 +54,11 @@ dynexmpl.o: $(srcdir)/dynexmpl.c  $(HEADERS)
 ILIBDIR = $(libpltdir)
 
 cygwin-install:
+	$(MAKE) cygwin-install-core
+	$(MAKE) cygwin-install-cgc
+	$(MAKE) cygwin-install-3m
+
+cygwin-install-core:
 	gcc -c $(srcdir)/init.cc
 	gcc -c $(srcdir)/fixup.c
 	cp $(srcdir)/mzdyn.def mzdynx.def
