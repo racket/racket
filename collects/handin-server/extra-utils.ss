@@ -93,9 +93,6 @@
 ;;   filter
 ;; * snip->text is used earlier in the process, where comment-box text is still
 ;;   available
-;; * test-boxes are registered through some hacked up code that will turn them
-;;   into an editor% with text that input-port->text-input-port will then spit
-;;   out.
 
 (require (lib "framework.ss" "framework")) ; for drscheme snips, used below
 
@@ -191,46 +188,14 @@
       (input->process->output maxwidth textualize? untabify? bad-re)
       (get-output-bytes (current-output-port)))))
 
-;; ---------------------------------------------------------
-;; This code will hack textualization of test and text boxes
+;; ------------------------------------------------
+;; This code will hack textualization of text boxes
 
 (define (insert-to-editor editor . xs)
   (for-each (lambda (x)
               (send editor insert
                     (if (string? x) x (make-object editor-snip% x))))
             xs))
-
-;; support for "test-case-box%"
-(define test-sc
-  (new (class snip-class%
-         (define/override (read f)
-           (let ([test (new test%)]) (send test read-from-file f) test))
-         (super-new))))
-(define test%
-  (class editor-snip%
-    (inherit set-snipclass get-editor)
-    (define to-test       (new text%))
-    (define expected      (new text%))
-    (define predicate     (new text%))
-    (define should-raise  (new text%))
-    (define error-message (new text%))
-    (define/public (read-from-file f)
-      (unless (eq? 2 (send test-sc reading-version f)) (error "BOOM"))
-      (send to-test       read-from-file f)
-      (send expected      read-from-file f)
-      (send predicate     read-from-file f)
-      (send should-raise  read-from-file f)
-      (send error-message read-from-file f)
-      (send f get (box 0))  ; enabled?
-      (send f get (box 0))  ; collapsed?
-      (send f get (box 0))) ; error-box
-    (super-new)
-    (set-snipclass test-sc)
-    (insert-to-editor (get-editor)
-      "{{TEST:\n  expression: " to-test "\n  should be:  " expected "\n}}")))
-(send test-sc set-classname "test-case-box%")
-(send test-sc set-version 2)
-(send (get-the-snip-class-list) add test-sc)
 
 ;; support for "text-box%"
 (define text-box-sc
