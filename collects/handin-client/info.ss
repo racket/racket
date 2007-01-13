@@ -8,9 +8,9 @@
 
   ;; The handin tool is disabled by default, uncomment these three lines to
   ;; enable it
-  (define tools      `("client-gui.ss"))
-  (define tool-names `(,name))
-  (define tool-icons `("icon.png"))
+  ;(define tools      `("client-gui.ss"))
+  ;(define tool-names `(,name))
+  ;(define tool-icons `("icon.png"))
   ;; Modify the provided "icon.png" file to your school/lab/etc logo.
 
   ;; You must define a server:port for the client to be functional
