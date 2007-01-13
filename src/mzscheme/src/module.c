@@ -5541,6 +5541,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 	  menv = scheme_module_access(modidx, env, 0);
 	  val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
 	  scheme_add_global_symbol(iname, val, env);
+          scheme_shadow(env, iname, 1);
 	} else if (!for_unmarshal || !has_context) {
 	  if (!save_marshal_info && !has_context && can_save_marshal)
 	    save_marshal_info = 1;
