@@ -247,26 +247,20 @@
                          (exn:fail:contract:variable-id x))))])
       (e #`(#,namespace-variable-value '#,id #t))))
 
-  (define (mk-args args)
-    (let loop ([l args])
-      (if (null? l)
-          ""
-          (string-append " " (format "~e" (car l)) (loop (cdr l))))))
-
   (define test-history-enabled (make-parameter #f))
   (define test-history (make-parameter null))
 
   (define (format-history one-test)
     (if (test-history-enabled)
-        (format "(begin~a)"
-                (apply string-append
-                       (map (lambda (s)
-                              (format " ~a" s))
-                            (reverse (test-history)))))
-        one-test))
+      (format "(begin~a)"
+              (apply string-append (map (lambda (s) (format " ~a" s))
+                                        (reverse (test-history)))))
+      one-test))
 
   (define (check-proc e result equal? f . args)
-    (let ([test (format "(~a~a)" f (mk-args args))])
+    (let ([test (format "(~a~a)" f
+                        (apply string-append
+                               (map (lambda (a) (format " ~e" a)) args)))])
       (when (test-history-enabled)
         (test-history (cons test (test-history))))
       (current-run-status (format "running instructor-supplied test ~a"
