@@ -504,7 +504,7 @@ int WNE(EventRecord *e, double sleep_secs)
 
   waiting_for_next_event = 1;
 
-  r = WaitNextEvent(everyEvent, e, sleep_secs * 60, mouseRgn);
+  r = WaitNextEvent(everyEvent, e, (sleep_secs < 0) ? 0x7FFFFFFF : sleep_secs * 60, mouseRgn);
 
   waiting_for_next_event = 0;
 
