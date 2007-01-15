@@ -969,6 +969,7 @@
 							   mk-method-temp
 							   (map car pubments))]
 				      [(public-final-name ...) (map car public-finals)]
+				      [(public-final-name-localized ...) (map lookup-localize (map car public-finals))]
 				      [(public-final-temp ...) (map
 								mk-method-temp
 								(map car public-finals))]
