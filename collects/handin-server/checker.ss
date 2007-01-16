@@ -1,4 +1,4 @@
-(module extra-utils mzscheme
+(module checker mzscheme
 
 (require "utils.ss" (lib "file.ss") (lib "list.ss") (lib "class.ss")
          (lib "mred.ss" "mred"))
