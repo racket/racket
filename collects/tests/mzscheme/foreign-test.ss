@@ -40,11 +40,8 @@
 (let ([c  (build-path (this-expression-source-directory) "foreign-test.c")]
       [o  (build-path (current-directory) "foreign-test.o")]
       [so (build-path (current-directory)
-                      (string-append "foreign-test."
-                                     (case (system-type)
-                                       [(unix)    "so"]
-                                       [(macosx)  "dylib"]
-                                       [(windows) "dll"])))])
+                      (bytes->path (bytes-append #"foreign-test"
+                                                 (system-type 'so-suffix))))])
   (when (file-exists? o) (delete-file o))
   (when (file-exists? so) (delete-file so))
   (parameterize ([current-standard-link-libraries '()])
