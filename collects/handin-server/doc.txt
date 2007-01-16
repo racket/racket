@@ -705,13 +705,14 @@ _utils.ss_
   submission byte string.  The byte string is opened for reading, with
   line-counting enabled.
 
-> (call-with-evaluator language teachpack-paths program-port proc)
+> (call-with-evaluator language teachpack-paths input-program proc)
   Calls `proc' with an evaluator for the given language, teachpack
-  paths, and initial definition content as supplied by a port.  It
-  also sets the current error-value print handler to print values in a
-  way suitable for `lang', it initializes `current-run-status' with
-  "executing your code", and it catches all exceptions to re-raise
-  them in a form suitable as a submission error.
+  paths, and initial definition content as supplied by input-program
+  (see `make-evaluator').  It also sets the current error-value print
+  handler to print values in a way suitable for `lang', it initializes
+  `current-run-status' with "executing your code", and it catches all
+  exceptions to re-raise them in a form suitable as a submission
+  error.
 
 > (call-with-evaluator/submission language teachpack-paths bytes proc)
   Like `call-with-evaluator', but the definitions content is supplied

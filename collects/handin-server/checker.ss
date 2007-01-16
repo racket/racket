@@ -689,9 +689,8 @@
     [(_ expr result equal?)
      (let ([val ((submission-eval) `expr)])
        (unless (equal? result val)
-         (error*
-          "your code failed a test: ~a evaluated to ~a, expecting ~a"
-          (->disp 'expr) (->disp val) (->disp result))))]))
+         (error* "your code failed a test: ~a evaluated to ~a, expecting ~a"
+                 (->disp 'expr) (->disp val) (->disp result))))]))
 
 (provide !all-covered)
 (define (!all-covered)
