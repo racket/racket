@@ -603,7 +603,8 @@ by this function.
 
 > get-uncovered-expressions
   A special value that, when passed to an evaluator created by
-  `make-evaluator', will return a list of uncovered syntax objects.
+  `make-evaluator' or applied on one, will return a list of uncovered
+  syntax objects.
 
 > namespace-specs
   A parameter that holds a list of values that specify how to create a

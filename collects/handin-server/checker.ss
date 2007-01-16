@@ -695,7 +695,7 @@
 
 (provide !all-covered)
 (define (!all-covered)
-  (let ([uncovered ((submission-eval) #f 'uncovered-expressions)])
+  (let ([uncovered (get-uncovered-expressions (submission-eval))])
     (cond [(pair? uncovered)
            (let ([stx (car uncovered)])
              (when stx

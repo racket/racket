@@ -146,7 +146,7 @@
   (define make-eventspace    (mz/mr void make-eventspace))
   (define run-in-bg          (mz/mr thread queue-callback))
 
-  (define get-uncovered-expressions "get-uncovered-expressions")
+  (define (get-uncovered-expressions eval) (eval get-uncovered-expressions))
 
   (define (make-evaluator language teachpacks input-program)
     (let ([coverage-enabled (coverage-enabled)]
