@@ -98,29 +98,30 @@
 				  [else (loop (cdr l))]))
 			       (append base '(#f)))
 			   base))]
+             [cert-f (gensym)]
 	     [qs (lambda (x) (if (eq? x #t)
 				 x
-				 (and x `((syntax-local-certifier) (quote-syntax ,x)))))])
-	`(list-immutable
-	  ,(qs (car names))
-	  ,(qs (cadr names))
-	  ,(qs (caddr names))
-	  (list-immutable 
-	   ,@(reverse (if omit-sel?
-			  null
-			  (map qs (if omit-set? flds (every-other flds)))))
-	   ,@(map qs (add-#f omit-sel? base-getters)))
-	  (list-immutable
-	   ,@(reverse (if omit-set?
-			  null
-			  (map qs (if omit-sel?
-				      flds
-				      (every-other (if (null? flds)
-						       null
-						       (cdr flds)))))))
-	   ,@(map qs (add-#f omit-set? base-setters)))
-	  ,(qs base-name)))))
-
+				 (and x `(,cert-f (quote-syntax ,x)))))])
+        `(let ([,cert-f (syntax-local-certifier #t)])
+           (list-immutable
+            ,(qs (car names))
+            ,(qs (cadr names))
+            ,(qs (caddr names))
+            (list-immutable 
+             ,@(reverse (if omit-sel?
+                            null
+                            (map qs (if omit-set? flds (every-other flds)))))
+             ,@(map qs (add-#f omit-sel? base-getters)))
+            (list-immutable
+             ,@(reverse (if omit-set?
+                            null
+                            (map qs (if omit-sel?
+                                        flds
+                                        (every-other (if (null? flds)
+                                                         null
+                                                         (cdr flds)))))))
+             ,@(map qs (add-#f omit-set? base-setters)))
+            ,(qs base-name))))))
 
   (define (struct-declaration-info? x)
     (define (identifier/#f? x)
@@ -158,15 +159,16 @@
     ;; if `defined-names' is #f.
     ;; If `expr?' is #t, then generate an expression to build the info,
     ;; otherwise build the info directly.
-    (let ([qs (if gen-expr? (lambda (x) #`((syntax-local-certifier) (quote-syntax #,x))) values)]
-	  [every-other (lambda (l)
-			 (let loop ([l l][r null])
-			   (cond
-			    [(null? l) r]
-			    [(null? (cdr l)) (cons (car l) r)]
-			    [else (loop (cddr l) (cons (car l) r))])))]
-	  [super-info (and super-id 
-			   (syntax-local-value super-id (lambda () #f)))])
+    (let* ([cert-f (gensym)]
+           [qs (if gen-expr? (lambda (x) #`(#,cert-f (quote-syntax #,x))) values)]
+           [every-other (lambda (l)
+                          (let loop ([l l][r null])
+                            (cond
+                             [(null? l) r]
+                             [(null? (cdr l)) (cons (car l) r)]
+                             [else (loop (cddr l) (cons (car l) r))])))]
+           [super-info (and super-id 
+                            (syntax-local-value super-id (lambda () #f)))])
       (when super-id 
 	;; Did we get valid super-info ?
 	(when (or (not (struct-declaration-info? super-info))
@@ -193,25 +195,26 @@
 			     (values null null))]
 			[(fields) (cdddr defined-names)]
 			[(wrap) (if gen-expr? (lambda (x) #`(list-immutable #,@x)) values)])
-	     (wrap
-	      (list-immutable (qs (car defined-names))
-			      (qs (cadr defined-names))
-			      (qs (caddr defined-names))
-			      (wrap
-			       (apply
-				list-immutable
-				(append (map qs (every-other fields)) 
-					initial-gets)))
-			      (wrap
-			       (apply
-				list-immutable
-				(append (map qs (if (null? fields) 
-						    null 
-						    (every-other (cdr fields)))) 
-					initial-sets)))
-			      (if super-id
-				  (qs super-id)
-				  #t))))
+             #`(let ([#,cert-f (syntax-local-certifier #t)])
+                 #,(wrap
+                    (list-immutable (qs (car defined-names))
+                                    (qs (cadr defined-names))
+                                    (qs (caddr defined-names))
+                                    (wrap
+                                     (apply
+                                      list-immutable
+                                      (append (map qs (every-other fields)) 
+                                              initial-gets)))
+                                    (wrap
+                                     (apply
+                                      list-immutable
+                                      (append (map qs (if (null? fields) 
+                                                          null 
+                                                          (every-other (cdr fields)))) 
+                                              initial-sets)))
+                                    (if super-id
+                                        (qs super-id)
+                                        #t)))))
 	   #f))))
 
   (define (make-core make-make-struct-type orig-stx defined-names super-info name field-names)

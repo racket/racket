@@ -582,7 +582,11 @@ static bigdig* allocate_bigdig_array(int length)
 {
   int i;
   bigdig* res;
-  res = (bigdig *)scheme_malloc_atomic(length * sizeof(bigdig));
+  if (length > 4096) {
+    res = (bigdig *)scheme_malloc_fail_ok(scheme_malloc_atomic, length * sizeof(bigdig));
+  } else {
+    res = (bigdig *)scheme_malloc_atomic(length * sizeof(bigdig));
+  }
   for(i = 0; i < length; ++i) {
     res[i] = 0;
   }

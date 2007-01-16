@@ -2324,6 +2324,7 @@ Bool wxPrintSetupData::ShowNative(wxWindow *parent)
   if (!native) {
     native = new WXGC_PTRS wxPrintData();
     native->SetLandscape(printer_orient == PS_LANDSCAPE);
+    native->SetScale(printer_scale_y);
   }
 
   d = new WXGC_PTRS wxPrintDialog(parent, native);
@@ -2333,6 +2334,8 @@ Bool wxPrintSetupData::ShowNative(wxWindow *parent)
   if (ok) {
     ls = native->GetLandscape();
     printer_orient = (ls ? PS_LANDSCAPE : PS_PORTRAIT);
+    printer_scale_y = native->GetScale();
+    printer_scale_x = printer_scale_y;
   }
   return ok;
 #else

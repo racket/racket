@@ -6309,25 +6309,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
              capturing the continuation, so we can jump directly. */
           scheme_drop_prompt_meta_continuations(c->prompt_tag);
           c->shortcut_prompt = prompt;
-          if ((!prompt->boundary_overflow_id && !p->overflow)
-              || (prompt->boundary_overflow_id
-                  && (prompt->boundary_overflow_id == p->overflow->id))) {
-            scheme_longjmpup(&c->buf);
-          } else {
-            /* Need to unwind overflows... */
-            Scheme_Overflow *overflow;
-            overflow = p->overflow;
-            while (overflow->prev
-                   && (!overflow->prev->id
-                       || (overflow->prev->id != prompt->boundary_overflow_id))) {
-              overflow = overflow->prev;
-            }
-            /* Immediate destination is in scheme_handle_stack_overflow(). */
-            p->cjs.jumping_to_continuation = (Scheme_Object *)c;
-            p->overflow = overflow;
-            p->stack_start = overflow->stack_start;
-            scheme_longjmpup(&overflow->jmp->cont);
-          }
+          p->stack_start = c->stack_start;
+          scheme_longjmpup(&c->buf);
         } else {
           p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
           p->cjs.num_vals = 1;

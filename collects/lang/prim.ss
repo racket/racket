@@ -48,7 +48,7 @@
                        "this primitive operator must be applied to arguments; "
                        "expected an open parenthesis before the operator name")
                       stx)])))
-              ((syntax-local-certifier)
+              ((syntax-local-certifier #t)
                #'impl))))]))
 
   (define-syntax (define-higher-order-primitive stx)
@@ -126,7 +126,7 @@
                                "this primitive operator must be applied to arguments; "
                                "expected an open parenthesis before the operator name")
                               s)])))
-                      ((syntax-local-certifier)
+                      ((syntax-local-certifier #t)
                        #'impl))))))))]))
 
   (define-syntax (fo->ho stx)

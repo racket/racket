@@ -476,6 +476,7 @@
   scheme_extension_table->scheme_getnameinfo = scheme_getnameinfo;
   scheme_extension_table->scheme_get_port_file_descriptor = scheme_get_port_file_descriptor;
   scheme_extension_table->scheme_get_port_socket = scheme_get_port_socket;
+  scheme_extension_table->scheme_socket_to_ports = scheme_socket_to_ports;
   scheme_extension_table->scheme_set_type_printer = scheme_set_type_printer;
   scheme_extension_table->scheme_print_bytes = scheme_print_bytes;
   scheme_extension_table->scheme_print_utf8 = scheme_print_utf8;

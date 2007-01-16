@@ -1,4 +1,33 @@
 
+(let ([try
+       (lambda (thread m-top n-top do-mid-stream do-abort)
+         (let ([result #f])
+           (thread-wait
+            (thread
+             (lambda ()
+               (set! result
+                     (let pre-loop ([m m-top])
+                       (if (zero? m)
+                           (list
+                            (do-mid-stream
+                             (lambda () 
+                               (call-with-continuation-prompt
+                                (lambda ()
+                                  (let loop ([n n-top])
+                                    (if (zero? n)
+                                        (do-abort
+                                         (lambda ()
+                                           (abort-current-continuation
+                                            (default-continuation-prompt-tag)
+                                            (lambda () 5000))))
+                                        (+ (loop (sub1 n))))))))))
+                           (list (car (pre-loop (sub1 m))))))))))
+           (test '(5000) values result)))])
+  (try thread 5000 10000 (lambda (mid) (mid)) 
+       (lambda (abort) (((call/cc
+                          (lambda (k) (lambda () k))))
+                        (lambda () (lambda (x) 5000))))))
+
 (test-breaks-ok)
 
 ;;----------------------------------------

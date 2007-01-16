@@ -4296,7 +4296,19 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
 
   if (do_reset_cjs)
     copy_cjs(&p->cjs, &cont->cjs);
-  p->overflow = cont->save_overflow;
+  if (shortcut_prompt) {
+    Scheme_Overflow *overflow;
+    overflow = p->overflow;
+    while (overflow
+           && (!overflow->id
+               || (overflow->id != shortcut_prompt->boundary_overflow_id))) {
+      overflow = overflow->prev;
+    }
+    overflow = clone_overflows(cont->save_overflow, NULL, overflow);
+    p->overflow = overflow;
+  } else {
+    p->overflow = cont->save_overflow;
+  }
   {
     Scheme_Meta_Continuation *mc, *resume_mc;
     if (resume) {

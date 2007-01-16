@@ -85,24 +85,25 @@
   (define-syntax signal
     (let ([field-name-symbols (list 'value 'dependents 'stale? 'thunk
                                     'depth 'continuation-marks 'parameterization
-                                    'producers)])
+                                    'producers)]
+          [cert (syntax-local-certifier #t)])
       (list-immutable
-       ((syntax-local-certifier) #'struct:signal)
-       ((syntax-local-certifier) #'make-signal)
-       ((syntax-local-certifier) #'signal?)
+       (cert #'struct:signal)
+       (cert #'make-signal)
+       (cert #'signal?)
        (apply list-immutable
               (map
                (lambda (fd)
-                 ((syntax-local-certifier) (datum->syntax-object
-                                            #'here
-                                            (string->symbol (format "signal-~a" fd)))))
+                 (cert (datum->syntax-object
+                        #'here
+                        (string->symbol (format "signal-~a" fd)))))
                (reverse field-name-symbols)))
        (apply list-immutable
               (map
                (lambda (fd)
-                 ((syntax-local-certifier) (datum->syntax-object
-                                            #'here
-                                            (string->symbol (format "set-signal-~a!" fd)))))
+                 (cert (datum->syntax-object
+                        #'here
+                        (string->symbol (format "set-signal-~a!" fd)))))
                (reverse field-name-symbols)))
        #t)))
   

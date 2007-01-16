@@ -385,11 +385,27 @@ static size_t round_to_apage_size(size_t sizeb)
   return sizeb;
 }
 
+static unsigned long custodian_single_time_limit(int set);
+inline static int thread_get_owner(void *p);
+
 /* the core allocation functions */
 static void *allocate_big(size_t sizeb, int type)
 {
   unsigned long sizew;
   struct mpage *bpage;
+
+  if(GC_out_of_memory) {
+    /* We're allowed to fail. Check for allocations that exceed a single-time
+       limit. Otherwise, the limit doesn't work as intended, because
+       a program can allocate a large block that nearly exhausts memory,
+       and then a subsequent allocation can fail. As long as the limit
+       is much smaller than the actual available memory, and as long as
+       GC_out_of_memory protects any user-requested allocation whose size
+       is independent of any existing object, then we can enforce the limit. */
+    if (custodian_single_time_limit(thread_get_owner(scheme_current_thread)) < sizeb) {
+      GC_out_of_memory();
+    }
+  }
 
   /* the actual size of this is the size, ceilinged to the next largest word,
      plus the size of the page header, plus one word for the object header.
@@ -407,7 +423,11 @@ static void *allocate_big(size_t sizeb, int type)
   /* We not only need APAGE_SIZE alignment, we 
      need everything consisently mapped within an APAGE_SIZE
      segment. So round up. */
-  bpage = malloc_pages(round_to_apage_size(sizeb), APAGE_SIZE);
+  if (type == PAGE_ATOMIC) {
+    bpage = malloc_dirty_pages(round_to_apage_size(sizeb), APAGE_SIZE);
+    memset(bpage, 0, sizeof(struct mpage));
+  } else
+    bpage = malloc_pages(round_to_apage_size(sizeb), APAGE_SIZE);
   bpage->size = sizeb;
   bpage->big_page = 1;
   bpage->page_type = type;
@@ -1191,6 +1211,7 @@ inline static void register_new_thread(void *t, void *c)
 
   work = (struct thread *)malloc(sizeof(struct thread));
   work->owner = current_owner((Scheme_Custodian *)c);
+  ((Scheme_Thread *)t)->gc_owner_set = work->owner;
   work->thread = t;
   work->next = threads;
   threads = work;
@@ -1202,6 +1223,7 @@ inline static void register_thread(void *t, void *c)
   for(work = threads; work; work = work->next)
     if(work->thread == t) {
       work->owner = current_owner((Scheme_Custodian *)c);
+      ((Scheme_Thread *)t)->gc_owner_set = work->owner;
       return;
     }
   register_new_thread(t, c);
@@ -1212,8 +1234,12 @@ inline static void mark_threads(int owner)
   struct thread *work;
 
   for(work = threads; work; work = work->next)
-    if(work->owner == owner) 
+    if(work->owner == owner) {
       normal_thread_mark(work->thread);
+      if (work->thread == scheme_current_thread) {
+        GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base);
+      }
+    }
 }
 
 inline static void clean_up_thread_list(void)
@@ -1238,12 +1264,7 @@ inline static void clean_up_thread_list(void)
 
 inline static int thread_get_owner(void *p)
 {
-  struct thread *work; 
-
-  for(work = threads; work; work = work->next)
-    if(work->thread == p)
-      return work->owner;
-  GCERR((GCOUTF, "Bad thread value for thread_get_owner!\n"));
+  return ((Scheme_Thread *)p)->gc_owner_set;
 }
 #endif
 
@@ -1362,12 +1383,14 @@ inline static void reset_pointer_stack(void)
 /*****************************************************************************/
 #ifdef NEWGC_BTC_ACCOUNT
 
-#define OWNER_TABLE_GROW_AMT 10
+#define OWNER_TABLE_INIT_AMT 10
 
 struct ot_entry {
   Scheme_Custodian *originator;
   Scheme_Custodian **members;
   unsigned long memory_use;
+  unsigned long single_time_limit, super_required;
+  char limit_set, required_set;
 };
 
 static struct ot_entry **owner_table = NULL;
@@ -1377,10 +1400,12 @@ static int really_doing_accounting = 0;
 static int current_mark_owner = 0;
 static int old_btc_mark = 0;
 static int new_btc_mark = 1;
+static int reset_limits = 0, reset_required = 0;
 
 inline static int create_blank_owner_set(void)
 {
   int i;
+  unsigned int old_top;
 
   for(i = 1; i < owner_table_top; i++)
     if(!owner_table[i]) {
@@ -1389,11 +1414,15 @@ inline static int create_blank_owner_set(void)
       return i;
     }
 
-  owner_table_top += OWNER_TABLE_GROW_AMT;
+  old_top = owner_table_top;
+  if (!owner_table_top)
+    owner_table_top = OWNER_TABLE_INIT_AMT;
+  else
+    owner_table_top *= 2;
+
   owner_table = realloc(owner_table, owner_table_top*sizeof(struct ot_entry*));
-  bzero((char*)owner_table + (sizeof(struct ot_entry*) * 
-			      (owner_table_top - OWNER_TABLE_GROW_AMT)),
-	OWNER_TABLE_GROW_AMT * sizeof(struct ot_entry*));
+  bzero((char*)owner_table + (sizeof(struct ot_entry*) * old_top),
+	(owner_table_top - old_top) * sizeof(struct ot_entry*));
   
   return create_blank_owner_set();
 }
@@ -1402,11 +1431,17 @@ inline static int custodian_to_owner_set(Scheme_Custodian *cust)
 {
   int i;
 
+  if (cust->gc_owner_set)
+    return cust->gc_owner_set;
+
   for(i = 1; i < owner_table_top; i++)
     if(owner_table[i] && (owner_table[i]->originator == cust))
       return i;
+
   i = create_blank_owner_set();
   owner_table[i]->originator = cust;
+  cust->gc_owner_set = i;
+
   return i;
 }
 
@@ -1426,6 +1461,7 @@ inline static int current_owner(Scheme_Custodian *c)
   if(!has_gotten_root_custodian && c) {
     has_gotten_root_custodian = 1;
     owner_table[1]->originator = c;
+    c->gc_owner_set = 1;
     return 1;
   }
 
@@ -1500,7 +1536,6 @@ inline static unsigned long custodian_usage(void *custodian)
   return gcWORDS_TO_BYTES(retval);
 }
 
-
 inline static void memory_account_mark(struct mpage *page, void *ptr)
 {
   GCDEBUG((DEBUGOUTF, "memory_account_mark: %p/%p\n", page, ptr));
@@ -1545,15 +1580,9 @@ inline static void mark_normal_obj(struct mpage *page, void *ptr)
 	 unless the object's owner is the current owner. In the case
 	 of threads, we already used it for roots, so we can just
 	 ignore them outright. In the case of custodians, we do need
-	 to do the check */
+	 to do the check; those differences are handled by replacing
+         the mark procedure in mark_table. */
       mark_table[*(unsigned short*)ptr](ptr);
-/*       unsigned short tag = *(unsigned short*)ptr; */
-/*       if(tag != scheme_thread_type) { */
-/* 	if(tag == scheme_custodian_type) { */
-/* 	  if(custodian_to_owner_set(ptr) == current_mark_owner) */
-/* 	    mark_table[scheme_custodian_type](ptr); */
-/* 	} else mark_table[tag](ptr); */
-/*       } */
       break;
     }
     case PAGE_ATOMIC: break;
@@ -1652,7 +1681,7 @@ static void do_btc_accounting(void)
     for(i = 1; i < owner_table_top; i++)
       if(owner_table[i])
 	owner_table[i]->memory_use = 0;
-    
+
     /* the end of the custodian list is where we want to start */
     while(SCHEME_PTR1_VAL(box)) {
       cur = (Scheme_Custodian*)SCHEME_PTR1_VAL(box);
@@ -1704,13 +1733,20 @@ inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
     c1 = park[0]; c2 = park[1];
     park[0] = park[1] = NULL;
   }
+
+  if (type == MZACCT_LIMIT)
+    reset_limits = 1;
+  if (type == MZACCT_REQUIRE)
+    reset_required = 1;
+
   for(work = hooks; work; work = work->next) {
-    if((work->type == type) && (work->c2 == c2)) {
+    if((work->type == type) && (work->c2 == c2) && (work->c1 == c1)) {
       if(type == MZACCT_REQUIRE) {
 	if(b > work->amount) work->amount = b;
       } else { /* (type == MZACCT_LIMIT) */
 	if(b < work->amount) work->amount = b;
       }
+      break;
     } 
   }
 
@@ -1726,7 +1762,7 @@ inline static void clean_up_account_hooks()
   struct account_hook *work = hooks, *prev = NULL;
 
   while(work) {
-    if(marked(work->c1) && marked(work->c2)) {
+    if((!work->c1 || marked(work->c1)) && marked(work->c2)) {
       work->c1 = GC_resolve(work->c1);
       work->c2 = GC_resolve(work->c2);
       prev = work; work = work->next;
@@ -1741,13 +1777,48 @@ inline static void clean_up_account_hooks()
   }
 }
 
+static unsigned long custodian_super_require(void *c)
+{
+  int set = ((Scheme_Custodian *)c)->gc_owner_set;
+
+  if (reset_required) {
+    int i;
+    for(i = 1; i < owner_table_top; i++)
+      if (owner_table[i])
+        owner_table[i]->required_set = 0;
+    reset_required = 0;
+  }
+
+  if (!owner_table[set]->required_set) {
+    unsigned long req = 0, r;
+    struct account_hook *work = hooks;
+
+    printf("check: %p\n", c);
+
+    while(work) {
+      if ((work->type == MZACCT_REQUIRE) && (c == work->c2)) {
+        r = work->amount + custodian_super_require(work->c1);
+        if (r > req)
+          req = r;
+      }
+      work = work->next;
+    }
+    owner_table[set]->super_required = req;
+    owner_table[set]->required_set = 1;
+  }
+  
+  return owner_table[set]->super_required;
+}
+
 inline static void run_account_hooks()
 {
   struct account_hook *work = hooks, *prev = NULL;
 
   while(work) {
     if( ((work->type == MZACCT_REQUIRE) && 
-	 (((max_used_pages - used_pages) * APAGE_SIZE) < work->amount))
+         ((used_pages > (max_used_pages / 2))
+          || ((((max_used_pages / 2) - used_pages) * APAGE_SIZE)
+              < (work->amount + custodian_super_require(work->c1)))))
 	||
 	((work->type == MZACCT_LIMIT) &&
 	 (GC_get_memory_use(work->c1) > work->amount))) {
@@ -1764,6 +1835,51 @@ inline static void run_account_hooks()
   }
 }
 
+static unsigned long custodian_single_time_limit(int set)
+{
+  if (!set)
+    return (unsigned long)(long)-1;
+
+  if (reset_limits) {
+    int i;
+    for(i = 1; i < owner_table_top; i++)
+      if (owner_table[i])
+        owner_table[i]->limit_set = 0;
+    reset_limits = 0;
+  }
+
+  if (!owner_table[set]->limit_set) {
+    /* Check for limits on this custodian or one of its ancestors: */
+    unsigned long limit = (unsigned long)(long)-1;
+    Scheme_Custodian *orig = owner_table[set]->originator, *c;
+    struct account_hook *work = hooks;
+
+    while(work) {
+      if ((work->type == MZACCT_LIMIT) && (work->c1 == work->c2)) {
+        c = orig;
+        while (1) {
+          if (work->c2 == c) {
+            if (work->amount < limit)
+              limit = work->amount;
+            break;
+          }
+          if (!c->parent)
+            break;
+          c = (Scheme_Custodian*)SCHEME_PTR1_VAL(c->parent);
+          if (!c)
+            break;
+        }
+      }
+      work = work->next;
+    }
+    owner_table[set]->single_time_limit = limit;
+    owner_table[set]->limit_set = 1;
+  }
+
+  return owner_table[set]->single_time_limit;
+}
+
+
 # define set_account_hook(a,b,c,d) { add_account_hook(a,b,c,d); return 1; }
 # define set_btc_mark(x) (((struct objhead *)(x))->btc_mark = old_btc_mark)
 #endif
@@ -1778,6 +1894,10 @@ inline static void run_account_hooks()
 # define run_account_hooks() /* */
 # define custodian_usage(cust) 0
 # define set_btc_mark(x) /* */
+static unsigned long custodian_single_time_limit(int set)
+{
+  return (unsigned long)(long)-1;
+}
 #endif
 
 int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
@@ -1954,9 +2074,10 @@ void GC_mark(const void *const_p)
 
 	  /* first check to see if this is an atomic object masquerading
 	     as a tagged object; if it is, then convert it */
-	  if(type == PAGE_TAGGED)
-	    if((unsigned long)mark_table[*(unsigned short*)p] < PAGE_TYPES)
+	  if(type == PAGE_TAGGED) {
+            if((unsigned long)mark_table[*(unsigned short*)p] < PAGE_TYPES)
 	      type = ohead->type = (int)(unsigned long)mark_table[*(unsigned short*)p];
+          }
 
 	  /* now set us up for the search for where to put this thing */
 	  work = pages[type];
@@ -2001,7 +2122,7 @@ void GC_mark(const void *const_p)
 	  ((struct objhead *)newplace)->mark = 1;
 	  /* if we're doing memory accounting, then we need the btc_mark
 	     to be set properly */
-	  set_btc_mark(ohead);
+	  set_btc_mark(newplace);
 	  /* drop the new location of the object into the forwarding space
 	     and into the mark queue */
 	  newplace = PTR(NUM(newplace) + WORD_SIZE);
@@ -2711,7 +2832,7 @@ static void garbage_collect(int force_full)
 /*   printf("Collection #li (full = %i): %i / %i / %i / %i\n", number, */
 /* 	 gc_full, force_full, !generations_available, */
 /* 	 (since_last_full > 100), (memory_in_use > (2 * last_full_mem_use))); */
-  
+
   number++; 
   INIT_DEBUG_FILE(); DUMP_HEAP();
 

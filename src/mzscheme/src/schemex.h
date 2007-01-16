@@ -699,6 +699,8 @@ void (*scheme_getnameinfo)(void *sa, int salen,
 				  char *serv, int servlen);
 int (*scheme_get_port_file_descriptor)(Scheme_Object *p, long *_fd);
 int (*scheme_get_port_socket)(Scheme_Object *p, long *_s);
+void (*scheme_socket_to_ports)(long s, const char *name, int takeover,
+                                      Scheme_Object **_inp, Scheme_Object **_outp);
 void (*scheme_set_type_printer)(Scheme_Type stype, Scheme_Type_Printer printer);
 void (*scheme_print_bytes)(Scheme_Print_Params *pp, const char *str, int offset, int len);
 void (*scheme_print_utf8)(Scheme_Print_Params *pp, const char *str, int offset, int len);

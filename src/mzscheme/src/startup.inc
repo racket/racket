@@ -652,7 +652,7 @@
 "((fields)(cdddr defined-names))"
 "((wrap)(if gen-expr?(lambda(x)(cons 'list-immutable x)) values))"
 "((total-wrap)(if gen-expr?"
-"(lambda(x) `(let((,cert-id(syntax-local-certifier))) ,x))"
+"(lambda(x) `(let((,cert-id(syntax-local-certifier #t))) ,x))"
 " values)))"
 "(total-wrap"
 "(wrap"

@@ -1,3 +1,11 @@
+Version 369.5
+print-struct defaults to #t instead of #f
+Changed make-exn to automatically convert a mutable message string
+ to an immutable string
+Added initial custodian argument to custodian-require-memory
+Added an argument to syntax-local-certifier indicating whether the
+ generated procedure attaches active or inactive certificates
+
 Version 369.4
 Default build uses 3m instead of CGC
 Added 'gc and 'so-suffix flags for system-type
@@ -6,6 +14,7 @@ Changed path->directory-path, simplify-path, and split-path to include
  path without it
 Changed simplify-path for Windows paths to replace / with \
 Changed current-directory to apply path->directory-path to given paths
+Added port-closed?
 
 Version 369.3
 Adjusted exception-handler calling to propagate any returned value

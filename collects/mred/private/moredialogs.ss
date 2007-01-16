@@ -181,7 +181,7 @@
 	   (let ([s (make-object wx:ps-setup%)])
 	     (send s copy-from (or pss-in (wx:current-ps-setup)))
 	     (and (parameterize ([wx:current-ps-setup s])
-		    (wx:show-print-setup parent))
+		    (wx:show-print-setup (and parent (mred->wx parent))))
 		  s)))]))
 
   (define (can-get-page-setup-from-user?)

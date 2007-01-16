@@ -434,18 +434,19 @@ add struct contracts for immutable structs?
                                               [super-id (if (boolean? super-id)
                                                             super-id
                                                             (with-syntax ([super-id super-id])
-                                                              (syntax ((syntax-local-certifier) #'super-id))))])
+                                                              (syntax (cert #'super-id))))])
                                   (syntax (begin
                                             (provide (rename id-rename struct-name))
                                             (define-syntax id-rename
-                                              (list-immutable ((syntax-local-certifier) #'-struct:struct-name)
-                                                              ((syntax-local-certifier) #'constructor-new-name)
-                                                              ((syntax-local-certifier) #'predicate-new-name)
-                                                              (list-immutable ((syntax-local-certifier) #'rev-selector-new-names) ...
-                                                                              ((syntax-local-certifier) #'rev-selector-old-names) ...)
-                                                              (list-immutable ((syntax-local-certifier) #'rev-mutator-new-names) ...
-                                                                              ((syntax-local-certifier) #'rev-mutator-old-names) ...)
-                                                              super-id)))))]
+                                              (let ([cert (syntax-local-certifier #t)])
+                                                (list-immutable (cert #'-struct:struct-name)
+                                                                (cert #'constructor-new-name)
+                                                                (cert #'predicate-new-name)
+                                                                (list-immutable (cert #'rev-selector-new-names) ...
+                                                                                (cert #'rev-selector-old-names) ...)
+                                                                (list-immutable (cert #'rev-mutator-new-names) ...
+                                                                                (cert #'rev-mutator-old-names) ...)
+                                                                super-id))))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]

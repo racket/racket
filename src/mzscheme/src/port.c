@@ -4201,26 +4201,31 @@ scheme_file_position(int argc, Scheme_Object *argv[])
 #endif
     } else {
       if (whence == SEEK_END) {
-	n = is->size;
+        if (wis)
+          n = is->u.hot;
+        else
+          n = is->size;
       }
       if (wis) {
 	if (is->index > is->u.hot)
 	  is->u.hot = is->index;
-	if (is->size < is->index + n) {
+	if (is->size < n) {
 	  /* Expand string up to n: */
 	  char *old;
 
 	  old = is->string;
-	  is->size = is->index + n;
 	  {
 	    char *ca;
-	    ca = (char *)scheme_malloc_atomic(is->size + 1);
+	    ca = (char *)scheme_malloc_fail_ok(scheme_malloc_atomic, n + 1);
 	    is->string = ca;
-	  }
-	  memcpy(is->string, old, is->index);
+          }
+	  is->size = n;
+	  memcpy(is->string, old, is->u.hot);
 	}
-	if (n > is->u.hot)
+	if (n > is->u.hot) {
 	  memset(is->string + is->u.hot, 0, n - is->u.hot);
+          is->u.hot = n;
+        }
       } else {
 	/* Can't really move past end of read string, but pretend we do: */
 	if (n > is->size) {

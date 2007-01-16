@@ -68,6 +68,15 @@
 		     (lambda (item event) 
 		       (send e save-file "" 'text))))
       (make-object separator-menu-item% file-menu)
+      (when (can-get-page-setup-from-user?)
+        (make-object menu-item% "Page Setup..." file-menu
+                     (lambda (item event)
+                       (let ([s (get-page-setup-from-user #f f)])
+                         (when s
+                           (send (current-ps-setup) copy-from s))))
+                     #\P
+                     #f void
+                     (cons 'shift (get-default-shortcut-prefix))))
       (make-object menu-item% "Print..." file-menu
 		   (lambda (item event)
 		     (send e print))

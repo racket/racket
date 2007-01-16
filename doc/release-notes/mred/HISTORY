@@ -1,3 +1,9 @@
+Version 369.5
+
+Mac OS X printer-dc% uses scaling specified by the current ps-setup%
+
+----------------------------------------------------------------------
+
 Version 360, November 2006
 
 Added get-other-altgr-key-code and get-other-shift-altgr-key-code

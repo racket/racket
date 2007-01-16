@@ -2583,12 +2583,24 @@ typedef Scheme_Object (*Scheme_Struct_Field_Guard_Proc)(int argc, Scheme_Object 
 
 static Scheme_Object *exn_field_check(int argc, Scheme_Object **argv)
 {
-  if (!SCHEME_IMMUTABLE_CHAR_STRINGP(argv[0]))
-    scheme_wrong_field_type(argv[2], "immutable string", argv[0]);
+  Scheme_Object *a[2], *v;
+
+  if (!SCHEME_CHAR_STRINGP(argv[0]))
+    scheme_wrong_field_type(argv[2], "string", argv[0]);
   if (!SAME_OBJ(argv[1], TMP_CMARK_VALUE) && !SCHEME_CONT_MARK_SETP(argv[1]))
     scheme_wrong_field_type(argv[2], "continuation mark set", argv[1]);
 
-  return scheme_values(2, argv);
+  a[0] = argv[0];
+  a[1] = argv[1];
+  
+  if (!SCHEME_IMMUTABLE_CHAR_STRINGP(a[0])) {
+    v = scheme_make_immutable_sized_char_string(SCHEME_CHAR_STR_VAL(a[0]),
+                                                SCHEME_CHAR_STRLEN_VAL(a[0]),
+                                                1);
+    a[0] = v;
+  }
+
+  return scheme_values(2, a);
 }
 
 static Scheme_Object *variable_field_check(int argc, Scheme_Object **argv)

@@ -81,7 +81,7 @@
 		  ;; Also, this isn't a transformer function, so any direct
 		  ;;  use of the name will trigger a syntax error. The name
 		  ;;  can be found by `syntax-local-value', though.
-		  (let ([cert (syntax-local-certifier)])
+		  (let ([cert (syntax-local-certifier #t)])
 		    (make-dt (cert (syntax pred-name))
 			     (list
 			      (make-vt (cert (syntax variant-name))

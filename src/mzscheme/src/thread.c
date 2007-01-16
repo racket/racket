@@ -242,6 +242,25 @@ static int recycle_cc_count;
 static mz_jmp_buf main_init_error_buf;
 	
 #ifdef MZ_PRECISE_GC
+/* This is a trick to get the types right. Note that 
+   the layout of the weak box is defined by the
+   GC spec. */
+typedef struct {
+  short type;
+  short hash_key;
+  Scheme_Custodian *val;
+} Scheme_Custodian_Weak_Box;
+
+# define MALLOC_MREF() (Scheme_Custodian_Reference *)scheme_make_weak_box(NULL)
+# define CUSTODIAN_FAM(x) ((Scheme_Custodian_Weak_Box *)x)->val
+# define xCUSTODIAN_FAM(x) SCHEME_BOX_VAL(x)
+#else
+# define MALLOC_MREF() MALLOC_ONE_WEAK(Scheme_Custodian_Reference)
+# define CUSTODIAN_FAM(x) (*(x))
+# define xCUSTODIAN_FAM(x) (*(x))
+#endif
+
+#ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
 
@@ -670,12 +689,12 @@ void scheme_init_thread(Scheme_Env *env)
   scheme_add_global_constant("custodian-require-memory",
 			     scheme_make_prim_w_arity(custodian_require_mem,
 						      "custodian-require-memory",
-						      2, 2),
+						      3, 3),
 			     env);
   scheme_add_global_constant("custodian-limit-memory",
 			     scheme_make_prim_w_arity(custodian_limit_mem,
 						      "custodian-limit-memory",
-						      3, 3),
+						      2, 3),
 			     env);
   
 
@@ -836,23 +855,45 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[])
 {
   long lim;
+  Scheme_Custodian *c1, *c2, *cx;
 
-  if (SCHEME_INTP(args[0]) && (SCHEME_INT_VAL(args[0]) > 0)) {
-    lim = SCHEME_INT_VAL(args[0]);
-  } else if (SCHEME_BIGNUMP(args[0]) && SCHEME_BIGPOS(args[0])) {
-    lim = 0x3fffffff; /* more memory than we actually have */
-  } else {
-    scheme_wrong_type("custodian-require-memory", "positive exact integer", 0, argc, args);
+  if(NOT_SAME_TYPE(SCHEME_TYPE(args[0]), scheme_custodian_type)) {
+    scheme_wrong_type("custodian-require-memory", "custodian", 0, argc, args);
     return NULL;
   }
 
-  if(NOT_SAME_TYPE(SCHEME_TYPE(args[1]), scheme_custodian_type)) {
-    scheme_wrong_type("custodian-require-memory", "custodian", 1, argc, args);
+  if (SCHEME_INTP(args[1]) && (SCHEME_INT_VAL(args[1]) > 0)) {
+    lim = SCHEME_INT_VAL(args[1]);
+  } else if (SCHEME_BIGNUMP(args[1]) && SCHEME_BIGPOS(args[1])) {
+    lim = 0x3fffffff; /* more memory than we actually have */
+  } else {
+    scheme_wrong_type("custodian-require-memory", "positive exact integer", 1, argc, args);
     return NULL;
+  }
+
+  if(NOT_SAME_TYPE(SCHEME_TYPE(args[2]), scheme_custodian_type)) {
+    scheme_wrong_type("custodian-require-memory", "custodian", 2, argc, args);
+    return NULL;
+  }
+
+  c1 = (Scheme_Custodian *)args[0];
+  c2 = (Scheme_Custodian *)args[2];
+
+  /* Check whether c1 is super to c2: */
+  if (c1 == c2) {
+    cx = NULL;
+  } else {
+    for (cx = c2; cx && NOT_SAME_OBJ(cx, c1); ) {
+      cx = CUSTODIAN_FAM(cx->parent);
+    }
+  }
+  if (!cx) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "custodian-require-memory: second custodian is not a sub-custodian of the first custodian");
   }
 
 #ifdef MZ_PRECISE_GC
-  if (GC_set_account_hook(MZACCT_REQUIRE, NULL, lim, args[1]))
+  if (GC_set_account_hook(MZACCT_REQUIRE, c1, lim, c2))
     return scheme_void;
 #endif
 
@@ -876,15 +917,18 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
     lim = 0x3fffffff; /* more memory than we actually have */
   } else {
     scheme_wrong_type("custodian-limit-memory", "positive exact integer", 1, argc, args);
-  }
-
-  if(NOT_SAME_TYPE(SCHEME_TYPE(args[2]), scheme_custodian_type)) {
-    scheme_wrong_type("custodian-require-memory", "custodian", 2, argc, args);
     return NULL;
   }
 
+  if (argc > 2) {
+    if (NOT_SAME_TYPE(SCHEME_TYPE(args[2]), scheme_custodian_type)) {
+      scheme_wrong_type("custodian-require-memory", "custodian", 2, argc, args);
+      return NULL;
+    }
+  }
+
 #ifdef MZ_PRECISE_GC
-  if (GC_set_account_hook(MZACCT_LIMIT, args[0], SCHEME_INT_VAL(args[1]), args[2]))
+  if (GC_set_account_hook(MZACCT_LIMIT, args[0], lim, (argc > 2) ? args[2] : args[0]))
     return scheme_void;
 #endif
 
@@ -978,25 +1022,6 @@ static void add_managed_box(Scheme_Custodian *m,
 
   m->count++;
 }
-
-#ifdef MZ_PRECISE_GC
-/* This is a trick to get the types right. Note that 
-   the layout of the weak box is defined by the
-   GC spec. */
-typedef struct {
-  short type;
-  short hash_key;
-  Scheme_Custodian *val;
-} Scheme_Custodian_Weak_Box;
-
-# define MALLOC_MREF() (Scheme_Custodian_Reference *)scheme_make_weak_box(NULL)
-# define CUSTODIAN_FAM(x) ((Scheme_Custodian_Weak_Box *)x)->val
-# define xCUSTODIAN_FAM(x) SCHEME_BOX_VAL(x)
-#else
-# define MALLOC_MREF() MALLOC_ONE_WEAK(Scheme_Custodian_Reference)
-# define CUSTODIAN_FAM(x) (*(x))
-# define xCUSTODIAN_FAM(x) (*(x))
-#endif
 
 static void remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o,
 			   Scheme_Close_Custodian_Client **old_f, void **old_data)
@@ -5924,7 +5949,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_DELAY_LOAD_INFO, scheme_false);
 
   init_param(cells, paramz, MZCONFIG_PRINT_GRAPH, scheme_false);
-  init_param(cells, paramz, MZCONFIG_PRINT_STRUCT, scheme_false);
+  init_param(cells, paramz, MZCONFIG_PRINT_STRUCT, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_BOX, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_VEC_SHORTHAND, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_HASH_TABLE, scheme_false);
@@ -5947,7 +5972,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_CURLY_BRACES_ARE_PARENS, (scheme_curly_braces_are_parens
 							      ? scheme_true : scheme_false));
 
-  init_param(cells, paramz, MZCONFIG_ERROR_PRINT_WIDTH, scheme_make_integer(100));
+  init_param(cells, paramz, MZCONFIG_ERROR_PRINT_WIDTH, scheme_make_integer(256));
   init_param(cells, paramz, MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH, scheme_make_integer(16));
   init_param(cells, paramz, MZCONFIG_ERROR_PRINT_SRCLOC, scheme_true);
 
@@ -6733,6 +6758,7 @@ static void done_with_GC()
 #ifdef RUNSTACK_IS_GLOBAL
 # ifdef MZ_PRECISE_GC
   MZ_RUNSTACK = scheme_current_thread->runstack;
+  MZ_RUNSTACK_START = scheme_current_thread->runstack_start;
 # endif
 #endif
 #ifdef WINDOWS_PROCESSES

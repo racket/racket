@@ -4848,7 +4848,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   /* Load table mapping symtab indices to stream positions: */
 
   all_short = scheme_get_byte(port);
-  so = (long *)scheme_malloc_atomic(sizeof(long) * symtabsize);
+  so = (long *)scheme_malloc_fail_ok(scheme_malloc_atomic, sizeof(long) * symtabsize);
   if ((got = scheme_get_bytes(port, (all_short ? 2 : 4) * (symtabsize - 1), (char *)so, 0)) 
       != ((all_short ? 2 : 4) * (symtabsize - 1)))
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
@@ -4892,7 +4892,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
   {
     unsigned char *st;
-    st = (unsigned char *)scheme_malloc_atomic(size + 1);
+    st = (unsigned char *)scheme_malloc_fail_ok(scheme_malloc_atomic, size + 1);
     rp->start = st;
   }
   rp->pos = 0;

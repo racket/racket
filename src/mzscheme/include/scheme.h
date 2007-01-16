@@ -1048,6 +1048,10 @@ typedef struct Scheme_Thread {
   Scheme_Object *transitive_resumes; /* A hash table of running-boxes */
 
   Scheme_Object *name;
+
+#ifdef MZ_PRECISE_GC
+  int gc_owner_set;
+#endif
 } Scheme_Thread;
 
 #if !SCHEME_DIRECT_EMBEDDED

@@ -102,6 +102,9 @@ class wxPrintData: public wxObject
 
   void SetLandscape(Bool);
   Bool GetLandscape();
+  
+  void SetScale(double s);
+  double GetScale();
 
   wxPrintData *copy();
 };

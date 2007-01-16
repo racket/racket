@@ -173,6 +173,25 @@
   (test #\l read-char s)
   (test 3 file-position s))
 
+(let ([os (open-output-string)])
+  (write '((0 54609) (1 32874234)) os)
+  (file-position os 2)
+  (file-position os eof)
+  (test #"((0 54609) (1 32874234))" get-output-bytes os))
+
+(let ([os (open-output-string)])
+  (write '1234 os)
+  (file-position os 10)
+  (write 'z os)
+  (test #"1234\0\0\0\0\0\0z" get-output-bytes os))
+
+(let ([os (open-output-string)])
+  (write '1234 os)
+  (file-position os 10)
+  (file-position os eof)
+  (write 'z os)
+  (test #"1234\0\0\0\0\0\0z" get-output-bytes os))
+
 (define s (open-output-string))
 (err/rt-test (file-position 's 1))
 (err/rt-test (file-position s 'one))

@@ -35,6 +35,11 @@ wxPrinterDC::wxPrinterDC(wxPrintData *printData, Bool interactive) : wxCanvasDC(
       printData = new WXGC_PTRS wxPrintData();
       if (ps->GetPrinterOrientation() == PS_LANDSCAPE)
 	printData->SetLandscape(TRUE);
+      {
+        double sx, sy;
+        ps->GetPrinterScaling(&sx, &sy);
+        printData->SetScale(sy);
+      }
     }
   }
 

@@ -2494,6 +2494,25 @@ int scheme_get_port_socket(Scheme_Object *p, long *_s)
 #endif
 }
 
+void scheme_socket_to_ports(long s, const char *name, int takeover,
+                            Scheme_Object **_inp, Scheme_Object **_outp)
+{
+  Scheme_Tcp *tcp;
+  Scheme_Object *v;
+
+  tcp = make_tcp_port_data(s, takeover ? 2 : 3);
+
+  v = make_tcp_input_port(tcp, name);
+  *_inp = v;
+  v = make_tcp_output_port(tcp, name);
+  *_outp = v;
+  
+  if (takeover) {
+    scheme_file_open_count++;
+    REGISTER_SOCKET(s);
+  }
+}
+
 /*========================================================================*/
 /*                                 UDP                                    */
 /*========================================================================*/

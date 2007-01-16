@@ -261,6 +261,18 @@ Bool wxPrintData::GetLandscape()
   return ((o == kPMLandscape) || (o == kPMReverseLandscape));
 }
 
+void wxPrintData::SetScale(double s)
+{
+  PMSetScale(cPageFormat, s * 100);
+}
+
+double wxPrintData::GetScale()
+{
+  double s;
+  PMGetScale(cPageFormat, &s);
+  return s / 100;
+}
+
 wxPrintData *wxPrintData::copy(void)
 {
   wxPrintData *pd;
@@ -303,11 +315,24 @@ Bool wxPrinter::Print(wxWindow *parent, wxPrintout *printout, Bool prompt)
   int copyCount;
   double w, h;
   wxDC* dc;
+  wxPrintSetupData *ps;
 
   if (!printout)
     return FALSE;
 
-  printData = new WXGC_PTRS wxPrintData();
+  ps = wxGetThePrintSetupData();
+  if (ps->native) {
+    printData = ps->native->copy();
+  } else {
+    printData = new WXGC_PTRS wxPrintData();
+    if (ps->GetPrinterOrientation() == PS_LANDSCAPE)
+      printData->SetLandscape(TRUE);
+    {
+      double sx, sy;
+      ps->GetPrinterScaling(&sx, &sy);
+      printData->SetScale(sy);
+    }
+  }
 
   printout->SetIsPreview(FALSE);
   printout->OnPreparePrinting();
