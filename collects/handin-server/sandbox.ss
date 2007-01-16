@@ -198,7 +198,7 @@
 
   ;; Resources ----------------------------------------------------------------
 
-  (define (with-limits sec mb thunk)
+  (define (call-with-limits sec mb thunk)
     (let ([cust (make-custodian)]
           [ch   (make-channel)])
       (when mb (custodian-limit-memory cust (* mb 1024 1024) cust))
@@ -218,5 +218,10 @@
         (if (list? r)
           (apply (car r) (cdr r))
           (error 'with-limit "out of ~a" r)))))
+
+  (define-syntax with-limits
+    (syntax-rules ()
+      [(with-limits sec mb body ...)
+       (call-with-limits sec mb (lambda () body ...))]))
 
   )

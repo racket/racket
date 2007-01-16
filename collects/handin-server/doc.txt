@@ -673,7 +673,7 @@ by this function.
   See also `with-limits' below for adding resource limits, and
   `get-uncovered-expressions' above for enforcing test coverage.
 
-> (with-limits sec mb thunk)
+> (call-with-limits sec mb thunk)
   This function executes the given thunk with memory and time
   restrictions: if execution consumes more than `mb' megabytes or more
   that `sec' seconds, then the computation is aborted and an error is
@@ -683,6 +683,9 @@ by this function.
 
   (Note: memory limit requires running in a 3m executable; the limit
   is only checked after a GC happens.)
+
+> (with-limits sec mb body ...)
+  A macro version of the above.
 
 
 _utils.ss_
