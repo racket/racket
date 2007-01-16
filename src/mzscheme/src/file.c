@@ -4398,6 +4398,11 @@ static Scheme_Object *expand_path(int argc, Scheme_Object *argv[])
     return scheme_make_sized_path(filename, strlen(filename), 1);
 }
 
+void do_find_close(void *p) 
+{
+  FIND_CLOSE(*(FF_HANDLE_TYPE *)p);
+}
+
 static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *argv[])
 {
 #if !defined(NO_READDIR) || defined(USE_FINDFIRST)
@@ -4412,7 +4417,7 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
 #ifdef USE_FINDFIRST
   char *pattern;
   int len;
-  FF_HANDLE_TYPE hfile;
+  FF_HANDLE_TYPE hfile, *hfile_ptr = NULL;
   FF_TYPE info;
 #endif
   volatile int counter = 0;
@@ -4525,7 +4530,11 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
     }
     counter++;
     if (break_ok && !(counter & 0x15)) {
-      BEGIN_ESCAPEABLE(FIND_CLOSE, hfile);
+      if (!hfile_ptr) {
+	hfile_ptr = (FF_HANDLE_TYPE *)scheme_malloc_atomic(sizeof(FF_HANDLE_TYPE));
+	*hfile_ptr = hfile;
+      }
+      BEGIN_ESCAPEABLE(do_find_close, hfile_ptr);
       scheme_thread_block(0);
       END_ESCAPEABLE();
       scheme_current_thread->ran_some = 1;
