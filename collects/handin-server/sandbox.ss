@@ -129,7 +129,8 @@
                         `(begin ,language ,@body)]
                        [else (error 'make-evaluator
                                     "Bad language specification: ~e"
-                                    language)])])
+                                    language)])]
+           [ns (current-namespace)])
       (when uncovered!
         (safe-eval '(require (lib "coverage.ss" "handin-server" "private"))))
       (safe-eval body)
@@ -140,7 +141,8 @@
           (current-namespace (module->namespace mod))))
       (when uncovered!
         (uncovered! (filter (lambda (x) (eq? 'program (syntax-source x)))
-                            (safe-eval '(get-uncovered-expressions)))))))
+                            (parameterize ([current-namespace ns])
+                              (safe-eval '(get-uncovered-expressions))))))))
 
   (define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
   (define make-eventspace    (mz/mr void make-eventspace))
