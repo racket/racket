@@ -157,46 +157,51 @@
           [input-ch  (make-channel)]
           [result-ch (make-channel)])
       (parameterize ([current-namespace ns]
-                     [current-inspector (make-inspector)]
-                     ;; bogus parameter and value if we're in mzscheme
-                     [current-eventspace (make-eventspace)])
-        (run-in-bg
-          (lambda ()
-            ;; First read program and evaluate it as a module:
-            (with-handlers ([void (lambda (exn) (channel-put result-ch exn))])
-              (evaluate-program
-               language teachpacks input-program
-               (and coverage-enabled
-                    (lambda (exprs) (set! uncovered-expressions exprs))))
-              (channel-put result-ch 'ok))
-            ;; Now wait for interaction expressions:
-            (let loop ()
-              (let ([expr (channel-get input-ch)])
-                (unless (eof-object? expr)
-                  (with-handlers ([void (lambda (exn)
-                                          (channel-put result-ch
-                                                       (cons 'exn exn)))])
-                    (channel-put result-ch
-                                 (cons 'vals (call-with-values
-                                                 (lambda () (safe-eval expr))
-                                                 list))))
-                  (loop))))
-            (let loop ()
-              (channel-put result-ch '(exn . no-more-to-evaluate))
-              (loop))))
-        (let ([r (channel-get result-ch)])
-          (if (eq? r 'ok)
-            ;; Initial program executed ok, so return an evaluator:
-            (lambda (expr)
-              (if (eq? expr get-uncovered-expressions)
-                uncovered-expressions
-                (begin (channel-put input-ch expr)
-                       (let ([r (channel-get result-ch)])
-                         (if (eq? (car r) 'exn)
-                           (raise (cdr r))
-                           (apply values (cdr r)))))))
-            ;; Program didn't execute:
-            (raise r))))))
+                     [current-inspector (make-inspector)])
+        ;; Note the above definition of `current-eventspace': in MzScheme, it
+        ;; is a parameter that is not used at all.  Also note that creating an
+        ;; eventspace starts a thread that will eventually run the callback
+        ;; code (which evaluates the program in `run-in-bg') -- so this
+        ;; parameterization must be nested in the above, or it will not use the
+        ;; new namespace.
+        (parameterize ([current-eventspace (make-eventspace)])
+          (run-in-bg
+           (lambda ()
+             ;; First read program and evaluate it as a module:
+             (with-handlers ([void (lambda (exn) (channel-put result-ch exn))])
+               (evaluate-program
+                language teachpacks input-program
+                (and coverage-enabled
+                     (lambda (exprs) (set! uncovered-expressions exprs))))
+               (channel-put result-ch 'ok))
+             ;; Now wait for interaction expressions:
+             (let loop ()
+               (let ([expr (channel-get input-ch)])
+                 (unless (eof-object? expr)
+                   (with-handlers ([void (lambda (exn)
+                                           (channel-put result-ch
+                                                        (cons 'exn exn)))])
+                     (channel-put result-ch
+                                  (cons 'vals (call-with-values
+                                                  (lambda () (safe-eval expr))
+                                                  list))))
+                   (loop))))
+             (let loop ()
+               (channel-put result-ch '(exn . no-more-to-evaluate))
+               (loop))))
+          (let ([r (channel-get result-ch)])
+            (if (eq? r 'ok)
+              ;; Initial program executed ok, so return an evaluator:
+              (lambda (expr)
+                (if (eq? expr get-uncovered-expressions)
+                  uncovered-expressions
+                  (begin (channel-put input-ch expr)
+                         (let ([r (channel-get result-ch)])
+                           (if (eq? (car r) 'exn)
+                             (raise (cdr r))
+                             (apply values (cdr r)))))))
+              ;; Program didn't execute:
+              (raise r)))))))
 
   ;; Resources ----------------------------------------------------------------
 
