@@ -1,20 +1,21 @@
 (module utils mzscheme
-  (require (lib "class.ss")
+  (require (lib "list.ss")
+           (lib "class.ss")
            (lib "mred.ss" "mred")
            (lib "posn.ss" "lang")
-           "private/run-status.ss"
-           "private/config.ss"
            (prefix pc: (lib "pconvert.ss"))
            (lib "pretty.ss")
-           (lib "list.ss")
-           (lib "string.ss")
-           (only "handin-server.ss" timeout-control))
+           (only "handin-server.ss" timeout-control)
+           "private/run-status.ss"
+           "private/config.ss"
+           "sandbox.ss")
 
-  (provide get-conf
+  (provide (all-from "sandbox.ss")
+
+           get-conf
 
            unpack-submission
 
-           make-evaluator
            make-evaluator/submission
            evaluate-all
            evaluate-submission
@@ -25,8 +26,6 @@
            current-run-status
            message
            current-value-printer
-
-           coverage-enabled
 
            check-proc
            check-defined
@@ -48,162 +47,7 @@
       (read-editor-global-footer stream)
       (values definitions-text interactions-text)))
 
-  ;; Protection ---------------------------------------
-
-  (define ok-path-re
-    (regexp
-     (string-append
-      "^(?:"
-      (apply string-append
-             (cdr (apply append
-                         (map (lambda (p)
-                                (list "|" (regexp-quote (path->string p))))
-                              (current-library-collection-paths)))))
-      ")(?:/|$)")))
-
-  (define tight-security
-    (make-security-guard
-     (current-security-guard)
-     (lambda (what path modes)
-       (when (or (memq 'write modes)
-                 (memq 'execute modes)
-                 (memq 'delete modes)
-                 (and path (not (regexp-match ok-path-re (path->string path)))))
-         (error what "file access denied (~a)" path)))
-     (lambda (what host port mode) (error what "network access denied"))))
-
-  (define null-input (open-input-string ""))
-  (define (safe-eval expr . more)
-    (parameterize ([current-security-guard tight-security]
-                   [current-input-port null-input]
-                   ;; breaks: [current-code-inspector (make-inspector)]
-                   )
-      (apply eval expr more)))
-
   ;; Execution ----------------------------------------
-
-  (define coverage-enabled (make-parameter #f))
-
-  (define modules-to-attach
-    (list '(lib "posn.ss" "lang")
-          '(lib "cache-image-snip.ss" "mrlib")))
-
-  (define (make-evaluation-namespace)
-    (let ([new-ns (make-namespace-with-mred)]
-          [orig-ns (current-namespace)])
-      (for-each (lambda (mod) (dynamic-require mod #f))
-                modules-to-attach)
-      (let ([modsyms
-             (map (lambda (mod) ((current-module-name-resolver) mod #f #f))
-                  modules-to-attach)])
-        (parameterize ((current-namespace new-ns))
-          (for-each (lambda (ms) (namespace-attach-module orig-ns ms))
-                    modsyms)))
-      new-ns))
-
-  (define (make-evaluator language teachpacks program-port)
-    (let ([coverage-enabled (coverage-enabled)]
-          [uncovered-expressions #f]
-          [ns (make-evaluation-namespace)]
-          [orig-ns (current-namespace)])
-      (parameterize ([current-namespace ns]
-                     [read-case-sensitive #t]
-                     [read-decimal-as-inexact #f]
-                     [current-inspector (make-inspector)])
-        (parameterize ([current-eventspace (make-eventspace)])
-          (let ([ch (make-channel)]
-                [result-ch (make-channel)])
-            (queue-callback
-             (lambda ()
-               ;; First read program and evaluate it as a module:
-               (with-handlers ([void (lambda (exn) (channel-put result-ch (cons 'exn exn)))])
-                 (let* ([body
-                         (parameterize ([read-case-sensitive #t]
-                                        [read-decimal-as-inexact #f])
-                           (let loop ([l null])
-                             (let ([expr (read-syntax 'program program-port)])
-                               (if (eof-object? expr)
-                                 (reverse l)
-                                 (loop (cons expr l))))))]
-                        [body (append (if (and (pair? teachpacks)
-                                               (eq? 'begin (car teachpacks)))
-                                        (cdr teachpacks)
-                                        (map (lambda (tp)
-                                               `(,#'require
-                                                 ,(if (pair? tp)
-                                                    tp `(file ,tp))))
-                                             teachpacks))
-                                      body)]
-                        [body
-                         (cond
-                          [(and (symbol? language)
-                                (memq language '(beginner
-                                                 beginner-abbr
-                                                 intermediate
-                                                 intermediate-lambda
-                                                 advanced)))
-                           `(module m
-                                (lib ,(case language
-                                        [(beginner) "htdp-beginner.ss"]
-                                        [(beginner-abbr) "htdp-beginner-abbr.ss"]
-                                        [(intermediate) "htdp-intermediate.ss"]
-                                        [(intermediate-lambda) "htdp-intermediate-lambda.ss"]
-                                        [(advanced) "htdp-advanced.ss"])
-                                     "lang")
-                              ,@body)]
-                          [(or (and (pair? language) (eq? 'lib (car language)))
-                               (symbol? language))
-                           `(module m ,language ,@body)]
-                          [(and (pair? language)
-                                (eq? 'begin (car language)))
-                           `(begin ,language ,@body)]
-                          [else (error 'make-evaluator
-                                       "Bad language specification: ~e"
-                                       language)])])
-                   (when coverage-enabled
-                     (safe-eval '(require (lib "coverage.ss"
-                                               "handin-server" "private"))))
-                   (safe-eval body)
-                   (when (and (pair? body) (eq? 'module (car body))
-                              (pair? (cdr body)) (symbol? (cadr body)))
-                     (let ([mod (cadr body)])
-                       (safe-eval `(require ,mod))
-                       (current-namespace (module->namespace mod))))
-                   (when coverage-enabled
-                     (set! uncovered-expressions
-                           (filter (lambda (x) (eq? 'program (syntax-source x)))
-                                   (safe-eval '(get-uncovered-expressions)
-                                              ns)))))
-                 (channel-put result-ch 'ok))
-               ;; Now wait for interaction expressions:
-               (let loop ()
-                 (let ([expr (channel-get ch)])
-                   (unless (eof-object? expr)
-                     (with-handlers ([void (lambda (exn)
-                                             (channel-put result-ch
-                                                          (cons 'exn exn)))])
-                       (channel-put result-ch (cons 'val (safe-eval expr))))
-                     (loop))))
-               (let loop ()
-                 (channel-put result-ch '(exn . no-more-to-evaluate))
-                 (loop))))
-            (let ([r (channel-get result-ch)])
-              (if (eq? r 'ok)
-                  ;; Initial program executed ok, so return an evaluator:
-                  (lambda (expr . more)
-                    (if (pair? more)
-                      (case (car more)
-                        [(uncovered-expressions) uncovered-expressions]
-                        [else (error 'make-evaluator
-                                     "Bad arguments: ~e"
-                                     (cons expr more))])
-                      (begin (channel-put ch expr)
-                             (let ([r (channel-get result-ch)])
-                               (if (eq? (car r) 'exn)
-                                 (raise (cdr r))
-                                 (cdr r))))))
-                  ;; Program didn't execute:
-                  (raise (cdr r)))))))))
 
   (define (open-input-text-editor/lines str)
     (let ([inp (open-input-text-editor str)])
@@ -211,7 +55,7 @@
 
   (define (make-evaluator/submission language teachpacks str)
     (let-values ([(defs interacts) (unpack-submission str)])
-      (make-evaluator language teachpacks (open-input-text-editor/lines defs))))
+      (make-evaluator language teachpacks (open-input-text-editor defs))))
 
   (define (evaluate-all source port eval)
     (let loop ()
@@ -228,10 +72,9 @@
 
   (define (reraise-exn-as-submission-problem thunk)
     (with-handlers ([void (lambda (exn)
-                            (error
-                             (if (exn? exn)
-                                 (exn-message exn)
-                                 (format "~s" exn))))])
+                            (error (if (exn? exn)
+                                     (exn-message exn)
+                                     (format "exception: ~e" exn))))])
       (thunk)))
 
   ;; ----------------------------------------
@@ -337,6 +180,6 @@
 
   (define (call-with-evaluator/submission lang teachpacks str go)
     (let-values ([(defs interacts) (unpack-submission str)])
-      (call-with-evaluator lang teachpacks (open-input-text-editor/lines defs) go)))
+      (call-with-evaluator lang teachpacks (open-input-text-editor defs) go)))
 
   )

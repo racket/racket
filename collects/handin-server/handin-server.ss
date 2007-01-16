@@ -550,13 +550,13 @@
           (custodian-limit-memory session-cust
                                   (get-conf 'session-memory-limit)
                                   session-cust)))
-      (let* ([watcher
-              (parameterize ([current-custodian orig-custodian])
-                (thread
-                 (lambda ()
-                   (let ([session-thread (channel-get session-channel)])
-                     (let loop ([timed-out? #f])
-                       (cond
+      (let ([watcher
+             (parameterize ([current-custodian orig-custodian])
+               (thread
+                (lambda ()
+                  (let ([session-thread (channel-get session-channel)])
+                    (let loop ([timed-out? #f])
+                      (cond
                         [(sync/timeout 3 session-thread)
                          (let* ([status (unbox status-box)]
                                 [status (if status
@@ -574,9 +574,8 @@
                         [(let ([t timeout]) ; grab value to avoid races
                            (and t ((current-inexact-milliseconds) . > . t)))
                          ;; Shutdown here to get the handin-terminated error
-                         ;;  message, instead of relying on
-                         ;;  (get-conf 'session-timeout)
-                         ;;  at the run-server level
+                         ;;  message, instead of relying on a timeout at the
+                         ;;  run-server level
                          (custodian-shutdown-all session-cust)
                          (loop #t)]
                         [else

@@ -33,7 +33,7 @@ server and each user's password.
 
 
 Quick Start for a Test Drive:
-============================================
+=============================
 
  1.  Create a new directory.
 
@@ -83,10 +83,8 @@ Quick Start for a Test Drive:
   -------------------------------------------------------------------
 
 
-Client Customization
-============================================
-
-To customize the client:
+Client Customization:
+=====================
 
   1. Rename (or make a copy of) the "handin-client" collection
      directory.  The new name should describe your class uniquely.
@@ -139,8 +137,8 @@ To customize the client:
       --all-users flag.
 
 
-Server Setup
-============================================
+Server Setup:
+=============
 
 You must prepare a special directory to host the handin server.  To
 run the server, you should either be in this directory, or you should
@@ -556,26 +554,102 @@ to start with a specific assignment (named ASSIGNMENT).  The default
 PORT is 7980.
 
 
-Checker Utilities
-============================================
+Checker Utilities:
+==================
 
-The _utils.ss_ module provides utilities helpful in implementing
-`checker' functions:
+The checker utilities are provided to make writing checker functions.
+They are provided in a few layers, each layer provides new
+functionality in addition to the lower one.  These modules are (in
+order):
 
-> (get-conf key)
-  Returns a value from the configuration file (useful for reading
-  things like field names etc)
+* sandbox.ss -- basic sandbox evaluation utilities, can be used
+  independently from the handin-server.
 
-> (unpack-submission bytes)
-  Returns two text% objects corresponding to the submitted definitions
-  and interactions windows.
+* utils.ss -- additional utilities for dealing with handin
+  submissions, as well as a few helpers for testing code.
 
-> (make-evaluator language teachpack-paths program-port)
-  Returns a function of one required argument for evaluating
-  expressions in the designated language, and loading teachpacks that
-  are specified in `teachpack-paths'.  The `program-port' is an input
-  port that produces the content of the definitions window; use
-  `(open-input-string "")' for an empty definitions window.
+* checker.ss -- this layer automates the task of creating a checker
+  function (in "<active-assignment>/checker.ss" modules) to cope with
+  common submission situations.
+
+The following sections describe each of these modules.
+
+
+_sandbox.ss_
+------------
+
+The main function that is implemented in this module is
+`make-evaluator'.  Most of the functionality that is provided is used
+by this function.
+
+> mred?
+  A boolean that is bound to `#t' if we're currently running in MrEd,
+  `#f' if in plain MzScheme.  The idea is that you can use this module
+  both from MzScheme or, if needed, from MrEd.  (Higher levels
+  ("utils.ss" and "checker.ss"), need to be used with MrEd.)
+
+> coverage-enabled
+  A boolean parameter that controls whether coverage testing is
+  enabled in `make-evaluator'-created functions.  If it set to true,
+  the "handin-server/private/coverage.ss" module will be used to
+  detect uncovered expressions.  This information is collected after
+  the input port has been evaluated, so it is not affected by testing
+  code that is not part of the submission.  To retrieve the collected
+  information, apply the evaluation function on the special
+  `get-uncovered-expressions' value below.  The resulting value is a
+  list of uncovered expressions, with at most one per position+span
+  (which means that the contents may be unreliable, but the position
+  is).  The default is `#f'.
+
+> get-uncovered-expressions
+  A special value that, when passed to an evaluator created by
+  `make-evaluator', will return a list of uncovered syntax objects.
+
+> namespace-specs
+  A parameter that holds a list of values that specify how to create a
+  namespace for evaluation in `make-evaluator'.  The first item in the
+  list is a thunk that creates the namespace, and the rest are require
+  specs for modules that are to be attached to the created namespace.
+  The default is `make-namespace' and `(lib "posn.ss" "lang")' if
+  running in MzScheme, or `make-namespace-with-mred' and
+  `(lib "cache-image-snip.ss" "mrlib")' as well as the posn library.
+  (The module specs are needed for sharing module instantiations, for
+  example, without the above, posn values in testing code will be a
+  different type from posn values in tested code.)
+
+> sandbox-reader
+  A parameter that holds a function that reads all expressions from
+  the current-input-port.  It is used to read the submission source.
+  It must return a list of syntax objects, and it must use the symbol
+  `program' as the input source (that is, something like a loop that
+  consumes the input using `(read-syntax 'program)').  The default
+  reader is using a plain `read-syntax' -- it does so while setting
+  `read-case-sensitive' to `#t', and `read-decimal-as-inexact' to `#f'
+  (both are sensible choices for testing code).
+
+> sandbox-security-guard
+  A parameter that holds a security guard that is used by all
+  evaluations that happen in a `make-evaluator' function.  The default
+  value is a security guard that forbids writing, deleting, execution,
+  acessing any paths outside of the collection paths, or any kind of
+  network activity.
+
+> (make-evaluator language teachpack-paths input-program)
+  This is the main entry point for the sandbox module.
+
+  This function Creates an evaluator function for evaluating
+  expressions in the designated `language', after loading teachpacks
+  that are specified in `teachpack-paths', and after evaluating the
+  code in the `input-program'.
+
+  The `input-program' holds the input program in one of the following
+  ways:
+  * an input port that produces the content of the definitions window;
+  * a string or a byte string that contains the definitions window
+    (you can use "" for an empty definitions window);
+  * a path that names a file holding the input program.
+  The contents of the input program is read using the
+  `sandbox-reader', with line-counting enabled.
 
   The `language' can be:
   * a symbol indicating a built-in language (currently, only
@@ -593,14 +667,34 @@ The _utils.ss_ module provides utilities helpful in implementing
   * a list that begins with a 'begin symbol is arbitrary code that is
     prefixed into the submitted program.
 
-  The actual evaluation of expressions happens in a newly created
-  eventspace and namespace, and under the supervision of a strict
-  security guard that reading files only from PLT collections, and no
-  other operations.
+  The actual evaluation of expressions (both the program and later
+  evaluations) happens under the `sandbox-security-guard'
+  restrictions, and if MrEd is used -- in a newly created eventspace.
+  See also `with-limits' below for adding resource limits, and
+  `get-uncovered-expressions' above for enforcing test coverage.
 
-  Additional arguments to the evaluator function are special messages
-  that retrieve additional information.  Currently, only
-  'uncovered-expressions is used (see below).
+> (with-limits sec mb thunk)
+  This function executes the given thunk with memory and time
+  restrictions: if execution consumes more than `mb' megabytes or more
+  that `sec' seconds, then the computation is aborted and an error is
+  thrown.  Otherwise the result of the thunk is returned (a value,
+  multiple values, or raise an exception).  Each of the two limits can
+  be `#f' to disable it.
+
+  (Note: memory limit requires running in a 3m executable; the limit
+  is only checked after a GC happens.)
+
+
+_utils.ss_
+----------
+
+> (get-conf key)
+  Returns a value from the configuration file (useful for reading
+  things like field names etc)
+
+> (unpack-submission bytes)
+  Returns two text% objects corresponding to the submitted definitions
+  and interactions windows.
 
 > (make-evaluator/submission language teachpack-paths bytes)
   Like `make-evaluator', but the definitions content is supplied as a
@@ -625,17 +719,6 @@ The _utils.ss_ module provides utilities helpful in implementing
 
 > (evaluate-submission bytes eval)
   Like `load' on a submission byte string.
-
-> coverage-enabled
-  Parameter that controls whether coverage testing is enabled.  If it
-  set to true, the handin-server/private/coverage collection will be
-  used to detect uncovered expressions.  This information is collected
-  before additional checker-evaluations.  To retrieve the collected
-  information, apply the evaluation function with a second argument of
-  'uncovered-expressions (the first argument will be ignored).  The
-  resulting value is a list of uncovered expressions, with at most one
-  per position+span (so the contents is unreliable, but the position
-  is).
 
 > (check-proc eval expect-v compare-proc proc-name arg ...)
   Calls the function named `proc-name' using the evaluator `eval',
@@ -717,15 +800,15 @@ The _utils.ss_ module provides utilities helpful in implementing
   specified), the timer will be reset to the 'session-timeout value.)
 
 
-Extra Checker Utilities
-============================================
+_checker.ss_
+------------
 
-The _extra-utils.ss_ module provides a higher-level of utilities,
-helpful in implementing `checker' functions that are intended for a
-more automated system.  This module is a language module -- a typical
+The "checker.ss" module provides a higher-level of utilities, helpful
+in implementing `checker' functions that are intended for a more
+automated system.  This module is a language module -- a typical
 checker that uses it looks like this:
 
-   (module checker (lib "extra-utils.ss" "handin-server")
+   (module checker (lib "checker.ss" "handin-server")
      (check: :language  'intermediate
              :users     pairs-or-singles-with-warning
              :coverage? #t
@@ -998,11 +1081,13 @@ value from the submission code.
   you can call it earlier (eg, before testing) to show clients a
   coverage error first.
 
-*** Multiple-file submissions
+
+Multiple-File Submissions:
+==========================
 
 By default, the system is set up for submissions of single a single
 file, straight fom DrScheme using the handin-client.  There is some
-support for multi-file submissions in "extra-utils.ss" and in the
+support for multi-file submissions in "checker.ss" and in the
 handin-client -- it is possible to submit multiple files, and have the
 system generate a single file that is the concatenation of all
 submission files (used only with text files).  To set up multi-file
@@ -1050,7 +1135,9 @@ submission utility -- the resulting executable can be used outside of
 DrScheme (but PLT Scheme is still required, so it cannot be
 uninstalled).
 
-*** Auto-updater
+
+Auto-Updater:
+=============
 
 The handin-client has code that can be used for automatic updating of
 clients.  This can be useful for courses where you distribute some
