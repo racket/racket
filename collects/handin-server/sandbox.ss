@@ -93,7 +93,7 @@
                           [(bytes?  inp) (open-input-bytes inp)]
                           [(path?   inp) (open-input-file inp)]
                           [else (error 'read-code "bad input: ~e" inp)])])
-      (port-count-lines! current-input-port)
+      (port-count-lines! (current-input-port))
       ((sandbox-reader))))
 
   (define (evaluate-program language teachpacks input-program uncovered!)
