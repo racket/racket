@@ -1320,7 +1320,7 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
 
     r = user_read_result(peek ? "user port peek" : "user port read",
 			 port, val, bstr, peek, nb,
-			 1, !!uip->peek_proc, unless && SCHEME_CDR(unless), sinfo);
+			 1, !!uip->peek_proc, !!unless, sinfo);
 
     scheme_pop_break_enable(&cframe, 1);
 
