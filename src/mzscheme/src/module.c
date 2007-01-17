@@ -2399,6 +2399,12 @@ static void expstart_module(Scheme_Module *m, Scheme_Env *env, int restart,
       menv = scheme_new_module_env(env, m, 0);
       scheme_hash_set(MODCHAIN_TABLE(env->modchain), m->modname, (Scheme_Object *)menv);
       
+      /* These three should be set by various "finish"es, but
+         we initialize them in case there's an error runing a "finish". */
+      menv->require_names = scheme_null;
+      menv->et_require_names = scheme_null;
+      menv->tt_require_names = scheme_null;
+
       menv->phase = env->phase;
       menv->link_midx = syntax_idx;
       insp = scheme_make_inspector(m->insp);
