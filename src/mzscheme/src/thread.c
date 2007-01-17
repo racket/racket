@@ -2092,7 +2092,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     process->extra_mrefs = scheme_null;
 
 #ifndef MZ_PRECISE_GC
-    scheme_weak_reference((void **)&hop->p);
+    scheme_weak_reference((void **)(void *)&hop->p);
 #endif
   }
 
@@ -2950,7 +2950,7 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
     np->mref = mref;
     np->extra_mrefs = scheme_null;
 #ifndef MZ_PRECISE_GC
-    scheme_weak_reference((void **)&hop->p);
+    scheme_weak_reference((void **)(void *)&hop->p);
 #endif
   }
 
@@ -2997,7 +2997,7 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 #ifdef MZ_PRECISE_GC
   WEAKIFIED(np->mr_hop->p) = NULL;
 #else
-  scheme_unweak_reference((void **)&np->mr_hop->p);
+  scheme_unweak_reference((void **)(void *)&np->mr_hop->p);
 #endif
   scheme_remove_all_finalization(np->mr_hop);
 
@@ -5485,7 +5485,7 @@ static Scheme_Thread_Cell_Table *inherit_cells(Scheme_Thread_Cell_Table *cells,
       cell = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
       if (cell && (((Thread_Cell *)cell)->inherited == inherited)) {
 	v = (Scheme_Object *)bucket->val;
-	scheme_add_to_table(t, (const char *)cell, v, 0);
+	scheme_add_to_table(t, (char *)cell, v, 0);
       }
     }
   }
