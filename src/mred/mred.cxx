@@ -3246,7 +3246,12 @@ wxFrame *MrEdApp::OnInit(void)
 #if !defined(USE_SENORA_GC) && !defined(MZ_PRECISE_GC)
   GC_set_warn_proc(CAST_IGNORE MrEdIgnoreWarnings);
 #endif
+#if 0
+  /* Used to be set for the sake of Mac OS Classic. Now,
+     setting GC_out_of_memory for 3m means that it's ok
+     to fail when a limit is reached. We don't want that. */
   GC_out_of_memory = (OOM_ptr)MrEdOutOfMemory;
+#endif
 
 #ifdef SGC_STD_DEBUGGING
   scheme_external_dump_info = dump_cpp_info;
