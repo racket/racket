@@ -1936,6 +1936,25 @@ static int cert_in_chain(Scheme_Object *mark, Scheme_Object *key, Scheme_Cert *c
   return 0;
 }
 
+static Scheme_Cert *append_certs(Scheme_Cert *a, Scheme_Cert *b)
+{
+  if (!a) return b;
+  if (!b) return a;
+  
+  if (a->depth < b->depth) {
+    Scheme_Cert *c = a;
+    a = b;
+    b = c;
+  }
+
+  for (; b; b = b->next) {
+    if (!cert_in_chain(b->mark, b->key, a))
+      a = cons_cert(b->mark, b->modidx, b->insp, b->key, a);
+  }
+
+  return a;
+}
+
 static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Object *use_key, int active)
 /* If !active, then inactive certs must have been lifted already. */
 {
@@ -1978,7 +1997,7 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
   else
     orig_certs = INACTIVE_CERTS(stx);
   now_certs = orig_certs;
-  
+
   for (; certs; certs = next_certs) {
     next_certs = certs->next;
     if (!cert_in_chain(certs->mark, use_key, now_certs)) {
@@ -2030,16 +2049,8 @@ Scheme_Object *scheme_stx_add_inactive_certs(Scheme_Object *o, Scheme_Object *ce
 
 Scheme_Object *scheme_stx_extract_certs(Scheme_Object *o, Scheme_Object *base_certs)
 {
-  Scheme_Cert *result = (Scheme_Cert *)base_certs, *certs;
-
-  certs = ACTIVE_CERTS((Scheme_Stx *)o);
-
-  for (; certs; certs = certs->next) {
-    if (!cert_in_chain(certs->mark, certs->key, result))
-      result = cons_cert(certs->mark, certs->modidx, certs->insp, certs->key, result);
-  }
-
-  return (Scheme_Object *)result;
+  return (Scheme_Object *)append_certs((Scheme_Cert *)base_certs,
+                                       ACTIVE_CERTS((Scheme_Stx *)o));
 }
 
 Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env *menv, 
@@ -2364,7 +2375,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
 	 are always lifted when inactive certs are added.) */
       Scheme_Object *np;
       Scheme_Stx *res;
-      Scheme_Cert *certs, *cc;
+      Scheme_Cert *certs;
 
       res = (Scheme_Stx *)scheme_make_stx(stx->val, 
 					  stx->srcloc,
@@ -2374,12 +2385,8 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
       np = scheme_make_raw_pair(SCHEME_CAR(stx->certs), NULL);
       res->certs = np;
 
-      cc = *cp;
-      for (certs = INACTIVE_CERTS(stx); certs; certs = certs->next) {
-	if (!cert_in_chain(certs->mark, certs->key, cc))
-	  cc = cons_cert(certs->mark, certs->modidx, certs->insp, certs->key, cc);
-      }
-      *cp = cc;
+      certs = append_certs(INACTIVE_CERTS(stx), *cp);
+      *cp = certs;
 
       return (Scheme_Object *)res;
     } else if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
