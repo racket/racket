@@ -1526,7 +1526,8 @@ module browser threading seems wrong.
                         (if logging
                             (stop-logging)
                             (start-logging)))))
-              (make-object separator-menu-item% file-menu)))
+              (make-object separator-menu-item% file-menu)
+              (super file-menu:between-save-as-and-print file-menu)))
           
           [define/override file-menu:print-string (λ () (string-constant print-definitions))]
           (define/override (file-menu:between-print-and-close file-menu)

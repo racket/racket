@@ -1125,6 +1125,19 @@
                                                    (preferences:get 'framework:print-output-mode))
                                              #t))
           (define/override file-menu:create-print? (λ () #t))
+
+          (inherit get-top-level-window)
+          (define/override (file-menu:between-save-as-and-print file-menu)
+            (when (can-get-page-setup-from-user?)
+              (new menu-item% 
+                   [parent file-menu]
+                   [label (string-constant page-setup-menu-item)]
+                   [help-string (string-constant page-setup-info)]
+                   [callback
+                    (lambda (item event)
+                      (let ([s (get-page-setup-from-user #f (get-top-level-window))])
+                        (when s
+                          (send (current-ps-setup) copy-from s))))])))
           
           (define/override edit-menu:between-select-all-and-find
            (λ (edit-menu)
