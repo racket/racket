@@ -107,7 +107,7 @@
       (unless (ok2? b)
 	(bad b "second" 2type))
       (unless (ok3? c)
-	(bad c "second" 3type))))
+	(bad c "third" 3type))))
 
   (define (positive-real? v)
     (and (real? v) (>= v 0)))
