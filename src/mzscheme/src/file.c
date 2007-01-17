@@ -4398,10 +4398,12 @@ static Scheme_Object *expand_path(int argc, Scheme_Object *argv[])
     return scheme_make_sized_path(filename, strlen(filename), 1);
 }
 
+#ifdef USE_FINDFIRST
 void do_find_close(void *p) 
 {
   FIND_CLOSE(*(FF_HANDLE_TYPE *)p);
 }
+#endif
 
 static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *argv[])
 {
