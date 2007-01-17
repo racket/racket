@@ -193,21 +193,16 @@
   (define (raise-contract-error val src-info blame contract-sexp fmt . args)
     (raise
      (make-exn:fail:contract2
-      (string->immutable-string
-       ((contract-violation->string) val 
-                                     src-info 
-                                     blame
-                                     contract-sexp 
-                                     (apply format fmt args)))
+      ((contract-violation->string)
+       val src-info blame contract-sexp (apply format fmt args))
       (current-continuation-marks)
       (if src-info
-          (list (make-srcloc 
-                 (syntax-source src-info)
-                 (syntax-line src-info)
-                 (syntax-column src-info)
-                 (syntax-position src-info)
-                 (syntax-span src-info)))
-          '()))))
+        (list (make-srcloc (syntax-source src-info)
+                           (syntax-line src-info)
+                           (syntax-column src-info)
+                           (syntax-position src-info)
+                           (syntax-span src-info)))
+        '()))))
   
   (define print-contract-liner
     (let ([default (pretty-print-print-line)])

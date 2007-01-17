@@ -149,9 +149,8 @@
        (unless (<= start end)
          (raise
           (make-exn:fail:contract
-           (string->immutable-string
-            (format "~a: indices (~a, ~a) out of range for vector: ~a"
-                    'vector-copy start end vec))
+           (format "~a: indices (~a, ~a) out of range for vector: ~a"
+                   'vector-copy start end vec)
            (current-continuation-marks))))
        (let ((new-vector
               (apply make-vector (cons (- end start) fill))))

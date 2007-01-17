@@ -46,9 +46,8 @@
            (unless (procedure-arity-includes? f num)
              (raise
               (make-exn:fail:contract:arity
-               (string->immutable-string
-                (format "<procedure-from-consumer-thread>: consumer procedure arity is ~e; provided ~s argument~a"
-                        (procedure-arity f) num (if (= 1 num) "" "s")))
+               (format "<procedure-from-consumer-thread>: consumer procedure arity is ~e; provided ~s argument~a"
+                       (procedure-arity f) num (if (= 1 num) "" "s"))
                (current-continuation-marks)))))
          (semaphore-wait protect)
          (set! front-state (cons new-state front-state))

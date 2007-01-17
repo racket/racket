@@ -114,8 +114,8 @@ PLANNED FEATURES:
   ;; ============================================================
   ;; FEATURE IMPLEMENTATIONS
   
-  (define (fail s . args) 
-    (raise (make-exn:fail (string->immutable-string (apply format s args)) (current-continuation-marks))))
+  (define (fail s . args)
+    (raise (make-exn:fail (apply format s args) (current-continuation-marks))))
   
   (define (download/install owner name majstr minstr)
     (let* ([maj (read-from-string majstr)]

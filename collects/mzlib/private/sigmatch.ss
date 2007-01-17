@@ -46,13 +46,12 @@
 		(when (eq? v no-val)
 		  (raise
 		   (make-exn:fail:unit
-		    (string->immutable-string
-		     (format
-		      "~a: ~a is missing a value name `~a', required by ~a"
-		      who
-		      src-context
-		      (sig-path-name s path)
-		      dest-context))
+		    (format
+                     "~a: ~a is missing a value name `~a', required by ~a"
+                     who
+                     src-context
+                     (sig-path-name s path)
+                     dest-context)
 		    (current-continuation-marks))))
 		(and v
 		     (begin
@@ -60,14 +59,13 @@
 			 (let ([p (sig-path-name s path)])
 			   (raise
 			    (make-exn:fail:unit
-			     (string->immutable-string
-			      (format
-			       "~a: ~a contains `~a' as a sub-unit name, but ~a contains `~a' as a value name"
-			       who
-			       src-context
-			       p
-			       dest-context
-			       p))
+			     (format
+                              "~a: ~a contains `~a' as a sub-unit name, but ~a contains `~a' as a value name"
+                              who
+                              src-context
+                              p
+                              dest-context
+                              p)
 			     (current-continuation-marks)))))
 		       (hash-table-put! table s #f)
 		       #t)))]
@@ -76,13 +74,12 @@
 		(when (eq? v no-val)
 		  (raise
 		   (make-exn:fail:unit
-		    (string->immutable-string
-		     (format
-		      "~a: ~a is missing a sub-unit name `~a', required by ~a"
-		      who
-		      src-context
-		      (sig-path-name (car s) path)
-		      dest-context))
+		    (format
+                     "~a: ~a is missing a sub-unit name `~a', required by ~a"
+                     who
+                     src-context
+                     (sig-path-name (car s) path)
+                     dest-context)
 		    (current-continuation-marks))))
 		(and v
 		     (begin
@@ -90,14 +87,13 @@
 			 (let ([p (sig-path-name (car s) path)])
 			   (raise
 			    (make-exn:fail:unit
-			     (string->immutable-string
-			      (format
-			       "~a: ~a contains `~a' as a value name, but ~a contains `~a' as a sub-unit name"
-			       who
-			       src-context
-			       p
-			       dest-context
-			       p))
+			     (format
+                              "~a: ~a contains `~a' as a value name, but ~a contains `~a' as a sub-unit name"
+                              who
+                              src-context
+                              p
+                              dest-context
+                              p)
 			     (current-continuation-marks)))))
 		       (hash-table-put! table (car s) #f)
 		       (check-sig-match v (cdr s) (cons (car s) path)
@@ -113,14 +109,13 @@
 		  (let ([p (sig-path-name k path)])
 		    (raise
 		     (make-exn:fail:unit
-		      (string->immutable-string
-		       (format
-			"~a: ~a contains an extra ~a name `~a' that is not required by ~a"
-			who
-			src-context
-			(if (symbol? v) 'value 'sub-unit)
-			p
-			dest-context))
+		      (format
+                       "~a: ~a contains an extra ~a name `~a' that is not required by ~a"
+                       who
+                       src-context
+                       (if (symbol? v) 'value 'sub-unit)
+                       p
+                       dest-context)
 		      (current-continuation-marks)))))))
 	     #t)))
 

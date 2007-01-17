@@ -64,10 +64,8 @@
   ;; constructs a cookie-error struct from the given error message
   ;; (added to fix exceptions-must-take-immutable-strings bug)
   (define (error* fmt . args)
-    (raise
-     (make-cookie-error
-       (string->immutable-string (apply format fmt args))
-       (current-continuation-marks))))
+    (raise (make-cookie-error (apply format fmt args)
+                              (current-continuation-marks))))
 
   ;; The syntax for the Set-Cookie response header is
   ;; set-cookie      =       "Set-Cookie:" cookies

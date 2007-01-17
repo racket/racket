@@ -3430,17 +3430,13 @@
   ;;--------------------------------------------------------------------
   
   (define undefined (letrec ([x x]) x))
-  
+
   (define-struct (exn:fail:object exn:fail) () insp)
 
   (define (obj-error where . msg)
-    (raise
-     (make-exn:fail:object
-      (string->immutable-string
-       (string-append
-	(format "~a: " where)
-	(apply format msg)))
-      (current-continuation-marks))))
+    (raise (make-exn:fail:object
+            (string-append (format "~a: " where) (apply format msg))
+            (current-continuation-marks))))
 
   (define (for-class name)
     (if name (format " for class: ~a" name) ""))
@@ -3448,7 +3444,7 @@
     (if name (format " for ~a class: ~a" which name) ""))
   (define (for-intf name)
     (if name (format " for interface: ~a" name) ""))
-  
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; mixin

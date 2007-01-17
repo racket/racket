@@ -45,8 +45,7 @@
         (hash-table-get instances instance-id
                         (lambda ()
                           (raise (make-exn:fail:servlet-manager:no-instance
-                                  (string->immutable-string
-                                   (format "No instance for id: ~a" instance-id))
+                                  (format "No instance for id: ~a" instance-id)
                                   (current-continuation-marks)
                                   instance-expiration-handler)))))
       instance)
@@ -95,8 +94,7 @@
              (hash-table-get htable a-k-id
                              (lambda ()
                                (raise (make-exn:fail:servlet-manager:no-continuation
-                                       (string->immutable-string 
-                                        (format "No continuation for id: ~a" a-k-id))
+                                       (format "No continuation for id: ~a" a-k-id)
                                        (current-continuation-marks)
                                        instance-expiration-handler))))
            [(list salt k expiration-handler count)
@@ -105,8 +103,7 @@
             (if (or (not (eq? salt a-salt))
                     (not k))
                 (raise (make-exn:fail:servlet-manager:no-continuation
-                        (string->immutable-string
-                         (format "No continuation for id: ~a" a-k-id))
+                        (format "No continuation for id: ~a" a-k-id)
                         (current-continuation-marks)
                         (if expiration-handler
                             expiration-handler

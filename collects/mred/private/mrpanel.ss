@@ -130,7 +130,7 @@
       (public
 	[get-number (lambda () (length save-choices))]
 	[append (entry-point
-		 (lambda (n) 
+		 (lambda (n)
 		   (check-label-string '(method tab-panel% append) n)
 		   (let ([n (string->immutable-string n)])
 		     (set! save-choices (list-append save-choices (list n)))

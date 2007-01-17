@@ -320,18 +320,17 @@ flat-contract : contract
   ;; generates the correct error report for a define data. 
   ;; the first argument is the define-data contract being checked,
   ;; the second is the value being checked
-  ;; and the third is the contract (one of the flats that was used in the define-data) that will be
-  ;; reported as the best failure match
-  (define (define-data-report me value best-cnt)  
-    (with-handlers ([exn:contract-violation? 
-                     (lambda (e) 
-                       (raise 
-                        (make-exn:contract-violation 
-                         (string->immutable-string
-			  (format "contract violation: ~e is not a ~e [failed part: ~e]" 
-                                 value 
-                                 ((contract-hilighter me) '()) 
-                                 ((contract-hilighter best-cnt) (exn:contract-violation-path e))))
+  ;; and the third is the contract (one of the flats that was used in the
+  ;; define-data) that will be reported as the best failure match
+  (define (define-data-report me value best-cnt)
+    (with-handlers ([exn:contract-violation?
+                     (lambda (e)
+                       (raise
+                        (make-exn:contract-violation
+                         (format "contract violation: ~e is not a ~e [failed part: ~e]"
+                                 value
+                                 ((contract-hilighter me) '())
+                                 ((contract-hilighter best-cnt) (exn:contract-violation-path e)))
                          (current-continuation-marks)
                          value
                          '()
@@ -391,11 +390,10 @@ flat-contract : contract
   (define contract-error
     (opt-lambda (value cnt path [exn-to-pass #f] [message-composer #f])
        (let ([cnt-hilighted ((contract-hilighter cnt) path)])
-         (raise (make-exn:contract-violation 
-                 (string->immutable-string
-		  (if message-composer
-                      (format "contract violation: ~a" (message-composer cnt-hilighted))
-                      (format "contract violation: ~e didnt satisfy the contract ~e" value cnt-hilighted)))
+         (raise (make-exn:contract-violation
+                 (if message-composer
+                   (format "contract violation: ~a" (message-composer cnt-hilighted))
+                   (format "contract violation: ~e didnt satisfy the contract ~e" value cnt-hilighted))
                  (current-continuation-marks)
                  value
                  path

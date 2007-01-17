@@ -10,13 +10,13 @@
       ((val)
        (raise
         (make-exn:misc:match
-         (string->immutable-string (format "match: no matching clause for ~e" val))
+         (format "match: no matching clause for ~e" val)
          (current-continuation-marks)
          val)))
       ((val expr)
        (raise
         (make-exn:misc:match
-         (string->immutable-string (format "match: no matching clause for ~e: ~s" val expr))
+         (format "match: no matching clause for ~e: ~s" val expr)
          (current-continuation-marks)
          val)))))
   

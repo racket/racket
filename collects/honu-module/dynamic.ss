@@ -570,24 +570,20 @@
 	      (syntax-object->datum val-type)
 	      (syntax-object->datum target-type))
       val-expr)))
-  
+
   (define (check proc who type-name pred val)
     (let-values ([(tst new-val) (pred val)])
       (unless tst
 	(raise
 	 (make-exn:fail:contract
-	  (string->immutable-string
-	   (format "~a: expected ~a value for ~a, got something else: ~e"
-		   (or proc (if (eq? who #t) #f who) "procedure")
-		   type-name
-		   (cond
-		    [(eq? who #t) "result"]
-		    [else (if proc 
-			      (format "~a argument" who)
-			      (if who
-				  "initialization"
-				  "argument"))])
-		   val))
+	  (format "~a: expected ~a value for ~a, got something else: ~e"
+                  (or proc (if (eq? who #t) #f who) "procedure")
+                  type-name
+                  (cond [(eq? who #t) "result"]
+                        [else (if proc
+                                (format "~a argument" who)
+                                (if who "initialization" "argument"))])
+                  val)
 	  (current-continuation-marks))))
       new-val))
 

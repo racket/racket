@@ -20,11 +20,10 @@
                    [print-struct #t])
       (when (or (eq? (print-tests) (first result))
                 (eq? (print-tests) #t))
-        
         (pretty-print result))
       (when (and (eq? (print-tests) 'stop)
                  (eq? (first result) 'bad))
-        (raise (make-exn:test (string->immutable-string (format "test failed: ~a" result))
+        (raise (make-exn:test (format "test failed: ~a" result)
                               (current-continuation-marks))))))
   
   

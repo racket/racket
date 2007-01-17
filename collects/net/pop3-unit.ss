@@ -32,8 +32,7 @@
   (define (signal-error constructor format-string . args)
     (lambda exn-args
       (raise (apply constructor
-                    (string->immutable-string
-                     (apply format format-string args))
+                    (apply format format-string args)
                     (current-continuation-marks)
                     exn-args))))
 

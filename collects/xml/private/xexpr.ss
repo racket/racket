@@ -73,22 +73,19 @@
                              (correct-xexpr? part true false))
                            (cdr x)))
                  (false (make-exn:invalid-xexpr
-                          (string->immutable-string
-                            (format
-                              "Expected a symbol as the element name, given ~a"
-                              (car x)))
-                          (current-continuation-marks)
-                          x)))))
+                         (format
+                          "Expected a symbol as the element name, given ~a"
+                          (car x))
+                         (current-continuation-marks)
+                         x)))))
           (else (false
                   (make-exn:invalid-xexpr
-                    (string->immutable-string
-                      (format
-                        (string-append
-                          "Expected a string, symbol, number, comment, "
-                          "processing instruction, or list, given ~a")
-                        x))
-                    (current-continuation-marks)
-                    x)))))
+                   (format (string-append
+                            "Expected a string, symbol, number, comment, "
+                            "processing instruction, or list, given ~a")
+                           x)
+                   (current-continuation-marks)
+                   x)))))
 
       ;; has-attribute? : List -> Boolean
       ;; True if the Xexpr provided has an attribute list.
@@ -111,10 +108,9 @@
                    (true))
               (false
                 (make-exn:invalid-xexpr
-                  (string->immutable-string
-                    (format "Expected a pair, given ~a" attr))
-                  (current-continuation-marks)
-                  attr))))))
+                 (format "Expected a pair, given ~a" attr)
+                 (current-continuation-marks)
+                 attr))))))
 
       ;; attribute-symbol-string? : List (-> a) (exn -> a) -> a
       ;; True if the list is a list of String,Symbol pairs.
@@ -123,15 +119,13 @@
           (if (string? (cadr attr))
             (true)
             (false (make-exn:invalid-xexpr
-                     (string->immutable-string
-                       (format "Expected a string, given ~a" (cadr attr)))
-                     (current-continuation-marks)
-                     (cadr attr))))
+                    (format "Expected a string, given ~a" (cadr attr))
+                    (current-continuation-marks)
+                    (cadr attr))))
           (false (make-exn:invalid-xexpr
-                   (string->immutable-string
-                     (format "Expected a symbol, given ~a" (car attr)))
-                   (current-continuation-marks)
-                   (cadr attr)))))
+                  (format "Expected a symbol, given ~a" (car attr))
+                  (current-continuation-marks)
+                  (cadr attr)))))
 
       ;; ; end xexpr? helpers
       ;; ;; ;; ;; ;; ;; ;; ;;

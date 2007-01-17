@@ -19,16 +19,14 @@
   ; string set value -> void
   (define (raise-value-not-found-exn fct-name set value)
     (raise (make-exn:set:value-not-found
-            (string->immutable-string
-             (format "~a: value ~a not found in set ~a" fct-name value set))
+            (format "~a: value ~a not found in set ~a" fct-name value set)
             (current-continuation-marks)
             set value)))
   
   ; string set value -> void
   (define (raise-duplicate-value-exn fct-name set value)
     (raise (make-exn:set:duplicate-value
-            (string->immutable-string
-             (format "~a: value ~a already in set ~a" fct-name value set))
+            (format "~a: value ~a already in set ~a" fct-name value set)
             (current-continuation-marks)
             set value)))
   

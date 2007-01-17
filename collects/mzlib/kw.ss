@@ -514,8 +514,7 @@
 ;; raise an appropriate exception
 (define (error* who fmt . args)
   (raise (make-exn:fail:contract
-          (string->immutable-string
-           (apply format (string-append "~a: " fmt) who args))
+          (apply format (string-append "~a: " fmt) who args)
           (current-continuation-marks))))
 
 ;; keyword searching utility (note: no errors for odd length)

@@ -268,7 +268,7 @@
               entry)]
         [else
          (raise (make-exn:fail:filesystem:exists:servlet
-                 (string->immutable-string (format "Couldn't find ~a" servlet-filename))
+                 (format "Couldn't find ~a" servlet-filename)
                  (current-continuation-marks) ))]))
     
     ;; load-servlet/path path -> (or/c #f cache-entry)

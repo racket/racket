@@ -37,17 +37,15 @@
       
       (raise
        (make-exn:fail:read
-        (string->immutable-string
-         (format "~a~a"
-                 (cond
-                   [(not (error-print-source-location)) ""]
-                   [(and line col)
-                    (format "~a:~a:~a: " source-name line col)]
-                   [pos
-                    (format "~a::~a: " source-name pos)]
-                   [else
-                    (format "~a: " source-name)])
-                 msg))
+        (format "~a~a"
+                (cond [(not (error-print-source-location)) ""]
+                      [(and line col)
+                       (format "~a:~a:~a: " source-name line col)]
+                      [pos
+                       (format "~a::~a: " source-name pos)]
+                      [else
+                       (format "~a: " source-name)])
+                msg)
         (current-continuation-marks)
 	(list-immutable (make-srcloc
 			 source-name line col pos span)))))))

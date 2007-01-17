@@ -156,8 +156,7 @@
 		(upper . > . #x110000)
 		(lower . >= . upper))
 	(raise (make-exn:fail:contract
-		(string->immutable-string
-		 (format "ucs-range->char-set: invalid range: [~a, ~a)" lower upper))
+		(format "ucs-range->char-set: invalid range: [~a, ~a)" lower upper)
 		(current-continuation-marks))))
       (char-set-union cs
 		      (cond

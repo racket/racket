@@ -42,8 +42,7 @@
     (unless (unit? u)
       (raise
        (make-exn:fail:contract
-        (string->immutable-string
-         (format "~a: result of unit expression was not a unit: ~e" name u))
+        (format "~a: result of unit expression was not a unit: ~e" name u)
         (current-continuation-marks)))))
   
   ;; check-helper : (vectorof (cons symbol (vectorof (cons symbol symbol)))))
@@ -72,36 +71,35 @@
             (let ([tag (if (pair? v0) (car v0) #f)]
                   [sub-name (car (vector-ref super-sig i))]
                   [err-str (if r
-                               "supplies multiple times"
-                               "does not supply")])
+                             "supplies multiple times"
+                             "does not supply")])
               (raise
                (make-exn:fail:contract
-                (string->immutable-string
-                 (cond
-                   [(and import? tag)
-                    (format "~a: unit argument expects an import for tag ~a with signature ~a, which this usage context ~a"
-                            name
-                            tag
-                            sub-name
-                            err-str)]
-                   [import?
-                    (format "~a: unit argument expects an untagged import with signature ~a, which this usage context ~a"
-                            name
-                            sub-name
-                            err-str)]
-                   [tag
-                    (format "~a: this usage context expects a unit with an export for tag ~a with signature ~a, which the given unit ~a"
-                            name
-                            tag
-                            sub-name
-                            err-str)]
-                   [else
-                    (format "~a: this usage context expects a unit with an untagged export with signature ~a, which the given unit ~a"
-                            name
-                            sub-name
-                            err-str)]))
+                (cond
+                  [(and import? tag)
+                   (format "~a: unit argument expects an import for tag ~a with signature ~a, which this usage context ~a"
+                           name
+                           tag
+                           sub-name
+                           err-str)]
+                  [import?
+                   (format "~a: unit argument expects an untagged import with signature ~a, which this usage context ~a"
+                           name
+                           sub-name
+                           err-str)]
+                  [tag
+                   (format "~a: this usage context expects a unit with an export for tag ~a with signature ~a, which the given unit ~a"
+                           name
+                           tag
+                           sub-name
+                           err-str)]
+                  [else
+                   (format "~a: this usage context expects a unit with an untagged export with signature ~a, which the given unit ~a"
+                           name
+                           sub-name
+                           err-str)])
                 (current-continuation-marks))))))
-          (loop (sub1 i)))))
+        (loop (sub1 i)))))
   
   ;; check-deps : (hash-tableof (cons symbol (or symbol #f)) (cons symbol symbol)) unit symbol ->
   ;; The hash table keys are the tag and runtime signature id
@@ -113,12 +111,11 @@
        (when r
          (raise
           (make-exn:fail:contract
-           (string->immutable-string
-            (if (car dep)
-                (format "~a: initialization dependent signature ~a with tag ~a is supplied from a later unit with link ~a"
-                        name (car r) (car dep) (cdr r))
-                (format "~a: untagged initialization dependent signature ~a is supplied from a later unit with link ~a"
-                        name (car r) (cdr r))))
+           (if (car dep)
+             (format "~a: initialization dependent signature ~a with tag ~a is supplied from a later unit with link ~a"
+                     name (car r) (car dep) (cdr r))
+             (format "~a: untagged initialization dependent signature ~a is supplied from a later unit with link ~a"
+                     name (car r) (cdr r)))
            (current-continuation-marks)))))
      (unit-deps unit)))
   

@@ -64,9 +64,9 @@
 		    (lambda (l)
 		      ((label-checker)
 		       '(method control<%> set-label) l)
-		      (let ([l (if (string? l) 
-				   (string->immutable-string l)
-				   l)])
+		      (let ([l (if (string? l)
+                                 (string->immutable-string l)
+                                 l)])
 			(send wx set-label l)
 			(set! label l))))])
       (public

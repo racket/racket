@@ -30,10 +30,9 @@
   (define (raise-wrong-module-name filename expected-name name)
     (raise
      (make-exn:fail
-      (string->immutable-string
-       (format
-	"load-handler: expected a `module' declaration for `~a' in ~s, found: ~a"
-	expected-name filename name))
+      (format
+       "load-handler: expected a `module' declaration for `~a' in ~s, found: ~a"
+       expected-name filename name)
       (current-continuation-marks))))
   
   (define (check-module-form exp expected-module filename)
@@ -43,10 +42,9 @@
       (and filename
 	   (raise
 	    (make-exn:fail
-	     (string->immutable-string
-	      (format
-	       "load-handler: expected a `module' declaration for `~a' in ~s, but found end-of-file"
-	       expected-module filename))
+	     (format
+              "load-handler: expected a `module' declaration for `~a' in ~s, but found end-of-file"
+              expected-module filename)
 	     (current-continuation-marks))))]
      [(compiled-module-expression? (syntax-e exp))
       (if (eq? (module-compiled-name (syntax-e exp))
@@ -76,10 +74,9 @@
       (and filename
 	   (raise
 	    (make-exn:fail
-	     (string->immutable-string
-	      (format
-	       "load-handler: expected a `module' declaration for `~a' in ~s, but found something else"
-	       expected-module filename))
+	     (format
+              "load-handler: expected a `module' declaration for `~a' in ~s, but found something else"
+              expected-module filename)
 	     (current-continuation-marks))))]))
   
   (define re:suffix #rx#"\\..*$")
@@ -171,9 +168,8 @@
 		 (date>=? so path-d))
 	    (if extension-handler
 		(extension-handler so #f)
-		(raise (make-exn:get-module-code 
-			(string->immutable-string
-			 (format "get-module-code: cannot use extension file; ~e" so))
+		(raise (make-exn:get-module-code
+			(format "get-module-code: cannot use extension file; ~e" so)
 			(current-continuation-marks)
 			so)))]
 	   ;; Or maybe even a _loader.so?
@@ -188,16 +184,15 @@
 	    => (lambda (loader)
 		 (if extension-handler
 		     (extension-handler loader #t)
-		     (raise (make-exn:get-module-code 
-			     (string->immutable-string
-			      (format "get-module-code: cannot use _loader file: ~e"
-				      _loader-so))
+		     (raise (make-exn:get-module-code
+			     (format "get-module-code: cannot use _loader file: ~e"
+                                     _loader-so)
 			     (current-continuation-marks)
 			     loader))))]
 	   ;; Report a not-there error
 	   [else
-	    (raise (make-exn:get-module-code 
-		    (string->immutable-string (format "get-module-code: no such file: ~e" path))
+	    (raise (make-exn:get-module-code
+		    (format "get-module-code: no such file: ~e" path)
 		    (current-continuation-marks)
 		    #f))])))))
 

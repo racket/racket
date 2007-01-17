@@ -371,17 +371,15 @@
     (unless (unit? unit)
       (raise
        (make-exn:fail:unit
-	(string->immutable-string
-	 (format "compound-unit: result of expression for tag ~s not a unit: ~e" tag unit))
+	(format "compound-unit: result of expression for tag ~s not a unit: ~e" tag unit)
 	(current-continuation-marks))))
     (unless (= num-imports (unit-num-imports unit))
       (raise
        (make-exn:fail:unit
-	(string->immutable-string
-	 (format "compound-unit: unit for tag ~s expects ~a imports, given ~a" 
-		 tag
-		 (unit-num-imports unit)
-		 num-imports))
+	(format "compound-unit: unit for tag ~s expects ~a imports, given ~a" 
+                tag
+                (unit-num-imports unit)
+                num-imports)
 	(current-continuation-marks))))
     (list->vector
      (map (lambda (ex)
@@ -390,9 +388,8 @@
 	       [(null? l)
 		(raise
 		 (make-exn:fail:unit
-		  (string->immutable-string
-		   (format "compound-unit: unit for tag ~s has no ~s export" 
-			   tag ex))
+		  (format "compound-unit: unit for tag ~s has no ~s export" 
+                          tag ex)
 		  (current-continuation-marks)))]
 	       [(eq? (car l) ex)
 		i]
@@ -757,15 +754,13 @@
     (unless (unit? u)
       (raise
        (make-exn:fail:unit
-	(string->immutable-string
-	 (format "invoke-unit: result of unit expression was not a unit: ~e" u))
+	(format "invoke-unit: result of unit expression was not a unit: ~e" u)
 	(current-continuation-marks))))
     (unless (= (unit-num-imports u) n)
       (raise
        (make-exn:fail:unit
-	(string->immutable-string
-	 (format "invoke-unit: expected a unit with ~a imports, given one with ~a imports"
-		 n (unit-num-imports u)))
+	(format "invoke-unit: expected a unit with ~a imports, given one with ~a imports"
+                n (unit-num-imports u))
 	(current-continuation-marks)))))
 
   ;; ----------------------------------------------------------------------

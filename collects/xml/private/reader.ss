@@ -443,27 +443,21 @@
                [offset (location-offset the-pos)])
           (raise
            (make-exn:xml
-            (string->immutable-string
-             (format "read-xml: lex-error: at position ~a: ~a" 
-                     (format-source the-pos)
-                     (apply format str rest)))
+            (format "read-xml: lex-error: at position ~a: ~a"
+                    (format-source the-pos)
+                    (apply format str rest))
             (current-continuation-marks)
-            (list-immutable (make-srcloc 
-                             (object-name in)
-                             #f
-                             #f
-                             offset
-                             1))))))
-      
+            (list-immutable
+             (make-srcloc (object-name in) #f #f offset 1))))))
+
       ;; parse-error : (listof srcloc) (listof TST) *-> alpha
       ;; raises a parsing error, using exn:xml
       (define (parse-error src fmt . args)
-        (raise (make-exn:xml
-                (string->immutable-string
-                 (apply format (string-append "read-xml: parse-error: " fmt) args))
-                (current-continuation-marks)
-                src)))
-      
+        (raise (make-exn:xml (string-append "read-xml: parse-error: "
+                                            (apply format fmt args))
+                             (current-continuation-marks)
+                             src)))
+
       ;; format-source : Location -> string
       ;; to format the source location for an error message
       (define (format-source loc)

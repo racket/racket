@@ -51,12 +51,11 @@
     (lambda (prim-name a b)
       (unless (ok? b)
 	(raise
-	  (make-exn:fail:contract
-	    (string->immutable-string
-	      (format "~a: second argument must be of type <~a>, given ~e and ~e"
-		prim-name type
-		a b))
-	    (current-continuation-marks))))))
+         (make-exn:fail:contract
+          (format "~a: second argument must be of type <~a>, given ~e and ~e"
+                  prim-name type
+                  a b)
+          (current-continuation-marks))))))
 
   (define check-second 
     (mk-check-second beginner-list? "list"))
@@ -73,20 +72,19 @@
 	   (let ([last (car l)])
 	     (unless (ok? last)
 	       (raise
-		 (make-exn:fail:contract
-		   (string->immutable-string
-		     (format "~a: last argument must be of type <~a>, given ~e; other args:~a"
-		       prim-name type
-		       last
-		       (build-arg-list
-			 (let loop ([args args])
-			   (cond
-			     [(null? (cdr args)) null]
-			     [else (cons (car args) (loop (cdr args)))])))))
-		   (current-continuation-marks)))))]
+                (make-exn:fail:contract
+                 (format "~a: last argument must be of type <~a>, given ~e; other args:~a"
+                         prim-name type
+                         last
+                         (build-arg-list
+                          (let loop ([args args])
+                            (cond
+                              [(null? (cdr args)) null]
+                              [else (cons (car args) (loop (cdr args)))]))))
+                 (current-continuation-marks)))))]
 	  [else (loop (cdr l))]))))
 
-  (define check-last 
+  (define check-last
     (mk-check-last beginner-list? "list"))
 
   (define check-last/cycle
@@ -94,20 +92,16 @@
 
   (define (check-three a b c prim-name ok1? 1type ok2? 2type ok3? 3type)
     (let ([bad
-	    (lambda (v which type)
-	      (raise
-		(make-exn:fail:contract
-		  (string->immutable-string
-		    (format "~a: ~a argument must be of type <~a>, given ~e, ~e, and ~e"
-		      prim-name which type
-		      a b c))
-		  (current-continuation-marks))))])
-      (unless (ok1? a)
-	(bad a "first" 1type))
-      (unless (ok2? b)
-	(bad b "second" 2type))
-      (unless (ok3? c)
-	(bad c "third" 3type))))
+           (lambda (v which type)
+             (raise
+              (make-exn:fail:contract
+               (format "~a: ~a argument must be of type <~a>, given ~e, ~e, and ~e"
+                       prim-name which type
+                       a b c)
+               (current-continuation-marks))))])
+      (unless (ok1? a) (bad a "first"  1type))
+      (unless (ok2? b) (bad b "second" 2type))
+      (unless (ok3? c) (bad c "third"  3type))))
 
   (define (positive-real? v)
     (and (real? v) (>= v 0)))
@@ -117,9 +111,7 @@
       (unless (boolean? a)
 	(raise
 	  (make-exn:fail:contract
-	    (string->immutable-string
-	      (format "not: expected either true or false; given ~e"
-		a))
+	    (format "not: expected either true or false; given ~e" a)
 	    (current-continuation-marks))))
       (not a)))
 
@@ -160,11 +152,10 @@
       (unless (and (symbol? sym)
 		(string? str))
 	(raise
-	  (make-exn:fail:contract
-	    (string->immutable-string
-	      (format "error: expected a symbol and a string, got ~e and ~e"
-		sym str))
-	    (current-continuation-marks))))
+         (make-exn:fail:contract
+          (format "error: expected a symbol and a string, got ~e and ~e"
+                  sym str)
+          (current-continuation-marks))))
       (error sym "~a" str)))
 
   (define-teach beginner struct?
@@ -252,9 +243,8 @@
   (define (qcheck quicksort fmt-str . x)
     (raise
       (make-exn:fail:contract
-	(string->immutable-string
-	  (string-append (format "~a : " quicksort) (apply format fmt-str x)))
-	(current-continuation-marks))))
+       (string-append (format "~a : " quicksort) (apply format fmt-str x))
+       (current-continuation-marks))))
     
   (define-teach intermediate quicksort
     (lambda (l cmp?)

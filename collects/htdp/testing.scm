@@ -112,10 +112,10 @@
                     (let ([test-val (test)])
                       (make-expected-error src error test-val)))])
       (when (check-fail? result) (update-failed-checks result))))
-       
+
   (define (error-check pred? actual fmt)
     (unless (pred? actual)
-      (raise (make-exn:fail:contract (string->immutable-string (format fmt actual))
+      (raise (make-exn:fail:contract (format fmt actual)
                                      (current-continuation-marks)))))
   
   ;run-and-check: (scheme-val scheme-val scheme-val -> boolean) 

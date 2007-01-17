@@ -597,8 +597,8 @@
                               (thread (lambda ()
                                         (raise
                                          (make-exn:break
-                                          (string->immutable-string
-                                           (format "~a (suspending)" (exn-message exn)))
+                                          (format "~a (suspending)"
+                                                  (exn-message exn))
                                           marks
                                           cont))))
                               (send parent suspend oeh (continuation-mark-set->list marks debug-key) 'break)

@@ -19,16 +19,14 @@
   ; string assoc-set value -> void
   (define (raise-key-not-found-exn fct-name assoc-set key)
     (raise (make-exn:assoc-set:key-not-found
-            (string->immutable-string
-             (format "~a: key ~a not found in associative set ~a" fct-name key assoc-set))
+            (format "~a: key ~a not found in associative set ~a" fct-name key assoc-set)
             (current-continuation-marks)
             assoc-set key)))
   
   ; string assoc-set value -> void
   (define (raise-duplicate-key-exn fct-name assoc-set key)
     (raise (make-exn:assoc-set:duplicate-key
-            (string->immutable-string
-             (format "~a: key ~a already in associative set ~a" fct-name key assoc-set))
+            (format "~a: key ~a already in associative set ~a" fct-name key assoc-set)
             (current-continuation-marks)
             assoc-set key)))
   

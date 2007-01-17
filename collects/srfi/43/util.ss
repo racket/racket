@@ -54,9 +54,8 @@
                  (< index (vector-length vec)))
       (raise
        (make-exn:fail:contract
-        (string->immutable-string
-         (format "~a: index ~a out of range for vector: ~a"
-                 callee index vec))
+        (format "~a: index ~a out of range for vector: ~a"
+                callee index vec)
         (current-continuation-marks)))))
   
   
@@ -71,9 +70,8 @@
     (unless (<= 0 index (vector-length vec))
       (raise
        (make-exn:fail:contract
-        (string->immutable-string
-         (format "~a: index ~a out of range for vector: ~a"
-                 callee index vec))
+        (format "~a: index ~a out of range for vector: ~a"
+                callee index vec)
         (current-continuation-marks)))))
   
   ;;; (CHECK-INDICES <vector> <start> <end> <caller>) -> 
@@ -88,9 +86,8 @@
     (unless (<= 0 start end (vector-length vec))
       (raise
        (make-exn:fail:contract
-        (string->immutable-string
-         (format "~a: indices (~a, ~a) out of range for vector: ~a"
-                 callee start end vec))
+        (format "~a: indices (~a, ~a) out of range for vector: ~a"
+                callee start end vec)
         (current-continuation-marks)))))
   
   (define (nonneg-int? x)

@@ -181,10 +181,8 @@
 	   (unless (signed-unit? u)
 	     (raise
 	      (make-exn
-	       (string->immutable-string
-		(format
-		 "~s: expression for \"~s\" is not a signed unit: ~e"
-		 who tag u))
+	       (format "~s: expression for \"~s\" is not a signed unit: ~e"
+                       who tag u)
 	       (current-continuation-marks)))))
 	 units tags)
 	(for-each
@@ -204,10 +202,9 @@
 	     (unless (= c n)
 	       (raise
 		(make-exn
-		 (string->immutable-string
-		  (format
-		   "~s: ~a unit imports ~a units, but ~a units were provided"
-		   who tag n c))
+		 (format
+                  "~s: ~a unit imports ~a units, but ~a units were provided"
+                  who tag n c)
 		 (current-continuation-marks))))))
 	 units tags isigs)
 	(for-each

@@ -130,10 +130,9 @@
     (let loop ([fmt-args '()] [args args] [a fmt-num])
       (if (zero? a)
         (raise (exn-maker
-                (string->immutable-string
-                 (if sym
-                   (apply format (concat "~s: " fmt) sym (reverse! fmt-args))
-                   (apply format fmt (reverse! fmt-args))))
+                (if sym
+                  (apply format (concat "~s: " fmt) sym (reverse! fmt-args))
+                  (apply format fmt (reverse! fmt-args)))
                 (current-continuation-marks) . args))
         (loop (cons (car args) fmt-args) (cdr args) (sub1 a))))))
 

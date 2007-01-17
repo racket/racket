@@ -92,69 +92,68 @@
 				     (file-or-directory-modify-seconds s))])
 
 		      (when (and (make-print-checking)
-				 (or line
-				     (make-print-dep-no-line)))
+				 (or line (make-print-dep-no-line)))
 			(printf "make: ~achecking ~a~n" indent s)
                         (flush-output))
 
 		      (if line
-			  (let ([deps (cadr line)])
-			    (for-each (let ([new-indent (string-append " " indent)])
-					(lambda (d) (make-file d new-indent)))
-				      deps)
-			    (let ([reason
-				   (or (not date)
-				       (ormap (lambda (dep)
-						(unless (or (file-exists? dep)
-							    (directory-exists? dep))
-						  (error 'make "dependancy ~a was not made~n" dep))
-						(and (> (file-or-directory-modify-seconds dep) date)
-						     dep))
-					      deps))])
-			      (when reason
-				(let ([l (cddr line)])
-				  (unless (null? l)
-				    (set! made (cons s made))
-				    ((make-notify-handler) s)
-				    (printf "make: ~amaking ~a~a~n"
-					    (if (make-print-checking) indent "")
-					    (path-string->string s)
-					    (if (make-print-reasons)
-						(cond
-						 [(not date)
-						  (string-append " because " (path-string->string s) " does not exist")]
-						 [(path-string? reason)
-						  (string-append " because " (path-string->string reason) " changed")]
-						 [else
-						  (string-append 
-						   (format " because (reason: ~a date: ~a)" 
-							   reason date))])
-						""))
-                                    (flush-output)
-				    (with-handlers ([exn:fail?
-						     (lambda (exn)
-						       (raise (make-exn:fail:make 
-							       (string->immutable-string
-								(format "make: Failed to make ~a; ~a"
-									(let ([fst (car line)])
-                                                                          (if (pair? fst)
-                                                                              (map path-string->string fst)
-                                                                              (path-string->string fst)))
-									(if (exn? exn)
-									    (exn-message exn)
-									    exn)))
-							       (if (exn? exn)
-								   (exn-continuation-marks exn)
-								   (current-continuation-marks))
-							       (car line)
-							       exn)))])
-				      ((car l))))))))
-			  (unless date
-			    (error 'make "don't know how to make ~a" (path-string->string s))))))])
+                        (let ([deps (cadr line)])
+                          (for-each (let ([new-indent (string-append " " indent)])
+                                      (lambda (d) (make-file d new-indent)))
+                                    deps)
+                          (let ([reason
+                                 (or (not date)
+                                     (ormap (lambda (dep)
+                                              (unless (or (file-exists? dep)
+                                                          (directory-exists? dep))
+                                                (error 'make "dependancy ~a was not made~n" dep))
+                                              (and (> (file-or-directory-modify-seconds dep) date)
+                                                   dep))
+                                            deps))])
+                            (when reason
+                              (let ([l (cddr line)])
+                                (unless (null? l)
+                                  (set! made (cons s made))
+                                  ((make-notify-handler) s)
+                                  (printf "make: ~amaking ~a~a~n"
+                                          (if (make-print-checking) indent "")
+                                          (path-string->string s)
+                                          (if (make-print-reasons)
+                                            (cond
+                                              [(not date)
+                                               (string-append " because " (path-string->string s) " does not exist")]
+                                              [(path-string? reason)
+                                               (string-append " because " (path-string->string reason) " changed")]
+                                              [else
+                                               (string-append 
+                                                (format " because (reason: ~a date: ~a)" 
+                                                        reason date))])
+                                            ""))
+                                  (flush-output)
+                                  (with-handlers ([exn:fail?
+                                                   (lambda (exn)
+                                                     (raise (make-exn:fail:make 
+                                                             (format "make: Failed to make ~a; ~a"
+                                                                     (let ([fst (car line)])
+                                                                       (if (pair? fst)
+                                                                         (map path-string->string fst)
+                                                                         (path-string->string fst)))
+                                                                     (if (exn? exn)
+                                                                       (exn-message exn)
+                                                                       exn))
+                                                             (if (exn? exn)
+                                                               (exn-continuation-marks exn)
+                                                               (current-continuation-marks))
+                                                             (car line)
+                                                             exn)))])
+                                    ((car l))))))))
+                        (unless date
+                          (error 'make "don't know how to make ~a"
+                                 (path-string->string s))))))])
 	  (cond
-	   [(path-string? argv) (make-file argv "")]
-	   [(equal? argv #()) (make-file (caar spec) "")]
-	   [else (for-each (lambda (f) (make-file f "")) (vector->list argv))])
+            [(path-string? argv) (make-file argv "")]
+            [(equal? argv #()) (make-file (caar spec) "")]
+            [else (for-each (lambda (f) (make-file f "")) (vector->list argv))])
 
 	  (for-each (lambda (item)
 		      (printf "make: made ~a~n" (path-string->string item)))

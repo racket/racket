@@ -53,23 +53,21 @@
   ;; verify-boolean is inserted to check for boolean results:
   (define (verify-boolean b where)
     (if (or (eq? b #t) (eq? b #f))
-	b
-	(raise
-	 (make-exn:fail:contract
-	  (string->immutable-string
-	   (format "~a: question result is not true or false: ~e" where b))
-	  (current-continuation-marks)))))
+      b
+      (raise
+       (make-exn:fail:contract
+        (format "~a: question result is not true or false: ~e" where b)
+        (current-continuation-marks)))))
 
   ;; Wrapped around uses of local-bound variables:
   (define (check-not-undefined name val)
     (if (eq? val undefined)
-	(raise
-	 (make-exn:fail:contract:variable
-	  (string->immutable-string
-	   (format "local variable used before its definition: ~a" name))
-	  (current-continuation-marks)
-	  name))
-	val))
+      (raise
+       (make-exn:fail:contract:variable
+        (format "local variable used before its definition: ~a" name)
+        (current-continuation-marks)
+        name))
+      val))
   (define undefined (letrec ([x x]) x))
 
   ;; Wrapped around top-level definitions to disallow re-definition:

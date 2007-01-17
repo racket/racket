@@ -257,15 +257,14 @@ an appropriate subdirectory.
         (for-each
          (lambda (already-loaded-pkg)
            (unless (can-be-loaded-together? pkg already-loaded-pkg)
-             (raise (make-exn:fail (string->immutable-string
-                                    (format 
-                                     "Package ~a loaded twice with multiple incompatible versions: 
-attempted to load version ~a.~a while version ~a.~a was already loaded" 
-                                     (pkg-name pkg) 
-                                     (pkg-maj pkg)
-                                     (pkg-min pkg)
-                                     (pkg-maj already-loaded-pkg)
-                                     (pkg-min already-loaded-pkg)))
+             (raise (make-exn:fail (format
+                                    "Package ~a loaded twice with multiple incompatible versions:
+attempted to load version ~a.~a while version ~a.~a was already loaded"
+                                    (pkg-name pkg)
+                                    (pkg-maj pkg)
+                                    (pkg-min pkg)
+                                    (pkg-maj already-loaded-pkg)
+                                    (pkg-min already-loaded-pkg))
                                    (current-continuation-marks)))))
          loaded-packages)
         (hash-table-put! (the-version-cache) (pkg->diamond-key pkg) (cons pkg loaded-packages)))))
@@ -302,15 +301,15 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
          (if (ormap number? path)
              (raise-syntax-error #f (format "Module path must consist of strings only, received a number (maybe you intended to specify a package version number?): ~s" path) stx)
              (raise-syntax-error #f (format "Module path must consist of strings only, received: ~s" path) stx)))
-       
-       (match-let*
-           ([pspec (pkg-spec->full-pkg-spec pkg-spec stx)]
-            [result (get-package module-path pspec)])
-         (cond
-           [(string? result)
-            (raise-syntax-error 'require (string->immutable-string result) stx)]
-           [(pkg? result)
-            (values (apply build-path (pkg-path result) (append path (list file-name))) result)]))]
+
+       (match-let* ([pspec (pkg-spec->full-pkg-spec pkg-spec stx)]
+                    [result (get-package module-path pspec)])
+         (cond [(string? result)
+                (raise-syntax-error 'require result stx)]
+               [(pkg? result)
+                (values (apply build-path (pkg-path result)
+                               (append path (list file-name)))
+                        result)]))]
       [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~e" (cdr spec)) stx)]))
 
   ;; PKG-GETTER ::= module-path pspec 
@@ -514,13 +513,12 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; install the given pkg to the planet cache and return a PKG representing the installed file
   (define (install-pkg pkg path maj min)
     (unless (install?)
-      (raise (make-exn:fail 
-              (string->immutable-string
-               (format
-                "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
-                (list (car (pkg-spec-path pkg)) (pkg-spec-name pkg) maj min)))
+      (raise (make-exn:fail
+              (format
+               "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
+               (list (car (pkg-spec-path pkg)) (pkg-spec-name pkg) maj min))
               (current-continuation-marks))))
-                
+    
     (let* ((owner (car (pkg-spec-path pkg)))
            (extra-path (cdr (pkg-spec-path pkg)))
            (the-dir 
@@ -601,9 +599,8 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
          (state:abort (format "Unknown error ~a receiving package: ~a" code msg))]
         [bad-response  (state:abort (format "Server returned malformed message: ~e" bad-response))]))
     
-    (define (state:abort msg) 
-      (raise (make-exn:i/o:protocol (string->immutable-string msg)
-                                    (current-continuation-marks))))
+    (define (state:abort msg)
+      (raise (make-exn:i/o:protocol msg (current-continuation-marks))))
     (define (state:failure msg) (list #f msg))
     
     (with-handlers ([void (lambda (e) (close-ports) (raise e))])

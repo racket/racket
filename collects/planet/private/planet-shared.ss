@@ -161,25 +161,23 @@ Various common pieces of code that both the client and server need to access
        (and (equal? (assoc-table-row->name row) (pkg-spec-name pkg))
             (equal? (assoc-table-row->path row) (pkg-spec-path pkg))))
      (get-hard-link-table)))
-  
+
   ;; verify-well-formed-hard-link-parameter! : -> void
   ;; pitches a fit if the hard link table parameter isn't set right
   (define (verify-well-formed-hard-link-parameter!)
     (unless (and (absolute-path? (HARD-LINK-FILE)) (path-only (HARD-LINK-FILE)))
-      (raise (make-exn:fail:contract 
-              (string->immutable-string
-               (format 
-                "The HARD-LINK-FILE setting must be an absolute path name specifying a file; given ~s" 
-                (HARD-LINK-FILE)))
+      (raise (make-exn:fail:contract
+              (format
+               "The HARD-LINK-FILE setting must be an absolute path name specifying a file; given ~s"
+               (HARD-LINK-FILE))
               (current-continuation-marks)))))
-  
+
   ;; get-hard-link-table : -> assoc-table
   (define (get-hard-link-table)
     (verify-well-formed-hard-link-parameter!)
     (if (file-exists? (HARD-LINK-FILE))
-        (map 
-         (lambda (item) (update-element 4 bytes->path item))
-         (with-input-from-file (HARD-LINK-FILE) read-all))
+        (map (lambda (item) (update-element 4 bytes->path item))
+             (with-input-from-file (HARD-LINK-FILE) read-all))
         '()))
   
   ;; row-for-package? : row string (listof string) num num -> boolean

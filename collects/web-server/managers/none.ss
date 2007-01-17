@@ -18,8 +18,7 @@
     
     (define (instance-lookup instance-id)
       (raise (make-exn:fail:servlet-manager:no-instance
-              (string->immutable-string
-               (format "No instance for id: ~a" instance-id))
+              (format "No instance for id: ~a" instance-id)
               (current-continuation-marks)
               instance-expiration-handler)))
     

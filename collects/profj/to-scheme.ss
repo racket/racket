@@ -864,12 +864,12 @@
            (dynamic-callables (refine-method-list wrapped-methods-initial class-name)))
       (list 
        `(define (,(build-identifier (string-append "wrap-convert-assert-" class-name)) obj p n s c)
-          (let ((raise-error 
+          (let ((raise-error
                  (lambda (method-name num-args)
-                   (raise (make-exn:fail 
-                           (string->immutable-string
-                            (format "~a broke the contract with ~a here, expected an object with a method ~a accepting ~a args"
-                                   n p method-name num-args)) c)))))
+                   (raise (make-exn:fail
+                           (format "~a broke the contract with ~a here, expected an object with a method ~a accepting ~a args"
+                                   n p method-name num-args)
+                           c)))))
             (and ,@(map method->check/error
                         (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m)))) wrapped-methods))))
           #;(c:contract ,(methods->contract (filter (lambda (m) (not (eq? 'ctor (method-record-rtype m))))
@@ -940,9 +940,8 @@
                 `(define/public (,(build-identifier define-name) . args)
                    (unless (= (length args) ,(length list-of-args))
                      (raise (make-exn:fail:contract:arity
-                             (string->immutable-string
-                              (format "~a broke the contract with ~a here, method ~a of ~a called with ~a args, instead of ~a"
-                                      neg-blame pos-blame ,(method-record-name method) ,(class-name) (length args) ,(length list-of-args)))
+                             (format "~a broke the contract with ~a here, method ~a of ~a called with ~a args, instead of ~a"
+                                     neg-blame pos-blame ,(method-record-name method) ,(class-name) (length args) ,(length list-of-args))
                              cc-marks)))
                    (let (,@(map (lambda (arg type ref)
                                   `(,arg ,(convert-value (assert-value `(list-ref args ,ref) type #t 'method-arg (method-record-name method)) type #t)))
@@ -1011,21 +1010,21 @@
                 (lambda (ok?)
                   `(let ((v-1 ,value))
                      (if (,ok? v-1) v-1
-                         (raise (make-exn:fail (string->immutable-string
-                                                ,(case kind
-                                                   ((unspecified)                                                
-                                                    `(format "~a broke the contract with ~a here, type-mismatch expected ~a given ~a"
-                                                             neg-blame pos-blame (quote ,type) v-1))
-                                                   ((field)
-                                                    `(format "~a broke the contract with ~a here, type-mismatch for field ~a of class ~a: expected ~a given ~a"
-                                                             neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1))
-                                                   ((method-arg)
-                                                    `(format "~a broke the contract with ~a here, type-mismatch for method argument of ~a in class ~a: expected ~a given ~a"
-                                                             neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1))
-                                                   ((method-ret)
-                                                    `(format "~a broke the contract with ~a here, type-mismatch for method return of ~a in ~a: expected ~a given ~a"
-                                                             neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1)))
-                                                ) cc-marks)))))))
+                         (raise (make-exn:fail
+                                 ,(case kind
+                                    ((unspecified)
+                                     `(format "~a broke the contract with ~a here, type-mismatch expected ~a given ~a"
+                                              neg-blame pos-blame (quote ,type) v-1))
+                                    ((field)
+                                     `(format "~a broke the contract with ~a here, type-mismatch for field ~a of class ~a: expected ~a given ~a"
+                                              neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1))
+                                    ((method-arg)
+                                     `(format "~a broke the contract with ~a here, type-mismatch for method argument of ~a in class ~a: expected ~a given ~a"
+                                              neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1))
+                                    ((method-ret)
+                                     `(format "~a broke the contract with ~a here, type-mismatch for method return of ~a in ~a: expected ~a given ~a"
+                                              neg-blame pos-blame ,name ,(class-name) (quote ,type) v-1)))
+                                 cc-marks)))))))
            (case type
              ((int byte short long) (check 'integer?))
              ((float double) (check 'real?))
@@ -1810,8 +1809,8 @@
   (define translate-throw
     (lambda (expr key src)
       (create-syntax #f `(let* ((obj ,expr)
-                                (exn (make-java:exception 
-                                      (string->immutable-string (send (send obj |getMessage|) get-mzscheme-string))
+                                (exn (make-java:exception
+                                      (send (send obj |getMessage|) get-mzscheme-string)
                                       (current-continuation-marks) obj)))
                            (send obj set-exception! exn)
                            (,(create-syntax #f 'raise (build-src key)) exn))
@@ -2133,9 +2132,9 @@
           `(let ((val ,val))
              (if (string? val)
                  (make-java-string val)
-                 (raise (make-exn:fail (string->immutable-string
-                                        (format "~a broke infered contract here: expected String received ~a"
-                                                ,(class-name) val)) (current-continuation-marks))))))))
+                 (raise (make-exn:fail (format "~a broke infered contract here: expected String received ~a"
+                                               ,(class-name) val)
+                                       (current-continuation-marks))))))))
       ((unknown-ref? type)
        `(let ((val ,val))
           (if (string? val)

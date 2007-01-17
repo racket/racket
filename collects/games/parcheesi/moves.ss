@@ -445,7 +445,6 @@
   
   (define bad-move
     (case-lambda
-      [(str) (raise (make-exn:bad-move (string->immutable-string str)
-                                       (current-continuation-marks)))]
-      [args (raise (make-exn:bad-move (string->immutable-string (apply format args))
+      [(str) (raise (make-exn:bad-move str (current-continuation-marks)))]
+      [args (raise (make-exn:bad-move (apply format args)
                                       (current-continuation-marks)))])))

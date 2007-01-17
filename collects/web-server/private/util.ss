@@ -41,10 +41,8 @@
   ;; network-error: symbol string . values -> void
   ;; throws a formatted exn:fail:network
   (define (network-error src fmt . args)
-    (raise (make-exn:fail:network
-            (string->immutable-string
-             (format "~a: ~a" src (apply format fmt args)))
-            (current-continuation-marks))))
+    (raise (make-exn:fail:network (format "~a: ~a" src (apply format fmt args))
+                                  (current-continuation-marks))))
   
   ;; build-path-unless-absolute : path-string? path-string? -> path?
   (define (build-path-unless-absolute base path)

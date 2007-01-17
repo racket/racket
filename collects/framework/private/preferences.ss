@@ -196,13 +196,12 @@ the state transitions / contracts are:
        ps
        vs
        fail-func)))
-    
-  
+
   (define (raise-unknown-preference-error sym fmt . args)
     (raise (exn:make-unknown-preference
-            (string->immutable-string (string-append (format "~a: " sym) (apply format fmt args)))
+            (string-append (format "~a: " sym) (apply format fmt args))
             (current-continuation-marks))))
-  
+
   ;; unmarshall-pref : symbol marshalled -> any
   ;; unmarshalls a preference read from the disk
   (define (unmarshall-pref p data)

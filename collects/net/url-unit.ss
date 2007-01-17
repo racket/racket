@@ -60,12 +60,11 @@
                 v)))))
 
     (define (url-error fmt . args)
-      (let ([s (string->immutable-string
-                (apply format fmt
-                       (map (lambda (arg)
-                              (if (url? arg) (url->string arg) arg))
-                            args)))])
-        (raise (make-url-exception s (current-continuation-marks)))))
+      (raise (make-url-exception
+              (apply format fmt
+                     (map (lambda (arg) (if (url? arg) (url->string arg) arg))
+                          args))
+              (current-continuation-marks))))
 
     (define (url->string url)
       (let ([scheme (url-scheme url)]

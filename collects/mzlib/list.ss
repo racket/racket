@@ -238,10 +238,8 @@
               [(not (pair? l))
                (raise
                 (make-exn:fail:contract
-                 (string->immutable-string
-                  (format
-                   "~a: second argument must be a (proper) list; given ~e"
-                   'name list))
+                 (format "~a: second argument must be a (proper) list; given ~e"
+                         'name list)
                  (current-continuation-marks)))]
               [else (let ([a (car l)])
                       #,(case (syntax-e #'mode)

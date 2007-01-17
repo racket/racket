@@ -209,8 +209,7 @@
 
   (define (error/network who fmt . args)
     (raise (make-exn:fail:network
-            (string->immutable-string
-             (format "~a: ~a" who (apply format fmt args)))
+            (format "~a: ~a" who (apply format fmt args))
             (current-continuation-marks))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -158,17 +158,17 @@
           [(owner pkg-name maj-str min-str)
            (let ([maj (string->number maj-str)]
                  [min (string->number min-str)])
-             (unless maj (error 'setup-plt "Bad major version for PLaneT package: ~s" maj-str))
-             (unless min (error 'setup-plt "Bad minor version for PLaneT package: ~s" min-str))
+             (unless maj (error 'setup-plt "Bad major version for PLaneT package: ~e" maj-str))
+             (unless min (error 'setup-plt "Bad minor version for PLaneT package: ~e" min-str))
              (let ([pkg (lookup-package-by-keys owner pkg-name maj min min)])
                (if pkg
                    pkg
-                   (error 'setup-plt "Not an installed PLaneT package: (~s ~s ~s ~s)" owner pkg-name maj min))))]
+                   (error 'setup-plt "Not an installed PLaneT package: (~e ~e ~e ~e)" owner pkg-name maj min))))]
           [_ spec]))
       
       (define (planet->cc path owner pkg-file extra-path maj min)
         (unless (path? path)
-            (error 'path->cc "non-path when building package ~a" pkg-file))
+          (error 'planet->cc "non-path when building package ~e" pkg-file))
         (let/ec return
           (let* ([info (with-handlers ([exn:fail? (warning-handler #f)])
                          (get-info/full path))]
@@ -176,12 +176,10 @@
                                   (lambda (x)
                                     (when x
                                       (unless (string? x)
-                                        (error 
-                                         (string->immutable-string
-                                          (format 
-                                           "'name' result from directory ~s is not a string:"
-                                           path))
-                                         x)))))])
+                                        (error 'planet->cc
+                                               "'name' result from directory ~e is not a string: ~e"
+                                               path
+                                               x)))))])
             (make-cc
              #f
              path
