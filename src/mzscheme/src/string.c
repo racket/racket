@@ -2139,7 +2139,7 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 
     sym = scheme_intern_symbol("os");
     if (!SAME_OBJ(argv[0], sym)) {
-      scheme_wrong_type("system-type", "'os, 'link, 'machine, or 'gc", 0, argc, argv);
+      scheme_wrong_type("system-type", "'os, 'link, 'machine, 'gc, or 'so-suffix", 0, argc, argv);
       return NULL;
     }
   }
