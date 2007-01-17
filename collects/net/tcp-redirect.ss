@@ -92,9 +92,8 @@
                      port
                      (lambda ()
                        (raise (make-exn:fail:network
-                               (string->immutable-string
-                                (format "tcp-connect: connection to ~a, port ~a failed (nobody is listening)"
-                                        hostname-string port))
+                               (format "tcp-connect: connection to ~a, port ~a failed (nobody is listening)"
+                                       hostname-string port)
                                (current-continuation-marks))))))
                    (cons to-in to-out))
                   (values from-in from-out))
