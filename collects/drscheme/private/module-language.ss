@@ -427,17 +427,18 @@
         (and path
              (let-values ([(base name dir) 
                            (split-path (normal-case-path (simplify-path (expand-path path) #f)))])
-               (string->symbol (format ",~a" (path->string base))))))
+               (string->symbol (format ",~a" (bytes->string/latin-1 (path->bytes base)))))))
         
       ;; build-name : path -> symbol
       (define (build-name pre-path)
         (let ([path (normal-case-path (simplify-path (expand-path pre-path) #f))])
           (let-values ([(base name dir) (split-path path)])
             (string->symbol (format ",~a" 
-                                    (path->string
-                                     (build-path 
-                                      base
-                                      (remove-suffix (path->string name)))))))))
+                                    (bytes->string/latin-1
+                                      (path->bytes
+                                       (build-path 
+                                        base
+                                        (remove-suffix (path->string name))))))))))
       
       ;; get-filename : port -> (union string #f)
       ;; extracts the file the definitions window is being saved in, if any.
