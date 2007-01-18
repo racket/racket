@@ -14,7 +14,9 @@
                [decimal-prefix (send stream read-bytes "decimal prefix")]
                [fraction-bytes (send stream read-bytes "fraction")]
                [expansions (send stream read-bytes "expansions")])
-           number))
+           (if text?
+               number
+               (lambda (src line col pos) (string->number (bytes->string/latin-1 number))))))
        (super-new)))))
 
                    

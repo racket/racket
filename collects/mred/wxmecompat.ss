@@ -36,4 +36,4 @@
 
   (register-lib-mapping!
    "(lib \"cache-image-snip.ss\" \"mrlib\")"
-   "(lib \"image.ss\" \"mred\" \"wxme\")"))
+   "(lib \"cache-image.ss\" \"mred\" \"wxme\")"))
