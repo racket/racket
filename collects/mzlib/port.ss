@@ -94,6 +94,26 @@
 	  (copy b)
 	  rd))]))
 
+  ;; `make-input-port/read-to-peek' sometimes need to wrap a special-value
+  ;; procedure so that it's only called once when the value is both
+  ;; peeked and read.
+  (define-values (struct:memoized make-memoized memoized? memoized-ref memoized-set!)
+    (make-struct-type 'memoized #f 1 0 #f null (current-inspector) 0))
+  (define (memoize p)
+    (define result #f)
+    (make-memoized
+     (if (procedure-arity-includes? p 0)
+         ;; original p accepts 0 or 4 arguments:
+         (case-lambda
+          [() (unless result (set! result (box (p)))) (unbox result)]
+          [(src line col pos)
+           (unless result (set! result (box (p src line col pos))))
+           (unbox result)])
+         ;; original p accepts only 4 arguments:
+         (lambda (src line col pos)
+           (unless result (set! result (box (p src line col pos))))
+           (unbox result)))))
+
   ;; Not kill-safe.
   ;; If the `read' proc returns an event, the event must produce 
   ;;  0 always
@@ -246,7 +266,15 @@
 		      eof]
 		     [(procedure? (car l))
 		      (if (zero? sk)
-			  (car l)
+                          ;; We should call the procedure only once. Change
+                          ;;  (car l) to a memoizing function, if it isn't already:
+                          (let ([proc (car l)])
+                            (if (memoized? proc)
+                                proc
+                                (let ([proc (memoize proc)])
+                                  (set-car! l proc)
+                                  proc)))
+                          ;; Skipping over special...
 			  (loop (sub1 sk) (cdr l)))]
 		     [(bytes? (car l))
 		      (let ([len (bytes-length (car l))])
