@@ -1,10 +1,9 @@
-#reader(lib"wxme.ss""mred")WXME0108 ## 
-#|
-   This file is in PLT Scheme editor format.
+#reader(lib"read.ss""wxme")WXME0108 ## 
+   Open this file in DrScheme version 370 or later to read it.
+   Open this file in DrScheme version 370 or later to read it.
    Most likely, it was created by saving a program in DrScheme version
-   359.6 or later, and it probably contains a program with non-text
+   370 or later, and it probably contains a program with non-text
    elements (such as images or comment boxes).
-   Open this file in DrScheme version 359.6 or later to read it.
                  www.plt-scheme.org
 |#
  4 7 #"wxtext\0"
@@ -148,6 +147,6 @@
 0 0 23 3 6 #"Swiss."
 0 0 20 3 1 #" "
 0 0 24 3 6 #"Fixed."
-0 0 25 3 55 #" (Last line changed to bottom-aligned for 2nd version.)"
+0 0 25 3 53 #" (Last line changed to bottom-aligned for version 8.)"
 0 0 20 29 1 #"\n"
 0 00000000000
