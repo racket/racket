@@ -60,13 +60,19 @@ Quick Start for a Test Drive:
  8.  In the "handin-client" collection, edit "info.ss" and
      uncomment the line
         (define server:port "localhost:7979")
+     and the lines that define `tools', `tool-names', and
+     `tool-icons'.
 
- 9.  Start DrScheme, click "Handin" to run the client, submit with
+ 9. Run `setup-plt -l handin-client' (on Windows, the executable is
+    "Setup PLT", and you don't have to supply the command line
+    arguments).
+
+ 10. Start DrScheme, click "Handin" to run the client, submit with
      username "tester" and password "pw".
 
      The submitted file will be .../test/tester/handin.scm.
 
- 10. Check the status of your submission by pointing a web browser at
+ 11. Check the status of your submission by pointing a web browser at
         https://localhost:7980/servlets/status.ss
      Note the "s" in "https". Use the "tester" username and "pw"
      password, as before.
