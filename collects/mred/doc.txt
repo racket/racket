@@ -32,4 +32,6 @@ The edit.ss module exports the following function.
 
 _wxme.ss_
 
-Reader syntax for PLT graphical format.
+#reader support for PLT graphical format. See also the "wxme"
+sub-collection of the "mred" collection.
+

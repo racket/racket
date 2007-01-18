@@ -575,10 +575,10 @@
                                    [(special-comment? v) (loop accum)]
                                    [else (loop (cons v accum))]))))))))))
 
-  (define (wxme:read port)
+  (define (wxme-read port)
     (do-read port 'read read))
 
-  (define (wxme:read-syntax source-name-v port)
+  (define (wxme-read-syntax source-name-v port)
     (do-read port 'read-syntax
              (lambda (port)
                (read-syntax source-name-v port))))
@@ -587,6 +587,6 @@
            register-lib-mapping!
            unknown-extensions-skip-enabled
            prop:readable
-           wxme:read
-           wxme:read-syntax))
+           wxme-read
+           wxme-read-syntax))
 

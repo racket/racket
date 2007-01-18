@@ -1,4 +1,22 @@
 
-_wxme.ss_
+_wxme.ss_ in mred/wxme
 
 Utilities for reading PLT graphical format files without MrEd.
+
+> (wxme-port->port input-port [snip-filter-proc-or-false])
+
+If `snip-filter-proc-or-false' is #f, then the generated port is pure
+text. Otherwise, the generated port may return "special" values for
+non-text items in the original stream.
+
+> (wxme-read port)
+
+Like `read', but for a WXME format input stream.
+
+> (wxme-read-syntax source-v port)
+
+Like `read-syntax', but for a WXME format input stream.
+
+> prop:readable
+
+A property for a structure representation of a snip.
