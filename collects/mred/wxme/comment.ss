@@ -2,13 +2,13 @@
 (module comment mzscheme
   (require (lib "class.ss")
            (lib "string.ss")
-           "../wxmefile.ss"
-           "nested.ss")
+           "wxme.ss"
+           "private/readable-editor.ss")
 
   (provide reader)
 
   (define reader
-    (new (class nested-reader%
+    (new (class editor-reader%
            (define/override (read-snip text? vers stream)
              (let ([s (super read-snip text? vers stream)])
                (if text?

@@ -3,7 +3,9 @@
   (require (lib "port.ss")
            (lib "string.ss")
            (lib "kw.ss")
-           (lib "class.ss"))
+           (lib "class.ss")
+           "image.ss"
+           "editor.ss")
 
   (define (expect rx port who msg)
     (let ([m (regexp-match rx port)])
@@ -50,7 +52,7 @@
   (define (read-editor-footers who port vers header)
     (discard-headers/footers who port vers))
 
-  (define (read-nested-editor who port vers header)
+  (define (read-editor-snip who port vers header)
     (let ([cnt (read-editor who port vers header)])
       (let loop ([cnt cnt][accum null])
         (if (zero? cnt)
@@ -320,9 +322,6 @@
   (define-values (prop:readable readable? readable-ref)
     (make-struct-type-property 'readable))
   
-  (define-struct nested (content-port))
-  (define-struct image (filename data w h dx dy))
-
   (define (find-class pos header who port vers)
     (define classes (header-classes header))
     (unless (< -1 pos (vector-length classes))
@@ -370,10 +369,10 @@
                  (read-integer who port vers "nested-editor tight-fit?"))
                (when (cvers . > . 2)
                  (read-integer who port vers "nested-editor alignment"))
-               (let ([n (read-nested-editor who port vers header)])
+               (let ([n (read-editor-snip who port vers header)])
                  (if (header-plain-text? header)
                      n
-                     (make-nested n))))]
+                     (make-editor n))))]
             [(equal? name #"wximage")
              (lambda (who port vers cvers header)
                (let ([filename (read-a-string who port vers "image-snip filename")]
@@ -450,9 +449,9 @@
       (define/public (read-bytes what)
         (read-a-string who port vers what))
 
-      (public [rne read-nested-editor])
+      (public [rne read-editor-snip])
       (define (rne)
-        (read-nested-editor who port vers header))
+        (read-editor-snip who port vers header))
 
       (super-new)))
 
@@ -552,7 +551,7 @@
 
   (define unknown-extensions-skip-enabled (make-parameter #f))
 
-  (define/kw (decode-wxme-stream port #:optional [snip-filter (lambda (x) x)])
+  (define/kw (wxme-port->port port #:optional [snip-filter (lambda (x) x)])
     ;; read optional #reader header:
     (regexp-match/fail-without-reading #rx#"^#reader[(]lib\"wxme.ss\"\"mred\"[)]" port)
     ;; decode:
@@ -584,11 +583,9 @@
              (lambda (port)
                (read-syntax source-name-v port))))
 
-  (provide register-lib-mapping!
+  (provide wxme-port->port
+           register-lib-mapping!
            unknown-extensions-skip-enabled
-           decode-wxme-stream
-           (struct nested (content-port))
-           (struct image (filename data w h dx dy))
            prop:readable
            wxme:read
            wxme:read-syntax))

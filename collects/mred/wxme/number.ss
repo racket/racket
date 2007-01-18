@@ -16,7 +16,7 @@
                [expansions (send stream read-bytes "expansions")])
            (if text?
                number
-               (lambda (src line col pos) (string->number (bytes->string/latin-1 number))))))
+               (string->number (bytes->string/latin-1 number)))))
        (super-new)))))
 
                    

@@ -27,3 +27,9 @@ The edit.ss module exports the following function.
 
 > (new-frame editor% file)
   Takes the editor class.
+
+-----------------------------------------------------------------
+
+_wxme.ss_
+
+Reader syntax for PLT graphical format.

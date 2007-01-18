@@ -3,23 +3,24 @@
   (require (lib "class.ss")
            (lib "xml.ss" "xml")
            (lib "list.ss")
-           "../wxmefile.ss"
-           "nested.ss")
+           "wxme.ss"
+           "editor.ss"
+           "private/readable-editor.ss")
 
   (provide reader)
 
   (define reader
-    (new (class nested-reader%
-           (inherit read-nested-snip)
+    (new (class editor-reader%
+           (inherit read-editor-snip)
            (define/override (read-snip text? vers stream)
              (let ([elim-whitespace? (zero? (send stream read-integer "elim-whitespace?"))])
-               (read-nested-snip text? vers stream elim-whitespace?)))
+               (read-editor-snip text? vers stream elim-whitespace?)))
 
-           (define/override (generate-special nested src line col pos)
-             (let* ([port (nested-content-port nested)]
+           (define/override (generate-special editor src line col pos)
+             (let* ([port (editor-content-port editor)]
                     [xml (read-xml port)]
                     [xexpr (xml->xexpr (document-element xml))]
-                    [clean-xexpr (if (readable-nested-data nested)
+                    [clean-xexpr (if (readable-editor-data editor)
                                      (eliminate-whitespace-in-empty-tags xexpr)
                                      xexpr)])
                (list 'quasiquote clean-xexpr)))

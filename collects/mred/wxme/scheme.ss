@@ -1,23 +1,24 @@
 
 (module scheme mzscheme
   (require (lib "class.ss")
-           "../wxmefile.ss"
-           "nested.ss")
+           "wxme.ss"
+           "editor.ss"
+           "private/readable-editor.ss")
 
   (provide reader)
 
   (define reader
     (new
-     (class nested-reader%
-       (inherit read-nested-snip)
+     (class editor-reader%
+       (inherit read-editor-snip)
        (define/override (read-snip text? vers stream)
          (let ([splice? (zero? (send stream read-integer "splice?"))])
-           (read-nested-snip text? vers stream splice?)))
+           (read-editor-snip text? vers stream splice?)))
 
-       (define/override (generate-special nested src line col pos)
-         (list (if (readable-nested-data nested)
+       (define/override (generate-special editor src line col pos)
+         (list (if (readable-editor-data editor)
                    'unquote-splicing
                    'unquote)
-               (read (nested-content-port nested))))
+               (read (editor-content-port editor))))
 
        (super-new)))))

@@ -1,6 +1,6 @@
 
-(module wxmecompat mzscheme
-  (require "wxmefile.ss")
+(module compat mzscheme
+  (require "wxme.ss")
 
   (register-lib-mapping!
    "(lib \"comment-snip.ss\" \"framework\")"
