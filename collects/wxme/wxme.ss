@@ -549,7 +549,9 @@
      (lambda ()
        (let ([snips-to-go (header-snips-to-go header)])
          (cond
-          [(zero? snips-to-go) #f]
+          [(zero? snips-to-go) 
+           (read-editor-footers who port vers header)
+           #f]
           [else 
            (set-header-snips-to-go! header (sub1 snips-to-go))
            (read-snip who port vers header)])))
@@ -600,22 +602,22 @@
     (wxme-convert-port port close? #f))
 
   (define (do-read port who read)
-    (let ([port (decode who port #t #f)])
+    (let ([port (decode who port (lambda (x) x) #f)])
       (let ([v (read port)])
         (let ([v2 (let loop ()
                     (let ([v2 (read port)])
                       (if (special-comment? v2)
                           (loop)
                           v2)))])
-          (if (eof-object? v)
-              null
+          (if (eof-object? v2)
+              v
               `(begin
-                 ,@(list v v2 (let loop ([accum null])
-                                (let ([v (read port)])
-                                  (cond
-                                   [(eof-object? v) (reverse accum)]
-                                   [(special-comment? v) (loop accum)]
-                                   [else (loop (cons v accum))]))))))))))
+                 ,@(list* v v2 (let loop ([accum null])
+                                 (let ([v (read port)])
+                                   (cond
+                                    [(eof-object? v) (reverse accum)]
+                                    [(special-comment? v) (loop accum)]
+                                    [else (loop (cons v accum))]))))))))))
 
   (define (wxme-read port)
     (do-read port 'read read))
