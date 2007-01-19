@@ -1,6 +1,11 @@
 
 (module editor mzscheme
-  (define-struct editor (content-port))
-  (provide (struct editor (content-port))))
+  (require (lib "class.ss")
+           "private/class-help.ss")
 
+  (provide editor%)
 
+  (define editor%
+    (class object%
+      (init-accessible content-port)
+      (super-new))))

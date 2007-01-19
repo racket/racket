@@ -7,20 +7,23 @@
            "editor.ss"
            "private/readable-editor.ss")
 
-  (provide reader)
+  (provide reader
+           xml-editor%)
+
+  (define xml-editor% (class readable-editor% (super-new)))
 
   (define reader
     (new (class editor-reader%
            (inherit read-editor-snip)
            (define/override (read-snip text? vers stream)
              (let ([elim-whitespace? (zero? (send stream read-integer "elim-whitespace?"))])
-               (read-editor-snip text? vers stream elim-whitespace?)))
+               (read-editor-snip text? vers stream elim-whitespace? xml-editor%)))
 
            (define/override (generate-special editor src line col pos)
-             (let* ([port (editor-content-port editor)]
+             (let* ([port (send editor get-content-port)]
                     [xml (read-xml port)]
                     [xexpr (xml->xexpr (document-element xml))]
-                    [clean-xexpr (if (readable-editor-data editor)
+                    [clean-xexpr (if (send editor get-data)
                                      (eliminate-whitespace-in-empty-tags xexpr)
                                      xexpr)])
                (list 'quasiquote clean-xexpr)))

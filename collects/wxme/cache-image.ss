@@ -1,15 +1,26 @@
 
 (module cache-image mzscheme
-  (require (lib "class.ss"))
+  (require (lib "class.ss")
+           "wxme.ss")
 
   (provide reader
-           (struct cache-image (argb width height pin-x pin-y)))
+           cache-image%)
 
-  (define-struct cache-image (argb width height pin-x pin-y))
+  (define cache-image%
+    (class object%
+      (init-field argb width height pin-x pin-y)
+      
+      (define (get-argb) argb)
+      (define (get-width) width)
+      (define (get-height) height)
+      (define (get-pin-x) pin-x)
+      (define (get-pin-y) pin-y)
+      
+      (super-new)))
 
   (define reader
     (new
-     (class object%
+     (class* object% (snip-reader<%>)
        (define/public (read-header vers stream)
          (void))
        (define/public (read-snip text? cvers stream)
@@ -17,14 +28,10 @@
            (if text?
                #"."
                (let ([l (read (open-input-bytes content))])
-                 (make-cache-image (car l)
-                                   (cadr l)
-                                   (/ (vector-length (car l)) (cadr l) 4)
-                                   (caddr l)
-                                   (cadddr l))))))
+                 (make-object cache-image% 
+                              (car l)
+                              (cadr l)
+                              (/ (vector-length (car l)) (cadr l) 4)
+                              (caddr l)
+                              (cadddr l))))))
        (super-new)))))
-
-                   
-  
-  
-  

@@ -5,7 +5,10 @@
            "editor.ss"
            "private/readable-editor.ss")
 
-  (provide reader)
+  (provide reader 
+           scheme-editor%)
+  
+  (define scheme-editor% (class readable-editor% (super-new)))
 
   (define reader
     (new
@@ -13,12 +16,12 @@
        (inherit read-editor-snip)
        (define/override (read-snip text? vers stream)
          (let ([splice? (zero? (send stream read-integer "splice?"))])
-           (read-editor-snip text? vers stream splice?)))
+           (read-editor-snip text? vers stream splice? scheme-editor%)))
 
        (define/override (generate-special editor src line col pos)
-         (list (if (readable-editor-data editor)
+         (list (if (send editor get-data)
                    'unquote-splicing
                    'unquote)
-               (read (editor-content-port editor))))
+               (read (send editor get-content-port))))
 
        (super-new)))))

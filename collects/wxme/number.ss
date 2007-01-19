@@ -1,12 +1,13 @@
 
 (module number mzscheme
-  (require (lib "class.ss"))
+  (require (lib "class.ss")
+           "wxme.ss")
 
   (provide reader)
 
   (define reader
     (new
-     (class object%
+     (class* object% (snip-reader<%>)
        (define/public (read-header vers stream)
          (void))
        (define/public (read-snip text? cvers stream)

@@ -4,16 +4,12 @@
            (lib "string.ss")
            (lib "kw.ss")
            (lib "class.ss")
+           (lib "contract.ss")
            "image.ss"
-           "editor.ss")
+           "editor.ss"
+           "private/compat.ss")
 
-  (define (expect rx port who msg)
-    (let ([m (regexp-match rx port)])
-      (unless m
-        (error who "bad WXME stream; ~a" msg))
-      (car m)))
-
-  (define (decode who port snip-filter)
+  (define (decode who port snip-filter close?)
     (expect #rx#"^WXME" port who "does not start with \"WXME\"")
     (expect #rx#"^01" port who "unrecognized format (not \"01\")")
     (let ([vers (string->number
@@ -22,7 +18,15 @@
       (unless (vers . < . 4)
         (expect #rx#"^ ##[ \r\n]" port who "missing \" ## \" tag in the expected place"))
       (let ([header (read-header who port vers snip-filter)])
-        (port->decoded-port who port vers header))))
+        (port->decoded-port who port vers header close?))))
+  
+  (define (expect rx port who msg)
+    (let ([m (regexp-match rx port)])
+      (unless m
+        (error who "bad WXME stream; ~a" msg))
+      (car m)))
+
+  ;; ----------------------------------------
   
   (define-struct header (classes data-classes styles snip-filter skip-unknown? snips-to-go stream))
   (define (header-plain-text? h)
@@ -66,7 +70,8 @@
                                           (and (pair? results)
                                                (begin0
                                                 (car results)
-                                                (set! results (cdr results)))))))))
+                                                (set! results (cdr results))))))
+                                      void)))
             (loop (sub1 cnt)
                   (cons (read-snip who port vers header)
                         accum))))))
@@ -182,23 +187,37 @@
         (let ([len (and (or (not class)
                             (not (snip-class-required? class)))
                         (read-fixed-integer who port vers "snip length"))])
-          (if class
+          (if (and class
+                   (snip-class-manager class))
               (let ([style (read-integer who port vers "snip style index")]
                     [m (snip-class-manager class)]
                     [cvers (snip-class-version class)])
                 (let ([s (if (procedure? m)
+                             ;; Built-in snip class:
                              (m who port vers cvers header)
-                             (send m read-snip
-                                   (header-plain-text? header) 
-                                   cvers
-                                   (header-stream header)))])
+                             ;; Extension snip class:
+                             (let* ([text? (header-plain-text? header)]
+                                    [s (send m read-snip
+                                             text?
+                                             cvers
+                                             (header-stream header))])
+                               (if (and text?
+                                        (not (bytes? s)))
+                                   (error 'read-snip 
+                                          "reader for ~a in text-only mode produced something other than bytes: ~e"
+                                          (snip-class-name class)
+                                          s)
+                                   s)))])
                   (read-buffer-data who port vers header)
                   (if (bytes? s)
+                      ;; Return bytes for the stream:
                       s
+                      ;; Filter the non-bytes result, and then wrap it as
+                      ;;  a special stream result:
                       (let ([s ((header-snip-filter header) s)])
                         (lambda (src line col pos)
-                          (if (readable? s)
-                              ((readable-ref s) s src line col pos)
+                          (if (s . is-a? . readable<%>)
+                              (send s read-special src line col pos)
                               s))))))
               (begin
                 (skip-data port vers len)
@@ -319,8 +338,14 @@
 
   ;; ----------------------------------------
 
-  (define-values (prop:readable readable? readable-ref)
-    (make-struct-type-property 'readable))
+  (define snip-reader<%>
+    (interface ()
+      read-header
+      read-snip))
+  
+  (define readable<%>
+    (interface ()
+      read-special))
   
   (define (find-class pos header who port vers)
     (define classes (header-classes header))
@@ -372,7 +397,7 @@
                (let ([n (read-editor-snip who port vers header)])
                  (if (header-plain-text? header)
                      n
-                     (make-editor n))))]
+                     (make-object editor% n))))]
             [(equal? name #"wximage")
              (lambda (who port vers cvers header)
                (let ([filename (read-a-string who port vers "image-snip filename")]
@@ -398,12 +423,14 @@
                                        (loop (add1 i))))))))])
                    (if (header-plain-text? header)
                        #"."
-                       (make-image (if data #f filename) data w h dx dy)))))]
+                       (make-object image% (if data #f filename) data w h dx dy)))))]
             [else
              ;; Load a manager for this snip class?
              (let ([lib (string->lib-path (bytes->string/latin-1 name))])
                (if lib
                    (let ([mgr (dynamic-require lib 'reader)])
+                     (unless (mgr . is-a? . snip-reader<%>)
+                       (error who "reader provided by ~s is not an instance of snip-reader<%>" lib))
                      mgr)
                    (if (header-skip-unknown? header)
                        #f
@@ -450,7 +477,7 @@
         (read-a-string who port vers what))
 
       (public [rne read-editor-snip])
-      (define (rne)
+      (define (rne what)
         (read-editor-snip who port vers header))
 
       (super-new)))
@@ -473,11 +500,9 @@
          (andmap ok-string-element? (cdr m))))
 
   (define (register-lib-mapping! str target)
-    (let ([lib (with-handlers ([exn:fail? (lambda (x) #f)])
-                 (read (open-input-string target)))])
-      (unless (ok-lib-path? lib)
-        (error 'register-lib-mapping! "given target is not a valid lib path: ~s" target))
-      (hash-table-put! lib-mapping str lib)))
+    (unless (ok-lib-path? target)
+      (error 'register-lib-mapping! "given target is not a valid marshalable lib path: ~s" target))
+    (hash-table-put! lib-mapping str target))
 
   (define (string->lib-path str)
     (or (let ([m (and (regexp-match #rx"^[(].*[)]$" str)
@@ -491,6 +516,8 @@
                                   (ok-lib-path? (cadr m))))
                (cadr m)))
         (hash-table-get lib-mapping str #f)))
+
+  (register-compatibility-mappings! register-lib-mapping!)
 
   ;; ----------------------------------------
 
@@ -516,7 +543,7 @@
 
   ;; ----------------------------------------
 
-  (define (port->decoded-port who port vers header)
+  (define (port->decoded-port who port vers header close?)
     (snip-results->port
      (object-name port)
      (lambda ()
@@ -525,9 +552,12 @@
           [(zero? snips-to-go) #f]
           [else 
            (set-header-snips-to-go! header (sub1 snips-to-go))
-           (read-snip who port vers header)])))))
+           (read-snip who port vers header)])))
+     (if close?
+         (lambda () (close-input-port port))
+         void)))
 
-  (define (snip-results->port name next-item!)
+  (define (snip-results->port name next-item! close)
     (define-values (r w) (make-pipe))
     (define (read-proc buffer)
       (if (char-ready? r)
@@ -545,20 +575,31 @@
      name
      read-proc
      #f
-     void))
+     close))
+
+  ;; ----------------------------------------
+
+  (define (wxme-convert-port port close? snip-filter)
+    ;; read optional #reader header:
+    (regexp-match/fail-without-reading #rx#"^#reader[(]lib\"read.ss\"\"wxme\"[)]" port)
+    ;; decode:
+    (decode 'read-bytes port snip-filter close?))
 
   ;; ----------------------------------------
 
   (define unknown-extensions-skip-enabled (make-parameter #f))
 
-  (define/kw (wxme-port->port port #:optional [snip-filter (lambda (x) x)])
-    ;; read optional #reader header:
-    (regexp-match/fail-without-reading #rx#"^#reader[(]lib\"wxme.ss\"\"mred\"[)]" port)
-    ;; decode:
-    (decode 'read-bytes port snip-filter))
+  (define (is-wxme-stream? p)
+    (regexp-match-peek #rx#"^(?:#reader(lib\"read[.]ss\"\"wxme\"))?WXME01[0-9][0-9] ##[ \r\n]" p))
+
+  (define/kw (wxme-port->port port #:optional [close? #t] [snip-filter (lambda (x) x)])
+    (wxme-convert-port port close? snip-filter))
+
+  (define/kw (wxme-port->text-port port #:optional [close? #t])
+    (wxme-convert-port port close? #f))
 
   (define (do-read port who read)
-    (let ([port (decode who port #t)])
+    (let ([port (decode who port #t #f)])
       (let ([v (read port)])
         (let ([v2 (let loop ()
                     (let ([v2 (read port)])
@@ -579,14 +620,19 @@
     (do-read port 'read read))
 
   (define (wxme-read-syntax source-name-v port)
-    (do-read port 'read-syntax
-             (lambda (port)
-               (read-syntax source-name-v port))))
+    (datum->syntax-object
+     #f
+     (do-read port 'read-syntax
+              (lambda (port)
+                (read-syntax source-name-v port)))))
 
-  (provide wxme-port->port
-           register-lib-mapping!
-           unknown-extensions-skip-enabled
-           prop:readable
+  (provide/contract [is-wxme-stream? (input-port? . -> . any)]
+                    [wxme-port->text-port ((input-port?) (any/c) . opt-> . input-port?)]
+                    [wxme-port->port ((input-port?) (any/c (any/c . -> . any)) . opt-> . input-port?)]
+                    [register-lib-mapping! (string? string? . -> . void?)])
+
+  (provide unknown-extensions-skip-enabled
+           snip-reader<%>
+           readable<%>
            wxme-read
            wxme-read-syntax))
-
