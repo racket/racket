@@ -254,7 +254,7 @@
     (let ([p (open-input-file filename)])
       (port-count-lines! p)
       (let ([p (cond
-		[(regexp-match-peek #rx#"^(?:#reader(lib\"wxme[.]ss\"\"mred\"))?WXME01[0-9][0-9] ## " p)
+		[(regexp-match-peek #rx#"^(?:#reader(lib\"read[.]ss\"\"wxme\"))?WXME01[0-9][0-9] ##[ \r\n]" p)
 		 (let ([t (make-object text%)])
 		   (send t insert-port p 'standard)
 		   (close-input-port p)
