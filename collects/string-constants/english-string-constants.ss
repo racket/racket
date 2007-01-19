@@ -580,13 +580,10 @@ please adhere to these guidelines:
  (save-as-info "Prompt for a filename and save this file to disk")
  (save-as-menu-item "Save &As...")
 
-  (page-setup-info "Configure printing parameters")
-  (page-setup-menu-item "Page Setup")
-  
  (print-info "Send this file to a printer")
  (print-menu-item "&Print...")
 
- (page-setup-info "Set up the page")
+ (page-setup-info "Configure printing parameters")
  (page-setup-menu-item "Page Setup...")
 
  (close-info "Close this file")
