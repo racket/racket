@@ -590,7 +590,8 @@
   (define unknown-extensions-skip-enabled (make-parameter #f))
 
   (define (is-wxme-stream? p)
-    (regexp-match-peek #rx#"^(?:#reader(lib\"read[.]ss\"\"wxme\"))?WXME01[0-9][0-9] ##[ \r\n]" p))
+    (and (regexp-match-peek #rx#"^(?:#reader[(]lib\"read[.]ss\"\"wxme\"[)])?WXME01[0-9][0-9] ##[ \r\n]" p)
+         #t))
 
   (define/kw (wxme-port->port port #:optional [close? #t] [snip-filter (lambda (x) x)])
     (wxme-convert-port port close? snip-filter))
