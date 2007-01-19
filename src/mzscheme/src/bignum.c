@@ -112,8 +112,7 @@ extern void GC_check(void *p);
 
 #define BIGNUM_CACHE_SIZE 16
 static void *bignum_cache[BIGNUM_CACHE_SIZE];
-static void *bignum_can_cache[BIGNUM_CACHE_SIZE];
-static int can_pos, did_pos;
+static int cache_count;
 
 static void *copy_to_protected(void *p, long len, int zero)
 {
@@ -121,23 +120,20 @@ static void *copy_to_protected(void *p, long len, int zero)
   long minsz;
   
   minsz = GC_malloc_stays_put_threshold();
-  if (minsz >= len) {
-    int i;
-    r = NULL;
-    for (i = 0; i < BIGNUM_CACHE_SIZE; i++) {
-      if (bignum_cache[i]) {
-        r = bignum_cache[i];
-        bignum_cache[i] = NULL;
-        break;
-      }
-    }
-    if (!r)
+  if (minsz >= len + sizeof(long)) {
+    if (cache_count) {
+      --cache_count;
+      r = bignum_cache[cache_count];
+      bignum_cache[cache_count] = NULL;
+    } else
       r = (char *)scheme_malloc_atomic(minsz);
-    bignum_can_cache[can_pos] = r;
-    can_pos = (can_pos + 1) & (BIGNUM_CACHE_SIZE - 1);
+    ((long *)r)[0] = 1;
   } else {
-    r = (char *)scheme_malloc_atomic(len);
+    r = (char *)scheme_malloc_atomic(len + sizeof(long));
+    ((long *)r)[0] = 0;
   }
+
+  r = (char *)r XFORM_OK_PLUS sizeof(long);
 
   if (p) memcpy(r, p, len);
   if (zero) memset(r, 0, len);
@@ -146,13 +142,9 @@ static void *copy_to_protected(void *p, long len, int zero)
 
 static void free_protected(void *p)
 {
-  int i;
-  for (i = 0; i < BIGNUM_CACHE_SIZE; i++) {
-    if (p == bignum_can_cache[i]) {
-      bignum_can_cache[i] = NULL;
-      bignum_cache[did_pos] = p;
-      did_pos = (did_pos + 1) & (BIGNUM_CACHE_SIZE - 1);
-      break;
+  if (((long *)p)[-1]) {
+    if (cache_count < BIGNUM_CACHE_SIZE) {
+      bignum_cache[cache_count++] = (char *)p - sizeof(long);
     }
   }
 }
@@ -162,8 +154,8 @@ void scheme_clear_bignum_cache(void)
   int i;
   for (i = 0; i < BIGNUM_CACHE_SIZE; i++) {
     bignum_cache[i] = NULL;
-    bignum_can_cache[i] = NULL;
   }
+  cache_count = 0;
 }
 
 #else
