@@ -66,12 +66,12 @@
 					    e
 					    (syntax-property
 					     (syntax-case e ()
-					       [((n1 n2) expr)
+					       [((n1 n2) . expr)
 						(quasisyntax/loc e
 						  (#,(syntax-property
 						      #'(n1 n2)
 						      'certify-mode 'transparent)
-						   expr))]
+						   . expr))]
 					       [_else e])
 					     'certify-mode 'transparent)))
 				      (syntax-e #'(elem (... ...)))))
