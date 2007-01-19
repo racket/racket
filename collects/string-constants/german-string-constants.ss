@@ -473,9 +473,12 @@
  (save-info "Diese Datei auf der Platte speichern")
  (save-menu-item "&Speichern")
 
- (save-as-info "Dateinamen abfragen und dann Datei auf der Platte speichern")
+ (save-as-info "Dateinamen abfragen und dann Datei abspeichern")
  (save-as-menu-item "Speichern &unter...")
 
+ (page-setup-info "Ausdruck-Einstellungen ändern")
+ (page-setup-menu-item "Ausdruck-Einstellungen...")
+ 
  (print-info "Diese Datei zum Drucker schicken")
  (print-menu-item "&Drucken...")
 
