@@ -2350,14 +2350,16 @@ static Scheme_Object *sch_pipe(int argc, Scheme_Object **args)
 
   if (argc == 1) {
     Scheme_Object *o = args[0];
-    if ((SCHEME_INTP(o) || SCHEME_BIGNUMP(o))
+    if (SCHEME_FALSEP(o)) {
+      bufmax = 0;
+    } else if ((SCHEME_INTP(o) || SCHEME_BIGNUMP(o))
 	&& SCHEME_TRUEP(scheme_positive_p(1, args))) {
       if (SCHEME_INTP(o))
 	bufmax = SCHEME_INT_VAL(o);
       else
 	bufmax = 0;
     } else {
-      scheme_wrong_type("make-pipe", "positive exact integer", 0, argc, args);
+      scheme_wrong_type("make-pipe", "positive exact integer or #f", 0, argc, args);
       return NULL;
     }
   } else
