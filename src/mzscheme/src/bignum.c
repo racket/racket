@@ -48,6 +48,12 @@
    In addition, the precise GC needs to distinguish Scheme_Bignum from
    Small_Bignum for computing sizes; the allocated_inline flag does
    that.
+
+   Finally, when pointers are sent into GMP when GMP might block or
+   allocate, then the pointer needs to be immobile (but it can and
+   should be GCable, in case a break exception escapes). The PROTECT
+   macros copy an array as necessary to immobile memory in precise
+   GC mode.
 */
 
 #include "schpriv.h"
@@ -95,19 +101,69 @@ static Scheme_Object *bignum_one;
 # define SCHEME_BIGDIG_SAFE(b, s) ((SCHEME_BIGDIG(b) == ((Small_Bignum *) mzALIAS b)->v) ? (s[0] = SCHEME_BIGDIG(b)[0], s) : SCHEME_BIGDIG(b))
 
 # define PROTECT(digarray, len) digarray = copy_to_protected(digarray, len * sizeof(bigdig), 0);
-# define RELEASE(digarray) (free(digarray), digarray = NULL);
+# define RELEASE(digarray) (free_protected(digarray), digarray = NULL);
 
 # define PROTECT_RESULT(len) copy_to_protected(NULL, len * sizeof(bigdig), 1);
 # define FINISH_RESULT(digarray, len) { bigdig *save = digarray; digarray = (bigdig *)scheme_malloc_atomic(len * sizeof(bigdig)); memcpy(digarray, save, len * sizeof(bigdig)); RELEASE(save); }
 # define MALLOC_PROTECT(size) copy_to_protected(NULL, size, 0)
+# define FREE_PROTECT(ptr) free_protected(ptr)
+
+extern void GC_check(void *p);
+
+#define BIGNUM_CACHE_SIZE 16
+static void *bignum_cache[BIGNUM_CACHE_SIZE];
+static void *bignum_can_cache[BIGNUM_CACHE_SIZE];
+static int can_pos, did_pos;
 
 static void *copy_to_protected(void *p, long len, int zero)
 {
   void *r;
-  r = malloc(len);
+  long minsz;
+  
+  minsz = GC_malloc_stays_put_threshold();
+  if (minsz >= len) {
+    int i;
+    r = NULL;
+    for (i = 0; i < BIGNUM_CACHE_SIZE; i++) {
+      if (bignum_cache[i]) {
+        r = bignum_cache[i];
+        bignum_cache[i] = NULL;
+        break;
+      }
+    }
+    if (!r)
+      r = (char *)scheme_malloc_atomic(minsz);
+    bignum_can_cache[can_pos] = r;
+    can_pos = (can_pos + 1) & (BIGNUM_CACHE_SIZE - 1);
+  } else {
+    r = (char *)scheme_malloc_atomic(len);
+  }
+
   if (p) memcpy(r, p, len);
   if (zero) memset(r, 0, len);
   return r;
+}
+
+static void free_protected(void *p)
+{
+  int i;
+  for (i = 0; i < BIGNUM_CACHE_SIZE; i++) {
+    if (p == bignum_can_cache[i]) {
+      bignum_can_cache[i] = NULL;
+      bignum_cache[did_pos] = p;
+      did_pos = (did_pos + 1) & (BIGNUM_CACHE_SIZE - 1);
+      break;
+    }
+  }
+}
+
+void scheme_clear_bignum_cache(void)
+{
+  int i;
+  for (i = 0; i < BIGNUM_CACHE_SIZE; i++) {
+    bignum_cache[i] = NULL;
+    bignum_can_cache[i] = NULL;
+  }
 }
 
 #else
@@ -119,6 +175,11 @@ static void *copy_to_protected(void *p, long len, int zero)
 
 # define PROTECT_RESULT(len) allocate_bigdig_array(len)
 # define FINISH_RESULT(digarray, len) /* no-op */
+
+# define MALLOC_PROTECT(size) scheme_malloc_atomic(size)
+# define FREE_PROTECT(ptr) /* no-op */
+
+void scheme_clear_bignum_cache(void) { }
 #endif
 
 #ifdef MZ_XFORM
@@ -1126,7 +1187,7 @@ char *scheme_bignum_to_allocated_string(const Scheme_Object *b, int radix, int a
 {
   Scheme_Object *c;
   unsigned char* str, *str2;
-  int i, slen, start;
+  int i, slen, start, clen;
   bigdig *c_digs;
   SAFE_SPACE(csd)
 
@@ -1154,14 +1215,11 @@ char *scheme_bignum_to_allocated_string(const Scheme_Object *b, int radix, int a
   else /* (radix == 10) */
     slen = (int)(ceil(WORD_SIZE * SCHEME_BIGLEN(b) * 0.30102999566398115)) + 1;
 
-#ifdef MZ_PRECISE_GC
   str = (unsigned char *)MALLOC_PROTECT(slen);
-#else
-  str = (unsigned char *)scheme_malloc_atomic(slen);
-#endif
 
   c_digs = SCHEME_BIGDIG_SAFE(c, csd);
-  PROTECT(c_digs, SCHEME_BIGLEN(c));
+  clen = SCHEME_BIGLEN(c);
+  PROTECT(c_digs, clen);
 
   slen = mpn_get_str(str, radix, c_digs, SCHEME_BIGLEN(c) - 1);
 
@@ -1172,7 +1230,7 @@ char *scheme_bignum_to_allocated_string(const Scheme_Object *b, int radix, int a
     unsigned char *save = str;
     str = (unsigned char*)scheme_malloc_atomic(slen);
     memcpy(str, save, slen);
-    RELEASE(save);
+    FREE_PROTECT(save);
   }
 #endif
 
@@ -1257,11 +1315,7 @@ Scheme_Object *scheme_read_bignum(const mzchar *str, int offset, int radix)
 
   /* Convert string of chars to string of bytes: */
 
-#ifdef MZ_PRECISE_GC
   istring = (unsigned char *)MALLOC_PROTECT(len);
-#else
-  istring = (unsigned char *)scheme_malloc_atomic(len);
-#endif
 
   i = stri;
   while(str[i] != 0) {
@@ -1290,7 +1344,7 @@ Scheme_Object *scheme_read_bignum(const mzchar *str, int offset, int radix)
 
   test = mpn_set_str(digs, istring, len, radix);
 
-  RELEASE(istring);
+  FREE_PROTECT(istring);
   FINISH_RESULT(digs, alloc);
 
   alloc = bigdig_length(digs, alloc);
@@ -1319,6 +1373,7 @@ static void bignum_double_inplace(Scheme_Object **_stk_o)
   if (len == 0)
     return;
 
+  /* We assume that *_stk_o is not small */
   carry = mpn_lshift(SCHEME_BIGDIG(*_stk_o), SCHEME_BIGDIG(*_stk_o), len, 1);
 
   if (carry)
@@ -1335,6 +1390,7 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
     *_stk_o = bignum_copy(*_stk_o, 1);
     return;
   }
+  /* We assume that *_stk_o is not small */
   carry = mpn_add_1(SCHEME_BIGDIG(*_stk_o), SCHEME_BIGDIG(*_stk_o), len, 1);
 
   if (carry)
@@ -1402,6 +1458,7 @@ void scheme_bignum_divide(const Scheme_Object *n, const Scheme_Object *d,
     short n_pos;
     bigdig *q_digs, *r_digs, *n_digs, *d_digs;
     Scheme_Object *q, *r;
+    SAFE_SPACE(ns) SAFE_SPACE(ds)
 
     n_size = SCHEME_BIGLEN(n);
     d_size = SCHEME_BIGLEN(d);
@@ -1417,8 +1474,8 @@ void scheme_bignum_divide(const Scheme_Object *n, const Scheme_Object *d,
     q_digs = PROTECT_RESULT(q_alloc);
     r_digs = PROTECT_RESULT(r_alloc);
 
-    n_digs = SCHEME_BIGDIG(n);
-    d_digs = SCHEME_BIGDIG(d);
+    n_digs = SCHEME_BIGDIG_SAFE(n, ns);
+    d_digs = SCHEME_BIGDIG_SAFE(d, ds);
     PROTECT(n_digs, n_size);
     PROTECT(d_digs, d_size);
 
@@ -1600,6 +1657,7 @@ Scheme_Object *scheme_bignum_gcd(const Scheme_Object *n, const Scheme_Object *d)
   long n_size, d_size, r_alloc, r_size;
   int res_double;
   Scheme_Object *r;
+  SAFE_SPACE(ns) SAFE_SPACE(ds)
 
   if (scheme_bignum_lt(d, n)) {
     const Scheme_Object *tmp;
@@ -1618,8 +1676,8 @@ Scheme_Object *scheme_bignum_gcd(const Scheme_Object *n, const Scheme_Object *d)
   r->type = scheme_bignum_type;
 
 #ifdef MZ_PRECISE_GC
-  n_digs = SCHEME_BIGDIG(n);
-  d_digs = SCHEME_BIGDIG(d);
+  n_digs = SCHEME_BIGDIG_SAFE(n, ns);
+  d_digs = SCHEME_BIGDIG_SAFE(d, ds);
   PROTECT(n_digs, n_size);
   PROTECT(d_digs, d_size);
 #else

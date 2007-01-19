@@ -3324,7 +3324,7 @@
           (eq? (path-convention-type s) 'windows)
           (eq? (system-type) 'windows))
       (let ([str (if (string? s) s (bytes->string/locale (path->bytes s)))])
-	(if (regexp-match-positions #rx"^[\u5C][\u5C][?][\u5C]" str)
+	(if (regexp-match? #rx"^[\u5C][\u5C][?][\u5C]" str)
 	    (if (string? s)
 		(string->path s)
 		s)
@@ -3332,7 +3332,7 @@
 	      (bytes->path 
                (string->bytes/locale
                 (regexp-replace* #rx"/" 
-                                 (if (regexp-match-positions #rx"[/\u5C][. ]+[/\u5C]*$" s)
+                                 (if (regexp-match? #rx"[/\u5C][. ]+[/\u5C]*$" s)
                                      ;; Just "." or ".." in last path element - don't remove
                                      s
                                      (regexp-replace* #rx"\u5B .\u5D+([/\u5C]*)$" s "\u005C1"))
@@ -3715,7 +3715,7 @@
 				    (if (eq? relto -prev-relto)
 					-prev-relto-dir
 					(let ([rts (string->bytes/latin-1 (symbol->string relto))])
-					  (and (regexp-match-positions -re:auto rts)
+					  (and (regexp-match? -re:auto rts)
 					       (let-values ([(base n d?)
 							     (split-path 
 							      (bytes->path
@@ -3732,7 +3732,7 @@
 		     (let* ([dir (get-dir)])
 		       (or (hash-table-get -path-cache (cons s dir) #f)
 			   (let ([s (string->bytes/utf-8 s)])
-			     (if (regexp-match-positions -re:ok-relpath s)
+			     (if (regexp-match? -re:ok-relpath s)
 				 ;; Parse Unix-style relative path string
 				 (let loop ([path dir][s s])
 				   (let ([prefix (regexp-match -re:dir s)])

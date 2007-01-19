@@ -6720,6 +6720,7 @@ static void get_ready_for_GC()
   scheme_clear_shift_cache();
   scheme_clear_prompt_cache();
   scheme_clear_rx_buffers();
+  scheme_clear_bignum_cache();
 
 #ifdef RUNSTACK_IS_GLOBAL
   scheme_current_thread->runstack = MZ_RUNSTACK;

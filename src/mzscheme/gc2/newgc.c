@@ -2004,7 +2004,7 @@ void GC_mark(const void *const_p)
     GCDEBUG((DEBUGOUTF, "Not marking %p (bad ptr)\n", p));
     return;
   }
-
+  
   if((page = find_page(p))) {
     /* toss this over to the BTC mark routine if we're doing accounting */
     if(doing_memory_accounting) { memory_account_mark(page,p); return; }
@@ -2131,7 +2131,7 @@ void GC_mark(const void *const_p)
 	  /* set forwarding pointer */
 	  GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", 
 		   p, newplace, work));
-	  *(void**)p = newplace;
+          *(void**)p = newplace;
 	  push_ptr(newplace);
 	}
       } else GCDEBUG((DEBUGOUTF,"Not marking %p (already marked)\n", p));

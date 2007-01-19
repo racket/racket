@@ -1291,6 +1291,8 @@ float scheme_bignum_to_float_inf_info(const Scheme_Object *n, int just_use, int 
 # define scheme_bignum_to_float_inf_info scheme_bignum_to_double_inf_info
 #endif
 
+void scheme_clear_bignum_cache(void);
+
 /****** Rational numbers *******/
 
 typedef struct {
