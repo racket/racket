@@ -328,6 +328,17 @@
   (let ([new (list line)] [cur (thread-cell-ref added-lines)])
     (if cur (append! cur new) (thread-cell-set! added-lines new))))
 
+(define (wrap-evaluator eval)
+  (lambda (expr)
+    (current-error-message-tweaker
+     (lambda (msg) (format "~a, while evaluating ~s" msg expr)))
+    (begin0 (eval expr)
+      ;; this will not happen if there was an error, so the above will still be
+      ;; in -- but the problem is that some evaluations may intentionally raise
+      ;; exception, so need to clear out this parameter anyway when done with
+      ;; testing.
+      (current-error-message-tweaker #f))))
+
 (provide check:)
 (define-syntax (check: stx)
   (define (id s) (datum->syntax-object stx s stx))
@@ -427,7 +438,7 @@
                ;; ========================================
                ;; verify submitting users
                (define (pre users submission)
-                 (current-run-status "checking submission username(s)")
+                 (set-run-status "checking submission username(s)")
                  (cond [(list? allowed)
                         (unless (member users allowed)
                           (error*
@@ -453,7 +464,7 @@
                  (define (prefix-line/substs str)
                    (prefix-line (subst str generic-substs)))
                  (define (write-text)
-                   (current-run-status "creating text file")
+                   (set-run-status "creating text file")
                    (with-output-to-file text-file
                      (lambda ()
                        (for-each (lambda (user)
@@ -467,7 +478,7 @@
                      'truncate))
                  (define submission-text
                    (and create-text?
-                        (begin (current-run-status "reading submission")
+                        (begin (set-run-status "reading submission")
                                ((if multi-file
                                   (unpack-multifile-submission
                                    names-checker output-file)
@@ -477,7 +488,7 @@
                  (when create-text? (make-directory "grading") (write-text))
                  (when value-printer (current-value-printer value-printer))
                  (when coverage? (coverage-enabled #t))
-                 (current-run-status "checking submission")
+                 (set-run-status "checking submission")
                  (cond
                    [(not eval?) (let () body ...)]
                    [language
@@ -501,16 +512,18 @@
                                         (error* "~a" user-error-message)])))])
                              (call-with-evaluator/submission
                               language teachpacks submission values))])
-                      (current-run-status "running tests")
-                      (parameterize ([submission-eval eval])
+                      (set-run-status "running tests")
+                      (parameterize ([submission-eval (wrap-evaluator eval)])
                         (let-syntax ([with-submission-bindings
                                       (syntax-rules ()
                                         [(_ bindings body*1 body* (... ...))
                                          (with-bindings eval bindings
                                            body*1 body* (... ...))])])
                           (let () body ...))
+                        ;; see the comment in `wrap-evaluator' for this:
+                        (current-error-message-tweaker #f)
                         ;; test coverage at the end (no harm if already done in
-                        ;; the checker since it's cheap)
+                        ;; the checker since it's cheap):
                         (when coverage? (!all-covered))
                         (when (thread-cell-ref added-lines) (write-text))))]
                    [else (error* "no language configured for submissions")])

@@ -23,9 +23,10 @@
            call-with-evaluator
            call-with-evaluator/submission
            reraise-exn-as-submission-problem
-           current-run-status
+           set-run-status
            message
            current-value-printer
+           current-error-message-tweaker
 
            check-proc
            check-defined
@@ -106,8 +107,8 @@
                                (map (lambda (a) (format " ~e" a)) args)))])
       (when (test-history-enabled)
         (test-history (cons test (test-history))))
-      (current-run-status (format "running instructor-supplied test ~a"
-                                  (format-history test)))
+      (set-run-status (format "running instructor-supplied test ~a"
+                              (format-history test)))
       (let-values ([(ok? val)
                     (with-handlers ([void
                                      (lambda (x)
@@ -175,7 +176,7 @@
       (reraise-exn-as-submission-problem
        (lambda ()
          (let ([e (make-evaluator lang teachpacks program-port)])
-           (current-run-status "executing your code")
+           (set-run-status "executing your code")
            (go e))))))
 
   (define (call-with-evaluator/submission lang teachpacks str go)

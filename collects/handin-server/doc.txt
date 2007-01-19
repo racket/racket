@@ -688,8 +688,7 @@ by this function.
   multiple values, or raise an exception).  Each of the two limits can
   be `#f' to disable it.
 
-  (Note: memory limit requires running in a 3m executable; the limit
-  is only checked after a GC happens.)
+  (Note: memory limit requires running in a 3m executable.)
 
 > (with-limits sec mb body ...)
   A macro version of the above.
@@ -716,7 +715,7 @@ _utils.ss_
   paths, and initial definition content as supplied by input-program
   (see `make-evaluator').  It also sets the current error-value print
   handler to print values in a way suitable for `lang', it initializes
-  `current-run-status' with "executing your code", and it catches all
+  `set-run-status' with "executing your code", and it catches all
   exceptions to re-raise them in a form suitable as a submission
   error.
 
@@ -773,7 +772,7 @@ _utils.ss_
   `message'.  You can use that to send warnings to the student and
   wait for confirmation.
 
-> (current-run-status string-or-#f)
+> (set-run-status string-or-#f)
   Registers information about the current actions of the checker, in
   case the session is terminated due to excessive memory consumption.
   For example, a checker might set the status to indicate which
@@ -959,8 +958,7 @@ Keywords for configuring `check:':
   This check happens after checker tests are run, but the information
   is collected and stored before, so checker tests do not change the
   result.  Also, you can use the `!all-covered' procedure in the
-  checker before other tests, if you want that feedback earlier.  Does
-  not work with non-textual submissions.
+  checker before other tests, if you want that feedback earlier.
 
 Within the body of `check:', `users' and `submission' will be bound to
 the checker arguments -- a (sorted) list of usernames and the
