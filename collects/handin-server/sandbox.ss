@@ -1,11 +1,14 @@
 (module sandbox mzscheme
-  (require (lib "string.ss") (lib "list.ss"))
+  (require (lib "string.ss") (lib "list.ss") (lib "port.ss"))
 
   (provide mred?
            coverage-enabled
            namespace-specs
            sandbox-reader
            sandbox-security-guard
+           sandbox-input
+           sandbox-output
+           get-output
            get-uncovered-expressions
            make-evaluator)
 
@@ -19,6 +22,10 @@
        (if mred? (dynamic-require '(lib "mred.ss" "mred") 'mrsym) mzval)]))
 
   ;; Configuration ------------------------------------------------------------
+
+  (define sandbox-input  (make-parameter #f))
+  (define sandbox-output (make-parameter #f))
+  (define null-input (open-input-bytes #""))
 
   (define coverage-enabled (make-parameter #f))
 
@@ -63,10 +70,8 @@
           (error what "file access denied (~a)" path)))
       (lambda (what host port mode) (error what "network access denied")))))
 
-  (define null-input (open-input-string ""))
   (define (safe-eval expr)
     (parameterize ([current-security-guard (sandbox-security-guard)]
-                   [current-input-port null-input]
                    ;; breaks: [current-code-inspector (make-inspector)]
                    )
       (eval expr)))
@@ -86,13 +91,15 @@
                     modsyms)))
       new-ns))
 
+  (define (input->port inp)
+    (cond [(input-port? inp) inp]
+          [(string? inp) (open-input-string inp)]
+          [(bytes?  inp) (open-input-bytes inp)]
+          [(path?   inp) (open-input-file inp)]
+          [else (error 'input->port "bad input: ~e" inp)]))
+
   (define (read-code inp)
-    (parameterize ([current-input-port
-                    (cond [(input-port? inp) inp]
-                          [(string? inp) (open-input-string inp)]
-                          [(bytes?  inp) (open-input-bytes inp)]
-                          [(path?   inp) (open-input-file inp)]
-                          [else (error 'read-code "bad input: ~e" inp)])])
+    (parameterize ([current-input-port (input->port inp)])
       (port-count-lines! (current-input-port))
       ((sandbox-reader))))
 
@@ -149,15 +156,39 @@
   (define run-in-bg          (mz/mr thread queue-callback))
 
   (define (get-uncovered-expressions eval) (eval get-uncovered-expressions))
+  (define (get-output eval) (eval get-output))
 
   (define (make-evaluator language teachpacks input-program)
     (let ([coverage-enabled (coverage-enabled)]
           [uncovered-expressions #f]
-          [ns (make-evaluation-namespace)]
           [input-ch  (make-channel)]
-          [result-ch (make-channel)])
-      (parameterize ([current-namespace ns]
-                     [current-inspector (make-inspector)])
+          [result-ch (make-channel)]
+          [output    #f])
+      (parameterize
+          ([current-namespace (make-evaluation-namespace)]
+           [current-inspector (make-inspector)]
+           [current-input-port
+            (let ([inp (sandbox-input)]) (if inp (input->port inp) null-input))]
+           [current-output-port
+            (let ([out (sandbox-output)])
+              (cond [(not out) (open-output-nowhere)]
+                    [(output-port? out) (set! output out) out]
+                    [(eq? out 'pipe)
+                     (let-values ([(i o) (make-pipe)]) (set! output i) o)]
+                    [(memq out '(bytes string))
+                     (let-values
+                         ([(open get)
+                           (if (eq? out 'bytes)
+                             (values open-output-bytes  get-output-bytes)
+                             (values open-output-string get-output-string))])
+                       (let ([o (open)])
+                         (set! output (lambda ()
+                                        (let ([o1 o])
+                                          (set! o (open))
+                                          (current-output-port o)
+                                          (get-output-bytes o1))))
+                         o))]
+                    [else (error 'make-evaluator "bad output: ~e" out)]))])
         ;; Note the above definition of `current-eventspace': in MzScheme, it
         ;; is a parameter that is not used at all.  Also note that creating an
         ;; eventspace starts a thread that will eventually run the callback
@@ -190,16 +221,20 @@
                (channel-put result-ch '(exn . no-more-to-evaluate))
                (loop))))
           (let ([r (channel-get result-ch)])
+            (define (eval-in-user-context expr)
+              (channel-put input-ch expr)
+              (let ([r (channel-get result-ch)])
+                (if (eq? (car r) 'exn) (raise (cdr r)) (apply values (cdr r)))))
             (if (eq? r 'ok)
               ;; Initial program executed ok, so return an evaluator:
               (lambda (expr)
-                (if (eq? expr get-uncovered-expressions)
-                  uncovered-expressions
-                  (begin (channel-put input-ch expr)
-                         (let ([r (channel-get result-ch)])
-                           (if (eq? (car r) 'exn)
-                             (raise (cdr r))
-                             (apply values (cdr r)))))))
+                (cond [(eq? expr get-uncovered-expressions)
+                       uncovered-expressions]
+                      [(eq? expr get-output)
+                       (if (procedure? output)
+                         (eval-in-user-context `(,output))
+                         output)]
+                      [else (eval-in-user-context expr)]))
               ;; Program didn't execute:
               (raise r)))))))
 

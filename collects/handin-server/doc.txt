@@ -209,7 +209,7 @@ This directory contains the following files and sub-directories:
          "BACKUP-1/handin.scm", etc.; the default is 9
 
       'user-regexp : a regular expression that is used to validate
-         usernames; alternatively, this can be #f meaning no
+         usernames; alternatively, this can be `#f' meaning no
          restriction, or a list of permitted strings.  Young students
          often choose exotic usernames that are impossible to
          remember, and forget capitalization, so the default is fairly
@@ -218,36 +218,36 @@ This directory contains the following files and sub-directories:
          specify joint work
 
       'user-desc : a plain-words description of the acceptable
-         username format (according to user-regexp above); #f stands
+         username format (according to user-regexp above); `#f' stands
          for no description; the default is "alphanumeric string"
          which matches the default user-regexp
 
-      'username-case-sensitive : a boolean; when #f, usernames are
-         case-folded for all purposes; defaults to #f (note that you
-         should not set this to #t on Windows or when using other
+      'username-case-sensitive : a boolean; when `#f', usernames are
+         case-folded for all purposes; defaults to `#f' (note that you
+         should not set this to `#t' on Windows or when using other
          case-insensitive filesystems, since usernames are used as
          directory names)
 
       'allow-new-users : a boolean indicating whether to allow
-         new-user requests from a client tool; the default is #f
+         new-user requests from a client tool; the default is `#f'
 
       'allow-change-info : a boolean indicating whether to allow
          changing user information from a client tool (changing
-         passwords is always possible); the default is #f
+         passwords is always possible); the default is `#f'
 
       'master-password : a string for an MD5 hash for a password that
-         allows login as any user; the default is #f, which disables
+         allows login as any user; the default is `#f', which disables
          the password
 
       'log-output : a boolean that controls whether the handin server
-         log is written on the standard output; defaults to #t
+         log is written on the standard output; defaults to `#t'
 
       'log-file : a path (relative to handin server directory or
          absolute) that specifies a filename for the handin server log
-         (possibly combined with the 'log-output option), or #f for no
-         log file; defaults to "log"
+         (possibly combined with the 'log-output option), or `#f' for
+         no log file; defaults to "log"
 
-      'web-base-dir : if #f (the default), the built-in web server
+      'web-base-dir : if `#f' (the default), the built-in web server
          will use the "status-web-root" in this collection for its
          configuration; to have complete control over the built in
          server, you can copy and edit "status-web-root", and add this
@@ -256,13 +256,13 @@ This directory contains the following files and sub-directories:
 
       'web-log-file : a path (relative to handin server directory or
          absolute) that specifies a filename for logging the internal
-         HTTPS status web server; or #f (the default) to disable this
-         log
+         HTTPS status web server; or `#f' (the default) to disable
+         this log
 
       'extra-fields : a list that describes extra string fields of
          information for student records; each element in this list is
          a list of three values -- the name of the field, the regexp
-         (or #f, or a list of permitted string values), and a string
+         (or `#f', or a list of permitted string values), and a string
          describing of acceptable strings.  The default is
 
            '(("Full Name" #f #f)
@@ -465,7 +465,7 @@ This directory contains the following files and sub-directories:
     hidden from the status interface.
 
     The checker should return a string, such as "handin.scm", to use
-    in naming the submission file, or #f to indicate that he file
+    in naming the submission file, or `#f' to indicate that he file
     should be deleted (eg, when the checker alrady created the
     submission file(s) in a different place).
 
@@ -489,7 +489,7 @@ This directory contains the following files and sub-directories:
       still be in place).  This is useful for things like notifying
       the user of the successful submission (see `message' below), or
       sending a `receipt' email.
-    To specify only pre/post-checker, use #f for the one you want to
+    To specify only pre/post-checker, use `#f' for the one you want to
     omit.
 
   * "<[in]active-assignment>/<user(s)>/<filename>" (if submitted) ---
@@ -607,10 +607,11 @@ by this function.
   (which means that the contents may be unreliable, but the position
   is).  The default is `#f'.
 
-> get-uncovered-expressions
-  A special value that, when passed to an evaluator created by
-  `make-evaluator' or applied on one, will return a list of uncovered
-  syntax objects.
+> (get-uncovered-expressions evaluator)
+  When this is used with an evaluator that was created with
+  `make-evaluator', it will return a list of uncovered syntax
+  objects.  (It can also be provided as an argument to the evaluator,
+  with the same result.)
 
 > namespace-specs
   A parameter that holds a list of values that specify how to create a
@@ -641,6 +642,39 @@ by this function.
   acessing any paths outside of the collection paths, or any kind of
   network activity.
 
+> sandbox-input
+  A parameter that specifies the input for evaluations that happen in
+  a `make-evaluator' function.  It defaults to `#f', which makes such
+  functions work in a context where no input is available.  It can be
+  set to:
+  * an input port, which will be used as is;
+  * a string or a byte string that will be used as the complete input;
+  * a path that names a file holding the input.
+
+> sandbox-output
+  A parameter that specifies the output for evaluations that happen in
+  a `make-evaluator' function.  It defaults to `#f', which simply
+  discards all such output.  It can also be set to:
+  * an output port, which will be used as is;
+  * the symbol 'bytes, which will make `get-output' (see below) return
+    the complete output as a byte string;
+  * the symbol 'string, similar to the above, but uses a string;
+  * the symbol 'pipe, which will make it use a pipe for output, and
+    `get-output' returns the input end of the pipe.
+
+> (get-output evaluator)
+  When this is used with an evaluator that was created with
+  `make-evaluator', it will return the output of the evaluator.  (It
+  can also be provided as an argument to the evaluator, with the same
+  result.)  The result depends on the value of the `sandbox-output'
+  parameter at the time the evaluator was created: if it was `#f' then
+  `get-output' will return `#f', if it was the symbol `pipe' then
+  `get-output' returns an input port that is being fed by the pipe,
+  and if it was the symbol `bytes' or `string' then `get-output'
+  returns the accumulated output and resets the evaluator's output to
+  a new output string or byte string (so each call returns a piece of
+  the evaluator's output).
+
 > (make-evaluator language teachpack-paths input-program)
   This is the main entry point for the sandbox module.
 
@@ -649,14 +683,10 @@ by this function.
   that are specified in `teachpack-paths', and after evaluating the
   code in the `input-program'.
 
-  The `input-program' holds the input program in one of the following
-  ways:
-  * an input port that produces the content of the definitions window;
-  * a string or a byte string that contains the definitions window
-    (you can use "" for an empty definitions window);
-  * a path that names a file holding the input program.
-  The contents of the input program is read using the
-  `sandbox-reader', with line-counting enabled.
+  The `input-program' holds the input program in the same way as the
+  `sandbox-input' parameter (but it cannot be `#f').  The contents of
+  this input is read using the `sandbox-reader', with line-counting
+  enabled.
 
   The `language' can be:
   * a symbol indicating a built-in language (currently, only
@@ -805,7 +835,7 @@ _utils.ss_
   checker can use this procedure to further control it: if msg is
   'reset the timeout is reset to 'session-timeout seconds; if msg is a
   number the timeout will be set to that many seconds in the future.
-  The timeout can be completely disabled by (timeout-control #f).
+  The timeout can be completely disabled by `(timeout-control #f)'.
   (Note that before the checker is used (after the pre-checker, if
   specified), the timer will be reset to the 'session-timeout value.)
 
@@ -846,10 +876,11 @@ Keywords for configuring `check:':
   useful value for pair submission where the pairs are unknown (see
   below).
 
-* :eval? -- whether submissions should be evaluated.  Defaults to #t.
-  Note that if it is specified as #f, then the checker body will not
-  be able to run any tests on the code, unless it contains code that
-  performs some evaluation (eg, using the facilities of "utils.ss").
+* :eval? -- whether submissions should be evaluated.  Defaults to
+  `#t'.  Note that if it is specified as `#f', then the checker body
+  will not be able to run any tests on the code, unless it contains
+  code that performs some evaluation (eg, using the facilities of
+  "utils.ss").
 
 * :language -- the language that is used for evaluating submissions,
   same as the `language' argument for `make-evaluator' (see above).
@@ -865,30 +896,31 @@ Keywords for configuring `check:':
   that is specified by :output below, for example "hw.java" is
   converted into a textual "grading/text.java").  This is intended for
   printouts and grading, and is in a subdirectory so students will not
-  see it on the status web server.  Defaults to #t.
+  see it on the status web server.  Defaults to `#t'.
 
 * :untabify? -- if true, then tabs are converted to spaces, assuming a
   standard tab width of 8 places.  This is needed for a correct
   computation of line lengths, but note that DrScheme does not insert
-  tabs in Scheme mode.  Defaults to #t.
+  tabs in Scheme mode.  Defaults to `#t'.
 
 * :textualize? -- if true, then all submissions are converted to text,
   trying to convert objects like comment boxes and test cases to some
-  form of text.  Defaults to #f, meaning that an exception is raised
+  form of text.  Defaults to `#f', meaning that an exception is raised
   for submissions that are not all text.
 
 * :maxwidth -- a number that specifies maximum line lengths for
   submissions (a helpful feature for reading student code).  Defaults
-  to 79.  This feature can be disabled if set to #f.
+  to 79.  This feature can be disabled if set to `#f'.
 
 * :output -- the name of the original handin file (unrelated to the
   text-converted files).  Defaults to "hw.scm".  (The suffix changes
-  the defaults of `:markup-prefix' and `:prefix-re' below.)  Can be #f
-  for removing the original file after processing.
+  the defaults of `:markup-prefix' and `:prefix-re' below.)  Can be
+  `#f' for removing the original file after processing.
 
-* :multi-file -- by default, this is set to #f, which means that only
-  DrScheme is used to send submissions as usual.  See "Multiple-file
-  submissions" below for setting up multi-file submissions.
+* :multi-file -- by default, this is set to `#f', which means that
+  only DrScheme is used to send submissions as usual.  See
+  "Multiple-file submissions" below for setting up multi-file
+  submissions.
 
 * :names-checker -- used for multi-file submissions; see
   "Multiple-file submissions" below for details.
@@ -1053,7 +1085,8 @@ value from the submission code.
   have an effect if `:create-text?' is false.
 
 > (procedure/arity? proc arity)
-  Returns #t if `proc' is a procedure that accepts `arity' arguments.
+  Returns `#t' if `proc' is a procedure that accepts `arity'
+  arguments.
 
 > (!defined id ...)
   A macro that checks that the given identifiers are defined in the
@@ -1073,7 +1106,7 @@ value from the submission code.
 > (!test expr)
 > (!test expr result [equal?])
   The first form checks that the given expression evaluates to a
-  non-#f value in the submission context, throwing an error
+  non-`#f' value in the submission context, throwing an error
   otherwise.  The second form compares the result of evaluation,
   requiring it to be equal to `result' (optionally specifying an
   equality procedure).  Note that the `result' and `equal?' forms are
@@ -1113,7 +1146,7 @@ submissions, do the following:
   forbidden.
 
 * In the "info.ss" file of the handin-client you need to set
-  `enable-multifile-handin' to #t, and adjust `selection-default' to
+  `enable-multifile-handin' to `#t', and adjust `selection-default' to
   patterns that are common to your course.  (It can be a single
   pattern, or a list of them.)
 
