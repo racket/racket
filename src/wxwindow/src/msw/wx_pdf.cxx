@@ -168,6 +168,10 @@ static volatile int waiting_for_cancel = 0, qes_answer = 0;
 static HANDLE cs_lock;
 extern void wxPostQueryEndSession();
 
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
 static int ResetCancelSema()
 {
   int qa;
@@ -187,17 +191,17 @@ LRESULT APIENTRY wxEndSessionWatcherWndProc(HWND hWnd, UINT message, WPARAM wPar
        end session or exit. */
     int qa;
 
-	WaitForSingleObject(cs_lock, INFINITE);
+    WaitForSingleObject(cs_lock, INFINITE);
     qa = qes_answer;
-	waiting_for_cancel = 1;
+    waiting_for_cancel = 1;
     ReleaseMutex(cs_lock);
 
-	if (!qa) {
+    if (!qa) {
       wxPostQueryEndSession();
       WaitForSingleObject(cancel_sema, INFINITE);
       qa = ResetCancelSema();
-	}
-	return qa;
+    }
+    return qa;
   }
 
   return ::DefWindowProcW(hWnd, message, wParam, lParam);
@@ -218,6 +222,10 @@ static long DoEndSessionWin(void *data)
 
   return 0;
 }
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
 
 void wxEndEndSessionThread()
 {
@@ -240,11 +248,11 @@ void notify_cancel()
   ReleaseMutex(cs_lock);
 	
   if (wfc) {
-	wxNotifyCancelEndSession();
-	/* Block until the qes window can handle a random message */
+    wxNotifyCancelEndSession();
+    /* Block until the qes window can handle a random message */
     SendMessage(qes_win,
-		        RegisterWindowMessage("MrEd_Done_B2261834-D535-44dd-8511-A26FC8F97DD0"),
-		        0, 0);
+		RegisterWindowMessage("MrEd_Done_B2261834-D535-44dd-8511-A26FC8F97DD0"),
+		0, 0);
   }
 }
 
