@@ -95,12 +95,16 @@ class wxMediaStreamOutStringBase : public wxMediaStreamOutBase
 
 /*******************************************************************/
 
+#define MRED_READER_STR "#reader(lib\"read.ss\"\"wxme\")"
+#define MRED_READER_STR_LEN 27
+#define MRED_START_STR_LEN 4
 #define MRED_START_STR "WXME"
 #define MRED_START_STR_LEN 4
 #define MRED_FORMAT_STR "01"
 #define MRED_FORMAT_STR_LEN 2
 #define MRED_VERSION_STR "08"
 #define MRED_VERSION_STR_LEN 2
+#define MZSCHEME_WRITER_VERSION "370"
 
 #define WXME_VERSION_ONE(f) (f->read_version[1] == '1')
 #define WXME_VERSION_TWO(f) (f->read_version[1] == '2')

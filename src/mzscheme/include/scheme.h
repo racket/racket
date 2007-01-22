@@ -1002,7 +1002,7 @@ typedef struct Scheme_Thread {
   Scheme_Object **values_buffer;
   int values_buffer_size;
 
-  union {
+  struct { /* used to be a union, but that confuses MZ_PRECISE_GC */
     struct {
       Scheme_Object *wait_expr;
     } eval;

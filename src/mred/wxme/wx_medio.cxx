@@ -1513,17 +1513,20 @@ void wxMediaStreamOut::PrettyStart()
     }
     s = "#|\n   This file is in PLT Scheme editor format.\n";
     f->Write(s, strlen(s));
+    s = "   Open this file in DrScheme version " MZSCHEME_WRITER_VERSION " or later to read it.\n";
+    f->Write(s, strlen(s));
+    s = "\n";
+    f->Write(s, strlen(s));
     s = "   Most likely, it was created by saving a program in DrScheme,\n";
     f->Write(s, strlen(s));
-    s = "   and it probably contains a program with non-text elements (such\n";
+    s = "   and it probably contains a program with non-text elements\n";
     f->Write(s, strlen(s));
-    s = "   as pictures, comment boxes, or test-cases boxes).\n";
+    s = "   (such as images or comment boxes).\n";
     f->Write(s, strlen(s));
-    s = "   Open this file in DrScheme to read its content.\n";
+    s = "\n";
     f->Write(s, strlen(s));
-    s = "                 www.plt-scheme.org\n|#\n";
+    s = "            http://www.plt-scheme.org\n|#\n";
     f->Write(s, strlen(s));
     col = 0;
   }
 }
-

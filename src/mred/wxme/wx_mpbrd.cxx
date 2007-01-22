@@ -2575,9 +2575,7 @@ Bool wxMediaPasteboard::InsertFile(const char *who, Scheme_Object *f, const char
 
   showErrors = TRUE;
 
-  n = scheme_get_byte_string(who, f, buffer, 0, MRED_START_STR_LEN, 0, 0, NULL);
-  buffer[MRED_START_STR_LEN] = 0;
-  if ((n != MRED_START_STR_LEN) || strcmp(buffer, MRED_START_STR)) {
+  if (!wxDetectWXMEFile(who, f, 0)) {
     if (showErrors)
       wxmeError("insert-file in pasteboard%: not a MrEd editor<%> file");
     fileerr = TRUE;

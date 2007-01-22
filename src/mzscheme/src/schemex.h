@@ -419,6 +419,7 @@ Scheme_Object *(*scheme_make_sema)(long v);
 void (*scheme_post_sema)(Scheme_Object *o);
 void (*scheme_post_sema_all)(Scheme_Object *o);
 int (*scheme_wait_sema)(Scheme_Object *o, int just_try);
+int (*scheme_try_plain_sema)(Scheme_Object *o);
 Scheme_Object **scheme_char_constants;
 Scheme_Object *(*scheme_make_channel)();
 Scheme_Object *(*scheme_make_channel_put_evt)(Scheme_Object *ch, Scheme_Object *v);

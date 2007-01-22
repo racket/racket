@@ -646,6 +646,13 @@ thread_val {
 
   gcMARK(pr->tail_buffer);
   
+  gcMARK(pr->ku.eval.wait_expr);
+
+  gcMARK(pr->ku.apply.tail_rator);
+  gcMARK(pr->ku.apply.tail_rands);
+
+  gcMARK(pr->ku.multiple.array);
+
   gcMARK(pr->ku.k.p1);
   gcMARK(pr->ku.k.p2);
   gcMARK(pr->ku.k.p3);

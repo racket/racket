@@ -241,6 +241,7 @@ EXPORTS
  scheme_post_sema
  scheme_post_sema_all
  scheme_wait_sema
+ scheme_try_plain_sema
  scheme_char_constants
  scheme_make_channel
  scheme_make_channel_put_evt

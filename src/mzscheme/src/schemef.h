@@ -110,7 +110,7 @@ MZ_EXTERN int scheme_block_until_unless(Scheme_Ready_Fun f, Scheme_Needs_Wakeup_
 					int enable_break);
 
 MZ_EXTERN void scheme_wait_input_allowed(Scheme_Input_Port *port, int nonblock);
-MZ_EXTERN int scheme_unless_ready(Scheme_Object *unless);
+XFORM_NONGCING MZ_EXTERN int scheme_unless_ready(Scheme_Object *unless);
 
 MZ_EXTERN int scheme_in_main_thread(void);
 
@@ -508,6 +508,7 @@ MZ_EXTERN Scheme_Object *scheme_make_sema(long v);
 MZ_EXTERN void scheme_post_sema(Scheme_Object *o);
 MZ_EXTERN void scheme_post_sema_all(Scheme_Object *o);
 MZ_EXTERN int scheme_wait_sema(Scheme_Object *o, int just_try);
+XFORM_NONGCING MZ_EXTERN int scheme_try_plain_sema(Scheme_Object *o);
 MZ_EXTERN Scheme_Object **scheme_char_constants;
 
 MZ_EXTERN Scheme_Object *scheme_make_channel();

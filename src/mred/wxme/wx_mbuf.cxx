@@ -694,6 +694,7 @@ void wxMediaBuffer::SetSnipData(wxSnip *, wxBufferData *)
 
 Bool wxWriteMediaVersion(wxMediaStreamOut *f, wxMediaStreamOutBase *b)
 {
+  b->Write(MRED_READER_STR, MRED_READER_STR_LEN);
   b->Write(MRED_START_STR, MRED_START_STR_LEN);
   b->Write(MRED_FORMAT_STR, MRED_FORMAT_STR_LEN);
   b->Write(MRED_VERSION_STR, MRED_VERSION_STR_LEN);
@@ -702,17 +703,51 @@ Bool wxWriteMediaVersion(wxMediaStreamOut *f, wxMediaStreamOutBase *b)
   return !b->Bad();
 }
 
+Bool wxDetectWXMEFile(const char *who, Scheme_Object *f, int peek)
+{
+  char sbuffer[MRED_START_STR_LEN+MRED_READER_STR_LEN+1];
+  int n;
+
+  n = scheme_get_byte_string(who, f, sbuffer, 0, MRED_START_STR_LEN, 0, peek, NULL);
+  sbuffer[MRED_START_STR_LEN] = 0;
+  if ((n != MRED_START_STR_LEN) || strcmp(sbuffer, MRED_START_STR)) {
+    if (!strncmp(sbuffer, MRED_READER_STR, MRED_START_STR_LEN)) {
+      /* So far, it looks like the #reader prefix... */
+      if (peek)
+        n = scheme_get_byte_string(who, f, sbuffer, 0, MRED_READER_STR_LEN + MRED_START_STR_LEN, 0, 1, NULL);
+      else
+        n += scheme_get_byte_string(who, f, sbuffer XFORM_OK_PLUS MRED_START_STR_LEN, 0, MRED_READER_STR_LEN, 0, 0, NULL);
+      sbuffer[MRED_READER_STR_LEN + MRED_START_STR_LEN] = 0;
+      if ((n != (MRED_READER_STR_LEN + MRED_START_STR_LEN)) || strcmp(sbuffer, MRED_READER_STR MRED_START_STR))
+        return 0;
+    } else
+      return 0;
+  }
+
+  return 1;
+}
+
 Bool wxReadMediaVersion(wxMediaStreamIn *mf, wxMediaStreamInBase *b, Bool parseFormat, Bool showErrors)
 {
-  char vbuf[MRED_FORMAT_STR_LEN + MRED_VERSION_STR_LEN + MRED_START_STR_LEN + 1];
+  char vbuf[MRED_READER_STR_LEN + MRED_FORMAT_STR_LEN + MRED_VERSION_STR_LEN + MRED_START_STR_LEN + 1];
 
   if (parseFormat) {
     memset(vbuf, 0, MRED_START_STR_LEN + 1);
     b->Read(vbuf, MRED_START_STR_LEN);
     if (strcmp(vbuf, MRED_START_STR)) {
-      if (showErrors)
-	wxmeError("insert-file in pasteboard%: not a MrEd editor<%> file");
-      return FALSE;
+      /* Maybe we have a #reader... prefix? */
+      b->Read(vbuf XFORM_OK_PLUS MRED_START_STR_LEN, MRED_READER_STR_LEN - MRED_START_STR_LEN);
+      if (!strcmp(vbuf, MRED_READER_STR)) {
+        /* Yes, so try reading start again. */
+        memset(vbuf, 0, MRED_START_STR_LEN + 1);
+        b->Read(vbuf, MRED_START_STR_LEN);
+      }
+
+      if (strcmp(vbuf, MRED_START_STR)) {
+        if (showErrors)
+          wxmeError("insert-file in pasteboard%: not a MrEd editor<%> file");
+        return FALSE;
+      }
     }
   }
 

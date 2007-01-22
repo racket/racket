@@ -1673,6 +1673,11 @@ wxStyleList *wxmbReadStylesFromFile(wxStyleList *styleList,
 
       f->Get(&shiftIndex);
 
+      if (shiftIndex >= i) {
+        wxmeError("map-index-to-style: bad shift-style index");
+        return FALSE;
+      }
+
       js = styleList->FindOrCreateJoinStyle(ssl->styleMap[baseIndex], 
 					    ssl->styleMap[shiftIndex]);
       ssl->styleMap[i] = js;

@@ -530,6 +530,18 @@ static int try_channel(Scheme_Sema *sema, Syncing *syncing, int pos, Scheme_Obje
   }
 }
 
+int scheme_try_plain_sema(Scheme_Object *o)
+{
+  Scheme_Sema *sema = (Scheme_Sema *)o;
+
+  if (sema->value) {
+    if (sema->value > 0)
+      --sema->value;
+    return 1;
+  } else
+    return 0;
+}
+
 int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *syncing)
      /* When syncing is supplied, o can contain Scheme_Channel_Syncer
 	and never-evt values, and just_try must be 0. */
@@ -542,12 +554,7 @@ int scheme_wait_semas_chs(int n, Scheme_Object **o, int just_try, Syncing *synci
     Scheme_Sema *sema = semas[0];
     if (just_try > 0) {
       if (sema->so.type == scheme_sema_type) {
-	if (sema->value) {
-	  if (sema->value > 0)
-	    --sema->value;
-	  v = 1;
-	} else
-	  v = 0;
+        v = scheme_try_plain_sema((Scheme_Object *)sema);
       } else {
 	v = try_channel(sema, syncing, 0, NULL);
       }

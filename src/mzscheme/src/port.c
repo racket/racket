@@ -1746,7 +1746,7 @@ int scheme_unless_ready(Scheme_Object *unless)
     return 1;
 
   if (SCHEME_CDR(unless))
-    return scheme_wait_sema(SCHEME_CDR(unless), 1);
+    return scheme_try_plain_sema(SCHEME_CDR(unless));
 
   return 0;
 }
@@ -4648,6 +4648,241 @@ fd_byte_ready (Scheme_Input_Port *port)
   }
 }
 
+static long fd_get_string_slow(Scheme_Input_Port *port,
+                               char *buffer, long offset, long size,
+                               int nonblock,
+                               Scheme_Object *unless)
+{
+  Scheme_FD *fip;
+  long bc;
+
+  fip = (Scheme_FD *)port->port_data;
+
+  while (1) {
+    /* Loop until a read succeeds. */
+    int none_avail = 0;
+    int target_size, target_offset, ext_target;
+    char *target;
+
+    /* If no chars appear to be ready, go to sleep. */
+    while (!fd_byte_ready(port)) {
+      if (nonblock > 0)
+        return 0;
+
+      scheme_block_until_unless((Scheme_Ready_Fun)fd_byte_ready,
+                                (Scheme_Needs_Wakeup_Fun)fd_need_wakeup,
+                                (Scheme_Object *)port,
+                                0.0, unless,
+                                nonblock);
+
+      scheme_wait_input_allowed(port, nonblock);
+
+      if (scheme_unless_ready(unless))
+        return SCHEME_UNLESS_READY;
+    }
+
+    if (port->closed) {
+      /* Another thread closed the input port while we were waiting. */
+      /* Call scheme_getc to signal the error */
+      scheme_get_byte((Scheme_Object *)port);
+    }
+
+    /* Another thread might have filled the buffer, or
+       if SOME_FDS_ARE_NOT_SELECTABLE is set,
+       fd_byte_ready might have read one character. */
+    if (fip->bufcount) {
+      bc = ((size <= fip->bufcount)
+            ? size
+            : fip->bufcount);
+
+      memcpy(buffer + offset, fip->buffer + fip->buffpos, bc);
+      fip->buffpos += bc;
+      fip->bufcount -= bc;
+
+      return bc;
+    }
+
+    if ((size >= MZPORT_FD_DIRECT_THRESHOLD) && (fip->flush != MZ_FLUSH_ALWAYS)) {
+      ext_target = 1;
+      target = buffer;
+      target_offset = offset;
+      target_size = size;
+    } else {
+      ext_target = 0;
+      target = (char *)fip->buffer;
+      target_offset = 0;
+      if (fip->flush == MZ_FLUSH_ALWAYS)
+        target_size = 1;
+      else
+        target_size = MZPORT_FD_BUFFSIZE;
+    }
+
+#ifdef WINDOWS_FILE_HANDLES
+    if (!fip->th) {
+      /* We can read directly. This must be a regular file, where
+         reading never blocks. */
+      DWORD rgot, delta;
+
+      if (fip->textmode) {
+        ext_target = 0;
+        target = fip->buffer;
+        target_offset = 0;
+        if (fip->flush == MZ_FLUSH_ALWAYS)
+          target_size = 1;
+        else
+          target_size = MZPORT_FD_BUFFSIZE;
+      }
+
+      rgot = target_size;
+
+      /* Pending CR in text mode? */
+      if (fip->textmode == 2) {
+        delta = 1;
+        if (rgot > 1)
+          rgot--;
+        fip->buffer[0] = '\r';
+      } else
+        delta = 0;
+
+      if (ReadFile((HANDLE)fip->fd, target XFORM_OK_PLUS target_offset + delta, rgot, &rgot, NULL)) {
+        bc = rgot;
+      } else {
+        int errid;
+        bc = -1;
+        errid = GetLastError();
+        errno = errid;
+      }
+
+      /* bc == 0 and no err => EOF */
+
+      /* Finish text-mode handling: */
+      if (fip->textmode && (bc >= 0)) {
+        int i, j;
+        unsigned char *buf;
+
+        if (fip->textmode == 2) {
+          /* we had added a CR */
+          bc++;
+          fip->textmode = 1;
+        }
+
+        /* If bc is only 1, then we've reached the end, and
+           any leftover CR there should stay. */
+        if (bc > 1) {
+          /* Collapse CR-LF: */
+          buf = fip->buffer;
+          for (i = 0, j = 0; i < bc - 1; i++) {
+            if ((buf[i] == '\r')
+                && (buf[i+1] == '\n')) {
+              buf[j++] = '\n';
+              i++;
+            } else
+              buf[j++] = buf[i];
+          }
+          if (i < bc) /* common case: didn't end with CRLF */
+            buf[j++] = buf[i];
+          bc = j;
+          /* Check for CR at end; if there, save it to maybe get a
+             LF on the next read: */
+          if (buf[bc - 1] == '\r') {
+            bc--;
+            fip->textmode = 2; /* 2 indicates a leftover CR */
+          }
+        }
+      }
+
+    } else {
+      ext_target = 0;
+
+      /* If we get this far, there's definitely data available.
+         Extract data made available by the reader thread. */
+      if (fip->th->eof) {
+        bc = 0;
+        if (fip->th->eof != INVALID_HANDLE_VALUE) {
+          ReleaseSemaphore(fip->th->eof, 1, NULL);
+          fip->th->eof = NULL;
+        }
+      } else if (fip->th->err) {
+        bc = -1;
+        errno = fip->th->err;
+      } else {
+        bc = fip->th->avail;
+        fip->th->avail = 0;
+      }
+    }
+#else
+# ifdef MAC_FILE_HANDLES
+    {
+      SInt32 cnt = target_size;
+
+      errno = FSRead(fip->fd, &cnt, target + target_offset);
+      if (!cnt && (errno != eofErr))
+        bc = -1;
+      else
+        bc = cnt;
+    }
+# else
+    if (fip->regfile) {
+      do {
+        bc = read(fip->fd, target + target_offset, target_size);
+      } while ((bc == -1) && (errno == EINTR));
+    } else {
+      /* We use a non-blocking read here, even though we've waited
+         for input above, because an external process might have
+         gobbled the characters that we expected to get. */
+      int old_flags;
+
+      old_flags = fcntl(fip->fd, F_GETFL, 0);
+      fcntl(fip->fd, F_SETFL, old_flags | MZ_NONBLOCKING);
+      do {
+        bc = read(fip->fd, target + target_offset, target_size);
+      } while ((bc == -1) && errno == EINTR);
+      fcntl(fip->fd, F_SETFL, old_flags);
+
+      if ((bc == -1) && (errno == EAGAIN)) {
+        none_avail = 1;
+        bc = 0;
+      }
+    }
+# endif
+#endif
+
+    if (!none_avail) {
+      if (ext_target && (bc > 0)) {
+        return bc;
+      }
+
+      fip->bufcount = bc;
+
+      if (fip->bufcount < 0) {
+        fip->bufcount = 0;
+        fip->buffpos = 0;
+        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                         "error reading from stream port %V (" FILENAME_EXN_E ")",
+                         port->name, errno);
+        return 0;
+      }
+
+      if (!fip->bufcount) {
+        fip->buffpos = 0;
+        return EOF;
+      } else {
+        bc = ((size <= fip->bufcount)
+              ? size
+              : fip->bufcount);
+
+        memcpy(buffer + offset, fip->buffer, bc);
+        fip->buffpos = bc;
+        fip->bufcount -= bc;
+
+        return bc;
+      }
+    } else if (nonblock > 0) {
+      return 0;
+    }
+  }
+}
+
 static long fd_get_string(Scheme_Input_Port *port,
 			  char *buffer, long offset, long size,
 			  int nonblock,
@@ -4655,6 +4890,9 @@ static long fd_get_string(Scheme_Input_Port *port,
 {
   Scheme_FD *fip;
   long bc;
+
+  /* Buffer-reading fast path is designed to avoid GC, 
+     and thus avoid MZ_PRECISE_GC instrumentation. */
 
   if (unless && scheme_unless_ready(unless))
     return SCHEME_UNLESS_READY;
@@ -4681,229 +4919,7 @@ static long fd_get_string(Scheme_Input_Port *port,
     if ((nonblock == 2) && (fip->flush == MZ_FLUSH_ALWAYS))
       return 0;
 
-    while (1) {
-      /* Loop until a read succeeds. */
-      int none_avail = 0;
-      int target_size, target_offset, ext_target;
-      char *target;
-
-      /* If no chars appear to be ready, go to sleep. */
-      while (!fd_byte_ready(port)) {
-	if (nonblock > 0)
-	  return 0;
-
-	scheme_block_until_unless((Scheme_Ready_Fun)fd_byte_ready,
-				  (Scheme_Needs_Wakeup_Fun)fd_need_wakeup,
-				  (Scheme_Object *)port,
-				  0.0, unless,
-				  nonblock);
-
-	scheme_wait_input_allowed(port, nonblock);
-
-	if (scheme_unless_ready(unless))
-	  return SCHEME_UNLESS_READY;
-      }
-
-      if (port->closed) {
-	/* Another thread closed the input port while we were waiting. */
-	/* Call scheme_getc to signal the error */
-	scheme_get_byte((Scheme_Object *)port);
-      }
-
-      /* Another thread might have filled the buffer, or
-	 if SOME_FDS_ARE_NOT_SELECTABLE is set,
-	 fd_byte_ready might have read one character. */
-      if (fip->bufcount) {
-	bc = ((size <= fip->bufcount)
-	      ? size
-	      : fip->bufcount);
-
-	memcpy(buffer + offset, fip->buffer + fip->buffpos, bc);
-	fip->buffpos += bc;
-	fip->bufcount -= bc;
-
-	return bc;
-      }
-
-      if ((size >= MZPORT_FD_DIRECT_THRESHOLD) && (fip->flush != MZ_FLUSH_ALWAYS)) {
-	ext_target = 1;
-	target = buffer;
-	target_offset = offset;
-	target_size = size;
-      } else {
-	ext_target = 0;
-	target = (char *)fip->buffer;
-	target_offset = 0;
-	if (fip->flush == MZ_FLUSH_ALWAYS)
-	  target_size = 1;
-	else
-	  target_size = MZPORT_FD_BUFFSIZE;
-      }
-
-#ifdef WINDOWS_FILE_HANDLES
-      if (!fip->th) {
-	/* We can read directly. This must be a regular file, where
-	   reading never blocks. */
-	DWORD rgot, delta;
-
-	if (fip->textmode) {
-	  ext_target = 0;
-	  target = fip->buffer;
-	  target_offset = 0;
-	  if (fip->flush == MZ_FLUSH_ALWAYS)
-	    target_size = 1;
-	  else
-	    target_size = MZPORT_FD_BUFFSIZE;
-	}
-
-	rgot = target_size;
-
-	/* Pending CR in text mode? */
-	if (fip->textmode == 2) {
-	  delta = 1;
-	  if (rgot > 1)
-	    rgot--;
-	  fip->buffer[0] = '\r';
-	} else
-	  delta = 0;
-
-	if (ReadFile((HANDLE)fip->fd, target XFORM_OK_PLUS target_offset + delta, rgot, &rgot, NULL)) {
-	  bc = rgot;
-	} else {
-	  int errid;
-	  bc = -1;
-	  errid = GetLastError();
-	  errno = errid;
-	}
-
-	/* bc == 0 and no err => EOF */
-
-	/* Finish text-mode handling: */
-	if (fip->textmode && (bc >= 0)) {
-	  int i, j;
-	  unsigned char *buf;
-
-	  if (fip->textmode == 2) {
-	    /* we had added a CR */
-	    bc++;
-	    fip->textmode = 1;
-	  }
-
-	  /* If bc is only 1, then we've reached the end, and
-	     any leftover CR there should stay. */
-	  if (bc > 1) {
-	    /* Collapse CR-LF: */
-	    buf = fip->buffer;
-	    for (i = 0, j = 0; i < bc - 1; i++) {
-	      if ((buf[i] == '\r')
-		  && (buf[i+1] == '\n')) {
-		buf[j++] = '\n';
-		i++;
-	      } else
-		buf[j++] = buf[i];
-	    }
-	    if (i < bc) /* common case: didn't end with CRLF */
-	      buf[j++] = buf[i];
-	    bc = j;
-	    /* Check for CR at end; if there, save it to maybe get a
-	       LF on the next read: */
-	    if (buf[bc - 1] == '\r') {
-	      bc--;
-	      fip->textmode = 2; /* 2 indicates a leftover CR */
-	    }
-	  }
-	}
-
-      } else {
-	ext_target = 0;
-
-	/* If we get this far, there's definitely data available.
-	   Extract data made available by the reader thread. */
-	if (fip->th->eof) {
-	  bc = 0;
-	  if (fip->th->eof != INVALID_HANDLE_VALUE) {
-	    ReleaseSemaphore(fip->th->eof, 1, NULL);
-	    fip->th->eof = NULL;
-	  }
-	} else if (fip->th->err) {
-	  bc = -1;
-	  errno = fip->th->err;
-	} else {
-	  bc = fip->th->avail;
-	  fip->th->avail = 0;
-	}
-      }
-#else
-# ifdef MAC_FILE_HANDLES
-      {
-	SInt32 cnt = target_size;
-
-	errno = FSRead(fip->fd, &cnt, target + target_offset);
-	if (!cnt && (errno != eofErr))
-	  bc = -1;
-	else
-	  bc = cnt;
-      }
-# else
-      if (fip->regfile) {
-	do {
-	  bc = read(fip->fd, target + target_offset, target_size);
-	} while ((bc == -1) && (errno == EINTR));
-      } else {
-	/* We use a non-blocking read here, even though we've waited
-	   for input above, because an external process might have
-	   gobbled the characters that we expected to get. */
-	int old_flags;
-
-	old_flags = fcntl(fip->fd, F_GETFL, 0);
-	fcntl(fip->fd, F_SETFL, old_flags | MZ_NONBLOCKING);
-	do {
-	  bc = read(fip->fd, target + target_offset, target_size);
-	} while ((bc == -1) && errno == EINTR);
-	fcntl(fip->fd, F_SETFL, old_flags);
-
-	if ((bc == -1) && (errno == EAGAIN)) {
-	  none_avail = 1;
-	  bc = 0;
-	}
-      }
-# endif
-#endif
-
-      if (!none_avail) {
-	if (ext_target && (bc > 0)) {
-	  return bc;
-	}
-
-	fip->bufcount = bc;
-
-	if (fip->bufcount < 0) {
-	  fip->bufcount = 0;
-	  fip->buffpos = 0;
-	  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-			   "error reading from stream port %V (" FILENAME_EXN_E ")",
-			   port->name, errno);
-	  return 0;
-	}
-
-	if (!fip->bufcount) {
-	  fip->buffpos = 0;
-	  return EOF;
-	} else {
-	  bc = ((size <= fip->bufcount)
-		? size
-		: fip->bufcount);
-
-	  memcpy(buffer + offset, fip->buffer, bc);
-	  fip->buffpos = bc;
-	  fip->bufcount -= bc;
-
-	  return bc;
-	}
-      } else if (nonblock > 0) {
-	return 0;
-      }
-    }
+    return fd_get_string_slow(port, buffer, offset, size, nonblock, unless);
   }
 }
 

@@ -3182,17 +3182,15 @@ Bool wxMediaEdit::InsertFile(const char *who, Scheme_Object *f, char *WXUNUSED(f
 {
   long n;
   const int BUF_SIZE = 1000;
-  char sbuffer[MRED_START_STR_LEN+1];
   wxchar buffer[BUF_SIZE];
   Bool fileerr;
 
   if (*format == wxMEDIA_FF_GUESS) {
-    n = scheme_get_byte_string(who, f, sbuffer, 0, MRED_START_STR_LEN, 0, 1, NULL);
-    sbuffer[MRED_START_STR_LEN] = 0;
-    if ((n != MRED_START_STR_LEN) || strcmp(sbuffer, MRED_START_STR))
+    if (!wxDetectWXMEFile(who, f, 1)) {
       *format = wxMEDIA_FF_TEXT;
-    else
+    } else {
       *format = wxMEDIA_FF_STD;
+    }
   }
 
   fileerr = FALSE;
@@ -3200,9 +3198,7 @@ Bool wxMediaEdit::InsertFile(const char *who, Scheme_Object *f, char *WXUNUSED(f
   showErrors = TRUE;
 
   if (*format == wxMEDIA_FF_STD) {
-    n = scheme_get_byte_string(who, f, sbuffer, 0, MRED_START_STR_LEN, 0, 1, NULL);
-    sbuffer[MRED_START_STR_LEN] = 0;
-    if ((n != MRED_START_STR_LEN) || strcmp(sbuffer, MRED_START_STR)){
+    if (!wxDetectWXMEFile(who, f, 1)) {
       if (showErrors) {
 	char ebuf[256];
 	sprintf(ebuf, "%s: not a MrEd editor<%%> file", who);
@@ -3213,7 +3209,7 @@ Bool wxMediaEdit::InsertFile(const char *who, Scheme_Object *f, char *WXUNUSED(f
       wxMediaStreamInFileBase *b;
       wxMediaStreamIn *mf;
 
-      scheme_get_byte_string(who, f, sbuffer, 0, MRED_START_STR_LEN, 0, 0, NULL);
+      wxDetectWXMEFile(who, f, 0);
       
       b = new WXGC_PTRS wxMediaStreamInFileBase(f);
       mf = new WXGC_PTRS wxMediaStreamIn(b);

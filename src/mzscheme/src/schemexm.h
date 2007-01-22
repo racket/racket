@@ -284,6 +284,7 @@
 #define scheme_post_sema (scheme_extension_table->scheme_post_sema)
 #define scheme_post_sema_all (scheme_extension_table->scheme_post_sema_all)
 #define scheme_wait_sema (scheme_extension_table->scheme_wait_sema)
+#define scheme_try_plain_sema (scheme_extension_table->scheme_try_plain_sema)
 #define scheme_char_constants (scheme_extension_table->scheme_char_constants)
 #define scheme_make_channel (scheme_extension_table->scheme_make_channel)
 #define scheme_make_channel_put_evt (scheme_extension_table->scheme_make_channel_put_evt)

@@ -784,7 +784,7 @@ Scheme_Port *scheme_port_record(Scheme_Object *port)
     return (Scheme_Port *)scheme_output_port_record(port);
 }
 
-Scheme_Input_Port *scheme_input_port_record(Scheme_Object *port)
+static MZ_INLINE Scheme_Input_Port *input_port_record_slow(Scheme_Object *port)
 {
   Scheme_Object *v;
 
@@ -812,7 +812,16 @@ Scheme_Input_Port *scheme_input_port_record(Scheme_Object *port)
   }
 }
 
-Scheme_Output_Port *scheme_output_port_record(Scheme_Object *port)
+Scheme_Input_Port *scheme_input_port_record(Scheme_Object *port)
+{
+  /* Avoid MZ_PRECISE_GC instrumentation in the common case: */
+  if (SCHEME_INPORTP(port))
+    return (Scheme_Input_Port *)port;
+  else
+    return input_port_record_slow(port);
+}
+
+static MZ_INLINE Scheme_Output_Port *output_port_record_slow(Scheme_Object *port)
 {
   Scheme_Object *v;
 
@@ -838,6 +847,15 @@ Scheme_Output_Port *scheme_output_port_record(Scheme_Object *port)
 
     SCHEME_USE_FUEL(1);
   }
+}
+
+Scheme_Output_Port *scheme_output_port_record(Scheme_Object *port)
+{
+  /* Avoid MZ_PRECISE_GC instrumentation in the common case: */
+  if (SCHEME_OUTPORTP(port))
+    return (Scheme_Output_Port *)port;
+  else
+    return output_port_record_slow(port);
 }
 
 int scheme_is_input_port(Scheme_Object *port)

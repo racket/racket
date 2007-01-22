@@ -1616,6 +1616,13 @@ static int thread_val_MARK(void *p) {
 
   gcMARK(pr->tail_buffer);
   
+  gcMARK(pr->ku.eval.wait_expr);
+
+  gcMARK(pr->ku.apply.tail_rator);
+  gcMARK(pr->ku.apply.tail_rands);
+
+  gcMARK(pr->ku.multiple.array);
+
   gcMARK(pr->ku.k.p1);
   gcMARK(pr->ku.k.p2);
   gcMARK(pr->ku.k.p3);
@@ -1703,6 +1710,13 @@ static int thread_val_FIXUP(void *p) {
 
   gcFIXUP(pr->tail_buffer);
   
+  gcFIXUP(pr->ku.eval.wait_expr);
+
+  gcFIXUP(pr->ku.apply.tail_rator);
+  gcFIXUP(pr->ku.apply.tail_rands);
+
+  gcFIXUP(pr->ku.multiple.array);
+
   gcFIXUP(pr->ku.k.p1);
   gcFIXUP(pr->ku.k.p2);
   gcFIXUP(pr->ku.k.p3);

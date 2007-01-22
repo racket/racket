@@ -284,6 +284,7 @@
   scheme_extension_table->scheme_post_sema = scheme_post_sema;
   scheme_extension_table->scheme_post_sema_all = scheme_post_sema_all;
   scheme_extension_table->scheme_wait_sema = scheme_wait_sema;
+  scheme_extension_table->scheme_try_plain_sema = scheme_try_plain_sema;
   scheme_extension_table->scheme_char_constants = scheme_char_constants;
   scheme_extension_table->scheme_make_channel = scheme_make_channel;
   scheme_extension_table->scheme_make_channel_put_evt = scheme_make_channel_put_evt;

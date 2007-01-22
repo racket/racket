@@ -1891,8 +1891,12 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int h
   params.can_read_box = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CAN_READ_GRAPH);
   params.can_read_graph = SCHEME_TRUEP(v);
-  v = scheme_get_param(config, MZCONFIG_CAN_READ_READER);
-  params.can_read_reader = SCHEME_TRUEP(v);
+  if (crc) {
+    params.can_read_reader = 1;
+  } else {
+    v = scheme_get_param(config, MZCONFIG_CAN_READ_READER);
+    params.can_read_reader = SCHEME_TRUEP(v);
+  }
   v = scheme_get_param(config, MZCONFIG_CASE_SENS);
   params.case_sensitive = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_SQUARE_BRACKETS_ARE_PARENS);
