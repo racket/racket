@@ -638,9 +638,18 @@ by this function.
 > sandbox-security-guard
   A parameter that holds a security guard that is used by all
   evaluations that happen in a `make-evaluator' function.  The default
-  value is a security guard that forbids writing, deleting, execution,
-  acessing any paths outside of the collection paths, or any kind of
-  network activity.
+  value is a security guard that forbids all I/O, except for reading
+  paths in `sandbox-read-ok-paths' and writing/deleting paths in
+  `sandbox-write-ok-paths' (see below).
+
+> sandbox-read-ok-paths
+> sandbox-write-ok-paths
+  These two parameters configure the behavior of the default sandbox
+  security guard as specified above.  The default value of the first
+  is a list of the library collection paths, and the default for the
+  second is null.  Note that when an evaluator is created by
+  `make-evaluator', the first list is augmented with paths for
+  non-`lib' teachpack requires and language module.
 
 > sandbox-input
   A parameter that specifies the input for evaluations that happen in
@@ -692,8 +701,10 @@ by this function.
   * a symbol indicating a built-in language (currently, only
     'mzscheme), or a teaching language -- one of 'beginner,
     'beginner-abbr, 'intermediate, 'intermediate-lambda, or 'advanced.
-  * a list that begins with a 'lib symbol stands for the language
-    defined by this (quoted) module specification.
+  * a list that begins with a 'lib, 'file, or 'planet symbol, which
+    stands for the language defined by this (quoted) module
+    specification, or a string specifying a relative module filename
+    directly.
   * a list that begins with a 'begin symbol means that the code will
     not be evaluated in a module context at all, it will simply be
     evaluated in a new namespace, after evaluating this list.

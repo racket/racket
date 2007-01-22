@@ -1,11 +1,14 @@
 (module sandbox mzscheme
-  (require (lib "string.ss") (lib "list.ss") (lib "port.ss"))
+  (require (lib "string.ss") (lib "list.ss") (lib "port.ss")
+           (lib "moddep.ss" "syntax"))
 
   (provide mred?
            coverage-enabled
            namespace-specs
            sandbox-reader
            sandbox-security-guard
+           sandbox-read-ok-paths
+           sandbox-write-ok-paths
            sandbox-input
            sandbox-output
            get-output
@@ -46,29 +49,53 @@
 
   (define sandbox-reader (make-parameter default-sandbox-reader))
 
-  (define ok-path-re
-    (byte-regexp
-     (bytes-append
-      #"^(?:"
-      (apply bytes-append
-             (cdr (apply append
-                         (map (lambda (p)
-                                (list #"|" (regexp-quote (path->bytes p))))
-                              (current-library-collection-paths)))))
-      #")(?:/|$)")))
+  (define (simplify-path* path)
+    (simplify-path
+     (expand-path
+      (path->complete-path (if (bytes? path) (bytes->path path) path)))))
+  (define (paths->path-bytes paths)
+    (map (lambda (p)
+           (if (or (path? p) (string? p) (bytes? p))
+             (path->bytes (simplify-path* p))
+             (error 'paths->path-bytes "bad path value: ~e" p)))
+         paths))
+  (define sandbox-read-ok-paths
+    (make-parameter (paths->path-bytes (current-library-collection-paths))
+                    paths->path-bytes))
+  (define sandbox-write-ok-paths
+    (make-parameter '() paths->path-bytes))
 
-  (define sandbox-security-guard
-    (make-parameter
-     (make-security-guard
-      (current-security-guard)
-      (lambda (what path modes)
-        (when (or (memq 'write modes)
-                  (memq 'execute modes)
-                  (memq 'delete modes)
-                  (and path
-                       (not (regexp-match? ok-path-re (path->bytes path)))))
-          (error what "file access denied (~a)" path)))
-      (lambda (what host port mode) (error what "network access denied")))))
+  (define sep (bytes-ref (path->bytes (simplify-path "/")) 0)) ; '\' on windows
+  (define (path-ok? path paths)
+    (let* ([path (path->bytes (simplify-path* path))]
+           [len (bytes-length path)])
+      (ormap (lambda (ok)
+               (let ([ok-len (bytes-length ok)])
+                 (or (and (= ok-len len) (bytes=? path ok))
+                     (and (< ok-len len) (= sep (bytes-ref path ok-len))
+                          (bytes=? ok (subbytes path 0 ok-len))))))
+             paths)))
+
+  (define default-sandbox-guard
+    (make-security-guard
+     (current-security-guard)
+     (lambda (what path modes)
+       (unless (cond
+                 ;; Hack: allow all exists accesses -- this is required for
+                 ;; `expand-path' which is itself used by the security guard.
+                 [(equal? modes '(exists)) #t]
+                 [(memq 'execute modes) #f] ; execution is never allowed
+                 [(or (memq 'write modes) (memq 'delete modes))
+                  ;; write+delete requires being in the write-paths
+                  (path-ok? path (sandbox-write-ok-paths))]
+                 [(or (memq 'read modes) (memq 'exists modes))
+                  ;; read+exists requires being in the read-paths
+                  (path-ok? path (sandbox-read-ok-paths))]
+                 [else (error what "unknown access modes: ~e" modes)])
+         (error what "file access denied ~a" (cons path modes))))
+     (lambda (what host port mode) (error what "network access denied"))))
+
+  (define sandbox-security-guard (make-parameter default-sandbox-guard))
 
   (define (safe-eval expr)
     (parameterize ([current-security-guard (sandbox-security-guard)]
@@ -103,8 +130,70 @@
       (port-count-lines! (current-input-port))
       ((sandbox-reader))))
 
+  ;; takes a module-spec and returns all module paths that are needed
+  ;; ==> ignores (lib ...) modules
+  (define (module-spec->non-lib-paths mod)
+    (define (lib? x)
+      (if (module-path-index? x)
+        (let-values ([(m base) (module-path-index-split x)]) (lib? m))
+        (and (pair? x) (eq? 'lib (car x)))))
+    (define (path->compiled-dir path)
+      (let-values ([(base name dir?) (split-path path)])
+        (build-path base "compiled")))
+    (let loop ([todo (if (lib? mod)
+                       '()
+                       (list (simplify-path* (resolve-module-path mod #f))))]
+               [r '()])
+      (cond
+        [(null? todo) r]
+        [(member (car todo) r) (loop (cdr todo) r)]
+        [else
+         (let ([path (car todo)])
+           (loop (map (lambda (i)
+                        (simplify-path* (resolve-module-path-index i path)))
+                      (filter (lambda (i)
+                                (and (module-path-index? i) (not (lib? i))))
+                              (apply append
+                                     (call-with-values
+                                         (lambda ()
+                                           (module-compiled-imports
+                                            (get-module-code (car todo))))
+                                         list))))
+                 (list* path (path->compiled-dir path) r)))])))
+  ;; (define (module-spec->paths mod)
+  ;;   (let loop ([todo (list (simplify-path* (resolve-module-path mod #f)))]
+  ;;              [r '()])
+  ;;     (cond
+  ;;       [(null? todo) r]
+  ;;       [(member (car todo) r) (loop (cdr todo) r)]
+  ;;       [else
+  ;;        (let ([path (car todo)])
+  ;;          (loop (map (lambda (i)
+  ;;                       (simplify-path* (resolve-module-path-index i path)))
+  ;;                     (filter module-path-index?
+  ;;                             (apply append
+  ;;                                    (call-with-values
+  ;;                                        (lambda ()
+  ;;                                          (module-compiled-imports
+  ;;                                           (get-module-code (car todo))))
+  ;;                                        list))))
+  ;;                (cons path r)))])))
+
   (define (evaluate-program language teachpacks input-program uncovered!)
     (let* ([body (read-code input-program)]
+           [required-paths
+            (if (and (pair? teachpacks) (eq? 'begin (car teachpacks)))
+              (apply append
+                     (map cdr
+                          (filter
+                           (lambda (x)
+                             (let ([fst (and (pair? x) (car x))])
+                               (eq? 'require
+                                    (if (syntax? fst) (syntax-e fst) fst))))
+                           (cdr teachpacks))))
+              teachpacks)]
+           [required-paths (apply append (map module-spec->non-lib-paths
+                                              required-paths))]
            [body (append (if (and (pair? teachpacks)
                                   (eq? 'begin (car teachpacks)))
                            (cdr teachpacks)
@@ -131,6 +220,13 @@
                        [(or (and (pair? language) (eq? 'lib (car language)))
                             (symbol? language))
                         `(module m ,language ,@body)]
+                       [(or (and (pair? language)
+                                 (memq (car language) '(file planet)))
+                            (string? language))
+                        (set! required-paths
+                              (append (module-spec->non-lib-paths language)
+                                      required-paths))
+                        `(module m ,language ,@body)]
                        [(and (pair? language)
                              (eq? 'begin (car language)))
                         `(begin ,language ,@body)]
@@ -138,6 +234,8 @@
                                     "Bad language specification: ~e"
                                     language)])]
            [ns (current-namespace)])
+      (unless (null? required-paths)
+        (sandbox-read-ok-paths (append required-paths (sandbox-read-ok-paths))))
       (when uncovered!
         (safe-eval '(require (lib "coverage.ss" "handin-server" "private"))))
       (safe-eval body)
