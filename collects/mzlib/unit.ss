@@ -491,7 +491,6 @@
                        [(icount ...) (map
                                       (lambda (import) (length (car import)))
                                       import-sigs)])
-                      
            (values 
             (quasisyntax/loc (error-syntax)
               (make-unit
@@ -540,18 +539,17 @@
   
   (define-syntax (unit-body stx)
     (syntax-case stx ()
-      ((_ err-stx (ivar ...) (evar ...) (eloc ...) body ...)
+      ((_ err-stx ivars evars elocs body ...)
        (parameterize ((error-syntax #'err-stx))
          (let* ([expand-context (generate-expand-context)]
                 [def-ctx (syntax-local-make-definition-context)]
-                [localify (lambda (ids)
-                            (cdr (syntax->list
-                                  (local-expand #`(stop #,@ids)
-                                                'expression
-                                                (list #'stop)
-                                                def-ctx))))]
-                [local-ivars (localify (syntax->list #'(ivar ...)))]
-                [local-evars (localify (syntax->list #'(evar ...)))]
+                [local-ivars (syntax->list (localify #'ivars def-ctx))]
+                [local-evars (syntax->list (localify #'evars def-ctx))]
+                [stop-list
+                 (append
+                  (kernel-form-identifier-list (quote-syntax here))
+                  (syntax->list #'ivars)
+                  (syntax->list #'evars))]
                 [definition?
                   (lambda (id)
                     (and (identifier? id)
@@ -568,9 +566,7 @@
                                (local-expand
                                 defn-or-expr
                                 expand-context
-                                (append
-                                 (kernel-form-identifier-list (quote-syntax here))
-                                 (syntax->list #'(ivar ... evar ...)))
+                                stop-list
                                 def-ctx)])
                          (syntax-case defn-or-expr (begin define-values define-syntaxes)
                            [(begin . l)
@@ -635,7 +631,7 @@
                   (raise-stx-err "cannot export syntax from a unit" name))
                 (set-var-info-exported?! v loc)))
             local-evars
-            (syntax->list #'(eloc ...)))
+            (syntax->list #'elocs))
            
            ;; Check that none of the imports are defined
            (for-each
@@ -659,6 +655,7 @@
                                (else res)))
                            null
                            (bound-identifier-mapping-map defined-names-table cons))]
+                         [(evar ...) #'evars]
                          [(l-evar ...) local-evars]
                          [(defn&expr ...) 
                           (filter
