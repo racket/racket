@@ -1132,15 +1132,16 @@ please adhere to these guidelines:
  (stepper-program-has-changed "WARNING: The program has changed.")
  (stepper-program-window-closed "WARNING: The program window is gone.")
 
- (stepper-home "Home")
  (stepper-name "Stepper")
  (stepper-language-level-message
   "The language level is set to \"~a\". Currently, the stepper works only for the \"~a\" through the \"~a\" language levels.")
  (stepper-button-label "Step")
+ (stepper-home "Home")
  (stepper-previous-application "|< Application")
  (stepper-previous "< Step")
  (stepper-next "Step >")
  (stepper-next-application "Application >|")
+ (stepper-jump-to-end "End")
  
  (debug-tool-button-name "Debug")
 
