@@ -43,7 +43,7 @@
 	(if (eof-object? l)
 	    (output accum)
 	    (cond
-	     [(regexp-match #rx#"^>" l)
+	     [(regexp-match? #rx#"^>" l)
 	      (output accum)
 	      (printf "~a\n" l)
 	      (loop null)]
