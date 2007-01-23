@@ -245,17 +245,6 @@ module browser threading seems wrong.
             (send dlg show #t)
             (and ok? (validate-number)))))
       
-      (define (basename fn)
-        (if fn
-            (let* ([file-name (mzlib:file:file-name-from-path fn)]
-                   [ext (mzlib:file:filename-extension file-name)])
-              (if ext
-                  (substring file-name 0 (- (string-length file-name)
-                                            (string-length ext)
-                                            1))
-                  file-name))
-            #f))
-      
       ;; create-executable : (instanceof drscheme:unit:frame<%>) -> void
       (define (create-executable frame)
         (let* ([definitions-text (send frame get-definitions-text)]

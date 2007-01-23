@@ -821,29 +821,12 @@
       
       ;; default-executable-filename : path symbol boolean -> path
       (define (default-executable-filename program-filename mode mred?)
-        (let-values ([(base name dir) (split-path program-filename)])
-          (let* ([ext (filename-extension name)]
-                 [program-bytename (path-element->bytes name)]
-                 ;; ext-less : bytes
-                 [ext-less (if ext
-                               (subbytes program-bytename
-                                         0
-                                         (- (bytes-length program-bytename)
-                                            (bytes-length ext)
-                                            1 ;; sub1 for the period in the extension
-                                            ))
-                               program-bytename)])
-            (let ([ext (let-values ([(extension style filters)
-                                     (mode->put-file-extension+style+filters mode mred?)])
-                         (and extension
-                              (string->bytes/utf-8 (string-append "." extension))))])
-              (if ext
-                  (if (path? base)
-                      (build-path base (bytes->path-element (bytes-append ext-less ext)))
-                      (bytes->path-element (bytes-append ext-less ext)))
-                  (if (path? base)
-                      (build-path base name)
-                      name))))))
+        (let ([ext (let-values ([(extension style filters)
+                                 (mode->put-file-extension+style+filters mode mred?)])
+                     (if extension
+                         (string->bytes/utf-8 (string-append "." extension))
+                         #""))])
+          (path-replace-suffix program-filename ext)))
       
       (define (mode->put-file-extension+style+filters mode mred?)
         (case mode
