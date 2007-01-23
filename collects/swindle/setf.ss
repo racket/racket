@@ -29,35 +29,37 @@
 ;; Original idea thanks to Eric Kidd who stole it from Dylan
 (provide setf!)
 (define-syntax (setf! stx)
-  (define (expand-place stx)
-    (syntax-case stx ()
-      [(_ var val)
-       (quasisyntax/loc stx
-         (_ #,(local-expand
-               #'var 'expression
-               (append '(#%app #%top #%datum)
-                       (map (lambda (s) (datum->syntax-object #'var s #f))
-                            '(#%app #%top #%datum))))
-            val))]
-      [else stx]))
-  (syntax-case (expand-place stx) ()
-    [(_ (getter args ...) val)
-     (if (identifier? #'getter)
-       (quasisyntax/loc stx
-         (#,(datum->syntax-object
-             #'getter
-             (string->symbol
-              (string-append "set-" (symbol->string (syntax-e #'getter)) "!"))
-             #'getter #'getter)
-          args ... val))
-       (raise-syntax-error #f "not an identifier" stx #'getter))]
-    [(_ var val)
-     (syntax/loc stx (set! var val))]
-    [(_ var val more ...)
-     (let loop ([vas #'(var val more ...)] [r '()])
-       (syntax-case vas ()
-         [(v a more ...)
-          (loop #'(more ...) (cons (syntax/loc stx (_ v a)) r))]
+  (define (set!-prefix id)
+    (datum->syntax-object
+     id
+     (string->symbol (string-append "set-" (symbol->string (syntax-e id)) "!"))
+     id id))
+  (syntax-case stx (setf!)
+    ;; if the getter is a set!-transformer, make it do its thing
+    [(setf! getter . xs)
+     (and (identifier? #'getter)
+          (set!-transformer? (syntax-local-value #'getter (lambda () #f))))
+     ((set!-transformer-procedure (syntax-local-value #'getter)) stx)]
+    [(setf! place val)
+     ;; need to expand place first, in case it is itself a macro
+     (with-syntax ([place (local-expand
+                           #'place 'expression
+                           (append '(#%app #%top #%datum)
+                                   (map (lambda (s)
+                                          (datum->syntax-object #'place s #f))
+                                        '(#%app #%top #%datum))))])
+       (syntax-case #'place ()
+         [(getter args ...)
+          (if (identifier? #'getter)
+            (with-syntax ([setter (set!-prefix #'getter)])
+              (syntax/loc stx (setter args ... val)))
+            (raise-syntax-error #f "not an identifier" stx #'getter))]
+         [_ (syntax/loc stx (set! place val))]))]
+    [(setf! place val . more)
+     (let loop ([pvs #'(place val . more)] [r '()])
+       (syntax-case pvs ()
+         [(p v . more)
+          (loop #'more (cons (syntax/loc stx (setf! p v)) r))]
          [() (quasisyntax/loc stx (begin #,@(reverse! r)))]
          [_ (raise-syntax-error #f "uneven number of forms" stx)]))]))
 
