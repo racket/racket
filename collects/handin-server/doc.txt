@@ -638,18 +638,24 @@ by this function.
 > sandbox-security-guard
   A parameter that holds a security guard that is used by all
   evaluations that happen in a `make-evaluator' function.  The default
-  value is a security guard that forbids all I/O, except for reading
-  paths in `sandbox-read-ok-paths' and writing/deleting paths in
-  `sandbox-write-ok-paths' (see below).
+  value is a security guard that forbids all I/O, except for things in
+  `sandbox-path-permissions' (see below).
 
-> sandbox-read-ok-paths
-> sandbox-write-ok-paths
-  These two parameters configure the behavior of the default sandbox
-  security guard as specified above.  The default value of the first
-  is a list of the library collection paths, and the default for the
-  second is null.  Note that when an evaluator is created by
-  `make-evaluator', the first list is augmented with paths for
-  non-`lib' teachpack requires and language module.
+> sandbox-path-permissions
+  This parameter configures the behavior of the default sandbox
+  security guard by listing path and access modes that are allowed.
+  The contents of this parameter is a list of specs, each one is a
+  list of an access mode (a symbol) and a path spec that is granted
+  this access.  The access mode symbol is one of: 'execute, 'write,
+  'read, or 'exists, where each of these implies that modes that
+  follow are also permitted (eg, 'read allows reading or checking for
+  existence).  The path spec is either a path as a byte string (must
+  be resolved and simplified) that will match exactly that path, or a
+  byte-regexp that applies for all matching paths.  The default value
+  is a list of 'read permissions for the library collection paths.
+  Note that when an evaluator is created by `make-evaluator', the list
+  is augmented with permissions for accessing non-`lib' teachpack
+  requires and language module.
 
 > sandbox-input
   A parameter that specifies the input for evaluations that happen in
