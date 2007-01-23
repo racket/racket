@@ -635,6 +635,15 @@ by this function.
   `read-case-sensitive' to `#t', and `read-decimal-as-inexact' to `#f'
   (both are sensible choices for testing code).
 
+> sandbox-override-collection-paths
+  A parameter that holds a list of collection directories.  A
+  submission evaluator that is created by `make-evaluator' will put
+  these directories (ones tat actually exist) in front of the
+  collections in `current-library-collection-paths' -- so you can put
+  collection overrides there.  The default is an `overridden-collects'
+  directory in the handin-server collection, which comes with a few
+  common overrides for teachpacks that use the GUI.
+
 > sandbox-security-guard
   A parameter that holds a security guard that is used by all
   evaluations that happen in a `make-evaluator' function.  The default
@@ -676,6 +685,7 @@ by this function.
   * the symbol 'string, similar to the above, but uses a string;
   * the symbol 'pipe, which will make it use a pipe for output, and
     `get-output' returns the input end of the pipe.
+  (Note that error output is *not* redirected.)
 
 > (get-output evaluator)
   When this is used with an evaluator that was created with

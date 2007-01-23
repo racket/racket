@@ -6,6 +6,7 @@
            coverage-enabled
            namespace-specs
            sandbox-reader
+           sandbox-override-collection-paths
            sandbox-security-guard
            sandbox-path-permissions
            sandbox-input
@@ -48,6 +49,10 @@
 
   (define sandbox-reader (make-parameter default-sandbox-reader))
 
+  (define sandbox-override-collection-paths
+    (make-parameter (list (build-path (collection-path "handin-server")
+                                      "overridden-collects"))))
+
   ;; Security Guard -----------------------------------------------------------
 
   (define sep (bytes-ref (path->bytes (simplify-path "/")) 0)) ; '\' on windows
@@ -69,13 +74,13 @@
                                      (path->bytes (simplify-path* path))
                                      (bytes-append #"(?:$|" sep-re #")"))))))
 
-  (define lib-permissions
+  (define (get-lib-permissions libs)
     (let* ([sep-re   (regexp-quote (bytes sep))]
            [last-sep (byte-regexp (bytes-append sep-re #"?$"))])
-      (map (lambda (p) (list 'read (dir-path->bytes-re p)))
-           (current-library-collection-paths))))
+      (map (lambda (p) (list 'read (dir-path->bytes-re p))) libs)))
 
-  (define sandbox-path-permissions (make-parameter lib-permissions))
+  (define sandbox-path-permissions
+    (make-parameter (get-lib-permissions (current-library-collection-paths))))
 
   (define (path-ok? bpath ok)
     (cond [(bytes? ok) (equal? bpath ok)]
@@ -286,6 +291,11 @@
       (parameterize
           ([current-namespace (make-evaluation-namespace)]
            [current-inspector (make-inspector)]
+           [current-library-collection-paths
+            (filter directory-exists?
+                    (append (sandbox-override-collection-paths)
+                            (current-library-collection-paths)))]
+           [exit-handler (lambda x (error 'exit "user code cannot exit"))]
            [current-input-port
             (let ([inp (sandbox-input)]) (if inp (input->port inp) null-input))]
            [current-output-port
@@ -308,8 +318,10 @@
                                           (get-output-bytes o1))))
                          o))]
                     [else (error 'make-evaluator "bad output: ~e" out)]))]
-           [sandbox-path-permissions (append (require-perms language teachpacks)
-                                             (sandbox-path-permissions))]
+           [sandbox-path-permissions
+            (append (sandbox-path-permissions)
+                    (get-lib-permissions (sandbox-override-collection-paths))
+                    (require-perms language teachpacks))]
            [current-security-guard (sandbox-security-guard)])
         ;; Note the above definition of `current-eventspace': in MzScheme, it
         ;; is a parameter that is not used at all.  Also note that creating an
