@@ -333,13 +333,13 @@
 
         ;; home : the action of the 'home' button
         (define (home)
-          (when stepper-is-waiting?
-            (set! stepper-is-waiting? #f))
+          (set! stepper-is-waiting? #f)
           (update-view/existing 0))
 
         ;; next-of-specified-kind: if the desired step is already in the list, display
         ;; it; otherwise, wait for it.
         (define (next-of-specified-kind find-step right-kind? wait-for-it-flag)
+          (set! stepper-is-waiting? #f)
           (let ([found-step (find-step view)])
             (if found-step
               (update-view/existing found-step)
@@ -379,8 +379,7 @@
 
         ;; previous : the action of the 'previous' button
         (define (previous)
-          (when stepper-is-waiting?
-            (set! stepper-is-waiting? #f))
+          (set! stepper-is-waiting? #f)
           (when (= view 0)
             (error 'previous-application
                    "previous-step button should not be enabled in view zero."))
@@ -389,8 +388,7 @@
         ;; previous-application : the action of the 'previous-application'
         ;; button
         (define (previous-application)
-          (when stepper-is-waiting?
-            (set! stepper-is-waiting? #f))
+          (set! stepper-is-waiting? #f)
           (when (= view 0)
             (error 'previous-application
                    "previous-application button should not be enabled in view zero."))
