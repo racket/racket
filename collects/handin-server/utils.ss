@@ -8,11 +8,13 @@
            (only "handin-server.ss" timeout-control)
            "private/run-status.ss"
            "private/config.ss"
+           "private/logger.ss"
            "sandbox.ss")
 
   (provide (all-from "sandbox.ss")
 
            get-conf
+           log-line
 
            unpack-submission
 
