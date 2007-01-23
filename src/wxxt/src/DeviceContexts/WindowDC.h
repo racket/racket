@@ -51,14 +51,14 @@ class wxGLConfig;
 #endif
 
 #ifdef Have_X_Types
-class wxWindowDC_Xinit {
+class wxWindowDC_Xinit : public gc {
 public:
     Display* dpy;		// display of drawable
     Screen* scn;		// screen of drawable
     Drawable drawable;		// init to 0 if drawable is not created
     wxWindow *owner;
 };
-class wxWindowDC_Xintern { // X GDI data
+class wxWindowDC_Xintern : public gc { // X GDI data
 public:
     GC           pen_gc, brush_gc, text_gc, bg_gc;
     Region       user_reg, expose_reg, current_reg;

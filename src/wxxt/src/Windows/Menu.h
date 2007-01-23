@@ -31,7 +31,7 @@
 #endif
 
 #if defined(Have_Xt_Types)
-class wxMenu_Widgets {
+class wxMenu_Widgets : public gc {
 public:
     Widget shell;
     Widget menu;

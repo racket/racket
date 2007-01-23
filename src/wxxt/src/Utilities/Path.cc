@@ -37,7 +37,7 @@ char *wxFileNameFromPath(char *path)
 	if (path[tcp] == '/') {
 	  char *naya;
 	  tcp++;
-	  naya = new char[slen + 1 - tcp];
+	  naya = new WXGC_ATOMIC char[slen + 1 - tcp];
 	  memcpy(naya, path + tcp, slen + 1 - tcp);
 	  return naya;
 	}
@@ -53,7 +53,7 @@ char *wxPathOnly(char *path)
     int p, last_slash = 0;
     char *buf;
 
-    buf = new char[strlen(path) + 1];
+    buf = new WXGC_ATOMIC char[strlen(path) + 1];
     
     // copy path and keep the last slash or baskslash in mind
     for (p = 0; path[p]; p++) {

@@ -296,7 +296,7 @@ void wxCommonInit(void)
     wxAPP_COLOURMAP = DEBUG_NEW wxColourMap(FALSE); // default colourmap
 
     wxREGGLOB(wxBuffer);
-    wxBuffer = new char[BUFSIZ+512];
+    wxBuffer = new WXGC_ATOMIC char[BUFSIZ+512];
 
     wxREGGLOB(wxResourceCache);
     wxResourceCache = new wxList(wxKEY_STRING);

@@ -195,7 +195,7 @@ Bool wxMenu::PopupMenu(Widget in_w, int root_x, int root_y, Bool forChoice, int 
 
     {
       void **srs;
-      srs = new void*[2];
+      srs = new WXGC_PTRS void*[2];
       srs[0] = saferef;
       srs[1] = saferefs;
       saferefs = srs;

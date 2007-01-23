@@ -29,13 +29,15 @@ Authors: John R. Ellis and Jesse Hull
 #include <stddef.h>
 #include "wxGC.h"
 
-/* With x86 Mac OS X, MrEd's `new' gets used by libraries
-   that shouldn't use it. So we can't define `new' on that
-   platform. For PPC, we define `new' and `delete' to use
-   malloc() and free(); for some reason, linking fails in
-   Mac OS X 10.3 if we just omit `new' and `delete'. */
-#if defined(OS_X) && !defined(XONX)
-# ifdef __POWERPC__
+/* With extensions, or with x86 Mac OS X, MrEd's `new' gets used by
+   libraries that shouldn't use it. So we can't define `new' on that
+   platform. For PPC, we define `new' and `delete' to use malloc() and
+   free(); for some reason, linking fails in Mac OS X 10.3 if we just
+   omit `new' and `delete'. There should be no problem under Windows,
+   due to the way DLL linking works. */
+
+#ifndef wx_msw
+# if defined(OS_X) && defined(__POWERPC__)
 #  define MALLOC_FOR_BUILTIN_NEW
 #  include <stdio.h>
 #  include <stdlib.h>

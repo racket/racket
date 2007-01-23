@@ -206,8 +206,8 @@ void wxListBox::Append(char *item)
     char **new_choices, **new_client_data;
 
     num_free = LIST_CHUNK_SIZE;
-    new_choices     = new char *[num_choices+LIST_CHUNK_SIZE];
-    new_client_data = new char *[num_choices+LIST_CHUNK_SIZE];
+    new_choices     = new WXGC_PTRS char *[num_choices+LIST_CHUNK_SIZE];
+    new_client_data = new WXGC_PTRS char *[num_choices+LIST_CHUNK_SIZE];
     // copy current choices
     for (i=0; i<num_choices; ++i) {
       new_choices[i] = choices[i];
@@ -279,8 +279,8 @@ void wxListBox::InsertItems(int n_items, char **items, int pos)
 
     pos = pos < num_choices ? pos : num_choices;
 
-    new_choices     = new char *[num_choices+n_items];
-    new_client_data = new char *[num_choices+n_items];
+    new_choices     = new WXGC_PTRS char *[num_choices+n_items];
+    new_client_data = new WXGC_PTRS char *[num_choices+n_items];
 
     for (i = 0; i < pos; ++i) {			// copy choices previous to pos
 	new_choices[i] = choices[i];
@@ -312,9 +312,9 @@ void wxListBox::Set(int n, char *_choices[])
   // copy choices and initialize client_data
   num_choices = n;
   num_free = LIST_CHUNK_SIZE;
-  sa = new char*[n+num_free];
+  sa = new WXGC_PTRS char*[n+num_free];
   choices = sa;
-  sa = new char*[n+num_free];
+  sa = new WXGC_PTRS char*[n+num_free];
   client_data = sa;
   for (i = 0; i < n; i++) {
     char *s;
@@ -453,7 +453,7 @@ int wxListBox::GetSelections(int **list_selections)
 
     rs = XfwfMultiListGetHighlighted(MULTILIST);
 
-    selections = new int[rs->num_selected];
+    selections = new WXGC_ATOMIC int[rs->num_selected];
     for (i = 0; i < rs->num_selected; i++) {
       selections[i] = rs->selected_items[i];
     }

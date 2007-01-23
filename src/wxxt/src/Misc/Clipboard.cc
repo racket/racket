@@ -150,7 +150,7 @@ static Boolean doConvertClipboard(wxClipboard *cb,
     if (cb->clipOwner) {
       count = cb->clipOwner->formats->Number();
       extra = (cb->clipOwner->formats->Member("TEXT")) ? 2 : 0;
-      cb->receivedTargets = new Atom[count + extra];
+      cb->receivedTargets = new WXGC_ATOMIC Atom[count + extra];
       formats = cb->clipOwner->formats->ListToArray(FALSE);
       for (i = 0; i < count; i++) {
 	Atom atm;
@@ -163,7 +163,7 @@ static Boolean doConvertClipboard(wxClipboard *cb,
       }
     } else {
       count = 3;
-      cb->receivedTargets = new Atom[3];
+      cb->receivedTargets = new WXGC_ATOMIC Atom[3];
       ((Atom *)cb->receivedTargets)[0] = xa_utf8;
       ((Atom *)cb->receivedTargets)[1] = XA_STRING;
       ((Atom *)cb->receivedTargets)[2] = xa_text;
@@ -381,7 +381,7 @@ static void wxGetTargets(Widget WXUNUSED(w), XtPointer _cb, Atom *WXUNUSED(sel),
       cb->receivedTargets = (void *)1; /* To break the waiting loop */
       cb->receivedLength = 0;
     } else {
-      cb->receivedTargets = new Atom[*len];
+      cb->receivedTargets = new WXGC_ATOMIC Atom[*len];
       memcpy(cb->receivedTargets, value, *len * sizeof(Atom));
       cb->receivedLength = *len;
     }
@@ -396,7 +396,7 @@ static void wxGetSelection(Widget WXUNUSED(w), XtPointer _cb, Atom *WXUNUSED(sel
   if (cb->in_progress < 0) {
     cb->in_progress = 0;
   } else {
-    cb->receivedString = new char[(*len) + 1];
+    cb->receivedString = new WXGC_ATOMIC char[(*len) + 1];
     memcpy(cb->receivedString, value, *len);
     cb->receivedString[*len] = 0;
     cb->receivedLength = *len;

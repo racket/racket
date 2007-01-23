@@ -320,7 +320,7 @@ static XPoint *wxEllipseToPolygon(double width, double height, double x, double 
 #ifdef MZ_PRECISE_GC
   p = (XPoint *)GC_malloc_atomic(sizeof(XPoint) * npoints);
 #else
-  p = new XPoint[npoints];
+  p = new WXGC_ATOMIC XPoint[npoints];
 #endif
 
   dx = x + width / 2;

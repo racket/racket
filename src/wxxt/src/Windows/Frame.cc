@@ -565,7 +565,7 @@ void wxFrame::CreateStatusLine(int number, char *)
     if (StatusLineExists())
 	return;
 
-    status = new wxMessage* [num_status = min(number, wxMAX_STATUS)];
+    status = new WXGC_PTRS wxMessage* [num_status = min(number, wxMAX_STATUS)];
     for (int i = 0; i < num_status; ++i) {
 	wxLayoutConstraints *constr;
 	int ww, hh;

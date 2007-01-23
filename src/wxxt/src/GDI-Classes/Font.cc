@@ -97,8 +97,8 @@ char **wxGetCompleteFaceList(int *_len)
   complete_face_list_size = fs->nfont;
   wxREGGLOB(complete_face_list);
   wxREGGLOB(complete_font_list);
-  complete_face_list = new char*[complete_face_list_size];
-  complete_font_list = (wxFontStruct **)(new char[sizeof(wxFontStruct*) * complete_face_list_size]);
+  complete_face_list = new WXGC_PTRS char*[complete_face_list_size];
+  complete_font_list = (wxFontStruct **)(new WXGC_ATOMIC char[sizeof(wxFontStruct*) * complete_face_list_size]);
 
   pos = 0;
   for (i = 0; i < fs->nfont; i++) {
@@ -609,7 +609,7 @@ void *wxFont::GetNextAASubstitution(int index, int cval, double scale_x, double 
     } else {
       i++;
       len = strlen(name XFORM_OK_PLUS i);
-      next_name = new char[len + 2];
+      next_name = new WXGC_ATOMIC char[len + 2];
       memcpy(next_name + 1, name + i, len + 1);
       next_name[0] = ' ';
       subs = NULL;
@@ -833,7 +833,7 @@ static XFontStruct *wxLoadQueryFont(const char *name,
     name = "-*-*-*-*-*-*-*-%d-*-*-*-*-*-*";
 
   len = strlen(name);
-  buffer = new char[len + 128];
+  buffer = new WXGC_ATOMIC char[len + 128];
 
   /* Make sure there's %d and no other format directives: */
   for (i = 0; i < len; i++) {
@@ -858,7 +858,7 @@ static XFontStruct *wxLoadQueryFont(const char *name,
 	&& (name[found-3] == '*')
 	&& (name[found-4] == '-')) {
       char *rename;
-      rename = new char[len + 1];
+      rename = new WXGC_ATOMIC char[len + 1];
       memcpy(rename, name, len + 1);
       rename[found-3] = '%';
       rename[found-2] = 'd';
@@ -877,7 +877,7 @@ static XFontStruct *wxLoadQueryFont(const char *name,
     char *rename, *matrix_str;
     double matrix[4];
     
-    rename = new char[len + 1];
+    rename = new WXGC_ATOMIC char[len + 1];
     memcpy(rename, name, len + 1);
     for (i = 0; i < len; i++) {
       if (rename[i] == '%') {
@@ -894,7 +894,7 @@ static XFontStruct *wxLoadQueryFont(const char *name,
     matrix[2] = -((double)point_size * scale_x) * sin(angle);
     matrix[3] = ((double)point_size * scale_y) * cos(angle);
 
-    matrix_str = new char[128];
+    matrix_str = new WXGC_ATOMIC char[128];
     sprintf(matrix_str, "[%g %g %g %g]", 
 	    matrix[0], matrix[1],
 	    matrix[2], matrix[3]);

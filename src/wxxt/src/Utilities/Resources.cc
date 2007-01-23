@@ -97,7 +97,7 @@ static void wxXMergeDatabases(void)
       // Get X defaults file, if any 
       home = wxGetUserHome(NULL);
       if (home) {
-	dest = new char[strlen(home) + 20];
+	dest = new WXGC_ATOMIC char[strlen(home) + 20];
 	
 	strcpy(dest, home);
 	if (dest[strlen(dest) - 1] != '/')
@@ -131,7 +131,7 @@ static void wxXMergeDatabases(void)
     // Get user defaults file, if any 
     home = wxGetUserHome(NULL);
     if (home) {
-      dest = new char[strlen(home) + 20];
+      dest = new WXGC_ATOMIC char[strlen(home) + 20];
       
       strcpy(dest, home);
       if (dest[strlen(dest) - 1] != '/')
@@ -246,7 +246,7 @@ Bool wxGetResource(const char *section, const char *entry, char **value,
     success = XrmGetResource(database, buf, "*", str_type, &xvalue);
     if (success) {
       char *v;
-      v = new char[xvalue.size + 1];
+      v = new WXGC_ATOMIC char[xvalue.size + 1];
       *value = v;
       strncpy(*value, xvalue.addr, (int)xvalue.size);
       return TRUE;

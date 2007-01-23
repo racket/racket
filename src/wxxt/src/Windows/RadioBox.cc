@@ -142,8 +142,8 @@ Bool wxRadioBox::Create(wxPanel *panel, wxFunction func, char *label,
 				  NULL);
     X->handle = wgt;
     // create the toggles
-    toggles = new long[num_toggles];
-    enabled = new Bool[num_toggles];
+    toggles = new WXGC_ATOMIC long[num_toggles];
+    enabled = new WXGC_ATOMIC Bool[num_toggles];
     for (i=0; i < num_toggles; ++i) {
 	char num_name[10]; 
 	char *tlabel;
@@ -271,8 +271,8 @@ Bool wxRadioBox::Create(wxPanel *panel, wxFunction func, char *label,
 				  NULL);
     X->handle = wgt;
     // create the toggles
-    toggles = new long[num_toggles];
-    enabled = new Bool[num_toggles];
+    toggles = new WXGC_ATOMIC long[num_toggles];
+    enabled = new WXGC_ATOMIC Bool[num_toggles];
 #ifdef MZ_PRECISE_GC
     {
       wxBitmap **ba;
@@ -282,8 +282,8 @@ Bool wxRadioBox::Create(wxPanel *panel, wxFunction func, char *label,
       bm_label_masks = ba;
     }
 #else
-    bm_labels = new wxBitmap*[num_toggles];
-    bm_label_masks = new wxBitmap*[num_toggles];
+    bm_labels = new WXGC_PTRS wxBitmap*[num_toggles];
+    bm_label_masks = new WXGC_PTRS wxBitmap*[num_toggles];
 #endif
     for (i=0; i < num_toggles; ++i) {
 	char num_name[10];

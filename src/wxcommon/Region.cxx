@@ -1369,7 +1369,9 @@ wxPolygonPathRgn::wxPolygonPathRgn(wxDC *dc_for_scale,
 
 Bool wxPolygonPathRgn::Install(long target, Bool reverse, Bool align)
 {
+#if defined(WX_USE_CAIRO) || defined(wx_msw) || defined(wx_mac)
   double xx, yy;
+#endif
   cairo_matrix_p m;
 
   PrepareScale(target, fillStyle == wxODDEVEN_RULE, align, &m);

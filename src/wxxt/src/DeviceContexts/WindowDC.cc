@@ -136,7 +136,7 @@ wxWindowDC::wxWindowDC(void) : wxDC()
 	Display *dpy = wxAPP_DISPLAY;
 	Window  win  = RootWindow(dpy, DefaultScreen(dpy));
 	wxREGGLOB(hatch_bitmaps);
-	hatch_bitmaps = new Pixmap[num_hatches];
+	hatch_bitmaps = new WXGC_ATOMIC Pixmap[num_hatches];
 	hatch_bitmaps[0] = XCreateBitmapFromData(dpy, win, bdiag_bits,
 						 bdiag_width, bdiag_height);
 	hatch_bitmaps[1] = XCreateBitmapFromData(dpy, win, cdiag_bits,
@@ -1988,7 +1988,7 @@ void wxWindowDC::ResetPen(wxPen *pen)
 	  num_dash = num_dashes[style-wxFIRST_DASH];
 	  dashdef  = dashdefs[style-wxFIRST_DASH];
 	}
-	if ((scaleddef = new wxDash[num_dash])) {
+	if ((scaleddef = new WXGC_ATOMIC wxDash[num_dash])) {
 	  int dscale = scale, i;
 	  if (!dscale) dscale = 1;
 	  for (i = 0; i < num_dash; i++) {

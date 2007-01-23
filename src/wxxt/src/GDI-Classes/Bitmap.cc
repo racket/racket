@@ -66,7 +66,7 @@ enum {
 #endif
 };
 
-class wxBitmap_Xintern {
+class wxBitmap_Xintern : public gc {
 public:
     int          type;			// what is the type of the bitmap
     unsigned int width, height, depth;	// dimensions of bitmap
@@ -80,7 +80,7 @@ public:
     void         *account;
 };
 
-class wxCursor_Xintern {
+class wxCursor_Xintern : public gc {
 public:
     Cursor x_cursor;
 };
@@ -438,7 +438,7 @@ static int write_pixmap_as_bitmap(Display *display, Pixmap pm, char *fname,
 
   rw = ((width + 1) >> 3);
 
-  data = new char[rw * height];
+  data = new WXGC_ATOMIC char[rw * height];
 
   pos = 0;
   for (j = 0; j < height; j++, pos += rw) {
