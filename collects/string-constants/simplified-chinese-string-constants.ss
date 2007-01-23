@@ -507,8 +507,14 @@
   (save-as-info "输入新的文件名,保存当前文件")
   (save-as-menu-item "另存为(&A)...")
   
+  (page-setup-info "设置打印参数")
+  (page-setup-menu-item "页面设置")
+  
   (print-info "打印当前文件")
   (print-menu-item "打印(&P)...")
+  
+  (page-setup-info "设置页面")
+  (page-setup-menu-item "页面设置...")
   
   (close-info "关闭当前文件")
   (close-menu-item "关闭(&C)")
@@ -856,7 +862,7 @@
   (advanced-student "高级")
   (advanced-one-line-summary "在中级的基础上，增加了lambda和赋值")
   (how-to-design-programs "程序设计方法/How to Design Programs") ;; should agree with MIT Press on this one...
-  (pretty-big-scheme "Pretty Big (包括MrEd和高级)")
+  (pretty-big-scheme "相当大（包括MrEd和HtDP高级）")
   (pretty-big-scheme-one-line-summary "增加了HtDP(程序设计方法)语言的语法和函数")
   (r5rs-lang-name "标准(R5RS)")
   (r5rs-one-line-summary "Scheme语言标准第5修改稿")
@@ -896,9 +902,9 @@
   (files-interactions "~a的交互") ;; filled with a filename
   (current-interactions "交互")
   (current-definitions "定义")
-  (mzscheme-w/debug "Textual (MzScheme, 包含R5RS)")
+  (mzscheme-w/debug "文本（MzScheme，包含R5RS）")
   (mzscheme-one-line-summary "PLT的Scheme实现")
-  (mred-w/debug "Graphical (MrEd, 包含 MzScheme)")
+  (mred-w/debug "图形（MrEd，包含MzScheme）")
   (mred-one-line-summary "在MzScheme的基础上增加GUI支持")
   
   ;; profiling
@@ -907,16 +913,16 @@
   (profiling-choose-low-color "请选择代表低的颜色")
   (profiling-choose-high-color "请选择代表高的颜色")
   (profiling "Profiling")
-  (profiling-example-text "(define (whee) (whee))")
+  (profiling-example-text "(define (理) (理))")
   (profiling-color-config "Profiling色谱") 
-  (profiling-scale "Profiling颜色的比例")
+  (profiling-scale "Profiling的色彩比例")
   (profiling-sqrt "平方根")
   (profiling-linear "线性")
   (profiling-square "平方")
   (profiling-number "调用次数")
   (profiling-time "累积次数")
   (profiling-update "更新Profile")
-  (profiling-col-percent-time "% 次")
+  (profiling-col-percent-time "%次")
   (profiling-col-function "函数")
   (profiling-col-time-in-msec "毫秒")
   (profiling-col-calls "调用")
