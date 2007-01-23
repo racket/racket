@@ -31,7 +31,7 @@
 #endif
 
 #ifdef Have_Xt_Types
-class wxWindow_Xintern {
+class wxWindow_Xintern : public gc {
 public:
     Widget	  frame;			// frame widgets
     Widget	  scroll;			// optional scrollable widget

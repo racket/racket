@@ -2566,8 +2566,6 @@ int wxMediaPasteboard::InsertPort(Scheme_Object *f, int WXUNUSED(format), Bool r
 Bool wxMediaPasteboard::InsertFile(const char *who, Scheme_Object *f, const char *filename, 
 				   Bool clearStyles, Bool showErrors)
 {
-  int n;
-  char buffer[MRED_START_STR_LEN + 1];
   Bool fileerr;
 
   if (userLocked || writeLocked)

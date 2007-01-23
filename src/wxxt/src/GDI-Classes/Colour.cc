@@ -48,14 +48,14 @@ extern Colormap wx_default_colormap;
 // private data of wxColour and wxColourMap
 //-----------------------------------------------------------------------------
 
-class wxColour_Xintern {
+class wxColour_Xintern : public gc {
 public:
     XColor   xcolor;
     Bool     have_pixel;
     Colormap xcolormap;
 };
 
-class wxColourMap_Xintern {
+class wxColourMap_Xintern : public gc {
 public:
     Colormap xcolormap;
     Bool     priv;

@@ -1714,6 +1714,7 @@ show_explicitly_disabled "${enable_mred}" MrEd
 if test "${enable_mred}" != "no" ; then
   show_explicitly_disabled "${enable_gl}" OpenGL
   show_explicitly_disabled "${enable_xrender}" Xrender
+  show_explicitly_disabled "${enable_xft}" Xft
   show_explicitly_disabled "${enable_cairo}" Cairo
   show_explicitly_disabled "${enable_libpng}" "Use-existing-libpng"
   show_explicitly_disabled "${enable_libjpeg}" "Use-existing-libjpeg"
