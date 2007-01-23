@@ -1148,7 +1148,7 @@ TODO
                    (break-enabled #f)
                    (set! user-thread-box (make-weak-box (current-thread)))
                    (initialize-parameters snip-classes))))
-              
+
               ;; disable breaks until an evaluation actually occurs
               (send context set-breakables #f #f)
               
@@ -1187,6 +1187,10 @@ TODO
                    (set! in-evaluation? #f)
                    (update-running #f)
                    (send context set-breakables #f #f)
+              
+                   ;; after this returns, future event dispatches
+                   ;; will use the user's break parameterization
+                   (initialize-dispatch-handler)
                    
                    ;; let init-thread procedure return,
                    ;; now that parameters are set
@@ -1290,71 +1294,72 @@ TODO
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
           ;; initialize-paramters : (listof snip-class%) -> void
-          (define/private initialize-parameters ; =User=
-            (λ (snip-classes)
-              
-              (current-language-settings user-language-settings)
-              (error-value->string-handler drscheme-error-value->string-handler)
-              (error-print-source-location #f)
-              (error-display-handler drscheme-error-display-handler)
-              (current-load-relative-directory #f)
-              (current-custodian user-custodian)
-              (current-load text-editor-load-handler)
-              
-              (drscheme:eval:set-basic-parameters snip-classes)
-              (current-rep this)
-              (let ([dir (or (send context get-directory)
+          (define/private (initialize-parameters snip-classes) ; =User=
+            
+            (current-language-settings user-language-settings)
+            (error-value->string-handler drscheme-error-value->string-handler)
+            (error-print-source-location #f)
+            (error-display-handler drscheme-error-display-handler)
+            (current-load-relative-directory #f)
+            (current-custodian user-custodian)
+            (current-load text-editor-load-handler)
+            
+            (drscheme:eval:set-basic-parameters snip-classes)
+            (current-rep this)
+            (let ([dir (or (send context get-directory)
                            drscheme:init:first-dir)])
-                (current-directory dir)
-                (current-load-relative-directory dir))
-              
-              (set! user-namespace-box (make-weak-box (current-namespace)))
-              
-              (current-output-port (get-out-port))
-              (current-error-port (get-err-port))
-              (current-value-port (get-value-port))
-              (current-input-port (get-in-box-port))
-              (let* ([primitive-dispatch-handler (event-dispatch-handler)])
-                (event-dispatch-handler
-                 (rec drscheme-event-dispatch-handler ; <= a name for #<...> printout
-                   (λ (eventspace) ; =User=, =Handler=
-                     ; Breaking is enabled if the user turned on breaks and
-                     ;  is in a `yield'. If we get a break, that's ok, because
-                     ;  the kernel never queues an event in the user's eventspace.
-                     (cond
-                       [(eq? eventspace (get-user-eventspace))
-                        ; =User=, =Handler=
-                        
-                        ; We must distinguish between "top-level" events and
-                        ;  those within `yield' in the user's program.
-                        (cond
-                          [(not in-evaluation?)
-                           ;; at this point, we must not be in a nested dispatch, so we can
-                           ;; just disable breaks and rely on call-with-break-parameterization
-                           ;; to restore them to the user's setting.
-                           (call-with-break-parameterization
-                            no-breaks-break-parameterization
-                            (λ ()
-                              ; =No-Breaks=
-                              (send context reset-offer-kill)
-                              (send context set-breakables (get-user-thread) (get-user-custodian))
-                              (call-with-continuation-prompt
-                               (λ () ; =User=, =Handler=, =No-Breaks=
-                                 (call-with-break-parameterization
-                                  user-break-parameterization
-                                  (λ () (primitive-dispatch-handler eventspace)))))
-
-                              ;; in principle, the line below might cause
-                              ;; "race conditions" in the GUI. That is, there might
-                              ;; be many little events that the user won't quite
-                              ;; be able to break.
-                              (send context set-breakables #f #f)))]
-                          [else
-                           ; Nested dispatch; don't adjust interface
-                           (primitive-dispatch-handler eventspace)])]
-                       [else 
-                        ; =User=, =Non-Handler=, =No-Breaks=
-                        (primitive-dispatch-handler eventspace)])))))))
+              (current-directory dir)
+              (current-load-relative-directory dir))
+            
+            (set! user-namespace-box (make-weak-box (current-namespace)))
+            
+            (current-output-port (get-out-port))
+            (current-error-port (get-err-port))
+            (current-value-port (get-value-port))
+            (current-input-port (get-in-box-port)))
+          
+          (define/private (initialize-dispatch-handler) ;;; =User=
+            (let* ([primitive-dispatch-handler (event-dispatch-handler)])
+              (event-dispatch-handler
+               (rec drscheme-event-dispatch-handler ; <= a name for #<...> printout
+                 (λ (eventspace) ; =User=, =Handler=
+                   ; Breaking is enabled if the user turned on breaks and
+                   ;  is in a `yield'. If we get a break, that's ok, because
+                   ;  the kernel never queues an event in the user's eventspace.
+                   (cond
+                     [(eq? eventspace (get-user-eventspace))
+                      ; =User=, =Handler=
+                      
+                      ; We must distinguish between "top-level" events and
+                      ;  those within `yield' in the user's program.
+                      (cond
+                        [(not in-evaluation?)
+                         ;; at this point, we must not be in a nested dispatch, so we can
+                         ;; just disable breaks and rely on call-with-break-parameterization
+                         ;; to restore them to the user's setting.
+                         (call-with-break-parameterization
+                          no-breaks-break-parameterization
+                          (λ ()
+                            ; =No-Breaks=
+                            (send context reset-offer-kill)
+                            (send context set-breakables (get-user-thread) (get-user-custodian))
+                            (call-with-continuation-prompt
+                             (λ () ; =User=, =Handler=, =No-Breaks=
+                               (call-with-break-parameterization
+                                user-break-parameterization
+                                (λ () (primitive-dispatch-handler eventspace)))))
+                            
+                            ;; in principle, the line below might cause
+                            ;; "race conditions" in the GUI. That is, there might
+                            ;; be many little events that the user won't quite
+                            ;; be able to break.
+                            (send context set-breakables #f #f)))]
+                        [else
+                         ; Nested dispatch; don't adjust interface
+                         (primitive-dispatch-handler eventspace)])]
+                     [else 
+                      ; =User=, =Non-Handler=, =No-Breaks=
+                      (primitive-dispatch-handler eventspace)]))))))
           
           (define/public (new-empty-console)
             (queue-user/wait
@@ -1451,7 +1456,7 @@ TODO
              (λ () ; =User=, =No-Breaks=
                (send (drscheme:language-configuration:language-settings-language user-language-settings)
                      first-opened)))
-
+            
             (insert-prompt)
             (send context enable-evaluation)
             (end-edit-sequence)

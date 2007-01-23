@@ -960,25 +960,24 @@ module browser threading seems wrong.
           
           ;; break-callback : -> void
           (define/public (break-callback)
-            (cond
-              [(or (not (weak-box-value thread-to-break-box))
-                   (not (weak-box-value custodian-to-kill-box)))
-               (bell)]
-              [offer-kill? 
-               (if (user-wants-kill?)
-                   (let ([thd (weak-box-value thread-to-break-box)])
-                     (when thd
-                       (break-thread thd)))
-                   (let ([cust (weak-box-value custodian-to-kill-box)])
-                     (when cust
-                       (custodian-shutdown-all cust))))]
-              [else
-               (let ([thd (weak-box-value thread-to-break-box)])
-                 (when thd
-                   (break-thread thd)))
-               ;; only offer a kill the next time if 
-               ;; something got broken.
-               (set! offer-kill? #t)]))
+            (let ([thread-to-break (weak-box-value thread-to-break-box)]
+                  [custodian-to-kill (weak-box-value custodian-to-kill-box)])
+              (cond
+                [(or (not thread-to-break)
+                     (not custodian-to-kill))
+                 (bell)]
+                [offer-kill? 
+                 (if (user-wants-kill?)
+                     (when thread-to-break
+                       (break-thread thread-to-break))
+                     (when custodian-to-kill
+                       (custodian-shutdown-all custodian-to-kill)))]
+                [else
+                 (when thread-to-break
+                   (break-thread thread-to-break))
+                 ;; only offer a kill the next time if 
+                 ;; something got broken.
+                 (set! offer-kill? #t)])))
           
           ;; user-wants-kill? : -> boolean
           ;; handles events, so be sure to check state
