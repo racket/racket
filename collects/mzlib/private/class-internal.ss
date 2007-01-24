@@ -1718,7 +1718,7 @@
 		       (and s 
 			    (not (eq? super object%))
 			    (if (symbol? s)
-				(string->symbol (format "derived-from-~a" s))
+				(format "derived-from-~a" s)
 				s))))]
 	   ;; Combine method lists
 	   [public-names (append pubment-names public-final-names public-normal-names)]
@@ -3133,6 +3133,11 @@
                (values #f #t)
                (loop (vector-ref (class-supers c) (sub1 (class-pos c))) #t))))))
 
+  (define (to-sym s)
+    (if (string? s)
+        (string->symbol s)
+        s))
+
   (define (class-info c)
     (unless (class? c)
       (raise-type-error 'class-info "class" c))
@@ -3141,7 +3146,7 @@
 	  (let loop ([next super][skipped? #f])
 	    (if (or (not next)
 		    (struct? ((class-insp-mk next))))
-		(values (class-name c)
+		(values (to-sym (class-name c))
 			(- (class-field-width c) (class-field-width super))
 			(apply list-immutable (filter interned? (class-field-ids c)))
 			(class-field-ref c)
