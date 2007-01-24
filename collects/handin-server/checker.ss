@@ -329,15 +329,18 @@
     (if cur (append! cur new) (thread-cell-set! added-lines new))))
 
 (define ((wrap-evaluator eval) expr)
+  (define unknown "unknown")
   (define (reraise exn)
     (raise
      (let-values ([(struct-type skipped?) (struct-info exn)])
        (if (and struct-type (not skipped?))
-         (let ([vals (vector->list (struct->vector exn))])
-           (apply (struct-type-make-constructor struct-type)
-                  (string->immutable-string
-                   (format "while evaluating ~s:\n  ~a" expr (cadr vals)))
-                  (cddr vals)))
+         (let ([vals (cdr (vector->list (struct->vector exn unknown)))])
+           (if (memq unknown vals)
+             exn
+             (apply (struct-type-make-constructor struct-type)
+                    (string->immutable-string
+                     (format "while evaluating ~s:\n  ~a" expr (car vals)))
+                    (cdr vals))))
          exn))))
   (with-handlers ([exn? reraise]) (eval expr)))
 
