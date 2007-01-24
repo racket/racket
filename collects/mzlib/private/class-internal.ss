@@ -1718,7 +1718,7 @@
 		       (and s 
 			    (not (eq? super object%))
 			    (if (symbol? s)
-				(format "derived-from-~a" s)
+				(string->symbol (format "derived-from-~a" s))
 				s))))]
 	   ;; Combine method lists
 	   [public-names (append pubment-names public-final-names public-normal-names)]
