@@ -631,10 +631,9 @@
               ;; Check protocol:
               (with-handlers ([exn:fail?
                                (lambda (exn)
-                                 (let ([msg (tweak-error-message
-                                             (if (exn? exn)
-                                               (exn-message exn)
-                                               (format "~e" exn)))])
+                                 (let ([msg (if (exn? exn)
+                                              (exn-message exn)
+                                              (format "~e" exn))])
                                    (kill-watcher)
                                    (log-line "ERROR: ~a" msg)
                                    (write+flush w msg)

@@ -28,7 +28,6 @@
            set-run-status
            message
            current-value-printer
-           current-error-message-tweaker
 
            check-proc
            check-defined

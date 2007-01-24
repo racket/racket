@@ -328,16 +328,18 @@
   (let ([new (list line)] [cur (thread-cell-ref added-lines)])
     (if cur (append! cur new) (thread-cell-set! added-lines new))))
 
-(define (wrap-evaluator eval)
-  (lambda (expr)
-    (current-error-message-tweaker
-     (lambda (msg) (format "~a, while evaluating ~s" msg expr)))
-    (begin0 (eval expr)
-      ;; this will not happen if there was an error, so the above will still be
-      ;; in -- but the problem is that some evaluations may intentionally raise
-      ;; exception, so need to clear out this parameter anyway when done with
-      ;; testing.
-      (current-error-message-tweaker #f))))
+(define ((wrap-evaluator eval) expr)
+  (define (reraise exn)
+    (raise
+     (let-values ([(struct-type skipped?) (struct-info exn)])
+       (if (and struct-type (not skipped?))
+         (let ([vals (vector->list (struct->vector exn))])
+           (apply (struct-type-make-constructor struct-type)
+                  (string->immutable-string
+                   (format "while evaluating ~s:\n  ~a" expr (cadr vals)))
+                  (cddr vals)))
+         e))))
+  (with-handlers ([exn? reraise]) (eval expr)))
 
 (provide check:)
 (define-syntax (check: stx)
@@ -520,8 +522,6 @@
                                          (with-bindings eval bindings
                                            body*1 body* (... ...))])])
                           (let () body ...))
-                        ;; see the comment in `wrap-evaluator' for this:
-                        (current-error-message-tweaker #f)
                         ;; test coverage at the end (no harm if already done in
                         ;; the checker since it's cheap):
                         (when coverage? (!all-covered))
