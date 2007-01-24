@@ -265,7 +265,10 @@
 
   (define (read-a-string who port vers what)
     (let ([s (read-raw-string who port vers what)])
-      (subbytes s 0 (sub1 (bytes-length s)))))
+      (let ([len (bytes-length s)])
+        (when (zero? len)
+          (read-error who "non-empty raw string" what port))
+        (subbytes s 0 (sub1 len)))))
 
   (define (read-integer who port vers what)
     (cond
@@ -307,7 +310,7 @@
                               #t
                               (if (vers . > . 1)
                                   #t
-                                  (system-big-endian?)))]))
+                                  (broken-wxme-big-endian?)))]))
       
   (define (read-inexact who port vers what)
     (cond
@@ -321,12 +324,13 @@
       (floating-point-bytes->real (read-bytes 8 port)
                                   (if (vers . > . 1)
                                       #t
-                                      (system-big-endian?)))]))
+                                      (broken-wxme-big-endian?)))]))
       
 
   (define (read-error who expected what port)
-    (error who "WXME format problem while reading for ~a (expected ~a) from port: ~v"
-           what expected port))
+    (error who "WXME format problem while reading for ~a (expected ~a) from port: ~e around position: ~a"
+           what expected port
+           (file-position port)))
 
   (define (skip-data port vers len)
     (if (vers . >= . 8)
@@ -369,9 +373,17 @@
                      (read-error who "size of read byte string is not a multiple of 4" "string-snip content" port))
                    (let loop ([pos 0][accum null])
                      (if (= pos (bytes-length s))
-                         (string->bytes/utf-8 (apply string (reverse accum)))
+                         (begin
+                           (string->bytes/utf-8 (apply string (reverse accum))))
                          (loop (+ pos 4)
-                               (cons (integer-bytes->integer (subbytes s pos (+ pos 4)))
+                               (cons (integer->char
+                                      (let ([v (integer-bytes->integer (subbytes s pos (+ pos 4)) #f
+                                                                       (broken-wxme-big-endian?))])
+                                        (unless (or (<= 0 v #xD7FF)
+                                                    (<= #xE000 v #x10FFFF))
+                                          (read-error who "UTF-32 character; probably an endian order mismatch" 
+                                                      "string-snip content" port))
+                                        v))
                                      accum))))]
                   [(cvers . > . 2) s])))]
             [(equal? name #"wxmedia")
@@ -591,6 +603,8 @@
 
   (define unknown-extensions-skip-enabled (make-parameter #f))
 
+  (define broken-wxme-big-endian? (make-parameter (system-big-endian?)))
+
   (define (is-wxme-stream? p)
     (and (regexp-match-peek #rx#"^(?:#reader[(]lib\"read[.]ss\"\"wxme\"[)])?WXME01[0-9][0-9] ##[ \r\n]" p)
          #t))
@@ -635,6 +649,7 @@
                     [register-lib-mapping! (string? string? . -> . void?)])
 
   (provide unknown-extensions-skip-enabled
+           broken-wxme-big-endian?
            snip-reader<%>
            readable<%>
            wxme-read

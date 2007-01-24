@@ -60,6 +60,13 @@ an unrecognized snip class is encountered in a WXME stream. When set to
 a true value, instances of unrecognized snip classes are simply
 omitted from the transformed stream.
 
+> broken-wxme-big-endian?
+
+A parameter. Some old and short-lived WXME formats depended on the
+endian order of the machine where the file was saved. Set this
+parameter to pick the endian order to use when reading the file; the
+default is the current platform's endian order.
+
 > (wxme-read port)
 
 Like `read', but for a stream that starts with WXME-format data. If
