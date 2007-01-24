@@ -338,7 +338,7 @@
                   (string->immutable-string
                    (format "while evaluating ~s:\n  ~a" expr (cadr vals)))
                   (cddr vals)))
-         e))))
+         exn))))
   (with-handlers ([exn? reraise]) (eval expr)))
 
 (provide check:)
