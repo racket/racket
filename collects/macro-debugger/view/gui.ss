@@ -196,6 +196,7 @@
           (frame:reorder-menus this)
           ))
 
+
       ;; macro-stepper-widget%
       (define macro-stepper-widget%
         (class* object% ()
@@ -251,7 +252,6 @@
                               (parent area)
                               (macro-stepper this)
                               (pref:props-percentage pref:props-percentage)))
-          (send sbview show-props (send config get-show-syntax-properties?))
           (send config listen-show-syntax-properties?
                 (lambda (show?) (send sbview show-props show?)))
 
@@ -265,7 +265,6 @@
                  (config config)))
           (send config listen-show-hiding-panel?
                 (lambda (show?) (show-macro-hiding-prefs show?)))
-          (show-macro-hiding-prefs (send config get-show-hiding-panel?))
 
           (send sbc add-selection-listener
                 (lambda (stx) (send macro-hiding-prefs set-syntax stx)))
@@ -560,7 +559,7 @@
                         (extract-protostep-seq step))]))))
 
           ;; restore-position : number -> void
-          (define (restore-position)
+          (define/private (restore-position)
             (define (advance)
               (let ([step (cursor:current steps)])
                 (cond [(not step)
@@ -660,7 +659,10 @@
           ;; Initialization
           
           (super-new)
-          (refresh/move/cached-prefix)))
+          (send sbview show-props (send config get-show-syntax-properties?))
+          (show-macro-hiding-prefs (send config get-show-hiding-panel?))
+          (refresh/move/cached-prefix)
+          ))
 
       ;; Main entry points
 
@@ -767,6 +769,11 @@
                  (editor text)
                  (widget this)
                  (macro-stepper macro-stepper)))
+
+          (define/override (show-props show?)
+            (super show-props show?)
+            (send macro-stepper update/preserve-view))
+
           (super-new)))))
   
   ;; Linking

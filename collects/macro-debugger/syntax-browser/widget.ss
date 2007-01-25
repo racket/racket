@@ -49,10 +49,9 @@
           (send -text lock #t)
           (send -split-panel set-percentages 
                 (list (- 1 props-percentage) props-percentage))
-          (toggle-props)
-          
+
           ;; syntax-properties-controller<%> methods
-          
+
           (define/public (set-syntax stx)
             (send props set-syntax stx))
           
@@ -135,7 +134,7 @@
             (define char-width (send style get-text-width (send -ecanvas get-dc)))
             (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))
             (sub1 (inexact->exact (floor (/ canvas-w char-width)))))
-          
+
           (super-new)))
       
       ))
