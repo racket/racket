@@ -748,6 +748,7 @@
                                       pushed-vars 
                                       num-calls 
                                       num-noreturn-calls
+                                      num-empty-calls
                                       nonempty-calls?))
         
         ;; A function prototype record:
@@ -926,6 +927,7 @@
                               (live-var-info-pushed-vars live-vars)
                               (live-var-info-num-calls live-vars)
                               (live-var-info-num-noreturn-calls live-vars)
+                              (live-var-info-num-empty-calls live-vars)
                               (live-var-info-nonempty-calls? live-vars)))
         
         (define gentag-count 0)
@@ -2289,7 +2291,7 @@
                                                null)
                                            (lambda () null)
                                            ;; Initially, no live vars, no introduiced vars, etc.:
-                                           (make-live-var-info #f -1 0 null null null 0 0 #f) 
+                                           (make-live-var-info #f -1 0 null null null 0 0 0 #f) 
                                            ;; Add PREPARE_VAR_STACK and ensure result return:
                                            (parse-proto-information
                                             e
@@ -2314,7 +2316,8 @@
 			       (zero? (live-var-info-maxpush live-vars))
 			       (or (<= (live-var-info-num-calls live-vars) 1)
 				   (= (live-var-info-num-calls live-vars)
-				      (live-var-info-num-noreturn-calls live-vars))))))
+				      (+ (live-var-info-num-empty-calls live-vars)
+                                         (live-var-info-num-noreturn-calls live-vars)))))))
                      ;; No conversion necessary. (Lack of `call' records means no GC-setup
                      ;; work when printing out the function.)
                      (list->seq
@@ -2624,6 +2627,7 @@
                                                                     (live-var-info-pushed-vars live-vars)
                                                                     (live-var-info-num-calls live-vars)
                                                                     (live-var-info-num-noreturn-calls live-vars)
+                                                                    (live-var-info-num-empty-calls live-vars)
                                                                     (live-var-info-nonempty-calls? live-vars)))]
                                   [(eq? (tok-n (caar body)) START_XFORM_SKIP)
                                    (let skip-loop ([body (cdr body)])
@@ -2825,6 +2829,7 @@
                                                     (live-var-info-pushed-vars live-vars)
                                                     (live-var-info-num-calls live-vars)
                                                     (live-var-info-num-noreturn-calls live-vars)
+                                                    (live-var-info-num-empty-calls live-vars)
                                                     (live-var-info-nonempty-calls? live-vars)))))))))))
         
         (define (body-var-decl? e)
@@ -2988,6 +2993,7 @@
                                                (live-var-info-pushed-vars live-vars)
                                                (live-var-info-num-calls live-vars)
                                                (live-var-info-num-noreturn-calls live-vars)
+                                               (live-var-info-num-empty-calls live-vars)
                                                (live-var-info-nonempty-calls? live-vars))))
                                       (loop (cdr el) (cons (wrap e) new-args) setups new-vars 
                                             (if must-convert?
@@ -3356,8 +3362,10 @@
 							(append new-pushed old-pushed))
 						      (+ (if non-gcing-call? 0 1)
 							 (live-var-info-num-calls live-vars))
-						      (+ (if non-returning? 1 0)
+						      (+ (if non-gcing-call? 0 (if non-returning? 1 0))
 							 (live-var-info-num-noreturn-calls live-vars))
+						      (+ (if (or non-gcing-call? non-returning?) 0 (if this-nonempty? 0 1))
+							 (live-var-info-num-empty-calls live-vars))
 						      (or (and this-nonempty? (not non-gcing-call?))
 							  (live-var-info-nonempty-calls? live-vars)))
 				  (or converted-sub?
@@ -3416,6 +3424,7 @@
                                       (live-var-info-pushed-vars live-vars)
                                       (live-var-info-num-calls live-vars)
                                       (live-var-info-num-noreturn-calls live-vars)
+                                      (live-var-info-num-empty-calls live-vars)
                                       (live-var-info-nonempty-calls? live-vars))
                                      #t))
                              (begin
@@ -3489,6 +3498,7 @@
                                                         new-pushed-vars
                                                         (live-var-info-num-calls live-vars)
                                                         (live-var-info-num-noreturn-calls live-vars)
+                                                        (live-var-info-num-empty-calls live-vars)
                                                         (live-var-info-nonempty-calls? live-vars))))]
                                [(restore-new-vars)
                                 (lambda (live-vars)
@@ -3500,6 +3510,7 @@
                                                       orig-pushed-vars
                                                       (live-var-info-num-calls live-vars)
                                                       (live-var-info-num-noreturn-calls live-vars)
+                                                      (live-var-info-num-empty-calls live-vars)
                                                       (live-var-info-nonempty-calls? live-vars)))]
                                [(e live-vars rest extra)
                                 (cond
