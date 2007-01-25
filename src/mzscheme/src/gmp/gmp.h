@@ -268,6 +268,12 @@ extern __gmp_const int mp_bits_per_limb;
 /* #define mpn_xnor_n		__MPN(xnor_n) */
 /* #define mpn_xor_n		__MPN(xor_n) */
 
+#ifdef MZ_PRECISE_GC
+# define XFORM_GMP_NONGCING XFORM_NONGCING
+#else
+# define XFORM_GMP_NONGCING /**/
+#endif
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
@@ -283,7 +289,7 @@ mp_limb_t mpn_addmul_1c _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_lim
 
 mp_limb_t mpn_addsub_n _PROTO ((mp_ptr, mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
 mp_limb_t mpn_bdivmod _PROTO ((mp_ptr, mp_ptr, mp_size_t, mp_srcptr, mp_size_t, unsigned long int));
-XFORM_NONGCING int mpn_cmp _PROTO ((mp_srcptr, mp_srcptr, mp_size_t));
+XFORM_GMP_NONGCING int mpn_cmp _PROTO ((mp_srcptr, mp_srcptr, mp_size_t));
 
 #define mpn_divexact_by3(dst, src, size)  mpn_divexact_by3c (dst, src, size, 0)
 
