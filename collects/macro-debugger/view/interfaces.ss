@@ -29,6 +29,7 @@
      pref:highlight-foci?
      pref:suppress-warnings?
      pref:one-by-one?
+     pref:extra-navigation?
      ))
 
   ;; macro-stepper-config%

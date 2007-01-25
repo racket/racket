@@ -69,6 +69,8 @@
                         (notify-box/pref pref:suppress-warnings?))
           (field/notify one-by-one?
                         (notify-box/pref pref:one-by-one?))
+          (field/notify extra-navigation?
+                        (notify-box/pref pref:extra-navigation?))
           (super-new)))
 
       (define macro-stepper-frame%
@@ -186,6 +188,9 @@
             (menu-option/notify-box extras-menu
                                     "Suppress warnings"
                                     (get-field suppress-warnings? config))
+            (menu-option/notify-box extras-menu
+                                    "Extra navigation"
+                                    (get-field extra-navigation? config))
             (new checkable-menu-item%
                  (label "(Debug) Catch internal errors?")
                  (parent extras-menu)
@@ -220,8 +225,16 @@
 
           (define warnings-frame #f)
 
+          ;; add-deriv : Derivation -> void
           (define/public (add-deriv d)
             (set! derivs (append derivs (list d)))
+            (ensure-nav:up+down-shown)
+            (if (null? (cdr derivs))
+                ;; There is nothing currently displayed
+                (refresh/move/cached-prefix)
+                (update)))
+
+          (define/private (ensure-nav:up+down-shown)
             (when (and (not (send nav:up is-shown?))
                        (pair? (cdr (append derivs-prefix derivs))))
               (send navigator change-children
@@ -231,30 +244,36 @@
                             nav:previous
                             nav:next
                             nav:end
-                            nav:down))))
-            (if (null? (cdr derivs))
-                ;; There is nothing currently displayed
-                (refresh/move/cached-prefix)
-                (update)))
+                            nav:down)))))
 
           (define/public (get-controller) sbc)
           (define/public (get-view) sbview)
           (define/public (get-macro-hiding-prefs) macro-hiding-prefs)
 
           (define area (new vertical-panel% (parent parent)))
-          (define navigator
+          (define supernavigator
             (new horizontal-panel%
                  (parent area)
                  (stretchable-height #f)
                  (alignment '(center center))))
-          
+          (define navigator
+            (new horizontal-panel%
+                 (parent supernavigator)
+                 (stretchable-width #f)
+                 (stretchable-height #f)
+                 (alignment '(left center))))
+          (define extra-navigator
+            (new horizontal-panel%
+                 (parent supernavigator)
+                 (stretchable-width #f)
+                 (stretchable-height #f)
+                 (alignment '(left center))
+                 (style '(deleted))))
+
           (define sbview (new sb:syntax-widget% 
                               (parent area)
                               (macro-stepper this)
                               (pref:props-percentage pref:props-percentage)))
-          (send config listen-show-syntax-properties?
-                (lambda (show?) (send sbview show-props show?)))
-
           (define sbc (send sbview get-controller))
           (define control-pane
             (new vertical-panel% (parent area) (stretchable-height #f)))
@@ -263,11 +282,16 @@
                  (parent control-pane)
                  (stepper this)
                  (config config)))
+
+          (send config listen-show-syntax-properties?
+                (lambda (show?) (send sbview show-props show?)))
+
           (send config listen-show-hiding-panel?
                 (lambda (show?) (show-macro-hiding-prefs show?)))
 
           (send sbc add-selection-listener
-                (lambda (stx) (send macro-hiding-prefs set-syntax stx)))
+                (lambda (stx)
+                  (send macro-hiding-prefs set-syntax stx)))
 
           (send config listen-highlight-foci?
                 (lambda (_) (update/preserve-view)))
@@ -278,8 +302,12 @@
           (send config listen-one-by-one?
                 (lambda (_) (refresh)))
 
+          (send config listen-extra-navigation?
+                (lambda (show?) (show-extra-navigation show?)))
+
           (define nav:up
-            (new button% (label "Previous term") (parent navigator) (style '(deleted))
+            (new button% (label "Previous term") (parent navigator)
+                 (style '(deleted))
                  (callback (lambda (b e) (navigate-up)))))
 
           (define nav:start
@@ -298,6 +326,14 @@
           (define nav:down
             (new button% (label "Next term") (parent navigator) (style '(deleted))
                  (callback (lambda (b e) (navigate-down)))))
+          #;
+          (define nav:zoom
+            (new button% (label "Zoom in") (parent extra-navigator)
+                 (callback (lambda (b e) (zoom)))))
+          #;
+          (define nav:jump-to
+            (new button% (label "Jump to") (parent extra-navigator)
+                 (callback (lambda (b e) (jump-to)))))
 
           (define/public (show-macro-hiding-prefs show?)
             (send area change-children
@@ -305,6 +341,13 @@
                     (if show?
                         (append (remq control-pane children) (list control-pane))
                         (remq control-pane children)))))
+
+          (define/private (show-extra-navigation show?)
+            (send supernavigator change-children
+                  (lambda (children)
+                    (if show?
+                        (list navigator extra-navigator)
+                        (list navigator)))))
 
           ;; Navigate
 
@@ -333,6 +376,50 @@
               (set! derivs (cdr derivs))
               (set! synth-deriv #f))
             (refresh/move/cached-prefix))
+
+          ;; FIXME: selected stx must be in term1; doesn't work in term2
+          #;
+          (define/private (zoom)
+            (let* ([selected-syntax (send sbc get-selected-syntax)]
+                   [step (and steps (cursor:current steps))]
+                   [deriv (and step (protostep-deriv step))])
+              (when (and selected-syntax deriv)
+                (for-each go/deriv (seek/syntax selected-syntax deriv)))))
+          #;
+          (define/public (jump-to)
+            (let* ([selected-syntax (send sbc get-selected-syntax)]
+                   [step (and steps (cursor:current steps))]
+                   [deriv (and step (protostep-deriv step))])
+              (when (and selected-syntax deriv)
+                (let ([subderivs (seek/syntax selected-syntax deriv)])
+                  (cond [(null? subderivs)
+                         (message-box "Macro stepper - Jump to"
+                                      "Cannot find selected term in the expansion")]
+                        [(and (pair? subderivs) (null? (cdr subderivs)))
+                         (jump-to/deriv (car subderivs))]
+                        [else
+                         (message-box "Macro stepper - Jump to"
+                                      "Subterm occurs non-linearly in the expansion")])))))
+          #;
+          (define/private (jump-to/deriv subderiv)
+            (define all-step-derivs
+              (let ([ht (make-hash-table)])
+                (for-each (lambda (s) (hash-table-put! ht (protostep-deriv s) #t))
+                          (cursor-suffix->list steps))
+                ht))
+            (define target-deriv
+              (find-deriv
+               (lambda (d) (hash-table-get all-step-derivs d (lambda () #f)))
+               (lambda (d) #f)
+               subderiv))
+            (unless target-deriv
+              (message-box "Macro stepper - Jump to"
+                           "Could not find selected term in the expansion"))
+            (when target-deriv
+              (let loop ()
+                (unless (eq? (protostep-deriv (cursor:current steps)) target-deriv)
+                  (cursor:move-next steps)))
+              (update/save-position)))
 
           (define/private (insert-step-separator text)
             (send sbview add-text "\n    ")
@@ -499,9 +586,8 @@
             (send nav:next enable (and steps (cursor:can-move-next? steps)))
             (send nav:end enable (and steps (cursor:can-move-next? steps)))
             (send nav:up enable (and (pair? derivs-prefix)))
-            (send nav:down enable 
-                  (and (pair? derivs))))
-          
+            (send nav:down enable (and (pair? derivs))))
+
           ;; --
 
           ;; refresh/move/cached-prefix : -> void
@@ -661,6 +747,7 @@
           (super-new)
           (send sbview show-props (send config get-show-syntax-properties?))
           (show-macro-hiding-prefs (send config get-show-hiding-panel?))
+          (show-extra-navigation (send config get-extra-navigation?))
           (refresh/move/cached-prefix)
           ))
 

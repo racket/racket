@@ -89,6 +89,10 @@
   (define (cursor:can-move-previous? c)
     (pair? (cursor-prefix c)))
   
-  
+  (define (cursor->list c)
+    (append (reverse (cursor-prefix c))
+            (cursor-suffix->list c)))
+
+  (define (cursor-suffix->list c) (cursor-suffix c))
   
   )
