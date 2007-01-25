@@ -28,7 +28,7 @@
                              [abbreviate-cons-as-list? boolean?]
                              [render-to-sexp (any/c . -> . any)]
                              [lifting? boolean?]
-                             [all-bindings-are-mutable? boolean?])]
+                             [all-bindings-mutable? boolean?])]
                     
                     
                     
