@@ -175,6 +175,13 @@ scheme_sub1 (int argc, Scheme_Object *argv[])
 #define FS_MULTIPLY(x,y) scheme_make_float(x * y)
 #define FS_DIVIDE(x,y) scheme_make_float((float)x / (float)y)
 
+static Scheme_Object *ADD_slow(long a, long b)
+{
+  Small_Bignum sa, sb;
+  return scheme_bignum_add(scheme_make_small_bignum(a, &sa),
+                           scheme_make_small_bignum(b, &sb));
+}
+
 static Scheme_Object *ADD(long a, long b)
 {
   long r;
@@ -187,11 +194,15 @@ static Scheme_Object *ADD(long a, long b)
 
   if (b == r - a)
     return o;
-  else {
-    Small_Bignum sa, sb;
-    return scheme_bignum_add(scheme_make_small_bignum(a, &sa),
-			     scheme_make_small_bignum(b, &sb));
-  }
+  else
+    return ADD_slow(a, b);
+}
+
+static Scheme_Object *SUBTRACT_slow(long a, long b)
+{
+  Small_Bignum sa, sb;
+  return scheme_bignum_subtract(scheme_make_small_bignum(a, &sa),
+                                scheme_make_small_bignum(b, &sb));  
 }
 
 static Scheme_Object *SUBTRACT(long a, long b)
@@ -206,11 +217,8 @@ static Scheme_Object *SUBTRACT(long a, long b)
 
   if (a == r + b)
     return o;
-  else {
-    Small_Bignum sa, sb;
-    return scheme_bignum_subtract(scheme_make_small_bignum(a, &sa),
-				  scheme_make_small_bignum(b, &sb));
-  }
+  else
+    return SUBTRACT_slow(a, b);
 }
 
 static Scheme_Object *MULTIPLY(long a, long b)
@@ -235,6 +243,13 @@ static Scheme_Object *MULTIPLY(long a, long b)
   }
 }
 
+static Scheme_Object *unary_minus(const Scheme_Object *n)
+{
+  Scheme_Object *a[1];
+  a[0] = (Scheme_Object *)n;
+  return minus(1, a);
+}
+
 GEN_BIN_OP(scheme_bin_plus, "+", ADD, F_ADD, FS_ADD, scheme_bignum_add, scheme_rational_add, scheme_complex_add, GEN_RETURN_N2, GEN_RETURN_N1, NO_NAN_CHECK, NO_NAN_CHECK)
 GEN_BIN_OP(scheme_bin_minus, "-", SUBTRACT, F_SUBTRACT, FS_SUBTRACT, scheme_bignum_subtract, scheme_rational_subtract, scheme_complex_subtract, GEN_SINGLE_SUBTRACT_N2, GEN_RETURN_N1, NO_NAN_CHECK, NO_NAN_CHECK)
 GEN_BIN_OP(scheme_bin_mult, "*", MULTIPLY, F_MULTIPLY, FS_MULTIPLY, scheme_bignum_multiply, scheme_rational_multiply, scheme_complex_multiply, GEN_RETURN_0, GEN_RETURN_0, NO_NAN_CHECK, NO_NAN_CHECK)
@@ -243,11 +258,25 @@ GEN_BIN_DIV_OP(scheme_bin_div, "/", DIVIDE, F_DIVIDE, FS_DIVIDE, scheme_make_rat
 GEN_NARY_OP(static, plus, "+", scheme_bin_plus, 0, SCHEME_NUMBERP, "number")
 GEN_NARY_OP(static, mult, "*", scheme_bin_mult, 1, SCHEME_NUMBERP, "number")
 
+static MZ_INLINE Scheme_Object *
+minus_slow (Scheme_Object *ret, int argc, Scheme_Object *argv[])
+{
+  int i;
+  for (i = 1; i < argc; i++) {
+    Scheme_Object *o = argv[i];
+    if (!SCHEME_NUMBERP(o)) {
+      scheme_wrong_type("-", "number", i, argc, argv);
+      ESCAPED_BEFORE_HERE;
+    }
+    ret = scheme_bin_minus(ret, o);
+  }
+  return ret;
+}
+
 static Scheme_Object *
 minus (int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *ret;
-  int i;
+  Scheme_Object *ret, *v;
 
   ret = argv[0];
   if (!SCHEME_NUMBERP(ret)) {
@@ -264,15 +293,15 @@ minus (int argc, Scheme_Object *argv[])
     }
     return scheme_bin_minus(zeroi, ret);
   }
-  for (i = 1; i < argc; i++) {
-    Scheme_Object *o = argv[i];
-    if (!SCHEME_NUMBERP(o)) {
-      scheme_wrong_type("-", "number", i, argc, argv);
+  if (argc == 2) {
+    v = argv[1];
+    if (!SCHEME_NUMBERP(v)) {
+      scheme_wrong_type("-", "number", 1, argc, argv);
       ESCAPED_BEFORE_HERE;
-    }
-    ret = scheme_bin_minus(ret, o);
+    } 
+    return scheme_bin_minus(ret, v);
   }
-  return ret;
+  return minus_slow(ret, argc, argv);
 }
 
 static Scheme_Object *

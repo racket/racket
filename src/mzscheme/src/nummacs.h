@@ -51,16 +51,14 @@
 static int name (Scheme_Object *n1, Scheme_Object *n2)
 
 #define GEN_NARY_COMP(name, scheme_name, bin_name, TYPEP, type) \
-static Scheme_Object * \
-name (int argc, Scheme_Object *argv[]) \
+static Scheme_Object *name (int argc, Scheme_Object *argv[]); \
+static MZ_INLINE Scheme_Object * \
+name ## __slow (Scheme_Object *p, int argc, Scheme_Object *argv[]) \
 { \
+  Scheme_Object *o; \
   int i; \
-  Scheme_Object *p; \
-  p = argv[0]; \
-  if (argc == 1) if (!TYPEP(p)) \
-   scheme_wrong_type(scheme_name, type, 0, argc, argv); \
   for (i = 1; i < argc; i++) {\
-    Scheme_Object *o = argv[i]; \
+    o = argv[i]; \
     if (!TYPEP(o)) { \
       scheme_wrong_type(scheme_name, type, i, argc, argv); \
       return NULL; \
@@ -75,6 +73,24 @@ name (int argc, Scheme_Object *argv[]) \
     p = o; \
   } \
   return scheme_true; \
+} \
+static MZ_INLINE Scheme_Object *name ## __bin(Scheme_Object *a, Scheme_Object *b) { \
+  return (bin_name(a, b) ? scheme_true : scheme_false); \
+} \
+Scheme_Object * \
+name (int argc, Scheme_Object *argv[]) \
+{ \
+  Scheme_Object *p, *p2; \
+  p = argv[0]; \
+  if (!TYPEP(p)) \
+   scheme_wrong_type(scheme_name, type, 0, argc, argv); \
+  if (argc == 2) { \
+    p2 = argv[1]; \
+    if (!TYPEP(p2)) \
+      scheme_wrong_type(scheme_name, type, 1, argc, argv); \
+    return name ## __bin(p, p2); \
+  } else \
+    return name ## __slow(p, argc, argv); \
 }
 
 #define GEN_BIN_PROT(name) \
@@ -166,6 +182,10 @@ static MZ_INLINE rettype name ## __dbl_comp(double d1, const Scheme_Object *n1, 
   return cxop((scheme_make_small_complex(n1, &sc)), \
 	      (n2)); \
 }) \
+static MZ_INLINE rettype name ## __big_int(const Scheme_Object *n1, const Scheme_Object *n2) { \
+  Small_Bignum sb; \
+  return bn_op((n1), (scheme_make_small_bignum(SCHEME_INT_VAL(n2), &sb))); \
+} \
 FLOATWRAP( \
 static MZ_INLINE rettype name ## __big_flt(double d1, const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Rational sr6; \
@@ -369,9 +389,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
   else if (t1 == scheme_bignum_type) \
     { \
       if (SCHEME_INTP(n2)) { \
-         Small_Bignum sb; \
-	 return bn_op((n1), \
-		      (scheme_make_small_bignum(SCHEME_INT_VAL(n2), &sb))); \
+        return name ## __big_int(n1, n2); \
       } \
       t2 = _SCHEME_TYPE(n2); \
       FLOATWRAP( \
@@ -466,7 +484,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 #define GEN_RETURN_1(x) x return scheme_make_integer(1);
 #define GEN_RETURN_N1(x) x return (Scheme_Object *)n1;
 #define GEN_RETURN_N2(x) x return (Scheme_Object *)n2;
-#define GEN_SINGLE_SUBTRACT_N2(x) x if SCHEME_FLOATP(n2) return minus(1, (Scheme_Object **)&n2);
+#define GEN_SINGLE_SUBTRACT_N2(x) x if SCHEME_FLOATP(n2) return unary_minus(n2);
 
 #define GEN_SAME_INF(x) (scheme_is_positive(x) ? scheme_inf_object : scheme_minus_inf_object)
 #define GEN_OPP_INF(x) (!scheme_is_positive(x) ? scheme_inf_object : scheme_minus_inf_object)
@@ -563,11 +581,23 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 }
 
 #define GEN_NARY_OP(stat, name, scheme_name, bin_name, ident, TYPEP, type) \
-stat Scheme_Object * \
+stat Scheme_Object *name (int argc, Scheme_Object *argv[]); \
+static MZ_INLINE Scheme_Object * \
+name ## __slow (Scheme_Object *ret, int argc, Scheme_Object *argv[])  \
+{ \
+  int i; \
+  for (i = 1 ; i<argc ; ++i ) { \
+    Scheme_Object *o; \
+    o = argv[i]; \
+    if (!TYPEP(o)) { scheme_wrong_type(scheme_name, type, i, argc, argv); return NULL; } \
+    ret = bin_name (ret, o); \
+  } \
+  return (ret); \
+}\
+Scheme_Object * \
 name (int argc, Scheme_Object *argv[]) \
 { \
-  Scheme_Object *ret; \
-  int i; \
+  Scheme_Object *ret;                          \
   if (!argc) return scheme_make_integer(ident); \
   ret = argv[0]; \
   if (!TYPEP(ret)) { scheme_wrong_type(scheme_name, type, 0, argc, argv); return NULL; } \
@@ -577,36 +607,35 @@ name (int argc, Scheme_Object *argv[]) \
     if (!TYPEP(b)) { scheme_wrong_type(scheme_name, type, 1, argc, argv); return NULL; } \
     return bin_name(ret, b); \
   } \
-  for (i = 1 ; i<argc ; ++i ) { \
-    Scheme_Object *o; \
-    o = argv[i]; \
-    if (!TYPEP(o)) { scheme_wrong_type(scheme_name, type, i, argc, argv); return NULL; } \
-    ret = bin_name (ret, o); \
-  } \
-  return (ret); \
+  return name ## __slow(ret, argc, argv); \
 }
 
 #define GEN_TWOARY_OP(stat, name, scheme_name, bin_name, TYPEP, type) \
-stat Scheme_Object * \
-name (int argc, Scheme_Object *argv[]) \
-{ \
-  Scheme_Object *ret; \
+stat Scheme_Object * name (int argc, Scheme_Object *argv[]); \
+static MZ_INLINE Scheme_Object * \
+name ## __slow (Scheme_Object *ret, int argc, Scheme_Object *argv[]) \
+{\
   int i; \
-  if (!TYPEP(argv[0])) \
-    scheme_wrong_type(scheme_name, type, 0, argc, argv); \
-  if (argc == 1) return argv[0]; \
-  if (argc == 2) { \
-    if (!TYPEP(argv[1])) \
-      scheme_wrong_type(scheme_name, type, 1, argc, argv); \
-    return bin_name(argv[0], argv[1]); \
-  } \
-  ret = argv[0]; \
   for ( i=1 ; i<argc ; ++i ) { \
     if (!TYPEP(argv[i])) \
       scheme_wrong_type(scheme_name, type, i, argc, argv); \
     ret = bin_name (ret, argv[i]); \
   } \
   return ret; \
+}\
+Scheme_Object * \
+name (int argc, Scheme_Object *argv[]) \
+{ \
+  Scheme_Object *ret = argv[0]; \
+  if (!TYPEP(ret)) \
+    scheme_wrong_type(scheme_name, type, 0, argc, argv); \
+  if (argc == 1) return ret; \
+  if (argc == 2) { \
+    if (!TYPEP(argv[1])) \
+      scheme_wrong_type(scheme_name, type, 1, argc, argv); \
+    return bin_name(ret, argv[1]); \
+  } \
+  return name ## __slow(ret, argc, argv); \
 }
 
 #define BIGNUMS_AS_DOUBLES(o) d = scheme_bignum_to_double(o);

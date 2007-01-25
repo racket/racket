@@ -5528,34 +5528,27 @@ Scheme_Object *_scheme_apply_prim_closure(Scheme_Object *rator,
 
 
 #ifdef MZ_USE_JIT
-Scheme_Object *_scheme_apply_from_native(Scheme_Object *rator,
-					 int argc,
-					 Scheme_Object **argv)
-{
-#define PRIM_CHECK_VALUE 1
-#define PRIM_CHECK_MULTI 1
-#include "schnapp.inc"
-}
 
-Scheme_Object *_scheme_apply_multi_from_native(Scheme_Object *rator,
-					       int argc,
-					       Scheme_Object **argv)
-{
-#define PRIM_CHECK_VALUE 1
-#define PRIM_CHECK_MULTI 0
-#include "schnapp.inc"
-}
+# define PRIM_APPLY_NAME _scheme_apply_from_native
+# define PRIM_APPLY_NAME_FAST _scheme_apply_from_native_fast
+# define PRIM_CHECK_VALUE 1
+# define PRIM_CHECK_MULTI 1
+# include "schnapp.inc"
 
-Scheme_Object *_scheme_tail_apply_from_native(Scheme_Object *rator,
-					      int argc,
-					      Scheme_Object **argv)
-{
-  /* It's ok to call primitive and closed primitives directly,
-     since they implement further tail by trampolining. */
-#define PRIM_CHECK_VALUE 0
-#define PRIM_CHECK_MULTI 0
-#include "schnapp.inc"
-}
+# define PRIM_APPLY_NAME _scheme_apply_multi_from_native
+# define PRIM_APPLY_NAME_FAST _scheme_apply_multi_from_native_fast
+# define PRIM_CHECK_VALUE 1
+# define PRIM_CHECK_MULTI 0
+# include "schnapp.inc"
+
+# define PRIM_APPLY_NAME _scheme_tail_apply_from_native
+# define PRIM_APPLY_NAME_FAST _scheme_tail_apply_from_native_fast
+/* It's ok to call primitive and closed primitives directly,
+   since they implement further tail by trampolining. */
+# define PRIM_CHECK_VALUE 0
+# define PRIM_CHECK_MULTI 0
+# include "schnapp.inc"
+
 #endif
 
 Scheme_Object *scheme_check_one_value(Scheme_Object *v)
