@@ -194,11 +194,26 @@ int scheme_rational_eq(const Scheme_Object *a, const Scheme_Object *b)
   return 1;
 }
 
-int scheme_rational_lt(const Scheme_Object *a, const Scheme_Object *b)
+static int rational_lt(const Scheme_Object *a, const Scheme_Object *b, int or_eq)
 {
   Scheme_Rational *ra = (Scheme_Rational *)a;
   Scheme_Rational *rb = (Scheme_Rational *)b;
   Scheme_Object *ma, *mb;
+
+  /* Avoid multiplication in simple cases: */
+  if (scheme_bin_lt_eq(ra->num, rb->num)
+      && scheme_bin_gt_eq(ra->num, rb->num)) {
+    if (!or_eq) {
+      if (scheme_rational_eq(a, b))
+        return 0;
+    }
+    return 1;
+  } else if (or_eq) {
+    if (scheme_rational_eq(a, b))
+      return 1;
+  }
+
+  /* Checking only for lt at this point */
 
   ma = scheme_bin_mult(ra->num, rb->denom);
   mb = scheme_bin_mult(rb->num, ra->denom);
@@ -213,19 +228,24 @@ int scheme_rational_lt(const Scheme_Object *a, const Scheme_Object *b)
     return !SCHEME_BIGPOS(ma);
 }
 
+int scheme_rational_lt(const Scheme_Object *a, const Scheme_Object *b)
+{
+  return rational_lt(a, b, 0);
+}
+
 int scheme_rational_gt(const Scheme_Object *a, const Scheme_Object *b)
 {
-  return !scheme_rational_lt(a, b) && !scheme_rational_eq(a, b);
+  return !rational_lt(a, b, 1);
 }
 
 int scheme_rational_le(const Scheme_Object *a, const Scheme_Object *b)
 {
-  return !scheme_rational_gt(a, b);
+  return rational_lt(a, b, 1);
 }
 
 int scheme_rational_ge(const Scheme_Object *a, const Scheme_Object *b)
 {
-  return !scheme_rational_lt(a, b);
+  return !rational_lt(a, b, 0);
 }
 
 Scheme_Object *scheme_rational_negate(const Scheme_Object *o)

@@ -514,12 +514,12 @@ MZ_EXTERN Scheme_Object **scheme_char_constants;
 MZ_EXTERN Scheme_Object *scheme_make_channel();
 MZ_EXTERN Scheme_Object *scheme_make_channel_put_evt(Scheme_Object *ch, Scheme_Object *v);
 
-MZ_EXTERN int scheme_get_int_val(Scheme_Object *o, long *v);
-MZ_EXTERN int scheme_get_unsigned_int_val(Scheme_Object *o, unsigned long *v);
-MZ_EXTERN int scheme_get_long_long_val(Scheme_Object *o, mzlonglong *v);
-MZ_EXTERN int scheme_get_unsigned_long_long_val(Scheme_Object *o, umzlonglong *v);
+XFORM_NONGCING MZ_EXTERN int scheme_get_int_val(Scheme_Object *o, long *v);
+XFORM_NONGCING MZ_EXTERN int scheme_get_unsigned_int_val(Scheme_Object *o, unsigned long *v);
+XFORM_NONGCING MZ_EXTERN int scheme_get_long_long_val(Scheme_Object *o, mzlonglong *v);
+XFORM_NONGCING MZ_EXTERN int scheme_get_unsigned_long_long_val(Scheme_Object *o, umzlonglong *v);
 
-MZ_EXTERN double scheme_real_to_double(Scheme_Object *r);
+XFORM_NONGCING MZ_EXTERN double scheme_real_to_double(Scheme_Object *r);
 
 MZ_EXTERN Scheme_Object *scheme_make_cptr(void *cptr, Scheme_Object *typetag);
 
@@ -587,17 +587,17 @@ MZ_EXTERN char *scheme_bignum_to_string(const Scheme_Object *n, int radix);
 MZ_EXTERN char *scheme_bignum_to_allocated_string(const Scheme_Object *n, int radix, int alloc);
 MZ_EXTERN Scheme_Object *scheme_read_bignum(const mzchar *str, int offset, int radix);
 MZ_EXTERN Scheme_Object *scheme_read_bignum_bytes(const char *str, int offset, int radix);
-MZ_EXTERN Scheme_Object *scheme_bignum_normalize(const Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_bignum_normalize(const Scheme_Object *n);
 
 /*========================================================================*/
 /*                              rationals                                 */
 /*========================================================================*/
 
 MZ_EXTERN Scheme_Object *scheme_make_rational(const Scheme_Object *r, const Scheme_Object *d);
-MZ_EXTERN double scheme_rational_to_double(const Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN double scheme_rational_to_double(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_rational_from_double(double d);
 #ifdef MZ_USE_SINGLE_FLOATS
-MZ_EXTERN float scheme_rational_to_float(const Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN float scheme_rational_to_float(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_rational_from_float(float d);
 #else
 # define scheme_rational_to_float scheme_rational_to_double
@@ -617,8 +617,8 @@ MZ_EXTERN Scheme_Object *scheme_complex_real_part(const Scheme_Object *n);
 MZ_EXTERN Scheme_Object *scheme_complex_imaginary_part(const Scheme_Object *n);
 
 /* Exact/inexact: */
-MZ_EXTERN int scheme_is_exact(Scheme_Object *n);
-MZ_EXTERN int scheme_is_inexact(Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN int scheme_is_exact(const Scheme_Object *n);
+XFORM_NONGCING MZ_EXTERN int scheme_is_inexact(const Scheme_Object *n);
 
 /*========================================================================*/
 /*                 macros, syntax, and compilation                        */
@@ -952,8 +952,8 @@ XFORM_NONGCING MZ_EXTERN int scheme_is_subinspector(Scheme_Object *i, Scheme_Obj
 /*                              utilities                                 */
 /*========================================================================*/
 
-MZ_EXTERN int scheme_eq(Scheme_Object *obj1, Scheme_Object *obj2);
-MZ_EXTERN int scheme_eqv(Scheme_Object *obj1, Scheme_Object *obj2);
+XFORM_NONGCING MZ_EXTERN int scheme_eq(Scheme_Object *obj1, Scheme_Object *obj2);
+XFORM_NONGCING MZ_EXTERN int scheme_eqv(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_equal(Scheme_Object *obj1, Scheme_Object *obj2);
 
 #ifdef MZ_PRECISE_GC

@@ -551,7 +551,7 @@ int scheme_bignum_eq(const Scheme_Object *a, const Scheme_Object *b)
 }
 
 /* - if a < b, 0 if a == b, + if  a > b */
-static int bignum_abs_cmp(const Scheme_Object *a, const Scheme_Object *b)
+XFORM_NONGCING static int bignum_abs_cmp(const Scheme_Object *a, const Scheme_Object *b)
 {
   long a_len, b_len;
 
@@ -870,7 +870,7 @@ Scheme_Object *do_big_power(const Scheme_Object *a, const Scheme_Object *b)
   result = scheme_make_integer(1);
   v[1] = scheme_make_integer(-1);
 
-  while (SCHEME_FALSEP(scheme_zero_p(1, (Scheme_Object **)&b))) {
+  while (!scheme_is_zero(b)) {
     if (SCHEME_TRUEP(scheme_odd_p(1, (Scheme_Object **)&b)))
       result = scheme_bin_mult(a, result);
     a = scheme_bin_mult(a, a);

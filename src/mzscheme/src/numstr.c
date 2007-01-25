@@ -1198,12 +1198,12 @@ Scheme_Object *scheme_read_number(const mzchar *str, long len,
       /* Don't calculate a huge exponential if we're returning a float: */
       if (result_is_float) {
 	if (scheme_bin_gt(exponent, scheme_make_integer(CHECK_INF_EXP_THRESHOLD))) {
-	  if (SCHEME_TRUEP(scheme_negative_p(1, &mantissa)))
+	  if (scheme_is_negative(mantissa))
 	    return CHECK_SINGLE(scheme_minus_inf_object, single);
 	  else
 	    return CHECK_SINGLE(scheme_inf_object, single);
 	} else if (scheme_bin_lt(exponent, scheme_make_integer(-CHECK_INF_EXP_THRESHOLD))) {
-	  if (SCHEME_TRUEP(scheme_negative_p(1, &mantissa)))
+	  if (scheme_is_negative(mantissa))
 	    return CHECK_SINGLE(scheme_nzerod, single);
 	  else
 	    return CHECK_SINGLE(scheme_zerod, single);
@@ -1286,7 +1286,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, long len,
     if (SAME_OBJ(n2, scheme_false))
       return scheme_false;
 
-    if (SCHEME_EXACT_REALP(n2) && SCHEME_TRUEP(scheme_zero_p(1, &n2))) {
+    if (SCHEME_EXACT_REALP(n2) && scheme_is_zero(n2)) {
       if (complain)
 	scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
 			"read-number: division by zero: %u", 

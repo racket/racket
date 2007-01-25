@@ -510,8 +510,8 @@ Scheme_Object *(*scheme_complex_normalize)(const Scheme_Object *n);
 Scheme_Object *(*scheme_complex_real_part)(const Scheme_Object *n);
 Scheme_Object *(*scheme_complex_imaginary_part)(const Scheme_Object *n);
 /* Exact/inexact: */
-int (*scheme_is_exact)(Scheme_Object *n);
-int (*scheme_is_inexact)(Scheme_Object *n);
+int (*scheme_is_exact)(const Scheme_Object *n);
+int (*scheme_is_inexact)(const Scheme_Object *n);
 /*========================================================================*/
 /*                 macros, syntax, and compilation                        */
 /*========================================================================*/

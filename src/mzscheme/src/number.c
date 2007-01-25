@@ -619,7 +619,7 @@ double scheme_real_to_double(Scheme_Object *r)
     return 0.0;
 }
 
-static MZ_INLINE int minus_zero_p(double d)
+XFORM_NONGCING static MZ_INLINE int minus_zero_p(double d)
 {
   return (1 / d) < 0;
 }
@@ -719,7 +719,7 @@ rational_p(int argc, Scheme_Object *argv[])
   Scheme_Object *o = argv[0];
   return (SCHEME_REALP(o) ? scheme_true : scheme_false);
 }
-	  
+
 int scheme_is_integer(const Scheme_Object *o)
 {
   if (SCHEME_INTP(o) || SCHEME_BIGNUMP(o))
@@ -749,7 +749,7 @@ integer_p (int argc, Scheme_Object *argv[])
   return scheme_is_integer(argv[0]) ? scheme_true : scheme_false;
 }
 
-int scheme_is_exact(Scheme_Object *n)
+int scheme_is_exact(const Scheme_Object *n)
 {
   if (SCHEME_INTP(n)) {
     return 1;
@@ -769,21 +769,24 @@ int scheme_is_exact(Scheme_Object *n)
     else if (type == scheme_complex_izi_type)
       return 0;
     else {
-      scheme_wrong_type("exact?", "number", 0, 1, &n);
-      return 0;
+      return -1;
     }
   }
 }
 
-static Scheme_Object *
+Scheme_Object *
 exact_p (int argc, Scheme_Object *argv[])
 {
-  return (scheme_is_exact(argv[0])
-	  ? scheme_true 
-	  : scheme_false);
+  int v;
+  v = scheme_is_exact(argv[0]);
+  if (v < 0) {
+    scheme_wrong_type("exact?", "number", 0, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
+  return (v ? scheme_true : scheme_false);
 }
 
-int scheme_is_inexact(Scheme_Object *n)
+int scheme_is_inexact(const Scheme_Object *n)
 {
   if (SCHEME_INTP(n)) {
     return 0;
@@ -803,8 +806,7 @@ int scheme_is_inexact(Scheme_Object *n)
     else if (type == scheme_complex_izi_type)
       return 1;
     else {
-      scheme_wrong_type("inexact?", "number", 0, 1, &n);
-      return 0;
+      return -1;
     }
   }
 }
@@ -812,9 +814,13 @@ int scheme_is_inexact(Scheme_Object *n)
 Scheme_Object *
 scheme_inexact_p (int argc, Scheme_Object *argv[])
 {
-  return (scheme_is_inexact(argv[0])
-	  ? scheme_true 
-	  : scheme_false);
+  int v;
+  v = scheme_is_inexact(argv[0]);
+  if (v < 0) {
+    scheme_wrong_type("inexact?", "number", 0, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
+  return (v ? scheme_true : scheme_false);
 }
 
 
@@ -1693,7 +1699,7 @@ Scheme_Object *scheme_sqrt (int argc, Scheme_Object *argv[])
   if (!SCHEME_REALP(n))
     scheme_wrong_type("sqrt", "number", 0, argc, argv);
 
-  if (SCHEME_TRUEP(scheme_negative_p(1, &n))) {
+  if (scheme_is_negative(n)) {
     n = scheme_bin_minus(zeroi, n);
     imaginary = 1;
   }
@@ -1747,7 +1753,7 @@ Scheme_Object *do_int_sqrt (const char *name, int argc, Scheme_Object *argv[], i
   } else if (SCHEME_INTP(v) || SCHEME_BIGNUMP(v)) {
     int imaginary = 0;
 
-    if (SCHEME_TRUEP(scheme_negative_p(1, &v))) {
+    if (scheme_is_negative(v)) {
       v = scheme_bin_minus(zeroi, v);
       imaginary = 1;
     }
@@ -1937,11 +1943,9 @@ scheme_expt(int argc, Scheme_Object *argv[])
     }
 
     if (!SCHEME_COMPLEXP(e)) {
-      neg = SCHEME_TRUEP(scheme_negative_p(1, &e));
+      neg = scheme_is_negative(e);
     } else {
-      Scheme_Object *a[1];
-      a[0] = scheme_complex_real_part(e);
-      neg = SCHEME_FALSEP(scheme_positive_p(1, a));
+      neg = !scheme_is_positive(scheme_complex_real_part(e));
     }
     
     if (neg) {
@@ -1955,7 +1959,7 @@ scheme_expt(int argc, Scheme_Object *argv[])
   if (!SCHEME_FLOATP(n)) {
     /* negative integer power of exact: compute positive power and invert */
     if (SCHEME_INTP(e) || SCHEME_BIGNUMP(e)) {
-      if (SCHEME_FALSEP(scheme_positive_p(1, &e))) {
+      if (!scheme_is_positive(e)) {
 	e = scheme_bin_minus(zeroi, e);
 	invert = 1;
       }
@@ -1995,7 +1999,7 @@ scheme_expt(int argc, Scheme_Object *argv[])
 	    /* Treat it as even for sign purposes: */
 	    iseven = 1;
 	  }
-	  isnonneg = SCHEME_FALSEP(scheme_negative_p(1, &e));
+	  isnonneg = !scheme_is_negative(e);
 	  negz = scheme_minus_zero_p(d);
 
 	  if (isnonneg) {
@@ -2146,8 +2150,7 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
       i = r;
       r = tmp;
     }
-    a[0] = r;
-    if (SCHEME_TRUEP(scheme_zero_p(1, a))) {
+    if (scheme_is_zero(r)) {
       a[0] = i;
       return scheme_exact_to_inexact(1, a);
     }
@@ -2224,7 +2227,7 @@ static Scheme_Object *angle(int argc, Scheme_Object *argv[])
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
 		       "angle: undefined for 0");
       ESCAPED_BEFORE_HERE;
-    } else if (SCHEME_TRUEP(scheme_positive_p(1, argv)))
+    } else if (scheme_is_positive(o))
       return zeroi;
     else {
 # ifdef USE_SINGLE_FLOATS_AS_DEFAULT
@@ -2388,7 +2391,7 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
   if (!SCHEME_INTP(so)) {
     if (SCHEME_BIGNUMP(so)) {
       if (!SCHEME_BIGPOS(so)) {
-	if (SCHEME_TRUEP(scheme_negative_p(1, &v)))
+	if (scheme_is_negative(v))
 	  return scheme_make_integer(-1);
 	else
 	  return scheme_make_integer(0);

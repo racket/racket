@@ -283,7 +283,7 @@ mp_limb_t mpn_addmul_1c _PROTO ((mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_lim
 
 mp_limb_t mpn_addsub_n _PROTO ((mp_ptr, mp_ptr, mp_srcptr, mp_srcptr, mp_size_t));
 mp_limb_t mpn_bdivmod _PROTO ((mp_ptr, mp_ptr, mp_size_t, mp_srcptr, mp_size_t, unsigned long int));
-int mpn_cmp _PROTO ((mp_srcptr, mp_srcptr, mp_size_t));
+XFORM_NONGCING int mpn_cmp _PROTO ((mp_srcptr, mp_srcptr, mp_size_t));
 
 #define mpn_divexact_by3(dst, src, size)  mpn_divexact_by3c (dst, src, size, 0)
 

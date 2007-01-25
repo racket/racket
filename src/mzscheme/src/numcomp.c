@@ -31,6 +31,9 @@ static Scheme_Object *lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lt_eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gt_eq (int argc, Scheme_Object *argv[]);
+static Scheme_Object *zero_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *positive_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *negative_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_max (int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_min (int argc, Scheme_Object *argv[]);
 
@@ -60,15 +63,15 @@ void scheme_init_numcomp(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant(">=", p, env);
 
-  p = scheme_make_folding_prim(scheme_zero_p, "zero?", 1, 1, 1);
+  p = scheme_make_folding_prim(zero_p, "zero?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("zero?", p, env);
 
-  p = scheme_make_folding_prim(scheme_positive_p, "positive?", 1, 1, 1);
+  p = scheme_make_folding_prim(positive_p, "positive?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("positive?", p, env);
 
-  p = scheme_make_folding_prim(scheme_negative_p, "negative?", 1, 1, 1);
+  p = scheme_make_folding_prim(negative_p, "negative?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("negative?", p, env);
 
@@ -128,38 +131,37 @@ GEN_NARY_COMP(gt_eq, ">=", scheme_bin_gt_eq, SCHEME_REALP, REAL_NUMBER_STR)
 
 #define GEN_IDENT_FOR_IZI GEN_IDENT
 
-GEN_BIN_COMP(scheme_bin_eq, "=", EQUAL, EQUAL, scheme_bignum_eq, scheme_rational_eq, scheme_complex_eq, 0, 0, scheme_inexact_p, scheme_inexact_p, GEN_IDENT, GEN_IDENT, "number")
-GEN_BIN_COMP(scheme_bin_lt, "<", LESS_THAN, fLESS_THAN, scheme_bignum_lt, scheme_rational_lt, COMP_IZI_LT, 0, 1, scheme_positive_p, scheme_negative_p, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
-GEN_BIN_COMP(scheme_bin_gt, ">", GREATER_THAN, GREATER_THAN, scheme_bignum_gt, scheme_rational_gt, COMP_IZI_GT, 1, 0, scheme_negative_p, scheme_positive_p, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
-GEN_BIN_COMP(scheme_bin_lt_eq, "<=", LESS_OR_EQUAL, fLESS_OR_EQUAL, scheme_bignum_le, scheme_rational_le, COMP_IZI_LT_EQ, 0, 1, scheme_positive_p, scheme_negative_p, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
-GEN_BIN_COMP(scheme_bin_gt_eq, ">=", GREATER_OR_EQUAL, GREATER_OR_EQUAL, scheme_bignum_ge, scheme_rational_ge, COMP_IZI_GT_EQ, 1, 0, scheme_negative_p, scheme_positive_p, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
+GEN_BIN_COMP(scheme_bin_eq, "=", EQUAL, EQUAL, scheme_bignum_eq, scheme_rational_eq, scheme_complex_eq, 0, 0, scheme_is_inexact, scheme_is_inexact, GEN_IDENT, GEN_IDENT, "number")
+GEN_BIN_COMP(scheme_bin_lt, "<", LESS_THAN, fLESS_THAN, scheme_bignum_lt, scheme_rational_lt, COMP_IZI_LT, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
+GEN_BIN_COMP(scheme_bin_gt, ">", GREATER_THAN, GREATER_THAN, scheme_bignum_gt, scheme_rational_gt, COMP_IZI_GT, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
+GEN_BIN_COMP(scheme_bin_lt_eq, "<=", LESS_OR_EQUAL, fLESS_OR_EQUAL, scheme_bignum_le, scheme_rational_le, COMP_IZI_LT_EQ, 0, 1, scheme_is_positive, scheme_is_negative, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
+GEN_BIN_COMP(scheme_bin_gt_eq, ">=", GREATER_OR_EQUAL, GREATER_OR_EQUAL, scheme_bignum_ge, scheme_rational_ge, COMP_IZI_GT_EQ, 1, 0, scheme_is_negative, scheme_is_positive, GEN_IDENT_FOR_IZI, GEN_OMIT, REAL_NUMBER_STR)
 
-Scheme_Object *
-scheme_zero_p (int argc, Scheme_Object *argv[])
+int
+scheme_is_zero(const Scheme_Object *o)
 {
   Scheme_Type t;
-  Scheme_Object *o = argv[0];
 
  top:
 
   if (SCHEME_INTP(o))
-    return (o == zeroi) ? scheme_true : scheme_false;
+    return o == zeroi;
   t = _SCHEME_TYPE(o);
 #ifdef MZ_USE_SINGLE_FLOATS
   if (t == scheme_float_type) {
 # ifdef NAN_EQUALS_ANYTHING
     if (MZ_IS_NAN(SCHEME_FLT_VAL(o)))
-      return scheme_false;
+      return 0;
 # endif
-    return (SCHEME_FLT_VAL(o) == 0.0f) ? scheme_true : scheme_false;
+    return SCHEME_FLT_VAL(o) == 0.0f;
   }
 #endif
   if (t == scheme_double_type) {
 #ifdef NAN_EQUALS_ANYTHING
     if (MZ_IS_NAN(SCHEME_DBL_VAL(o)))
-      return scheme_false;
+      return 0;
 #endif
-    return (SCHEME_DBL_VAL(o) == 0.0) ? scheme_true : scheme_false;
+    return SCHEME_DBL_VAL(o) == 0.0;
   }
 
   if (t == scheme_complex_izi_type) {
@@ -168,98 +170,125 @@ scheme_zero_p (int argc, Scheme_Object *argv[])
   }
 
   if ((t >= scheme_bignum_type) && (t <= scheme_complex_type))
-    return scheme_false;
+    return 0;
  
-  NEED_NUMBER(zero?);
-
-  ESCAPED_BEFORE_HERE;
+  return -1;
 }
 
 Scheme_Object *
-scheme_positive_p (int argc, Scheme_Object *argv[])
+zero_p (int argc, Scheme_Object *argv[])
+{
+  int v;
+  v = scheme_is_zero(argv[0]);
+  if (v < 0) {
+    NEED_REAL(zero?);
+    ESCAPED_BEFORE_HERE;
+  }
+  return (v ? scheme_true : scheme_false);
+}
+
+int
+scheme_is_positive(const Scheme_Object *o)
 {
   Scheme_Type t;
-  Scheme_Object *o = argv[0];
 
  top:
 
   if (SCHEME_INTP(o))
-    return (SCHEME_INT_VAL(o) > 0 ? scheme_true : scheme_false);
+    return SCHEME_INT_VAL(o) > 0;
   t = _SCHEME_TYPE(o);
 #ifdef MZ_USE_SINGLE_FLOATS
   if (t == scheme_float_type) {
     float d = SCHEME_FLT_VAL(o);
 # ifdef NAN_EQUALS_ANYTHING
     if (MZ_IS_NAN(d))
-      return scheme_false;
+      return 0;
 # endif
-    return (d > 0 ? scheme_true : scheme_false);
+    return d > 0;
   }
 #endif
   if (t == scheme_double_type) {
     double d = SCHEME_DBL_VAL(o);
 #ifdef NAN_EQUALS_ANYTHING
     if (MZ_IS_NAN(d))
-      return scheme_false;
+      return 0;
 #endif
-    return (d > 0 ? scheme_true : scheme_false);
+    return d > 0;
   }
   if (t == scheme_bignum_type)
-    return (SCHEME_BIGPOS(o) ? scheme_true : scheme_false);
+    return SCHEME_BIGPOS(o);
   if (t == scheme_rational_type)
-    return (scheme_is_rational_positive(o)  ? scheme_true : scheme_false);
+    return scheme_is_rational_positive(o);
   if (t == scheme_complex_izi_type) {
     o = IZI_REAL_PART(o);
     goto top;
   }
 
-
-  NEED_REAL(positive?);
-
-  ESCAPED_BEFORE_HERE;
+  return -1;
 }
 
 Scheme_Object *
-scheme_negative_p (int argc, Scheme_Object *argv[])
+positive_p (int argc, Scheme_Object *argv[])
+{
+  int v;
+  v = scheme_is_positive(argv[0]);
+  if (v < 0) {
+    NEED_REAL(positive?);
+    ESCAPED_BEFORE_HERE;
+  }
+  return (v ? scheme_true : scheme_false);
+}
+
+int
+scheme_is_negative(const Scheme_Object *o)
 {
   Scheme_Type t;
-  Scheme_Object *o = argv[0];
 
  top:
 
   if (SCHEME_INTP(o))
-    return (SCHEME_INT_VAL(o) < 0 ? scheme_true : scheme_false);
+    return SCHEME_INT_VAL(o) < 0;
   t = _SCHEME_TYPE(o);
 #ifdef MZ_USE_SINGLE_FLOATS
   if (t == scheme_float_type) {
     float d = SCHEME_FLT_VAL(o);
 # if defined(NAN_EQUALS_ANYTHING) || defined(NAN_LT_COMPARISON_WRONG)
     if (MZ_IS_NAN(d))
-      return scheme_false;
+      return 0;
 # endif
-    return (d < 0 ? scheme_true : scheme_false);
+    return d < 0;
   }
 #endif
   if (t == scheme_double_type) {
     double d = SCHEME_DBL_VAL(o);
 # if defined(NAN_EQUALS_ANYTHING) || defined(NAN_LT_COMPARISON_WRONG)
     if (MZ_IS_NAN(d))
-      return scheme_false;
+      return 0;
 #endif
-    return (d < 0 ? scheme_true : scheme_false);
+    return d < 0;
   }
   if (t == scheme_bignum_type)
-    return (!SCHEME_BIGPOS(o) ? scheme_true : scheme_false);
+    return !SCHEME_BIGPOS(o);
   if (t == scheme_rational_type)
-    return (!scheme_is_rational_positive(o) ? scheme_true : scheme_false);
+    return !scheme_is_rational_positive(o);
   if (t == scheme_complex_izi_type) {
     o = IZI_REAL_PART(o);
     goto top;
   }
 
-  NEED_REAL(negative?);
+  return -1;
+}
 
-  ESCAPED_BEFORE_HERE;
+Scheme_Object *
+negative_p (int argc, Scheme_Object *argv[])
+{
+  int v;
+  v = scheme_is_negative(argv[0]);
+  if (v < 0) {
+    NEED_REAL(negative?);
+    ESCAPED_BEFORE_HERE;
+  }
+  return (v ? scheme_true : scheme_false);
 }
 
 #define MAX(n1,n2) scheme_make_integer((n1>n2) ? n1 : n2)

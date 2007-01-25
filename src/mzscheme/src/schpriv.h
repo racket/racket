@@ -1251,19 +1251,19 @@ typedef struct {
   bigdig v[1];
 } Small_Bignum;
 
-Scheme_Object *scheme_make_small_bignum(long v, Small_Bignum *s);
+XFORM_NONGCING Scheme_Object *scheme_make_small_bignum(long v, Small_Bignum *s);
 char *scheme_number_to_string(int radix, Scheme_Object *obj);
 
-int scheme_bignum_get_int_val(const Scheme_Object *o, long *v);
-int scheme_bignum_get_unsigned_int_val(const Scheme_Object *o, unsigned long *v);
-int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v);
-int scheme_bignum_get_unsigned_long_long_val(const Scheme_Object *o, umzlonglong *v);
+XFORM_NONGCING int scheme_bignum_get_int_val(const Scheme_Object *o, long *v);
+XFORM_NONGCING int scheme_bignum_get_unsigned_int_val(const Scheme_Object *o, unsigned long *v);
+XFORM_NONGCING int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v);
+XFORM_NONGCING int scheme_bignum_get_unsigned_long_long_val(const Scheme_Object *o, umzlonglong *v);
 
-int scheme_bignum_eq(const Scheme_Object *a, const Scheme_Object *b);
-int scheme_bignum_lt(const Scheme_Object *a, const Scheme_Object *b);
-int scheme_bignum_gt(const Scheme_Object *a, const Scheme_Object *b);
-int scheme_bignum_le(const Scheme_Object *a, const Scheme_Object *b);
-int scheme_bignum_ge(const Scheme_Object *a, const Scheme_Object *b);
+XFORM_NONGCING int scheme_bignum_eq(const Scheme_Object *a, const Scheme_Object *b);
+XFORM_NONGCING int scheme_bignum_lt(const Scheme_Object *a, const Scheme_Object *b);
+XFORM_NONGCING int scheme_bignum_gt(const Scheme_Object *a, const Scheme_Object *b);
+XFORM_NONGCING int scheme_bignum_le(const Scheme_Object *a, const Scheme_Object *b);
+XFORM_NONGCING int scheme_bignum_ge(const Scheme_Object *a, const Scheme_Object *b);
 Scheme_Object *scheme_bignum_negate(const Scheme_Object *n);
 Scheme_Object *scheme_bignum_add(const Scheme_Object *a, const Scheme_Object *b);
 Scheme_Object *scheme_bignum_subtract(const Scheme_Object *a, const Scheme_Object *b);
@@ -1284,9 +1284,9 @@ Scheme_Object *scheme_bignum_xor(const Scheme_Object *a, const Scheme_Object *b)
 Scheme_Object *scheme_bignum_not(const Scheme_Object *a);
 Scheme_Object *scheme_bignum_shift(const Scheme_Object *a, long shift);
 
-double scheme_bignum_to_double_inf_info(const Scheme_Object *n, int just_use, int *only_need);
+XFORM_NONGCING double scheme_bignum_to_double_inf_info(const Scheme_Object *n, int just_use, int *only_need);
 #ifdef MZ_USE_SINGLE_FLOATS
-float scheme_bignum_to_float_inf_info(const Scheme_Object *n, int just_use, int *only_need);
+XFORM_NONGCING float scheme_bignum_to_float_inf_info(const Scheme_Object *n, int just_use, int *only_need);
 #else
 # define scheme_bignum_to_float_inf_info scheme_bignum_to_double_inf_info
 #endif
@@ -1303,11 +1303,11 @@ typedef struct {
 
 typedef Scheme_Rational Small_Rational;
 
-Scheme_Object *scheme_make_small_rational(long n, Small_Rational *space);
-Scheme_Object *scheme_make_small_bn_rational(Scheme_Object *n, Small_Rational *space);
+XFORM_NONGCING Scheme_Object *scheme_make_small_rational(long n, Small_Rational *space);
+XFORM_NONGCING Scheme_Object *scheme_make_small_bn_rational(Scheme_Object *n, Small_Rational *space);
 Scheme_Object *scheme_integer_to_rational(const Scheme_Object *n);
 Scheme_Object *scheme_make_fixnum_rational(long n, long d);
-int scheme_rational_eq(const Scheme_Object *a, const Scheme_Object *b);
+XFORM_NONGCING int scheme_rational_eq(const Scheme_Object *a, const Scheme_Object *b);
 int scheme_rational_lt(const Scheme_Object *a, const Scheme_Object *b);
 int scheme_rational_gt(const Scheme_Object *a, const Scheme_Object *b);
 int scheme_rational_le(const Scheme_Object *a, const Scheme_Object *b);
@@ -1322,7 +1322,7 @@ Scheme_Object *scheme_rational_max(const Scheme_Object *a, const Scheme_Object *
 Scheme_Object *scheme_rational_min(const Scheme_Object *a, const Scheme_Object *b);
 Scheme_Object *scheme_rational_divide(const Scheme_Object *n, const Scheme_Object *d);
 Scheme_Object *scheme_rational_power(const Scheme_Object *a, const Scheme_Object *b);
-int scheme_is_rational_positive(const Scheme_Object *o);
+XFORM_NONGCING int scheme_is_rational_positive(const Scheme_Object *o);
 Scheme_Object *scheme_rational_floor(const Scheme_Object *a);
 Scheme_Object *scheme_rational_truncate(const Scheme_Object *a);
 Scheme_Object *scheme_rational_ceiling(const Scheme_Object *a);
@@ -1354,7 +1354,7 @@ Scheme_Object *scheme_complex_multiply(const Scheme_Object *a, const Scheme_Obje
 Scheme_Object *scheme_complex_divide(const Scheme_Object *n, const Scheme_Object *d);
 Scheme_Object *scheme_complex_power(const Scheme_Object *a, const Scheme_Object *b);
 Scheme_Object *scheme_complex_sqrt(const Scheme_Object *a);
-int scheme_is_complex_exact(const Scheme_Object *o);
+XFORM_NONGCING int scheme_is_complex_exact(const Scheme_Object *o);
 
 /****** Inexacts ******/
 
@@ -1368,7 +1368,7 @@ int scheme_check_float(const char *where, float v, const char *dest);
 #endif
 
 double scheme_get_val_as_double(const Scheme_Object *n);
-int scheme_minus_zero_p(double d);
+XFORM_NONGCING int scheme_minus_zero_p(double d);
 
 #ifdef MZ_USE_SINGLE_FLOATS
 float scheme_get_val_as_float(const Scheme_Object *n);
@@ -1483,10 +1483,10 @@ Scheme_Object *scheme_exact_to_inexact(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_inexact_p(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_TO_DOUBLE(const Scheme_Object *n);
 Scheme_Object *scheme_to_bignum(const Scheme_Object *o);
-int scheme_is_integer(const Scheme_Object *o);
-Scheme_Object *scheme_zero_p(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_negative_p(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_positive_p(int argc, Scheme_Object *argv[]);
+XFORM_NONGCING int scheme_is_integer(const Scheme_Object *o);
+XFORM_NONGCING int scheme_is_zero(const Scheme_Object *o);
+XFORM_NONGCING int scheme_is_negative(const Scheme_Object *o);
+XFORM_NONGCING int scheme_is_positive(const Scheme_Object *o);
 Scheme_Object *scheme_make_polar(int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_bitwise_shift(int argc, Scheme_Object *argv[]);

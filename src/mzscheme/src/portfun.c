@@ -2371,7 +2371,7 @@ static Scheme_Object *sch_pipe(int argc, Scheme_Object **args)
     if (SCHEME_FALSEP(o)) {
       bufmax = 0;
     } else if ((SCHEME_INTP(o) || SCHEME_BIGNUMP(o))
-	&& SCHEME_TRUEP(scheme_positive_p(1, args))) {
+               && scheme_is_positive(o)) {
       if (SCHEME_INTP(o))
 	bufmax = SCHEME_INT_VAL(o);
       else

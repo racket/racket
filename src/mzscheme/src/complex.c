@@ -250,8 +250,7 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
     return scheme_make_complex(r, i);
   }
 
-  aa[0] = d;
-  if (SCHEME_TRUEP(scheme_zero_p(1, aa))) {
+  if (scheme_is_zero(d)) {
     /* This is like dividing by a real number, except that
        the inexact 0 imaginary part can interact with +inf.0 and +nan.0 */
     r = scheme_bin_plus(scheme_bin_div(a, c),
@@ -263,8 +262,7 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
     
     return scheme_make_complex(r, i);
   }
-  aa[0] = c;
-  if (SCHEME_TRUEP(scheme_zero_p(1, aa))) {
+  if (scheme_is_zero(c)) {
     r = scheme_bin_plus(scheme_bin_div(b, d),
 			/* Either 0.0 or +nan.0: */
 			scheme_bin_mult(c, a));
