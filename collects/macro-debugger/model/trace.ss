@@ -23,12 +23,12 @@
 
   ;; trace : syntax -> Derivation
   (define (trace stx)
-    (let-values ([(result tracer) (expand+tracer stx)])
+    (let-values ([(result tracer) (expand+tracer stx expand)])
       (parse-derivation tracer)))
 
   ;; trace/result : syntax -> (values syntax/exn Derivation)
   (define (trace/result stx)
-    (let-values ([(result tracer) (expand+tracer stx)])
+    (let-values ([(result tracer) (expand+tracer stx expand)])
       (values result
               (parse-derivation tracer))))
 
@@ -36,8 +36,8 @@
   (define (trace+reductions stx)
     (reductions (trace stx)))
 
-  ;; expand+tracer : syntax/sexpr -> (values syntax/exn (-> event))
-  (define (expand+tracer sexpr)
+  ;; expand+tracer : syntax/sexpr (syntax -> A) -> (values A/exn (-> event))
+  (define (expand+tracer sexpr expander)
     (let* ([s (make-semaphore 1)]
            [head (cons #f #f)]
            [tail head]
@@ -64,7 +64,7 @@
                                 (lambda (exn)
                                   (add! (cons 'error exn))
                                   exn)])
-                 (expand sexpr))])
+                 (expander sexpr))])
           (add! (cons 'EOF pos))
           (values result
                   (lambda ()

@@ -33,9 +33,12 @@
 
   ;; Struct for one-by-one stepping
 
-  (define-struct (prestep protostep) (redex e1))
-  (define-struct (poststep protostep) (contractum e2))
-  
+  (define-struct (prestep protostep) (foci1 e1))
+  (define-struct (poststep protostep) (foci2 e2))
+
+  (define (prestep-term1 s) (context-fill (protostep-ctx s) (prestep-e1 s)))
+  (define (poststep-term2 s) (context-fill (protostep-ctx s) (poststep-e2 s)))
+
   ;; Macro Stepper
 
   (define view@
@@ -387,7 +390,8 @@
           (define/private (update:show-lctx lctx)
             (when (pair? lctx)
               (for-each (lambda (bc)
-                          (send sbview add-text "While executing macro transformer in:\n")
+                          (send sbview add-text 
+                                "While executing macro transformer in:\n")
                           (insert-syntax/redex (cddr bc) (cadr bc)))
                         lctx)
               (send sbview add-text "\n")))
@@ -399,34 +403,38 @@
             (insert-step-separator (step-type->string (protostep-type step))))
 
           (define/private (update:separator/small step)
-            (insert-step-separator/small (step-type->string (protostep-type step))))
+            (insert-step-separator/small
+             (step-type->string (protostep-type step))))
           
           (define/private (update:show-step step)
             (update:show-protostep step)
-            (insert-syntax/redex (step-e1 step) (foci (step-redex step)))
+            (insert-syntax/redex (step-term1 step) (step-foci1 step))
             (update:separator step)
-            (insert-syntax/contractum (step-e2 step) (foci (step-contractum step))))
-          
+            (insert-syntax/contractum (step-term2 step) (step-foci2 step)))
+
           (define/private (update:show-prestep step)
             (update:show-protostep step)
             (update:separator/small step)
-            (insert-syntax/redex (prestep-e1 step) (foci (prestep-redex step))))
+            (insert-syntax/redex (prestep-term1 step)
+                                 (prestep-foci1 step)))
 
           (define/private (update:show-poststep step)
             (update:show-protostep step)
             (update:separator/small step)
-            (insert-syntax/contractum (poststep-e2 step) (foci (poststep-contractum step))))
+            (insert-syntax/contractum (poststep-term2 step)
+                                      (poststep-foci2 step)))
           
           (define/private (update:show-misstep step)
             (update:show-protostep step)
-            (insert-syntax/redex (misstep-e1 step) (foci (misstep-redex step)))
+            (insert-syntax/redex (misstep-term1 step)
+                                 (misstep-foci1 step))
             (update:separator step)
             (send sbview add-text (exn-message (misstep-exn step)))
             (send sbview add-text "\n")
             (when (exn:fail:syntax? (misstep-exn step))
               (for-each (lambda (e) (send sbview add-syntax e))
                         (exn:fail:syntax-exprs (misstep-exn step)))))
-          
+
           (define/private (update:show-final)
             (let ([result (lift/deriv-e2 synth-deriv)])
               (when result
@@ -438,7 +446,8 @@
           (define/private (update:show-suffix)
             (when (pair? derivs)
               (for-each (lambda (suffix-deriv)
-                          (send sbview add-syntax (lift/deriv-e1 suffix-deriv)))
+                          (send sbview add-syntax
+                                (lift/deriv-e1 suffix-deriv)))
                         (cdr derivs))))
 
           ;; update/save-position : -> void
@@ -547,24 +556,8 @@
                        ;; At end; go to the end when restored
                        (update-saved-position +inf.0)]
                       [(protostep? step)
-                       (update-saved-position (extract-protostep-seq step))]))))
-
-;           ;; save-position : -> void
-;           (define (save-position)
-;             (define (steps-loop)
-;               (let ([step (cursor:current steps)])
-;                 (cond [(not step)
-;                        ;; At end; go to the end when restored
-;                        +inf.0]
-;                       [(protostep? step)
-;                        (or (extract-protostep-seq step)
-;                            ;; Go one previous, if possible, and try again
-;                            (if (cursor:can-move-previous? steps)
-;                                (begin (cursor:move-previous steps)
-;                                       (steps-loop))
-;                                #f))]
-;                       [else #f])))
-;             (update-saved-position (and steps (steps-loop))))
+                       (update-saved-position
+                        (extract-protostep-seq step))]))))
 
           ;; restore-position : number -> void
           (define (restore-position)
@@ -640,13 +633,13 @@
           (define/private (reduce:one-by-one rs)
             (let loop ([rs rs])
               (match rs
-                [(cons (struct step (d l t redex contractum e1 e2)) rs)
-                 (list* (make-prestep d l "Find redex" redex e1)
-                        (make-poststep d l t contractum e2)
+                [(cons (struct step (d l t c redex contractum e1 e2)) rs)
+                 (list* (make-prestep d l "Find redex" c redex e1)
+                        (make-poststep d l t c contractum e2)
                         (loop rs))]
-                [(cons (struct misstep (d l t redex e1 exn)) rs)
-                 (list* (make-prestep d l "Find redex" redex e1)
-                        (make-misstep d l t redex e1 exn)
+                [(cons (struct misstep (d l t c redex e1 exn)) rs)
+                 (list* (make-prestep d l "Find redex" c redex e1)
+                        (make-misstep d l t c redex e1 exn)
                         (loop rs))]
                 ['()
                  null])))

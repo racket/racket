@@ -140,9 +140,9 @@
        (with-syntax ([(?case-lambda [?formals . ?body] ...) e1]
                      [((?formals* . ?body*) ...) (map car renames+bodies)])
          (let ([mid (syntax/skeleton e1 (?case-lambda [?formals* . ?body*] ...))])
-           (cons (walk/foci/E (syntax->list #'(?formals ...))
-                              (syntax->list #'(?formals* ...))
-                              e1 mid 'rename-case-lambda)
+           (cons (walk/foci (syntax->list #'(?formals ...))
+                            (syntax->list #'(?formals* ...))
+                            e1 mid 'rename-case-lambda)
                  (R mid (CASE-LAMBDA [FORMALS . BODY] ...)
                     [Block (BODY ...) (map cdr renames+bodies)]))))]
       [(AnyQ p:let-values (e1 e2 rs renames rhss body) exni)
@@ -391,9 +391,9 @@
                                                (stx-take tail
                                                          (- (stx-improper-length tail)
                                                             (stx-improper-length (stx-cdr suffix))))
-                                               (E (revappend prefix 
-                                                             (cons (deriv-e2 head) (stx-cdr suffix))))
-                                               (E (revappend prefix tail))
+                                               (revappend prefix 
+                                                          (cons (deriv-e2 head) (stx-cdr suffix)))
+                                               (revappend prefix tail)
                                                'splice-block))
                               (cons (with-context (lambda (x) 
                                                     (revappend prefix (cons x (stx-cdr suffix))))
@@ -403,7 +403,7 @@
                   ;; FIXME
                   (error 'unimplemented)]
                  [(struct error-wrap (exn tag _inner))
-                  (values (list (stumble/E suffix (E (revappend prefix suffix)) exn))
+                  (values (list (stumble/E suffix (revappend prefix suffix) exn))
                           (revappend prefix suffix))]))]
             [(null? brules)
              (values (apply append (reverse rss))
@@ -447,8 +447,8 @@
                                               (stx-take stxs
                                                         (- (stx-improper-length stxs)
                                                            (stx-improper-length suffix-tail)))
-                                              (E (revappend prefix (cons head-e2 suffix-tail)))
-                                              (E (revappend prefix stxs))
+                                              (revappend prefix (cons head-e2 suffix-tail))
+                                              (revappend prefix stxs)
                                               'splice-module)
                           (loop next stxs prefix))))]
                          [(struct mod:lift (head stxs))
@@ -459,8 +459,8 @@
                              (let ([new-suffix (append stxs (cons head-e2 suffix-tail))])
                                (cons (walk/foci null
                                                 stxs
-                                                (E (revappend prefix (cons head-e2 suffix-tail)))
-                                                (E (revappend prefix new-suffix))
+                                                (revappend prefix (cons head-e2 suffix-tail))
+                                                (revappend prefix new-suffix)
                                                 'splice-lifts)
                                      (loop next
                                            new-suffix
@@ -470,8 +470,8 @@
                            (if (pair? tail)
                                (list (walk/foci null
                                                 tail
-                                                (E (revappend prefix suffix))
-                                                (E (revappend prefix tail))
+                                                (revappend prefix suffix)
+                                                (revappend prefix tail)
                                                 'splice-module-lifts))
                                null)
                            (loop next tail prefix))]))]

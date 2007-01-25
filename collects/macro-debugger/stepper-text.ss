@@ -64,15 +64,15 @@
     (cond [(step? step)
            (display (step-type->string (protostep-type step)))
            (newline)
-           (show-term (step-e1 step) partition)
+           (show-term (step-term1 step) partition)
            (display "  ==>")
            (newline)
-           (show-term (step-e2 step) partition)
+           (show-term (step-term2 step) partition)
            (newline)]
           [(misstep? step)
            (display (exn-message (misstep-exn step)))
            (newline)
-           (show-term (misstep-e1 step) partition)]))
+           (show-term (misstep-term1 step) partition)]))
   
   (define (show-term stx partition)
     (define-values (datum flat=>stx stx=>flat)

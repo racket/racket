@@ -3,15 +3,24 @@
   (require "deriv.ss"
            "stx-util.ss"
            "steps.ss")
-  (provide (all-defined)
-           (all-from "steps.ss"))
-  
-  ;; A Context is (syntax -> syntax)
-  ;; A BigContext is (list-of (cons Derivation (cons Syntaxes Syntax)))
-  ;;   local expansion contexts: deriv, foci, term
-  
+  (provide (all-from "steps.ss"))
+
+  (provide context
+           big-context
+           current-derivation
+           with-context
+           with-derivation
+           with-new-local-context
+           CC
+           R
+           revappend)
+  (provide walk
+           walk/foci
+           stumble
+           stumble/E)
+
   ;; context: parameter of Context
-  (define context (make-parameter (lambda (x) x)))
+  (define context (make-parameter null))
 
   ;; big-context: parameter of BigContext
   (define big-context (make-parameter null))
@@ -22,8 +31,8 @@
   (define-syntax with-context
     (syntax-rules ()
       [(with-context f . body)
-       (let ([E (context)])
-         (parameterize ([context (lambda (x) (E (f x)))])
+       (let ([c (context)])
+         (parameterize ([context (cons f c)])
            . body))]))
 
   (define-syntax with-derivation
@@ -34,15 +43,14 @@
   (define-syntax with-new-local-context
     (syntax-rules ()
       [(with-new-local-context e . body)
-       (parameterize ([big-context 
-                       (cons (cons (current-derivation) (cons (list e) (E e)))
+       (parameterize ([big-context
+                       (cons (cons (current-derivation)
+                                   (cons (list e)
+                                         (context)))
                              (big-context))]
-                      [context (lambda (x) x)])
+                      [context null])
          . body)]))
   
-  ;; E : syntax -> syntax
-  (define (E stx) ((context) stx))
-
   ;; -----------------------------------
   
   ;; CC
@@ -83,15 +91,15 @@
        #'(let-values ([(form2-var foci1-var foci2-var description-var)
                        (with-syntax ([p f])
                          (values form2 foci1 foci2 description))])
-           (cons (walk/foci/E foci1-var foci2-var f form2-var description-var)
+           (cons (walk/foci foci1-var foci2-var f form2-var description-var)
                  (R** form2-var p . more)))]
       [(R** f p [#:rename form2 foci1 foci2 description] . more)
        #'(let-values ([(form2-var foci1-var foci2-var description-var)
                        (with-syntax ([p f])
                          (values form2 foci1 foci2 description))])
-           (cons (walk/foci/E foci1-var foci2-var
-                              f form2-var
-                              description-var)
+           (cons (walk/foci foci1-var foci2-var
+                            f form2-var
+                            description-var)
                  (R** form2-var p . more)))]
       [(R** f p [#:walk form2 description] . more)
        #'(let-values ([(form2-var description-var)
@@ -167,30 +175,26 @@
   
   
   ;; -----------------------------------
-  
-  ;; walk : syntax(s) syntax(s) StepType -> Reduction
+
+  ;; walk : syntax(es) syntax(es) StepType -> Reduction
   ;; Lifts a local step into a term step.
   (define (walk e1 e2 type)
-    (make-step (current-derivation) (big-context) type
-               e1 e2 (E e1) (E e2)))
+    (make-step (current-derivation) (big-context) type (context)
+               (foci e1) (foci e2) e1 e2))
   
-  ;; walk/foci/E : syntax(s) syntax(s) syntax syntax StepType -> Reduction
-  (define (walk/foci/E focus1 focus2 e1 e2 type)
-    (walk/foci focus1 focus2 (E e1) (E e2) type))
-  
-  ;; walk/foci : syntax(s) syntax(s) syntax syntax StepType -> Reduction
-  (define (walk/foci focus1 focus2 Ee1 Ee2 type)
-    (make-step (current-derivation) (big-context) type
-               focus1 focus2 Ee1 Ee2))
-  
+  ;; walk/foci : syntaxes syntaxes syntax syntax StepType -> Reduction
+  (define (walk/foci foci1 foci2 Ee1 Ee2 type)
+    (make-step (current-derivation) (big-context) type (context)
+               (foci foci1) (foci foci2) Ee1 Ee2))
+
   ;; stumble : syntax exception -> Reduction
   (define (stumble stx exn)
-    (make-misstep (current-derivation) (big-context) 'error
-                  stx (E stx) exn))
-
+    (make-misstep (current-derivation) (big-context) 'error (context)
+                  stx stx exn))
+  
   ;; stumble/E : syntax(s) syntax exn -> Reduction
   (define (stumble/E focus Ee1 exn)
-    (make-misstep (current-derivation) (big-context) 'error
+    (make-misstep (current-derivation) (big-context) 'error (context)
                   focus Ee1 exn))
   
   ;; ------------------------------------
@@ -198,4 +202,9 @@
   (define (revappend a b)
     (cond [(pair? a) (revappend (cdr a) (cons (car a) b))]
           [(null? a) b]))
+
+  (define (foci x)
+    (if (list? x)
+        x
+        (list x)))
   )
