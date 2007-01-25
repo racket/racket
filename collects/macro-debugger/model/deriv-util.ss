@@ -1,6 +1,7 @@
 
 (module deriv-util mzscheme
   (require "deriv.ss"
+           (lib "list.ss")
            (lib "plt-match.ss"))
   (provide IntW
            ErrW
@@ -197,7 +198,8 @@
         [(AnyQ p:rename (_ _ _ _ inner))
          (loop inner)]
         [(AnyQ p:synth (_ _ _ subterms))
-         (loops (map s:subterm-deriv subterms))]
+         (loops (map s:subterm-deriv
+                     (filter s:subterm? subterms)))]
 
         [(AnyQ lderiv (_ _ derivs))
          (loops derivs)]
