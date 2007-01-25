@@ -3446,7 +3446,8 @@ static void ensure_closure_native(Scheme_Closure_Data *data,
 }
 
 static int generate_closure(Scheme_Closure_Data *data, 
-			    mz_jit_state *jitter)
+			    mz_jit_state *jitter,
+                            int immediately_filled)
 {
   Scheme_Native_Closure_Data *code;
   int retptr;
@@ -3465,7 +3466,11 @@ static int generate_closure(Scheme_Closure_Data *data,
     jit_movi_l(JIT_R0, sz);
     mz_prepare(1);
     jit_pusharg_l(JIT_R0);
-    (void)mz_finish(GC_malloc_one_small_dirty_tagged);
+    if (immediately_filled) {
+      (void)mz_finish(GC_malloc_one_small_dirty_tagged);
+    } else {
+      (void)mz_finish(GC_malloc_one_small_tagged);
+    }
     jit_retval(JIT_R0);
     retptr = mz_retain(code);
     init_word = *(long *)&example_so;
@@ -3593,7 +3598,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter)
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
     data = (Scheme_Closure_Data *)o;
     mz_pushr_p(JIT_R1);
-    generate_closure(data, jitter);
+    generate_closure(data, jitter, 1);
     CHECK_LIMIT();
     generate_closure_fill(data, jitter);
     CHECK_LIMIT();
@@ -4281,7 +4286,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       LOG_IT(("lambda\n"));
       
       /* Allocate closure */
-      generate_closure(data, jitter);
+      generate_closure(data, jitter, 1);
       CHECK_LIMIT();
 
       generate_closure_fill(data, jitter);
@@ -4417,7 +4422,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       /* Create unfinished closures */
       for (i = 0; i < l->count; i++) {
 	((Scheme_Closure_Data *)l->procs[i])->context = (Scheme_Object *)l;
-	generate_closure((Scheme_Closure_Data *)l->procs[i], jitter);
+	generate_closure((Scheme_Closure_Data *)l->procs[i], jitter, i + 1 == l->count);
 	CHECK_LIMIT();
 	jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_R0);
       }

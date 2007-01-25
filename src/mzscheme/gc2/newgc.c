@@ -2033,7 +2033,7 @@ void GC_mark(const void *const_p)
 	     btc_mark is right */
 	  set_btc_mark(NUM(page) + HEADER_SIZEB);
 	}
-	
+
 	page->marked_on = 1;
 	record_backtrace(page, PTR(NUM(page) + HEADER_SIZEB));
 	GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
