@@ -44,15 +44,13 @@
     (syntax-rules ()
       [(with-new-local-context e . body)
        (parameterize ([big-context
-                       (cons (cons (current-derivation)
-                                   (cons (list e)
-                                         (context)))
+                       (cons (make-bigframe (current-derivation) (context) (list e) e)
                              (big-context))]
                       [context null])
          . body)]))
-  
+
   ;; -----------------------------------
-  
+
   ;; CC
   ;; the context constructor
   (define-syntax (CC stx)
@@ -66,7 +64,7 @@
     (syntax-rules ()
       [(R form pattern . clauses)
        (R** #f _ [#:set-syntax form] [#:pattern pattern] . clauses)]))
-  
+
   (define-syntax (R** stx)
     (syntax-case stx (! @ List Block =>)
       [(R** form-var pattern)

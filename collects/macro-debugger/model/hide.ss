@@ -1,20 +1,24 @@
 
 (module hide mzscheme
   (require (lib "plt-match.ss")
+           (lib "unit.ss")
            (lib "list.ss")
            "deriv.ss"
            "deriv-util.ss"
            "synth-engine.ss"
            "stx-util.ss"
            "context.ss")
-  (provide (all-defined))
-  
-  #;
+
   (provide hide/policy
-           hide
-           #;seek/syntax
+           seek/syntax
            macro-policy
-           current-hiding-warning-handler)
+           current-hiding-warning-handler
+           (struct nonlinearity (message paths))
+           (struct localactions ()))
+
+  (define-signature hide^ (hide))
+  (define-signature seek^ (seek/deriv seek subterm-derivations))
+  (define-signature seek-syntax^ (seek/syntax))
 
   ;; hide/policy : Derivation (identifier -> boolean) -> (values Derivation syntax)
   (define (hide/policy deriv show-macro?)
@@ -87,6 +91,11 @@
 ;   -$   @-    ++   -@- $@-  @+  - 
 ;   -$   @-    ++    +@@+@-  -@@@@-
 
+  (define hide@
+    (unit 
+     (import seek^)
+     (export hide^)
+  
   ;; Macro hiding:
   ;; The derivation is "visible" or "active" by default, 
   ;; but pieces of it may need to be hidden.
@@ -444,7 +453,7 @@
         [#f (values #f #f)]))
 
     (for-deriv deriv))
-
+  ))
 
 ;    -@@@$                  -$     
 ;    @*  -                  -$     
@@ -457,27 +466,15 @@
 ;    +- +@   @+  -   @+  -  -$  +@ 
 ;   -@@@@-   -@@@@-  -@@@@- -$   $+
 
+  (define seek@
+    (unit
+     (import hide^)
+     (export seek^)
+
   ;; Seek:
   ;; The derivation is "inactive" or "hidden" by default,
   ;; but pieces of it can become visible if they correspond to subterms
   ;; of the hidden syntax.
-
-  ;; seek/syntax : syntax Derivation -> (union (cons Derivation Derivation) #f)
-  ;; Seeks for derivations of *exactly* the given syntax (not a subterm)
-  ;; Does track the syntax through renaming, however.
-  ;; Returns the whole derivation followed by the subterm derivation.
-  ;; If there is no subderivation for that syntax, returns #f.
-  #;
-  (define (seek/syntax stx deriv)
-    (let ([subterms (gather-one-subterm (deriv-e1 deriv) stx)])
-      (parameterize ((subterms-table subterms))
-        (let ([subderivs (subterm-derivations deriv)])
-          (unless (and (pair? subderivs) (null? (cdr subderivs)))
-            (error 'seek/syntax "nonlinear subterm derivations"))
-          (if (pair? subderivs)
-              (values (create-synth-deriv (deriv-e1 deriv) subderivs)
-                      (s:subterm-deriv (car subderivs)))
-              #f)))))
 
   ;; seek/deriv : Derivation -> (values Derivation syntax)
   ;; Seeks for derivations of all proper subterms of the derivation's
@@ -714,6 +711,77 @@
 
     (for-deriv d))
 
+  ))
+
+  (define-values/invoke-unit
+    (compound-unit
+     (import)
+     (export HIDE SEEK)
+     (link [((HIDE : hide^)) hide@ SEEK]
+           [((SEEK : seek^)) seek@ HIDE]))
+    (import)
+    (export hide^ seek^))
+
+
+  (define trivial-hide@
+    (unit
+     (import)
+     (export hide^)
+     
+     (define (hide d)
+       (values d (lift/deriv-e2 d)))))
+
+  (define seek-syntax@
+    (unit
+     (import seek^)
+     (export seek-syntax^)
+     
+     ;; seek/syntax : syntax Derivation -> (listof Derivation)
+     ;; Seeks for derivations of *exactly* the given syntax (not a subterm)
+     ;; Does track the syntax through renaming, however.
+     (define (seek/syntax stx deriv)
+       (let ([subterms (gather-one-subterm (deriv-e1 deriv) stx)])
+         (parameterize ((subterms-table subterms))
+           (let ([subderivs (subterm-derivations deriv)])
+             (map s:subterm-deriv (filter s:subterm? subderivs))))))))
+
+  (define-values/invoke-unit
+    (compound-unit
+     (import)
+     (export SEEK-SYNTAX)
+     (link [((HIDE : hide^)) trivial-hide@]
+           [((SEEK : seek^)) seek@ HIDE]
+           [((SEEK-SYNTAX : seek-syntax^)) seek-syntax@ SEEK]))
+    (import)
+    (export seek-syntax^))
+
+
+;                     +###+                                       
+;  +@@  +@@:             @+                                       
+;   @+   @+              @+                                       
+;   @+   @+              @+                                       
+;   @+   @+   +###+      @+   :@@ +@+    +###+  :@$$ +@#  -+###+: 
+;   @+   @+  +#:  #+     @+    +@+**@+  +#:  #+  :+@++*@  #+   ++ 
+;   @@###@+  #+   +#     @+    +@:  +#  #+   +#   +@:  +  @+   :: 
+;   @+   @+  @@###@#     @+    +@   +@  @@###@#   +@      +@#++   
+;   @+   @+  @+          @+    +@   +@  @+        +@        ++#@+ 
+;   @+   @+  #+          @+    +@   ++  #+        +@      +    +@ 
+;   @+   @+  :@+- :+     @+    +@- +@*  :@+- :+   +@      @:   ++ 
+;  +@#  +@#-  :+@@#+  +##@@##  +@$$#+    :+@@#+ :#@@##+   +#@##+  
+;                              +@                                 
+;                              +@                                 
+;                             :###+                               
+
+  ;; show-macro? : identifier -> boolean
+  (define (show-macro? id)
+    ((macro-policy) id))
+  
+  ;; show-mrule? : MRule -> boolean
+  (define (show-transformation? tx)
+    (match tx
+      [(AnyQ transformation (e1 e2 rs me1 me2 locals _seq))
+       (ormap show-macro? rs)]))
+  
 
   ;; check-nonlinear-subterms : (list-of Subterm) -> void
   ;; FIXME: No checking on renamings... need to add
@@ -827,34 +895,6 @@
       (loop stx0 null)
       table))
 
-
-
-;                     +###+                                       
-;  +@@  +@@:             @+                                       
-;   @+   @+              @+                                       
-;   @+   @+              @+                                       
-;   @+   @+   +###+      @+   :@@ +@+    +###+  :@$$ +@#  -+###+: 
-;   @+   @+  +#:  #+     @+    +@+**@+  +#:  #+  :+@++*@  #+   ++ 
-;   @@###@+  #+   +#     @+    +@:  +#  #+   +#   +@:  +  @+   :: 
-;   @+   @+  @@###@#     @+    +@   +@  @@###@#   +@      +@#++   
-;   @+   @+  @+          @+    +@   +@  @+        +@        ++#@+ 
-;   @+   @+  #+          @+    +@   ++  #+        +@      +    +@ 
-;   @+   @+  :@+- :+     @+    +@- +@*  :@+- :+   +@      @:   ++ 
-;  +@#  +@#-  :+@@#+  +##@@##  +@$$#+    :+@@#+ :#@@##+   +#@##+  
-;                              +@                                 
-;                              +@                                 
-;                             :###+                               
-
-  ;; show-macro? : identifier -> boolean
-  (define (show-macro? id)
-    ((macro-policy) id))
-  
-  ;; show-mrule? : MRule -> boolean
-  (define (show-transformation? tx)
-    (match tx
-      [(AnyQ transformation (e1 e2 rs me1 me2 locals _seq))
-       (ormap show-macro? rs)]))
-  
   (define (map/2values f items)
     (if (null? items)
         (values null null)

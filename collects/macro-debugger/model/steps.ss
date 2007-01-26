@@ -5,13 +5,14 @@
   ;; A ReductionSequence is a (list-of Reduction)
 
   ;; A ProtoStep is (make-protostep Derivation BigContext StepType Context)
-  
+
   ;; A Context is a list of Frames
   ;; A Frame is (syntax -> syntax)
 
-  ;; A BigContext is (list-of (cons Derivation (cons Syntaxes Syntax)))
-  ;;   local expansion contexts: deriv, foci, term
-  
+  ;; A BigContext is (list-of BigFrame)
+  ;; A BigFrame is (make-bigframe Derivation Context Syntaxes Syntax)
+  (define-struct bigframe (deriv ctx foci e))
+
   ;; A Reduction is one of 
   ;;   - (make-step ... Syntaxes Syntaxes Syntax Syntax)
   ;;   - (make-misstep ... Syntax Syntax Exception)
@@ -36,6 +37,9 @@
   (define (misstep-term1 s)
     (context-fill (protostep-ctx s) (misstep-e1 s)))
 
+  (define (bigframe-term bf)
+    (context-fill (bigframe-ctx bf) (bigframe-e bf)))
+  
   ;; A StepType is a simple in the following alist.
 
   (define step-type-meanings

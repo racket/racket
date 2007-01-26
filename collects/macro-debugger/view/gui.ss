@@ -326,11 +326,11 @@
           (define nav:down
             (new button% (label "Next term") (parent navigator) (style '(deleted))
                  (callback (lambda (b e) (navigate-down)))))
-          #;
+
           (define nav:zoom
             (new button% (label "Zoom in") (parent extra-navigator)
                  (callback (lambda (b e) (zoom)))))
-          #;
+
           (define nav:jump-to
             (new button% (label "Jump to") (parent extra-navigator)
                  (callback (lambda (b e) (jump-to)))))
@@ -378,14 +378,13 @@
             (refresh/move/cached-prefix))
 
           ;; FIXME: selected stx must be in term1; doesn't work in term2
-          #;
           (define/private (zoom)
             (let* ([selected-syntax (send sbc get-selected-syntax)]
                    [step (and steps (cursor:current steps))]
                    [deriv (and step (protostep-deriv step))])
               (when (and selected-syntax deriv)
                 (for-each go/deriv (seek/syntax selected-syntax deriv)))))
-          #;
+
           (define/public (jump-to)
             (let* ([selected-syntax (send sbc get-selected-syntax)]
                    [step (and steps (cursor:current steps))]
@@ -400,7 +399,7 @@
                         [else
                          (message-box "Macro stepper - Jump to"
                                       "Subterm occurs non-linearly in the expansion")])))))
-          #;
+
           (define/private (jump-to/deriv subderiv)
             (define all-step-derivs
               (let ([ht (make-hash-table)])
@@ -408,6 +407,8 @@
                           (cursor-suffix->list steps))
                 ht))
             (define target-deriv
+              subderiv
+              #;
               (find-deriv
                (lambda (d) (hash-table-get all-step-derivs d (lambda () #f)))
                (lambda (d) #f)
@@ -475,10 +476,10 @@
           
           (define/private (update:show-lctx lctx)
             (when (pair? lctx)
-              (for-each (lambda (bc)
+              (for-each (lambda (bf)
                           (send sbview add-text 
                                 "While executing macro transformer in:\n")
-                          (insert-syntax/redex (cddr bc) (cadr bc)))
+                          (insert-syntax/redex (bigframe-term bf) (bigframe-foci bf)))
                         lctx)
               (send sbview add-text "\n")))
 
@@ -491,7 +492,7 @@
           (define/private (update:separator/small step)
             (insert-step-separator/small
              (step-type->string (protostep-type step))))
-          
+
           (define/private (update:show-step step)
             (update:show-protostep step)
             (insert-syntax/redex (step-term1 step) (step-foci1 step))
