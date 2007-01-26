@@ -63,7 +63,9 @@
         #:to-be-copied-module-specs
         '((lib "md5.ss"    "handin-server" "private")
           (lib "logger.ss" "handin-server" "private")
-          (lib "config.ss" "handin-server" "private")))))
+          (lib "config.ss" "handin-server" "private")
+          (lib "hooker.ss" "handin-server" "private")
+          (lib "reloadable.ss" "handin-server" "private")))))
 
     (define-unit-binding config@ configuration (import) (export web-config^))
     (define-unit-binding ssl-tcp@

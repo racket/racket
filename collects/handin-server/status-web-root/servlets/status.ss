@@ -8,7 +8,8 @@
            (lib "uri-codec.ss" "net")
            (lib "md5.ss"    "handin-server" "private")
            (lib "logger.ss" "handin-server" "private")
-           (lib "config.ss" "handin-server" "private"))
+           (lib "config.ss" "handin-server" "private")
+           (lib "hooker.ss" "handin-server" "private"))
 
   (define get-user-data
     (let ([users-file (build-path server-dir "users.ss")])
@@ -185,6 +186,7 @@
           (check file `(#rx"^solution" *) #f)
           (error "Boom!"))
       (log-line "Status file-get: ~s ~a" who file)
+      (hook 'status-file-get `([username ,(string->symbol who)] [file ,file]))
       ;; Return the downloaded file
       (let* ([data (with-input-from-file file
                      (lambda () (read-bytes (file-size file))))]
@@ -204,6 +206,7 @@
 
   (define (status-page user for-handin)
     (log-line "Status access: ~s" user)
+    (hook 'status-login `([username ,(string->symbol user)]))
     (if for-handin
       (one-status-page user for-handin)
       (all-status-page user)))

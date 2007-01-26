@@ -11,6 +11,8 @@
            "private/lock.ss"
            "private/md5.ss"
            "private/run-status.ss"
+           "private/reloadable.ss"
+           "private/hooker.ss"
            "web-status-server.ss")
 
   (install-logger-port)
@@ -163,6 +165,7 @@
     (unless (member assignment assignments)
       (error* "not an active assignment: ~a" assignment))
     (log-line "assignment for ~a: ~a" users assignment)
+    (hook 'submission-received `([usernames ,users] [assignment ,assignment]))
     (write+flush w 'ok)
     (set! len (read r-safe))
     (unless (and (number? len) (integer? len) (positive? len))
@@ -216,7 +219,9 @@
           (let* ([checker* (path->complete-path (build-path 'up "checker.ss"))]
                  [checker* (and (file-exists? checker*)
                                 (parameterize ([current-directory server-dir])
-                                  (dynamic-require checker* 'checker)))])
+                                  (auto-reload-value
+                                   `(file ,(path->string checker*))
+                                   'checker)))])
             (define-values (pre checker post)
               (cond [(not checker*) (values #f #f #f)]
                     [(procedure? checker*) (values #f checker* #f)]
@@ -257,6 +262,8 @@
                     ;;  no SUCCESS-0:
                     (make-success-dir-available 0)
                     (rename-file-or-directory ATTEMPT-DIR (success-dir 0))
+                    (hook 'submission-committed
+                          `([usernames ,users] [assignment ,assignment]))
                     (when post
                       (parameterize ([current-directory (success-dir 0)])
                         (post users s))))
@@ -299,7 +306,9 @@
           (write+flush w len)
           (display "$" w)
           (display (with-input-from-file file (lambda () (read-bytes len))) w)
-          (flush-output w))
+          (flush-output w)
+          (hook 'submission-retrieved
+                `([usernames ,users] [assignment ,assignment])))
         (error* "no ~a submission file found for ~a" assignment users))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -369,6 +378,7 @@
               extra-fields (get-conf 'extra-fields))
     (wait-for-lock "+newuser+")
     (log-line "create user: ~a" username)
+    (hook 'user-create `([username ,username] [fields ,extra-fields]))
     (put-user-data username (cons passwd extra-fields)))
 
   (define (change-user-info data)
@@ -381,19 +391,24 @@
       (error* "cannot change a password for multiple users: ~a" usernames))
     ;; the new data is the same as the old one for every empty string (includes
     ;; hidden fields)
-    (let ([new-data (map (lambda (old new) (if (equal? "" new) old new))
-                         (car user-datas) (cons passwd extra-fields))])
+    (let* ([username (car usernames)]
+           [old-data (car user-datas)]
+           [new-data (map (lambda (old new) (if (equal? "" new) old new))
+                          old-data (cons passwd extra-fields))])
       (unless (or (get-conf 'allow-change-info)
-                  (equal? (cdr new-data) (cdar user-datas)))
-        (error* "changing information not allowed: ~a" (car usernames)))
-      (when (equal? new-data (car user-datas))
-        (error* "no fields changed: ~a" (car usernames)))
+                  (equal? (cdr new-data) (cdr old-data)))
+        (error* "changing information not allowed: ~a" username))
+      (when (equal? new-data old-data)
+        (error* "no fields changed: ~a" username))
       (for-each (lambda (str info)
                   (check-field str (cadr info) (car info) (caddr info)))
                 (cdr new-data) (get-conf 'extra-fields))
-      (log-line "change info for ~a ~s -> ~s"
-                (car usernames) (car user-datas) new-data)
-      (put-user-data (car usernames) new-data)))
+      (log-line "change info for ~a ~s -> ~s" username old-data new-data)
+      (unless (equal? (cdr new-data) (cdr old-data)) ; not for password change
+        (hook 'user-change `([username ,username]
+                             [old ,(cdr old-data)]
+                             [new ,(cdr new-data)])))
+      (put-user-data username new-data)))
 
   (define (get-user-info data)
     (define usernames  (a-ref data 'usernames))
@@ -506,7 +521,8 @@
              (log-line "failed login: ~a" (a-ref data 'username/s))
              (error* "bad username or password for ~a"
                      (a-ref data 'username/s)))
-           (log-line "login: ~a" usernames))
+           (log-line "login: ~a" usernames)
+           (hook 'login `([usernames ,usernames])))
          (case msg
            [(change-user-info) (change-user-info data)]
            [(save-submission) (accept-specific-submission data r r-safe w)]
@@ -606,6 +622,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (log-line "server started ------------------------------")
+  (hook 'server-start `([port ,(get-conf 'port-number)]))
 
   (define stop-status (serve-status (get-conf 'https-port-number)))
 
@@ -622,7 +639,8 @@
                        (begin (set! session-count (add1 session-count))
                               session-count)])
          (let-values ([(here there) (ssl-addresses r)])
-           (log-line "connect from ~a" there))
+           (log-line "connect from ~a" there)
+           (hook 'server-connect `([from ,there])))
          (with-watcher
           w
           (lambda (kill-watcher)

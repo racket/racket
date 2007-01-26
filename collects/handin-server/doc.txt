@@ -297,6 +297,40 @@ This directory contains the following files and sub-directories:
          information.  (The third element for such descriptors is
          ignored.)
 
+      'hook-file : a path (relative to handin server directory or
+         absolute) that specifies a filename that contains a `hook'
+         module.  This is useful as a general device for customizing
+         the server through Scheme code.  The file is expected to
+         contain a module that provides a `hook' function, which
+         should be receiving three arguments:
+         - a symbol that indicates the operation that is now taking
+           place;
+         - a datum that specifies the connection context (a number for
+           handin connections, a `wN' symbol for servlet connections,
+           and #f for other server operations);
+         - an alist of information relevant to this operation.
+         Currently, the hook is used in several places after an
+         operation has completed.  The first argument will be one of
+         these symbols: 'server-start, 'server-connect, 'user-create,
+         'user-change, 'login, 'submission-received,
+         'submission-committed, 'submission-retrieved, 'status-login,
+         'status-file-get.  For example, here is a simple hook module
+         that sends notification messages when users are created or
+         their information has changed:
+
+           (module hook mzscheme
+             (provide hook)
+             (require (lib "sendmail.ss" "net"))
+             (define (hook what session alist)
+               (when (memq what '(user-create user-change))
+                 (send-mail-message
+                  "course-staff@university.edu"
+                  (format "[server] ~a (~a)" what session)
+                  '("course-staff@university.edu") '() '()
+                  (map (lambda (key+val)
+                         (apply format "~a: ~s" key+val))
+                       alist)))))
+
     Changes to "config.ss" are detected, the file will be re-read, and
     options are reloaded.  A few options are fixed at startup time:
     port numbers, log file specs, and the `web-base-dir' are as
@@ -438,14 +472,18 @@ This directory contains the following files and sub-directories:
     web server.
 
   * "<active-assignment>/checker.ss" (optional) --- a module that
-    exports a `checker' function.  This function receives two strings.
-    The first is a username list and the second is the submission as a
-    byte string.  (See also `unpack-submission', etc. from "util.ss",
-    below.)  To reject the submission, the `checker' function can
-    raise an exception; the exception message will be relayed back to
-    the student.  The module is loaded when the current directory is
-    the main server directory, so it can read information from
-    "config.ss".
+    exports a `checker' function.  This function receives two
+    arguments: a username list and a submission as a byte string.
+    (See also `unpack-submission', etc. from "util.ss", below.)  To
+    reject the submission, the `checker' function can raise an
+    exception; the exception message will be relayed back to the
+    student.  The module is loaded when the current directory is the
+    main server directory, so it can read files from there (but note
+    that to read values from "config.ss" it is better to use
+    `get-conf').  Also, the module will be reloaded if the checker
+    file is modified -- no need to restart the server, but make sure
+    that you do not save a broken checker (ie, do not save in
+    mid-edit).
 
     The first argument is a list of usernames with at least one
     username, and more than one if this is a joint submission (where
@@ -523,10 +561,9 @@ related crashes.
 
 The server currently provides no mechanism for a graceful shutdown,
 but terminating the server is no worse than a network outage.  (In
-particular, no data should be lost.)  To reconfigure the server (e.g.,
-to change a checker module), stop it and restart it.  (Changing the
-configuration file is detected, and options are reloaded, so no
-restart is needed for that.)
+particular, no data should be lost.)  The server reloads the
+configuration file, checker modules etc, so there should not be any
+need to restart it for reconfigurations.
 
 The client and server are designed to be robust against network
 problems and timeouts.  The client-side tool always provides a
