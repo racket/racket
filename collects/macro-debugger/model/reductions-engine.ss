@@ -195,7 +195,7 @@
   ;; stumble/E : syntax(s) syntax exn -> Reduction
   (define (stumble/E focus Ee1 exn)
     (make-misstep (current-derivation) (big-context) 'error (context)
-                  focus Ee1 exn))
+                  (foci focus) Ee1 exn))
   
   ;; ------------------------------------
   
