@@ -21,10 +21,10 @@
       (init-field typesetter)
       (init-field (primary-partition #f))
       (init-field (columns (current-default-columns)))
-      
+
       (unless (syntax? main-stx)
-        (error 'syntax-snip% "got non-syntax object: ~s" main-stx))
-      
+        (error 'syntax-pretty-printer "got non-syntax object: ~s" main-stx))
+
       (define datum #f)
       (define ht:flat=>stx #f)
       (define ht:stx=>flat #f)
