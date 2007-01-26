@@ -28,7 +28,6 @@ class wxTimer: public wxbTimer
  void *context;
  double expiration;
  int one_shot;
- int interval;
  wxTimer *prev, *next;
 #endif
   wxTimer(void *ctx = NULL);

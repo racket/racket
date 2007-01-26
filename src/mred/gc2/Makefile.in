@@ -1405,6 +1405,7 @@ XSRC_EXTRA_DIR_wx_mac = macxsrc
 gen-deps:
 	../../mzscheme/mzscheme@MMM@ -qr "$(srcdir)/gen-deps.ss"
 
+@INCLUDEDEP@ mred.dd
 @INCLUDEDEP@ wb_item.dd
 @INCLUDEDEP@ wb_panel.dd
 @INCLUDEDEP@ wb_timer.dd
