@@ -1781,7 +1781,7 @@
                      (parse-statement 
                       cur-tok
                       (parse-expression cur-tok 
-                                        (parse-expression cur-tok next-tok 'start getter #f #t)
+                                        (parse-expression cur-tok next-tok 'start getter #f #f)
                                         'method-args getter #f #t)
                       'end-exp getter id-ok? ctor? super-seen?))))
                 (parse-statement cur-tok (parse-expression pre cur-tok 'method-call-args getter #f #t)
@@ -2532,7 +2532,7 @@
                    (if (and statement-ok? (or (advanced?) (intermediate?) (semi-colon? (get-tok after-c))))
                        (getter)
                        (parse-expression next-tok after-c 'dot-op-or-end getter statement-ok? stmt-exp?))))
-                (else (parse-expression cur-tok (parse-expression cur-tok next-tok 'start getter #f stmt-exp?)
+                (else (parse-expression cur-tok (parse-expression cur-tok next-tok 'start getter #f #f)
                                         'method-args getter statement-ok? stmt-exp?)))))
            (else (parse-error (format "Expected method arguments in parens, found ~a" out) start end))))
         ((method-args)
