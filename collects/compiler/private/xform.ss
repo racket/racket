@@ -801,6 +801,11 @@
         
         (define re:_stk_ (regexp "^_stk_"))
         
+        ;; These don't act like functions, but we need to treat them
+        ;;  specially:
+        (define setjmp-functions
+          '(setjmp _setjmp scheme_setjmp scheme_mz_setjmp))
+        
         ;; The non-functions table identifies symbols to ignore when
         ;; finding function calls
         (define non-functions
@@ -810,11 +815,11 @@
                return sizeof if for while else switch case
                asm __asm __asm__ __volatile __volatile__ volatile __extension__
                __typeof
-               
+
                ;; These don't act like functions:
-               setjmp longjmp _setjmp _longjmp scheme_setjmp scheme_longjmp scheme_mz_setjmp scheme_mz_longjmp
-	       scheme_jit_longjmp scheme_jit_setjmp_prepare
-               
+               setjmp longjmp _longjmp scheme_longjmp_setjmp scheme_mz_longjmp scheme_jit_longjmp
+               scheme_jit_setjmp_prepare
+
                ;; The following are functions, but they don't trigger GC, and
                ;; they either take one argument or no pointer arguments.
                ;; So we can ignore them:
@@ -826,7 +831,7 @@
                fread fwrite socket fcntl setsockopt connect send recv close
                __builtin_next_arg __builtin_saveregs 
                __builtin_constant_p __builtin_memset
-	       __builtin___CFStringMakeConstantString
+               __builtin___CFStringMakeConstantString
                __error __errno_location __toupper __tolower
                __attribute__ __mode__ ; not really functions in gcc
                __iob_func ; VC 8
@@ -834,9 +839,9 @@
                scheme_rational_to_double scheme_bignum_to_double
                scheme_rational_to_float scheme_bignum_to_float
                |GetStdHandle| |__CFStringMakeConstantString|
-		_vswprintf_c
+               _vswprintf_c
                
-		scheme_make_small_bignum scheme_make_small_rational scheme_make_small_complex))
+               scheme_make_small_bignum scheme_make_small_rational scheme_make_small_complex))
         (define non-functions-table
           (let ([ht (make-hash-table)])
             (for-each (lambda (s)
@@ -3316,9 +3321,12 @@
                                          (live-var-info-nonempty-calls? live-vars)))])
 			  (let ([non-gcing-call?
 				 (and (null? (cdr func))
-				      (hash-table-get non-gcing-functions (tok-n (car func)) (lambda () #f)))])
+				      (hash-table-get non-gcing-functions (tok-n (car func)) (lambda () #f)))]
+                                [setjmp-call?
+                                 (memq (tok-n (car func)) setjmp-functions)])
 			    (loop rest-
-				  (let ([call (if non-gcing-call?
+				  (let ([call (if (or non-gcing-call?
+                                                      setjmp-call?)
 						  ;; Call without pointer pushes
 						  (make-parens
 						   "(" #f #f ")"
@@ -3360,13 +3368,13 @@
 									     (filter (lambda (x) (not (assq (car x) old-pushed))) 
 										     pushed-vars))])
 							(append new-pushed old-pushed))
-						      (+ (if non-gcing-call? 0 1)
+						      (+ (if (or non-gcing-call? setjmp-call?) 0 1)
 							 (live-var-info-num-calls live-vars))
-						      (+ (if non-gcing-call? 0 (if non-returning? 1 0))
+						      (+ (if (or non-gcing-call? setjmp-call?) 0 (if non-returning? 1 0))
 							 (live-var-info-num-noreturn-calls live-vars))
-						      (+ (if (or non-gcing-call? non-returning?) 0 (if this-nonempty? 0 1))
+						      (+ (if (or non-gcing-call? non-returning? setjmp-call?) 0 (if this-nonempty? 0 1))
 							 (live-var-info-num-empty-calls live-vars))
-						      (or (and this-nonempty? (not non-gcing-call?))
+						      (or (and this-nonempty? (not (or non-gcing-call? setjmp-call?)))
 							  (live-var-info-nonempty-calls? live-vars)))
 				  (or converted-sub?
 				      (null? rest-)
