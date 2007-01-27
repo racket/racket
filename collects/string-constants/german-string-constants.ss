@@ -1024,15 +1024,16 @@
  (stepper-program-has-changed "WARNUNG: Das Programm wurde geändert.")
  (stepper-program-window-closed "WARNUNG: Das Programm-Fenster ist nicht mehr da.")
 
- (stepper-home "Anfang")
  (stepper-name "Stepper")
  (stepper-language-level-message
   "Die aktuelle Sprachebene ist \"~a\". Der Stepper funktioniert bisher nur für die Ebenen\"~a\" bis \"~a\".")
  (stepper-button-label "Stepper")
+ (stepper-home "Anfang")
  (stepper-previous-application "|< Applikation")
  (stepper-previous "< Schritt")
  (stepper-next "Schritt >")
  (stepper-next-application "Applikation >|")
+ (stepper-jump-to-end "Ende")
  
  (debug-tool-button-name "Debugger")
 
