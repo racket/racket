@@ -1538,7 +1538,7 @@ extern void *scheme_malloc_envunbox(size_t);
 
 
 #ifdef MZ_PRECISE_GC
-# define MZ_GC_DECL_REG(size) void *__gc_var_stack__[size+2] = { 0, size };
+# define MZ_GC_DECL_REG(size) void *__gc_var_stack__[size+2] = { (void *)0, (void *)size };
 # define MZ_GC_VAR_IN_REG(x, v) (__gc_var_stack__[x+2] = (void *)&(v))
 # define MZ_GC_ARRAY_VAR_IN_REG(x, v, l) (__gc_var_stack__[x+2] = (void *)0, \
                                           __gc_var_stack__[x+3] = (void *)&(v), \
@@ -1546,7 +1546,7 @@ extern void *scheme_malloc_envunbox(size_t);
 # define MZ_GC_NO_VAR_IN_REG(x) (__gc_var_stack__[x+2] = NULL)
 # define MZ_GC_REG()  (__gc_var_stack__[0] = GC_variable_stack, \
                        GC_variable_stack = __gc_var_stack__)
-# define MZ_GC_UNREG() (GC_variable_stack = __gc_var_stack__[0])
+# define MZ_GC_UNREG() (GC_variable_stack = (void **)__gc_var_stack__[0])
 #else
 # define MZ_GC_DECL_REG(size)            /* empty */
 # define MZ_GC_VAR_IN_REG(x, v)          /* empty */
