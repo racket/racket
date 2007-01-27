@@ -200,31 +200,19 @@ static int rational_lt(const Scheme_Object *a, const Scheme_Object *b, int or_eq
   Scheme_Rational *rb = (Scheme_Rational *)b;
   Scheme_Object *ma, *mb;
 
-#if 0
-  /* Avoid multiplication in simple cases: */
-  if (scheme_bin_lt_eq(ra->num, rb->num)
-      && scheme_bin_gt_eq(ra->denom, rb->denom)) {
-    if (!or_eq) {
-      if (scheme_rational_eq(a, b))
-        return 0;
-    }
-    return 1;
-  } else 
-#endif
-    if (or_eq) {
-    if (scheme_rational_eq(a, b))
-      return 1;
-  }
-
-  /* Checking only for lt at this point */
-
   ma = scheme_bin_mult(ra->num, rb->denom);
   mb = scheme_bin_mult(rb->num, ra->denom);
 
   if (SCHEME_INTP(ma) && SCHEME_INTP(mb)) {
-    return (SCHEME_INT_VAL(ma) < SCHEME_INT_VAL(mb));
+    if (or_eq)
+      return (SCHEME_INT_VAL(ma) <= SCHEME_INT_VAL(mb));
+    else
+      return (SCHEME_INT_VAL(ma) < SCHEME_INT_VAL(mb));
   } else if (SCHEME_BIGNUMP(ma) && SCHEME_BIGNUMP(mb)) {
-    return scheme_bignum_lt(ma, mb);
+    if (or_eq)
+      return scheme_bignum_le(ma, mb);
+    else
+      return scheme_bignum_lt(ma, mb);
   } else if (SCHEME_BIGNUMP(mb)) {
     return SCHEME_BIGPOS(mb);
   } else

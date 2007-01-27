@@ -193,6 +193,7 @@
   
 (test-compare 0.5 1.2 2.3)
 (test-compare 2/5 1/2 2/3)
+(test-compare 1/4 1/3 1/2)
 (test #t = 1/2 2/4)
 (test #f = 2/3 2/5)
 (test #f = 2/3 2/500000000000000000000000000)

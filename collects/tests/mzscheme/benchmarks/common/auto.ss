@@ -138,10 +138,10 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 extract-mzscheme-times
                 clean-up-nothing
                 '())
-     (make-impl 'mzscheme3m
+     (make-impl 'mzschemecgc
                 mk-mzscheme
                 (lambda (bm)
-                  (system (format "mzscheme3m -qu ~a.ss" bm)))
+                  (system (format "mzschemecgc -qu ~a.ss" bm)))
                 extract-mzscheme-times
                 clean-up-nothing
                 '())
@@ -161,10 +161,10 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 extract-mzscheme-times
                 clean-up-nothing
                 '())
-     (make-impl 'mzscheme3m-tl
+     (make-impl 'mzschemecgc-tl
                 mk-mzscheme-tl
                 (lambda (bm)
-                  (system (format "mzscheme3m -qr compiled/~a.zo" bm)))
+                  (system (format "mzschemecgc -qr compiled/~a.zo" bm)))
                 extract-mzscheme-times
                 clean-up-zo
                 '(nucleic2))
@@ -193,7 +193,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 clean-up-fasl
                 '(maze))))
 
-  (define obsolte-impls '(mzscheme mzscheme-j mzscheme3m-tl mzc))
+  (define obsolte-impls '(mzscheme mzscheme-j mzschemecgc-tl mzc))
 
   (define benchmarks
     '(conform
