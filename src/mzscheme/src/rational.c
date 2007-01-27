@@ -209,11 +209,12 @@ static int rational_lt(const Scheme_Object *a, const Scheme_Object *b, int or_eq
         return 0;
     }
     return 1;
-  } else if (or_eq) {
+  } else 
+#endif
+    if (or_eq) {
     if (scheme_rational_eq(a, b))
       return 1;
   }
-#endif
 
   /* Checking only for lt at this point */
 
