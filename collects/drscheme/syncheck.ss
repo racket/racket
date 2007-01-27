@@ -1561,12 +1561,13 @@ If the namespace does not, they are colored the unbound color.
       (define (add-require-spec require-ht)
         (λ (raw-spec syntax)
           (when (syntax-original? syntax)
-            (hash-table-put! require-ht
-                             (syntax-object->datum raw-spec)
-                             (cons syntax
-                                   (hash-table-get require-ht
-                                                   (syntax-object->datum raw-spec)
-                                                   (λ () '())))))))
+            (let ([key (syntax-object->datum raw-spec)])
+              (hash-table-put! require-ht
+                               key
+                               (cons syntax
+                                     (hash-table-get require-ht
+                                                     key
+                                                     (λ () '()))))))))
       
       ;; annotate-unused-require : syntax -> void
       (define (annotate-unused-require req/tag)
@@ -1708,16 +1709,39 @@ If the namespace does not, they are colored the unbound color.
                   (when req-stxes
                     (hash-table-remove! unused req-path)
                     (for-each (λ (req-stx) 
-                                (when id
-                                  (add-jump-to-definition
-                                   var
-                                   id
-                                   (get-require-filename req-path user-namespace user-directory)))
-                                (add-mouse-over var (format (string-constant cs-mouse-over-import)
-                                                            (syntax-e var)
-                                                            req-path))
-                                (connect-syntaxes req-stx var))
+                                (when (id/require-match? (syntax-object->datum var) 
+                                                         id 
+                                                         (syntax-object->datum req-stx))
+                                  (when id
+                                    (add-jump-to-definition
+                                     var
+                                     id
+                                     (get-require-filename req-path user-namespace user-directory)))
+                                  (add-mouse-over var (format (string-constant cs-mouse-over-import)
+                                                              (syntax-e var)
+                                                              req-path))
+                                  (connect-syntaxes req-stx var)))
                               req-stxes))))))))
+      
+      (define (id/require-match? var id req-stx)
+        (cond
+          [(and (pair? req-stx)
+                (eq? (list-ref req-stx 0) 'prefix))
+           (let ([prefix (list-ref req-stx 1)])
+             (equal? (format "~a~a" prefix id)
+                     (symbol->string var)))]
+          [(and (pair? req-stx)
+                (eq? (list-ref req-stx 0) 'prefix-all-except))
+           (let ([prefix (list-ref req-stx 1)])
+             (and (not (memq id (cdddr req-stx)))
+                  (equal? (format "~a~a" prefix id)
+                          (symbol->string var))))]
+          [(and (pair? req-stx)
+                (eq? (list-ref req-stx 0) 'rename))
+           (eq? (list-ref req-stx 2)
+                var)]
+          [else (eq? var id)]))
+          
           
       ;; get-module-req-path : binding -> (union #f (cons require-sexp sym))
       ;; argument is the result of identifier-binding or identifier-transformer-binding
