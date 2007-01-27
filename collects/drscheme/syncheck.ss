@@ -1753,7 +1753,7 @@ If the namespace does not, they are colored the unbound color.
                   (let-values ([(base offset) (module-path-index-split mod-path)])
                     (cons base (list-ref binding 3)))]
                  [(symbol? mod-path)
-                  (cons mod-path #f)]))))
+                  (cons mod-path (list-ref binding 3))]))))
       
       ;; color/connect-top : namespace directory id-set syntax -> void
       (define (color/connect-top rename-ht user-namespace user-directory binders var)
