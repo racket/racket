@@ -930,7 +930,7 @@ MZ_EXTERN Scheme_Object *scheme_make_struct_exptime(Scheme_Object **names, int c
 						    Scheme_Object *super_exptime,
 						    int flags);
 
-MZ_EXTERN int scheme_is_struct_instance(Scheme_Object *type, Scheme_Object *v);
+XFORM_NONGCING MZ_EXTERN int scheme_is_struct_instance(Scheme_Object *type, Scheme_Object *v);
 MZ_EXTERN Scheme_Object *scheme_struct_ref(Scheme_Object *s, int pos);
 MZ_EXTERN void scheme_struct_set(Scheme_Object *s, int pos, Scheme_Object *v);
 

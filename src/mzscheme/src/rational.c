@@ -202,7 +202,7 @@ static int rational_lt(const Scheme_Object *a, const Scheme_Object *b, int or_eq
 
   /* Avoid multiplication in simple cases: */
   if (scheme_bin_lt_eq(ra->num, rb->num)
-      && scheme_bin_gt_eq(ra->num, rb->num)) {
+      && scheme_bin_gt_eq(ra->denom, rb->denom)) {
     if (!or_eq) {
       if (scheme_rational_eq(a, b))
         return 0;
