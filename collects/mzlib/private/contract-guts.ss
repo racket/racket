@@ -193,16 +193,21 @@
   (define (raise-contract-error val src-info blame contract-sexp fmt . args)
     (raise
      (make-exn:fail:contract2
-      ((contract-violation->string)
-       val src-info blame contract-sexp (apply format fmt args))
+      (string->immutable-string
+       ((contract-violation->string) val 
+                                     src-info 
+                                     blame
+                                     contract-sexp 
+                                     (apply format fmt args)))
       (current-continuation-marks)
       (if src-info
-        (list (make-srcloc (syntax-source src-info)
-                           (syntax-line src-info)
-                           (syntax-column src-info)
-                           (syntax-position src-info)
-                           (syntax-span src-info)))
-        '()))))
+          (list (make-srcloc 
+                 (syntax-source src-info)
+                 (syntax-line src-info)
+                 (syntax-column src-info)
+                 (syntax-position src-info)
+                 (syntax-span src-info)))
+          '()))))
   
   (define print-contract-liner
     (let ([default (pretty-print-print-line)])
@@ -308,7 +313,12 @@
       (error 'flat-contract-predicate "expected a flat contract, got ~e" x))
     ((flat-get x) x))
   (define (flat-contract? x) (flat-pred? x))
-  (define (contract-name ctc) ((name-get ctc) ctc))
+  (define (contract-name ctc)
+    (if (and (procedure? ctc)
+             (procedure-arity-includes? ctc 1))
+        (or (object-name ctc)
+            'unknown)
+        ((name-get ctc) ctc)))
   (define (contract? x) (proj-pred? x))
   (define (contract-proc ctc) ((proj-get ctc) ctc))
   
