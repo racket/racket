@@ -254,7 +254,10 @@ TODO
                  ;; give break exn's a free pass on this one.
                  ;; sometimes they get raised in a funny place. 
                  ;; (see call-with-break-parameterization below)
-                 (fprintf (current-error-port) "ACK! didn't find drscheme's stackframe when filtering\n"))
+                 (unless (null? initial-stack)
+                   ;; sometimes, mzscheme just doesn't have any backtrace all. in that case,
+                   ;; don't print anything either.
+                   (fprintf (current-error-port) "ACK! didn't find drscheme's stackframe when filtering\n")))
                initial-stack]
               [else 
                (let ([top (car stack)])
