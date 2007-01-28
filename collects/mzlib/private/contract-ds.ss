@@ -388,7 +388,7 @@ it around flattened out.
                             #,(bind-lifts
                                lifts
                                #`(let-syntax #,(if (opt/info-recf opt/info)
-                                                   (#`[#,(opt/info-recf opt/info) 
+                                                   #`([#,(opt/info-recf opt/info) 
                                                          (lambda (stx)
                                                            (syntax-case stx () 
                                                              [(f val args ((... ...) (... ...)))
