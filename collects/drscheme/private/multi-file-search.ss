@@ -499,11 +499,12 @@
              (cond
                [(null? methods-check-boxess) null]
                [else
-                (let loop ([methods-check-boxes (car methods-check-boxess)])
-                  (cond
-                    [(null? methods-check-boxes) null]
-                    [else (cons (send (car methods-check-boxes) get-value)
-                                (loop (cdr methods-check-boxes)))]))]))))
+                (cons (let loop ([methods-check-boxes (car methods-check-boxess)])
+                        (cond
+                          [(null? methods-check-boxes) null]
+                          [else (cons (send (car methods-check-boxes) get-value)
+                                      (loop (cdr methods-check-boxes)))]))
+                      (loop (cdr methods-check-boxess)))]))))
         
         (define (dir-field-callback)
           (let ([df (send dir-field get-value)])
@@ -651,7 +652,7 @@
                             (process-dir-contents (cdr contents) k)]))]))])
           (λ () (next-thunk))))
       
-      ;; build-flat-file-list : (union #f regexp) string -> (-> (union string #f))
+      ;; build-flat-file-list : path (union #f regexp) -> (-> (union string #f))
       ;; thread: searching thread
       (define (build-flat-file-list dir filter)
         (let ([contents (map (λ (x) (build-path dir x)) (directory-list dir))])
@@ -660,7 +661,7 @@
               (cond
                 [(null? contents)
                  #f]
-                [(and filter (regexp-match filter (car contents)))
+                [(and filter (regexp-match filter (path->string (car contents))))
                  (begin0
                    (car contents)
                    (set! contents (cdr contents)))]
