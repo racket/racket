@@ -1,5 +1,5 @@
 (module config mzscheme
-  (require (lib "file.ss") (lib "list.ss") "logger.ss")
+  (require (lib "file.ss") (lib "list.ss"))
 
   ;; This module should be invoked when we're in the server directory
   (provide server-dir)
@@ -27,10 +27,11 @@
                                         (error 'get-conf
                                                "could not read conf (~a)"
                                                config-file))])
-                  ;; can't use log-line from logger, since it makes a cycle
-                  (fprintf (current-error-port)
-                           (format "(re)loading configuration from ~a"
-                                   config-file))
+                  (when raw-config
+                    ;; can't use log-line from logger, since it makes a cycle
+                    (fprintf (current-error-port)
+                             (format "loading configuration from ~a"
+                                     config-file)))
                   (with-input-from-file config-file read)))
           (set! config-cache (make-hash-table)))))
     (hash-table-get config-cache key
