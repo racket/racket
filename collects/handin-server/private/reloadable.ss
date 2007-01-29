@@ -1,6 +1,6 @@
 (module reloadable mzscheme
 
-  (require (lib "moddep.ss" "syntax"))
+  (require (lib "moddep.ss" "syntax") "logger.ss")
 
   (provide reload-module)
   (define (reload-module modspec path)
@@ -14,6 +14,7 @@
                           "unexpected module name for ~e: ~e" modspec name))]
            [prefix (let-values ([(base name dir?) (split-path name)])
                      (string->symbol (format ",~a" base)))])
+      (log-line "(re)loading module from ~a" modspec)
       (parameterize ([current-module-name-prefix prefix]
                      [compile-enforce-module-constants #f])
         (load/use-compiled path))))
