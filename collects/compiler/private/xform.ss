@@ -853,7 +853,7 @@
           ;; The following don't need wrappers, but we need to check for
           ;;  nested function calls because it takes more than one argument:
           (append
-           '(memcpy memmove
+           '(memcpy memmove memcmp
                     strcmp strcoll strcpy _mzstrcpy strcat memset
                     printf sprintf vsprintf vprintf
                     strncmp
