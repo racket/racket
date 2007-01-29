@@ -30,6 +30,7 @@
       ("regexmatch.ss")
       ("regexpdna.ss")
       ("reversecomplement.ss" #f ,(lambda () (mk-revcomp-input)))
+      ("k-nucleotide.ss" #f ,(lambda () (mk-knuc-input)))
       ("reversefile.ss")
       ("sieve.ss" "1200")
       ("spellcheck.ss")

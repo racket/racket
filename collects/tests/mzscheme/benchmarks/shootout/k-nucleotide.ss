@@ -9,7 +9,7 @@
 # modified by Sokolov Yura
 |#
 
-(module spectralnorm mzscheme
+(module k-nucleotide mzscheme
   (require (lib "list.ss")
            (lib "string.ss")
            (only (lib "13.ss" "srfi") string-pad-right))
