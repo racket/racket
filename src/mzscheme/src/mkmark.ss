@@ -6,6 +6,8 @@
 
 (define re:mark "^ mark:")
 (define re:size "^ size:")
+(define re:size-or-more "^ (?:size|more):")
+(define re:fixup-start "^ fixup:")
 (define re:close "^}")
 
 (define re:const-size (regexp "^[ \t]*gcBYTES_TO_WORDS[(]sizeof[(][A-Za-z0-9_]*[)][)];[ \t]*$"))
@@ -24,7 +26,8 @@
 		    [(regexp-match re:done l)
 		     null]
 		    [(or (regexp-match re:mark l)
-			 (regexp-match re:size l))
+                         (regexp-match re:size-or-more l)
+			 (regexp-match re:fixup-start l))
 		     (error 'mkmark.ss "unexpected label: ~a at ~a" l
 			    (file-position (current-input-port)))]
 		    [(regexp-match re:close l)
@@ -36,7 +39,12 @@
 			  (printf "~a~n" s))
 			l))])
     (let ([prefix (read-lines re:mark)]
-	  [mark (read-lines re:size)]
+	  [mark (read-lines re:size-or-more)]
+	  [fixup (if (regexp-match-peek re:fixup-start (current-input-port))
+                     (begin
+                       (regexp-match re:fixup-start (current-input-port))
+                       (read-lines re:size))
+                     null)]
 	  [size (read-lines re:close)])
       (printf "static int ~a_SIZE(void *p) {~n" name)
       (print-lines prefix)
@@ -69,7 +77,9 @@
 			    s 
 			    "FIXUP")
 			   "\\1"))
-			mark))
+			(append
+                         mark
+                         fixup)))
       (printf "  return~n")
       (print-lines size)
       (printf "}~n~n")

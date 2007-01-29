@@ -440,7 +440,7 @@ static int just_checking, the_size;
 
 #if defined(OS_X)
 # if GENERATIONS
-static void designate_modified(void *p);
+static int designate_modified(void *p);
 # endif
 
 # define TEST 0
@@ -3918,6 +3918,11 @@ void *GC_malloc(size_t size_in_bytes)
 void *GC_malloc_allow_interior(size_t size_in_bytes)
 {
   return malloc_bigblock(size_in_bytes, MTYPE_ARRAY, 1);
+}
+
+void *GC_malloc_tagged_allow_interior(size_t size_in_bytes)
+{
+  return malloc_bigblock(size_in_bytes, MTYPE_TAGGED, 1);
 }
 
 void *GC_malloc_array_tagged(size_t size_in_bytes)

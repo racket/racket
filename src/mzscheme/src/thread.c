@@ -2037,7 +2037,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     process->runstack_size = init_stack_size;
     {
       Scheme_Object **sa;
-      sa = scheme_malloc_allow_interior(sizeof(Scheme_Object*) * init_stack_size);
+      sa = scheme_alloc_runstack(init_stack_size);
       process->runstack_start = sa;
     }
     process->runstack = process->runstack_start + init_stack_size;
@@ -2161,6 +2161,48 @@ void *scheme_tls_get(int pos)
   else
     return p->user_tls[pos];
 }
+
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
+
+Scheme_Object **scheme_alloc_runstack(long len)
+{
+#ifdef MZ_PRECISE_GC
+  long sz;
+  void **p;
+  sz = sizeof(Scheme_Object*) * (len + 4);
+  p = (void **)GC_malloc_tagged_allow_interior(sz);
+  *(Scheme_Type *)(void *)p = scheme_rt_runstack;
+  ((long *)(void *)p)[1] = gcBYTES_TO_WORDS(sz);
+  ((long *)(void *)p)[2] = 0;
+  ((long *)(void *)p)[3] = len;
+  return (Scheme_Object **)(p + 4);
+#else
+  return (Scheme_Object **)scheme_malloc_allow_interior(sizeof(Scheme_Object*) * len);
+#endif
+}
+
+void scheme_set_runstack_limits(Scheme_Object **rs, long len, long start, long end)
+/* With 3m, we can tell the GC not to scan the unused parts, and we
+   can have the fixup function zero out the unused parts; that avoids
+   writing and scanning pages that could be skipped for a minor
+   GC. For CGC, we have to just clear out the unused part. */
+{
+#ifdef MZ_PRECISE_GC
+  if (((long *)(void *)rs)[-2] != start)
+    ((long *)(void *)rs)[-2] = start;
+  if (((long *)(void *)rs)[-1] != end)
+    ((long *)(void *)rs)[-1] = end;
+#else
+  memset(rs, 0, start * sizeof(Scheme_Object *));
+  memset(rs + end, 0, (len - end) * sizeof(Scheme_Object *));
+#endif
+}
+
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
 
 /*========================================================================*/
 /*                     thread creation and swapping                       */
@@ -2371,10 +2413,12 @@ static void remove_thread(Scheme_Thread *r)
   if (r->runstack_owner) {
     /* Drop ownership, if active, and clear the stack */
     if (r == *(r->runstack_owner)) {
-      memset(r->runstack_start, 0, r->runstack_size * sizeof(Scheme_Object*));
-      r->runstack_start = NULL;
+      if (r->runstack_start) {
+        scheme_set_runstack_limits(r->runstack_start, r->runstack_size, 0, 0);
+        r->runstack_start = NULL;
+      }
       for (saved = r->runstack_saved; saved; saved = saved->prev) {
-	memset(saved->runstack_start, 0, saved->runstack_size * sizeof(Scheme_Object*));
+        scheme_set_runstack_limits(saved->runstack_start, saved->runstack_size, 0, 0);
       }
       r->runstack_saved = NULL;
       *(r->runstack_owner) = NULL;
@@ -6596,39 +6640,41 @@ static void prepare_thread_for_GC(Scheme_Object *t)
   /* zero ununsed part of env stack in each thread */
 
   if (!p->nestee) {
-    Scheme_Object **o, **e, **e2;
     Scheme_Saved_Stack *saved;
 # define RUNSTACK_TUNE(x) /* x   - Used for performance tuning */
     RUNSTACK_TUNE( long size; );
 
     if (!p->runstack_owner
 	|| (p == *p->runstack_owner)) {
-      o = p->runstack_start;
-      e = p->runstack;
-      e2 = p->runstack_tmp_keep;
-
-      while (o < e && (o != e2)) {
-	*(o++) = NULL;
-      }
+      long rs_end;
 
       /* If there's a meta-prompt, we can also zero out past the unused part */
       if (p->meta_prompt && (p->meta_prompt->runstack_boundary_start == p->runstack_start)) {
-        e = p->runstack_start + p->runstack_size;
-        o = p->runstack_start + p->meta_prompt->runstack_boundary_offset;
-        while (o < e) {
-          *(o++) = NULL;
-        }
+        rs_end = p->meta_prompt->runstack_boundary_offset;
+      } else {
+        rs_end = p->runstack_size;
       }
+
+      scheme_set_runstack_limits(p->runstack_start, 
+                                 p->runstack_size,
+                                 p->runstack - p->runstack_start,
+                                 rs_end);
       
       RUNSTACK_TUNE( size = p->runstack_size - (p->runstack - p->runstack_start); );
       
       for (saved = p->runstack_saved; saved; saved = saved->prev) {
-	o = saved->runstack_start;
-	e = o + saved->runstack_offset;
 	RUNSTACK_TUNE( size += saved->runstack_size; );
-	while (o < e) {
-	  *(o++) = NULL;
-	}
+
+        if (p->meta_prompt && (p->meta_prompt->runstack_boundary_start == saved->runstack_start)) {
+          rs_end = p->meta_prompt->runstack_boundary_offset;
+        } else {
+          rs_end = saved->runstack_size;
+        }
+
+        scheme_set_runstack_limits(saved->runstack_start,
+                                   saved->runstack_size,
+                                   saved->runstack_offset,
+                                   rs_end);
       }
     }
 
@@ -6662,11 +6708,16 @@ static void prepare_thread_for_GC(Scheme_Object *t)
     
     if (segpos < p->cont_mark_seg_count) {
       Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[segpos];
-      int stackpos = ((long)p->cont_mark_stack & SCHEME_MARK_SEGMENT_MASK), i;
+      int stackpos = ((long)p->cont_mark_stack & SCHEME_MARK_SEGMENT_MASK);
       for (i = stackpos; i < SCHEME_MARK_SEGMENT_SIZE; i++) {
-	seg[i].key = NULL;
-	seg[i].val = NULL;
-	seg[i].cache = NULL;
+        if (seg[i].key) {
+          seg[i].key = NULL;
+          seg[i].val = NULL;
+          seg[i].cache = NULL;
+        } else {
+          /* NULL means we already cleared from here on. */
+          break;
+        }
       }
     }
 
@@ -6729,9 +6780,7 @@ static void get_ready_for_GC()
   scheme_current_thread->cont_mark_pos = MZ_CONT_MARK_POS;
 #endif
 
-  if (scheme_fuel_counter) {
-    for_each_managed(scheme_thread_type, prepare_thread_for_GC);
-  }
+  for_each_managed(scheme_thread_type, prepare_thread_for_GC);
 
 #ifdef MZ_PRECISE_GC
   scheme_flush_stack_copy_cache();

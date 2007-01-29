@@ -83,7 +83,8 @@ MzScheme allocates the following kinds of memory objects:
 
    Note that a two-space copying collector might use only the fixup
    operation, while a non-moving collector might use only the mark
-   operation.
+   operation. However, MzScheme currently relies on at least fixup
+   calls for scheme_runstack_rt-tagged objects.
 
  * Atomic - The allocated object contains no pointers to other
    allocated objects.

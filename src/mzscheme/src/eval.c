@@ -716,16 +716,16 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
       size = 1000;
   }
 
-  p->runstack_saved = saved;
   if (p->spare_runstack && (size <= p->spare_runstack_size)) {
     size = p->spare_runstack_size;
     MZ_RUNSTACK_START = p->spare_runstack;
     p->spare_runstack = NULL;
   } else {
-    MZ_RUNSTACK_START = scheme_malloc_allow_interior(sizeof(Scheme_Object*) * size);
+    MZ_RUNSTACK_START = scheme_alloc_runstack(size);
   }
   p->runstack_size = size;
   MZ_RUNSTACK = MZ_RUNSTACK_START + size;
+  p->runstack_saved = saved;
   
   cont_count = scheme_cont_capture_count;
 

@@ -227,6 +227,7 @@ enum {
   scheme_rt_delay_load_info,            /* 205 */
   scheme_rt_marshal_info,               /* 206 */
   scheme_rt_unmarshal_info,             /* 207 */
+  scheme_rt_runstack,                   /* 208 */
 #endif
 
   _scheme_last_type_

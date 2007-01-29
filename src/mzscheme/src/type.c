@@ -540,6 +540,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_global_ref_type, small_object);
 
   GC_REG_TRAV(scheme_delay_syntax_type, small_object);
+
+  GC_REG_TRAV(scheme_rt_runstack, runstack_val);
 }
 
 END_XFORM_SKIP;

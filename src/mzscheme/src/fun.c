@@ -4277,7 +4277,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
   MZ_MARK_STACK_TYPE copied_cms = 0;
   Scheme_Object **mv, *sub_conts = NULL;
   int mc;
-  
+
   if (SAME_OBJ(result, SCHEME_MULTIPLE_VALUES)) {
     /* Get values out before GC */
     mv = p->ku.multiple.array;
@@ -4349,6 +4349,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
       mc = cont->meta_continuation;
     p->meta_continuation = mc;
   }
+
   if (shortcut_prompt) {
     /* In shortcut mode, we need to preserve saved runstacks
        that were pruned when capturing the continuation. */
@@ -4370,14 +4371,19 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     p->runstack_saved = rs;
   } else
     p->runstack_saved = cont->runstack_saved;
+
   MZ_RUNSTACK_START = cont->runstack_start;
   p->runstack_size = cont->runstack_size;
 
   scheme_restore_env_stack_w_thread(cont->ss, p);
 
   if (p->runstack_owner
-      && (*p->runstack_owner == p))
+      && (*p->runstack_owner == p)) {
     *p->runstack_owner = NULL;
+  }
+
+  if (resume)
+    p->meta_prompt = NULL; /* in case there's a GC before we can set it */
 
   p->runstack_owner = cont->runstack_owner;
   if (p->runstack_owner && (*p->runstack_owner != p)) {

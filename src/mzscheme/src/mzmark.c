@@ -1752,6 +1752,57 @@ static int thread_val_FIXUP(void *p) {
 #define thread_val_IS_CONST_SIZE 1
 
 
+static int runstack_val_SIZE(void *p) {
+  long *s = (long *)p;
+  return
+  s[1];
+}
+
+static int runstack_val_MARK(void *p) {
+  long *s = (long *)p;
+  void **a, **b;
+  a = (void **)s + 4 + s[2];
+  b = (void **)s + 4 + s[3];
+  while (a < b) {
+    gcMARK(*a);
+    a++;
+  }
+  return
+  s[1];
+}
+
+static int runstack_val_FIXUP(void *p) {
+  long *s = (long *)p;
+  void **a, **b;
+  a = (void **)s + 4 + s[2];
+  b = (void **)s + 4 + s[3];
+  while (a < b) {
+    gcFIXUP(*a);
+    a++;
+  }
+
+  /* Zero out the part that we didn't mark, in case it becomes
+     live later. */
+  a = (void **)s + 4;
+  b = (void **)s + 4 + s[2];
+  while (a < b) {
+    *a = NULL;
+    a++;
+  }
+  a = (void **)s + 4 + s[3];
+  b = (void **)s + 4 + (s[1] - 4);
+  while (a < b) {
+    *a = NULL;
+    a++;
+  }
+  return
+  s[1];
+}
+
+#define runstack_val_IS_ATOMIC 0
+#define runstack_val_IS_CONST_SIZE 0
+
+
 static int prompt_val_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Prompt));

@@ -324,6 +324,9 @@ void scheme_start_itimer_thread(long usec);
 void scheme_block_child_signals(int block);
 #endif
 
+Scheme_Object **scheme_alloc_runstack(long len);
+void scheme_set_runstack_limits(Scheme_Object **rs, long len, long start, long end);
+
 void scheme_alloc_list_stack(Scheme_Thread *p);
 void scheme_clean_list_stack(Scheme_Thread *p);
 
