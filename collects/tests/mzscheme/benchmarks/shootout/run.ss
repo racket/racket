@@ -34,6 +34,7 @@
       ("reversefile.ss")
       ("sieve.ss" "1200")
       ("spellcheck.ss")
+      ("spectralnorm.ss" "5500")
       ("strcat.ss" "40000")
       ("sumcol.ss" #f ,(lambda () (mk-sumcol-input)))
       ("wc.ss")
