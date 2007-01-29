@@ -136,11 +136,12 @@
       (if (module-path-index? x)
         (let-values ([(m base) (module-path-index-split x)]) (lib? m))
         (and (pair? x) (eq? 'lib (car x)))))
-    (let loop ([todo (map (lambda (mod)
-                            (if (lib? mod)
-                              '()
-                              (simplify-path* (resolve-module-path mod #f))))
-                          mods)]
+    (let loop ([todo (filter values
+                             (map (lambda (mod)
+                                    (and (not (lib? mod))
+                                         (simplify-path*
+                                          (resolve-module-path mod #f))))
+                                  mods))]
                [r '()])
       (cond
         [(null? todo) r]
