@@ -947,6 +947,21 @@
       ; -> string
       (define/override (my-name) "Throwable")
       
+      (define/override (field-names)
+        (cond
+          [(and (null? cause) 
+                (equal? "" (send message get-mzscheme-string))) null]
+          [(null? cause) (list "message")]
+          [(equal? "" (send message get-mzscheme-string)) (list "cause")]
+          [else (list "message" "cause")]))
+      (define/override (field-values)
+        (cond
+          [(and (null? cause)
+                (equal? "" (send message get-mzscheme-string))) null]
+          [(null? cause) (list message)]
+          [(equal? "" (send message get-mzscheme-string)) (list cause)]
+          [else (list message cause)]))
+      
       (super-instantiate ())))
   
   ;(make-java-exception string continuation-mark-set Throwable)

@@ -77,7 +77,7 @@
         (set-single-test-covered-exprs! 
          current-class 
          (cons src (single-test-covered-exprs current-class)))
-        (when (and (testcase-ext?) src)
+        (when (and (testcase-ext?) src (not (null? current-test-obj)))
           (send current-test-obj testCoverage-boolean-int #f (src-pos src))))
       
       (define/public (provide-test-results)
