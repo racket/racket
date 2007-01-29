@@ -316,7 +316,7 @@ void scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STAC
     b->external_stack = es;
   }
 #endif
-  
+
   memcpy(get_copy(b->stack_copy),
 	 b->stack_from,
 	 size);
@@ -337,12 +337,8 @@ static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
     uncopy_stack(STK_COMP(z, DEEPPOS(b)), b, junk);
   }
 
-  {
-    int i;
-    for (i = 0; i < 200; i++) {
-      prev[i] = 0;
-    }
-  }
+  /* Vague attempt to prevent the compiler from optimizing away `prev': */
+  prev[199] = 0;
 
   FLUSH_REGISTER_WINDOWS;
 
