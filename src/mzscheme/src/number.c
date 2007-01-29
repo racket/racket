@@ -659,7 +659,7 @@ int scheme_is_nan(double d)
 
 Scheme_Object *scheme_make_double(double d)
 {
-  Scheme_Double *sd;
+  GC_CAN_IGNORE Scheme_Double *sd;
 
   if (d == 0.0) {
     if (minus_zero_p(d))
@@ -672,7 +672,8 @@ Scheme_Object *scheme_make_double(double d)
       return scheme_zerod;
   }
 
-  sd = (Scheme_Double *)scheme_malloc_atomic_tagged(sizeof(Scheme_Double));
+  sd = (Scheme_Double *)scheme_malloc_small_atomic_tagged(sizeof(Scheme_Double));
+  CLEAR_KEY_FIELD(&sd->so);
   sd->so.type = scheme_double_type;
   SCHEME_DBL_VAL(sd) = d;
   return (Scheme_Object *)sd;

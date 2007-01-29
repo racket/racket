@@ -33,8 +33,9 @@ static Scheme_Object *make_rational(const Scheme_Object *n, const Scheme_Object 
 {
   Scheme_Rational *r;
 
-  r = MALLOC_ONE_TAGGED(Scheme_Rational);
+  r = (Scheme_Rational *)scheme_malloc_small_dirty_tagged(sizeof(Scheme_Rational));
   r->so.type = scheme_rational_type;
+  CLEAR_KEY_FIELD(&r->so);
   r->num = (Scheme_Object *)n;
   r->denom = (Scheme_Object *)d;
   

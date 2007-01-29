@@ -33,7 +33,8 @@ static Scheme_Object *make_complex(const Scheme_Object *r, const Scheme_Object *
 {
   Scheme_Complex *c;
 
-  c = MALLOC_ONE_TAGGED(Scheme_Complex);
+  c = (Scheme_Complex *)scheme_malloc_small_dirty_tagged(sizeof(Scheme_Complex));
+  CLEAR_KEY_FIELD(&c->so);
   c->so.type = scheme_complex_type;
   c->r = (Scheme_Object *)r;
   c->i = (Scheme_Object *)i;

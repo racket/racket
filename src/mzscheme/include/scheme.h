@@ -1504,6 +1504,8 @@ void *scheme_malloc(size_t size);
 # endif
 # define scheme_malloc_tagged GC_malloc_one_tagged
 # define scheme_malloc_small_tagged(s) GC_malloc_one_small_tagged(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(s)))
+# define scheme_malloc_small_dirty_tagged(s) GC_malloc_one_small_dirty_tagged(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(s)))
+# define scheme_malloc_small_atomic_tagged(s) GC_malloc_small_atomic_tagged(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(s)))
 # define scheme_malloc_array_tagged GC_malloc_array_tagged
 # define scheme_malloc_atomic_tagged GC_malloc_atomic_tagged
 # define scheme_malloc_stubborn_tagged GC_malloc_one_tagged
@@ -1533,7 +1535,9 @@ extern void *scheme_malloc_envunbox(size_t);
 #  define scheme_malloc_uncollectable_tagged scheme_malloc_uncollectable
 #  define scheme_malloc_envunbox scheme_malloc
 # endif
+# define scheme_malloc_small_dirty_tagged scheme_malloc_small_tagged
 # define scheme_malloc_allow_interior scheme_malloc
+# define scheme_malloc_small_atomic_tagged scheme_malloc_atomic_tagged
 #endif
 
 

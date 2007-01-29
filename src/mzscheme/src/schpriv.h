@@ -125,6 +125,12 @@ void scheme_clear_ephemerons(void);
 # define MZ_INLINE /* empty */
 #endif
 
+#ifdef MZ_PRECISE_GC
+# define CLEAR_KEY_FIELD(o) ((o)->keyex = 0)
+#else
+# define CLEAR_KEY_FIELD(o) /* empty */
+#endif
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/

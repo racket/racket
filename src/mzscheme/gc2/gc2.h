@@ -165,6 +165,7 @@ GC2_EXTERN void *GC_malloc_atomic(size_t size_in_bytes);
    Alloc pointerless memory (not necessarily zeroed). */
 
 #define GC_malloc_atomic_tagged GC_malloc_one_tagged
+#define GC_malloc_small_atomic_tagged GC_malloc_one_small_dirty_tagged
 /*
    Alloc pointer-free tagged memory (not necessarily zeroed).
    MzScheme sets the tag before a collection. */

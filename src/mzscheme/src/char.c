@@ -258,7 +258,8 @@ Scheme_Object *scheme_make_char(mzchar ch)
   if (ch < 256)
     return scheme_char_constants[ch];
   
-  o = scheme_alloc_small_object();
+  o = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Simple_Object));
+  CLEAR_KEY_FIELD(o);
   o->type = scheme_char_type;
   SCHEME_CHAR_VAL(o) = ch;
 
