@@ -5,7 +5,7 @@
       ("ary.ss" "9000")
       ("binarytrees.ss" "16")
       ("chameneos.ss")
-      ("cheapconcurrency.ss")
+      ("cheapconcurrency.ss" "15000")
       ("echo.ss" "150000")
       ("except.ss" "2500000")
       ("fannkuch.ss" "10")
@@ -15,10 +15,10 @@
       ("hash2.ss" "200")
       ("heapsort.ss" "100000")
       ("lists.ss" "18")
-      ("mandelbrot.ss")
+      ("mandelbrot.ss" "3000")
       ("matrix.ss" "600")
       ("moments.ss") ; 200 somethings...
-      ("nbody.ss")
+      ("nbody.ss" "20000000")
       ("nestedloop.ss" "18")
       ("nsieve.ss")
       ("nsievebits.ss")
@@ -42,15 +42,21 @@
   (define (dynreq f)
     (dynamic-require `(lib ,f "tests" "mzscheme" "benchmarks" "shootout") #f))
 
-  (define (mk-revcomp-input)
-    (let ([f (build-path (find-system-path 'temp-dir) "fasta-2m5")])
+  (define (mk-fasta n suffix)
+    (let ([f (build-path (find-system-path 'temp-dir) (string-append "fasta-" suffix))])
       (unless (file-exists? f)
-        (printf "Building FASTA 2,500,000 output for input: ~a\n" f)
+        (printf "Building FASTA ~a output for input: ~a\n" n f)
         (with-output-to-file f
           (lambda ()
-            (parameterize ([current-command-line-arguments (vector "2500000")])
+            (parameterize ([current-command-line-arguments (vector n)])
               (dynreq "fasta.ss")))))
       f))
+
+  (define (mk-revcomp-input)
+    (mk-fasta "2500000" "2m5"))
+
+  (define (mk-knuc-input)
+    (mk-fasta "1000000" "1m"))
 
   (define (mk-sumcol-input)
     (let ([f (build-path (find-system-path 'temp-dir) "sumcol-21k")])
