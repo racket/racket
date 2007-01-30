@@ -6647,6 +6647,7 @@ static void prepare_thread_for_GC(Scheme_Object *t)
     if (!p->runstack_owner
 	|| (p == *p->runstack_owner)) {
       long rs_end;
+      Scheme_Object **rs_start;
 
       /* If there's a meta-prompt, we can also zero out past the unused part */
       if (p->meta_prompt && (p->meta_prompt->runstack_boundary_start == p->runstack_start)) {
@@ -6655,9 +6656,15 @@ static void prepare_thread_for_GC(Scheme_Object *t)
         rs_end = p->runstack_size;
       }
 
+      if ((p->runstack_tmp_keep >= p->runstack_start)
+          && (p->runstack_tmp_keep < p->runstack))
+        rs_start = p->runstack_tmp_keep;
+      else
+        rs_start = p->runstack;
+
       scheme_set_runstack_limits(p->runstack_start, 
                                  p->runstack_size,
-                                 p->runstack - p->runstack_start,
+                                 rs_start - p->runstack_start,
                                  rs_end);
       
       RUNSTACK_TUNE( size = p->runstack_size - (p->runstack - p->runstack_start); );
