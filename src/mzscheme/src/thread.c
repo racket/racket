@@ -3128,7 +3128,9 @@ static int check_sleep(int need_activity, int sleep_now)
   if (!do_atomic) {
     p = scheme_first_thread;
     while (p) {
-      if (!p->nestee && (p->ran_some || p->block_descriptor == NOT_BLOCKED))
+      if (!p->nestee
+          && (p->ran_some || p->block_descriptor == NOT_BLOCKED)
+          && (p->next || !(p->running & MZTHREAD_USER_SUSPENDED)))
 	break;
       p = p->next;
     }
@@ -3210,8 +3212,9 @@ static int check_sleep(int need_activity, int sleep_now)
     if (needs_sleep_cancelled)
       return 0;
 
-    if (post_system_idle())
+    if (post_system_idle()) {
       return 0;
+    }
   
     if (sleep_now) {
       float mst = (float)max_sleep_time;
