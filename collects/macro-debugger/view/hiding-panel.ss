@@ -90,7 +90,9 @@
       (define add-show-id-button
         (new button% (parent add-pane) (label "Show macro") (enabled #f)
              (callback (lambda _ (add-show-identifier) (refresh)))))
-      
+
+      (new grow-box-spacer-pane% (parent add-pane))
+
       (send add-editor lock #t)
       
       ;; Methods
