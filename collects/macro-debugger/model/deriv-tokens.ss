@@ -83,7 +83,6 @@
       (12 . ,token-block->list)
       (13 . ,token-next-group)
       (14 . ,token-block->letrec)
-      #;(15 . renamer)
       (16 . ,token-renames-let)
       (17 . ,token-renames-lambda)
       (18 . ,token-renames-case-lambda)
@@ -143,5 +142,8 @@
            pos
            pos)
           (error 'tokenize "bad signal: ~s" sig-n))))
+
+  (define (signal->symbol sig-n)
+    (cdr (assv sig-n signal-mapping)))
   
   )
