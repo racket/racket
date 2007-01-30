@@ -103,7 +103,7 @@
       ;; refresh
       (define/public (refresh)
         (when (send config get-macro-hiding?)
-          (send stepper refresh)))
+          (send stepper refresh/resynth-prefix)))
 
       ;; force-refresh
       (define/private (force-refresh)
