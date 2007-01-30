@@ -311,7 +311,8 @@ profile todo:
                       (λ () (open-and-highlight-in-file src-to-display)))
                 (write-special note (current-error-port))
                 (display #\space (current-error-port))))
-            (display (path->string (find-relative-path (current-directory) src))
+            (display (path->string (find-relative-path (current-directory)
+                                                       (normalize-path src)))
                      (current-error-port))
             (let ([line (srcloc-line src-to-display)]
                   [col (srcloc-column src-to-display)]

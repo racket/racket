@@ -1338,7 +1338,7 @@ module browser threading seems wrong.
                                   (if (equal? f1 f2)
                                       (loop (cdr p1) (cdr p2) (+ i 1))
                                       i))])))]
-                   [exp (reverse (explode-path fn))]
+                   [exp (reverse (explode-path (normalize-path fn)))]
                    [other-exps
                     (filter
                      (λ (x) (and x 
@@ -1346,7 +1346,7 @@ module browser threading seems wrong.
                      (map (λ (other-tab) 
                             (let ([fn (send (send other-tab get-defs) get-filename)])
                               (and fn 
-                                   (reverse (explode-path fn)))))
+                                   (reverse (explode-path (normalize-path fn))))))
                           tabs))]
                    [size
                     (let loop ([other-exps other-exps]
