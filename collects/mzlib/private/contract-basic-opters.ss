@@ -8,7 +8,6 @@
   ;; opt/pred helper
   ;;
   (define-for-syntax (opt/pred opt/info pred)
-    (printf "~s\n" (list 'opt/pred opt/info pred))
     (with-syntax ((pred pred))
       (values
        (with-syntax ((val (opt/info-val opt/info))
@@ -40,7 +39,6 @@
     (syntax-case stx (null?)
       [null? (opt/pred opt/info #'null?)]))
   (define/opter (boolean? opt/i opt/info stx)
-    (printf "boolean opter\n")
     (syntax-case stx (boolean?)
       [boolean? (opt/pred opt/info #'boolean?)]))
   (define/opter (integer? opt/i opt/info stx)

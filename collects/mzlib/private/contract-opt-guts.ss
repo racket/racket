@@ -19,10 +19,6 @@
            opt/info-base-pred
            opt/info-this
            opt/info-that
-           opt/info-sv-index
-           
-           sv-index
-           inc-sv-index!
            
            opt/info-swap-blame)
   
@@ -56,16 +52,7 @@
 
 
   ;; struct for color-keeping across opters
-  (define-struct opt/info (contract val pos neg src-info orig-str free-vars recf base-pred this that sv-index))
-  
-  ;; sv-index : opt/info -> int
-  (define (sv-index info)
-    (unbox (opt/info-sv-index info)))
-  
-  ;; inc-sv-index! : opt/info int -> unit
-  (define (inc-sv-index! info n)
-    (let ((old (unbox (opt/info-sv-index info))))
-      (set-box! (opt/info-sv-index info) (+ old n))))
+  (define-struct opt/info (contract val pos neg src-info orig-str free-vars recf base-pred this that))
   
   ;; opt/info-swap-blame : opt/info -> opt/info
   ;; swaps pos and neg
@@ -80,9 +67,8 @@
           (recf (opt/info-recf info))
           (base-pred (opt/info-base-pred info))
           (this (opt/info-this info))
-          (that (opt/info-that info))
-          (sv-index (opt/info-sv-index info)))
-      (make-opt/info ctc val pos neg src-info orig-str free-vars recf base-pred this that sv-index)))
+          (that (opt/info-that info)))
+      (make-opt/info ctc val pos neg src-info orig-str free-vars recf base-pred this that)))
   
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -126,11 +112,6 @@
            (number? (syntax-e e))
            (boolean? (syntax-e e)))
        (values e lifts)]
-      #;
-      [x
-       (identifier? e)
-       (values e
-               (snoc (cons e e) lifts))]
       [else
        (let ([x (car (generate-temporaries (list id-hint)))])
          (values x

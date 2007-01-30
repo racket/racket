@@ -1,11 +1,13 @@
 (module contract-opt mzscheme
   (require "contract-guts.ss"
+           (lib "stxparam.ss")
            (lib "etc.ss"))
   (require-for-syntax "contract-opt-guts.ss"
                       (lib "etc.ss")
+                      (lib "stxparam.ss")
                       (lib "list.ss"))
   
-  (provide opt/c define/opter define/osc opt-stronger-vars-ref)
+  (provide opt/c define-opt/c define/opter define/osc opt-stronger-vars-ref)
   
   ;; define/opter : id -> syntax
   ;;
@@ -138,6 +140,19 @@
         [argless-ctc
          (and (identifier? #'argless-ctc) (opter #'argless-ctc))
          ((opter #'argless-ctc) opt/i opt/info stx)]
+        [(f arg ...)
+         (and (identifier? #'f) 
+              (syntax-parameter-value #'define/opt-recursive-fn)
+              (module-identifier=? (syntax-parameter-value #'define/opt-recursive-fn)
+                                   #'f))
+         (values
+          #`(f #,(opt/info-val opt/info) arg ...)
+          null
+          null
+          null
+          #f
+          #f
+          null)]
         [else
          (opt/unknown opt/i opt/info stx)]))
     
@@ -153,25 +168,44 @@
                                             #f
                                             #f
                                             #'this
-                                            #'that
-                                            (box 0))]
+                                            #'that)]
                      [(next lifts superlifts partials _ __ stronger-ribs) (opt/i info #'e)])
-         (with-syntax ((next next))
-           (bind-superlifts 
-            superlifts
-            (bind-lifts
-             lifts
-             #`(make-opt-contract
-                (λ (ctc)
-                  (λ (pos neg src-info orig-str)
-                    #,(bind-lifts
-                       partials
-                       #`(λ (val) 
-                           next))))
-                (λ () e)
-                (λ (this that) #f)
-                (vector)
-                (begin-lifted (box #f)))))))]))
+         (with-syntax ([next next])
+           (let ([superlifts2
+                  (if (syntax-parameter-value #'define/opt-recursive-fn)
+                      (cons (cons
+                             (syntax-parameter-value #'define/opt-recursive-fn)
+                             (with-syntax ([(args ...)
+                                            (syntax-parameter-value #'define/opt-recursive-args)])
+                               #'(lambda (val info args ...) 'next)))
+                            superlifts)
+                      superlifts)])
+             (bind-superlifts 
+              superlifts2
+              (bind-lifts
+               lifts
+               #`(make-opt-contract
+                  (λ (ctc)
+                    (λ (pos neg src-info orig-str)
+                      #,(bind-lifts
+                         partials
+                         #`(λ (val) 
+                             next))))
+                  (λ () e)
+                  (λ (this that) #f)
+                  (vector)
+                  (begin-lifted (box #f))))))))]))
+
+  (define-syntax-parameter define/opt-recursive-fn #f)
+  (define-syntax-parameter define/opt-recursive-args #f)
+  
+  (define-syntax (define-opt/c stx)
+    (syntax-case stx ()
+      [(_ (id args ...) body)
+       #'(define (id args ...)
+           (syntax-parameterize ([define/opt-recursive-fn #'id]
+                                 [define/opt-recursive-args #'(args ...)])
+                                (opt/c body)))]))
   
   ;; define/osc : syntax -> syntax
   ;; define/osc allows you define optimized recursive contracts, and must be used
@@ -210,8 +244,7 @@
                                             #'f
                                             #'base-pred
                                             #'this
-                                            #'that
-                                            (box 0))]
+                                            #'that)]
                      [(next lifts superlifts partials _ __ stronger-ribs) (opt/i info #'e)])
          (with-syntax ((next next)
                        ((superlift ...) (map (λ (x) (with-syntax ((var (car x))

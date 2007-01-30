@@ -360,8 +360,7 @@ it around flattened out.
                                                                      (opt/info-recf opt/info)
                                                                      (opt/info-base-pred opt/info)
                                                                      (opt/info-this opt/info)
-                                                                     (opt/info-that opt/info)
-                                                                     (opt/info-sv-index opt/info))
+                                                                     (opt/info-that opt/info))
                                                       name
                                                       stx
                                                       clauses

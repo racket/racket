@@ -9,7 +9,7 @@
            "private/contract-basic-opters.ss")
   
   (provide 
-   opt/c ;(all-from "private/contract-opt.ss")
+   opt/c #;define-opt/c ;(all-from "private/contract-opt.ss")
    (all-from-except "private/contract-ds.ss"
                     lazy-depth-to-look)
 
