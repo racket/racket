@@ -938,8 +938,8 @@ long scheme_extract_index(const char *name, int pos, int argc, Scheme_Object **a
 }
 
 void scheme_get_substring_indices(const char *name, Scheme_Object *str,
-				  int argc, Scheme_Object **argv,
-				  int spos, int fpos, long *_start, long *_finish)
+                                  int argc, Scheme_Object **argv,
+                                  int spos, int fpos, long *_start, long *_finish)
 {
   long len;
   long start, finish;
@@ -967,6 +967,36 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
 
   *_start = start;
   *_finish = finish;
+}
+
+static void get_substring_indices(const char *name, Scheme_Object *str,
+                                  int argc, Scheme_Object **argv,
+                                  int spos, int fpos, long *_start, long *_finish, long len)
+{
+  if (argc > spos) {
+    if (SCHEME_INTP(argv[spos])) {
+      long start = SCHEME_INT_VAL(argv[spos]);
+      if ((start >= 0) && (start < len)) {
+        *_start = start;
+        if (argc > fpos) {
+          long finish = SCHEME_INT_VAL(argv[fpos]);
+          if ((finish >= start) && (finish <= len)) {
+            *_finish = finish;
+            return;
+          }
+        } else {
+          *_finish = len;
+          return;
+        }
+      }
+    }
+  } else {
+    *_start = 0;
+    *_finish = len;
+    return;
+  }
+
+  return scheme_get_substring_indices(name, str, argc, argv, spos, fpos, _start, _finish);
 }
 
 /**********************************************************************/
@@ -4868,6 +4898,7 @@ mzchar *scheme_utf8_decode_to_buffer_len(const unsigned char *s, int len,
 					 mzchar *buf, int blen, long *_ulen)
 {
   int ulen;
+
   ulen = utf8_decode_x(s, 0, len, NULL, 0, -1,
 		       NULL, NULL, 0, 0,
 		       NULL, 0, 0);
@@ -5089,6 +5120,22 @@ char *scheme_utf8_encode_to_buffer_len(const mzchar *s, int len,
 				       long *_slen)
 {
   int slen;
+
+  /* ASCII with len < blen is a common case: */
+  if (len < blen) {
+    for (slen = 0; slen < len; slen++) {
+      if (s[slen] > 127)
+        break;
+      else
+        buf[slen] = s[slen];
+    }
+    if (slen == len) {
+      buf[slen] = 0;
+      *_slen = slen;
+      return buf;
+    }
+  }
+
   slen = utf8_encode_x(s, 0, len, NULL, 0, -1, NULL, NULL, 0);
   if (slen + 1 > blen) {
     buf = (char *)scheme_malloc_atomic(slen + 1);

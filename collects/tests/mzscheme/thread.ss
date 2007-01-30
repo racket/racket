@@ -134,7 +134,7 @@
 				 (lambda ()
 				   (let loop ()
 				     (let ([r (set-ready #f)])
-				       (sleep SLEEP-TIME)
+				       (sync (system-idle-evt))
 				       (set! result (add1 result))
 				       (when r (semaphore-post r)))
 				     (loop)))))))))))
@@ -156,7 +156,7 @@
 (set! start result)
 (test #f thread-running? th1)
 (test #t thread-dead? th1)
-(sleep SLEEP-TIME)
+(sync (system-idle-evt))
 (test #t eq? start result)
 
 (let ([kept-going? #f])
@@ -285,12 +285,27 @@
 	(semaphore-wait s2) (semaphore-wait s2)
 	'ok))
 
+;; Returns a list of semaphores that are posted, in order,
+;;  when there's no work to do.
+(define (virtual-clock n-ticks)
+  (let ([semas (let loop ([n n-ticks])
+                 (if (zero? n)
+                     null
+                     (cons (make-semaphore) (loop (sub1 n)))))])
+    (thread (lambda ()
+              (let loop ([semas semas])
+                (unless (null? semas)
+                  (sync (system-idle-evt))
+                  (semaphore-post (car semas))
+                  (loop (cdr semas))))))
+    (map semaphore-peek-evt semas)))
+
 ; Tests inspired by a question from David Tillman
 (define (read-line/expire1 port expiration)
   (with-handlers ([exn:break? (lambda (exn) #f)])
     (let ([timer (thread (let ([id (current-thread)])
 			   (lambda () 
-			     (sleep expiration)
+			     (sync expiration)
 			     (break-thread id))))])
       (dynamic-wind
        void
@@ -303,7 +318,7 @@
 			(set! result (read-line port))
 			(semaphore-post done)))]
 	  [t2 (thread (lambda () 
-			(sleep expiration)
+			(sync expiration)
 			(semaphore-post done)))])
       (semaphore-wait done)
       (kill-thread t1)
@@ -323,6 +338,7 @@
       v)))
 
 (define (go read-line/expire)
+  (define clock (virtual-clock 3))
   (define p (let ([c 0]
 		  [nl-sema (make-semaphore 1)]
 		  [ready? #f]
@@ -340,7 +356,7 @@
 				(semaphore-try-wait? nl-sema)
 				(set! ready? #f)
 				(thread (lambda ()
-					  (sleep 0.4)
+					  (sync (cadr clock))
 					  (set! ready? #t)
 					  (semaphore-post nl-sema)))
 				(set! c (add1 c))
@@ -354,8 +370,8 @@
 		       0)))
 	       #f
 	       void)))
-  (test #f read-line/expire p 0.2) ; should get char but not newline
-  (test "" read-line/expire p 0.6)) ; picks up newline
+  (test #f read-line/expire p (car clock)) ; should get char but not newline
+  (test "" read-line/expire p (caddr clock))) ; picks up newline
 
 (go read-line/expire1)
 (go read-line/expire2)
@@ -556,9 +572,9 @@
 		     (lambda ()
 		       (with-handlers ([exn:break? (lambda (x) (set! v 'break))])
 			 (set! v (wait #f s t l r)))))])
-	    (sleep 0.05) ;;;     <---------- race condition (that's unlikely to fail)
+	    (sync (system-idle-evt))
 	    (break-thread bt)
-	    (sleep 0.05) ;;;     <----------
+            (sync (system-idle-evt))
 	    )
 	  (test 'break 'broken-wait v)))
 
@@ -678,7 +694,7 @@
 		      (test #f thread-running? t)
 		      (test #f thread-dead? t)
 		      (semaphore-post s)
-		      (sleep SLEEP-TIME)
+		      (sync (system-idle-evt))
 		      (test 17 values v)
 		      (thread-resume t)))])
     (semaphore-wait s)
@@ -689,7 +705,7 @@
 (let ([v 19]
       [t (current-thread)])
   (let ([t2 (thread (lambda () 
-		      (sleep SLEEP-TIME)
+                      (sync (system-idle-evt))
 		      (test 19 values v)
 		      (thread-resume t)))])
     (thread-suspend t)
@@ -744,7 +760,7 @@
 	      (let ([t2 (parameterize ([current-error-port /dev/null-for-err])
 			  (thread
 			   (lambda () 
-			     (let loop () (when (= v 10) (sleep) (loop)))
+			     (let loop () (when (= v 10) (sleep 0.01) (loop)))
 			     (sleep0)
 			     (set! v 99))))])
 		(sleep1)
@@ -838,7 +854,6 @@
 		     (w-block (lambda () (thread (lambda () (channel-put ch 10))))
 			      (lambda () (sync/timeout/enable-break #f (make-semaphore) ch))))))
 	       '(#t #f))))])
-     (define BKT-SLEEP-TIME (/ SLEEP-TIME 4))
      (goes void void break-thread)
      (goes void void kill-thread)
      (goes sleep void break-thread)
@@ -847,12 +862,12 @@
      (goes void sleep kill-thread)
      (goes sleep sleep break-thread)
      (goes sleep sleep kill-thread)
-     (goes (lambda () (sleep BKT-SLEEP-TIME)) void break-thread)
-     (goes (lambda () (sleep BKT-SLEEP-TIME)) void kill-thread)
-     (goes void (lambda () (sleep BKT-SLEEP-TIME)) break-thread)
-     (goes void (lambda () (sleep BKT-SLEEP-TIME)) kill-thread)
-     (goes (lambda () (sleep BKT-SLEEP-TIME)) (lambda () (sleep BKT-SLEEP-TIME)) break-thread)
-     (goes (lambda () (sleep BKT-SLEEP-TIME)) (lambda () (sleep BKT-SLEEP-TIME)) kill-thread)))
+     (goes (lambda () (sync (system-idle-evt))) void break-thread)
+     (goes (lambda () (sync (system-idle-evt))) void kill-thread)
+     (goes void (lambda () (sync (system-idle-evt))) break-thread)
+     (goes void (lambda () (sync (system-idle-evt))) kill-thread)
+     (goes (lambda () (sync (system-idle-evt))) (lambda () (sync (system-idle-evt))) break-thread)
+     (goes (lambda () (sync (system-idle-evt))) (lambda () (sync (system-idle-evt))) kill-thread)))
  (list sleep void))
 
 ;; ----------------------------------------
@@ -895,11 +910,20 @@
 ;; Kill versus Suspend
 
 (let* ([v 0]
+       [all-ticks (virtual-clock 40)]
+       [odd-ticks (let loop ([all-ticks all-ticks][get? #f])
+                    (if (null? all-ticks)
+                        null
+                        (if get?
+                            (cons (car all-ticks)
+                                  (loop (cdr all-ticks) #f))
+                            (loop (cdr all-ticks) #t))))]
        [loop (lambda ()
 	       (let loop ()
 		 (set! v (add1 v))
-		 (sleep (/ SLEEP-TIME 2))
-		 (loop)))]
+		 (sync (car all-ticks))
+                 (set! all-ticks (cdr all-ticks))
+                 (loop)))]
        [c0 (make-custodian)])
   (let ([try
 	 (lambda (resumable?)
@@ -909,7 +933,8 @@
 		       ((if resumable? thread/suspend-to-kill thread) loop))]
 		  [check-inc (lambda (inc?)
 			       (let ([v0 v]) 
-				 (sleep SLEEP-TIME)
+                                 (sync (car odd-ticks))
+                                 (set! odd-ticks (cdr odd-ticks))
 				 (test inc? > v v0)))])
 	     (test #t thread-running? t)
 	     (check-inc #t)
@@ -1221,6 +1246,10 @@
 
 ;; --------------------
 ;; Check BEGIN_ESCAPABLE:
+
+;; Races conditions due to the `sleep' calls here are ok. The
+;; intended order will happen often enough for the text to be
+;; useful.
 
 (let ([try
        (lambda (break? kill?)

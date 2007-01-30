@@ -16,10 +16,8 @@
       (namespace-set-variable-value! 'real-error-port err)
       (namespace-set-variable-value! 'last-error #f)
       ;; we're loading this for the first time:
-      ;; -- make real errors show
-      ;;    (can't override current-exception-handler alone, since the escape
-      ;;     handler is overridden to avoid running off, so use the first to
-      ;;     save the data and the second to show it)
+      ;; make real errors show by remembering the exn
+      ;; value, and then printing it on abort.
       (uncaught-exception-handler (lambda (e) 
                                     (when (eq? (current-thread) orig-thread)
                                       (set! last-error e))
@@ -43,7 +41,8 @@
    (default-continuation-prompt-tag)
    (lambda (thunk)
      (when last-error
-       (fprintf real-error-port "ERROR: ~a\n"
+       (fprintf real-error-port "~aERROR: ~a\n"
+                Section-prefix
                 (if (exn? last-error) (exn-message last-error) last-error))
        (exit 2))))
   (report-errs #t))

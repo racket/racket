@@ -59,8 +59,11 @@ transcript.
     (display msg err)
     (flush-output err)))
 
+(define Section-prefix
+  (namespace-variable-value 'Section-prefix #f (lambda () "")))
+
 (define (Section . args)
-  (eprintf* "Section~s\n" args)
+  (eprintf* "~aSection~s\n" Section-prefix args)
   (set! cur-section args)
   #t)
 
@@ -113,7 +116,7 @@ transcript.
 (define thunk-error-test
   (case-lambda
    [(th expr) (thunk-error-test th expr exn:application:type?)]
-   [(th expr exn?)
+   [(th expr exn-type?)
     (set! expr (syntax-object->datum expr))
     (set! number-of-error-tests (add1 number-of-error-tests))
     (printf "~s  =e=> " expr)
@@ -123,7 +126,7 @@ transcript.
 		      [orig-err-port (current-error-port)]
 		      [test-exn-handler
 		       (lambda (e)
-			 (when (and exn? (not (exn? e)))
+			 (when (and exn-type? (not (exn-type? e)))
 			       (printf " WRONG EXN TYPE: ~s " e)
 			       (record-error (list e 'exn-type expr)))
 			 (when (and (exn:fail:syntax? e)
@@ -173,7 +176,7 @@ transcript.
 (defvar error-test
   (case-lambda
     [(expr) (error-test expr exn:application:type?)]
-    [(expr exn?) (thunk-error-test (lambda () (eval expr)) expr exn?)]))
+    [(expr exn-type?) (thunk-error-test (lambda () (eval expr)) expr exn-type?)]))
 
 (require (rename mzscheme err:mz:lambda lambda)) ; so err/rt-test works with beginner.ss
 (define-syntax err/rt-test
@@ -231,7 +234,9 @@ transcript.
 		  (let ([v (with-handlers ([void
 					    (lambda (exn)
 					      (if (check? exn)
-						  (printf " ~a\n" (exn-message exn))
+						  (printf " ~a\n" (if (exn? exn)
+                                                                      (exn-message exn)
+                                                                      (format "uncaught ~x" exn)))
 						  (let ([ok-type? (exn:application:arity? exn)])
 						    (printf " WRONG EXN ~a: ~s\n"
 							    (if ok-type?

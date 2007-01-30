@@ -193,7 +193,9 @@
   
 (test-compare 0.5 1.2 2.3)
 (test-compare 2/5 1/2 2/3)
-(test-compare 1/4 1/3 1/2)
+(test-compare 1/4 1/3 1/2) ; same numerator
+(test-compare 3/10 7/10 9/10) ; same denominator
+(test-compare 2/500000000000000000000000000 1/200000000000000000000000000 2/300000000000000000000000000) ; bignums
 (test #t = 1/2 2/4)
 (test #f = 2/3 2/5)
 (test #f = 2/3 2/500000000000000000000000000)

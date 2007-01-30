@@ -154,9 +154,11 @@ static Scheme_Object *general_path_p(int argc, Scheme_Object **argv);
 static Scheme_Object *path_to_string(int argc, Scheme_Object **argv);
 static Scheme_Object *path_to_bytes(int argc, Scheme_Object **argv);
 static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv);
+static Scheme_Object *path_element_to_string(int argc, Scheme_Object **argv);
 static Scheme_Object *string_to_path(int argc, Scheme_Object **argv);
 static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv);
 static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv);
+static Scheme_Object *string_to_path_element(int argc, Scheme_Object **argv);
 static Scheme_Object *path_kind(int argc, Scheme_Object **argv);
 static Scheme_Object *platform_path_kind(int argc, Scheme_Object **argv);
 
@@ -312,6 +314,11 @@ void scheme_init_file(Scheme_Env *env)
 						      "path-element->bytes", 
 						      1, 1), 
 			     env);
+  scheme_add_global_constant("path-element->string", 
+			     scheme_make_prim_w_arity(path_element_to_string, 
+						      "path-element->string", 
+						      1, 1), 
+			     env);
   scheme_add_global_constant("string->path", 
 			     scheme_make_prim_w_arity(string_to_path, 
 						      "string->path", 
@@ -326,6 +333,11 @@ void scheme_init_file(Scheme_Env *env)
 			     scheme_make_prim_w_arity(bytes_to_path_element, 
 						      "bytes->path-element", 
 						      1, 2), 
+			     env);
+  scheme_add_global_constant("string->path-element", 
+			     scheme_make_prim_w_arity(string_to_path_element, 
+						      "string->path-element", 
+						      1, 1), 
 			     env);
 
   scheme_add_global_constant("file-exists?", 
@@ -760,10 +772,6 @@ Scheme_Object *scheme_path_to_char_string(Scheme_Object *p)
 {
   Scheme_Object *s;
 
-#ifdef DOS_FILE_SYSTEM
-  p = drop_rel_prefix(p);
-#endif
-
   s = scheme_byte_string_to_char_string_locale(p);
 
   if (!SCHEME_CHAR_STRLEN_VAL(s))
@@ -801,28 +809,29 @@ static Scheme_Object *is_path_element(Scheme_Object *p)
                          &isdir,
                          SCHEME_PATH_KIND(p));
 
-  if (SCHEME_SYMBOLP(base))
+  if (SCHEME_SYMBOLP(base)
+      && SCHEME_GENERAL_PATHP(fn))
     return fn;
   return NULL;
 }
 
-static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv)
+static Scheme_Object *do_path_element_to_bytes(const char *name, int argc, Scheme_Object **argv)
 {
   Scheme_Object *p = argv[0], *pe;
   int kind;
 
   if (!SCHEME_GENERAL_PATHP(p))
-    scheme_wrong_type("path-element->bytes", "path", 0, argc, argv);
+    scheme_wrong_type(name, "path", 0, argc, argv);
   
   pe = is_path_element(p);
 
   if (!pe)
-    scheme_arg_mismatch("path-element->bytes",
+    scheme_arg_mismatch(name,
                         "path can be split or is not relative: ",
                         p);
 
   if (SCHEME_SYMBOLP(pe)) {
-    scheme_arg_mismatch("path-element->bytes",
+    scheme_arg_mismatch(name,
                         (SAME_OBJ(pe, up_symbol)
                          ? "path is an up-directory indicator: "
                          : "path is a same-directory indicator: "),
@@ -851,6 +860,18 @@ static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv)
   return scheme_make_sized_byte_string(SCHEME_PATH_VAL(p),
 				       SCHEME_PATH_LEN(p),
 				       1);
+}
+
+static Scheme_Object *path_element_to_bytes(int argc, Scheme_Object **argv)
+{
+  return do_path_element_to_bytes("path-element->bytes", argc, argv);
+}
+
+static Scheme_Object *path_element_to_string(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *b;
+  b = do_path_element_to_bytes("path-element->string", argc, argv);
+  return scheme_byte_string_to_char_string_locale(b);
 }
 
 static void check_path_ok(const char *who, Scheme_Object *p, Scheme_Object *o)
@@ -907,15 +928,15 @@ static Scheme_Object *bytes_to_path(int argc, Scheme_Object **argv)
   return s;
 }
 
-static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv)
+static Scheme_Object *do_bytes_to_path_element(const char *name, Scheme_Object *s, int argc, Scheme_Object **argv)
 {
-  Scheme_Object *s = argv[0], *p;
+  Scheme_Object *p;
   long i, len;
   int kind;
 
   if (!SCHEME_BYTE_STRINGP(s))
-    scheme_wrong_type("bytes->path-element", "byte string", 0, argc, argv);
-  kind = extract_path_kind("bytes->path-element", 1, argc, argv);
+    scheme_wrong_type(name, "byte string", 0, argc, argv);
+  kind = extract_path_kind(name, 1, argc, argv);
 
   len = SCHEME_BYTE_STRLEN_VAL(s);
   for (i = 0; i < len; i++) {
@@ -933,11 +954,28 @@ static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv)
     p = NULL;
 
   if (!p || !is_path_element(p))
-    scheme_arg_mismatch("bytes->path-element",
-                        "converted path can be split or is not relative: ",
+    scheme_arg_mismatch(name,
+                        "cannot be converted to a path element (can be split, is not relative, or names a special element): ",
                         argv[0]);
 
   return p;
+}
+
+static Scheme_Object *bytes_to_path_element(int argc, Scheme_Object **argv)
+{
+  return do_bytes_to_path_element("bytes->path-element", argv[0], argc, argv);
+}
+
+static Scheme_Object *string_to_path_element(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *b;
+
+  if (!SCHEME_CHAR_STRINGP(argv[0]))
+    scheme_wrong_type("string->path-element", "string", 0, argc, argv);
+
+  b = scheme_char_string_to_byte_string_locale(argv[0]);
+  
+  return do_bytes_to_path_element("string->path-element", b, argc, argv);
 }
 
 /**********************************************************************/

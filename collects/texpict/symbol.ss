@@ -1,7 +1,7 @@
 (module symbol (lib "slideshow.ss" "slideshow")
   
   (provide symbol
-	   sym:in sym:rightarrow sym:infinity sym:times 
+	   sym:in sym:rightarrow sym:leftarrow sym:infinity sym:times 
 	   sym:implies sym:emdash 
 	   sym:therefore)
   

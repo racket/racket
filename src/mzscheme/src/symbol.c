@@ -82,6 +82,10 @@ typedef unsigned long hash_v_t;
 # define WEAK_ARRAY_HEADSIZE 0
 #endif
 
+static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
+                                           GC_CAN_IGNORE const char *key, unsigned int length,
+                                           Scheme_Object *naya);
+
 /* Special hashing for symbols: */
 static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
 				    GC_CAN_IGNORE const char *key, unsigned int length,
@@ -92,8 +96,9 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
   Scheme_Object *bucket;
 
   /* WARNING: key may be GC-misaligned... */
+  /* This function is designed to need no MZ_PRECISE_GC instrumentation.
+     To handle re-hashing, it tail-calls rehash_symbol_bucket. */
 
- rehash_key:
   mask = table->size - 1;
 
   {
@@ -138,51 +143,7 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
     return NULL;
 
   if (table->count * FILL_FACTOR >= table->size) {
-    /* Rehash */
-    int i, oldsize = table->size, newsize, lostc;
-    size_t asize;
-    Scheme_Object *cb;
-    Scheme_Object **old = table->keys;
-
-    /* Don't grow table if it's mostly lost cells (due to lots of
-       temporary symbols). */
-    lostc = 0;
-    for (i = 0; i < oldsize; i++) {
-      cb = old[WEAK_ARRAY_HEADSIZE + i];
-      if (cb == SYMTAB_LOST_CELL)
-	lostc++;
-    }
-    if ((lostc * 2) < table->count)
-      newsize = oldsize << 1;
-    else
-      newsize = oldsize;
-
-    asize = (size_t)newsize * sizeof(Scheme_Object *);
-    {
-      Scheme_Object **ba;
-#ifdef MZ_PRECISE_GC
-      ba = (Scheme_Object **)GC_malloc_weak_array(sizeof(Scheme_Object *) * newsize,
-						  SYMTAB_LOST_CELL);
-#else
-      ba = MALLOC_N_ATOMIC(Scheme_Object *, newsize);
-      memset((char *)ba, 0, asize);
-#endif
-      table->keys = ba;
-    }
-    table->size = newsize;
-
-    table->count = 0;
-
-    for (i = 0; i < oldsize; i++) {
-      cb = old[WEAK_ARRAY_HEADSIZE + i] ;
-      if (cb && (cb != SYMTAB_LOST_CELL))
-	symbol_bucket(table, SCHEME_SYM_VAL(cb), SCHEME_SYM_LEN(cb), cb);
-    }
-
-    /* Restore GC-misaligned key: */
-    key = SCHEME_SYM_VAL(naya);
-
-    goto rehash_key;
+    return rehash_symbol_bucket(table, key, length, naya);
   }
 
   table->keys[WEAK_ARRAY_HEADSIZE + h] = naya;
@@ -190,6 +151,58 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
   table->count++;
 
   return naya;
+}
+
+static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
+                                           GC_CAN_IGNORE const char *key, unsigned int length,
+                                           Scheme_Object *naya)
+{
+  int i, oldsize = table->size, newsize, lostc;
+  size_t asize;
+  Scheme_Object *cb;
+  Scheme_Object **old = table->keys;
+
+  /* WARNING: key may be GC-misaligned... */
+
+  /* Don't grow table if it's mostly lost cells (due to lots of
+     temporary symbols). */
+  lostc = 0;
+  for (i = 0; i < oldsize; i++) {
+    cb = old[WEAK_ARRAY_HEADSIZE + i];
+    if (cb == SYMTAB_LOST_CELL)
+      lostc++;
+  }
+  if ((lostc * 2) < table->count)
+    newsize = oldsize << 1;
+  else
+    newsize = oldsize;
+
+  asize = (size_t)newsize * sizeof(Scheme_Object *);
+  {
+    Scheme_Object **ba;
+#ifdef MZ_PRECISE_GC
+    ba = (Scheme_Object **)GC_malloc_weak_array(sizeof(Scheme_Object *) * newsize,
+                                                SYMTAB_LOST_CELL);
+#else
+    ba = MALLOC_N_ATOMIC(Scheme_Object *, newsize);
+    memset((char *)ba, 0, asize);
+#endif
+    table->keys = ba;
+  }
+  table->size = newsize;
+
+  table->count = 0;
+
+  for (i = 0; i < oldsize; i++) {
+    cb = old[WEAK_ARRAY_HEADSIZE + i] ;
+    if (cb && (cb != SYMTAB_LOST_CELL))
+      symbol_bucket(table, SCHEME_SYM_VAL(cb), SCHEME_SYM_LEN(cb), cb);
+  }
+
+  /* Restore GC-misaligned key: */
+  key = SCHEME_SYM_VAL(naya);
+
+  return symbol_bucket(table, key, length, naya);
 }
 
 #ifndef MZ_PRECISE_GC

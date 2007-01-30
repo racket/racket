@@ -1,3 +1,6 @@
+Version 369.7
+Added string->path-element and path-element->string
+
 Version 369.6
 Default load handler enables #reader (even when not reading a module)
 

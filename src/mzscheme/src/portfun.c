@@ -2292,13 +2292,15 @@ static int pipe_out_ready(Scheme_Output_Port *p)
   if (pipe->eof || !pipe->bufmax)
     return 1;
 
-  if (pipe->bufstart <= pipe->bufend) {
-    avail = (pipe->buflen - pipe->bufend) + pipe->bufstart - 1;
+  if (pipe->bufend >= pipe->bufstart) {
+    avail = pipe->bufend - pipe->bufstart;
   } else {
-    avail = pipe->bufstart - pipe->bufend - 1;
+    avail = pipe->bufend + (pipe->buflen - pipe->bufstart);
   }
 
-  return !!avail;
+  avail = pipe->bufmax + pipe->bufmaxextra - 1 - avail;
+
+  return avail > 0;
 }
 
 void scheme_pipe_with_limit(Scheme_Object **read, Scheme_Object **write, int queuelimit)

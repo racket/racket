@@ -834,8 +834,18 @@
 (when (eq? 'unix (system-path-convention-type))
   (test-~-paths 'unix #f))
 
+;; Assuming a reasonable locale...
+(test "Apple" path-element->string (string->path-element "Apple"))
+(test "Apple" path-element->string (bytes->path-element #"Apple"))
+
 (err/rt-test (path-element->bytes (string->path ".")))
 (err/rt-test (path-element->bytes (string->path "..")))
+(err/rt-test (bytes->path-element #"." 'unix))
+(err/rt-test (bytes->path-element #".." 'unix))
+(err/rt-test (bytes->path-element "a/b" 'unix))
+(err/rt-test (bytes->path-element "a\\b" 'windows))
+
+(test #"\\\\?\\REL\\\\a/b" path->bytes (bytes->path-element #"a/b" 'windows))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

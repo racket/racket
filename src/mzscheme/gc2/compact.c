@@ -2781,8 +2781,6 @@ static void check_ptr(void **a)
 #endif
   }
 }
-# endif
-
 
 #define GC_X_variable_stack GC_do_check_variable_stack
 #define gcX(a) check_ptr(a)
@@ -2791,6 +2789,8 @@ static void check_ptr(void **a)
 #undef GC_X_variable_stack
 #undef gcX
 #undef X_source
+
+# endif
 
 void GC_check_variable_stack()
 {

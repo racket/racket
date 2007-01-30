@@ -26,14 +26,14 @@
 	   [th (thread
 		(lambda ()
 		  (set! r (port-commit-peeked 3 unless-evt never-evt in))))])
-      (sleep SLEEP-TIME)
+      (sync (system-idle-evt))
       (test #t thread-running? th)
       (test #\b peek-char in)
-      (sleep SLEEP-TIME)
+      (sync (system-idle-evt))
       (test #t thread-running? th)
       (test #f sync/timeout 0 unless-evt)
       (test #\b read-char in)
-      (sleep SLEEP-TIME)
+      (sync (system-idle-evt))
       (test th sync th)
       (test #f values r))
     (test "anana" read-string 5 in)
@@ -50,29 +50,29 @@
 		       [th1 (thread
 			     (lambda ()
 			       (set! r1 (port-commit-peeked 1 unless-evt s1 in))))]
-		       [_ (sleep SLEEP-TIME)]
+		       [_ (sync (system-idle-evt))]
 		       [th2 (thread
 			     (lambda ()
 			       (set! r2 (port-commit-peeked 2 unless-evt (semaphore-peek-evt s2) in))))])
-		  (sleep SLEEP-TIME)
+                  (sync (system-idle-evt))
 		  (when suspend/kill
 		    (case suspend/kill
 		      [(suspend) (thread-suspend th1)]
 		      [(kill) (kill-thread th1)])
-		    (sleep SLEEP-TIME))
+                    (sync (system-idle-evt)))
 		  (test (eq? suspend/kill 'kill) thread-dead? th1)
 		  (test #f thread-dead? th2)
 		  (when peek?
 		    (test #"do" peek-bytes 2 0 in)
-		    (sleep SLEEP-TIME))
+                    (sync (system-idle-evt)))
 		  (unless (= which 3)
 		    (semaphore-post (if (= which 1) s1 s2)))
 		  (when (= which 3)
 		    (test #"do" read-bytes 2 in))
-		  (sleep SLEEP-TIME)
+                  (sync (system-idle-evt))
 		  (test unless-evt sync/timeout 0 unless-evt)
 		  (test (not (eq? suspend/kill 'suspend)) thread-dead? th1)
-		  (sleep SLEEP-TIME)
+                  (sync (system-idle-evt))
 		  (test #t thread-dead? th2)
 		  (test (if (= which 1) #t (if suspend/kill '? #f)) values r1)
 		  (test (= which 2) values r2)
@@ -108,18 +108,20 @@
       (define (bg thunk runs? spec? exn?)
 	;; Fill the pipe, again:
 	(test 10 write-bytes (make-bytes 10 66) out)
+        (sync (system-idle-evt))
 	(let* ([ex #f]
 	       [th (thread 
 		    (lambda ()
 		      (with-handlers ([exn:fail? (lambda (x) 
 						   (set! ex #t)
 						   (raise x))])
-			(sync (write-bytes-avail-evt #"x" out)))))])
-	  (sleep SLEEP-TIME)
+                        (let ([evt (write-bytes-avail-evt #"x" out)])
+                          (sync evt)))))])
+          (sync (system-idle-evt))
 	  (test #t thread-running? th)
 	  ;; This thunk (and sometimes read) should go through the manager:
 	  (thunk)
-	  (sleep SLEEP-TIME)
+          (sync (system-idle-evt))
 	  (test (not runs?) thread-running? th)
 	  (test (make-bytes 10 66) read-bytes 10 in)
 	  (thread-wait th)
@@ -368,7 +370,7 @@
 (define (delay-hello)
   (let-values ([(r w) (make-pipe)])
     (thread (lambda ()
-	      (sleep 0.1)
+	      (sync (system-idle-evt))
 	      (write-string "hello" w)
 	      (close-output-port w)))
     r))
@@ -460,7 +462,7 @@
       (let* ([v #f]
 	     [t (thread (lambda ()
 			  (set! v (read-bytes 6 p))))])
-	(test #f sync/timeout SLEEP-TIME t)
+	(test (void) sync (system-idle-evt) t)
 	(display "56" out)
 	(test t sync/timeout SLEEP-TIME t)
 	(test #"123456" values v)))))

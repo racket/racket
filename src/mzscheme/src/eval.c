@@ -162,7 +162,6 @@ static Scheme_Object *top_expander;
 static Scheme_Object *stop_expander;
 
 static Scheme_Object *quick_stx;
-static int quick_stx_in_use;
 static int taking_shortcut;
 
 Scheme_Object *scheme_stack_dump_key;
@@ -497,7 +496,6 @@ scheme_init_eval (Scheme_Env *env)
 			    env);
 
   REGISTER_SO(quick_stx);
-  quick_stx = scheme_datum_to_syntax(app_symbol, scheme_false, scheme_false, 0, 0);
 }
 
 /*========================================================================*/
@@ -4000,7 +3998,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 			   Scheme_Compile_Expand_Info *rec, int drec, 
 			   int app_position)
 {
-  Scheme_Object *name, *var, *stx, *normal;
+  Scheme_Object *name, *var, *stx, *normal, *can_recycle_stx = NULL;
   Scheme_Env *menv = NULL;
   GC_CAN_IGNORE char *not_allowed;
   int looking_for_top;
@@ -4239,13 +4237,16 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   /* Compile/expand as application, datum, or top: */
-  if (!quick_stx_in_use && rec[drec].comp) {
-    quick_stx_in_use = 1;
+  if (quick_stx && rec[drec].comp) {
     ((Scheme_Stx *)quick_stx)->val = stx;
     ((Scheme_Stx *)quick_stx)->wraps = ((Scheme_Stx *)form)->wraps;
+    ((Scheme_Stx *)quick_stx)->u.modinfo_cache = NULL;
     stx = quick_stx;
+    quick_stx = NULL;
   } else
     stx = scheme_datum_to_syntax(stx, scheme_false, form, 0, 0);
+  if (rec[drec].comp)
+    can_recycle_stx = stx;
 
   {
     Scheme_Object *find_name = stx;
@@ -4277,12 +4278,9 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     }
   }
 
-  if (SAME_OBJ(stx, quick_stx)) {
-    quick_stx_in_use = 0;
-    if (!SAME_OBJ(var, normal)) {
-      /* Need a new stx after all: */
-      stx = scheme_datum_to_syntax(SCHEME_STX_VAL(stx), scheme_false, form, 0, 0);
-    }
+  if (!SAME_OBJ(var, normal)) {
+    /* Someone might keep the stx: */
+    can_recycle_stx = NULL;
   }
 
   if (!var && looking_for_top) {
@@ -4317,6 +4315,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       Scheme_Syntax *f;
       taking_shortcut = 1;
       f = (Scheme_Syntax *)SCHEME_SYNTAX(var);
+      if (can_recycle_stx && !quick_stx)
+        quick_stx = can_recycle_stx;
       return f(form, env, rec, drec);
     } else {
       form = scheme_datum_to_syntax(scheme_make_immutable_pair(stx, form), form, form, 0, 2);
@@ -4411,11 +4411,13 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
 		   Scheme_Compile_Expand_Info *rec, int drec)
 {
   Scheme_Object *form, *naya;
+  int tsc = taking_shortcut;
+
+  taking_shortcut = 0;
 
   scheme_rec_add_certs(rec, drec, forms);
-  if (taking_shortcut) {
+  if (tsc) {
     form = forms;
-    taking_shortcut = 0;
   } else {
     form = SCHEME_STX_CDR(forms);
     form = scheme_datum_to_syntax(form, forms, forms, 0, 0);

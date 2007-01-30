@@ -208,8 +208,8 @@ X__(substring) (int argc, Scheme_Object *argv[])
 
   chars = SCHEME_X_STR_VAL(argv[0]);
 
-  scheme_get_substring_indices(SUBXSTR, argv[0], argc, argv, 1, 2,
-			       &start, &finish);
+  get_substring_indices(SUBXSTR, argv[0], argc, argv, 1, 2,
+                        &start, &finish, SCHEME_X_STRTAG_VAL(argv[0]));
 
   str = X(scheme_alloc, _string)(finish-start, 0);
   memcpy(SCHEME_X_STR_VAL(str), chars + start, (finish - start) * sizeof(Xchar));
@@ -335,28 +335,31 @@ X__(string_copy) (int argc, Scheme_Object *argv[])
     scheme_wrong_type(XSTRINGSTR "-copy", XSTR "string", 0, argc, argv);
 
   return X(scheme_make_sized, _string)(SCHEME_X_STR_VAL(argv[0]), 
-					   SCHEME_X_STRTAG_VAL(argv[0]), 1);
+                                       SCHEME_X_STRTAG_VAL(argv[0]), 1);
 }
 
 static Scheme_Object *
 X__(string_copy_bang)(int argc, Scheme_Object *argv[])
 {
+  Scheme_Object *s1, *s2;
   long istart, ifinish;
   long ostart, ofinish;
 
-  if (!SCHEME_MUTABLE_X_STRINGP(argv[0]))
+  s1 = argv[0];
+  if (!SCHEME_MUTABLE_X_STRINGP(s1))
     scheme_wrong_type(XSTRINGSTR "-copy!", "mutable " XSTR "string", 0, argc, argv);
 
-  scheme_get_substring_indices(XSTRINGSTR "-copy!", argv[0], 
-			       argc, argv, 1, 5, 
-			       &ostart, &ofinish);
+  get_substring_indices(XSTRINGSTR "-copy!", s1, 
+                        argc, argv, 1, 5, 
+                        &ostart, &ofinish, SCHEME_X_STRTAG_VAL(s1));
 
-  if (!SCHEME_X_STRINGP(argv[0]))
+  s2 = argv[2];
+  if (!SCHEME_X_STRINGP(s2))
     scheme_wrong_type(XSTRINGSTR "-copy!", XSTR "string", 2, argc, argv);
 
-  scheme_get_substring_indices(XSTRINGSTR "-copy!", argv[2], 
-			       argc, argv, 3, 4, 
-			       &istart, &ifinish);
+  get_substring_indices(XSTRINGSTR "-copy!", s2, 
+                        argc, argv, 3, 4, 
+                        &istart, &ifinish, SCHEME_X_STRTAG_VAL(s2));
 
   if ((ofinish - ostart) < (ifinish - istart)) {
     scheme_arg_mismatch(XSTRINGSTR "-copy!",
@@ -365,8 +368,8 @@ X__(string_copy_bang)(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  memmove(SCHEME_X_STR_VAL(argv[0]) + ostart,
-	  SCHEME_X_STR_VAL(argv[2]) + istart,
+  memmove(SCHEME_X_STR_VAL(s1) + ostart,
+	  SCHEME_X_STR_VAL(s2) + istart,
 	  (ifinish - istart) * sizeof(Xchar));
   
   return scheme_void;

@@ -517,7 +517,8 @@
 			(begin
 			  ;; This means that we let too many bytes
 			  ;;  get written while a special was pending.
-			  ;;  Too bad...
+			  ;;  (The limit is disabled when a special
+                          ;;  is in the pipe.)
 			  (set-car! more (subbytes (car more) wrote))
 			  ;; By peeking, make room for more:
 			  (peek-byte r (sub1 (min (pipe-content-length w)
@@ -589,7 +590,6 @@
 						 (list 'reply (cadr req) (caddr req) v))])
 				    (case (car req)
 				      [(read)
-				       (printf "read~n")
 				       (reply (read-one (cadddr req)))]
 				      [(close)
 				       (reply (close-it))]
@@ -640,7 +640,8 @@
 							(min (- end start)
 							     (max 0
 								  (- limit (pipe-content-length w)))))])
-					  (if (zero? len)
+					  (if (and (zero? len)
+                                                   (null? more))
 					      (handle-evt w (lambda (x) (loop reqs)))
 					      (handle-evt (channel-put-evt (cadr req) len)
 							  (lambda (x)
@@ -673,7 +674,7 @@
 	       (call-with-semaphore
 		lock-semaphore
 		(lambda ()
-		  (unless via-manager?
+		  (unless mgr-th
 		    (set! mgr-th (thread serve)))
 		  (set! via-manager? #t)
 		  (thread-resume mgr-th (current-thread))

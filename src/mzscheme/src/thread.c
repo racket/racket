@@ -357,6 +357,8 @@ static int dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 
 static int can_break_param(Scheme_Thread *p);
 
+static int post_system_idle();
+
 static Scheme_Object *current_stats(int argc, Scheme_Object *args[]);
 
 static Scheme_Object **config_map;
@@ -2333,11 +2335,15 @@ static void select_thread()
       }
       if ((new_thread->running & MZTHREAD_USER_SUSPENDED)
 	  && !(new_thread->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
-	scheme_console_printf("unbreakable deadlock\n");
-	if (scheme_exit)
-	  scheme_exit(1);
-	/* We really have to exit: */
-	exit(1);
+        if (post_system_idle()) {
+          /* Aha! Someone was waiting for us to do nothing. Try again... */
+        } else {
+          scheme_console_printf("unbreakable deadlock\n");
+          if (scheme_exit)
+            scheme_exit(1);
+          /* We really have to exit: */
+          exit(1);
+        }
       } else {
 	scheme_weak_resume_thread(new_thread);
       }
@@ -3203,6 +3209,9 @@ static int check_sleep(int need_activity, int sleep_now)
   
     if (needs_sleep_cancelled)
       return 0;
+
+    if (post_system_idle())
+      return 0;
   
     if (sleep_now) {
       float mst = (float)max_sleep_time;
@@ -3222,14 +3231,14 @@ static int check_sleep(int need_activity, int sleep_now)
   return 0;
 }
 
-void scheme_cancel_sleep()
-{
-  needs_sleep_cancelled = 1;
-}
-
 static int post_system_idle()
 {
   return scheme_try_channel_get(scheme_system_idle_channel);
+}
+
+void scheme_cancel_sleep()
+{
+  needs_sleep_cancelled = 1;
 }
 
 void scheme_check_threads(void)
@@ -3739,8 +3748,7 @@ void scheme_thread_block(float sleep_time)
   } else {
     /* If all processes are blocked, check for total process sleeping: */
     if (p->block_descriptor != NOT_BLOCKED) {
-      if (!post_system_idle())
-        check_sleep(1, 1);
+      check_sleep(1, 1);
     }
   }
 
