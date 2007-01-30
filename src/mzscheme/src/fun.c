@@ -1331,7 +1331,8 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     data->max_let_depth = (new_info->max_let_depth
                            + num_params
                            + closure_size
-                           + convert_size);
+                           + convert_size
+                           + SCHEME_TAIL_COPY_THRESHOLD);
 
     /* Add code to box set!ed argument variables: */
     for (i = 0; i < num_params; i++) {
