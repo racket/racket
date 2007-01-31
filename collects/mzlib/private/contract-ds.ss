@@ -19,7 +19,8 @@ it around flattened out.
 (module contract-ds mzscheme
   (require "contract-guts.ss"
            "contract-opt.ss"
-           "contract-ds-helpers.ss")
+           "contract-ds-helpers.ss"
+           (lib "etc.ss"))
   (require-for-syntax "contract-ds-helpers.ss"
                       "contract-helpers.ss"
                       "contract-opt-guts.ss"
@@ -28,12 +29,10 @@ it around flattened out.
   (provide define-contract-struct
            
            make-opt-contract/info
+           set-opt-contract/info-enforcer!
            opt-contract/info-contract
+           opt-contract/info-id
            opt-contract/info-enforcer
-           opt-contract/info-pos
-           opt-contract/info-neg
-           opt-contract/info-src-info
-           opt-contract/info-orig-str
            lazy-depth-to-look
            
            unknown?
@@ -350,17 +349,7 @@ it around flattened out.
                (let*-values ([(inner-val) #'val]
                              [(clauses lifts superlifts stronger-ribs)
                               (build-enforcer-clauses opt/i
-                                                      (make-opt/info #'ctc
-                                                                     inner-val
-                                                                     #'pos
-                                                                     #'neg
-                                                                     #'src-info
-                                                                     #'orig-str
-                                                                     (opt/info-free-vars opt/info)
-                                                                     (opt/info-recf opt/info)
-                                                                     (opt/info-base-pred opt/info)
-                                                                     (opt/info-this opt/info)
-                                                                     (opt/info-that opt/info))
+                                                      (opt/info-change-val inner-val opt/info)
                                                       name
                                                       stx
                                                       clauses
@@ -372,33 +361,16 @@ it around flattened out.
                  (with-syntax ([(clause (... ...)) clauses]
                                [enforcer-id enforcer-id-var]
                                [helper-id helper-id-var]
-                               [free-vars (make-free-vars (append (opt/info-free-vars opt/info)) #'freev)]
+                               [((free-var free-var-val) (... ...))
+                                (make-free-vars (append (opt/info-free-vars opt/info)) #'freev)]
                                [(saved-lifts (... ...)) (lifts-to-save lifts)])
                    (values
                     #`(λ (stct f-x ...)
-                        (let* ([info (opt-wrap-get stct 1)]
-                               [enforcer (opt-contract/info-enforcer info)]
-                               [ctc (opt-contract/info-contract info)]
-                               [pos (opt-contract/info-pos info)]
-                               [neg (opt-contract/info-neg info)]
-                               [src-info (opt-contract/info-src-info info)]
-                               [orig-str (opt-contract/info-orig-str info)])
-                          (let free-vars
-                            #,(bind-lifts
-                               lifts
-                               #`(let-syntax #,(if (opt/info-recf opt/info)
-                                                   #`([#,(opt/info-recf opt/info) 
-                                                         (lambda (stx)
-                                                           (syntax-case stx () 
-                                                             [(f val args ((... ...) (... ...)))
-                                                              #'(helper-id val
-                                                                           info
-                                                                           args
-                                                                           ((... ...) (... ...))
-                                                                           saved-lifts (... ...))]))])
-                                                   #`())
-                                   (let* (clause (... ...))
-                                     (values f-x ...)))))))
+                        (let ((free-var free-var-val) (... ...))
+                          #,(bind-lifts
+                             lifts
+                             #'(let* (clause (... ...))
+                                 (values f-x ...)))))
                     lifts
                     superlifts
                     stronger-ribs))))
@@ -411,7 +383,8 @@ it around flattened out.
                  [(_ clause (... ...))
                   (let ((enforcer-id-var (car (generate-temporaries (syntax (enforcer)))))
                         (helper-id-var (car (generate-temporaries (syntax (helper)))))
-                        (contract/info-var (car (generate-temporaries (syntax (contract/info))))))
+                        (contract/info-var (car (generate-temporaries (syntax (contract/info)))))
+                        (id-var (car (generate-temporaries (syntax (id))))))
                     (let-values ([(enforcer lifts superlifts stronger-ribs)
                                   (build-enforcer opt/i
                                                   opt/info
@@ -430,100 +403,71 @@ it around flattened out.
                                     (src-info (opt/info-src-info opt/info))
                                     (orig-str (opt/info-orig-str opt/info))
                                     (ctc (opt/info-contract opt/info))
-                                    (base-pred (or (opt/info-base-pred opt/info) #'(λ (x) #f)))
                                     (enforcer-id enforcer-id-var)
                                     (helper-id helper-id-var)
                                     (contract/info contract/info-var)
+                                    (id id-var)
                                     ((j (... ...)) (let loop ([i 2]
                                                               [lst to-save])
                                                      (cond
                                                        [(null? lst) null]
                                                        [else (cons i (loop (+ i 1) (cdr lst)))])))
                                     ((free-var (... ...)) to-save))
-                        (values
-                         (syntax (helper-id val contract/info free-var (... ...)))
-                         lifts
-                         (append 
-                          superlifts
-                          (list (with-syntax ([(stronger-this-var (... ...)) (map stronger-rib-this-var stronger-ribs)]
-                                              [(stronger-that-var (... ...)) (map stronger-rib-that-var stronger-ribs)]
-                                              [(stronger-exps (... ...)) (map stronger-rib-stronger-exp stronger-ribs)]
-                                              [(stronger-indexes (... ...)) (build-list (length stronger-ribs) 
-                                                                                        (λ (x) (+ x 2)))]
-                                              [(stronger-var (... ...)) (map stronger-rib-save-id stronger-ribs)])
-                                  (cons #'is-stronger? 
-                                        #'(λ (val i free-var (... ...))
-                                            (cond
-                                              [(= i 0) #f]
-                                              [(and (opt-wrap-predicate val)
-                                                    (opt-wrap-get val 0))
-                                               (let ([stronger-this-var stronger-var] 
-                                                     (... ...)
-                                                     
-                                                     ;; this computation is bogus
-                                                     ;; it only works if the stronger vars and the things
-                                                     ;; saved in the wrapper are the same
-                                                     [stronger-that-var (opt-wrap-get val stronger-indexes)]
-                                                     (... ...))
-                                                 
-                                                 (or (and 
-                                                      ;; make sure this is the same contract -- if not,
-                                                      ;; the rest of this test is bogus and may fail at runtime
-                                                      (eq? enforcer-id (opt-contract/info-enforcer 
-                                                                        (opt-wrap-get val 1)))
-                                                      stronger-exps
-                                                      (... ...))
-                                                     (is-stronger? (opt-wrap-get val 0)
-                                                                   (- i 1)
-                                                                   free-var (... ...))))]
-                                              [else #f]))))
-                                (cons 
-                                 helper-id-var
-                                 (syntax
-                                  (λ (val info free-var (... ...))
-                                    (let ([ctc (opt-contract/info-contract info)]
-                                          [pos (opt-contract/info-pos info)]
-                                          [neg (opt-contract/info-neg info)]
-                                          [src-info (opt-contract/info-src-info info)]
-                                          [orig-str (opt-contract/info-orig-str info)])
-                                      (cond
-                                        ;; FIXME terribly broken
-                                        [(base-pred val) val]
-                                        [else
-                                         (begin
-                                           (unless (or (wrap-predicate val)
-                                                       (opt-wrap-predicate val)
-                                                       (raw-predicate val))
-                                             (raise-contract-error
-                                              val
-                                              src-info
-                                              pos
-                                              orig-str
-                                              "expected <~a>, got ~e"
-                                              ((name-get ctc) ctc)
-                                              val))
-                                           (cond
-                                             ;; this is where the optimized stronger needs to be called.
-                                             [(is-stronger? val 5 free-var (... ...))
-                                              val]
-                                             ;; ALLOCATE OPT-WRAP
-                                             [else 
-                                              (let ([w (opt-wrap-maker val info)])
-                                                (opt-wrap-set w j free-var) (... ...)
-                                                w)]))])))))
-                                (cons enforcer-id-var enforcer)))
-                         (list (cons contract/info-var
-                                     (syntax 
-                                      (make-opt-contract/info ctc
-                                                              enforcer-id
-                                                              pos
-                                                              neg
-                                                              src-info
-                                                              orig-str))))
-                         #f
-                         #f
-                         stronger-ribs)))))]))
-             
+                        (with-syntax ([(stronger-this-var (... ...)) (map stronger-rib-this-var stronger-ribs)]
+                                      [(stronger-that-var (... ...)) (map stronger-rib-that-var stronger-ribs)]
+                                      [(stronger-exps (... ...)) (map stronger-rib-stronger-exp stronger-ribs)]
+                                      [(stronger-indexes (... ...)) (build-list (length stronger-ribs) 
+                                                                                (λ (x) (+ x 2)))]
+                                      [(stronger-var (... ...)) (map stronger-rib-save-id stronger-ribs)])
+                          
+                          (let ([partials
+                                 (list (cons id-var #'(begin-lifted (box 'identity)))
+                                       (cons enforcer-id-var enforcer)
+                                       (cons contract/info-var
+                                             (syntax 
+                                              (make-opt-contract/info ctc enforcer-id id))))])
+                            (values
+                             (syntax 
+                              (cond
+                                [(opt-wrap-predicate val)
+                                 (if (and (opt-wrap-get val 0)
+                                          (let ([stronger-this-var stronger-var] 
+                                                (... ...)
+                                                
+                                                ;; this computation is bogus
+                                                ;; it only works if the stronger vars and the things
+                                                ;; saved in the wrapper are the same
+                                                [stronger-that-var (opt-wrap-get val stronger-indexes)]
+                                                (... ...))
+                                            (and 
+                                             ;; make sure this is the same contract -- if not,
+                                             ;; the rest of this test is bogus and may fail at runtime
+                                             (eq? id (opt-contract/info-id (opt-wrap-get val 1)))
+                                             stronger-exps (... ...))))
+                                     val
+                                     (let ([w (opt-wrap-maker val contract/info)])
+                                       (opt-wrap-set w j free-var) (... ...)
+                                       w))]
+                                [(or (raw-predicate val)
+                                     (wrap-predicate val))
+                                 (let ([w (opt-wrap-maker val contract/info)])
+                                   (opt-wrap-set w j free-var) (... ...)
+                                   w)]
+                                [else
+                                 (raise-contract-error
+                                  val
+                                  src-info
+                                  pos
+                                  orig-str
+                                  "expected <~a>, got ~e"
+                                  ((name-get ctc) ctc)
+                                  val)]))
+                             lifts
+                             superlifts
+                             partials
+                             #f
+                             #f
+                             stronger-ribs)))))))]))
              )))]))
   
   (define (do-contract-name name/c name/dc list-of-subcontracts fields attrs)
@@ -550,7 +494,7 @@ it around flattened out.
            [else (apply build-compound-type-name name/dc fields)]))]))
   
   (define-struct contract/info (contract pos neg src-info orig-str))
-  (define-struct opt-contract/info (contract enforcer pos neg src-info orig-str))
+  (define-struct opt-contract/info (contract enforcer id))
 
   ;; parents : (listof wrap-parent)
   ;; vals : hash-table[symbol -o> (union (make-unknown proc[field-vals -> any]) any)

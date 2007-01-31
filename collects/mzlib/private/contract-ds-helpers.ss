@@ -132,35 +132,21 @@ which are then called when the contract's fields are explored
   
   (define (build-enforcer-clauses opt/i opt/info name stx clauses f-x/vals f-xs/vals
                                   helper-id helper-info helper-freev)  
-    (define (opt/enforcer-clause stx)
+    (define (opt/enforcer-clause id stx)
       (syntax-case stx ()
         [(f arg ...)
          ;; we need to override the default optimization of recursive calls to use our helper
          (and (opt/info-recf opt/info) (module-identifier=? (opt/info-recf opt/info) #'f))
          (values
-          #`(f #,(opt/info-val opt/info) arg ...)
+          #`(f #,id arg ...)
           null
           null
           null
           #f
           #f
           null)]
-        #;
-        [(f arg ...)
-         ;; we need to override the default optimization of recursive calls to use our helper
-         (module-identifier=? (opt/info-recf opt/info) #'f)
-         (with-syntax ((helper helper-id)
-                       (val (opt/info-val opt/info))
-                       (info helper-info))
-           (values
-            (syntax (helper val info arg ...))
-            null
-            null
-            null
-            #f
-            #f
-            null))]
-        [else (opt/i opt/info stx)]))
+        [else (opt/i (opt/info-change-val id opt/info)
+                     stx)]))
 
     (let* ([field-names 
             (map (λ (clause)
@@ -197,21 +183,21 @@ which are then called when the contract's fields are explored
                 (and (identifier? (syntax id))
                      (andmap identifier? (syntax->list (syntax (x ...)))))
                 (let*-values ([(next lifts superlifts partials _ _2 _3)
-                               (opt/enforcer-clause (syntax ctc-exp))]
+                               (opt/enforcer-clause let-var (syntax ctc-exp))]
                               [(maker-arg)
-                               (with-syntax ((val (opt/info-val opt/info))
-                                             ((arg ...) arglist)
-                                             [(new-let-vars ...) (match-up (reverse prior-ac-ids)
-                                                                           (syntax (x ...))
-                                                                           field-names)])
+                               (with-syntax ([val (opt/info-val opt/info)]
+                                             [(new-let-bindings ...) 
+                                              (match-up/bind (reverse prior-ac-ids)
+                                                             (syntax (x ...))
+                                                             field-names
+                                                             arglist)])
                                  #`(#,let-var
                                       #,(bind-lifts
                                          superlifts
-                                         #`(let ([new-let-vars arg] ...)
+                                         #`(let (new-let-bindings ...)
                                              #,(bind-lifts 
                                                 (append lifts partials)
-                                                #`(let ((val #,let-var))
-                                                    #,next))))))])
+                                                next)))))])
                   (loop (cdr clauses)
                         (cdr let-vars)
                         (cdr arglists)
@@ -231,14 +217,13 @@ which are then called when the contract's fields are explored
                [(id ctc-exp)
                 (identifier? (syntax id))
                 (let*-values ([(next lifts superlifts partials _ __ stronger-ribs)
-                               (opt/enforcer-clause (syntax ctc-exp))]
+                               (opt/enforcer-clause let-var (syntax ctc-exp))]
                               [(maker-arg)
                                (with-syntax ((val (opt/info-val opt/info)))
                                  #`(#,let-var
                                       #,(bind-lifts
                                          partials
-                                         #`(let ((val #,let-var))
-                                             #,next))))])
+                                         next)))])
                   (loop (cdr clauses)
                         (cdr let-vars)
                         (cdr arglists)
@@ -281,6 +266,31 @@ which are then called when the contract's fields are explored
          [(null? vars) null]
          [else (cons (reverse (cdr vars)) 
                      (loop (cdr vars)))]))))
+  
+  (define (match-up/bind prior-ac-ids used-field-names field-names rhss)
+    (let ([used-field-ids (syntax->list used-field-names)])
+      (let loop ([prior-ac-ids prior-ac-ids]
+                 [field-names field-names]
+                 [rhss rhss])
+        (cond
+          [(null? prior-ac-ids) null]
+          [else (let* ([ac-id (car prior-ac-ids)]
+                       [field-name (car field-names)]
+                       [id-used 
+                        (ormap (λ (used-field-id) 
+                                 (and (eq? (syntax-e field-name) (syntax-e used-field-id))
+                                      used-field-id))
+                               used-field-ids)])
+                  (if id-used
+                      (cons (with-syntax ([id id-used]
+                                          [arg (car rhss)])
+                              #'[id arg])
+                            (loop (cdr prior-ac-ids)
+                                  (cdr field-names)
+                                  (cdr rhss)))
+                      (loop (cdr prior-ac-ids)
+                            (cdr field-names)
+                            (cdr rhss))))]))))
   
   (define (match-up prior-ac-ids used-field-names field-names)
     (let ([used-field-ids (syntax->list used-field-names)])

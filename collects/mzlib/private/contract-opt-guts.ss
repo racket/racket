@@ -20,7 +20,8 @@
            opt/info-this
            opt/info-that
            
-           opt/info-swap-blame)
+           opt/info-swap-blame
+           opt/info-change-val)
   
   ;; a hash table of opters
   (define opters-table
@@ -69,6 +70,21 @@
           (this (opt/info-this info))
           (that (opt/info-that info)))
       (make-opt/info ctc val pos neg src-info orig-str free-vars recf base-pred this that)))
+  
+  ;; opt/info-change-val : identifier opt/info -> opt/info
+  ;; changes the name of the variable that the value-to-be-contracted is bound to
+  (define (opt/info-change-val val info)
+    (let ((ctc (opt/info-contract info))
+          (pos (opt/info-neg info))
+          (neg (opt/info-pos info))
+          (src-info (opt/info-src-info info))
+          (orig-str (opt/info-orig-str info))
+          (free-vars (opt/info-free-vars info))
+          (recf (opt/info-recf info))
+          (base-pred (opt/info-base-pred info))
+          (this (opt/info-this info))
+          (that (opt/info-that info)))
+      (make-opt/info ctc val neg pos src-info orig-str free-vars recf base-pred this that)))
   
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

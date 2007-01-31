@@ -3552,6 +3552,202 @@
       ((couple-tl (contract c x 'pos 'neg)) -11)))
   
   
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  testing define-opt/c
+  ;;
+  
+  (contract-eval '(define-contract-struct node (val obj rank left right) (make-inspector)))
+  (contract-eval '(define (compute-rank n)
+                    (cond
+                      [(not n) 0]
+                      [else (node-rank n)])))
+  
+  (contract-eval '(define-opt/c (leftist-heap-greater-than/rank/opt n r)
+                    (or/c not
+                          (node/dc [val (>=/c n)]
+                                   [obj any/c]
+                                   [rank (<=/c r)]
+                                   [left (val) (leftist-heap-greater-than/rank/opt val +inf.0)]
+                                   [right (val left) (leftist-heap-greater-than/rank/opt val (compute-rank left))]))))
+  
+  (contract-eval '(define leftist-heap/c (leftist-heap-greater-than/rank/opt -inf.0 +inf.0)))
+  
+  (test/pos-blame 'd-o/c1 '(contract leftist-heap/c 2 'pos 'neg))
+  
+  
+  (test/spec-passed 'd-o/c2 '(contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg))
+  (test/spec-passed 'd-o/c3 '(contract leftist-heap/c #f 'pos 'neg))
+  (test/spec-passed 'd-o/c4 '(contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg))
+  (test/spec-passed/result 'd-o/c5
+                           '(node? (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg))
+                           #t)
+  
+  (test/spec-passed/result 'd-o/c6 '(node-val (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)) 1)
+  (test/spec-passed/result 'd-o/c7 '(node-obj (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)) 2)
+  (test/spec-passed/result 'd-o/c8 '(node-rank (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)) 3)
+  (test/spec-passed/result 'd-o/c9 '(node-left (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)) #f)
+  (test/spec-passed/result 'd-o/c10 '(node-right (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)) #f)
+  
+  (test/spec-passed/result 'd-o/c11
+                           '(node-val (contract leftist-heap/c 
+                                                (contract leftist-heap/c 
+                                                          (make-node 1 2 3 #f #f)
+                                                          'pos 'neg)
+                                                'pos 'neg))
+                           1)
+  (test/spec-passed/result 'd-o/c12
+                           '(node-obj (contract leftist-heap/c 
+                                                (contract leftist-heap/c 
+                                                          (make-node 1 2 3 #f #f)
+                                                          'pos 'neg)
+                                                'pos 'neg))
+                           2)
+  (test/spec-passed/result 'd-o/c13
+                           '(node-rank (contract leftist-heap/c 
+                                                 (contract leftist-heap/c 
+                                                           (make-node 1 2 3 #f #f)
+                                                           'pos 'neg)
+                                                 'pos 'neg))
+                           3)
+  (test/spec-passed/result 'd-o/c14
+                           '(node-left (contract leftist-heap/c 
+                                                 (contract leftist-heap/c 
+                                                           (make-node 1 2 3 #f #f)
+                                                           'pos 'neg)
+                                                 'pos 'neg)) 
+                           #f)
+  (test/spec-passed/result 'd-o/c15
+                           '(node-right (contract leftist-heap/c 
+                                                  (contract leftist-heap/c 
+                                                            (make-node 1 2 3 #f #f)
+                                                            'pos 'neg)
+                                                  'pos 'neg))
+                           #f)
+  
+  (test/spec-passed/result 'd-o/c16
+                           '(let ([h (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)])
+                              (node-val h)
+                              (node-val h))
+                           1)
+  (test/spec-passed/result 'd-o/c17
+                           '(let ([h (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)])
+                              (node-obj h)
+                              (node-obj h))
+                           2)
+  
+  (test/spec-passed/result 'd-o/c18
+                           '(let ([h (contract leftist-heap/c (make-node 1 2 3 #f #f)'pos 'neg)])
+                              (node-rank h)
+                              (node-rank h))
+                           3)
+  (test/spec-passed/result 'd-o/c19
+                           '(let ([h (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)])
+                              (node-left h)
+                              (node-left h))
+                           #f)
+  (test/spec-passed/result 'd-o/c20
+                           '(let ([h (contract leftist-heap/c (make-node 1 2 3 #f #f) 'pos 'neg)])
+                              (node-right h)
+                              (node-right h))
+                           #f)
+  
+  (test/spec-passed/result 'd-o/c21
+                           '(node-val
+                             (node-right
+                              (contract leftist-heap/c 
+                                        (make-node 1 2 3 
+                                                   (make-node 7 8 9 #f #f)
+                                                   (make-node 4 5 6 #f #f))
+                                        'pos 'neg)))
+                           4)
+  (test/spec-passed/result 'd-o/c22
+                           '(node-val
+                             (node-left
+                              (contract leftist-heap/c 
+                                        (make-node 1 2 3 
+                                                   (make-node 7 8 9 #f #f)
+                                                   (make-node 4 5 6 #f #f))
+                                        'pos 'neg)))
+                           7)
+  
+  (test/pos-blame 'd-o/c23
+                  '(node-val
+                    (node-right
+                     (contract leftist-heap/c 
+                               (make-node 5 2 3 
+                                          (make-node 7 8 9 #f #f)
+                                          (make-node 4 5 6 #f #f))
+                               'pos 'neg))))
+  
+  (test/pos-blame 'd-o/c24
+                  '(node-val
+                    (node-left
+                     (contract leftist-heap/c 
+                               (make-node 9 2 3 
+                                          (make-node 7 8 9 #f #f)
+                                          (make-node 11 5 6 #f #f))
+                               'pos 'neg))))
+  
+  (test/neg-blame 'd-o/c25
+                  '((contract (-> leftist-heap/c any)
+                              (λ (kh)
+                                (node-val
+                                 (node-left
+                                  kh)))
+                              'pos 'neg)
+                    (make-node 9 2 3 
+                               (make-node 7 8 9 #f #f)
+                               (make-node 11 5 6 #f #f))))
+  
+  
+  
+  (test/spec-passed/result
+   'd-o/c26 
+   '(let ([ai (λ (x) (contract leftist-heap/c x 'pos 'neg))])
+      (define (remove-min t) (merge (node-left t) (node-right t)))
+      
+      (define (merge t1 t2)
+        (cond
+          [(not t1) t2]
+          [(not t2) t1]
+          [else
+           (let ([t1-val (node-val t1)]
+                 [t2-val (node-val t2)])
+             (cond
+               [(<= t1-val t2-val)
+                (pick t1-val 
+                      (node-obj t1)
+                      (node-left t1)
+                      (merge (node-right t1)
+                             t2))]
+               [else
+                (pick t2-val 
+                      (node-obj t2)
+                      (node-left t2)
+                      (merge t1
+                             (node-right t2)))]))]))
+      
+      (define (pick x obj a b)
+        (let ([ra (compute-rank a)]
+              [rb (compute-rank b)])
+          (cond
+            [(>= ra rb)
+             (make-node x obj (+ rb 1) a b)]
+            [else
+             (make-node x obj (+ ra 1) b a)])))
+      (node-val
+       (remove-min (ai (make-node 137 'x 1 
+                                  (ai (make-node 178 'y 1 
+                                                 (make-node 178 'z 1 #f #f)
+                                                 #f))
+                                  #f)))))
+   178)
+  
+  ;;
+  ;;  end of define-opt/c
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   ;; NOT YET RELEASED
   #;

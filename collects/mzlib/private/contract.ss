@@ -1288,9 +1288,14 @@ add struct contracts for immutable structs?
                       (and (number? x)
                            (<= n x m))))))))
   
-  (define (check-unary-between/c sym x)
-    (unless (number? x)
-      (error sym "expected a number, got ~e" x)))
+  (define-syntax (check-unary-between/c stx)
+    (syntax-case stx ()
+      [(_ 'sym x-exp)
+       (identifier? #'sym)
+       #'(let ([x x-exp])
+           (unless (number? x)
+             (error 'sym "expected a number, got ~e" x)))]))
+  
   (define (=/c x) 
     (check-unary-between/c '=/c x)
     (make-between/c x x))
@@ -1377,16 +1382,17 @@ add struct contracts for immutable structs?
                           (this (opt/info-this opt/info))
                           (that (opt/info-that opt/info)))
               (values
-               (syntax (if (and (number? val) (comparison val m)) 
-                           val
-                           (raise-contract-error
-                            val
-                            src-info
-                            pos
-                            orig-str
-                            "expected <~a>, given: ~e"
-                            ((name-get ctc) ctc)
-                            val)))
+               (syntax 
+                (if (and (number? val) (comparison val m)) 
+                    val
+                    (raise-contract-error
+                     val
+                     src-info
+                     pos
+                     orig-str
+                     "expected <~a>, given: ~e"
+                     ((name-get ctc) ctc)
+                     val)))
                lifts3
                null
                null
