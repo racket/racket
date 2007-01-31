@@ -59,7 +59,7 @@ int designate_modified(void *p);
 #endif
 
 /* Forward declarations: */
-inline static void *find_cached_pages(size_t len, size_t alignment);
+inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok);
 static void free_actual_pages(void *p, size_t len, int zeroed);
 
 /* the structure of an exception msg and its reply */
@@ -93,7 +93,7 @@ static mach_port_t task_self = 0;
 static mach_port_t exc_port = 0;
 
 /* the VM subsystem as defined by the GC files */
-static void *malloc_pages(size_t len, size_t alignment)
+static void *do_malloc_pages(size_t len, size_t alignment, int dirty_ok)
 {
   kern_return_t retval;
   size_t extra = 0;
@@ -107,7 +107,7 @@ static void *malloc_pages(size_t len, size_t alignment)
   if(len & (page_size - 1))
     len += page_size - (len & (page_size - 1));
 
-  r = find_cached_pages(len, alignment);
+  r = find_cached_pages(len, alignment, dirty_ok);
   if (r)
     return r;
 
@@ -155,6 +155,16 @@ static void *malloc_pages(size_t len, size_t alignment)
   LOGICALLY_ALLOCATING_PAGES(len);
 
   return r;
+}
+
+static void *malloc_pages(size_t len, size_t alignment)
+{
+  return do_malloc_pages(len, alignment, 0);
+}
+
+static void *malloc_dirty_pages(size_t len, size_t alignment)
+{
+  return do_malloc_pages(len, alignment, 1);
 }
 
 static void system_free_pages(void *p, size_t len)

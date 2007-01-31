@@ -34,6 +34,11 @@
 #ifndef __lightning_funcs_h
 #define __lightning_funcs_h
 
+static void
+jit_notify_freed_code(void)
+{
+}
+
 #if !defined(__GNUC__) && !defined(__GNUG__)
 #error Go get GNU C, I do not know how to flush the cache
 #error with this compiler.

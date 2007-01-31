@@ -171,8 +171,6 @@ inline static void free_used_pages(size_t len)
 
 #include "protect_range.c"
 
-#define malloc_dirty_pages(size,align) malloc_pages(size,align)
-
 /*****************************************************************************/
 /* Memory Tracing, Part 1                                                    */
 /*****************************************************************************/
@@ -368,6 +366,8 @@ static size_t round_to_apage_size(size_t sizeb)
 
 static unsigned long custodian_single_time_limit(int set);
 inline static int thread_get_owner(void *p);
+
+static int atomic_counter = 0;
 
 /* the core allocation functions */
 static void *allocate_big(size_t sizeb, int type)
@@ -2078,6 +2078,7 @@ void GC_mark(const void *const_p)
 	  } else {
 	    /* Allocate and prep the page */
 	    work = (struct mpage *)malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
+            memset(work, 0, sizeof(struct mpage));
 	    work->generation = 1;
 	    work->page_type = type;
 	    work->size = work->previous_size = HEADER_SIZEB;
@@ -2490,6 +2491,7 @@ struct mpage *allocate_compact_target(struct mpage *work)
   struct mpage *npage;
 
   npage = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
+  memset(npage, 0, sizeof(struct mpage));
   npage->previous_size = npage->size = HEADER_SIZEB;
   npage->generation = 1;
   npage->back_pointers = 0;

@@ -6384,6 +6384,7 @@ void scheme_clean_native_symtab(void)
 {
 #ifndef MZ_PRECISE_GC
   clear_symbols_for_collected();
+  jit_notify_freed_code();
 #endif
 }
 
@@ -6398,6 +6399,7 @@ static void release_native_code(void *fnlized, void *p)
   add_symbol((unsigned long)p, (unsigned long)p + SCHEME_INT_VAL(len), NULL, 0);
   /* Free memory: */
   free(p);
+  jit_notify_freed_code();
 }
 #endif
 

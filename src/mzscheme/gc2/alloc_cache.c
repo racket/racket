@@ -50,7 +50,7 @@ static void collapse_adjacent_pages(void)
   }
 }
 
-inline static void *find_cached_pages(size_t len, size_t alignment)
+inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok)
 {
   int i;
   void *r;
@@ -62,7 +62,7 @@ inline static void *find_cached_pages(size_t len, size_t alignment)
       if (!alignment || !((unsigned long)r & (alignment - 1))) {
 	blockfree[i].start = NULL;
 	blockfree[i].len = 0;
-	if (!blockfree[i].zeroed)
+	if (!blockfree[i].zeroed && !dirty_ok)
 	  memset(r, 0, len);
 	LOGICALLY_ALLOCATING_PAGES(len);
 	return r;
@@ -78,7 +78,7 @@ inline static void *find_cached_pages(size_t len, size_t alignment)
       if (!alignment || !((unsigned long)r & (alignment - 1))) {
 	blockfree[i].start += len;
 	blockfree[i].len -= len;
-	if (!blockfree[i].zeroed)
+	if (!blockfree[i].zeroed && !dirty_ok)
 	  memset(r, 0, len);
 	LOGICALLY_ALLOCATING_PAGES(len);
 	return r;
@@ -88,7 +88,7 @@ inline static void *find_cached_pages(size_t len, size_t alignment)
       r = blockfree[i].start + (blockfree[i].len - len);
       if (!((unsigned long)r & (alignment - 1))) {
 	blockfree[i].len -= len;
-	if (!blockfree[i].zeroed)
+	if (!blockfree[i].zeroed && !dirty_ok)
 	  memset(r, 0, len);
 	LOGICALLY_ALLOCATING_PAGES(len);
 	return r;

@@ -42,6 +42,18 @@
 # include <windows.h>
 #endif
 
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+static unsigned long jit_prev_page = 0, jit_prev_length = 0;
+#endif
+
+static void
+jit_notify_freed_code(void)
+{
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+  jit_prev_page = jit_prev_length = 0;
+#endif
+}
+
 static void
 jit_flush_code(void *dest, void *end)
 {
@@ -55,7 +67,6 @@ jit_flush_code(void *dest, void *end)
      and more common (Fedora, for example), so we implement our
      jit_flush_code as an mprotect.  */
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
-  static unsigned long prev_page = 0, prev_length = 0;
   unsigned long page, length;
 # ifdef PAGESIZE
   const long page_size = PAGESIZE;
@@ -77,7 +88,7 @@ jit_flush_code(void *dest, void *end)
 
   /* Simple-minded attempt at optimizing the common case where a single
      chunk of memory is used to compile multiple functions.  */
-  if (page >= prev_page && page + length <= prev_page + prev_length)
+  if (page >= jit_prev_page && page + length <= jit_prev_page + jit_prev_length)
     return;
 
 # ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
@@ -91,18 +102,18 @@ jit_flush_code(void *dest, void *end)
 
   /* See if we can extend the previously mprotect'ed memory area towards
      higher addresses: the starting address remains the same as before.  */
-  if (page >= prev_page && page <= prev_page + prev_length)
-    prev_length = page + length - prev_page;
+  if (page >= jit_prev_page && page <= jit_prev_page + jit_prev_length)
+    jit_prev_length = page + length - jit_prev_page;
 
   /* See if we can extend the previously mprotect'ed memory area towards
      lower addresses: the highest address remains the same as before. */
-  else if (page < prev_page && page + length >= prev_page 
-	   && page + length <= prev_page + prev_length)
-    prev_length += prev_page - page, prev_page = page;
+  else if (page < jit_prev_page && page + length >= jit_prev_page 
+	   && page + length <= jit_prev_page + jit_prev_length)
+    jit_prev_length += jit_prev_page - page, jit_prev_page = page;
 
   /* Nothing to do, replace the area.  */
   else
-    prev_page = page, prev_length = length;
+    jit_prev_page = page, jit_prev_length = length;
 #endif
 }
 
