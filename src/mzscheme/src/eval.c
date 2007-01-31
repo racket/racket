@@ -5349,6 +5349,61 @@ void scheme_pop_continuation_frame(Scheme_Cont_Frame_Data *d)
   MZ_CONT_MARK_STACK = d->cont_mark_stack;
 }
 
+static MZ_MARK_STACK_TYPE clone_meta_cont_set_mark(Scheme_Meta_Continuation *mc, Scheme_Object *val, long findpos)
+{
+  /* Clone the meta-continuation, in case it was captured by
+     a continuation in its current state. */
+  Scheme_Meta_Continuation *naya;
+  Scheme_Cont_Mark *cp;
+
+  naya = MALLOC_ONE_RT(Scheme_Meta_Continuation);
+  memcpy(naya, mc, sizeof(Scheme_Meta_Continuation));
+  cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_shareable);
+  memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_shareable * sizeof(Scheme_Cont_Mark));
+  naya->cont_mark_stack_copied = cp;
+  naya->copy_after_captured = scheme_cont_capture_count;
+  mc = naya;
+  scheme_current_thread->meta_continuation = mc;
+
+  mc->cont_mark_stack_copied[findpos].val = val;
+  mc->cont_mark_stack_copied[findpos].cache = NULL;
+
+  return 0;
+}
+
+static MZ_MARK_STACK_TYPE new_segment_set_mark(long segpos, long pos, Scheme_Object *key, Scheme_Object *val)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Cont_Mark *cm = NULL;
+  int c = p->cont_mark_seg_count;
+  Scheme_Cont_Mark **segs, *seg;
+  long findpos;
+  
+  /* Note: we perform allocations before changing p to avoid GC trouble,
+     since MzScheme adjusts a thread's cont_mark_stack_segments on GC. */
+  segs = MALLOC_N(Scheme_Cont_Mark *, c + 1);
+  seg = scheme_malloc_allow_interior(sizeof(Scheme_Cont_Mark) * SCHEME_MARK_SEGMENT_SIZE);
+  segs[c] = seg;
+  
+  memcpy(segs, p->cont_mark_stack_segments, c * sizeof(Scheme_Cont_Mark *));
+  
+  p->cont_mark_seg_count++;
+  p->cont_mark_stack_segments = segs;
+
+  seg = p->cont_mark_stack_segments[segpos];
+  cm = seg + pos;
+  findpos = MZ_CONT_MARK_STACK;
+  MZ_CONT_MARK_STACK++;
+
+  cm->key = key;
+  cm->val = val;
+  cm->pos = MZ_CONT_MARK_POS; /* always odd */
+  cm->cache = NULL;
+
+  return findpos;
+}
+
+
 MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -5387,18 +5442,7 @@ MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
                 break;
               if (mc->cont_mark_stack_copied[findpos].key == key) {
                 if (mc->copy_after_captured < scheme_cont_capture_count) {
-                  /* Clone the meta-continuation, in case it was captured by
-                     a continuation in its current state. */
-                  Scheme_Meta_Continuation *naya;
-                  Scheme_Cont_Mark *cp;
-                  naya = MALLOC_ONE_RT(Scheme_Meta_Continuation);
-                  memcpy(naya, mc, sizeof(Scheme_Meta_Continuation));
-                  cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_shareable);
-                  memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_shareable * sizeof(Scheme_Cont_Mark));
-                  naya->cont_mark_stack_copied = cp;
-                  naya->copy_after_captured = scheme_cont_capture_count;
-                  mc = naya;
-                  p->meta_continuation = mc;
+                  return clone_meta_cont_set_mark(mc, val, findpos);
                 }
                 mc->cont_mark_stack_copied[findpos].val = val;
                 mc->cont_mark_stack_copied[findpos].cache = NULL;
@@ -5422,19 +5466,7 @@ MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
 
     if (segpos >= p->cont_mark_seg_count) {
       /* Need a new segment */
-      int c = p->cont_mark_seg_count;
-      Scheme_Cont_Mark **segs, *seg;
-
-      /* Note: we perform allocations before changing p to avoid GC trouble,
-	 since MzScheme adjusts a thread's cont_mark_stack_segments on GC. */
-      segs = MALLOC_N(Scheme_Cont_Mark *, c + 1);
-      seg = scheme_malloc_allow_interior(sizeof(Scheme_Cont_Mark) * SCHEME_MARK_SEGMENT_SIZE);
-      segs[c] = seg;
-
-      memcpy(segs, p->cont_mark_stack_segments, c * sizeof(Scheme_Cont_Mark *));
-	      
-      p->cont_mark_seg_count++;
-      p->cont_mark_stack_segments = segs;
+      return new_segment_set_mark(segpos, pos, key, val);
     }
 
     seg = p->cont_mark_stack_segments[segpos];

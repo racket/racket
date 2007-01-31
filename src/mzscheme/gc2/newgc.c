@@ -167,26 +167,7 @@ inline static void free_used_pages(size_t len)
 
 #include "page_range.c"
 
-#if _WIN32
-# include "vm_win.c"
-# define MALLOCATOR_DEFINED
-#endif
-
-#if defined(__APPLE__) && defined(__MACH__)
-# define TEST 0
-int designate_modified(void *p);
-# include "vm_osx.c"
-# define MALLOCATOR_DEFINED
-#endif
-
-#if OSKIT
-# include "vm_osk.c"
-# define MALLOCATOR_DEFINED
-#endif
-
-#ifndef MALLOCATOR_DEFINED
-# include "vm_mmap.c"
-#endif
+#include "vm.c"
 
 #include "protect_range.c"
 
