@@ -138,9 +138,7 @@
                       dst (file-or-directory-modify-seconds src)))])
         (cond [(skip-filter src) 'skip]
               [(link-exists? src)
-               ;; symlinks are impossible to do in Scheme now: can't make
-               ;; arbitrary ones
-               (run "cp" "-a" "--" src dst)]
+               (make-file-or-directory-link (resolve-path src) dst)]
               [(directory-exists? src)
                (make-directory dst) (time!)
                (parameterize ([current-directory src])
