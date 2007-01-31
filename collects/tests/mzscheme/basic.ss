@@ -655,7 +655,9 @@
 (err/rt-test (make-string 5.0 #\b))
 (err/rt-test (make-string 5.2 #\a))
 (err/rt-test (make-string -5 #\f))
-(err/rt-test (make-string 500000000000000 #\f) exn:fail:out-of-memory?) ;; bignum on 32-bit machines
+(define 64-bit-machine? (eq? (expt 2 40) (eq-hash-code (expt 2 40))))
+(unless 64-bit-machine?
+  (err/rt-test (make-string 500000000000000 #\f) exn:fail:out-of-memory?)) ;; bignum on 32-bit machines
 (err/rt-test (make-string 50000000000000000000 #\f) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
 
 
@@ -960,7 +962,8 @@
 (err/rt-test (make-bytes 5.2 97))
 (err/rt-test (make-bytes -5 98))
 (err/rt-test (make-bytes 50000000000000000000 #\f))
-(err/rt-test (make-bytes 500000000000000 45) exn:fail:out-of-memory?) ;; bignum on 32-bit machines
+(unless 64-bit-machine?
+  (err/rt-test (make-bytes 500000000000000 45) exn:fail:out-of-memory?)) ;; bignum on 32-bit machines
 (err/rt-test (make-bytes 50000000000000000000 45) exn:fail:out-of-memory?)  ;; bignum on 64-bit machines
 
 

@@ -410,6 +410,10 @@
               (define (f x) (+ x 1))
               9))
 
+(test-comp '(let ([f (lambda (x) 10)])
+              3)
+           '3)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 
