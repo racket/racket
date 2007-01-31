@@ -24,18 +24,25 @@
 # define CHECK_USED_AGAINST_MAX(x) /* empty */
 #endif
 
-inline static void *malloc_pages(size_t len, size_t alignment)
+inline static void *malloc_dirty_pages(size_t len, size_t alignment)
 {
   void *p;
 
   CHECK_USED_AGAINST_MAX(len);
 
   p = smemalign(alignment, len);
-  memset(p, 0, len);
 
   ACTUALLY_ALLOCATING_PAGES(len);
   LOGICALLY_ALLOCATING_PAGES(len);
 
+  return p;
+}
+
+inline static void *malloc_pages(size_t len, size_t alignment)
+{
+  void *p;
+  p = malloc_dirty_pages(len, alignment);
+  memset(p, 0, len);
   return p;
 }
 

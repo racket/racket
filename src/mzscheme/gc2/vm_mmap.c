@@ -116,6 +116,8 @@ static void *malloc_pages(size_t len, size_t alignment)
   return r;
 }
 
+#define malloc_dirty_pages(size,align) malloc_pages(size,align)
+
 static void system_free_pages(void *p, size_t len)
 {
   if (munmap(p, len)) {

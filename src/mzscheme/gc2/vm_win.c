@@ -67,6 +67,8 @@ static void *malloc_pages(size_t len, size_t alignment)
 			      PAGE_READWRITE);
 }
 
+#define malloc_dirty_pages(size,align) malloc_pages(size,align)
+
 static void free_pages(void *p, size_t len)
 {
   LOGICALLY_FREEING_PAGES(len);
