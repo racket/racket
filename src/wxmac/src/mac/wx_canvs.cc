@@ -884,9 +884,13 @@ void wxCanvas::OnPaint(void)
 void wxCanvas::ResetGLView()
 {
   if (wx_dc->gl) {
-    wxArea* clientArea, *topClientArea;
+    wxArea* clientArea;
+    wxMacDC *macdc;
     wxFrame *fr;
-    int h, w, th;
+    CGrafPtr graf;
+    WindowRef win;
+    int h, w;
+    Rect cr, sr;
 
     SetCurrentMacDC();
 
@@ -895,11 +899,15 @@ void wxCanvas::ResetGLView()
     h = clientArea->Height();
 
     fr = GetRootFrame();
-    topClientArea = fr->ContentArea();
-    th = topClientArea->Height();
+    macdc = fr->MacDC();
+    graf = macdc->macGrafPort();
+    win = GetWindowFromPort(graf);
 
-    wx_dc->gl->ResetGLView(SetOriginX,
-			   (th - (SetOriginY + h)),
+    GetWindowBounds(win, kWindowContentRgn, &cr);
+    GetWindowBounds(win, kWindowStructureRgn, &sr);
+    
+    wx_dc->gl->ResetGLView(SetOriginX + (cr.left - sr.left),
+			   (cr.bottom - cr.top) - (SetOriginY + h) + (sr.bottom - cr.bottom),
 			   w,
 			   h);
   }
