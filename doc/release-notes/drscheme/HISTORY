@@ -9,6 +9,15 @@
     the library. Just remove any calls to it and your code
     should work fine.
 
+  . split the preferences library out from the framework, so
+    it does not have to depend on mred
+
+  . removed (from the framework): exn:struct:exn,
+    exn:make-exn, and exn:exn?
+
+  . added preferences:restore-prefs-snapshot,
+  preferences:get-prefs-snapshot, and preferences:snaphot?
+
 ------------------------------
         Version 353
 ------------------------------
