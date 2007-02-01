@@ -445,6 +445,9 @@
                     [make-debug-info-fake-exp (lambda (exp free-bindings)
                                                 (make-debug-info (stepper-syntax-property exp 'stepper-fake-exp #t) 
                                                                  tail-bound free-bindings 'none #t))]
+                    [make-debug-info-fake-exp/tail-bound (lambda (exp tail-bound free-bindings)
+                                                           (make-debug-info (stepper-syntax-property exp 'stepper-fake-exp #t) 
+                                                                            tail-bound free-bindings 'none #t))]
                     
                     [outer-wcm-wrap (if pre-break?
                                         wcm-pre-break-wrap
@@ -843,47 +846,33 @@
                                               (quasisyntax/loc exp (begin0 #,annotated-body)))
                               free-vars-body))]
                     
-                    #;(let unroll-loop ([bodies-list bodies-list] [outermost? #t])
-                                  (cond [(null? bodies-list)
-                                         (error 'annotate "no bodies in let")]
-                                        [(null? (cdr bodies-list))
-                                         (tail-recur (car bodies-list))]
-                                        [else
-                                         (let*-2vals
-                                          ([(rest free-vars-rest) (unroll-loop (cdr bodies-list) #f)]
-                                           [(this-one free-vars-this) (non-tail-recur (car bodies-list))]
-                                           [free-vars-all (varref-set-union (list free-vars-rest free-vars-this))]
-                                           [debug-info (make-debug-info-fake-exp 
-                                                        #`(begin #,@bodies-list)
-                                                        free-vars-all)]
-                                           [begin-form #`(begin #,(normal-break/values-wrap this-one) #,rest)])
-                                          (2vals (if outermost?
-                                                     (wcm-wrap debug-info begin-form)
-                                                     (wcm-pre-break-wrap debug-info begin-form))
-                                                 free-vars-all))]))
-                    
-                      ;; temporary hack for ProfJ stepper, 2006-12-4, JBC
-                      [(begin0 first-body . bodies-stx)
-                       #`(error "shouldn't get evaluated, please.\n")]
                       
-                    #;[(begin0 first-body . bodies-stx)
-                     (let*-2vals ([(annotated-first free-vars-first) (result-recur first-body)])
-                       #`(let ([,begin0-temp #,annotated-first])
-                           #,unrolled-rest))
-                     (let unroll-loop ([bodies-list (syntax->list #`(first-body . bodies-stx))] [outermost? #t])
-                       (cond [(null? bodies-list)
-                              (error 'annotate "this case should have been handled by the zero-body annotation")]
-                             [(null? (cdr bodies-list))
-                              (let*-2vals
-                                  ([(this-one free-vars-this) (non-tail-recur)]))]))
-                     (let*-2vals
-                      ([bodies (syntax->list (syntax bodies-stx))]
-                       [(annotated-first free-varrefs-first)
-                        (result-recur (car bodies))]
-                       [(annotated-bodies free-varref-sets)
-                        (2vals-map non-tail-recur (cdr bodies))])
-                      (normal-bundle (varref-set-union (cons free-varrefs-first free-varref-sets))
-                                     (quasisyntax/loc exp (begin0 #,annotated-first #,@annotated-bodies))))]
+                    [(begin0 first-body . bodies-stx)
+                     (let*-2vals ([(annotated-first free-vars-first) (result-recur #'first-body)]
+                                  [(annotated-rest free-vars-rest) (2vals-map non-tail-recur (syntax->list #`bodies-stx))]
+                                  [wrapped-rest (map normal-break/values-wrap annotated-rest)]
+                                  [all-free-vars (varref-set-union (cons free-vars-first free-vars-rest))]
+                                  [early-debug-info (make-debug-info-normal all-free-vars)]
+                                  [tagged-temp (stepper-syntax-property begin0-temp 'stepper-binding-type 'stepper-temp)]
+                                  [debug-info-maker
+                                   (lambda (rest-exps)
+                                     (make-debug-info-fake-exp/tail-bound                                               
+                                      #`(begin0 #,@rest-exps)
+                                      (binding-set-union (list (list tagged-temp) tail-bound))
+                                      (varref-set-union (list (list tagged-temp) all-free-vars))))]
+                                  [rolled-into-fakes (let loop ([remaining-wrapped wrapped-rest] 
+                                                                [remaining-src (syntax->list #`bodies-stx)]
+                                                                [first-time? #t])
+                                                       ((if first-time? wcm-wrap wcm-pre-break-wrap)
+                                                        (debug-info-maker remaining-src)   
+                                                        (cond [(null? remaining-src) begin0-temp]
+                                                              [else #`(begin #,(car remaining-wrapped) #,(loop (cdr remaining-wrapped)
+                                                                                                               (cdr remaining-src)
+                                                                                                               #f))])))])
+                                 (2vals (wcm-wrap early-debug-info
+                                                  #`(let ([#,begin0-temp #,annotated-first])
+                                                      #,rolled-into-fakes))
+                                        all-free-vars))]
                     
                     
                     

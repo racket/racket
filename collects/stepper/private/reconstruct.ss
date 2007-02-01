@@ -11,7 +11,8 @@
            "marks.ss"
            "model-settings.ss"
            "shared.ss"
-           "my-macros.ss")
+           "my-macros.ss"
+           (file "~/clements/scheme-scraps/eli-debug.ss"))
 
   (provide/contract 
    [reconstruct-completed (syntax? 
@@ -365,7 +366,14 @@
                               [(if test then else) (recon-basic)]
                               [(if test then) (recon-basic)]
                               [(begin . bodies) (recon-basic)]
-                              [(begin0 . bodies) (recon-basic)]
+                              [(begin0 . bodies) 
+                               (if (stepper-syntax-property expr 'stepper-fake-exp)
+                                   (if (null? (syntax->list #`bodies))
+                                       (recon-value (lookup-binding mark-list begin0-temp) render-settings)
+                                       ;; prepend the computed value of the first arg:
+                                       #`(begin0 #,(recon-value (lookup-binding mark-list begin0-temp) render-settings)
+                                                 #,@(map recur (filter-skipped (syntax->list #`bodies)))))
+                                   (recon-basic))]
                               
                               ; let-values, letrec-values
                               [(let-values . rest) (recon-let/rec #f)]
@@ -440,7 +448,9 @@
                                (syntax var)]
                               
                               [else
-                               (error 'recon-source "no matching clause for syntax: ~a" expr)])])
+                               (error 'recon-source "no matching clause for syntax: ~a" (if (syntax? expr)
+                                                                                            (syntax-object->datum expr)
+                                                                                            expr))])])
                 (attach-info recon expr)))))))
   
   ;; reconstruct-set!-var
@@ -686,11 +696,17 @@
                          (attach-info #`(label #,recon-bindings #,@rectified-bodies) exp))))])
              (if (stepper-syntax-property exp 'stepper-fake-exp)
                  
-                 (syntax-case exp ()
+                 (kernel:kernel-syntax-case exp #f
                    [(begin . bodies)
                     (if (eq? so-far nothing-so-far)
                         (error 'recon-inner "breakpoint before a begin reduction should have a result value in exp: ~a" (syntax-object->datum exp))
                         #`(begin #,so-far #,@(map recon-source-current-marks (cdr (syntax->list #'bodies)))))]
+                   [(begin0 first-body . rest-bodies)
+                    (if (eq? so-far nothing-so-far)
+                        (error 'recon-inner "breakpoint before a begin0 reduction should have a result value in exp: ~a" (syntax-object->datum exp))
+                        #`(begin0 #,(recon-value (lookup-binding mark-list begin0-temp) render-settings)
+                                  #,so-far
+                                  #,@(map recon-source-current-marks (syntax->list #`rest-bodies))))]
                    [else
                     (error 'recon-inner "unexpected fake-exp expression: ~a" (syntax-object->datum exp))])
                  
@@ -811,6 +827,14 @@
                                              (if (eq? so-far nothing-so-far)
                                                  (recon-source-current-marks exp)
                                                  (error 'recon-inner "one-body begin0 given as context: ~a" exp))]
+                                            
+                                            ;; the only time begin0 shows up other than in a fake-exp is when the first 
+                                            ;; term is being evaluated
+                                            [(begin0 first-body . rest-bodies)
+                                             (if (eq? so-far nothing-so-far)
+                                                 (error 'foo "not implemented")
+                                                 ;; don't know what goes hereyet
+                                                 #`(begin0 #,so-far #,@(map recon-source-current-marks (syntax->list #`rest-bodies))))]
                                             
                                             ; let-values
                                             

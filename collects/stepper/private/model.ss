@@ -162,22 +162,6 @@
                 steps-received/current
                 mark-set break-kind returned-value-list)))))
 
-        ;; bizarrely, this causes something in the test tool startup to fail
-        ;; with:
-        ;;   current-eventspace: expects argument of type <eventspace>; given #f
-
-        ;; === context ===
-        ;; ...collects/drscheme/private/rep.ss:1183:10: queue-user/wait method in ...cheme/private/rep.ss:480:8
-        ;; ...collects/drscheme/private/rep.ss:1094:10: init-evaluation-thread method in ...cheme/private/rep.ss:480:8
-        ;; ...collects/drscheme/private/rep.ss:1346:10: reset-console method in ...cheme/private/rep.ss:480:8
-        ;; ...collects/mztake/debug-tool.ss:510:10: reset-console method in ...mztake/debug-tool.ss:428:8
-        ;; ...collects/test-suite/tool.ss:162:10: reset-console method in ...s/test-suite/tool.ss:137:8
-        ;; ...collects/drscheme/private/rep.ss:1413:10: initialize-console method in ...cheme/private/rep.ss:480:8
-        ;; ...collects/drscheme/private/unit.ss:3200:6: create-new-drscheme-frame
-        ;; ...collects/drscheme/private/main.ss:372:6: make-basic
-
-        ;; ... okay, the error was transient.  wonder what caused it?
-
         (let* ([mark-list (and mark-set (extract-mark-list mark-set))])
 
           (define (reconstruct-all-completed)
