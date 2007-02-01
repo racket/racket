@@ -20,7 +20,7 @@ The structure of user PLaneT invocations is listed below.
 
 PLANET-REQUEST ::= (planet FILE-NAME PKG-SPEC [PATH ...]) 
 FILE-NAME      ::= string
-PKG-SPEC       ::= string | (FILE-PATH ... PKG-NAME) | (FILE-PATH ... PKG-NAME VER-SPEC)
+PKG-SPEC       ::= (FILE-PATH ... PKG-NAME) | (FILE-PATH ... PKG-NAME VER-SPEC)
 VER-SPEC       ::= Nat | (Nat MINOR) 
 MINOR          ::= Nat       ; the specified revision or above
                  | (Nat Nat) ; a revision between the two specified numbers (inclusive)
