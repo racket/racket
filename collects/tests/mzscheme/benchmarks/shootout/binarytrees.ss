@@ -5,7 +5,11 @@
 (module binarytrees mzscheme
 
   (define-struct node (left val right))
-  (define-struct leaf (val))
+
+  ;; Instead of (define-struct leaf (val)):
+  (define (make-leaf val) (make-node #f val #f))
+  (define (leaf? l) (not (node-left l)))
+  (define (leaf-val l) (node-val l))
 
   (define (make item d)
     (if (= d 0)
