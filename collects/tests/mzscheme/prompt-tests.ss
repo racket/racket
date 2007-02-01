@@ -1650,7 +1650,7 @@
   (let ([t (thread (lambda () (long-loop void)))])
     (sleep 0.05)
     (break-thread t)
-    (sleep 0.05)
+    (sync (system-idle-evt))
     (test #f thread-running? t))
   (printf "Trying long chain...\n")
   (let ([k (long-loop (lambda () 
