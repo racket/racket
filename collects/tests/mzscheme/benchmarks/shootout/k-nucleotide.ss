@@ -1,13 +1,5 @@
 ;;   The Computer Language Shootout
 ;;   http://shootout.alioth.debian.org/
-;;
-;; Based on the Ruby version:
-#|
-# http://shootout.alioth.debian.org
-#
-# contributed by jose fco. gonzalez
-# modified by Sokolov Yura
-|#
 
 (module k-nucleotide mzscheme
   (require (lib "list.ss")
