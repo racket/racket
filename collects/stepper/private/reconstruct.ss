@@ -11,8 +11,7 @@
            "marks.ss"
            "model-settings.ss"
            "shared.ss"
-           "my-macros.ss"
-           (file "~/clements/scheme-scraps/eli-debug.ss"))
+           "my-macros.ss")
 
   (provide/contract 
    [reconstruct-completed (syntax? 
