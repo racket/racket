@@ -275,6 +275,9 @@ install-both:
 	$(MAKE) install-@WXVARIANT@-cgc
 	$(MAKE) install-@WXVARIANT@-@MAIN_VARIANT@-final
 
+install-post-collects:
+	$(MAKE) install-@WXVARIANT@-post-collects
+
 install-common:
 	cd ..; rm -f "$(DESTDIR)$(bindir)/mred@CGC_INSTALLED@"
 	cd ..; rm -f "$(DESTDIR)$(bindir)/mred@MMM_INSTALLED@"
@@ -320,6 +323,9 @@ install-wx_xt-3m:
 install-wx_xt-3m-final:
 	cd .
 
+install-wx_xt-post-collects:
+	cd .
+
 # Mac OS X ----------------------------------------
 
 MRFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MrEd.framework
@@ -333,9 +339,6 @@ install-wx_mac:
 	cd ..; rm -rf "$(prefix)/MrEd@MMM_CAP_INSTALLED@.app"
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MRFWDIR) ; fi
 	mkdir -p "@FRAMEWORK_INSTALL_DIR@"
-	cd ..; rm -rf $(collectsdir)/launcher/Starter.app
-	mkdir -p $(collectsdir)/launcher
-	cd ..; $(ICP) -r mred/Starter.app $(collectsdir)/launcher/.
 
 install-wx_mac-cgc:
 	mkdir -p "$(MRFWDIR)/Versions/$(FWVERSION)"
@@ -362,6 +365,11 @@ install-wx_mac-3m:
 install-wx_mac-3m-final:
 	ln -s Versions/$(FWVERSION)_3m/PLT_MrEd $(MRFWDIR)/
 	ln -s Versions/$(FWVERSION)_3m/Resources $(MRFWDIR)/
+
+install-wx_mac-post-collects:
+	cd ..; rm -rf $(collectsdir)/launcher/Starter.app
+	mkdir -p $(collectsdir)/launcher
+	cd ..; $(ICP) -r mred/Starter.app $(collectsdir)/launcher/.
 
 
 @INCLUDEDEP@ wxGC.d

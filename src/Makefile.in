@@ -61,6 +61,7 @@ install-common-first:
 
 install-common-middle:
 	$(MAKE) @MAKE_COPYTREE@-run
+	$(MAKE) install-@MAKE_MRED@-post-collects
 	$(MAKE) lib-finish
 
 install-common-last:
@@ -77,6 +78,12 @@ copytree-run:
           "$(srcdir)/../collects/setup/unixstyle-install.ss" \
           make-install-copytree "$(srcdir)/.." \
           $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"
+
+install-mred-post-collects:
+	cd mred; $(MAKE) install-post-collects
+
+install-no-post-collects:
+	cd .
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
