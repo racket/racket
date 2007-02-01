@@ -280,6 +280,8 @@
 
 (let ([s (make-semaphore 1)]
       [nack-try-wait? (lambda (n)
+                        (unless (evt? n)
+                          (error "NACK isn't ready for try-wait"))
 			(let ([v (sync/timeout 0 n)])
 			  (when v
 			    (test #t void? v)
@@ -408,6 +410,7 @@
 	 (lambda (nack)
 	   (set! v nack)
 	   (choice-evt (make-semaphore) (make-semaphore)))))
+  (unless (evt? v) (error "the NACK isn't ready!"))
   (test (void) sync/timeout 0 v))
 
 (let ([ch (make-channel)]
@@ -420,7 +423,7 @@
 		  (set! n nack)
 		  never-evt))
 	       (channel-put-evt ch 10))))])
-    (sleep)
+    (sync (system-idle-evt))
     (test 10 channel-get ch)
     (test (void) sync/timeout 0 n)))
 	       
@@ -435,21 +438,21 @@
 
 (let ([s (semaphore-peek-evt (make-semaphore 1))])
   (test s sync/timeout 0 (poll-guard-evt (lambda (poll?)
-							     (test #t values poll?)
-							     s)))
+                                           (test #t values poll?)
+                                           s)))
   (test s sync (poll-guard-evt (lambda (poll?)
-							      (test #f values poll?)
-							      s)))
+                                 (test #f values poll?)
+                                 s)))
   (test s sync/timeout 0 (choice-evt
-				  (poll-guard-evt (lambda (poll?)
-							      (test #t values poll?)
-							      s))
-				  (make-semaphore)))
+                          (poll-guard-evt (lambda (poll?)
+                                            (test #t values poll?)
+                                            s))
+                          (make-semaphore)))
   (test s sync (choice-evt
-				   (poll-guard-evt (lambda (poll?)
-							       (test #f values poll?)
-							       s))
-				   (make-semaphore))))
+                (poll-guard-evt (lambda (poll?)
+                                  (test #f values poll?)
+                                  s))
+                (make-semaphore))))
 
 ;; ----------------------------------------
 ;; Structures as waitables
