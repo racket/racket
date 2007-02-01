@@ -37,8 +37,9 @@
           (lock #f)
           (begin-edit-sequence)
           (erase))
-        (when (syntax? selected-syntax)
-          (refresh/mode mode))
+        (if (syntax? selected-syntax)
+            (refresh/mode mode)
+            (refresh/mode #f))
         (send* text
           (end-edit-sequence)
           (lock #t)
@@ -49,7 +50,7 @@
         (case mode
           ((term) (send pdisplayer display-meaning-info selected-syntax))
           ((stxobj) (send pdisplayer display-stxobj-info selected-syntax))
-          ((#f) (void))
+          ((#f) (send pdisplayer display-null-info))
           (else (error 'properties-view%:refresh "internal error: no such mode: ~s" mode))))
 
       ;; text : text%
@@ -59,6 +60,7 @@
       (send text set-styles-sticky #f)
       #;(send text hide-caret #t)
       (send text lock #t)
+      (refresh)
       (super-new)))
 
 
@@ -122,6 +124,10 @@
   (define properties-displayer%
     (class* object% ()
       (init-field text)
+
+      ;; display-null-info : -> void
+      (define/public (display-null-info)
+        (display "No syntax selected\n" n/a-sd))
 
       ;; display-meaning-info : syntax -> void
       (define/public (display-meaning-info stx)
