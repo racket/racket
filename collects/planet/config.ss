@@ -19,6 +19,7 @@
     (DEFAULT-PACKAGE-LANGUAGE (version))
     
     (USE-HTTP-DOWNLOADS?       #t)
-    (HTTP-DOWNLOAD-SERVLET-URL "http://coach.cs.uchicago.edu/servlets/planet/planet-servlet.ss")
+    (HTTP-DOWNLOAD-SERVLET-URL "http://planet.plt-scheme.org/servlets/planet-servlet.ss"
+                               #;"http://coach.cs.uchicago.edu/servlets/planet/planet-servlet.ss")
     (PLANET-ARCHIVE-FILTER     #f)))
     
