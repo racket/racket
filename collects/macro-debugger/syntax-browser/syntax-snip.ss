@@ -7,7 +7,8 @@
            "interfaces.ss"
            "controller.ss"
            "properties.ss"
-           "typesetter.ss")
+           "typesetter.ss"
+           "partition.ss")
   (provide snip@
            snip-keymap-extension@)
 
@@ -26,8 +27,6 @@
       (define (syntax-snip stx)
         (new syntax-snip% (syntax stx)))
       
-      (define *syntax-controller* #f)
-      
       ;; syntax-value-snip%
       (define syntax-value-snip%
         (class* editor-snip% (readable-snip<%>)
@@ -35,7 +34,7 @@
           (init-field controller)
           (inherit set-margin
                    set-inset)
-          
+
           (define -outer (new text:standard-style-list%))
           (super-new (editor -outer) (with-border? #f))
           (set-margin 0 0 0 0)
@@ -81,11 +80,11 @@
           (define/override (copy)
             (new syntax-value-snip% (controller controller) (syntax stx)))
           
+          ;; read-special : any number/#f number/#f number/#f -> syntax
+          ;; Produces 3D syntax to preserve eq-ness of syntax
+          ;; #'#'stx would be lose identity when wrapped
           (define/public (read-special src line col pos)
-            #;(datum->syntax-object #f
-                                    `(,#'quote-syntax ,stx)
-                                    (list src line col pos 1))
-            #`(force '#,(delay stx)))
+            #`((,(lambda () stx))))
           ))
 
 
@@ -97,15 +96,14 @@
                    set-inset
                    set-snipclass
                    set-tight-text-fit
-                   show-border)
-          
-          (define controller (new syntax-controller%))
-          (define properties-controller
-            (new independent-properties-controller%
-                 (syntax stx)
-                 (controller controller)))
-          (send controller set-properties-controller properties-controller)
-          
+                   show-border
+                   get-admin)
+
+          (define controller
+            (new syntax-controller% (primary-partition (find-primary-partition))))
+          (define properties-snip (new properties-snip%))
+          (send controller set-properties-controller this)
+
           (define -outer (new text%))
           (super-new (editor -outer) (with-border? #f))
           (set-margin 0 0 0 0)
@@ -122,39 +120,49 @@
                   (format "#<syntax:~s:~s>" line col)
                   "#<syntax>")))
           
-          (define/private (hide-me)
+          (define shown? #f)
+          (define/public (refresh)
+            (if shown?
+                (refresh/shown)
+                (refresh/hidden)))
+
+          (define/private (refresh/hidden)
             (send* -outer
               (begin-edit-sequence)
               (lock #f)
               (erase))
             (set-tight-text-fit #t)
             (show-border #f)
-            (outer:insert (show-icon) style:hyper (lambda _ (show-me)))
+            (outer:insert (show-icon) style:hyper 
+                          (lambda _ (set! shown? #t) (refresh)))
             (outer:insert the-summary)
             (send* -outer 
               (lock #t)
               (end-edit-sequence)))
-          
-          (define/private (show-me)
+
+          (define/private (refresh/shown)
             (send* -outer
               (begin-edit-sequence)
               (lock #f)
               (erase))
             (set-tight-text-fit #f)
             (show-border #t)
-            (outer:insert (hide-icon) style:hyper (lambda _ (hide-me)))
+            (outer:insert (hide-icon) style:hyper
+                          (lambda _ (set! shown? #f) (refresh)))
             (outer:insert " ")
             (outer:insert the-syntax-snip)
             (outer:insert " ")
-            (outer:insert (show-properties-icon) style:hyper 
-                          (lambda _ (send properties-controller show #t)))
+            (if (props-shown?)
+                (begin (outer:insert "<" style:green (lambda _ (show #f)))
+                       (outer:insert properties-snip))
+                (begin (outer:insert ">" style:green (lambda _ (show #t)))))
             (send* -outer
               (change-style (make-object style-delta% 'change-alignment 'top)
                             0
                             (send -outer last-position))
               (lock #t)
               (end-edit-sequence)))
-          
+
           (define/private outer:insert
             (case-lambda
               [(obj)
@@ -176,13 +184,29 @@
             (send stream put (string->bytes/utf-8 (format "~s" (marshall-syntax stx)))))
           (define/public (read-special src line col pos)
             (send the-syntax-snip read-special src line col pos))
-          
-          (hide-me)
+
+          (define/private (find-primary-partition)
+            #;(define editor (send (get-admin) get-editor))
+            (new-bound-partition))
+
+
+          ;; syntax-properties-controller methods
+          (define properties-shown? #f)
+          (define/public (props-shown?)
+            properties-shown?)
+          (define/public (show ?)
+            (set! properties-shown? ?)
+            (refresh))
+          (define/public (set-syntax stx)
+            (send properties-snip set-syntax stx))
+
+          (refresh)
           (send -outer hide-caret #t)
           (send -outer lock #t)
           ))
       
       ;; independent-properties-controller%
+      #;
       (define independent-properties-controller%
         (class* object% (syntax-properties-controller<%>)
           (init-field controller)
@@ -192,13 +216,6 @@
           (define parent
             (new frame% (label "Properties") (height (pref:height))
                  (width (floor (* (pref:props-percentage) (pref:width))))))
-          ;(define vp (new panel:vertical-dragable% (parent parent)))
-          ;(define syntax-text (new text%))
-          ;(define syntax-canvas (new editor-canvas% (parent vp) (editor syntax-text)))
-          ;(let ([ss (new syntax-value-snip% (syntax stx) (controller controller))])
-          ;  (send syntax-text insert ss)
-          ;  ...)
-          ;(send syntax-text lock #t)
           (define pv (new properties-view% (parent parent)))
           
           (define/private (show-properties)
@@ -211,6 +228,7 @@
             (send parent show ?))
           (define/public (props-shown?)
             (send parent is-shown?))
+
           (super-new)))
       ))
 
@@ -236,6 +254,10 @@
     (let ([s (make-object style-delta% 'change-normal)])
       (send s set-delta 'change-toggle-underline)
       (send s set-delta-foreground "blue")
+      s))
+  (define style:green
+    (let ([s (make-object style-delta% 'change-normal)])
+      (send s set-delta-foreground "darkgreen")
       s))
   (define style:bold
     (let ([s (make-object style-delta% 'change-normal)])

@@ -4,67 +4,145 @@
            "util.ss"
            (lib "class.ss")
            (lib "mred.ss" "mred"))
-  (provide properties-view%)
+  (provide properties-view%
+           properties-snip%)
 
-  ;; properties-view%
-  (define properties-view%
-    (class* object% ()
-      (init parent)
-      (define selected-syntax #f)
-      
-      (define tab-choices (get-tab-choices))
-      (define tab-panel (new tab-panel% 
-                             (choices (map car tab-choices))
-                             (parent parent)
-                             (callback (lambda _ (refresh)))))
-      
-      (define text (new text%))
-      (send text set-styles-sticky #f)
-      (define ecanvas (new editor-canvas% (editor text) (parent tab-panel)))
+  ;; properties-view-base-mixin
+  (define properties-view-base-mixin
+    (mixin () ()
+      (init)
 
+      ;; selected-syntax : syntax
+      (field (selected-syntax #f))
+
+      ;; set-syntax : syntax -> void
       (define/public (set-syntax stx)
         (set! selected-syntax stx)
         (refresh))
-      
-      ;; get-tab-choices : (listof (cons string thunk))
-      ;; Override to add or remove panels
-      (define/public (get-tab-choices)
-        (list (cons "Term" (lambda () (display-meaning-info)))
-              (cons "Syntax Object" (lambda () (display-stxobj-info)))))
-      
-      (define/private (refresh)
+
+      ;; mode : maybe symbol in '(term stxobj)
+      (define mode 'term)
+
+      ;; get-mode : -> symbol
+      (define/public (get-mode) mode)
+
+      ;; set-mode : symbol -> void
+      (define/public (set-mode m)
+        (set! mode m)
+        (refresh))
+
+      ;; refresh : -> void
+      (define/public (refresh)
         (send* text
           (lock #f)
           (begin-edit-sequence)
           (erase))
         (when (syntax? selected-syntax)
-          (let ([tab (send tab-panel get-item-label (send tab-panel get-selection))])
-            (cond [(assoc tab tab-choices) => (lambda (p) ((cdr p)))]
-                  [else (error 'properties-view%:refresh "internal error: no such tab: ~s" tab)])))
+          (refresh/mode mode))
         (send* text
           (end-edit-sequence)
           (lock #t)
           (scroll-to-position 0)))
 
-      (define/pubment (display-meaning-info)
-        (when (and (identifier? selected-syntax)
-                   (uninterned? (syntax-e selected-syntax)))
+      ;; refresh/mode : symbol -> void
+      (define/public (refresh/mode mode)
+        (case mode
+          ((term) (send pdisplayer display-meaning-info selected-syntax))
+          ((stxobj) (send pdisplayer display-stxobj-info selected-syntax))
+          ((#f) (void))
+          (else (error 'properties-view%:refresh "internal error: no such mode: ~s" mode))))
+
+      ;; text : text%
+      (field (text (new text%)))
+      (field (pdisplayer (new properties-displayer% (text text))))
+
+      (send text set-styles-sticky #f)
+      #;(send text hide-caret #t)
+      (send text lock #t)
+      (super-new)))
+
+
+  ;; properties-snip%
+  (define properties-snip%
+    (class (properties-view-base-mixin editor-snip%)
+      (inherit-field text)
+      (inherit-field pdisplayer)
+      (inherit set-mode)
+
+      (define/private outer:insert
+        (case-lambda
+         [(obj)
+          (outer:insert obj style:normal)]
+         [(text style)
+          (outer:insert text style #f)]
+         [(text style clickback)
+          (let ([start (send outer-text last-position)])
+            (send outer-text insert text)
+            (let ([end (send outer-text last-position)])
+              (send outer-text change-style style start end #f)
+              (when clickback
+                    (send outer-text set-clickback start end clickback))))]))
+
+      (define outer-text (new text%))
+      (super-new (editor outer-text))
+      (outer:insert "Term" style:hyper (lambda _ (set-mode 'term)))
+      (outer:insert " ")
+      (outer:insert "Syntax Object" style:hyper (lambda _ (set-mode 'stxobj)))
+      (outer:insert "\n")
+      (outer:insert (new editor-snip% (editor text)))
+      (send outer-text hide-caret #t)
+      (send outer-text lock #t)))
+
+  ;; properties-view%
+  (define properties-view%
+    (class* (properties-view-base-mixin object%) ()
+      (init parent)
+      (inherit-field text)
+      (inherit-field pdisplayer)
+      (inherit set-mode)
+
+      ;; get-tab-choices : (listof (cons string thunk))
+      ;; Override to add or remove panels
+      (define/public (get-tab-choices)
+        (list (cons "Term" 'term)
+              (cons "Syntax Object" 'stxobj)))
+
+      (super-new)
+      (define tab-choices (get-tab-choices))
+      (define tab-panel (new tab-panel% 
+                             (choices (map car tab-choices))
+                             (parent parent)
+                             (callback
+                              (lambda (tp e)
+                                (set-mode
+                                 (cdr (list-ref tab-choices (send tp get-selection))))))))
+      (define ecanvas (new editor-canvas% (editor text) (parent tab-panel)))))
+
+  ;; properties-displayer%
+  (define properties-displayer%
+    (class* object% ()
+      (init-field text)
+
+      ;; display-meaning-info : syntax -> void
+      (define/public (display-meaning-info stx)
+        (when (and (identifier? stx)
+                   (uninterned? (syntax-e stx)))
           (display "Uninterned symbol!\n\n" key-sd))
-        (display-binding-info)
-        (inner (void) display-meaning-info))
-      
-      
-      (define/private (display-binding-info)
+        (display-binding-info stx))
+
+      ;; display-binding-info : syntax -> void
+      (define/private (display-binding-info stx)
         (display "Apparent identifier binding\n" key-sd)
-        (unless (identifier? selected-syntax)
+        (unless (identifier? stx)
           (display "Not applicable\n\n" n/a-sd))
-        (when (identifier? selected-syntax)
-          (if (eq? (identifier-binding selected-syntax) 'lexical)
+        (when (identifier? stx)
+          (if (eq? (identifier-binding stx) 'lexical)
               (display "lexical (all phases)\n" #f)
-              (for-each (lambda (p) (display-binding-kvs (car p) ((cdr p) selected-syntax)))
+              (for-each (lambda (p) (display-binding-kvs (car p) ((cdr p) stx)))
                         binding-properties))
           (display "\n" #f)))
-      
+
+      ;; display-binding-kvs : string bindinginfo -> void
       (define/private (display-binding-kvs k v)
         (display k sub-key-sd)
         (display "\n" #f)
@@ -77,19 +155,20 @@
                (display-subkv "  as" (list-ref v 3))
                (if (list-ref v 4)
                    (display "  via define-for-syntax" sub-key-sd))]))
-        
-      (define/pubment (display-stxobj-info)
-        (display-source-info)
-        (display-extra-source-info)
-        (inner (void) display-stxobj-info)
-        (display-symbol-property-info))
 
-      (define/private (display-source-info)
-        (define s-source (syntax-source selected-syntax))
-        (define s-line (syntax-line selected-syntax))
-        (define s-column (syntax-column selected-syntax))
-        (define s-position (syntax-position selected-syntax))
-        (define s-span0 (syntax-span selected-syntax))
+      ;; display-stxobj-info : syntax -> void
+      (define/public (display-stxobj-info stx)
+        (display-source-info stx)
+        (display-extra-source-info stx)
+        (display-symbol-property-info stx))
+
+      ;; display-source-info : syntax -> void
+      (define/private (display-source-info stx)
+        (define s-source (syntax-source stx))
+        (define s-line (syntax-line stx))
+        (define s-column (syntax-column stx))
+        (define s-position (syntax-position stx))
+        (define s-span0 (syntax-span stx))
         (define s-span (if (zero? s-span0) #f s-span0))
         (display "Source location\n" key-sd)
         (if (or s-source s-line s-column s-position s-span)
@@ -101,41 +180,46 @@
               (display-subkv "span" s-span0))
             (display "No source location available\n" n/a-sd))
         (display "\n" #f))
-      
-      (define/private (display-extra-source-info)
+
+      ;; display-extra-source-info : syntax -> void
+      (define/private (display-extra-source-info stx)
         (display "Built-in properties\n" key-sd)
         (display-subkv "source module"
-                       (let ([mod (syntax-source-module selected-syntax)])
+                       (let ([mod (syntax-source-module stx)])
                          (and mod (mpi->string mod))))
-        (display-subkv "original?" (syntax-original? selected-syntax))
+        (display-subkv "original?" (syntax-original? stx))
         (display "\n" #f))
-      
-      (define/private (display-symbol-property-info)
-        (let ([keys (syntax-property-symbol-keys selected-syntax)])
+
+      ;; display-symbol-property-info : syntax -> void
+      (define/private (display-symbol-property-info stx)
+        (let ([keys (syntax-property-symbol-keys stx)])
           (display "Additional properties\n" key-sd)
           (when (null? keys)
             (display "No additional properties available.\n" n/a-sd))
           (when (pair? keys)
-            (for-each (lambda (k) (display-subkv k (syntax-property selected-syntax k)))
+            (for-each (lambda (k) (display-subkv k (syntax-property stx k)))
                       keys))))
-      
+
+      ;; display-kv : any any -> void
       (define/private (display-kv key value)
         (display (format "~a~n" key) key-sd)
         (display (format "~s~n~n" value) #f))
 
+      ;; display-subkv : any any -> void
       (define/public (display-subkv k v)
         (display (format "~a: " k) sub-key-sd)
         (display (format "~a~n" v) #f))
-      
+
+      ;; display : string style-delta -> void
       (define/private (display item sd)
         (let ([p0 (send text last-position)])
           (send text insert item)
           (let ([p1 (send text last-position)])
             (send text change-style sd p0 p1))))
 
-      (send text lock #t)
       (super-new)))
-  
+
+
   ;; lift/id : (identifier -> void) 'a -> void
   (define (lift/id f)
     (lambda (stx) (when (identifier? stx) (f stx))))
@@ -174,5 +258,12 @@
     (let ([sd (new style-delta%)])
       (send sd set-delta-foreground "gray")
       sd))
-  
+
+  (define style:normal (make-object style-delta% 'change-normal))
+
+  (define style:hyper
+    (let ([s (make-object style-delta% 'change-normal)])
+      (send s set-delta 'change-toggle-underline)
+      (send s set-delta-foreground "blue")
+      s))
   )
