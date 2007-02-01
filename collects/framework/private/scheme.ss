@@ -7,13 +7,11 @@
 	   (lib "class.ss")
 	   "sig.ss"
 	   (lib "mred-sig.ss" "mred")
-           (lib "mred.ss" "mred")
 	   (lib "list.ss")
-	   (lib "thread.ss")
            (lib "etc.ss")
-           (lib "surrogate.ss")
            (lib "scheme-lexer.ss" "syntax-color")
-           "../gui-utils.ss")
+           "../gui-utils.ss"
+           "../preferences.ss")
   
   
   (import mred^

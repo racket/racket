@@ -3,7 +3,8 @@
   (require (lib "string-constant.ss" "string-constants")
            (lib "class.ss")
            "sig.ss"
-	   "../gui-utils.ss"
+	   "../preferences.ss"
+           "../gui-utils.ss"
            (lib "mred-sig.ss" "mred")
            (lib "list.ss")
            (lib "file.ss"))
@@ -11,7 +12,6 @@
   (import mred^
           [prefix application: framework:application^]
           [prefix frame: framework:frame^]
-          [prefix preferences: framework:preferences^]
           [prefix text: framework:text^]
           [prefix canvas: framework:canvas^]
           [prefix menu: framework:menu^])

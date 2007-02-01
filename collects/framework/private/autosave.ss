@@ -4,15 +4,13 @@
            (lib "file.ss")
 	   "sig.ss"
 	   "../gui-utils.ss"
-	   (lib "mred-sig.ss" "mred")
-           (lib "mred.ss" "mred") ;; remove this!
+           "../preferences.ss"
+           (lib "mred-sig.ss" "mred")
            (lib "list.ss")
-           (lib "string-constant.ss" "string-constants")
-           (lib "unit.ss"))
+           (lib "string-constant.ss" "string-constants"))
   
   (import mred^
           [prefix exit: framework:exit^]
-          [prefix preferences: framework:preferences^]
           [prefix frame: framework:frame^]
           [prefix scheme: framework:scheme^]
           [prefix editor: framework:editor^]

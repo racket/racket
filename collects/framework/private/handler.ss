@@ -4,7 +4,8 @@
            (lib "list.ss")
            (lib "hierlist.ss" "hierlist")
 	   "sig.ss"
-	   "../gui-utils.ss"
+	   "../preferences.ss"
+           "../gui-utils.ss"
 	   (lib "mred-sig.ss" "mred")
 	   (lib "file.ss")
            (lib "string-constant.ss" "string-constants"))
@@ -14,7 +15,6 @@
           [prefix finder: framework:finder^]
           [prefix group: framework:group^]
           [prefix text: framework:text^]
-          [prefix preferences: framework:preferences^]
           [prefix frame: framework:frame^])
   (export framework:handler^)
   (init-depend framework:frame^)

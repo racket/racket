@@ -1,9 +1,8 @@
 (module main (lib "a-unit.ss")
   (require (lib "class.ss")
 	   "sig.ss"
-	   "../gui-utils.ss"
-           (lib "string-constant.ss" "string-constants")
-	   (lib "mred-sig.ss" "mred"))
+           "../preferences.ss"
+   	   (lib "mred-sig.ss" "mred"))
   
   (import mred^
           [prefix preferences: framework:preferences^]
@@ -17,8 +16,10 @@
   (init-depend framework:preferences^ framework:exit^ framework:editor^
                framework:color-prefs^ framework:scheme^)
 
-      (application-preferences-handler (λ () (preferences:show-dialog)))
-      
+  (preferences:low-level-put-preferences preferences:put-preferences/gui)
+  
+  (application-preferences-handler (λ () (preferences:show-dialog)))
+  
       (preferences:set-default 'framework:square-bracket:cond/offset
                                '(("case-lambda" 0)
                                  ("cond" 0)

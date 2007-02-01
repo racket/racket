@@ -30,138 +30,17 @@ the state transitions / contracts are:
   (require (lib "string-constant.ss" "string-constants")
 	   (lib "class.ss")
            (lib "file.ss")
-	   (lib "etc.ss")
            "sig.ss"
            "../gui-utils.ss"
+           "../preferences.ss"
 	   (lib "mred-sig.ss" "mred")
-	   (lib "pretty.ss")
 	   (lib "list.ss"))
   
   (import mred^
-          [prefix exn: framework:exn^]
           [prefix exit: framework:exit^]
           [prefix panel: framework:panel^]
           [prefix frame: framework:frame^])
   (export framework:preferences^)
-  
-  (define old-preferences-symbol 'plt:framework-prefs)
-  (define old-preferences (make-hash-table))
-  (let ([old-prefs (get-preference old-preferences-symbol (λ () '()))])
-    (for-each
-     (λ (line) (hash-table-put! old-preferences (car line) (cadr line)))
-     old-prefs))
-  
-  (define (add-pref-prefix p) (string->symbol (format "plt:framework-pref:~a" p)))
-  
-  ;; preferences : hash-table[sym -o> any]
-  ;; the current values of the preferences
-  (define preferences (make-hash-table))
-  
-  ;; marshalled : hash-table[sym -o> any]
-  ;; the values of the preferences, as read in from the disk
-  ;; each symbol will only be mapped in one of the preferences
-  ;; hash-table and this hash-table, but not both.
-  (define marshalled (make-hash-table))
-  
-  ;; marshall-unmarshall : sym -o> un/marshall
-  (define marshall-unmarshall (make-hash-table))
-  
-  ;; callbacks : sym -o> (listof (sym TST -> boolean))
-  (define callbacks (make-hash-table))
-  
-  ;; defaults : hash-table[sym -o> default]
-  (define defaults (make-hash-table))
-  
-  ;; these four functions determine the state of a preference
-  (define (pref-un/marshall-set? pref) (hash-table-bound? marshall-unmarshall pref))
-  (define (pref-default-set? pref) (hash-table-bound? defaults pref))
-  (define (pref-can-init? pref) 
-    (and (not snapshot-grabbed?)
-         (not (hash-table-bound? preferences pref))))
-  
-  ;; type un/marshall = (make-un/marshall (any -> prinable) (printable -> any))
-  (define-struct un/marshall (marshall unmarshall))
-  
-  ;; type pref = (make-pref any)
-  (define-struct pref (value))
-  
-  ;; type default  = (make-default any (any -> bool))
-  (define-struct default (value checker))
-  
-  ;; pref-callback : (make-pref-callback (union (weak-box (sym tst -> void)) (sym tst -> void)))
-  ;; this is used as a wrapped to deal with the problem that different procedures might be eq?.
-  (define-struct pref-callback (cb))
-  
-  ;; get : symbol -> any
-  ;; return the current value of the preference `p'
-  ;; exported
-  (define (get p)
-    (cond
-      [(pref-default-set? p)
-       
-       ;; unmarshall, if required
-       (when (hash-table-bound? marshalled p)
-         ;; if `preferences' is already bound, that means the unmarshalled value isn't useful.
-         (unless (hash-table-bound? preferences p)
-           (hash-table-put! preferences p (unmarshall-pref p (hash-table-get marshalled p))))
-         (hash-table-remove! marshalled p))
-       
-       ;; if there is no value in the preferences table, but there is one
-       ;; in the old version preferences file, take that:
-       (unless (hash-table-bound? preferences p)
-         (when (hash-table-bound? old-preferences p)
-           (hash-table-put! preferences p (unmarshall-pref p (hash-table-get old-preferences p)))))
-       
-       ;; clear the pref from the old table (just in case it was taking space -- we don't need it anymore)
-       (when (hash-table-bound? old-preferences p)
-         (hash-table-remove! old-preferences p))
-       
-       ;; if it still isn't set, take the default value
-       (unless (hash-table-bound? preferences p)
-         (hash-table-put! preferences p (default-value (hash-table-get defaults p))))
-       
-       (hash-table-get preferences p)]
-      [(not (pref-default-set? p))
-       (raise-unknown-preference-error
-        'preferences:get
-        "tried to get a preference but no default set for ~e"
-        p)]))
-  
-  ;; set : symbol any -> void
-  ;; updates the preference
-  ;; exported
-  (define (set p value) (multi-set (list p) (list value)))
-  
-  ;; set : symbol any -> void
-  ;; updates the preference
-  ;; exported
-
-  (define (multi-set ps values)
-    (for-each
-     (λ (p value)
-       (cond
-         [(pref-default-set? p)
-          (let ([default (hash-table-get defaults p)])
-            (unless ((default-checker default) value)
-              (error 'preferences:set
-                     "tried to set preference ~e to ~e but it does not meet test from preferences:set-default"
-                     p value))
-            (check-callbacks p value)
-            (hash-table-put! preferences p value)
-            (void))]
-         [(not (pref-default-set? p))
-          (raise-unknown-preference-error
-           'preferences:set "tried to set the preference ~e to ~e, but no default is set"
-           p
-           value)]))
-     ps values)
-    
-    (put-preferences/gui (map add-pref-prefix ps) 
-                         (map (λ (p value) (marshall-pref p value))
-                              ps
-                              values))
-    
-    (void))
   
   (define (put-preferences/gui ps vs)
     (define (fail-func path)
@@ -196,180 +75,9 @@ the state transitions / contracts are:
        ps
        vs
        fail-func)))
+  
+  
 
-  (define (raise-unknown-preference-error sym fmt . args)
-    (raise (exn:make-unknown-preference
-            (string-append (format "~a: " sym) (apply format fmt args))
-            (current-continuation-marks))))
-
-  ;; unmarshall-pref : symbol marshalled -> any
-  ;; unmarshalls a preference read from the disk
-  (define (unmarshall-pref p data)
-    (let/ec k
-      (let* ([unmarshall-fn (un/marshall-unmarshall
-                             (hash-table-get marshall-unmarshall
-                                             p
-                                             (λ () (k data))))]
-             [default (hash-table-get defaults p)]
-             [result (unmarshall-fn data)])
-        (if ((default-checker default) result)
-            result
-            (default-value default)))))
-  
-  ;; add-callback : sym (-> void) -> void
-  (define add-callback 
-    (opt-lambda (p callback [weak? #f])
-      (let ([new-cb (make-pref-callback (if weak?
-                                            (make-weak-box callback)
-                                            callback))])
-        (hash-table-put! callbacks
-                         p 
-                         (append 
-                          (hash-table-get callbacks p (λ () null))
-                          (list new-cb)))
-        (λ ()
-          (hash-table-put!
-           callbacks
-           p
-           (let loop ([callbacks (hash-table-get callbacks p (λ () null))])
-             (cond
-               [(null? callbacks) null]
-               [else 
-                (let ([callback (car callbacks)])
-                  (cond
-                    [(eq? callback new-cb)
-                     (loop (cdr callbacks))]
-                    [else
-                     (cons (car callbacks) (loop (cdr callbacks)))]))])))))))
-  
-  ;; check-callbacks : sym val -> void
-  (define (check-callbacks p value)
-    (let ([new-callbacks
-           (let loop ([callbacks (hash-table-get callbacks p (λ () null))])
-             (cond
-               [(null? callbacks) null]
-               [else 
-                (let* ([callback (car callbacks)]
-                       [cb (pref-callback-cb callback)])
-                  (cond
-                    [(weak-box? cb)
-                     (let ([v (weak-box-value cb)])
-                       (if v
-                           (begin 
-                             (v p value)
-                             (cons callback (loop (cdr callbacks))))
-                           (loop (cdr callbacks))))]
-                    [else
-                     (cb p value)
-                     (cons callback (loop (cdr callbacks)))]))]))])
-      (if (null? new-callbacks)
-          (hash-table-remove! callbacks p)
-          (hash-table-put! callbacks p new-callbacks))))
-  
-  (define (set-un/marshall p marshall unmarshall)
-    (cond
-      [(and (pref-default-set? p)
-            (not (pref-un/marshall-set? p))
-            (pref-can-init? p))
-       (hash-table-put! marshall-unmarshall p (make-un/marshall marshall unmarshall))]
-      [(not (pref-default-set? p))
-       (error 'preferences:set-un/marshall
-              "must call set-default for ~s before calling set-un/marshall for ~s"
-              p p)]
-      [(pref-un/marshall-set? p)
-       (error 'preferences:set-un/marshall
-              "already set un/marshall for ~e" 
-              p)]
-      [(not (pref-can-init? p))
-       (error 'preferences:set-un/marshall "the preference ~e cannot be configured any more" p)]))
-  
-  (define (hash-table-bound? ht s)
-    (let/ec k
-      (hash-table-get ht s (λ () (k #f)))
-      #t))
-  
-  (define (restore-defaults)
-    (hash-table-for-each
-     defaults
-     (λ (p def) (set p (default-value def)))))
-  
-  ;; set-default : (sym TST (TST -> boolean) -> void
-  (define (set-default p default-value checker)
-    (cond
-      [(and (not (pref-default-set? p))
-            (pref-can-init? p))
-       (let ([default-okay? (checker default-value)])
-         (unless default-okay?
-           (error 'set-default "~s: checker (~s) returns ~s for ~s, expected #t~n"
-                  p checker default-okay? default-value))
-         (hash-table-put! defaults p (make-default default-value checker))
-         (let/ec k
-           (let ([m (get-preference (add-pref-prefix p) (λ () (k (void))))])
-             ;; if there is no preference saved, we just don't do anything.
-             ;; `get' notices this case.
-             (hash-table-put! marshalled p m))))]
-      [(not (pref-can-init? p))
-       (error 'preferences:set-default
-              "tried to call set-default for preference ~e but it cannot be configured any more"
-              p)]
-      [(pref-default-set? p)
-       (error 'preferences:set-default
-              "preferences default already set for ~e" p)]
-      [(not (pref-can-init? p))
-       (error 'preferences:set-default
-              "can no longer set the default for ~e" p)]))
-  
-  ;; marshall-pref : symbol any -> (list symbol printable)
-  (define (marshall-pref p value)
-    (let/ec k
-      (let* ([marshaller
-              (un/marshall-marshall
-               (hash-table-get marshall-unmarshall p (λ () (k value))))])
-        (marshaller value))))
-  
-  (define (read-err input msg)
-    (message-box 
-     (string-constant preferences)
-     (let* ([max-len 150]
-            [s1 (format "~s" input)]
-            [ell "..."]
-            [s2 (if (<= (string-length s1) max-len)
-                    s1
-                    (string-append
-                     (substring s1 0 (- max-len
-                                        (string-length ell)))
-                     ell))])
-       (string-append
-        (string-constant error-reading-preferences)
-        "\n"
-        msg
-        "\n"
-        s2))))
-  
-  (define snapshot-grabbed? #f)
-  (define (get-prefs-snapshot)
-    (set! snapshot-grabbed? #t)
-    (hash-table-map defaults (λ (k v) (cons k (get k)))))
-    
-  (define (restore-prefs-snapshot snapshot)
-    (multi-set (map car snapshot)
-               (map cdr snapshot)))
-  
-  
-  ;;    ;           ;;;                 
-  ;                  ;                 
-  ;                  ;                 
-  ;;;;  ;;;    ;;;;     ;     ;;;    ;;; ;
-  ;   ;    ;        ;    ;    ;   ;  ;   ; 
-  ;   ;    ;     ;;;;    ;    ;   ;  ;   ; 
-  ;   ;    ;    ;   ;    ;    ;   ;  ;   ; 
-  ;   ;    ;    ;   ;    ;    ;   ;  ;   ; 
-  ;;; ; ;;;;;   ;;; ; ;;;;;;  ;;;    ;;;; 
-  ; 
-  ; 
-  ;;;  
-  
-  
   ;; ppanel-tree = 
   ;;  (union (make-ppanel-leaf string (union #f panel) (panel -> panel))
   ;;         (make-ppanel-interior string (union #f panel) (listof panel-tree)))
@@ -465,12 +173,12 @@ the state transitions / contracts are:
   (define can-close-dialog-callbacks null)
   
   (define (make-preferences-dialog)
-    (letrec ([stashed-prefs (get-prefs-snapshot)]
+    (letrec ([stashed-prefs (preferences:get-prefs-snapshot)]
              [frame-stashed-prefs%
               (class frame:basic%
                 (define/override (show on?)
                   (when on?
-                    (set! stashed-prefs (get-prefs-snapshot)))
+                    (set! stashed-prefs (preferences:get-prefs-snapshot)))
                   (super show on?))
                 (super-new))]
              [frame 
@@ -529,7 +237,7 @@ the state transitions / contracts are:
                               (hide-dialog)))]
              [cancel-callback (λ (_1 _2)
                                 (hide-dialog)
-                                (restore-prefs-snapshot stashed-prefs))])
+                                (preferences:restore-prefs-snapshot stashed-prefs))])
       (gui-utils:ok/cancel-buttons
        bottom-panel
        ok-callback
@@ -574,14 +282,15 @@ the state transitions / contracts are:
   (define (make-check main pref title bool->pref pref->bool)
     (let* ([callback
             (λ (check-box _)
-              (set pref (bool->pref (send check-box get-value))))]
-           [pref-value (get pref)]
+              (preferences:set pref (bool->pref (send check-box get-value))))]
+           [pref-value (preferences:get pref)]
            [initial-value (pref->bool pref-value)]
            [c (make-object check-box% title main callback)])
       (send c set-value initial-value)
-      (add-callback pref
-                    (λ (p v)
-                      (send c set-value (pref->bool v))))))
+      (preferences:add-callback
+       pref
+       (λ (p v)
+         (send c set-value (pref->bool v))))))
   
   (define (make-recent-items-slider parent)
     (let ([slider (instantiate slider% ()
@@ -589,11 +298,11 @@ the state transitions / contracts are:
                     (label (string-constant number-of-open-recent-items))
                     (min-value 1)
                     (max-value 100)
-                    (init-value (get 'framework:recent-max-count))
+                    (init-value (preferences:get 'framework:recent-max-count))
                     (callback (λ (slider y)
-                                (set 'framework:recent-max-count
-                                     (send slider get-value)))))])
-      (add-callback
+                                (preferences:set 'framework:recent-max-count
+                                                 (send slider get-value)))))])
+      (preferences:add-callback
        'framework:recent-max-count
        (λ (p v)
          (send slider set-value v)))))
@@ -732,13 +441,14 @@ the state transitions / contracts are:
               (λ (family)
                 (let ([name (build-font-preference-symbol family)]
                       [font-entry (build-font-entry family)])
-                  (set-default name
-                               default
-                               (cond
-                                 [(string? default) string?]
-                                 [(number? default) number?]
-                                 [else (error 'internal-error.set-default "unrecognized default: ~a~n" default)]))
-                  (add-callback 
+                  (preferences:set-default
+                   name
+                   default
+                   (cond
+                     [(string? default) string?]
+                     [(number? default) number?]
+                     [else (error 'internal-error.set-default "unrecognized default: ~a~n" default)]))
+                  (preferences:add-callback 
                    name 
                    (λ (p new-value)
                      (write-resource 
@@ -773,11 +483,11 @@ the state transitions / contracts are:
                             [set-edit-font
                              (λ (size)
                                (let ([delta (make-object style-delta% 'change-size size)]
-                                     [face (get pref-sym)])
+                                     [face (preferences:get pref-sym)])
                                  (if (and (string=? face font-default-string)
                                           family-const-pair)
                                      (send delta set-family (cadr family-const-pair))
-                                     (send delta set-delta-face (get pref-sym)))
+                                     (send delta set-delta-face (preferences:get pref-sym)))
                                  
                                  (send edit change-style delta 0 (send edit last-position))))]
                             
@@ -807,14 +517,14 @@ the state transitions / contracts are:
                                                  name)
                                          fonts)])
                                    (when new-value
-                                     (set pref-sym (list-ref fonts (car new-value))) 
-                                     (set-edit-font (get font-size-pref-sym))))))]
+                                     (preferences:set pref-sym (list-ref fonts (car new-value))) 
+                                     (set-edit-font (preferences:get font-size-pref-sym))))))]
                             [canvas (make-object editor-canvas% horiz
                                       edit
                                       (list 'hide-hscroll
                                             'hide-vscroll))])
-                       (set-edit-font (get font-size-pref-sym))
-                       (add-callback
+                       (set-edit-font (preferences:get font-size-pref-sym))
+                       (preferences:add-callback
                         pref-sym
                         (λ (p new-value)
                           (send horiz change-children
@@ -861,11 +571,11 @@ the state transitions / contracts are:
                      1 127
                      size-panel
                      (λ (slider evt)
-                       (set font-size-pref-sym (send slider get-value)))
+                       (preferences:set font-size-pref-sym (send slider get-value)))
                      initial-font-size)])
            (update-message-sizes font-message-get-widths font-message-user-min-sizes)
            (update-message-sizes category-message-get-widths category-message-user-min-sizes)
-           (add-callback
+           (preferences:add-callback
             font-size-pref-sym
             (λ (p value)
               (for-each (λ (f) (f value)) set-edit-fonts)

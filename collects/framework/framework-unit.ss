@@ -8,7 +8,6 @@
            "private/application.ss"
 	   "private/version.ss"
 	   "private/color-model.ss"
-	   "private/exn.ss"
 	   "private/exit.ss"
 	   "private/menu.ss"
 	   "private/preferences.ss"
@@ -38,7 +37,6 @@
     (export framework:application^ 
             framework:version^
             framework:color-model^
-            framework:exn^
 	    framework:mode^
             framework:exit^
             framework:menu^
@@ -63,7 +61,7 @@
             framework:scheme^ 
             framework:main^)
     (link
-     application@ version@ color-model@ exn@ mode@ exit@ menu@
+     application@ version@ color-model@ mode@ exit@ menu@
      preferences@ number-snip@ autosave@ path-utils@ icon@ keymap@
      editor@ pasteboard@ text@ color@ color-prefs@ comment-box@ 
      finder@ group@ canvas@ panel@ frame@ handler@ scheme@ main@))
@@ -72,7 +70,6 @@
     (((prefix application: framework:application^)
       (prefix version: framework:version^)
       (prefix color-model: framework:color-model^)
-      (prefix exn: framework:exn^)
       (prefix mode: framework:mode^)
       (prefix exit: framework:exit^)
       (prefix menu: framework:menu^)

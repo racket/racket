@@ -6,6 +6,7 @@
            (lib "mred.ss" "mred")
            (lib "class.ss")
            
+           "preferences.ss"
            "test.ss"
            "gui-utils.ss"
            "decorated-editor-snip.ss"
@@ -19,7 +20,6 @@
    (prefix application: framework:application-class^)
    (prefix version: framework:version-class^)
    (prefix color-model: framework:color-model-class^)
-   (prefix exn: framework:exn-class^)
    (prefix mode: framework:mode-class^)
    (prefix exit: framework:exit-class^)
    (prefix menu: framework:menu-class^)
@@ -46,10 +46,8 @@
 
   (provide (all-from "test.ss")
            (all-from "gui-utils.ss")
+           (all-from "preferences.ss")
            (all-from "decorated-editor-snip.ss"))
-
-  (provide exn:struct:unknown-preference
-           exn:struct:exn)
 
   (define-syntax (provide/contract/docs stx)
     (syntax-case stx ()
@@ -107,23 +105,6 @@
     "@flink version:add-spec %"
     ".")
 
-   (exn:make-exn
-    (string? continuation-mark-set? . -> . exn?)
-    (message continuation-marks)
-    "Creates a framework exception.")
-   (exn:exn?
-    (any/c . -> . boolean?)
-    (exn)
-    "Tests if a value is a framework exception.")
-   (exn:make-unknown-preference 
-    (string? continuation-mark-set? . -> . exn:unknown-preference?)
-    (message continuation-marks)
-    "Creates an unknown preference exception.")
-   (exn:unknown-preference? 
-    (any/c . -> . boolean?)
-    (exn)
-    "Determines if a value is an unknown preference exn.")
-
    (application:current-app-name
     (case-> (-> string?)
             (string? . -> . void?))
@@ -136,116 +117,6 @@
     "the current name, and"
     "the second case in the case-lambda sets"
     "the name of the application to \\var{name}.")
-
-   (preferences:get
-    (symbol? . -> . any/c)
-    (symbol)
-    "See also"
-    "@flink preferences:set-default %"
-    "."
-    ""
-    "\\rawscm{preferences:get} returns the value for the preference"
-    "\\var{symbol}. It raises"
-    "\\scmindex{exn:unknown-preference}\\rawscm{exn:unknown-preference}"
-    "if the preference's default has not been set.")
-   (preferences:set
-    (symbol? any/c . -> . void?)
-    (symbol value)
-    "See also"
-    "@flink preferences:set-default %"
-    "."
-    ""
-    "\\rawscm{preferences:set-preference} sets the preference"
-    "\\var{symbol} to \\var{value}. This should be called when the"
-    "users requests a change to a preference."
-    ""
-    "This function immediately writes the preference value to disk."
-    ""
-    "It raises"
-    "\\scmindex{exn:unknown-preference}\\rawscm{exn:unknown-preference}"
-    "if the preference's default has not been set.")
-   (preferences:add-callback
-    (opt-> (symbol? (symbol? any/c . -> . any/c))
-           (boolean?)
-           (-> void?))
-    ((p f)
-     ((weak? #f)))
-    "This function adds a callback which is called with a symbol naming a"
-    "preference and it's value, when the preference changes."
-    "\\rawscm{preferences:add-callback} returns a thunk, which when"
-    "invoked, removes the callback from this preference."
-    ""
-    "If \\var{weak?} is true, the preferences system will only hold on to"
-    "the callback weakly."
-    ""
-    "The callbacks will be called in the order in which they were added."
-    ""
-    "If you are adding a callback for a preference that requires"
-    "marshalling and unmarshalling, you must set the marshalling and"
-    "unmarshalling functions by calling"
-    "\\iscmprocedure{preferences:set-un/marshall} before adding a callback."
-    ""
-    "This function raises"
-    "\\scmindex{exn:unknown-preference}\\rawscm{exn:unknown-preference}"
-    "if the preference has not been set.")
-   (preferences:set-default
-    (symbol? any/c (any/c . -> . any) . -> . void?)
-    (symbol value test)
-    "This function must be called every time your application starts up, before any call to"
-    "@flink preferences:get %"
-    ", "
-    "@flink preferences:set"
-    "(for any given preference)."
-    ""
-    "If you use"
-    "@flink preferences:set-un/marshall %"
-    ", you must call this function before calling it."
-    ""
-    "This sets the default value of the preference \\var{symbol} to"
-    "\\var{value}. If the user has chosen a different setting,"
-    "the user's setting"
-    "will take precedence over the default value."
-    ""
-    "The last argument, \\var{test} is used as a safeguard. That function is"
-    "called to determine if a preference read in from a file is a valid"
-    "preference. If \\var{test} returns \\rawscm{\\#t}, then the preference is"
-    "treated as valid. If \\var{test} returns \\rawscm{\\#f} then the default is"
-    "used.")
-   (preferences:set-un/marshall
-    (symbol? (any/c . -> . printable/c) (printable/c . -> . any/c) . -> . void?)
-    (symbol marshall unmarshall)
-    "\\rawscm{preference:set-un/marshall} is used to specify marshalling and"
-    "unmarshalling functions for the preference"
-    "\\var{symbol}. \\var{marshall} will be called when the users saves their"
-    "preferences to turn the preference value for \\var{symbol} into a"
-    "printable value. \\var{unmarshall} will be called when the user's"
-    "preferences are read from the file to transform the printable value"
-    "into it's internal representation. If \\rawscm{preference:set-un/marshall}"
-    "is never called for a particular preference, the values of that"
-    "preference are assumed to be printable."
-    ""
-    "If the unmarshalling function returns a value that does not meet the"
-    "guard passed to "
-    "@flink preferences:set-default"
-    "for this preference, the default value is used."
-    ""
-    "The \\var{marshall} function might be called with any value returned"
-    "from \\scheme{read} and it must not raise an error (although it"
-    "can return arbitrary results if it gets bad input). This might"
-    "happen when the preferences file becomes corrupted, or is edited"
-    "by hand."
-    ""
-    "\\rawscm{preference:set-un/marshall} must be called before calling"
-    "@flink preferences:get %"
-    ", "
-    "@flink preferences:set %"
-    ".")
-   
-   (preferences:restore-defaults
-    (-> void?)
-    ()
-    "\\rawscm{(preferences:restore-defaults)} restores the users's configuration to the"
-    "default preferences.")
 
    (preferences:add-panel
     ((or/c string? (cons/c string? (listof string?)))
@@ -279,7 +150,7 @@
    "\\var{f} is expected to add a new child panel to it and add"
    "whatever preferences configuration controls it wants to that"
    "panel. Then, \\var{f}'s should return the panel it added.")
-
+   
    (preferences:add-editor-checkbox-panel
     (-> void?)
     ()

@@ -4,7 +4,8 @@
 	   (lib "class.ss")
 	   (lib "include.ss")
 	   "sig.ss"
-	   "../gui-utils.ss"
+	   "../preferences.ss"
+           "../gui-utils.ss"
            "bday.ss"
 	   (lib "mred-sig.ss" "mred")
 	   (lib "list.ss")

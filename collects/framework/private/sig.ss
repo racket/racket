@@ -60,12 +60,6 @@
   (define-signature panel^ extends panel-class^
     ())
 
-  (define-signature exn-class^
-    ())
-  (define-signature exn^ extends exn-class^
-    ((struct exn ())
-     (struct unknown-preference ())))
-
   (define-signature application-class^
     ())
   (define-signature application^ extends application-class^
@@ -74,14 +68,7 @@
   (define-signature preferences-class^
     ())
   (define-signature preferences^ extends preferences-class^
-    (get
-     add-callback
-     set
-     set-default
-     set-un/marshall
-
-     restore-defaults
-     
+    (put-preferences/gui
      add-panel
      add-font-panel
 
@@ -436,7 +423,6 @@
     ((open (prefix application: application^))
      (open (prefix version: version^))
      (open (prefix color-model: color-model^))
-     (open (prefix exn: exn^))
      (open (prefix mode: mode^))
      (open (prefix exit: exit^))
      (open (prefix menu: menu^))

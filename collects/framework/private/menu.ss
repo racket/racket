@@ -1,10 +1,10 @@
 (module menu (lib "a-unit.ss")
   (require (lib "class.ss")
 	   "sig.ss"
-	   (lib "mred-sig.ss" "mred"))
+	   "../preferences.ss"
+           (lib "mred-sig.ss" "mred"))
   
-  (import mred^
-          [prefix preferences: framework:preferences^])
+  (import mred^)
   (export framework:menu^)
       
       (define can-restore<%>

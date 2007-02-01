@@ -5,11 +5,11 @@
 	   (lib "list.ss")
 	   (lib "mred-sig.ss" "mred")
            (lib "match.ss")
+           "../preferences.ss"
            "sig.ss")
   
    
   (import mred^
-          [prefix preferences: framework:preferences^]
           [prefix finder: framework:finder^]
           [prefix handler: framework:handler^]
           [prefix frame: framework:frame^]

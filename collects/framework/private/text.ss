@@ -11,7 +11,8 @@ WARNING: printf is rebound in the body of the unit to always
            (lib "match.ss")
 	   "sig.ss"
 	   "../gui-utils.ss"
-	   (lib "mred-sig.ss" "mred")
+	   "../preferences.ss"
+           (lib "mred-sig.ss" "mred")
            (lib "interactive-value-port.ss" "mrlib")
 	   (lib "list.ss")
 	   (lib "etc.ss"))
@@ -19,7 +20,6 @@ WARNING: printf is rebound in the body of the unit to always
   (import mred^
           [prefix icon: framework:icon^]
           [prefix editor: framework:editor^]
-          [prefix preferences: framework:preferences^]
           [prefix keymap: framework:keymap^]
           [prefix color-model: framework:color-model^]
           [prefix frame: framework:frame^]

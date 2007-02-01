@@ -2,17 +2,14 @@
 (module finder (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
 	   "sig.ss"
-	   "../gui-utils.ss"
-           (lib "class.ss")
+           "../preferences.ss"
 	   (lib "mred-sig.ss" "mred")
 	   (lib "string.ss")
-	   (lib "list.ss")
 	   (lib "file.ss")
 	   (lib "etc.ss"))
 
 
   (import mred^
-          [prefix preferences: framework:preferences^]
           [prefix keymap: framework:keymap^])
 
   (export (rename framework:finder^

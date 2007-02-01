@@ -3,7 +3,8 @@
   (require (lib "class.ss")
            (lib "string-constant.ss" "string-constants")
 	   "sig.ss"
-	   "../gui-utils.ss"
+	   "../preferences.ss"
+           "../gui-utils.ss"
            (lib "etc.ss")
 	   (lib "mred-sig.ss" "mred")
 	   (lib "file.ss"))
@@ -14,7 +15,6 @@
           [prefix path-utils: framework:path-utils^]
           [prefix keymap: framework:keymap^]
           [prefix icon: framework:icon^]
-          [prefix preferences: framework:preferences^]
           [prefix text: framework:text^]
           [prefix pasteboard: framework:pasteboard^]
           [prefix frame: framework:frame^]

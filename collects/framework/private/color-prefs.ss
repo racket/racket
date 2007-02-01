@@ -1,9 +1,9 @@
 (module color-prefs (lib "a-unit.ss")
   (require (lib "class.ss")
-           (lib "unit.ss")
            (lib "etc.ss")
            (lib "mred.ss" "mred")
            (lib "string-constant.ss" "string-constants")
+           "../preferences.ss"
            "sig.ss")
   
   (import [prefix preferences: framework:preferences^]

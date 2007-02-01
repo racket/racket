@@ -1,14 +1,11 @@
 (module exit (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
-	   (lib "class.ss")
 	   "sig.ss"
-	   "../gui-utils.ss"
-	   (lib "mred-sig.ss" "mred")
-	   (lib "file.ss")
-           (lib "etc.ss"))
+	   "../preferences.ss"
+           "../gui-utils.ss"
+	   (lib "mred-sig.ss" "mred"))
 
-  (import mred^
-          [prefix preferences: framework:preferences^])
+  (import mred^)
   (export (rename framework:exit^
                   (-exit exit)))
       

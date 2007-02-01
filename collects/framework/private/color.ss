@@ -1,16 +1,15 @@
 (module color (lib "a-unit.ss")
   (require (lib "class.ss")
-           (lib "etc.ss")
-	   (lib "thread.ss")
+           (lib "thread.ss")
            (lib "mred.ss" "mred")
+           (lib "etc.ss")
            (lib "token-tree.ss" "syntax-color")
            (lib "paren-tree.ss" "syntax-color")
            (lib "default-lexer.ss" "syntax-color")
-           (lib "unit.ss")
+           "../preferences.ss"
            "sig.ss")
 
-  (import [prefix preferences: framework:preferences^]
-          [prefix icon: framework:icon^]
+  (import [prefix icon: framework:icon^]
           [prefix mode: framework:mode^]
           [prefix text: framework:text^]
           [prefix color-prefs: framework:color-prefs^]

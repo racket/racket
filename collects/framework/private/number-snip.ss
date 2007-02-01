@@ -3,10 +3,10 @@
   (require "sig.ss"
 	   (lib "mred-sig.ss" "mred")
 	   (lib "class.ss")
+           "../preferences.ss"
            (lib "string-constant.ss" "string-constants"))
   
-  (import mred^
-          [prefix preferences: framework:preferences^])
+  (import mred^)
   (export (rename framework:number-snip^
                   [-snip-class% snip-class%]))
   (init-depend mred^)
