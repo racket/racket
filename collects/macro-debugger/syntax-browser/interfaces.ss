@@ -115,6 +115,14 @@
       select-syntax
       apply-styles))
 
+  ;; syntax-sharing-context<%>
+  ;; A syntax-sharing-context<%> 
+  ;; Syntax snips search their enclosing editors for instances of sharing contexts
+  (define syntax-sharing-context<%>
+    (interface ()
+      ;; get-shared-partition
+      get-shared-partition))
+
   ;;----------
   
   ;; Convenience widget, specialized for displaying stx and not much else

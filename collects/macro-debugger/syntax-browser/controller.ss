@@ -11,12 +11,13 @@
     (class* object% (syntax-controller<%>
                      syntax-pp-snip-controller<%>
                      color-controller<%>)
+      (init-field (primary-partition (new-bound-partition)))
+      (init-field (properties-controller #f))
 
       (define colorers null)
       (define selection-listeners null)
       (define selected-syntax #f)
       (define identifier=?-listeners null)
-      (init-field (properties-controller #f))
 
       ;; syntax-controller<%> Methods
 
@@ -42,7 +43,7 @@
         (set! selection-listeners (cons p selection-listeners)))
       
       (define/public (on-update-identifier=? name id=?)
-        (set! -secondary-partition 
+        (set! secondary-partition 
               (and id=? (new partition% (relation id=?))))
         (for-each (lambda (c) (send c refresh)) colorers)
         (for-each (lambda (f) (f name id=?)) identifier=?-listeners))
@@ -61,11 +62,10 @@
 
       ;; color-controller<%> Methods
 
-      (define -primary-partition (new-bound-partition))
-      (define -secondary-partition #f)
+      (define secondary-partition #f)
 
-      (define/public (get-primary-partition) -primary-partition)
-      (define/public (get-secondary-partition) -secondary-partition)
+      (define/public (get-primary-partition) primary-partition)
+      (define/public (get-secondary-partition) secondary-partition)
 
       ;; Initialization
       (super-new)
