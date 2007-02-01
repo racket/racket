@@ -193,6 +193,8 @@ scheme_make_hash_table_equal
 scheme_hash_set
 scheme_hash_get
 scheme_eq_hash_get
+scheme_hash_set_atomic
+scheme_hash_get_atomic
 scheme_hash_table_equal
 scheme_is_hash_table_equal
 scheme_clone_hash_table

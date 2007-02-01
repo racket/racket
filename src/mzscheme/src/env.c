@@ -1356,7 +1356,6 @@ static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved, i
 {
   Scheme_Toplevel *tl;
   Scheme_Object *v, *pr;
-  Scheme_Hash_Table *tl_ht;
 
   /* Important: non-resolved can't be cached, because the ISCONST
      field is modified to track mutated module-level variables. But
@@ -1373,10 +1372,7 @@ static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved, i
 			     scheme_make_integer(flags))
 	  : scheme_make_integer(position));
     pr = scheme_make_pair(scheme_make_integer(depth), pr);
-    tl_ht = toplevels_ht;
-    scheme_wait_sema(tl_ht->mutex, 0);
-    v = scheme_hash_get(tl_ht, pr);
-    scheme_post_sema(tl_ht->mutex);
+    v = scheme_hash_get_atomic(toplevels_ht, pr);
     if (v)
       return v;
   } else
@@ -1392,10 +1388,7 @@ static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved, i
     if (toplevels_ht->count > TABLE_CACHE_MAX_SIZE) {
       toplevels_ht = scheme_make_hash_table_equal();
     }
-    tl_ht = toplevels_ht;
-    scheme_wait_sema(tl_ht->mutex, 0);
-    scheme_hash_set(tl_ht, pr, (Scheme_Object *)tl);
-    scheme_post_sema(tl_ht->mutex);
+    scheme_hash_set_atomic(toplevels_ht, pr, (Scheme_Object *)tl);
   }
 
   return (Scheme_Object *)tl;

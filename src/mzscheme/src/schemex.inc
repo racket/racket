@@ -221,6 +221,8 @@
   scheme_extension_table->scheme_hash_set = scheme_hash_set;
   scheme_extension_table->scheme_hash_get = scheme_hash_get;
   scheme_extension_table->scheme_eq_hash_get = scheme_eq_hash_get;
+  scheme_extension_table->scheme_hash_set_atomic = scheme_hash_set_atomic;
+  scheme_extension_table->scheme_hash_get_atomic = scheme_hash_get_atomic;
   scheme_extension_table->scheme_hash_table_equal = scheme_hash_table_equal;
   scheme_extension_table->scheme_is_hash_table_equal = scheme_is_hash_table_equal;
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;

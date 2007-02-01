@@ -5460,9 +5460,13 @@ MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
 
   if (!cm) {
     /* Allocate a new mark record: */
-    long segpos = ((long)MZ_CONT_MARK_STACK) >> SCHEME_LOG_MARK_SEGMENT_SIZE;
-    long pos = ((long)MZ_CONT_MARK_STACK) & SCHEME_MARK_SEGMENT_MASK;
+    long segpos;
+    long pos;
     Scheme_Cont_Mark *seg;
+
+    findpos = MZ_CONT_MARK_STACK;
+    segpos = ((long)findpos) >> SCHEME_LOG_MARK_SEGMENT_SIZE;
+    pos = ((long)findpos) & SCHEME_MARK_SEGMENT_MASK;
 
     if (segpos >= p->cont_mark_seg_count) {
       /* Need a new segment */
@@ -5471,8 +5475,7 @@ MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
 
     seg = p->cont_mark_stack_segments[segpos];
     cm = seg + pos;
-    findpos = MZ_CONT_MARK_STACK;
-    MZ_CONT_MARK_STACK++;
+    MZ_CONT_MARK_STACK = findpos + 1;
   }
 
   cm->key = key;

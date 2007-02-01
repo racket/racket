@@ -1905,7 +1905,7 @@ static void make_mapped(Scheme_Cert *cert)
       pr = scheme_make_pair(cert->mark, cert->key);
     else
       pr = cert->mark;
-    scheme_hash_set(ht, pr, scheme_true);
+    scheme_hash_set_atomic(ht, pr, scheme_true);
   }
 }
 
@@ -1924,7 +1924,7 @@ static int cert_in_chain(Scheme_Object *mark, Scheme_Object *key, Scheme_Cert *c
       if (!hkey)
 	hkey = scheme_make_pair(mark, key);
 
-      if (scheme_hash_get(ht, hkey))
+      if (scheme_hash_get_atomic(ht, hkey))
 	return 1;
     } else if (SAME_OBJ(cert->mark, mark)
 	       && SAME_OBJ(cert->key, key)) {

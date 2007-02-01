@@ -377,6 +377,27 @@ Scheme_Object *scheme_eq_hash_get(Scheme_Hash_Table *table, Scheme_Object *key)
     return do_hash_get(table, key);
 }
 
+Scheme_Object *scheme_hash_get_atomic(Scheme_Hash_Table *table, Scheme_Object *key)
+/* Mostly useful for acessing equal-based hash table when you don't want
+   thread switches (such as in stx object manipulations). Simply grabbing the
+   table's lock would be enough to make access to the table single-threaded,
+   but sometimes you don't want any thread switches at all. */
+{
+  Scheme_Object *r;
+  scheme_start_atomic();
+  r = scheme_hash_get(table, key);
+  scheme_end_atomic_no_swap();
+  return r;
+}
+
+void scheme_hash_set_atomic(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val)
+/* See rationale with scheme_hash_get_atomic. */
+{
+  scheme_start_atomic();
+  scheme_hash_set(table, key, val);
+  scheme_end_atomic_no_swap();
+}
+
 int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2)
 {
   Scheme_Object **vals, **keys, *v;
