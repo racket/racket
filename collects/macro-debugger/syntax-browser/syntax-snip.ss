@@ -84,7 +84,8 @@
           ;; Produces 3D syntax to preserve eq-ness of syntax
           ;; #'#'stx would be lose identity when wrapped
           (define/public (read-special src line col pos)
-            #`((,(lambda () stx))))
+            (with-syntax ([p (lambda () stx)])
+              #'(p)))
           ))
 
 
