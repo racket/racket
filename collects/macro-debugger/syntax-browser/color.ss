@@ -125,7 +125,7 @@
             (cond [(< n (length colors))
                    (send delta set-delta-foreground (list-ref colors n))]
                   [else
-                   (send delta set-delta-foreground "gray")
+                   (send delta set-delta-foreground "darkgray")
                    #;(begin (send* delta
                               (set-delta-foreground "white")
                               (set-delta-background "black")))]))
