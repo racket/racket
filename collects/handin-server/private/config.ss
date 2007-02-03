@@ -30,7 +30,7 @@
                   (when raw-config
                     ;; can't use log-line from logger, since it makes a cycle
                     (fprintf (current-error-port)
-                             (format "loading configuration from ~a"
+                             (format "loading configuration from ~a\n"
                                      config-file)))
                   (with-input-from-file config-file read)))
           (set! config-cache (make-hash-table)))))
