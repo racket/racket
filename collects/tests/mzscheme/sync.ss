@@ -490,8 +490,10 @@
 	  [real-took (/ (abs (- (current-milliseconds) real-msecs)) 1000.0)]
 	  [boundary (/ SYNC-BUSY-DELAY 6)])
       ;; Hack.
-      ;; The following test isn't reliable, so only Matthew should see it.
-      (when (regexp-match #rx"(mflatt)|(matthewf)" (path->string (find-system-path 'home-dir)))
+      ;; The following test isn't reliable, so only Matthew should see it,
+      ;; and only in non-parallel mode:
+      (when (and (regexp-match #rx"(mflatt)|(matthewf)" (path->string (find-system-path 'home-dir)))
+                 (equal? "" Section-prefix))
 	(test busy? (lambda (a ax b c d) (> b c)) 'busy-wait? go took boundary real-took)))))
 
 (define (test-good-waitable wrap-sema)
@@ -587,7 +589,7 @@
        (thread (lambda ()
 		 (sleep SYNC-BUSY-DELAY)
 		 (set! go? #t)))
-       (test bad-stuck-port sync/timeout (* 3 SYNC-BUSY-DELAY) bad-stuck-port))
+       (test bad-stuck-port sync bad-stuck-port))
      #t)))
 
 (test-stuck-port (make-semaphore 1) semaphore-try-wait? semaphore-post)
@@ -706,7 +708,11 @@
 	[sl (lambda ()
 	      (let loop ([n 20])
 		(unless (zero? n) (sleep) (loop (sub1 n)))))]
-	[ok-done? (lambda (r) (<= (list-ref r 3) orig-scheduled))])
+	[ok-done? (lambda (r) 
+                    (or (<= (list-ref r 3) orig-scheduled)
+                        ;; If we're running parallel threads, 
+                        ;; just give up on the comparison.
+                        (not (equal? "" Section-prefix))))])
     (test #t
 	  ok-done?
 	  (let loop ([tries 0][n 100])

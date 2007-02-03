@@ -278,16 +278,19 @@ transcript.
   (let* ([final? (and (pair? final?) (car final?))]
          [printf (if final? eprintf* printf)]
          [ok?    (null? errs)])
-    (printf "\nPerformed ~a expression tests (~a ~a, ~a ~a)\n"
+    (printf "\n~aPerformed ~a expression tests (~a ~a, ~a ~a)\n"
+            Section-prefix
             (+ number-of-tests number-of-error-tests)
             number-of-tests "good expressions"
             number-of-error-tests "bad expressions")
-    (printf "and ~a exception field tests.\n\n"
+    (printf "~aand ~a exception field tests.\n\n"
+            Section-prefix
             number-of-exn-tests)
     (if ok?
-      (printf "Passed all tests.\n")
-      (begin (printf "Errors were:\n(Section (got expected (call)))\n")
-             (for-each (lambda (l) (printf "~s\n" l)) (reverse errs))
+      (printf "~aPassed all tests.\n" Section-prefix)
+      (begin (printf "~aErrors were:\n~a(Section (got expected (call)))\n"
+                     Section-prefix Section-prefix)
+             (for-each (lambda (l) (printf "~a~s\n" Section-prefix l)) (reverse errs))
              (when final? (exit 1))))
     (when final? (exit (if ok? 0 1)))
     (printf "(Other messages report successful tests of~a.)\n"

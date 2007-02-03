@@ -22,40 +22,41 @@
 (define (test-set-balance as bs cs ds
 			  sa sb sc sd
 			  a% b% c% d%)
-  (let ([a (box 0)]
-	[b (box 0)]
-	[c (box 0)]
-	[d (box 0)]
-	[stop? #f])
-    
-    (define (go box s s-amt)
-      (parameterize ([current-thread-group s])
-	(thread (lambda ()
-		  (let loop ()
-		    (set-box! box (add1 (unbox box)))
-		    (sleep s-amt)
-		    (unless stop?
-		      (loop)))))))
-    
-    (go a as sa)
-    (go b bs sb)
-    (go c cs sc)
-    (go d ds sd)
+  (when (equal? "" Section-prefix)
+    (let ([a (box 0)]
+          [b (box 0)]
+          [c (box 0)]
+          [d (box 0)]
+          [stop? #f])
 
-    (sleep SLEEP-TIME)
+      (define (go box s s-amt)
+        (parameterize ([current-thread-group s])
+          (thread (lambda ()
+                    (let loop ()
+                      (set-box! box (add1 (unbox box)))
+                      (sleep s-amt)
+                      (unless stop?
+                        (loop)))))))
+      
+      (go a as sa)
+      (go b bs sb)
+      (go c cs sc)
+      (go d ds sd)
 
-    (set! stop? #t)
+      (sleep SLEEP-TIME)
 
-    (let ([va (/ (unbox a) a%)]
-	  [vb (unbox b)]
-	  [vc (unbox c)]
-	  [vd (unbox d)])
-      (define (roughly= x y)
-	(<= (* (- x 1) 0.9) y (* (+ x 1) 1.1)))
+      (set! stop? #t)
 
-      (test #t roughly= vb (* b% va))
-      (test #t roughly= vc (* c% va))
-      (test #t roughly= vd (* d% va)))))
+      (let ([va (/ (unbox a) a%)]
+            [vb (unbox b)]
+            [vc (unbox c)]
+            [vd (unbox d)])
+        (define (roughly= x y)
+          (<= (* (- x 1) 0.9) y (* (+ x 1) 1.1)))
+
+        (test #t roughly= vb (* b% va))
+        (test #t roughly= vc (* c% va))
+        (test #t roughly= vd (* d% va))))))
 
 ;; Simple test:
 (let ([ts (make-thread-group)])

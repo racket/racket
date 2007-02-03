@@ -25,7 +25,7 @@
       ;; -- set up a timeout
       (thread (lambda ()
                 (sleep 600)
-                (fprintf err "\n\nTIMEOUT -- ABORTING!\n")
+                (fprintf err "\n\n~aTIMEOUT -- ABORTING!\n" Section-prefix)
                 (exit 3)
                 ;; in case the above didn't work for some reason
                 (sleep 60)

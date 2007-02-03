@@ -97,3 +97,5 @@
 (test #f coroutine-result w4)
 (err/rt-test (coroutine-run MAX-RUN-TIME w4) (lambda (x) (eq? x 15)))
 (test #t coroutine-run 100 w4)
+
+(report-errs)
