@@ -37,8 +37,7 @@
 
 (module mutators mzscheme
   
-  (require "util.ss"
-           (lib "etc.ss"))
+  (require "util.ss")
   
   (provide vector-swap!
            (rename my-vector-fill! vector-fill!)
@@ -74,13 +73,12 @@
                   'vector-fill! "vector" 0
                   vec value maybe-start+end))
           (else
-           (apply (opt-lambda (vec value (start 0) (end (vector-length vec)))
-                    (check-indices vec start end 'vector-fill!)
-                    (do ((i start (add1 i)))
-                      ((= i end))
-                      (vector-set! vec i value))
-                    vec)
-                  vec value maybe-start+end))))
+           (let-values (((start end)
+                         (check-indices vec maybe-start+end 'vector-fill!)))
+             (do ((i start (add1 i)))
+               ((= i end))
+               (vector-set! vec i value))
+             vec))))
   
   (define %vector-reverse!
     (letrec ((loop (lambda (vec i j)
@@ -99,10 +97,9 @@
       (apply raise-type-error
              'vector-reverse! "vector" 0
              vec maybe-start+end))
-    (apply (opt-lambda (vec (start 0) (end (vector-length vec)))
-             (check-indices vec start end 'vector-reverse!)
-             (%vector-reverse! vec start end))
-           vec maybe-start+end))
+    (let-values (((start end)
+                  (check-indices vec maybe-start+end 'vector-reverse!)))
+      (%vector-reverse! vec start end)))
   
   ;;; (VECTOR-COPY! <target> <tstart> <source> [<sstart> <send>])
   ;;;       -> unspecified
@@ -113,23 +110,18 @@
       (apply raise-type-error
              'vector-copy! "vector" 0
              target tstart source maybe-sstart+send))
-    (check-start target tstart 'vector-copy!)
+    (check-index target tstart 'vector-copy!)
     (unless (vector? source)
       (apply raise-type-error
              'vector-copy! "vector" 2
              target tstart source maybe-sstart+send))
-    (apply (opt-lambda (target
-                        tstart
-                        source
-                        (sstart 0)
-                        (send (vector-length source)))
-             (check-indices source sstart send 'vector-copy!)
-             (if (< (- (vector-length target) tstart)
-                    (- send sstart))
-                 (error 'vector-copy!
-                        "target vector not long enough to copy"))
-             (%vector-copy! target tstart source sstart send))
-           target tstart source maybe-sstart+send))
+    (let-values (((sstart send)
+                  (check-indices source maybe-sstart+send 'vector-copy!)))
+      (if (< (- (vector-length target) tstart)
+             (- send sstart))
+          (error 'vector-copy!
+                 "target vector not long enough to copy"))
+      (%vector-copy! target tstart source sstart send)))
   
   ;;; (VECTOR-REVERSE-COPY! <target> <tstart> <source> [<sstart> <send>])
   (define (vector-reverse-copy! target tstart source . maybe-sstart+send)
@@ -137,35 +129,31 @@
       (apply raise-type-error
              'vector-reverse-copy! "vector" 0
              target tstart source maybe-sstart+send))
-    (check-start target tstart 'vector-reverse-copy!)
+    (check-index target tstart 'vector-reverse-copy!)
     (unless (vector? source)
       (apply raise-type-error
              'vector-reverse-copy! "vector" 2
              target tstart source maybe-sstart+send))
-    (apply (opt-lambda (target
-                        tstart
-                        source
-                        (sstart 0)
-                        (send (vector-length source)))
-             (check-indices source sstart send 'vector-reverse-copy!)
-             (cond ((< (- (vector-length target) tstart)
-                       (- send sstart))
-                    (error 'vector-reverse-copy!
-                           "target vector not long enough to copy"))
-                   ((and (eq? target source)
-                         (= sstart tstart))
-                    (%vector-reverse! target tstart send))
-                   ((and (eq? target source)
-                         (or (between? sstart tstart send)
-                             (between? tstart sstart
-                                       (+ tstart (- send sstart)))))
-                    ;an error in the reference implement here
-                    (error 'vector-reverse-copy!
-                           "Vector range for self-copying overlaps"))
-                   (else
-                    (%vector-reverse-copy! target tstart
-                                           source sstart send))))
-           target tstart source maybe-sstart+send))
+    (let-values (((sstart send)
+                  (check-indices source maybe-sstart+send 'vector-reverse-copy!)))
+      (cond ((< (- (vector-length target) tstart)
+                (- send sstart))
+             (error 'vector-reverse-copy!
+                    "target vector not long enough to copy"))
+            ((and (eq? target source)
+                  (= sstart tstart))
+             (%vector-reverse! target tstart send))
+            ((and (eq? target source)
+                  (or (between? sstart tstart send)
+                      (between? tstart sstart
+                                (+ tstart (- send sstart)))))
+             ;an error in the reference implement here
+             (error 'vector-reverse-copy!
+                    "Vector range for self-copying overlaps"))
+            (else
+             (%vector-reverse-copy! target tstart
+                                    source sstart send)))))
+  
   (define (between? x y z)
     (and (<  x y)
          (<= y z))))

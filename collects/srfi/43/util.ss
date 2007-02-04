@@ -58,37 +58,29 @@
                 callee index vec)
         (current-continuation-marks)))))
   
-  
-  ;;; (CHECK-START <vector> <index> <callee>) -> 
-  ;;;   Ensure that INDEX is a valid bound of VECTOR; if not, signal an
-  ;;;   error stating that it is not and that this happened in a call to
-  ;;;   CALLEE.  (Note that this does NOT check that VECTOR is indeed a
-  ;;;   vector.)
-  (define (check-start vec index callee)
-    (unless (nonneg-int? index)
-      (raise-type-error callee "non-negative exact integer" index))
-    (unless (<= 0 index (vector-length vec))
-      (raise
-       (make-exn:fail:contract
-        (format "~a: index ~a out of range for vector: ~a"
-                callee index vec)
-        (current-continuation-marks)))))
-  
-  ;;; (CHECK-INDICES <vector> <start> <end> <caller>) -> 
-  ;;;   Ensure that START and END are valid bounds of a range within
-  ;;;   VECTOR; if not, signal an error stating that they are not
-  ;;;   while calling CALLEE. 
-  (define (check-indices vec start end callee)
-    (unless (nonneg-int? start)
-      (raise-type-error callee "non-negative exact integer" start))
-    (unless (nonneg-int? end)
-      (raise-type-error callee "non-negative exact integer" end))
-    (unless (<= 0 start end (vector-length vec))
-      (raise
-       (make-exn:fail:contract
-        (format "~a: indices (~a, ~a) out of range for vector: ~a"
-                callee start end vec)
-        (current-continuation-marks)))))
+  (define (check-indices vec maybe-start+end callee)
+    (if (null? maybe-start+end)
+        (values 0 (vector-length vec))
+        (let ((start (car maybe-start+end)))
+          (unless (nonneg-int? start)
+            (raise-type-error callee "non-negative exact integer" start))
+          (unless (<= 0 start (vector-length vec))
+            (raise
+             (make-exn:fail:contract
+              (format "~a: index ~a out of range for vector: ~a"
+                      callee start vec)
+              (current-continuation-marks))))
+          (if (null? (cdr maybe-start+end))
+              (values start (vector-length vec))
+              (let ((end (cadr maybe-start+end)))
+                (unless (nonneg-int? end)
+                  (raise-type-error callee "non-negative exact integer" end))
+                (unless (<= start end (vector-length vec))
+                  (raise
+                   (make-exn:fail:contract
+                    (format "~a: indices (~a, ~a) out of range for vector: ~a"
+                            callee start end vec))))
+                (values start end))))))
   
   (define (nonneg-int? x)
     (and (integer? x)
@@ -98,13 +90,25 @@
   ;;; (%VECTOR-COPY! <target> <tstart> <source> <sstart> <send>)
   ;;;   Copy elements at locations SSTART to SEND from SOURCE to TARGET,
   ;;;   starting at TSTART in TARGET.
-  (define (%vector-copy! target tstart source sstart send)
-    (let loop ((i sstart)
-               (j tstart))
-      (cond ((< i send)
-             (vector-set! target j
-                          (vector-ref source i))
-             (loop (add1 i) (add1 j))))))
+  (define %vector-copy!
+    (letrec ((loop/l->r (lambda (target source send i j)
+                          (cond ((< i send)
+                                 (vector-set! target j
+                                              (vector-ref source i))
+                                 (loop/l->r target source send
+                                            (add1 i) (add1 j))))))
+             (loop/r->l (lambda (target source sstart i j)
+                          (cond ((>= i sstart)
+                                 (vector-set! target j
+                                              (vector-ref source i))
+                                 (loop/r->l target source sstart
+                                            (sub1 i) (sub1 j)))))))
+      (lambda (target tstart source sstart send)
+        (if (> sstart tstart)             ; Make sure we don't copy over
+            ;   ourselves.
+            (loop/l->r target source send sstart tstart)
+            (loop/r->l target source sstart (sub1 send)
+                       (+ -1 tstart send (- sstart)))))))
   
   ;;; (%VECTOR-REVERSE-COPY! <target> <tstart> <source> <sstart> <send>)
   ;;;   Copy elements from SSTART to SEND from SOURCE to TARGET, in the

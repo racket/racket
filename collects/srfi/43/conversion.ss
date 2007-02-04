@@ -37,8 +37,7 @@
 
 (module conversion mzscheme
   
-  (require "util.ss"
-           (lib "etc.ss"))
+  (require "util.ss")
   
   (provide (rename my-vector->list vector->list)
            reverse-vector->list
@@ -55,17 +54,16 @@
              vec maybe-start+end))
     (if (null? maybe-start+end)
         (vector->list vec)           ;+++
-        (apply (opt-lambda (vec (start 0) (end (vector-length vec)))
-                 (check-indices vec start end 'vector->list)
-                 ;(unfold (lambda (i)        ; No SRFI 1.
-                 ;          (< i start))
-                 ;        (lambda (i) (vector-ref vec i))
-                 ;        (lambda (i) (sub1 i))
-                 ;        (sub1 end))
-                 (do ((i (sub1 end) (sub1 i))
-                      (result '() (cons (vector-ref vec i) result)))
-                   ((< i start) result)))
-               vec maybe-start+end)))
+        (let-values (((start end)
+                      (check-indices vec maybe-start+end 'vector->list)))
+          ;(unfold (lambda (i)        ; No SRFI 1.
+          ;          (< i start))
+          ;        (lambda (i) (vector-ref vec i))
+          ;        (lambda (i) (sub1 i))
+          ;        (sub1 end))
+          (do ((i (sub1 end) (sub1 i))
+               (result '() (cons (vector-ref vec i) result)))
+            ((< i start) result)))))
   
   ;;; (REVERSE-VECTOR->LIST <vector> [<start> <end>]) -> list
   ;;;   Produce a list containing the elements in the locations between
@@ -76,16 +74,15 @@
       (apply raise-type-error
              'reverse-vector->list "vector" 0
              vec maybe-start+end))
-    (apply (opt-lambda (vec (start 0) (end (vector-length vec)))
-             (check-indices vec start end 'reverse-vector->list)
-             ;(unfold (lambda (i) (= i end))     ; No SRFI 1.
-             ;        (lambda (i) (vector-ref vec i))
-             ;        (lambda (i) (add1 i))
-             ;        start)
-             (do ((i start (add1 i))
-                  (result '() (cons (vector-ref vec i) result)))
-               ((= i end) result)))
-           vec maybe-start+end))
+    (let-values (((start end)
+                  (check-indices vec maybe-start+end 'reverse-vector->list)))
+      ;(unfold (lambda (i) (= i end))     ; No SRFI 1.
+      ;        (lambda (i) (vector-ref vec i))
+      ;        (lambda (i) (add1 i))
+      ;        start)
+      (do ((i start (add1 i))
+           (result '() (cons (vector-ref vec i) result)))
+        ((= i end) result))))
   
   ;;; (REVERSE-LIST->VECTOR <list> -> vector
   ;;;   Produce a vector containing the elements in LIST in reverse order.

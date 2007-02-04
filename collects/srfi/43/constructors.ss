@@ -142,8 +142,8 @@
     (unless (vector? vec)
       (raise-type-error 'vector-copy "vector" vec))
     (apply
-     (opt-lambda (vec (start 0) (end (vector-length vec)) . fill)
-       (check-start vec start 'vector-copy)
+     (opt-lambda ((start 0) (end (vector-length vec)) (fill 0))
+       (check-index vec start 'vector-copy)
        (unless (nonneg-int? end)
          (raise-type-error 'vector-copy "non-negative exact integer" end))
        (unless (<= start end)
@@ -153,12 +153,12 @@
                    'vector-copy start end vec)
            (current-continuation-marks))))
        (let ((new-vector
-              (apply make-vector (cons (- end start) fill))))
+              (make-vector (- end start) fill)))
          (%vector-copy! new-vector 0
                         vec        start
                         (min end (vector-length vec)))
          new-vector))
-     vec arg))
+     arg))
   
   ;;; (VECTOR-REVERSE-COPY <vector> [<start> <end>]) -> vector
   ;;;   Create a newly allocated vector whose elements are the reversed
@@ -167,13 +167,11 @@
   (define (vector-reverse-copy vec . arg)
     (unless (vector? vec)
       (raise-type-error 'vector-reverse-copy "vector" vec))
-    (apply
-     (opt-lambda (vec (start 0) (end (vector-length vec)))
-       (check-indices vec start end 'vector-reverse-copy)
-       (let ((new (make-vector (- end start))))
-         (%vector-reverse-copy! new 0 vec start end)
-         new))
-     vec arg))
+    (let-values (((start end)
+                  (check-indices vec arg 'vector-reverse-copy)))
+      (let ((new (make-vector (- end start))))
+        (%vector-reverse-copy! new 0 vec start end)
+        new)))
   
   ;;; (VECTOR-APPEND <vector> ...) -> vector
   ;;;   Append VECTOR ... into a newly allocated vector and return that

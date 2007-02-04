@@ -507,13 +507,10 @@
   (save-as-info "输入新的文件名,保存当前文件")
   (save-as-menu-item "另存为(&A)...")
   
-  (page-setup-info "设置打印参数")
-  (page-setup-menu-item "页面设置")
-  
   (print-info "打印当前文件")
   (print-menu-item "打印(&P)...")
   
-  (page-setup-info "设置页面")
+  (page-setup-info "设置打印参数")
   (page-setup-menu-item "页面设置...")
   
   (close-info "关闭当前文件")
@@ -1048,15 +1045,16 @@
   (stepper-program-has-changed "注意：程序已改变。")
   (stepper-program-window-closed "注意：程序窗口已关闭。")
   
-  (stepper-home "还原")
   (stepper-name "单步执行器")
   (stepper-language-level-message
    "您选择的语言是“~a”。目前，单步执行只支持“~a”和“~a”之间的语言。")
   (stepper-button-label "单步执行")
+  (stepper-home "源程序")
   (stepper-previous-application "|< 调用")
   (stepper-previous "< 上一步")
   (stepper-next "下一步 >")
   (stepper-next-application "调用 >|")
+  (stepper-jump-to-end "最终运行结果")
   
   (debug-tool-button-name "调试")
   
