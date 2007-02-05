@@ -518,7 +518,7 @@
 		     ;; Something went wrong matching. Should we get here?
                      (do-indent 0)]
                     [(not last) 
-		     ;; We can't find a match backward from pos,
+                     ;; We can't find a match backward from pos,
 		     ;;  but we seem to be inside an S-exp, so 
 		     ;;  go "up" an S-exp, and move forward past
 		     ;;  the associated paren
@@ -527,28 +527,32 @@
                                       (+ (visual-offset enclosing) 1)
                                       0)))]
                     [(= contains last)
-		     ;; There's only one S-expr in the S-expr
+                     ;; There's only one S-expr in the S-expr
 		     ;;  containing "pos"
                      (do-indent (+ (visual-offset contains)
                                    (procedure-indent)))]
                     [(special-check)
-		     ;; In case of "define", etc., ignore the position of last 
+                     ;; In case of "define", etc., ignore the position of last 
 		     ;;  and just indent under the "define"
                      (do-indent (add1 (visual-offset contains)))]
                     [(= contain-para last-para)
 		     ;; So far, the S-exp containing "pos" was all on
 		     ;;  one line (possibly not counting the opening paren),
 		     ;;  so indent to follow the first S-exp's end
+                     ;;  unless there are just two sexps and the second is an ellipsis.
+                     ;;  in that case, we just ignore the ellipsis
                      (let ([name-length (let ([id-end (get-forward-sexp contains)])
 					  (if id-end
 					      (- id-end contains)
 					      0))])
-                       (do-indent (+ (visual-offset contains)
-                                     name-length
-                                     (indent-first-arg (+ contains 
-                                                          name-length)))))]
+                       (if (second-sexp-is-ellipsis? contains)
+                           (do-indent (visual-offset contains))
+                           (do-indent (+ (visual-offset contains)
+                                         name-length
+                                         (indent-first-arg (+ contains 
+                                                              name-length))))))]
                     [else
-		     ;; No particular special case, so indent to match first 
+                     ;; No particular special case, so indent to match first 
 		     ;; S-expr that start on the previous line
 		     (let loop ([last last][last-para last-para])
 		       (let* ([next-to-last (backward-match last limit)]
@@ -557,6 +561,22 @@
 			 (if (equal? last-para next-to-last-para)
 			     (loop next-to-last next-to-last-para)
 			     (do-indent (visual-offset last)))))])))))
+          
+          ;; returns #t if `contains' is at a position on a line with an sexp, an ellipsis and nothing else.
+          ;; otherwise, returns #f
+          (define/private (second-sexp-is-ellipsis? contains)
+            (let ([fst-end (get-forward-sexp contains)])
+              (and fst-end
+                   (let ([snd-end (get-forward-sexp fst-end)])
+                     (and snd-end
+                          (let ([snd-start (get-backward-sexp snd-end)])
+                            (and snd-start
+                                 (equal? (get-text snd-start snd-end)
+                                         "...")
+                                 (let ([thrd-start (get-forward-sexp snd-end)])
+                                   (and (or (not thrd-start)
+                                            (not (= (position-paragraph thrd-start)
+                                                    (position-paragraph snd-start)))))))))))))
           
           (define/public tabify-selection
             (opt-lambda ([start-pos (get-start-position)]
