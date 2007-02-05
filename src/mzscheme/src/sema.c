@@ -430,7 +430,10 @@ static void ext_get_into_line(Scheme_Object *ch, Scheme_Schedule_Info *sinfo)
   /* Get into line */
   w = MALLOC_ONE_RT(Scheme_Channel_Syncer);
   w->so.type = scheme_channel_syncer_type;
-  w->p = scheme_current_thread;
+  if (sinfo->false_positive_ok)
+    w->p = sinfo->false_positive_ok;
+  else
+    w->p = scheme_current_thread;
   w->syncing = (Syncing *)sinfo->current_syncing;
   w->obj = ch;
   w->syncing_i = sinfo->w_i;
@@ -459,8 +462,8 @@ static int try_channel(Scheme_Sema *sema, Syncing *syncing, int pos, Scheme_Obje
 	w = w->next;
       } else {
 	Scheme_Channel_Put *chp = (Scheme_Channel_Put *)w->obj;
-	
-	if (!w->syncing->result && !pending_break(w->p)) {
+
+        if (!w->syncing->result && !pending_break(w->p)) {
 	  w->picked = 1;
 	  w->syncing->result = w->syncing_i + 1;
 	  if (w->syncing->disable_break)

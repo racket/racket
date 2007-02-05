@@ -3288,9 +3288,7 @@ END_XFORM_SKIP;
 
 #endif
 
-#define FALSE_POS_OK_INIT 1
-
-static void init_schedule_info(Scheme_Schedule_Info *sinfo, int false_pos_ok, 
+static void init_schedule_info(Scheme_Schedule_Info *sinfo, Scheme_Thread *false_pos_ok, 
 			       double sleep_end)
 {
   sinfo->false_positive_ok = false_pos_ok;
@@ -3647,7 +3645,7 @@ void scheme_thread_block(float sleep_time)
 	  if (next->block_check) {
 	    Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)next->block_check;
 	    Scheme_Schedule_Info sinfo;
-	    init_schedule_info(&sinfo, FALSE_POS_OK_INIT, next->sleep_end);
+	    init_schedule_info(&sinfo, next, next->sleep_end);
 	    if (f(next->blocker, &sinfo))
 	      break;
 	    next->sleep_end = sinfo.sleep_end;
@@ -3795,7 +3793,7 @@ void scheme_thread_block(float sleep_time)
 	if (p->block_check) {
 	  Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)p->block_check;
 	  Scheme_Schedule_Info sinfo;
-	  init_schedule_info(&sinfo, FALSE_POS_OK_INIT, sleep_end);
+	  init_schedule_info(&sinfo, p, sleep_end);
 	  if (f(p->blocker, &sinfo)) {
 	    sleep_end = 0;
 	  } else {

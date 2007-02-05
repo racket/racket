@@ -385,7 +385,7 @@ typedef struct Scheme_Security_Guard {
 
 /* Always allocated on the stack: */
 typedef struct {
-  int false_positive_ok;  /* non-zero => return 1 to swap in thread rather than running Scheme code */
+  Scheme_Thread *false_positive_ok;  /* non-zero => return 1 to swap in thread rather than running Scheme code */
   int potentially_false_positive; /* => returning 1 to swap thread in, but truth may be 0 */
   Scheme_Object *current_syncing;
   double sleep_end;
