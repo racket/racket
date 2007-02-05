@@ -2116,24 +2116,26 @@
               (set-searching-direction x)
 	      (when dir-radio
 		(send dir-radio set-selection (if (eq? x 'forward) 0 1)))))
-          (define can-replace?
-            (λ ()
-              (let ([tx (get-text-to-search)])
-                (and
-                 tx
-                 (not (= 0 (send replace-edit last-position)))
-                 (string=?
+          (define (can-replace?)
+            (let ([tx (get-text-to-search)])
+              (and
+               tx
+               (not (= 0 (send replace-edit last-position)))
+               (let ([cmp 
+                      (if (send find-edit get-case-sensitive?)
+                          string=?
+                          string-ci=?)])
+                 (cmp
                   (send tx get-text
                         (send tx get-start-position)
                         (send tx get-end-position))
                   (send find-edit get-text 0 (send find-edit last-position)))))))
-          (define replace&search
-            (λ ()
-              (let ([text (get-text-to-search)])
-                (send text begin-edit-sequence)
-                (when (replace)
-                  (search-again))
-                (send text end-edit-sequence))))
+          (define (replace&search)
+            (let ([text (get-text-to-search)])
+              (send text begin-edit-sequence)
+              (when (replace)
+                (search-again))
+              (send text end-edit-sequence)))
           (define (replace-all)
             (let* ([replacee-edit (get-text-to-search)]
                    [embeded-replacee-edit (find-embedded-focus-editor replacee-edit)]
@@ -2158,8 +2160,12 @@
                    [new-text (send replace-edit get-text)]
                    [replacee (send replacee-edit get-text
                                    replacee-start
-                                   (send replacee-edit get-end-position))])
-              (if (string=? replacee search-text)
+                                   (send replacee-edit get-end-position))]
+                   [cmp 
+                    (if (send find-edit get-case-sensitive?)
+                        string=?
+                        string-ci=?)])
+              (if (cmp replacee search-text)
                   (begin (send replacee-edit insert new-text)
                          (send replacee-edit set-position
                                replacee-start
