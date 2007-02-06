@@ -1,11 +1,12 @@
 (require (lib "servlet-sig.ss" "web-server")
-         (lib "unitsig.ss")
+         (lib "unit.ss")
          (lib "etc.ss")
          "helper-sig.ss")
 
 (define multiply@
-  (unit/sig ()
+  (unit
     (import servlet^ my-servlet-helpers^)
+    (export)
     
     ; matrix = (listof (listof num))
     
@@ -86,9 +87,8 @@
                    (matrix-multiply (get-matrix r c)
                                     (get-matrix c r)))))))))
 
-(compound-unit/sig
- (import (S : servlet^))
- (link
-  [H : my-servlet-helpers^ ((load-relative "helper.ss") S)]
-  [M : () (multiply@ S H)])
- (export (open M)))
+(compound-unit (import (S : servlet^))
+               (export)
+               (link 
+                (((H : my-servlet-helpers^)) ((load-relative "helper.ss") S))
+                (() multiply@ S H)))

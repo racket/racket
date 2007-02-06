@@ -1,5 +1,5 @@
-(require (lib "unitsig.ss"))
-(require (lib "servlet-sig.ss" "web-server"))
+(require (lib "unit.ss")
+         (lib "servlet-sig.ss" "web-server"))
 
 (let* ([line-size 80]
        [build-a-str
@@ -10,8 +10,9 @@
                             [else (cons #\a (loop (sub1 n)))]))))]
        [line (build-a-str (sub1 line-size))]
        [html-overhead 68])
-  (unit/sig ()
+  (unit
     (import servlet^)
+    (export)
     
     (define size (- (string->number (cdr (assq 'size bindings))) html-overhead))
     (define nlines (quotient size line-size))

@@ -281,10 +281,12 @@
     (define (load-servlet/path a-path)
       (define (v0.servlet->v1.lambda servlet)
         (lambda (initial-request)
+          (define servlet@ (unit-from-context servlet^))
           (invoke-unit
-           (compound-unit (import) (export)
-            (link (((S : servlet^)) (unit-from-context servlet^))
-                  (() servlet S))))))
+           (compound-unit 
+             (import) (export)
+             (link (((S : servlet^)) servlet@)
+                   (() servlet S))))))
       (define (v0.response->v1.lambda response-path response)
         (define go
           (box

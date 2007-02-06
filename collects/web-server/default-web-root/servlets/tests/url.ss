@@ -1,9 +1,10 @@
-(require (lib "unitsig.ss")
+(require (lib "unit.ss")
          (lib "servlet-sig.ss" "web-server")
          (lib "url.ss" "net"))
 (let ([count 0])
-  (unit/sig ()
+  (unit
     (import servlet^)
+    (export)
     (set! count (add1 count))
     `(html (head (title "URL Test"))
            (body (p "The method requested is: " ,(format "~s" (request-method initial-request)))

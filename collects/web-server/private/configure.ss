@@ -1,5 +1,5 @@
 (module configure mzscheme
-  (require (lib "unitsig.ss")
+  (require (lib "unit.ss")
            (lib "servlet-sig.ss" "web-server")
            (lib "url.ss" "net")
            (lib "etc.ss")
@@ -14,9 +14,9 @@
            (lib "configuration-util.ss" "web-server" "private")
            (lib "util.ss" "web-server" "private"))
   (provide/contract
-   [servlet unit/sig?]
+   [servlet unit?]
    ; XXX contract
-   [servlet-maker (string? . -> . unit/sig?)])
+   [servlet-maker (string? . -> . unit?)])
   
   ;; FIX
   ; - fuss with changing absolute paths into relative ones internally
@@ -32,8 +32,9 @@
   
   ; servlet-maker : str -> (unit/sig servlet^ -> ())
   (define (servlet-maker default-configuration-path)
-    (unit/sig ()
+    (unit
       (import servlet^)
+      (export)
       
       (define CONFIGURE-SERVLET-NAME "configure.ss")
       (define WIDE "70")

@@ -1,8 +1,9 @@
-(require (lib "unitsig.ss")
+(require (lib "unit.ss")
          (lib "servlet-sig.ss" "web-server")
          (lib "date.ss"))
 
-(unit/sig () (import servlet^)
+(unit (import servlet^)
+      (export)
 
   (send/back
    `(html (head (title "Current Directory Page"))

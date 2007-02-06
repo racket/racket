@@ -3,13 +3,14 @@
            (lib "tool.ss" "drscheme")
            (lib "contract.ss")
            ;(lib "mred.ss" "mred")
-           (lib "unitsig.ss"))
+           (lib "unit.ss"))
   (provide/contract
-   [tool@ unit/sig?])
+   [tool@ unit?])
 
   (define tool@
-    (unit/sig drscheme:tool-exports^
+    (unit 
       (import drscheme:tool^)
+      (export drscheme:tool-exports^)
       (define (phase1) (void))
       (define (phase2)
         (add-servlet-language))

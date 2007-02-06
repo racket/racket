@@ -1,9 +1,10 @@
-(require (lib "unit.ss")
-         (lib "servlet-sig.ss" "web-server")
-         (lib "date.ss"))
-
-(unit (import servlet^)
-      (export)
+(module add-module mzscheme
+  (require (lib "servlet.ss" "web-server")
+           (lib "date.ss"))
+  (provide (all-defined))
+  
+  (define interface-version 'v1)
+  (define timeout 30)
   
   ; request-number : str -> num
   (define (request-number which-number)
@@ -11,7 +12,7 @@
      (extract-binding/single
       'number
       (request-bindings (send/suspend (build-request-page which-number))))))
-  
+
   ; build-request-page : str -> str -> response
   (define (build-request-page which-number)
     (lambda (k-url)
@@ -21,10 +22,9 @@
                          "Enter the " ,which-number " number to add: "
                          (input ([type "text"] [name "number"] [value ""]))
                          (input ([type "submit"] [name "enter"] [value "Enter"])))))))
-  
-  (send/suspend
-   (lambda (k-url)
-     `(html (head (title "Sum"))
-            (body ([bgcolor "white"])
-                  (p "The sum is "
-                     ,(number->string (+ (request-number "first") (request-number "second")))))))))
+
+  (define (start initial-request)
+    `(html (head (title "Sum"))
+           (body ([bgcolor "white"])
+                 (p "The sum is "
+                    ,(number->string (+ (request-number "first") (request-number "second"))))))))

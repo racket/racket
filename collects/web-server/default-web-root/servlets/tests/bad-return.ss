@@ -1,5 +1,6 @@
-(require (lib "unitsig.ss"))
-(require (lib "servlet-sig.ss" "web-server"))
-(unit/sig ()
+(require (lib "unit.ss")
+         (lib "servlet-sig.ss" "web-server"))
+(unit
   (import servlet^)
+  (export)
   5)

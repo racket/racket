@@ -1,8 +1,9 @@
 (require (lib "servlet-sig.ss" "web-server")
-         (lib "unitsig.ss"))
+         (lib "unit.ss"))
 
-(unit/sig ()
+(unit
   (import servlet^)
+  (export)
   
   (send/finish
    (make-html-response/incremental

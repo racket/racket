@@ -1,10 +1,11 @@
 (require (lib "xml.ss" "xml")
-         (lib "unitsig.ss")
+         (lib "unit.ss")
          (lib "servlet-sig.ss" "web-server")
          "helper-sig.ss")
 
-(unit/sig my-servlet-helpers^
+(unit 
   (import servlet^)
+  (export my-servlet-helpers^)
   
   ; get-number : string -> number
   ; to prompt the user for a number

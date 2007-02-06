@@ -1,7 +1,8 @@
-(require (lib "unitsig.ss")
+(require (lib "unit.ss")
          (lib "servlet-sig.ss" "web-server"))
 
-(unit/sig () (import servlet^)
+(unit (import servlet^)
+      (export)
   
   (define the-text "Hello, Web!")
   

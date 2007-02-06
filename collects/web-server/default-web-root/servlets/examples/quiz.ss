@@ -19,12 +19,13 @@
 (define *questions-per-quiz* 5)
 
 
-(require (lib "unitsig.ss")
+(require (lib "unit.ss")
          (lib "servlet-sig.ss" "web-server")
          (lib "list.ss")
          (lib "etc.ss"))
 
-(unit/sig () (import servlet^)
+(unit (import servlet^)
+      (export)
 
  ;; Accessors into question sexp's
  (define question-text car)

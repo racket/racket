@@ -1,10 +1,11 @@
-(require (lib "unitsig.ss")
+(require (lib "unit.ss")
          (lib "servlet-sig.ss" "web-server")
          (lib "date.ss"))
 
 (let ([count 0]
       [date (date->string (seconds->date (current-seconds)) 'time-too)])
-  (unit/sig () (import servlet^)
+  (unit (import servlet^)
+        (export)
     (define other-count 0)
     
     (set! other-count (add1 other-count))
