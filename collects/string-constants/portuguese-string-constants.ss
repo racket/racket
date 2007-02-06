@@ -110,7 +110,7 @@ please adhere to these guidelines:
  (cancel "Cancelar")
  (abort "Abortar")
  (untitled "SemNome")
- (untitled-n "SemNOme ~a")
+ (untitled-n "SemNome ~a")
  (warning "Aviso")
  (error "Erro")
  (close "Fechar") ;; as in, close an open window. must match close-menu-item
@@ -118,9 +118,9 @@ please adhere to these guidelines:
                   ;; close-menu-item, it must be the same string as this.
  (stop "Parar")   
  (&stop "&Parar") ;; for use in button and menu item labels, with short cut.
- (are-you-sure-delete? "Tem a certeza que deseja apagar ~a?") ;; ~a is a filename or directory name
+ (are-you-sure-delete? "Tem a certeza que deseja remover ~a?") ;; ~a is a filename or directory name
  (ignore "Ignorar")
- (revert "Reverter")
+ (revert "Recuperar")
 
  ;; label for a generic check box, often supported on dialogs
  ;; that ask a binary choice of the user. If checked, the
@@ -131,18 +131,18 @@ please adhere to these guidelines:
  (dont-ask-again                "Não voltar a perguntar")
 
  ;;; important urls
- (web-materials "Sitios na Web Relacionados") ;; menu item title
- (tool-web-sites "Sitios na Web de Ferramentas")   ;; menu item title
+ (web-materials "Sítios Web Relacionados") ;; menu item title
+ (tool-web-sites "Sítios Web de Ferramentas")   ;; menu item title
  (drscheme-homepage "DrScheme")
  (plt-homepage "PLT")
  (how-to-use-scheme "Como Usar o Scheme") ;; title of a book.
  (teachscheme!-homepage "AprenderScheme!") ;; probably this should be a `word' in all languages
 
  ;;; bug report form
- (cancel-bug-report? "Cancelar Relatório de Erro?")
+ (cancel-bug-report? "Cancelar relatório de erro?")
  (are-you-sure-cancel-bug-report?
   "Tem a certeza que deseja cancelar o envio deste relatório de erro?")
- (bug-report-form "Formulário de Relatório de Erro")
+ (bug-report-form "Formulário de relatório de erro")
  (bug-report-field-name "Nome")
  (bug-report-field-email "Email")
  (bug-report-field-summary "Sumário")
@@ -155,25 +155,26 @@ please adhere to these guidelines:
  (bug-report-field-docs-installed "Documentação Instalada")
  (bug-report-field-collections "Colecções")
  (bug-report-field-human-language "Língua")
+ (bug-report-field-memory-use "Utilização de Memória")
  (bug-report-field-version "Versão")
- (bug-report-synthesized-information "Informação Sintetizada")  ;; dialog title
- (bug-report-show-synthesized-info "Mostrar Informação Sintetizada")
+ (bug-report-synthesized-information "Informação Gerada")  ;; dialog title
+ (bug-report-show-synthesized-info "Mostrar Informação Gerada")
  (bug-report-submit "Enviar")
- (bug-report-submit-menu-item "Enviar Relatório de Erro") ;; in Help Menu (drs & help desk)
- (error-sending-bug-report "Erro a Enviar Relatório de Erro")
+ (bug-report-submit-menu-item "Enviar relatório de erro") ;; in Help Menu (drs & help desk)
+ (error-sending-bug-report "Erro a Enviar relatório de erro")
  (error-sending-bug-report-expln "Um erro ocorreu enquanto o relatório de erro estava a ser enviado. Se a sua ligação à internet está a funcionar correctamente, por favor visite:\n\n http://bugs.plt-scheme.org/\n\ne envie o erro através do nosso formulário online. Pedimos desculpa pelo incómodo.\n\nA mensagem de erro é:\n~a")
  (illegal-bug-report "Relatório de Erro Ilegal")
  (pls-fill-in-field "Por favor preencha o campo \"~a\"")
  (malformed-email-address "Endereço de email mal formado")
- (pls-fill-in-either-description-or-reproduce "Por favor preencha o campo de Descrição ou o campo com os Passos para Reproduzir.")
+ (pls-fill-in-either-description-or-reproduce "Por favor preencha o campo de Descrição ou o campo com os Passos para Reproduzir o erro.")
 
  ;;; check syntax
  (check-syntax "Verificar Sintaxe")
  (cs-italic "Itálico")
  (cs-bold "Negrito")
- (cs-underline "Sublinhado")
+ (cs-underline "Sublinhar")
  (cs-change-color "Modificar cor")
- (cs-tack/untack-arrow "Tack/Untack Arrow(s)")
+ (cs-tack/untack-arrow "Marcar/Desmarcar Seta(s)")
  (cs-jump-to-next-bound-occurrence "Saltar para a Próxima Ocorrência")
  (cs-jump-to-binding "Ir para a Próxima Atribuição")
  (cs-jump-to-definition "Ir para a Definição")
@@ -218,8 +219,14 @@ please adhere to these guidelines:
  (no-full-name-since-not-saved
   "O ficheiro não tem um nome completo porque ainda não foi gravado.")
  (cannot-open-because-dne "Impossível abrir ~a porque não existe.")
- (interactions-out-of-sync
-  "AVISO: Janela de Interacções não está sincronizada com a janela das definições. Clica em Correr.")
+ 
+  (needs-execute-language-changed
+   "ATENÇÃO: A língua mudou. Clique Correr.")
+  (needs-execute-teachpack-changed
+   "ATENÇÃO: Os pacotes de ensino mudaram. Clique Correr.")
+  (needs-execute-defns-edited
+   "ATENÇÃO: A janela de definições mudou. Clique Correr.")
+  
  (file-is-not-saved "O ficheiro \"~a\" não está gravado.")
  (save "Gravar")
  (close-anyway "Fechar na Mesma")
@@ -264,7 +271,7 @@ please adhere to these guidelines:
  (plt:hd:feeling-lucky "Sinto-me Sortudo")
  (plt:hd:home "Início do Directorio de Ajuda") 
  ; next 3 are popup menu choices in help desk search frame
- (plt:hd:search-for-keyword "Procurara por palavra-chave")
+ (plt:hd:search-for-keyword "Procurar por palavra-chave")
  (plt:hd:search-for-keyword-or-index "Procurar por palavra-chave ou índice")
  (plt:hd:search-for-keyword-or-index-or-text "Procurar por palavra-chave, índice ou texto")
  (plt:hd:exact-match "Procura exacta")
@@ -281,7 +288,7 @@ please adhere to these guidelines:
  ;; refreshing manuals
  (plt:hd:refreshing-manuals "Reactualização de manuais")
  (plt:hd:refresh-downloading... "A tirar ~a...")
- (plt:hd:refresh-deleting... "A apagar a versão antiga de ~a...")
+ (plt:hd:refresh-deleting... "A remover a versão antiga de ~a...")
  (plt:hd:refresh-installing... "A instalar nova versão de ~a...")
  (plt:hd:refresh-clearing-indicies "A apagar os índices em cache")
  (plt:hd:refreshing-manuals-finished "Concluído.")
@@ -302,7 +309,14 @@ please adhere to these guidelines:
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "Ordem de Procura dos Manuais")
 
-
+  ;; in the help-desk standalone font preference dialog, on a check box
+  (use-drscheme-font-size "Usar o tamanho de fonte do DrScheme")
+  
+  ;; in the preferences dialog in drscheme there is example text for help desk font size.
+  ;; clicking the links in that text produces a dialog with this message
+  (help-desk-this-is-just-example-text
+   "Isto é apenas um texto exemplo para a opção do tamanho da fonte. Abra o directório de ajuda (do menu Ajuda) para seguir estas ligações.")
+  
  ;; Help desk htty proxy
  (http-proxy "HTTP Proxy")
  (proxy-direct-connection "Conexão Directa")
@@ -366,23 +380,30 @@ please adhere to these guidelines:
  ;;; preferences
  (preferences "Preferências")
  (error-saving-preferences "Erro a gravar preferências: ~a")
+ (error-saving-preferences-title "Erro a gravar preferências")
  (error-reading-preferences "Erro a ler preferências")
+ (prefs-file-locked "The preferences file is locked (because the file ~a exists), so your preference change could not be saved. Cancel preference change?")
+ (try-again "Tentar de novo") ;; button label
+ (prefs-file-still-locked "O ficheiro de preferências continua trancado (porque o ficheiro ~a existe), logo as suas modificações não serão guardadas.")
  (scheme-prefs-panel-label "Scheme")
  (warnings-prefs-panel-label "Avisos")
  (editor-prefs-panel-label "Editar")
  (general-prefs-panel-label "Geral")
  (highlight-parens "Iluminar entre parêntesis correctos")
- (fixup-parens "Corrigir parêntesis")
+ (fixup-open-brackets "Ajustar automaticamente parêntesis rectos de abertura")
+ (fixup-close-parens "Ajustar automaticamente parêntesis de fecho")
  (flash-paren-match "Iluminar correcção de parêntesis")
  (auto-save-files "Auto-gravar ficheiros")
  (backup-files "Gravar ficheiros como backup")
  (map-delete-to-backspace "Mapar tecla de delete para backspace")
- (verify-exit "Verificar Exit")
+ (verify-exit "Verificar Saída")
  (ask-before-changing-format "Perguntar antes de modificar formato de gravação")
  (wrap-words-in-editor-buffers "Wrap words in editor buffers")
  (show-status-line "Mostrar linha de status")
  (count-columns-from-one "Contar número de colunas a partir de um")
  (display-line-numbers "Mostrar número da linha no buffer; sem offset de caracteres")
+ (show-line-and-column-numbers "Mostrar número de linha e coluna") ; used for popup menu; right click on line/column box in bottom of drs window
+ (show-character-offsets "Mostrar caractéres de offset") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "Activar ligações de teclas nos menus")
  (automatically-to-ps "Imprimir automaticamente para um ficheiro postscript")
  (option-as-meta "Tratar tecla option como meta") ;; macos/macos x only
@@ -426,27 +447,32 @@ please adhere to these guidelines:
  (only-warn-once "Avisar apenas uma vez quando as definições e as interacções não estiverem sincronizadas")
  
  ; warning message when lockfile is around
- (waiting-for-pref-lock "Waiting for the preferences lockfile...")
+ (waiting-for-pref-lock "À espera do ficheiro de tranca das preferências...")
  (pref-lock-not-gone
-  "The preferences lockfile:\n\n   ~a\n\nprevents the preferences from being saved. Ensure that no PLT software is running and delete this file.")
- (still-locked-exit-anyway? "The preferences were not saved sucessfully. Exit anyway?")
+  "O ficheiro de tranca:\n\n   ~a\n\nprevine que as preferências de serem guardadas. Certifique-se que nenhum software PLT está a correr e apague este ficheiro.")
+ (still-locked-exit-anyway? "As preferências não foram guardadas com sucesso. Pretende continuar?")
  
  ;;; indenting preferences panel
  (indenting-prefs-panel-label "Indentação")
  (indenting-prefs-extra-regexp "Expressões regulares extra")
 
+ (square-bracket-prefs-panel-label "Parêntesis Recto")
+  
  ; filled with define, lambda, or begin
  (enter-new-keyword "Insira nova palavra chave do tipo ~a:")
  (x-keyword "Palavra Chave ~a")
  (x-like-keywords "Palavras Chave do tipo ~a")
 
+  ; used in Square bracket panel
+ (skip-subexpressions "Número de sub-expressões a saltar")
+  
  (expected-a-symbol "esperava um símbolo, recebeu: ~a")
  (already-used-keyword "\"~a\" já é uma palavra chave na lista de indentação")
  (add-keyword "Adicionar")
  (remove-keyword "Remover")
  
  ;;; find/replace
- (find-and-replace "Procurar e SubstituirFind and Replace")
+ (find-and-replace "Procurar e Substituir")
  (find "Procurar")
  (replace "Substituir")
  (dock "Esconder")
@@ -479,9 +505,9 @@ please adhere to these guidelines:
  
  ;;; reverting a file
  (are-you-sure-revert
-  "Are you sure that you want to revert this file? This change cannot be undone.")
+  "De certeza que pretende recuperar este ficheiro? Esta modificação não poderá ser desfeita.")
  (are-you-sure-revert-title
-  "Revert?")
+  "Recuperar?")
  
  ;;; saving a file
  ; ~a is filled with the filename
@@ -662,26 +688,26 @@ please adhere to these guidelines:
   ;; (also, do this with an unsaved file). Wait for the autosave
   ;; files to appear (typically 5 minutes). Kill DrScheme
   ;; and restart it. You'll see the dialog
-  (autosave-autosave-label: "Autosave file:")
-  (autosave-original-label: "Original file:")
-  (autosave-autosave-label "Autosave file")
-  (autosave-original-label "Original file")
-  (autosave-compare-files "Compare autosave files")
+  (autosave-autosave-label: "Ficheiro de auto-gravação:")
+  (autosave-original-label: "Ficheiro original:")
+  (autosave-autosave-label "Ficheiro de auto-gravação")
+  (autosave-original-label "Ficheiro original")
+  (autosave-compare-files "Comparar ficheiros de auto-gravação")
 
-  (autosave-show-autosave "Autosave file") ;; title of a window showing the autosave file
+  (autosave-show-autosave "Ficheiro de Autogravação") ;; title of a window showing the autosave file
 
-  (autosave-explanation "DrScheme found autosave files, which may contain your unsaved work.")
+  (autosave-explanation "O DrScheme encontro ficheiros de auto-gravação que poderá conter trabalho ainda não gravado.")
 
-  (autosave-recovered! "Recovered!") ;; status of an autosave file
-  (autosave-deleted "Deleted")       ;; status of an autosave file
+  (autosave-recovered! "Recuperado!") ;; status of an autosave file
+  (autosave-deleted "Removido")       ;; status of an autosave file
 
-  (autosave-error-deleting "Error deleting ~a\n\n~a") ;; first is a filename, second is an error message from mz.
-  (autosave-delete-button "Delete")
-  (autosave-delete-title "Delete")  ;; title of a dialog asking for deletion confirmation
-  (autosave-done "Done")
+  (autosave-error-deleting "Erro a remover ~a\n\n~a") ;; first is a filename, second is an error message from mz.
+  (autosave-delete-button "Remover")
+  (autosave-delete-title "Remover")  ;; title of a dialog asking for deletion confirmation
+  (autosave-done "Completo")
   
   ;; appears in the file dialog
-  (autosave-restore-to-where? "Choose a place to save the autosave file.")
+  (autosave-restore-to-where? "Escolha um local para gravar o ficheiro de auto-gravação.")
   
   
  ;;; file modified warning
