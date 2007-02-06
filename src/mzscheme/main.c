@@ -183,15 +183,6 @@ static void user_break_hit(int ignore)
 
 #endif
 
-#if defined(_IBMR2)
-static void dangerdanger(int ignored)
-{
-  char *s = "mzscheme: Danger - paging space low\n";
-  write(2, s, strlen(s));
-  scheme_collect_garbage();
-}
-#endif
-
 /*========================================================================*/
 /*                                 main                                   */
 /*========================================================================*/

@@ -3,7 +3,7 @@
 /* This command-line parser is used by both MzScheme and MrEd. */
 /***************************************************************/
 
-#define SDESC "Set! works on undefined identifiers.\n"
+#define SDESC "Set! works on undefined identifiers"
 
 char *cmdline_exe_hack = "[Replace me for EXE hack                                       ]";
 
@@ -232,6 +232,32 @@ static char *make_require_coll(const char *coll)
   return make_require_lib(s, coll);
 }
 
+static char *make_require_planet(const char *file, const char *file_sfx, 
+                                 const char *user, 
+                                 const char *pkg, char *pkg_sfx)
+{
+  char *s;
+  
+  pkg = protect_quote_backslash(pkg);
+  user = protect_quote_backslash(user);
+  
+  s = (char *)malloc(strlen(file) 
+                     + strlen(file_sfx) 
+                     + strlen(user) 
+                     + strlen(pkg) 
+                     + strlen(pkg_sfx) + 46);
+  strcpy(s, "(require (planet \"");
+  strcat(s, file);
+  strcat(s, file_sfx);
+  strcat(s, "\" (\"");
+  strcat(s, user);
+  strcat(s, "\" \"");
+  strcat(s, pkg);
+  strcat(s, pkg_sfx);
+  strcat(s, "\")))");
+  return s;
+}
+
 static char *make_embedded_load(const char *start, const char *end)
 {
   char *s;
@@ -260,6 +286,7 @@ static char *make_embedded_load(const char *start, const char *end)
 #define mzcmd_MAIN 2
 
 typedef struct {
+  int start_with_req;
 #ifndef DONT_PARSE_COMMAND_LINE
   char **evals_and_loads;
   int *eval_kind, num_enl;
@@ -287,6 +314,10 @@ typedef void (*Repl_Proc)(Scheme_Env *);
 static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 {
   volatile int exit_val = 0;
+
+  if (fa->start_with_req) {
+    scheme_eval_string("(require mzscheme)", fa->global_env);    
+  }
 
 #ifndef DONT_LOAD_INIT_FILE
   if (!fa->no_init_file) {
@@ -459,10 +490,6 @@ static void init_mred(Scheme_Env *global_env)
 int osk_not_console = 0;
 #endif
 
-#if defined(_IBMR2)
-static void dangerdanger(int);
-#endif
-
 #ifndef MZ_XFORM
 # ifndef GC_CAN_IGNORE
 #  define GC_CAN_IGNORE /**/
@@ -484,6 +511,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int no_more_switches = 0;
   int mute_banner = 0;
   int no_argv = 0;
+  int start_with_req = 0;
 #endif
 #if !defined(DONT_RUN_REP) || !defined(DONT_PARSE_COMMAND_LINE)
   int no_rep = 0;
@@ -747,6 +775,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-X";
     else if (!strcmp("--search", argv[0]))
       argv[0] = "-S";
+    else if (!strcmp("--prim", argv[0]))
+      argv[0] = "-Q";
 # ifndef MZSCHEME_CMD_LINE
     else if (!strcmp("--nogui", argv[0]))
       argv[0] = "-Z";
@@ -761,10 +791,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
     else if (!strcmp("--yield", argv[0]))
       argv[0] = "-V";
 # endif
-#if defined(_IBMR2)
-    else if (!strcmp("--persistent", argv[0]))
-      argv[0] = "-p";
-#endif
     else if (!strcmp("--restore", argv[0])) {
       PRINTF("--restore or -R<file> must be the first (and only) switch\n");
       goto show_need_help;
@@ -945,6 +971,45 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  evals_and_loads[num_enl] = se;
 	  eval_kind[num_enl++] = mzcmd_EVAL;
 	  break;
+	case 'p':
+	  if (argc < 4) {
+	    PRINTF("%s: missing %s after %s switch\n", 
+		   prog, 
+		   ((argc > 2) 
+                    ? "package"
+                    : ((argc > 1) 
+                       ? "user and package" 
+                       : "file, user, and package")),
+		   real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  se = make_require_planet(argv[0], "", argv[1], argv[2], "");
+	  evals_and_loads[num_enl] = se;
+	  argv += 2;
+	  argc -= 2;
+	  eval_kind[num_enl++] = mzcmd_EVAL;
+	  break;
+	case 'P':
+	  if (argc < 3) {
+	    PRINTF("%s: missing %s after %s switch\n", 
+		   prog, 
+		   (argc < 2) ? "package/file base name and user" : "package",
+		   real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  se = make_require_planet(argv[0], ".ss", argv[1], argv[0], ".plt");
+	  evals_and_loads[num_enl] = se;
+	  argv++;
+	  --argc;
+	  eval_kind[num_enl++] = mzcmd_EVAL;
+	  break;
+        case 'Q':
+          start_with_req = 1;
+          break;
 	case 'w':
 	  se = make_require_lib("awk.ss", "mzlib");
 	  evals_and_loads[num_enl] = se;
@@ -1018,11 +1083,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  no_front = 1;
 	  break;
 #endif
-#if defined(_IBMR2)
-	case 'p':
-	  signal(SIGDANGER, dangerdanger);
-	  break;
-#endif
 #ifdef USE_OSKIT_CONSOLE
 	case 'S':
 	  osk_not_console = 1;
@@ -1052,7 +1112,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
       PRINTF(BANNER);
 #ifdef MZSCHEME_CMD_LINE  
     if (scheme_get_allow_set_undefined())
-      PRINTF(SDESC);
+      PRINTF(SDESC ".\n");
 # ifdef DOS_FILE_SYSTEM
 #  if !defined(FILES_HAVE_FDS)
 #   if !defined(WINDOWS_FILE_HANDLES)
@@ -1139,6 +1199,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
 
   fa = (FinishArgs *)scheme_malloc(sizeof(FinishArgs));
+  fa->start_with_req = start_with_req;
 #ifndef DONT_PARSE_COMMAND_LINE
   fa->evals_and_loads = evals_and_loads;
   fa->eval_kind = eval_kind;
@@ -1168,93 +1229,94 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifndef DONT_PARSE_COMMAND_LINE
  show_help:
   prog =("%s"
+         PROGRAM_LC " [<option> ...] <argument> ...\n"
 # ifndef MZSCHEME_CMD_LINE
 #  ifdef wx_x
-	 " X switches (must precede all other flags):\n"
+	 " X options (must precede all other options):\n"
 	 "  -display <display>, -geometry <geometry>, -fn <font>, -font <font>,\n"
          "  -bg <color>, -background <color>, -fg <color>, -foreground <color>,\n"
 	 "  -iconic, -name <name>, -rv, -reverse, +rv, -selectionTimeout <timeout>,\n"
 	 "  -synchronous, -title <title>, -xnllanguage <language>, -xrm <file>\n"
 #  endif
 # endif
-	 " Startup file and expression switches:\n"
-	 "  -e <expr>, --eval <expr> : Evaluates <expr> after " PROGRAM " starts.\n"
-	 "  -f <file>, --load <file> : Loads <file> after " PROGRAM " starts.\n"
-	 "  -d <file>, --load-cd <file> : Load/cds <file> after " PROGRAM " starts.\n"
-	 "  -t <file>, --require <file> : Requires <file> after " PROGRAM " starts.\n"
-	 "  -F, --Load : Loads all remaining arguments after " PROGRAM " starts.\n"
-	 "  -D, --Load-cd : Load/cds all remaining arguments after " PROGRAM " starts.\n"
-	 "  -T, --Require : Requires all remaining arguments after " PROGRAM " starts.\n"
-	 "  -l <file>, --mzlib <file> : Same as -e '(require (lib \"<file>\"))'.\n"
-	 "  -L <file> <coll> : Same as -e '(require (lib \"<file>\" \"<coll>\"))'.\n"
-	 "  -M <coll> : Same as -e '(require (lib \"<coll>.ss\" \"<coll>\"))'.\n"
-	 "  -r, --script : Script mode: use as last switch for scripts. Same as -fmv-.\n" 
-	 "  -i, --script-cd : Like -r, but also sets the directory. Same as -dmv-.\n"
-	 "  -u, --require-script : Like -r, but requires a module. Same as -tmv-.\n" 
+	 " Startup file and expression options:\n"
+	 "  -e <expr>, --eval <expr> : Evaluates <expr> after " PROGRAM " starts\n"
+	 "  -f <file>, --load <file> : Loads <file> after " PROGRAM " starts\n"
+	 "  -d <file>, --load-cd <file> : Load/cds <file> after " PROGRAM " starts\n"
+	 "  -t <file>, --require <file> : Requires <file> after " PROGRAM " starts\n"
+	 "  -F, --Load : Loads all remaining arguments after " PROGRAM " starts\n"
+	 "  -D, --Load-cd : Load/cds all remaining arguments after " PROGRAM " starts\n"
+	 "  -T, --Require : Requires all remaining arguments after " PROGRAM " starts\n"
+	 "  -l <file>, --mzlib <file> : Same as -e '(require (lib \"<file>\"))'\n"
+	 "  -L <file> <coll> : Same as -e '(require (lib \"<file>\" \"<coll>\"))'\n"
+	 "  -M <coll> : Same as -e '(require (lib \"<coll>.ss\" \"<coll>\"))'\n"
+	 "  -p <fl> <u> <pkg> : Same as -e '(require (planet \"<fl>\" (\"<u>\" \"<pkg>\"))'\n"
+	 "  -P <nm> <u> : Same as -e '(require (planet \"<nm>.ss\" (\"<u>\" \"<nm>.plt\"))'\n"
+	 "  -r, --script : Script mode: use as last option for scripts; same as -fmv-\n" 
+	 "  -i, --script-cd : Like -r, but also sets the directory; same as -dmv-\n"
+	 "  -u, --require-script : Like -r, but requires a module; same as -tmv-\n" 
 # ifndef MZSCHEME_CMD_LINE
-	 "  -Z, --nogui : Skip \"class.ss\" & \"mred.ss\" require, load handler set.\n"
+	 "  -Z, --nogui : Skip \"class.ss\" & \"mred.ss\" require, load handler set\n"
 # endif
 # ifdef CMDLINE_STDIO_FLAG
-	 "  -z, --stdio : Show version, use read-eval-print-loop (not graphical-...).\n"
-	 "  -K, --back : Don't bring application to the foreground (Mac OS X).\n"
+	 "  -z, --stdio : Show version, use read-eval-print-loop (not graphical-...)\n"
+	 "  -K, --back : Don't bring application to the foreground (Mac OS X)\n"
 # endif
-	 "  -w, --awk : Same as -l awk.ss.\n"
-	 "  -k <n> <m> : Load executable-embedded code from file offset <n> to <m>.\n"
-	 "  -C, --main : Like -r, then call `main' w/argument list; car is file name.\n"
-	 " Initialization switches:\n"
-	 "  -X <dir>, --collects <dir> : Main collects at <dir> relative to " PROGRAM ".\n"
-	 "  -S <dir>, --search <dir> : More collects at <dir> relative to " PROGRAM ".\n"
+	 "  -w, --awk : Same as -l awk.ss\n"
+	 "  -k <n> <m> : Load executable-embedded code from file offset <n> to <m>\n"
+	 "  -C, --main : Like -r, then call `main' w/argument list; car is file name\n"
+	 " Initialization options:\n"
+	 "  -X <dir>, --collects <dir> : Main collects at <dir> relative to " PROGRAM "\n"
+	 "  -S <dir>, --search <dir> : More collects at <dir> relative to " PROGRAM "\n"
 	 "  -U, --no-user-path : Ignores user-specific collects, etc.\n"
-         "  -x, --no-lib-path : Skips trying to set current-library-collection-paths.\n"
-	 "  -q, --no-init-file : Skips trying to load " INIT_FILENAME ".\n"
-	 "  -N <file>, --name <file> : Sets `program' to <file>.\n"
-	 "  -A : Skips defining `argv' and `program'.\n"
+         "  -x, --no-lib-path : Skips trying to set current-library-collection-paths\n"
+	 "  -q, --no-init-file : Skips trying to load " INIT_FILENAME "\n"
+	 "  -N <file>, --name <file> : Sets `program' to <file>\n"
+	 "  -A : Skips defining `argv' and `program'\n"
 # ifdef MZ_USE_JIT
-	 "  -j, --no-jit : Disables just-in-time compiler.\n"
+	 "  -j, --no-jit : Disables just-in-time compiler\n"
 # else
-	 "  -j, --no-jit : No effect, since the just-in-time compiler is unavailable.\n"
+	 "  -j, --no-jit : No effect, since the just-in-time compiler is unavailable\n"
 # endif
-	 " Language setting switches:\n"
-	 "  -g, --case-sens : Identifiers/symbols are initially case-sensitive.\n"
-	 "  -G, --case-insens : Identifiers/symbols are initially case-insensitive.\n"
-	 "  -s, --set-undef : " SDESC
-	 " Miscellaneous switches:\n"
-	 "  -- : No argument following this switch is used as a switch.\n"
-# if defined(_IBMR2)
-	 "  -p, --persistent : Catches SIGDANGER (low page space) signal.\n"
-# endif
+	 " Language setting options:\n"
+         "  -Q, --prim : Assume primitive bindings at top level\n"
+	 "  -g, --case-sens : Identifiers/symbols are initially case-sensitive\n"
+	 "  -G, --case-insens : Identifiers/symbols are initially case-insensitive\n"
+	 "  -s, --set-undef : " SDESC "\n"
+	 " Miscellaneous options:\n"
+	 "  -- : No argument following this switch is used as a switch\n"
 	 "  -m, --mute-banner : Suppresses "
 # ifdef MZSCHEME_CMD_LINE  
 	 "the startup banner"
 # else
 	 "-v/--version/-z/--stdio"
 # endif
-	 " text.\n"
+	 " text\n"
 	 "  -v, --version : Suppresses the read-eval-print loop"
 # ifdef MZSCHEME_CMD_LINE  
-	 ".\n"
+	 "\n"
 # else
-	 ", prints version.\n"
+	 ", prints version\n"
 # endif
 # ifdef VERSION_YIELD_FLAG
-	 "  -V, --no-yield : Like -v, also suppresses (yield 'wait).\n"
+	 "  -V, --no-yield : Like -v, also suppresses (yield 'wait)\n"
 # endif
-	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode.\n"
-	 "  -h, --help : Shows this information and exits, ignoring other switches.\n"
+	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode\n"
+	 "  -h, --help : Shows this information and exits, ignoring other options\n"
 	 "Multiple single-letter switches can be collapsed, with arguments placed\n"
 	 " after the collapsed switches; the first collapsed switch cannot be --.\n"
-	 " E.g.: `-vfme file expr' is the same as `-v -f file -m -e expr'.\n"
-	 "Extra arguments following the last switch are put into the Scheme global\n"
+	 " E.g.: `-vfme file expr' is the same as `-v -f file -m -e expr'\n"
+	 "Extra arguments following the last option are put into the Scheme global\n"
 	 " variable `argv' as a vector of strings. The name used to start " PROGRAM "\n"
 	 " is put into the global variable `program' as a string.\n"
          "Expressions/files/--main/etc. are evaluated/loaded in order as provided.\n"
 	 " An error during evaluation/loading causes later ones to be skipped.\n"
 	 "The current-library-collection-paths is automatically set before any\n"
 	 " expressions/files are evaluated/loaded, unless the -x or --no-lib-path\n"
-	 " switch is used.\n"
+	 " option is used.\n"
 	 "The file " INIT_FILENAME
 	 " is loaded before any provided expressions/files\n"
-	 " are evaluated/loaded, unless the -q or --no-init-file switch is used.\n"
+	 " are evaluated/loaded, unless the -q or --no-init-file option is used.\n"
 # ifdef MACINTOSH_EVENTS
 	 "\n"
 	 "Macintosh Startup files are alphabetized and put after the -F switch\n"

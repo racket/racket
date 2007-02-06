@@ -63,15 +63,6 @@ extern "C" { typedef int (*ACTUAL_MAIN_PTR)(int argc, char **argv); }
 char *check_for_another = "yes, please check for another";
 #endif
 
-#if defined(_IBMR2)
-static void dangerdanger(int)
-{
-  char *s = "mred: Danger - paging space low\n";
-  write(2, s, strlen(s));
-  scheme_collect_garbage();
-}
-#endif
-
 static void yield_indefinitely()
 {
 #ifdef MZ_PRECISE_GC
@@ -173,23 +164,6 @@ static void interrupt(int)
 #endif
 #endif
 
-#if defined(_IBMR2)
-static int danger_signal_received;
-static void dangerdanger_gui(int)
-{
-  if (danger_signal_received) {
-    fprintf(stderr, "mred: Danger - paging space STILL low - exiting\n");
-    exit(-1);
-  } else {
-    fprintf(stderr, "mred: Danger - paging space low\n");
-    scheme_collect_garbage();
-    danger_signal_received = 1;
-  }
-  
-  signal(SIGDANGER, dangerdanger_gui);
-}
-#endif
-
 static FinishArgs *xfa;
 
 static void do_graph_repl(Scheme_Env *env)
@@ -288,9 +262,6 @@ int main(int argc, char *argv[])
   scheme_set_stack_base(stack_start, 1);
 #endif
 
-#if defined(_IBMR2)
-  signal(SIGDANGER, dangerdanger_gui);
-#endif
 #ifdef wx_x
 # if INTERRUPT_CHECK_ON
   signal(SIGINT, interrupt);

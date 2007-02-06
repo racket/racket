@@ -1,3 +1,6 @@
+Version 369.8
+Added -p, -P, and -Q command-line options
+
 Version 369.7
 Added string->path-element and path-element->string
 

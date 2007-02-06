@@ -3860,12 +3860,12 @@ int scheme_block_until(Scheme_Ready_Fun _f, Scheme_Needs_Wakeup_Fun fdf,
 
   /* We make an sinfo to be polite, but we also assume
      that f will not generate any redirections! */
-  init_schedule_info(&sinfo, 0, sleep_end);
+  init_schedule_info(&sinfo, NULL, sleep_end);
 
   while (!(result = f((Scheme_Object *)data, &sinfo))) {
     sleep_end = sinfo.sleep_end;
     if (sinfo.spin) {
-      init_schedule_info(&sinfo, 0, 0.0);
+      init_schedule_info(&sinfo, NULL, 0.0);
       scheme_thread_block(0.0);
       scheme_current_thread->ran_some = 1;
     } else {

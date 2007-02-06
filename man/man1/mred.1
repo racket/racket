@@ -1,5 +1,5 @@
 \" dummy line
-.TH MRED 1 "May 2007"
+.TH MRED 1 "January 2007"
 .UC 4
 .SH NAME
 mred \- The PLT Graphical Scheme implementation
@@ -138,6 +138,26 @@ Same as
 .I coll\|\c
 "))'.
 .TP
+.BI \-p \ file \  user \  package
+Same as
+.BR -e \ '(require\ (planet\ "\|\c
+.I file\|\c
+\|" "\|\c
+.I user\|\c
+\|" "\|\c
+.I package\|\c
+"))'.
+.TP
+.BI \-P \ name \  user
+Same as
+.BR -e \ '(require\ (planet\ "\|\c
+.I name\|\c
+\|.ss" "\|\c
+.I user\|\c
+\|" "\|\c
+.I name\|\c
+\|.plt"))'.
+.TP
 .B \-r\fR,\fP \-\^\-script
 Script mode: use as last flag for scripts.
 Same as
@@ -218,6 +238,10 @@ Skips defining `argv' and `program'.
 
 .SH LANGUAGE SETTING OPTIONS
 .TP
+.B \-Q\fR,\fP \-\^\-prim
+Assume primitive bindings at top level by initializing the environment with
+`(require mzscheme)'.
+.TP
 .B \-g\fR,\fP \-\^\-case-sens
 Identifiers and symbols are initially case-sensitive (the default).
 .TP
@@ -248,11 +272,8 @@ Like -v, also suppresses (yield 'wait).
 .TP
 .B \-h\fR,\fP \-\^\-help
 Shows help for command-line arguments.
-.TP
-.BI \-R file\fR,\ \fP \-\^\-restore \ file
-Restores an image; must be the only switch. (Special versions only)
 
-.SH OPTION CONVENTIONS
+.SH COMMAND-LINE CONVENTIONS
 
 Multiple single-letter switches can be collapsed, with arguments placed
 after the collapsed switches; the first collapsed switch cannot be
@@ -267,16 +288,10 @@ is the same as
 .B -m -e
 .IR expr .
 .PP
-Extra arguments following the last switch are put into the Scheme global
+Extra arguments following the last option are put into the Scheme global
 variable `argv' as a vector of strings. The name used to start 
 .I MrEd
 is put into the global variable `program' as a string.
-.PP
-Extra arguments after a 
-.B --restore
-file are returned as a vector of
-strings to the continuation of the `write-image-to-file' call that created
-the image.
 .PP
 Expressions/files are evaluated/loaded in order as provided, including
 calls to
@@ -293,7 +308,7 @@ expressions/files are evaluated/loaded, unless the
 .B -x
 or
 .B --no-lib-path
-switch is used.  
+option is used.  
 
 .SH EXECUTABLE NAME
 If the executable name has the form scheme-\|\c
@@ -315,13 +330,13 @@ expressions/files are evaluated/loaded, unless the
 .B -q 
 or 
 .B --no-init-file 
-switch is used.
+option is used.
 .PP
 Unless the
 .B -U
 or
 .B --no-user-path
-switch is provided, the library collections search
+option is provided, the library collections search
 path is read from the PLTCOLLECTS environment variable
 (as a colon-separated list of paths). Where the empty path
 appears in PLTCOLLECTS, it is replaced with the default

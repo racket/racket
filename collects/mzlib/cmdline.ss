@@ -181,7 +181,7 @@
      [(program arguments table finish finish-help help)
       (parse-command-line program arguments table finish finish-help help
 			  (lambda (flag)
-			    (raise-user-error (string->symbol program) "unknown flag: ~s" flag)))]
+			    (raise-user-error (string->symbol program) "unknown switch: ~s" flag)))]
      [(program arguments0 table finish finish-help help unknown-flag)
       (define arguments (if (vector? arguments0) (vector->list arguments0) arguments0))
       (unless (string? program)
@@ -310,9 +310,9 @@
 		(list #f (list "--help" "-h")
 		      (lambda (f)
 			(let* ([sp (open-output-string)])
-			  (fprintf sp "~a [ <flag> ... ]" program)
+			  (fprintf sp "~a [ <option> ... ]" program)
 			  (print-args sp finish-help finish)
-			  (fprintf sp "~n where <flag> is one of~n")
+			  (fprintf sp "~n where <option> is one of~n")
 			  (for-each
 			   (lambda (set)
 			     (if (eq? (car set) 'help-labels)
@@ -358,12 +358,12 @@
 				  (cdr set))))
 			   table) ; the original table
 			  (fprintf sp "  --help, -h : Show this help~n")
-			  (fprintf sp "  -- : Do not treat any remaining argument as a flag (at this level)~n")
+			  (fprintf sp "  -- : Do not treat any remaining argument as a switch (at this level)~n")
 			  (when (or (assq 'multi table) (assq 'final table))
-			    (fprintf sp " * Asterisks indicate flags allowed multiple times.~n"))
+			    (fprintf sp " * Asterisks indicate options allowed multiple times.~n"))
 			  (when (assq 'once-any table)
-			    (fprintf sp " /|\\ Brackets indicate mutually exclusive flags.~n"))
-			  (fprintf sp " Multiple single-letter flags can be combined after one `-'; for~n")
+			    (fprintf sp " /|\\ Brackets indicate mutually exclusive options.~n"))
+			  (fprintf sp " Multiple single-letter switches can be combined after one `-'; for~n")
 			  (fprintf sp "  example: `-h-' is the same as `-h --'~n")
 			  (help (get-output-string sp))))
 		      (list "Help")))
@@ -427,7 +427,7 @@
 				remaining)])
 		  (if (< remaining needed)
 		      (raise-user-error (string->symbol (format "~a" program))
-					"the ~s flag needs ~a argument~a, but ~a~a provided"
+					"the ~s option needs ~a argument~a, but ~a~a provided"
 					flag needed (if (> needed 1) "s" "")
 					(if (zero? remaining) "" "only ")
 					remaining)
@@ -458,8 +458,8 @@
 			      (raise-user-error 
 			       (string->symbol (format "~a" program))
 			       (let ([s (if (= 1 (length flags))
-					    (format "the ~a flag can only be specified once" (car flags))
-					    (format "only one instance of one flag from ~a is allowed" flags))])
+					    (format "the ~a option can only be specified once" (car flags))
+					    (format "only one instance of one option from ~a is allowed" flags))])
 				 (if orig-multi
 				     (format "~a; note that ~s is shorthand for ~s, in contrast to ~s"
 					     s

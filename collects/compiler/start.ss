@@ -379,7 +379,7 @@
 	 ("Set the maximum inlining size" "size")]
 	[("--prim")
 	 ,(lambda (f) (compiler:option:assume-primitives #t))
-	 ("Assume primitive bindings at top-level")]
+	 ("Assume primitive bindings at top level")]
 	[("--stupid")
 	 ,(lambda (f) (compiler:option:stupid #t))
 	 ("Compile despite obvious non-syntactic errors")]
