@@ -44,6 +44,7 @@ WARNING: printf is rebound in the body of the unit to always
       (define basic<%>
         (interface (editor:basic<%> (class->interface text%))
           highlight-range
+          unhighlight-range
           get-highlighted-ranges
           get-styles-fixed
           get-fixed-style
@@ -239,17 +240,28 @@ WARNING: printf is rebound in the body of the unit to always
                 (set! ranges (if (eq? priority 'high) (cons l ranges) (append ranges (list l))))
                 (recompute-range-rectangles)
                 (invalidate-rectangles range-rectangles)
-                (λ ()
-                  (let ([old-rectangles range-rectangles])
-                    (set! ranges
-                          (let loop ([r ranges])
-                            (cond
-                              [(null? r) r]
-                              [else (if (eq? (car r) l)
-                                        (cdr r)
-                                        (cons (car r) (loop (cdr r))))])))
-                    (recompute-range-rectangles)                    
-                    (invalidate-rectangles old-rectangles))))))
+                (λ () (unhighlight-range start end color bitmap caret-space?)))))
+
+          (define/public unhighlight-range
+            (opt-lambda (start end color [bitmap #f] [caret-space? #f])
+              (let ([old-rectangles range-rectangles])
+                (set! ranges
+                      (let loop ([r ranges])
+                        (cond
+                          [(null? r) r]
+                          [else (if (matching-rectangle? (car r) start end color bitmap caret-space?)
+                                    (cdr r)
+                                    (cons (car r) (loop (cdr r))))])))
+                (recompute-range-rectangles)
+                (invalidate-rectangles old-rectangles))))
+          
+          (define/private (matching-rectangle? r start end color bitmap caret-space?)
+            (and (equal? start (range-start r))
+                 (equal? end (range-end r))
+                 (eq? bitmap (range-b/w-bitmap r))
+                 (equal? color (range-color r))
+                 (equal? caret-space? (range-caret-space? r))))
+          
           (define/override (on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
             (super on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
             (recompute-range-rectangles)
@@ -654,6 +666,15 @@ WARNING: printf is rebound in the body of the unit to always
                     (loop (send snip next)))))
               (for-each
                (λ (range)
+                 (send delegate unhighlight-range 
+                       (range-start range)
+                       (range-end range)
+                       (range-color range)
+                       (range-b/w-bitmap range)
+                       (range-caret-space? range)))
+               (send delegate get-highlighted-ranges))
+              (for-each
+               (λ (range)
                  (send delegate highlight-range 
                        (range-start range)
                        (range-end range)
@@ -667,14 +688,16 @@ WARNING: printf is rebound in the body of the unit to always
           
           (define/override highlight-range
             (opt-lambda (start end color [bitmap #f] [caret-space? #f] [priority 'low])
-              (let ([res (super highlight-range start end color bitmap caret-space? priority)])
-                (if delegate
-                    (let ([delegate-res (send delegate highlight-range 
-                                              start end color bitmap caret-space? priority)]) 
-                      (λ ()
-                        (res)
-                        (delegate-res)))
-                    res))))
+              (when delegate
+                (send delegate highlight-range 
+                      start end color bitmap caret-space? priority))
+              (super highlight-range start end color bitmap caret-space? priority)))
+          
+          (define/override unhighlight-range
+            (opt-lambda (start end color [bitmap #f] [caret-space? #f])
+              (when delegate
+                (send delegate unhighlight-range start end color bitmap caret-space?))
+              (super unhighlight-range start end color bitmap caret-space?)))
           
           (inherit get-canvases get-active-canvas has-focus?)
           (define/override (on-paint before? dc left top right bottom dx dy draw-caret?)

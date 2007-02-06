@@ -1,4 +1,3 @@
-
 (module frame (lib "a-unit.ss")
   (require (lib "string-constant.ss" "string-constants")
 	   (lib "class.ss")
