@@ -529,7 +529,7 @@ static Scheme_Object *os_wxChoiceSetSelection(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "set-selection in choice%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxChoice *)((Scheme_Class_Object *)p[0])->primdata)->SetSelection(x0));
 
   

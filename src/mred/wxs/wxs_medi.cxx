@@ -987,7 +987,7 @@ static Scheme_Object *os_wxMediaBufferSetCursor(int n,  Scheme_Object *p[])
   } else
     x1 = TRUE;
 
-  if (x0 && !x0->Ok()) return scheme_void;
+  if (x0 && !x0->Ok()) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxMediaBuffer *)((Scheme_Class_Object *)p[0])->primdata)->SetCursor(x0, x1));
 
   

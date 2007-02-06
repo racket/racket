@@ -39,7 +39,7 @@ static void menuSelect(wxMenu *MAC_UNUSED(m), wxMenuBar *WINMAC_UNUSED(mb))
 @SET CALLBACK_CLASS_USER = METHODNAME("menu%","initialization")
 @INCLUDE cb_start.xci
 
-@MACRO CHECKNEG[pos.result] = if (x<pos> < 0) return <result>;
+@MACRO CHECKNEG[pos.result] = if (x<pos> < 0) { READY_TO_RETURN; return <result>; }
 @MACRO CHECKNEGVOID[pos] = $$CHECKNEG[<pos>.scheme_void]
 @MACRO CHECKNEGNULL[pos] = $$CHECKNEG[<pos>.XC_SCHEME_NULL]
 @MACRO CHECKNEGFALSE[pos] = $$CHECKNEG[<pos>.scheme_false]

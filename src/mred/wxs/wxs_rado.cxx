@@ -663,7 +663,7 @@ static Scheme_Object *os_wxRadioBoxEnable(int n,  Scheme_Object *p[])
     x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "enable in radio-box% (single-button case)"));
     x1 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+1], "enable in radio-box% (single-button case)"));
 
-    if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+    if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
     WITH_VAR_STACK(((wxRadioBox *)((Scheme_Class_Object *)p[0])->primdata)->Enable(x0, x1));
 
     
@@ -704,7 +704,7 @@ static Scheme_Object *os_wxRadioBoxSetSelection(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "set-selection in radio-box%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxRadioBox *)((Scheme_Class_Object *)p[0])->primdata)->SetSelection(x0));
 
   

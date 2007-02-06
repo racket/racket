@@ -5,7 +5,7 @@
 
 @MACRO NOZERO[p] = if (!x<p>) x<p> = -1;
 @MACRO CHECKDCOK[p.who] = if (x<p> && !x<p>->Ok()) WITH_VAR_STACK(scheme_arg_mismatch(<who>, "bad device context: ", p[POFFSET+<p>]));
-@MACRO CHECKVOIDABLEOK[p] = if (x<p> && !x<p>->Ok()) return scheme_void;
+@MACRO CHECKVOIDABLEOK[p] = if (x<p> && !x<p>->Ok()) { READY_TO_RETURN; return scheme_void; }
 
 #ifdef wx_x
 # define BM_SELECTED(map) ((map)->selectedTo)

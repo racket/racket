@@ -591,7 +591,7 @@ static Scheme_Object *os_wxListBoxSetString(int n,  Scheme_Object *p[])
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "set-string in list-box%"));
   x1 = (string)WITH_VAR_STACK(objscheme_unbundle_string(p[POFFSET+1], "set-string in list-box%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxListBox *)((Scheme_Class_Object *)p[0])->primdata)->SetString(x0, x1));
 
   
@@ -613,7 +613,7 @@ static Scheme_Object *os_wxListBoxSetFirstItem(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "set-first-visible-item in list-box%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxListBox *)((Scheme_Class_Object *)p[0])->primdata)->SetFirstItem(x0));
 
   
@@ -767,7 +767,7 @@ static Scheme_Object *os_wxListBoxSetClientData(int n,  Scheme_Object *p[])
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "set-data in list-box%"));
   x1 = ((char *)p[POFFSET+1]);
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxListBox *)((Scheme_Class_Object *)p[0])->primdata)->SetClientData(x0, x1));
 
   
@@ -790,7 +790,7 @@ static Scheme_Object *os_wxListBoxGetClientData(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "get-data in list-box%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return XC_SCHEME_NULL;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return XC_SCHEME_NULL; }
   r = WITH_VAR_STACK(((wxListBox *)((Scheme_Class_Object *)p[0])->primdata)->GetClientData(x0));
 
   
@@ -813,7 +813,7 @@ static Scheme_Object *os_wxListBoxSelected(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "selected? in list-box%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_false;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_false; }
   r = WITH_VAR_STACK(((wxListBox *)((Scheme_Class_Object *)p[0])->primdata)->Selected(x0));
 
   
@@ -835,7 +835,7 @@ static Scheme_Object *os_wxListBoxSetOneSelection(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "set-selection in list-box%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxListBox *)((Scheme_Class_Object *)p[0])->primdata)->SetOneSelection(x0));
 
   
@@ -862,7 +862,7 @@ static Scheme_Object *os_wxListBoxSetSelection(int n,  Scheme_Object *p[])
   } else
     x1 = TRUE;
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxListBox *)((Scheme_Class_Object *)p[0])->primdata)->SetSelection(x0, x1));
 
   
@@ -884,7 +884,7 @@ static Scheme_Object *os_wxListBoxDelete(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "delete in list-box%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) return scheme_void;
+  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxListBox *)((Scheme_Class_Object *)p[0])->primdata)->Delete(x0));
 
   

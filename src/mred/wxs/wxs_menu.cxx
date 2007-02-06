@@ -727,7 +727,7 @@ static Scheme_Object *os_wxMenuBarSetLabelTop(int n,  Scheme_Object *p[])
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "set-label-top in menu-bar%"));
   x1 = (string)WITH_VAR_STACK(objscheme_unbundle_string(p[POFFSET+1], "set-label-top in menu-bar%"));
 
-  if (x0 < 0) return scheme_void;
+  if (x0 < 0) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxMenuBar *)((Scheme_Class_Object *)p[0])->primdata)->SetLabelTop(x0, x1));
 
   
@@ -772,7 +772,7 @@ static Scheme_Object *os_wxMenuBarEnableTop(int n,  Scheme_Object *p[])
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "enable-top in menu-bar%"));
   x1 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+1], "enable-top in menu-bar%"));
 
-  if (x0 < 0) return scheme_void;
+  if (x0 < 0) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxMenuBar *)((Scheme_Class_Object *)p[0])->primdata)->EnableTop(x0, x1));
 
   

@@ -77,13 +77,13 @@ static void wxSetResizeCorner(wxCanvas *c, Bool v)
 
 @ "get-dc" : wxDC! GetDC();
 
-// @ "get-scroll-units" : void GetScrollUnitsPerPage(int*,int*); : : / PANELREDIRECT[ FillZero(x0,x1); return scheme_void]
-@ "get-virtual-size" : void GetVirtualSize(int*,int*); : : / PANELREDIRECT[FillZero(x0,x1); return scheme_void]
-@ "set-scrollbars" : void SetScrollbars(rint[0|10000],rint[0|10000],rint[0|10000],rint[0|10000],rint[1|10000],rint[1|10000],rint[0|10000]=0,rint[0|10000]=0,bool=TRUE);  : : / PANELREDIRECT[return scheme_void]
+// @ "get-scroll-units" : void GetScrollUnitsPerPage(int*,int*); : : / PANELREDIRECT[ FillZero(x0,x1); READY_TO_RETURN; return scheme_void]
+@ "get-virtual-size" : void GetVirtualSize(int*,int*); : : / PANELREDIRECT[FillZero(x0,x1); READY_TO_RETURN; return scheme_void]
+@ "set-scrollbars" : void SetScrollbars(rint[0|10000],rint[0|10000],rint[0|10000],rint[0|10000],rint[1|10000],rint[1|10000],rint[0|10000]=0,rint[0|10000]=0,bool=TRUE);  : : / PANELREDIRECT[READY_TO_RETURN; return scheme_void]
 @ "show-scrollbars" : void EnableScrolling(bool,bool)
 @ m "set-resize-corner" : void wxSetResizeCorner(bool)
-@ "view-start" : void ViewStart(int*,int*); : : / PANELREDIRECT[FillZero(x0,x1); return scheme_void]
-@ "warp-pointer" : void WarpPointer(rint[0|10000],rint[0|10000]);  : : / PANELREDIRECT[return scheme_void]
+@ "view-start" : void ViewStart(int*,int*); : : / PANELREDIRECT[FillZero(x0,x1); READY_TO_RETURN; return scheme_void]
+@ "warp-pointer" : void WarpPointer(rint[0|10000],rint[0|10000]);  : : / PANELREDIRECT[READY_TO_RETURN; return scheme_void]
 
 @ "scroll" : void ScrollPercent(double,double);
 @ "get-scroll-pos" : int GetScrollPos(SYM[orientation]);
@@ -94,7 +94,7 @@ static void wxSetResizeCorner(wxCanvas *c, Bool v)
 @ "set-scroll-range" : void SetScrollRange(SYM[orientation], rint[0|10000]);
 @ "set-scroll-page" : void SetScrollPage(SYM[orientation], rint[1|10000]);
 
-@ v "on-scroll" : void OnScroll(wxScrollEvent!); : JMPDECL/SETJMP/RESETJMP : / PANELREDIRECT[return scheme_void]
+@ v "on-scroll" : void OnScroll(wxScrollEvent!); : JMPDECL/SETJMP/RESETJMP : / PANELREDIRECT[READY_TO_RETURN; return scheme_void]
 
 @ m "set-background-to-gray" : bool wxSetBackgroundToGray()
 

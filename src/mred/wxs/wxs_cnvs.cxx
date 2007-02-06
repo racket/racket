@@ -183,7 +183,7 @@ static Scheme_Object *bundle_symset_orientation(int v) {
 
 
 
-// @ "get-scroll-units" : void GetScrollUnitsPerPage(int*,int*); : : / PANELREDIRECT[ FillZero(x0,x1); return scheme_void]
+// @ "get-scroll-units" : void GetScrollUnitsPerPage(int*,int*); : : / PANELREDIRECT[ FillZero(x0,x1); READY_TO_RETURN; return scheme_void]
 
 
 
@@ -843,7 +843,7 @@ static Scheme_Object *os_wxCanvasOnScroll(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_wxScrollEvent(p[POFFSET+0], "on-scroll in canvas%", 0));
 
-  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { return scheme_void; }
+  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { READY_TO_RETURN; return scheme_void; }
   if (((Scheme_Class_Object *)p[0])->primflag)
     WITH_VAR_STACK(((os_wxCanvas *)((Scheme_Class_Object *)p[0])->primdata)->wxCanvas::OnScroll(x0));
   else
@@ -1035,7 +1035,7 @@ static Scheme_Object *os_wxCanvasWarpPointer(int n,  Scheme_Object *p[])
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+0], 0, 10000, "warp-pointer in canvas%"));
   x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 0, 10000, "warp-pointer in canvas%"));
 
-  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { return scheme_void; }
+  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxCanvas *)((Scheme_Class_Object *)p[0])->primdata)->WarpPointer(x0, x1));
 
   
@@ -1062,7 +1062,7 @@ static Scheme_Object *os_wxCanvasViewStart(int n,  Scheme_Object *p[])
       *x0 = (sbox_tmp = WITH_VAR_STACK(objscheme_unbox(p[POFFSET+0], "view-start in canvas%")), WITH_VAR_STACK(objscheme_unbundle_integer(sbox_tmp, "view-start in canvas%"", extracting boxed argument")));
       *x1 = (sbox_tmp = WITH_VAR_STACK(objscheme_unbox(p[POFFSET+1], "view-start in canvas%")), WITH_VAR_STACK(objscheme_unbundle_integer(sbox_tmp, "view-start in canvas%"", extracting boxed argument")));
 
-  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { FillZero(x0,x1); return scheme_void; }
+  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { FillZero(x0,x1); READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxCanvas *)((Scheme_Class_Object *)p[0])->primdata)->ViewStart(x0, x1));
 
   
@@ -1159,7 +1159,7 @@ static Scheme_Object *os_wxCanvasSetScrollbars(int n,  Scheme_Object *p[])
   } else
     x8 = TRUE;
 
-  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { return scheme_void; }
+  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxCanvas *)((Scheme_Class_Object *)p[0])->primdata)->SetScrollbars(x0, x1, x2, x3, x4, x5, x6, x7, x8));
 
   
@@ -1186,7 +1186,7 @@ static Scheme_Object *os_wxCanvasGetVirtualSize(int n,  Scheme_Object *p[])
       *x0 = (sbox_tmp = WITH_VAR_STACK(objscheme_unbox(p[POFFSET+0], "get-virtual-size in canvas%")), WITH_VAR_STACK(objscheme_unbundle_integer(sbox_tmp, "get-virtual-size in canvas%"", extracting boxed argument")));
       *x1 = (sbox_tmp = WITH_VAR_STACK(objscheme_unbox(p[POFFSET+1], "get-virtual-size in canvas%")), WITH_VAR_STACK(objscheme_unbundle_integer(sbox_tmp, "get-virtual-size in canvas%"", extracting boxed argument")));
 
-  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { FillZero(x0,x1); return scheme_void; }
+  if (CHECK_FOR_PANEL((wxObject *)((Scheme_Class_Object *)THEOBJ)->primdata)) { FillZero(x0,x1); READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxCanvas *)((Scheme_Class_Object *)p[0])->primdata)->GetVirtualSize(x0, x1));
 
   

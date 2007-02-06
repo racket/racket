@@ -2256,7 +2256,7 @@ static Scheme_Object *os_wxDCDrawEllipse(int n,  Scheme_Object *p[])
   x2 = WITH_VAR_STACK(objscheme_unbundle_nonnegative_double(p[POFFSET+2], "draw-ellipse in dc<%>"));
   x3 = WITH_VAR_STACK(objscheme_unbundle_nonnegative_double(p[POFFSET+3], "draw-ellipse in dc<%>"));
 
-  if (x2 <= 0) return scheme_void;if (x3 <= 0) return scheme_void;DO_OK_CHECK(METHODNAME("dc<%>","draw-ellipse"))
+  if (x2 <= 0) { READY_TO_RETURN; return scheme_void; }if (x3 <= 0) { READY_TO_RETURN; return scheme_void; }DO_OK_CHECK(METHODNAME("dc<%>","draw-ellipse"))
   WITH_VAR_STACK(((wxDC *)((Scheme_Class_Object *)p[0])->primdata)->DrawEllipse(x0, x1, x2, x3));
 
   
@@ -2396,7 +2396,7 @@ static Scheme_Object *os_wxDCDrawRoundedRectangle(int n,  Scheme_Object *p[])
   } else
     x4 = -0.25;
 
-  if (x2 <= 0) return scheme_void;if (x3 <= 0) return scheme_void;{ if (x4 < -0.5)  WITH_VAR_STACK(scheme_arg_mismatch(METHODNAME("dc<%>","draw-rounded-rectangle"), "radius must be no less than -0.5: ", p[POFFSET+4])); if (x4 > 0) { if (2 * x4 > x2) WITH_VAR_STACK(scheme_arg_mismatch(METHODNAME("dc<%>","draw-rounded-rectangle"), "radius is more than half the width: ", p[POFFSET+4])); if (2 * x4 > x3) WITH_VAR_STACK(scheme_arg_mismatch(METHODNAME("dc<%>","draw-rounded-rectangle"), "radius is more than half the height: ", p[POFFSET+4])); } }DO_OK_CHECK(METHODNAME("dc<%>","draw-rounded-rectangle"))
+  if (x2 <= 0) { READY_TO_RETURN; return scheme_void; }if (x3 <= 0) { READY_TO_RETURN; return scheme_void; }{ if (x4 < -0.5)  WITH_VAR_STACK(scheme_arg_mismatch(METHODNAME("dc<%>","draw-rounded-rectangle"), "radius must be no less than -0.5: ", p[POFFSET+4])); if (x4 > 0) { if (2 * x4 > x2) WITH_VAR_STACK(scheme_arg_mismatch(METHODNAME("dc<%>","draw-rounded-rectangle"), "radius is more than half the width: ", p[POFFSET+4])); if (2 * x4 > x3) WITH_VAR_STACK(scheme_arg_mismatch(METHODNAME("dc<%>","draw-rounded-rectangle"), "radius is more than half the height: ", p[POFFSET+4])); } }DO_OK_CHECK(METHODNAME("dc<%>","draw-rounded-rectangle"))
   WITH_VAR_STACK(((wxDC *)((Scheme_Class_Object *)p[0])->primdata)->DrawRoundedRectangle(x0, x1, x2, x3, x4));
 
   
@@ -2424,7 +2424,7 @@ static Scheme_Object *os_wxDCDrawRectangle(int n,  Scheme_Object *p[])
   x2 = WITH_VAR_STACK(objscheme_unbundle_nonnegative_double(p[POFFSET+2], "draw-rectangle in dc<%>"));
   x3 = WITH_VAR_STACK(objscheme_unbundle_nonnegative_double(p[POFFSET+3], "draw-rectangle in dc<%>"));
 
-  if (x2 <= 0) return scheme_void;if (x3 <= 0) return scheme_void;DO_OK_CHECK(METHODNAME("dc<%>","draw-rectangle"))
+  if (x2 <= 0) { READY_TO_RETURN; return scheme_void; }if (x3 <= 0) { READY_TO_RETURN; return scheme_void; }DO_OK_CHECK(METHODNAME("dc<%>","draw-rectangle"))
   WITH_VAR_STACK(((wxDC *)((Scheme_Class_Object *)p[0])->primdata)->DrawRectangle(x0, x1, x2, x3));
 
   
