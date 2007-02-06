@@ -380,10 +380,10 @@
          ((null? (cdr path)) (make-dir-path (build-path 'same) #t))
          ((not (equal? (cadr path) "lib")) 
           (let ((dir (find-directory (cdr path) fail)))
-            (make-dir-path dir #t)))
+            (make-dir-path (dir-path-path dir) #t)))
          ((and (equal? (cadr path) "lib") (not (null? (cddr path))))
           (make-dir-path (apply collection-path (cddr path)) #t))
-         (else (make-dir-path (list "mzlib") #t))))
+         (else (make-dir-path (build-path "mzlib") #t))))
       (else
        (when (null? (classpath)) (classpath (get-classpath)))
        (let-values (((search)

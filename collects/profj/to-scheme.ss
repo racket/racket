@@ -2418,24 +2418,28 @@
               (expr (if obj (translate-expression obj))))
          (cond
            ((var-access-static? access)
-            (let ((static-name (build-static-name field-string (var-access-class access))))
+            (let ((static-name (build-static-name field-string (var-access-class access)))
+                  (obj-wrapper 
+                   (lambda (s) (if obj (make-syntax #f `(begin ,expr ,s) (build-src field-src)) s))))
               (if (dynamic-val? type)
-                  (let ((access-syntax (cond 
-                                         ((unknown-ref? (dynamic-val-type type))
-                                          `(let ((val-1 ,(translate-id static-name field-src)))
-                                             (if (string? val-1)
-                                                 (make-java-string val-1)
-                                                 val-1)))
-                                         (else (translate-id static-name field-src)))))
+                  (let ((access-syntax 
+                         (cond 
+                           ((unknown-ref? (dynamic-val-type type))
+                            `(let ((val-1 ,(translate-id static-name field-src)))
+                               (if (string? val-1)
+                                   (make-java-string val-1)
+                                   val-1)))
+                           (else (translate-id static-name field-src)))))
                     (make-syntax #f
-                                 (convert-assert-value
-                                  (make-syntax #f
-                                               `(c:contract ,(type->contract (dynamic-val-type type) #t)
-                                                            ,access-syntax
-                                                            (quote ,(string->symbol (class-name))) '||)
-                                               (build-src field-src))
-                                  (dynamic-val-type type)) (build-src field-src)))
-                  (translate-id (build-var-name static-name) field-src))))
+                                 (obj-wrapper
+                                  (convert-assert-value
+                                   (make-syntax #f
+                                                `(c:contract ,(type->contract (dynamic-val-type type) #t)
+                                                             ,access-syntax
+                                                             (quote ,(string->symbol (class-name))) '||)
+                                                (build-src field-src))
+                                   (dynamic-val-type type))) (build-src field-src)))
+                  (obj-wrapper (translate-id (build-var-name static-name) field-src)))))
            ((eq? 'array (var-access-class access))
             (if cant-be-null?
                 (make-syntax #f `(send ,expr ,(translate-id field-string field-src)) (build-src src))
@@ -2620,7 +2624,7 @@
                       (cond
                         ((and cant-be-null? (not static?))
                          (create-syntax #f `(send ,expression ,name ,@translated-args) (build-src src)))
-                        (static? (create-syntax #f `(,name ,@translated-args) (build-src src)))
+                        (static? (create-syntax #f `(begin ,expression (,name ,@translated-args)) (build-src src)))
                         (else
                          (create-syntax #f
                                         `(let ((,unique-name ,expression))
