@@ -3,6 +3,7 @@
            (lib "xml.ss" "xml")
            (lib "kw.ss")
            (lib "list.ss")
+           (lib "string.ss")
            (lib "plt-match.ss")
            (lib "contract.ss")
            (lib "uri-codec.ss" "net"))
@@ -19,6 +20,20 @@
    [interface-version dispatcher-interface-version?])
   (provide ; XXX contract kw
    make)
+  
+  ; more here - ".." should probably raise an error instead of disappearing.
+  (define (url-path->path base p)
+    (path->complete-path
+     (apply build-path base
+            (reverse!
+             (foldl (lambda (x acc)
+                      (cond
+                        [(string=? x "") acc]
+                        [(string=? x ".") acc]
+                        [(string=? x "..") (if (pair? acc) (cdr acc) acc)]
+                        [else (cons x acc)]))
+                    null
+                    (regexp-split #rx"/" p))))))
   
   (define interface-version 'v1)
   (define/kw (make #:key 

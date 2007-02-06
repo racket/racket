@@ -94,47 +94,6 @@
         [(not base) (error 'directory-part "~a is a top-level directory" path)]
         [(path? base) base])))
   
-  ; more here - ".." should probably raise an error instead of disappearing.
-  ; XXX: This is terrible. should re-write.
-  (define (url-path->path base p)
-    (let ([path-elems (regexp-split #rx"/" p)])
-      ;;; Hardcoded, bad, and wrong
-      (if (or (string=? (car path-elems) "servlets")
-              (and (string=? (car path-elems) "")
-                   (string=? (cadr path-elems) "servlets")))
-          ;; Servlets can have extra stuff after them
-          (let ([build-path
-                 (lambda (b p)
-                   (if (string=? p "")
-                       b
-                       (build-path b p)))])
-            (let loop ([p-e (if (string=? (car path-elems) "")
-                                (cddr path-elems)
-                                (cdr path-elems))]
-                       [f (build-path base 
-                                      (if (string=? (car path-elems) "")
-                                          (cadr path-elems)
-                                          (car path-elems)))])
-              (cond
-                [(null? p-e)
-                 f]
-                [(directory-exists? f)
-                 (loop (cdr p-e) (build-path f (car p-e)))]
-                [(file-exists? f)
-                 f]
-                [else
-                 f]))) ;; Don't worry about e.g. links for now
-          (apply build-path base
-                 (reverse!
-                  (foldl (lambda (x acc)
-                           (cond
-                             [(string=? x "") acc]
-                             [(string=? x ".") acc]
-                             [(string=? x "..") (if (pair? acc) (cdr acc) acc)]
-                             [else (cons x acc)]))
-                         null
-                         (regexp-split #rx"/" p)))))))
-  
   ; to convert a platform dependent path into a listof path parts such that
   ; (forall x (equal? (path->list x) (path->list (apply build-path (path->list x)))))
   (define (path->list p)
@@ -168,7 +127,6 @@
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [path->list  (path? . -> . (cons/c (or/c path? (symbols 'up 'same))
                                       (listof (or/c path? (symbols 'up 'same)))))]
-   [url-path->path ((or/c (symbols 'up 'same) path?) string? . -> . path?)]
    [directory-part (path? . -> . path?)]
    [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
    [exn->string ((or/c exn? any/c) . -> . string?)]

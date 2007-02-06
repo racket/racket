@@ -3,6 +3,7 @@
            (lib "kw.ss")
            (lib "plt-match.ss")
            (lib "unit.ss")
+           (lib "string.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
            "../private/web-server-structs.ss"
@@ -25,6 +26,34 @@
   (provide ; XXX contract improve
    ; XXX contract kw
    make)
+  
+  (define (url-path->path base p)
+    (path->complete-path
+     (let ([path-elems (regexp-split #rx"/" p)])
+       ;; Servlets can have extra stuff after them
+       (let ([build-path
+              (lambda (b p)
+                (if (string=? p "")
+                    b
+                    (build-path b p)))])
+         (let loop
+           ([p-e (if (string=? (car path-elems) "")
+                     (cddr path-elems)
+                     (cdr path-elems))]
+            [f (build-path base
+                           (if (string=? (car path-elems) "")
+                               (cadr path-elems)
+                               (car path-elems)))])
+           (cond
+             [(null? p-e)
+              f]
+             [(directory-exists? f)
+              (loop (cdr p-e) (build-path f (car p-e)))]
+             [(file-exists? f)
+              f]
+             [else
+              ;; Don't worry about e.g. links for now
+              f]))))))
   
   (define interface-version 'v1)
   (define/kw (make config:instances config:scripts config:make-servlet-namespace
