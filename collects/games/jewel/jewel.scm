@@ -1796,6 +1796,7 @@
                (min-height 480)
                (stretchable-width #f)
                (stretchable-height #f)
+               (style '(no-resize-border))
           )
   )
 

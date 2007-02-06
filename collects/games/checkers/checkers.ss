@@ -164,6 +164,7 @@
                          (get-piece-draw-fn p (send board enabled? p))))
                  (send board get-pieces))
                 (send board refresh)))))
+      (new grow-box-spacer-pane% [parent hp])
       (send texture-box set-value #t)
                 
       (define q

@@ -40,6 +40,7 @@
 	[dragging? #f]
 	[bg-click? #f]
 	[click-base #f]
+        [last-click #f]
 	[regions null])
       (private
 	[get-snip-bounds
@@ -253,9 +254,17 @@
       (override
 	[on-default-event
 	 (lambda (e)
-	   (let ([click (or (and (send e button-down? 'left) 'left)
-			    (and (send e button-down? 'right) 'right)
-			    (and (send e button-down? 'middle) 'middle))])
+	   (let ([click (let ([c (or (and (send e button-down? 'left) 'left)
+                                     (and (send e button-down? 'right) 'right)
+                                     (and (send e button-down? 'middle) 'middle))])
+                          (cond
+                           [(eq? c last-click) c]
+                           [(not last-click) c]
+                           ;; Move/drag event has different mouse button,
+                           ;; and there was no mouse up. Don't accept the
+                           ;; click, yet.
+                           [else #f]))])
+             (set! last-click click)
 	     (when click
 	       (let* ([actions (cdr (assoc click button-map))]
 		      [one? (list-ref actions 0)]

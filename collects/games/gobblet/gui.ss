@@ -380,6 +380,8 @@
 		(send mode set-selection (if smart? 0 1))
 		(send d center)
 		(send d show #t)))])
+
+      (new grow-box-spacer-pane% [parent bottom])
       
       ;; Extra controls ----------------------------------------
       
