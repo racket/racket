@@ -1028,7 +1028,11 @@
        [(check ConditionalExpression expect ConditionalExpression within ConditionalExpression) 
         (make-check-expect #f (build-src 6) $2 $4 $6 (build-src 2 4))]
        [(check ConditionalExpression catch Type)
-        (make-check-catch #f (build-src 4) $2 $4)])
+        (make-check-catch #f (build-src 4) $2 $4)]
+       [(check ConditionalExpression expect ConditionalExpression by ==)
+        (make-check-by #f (build-src 6) $2 $4 '==)]
+       [(check ConditionalExpression expect ConditionalExpression by IDENTIFIER)
+        (make-check-by #f (build-src 6) $2 $4 $6)])
        
       (MutateExpression
        [(CheckExpression) $1]

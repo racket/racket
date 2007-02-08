@@ -18,7 +18,7 @@
   
   (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 
            divide-float and or cast-primitive cast-reference instanceof-array nullError
-           check-eq? dynamic-equal? compare compare-within check-catch check-mutate)
+           check-eq? dynamic-equal? compare compare-within check-catch check-mutate check-by)
 
   (define (check-eq? obj1 obj2)
     (or (eq? obj1 obj2)
@@ -207,6 +207,8 @@
     (compare-within test act 0.0 info src test-obj catch? #f))
   
   (define exception (gensym 'exception))
+  ;(make-exn-thrown exn boolean string)
+  (define-struct exn-thrown (exception expected? cause))
   
   ;compare-within: (-> val) val val (list symbol string) (U #f object) boolean . boolean -> boolean
   (define (compare-within test act range info src test-obj catch? . within?)
@@ -246,10 +248,10 @@
                       (else #f)))))
              (fail? #f))
       (set! test 
-            (with-handlers ((exn? 
+            (with-handlers ([exn? 
                              (lambda (e) 
                                (set! fail? #t)
-                               (list exception catch? e))))
+                               (list exception catch? e "eval"))])
               (test)))
       (let ([res (if fail? #f (java-equal? test act null null))]
             [values-list (append (list act test) (if (null? within?) (list range) null))])
@@ -275,6 +277,26 @@
           (stored-checks (cons (list return 'check-catch info values-list src) (stored-checks)))
           (report-check-result return 'check-catch info values-list src test-obj))
       return))
+  
+  ;check-by: (-> val) value (value value -> boolean) (list string) string src object -> boolean
+  (define (check-by test act comp info meth src test-obj)
+    (let* ([fail? #f]
+           [test (with-handlers ([exn? 
+                                  (lambda (e)
+                                    (set! fail? #t)
+                                    (list exception e "eval"))])
+                   (test))]
+           [result (with-handlers ([exn? 
+                                    (lambda (e)
+                                      (set! fail? #t)
+                                      (list exception e "comp"))])
+                     (and (not fail?)
+                          (comp test act)))]
+           [values-list (list act test meth result)])
+      (if (in-check-mutate?)
+          (stored-checks (cons (list (and (not fail?) result) 'check-by info values-list src) (stored-checks)))
+          (report-check-result (and (not fail?) result) 'check-by info values-list src test-obj))
+      (and (not fail?) result)))
 
   ;check-mutate: (-> val) (-> boolean) (list string) src object -> boolean
   (define (check-mutate mutatee check info src test-obj)
@@ -311,39 +333,61 @@
 
   (define (compose-message test-obj check-kind info values mutate-message)
     (letrec ((test-format (construct-info-msg info))
-             (exception-raised? #f)
+             (eval-exception-raised? #f)
+             (comp-exception-raised? #f)
              (exception-not-error? #f)
              (formatted-values (map (lambda (v) 
-                                      (if (and (pair? v) (eq? (car v) exception))
-                                          (begin (set! exception-raised? #t)
-                                                 (set! exception-not-error? (cadr v))
-                                                 (send test-obj format-value (caddr v)))
-                                          (send test-obj format-value v))) values))
+                                      (cond
+                                        [(and (pair? v) (eq? (car v) exception))
+                                         (if (equal? (cadddr v) "eval")
+                                             (set! eval-exception-raised? #t)
+                                             (set! comp-exception-raised? #t))
+                                         (set! exception-not-error? (cadr v))
+                                         (send test-obj format-value (caddr v))]
+                                        [else (send test-obj format-value v)])) values))
              (expected-format
               (case check-kind
-                ((check-expect) "to produce ")
+                ((check-expect check-by) "to produce ")
                 ((check-catch) "to throw an instance of "))))
-      (append (list (if mutate-message mutate-message "check expected ")
-                    test-format
-                    expected-format
-                    (first formatted-values))
-              (case check-kind
-                ((check-expect)
-                 (append (if (= (length formatted-values) 3)
-                             (list ", within " (third formatted-values))
-                             null)
-                         (cond
-                           [(and exception-raised? (not exception-not-error?))
-                            (list ", instead a " (second formatted-values) " exception occurred")]
-                           [(and exception-raised? exception-not-error?)
-                            (list", instead an error occured")]
-                           [else
-                            (list ", instead found " (second formatted-values))])))
-                ((check-catch)
-                 (if (= (length formatted-values) 1)
-                     (list ", instead no exceptions occured")
-                     (list ", instead an instance of " (second formatted-values) " was thrown"))))
-              (list "."))))
+      (cond 
+        [(not (eq? 'check-by check-kind))
+         (append (list (if mutate-message mutate-message "check expected ")
+                       test-format
+                       expected-format
+                       (first formatted-values))
+                 (case check-kind
+                   ((check-expect)
+                    (append (if (= (length formatted-values) 3)
+                                (list ", within " (third formatted-values))
+                                null)
+                            (cond
+                              [(and eval-exception-raised? (not exception-not-error?))
+                               (list ", instead a " (second formatted-values) " exception occurred")]
+                              [(and eval-exception-raised? exception-not-error?)
+                               (list", instead an error occurred")]
+                              [else
+                               (list ", instead found " (second formatted-values))])))
+                   ((check-catch)
+                    (if (= (length formatted-values) 1)
+                        (list ", instead no exceptions occurred")
+                        (list ", instead an instance of " (second formatted-values) " was thrown"))))
+                 (list "."))]
+        [(and (eq? check-kind 'check-by)
+              comp-exception-raised?)
+         (list "check encountered a " (fourth formatted-values)
+               " exception when using " (third formatted-values)
+               " to compare the actual value " (second formatted-values)
+               " with the expected result " (first formatted-values) ".")]
+        [(and (eq? check-kind 'check-by) eval-exception-raised?)
+         (list "check expected a value to use in " (third formatted-values)
+               " with argument " (first formatted-values)
+               " instead, a " (second formatted-values)
+               " exception occurred.")]
+        [else
+         (list "check received the value " (second formatted-values)
+               " to compare to " (first formatted-values)
+               " using " (third formatted-values)
+               ". This value did not match the expectation.")])))
 
   ;construct-info-msg (list symbol string ...) -> string
   (define (construct-info-msg info)

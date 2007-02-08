@@ -2725,6 +2725,16 @@
                          env
                          (expr-src exp)
                          type-recs))
+      ((check-by? exp)
+       (check-test-by exp
+                      (check-by-test exp)
+                      (check-by-actual exp)
+                      (check-by-compare exp)
+                      check-sub-expr
+                      env
+                      level
+                      (expr-src exp)
+                      type-recs))
       ((check-mutate? exp)
        (check-test-mutate (check-mutate-mutate exp)
                           (check-mutate-check exp)
@@ -2796,6 +2806,61 @@
              [test-type (check-e test new-env)])
         (make-type/env 'boolean (restore-exn-env (type/env-e test-type) env)))))
       
+  ;check-test-by: expr expr (U symbol id) (expr env -> type-env) env symbol src type-records -> type/env
+  (define (check-test-by exp test actual by check-e env level src type-recs)
+    (let* ([test-et (check-e test env)]
+           [actual-et (check-e actual (type/env-e test-et))]
+           [test-type (type/env-t test-et)]
+           [actual-type (type/env-t actual-et)]
+           [new-env (type/env-e actual-et)])
+      (cond
+        [(eq? '== by)
+         (unless 
+             (or (and (prim-numeric-type? test-type)
+                      (prim-numeric-type? actual-type))
+                 (and (boolean? test-type)
+                      (boolean? actual-type))
+                 (and
+                  (reference-type? test-type)
+                  (reference-type? actual-type)
+                  (castable? actual-type test-type type-recs))
+                 (and
+                  (reference-type? test-type)
+                  (reference-type? actual-type)
+                  (castable? test-type actual-type type-recs)))
+           (check-by-==-error test-type actual-type src))]
+        [else
+         (unless (and (reference-type? test-type) 
+                      (reference-type? actual-type))
+           (check-by-error 'not-obj test-type actual-type #f src))
+         (unless (or (dynamic-val? test-type)
+                     (eq? 'dynamic test-type))
+           (let* ([class-rec (send type-recs get-class-record test-type)]
+                  [methods (get-method-records by class-rec type-recs)])
+             (cond
+               [(null? methods)
+                (check-by-error 'no-such-method test-type #f by src)]
+               [else 
+                (let ([meth (resolve-overloading methods 
+                                                 (list actual-type)
+                                                 (lambda ()
+                                                   (check-by-error 'no-arg-count
+                                                                   test-type #f by src))
+                                                 (lambda ()
+                                                   (check-by-error 'conflict
+                                                                   test-type actual-type
+                                                                   by src))
+                                                 (lambda ()
+                                                   (check-by-error 'no-match
+                                                                   test-type actual-type
+                                                                   by src))
+                                                 type-recs)])
+                  (when meth 
+                    (unless (eq? (method-record-rtype meth) 'boolean)
+                      (check-by-error 'not-boolean test-type actual-type by src))
+                    (set-check-by-compare! exp meth)))])
+             (make-type/env 'boolean new-env)))])))             
+  
   ;check-test-mutate: exp exp (exp env -> type/env) env src type-records -> type/env
   (define (check-test-mutate mutatee check check-sub-expr env src type-recs)
     (unless (or (call? mutatee)
@@ -3553,6 +3618,41 @@
      'check ta-src
      ))
 
+  (define (check-by-==-error t-type a-type src)
+    (raise-error
+     'check
+     (string-append "In a 'check' expression with '==', the type of the expected and actual expression must be castable to each other~n"
+                    (format "Given ~a and ~a, which are not comparable."
+                            (type->ext-name t-type) (type->ext-name a-type)))
+     'by
+     src))
+
+  (define (check-by-error kind t-type a-type by src)
+    (let ([by (if (id? by) (id-string by) by)])
+      (raise-error
+       'check
+       (case kind
+         [(not-obj) 
+          (string-append "In a 'check' expression with 'by', the type of the expected value must be an interface or class~n"
+                         (format "Exepected value is of ~a type, which is not allowed."
+                                 (type->ext-name t-type)))]
+         [(no-such-method) 
+          (format "Class or interface ~a does not have a method ~a to compare with in this 'check'."
+                  (type->ext-name t-type) by)]        
+       [(no-arg-count) 
+        (format "Class or interface ~a does not have a method ~a accepting one argument for this 'check'"
+                (type->ext-name t-type) by)]
+       [(conflict) 
+        (format "Multiple methods in ~a could accept the argument ~a for comparison in this 'check'."
+                (type->ext-name t-type) (type->ext-name a-type) by)]
+       [(no-match) 
+        (format "No ~a method in ~a expects a ~a for comparison in this 'check'."
+                by (type->ext-name t-type) (type->ext-name a-type))]
+       [(not-bool)
+        (format "Method ~a accepting ~a in ~a does not return a boolean and cannot do the comparison in this 'check'."
+                by (type->ext-name a-type) (type->ext-name t-type))])
+       'by src)))
+  
   ;check-catch-error: type src -> void
   (define (check-catch-error name src)
     (raise-error

@@ -300,6 +300,9 @@
   ;(make-check-catch (U #f type) src Expression type-spec)
   (p-define-struct (check-catch check) (test exn))
   
+  ;(make-check-by (U #f type) src Expression Expression (U '== Name))
+  (p-define-struct (check-by check) (test actual compare))
+  
   ;(make-check-mutate (U #f type) src Expression Expression src)
   (p-define-struct (check-mutate check) (mutate check op-src))
   

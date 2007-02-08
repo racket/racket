@@ -44,7 +44,7 @@
                                     const       for        new           switch
                                     continue    goto       package       synchronized))
   
-  (define-empty-tokens ExtraKeywords (dynamic check expect within -> ->> ->>> test tests testcase))
+  (define-empty-tokens ExtraKeywords (dynamic check expect within by -> ->> ->>> test tests testcase))
   
   (define-tokens java-vals
                  (STRING_LIT CHAR_LIT INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT 
@@ -317,7 +317,7 @@
         ((test-ext?) (string->symbol lexeme))
         (else (token-IDENTIFIER lexeme))))
      
-     ((re:or "test" "tests" "testcase")
+     ((re:or "test" "tests" "testcase" "by")
       (cond
         ((testcase-ext?) (string->symbol lexeme))
         (else (token-IDENTIFIER lexeme))))

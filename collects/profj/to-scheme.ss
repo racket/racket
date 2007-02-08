@@ -2938,6 +2938,10 @@
       ((check-catch? expr) (translate-check-catch (check-catch-test expr)
                                                   (check-catch-exn expr)
                                                   (expr-src expr)))
+      ((check-by? expr) (translate-check-by (check-by-test expr)
+                                            (check-by-actual expr)
+                                            (check-by-compare expr)
+                                            (expr-src expr)))
       ((check-mutate? expr) (translate-check-mutate (check-mutate-mutate expr)
                                                     (check-mutate-check expr)
                                                     (expr-src expr)))))
@@ -2966,6 +2970,29 @@
                    `(javaRuntime:check-catch ,t ,(symbol->string (syntax-object->datum n)) ,n ,(checked-info test) ,src
                                              (namespace-variable-value 'current~test~object% #f
                                                                        (lambda () #f)))
+                   (build-src src))))
+  
+  ;translate-check-by: expression expression (U '== method-record) src -> syntax
+  (define (translate-check-by test actual comp src)
+    (let ([t (create-syntax #f `(lambda () ,(translate-expression test)) #f)]
+          [a (translate-expression actual)]
+          [info (checked-info test)])
+      (make-syntax #f
+                   `(javaRuntime:check-by ,t ,a 
+                                            ,(if (method-record? comp)
+                                                 (create-syntax #f `(lambda (test-v a)
+                                                                      (send test-v 
+                                                                            ,(build-identifier 
+                                                                              (mangle-method-name 
+                                                                               (method-record-name comp)
+                                                                               (method-record-atypes comp)))
+                                                                            a))
+                                                                (build-src src))
+                                                 'eq?)
+                                            ,info
+                                            ,(if (method-record? comp) (method-record-name comp) "==")
+                                            ,src
+                                            (namespace-variable-value 'current~test~object% #f (lambda () #f)))
                    (build-src src))))
   
   ;translate-check-mutate: expression expression src -> syntax
