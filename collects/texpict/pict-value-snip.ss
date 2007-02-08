@@ -110,15 +110,20 @@ the user has to move the mouse first.
         (let ([w (inexact->exact (ceiling (pict-width pict)))]
               [h (inexact->exact (ceiling (pict-height pict)))])
           (send in put h)
-          (let* ([bm (make-object bitmap% w h)]
-                 [str (make-bytes (* w h 4))]
-                 [bdc (make-object bitmap-dc% bm)])
-            (send bdc clear)
-	    (send bdc set-smoothing 'aligned)
-            (pict-drawer bdc 0 0)
-            (send bdc get-argb-pixels 0 0 w h str)
-            (send bdc set-bitmap #f)
-            (send in put (+ 1 (bytes-length str)) str))))
+          (cond
+            [(or (= w 0)
+                 (= h 0))
+             (send in put 1 #"")]
+            [else
+             (let* ([bm (make-object bitmap% w h)]
+                    [str (make-bytes (* w h 4))]
+                    [bdc (make-object bitmap-dc% bm)])
+               (send bdc clear)
+               (send bdc set-smoothing 'aligned)
+               (pict-drawer bdc 0 0)
+               (send bdc get-argb-pixels 0 0 w h str)
+               (send bdc set-bitmap #f)
+               (send in put (+ 1 (bytes-length str)) str))])))
       
       (super-new)
       (inherit set-snipclass set-flags get-flags)
@@ -136,13 +141,16 @@ the user has to move the mouse first.
             (cond
               [(and (number? h)
                     (bytes? bitmap-bstr)
-                    (zero? (modulo (bytes-length bitmap-bstr) (* 4 h))))
-               (let* ([w (quotient (bytes-length bitmap-bstr) (* 4 h))]
-                      [bm (make-object bitmap% w h)]
-                      [bdc (make-object bitmap-dc% bm)])
-                 (send bdc set-argb-pixels 0 0 w h bitmap-bstr)
-                 (send bdc set-bitmap #f)
-                 (bitmap bm))]
+                    (or (zero? h)
+                        (zero? (modulo (bytes-length bitmap-bstr) (* 4 h)))))
+               (if (zero? h)
+                   (blank)
+                   (let* ([w (quotient (bytes-length bitmap-bstr) (* 4 h))]
+                          [bm (make-object bitmap% w h)]
+                          [bdc (make-object bitmap-dc% bm)])
+                     (send bdc set-argb-pixels 0 0 w h bitmap-bstr)
+                     (send bdc set-bitmap #f)
+                     (bitmap bm)))]
               [else (x-out (ellipse 10 10))])))
         (new pict-value-snip% (pict pict)))
       (super-new)))
