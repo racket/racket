@@ -418,7 +418,8 @@ please adhere to these guidelines:
  (background-color "Background Color")
  (default-text-color "Default text") ;; used for configuring colors, but doesn't need the word "color"
  (choose-a-background-color "Please choose a background color")
-
+ (revert-to-defaults "Revert to defaults")
+  
  ; title of the color choosing dialog
 
  ; should have entire alphabet

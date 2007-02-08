@@ -238,6 +238,12 @@ the state transitions / contracts are:
              [cancel-callback (λ (_1 _2)
                                 (hide-dialog)
                                 (preferences:restore-prefs-snapshot stashed-prefs))])
+      (new button%
+           [label (string-constant revert-to-defaults)]
+           [callback
+            (λ (a b)
+              (preferences:restore-defaults))]
+           [parent bottom-panel])
       (gui-utils:ok/cancel-buttons
        bottom-panel
        ok-callback
