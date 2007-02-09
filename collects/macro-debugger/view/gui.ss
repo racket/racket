@@ -693,7 +693,7 @@
             (message-box
              "Macro Debugger Internal Error"
              (string-append
-              "This expansion triggers an error in the macro hiding code. "
+              "This expansion triggers an internal error in the macro hiding code. "
               "Trying again with macro hiding disabled."))
             (queue-callback (lambda () (send config set-macro-hiding? #f))))
 
