@@ -691,7 +691,7 @@
 
           (define/private (disable-hiding)
             (message-box
-             "Macro Debugger"
+             "Macro Debugger Internal Error"
              (string-append
               "This expansion triggers an error in the macro hiding code. "
               "Trying again with macro hiding disabled."))
