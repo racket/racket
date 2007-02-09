@@ -3900,7 +3900,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   {
     Scheme_Object *stop;
     stop = scheme_get_stop_expander();
-    scheme_add_local_syntax(21, xenv);
+    scheme_add_local_syntax(22, xenv);
     scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv);
     scheme_set_local_syntax(1, scheme_define_values_stx, stop, xenv);
     scheme_set_local_syntax(2, scheme_define_syntaxes_stx, stop, xenv);
@@ -3912,16 +3912,17 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_set_local_syntax(8, set_stx, stop, xenv);
     scheme_set_local_syntax(9, app_stx, stop, xenv);
     scheme_set_local_syntax(10, scheme_top_stx, stop, xenv);
-    scheme_set_local_syntax(11, case_lambda_stx, stop, xenv);
-    scheme_set_local_syntax(12, let_values_stx, stop, xenv);
-    scheme_set_local_syntax(13, letrec_values_stx, stop, xenv);
-    scheme_set_local_syntax(14, if_stx, stop, xenv);
-    scheme_set_local_syntax(15, begin0_stx, stop, xenv);
-    scheme_set_local_syntax(16, set_stx, stop, xenv);
-    scheme_set_local_syntax(17, with_continuation_mark_stx, stop, xenv);
-    scheme_set_local_syntax(18, letrec_syntaxes_stx, stop, xenv);
-    scheme_set_local_syntax(19, var_ref_stx, stop, xenv);
-    scheme_set_local_syntax(20, expression_stx, stop, xenv);
+    scheme_set_local_syntax(11, lambda_stx, stop, xenv);
+    scheme_set_local_syntax(12, case_lambda_stx, stop, xenv);
+    scheme_set_local_syntax(13, let_values_stx, stop, xenv);
+    scheme_set_local_syntax(14, letrec_values_stx, stop, xenv);
+    scheme_set_local_syntax(15, if_stx, stop, xenv);
+    scheme_set_local_syntax(16, begin0_stx, stop, xenv);
+    scheme_set_local_syntax(17, set_stx, stop, xenv);
+    scheme_set_local_syntax(18, with_continuation_mark_stx, stop, xenv);
+    scheme_set_local_syntax(19, letrec_syntaxes_stx, stop, xenv);
+    scheme_set_local_syntax(20, var_ref_stx, stop, xenv);
+    scheme_set_local_syntax(21, expression_stx, stop, xenv);
   }
 
   first = scheme_null;
