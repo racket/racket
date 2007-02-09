@@ -245,7 +245,8 @@
                   (let ([ctx (lambda (x) (path-replace term path0 x))])
                     (append (with-context ctx
                               (reductions deriv0))
-                            (loop (path-replace term path0 (deriv-e2 deriv0))
+                            (loop (and (deriv? deriv0)
+                                       (path-replace term path0 (deriv-e2 deriv0)))
                                   (cdr subterms)))))]
                [(s:rename? (car subterms))
                 (let* ([subterm0 (car subterms)])
