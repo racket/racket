@@ -484,7 +484,7 @@
         (make-b:defvals $3 $4)]
        [(next NoError renames-block CheckImmediateMacro
               prim-define-syntaxes (? BindSyntaxes 'bind))
-        (make-b:defstx $3 $4 $5)])
+        (make-b:defstx $3 $4 $6)])
 
       ;; BindSyntaxes Answer = Derivation
       (BindSyntaxes

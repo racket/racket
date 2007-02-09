@@ -1,7 +1,6 @@
 
 (module hide mzscheme
   (require (lib "plt-match.ss")
-           (lib "unit.ss")
            (lib "list.ss")
            "deriv.ss"
            "deriv-util.ss"
@@ -10,15 +9,10 @@
            "context.ss")
 
   (provide hide/policy
-           seek/syntax
            macro-policy
            current-hiding-warning-handler
            (struct nonlinearity (message paths))
            (struct localactions ()))
-
-  (define-signature hide^ (hide))
-  (define-signature seek^ (seek/deriv seek subterm-derivations))
-  (define-signature seek-syntax^ (seek/syntax))
 
   ;; hide/policy : Derivation (identifier -> boolean) -> (values Derivation syntax)
   (define (hide/policy deriv show-macro?)
@@ -91,11 +85,6 @@
 ;   -$   @-    ++   -@- $@-  @+  - 
 ;   -$   @-    ++    +@@+@-  -@@@@-
 
-  (define hide@
-    (unit 
-     (import seek^)
-     (export hide^)
-  
   ;; Macro hiding:
   ;; The derivation is "visible" or "active" by default, 
   ;; but pieces of it may need to be hidden.
@@ -453,7 +442,7 @@
         [#f (values #f #f)]))
 
     (for-deriv deriv))
-  ))
+
 
 ;    -@@@$                  -$     
 ;    @*  -                  -$     
@@ -466,10 +455,7 @@
 ;    +- +@   @+  -   @+  -  -$  +@ 
 ;   -@@@@-   -@@@@-  -@@@@- -$   $+
 
-  (define seek@
-    (unit
-     (import hide^)
-     (export seek^)
+
 
   ;; Seek:
   ;; The derivation is "inactive" or "hidden" by default,
@@ -711,26 +697,9 @@
 
     (for-deriv d))
 
-  ))
-
-  (define-values/invoke-unit
-    (compound-unit
-     (import)
-     (export HIDE SEEK)
-     (link [((HIDE : hide^)) hide@ SEEK]
-           [((SEEK : seek^)) seek@ HIDE]))
-    (import)
-    (export hide^ seek^))
 
 
-  (define trivial-hide@
-    (unit
-     (import)
-     (export hide^)
-     
-     (define (hide d)
-       (values d (lift/deriv-e2 d)))))
-
+  #;
   (define seek-syntax@
     (unit
      (import seek^)
@@ -745,15 +714,6 @@
            (let ([subderivs (subterm-derivations deriv)])
              (map s:subterm-deriv (filter s:subterm? subderivs))))))))
 
-  (define-values/invoke-unit
-    (compound-unit
-     (import)
-     (export SEEK-SYNTAX)
-     (link [((HIDE : hide^)) trivial-hide@]
-           [((SEEK : seek^)) seek@ HIDE]
-           [((SEEK-SYNTAX : seek-syntax^)) seek-syntax@ SEEK]))
-    (import)
-    (export seek-syntax^))
 
 
 ;                     +###+                                       
@@ -911,13 +871,14 @@
     (match deriv
       [(IntQ p:letrec-syntaxes+values (_ _ _ srenames srhss vrenames vrhss body))
        ;; Assertion: pass1 of the body is always trivial
-       (with-syntax ([(([?svars ?srhs] ...) ([?vvars ?vrhs] ...) . ?body) srenames]
-                     [(([?vvars* ?vrhs*] ...) . ?body*) vrenames])
-         (values (map cons
-                      (syntax->list #'(?svars ...))
-                      srhss)
-                 (map cons (syntax->list #'(?vvars* ...)) vrhss)
-                 (lderiv-derivs (bderiv-pass2 body))))]
+       (with-syntax ([(([?svars ?srhs] ...) ([?vvars ?vrhs] ...) . ?body) srenames])
+         (with-syntax ([(([?vvars* ?vrhs*] ...) . ?body*)
+                        (or vrenames #'(([?vvars ?vrhs] ...) . ?body))])
+           (values (map cons
+                        (syntax->list #'(?svars ...))
+                        srhss)
+                   (map cons (syntax->list #'(?vvars* ...)) vrhss)
+                   (lderiv-derivs (bderiv-pass2 body)))))]
       [(IntQ p:letrec-values (_ _ _ vrenames vrhss body))
        ;; Assertion: pass1 of the body is always trivial
        (with-syntax ([(([?vars ?rhs] ...) . ?body) vrenames])
@@ -981,6 +942,13 @@
   ;; reconstruct-defval : syntax syntax Derivation -> Derivation
   ;; Reconstruct a define-values node from its rhs deriv
   (define (reconstruct-defval head-e2 dvvars dvrhs)
+    (reconstruct-definition-form head-e2 dvvars dvrhs make-p:define-values))
+
+  ;; reconstruct-defstx : syntax syntax Derivation -> Derivation
+  (define (reconstruct-defstx head-e2 dsvars dsrhs)
+    (reconstruct-definition-form head-e2 dsvars dsrhs make-p:define-syntaxes))
+
+  (define (reconstruct-definition-form head-e2 dvvars dvrhs make-Definition)
     (match dvrhs
       [(AnyQ deriv (rhs-e1 rhs-e2))
        (with-syntax ([(?dv ?vars ?rhs) head-e2]
@@ -1002,7 +970,7 @@
              null
              (cons (cons #'?vars #'?rhs)
                    (cons #'?vars* #'?rhs*))
-             (outer-rewrap dvrhs (make-p:define-values dv1* dv2 null dvrhs))))))]))
+             (outer-rewrap dvrhs (make-Definition dv1* dv2 null dvrhs))))))]))
 
   ;; bderiv->lderiv : BlockDerivation -> ListDerivation
   ;; Combines pass1 and pass2 into a single pass(2) list derivation
@@ -1071,14 +1039,19 @@
                                                                     #f))))
                      null #;(loop (sub1 count))))]
                  [(cons (IntQ b:defstx (renames head rhs)) next)
-                  (let ([stx (car suffix)])
+                  (let ([stx (stx-car suffix)])
                     (set! _dss (cdr _dss))
                     (set! suffix (stx-cdr suffix))
                     (set! brules next)
-                    (cons (make-b:defstx renames head rhs)
-                          (loop (sub1 count))))]
+                    (let* ([svars 
+                            (with-syntax ([(?ds ?svars . ?body) (cdr renames)])
+                              #'?svars)]
+                           [finish (reconstruct-defstx (deriv-e2 head) svars rhs)])
+                      (cons (make-b:expr renames (combine-derivs head finish))
+                            (loop (sub1 count)))))]
                  [(cons (struct b:splice (renames head tail)) next)
-                  (let ([n (- (length tail) (length (stx->list (stx-cdr suffix))))])
+                  (let ([n (- (length (stx->list tail))
+                              (length (stx->list (stx-cdr suffix))))])
                     (set! suffix tail)
                     (set! brules next)
                     (let* ([splice-derivs (loop n)]

@@ -27,6 +27,8 @@
 
            catch-errors?)
 
+  (define (seek/syntax d s) (error 'unsupported "Extra navigation stuff currently unsupported"))
+  
   ;; Debugging parameters / Not user configurable
 
   (define catch-errors? (make-parameter #t))

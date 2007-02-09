@@ -77,16 +77,20 @@
                    lp-datum)]
                 [(pair? obj)
                  (pairloop obj)]
-                [(vector? obj) 
-                 (list->vector (map loop (vector->list obj)))]
                 [(symbol? obj)
                  (unintern obj)]
-                [(number? obj)
-                 (make-syntax-dummy obj)]
-                [(box? obj)
-                 (box (loop (unbox obj)))]
                 [(null? obj)
                  (make-syntax-dummy obj)]
+                [(boolean? obj)
+                 (make-syntax-dummy obj)]
+                [(number? obj)
+                 (make-syntax-dummy obj)]
+                [(keyword? obj)
+                 (make-syntax-dummy obj)]
+                [(vector? obj) 
+                 (list->vector (map loop (vector->list obj)))]
+                [(box? obj)
+                 (box (loop (unbox obj)))]
                 [else obj]))
         (define (pairloop obj)
           (cond [(pair? obj)

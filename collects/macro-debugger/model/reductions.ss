@@ -375,11 +375,13 @@
                           (cons head-rs rss)))]
                  [(AnyQ b:defstx (renames head rhs))
                   (let* ([estx (deriv-e2 head)]
-                         [estx2 (with-syntax ([(?ds ?vars ?rhs) estx]
-                                              [?rhs* (deriv-e2 rhs)])
-                                             ;;FIXME
-                                  (datum->syntax-object estx `(,#'?ds ,#'?vars ,#'?rhs*) estx estx))])
-                    (loop next (cdr suffix) (cons estx2 prefix)
+                         [estx2 (and (deriv? rhs)
+                                     (with-syntax ([(?ds ?vars ?rhs) estx]
+                                                   [?rhs* (deriv-e2 rhs)])
+                                       (datum->syntax-object estx
+                                                             `(,#'?ds ,#'?vars ,#'?rhs*)
+                                                             estx estx)))])
+                    (loop next (stx-cdr suffix) (cons estx2 prefix)
                           (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
                             (cons (with-context (CC (?ds ?vars ?rhs) estx ?rhs)
                                     (reductions rhs))
@@ -433,7 +435,10 @@
                           (append (with-context the-context
                                     (append (reductions head)
                                             (reductions prim)))
-                                  (let ([estx (and (deriv? head) (deriv-e2 head))])
+                                  (let ([estx 
+                                         (if prim
+                                             (lift/deriv-e2 prim)
+                                             (and (deriv? head) (deriv-e2 head)))])
                                     (loop next (stx-cdr suffix) (cons estx prefix))))]
                          [(ErrW mod:splice (head stxs) exn)
                           (append (with-context the-context (reductions head))
