@@ -10,6 +10,7 @@
 
   (provide hide/policy
            macro-policy
+           seek-syntax
            current-hiding-warning-handler
            (struct nonlinearity (message paths))
            (struct localactions ()))
@@ -699,21 +700,6 @@
 
 
 
-  #;
-  (define seek-syntax@
-    (unit
-     (import seek^)
-     (export seek-syntax^)
-     
-     ;; seek/syntax : syntax Derivation -> (listof Derivation)
-     ;; Seeks for derivations of *exactly* the given syntax (not a subterm)
-     ;; Does track the syntax through renaming, however.
-     (define (seek/syntax stx deriv)
-       (let ([subterms (gather-one-subterm (deriv-e1 deriv) stx)])
-         (parameterize ((subterms-table subterms))
-           (let ([subderivs (subterm-derivations deriv)])
-             (map s:subterm-deriv (filter s:subterm? subderivs))))))))
-
 
 
 ;                     +###+                                       
@@ -1366,4 +1352,197 @@
           (do-rename (cons #'?vbindings #'?body) rename))
         (values null
                 (subterms-table))))
-  )
+
+  
+  
+
+;                                                                 
+;                                                                 
+;                                                                 
+;                              ;;                                 
+;                              ;;                                 
+;                               ;                  ;              
+;                               ;                  ;              
+;    ;;;;;     ;;;;     ;;;;    ;  ;;;   ;;;;;   ;;;;;;  ;;;;  ;; 
+;   ;;   ;    ;   ;    ;   ;    ;  ;    ;;   ;     ;       ;   ;  
+;   ;;       ;;   ;;  ;;   ;;   ; ;     ;;         ;        ; ;   
+;    ;;;     ;;;;;;;  ;;;;;;;   ;;;      ;;;       ;        ;;;   
+;      ;;;;  ;        ;         ;;;        ;;;;    ;        ;;;   
+;   ;    ;;  ;;       ;;        ; ;;    ;    ;;    ;        ; ;   
+;   ;    ;;   ;;       ;;       ;  ;;   ;    ;;    ;;      ;   ;  
+;   ;;;;;;     ;;;;     ;;;;   ;;;  ;;; ;;;;;;      ;;;  ;;;  ;;; 
+;                                                                 
+;                                                                 
+;                                                                 
+;                                                                 
+  
+  (define-syntax proptable
+    (syntax-rules ()
+      [(proptable expr)
+       (let-values ([(subterms table) expr]
+                    [(old-table) (subterms-table)])
+         (hash-table-for-each
+          old-table
+          (lambda (k v) (hash-table-put! table k v)))
+         (printf "** New table: ~s~n" (hash-table-count table))
+         (begin (printf "  > ")
+                (hash-table-for-each table (lambda (k v) (write (syntax-object->datum k)) (display " ")))
+                (printf "~n"))
+         (values subterms table))]))
+
+  ;; seek-syntax : Syntax Derivation -> (list-of Derivation)
+  (define (seek-syntax stx d)
+
+    ;; for-deriv : Derivation -> (list-of Derivation)
+    (define (for-deriv d)
+      (cond [(hash-table-get (subterms-table) (lift/deriv-e1 d) #f)
+             (list d)]
+            [else (for-unlucky-deriv d)]))
+
+    ;; for-unlucky-deriv : Derivation -> (list-of Derivation)
+    (define (for-unlucky-deriv d)
+      (parameterize ((print-struct #f)) 
+        (printf "unlucky with ~s[[~s]]~n" d (syntax-object->datum (lift/deriv-e1 d))))
+      (match d
+        ;; Primitives
+        [(AnyQ p:module (e1 e2 rs one-body-form? body))
+         (cond [one-body-form?
+                ;; FIXME: tricky... how to do renaming?
+                (for-deriv body)]
+               [else
+                (with-syntax ([(?module ?name ?lang . ?body) e1]
+                              [(?module-begin . ?body*) (lift/deriv-e1 body)])
+                  (>>Seek [#:rename (proptable (do-rename #'?body #'?body*))]
+                          (for-deriv body)))])]
+        [(AnyQ p:#%module-begin (e1 e2 rs pass1 pass2))
+         ;; FIXME: No new allocation!
+         (let ([lderiv (module-begin->lderiv d)])
+           (for-lderiv lderiv))]
+        [(AnyQ p:variable (e1 e2 rs))
+         null]
+        [(AnyQ p:define-syntaxes (e1 e2 rs rhs))
+         (>>Seek (for-deriv rhs))]
+        [(AnyQ p:define-values (e1 e2 rs rhs))
+         (>>Seek (for-deriv rhs))]
+        [(AnyQ p:if (e1 e2 rs full? test then else))
+         (>>Seek (for-deriv test)
+                 (for-deriv then)
+                 (if full?
+                     (for-deriv else)
+                     null))]
+        [(AnyQ p:wcm (e1 e2 rs key value body))
+         (>>Seek (for-deriv key)
+                 (for-deriv value)
+                 (for-deriv body))]
+        [(AnyQ p:set! (e1 e2 rs id-resolves rhs))
+         (>>Seek (for-deriv rhs))]
+        [(AnyQ p:set!-macro (e1 e2 rs deriv))
+         (>>Seek (for-deriv deriv))]
+        [(AnyQ p:begin (e1 e2 rs lderiv))
+         (>>Seek (for-lderiv lderiv))]
+        [(AnyQ p:begin0 (e1 e2 rs head lderiv))
+         (>>Seek (for-deriv head)
+                 (for-lderiv lderiv))]
+        [(AnyQ p:#%app (e1 e2 rs tagges-stx lderiv))
+         (>>Seek (for-lderiv lderiv))]
+        [(AnyQ p:lambda (e1 e2 rs renames body) exni)
+         (>>Seek [! exni]
+                 [#:rename (proptable (do-rename/lambda e1 renames))]
+                 (for-bderiv body))]
+        [(AnyQ p:case-lambda (e1 e2 rs renames+bodies))
+         (with-syntax ([(?case-lambda ?clause ...) e1])
+           (let ()
+             (define (handle-clause clause-stx rename body)
+               (>>Seek [#:rename (proptable (do-rename/case-lambda clause-stx rename))]
+                       (for-bderiv body)))
+             (let loop ([clauses (syntax->list #'(?clause ...))]
+                        [renames+bodies renames+bodies])
+               (if (pair? renames+bodies)
+                   (append (handle-clause (car clauses)
+                                          (caar renames+bodies)
+                                          (cdar renames+bodies))
+                           (loop (cdr clauses) (cdr renames+bodies)))
+                   null))))]
+        [(AnyQ p:let-values (e1 e2 rs renames rhss body))
+         (>>Seek [#:rename (proptable (do-rename/let e1 renames))]
+                 [#:append (map for-deriv rhss)]
+                 (for-bderiv body))]
+        [(AnyQ p:letrec-values (e1 e2 rs renames rhss body))
+         (>>Seek [#:rename (proptable (do-rename/let e1 renames))]
+                 [#:append (map for-deriv rhss)]
+                 (for-bderiv body))]
+        [(AnyQ p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body))
+         (>>Seek [#:rename (proptable (do-rename/lsv1 e1 srenames))]
+                 [#:append (map for-deriv srhss)]
+                 [#:rename (proptable (do-rename/lsv2 srenames vrenames))]
+                 [#:append (map for-deriv vrhss)]
+                 (for-bderiv body))]
+        [(AnyQ p::STOP (e1 e2 rs))
+         null]
+        [(AnyQ p:synth (e1 e2 rs ss))
+         (let loop ([ss ss])
+           (if (null? ss)
+               null
+               (let ([s0 (car ss)])
+                 (parameterize ((print-struct #f)) (printf "subterm: ~s~n" s0))
+                 (cond [(s:subterm? s0)
+                        (>>Seek (for-deriv (s:subterm-deriv s0))
+                                (loop (cdr ss)))]
+                       [(s:rename? s0)
+                        (>>Seek [#:rename (proptable 
+                                           (do-rename (s:rename-before s0)
+                                                      (s:rename-after s0)))]
+                                (loop (cdr ss)))]
+                       [else
+                        (loop (cdr ss))]))))]
+        [(AnyQ p:rename (e1 e2 rs rename inner))
+         (>>Seek [#:rename (proptable (do-rename (car rename) (cdr rename)))]
+                 (for-deriv inner))]
+        
+        ;; Macros
+
+        [(AnyQ mrule (e1 e2 (? transformation? tx) next))
+         (recv [(subterms table) (for-transformation tx)]
+               (parameterize ((subterms-table table))
+                 (append subterms (for-deriv next))))]
+        
+        [(AnyQ lift-deriv (e1 e2 first lifted-stx next))
+         (>>Seek (for-deriv first)
+                 (for-deriv next))]
+        
+        [#f null]
+        ))
+
+    ;; for-transformation : Transformation -> (values (list-of Subterm) Table)
+    (define (for-transformation tx)
+      (match tx
+        [(struct transformation (e1 e2 rs me1 me2 locals _seq))
+         ;; FIXME: We'll need to use e1/e2/me1/me2 to synth locals, perhaps
+         ;; FIXME: and we'll also need to account for *that* marking, too...
+         (let-values ([(rename-subterms1 table1) (proptable (do-rename e1 me1))])
+           (parameterize ((subterms-table table1))
+             (let-values ([(rename-subterms2 table2) (proptable (do-rename me2 e2))])
+               ;; FIXME: Including these seems to produce evil results
+               ;; ie, parts of the hidden macro use appear as marked
+               ;;     when they shouldn't
+               (values null table2))))]))
+
+    ;; for-lderiv : ListDerivation -> (list-of Subterm)
+    (define (for-lderiv ld)
+      (match ld
+        [(IntQ lderiv (es1 es2 derivs))
+         (apply append (map for-deriv derivs))]
+        [(struct error-wrap (exn tag inner))
+         (for-lderiv inner)]
+        [#f null]))
+
+    ;; for-bderiv : BlockDerivation -> (list-of Subterm)
+    (define (for-bderiv bd)
+      (for-lderiv (bderiv->lderiv bd)))
+
+    (let ([table0 (make-hash-table)])
+      (hash-table-put! table0 stx #t)
+      (parameterize ((subterms-table table0))
+        (for-deriv d))))
+
+    )

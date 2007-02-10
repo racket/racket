@@ -27,8 +27,6 @@
 
            catch-errors?)
 
-  (define (seek/syntax d s) (error 'unsupported "Extra navigation stuff currently unsupported"))
-  
   ;; Debugging parameters / Not user configurable
 
   (define catch-errors? (make-parameter #t))
@@ -380,27 +378,28 @@
             (refresh/move/cached-prefix))
 
           ;; FIXME: selected stx must be in term1; doesn't work in term2
-          (define/private (zoom)
+          (define/public (zoom)
             (let* ([selected-syntax (send sbc get-selected-syntax)]
                    [step (and steps (cursor:current steps))]
                    [deriv (and step (protostep-deriv step))])
               (when (and selected-syntax deriv)
-                (for-each go/deriv (seek/syntax selected-syntax deriv)))))
+                (for-each go/deriv (seek-syntax selected-syntax deriv)))))
 
           (define/public (jump-to)
             (let* ([selected-syntax (send sbc get-selected-syntax)]
                    [step (and steps (cursor:current steps))]
                    [deriv (and step (protostep-deriv step))])
               (when (and selected-syntax deriv)
-                (let ([subderivs (seek/syntax selected-syntax deriv)])
+                (let ([subderivs (seek-syntax selected-syntax deriv)])
                   (cond [(null? subderivs)
                          (message-box "Macro stepper - Jump to"
                                       "Cannot find selected term in the expansion")]
                         [(and (pair? subderivs) (null? (cdr subderivs)))
                          (jump-to/deriv (car subderivs))]
                         [else
-                         (message-box "Macro stepper - Jump to"
-                                      "Subterm occurs non-linearly in the expansion")])))))
+                         (message-box 
+                          "Macro stepper - Jump to"
+                          "Subterm occurs more than once in the expansion (non-linearity)")])))))
 
           (define/private (jump-to/deriv subderiv)
             (define all-step-derivs
