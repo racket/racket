@@ -64,9 +64,10 @@
     (cond [(zero? n) null]
           [else (cons (stx-car items) (stx-take (stx-cdr items) (sub1 n)))]))
 
+  ;; stx-improper-length : syntax -> number
   (define (stx-improper-length stx)
-    (if (stx-pair? stx)
-        (add1 (stx-improper-length (stx-cdr stx)))
-        0))
-
+    (let loop ([stx stx] [n 0])
+      (if (stx-pair? stx)
+          (loop (stx-cdr stx) (add1 n))
+          n)))
   )
