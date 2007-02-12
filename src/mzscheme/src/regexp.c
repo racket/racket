@@ -4318,10 +4318,10 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	      if (((c >= 'a') && (c <= 'z'))
 		  || ((c >= 'A') && (c <= 'Z'))) {
 		regcharclass(c, simple_on);
-		p++;
+		p += 2;
 	      } else if (c < 128) {
 		simple_on[c] = 1;
-		p++;
+		p += 2;
 	      } else {
 		/* Let next iteration handle it.
 		   (There's no danger of using it as a meta-character.) */
