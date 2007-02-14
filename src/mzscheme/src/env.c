@@ -2994,10 +2994,46 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
   return rp;
 }
 
+Resolve_Prefix *scheme_remap_prefix(Resolve_Prefix *rp, Resolve_Info *ri)
+{
+  /* Rewrite stxes list based on actual uses at resolve pass.
+     If we have no lifts, we can just srop unused stxes.
+     Otherwise, if any stxes go unused, we just have to replace them
+     with NULL. */
+  int i, cnt;
+  Scheme_Object **new_stxes, *v;
+
+  if (!rp->num_stxes)
+    return rp;
+
+  if (rp->num_lifts)
+    cnt = rp->num_stxes;
+  else
+    cnt = ri->stx_map->count;
+
+  new_stxes = MALLOC_N(Scheme_Object *, cnt);
+
+  for (i = 0; i < rp->num_stxes; i++) {
+    if (ri->stx_map)
+      v = scheme_hash_get(ri->stx_map, scheme_make_integer(i));
+    else
+      v = NULL;
+    if (v) {
+      new_stxes[SCHEME_INT_VAL(v)]  = rp->stxes[i];
+    }
+  }
+
+  rp->stxes = new_stxes;
+  rp->num_stxes = cnt;
+
+  return rp;
+}
+
 Resolve_Info *scheme_resolve_info_create(Resolve_Prefix *rp)
 {
   Resolve_Info *naya;
   Scheme_Object *b;
+  Scheme_Hash_Table *ht;
 
   naya = MALLOC_ONE_RT(Resolve_Info);
 #ifdef MZTAG_REQUIRED
@@ -3007,6 +3043,9 @@ Resolve_Info *scheme_resolve_info_create(Resolve_Prefix *rp)
   naya->count = 0;
   naya->next = NULL;
   naya->toplevel_pos = -1;
+
+  ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  naya->stx_map = ht;
 
   b = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
   naya->use_jit = SCHEME_TRUEP(b);
@@ -3026,6 +3065,7 @@ Resolve_Info *scheme_resolve_info_extend(Resolve_Info *info, int size, int oldsi
   naya->type = scheme_rt_resolve_info;
 #endif
   naya->prefix = info->prefix;
+  naya->stx_map = info->stx_map;
   naya->next = info;
   naya->use_jit = info->use_jit;
   naya->enforce_const = info->enforce_const;
@@ -3243,6 +3283,22 @@ int scheme_resolve_is_toplevel_available(Resolve_Info *info)
   }
 
   return 0;
+}
+
+int scheme_resolve_quote_syntax_offset(int i, Resolve_Info *info)
+{
+  Scheme_Hash_Table *ht;
+  Scheme_Object *v;
+
+  ht = info->stx_map;
+
+  v = scheme_hash_get(ht, scheme_make_integer(i));
+  if (!v) {
+    v = scheme_make_integer(ht->count);
+    scheme_hash_set(ht, scheme_make_integer(i), v);
+  }
+
+  return SCHEME_INT_VAL(v);
 }
 
 int scheme_resolve_quote_syntax_pos(Resolve_Info *info)
@@ -4262,9 +4318,12 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   i = rp->num_stxes;
   sv = scheme_make_vector(i, NULL);
   while (i--) {
-    ds = scheme_alloc_small_object();
-    ds->type = scheme_delay_syntax_type;
-    SCHEME_PTR_VAL(ds) = rp->stxes[i];
+    if (rp->stxes[i]) {
+      ds = scheme_alloc_small_object();
+      ds->type = scheme_delay_syntax_type;
+      SCHEME_PTR_VAL(ds) = rp->stxes[i];
+    } else
+      ds = scheme_false;
     SCHEME_VEC_ELS(sv)[i] = ds;
   }
 
@@ -4305,7 +4364,9 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   a = MALLOC_N(Scheme_Object *, i);
   while (i--) {
     stx = SCHEME_VEC_ELS(sv)[i];
-    if (SCHEME_RPAIRP(stx)) {
+    if (SCHEME_FALSEP(stx)) {
+      stx = NULL;
+    } else if (SCHEME_RPAIRP(stx)) {
       rp->delay_info = (struct Scheme_Load_Delay *)SCHEME_CDR(stx);
       rp->delay_refcount++;
       stx = SCHEME_CAR(stx);

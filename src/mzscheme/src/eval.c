@@ -789,7 +789,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals)
       || (vtype == scheme_local_unbox_type)
       || (vtype == scheme_unclosed_procedure_type)
       || (vtype == scheme_compiled_unclosed_procedure_type)
-      || (vtype == scheme_case_lambda_sequence_type))
+      || (vtype == scheme_case_lambda_sequence_type)
+      || (vtype == scheme_quote_syntax_type)
+      || (vtype == scheme_compiled_quote_syntax_type))
     return ((vals == 1) || (vals < 0));
 
   if ((vtype == scheme_compiled_quote_syntax_type)) {
@@ -1750,6 +1752,7 @@ Scheme_Object *scheme_resolve_expr(Scheme_Object *expr, Resolve_Info *info)
       int i, c, p;
 
       i = SCHEME_LOCAL_POS(expr);
+      i = scheme_resolve_quote_syntax_offset(i, info);
       c = scheme_resolve_toplevel_pos(info);
       p = scheme_resolve_quote_syntax_pos(info);
 
@@ -2542,7 +2545,9 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
       return scheme_optimize_expr(fb, info);
     else
       return scheme_optimize_expr(tb, info);
-  }
+  } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_quote_syntax_type)
+             || SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_unclosed_procedure_type))
+    return scheme_optimize_expr(tb, info);
 
   tb = scheme_optimize_expr(tb, info);
 
@@ -3797,6 +3802,8 @@ static void *compile_k(void)
       o = scheme_resolve_expr(o, ri);
 
       o = scheme_merge_expression_resolve_lifts(o, rp, ri);
+
+      rp = scheme_remap_prefix(rp, ri);
 
       top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
       top->so.type = scheme_compilation_top_type;
@@ -8435,7 +8442,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       if ((c < 0) || (p < 0) || (d >= depth)
 	  || (stack[d] != VALID_TOPLEVELS) 
 	  || (p >= (num_toplevels + num_lifts + num_stxes + (num_stxes ? 1 : 0)))
-	  || (num_stxes && (p == num_toplevels)))
+	  || ((p >= num_toplevels) && (p < num_toplevels + num_stxes + (num_stxes ? 1 : 0))))
 	scheme_ill_formed_code(port);
       
       if ((proc_with_refs_ok != 1) 

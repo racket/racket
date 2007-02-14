@@ -2636,6 +2636,7 @@ static int mark_resolve_info_MARK(void *p) {
   Resolve_Info *i = (Resolve_Info *)p;
   
   gcMARK(i->prefix);
+  gcMARK(i->stx_map);
   gcMARK(i->old_pos);
   gcMARK(i->new_pos);
   gcMARK(i->old_stx_pos);
@@ -2652,6 +2653,7 @@ static int mark_resolve_info_FIXUP(void *p) {
   Resolve_Info *i = (Resolve_Info *)p;
   
   gcFIXUP(i->prefix);
+  gcFIXUP(i->stx_map);
   gcFIXUP(i->old_pos);
   gcFIXUP(i->new_pos);
   gcFIXUP(i->old_stx_pos);

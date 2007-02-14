@@ -3416,7 +3416,6 @@ module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
 
   rp = scheme_resolve_prefix(0, m->comp_prefix, 1);
   m->comp_prefix = NULL;
-  m->prefix = rp;
 
   b = scheme_resolve_expr(m->dummy, old_rslv);
   m->dummy = b;
@@ -3438,6 +3437,10 @@ module_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
   b = scheme_append(SCHEME_VEC_ELS(lift_vec)[0], m->body);
   m->body = b;
   rp->num_lifts = SCHEME_INT_VAL(SCHEME_VEC_ELS(lift_vec)[1]);
+
+  rp = scheme_remap_prefix(rp, rslv);
+
+  m->prefix = rp;
 
   /* Exp-time body was resolved during compilation */
 
@@ -4290,6 +4293,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
           scheme_enable_expression_resolve_lifts(ri);
 	  m = scheme_resolve_expr(m, ri);
           m = scheme_merge_expression_resolve_lifts(m, rp, ri);
+          rp = scheme_remap_prefix(rp, ri);
 
 	  /* Add code with names and lexical depth to exp-time body: */
 	  vec = scheme_make_vector(5, NULL);

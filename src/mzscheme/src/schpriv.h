@@ -1689,6 +1689,7 @@ typedef struct Resolve_Info
   int size, oldsize, count, pos;
   int max_let_depth; /* filled in by sub-expressions */
   Resolve_Prefix *prefix;
+  Scheme_Hash_Table *stx_map; /* compile offset => resolve offset; prunes prefix-recored stxes */
   mzshort toplevel_pos; /* -1 mean consult next */
   mzshort *old_pos;
   mzshort *new_pos;
@@ -1956,6 +1957,7 @@ int scheme_is_compiled_procedure(Scheme_Object *o, int can_be_closed, int can_be
 Scheme_Object *scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info);
 
 Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify);
+Resolve_Prefix *scheme_remap_prefix(Resolve_Prefix *rp, Resolve_Info *ri);
 
 Resolve_Info *scheme_resolve_info_create(Resolve_Prefix *rp);
 Resolve_Info *scheme_resolve_info_extend(Resolve_Info *info, int size, int oldsize, int mapcount);
@@ -1998,6 +2000,7 @@ int scheme_env_uses_toplevel(Optimize_Info *frame);
 
 int scheme_resolve_toplevel_pos(Resolve_Info *info);
 int scheme_resolve_is_toplevel_available(Resolve_Info *info);
+int scheme_resolve_quote_syntax_offset(int i, Resolve_Info *info);
 int scheme_resolve_quote_syntax_pos(Resolve_Info *info);
 Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr);
 Scheme_Object *scheme_resolve_invent_toplevel(Resolve_Info *info);

@@ -4726,6 +4726,8 @@ static Scheme_Object *do_define_syntaxes_resolve(Scheme_Object *data, Resolve_In
     names = scheme_resolve_list(names, einfo);
   val = scheme_resolve_expr(val, einfo);
 
+  rp = scheme_remap_prefix(rp, einfo);
+
   base_stack_depth = scheme_make_integer(einfo->max_let_depth);
 
   len = scheme_list_length(names);
@@ -4988,6 +4990,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
 
   ri = scheme_resolve_info_create(rp);
   a = scheme_resolve_expr(a, ri);
+
+  rp = scheme_remap_prefix(rp, ri);
 
   /* To JIT:
        if (ri->use_jit) a = scheme_jit_expr(a);

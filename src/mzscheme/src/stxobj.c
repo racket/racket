@@ -1384,6 +1384,9 @@ Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i)
   Resolve_Prefix *rp;
 
   rename = o[0];
+
+  if (!rename) return scheme_false; /* happens only with corrupted .zo! */
+
   rp = (Resolve_Prefix *)o[1];
 
   if (SCHEME_INTP(rp->stxes[i])) {
