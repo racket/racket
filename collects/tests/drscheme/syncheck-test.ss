@@ -663,6 +663,19 @@
                        '((28 56) (87 92) (93 98))
                        '((57 85) (87 92) (93 98))))
      
+     (build-test "(module m mzscheme (require (prefix x: mzscheme)) x:+ +)"
+                 '(("("                                                  default-color)
+                   ("module"                                             imported-syntax)
+                   (" m mzscheme ("                                      default-color)
+                   ("require"                                            imported-syntax)
+                   ("(prefix x: mzscheme)) "                             default-color)
+                   ("x:+"                                                imported-variable)
+                   (" "                                                  default-color)
+                   ("+"                                                  imported-variable)
+                   (")"                                                  default-color))
+                 (list '((10 18) (20 27) (54 55))
+                       '((28 48) (50 53))))
+     
      (build-test "(module m mzscheme (require (lib \"etc.ss\")) (rec f 1))"
                 '(("("                     default-color)
                   ("module"                imported-syntax)

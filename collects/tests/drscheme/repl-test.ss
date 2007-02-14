@@ -206,6 +206,16 @@
                 void
                 void)
 
+     (make-test "(begin xx (printf \"hi\\n\"))"
+                "reference to undefined identifier: xx"
+                "reference to undefined identifier: xx"
+                "{bug09.gif} reference to undefined identifier: xx"
+                "{bug09.gif} {file.gif} repl-test-tmp.ss::1: reference to undefined identifier: xx"
+                (cons (make-loc 0 7 7) (make-loc 0 9 9))
+		#f
+                void
+                void)
+     
      (make-test (string-append
                  "(module m mzscheme (provide e) (define e #'1))\n"
                  "(module n mzscheme (require-for-syntax m) (provide s) (define-syntax (s stx) e))\n"
