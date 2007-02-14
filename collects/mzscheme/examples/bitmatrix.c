@@ -20,7 +20,8 @@
 /* Instances of this Bitmatrix structure will be the Scheme bit matirx
    values: */
 typedef struct {
-  Scheme_Type type; /* Every Scheme value starts with a type tag.  The
+  Scheme_Object so; /* Every Scheme value starts with a Scheme_Object,
+                       which stars with a type tag.  The
 		       format for the rest of the structure is
 		       anything we want it to be. */
   unsigned long w, h, l; /* l = w rounded to multiple of LONG_SIZE */
@@ -110,7 +111,7 @@ Scheme_Object *make_bit_matrix(int argc, Scheme_Object **argv)
   /* Malloc the bit matrix structure. Since we use scheme_malloc, the
      bit matrix value is GC-able. */
   bm = (Bitmatrix *)scheme_malloc_tagged(sizeof(Bitmatrix));
-  bm->type = bitmatrix_type;
+  bm->so.type = bitmatrix_type;
 
   /* Try to allocate the bit matrix. Handle failure gracefully. Note
      that we use scheme_malloc_atomic since the allocated memory will
