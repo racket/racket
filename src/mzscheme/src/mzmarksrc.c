@@ -56,10 +56,18 @@ quotesyntax_obj {
 
 cpointer_obj {
  mark:
-  gcMARK(SCHEME_CPTR_VAL((Scheme_Object *)p));
-  gcMARK(SCHEME_CPTR_TYPE((Scheme_Object *)p));
+  gcMARK(SCHEME_CPTR_VAL(p));
+  gcMARK(SCHEME_CPTR_TYPE(p));
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
+}
+
+offset_cpointer_obj {
+ mark:
+  gcMARK(SCHEME_CPTR_VAL(p));
+  gcMARK(SCHEME_CPTR_TYPE(p));
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
 }
 
 second_of_cons {

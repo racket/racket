@@ -553,6 +553,14 @@ static Scheme_Object *name ## __wrong_type(const Scheme_Object *v) \
   scheme_wrong_type(scheme_name, "exact integer", -1, 0, a); \
   return NULL; \
 } \
+static MZ_INLINE Scheme_Object * name ## __int_big(const Scheme_Object *n1, const Scheme_Object *n2) { \
+  Small_Bignum sb; \
+  return bigop((scheme_make_small_bignum(SCHEME_INT_VAL(n1), &sb)), n2); \
+} \
+static MZ_INLINE Scheme_Object * name ## __big_int(const Scheme_Object *n1, const Scheme_Object *n2) { \
+  Small_Bignum sb; \
+  return bigop(n1, (scheme_make_small_bignum(SCHEME_INT_VAL(n2), &sb))); \
+} \
 static Scheme_Object * \
 name (const Scheme_Object *n1, const Scheme_Object *n2) \
 { \
@@ -563,13 +571,11 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
       b = SCHEME_INT_VAL(n2); \
       return scheme_make_integer(a op b); \
     } else if (SCHEME_BIGNUMP(n2)) { \
-      Small_Bignum sb; \
-      return bigop(scheme_make_small_bignum(SCHEME_INT_VAL(n1), &sb), n2); \
+      return name ## __int_big(n1, n2); \
     } \
   } else if (SCHEME_BIGNUMP(n1)) { \
     if (SCHEME_INTP(n2)) { \
-      Small_Bignum sb; \
-      return bigop(n1, scheme_make_small_bignum(SCHEME_INT_VAL(n2), &sb)); \
+      return name ## __big_int(n1, n2); \
     } \
     if (SCHEME_BIGNUMP(n2)) \
       return bigop(n1, n2); \

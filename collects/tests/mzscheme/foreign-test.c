@@ -55,3 +55,5 @@ X int use_g3(int x) { return ((int(*)(int))g3)(x); }
 /* typedef int2int(*int_to_int2int)(int); */
 /* int hoho(int x, int_to_int2int f) { */
 X int hoho(int x, int(*(*f)(int))(int)) { return (f(x+1))(x-1); }
+
+X int grab7th(void *p) { return ((char *)p)[7]; }

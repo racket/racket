@@ -4396,6 +4396,7 @@ static Scheme_Object *check_single(Scheme_Object *form, Scheme_Comp_Env *top_onl
 static Scheme_Object *
 single_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec, int top_only)
 {
+  scheme_rec_add_certs(rec, drec, form);
   return scheme_compile_expr(check_single(form, top_only ? env: NULL), env, rec, drec);
 }
 
@@ -4405,14 +4406,19 @@ single_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
 {
   Scheme_Object *expr, *form_name;
 
+  scheme_rec_add_certs(erec, drec, form);
+
   expr = check_single(form, top_only ? env : NULL);
   expr = scheme_expand_expr(expr, env, erec, drec);
 
+  form_name = SCHEME_STX_CAR(form);
+
   if (simplify && (erec[drec].depth == -1)) {
+    /* FIXME: this needs EXPAND_OBSERVE callbacks. */
+    expr = scheme_stx_track(expr, form, form_name);
+    expr = scheme_stx_cert(expr, scheme_false, NULL, form, NULL, 1);
     return expr;
   }
-
-  form_name = SCHEME_STX_CAR(form);
 
   return scheme_datum_to_syntax(icons(form_name, icons(expr, scheme_null)), 
 				form, form,

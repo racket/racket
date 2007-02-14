@@ -3884,6 +3884,11 @@ void *GC_malloc_allow_interior(size_t size_in_bytes)
   return malloc_bigblock(size_in_bytes, MTYPE_ARRAY, 1);
 }
 
+void *GC_malloc_atomic_allow_interior(size_t size_in_bytes)
+{
+  return malloc_bigblock(size_in_bytes, MTYPE_ATOMIC, 1);
+}
+
 void *GC_malloc_tagged_allow_interior(size_t size_in_bytes)
 {
   return malloc_bigblock(size_in_bytes, MTYPE_TAGGED, 1);

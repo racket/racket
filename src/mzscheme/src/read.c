@@ -89,6 +89,7 @@ static Scheme_Object *print_honu(int, Scheme_Object *[]);
 #define RETURN_FOR_HASH_COMMENT     0x2
 #define RETURN_FOR_DELIM            0x4
 #define RETURN_FOR_COMMENT          0x8
+#define RETURN_HONU_ANGLE           0x10
 
 static MZ_INLINE long SPAN(Scheme_Object *port, long pos) {
   long cpos;
@@ -303,12 +304,15 @@ static Scheme_Object *unsyntax_splicing_symbol;
 static Scheme_Object *quasisyntax_symbol;
 
 static Scheme_Object *honu_comma, *honu_semicolon;
-static Scheme_Object *honu_parens, *honu_braces, *honu_brackets;
+static Scheme_Object *honu_parens, *honu_braces, *honu_brackets, *honu_angles;
 
 static Scheme_Object *paren_shape_symbol;
 
 static Scheme_Object *terminating_macro_symbol, *non_terminating_macro_symbol, *dispatch_macro_symbol;
 static char *builtin_fast;
+
+/* For matching angle brackets in Honu mode: */
+static Scheme_Object *honu_angle_open, *honu_angle_close;
 
 /* For recoginizing unresolved hash tables and commented-out graph introductions: */
 static Scheme_Object *an_uninterned_symbol;
@@ -361,12 +365,18 @@ void scheme_init_read(Scheme_Env *env)
   REGISTER_SO(honu_parens);
   REGISTER_SO(honu_braces);
   REGISTER_SO(honu_brackets);
+  REGISTER_SO(honu_angles);
+  REGISTER_SO(honu_angle_open);
+  REGISTER_SO(honu_angle_close);
 
   honu_comma = scheme_intern_symbol(",");
   honu_semicolon = scheme_intern_symbol(";");
   honu_parens = scheme_intern_symbol("#%parens");
   honu_braces = scheme_intern_symbol("#%braces");
   honu_brackets = scheme_intern_symbol("#%brackets");
+  honu_angles = scheme_intern_symbol("#%angles");
+  honu_angle_open = scheme_make_symbol("<"); /* uninterned */
+  honu_angle_close = scheme_make_symbol(">"); /* uninterned */
 
   {
     int i;
@@ -1687,6 +1697,28 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
       }
       special_value = read_symbol(ch, 0, port, stxsrc, line, col, pos, ht, indentation, params, table);
       break;
+    case '>':
+    case '<':
+      if ((params->honu_mode) && (comment_mode & RETURN_HONU_ANGLE)) {
+        Scheme_Object *v;
+        v = read_symbol(ch, 0, port, stxsrc, line, col, pos, ht, indentation, params, table);
+        special_value = v;
+        if (SCHEME_STXP(v))
+          v = SCHEME_STX_VAL(v);
+        if (SCHEME_SYMBOLP(v) && (SCHEME_SYM_LEN(v) == 1)
+            && ((SCHEME_SYM_VAL(v)[0] == '>') || (SCHEME_SYM_VAL(v)[0] == '<'))) {
+          if (SCHEME_SYM_VAL(v)[0] == '<')
+            v = honu_angle_open;
+          else
+            v = honu_angle_close;
+          if (SCHEME_STXP(special_value))
+            special_value = scheme_datum_to_syntax(v, scheme_false, special_value, 0, 1);
+          else
+            special_value = v;
+        }
+      } else
+        special_value = read_symbol(ch, 0, port, stxsrc, line, col, pos, ht, indentation, params, table);
+      break;
     default:
       if (isdigit_ascii(ch))
 	special_value = read_number(ch, port, stxsrc, line, col, pos, 0, 0, 10, 0, ht, indentation, params, table);
@@ -2220,6 +2252,7 @@ static const char *dot_name(ReadParams *params)
   return mapping_name(params, '.', "`.'", 6);
 }
 
+static Scheme_Object *combine_angle_brackets(Scheme_Object *list);
 static Scheme_Object *honu_add_module_wrapper(Scheme_Object *list,
 					      Scheme_Object *stxsrc,
 					      Scheme_Object *port);
@@ -2322,6 +2355,7 @@ read_list(Scheme_Object *port,
 	}
       }
       pop_indentation(indentation);
+      list = combine_angle_brackets(list);
       list = (stxsrc
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
@@ -2344,7 +2378,8 @@ read_list(Scheme_Object *port,
 	   to make sure that it's not a comment. For consistency, always
 	   read ahead. */
 	scheme_ungetc(ch, port);
-	prefetched = read_inner(port, stxsrc, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
+	prefetched = read_inner(port, stxsrc, ht, indentation, params, 
+                                RETURN_FOR_SPECIAL_COMMENT | RETURN_HONU_ANGLE);
 	if (!prefetched)
 	  continue; /* It was a comment; try again. */
 
@@ -2376,7 +2411,8 @@ read_list(Scheme_Object *port,
 	prefetched = NULL;
       } else {
 	scheme_ungetc(ch, port);
-	car = read_inner(port, stxsrc, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
+	car = read_inner(port, stxsrc, ht, indentation, params, 
+                         RETURN_FOR_SPECIAL_COMMENT | RETURN_HONU_ANGLE);
 	if (!car) continue; /* special was a comment */
       }
       /* can't be eof, due to check above */
@@ -2428,6 +2464,8 @@ read_list(Scheme_Object *port,
       }
 
       pop_indentation(indentation);
+      if (params->honu_mode)
+        list = combine_angle_brackets(list);
       list = (stxsrc
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
@@ -2450,7 +2488,7 @@ read_list(Scheme_Object *port,
 	return NULL;
       }
       /* can't be eof, due to check above: */
-      cdr = read_inner(port, stxsrc, ht, indentation, params, 0);
+      cdr = read_inner(port, stxsrc, ht, indentation, params, RETURN_HONU_ANGLE);
       ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params);
       effective_ch = readtable_effective_char(params->table, ch);
       if (effective_ch != closer) {
@@ -2503,7 +2541,8 @@ read_list(Scheme_Object *port,
 	/* Assert: infixed is NULL (otherwise we raised an exception above) */
 
 	pop_indentation(indentation);
-
+        if (params->honu_mode)
+          list = combine_angle_brackets(list);
 	list = (stxsrc
 		? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 		: list);
@@ -2514,7 +2553,8 @@ read_list(Scheme_Object *port,
       if ((ch == SCHEME_SPECIAL) || (params->table && (ch != EOF))) {
 	/* We have to try the read, because it might be a comment. */
 	scheme_ungetc(ch, port);
-	prefetched = read_inner(port, stxsrc, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
+	prefetched = read_inner(port, stxsrc, ht, indentation, params, 
+                                RETURN_FOR_SPECIAL_COMMENT | RETURN_HONU_ANGLE);
 	if (!prefetched)
 	  goto retry_before_dot;
       } else {
@@ -2536,6 +2576,87 @@ read_list(Scheme_Object *port,
       last = cdr;
     }
   }
+}
+
+static Scheme_Object *combine_angle_brackets(Scheme_Object *list)
+{
+  Scheme_Object *l, *a, *open_stack = NULL, *prev = NULL;
+  int i, ch;
+
+  for (l = list; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    a = SCHEME_CAR(l);
+    if (SCHEME_STXP(a))
+      a = SCHEME_STX_VAL(a);
+    if (SAME_OBJ(a, honu_angle_open)) {
+      open_stack = scheme_make_raw_pair(scheme_make_raw_pair(l, prev),
+                                        open_stack);
+      /* Tentatively assume no matching close: */
+      a = scheme_intern_symbol("<");
+      if (SCHEME_STXP(SCHEME_CAR(l)))
+        a = scheme_datum_to_syntax(a, scheme_false, SCHEME_CAR(l), 0, 1);
+      SCHEME_CAR(l) = a;
+    } else if (SAME_OBJ(a, honu_angle_close)) {
+      if (open_stack) {
+        /* A matching close --- combine the angle brackets! */
+        Scheme_Object *open, *open_prev;
+        Scheme_Object *naya, *ang, *seq;
+        open = SCHEME_CAR(open_stack);
+        open_prev = SCHEME_CDR(open);
+        open = SCHEME_CAR(open);
+        open_stack = SCHEME_CDR(open_stack);
+        ang = honu_angles;
+        if (SCHEME_STXP(SCHEME_CAR(l))) {
+          Scheme_Stx *o, *c;
+          int span;
+          o = (Scheme_Stx *)SCHEME_CAR(open);
+          c = (Scheme_Stx *)SCHEME_CAR(l);
+          if ((o->srcloc->pos >= 0) && (c->srcloc->pos >= 0))
+            span = (c->srcloc->pos - o->srcloc->pos) + c->srcloc->span;
+          else
+            span = -1;
+          ang = scheme_make_stx_w_offset(ang, 
+                                         o->srcloc->line,
+                                         o->srcloc->col,
+                                         o->srcloc->pos,
+                                         span,
+                                         o->srcloc->src,
+                                         STX_SRCTAG);
+        }
+        seq = scheme_make_pair(ang, SCHEME_CDR(open));
+        SCHEME_CDR(prev) = scheme_null;
+        if (SCHEME_STXP(ang)) {
+          seq = scheme_datum_to_syntax(seq, scheme_false, ang, 0, 1);
+        }
+        naya = scheme_make_pair(seq, SCHEME_CDR(l));
+        if (open_prev) {
+          SCHEME_CDR(open_prev) = naya;
+        } else {
+          list = naya;
+        }
+        l = naya;
+      } else {
+        /* Not a matching close: */
+        a = scheme_intern_symbol(">");
+        if (SCHEME_STXP(SCHEME_CAR(l)))
+          a = scheme_datum_to_syntax(a, scheme_false, SCHEME_CAR(l), 0, 1);
+        SCHEME_CAR(l) = a;
+      }
+    } else if (open_stack && SCHEME_SYMBOLP(a)) {
+      /* Check for ids containing -, |, or &, which have lower
+         operator precedence than < and >, and which therefore break up 
+         angle brackets. */
+      for (i = SCHEME_SYM_LEN(a); i--; ) {
+        ch = SCHEME_SYM_VAL(a)[i];
+        if ((ch == '=') || (ch == '|') || (ch == '&')) {
+          open_stack = NULL;
+          break;
+        }
+      }
+    }
+    prev = l;
+  }
+
+  return list;
 }
 
 static Scheme_Object *

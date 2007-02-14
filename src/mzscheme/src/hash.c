@@ -1079,8 +1079,14 @@ static long equal_hash_key(Scheme_Object *o, long k)
 	return k + (PTR_TO_LONG(o) >> 4);
     }
 # endif
-  default:
-    return k + (PTR_TO_LONG(o) >> 4);
+  default:    
+    {
+      Scheme_Primary_Hash_Proc h1 = scheme_type_hash1s[t];
+      if (h1)
+        return h1(o, k);
+      else
+        return k + (PTR_TO_LONG(o) >> 4);
+    }
   }
 
   k = (k << 1) + k;
@@ -1274,6 +1280,12 @@ long scheme_equal_hash_key2(Scheme_Object *o)
       return k;
     }
   default:
-    return t;
+    {
+      Scheme_Secondary_Hash_Proc h2 = scheme_type_hash2s[t];
+      if (h2)
+        return h2(o);
+      else
+        return t;
+    }
   }
 }

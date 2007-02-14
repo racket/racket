@@ -3288,6 +3288,25 @@ static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[])
   return SCHEME_TAIL_CALL_WAITING;
 }
 
+static MZ_INLINE Scheme_Object *values_slow(int argc, Scheme_Object *argv[])
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object **a;
+  int i;
+
+  a = MALLOC_N(Scheme_Object *, argc);
+  p->values_buffer = a;
+  p->values_buffer_size = argc;
+
+  p->ku.multiple.array = a;
+
+  for (i = 0; i < argc; i++) {
+    a[i] = argv[i];
+  }
+
+  return SCHEME_MULTIPLE_VALUES;
+}
+
 Scheme_Object *scheme_values(int argc, Scheme_Object *argv[])
 {
   Scheme_Thread *p;
@@ -3299,12 +3318,10 @@ Scheme_Object *scheme_values(int argc, Scheme_Object *argv[])
 
   p = scheme_current_thread;
   p->ku.multiple.count = argc;
-  if (p->values_buffer && (p->values_buffer_size >= argc))
+  if (p->values_buffer && (p->values_buffer_size >= argc)) {
     a = p->values_buffer;
-  else {
-    a = MALLOC_N(Scheme_Object *, argc);
-    p->values_buffer = a;
-    p->values_buffer_size = argc;
+  } else {
+    return values_slow(argc, argv);
   }
 
   p->ku.multiple.array = a;

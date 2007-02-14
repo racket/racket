@@ -27,6 +27,9 @@
 
 Scheme_Type_Reader *scheme_type_readers;
 Scheme_Type_Writer *scheme_type_writers;
+Scheme_Equal_Proc *scheme_type_equals;
+Scheme_Primary_Hash_Proc *scheme_type_hash1s;
+Scheme_Secondary_Hash_Proc *scheme_type_hash2s;
 
 static char **type_names;
 static Scheme_Type maxtype, allocmax;
@@ -42,6 +45,9 @@ static void init_type_arrays()
   REGISTER_SO(type_names);
   REGISTER_SO(scheme_type_readers);
   REGISTER_SO(scheme_type_writers);
+  REGISTER_SO(scheme_type_equals);
+  REGISTER_SO(scheme_type_hash1s);
+  REGISTER_SO(scheme_type_hash2s);
   
   maxtype = _scheme_last_type_;
   allocmax = maxtype + 10;
@@ -63,6 +69,18 @@ static void init_type_arrays()
 #ifdef MEMORY_COUNTING_ON
   scheme_type_table_count += n;
 #endif  
+
+  scheme_type_equals = MALLOC_N_ATOMIC(Scheme_Equal_Proc, allocmax);
+  n = allocmax * sizeof(Scheme_Equal_Proc);
+  memset((char *)scheme_type_equals, 0, n);
+
+  scheme_type_hash1s = MALLOC_N_ATOMIC(Scheme_Primary_Hash_Proc, allocmax);
+  n = allocmax * sizeof(Scheme_Primary_Hash_Proc);
+  memset((char *)scheme_type_hash1s, 0, n);
+
+  scheme_type_hash2s = MALLOC_N_ATOMIC(Scheme_Secondary_Hash_Proc, allocmax);
+  n = allocmax * sizeof(Scheme_Secondary_Hash_Proc);
+  memset((char *)scheme_type_hash2s, 0, n);
 }
 
 void
@@ -183,6 +201,7 @@ scheme_init_type (Scheme_Env *env)
   
   set_name(scheme_stx_type, "<syntax>");
   set_name(scheme_stx_offset_type, "<internal-syntax-offset>");
+  set_name(scheme_expanded_syntax_type, "<expanded-syntax>");
   set_name(scheme_set_macro_type, "<set!-transformer>");
   set_name(scheme_id_macro_type, "<rename-transformer>");
 
@@ -192,6 +211,7 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_subprocess_type, "<subprocess>");
 
   set_name(scheme_cpointer_type, "<cpointer>");
+  set_name(scheme_offset_cpointer_type, "<cpointer>");
 
   set_name(scheme_wrap_chunk_type, "<wrap-chunk>");
 
@@ -270,10 +290,25 @@ Scheme_Type scheme_make_type(const char *name)
     memcpy(naya, scheme_type_writers, maxtype * sizeof(Scheme_Type_Writer));
     scheme_type_writers = (Scheme_Type_Writer *)naya;
 
+    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Equal_Proc));
+    memset((char *)naya, 0, n);
+    memcpy(naya, scheme_type_equals, maxtype * sizeof(Scheme_Equal_Proc));
+    scheme_type_equals = (Scheme_Equal_Proc *)naya;
+
+    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Primary_Hash_Proc));
+    memset((char *)naya, 0, n);
+    memcpy(naya, scheme_type_hash1s, maxtype * sizeof(Scheme_Primary_Hash_Proc));
+    scheme_type_hash1s = (Scheme_Primary_Hash_Proc *)naya;
+
+    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Secondary_Hash_Proc));
+    memset((char *)naya, 0, n);
+    memcpy(naya, scheme_type_hash2s, maxtype * sizeof(Scheme_Secondary_Hash_Proc));
+    scheme_type_hash2s = (Scheme_Secondary_Hash_Proc *)naya;
+
 #ifdef MEMORY_COUNTING_ON
-  scheme_type_table_count += 20 * (sizeof(Scheme_Type_Reader)
-				   + sizeof(Scheme_Type_Writer));
-  scheme_misc_count += (20 * sizeof(char *));
+    scheme_type_table_count += 20 * (sizeof(Scheme_Type_Reader)
+                                     + sizeof(Scheme_Type_Writer));
+    scheme_misc_count += (20 * sizeof(char *));
 #endif
   }
 
@@ -307,6 +342,20 @@ void scheme_install_type_writer(Scheme_Type t, Scheme_Type_Writer f)
     return;
 
   scheme_type_writers[t] = f;
+}
+
+
+void scheme_set_type_equality(Scheme_Type t, 
+                              Scheme_Equal_Proc f,
+                              Scheme_Primary_Hash_Proc hash1,
+                              Scheme_Secondary_Hash_Proc hash2)
+{
+  if (t < 0 || t >= maxtype)
+    return;
+
+  scheme_type_equals[t] = f;
+  scheme_type_hash1s[t] = hash1;
+  scheme_type_hash2s[t] = hash2;
 }
 
 int scheme_num_types(void)
@@ -464,6 +513,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_raw_pair_type, cons_cell);
   GC_REG_TRAV(scheme_vector_type, vector_obj);
   GC_REG_TRAV(scheme_cpointer_type, cpointer_obj);
+  GC_REG_TRAV(scheme_offset_cpointer_type, offset_cpointer_obj);
 
   GC_REG_TRAV(scheme_bucket_type, bucket_obj);
 
@@ -512,6 +562,7 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(scheme_stx_type, stx_val);
   GC_REG_TRAV(scheme_stx_offset_type, stx_off_val);
+  GC_REG_TRAV(scheme_expanded_syntax_type, twoptr_obj);
   GC_REG_TRAV(scheme_module_type, module_val);
   GC_REG_TRAV(scheme_rt_module_exports, module_exports_val);
   GC_REG_TRAV(scheme_module_index_type, modidx_val);

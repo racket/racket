@@ -30,8 +30,6 @@ Scheme_Object scheme_null[1];
 /* locals */
 static Scheme_Object *pair_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cons_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *set_car_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *set_cdr_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cons_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *null_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_p_prim (int argc, Scheme_Object *argv[]);
@@ -138,16 +136,14 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("cdr", p, env);
 
-  scheme_add_global_constant ("set-car!",
-			      scheme_make_noncm_prim(set_car_prim,
-						     "set-car!",
-						     2, 2),
-			      env);
-  scheme_add_global_constant ("set-cdr!",
-			      scheme_make_noncm_prim(set_cdr_prim,
-						     "set-cdr!",
-						     2, 2),
-			      env);
+  p = scheme_make_noncm_prim(scheme_checked_set_car, "set-car!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant ("set-car!", p, env);
+
+  p = scheme_make_noncm_prim(scheme_checked_set_cdr, "set-cdr!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant ("set-cdr!", p, env);
+
   scheme_add_global_constant ("cons-immutable",
 			      scheme_make_noncm_prim(cons_immutable,
 						     "cons-immutable",
@@ -766,8 +762,8 @@ scheme_checked_cdr (int argc, Scheme_Object *argv[])
   return (SCHEME_CDR (argv[0]));
 }
 
-static Scheme_Object *
-set_car_prim (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_set_car (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_MUTABLE_PAIRP(argv[0]))
     scheme_wrong_type("set-car!", "mutable-pair", 0, argc, argv);
@@ -776,8 +772,8 @@ set_car_prim (int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
-static Scheme_Object *
-set_cdr_prim (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_set_cdr (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_MUTABLE_PAIRP(argv[0]))
     scheme_wrong_type("set-cdr!", "mutable-pair", 0, argc, argv);

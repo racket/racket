@@ -3564,6 +3564,7 @@
 "(require #%qqstx)"
 "(require #%define)"
 "(require #%expobs) "
+"(require(only #%foreign)) "
 "(provide(all-from #%more-scheme)"
 "(all-from-except #%misc make-standard-module-name-resolver)"
 "(all-from-except #%stxcase-scheme -define -define-syntax)"

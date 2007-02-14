@@ -107,6 +107,7 @@ static void *call_original_binary_arith_for_branch_code;
 static void *call_original_binary_rev_arith_for_branch_code;
 static void *bad_car_code, *bad_cdr_code;
 static void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
+static void *bad_set_car_code, *bad_set_cdr_code;
 static void *bad_unbox_code;
 static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
@@ -1897,7 +1898,9 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     if ((num_rands >= ((Scheme_Primitive_Proc *)rator)->mina)
 	&& ((num_rands <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
 	    || (((Scheme_Primitive_Proc *)rator)->mina < 0))
-	&& is_noncm(rator, jitter, 0, 0))
+	&& (is_noncm(rator, jitter, 0, 0)
+            /* It's also ok to directly call `values' if multiple values are ok: */
+            || (multi_ok && SAME_OBJ(rator, scheme_values_func))))
       direct_prim = 1;
   } else {
     Scheme_Type t;
@@ -3259,6 +3262,43 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	mz_runstack_unskipped(jitter, 2);
       else
 	mz_runstack_unskipped(jitter, 1);
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "set-car!")
+               || IS_NAMED_PRIM(rator, "set-cdr!")) {
+      GC_CAN_IGNORE jit_insn *reffail, *ref;
+      int set_car;
+
+      set_car = IS_NAMED_PRIM(rator, "set-car!");
+
+      LOG_IT(("inlined set-car!\n"));
+
+      generate_two_args(app->rand1, app->rand2, jitter, 1);
+      CHECK_LIMIT();
+
+      __START_SHORT_JUMPS__(1);
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      reffail = _jit.x.pc;
+      __END_SHORT_JUMPS__(1);
+      if (set_car)
+        (void)jit_jmpi(bad_set_car_code);
+      else
+        (void)jit_jmpi(bad_set_cdr_code);
+      __START_SHORT_JUMPS__(1);
+      mz_patch_branch(ref);
+      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+      (void)jit_bnei_i(reffail, JIT_R2, scheme_pair_type);
+      jit_ldxi_s(JIT_R2, JIT_R0, &(MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0)));
+      (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
+      __END_SHORT_JUMPS__(1);
+      CHECK_LIMIT();
+
+      if (set_car)
+        (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.car, JIT_R0, JIT_R1);
+      else
+        (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.cdr, JIT_R0, JIT_R1);
+      
+      (void)jit_movi_p(JIT_R0, scheme_void);
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "cons")) {
@@ -4825,6 +4865,37 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     case 5:
       (void)mz_finish(scheme_checked_cddr);
+      break;
+    }
+    CHECK_LIMIT();
+  }
+
+  /* *** bad_set_{car,cdr}_code *** */
+  /* Bad argument is in R0, other is in R1 */
+  for (i = 0; i < 2; i++) {
+    switch (i) {
+    case 0:
+      bad_set_car_code = jit_get_ip().ptr;
+      break;
+    case 1:
+      bad_set_cdr_code = jit_get_ip().ptr;
+      break;
+    }
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    jit_str_p(JIT_RUNSTACK, JIT_R0);
+    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+    JIT_UPDATE_THREAD_RSPTR();
+    CHECK_LIMIT();
+    jit_movi_i(JIT_R1, 2);
+    jit_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_R1);
+    switch (i) {
+    case 0:
+      (void)mz_finish(scheme_checked_set_car);
+      break;
+    case 1:
+      (void)mz_finish(scheme_checked_set_cdr);
       break;
     }
     CHECK_LIMIT();

@@ -134,8 +134,8 @@
                      #xFFF #x1FFF #x3FFF #x7FFF #xFFFF)])
       (lambda (a s)
         (let-values ([(hi lo s)
-                      (cond [(< 0 s 16) (values (car a) (cdr a) s)]
-                            [(< s 32)   (values (cdr a) (car a) (- s 16))]
+                      (cond [(< s 16) (values (car a) (cdr a) s)]
+                            [(< s 32) (values (cdr a) (car a) (- s 16))]
                             [else (error 'word<<< "shift out of range: ~e"
                                          s)])])
           (cons! a
@@ -161,12 +161,12 @@
     ;;   (error 'bytes->word-vector! "something bad happened"))
     (let loop ([n 15])
       (when (<= 0 n)
-        (let ([m (* 4 n)])
+        (let ([m (arithmetic-shift n 2)])
           (cons! (vector-ref result n)
                  (+ (bytes-ref l-raw (+ 2 m))
-                    (* 256 (bytes-ref l-raw (+ 3 m))))
+                    (arithmetic-shift (bytes-ref l-raw (+ 3 m)) 8))
                  (+ (bytes-ref l-raw m)
-                    (* 256 (bytes-ref l-raw (+ 1 m))))))
+                    (arithmetic-shift (bytes-ref l-raw (+ 1 m)) 8))))
         (loop (sub1 n)))))
 
   (define empty-port (open-input-bytes #""))

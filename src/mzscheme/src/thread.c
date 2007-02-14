@@ -6755,8 +6755,13 @@ static void prepare_thread_for_GC(Scheme_Object *t)
     }
   }
 
-  if (p->values_buffer)
-    memset(p->values_buffer, 0, sizeof(Scheme_Object*) * p->values_buffer_size);
+  if (p->values_buffer) {
+    if (p->values_buffer_size > 128)
+      p->values_buffer = NULL;
+    else {
+      memset(p->values_buffer, 0, sizeof(Scheme_Object*) * p->values_buffer_size);
+    }
+  }
 
   p->spare_runstack = NULL;
 

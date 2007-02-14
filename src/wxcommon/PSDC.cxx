@@ -1659,6 +1659,7 @@ void wxPostScriptDC::StartPage (void)
   pstream->Out("%%EndPageSetup\n");
 
   resetFont = RESET_FONT | RESET_COLOR;
+  current_font_name = NULL;
 
   if (clipping)
     SetClippingRegion(clipping);

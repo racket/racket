@@ -180,6 +180,10 @@ GC2_EXTERN void *GC_malloc_allow_interior(size_t size_in_bytes);
    pointers into the middle of the array, or just past the end of the
    array. */
 
+GC2_EXTERN void *GC_malloc_atomic_allow_interior(size_t size_in_bytes);
+/*
+   Like GC_malloc_allow_interior(), but for an atomic object. */
+
 GC2_EXTERN void *GC_malloc_tagged_allow_interior(size_t size_in_bytes);
 /*
    Like GC_malloc_allow_interior(), but for a tagged object. */

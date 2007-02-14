@@ -201,6 +201,10 @@ typedef Scheme_Object *(*Scheme_Type_Writer)(Scheme_Object *obj);
 extern Scheme_Type_Reader *scheme_type_readers;
 extern Scheme_Type_Writer *scheme_type_writers;
 
+extern Scheme_Equal_Proc *scheme_type_equals;
+extern Scheme_Primary_Hash_Proc *scheme_type_hash1s;
+extern Scheme_Secondary_Hash_Proc *scheme_type_hash2s;
+
 void scheme_init_port_config(void);
 void scheme_init_port_fun_config(void);
 Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *c);
@@ -606,6 +610,8 @@ int scheme_syntax_is_graph(Scheme_Object *stx);
 Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 				Scheme_Object *old,
 				Scheme_Object *origin);
+
+int scheme_stx_has_empty_wraps(Scheme_Object *);
 
 Scheme_Object *scheme_new_mark(void);
 Scheme_Object *scheme_add_remove_mark(Scheme_Object *o, Scheme_Object *m);
@@ -2708,6 +2714,8 @@ Scheme_Object *scheme_checked_caar(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cadr(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cdar(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_cddr(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_set_car (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_set_cdr (int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_vector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_vector_set(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_string_ref(int argc, Scheme_Object *argv[]);

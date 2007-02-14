@@ -335,6 +335,9 @@ MZ_EXTERN void *GC_malloc_one_tagged(size_t size_in_bytes);
 MZ_EXTERN void *GC_malloc_atomic_uncollectable(size_t size_in_bytes);
 MZ_EXTERN void *scheme_malloc_uncollectable(size_t size_in_bytes);
 MZ_EXTERN void *GC_malloc_array_tagged(size_t size_in_bytes);
+MZ_EXTERN void *GC_malloc_allow_interior(size_t size_in_bytes);
+MZ_EXTERN void *GC_malloc_atomic_allow_interior(size_t size_in_bytes);
+MZ_EXTERN void *GC_malloc_tagged_allow_interior(size_t size_in_bytes);
 #  else
 MZ_EXTERN void *GC_malloc_stubborn(size_t size_in_bytes);
 MZ_EXTERN void *GC_malloc_uncollectable(size_t size_in_bytes);
@@ -524,6 +527,7 @@ XFORM_NONGCING MZ_EXTERN int scheme_get_unsigned_long_long_val(Scheme_Object *o,
 XFORM_NONGCING MZ_EXTERN double scheme_real_to_double(Scheme_Object *r);
 
 MZ_EXTERN Scheme_Object *scheme_make_cptr(void *cptr, Scheme_Object *typetag);
+MZ_EXTERN Scheme_Object *scheme_make_offset_cptr(void *cptr, long offset, Scheme_Object *typetag);
 
 MZ_EXTERN const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error);
 
@@ -963,6 +967,11 @@ XFORM_NONGCING MZ_EXTERN long scheme_hash_key(Scheme_Object *o);
 #endif
 MZ_EXTERN long scheme_equal_hash_key(Scheme_Object *o);
 MZ_EXTERN long scheme_equal_hash_key2(Scheme_Object *o);
+
+MZ_EXTERN void scheme_set_type_equality(Scheme_Type type, 
+                                        Scheme_Equal_Proc f,
+                                        Scheme_Primary_Hash_Proc hash1,
+                                        Scheme_Secondary_Hash_Proc hash2);
 
 MZ_EXTERN Scheme_Object *scheme_build_list(int argc, Scheme_Object **argv);
 MZ_EXTERN Scheme_Object *scheme_build_list_offset(int argc, Scheme_Object **argv, int delta);

@@ -172,6 +172,7 @@ static Scheme_Object *compile(int argc, Scheme_Object *argv[]);
 static Scheme_Object *compiled_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *expand(int argc, Scheme_Object **argv);
 static Scheme_Object *local_expand(int argc, Scheme_Object **argv);
+static Scheme_Object *local_expand_expr(int argc, Scheme_Object **argv);
 static Scheme_Object *local_expand_catch_lifts(int argc, Scheme_Object **argv);
 static Scheme_Object *local_transformer_expand(int argc, Scheme_Object **argv);
 static Scheme_Object *local_transformer_expand_catch_lifts(int argc, Scheme_Object **argv);
@@ -386,6 +387,11 @@ scheme_init_eval (Scheme_Env *env)
 			     scheme_make_prim_w_arity(local_expand, 
 						      "local-expand",
 						      3, 4), 
+			     env);
+  scheme_add_global_constant("syntax-local-expand-expression", 
+			     scheme_make_prim_w_arity(local_expand_expr, 
+                                                      "syntax-local-expand-expression",
+						      1, 1), 
 			     env);
   scheme_add_global_constant("syntax-local-bind-syntaxes", 
 			     scheme_make_prim_w_arity(local_eval, 
@@ -3975,6 +3981,18 @@ compile_expand_macro_app(Scheme_Object *name, Scheme_Env *menv, Scheme_Object *m
   /* caller expects rec[drec] to be used to compile the result... */
 }
 
+static int same_effective_env(Scheme_Comp_Env *orig, Scheme_Comp_Env *e)
+{
+  while (1) {
+    if (orig == e)
+      return 1;
+    if (e && e->flags & SCHEME_FOR_STOPS)
+      e = e->next;
+    else
+      return 0;
+  }
+}
+
 static Scheme_Object *compile_expand_expr_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -4043,6 +4061,22 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_default_compile_rec(rec, drec);
   } else {
     SCHEME_EXPAND_OBSERVE_VISIT(rec[drec].observer,form);
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(SCHEME_STX_VAL(form)), scheme_expanded_syntax_type)) {
+    var = SCHEME_STX_VAL(form);
+    if (scheme_stx_has_empty_wraps(form)
+        && same_effective_env(SCHEME_PTR2_VAL(var), env)) {
+      /* FIXME: this needs EXPAND_OBSERVE callbacks. */
+      var = scheme_stx_track(SCHEME_PTR1_VAL(var), form, form);
+      form = scheme_stx_cert(var, scheme_false, NULL, form, NULL, 1);
+      if (!rec[drec].comp) {
+        /* Already fully expanded. */
+        return form;
+      }
+    } else {
+      scheme_wrong_syntax(NULL, NULL, SCHEME_PTR1_VAL(var), "expanded syntax not in its original context");
+    }
   }
 
   looking_for_top = 0;
@@ -7655,15 +7689,16 @@ scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Ob
 }
 
 static Scheme_Object *
-do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme_Object **argv)
+do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, int argc, Scheme_Object **argv)
 {
-  Scheme_Comp_Env *env;
-  Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l;
+  Scheme_Comp_Env *env, *orig_env;
+  Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind;
   int bad_sub_env = 0;
   Scheme_Object *observer;
 
   env = scheme_current_thread->current_local_env;
+  orig_env = env;
 
   if (!env)
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, "%s: not currently transforming", name);
@@ -7673,7 +7708,9 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
     env = scheme_new_comp_env(env->genv->exp_env, env->insp, 0);
   }
 
-  if (SAME_OBJ(argv[1], module_symbol))
+  if (for_expr)
+    kind = 0; /* expression */
+  else if (SAME_OBJ(argv[1], module_symbol))
     kind = SCHEME_MODULE_BEGIN_FRAME; /* name is backwards compared to symbol! */
   else if (SAME_OBJ(argv[1], module_begin_symbol))
     kind = SCHEME_MODULE_FRAME; /* name is backwards compared to symbol! */
@@ -7718,7 +7755,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
 
   local_mark = scheme_current_thread->current_local_mark;
   
-  if (SCHEME_TRUEP(argv[2])) {
+  if (for_expr) {
+  } else if (SCHEME_TRUEP(argv[2])) {
     cnt = scheme_stx_proper_list_length(argv[2]);
     if (cnt > 0)
       scheme_add_local_syntax(cnt, env);
@@ -7804,6 +7842,25 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
   if (renaming)
     l = scheme_add_rename(l, renaming);
 
+  if (for_expr) {
+    /* Package up expanded expr with the enviornment. */
+    while (1) {
+      if (orig_env->flags & SCHEME_FOR_STOPS)
+        orig_env = orig_env->next;
+      else if ((orig_env->flags & SCHEME_INTDEF_FRAME)
+               && !orig_env->num_bindings)
+        orig_env = orig_env->next;
+      else
+        break;
+    }
+    exp_expr = scheme_alloc_object();
+    exp_expr->type = scheme_expanded_syntax_type;
+    SCHEME_PTR1_VAL(exp_expr) = l;
+    SCHEME_PTR2_VAL(exp_expr) = orig_env;
+    exp_expr = scheme_datum_to_syntax(exp_expr, l, scheme_false, 0, 0);
+    exp_expr = scheme_add_remove_mark(exp_expr, local_mark);
+  }
+
   if (local_mark) {
     /* Put the temporary mark back: */
     l = scheme_add_remove_mark(l, local_mark);
@@ -7811,31 +7868,43 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int argc, Scheme
 
   SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(observer, l);
 
-  return l;
+  if (for_expr) {
+    Scheme_Object *a[2];
+    a[0] = l;
+    a[1] = exp_expr;
+    return scheme_values(2, a);
+  } else
+    return l;
 }
 
 static Scheme_Object *
 local_expand(int argc, Scheme_Object **argv)
 {
-  return do_local_expand("local-expand", 0, 0, argc, argv);
+  return do_local_expand("local-expand", 0, 0, 0, argc, argv);
+}
+
+static Scheme_Object *
+local_expand_expr(int argc, Scheme_Object **argv)
+{
+  return do_local_expand("syntax-local-expand-expression", 0, 0, 1, argc, argv);
 }
 
 static Scheme_Object *
 local_transformer_expand(int argc, Scheme_Object **argv)
 {
-  return do_local_expand("local-transformer-expand", 1, 0, argc, argv);
+  return do_local_expand("local-transformer-expand", 1, 0, 0, argc, argv);
 }
 
 static Scheme_Object *
 local_expand_catch_lifts(int argc, Scheme_Object **argv)
 {
-  return do_local_expand("local-expand/capture-lifts", 0, 1, argc, argv);
+  return do_local_expand("local-expand/capture-lifts", 0, 1, 0, argc, argv);
 }
 
 static Scheme_Object *
 local_transformer_expand_catch_lifts(int argc, Scheme_Object **argv)
 {
-  return do_local_expand("local-transformer-expand/capture-lifts", 1, 1, argc, argv);
+  return do_local_expand("local-transformer-expand/capture-lifts", 1, 1, 0, argc, argv);
 }
 
 static Scheme_Object *

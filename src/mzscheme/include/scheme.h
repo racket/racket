@@ -325,6 +325,10 @@ typedef struct Scheme_Vector {
 typedef struct Scheme_Print_Params Scheme_Print_Params;
 typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Print_Params *pp);
 
+typedef int (*Scheme_Equal_Proc)(Scheme_Object *obj1, Scheme_Object *obj2);
+typedef long (*Scheme_Primary_Hash_Proc)(Scheme_Object *obj, long base);
+typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj);
+
 /* This file defines all the built-in types */
 #ifdef INCLUDE_WITHOUT_PATHS
 # include "stypes.h"
@@ -459,7 +463,7 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_UDPP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_udp_type)
 #define SCHEME_UDP_EVTP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_udp_evt_type)
 
-#define SCHEME_CPTRP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_cpointer_type)
+#define SCHEME_CPTRP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_cpointer_type) || SAME_TYPE(SCHEME_TYPE(obj), scheme_offset_cpointer_type))
 
 #define SCHEME_MUTABLEP(obj) (!(MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) & 0x1))
 #define SCHEME_IMMUTABLEP(obj) (MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) & 0x1)
@@ -549,8 +553,21 @@ typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Pr
 #define SCHEME_PINT_VAL(obj) (((Scheme_Simple_Object *)(obj))->u.ptr_int_val.pint)
 #define SCHEME_PLONG_VAL(obj) (((Scheme_Simple_Object *)(obj))->u.ptr_long_val.pint)
 
-#define SCHEME_CPTR_VAL(obj) (((Scheme_Simple_Object *)(obj))->u.cptr_val.val)
-#define SCHEME_CPTR_TYPE(obj) (((Scheme_Simple_Object *)(obj))->u.cptr_val.type)
+typedef struct Scheme_Cptr
+{
+  Scheme_Object so;
+  void *val;
+  Scheme_Object *type;
+} Scheme_Cptr;
+typedef struct Scheme_Offset_Cptr
+{
+  Scheme_Cptr cptr; 
+  long offset;
+} Scheme_Offset_Cptr;
+
+#define SCHEME_CPTR_VAL(obj) (((Scheme_Cptr *)(obj))->val)
+#define SCHEME_CPTR_TYPE(obj) (((Scheme_Cptr *)(obj))->type)
+#define SCHEME_CPTR_OFFSET(obj) (SAME_TYPE(_SCHEME_TYPE(obj), scheme_offset_cpointer_type) ? ((Scheme_Offset_Cptr *)obj)->offset : 0)
 
 #define SCHEME_SET_IMMUTABLE(obj)  ((MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) |= 0x1))
 #define SCHEME_SET_CHAR_STRING_IMMUTABLE(obj) SCHEME_SET_IMMUTABLE(obj)
@@ -1515,6 +1532,7 @@ void *scheme_malloc(size_t size);
 # define scheme_malloc_weak GC_malloc_weak
 # define scheme_malloc_weak_tagged GC_malloc_one_weak_tagged
 # define scheme_malloc_allow_interior GC_malloc_allow_interior
+# define scheme_malloc_atomic_allow_interior GC_malloc_allow_interior
 #else
 # ifdef USE_TAGGED_ALLOCATION
 extern void *scheme_malloc_tagged(size_t);
@@ -1537,6 +1555,7 @@ extern void *scheme_malloc_envunbox(size_t);
 # endif
 # define scheme_malloc_small_dirty_tagged scheme_malloc_small_tagged
 # define scheme_malloc_allow_interior scheme_malloc
+# define scheme_malloc_atomic_allow_interior scheme_malloc_atomic
 # define scheme_malloc_small_atomic_tagged scheme_malloc_atomic_tagged
 #endif
 

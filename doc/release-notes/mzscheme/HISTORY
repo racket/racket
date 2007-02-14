@@ -1,5 +1,10 @@
 Version 369.8
 Added -p, -P, and -Q command-line options
+Changed H-expression parsing to represent angle brackets specially
+Added syntax-local-expand-expression
+MzLib: foreign.ss: Added ptr-add, memmove, memcpy, and memset
+Inside MzScheme: added scheme_set_type_equality(), based on a patch
+ from Dimitris Vyzovitis
 
 Version 369.7
 Added string->path-element and path-element->string

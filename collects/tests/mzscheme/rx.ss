@@ -1662,6 +1662,21 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Check that [\s] doesn't match \s, etc.
+(let ([test-both
+       (lambda (r bstr arg)
+         (test (and r (list r))regexp-match (byte-pregexp bstr) arg)
+         (test (and r (list (bytes->string/latin-1 r)) )
+               regexp-match 
+               (pregexp (bytes->string/latin-1 bstr))
+               (bytes->string/latin-1 arg)))])
+  (test-both #f #"[\\s]" #"a")
+  (test-both #f #"[\\s]" #"s")
+  (test-both #" " #"[\\s]" #" ")
+  (test-both #"a" #"[^\\s]" #"a")
+  (test-both #"s" #"[^\\s]" #"s")
+  (test-both #f #"[^\\s]" #" "))
+
 ;; Check that rx doesn't parse as px:
 (test '(#"aa" #"a") regexp-match #px#"(a)\\1" #"aa")
 (test '(#"a1" #"a") regexp-match #rx#"(a)\\1" #"a1")

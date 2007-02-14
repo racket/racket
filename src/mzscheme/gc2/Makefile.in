@@ -121,7 +121,8 @@ XFORMDEP_NOPRECOMP = $(srcdir)/gc2.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss
 XFORMDEP = $(XFORMDEP_NOPRECOMP) $(XSRCDIR)/precomp.h
 
 $(XSRCDIR)/precomp.h : $(XFORMDEP_NOPRECOMP) $(srcdir)/precomp.c $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
-                       $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schvers.h $(srcdir)/../src/schemef.h
+                       $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schvers.h $(srcdir)/../src/schemef.h \
+                       $(srcdir)/../src/stypes.h 
 	env XFORM_PRECOMP=yes $(XFORM_NOPRECOMP) $(XSRCDIR)/precomp.h $(srcdir)/precomp.c
 
 $(XSRCDIR)/salloc.c: ../src/salloc.@LTO@ $(XFORMDEP)

@@ -73,12 +73,19 @@ Like `read', but for a stream that starts with WXME-format data. If
 multiple S-expressions are in the WXME data, they are all read and
 combined with `begin'.
 
+If MrEd is available (as determined by checking for `#%mred-kernel'),
+then MrEd is used via `open-input-text-editor'. Otherwise,
+`wxme-port->port' is used.
+
 > (wxme-read-syntax source-v port)
 
 Like `read-syntax', but for a WXME format input stream.  If multiple
 S-expressions are in the WXME data, they are all read and combined
 with `begin'.
 
+If MrEd is available (as determined by checking for `#%mred-kernel'),
+then MrEd is used via `open-input-text-editor'. Otherwise,
+`wxme-port->port' is used.
 
 > snip-reader<%>
 

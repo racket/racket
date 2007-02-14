@@ -230,10 +230,23 @@ Scheme_Object *scheme_make_cptr(void *cptr, Scheme_Object *typetag)
 {
   Scheme_Object *o;
 
-  o = scheme_alloc_object();
+  o = (Scheme_Object *)scheme_malloc_small_tagged(sizeof(Scheme_Cptr));
   o->type = scheme_cpointer_type;
-  SCHEME_PTR1_VAL(o) = cptr;
-  SCHEME_PTR2_VAL(o) = (void *)typetag;
+  SCHEME_CPTR_VAL(o) = cptr;
+  SCHEME_CPTR_TYPE(o) = (void *)typetag;
+
+  return o;
+}
+
+Scheme_Object *scheme_make_offset_cptr(void *cptr, long offset, Scheme_Object *typetag)
+{
+  Scheme_Object *o;
+
+  o = (Scheme_Object *)scheme_malloc_small_tagged(sizeof(Scheme_Offset_Cptr));
+  o->type = scheme_offset_cpointer_type;
+  SCHEME_CPTR_VAL(o) = cptr;
+  SCHEME_CPTR_TYPE(o) = (void *)typetag;
+  ((Scheme_Offset_Cptr *)o)->offset = offset;
 
   return o;
 }

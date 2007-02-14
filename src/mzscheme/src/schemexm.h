@@ -175,6 +175,9 @@
 #define GC_malloc_atomic_uncollectable (scheme_extension_table->GC_malloc_atomic_uncollectable)
 #define scheme_malloc_uncollectable (scheme_extension_table->scheme_malloc_uncollectable)
 #define GC_malloc_array_tagged (scheme_extension_table->GC_malloc_array_tagged)
+#define GC_malloc_allow_interior (scheme_extension_table->GC_malloc_allow_interior)
+#define GC_malloc_atomic_allow_interior (scheme_extension_table->GC_malloc_atomic_allow_interior)
+#define GC_malloc_tagged_allow_interior (scheme_extension_table->GC_malloc_tagged_allow_interior)
 #  else
 #define GC_malloc_stubborn (scheme_extension_table->GC_malloc_stubborn)
 #define GC_malloc_uncollectable (scheme_extension_table->GC_malloc_uncollectable)
@@ -296,6 +299,7 @@
 #define scheme_get_unsigned_long_long_val (scheme_extension_table->scheme_get_unsigned_long_long_val)
 #define scheme_real_to_double (scheme_extension_table->scheme_real_to_double)
 #define scheme_make_cptr (scheme_extension_table->scheme_make_cptr)
+#define scheme_make_offset_cptr (scheme_extension_table->scheme_make_offset_cptr)
 #define scheme_get_proc_name (scheme_extension_table->scheme_get_proc_name)
 #define scheme_utf8_decode (scheme_extension_table->scheme_utf8_decode)
 #define scheme_utf8_decode_as_prefix (scheme_extension_table->scheme_utf8_decode_as_prefix)
@@ -539,6 +543,7 @@
 #endif
 #define scheme_equal_hash_key (scheme_extension_table->scheme_equal_hash_key)
 #define scheme_equal_hash_key2 (scheme_extension_table->scheme_equal_hash_key2)
+#define scheme_set_type_equality (scheme_extension_table->scheme_set_type_equality)
 #define scheme_build_list (scheme_extension_table->scheme_build_list)
 #define scheme_build_list_offset (scheme_extension_table->scheme_build_list_offset)
 #define scheme_make_list_immutable (scheme_extension_table->scheme_make_list_immutable)

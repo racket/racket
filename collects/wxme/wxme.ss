@@ -616,7 +616,17 @@
     (wxme-convert-port port close? #f))
 
   (define (do-read port who read)
-    (let ([port (decode who port (lambda (x) x) #f)])
+    (let ([port (if (with-handlers ([exn:fail? (lambda (x) #f)])
+                      (dynamic-require '#%mred-kernel #f)
+                      #t)
+                    ;; GUI mode, since MrEd is available:
+                    (let ([text% (dynamic-require '(lib "mred.ss" "mred") 'text%)]
+                          [open-input-text-editor (dynamic-require '(lib "mred.ss" "mred") 'open-input-text-editor)])
+                      (let ([t (new text%)])
+                        (send t insert-port port 'standard)
+                        (open-input-text-editor t 0 'end values (object-name port) #t)))
+                    ;; Non-GUI mode:
+                    (decode who port (lambda (x) x) #f))])
       (let ([v (read port)])
         (let ([v2 (let loop ()
                     (let ([v2 (read port)])

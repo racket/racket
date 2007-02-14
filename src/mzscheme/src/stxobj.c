@@ -2494,6 +2494,11 @@ Scheme_Object *scheme_stx_activate_certs(Scheme_Object *o)
   return lift_inactive_certs(o, 1);
 }
 
+int scheme_stx_has_empty_wraps(Scheme_Object *o)
+{
+  return SCHEME_NULLP(((Scheme_Stx *)o)->wraps);
+}
+
 /*========================================================================*/
 /*                           stx comparison                               */
 /*========================================================================*/
@@ -2682,6 +2687,14 @@ static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
 
 #define QUICK_STACK_SIZE 10
 
+#define EXPLAIN_RESOLVE 0
+#if EXPLAIN_RESOLVE
+static int explain_resolves = 0;
+# define EXPLAIN(x) if (explain_resolves) { x; }
+#else
+# define EXPLAIN(x) /* empty */
+#endif
+
 /* Although resolve_env may call itself recursively, the recursion
    depth is bounded (by the fact that modules can't be nested,
    etc.). */
@@ -2710,6 +2723,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
   Scheme_Object *bdg = NULL;
   Scheme_Hash_Table *export_registry = NULL;
 
+  EXPLAIN(printf("Resolving %s:\n", SCHEME_SYM_VAL(SCHEME_STX_VAL(a))));
+
   if (_wraps) {
     WRAP_POS_COPY(wraps, *_wraps);
     WRAP_POS_INC(wraps);
@@ -2722,33 +2737,45 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
       Scheme_Object *result, *key;
       int did_lexical = 0;
 
+      EXPLAIN(printf("Rename...\n"));
+
       result = scheme_false;
       while (!SCHEME_NULLP(o_rename_stack)) {
 	key = SCHEME_CAAR(o_rename_stack);
 	if (SAME_OBJ(key, result)) {
+          EXPLAIN(printf("Match %s\n", scheme_write_to_string(key, 0)));
 	  did_lexical = 1;
 	  result = SCHEME_CDR(SCHEME_CAR(o_rename_stack));
-	} else if (SAME_OBJ(key, scheme_true)) {
-	  /* marks a module-level renaming that overrides lexical renaming */
-	  did_lexical = 0;
-	}
+	} else {
+          EXPLAIN(printf("No match %s\n", scheme_write_to_string(key, 0)));
+          if (SAME_OBJ(key, scheme_true)) {
+            /* marks a module-level renaming that overrides lexical renaming */
+            did_lexical = 0;
+          }
+        }
 	o_rename_stack = SCHEME_CDR(o_rename_stack);
       }
       while (stack_pos) {
 	key = rename_stack[stack_pos - 1];
 	if (SAME_OBJ(key, result)) {
+          EXPLAIN(printf("Match %s\n", scheme_write_to_string(key, 0)));
 	  result = rename_stack[stack_pos - 2];
 	  did_lexical = 1;
-	} else if (SAME_OBJ(key, scheme_true)) {
-	  /* marks a module-level renaming that overrides lexical renaming */
-	  did_lexical = 0;
-	}
+	} else {
+          EXPLAIN(printf("No match %s\n", scheme_write_to_string(key, 0)));
+          if (SAME_OBJ(key, scheme_true)) {
+            /* marks a module-level renaming that overrides lexical renaming */
+            did_lexical = 0;
+          }
+        }
 	stack_pos -= 2;
       }
       if (!did_lexical)
 	result = mresult;
       else if (get_names)
 	get_names[0] = scheme_undefined;
+
+      EXPLAIN(printf("Result: %s\n", scheme_write_to_string(result, 0)));
 
       return result;
     } else if (SCHEME_RENAMESP(WRAP_POS_FIRST(wraps)) && w_mod) {
@@ -2934,6 +2961,9 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	      other_env = scheme_false;
 	      envname = SCHEME_VEC_ELS(rename)[2+c+ri];
 	      same = 1;
+              EXPLAIN(printf("Targes %s <- %s\n", 
+                             scheme_write_to_string(envname, 0),
+                             scheme_write_to_string(other_env, 0)));
 	    } else {
 	      envname = SCHEME_VEC_ELS(rename)[0];
 	      other_env = SCHEME_VEC_ELS(rename)[2+c+ri];
@@ -2946,10 +2976,17 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 		SCHEME_USE_FUEL(1);
 	      }
 
+              EXPLAIN(printf("Target %s <- %s (%d)\n", 
+                             scheme_write_to_string(envname, 0),
+                             scheme_write_to_string(other_env, 0),
+                             SCHEME_IMMUTABLEP(rename)));
+
 	      {
 		WRAP_POS w2;
 		WRAP_POS_INIT(w2, ((Scheme_Stx *)renamed)->wraps);
 		same = same_marks(&w2, &wraps, other_env, WRAP_POS_FIRST(wraps));
+                if (!same)
+                  EXPLAIN(printf("Different marks\n"));
 	      }
 	    }
 	    
@@ -2977,14 +3014,18 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
     } else if (SCHEME_RIBP(WRAP_POS_FIRST(wraps)) && !no_lexical) {
       /* Lexical-rename rib. Splice in the names. */
       rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(wraps);
+      EXPLAIN(printf("Rib: %p...\n", rib));
       if (skip_ribs) {
-	if (scheme_bin_gt_eq(rib->timestamp, skip_ribs))
+	if (scheme_bin_gt_eq(rib->timestamp, skip_ribs)) {
+          EXPLAIN(printf("Skip rib\n"));
 	  rib = NULL;
+        }
       }
       if (rib) {
-	if (SAME_OBJ(did_rib, rib))
+	if (SAME_OBJ(did_rib, rib)) {
+          EXPLAIN(printf("Did rib\n"));
 	  rib = NULL;
-	else {
+	} else {
 	  did_rib = rib;
 	  rib = rib->next; /* First rib record has no rename */
 	}
@@ -3270,6 +3311,16 @@ int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, long phase)
 {
   return scheme_stx_env_bound_eq(a, b, NULL, phase);
 }
+
+#if EXPLAIN
+Scheme_Object *scheme_explain_resolve_env(Scheme_Object *a)
+{
+  explain_resolves++;
+  a = resolve_env(NULL, a, 0, 0, NULL, NULL);
+  --explain_resolves;
+  return a;
+}
+#endif
 
 Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve)
 {

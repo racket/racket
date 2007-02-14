@@ -175,6 +175,9 @@
   scheme_extension_table->GC_malloc_atomic_uncollectable = GC_malloc_atomic_uncollectable;
   scheme_extension_table->scheme_malloc_uncollectable = scheme_malloc_uncollectable;
   scheme_extension_table->GC_malloc_array_tagged = GC_malloc_array_tagged;
+  scheme_extension_table->GC_malloc_allow_interior = GC_malloc_allow_interior;
+  scheme_extension_table->GC_malloc_atomic_allow_interior = GC_malloc_atomic_allow_interior;
+  scheme_extension_table->GC_malloc_tagged_allow_interior = GC_malloc_tagged_allow_interior;
 #  else
   scheme_extension_table->GC_malloc_stubborn = GC_malloc_stubborn;
   scheme_extension_table->GC_malloc_uncollectable = GC_malloc_uncollectable;
@@ -296,6 +299,7 @@
   scheme_extension_table->scheme_get_unsigned_long_long_val = scheme_get_unsigned_long_long_val;
   scheme_extension_table->scheme_real_to_double = scheme_real_to_double;
   scheme_extension_table->scheme_make_cptr = scheme_make_cptr;
+  scheme_extension_table->scheme_make_offset_cptr = scheme_make_offset_cptr;
   scheme_extension_table->scheme_get_proc_name = scheme_get_proc_name;
   scheme_extension_table->scheme_utf8_decode = scheme_utf8_decode;
   scheme_extension_table->scheme_utf8_decode_as_prefix = scheme_utf8_decode_as_prefix;
@@ -539,6 +543,7 @@
 #endif
   scheme_extension_table->scheme_equal_hash_key = scheme_equal_hash_key;
   scheme_extension_table->scheme_equal_hash_key2 = scheme_equal_hash_key2;
+  scheme_extension_table->scheme_set_type_equality = scheme_set_type_equality;
   scheme_extension_table->scheme_build_list = scheme_build_list;
   scheme_extension_table->scheme_build_list_offset = scheme_build_list_offset;
   scheme_extension_table->scheme_make_list_immutable = scheme_make_list_immutable;

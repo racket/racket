@@ -4072,6 +4072,7 @@
   (require #%qqstx)
   (require #%define)
   (require #%expobs) ; so it's attached
+  (require (only #%foreign))  ; so it's attached, but doesn't depend on any exports
 
   (provide (all-from #%more-scheme)
 	   (all-from-except #%misc make-standard-module-name-resolver)

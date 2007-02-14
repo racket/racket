@@ -120,10 +120,56 @@
          (lambda (x y)
            (let ([x (ptr-ref x _int)] [y (ptr-ref y _int)])
              (cond [(< x y) -1] [(> x y) +1] [else 0])))))
+
+  ;; ---
+  (t  55 'grab7th   (_fun _pointer -> _int ) #"012345678")
+  (t  56 'grab7th   (_fun _pointer -> _int ) (ptr-add #"012345678" 1))
+  (t  52 'grab7th   (_fun _pointer -> _int ) (ptr-add #"012345678" -3))
   )
 
-(report-errs)
+;; Test pointer arithmetic and memmove-like operations
+(let ([p (malloc 10 _int)])
+  (memset p 0 10 _int)
+  (test 0 ptr-ref p _int)
+  (test 0 ptr-ref (ptr-add p 3 _int) _int)
+  (ptr-set! p _int 5)
+  (test 5 ptr-ref p _int)
+  (test 0 ptr-ref (ptr-add p 3 _int) _int)
+  (memcpy p 3 _int p 0 1 _int)
+  (test 5 ptr-ref (ptr-add p 3 _int) _int)
 
+  ;; A MzScheme `int' is always 4 bytes.
+  (memset p 1 _int 17 9 _int)
+  (test 5 ptr-ref p _int)
+  (test #x11111111 ptr-ref (ptr-add p 4) _int)
+  (memset p 2 18 9 _int)
+  (test #x12121212 ptr-ref (ptr-add p 4) _int)
+  (if (system-big-endian?)
+      (test #x00001212 ptr-ref p _int)
+      (test #x12120005 ptr-ref p _int))
+
+  (ptr-set! (ptr-add p 4 _int) _int 10)
+  (ptr-set! (ptr-add p 5 _int) _int 11)
+  (ptr-set! (ptr-add p 6 _int) _int 12)
+  (memmove p 2 _int p 4 _int 3 _int)
+  (test 10 ptr-ref (ptr-add p 2 _int) _int)
+  (test 11 ptr-ref (ptr-add p 3 _int) _int)
+  (test 12 ptr-ref (ptr-add p 4 _int) _int)
+  (memmove p 6 _short p 8 _byte 12)
+  (test 10 ptr-ref (ptr-add p 2 _int) _int)
+  (test 10 ptr-ref (ptr-add p 3 _int) _int)
+  (test 11 ptr-ref (ptr-add p 4 _int) _int)
+  (test 12 ptr-ref (ptr-add p 5 _int) _int)
+  (test 12 ptr-ref (ptr-add p 6 _int) _int)
+  (memmove p p 8 4)
+  (test 10 ptr-ref p _int)
+
+  (test #f ptr-equal? p (ptr-add p 3))
+  (test #t ptr-equal? p (ptr-add (ptr-add p 3) -3))
+  (test #f ptr-equal? #f (ptr-add #f 8))
+  (test #t ptr-equal? #f (ptr-add (ptr-add #f 8) -8)))
+
+(report-errs)
 
 #| --- ignore everything below ---
 
