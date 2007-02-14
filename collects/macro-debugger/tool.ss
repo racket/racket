@@ -101,7 +101,9 @@
         (class %
           (inherit get-top-level-window)
           (define/augment (after-set-next-settings s)
-	    (send (get-top-level-window) check-language)
+            (let ([tlw (get-top-level-window)])
+              (when tlw
+                (send tlw check-language)))
 	    (inner (void) after-set-next-settings s))
           (super-new)))
 

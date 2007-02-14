@@ -45,7 +45,7 @@
       ;; module-mixin : (implements drscheme:language:language<%>)
       ;;             -> (implements drscheme:language:language<%>)
       (define (module-mixin %)
-        (class* % (module-language<%>)
+        (class* % (drscheme:language:language<%> module-language<%>)
           (define/override (use-namespace-require/copy?) #t)
           (field [iteration-number 0])
           

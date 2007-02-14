@@ -635,7 +635,9 @@
             (inner (void) on-delete x y))
 
           (define/augment (after-set-next-settings s)
-            (send (get-top-level-window) check-current-language-for-stepper)
+            (let ([tlw (get-top-level-window)])
+              (when tlw
+                (send tlw check-current-language-for-stepper)))
             (inner (void) after-set-next-settings s))
 
           (super-new)))

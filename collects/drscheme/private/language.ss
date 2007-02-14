@@ -34,34 +34,35 @@
       ;; text/pos = (make-text/pos (instanceof text% number number))
       ;; this represents a portion of a text to be processed.
       
-      (define language<%>
-	(interface ()
-	  marshall-settings
-          unmarshall-settings
-          default-settings
-	  default-settings?
-          
-          order-manuals
-          
-          front-end/complete-program
-          front-end/interaction
-	  config-panel
-	  on-execute
-          first-opened
-          render-value/format
-          render-value
-          
-          capability-value
-          
-          create-executable
-          
-          get-language-position
-          get-language-name
-          get-style-delta
-          get-language-numbers
-          get-one-line-summary
-          get-language-url
-          get-comment-character))
+  (define language<%>
+    (interface ()
+      marshall-settings
+      unmarshall-settings
+      default-settings
+      default-settings?
+      
+      order-manuals
+      
+      front-end/complete-program
+      front-end/interaction
+      config-panel
+      on-execute
+      first-opened
+      render-value/format
+      render-value
+      
+      capability-value
+      
+      create-executable
+      
+      get-save-module
+      get-language-position
+      get-language-name
+      get-style-delta
+      get-language-numbers
+      get-one-line-summary
+      get-language-url
+      get-comment-character))
       
       (define module-based-language<%>
 	(interface ()
@@ -507,6 +508,8 @@
 	(mixin (module-based-language<%>) (language<%>)
 	  (inherit get-module get-transformer-module use-namespace-require/copy?
                    get-init-code use-mred-launcher get-reader)
+          
+          (define/public (get-save-module) #f)
           
           (define/pubment (capability-value s) 
             (inner (get-capability-default s) capability-value s))

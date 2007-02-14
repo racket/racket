@@ -359,7 +359,7 @@ module browser threading seems wrong.
 ;                                                                                                  
 ;                                                                                                  
 
-
+    
       (define get-definitions-text%
         (let ([definitions-text% #f])
           (λ ()
@@ -420,6 +420,23 @@ module browser threading seems wrong.
                                   (set-current-mode mode))
                                 (loop (cdr modes))))]))))
             
+            (inherit begin-edit-sequence end-edit-sequence
+                     delete insert last-position paragraph-start-position
+                     get-character)
+            (define/augment (on-save-file filename fmt)
+              (inner (void) on-save-file filename fmt)
+              (let ([name-mod (send (drscheme:language-configuration:language-settings-language next-settings)
+                                    get-save-module)])
+                (when name-mod
+                  (begin-edit-sequence)
+                  (let-values ([(base name dir) (split-path filename)])
+                    (insert (format "(module ~s ~s\n" 
+                                    (string->symbol (regexp-replace #rx"\\.[^.]*$"
+                                                                    (path->string name)
+                                                                    ""))
+                                    name-mod)
+                            0 0))
+                  (insert ")" (last-position) (last-position)))))
             (define/augment (after-save-file success?)
               (when success?
                 (let ([filename (get-filename)])
@@ -429,8 +446,56 @@ module browser threading seems wrong.
                     (with-handlers ([exn:fail:filesystem? void])
                       (let-values ([(creator type) (file-creator-and-type filename)])
                         (file-creator-and-type filename #"DrSc" type))))))
+              (let ([name-mod (send (drscheme:language-configuration:language-settings-language next-settings)
+                                    get-save-module)])
+                (when name-mod
+                  (delete (- (last-position) 1) (last-position))
+                  (delete (paragraph-start-position 0)
+                          (paragraph-start-position 1))
+                  (end-edit-sequence)
+                  (set-modified #f)))
               (inner (void) after-save-file success?))
-              
+            (define/augment (on-load-file filename format)
+              (inner (void) on-load-file filename format)
+              (begin-edit-sequence))
+            (define/augment (after-load-file success?)
+              (when success?
+                (let* ([tp (open-input-text-editor this)]
+                       [l (read-line tp)])
+                  (unless (eof-object? l)
+                    (unless (regexp-match #rx"[;#]" l) ;; no comments on the first line
+                      (when (equal? #\) (get-character (- (last-position) 1)))
+                        (let ([sp (open-input-string l)])
+                          (when (regexp-match #rx"[(]" sp)
+                            (let/ec k
+                              (let-values ([(mod name module-spec)
+                                            (with-handlers ([exn:fail:read? (λ (x) (k (void)))])
+                                              (values (read sp)
+                                                      (read sp)
+                                                      (read sp)))])
+                                (when (eq? mod 'module)
+                                  (let ([matching-language
+                                         (ormap 
+                                          (λ (lang)
+                                            (and (equal? module-spec (send lang get-save-module))
+                                                 lang))
+                                          (drscheme:language-configuration:get-languages))])
+                                    (delete (- (last-position) 1) (last-position))
+                                    (delete (paragraph-start-position 0)
+                                            (paragraph-start-position 1))
+                                    (when matching-language
+                                      (unless (eq? (drscheme:language-configuration:language-settings-language 
+                                                    next-settings)
+                                                   matching-language)
+                                        (set-next-settings
+                                         (drscheme:language-configuration:make-language-settings 
+                                          matching-language
+                                          (send matching-language default-settings)))))
+                                    (set-modified #f))))))))))))
+
+              (end-edit-sequence)
+              (inner (void) after-load-file success?))
+                              
             (inherit is-modified? run-after-edit-sequence)
             (define/override (set-modified mod?)
               (super set-modified mod?)
@@ -458,12 +523,17 @@ module browser threading seems wrong.
             
             (define/pubment (get-next-settings) next-settings)
             (define/pubment (set-next-settings _next-settings)
+              (when (or (send (drscheme:language-configuration:language-settings-language _next-settings)
+                              get-save-module)
+                        (send (drscheme:language-configuration:language-settings-language next-settings)
+                              get-save-module))
+                (set-modified #t))
               (set! next-settings _next-settings)
               (change-mode-to-match)
 	      (after-set-next-settings _next-settings))
 
 	    (define/pubment (after-set-next-settings s)
-	      (inner (void) after-set-next-settings s))
+              (inner (void) after-set-next-settings s))
             
             (define/public (needs-execution)
               (or needs-execution-state

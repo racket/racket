@@ -436,7 +436,9 @@
                         (loop start-pos (rest marks)))))))))
 
 	  (define/augment (after-set-next-settings s)
-	    (send (get-top-level-window) check-current-language-for-debugger)
+            (let ([tlw (get-top-level-window)])
+              (when tlw
+                (send tlw check-current-language-for-debugger)))
 	    (inner (void) after-set-next-settings s))))
       
       (define (debug-interactions-text-mixin super%)

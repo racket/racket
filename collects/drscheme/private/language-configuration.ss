@@ -1379,10 +1379,9 @@
         (let* ([extras-mixin
                 (λ (mred-launcher? one-line-summary)
                   (λ (%)
-                    (class %
+                    (class* % (drscheme:language:language<%>)
                       (define/override (get-one-line-summary) one-line-summary)
                       (define/override (use-namespace-require/copy?) #t)
-                      
                       (inherit get-module get-transformer-module get-init-code)
                       (define/override (create-executable setting parent program-filename teachpacks)
                         (let ([executable-fn
@@ -1403,7 +1402,7 @@
                              (get-init-code setting teachpacks)
                              mred-launcher?
                              (use-namespace-require/copy?)))))
-                      (super-instantiate ()))))]
+                      (super-new))))]
                [make-simple
                 (λ (module id position numbers mred-launcher? one-line-summary extra-mixin)
                   (let ([%

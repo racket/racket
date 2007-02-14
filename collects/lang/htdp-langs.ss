@@ -450,7 +450,9 @@ tracing todo:
               [else (inner (drscheme:language:get-capability-default key) 
                            capability-value
                            key)]))
-
+          
+          (define/override (get-save-module) (get-module))
+        
           (super-new)))
       
       (define (stepper-settings-language %)
