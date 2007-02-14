@@ -460,38 +460,60 @@ module browser threading seems wrong.
               (begin-edit-sequence))
             (define/augment (after-load-file success?)
               (when success?
-                (let* ([tp (open-input-text-editor this)]
-                       [l (read-line tp)])
-                  (unless (eof-object? l)
-                    (unless (regexp-match #rx"[;#]" l) ;; no comments on the first line
-                      (when (equal? #\) (get-character (- (last-position) 1)))
-                        (let ([sp (open-input-string l)])
-                          (when (regexp-match #rx"[(]" sp)
-                            (let/ec k
-                              (let-values ([(mod name module-spec)
-                                            (with-handlers ([exn:fail:read? (λ (x) (k (void)))])
-                                              (values (read sp)
-                                                      (read sp)
-                                                      (read sp)))])
-                                (when (eq? mod 'module)
-                                  (let ([matching-language
-                                         (ormap 
-                                          (λ (lang)
-                                            (and (equal? module-spec (send lang get-save-module))
-                                                 lang))
-                                          (drscheme:language-configuration:get-languages))])
-                                    (delete (- (last-position) 1) (last-position))
-                                    (delete (paragraph-start-position 0)
-                                            (paragraph-start-position 1))
-                                    (when matching-language
-                                      (unless (eq? (drscheme:language-configuration:language-settings-language 
-                                                    next-settings)
-                                                   matching-language)
-                                        (set-next-settings
-                                         (drscheme:language-configuration:make-language-settings 
-                                          matching-language
-                                          (send matching-language default-settings)))))
-                                    (set-modified #f))))))))))))
+                (let ([found-language? #f])
+                  (let* ([tp (open-input-text-editor this)]
+                         [l (read-line tp)])
+                    (unless (eof-object? l)
+                      (unless (regexp-match #rx"[;#]" l) ;; no comments on the first line
+                        (when (equal? #\) (get-character (- (last-position) 1)))
+                          (let ([sp (open-input-string l)])
+                            (when (regexp-match #rx"[(]" sp)
+                              (let/ec k
+                                (let-values ([(mod name module-spec)
+                                              (with-handlers ([exn:fail:read? (λ (x) (k (void)))])
+                                                (values (parameterize ([read-accept-reader #f]) (read sp))
+                                                        (parameterize ([read-accept-reader #f]) (read sp))
+                                                        (parameterize ([read-accept-reader #f]) (read sp))))])
+                                  (when (eq? mod 'module)
+                                    (let ([matching-language
+                                           (ormap 
+                                            (λ (lang)
+                                              (and (equal? module-spec (send lang get-save-module))
+                                                   lang))
+                                            (drscheme:language-configuration:get-languages))])
+                                      (when matching-language
+                                        (delete (- (last-position) 1) (last-position))
+                                        (delete (paragraph-start-position 0)
+                                                (paragraph-start-position 1))
+                                        (set! found-language? #t)
+                                        (unless (eq? (drscheme:language-configuration:language-settings-language 
+                                                      next-settings)
+                                                     matching-language)
+                                          (set-next-settings
+                                           (drscheme:language-configuration:make-language-settings 
+                                            matching-language
+                                            (send matching-language default-settings))))
+                                        (set-modified #f))))))))))))
+                  (unless found-language?
+                    (let* ([tp (open-input-text-editor this)]
+                           [r1 (parameterize ([read-accept-reader #f]) (read tp))]
+                           [r2 (parameterize ([read-accept-reader #f]) (read tp))])
+                      (when (and (eof-object? r2)
+                                 (pair? r1)
+                                 (eq? (car r1) 'module))
+                        (let ([ml (ormap (λ (lang)
+                                           (and (is-a? lang drscheme:module-language:module-language<%>)
+                                                lang))
+                                         (drscheme:language-configuration:get-languages))])
+                          (when ml
+                            (unless (eq? (drscheme:language-configuration:language-settings-language 
+                                          next-settings)
+                                         ml)
+                              (set-next-settings
+                               (drscheme:language-configuration:make-language-settings 
+                                ml
+                                (send ml default-settings))))
+                            (set-modified #f))))))))
 
               (end-edit-sequence)
               (inner (void) after-load-file success?))
