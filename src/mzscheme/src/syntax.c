@@ -3788,7 +3788,6 @@ do_let_expand(Scheme_Object *form, Scheme_Comp_Env *origenv, Scheme_Expand_Info 
   if (!SCHEME_STX_NULLP(vs))
     scheme_wrong_syntax(NULL, vs, form, NULL);
 
-  use_env = origenv;
   if (env_already)
     env = env_already;
   else
@@ -3796,6 +3795,8 @@ do_let_expand(Scheme_Object *form, Scheme_Comp_Env *origenv, Scheme_Expand_Info 
 
   if (letrec)
     use_env = env;
+  else
+    use_env = scheme_no_defines(origenv);
 
   /* Pass 1: Rename */
 
