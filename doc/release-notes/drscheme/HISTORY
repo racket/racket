@@ -2,6 +2,15 @@
         Version 370
 ------------------------------
 
+  . The teaching languages now add a `module' wrapper to
+    saved files. Although the content of the file, when
+    viewed in drscheme, does not change, this does mean that
+    drscheme "remembers" which language was used for each
+    file, even if you change languages when editing other
+    files.
+
+  . added get-name-module to language<%> interface
+
   . the framework preferences library now saves prefs each
     time any one of them is changed, and works better when
     multiple apps are both using the library. As a
