@@ -156,7 +156,7 @@
                    (if (eq? '3m (system-type 'gc)) " [current default]" "")))]
 	[("--cgc")
 	 ,(lambda (f) (compiler:option:3m #f))
-	 (,(format "Compile/link for 3m, with -e/-c/-o/--exe/etc.~a"
+	 (,(format "Compile/link for CGC, with -e/-c/-o/--exe/etc.~a"
                    (if (eq? 'cgc (system-type 'gc)) " [current default]" "")))]]
        [once-each
 	[("-m" "--module")
