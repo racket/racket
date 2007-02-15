@@ -414,6 +414,16 @@
               3)
            '3)
 
+(test-comp '(let ([x (#%expression
+                      (begin (quote-syntax foo) 3))])
+              x)
+           '3)
+
+(test-comp '(if (lambda () 10)
+                'ok
+                (quote-syntax no!))
+           ''ok)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

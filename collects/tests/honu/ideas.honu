@@ -1,0 +1,121 @@
+#honu
+
+/* Some examples to consider when writing a test suite. */
+
+-10;
+
+(int)10;
+//T (int)"apple";
+//R (int)(obj)"apple";
+
+//T 1(10);
+
+//T int xyz = "a";
+//R int xyz = (obj)"a";
+
+int b(int y) { 1 + y; }
+
+int f(int x, (string -> int) g) {
+   if (x == 0) 1; else g("a");
+}
+
+int g(string s) { return 5; }
+
+//T g({ if (true) "a"; else 5; });
+
+string j (string s) { return s; }
+
+obj h = j;
+
+f(1, g);
+f(1, { obj g2 = g; g2; });
+f(0, h);
+
+string function(string x) { return x; };
+
+int loop(int n) {
+  if (n == 0)
+    return 1;
+  else
+    return loop(n - 1);
+}
+
+{ time loop(1000000); } + 1;
+
+obj z(a) {
+  int y = 12;
+  return 13;
+}
+z(10);
+
+if (true)
+  if (true)
+    1;
+  else
+    2;
+else
+  3;
+
+1 < 2 && 7 > 6;
+
+<a, b, c> b poly(a n) { if (n) poly<bool, b, c>(false); else { obj x = 12; x;} }
+poly<int, int, int> (1);
+
+<a, b, c> obj paly(obj n, obj m) { return n; }
+
+obj pf0((a b c >-> (a -> b)) g) { return g<int,bool,int>(10); }
+//R pf0(poly);
+
+obj pf((a b c >-> (a -> b)) g) { return g<int,int,int>(10); }
+pf(poly);
+//T pf(paly);
+pf({ obj x = poly; x; } );
+pf((obj)poly);
+//R pf({ obj x = paly; x; } );
+//R pf((obj)paly);
+
+// Check time of 2-arg loop...
+obj loop3(int n, obj res) {
+  if (n == 0)
+    return res;
+  else
+    return loop3(n - 1, res);
+}
+time loop3(1000000, false);
+
+// Compare this cost to loop3:
+<a> a loop2(int n, a res) {
+  if (n == 0)
+    return res;
+  else
+    return loop2<a>(n - 1, res);
+}
+time loop2<bool>(1000000, false);
+
+int app((int int -> int) f) { return f(0, 1); }
+app(int function(int a, int b) { return a; });
+
+
+// { if (true) int function(int b) { return 1; }; else 10; } (1);
+{ if (true) int function(int b) { return 1; }; else { obj x = 10; x; } } (1);
+(true ? int function(int b) { return 1; } : { obj x = 10; x; } ) (1);
+{ if (true) int function(int b) { return 1; }; else obj function(int x) { return "hi"; }; } (1);
+// { if (true) int function(int b, obj z) { return 1; }; else obj function(int x) { return "hi"; }; } (1);
+{ if (false) int function(int b) { return 1; }; else obj function(int x) { return "hi"; }; } (1);
+{ if (false) int function(int b) { return 1; }; else obj function(obj x) { return "hi"; }; } ("a");
+// { if (true) int function(int b) { return 1; }; else obj function(obj x) { return "hi"; }; } ("a");
+{ if (true) obj function(obj x) { return "hi"; }; else int function(int b) { return 1; };} ("a");
+// { if (false) obj function(obj x) { return "hi"; }; else int function(int b) { return 1; };} ("a");
+
+int make_adder((int -> int) x) { x(10); }
+{ ((int -> int) -> int) mkaddr = make_adder; mkaddr; }(b);
+{ if (true) { ((int -> int) -> int) mkaddr = make_adder; mkaddr; } else { obj x = 5; x; } }(b);
+
+<a> function(a y) { return 10; };
+(<a> function(a y) { return 10; });
+//(<a> function(a y) { return 10; })(12);
+//(<a> function(a y) { return 10; })<int>(12);
+
+(int function(int b, int a) { return a + b; }) (1, 2);
+
+provide make_adder;
