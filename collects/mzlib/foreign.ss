@@ -961,8 +961,9 @@
 
 (provide (rename allocate-cvector make-cvector))
 (define (allocate-cvector type len)
-  (let ([cblock (malloc len type)])
-    (make-cvector cblock type len)))
+  (make-cvector (if (zero? len) #f ; 0 => NULL
+                    (malloc len type))
+                type len))
 
 (provide (rename cvector-args cvector))
 (define (cvector-args type . args)
