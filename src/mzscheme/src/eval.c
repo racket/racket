@@ -4077,7 +4077,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       /* FIXME: this needs EXPAND_OBSERVE callbacks. */
       var = scheme_stx_track(SCHEME_PTR1_VAL(var), form, form);
       form = scheme_stx_cert(var, scheme_false, NULL, form, NULL, 1);
-      if (!rec[drec].comp) {
+      if (!rec[drec].comp && (rec[drec].depth != -1)) {
         /* Already fully expanded. */
         return form;
       }

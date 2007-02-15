@@ -4434,7 +4434,7 @@ static Scheme_Object *expression_syntax(Scheme_Object *form, Scheme_Comp_Env *en
 static Scheme_Object *expression_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
   return single_expand(form, scheme_no_defines(env), erec, drec, 0,
-                       !scheme_is_toplevel(env));
+                       !(env->flags & SCHEME_TOPLEVEL_FRAME));
 }
 
 
