@@ -3315,7 +3315,7 @@ int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, long phase)
   return scheme_stx_env_bound_eq(a, b, NULL, phase);
 }
 
-#if EXPLAIN
+#if EXPLAIN_RESOLVE
 Scheme_Object *scheme_explain_resolve_env(Scheme_Object *a)
 {
   explain_resolves++;
