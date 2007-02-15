@@ -1,6 +1,8 @@
 #honu
 
-/* Some examples to consider when writing a test suite. */
+/* Some examples to consider when writing a test suite.
+   //T means the example should be a type error.
+   //R means the example should be a run-time error. */
 
 -10;
 
@@ -33,6 +35,7 @@ f(0, h);
 
 string function(string x) { return x; };
 
+/* Should be the same speed as the Scheme version: */
 int loop(int n) {
   if (n == 0)
     return 1;
@@ -74,7 +77,7 @@ pf((obj)poly);
 //R pf({ obj x = paly; x; } );
 //R pf((obj)paly);
 
-// Check time of 2-arg loop...
+/* Check time of 2-arg loop... */
 obj loop3(int n, obj res) {
   if (n == 0)
     return res;
@@ -83,7 +86,7 @@ obj loop3(int n, obj res) {
 }
 time loop3(1000000, false);
 
-// Compare this cost to loop3:
+/* Compare this cost to loop3: */
 <a> a loop2(int n, a res) {
   if (n == 0)
     return res;
@@ -96,16 +99,16 @@ int app((int int -> int) f) { return f(0, 1); }
 app(int function(int a, int b) { return a; });
 
 
-// { if (true) int function(int b) { return 1; }; else 10; } (1);
+//T { if (true) int function(int b) { return 1; }; else 10; } (1);
 { if (true) int function(int b) { return 1; }; else { obj x = 10; x; } } (1);
 (true ? int function(int b) { return 1; } : { obj x = 10; x; } ) (1);
 { if (true) int function(int b) { return 1; }; else obj function(int x) { return "hi"; }; } (1);
-// { if (true) int function(int b, obj z) { return 1; }; else obj function(int x) { return "hi"; }; } (1);
+//T { if (true) int function(int b, obj z) { return 1; }; else obj function(int x) { return "hi"; }; } (1);
 { if (false) int function(int b) { return 1; }; else obj function(int x) { return "hi"; }; } (1);
 { if (false) int function(int b) { return 1; }; else obj function(obj x) { return "hi"; }; } ("a");
-// { if (true) int function(int b) { return 1; }; else obj function(obj x) { return "hi"; }; } ("a");
+//R { if (true) int function(int b) { return 1; }; else obj function(obj x) { return "hi"; }; } ("a");
 { if (true) obj function(obj x) { return "hi"; }; else int function(int b) { return 1; };} ("a");
-// { if (false) obj function(obj x) { return "hi"; }; else int function(int b) { return 1; };} ("a");
+//R { if (false) obj function(obj x) { return "hi"; }; else int function(int b) { return 1; };} ("a");
 
 int make_adder((int -> int) x) { x(10); }
 { ((int -> int) -> int) mkaddr = make_adder; mkaddr; }(b);
@@ -113,8 +116,8 @@ int make_adder((int -> int) x) { x(10); }
 
 <a> function(a y) { return 10; };
 (<a> function(a y) { return 10; });
-//(<a> function(a y) { return 10; })(12);
-//(<a> function(a y) { return 10; })<int>(12);
+//T (<a> function(a y) { return 10; })(12);
+(<a> function(a y) { return 10; })<int>(12);
 
 (int function(int b, int a) { return a + b; }) (1, 2);
 
