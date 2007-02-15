@@ -1,8 +1,12 @@
 
 (module util mzscheme
-  (provide extract-until)
+  (provide delim-identifier=?
+           extract-until)
 
   (require (lib "stx.ss" "syntax"))
+
+   (define (delim-identifier=? a b)
+     (eq? (syntax-e a) (syntax-e b)))
 
   (define extract-until
     (case-lambda
@@ -13,7 +17,7 @@
 	  (values #f #f #f)]
 	 [(and (identifier? (stx-car r))
 	       (ormap (lambda (id)
-			(module-identifier=? id (stx-car r)))
+			(delim-identifier=? id (stx-car r)))
 		      ids))
 	  (values (reverse (if keep?
 			       (cons (stx-car r) val-stxs) 

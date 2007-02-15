@@ -2,48 +2,156 @@
 >>> FOR NOW, THIS IS AN EXPERIMENTAL TOY <<<
     > Everything is subject to change. <
 
-Write a dynamically typed Honu program as
+Honu is a "gradual-ly typed" language. That is, it's statically typed,
+but any expression can have type `obj', and an expresion of type `obj'
+is implicitly coreced to any other type by inserting run-time checks
+(with delayed checks for higher-order values, as in a contract
+system).
 
- #honu dynamic
+Every identifier binding has a declared type --- it's `obj' if an
+optional <type> is omitted --- and every function has a declared
+return type. Types for expressions are inferred in the obvious
+way. [TODO: explain "obvious".]
 
- <defn-or-provide>
+The syntax is much like Java, but also slightly influenced by
+Javascript, since functions are first-class values. Honu support
+higher-order parametric polymorphism, for which it uses the Java
+"generic" terminology.
+
+There no no classes/records, yet. That's the next step.
+
+
+Write a Honu program as
+
+ #honu
+
+ <stmt|defn|impexp>
  ...
 
-The syntax of a definition is much like Java, and type positions in
-Java are roughly contract positions in dynamic Honu.
+and run it like a `(module ...)' program.
 
-The only supported base "types" right now are
+Each <stmt> as a top-level <stmt|defn> is implicitly wrapped to print
+the result of the <stmt> (if the result is not void).
 
-    int     - exact integer
-    obj     - anything
-    string  - character string
+The following grammar is a lie, because Honu is extensible in a way
+that doesn't fit BNFs. But it's (intended as) an accurate picture of
+the initial grammar before any extensions.
 
-and the only "type constructor" is
+Types:
 
-    (_ -> _)
+ <type> := obj                   // anything
+        |  bool
+        |  int                   // exact integer
+        |  string                // character string
+        |  (<type>* -> <type>)   // procedure
+        |  (<id>* >-> <type>)    // generic
+        |  <id>                  // if bound as generic argument
 
-where "_" is to be replaced with a "type". [Ok, "->" is not very Java
-like...]
+Definitions:
 
-Every declaration must have a value, like this:
+  <defn> := var [<type>] <id> = <expr>;   // <type> defaults to `obj'
+         |  const [<type>] <id> = <expr>; // prohibits assignment
+         |  <type> <id> = <expr>;
+         |  <type> id(<arg>,*) { <stmt|defn>* }
+         |  < <id>,* > <type> id(<arg>,*) { <stmt|defn>* }
 
-  #honu dynamic
+   <arg> := <id>        // same as `obj <id>'
+         |  <type> <id>
 
-  int v = 10;
+The <defn> form is a generic-procedure definition.
 
-  int f(int x) {
-    return x + 1;
-  }
+Expressions:
 
-  (int -> int) g() {
-    return f;
-  }
+  <expr> := <literal>
+         | <expr> <binop> <expr>
+         |  <unpreop> <expr>
+         |  <expr> <unpostop>
+         |  (<expr>)
+         |  { <stmt|defn>* }
+         |  (type)<expr>         // cast
+         |  <expr>(<expr>,*)     // procedure call
+         |  <expr> [ <expr> ]    // array access (eventually)
+         |  <expr> < <type>,* >  // generic instantiation
+         |  [type] function(<arg>,*) { <stmt|defn>* } // anon function
+         |  < <id>,* > [type] function(<arg>,*) { <stmt|defn>* }
 
-  provide f, g;
+  <literal> := <number>
+            |  <string>
+            |  true  | false
 
-The "return" keyword is optional, but allowed only for expressions in
-tail position.
+  <binop> := + | - | * | / | %
+          | == | < | > | >= | <= | = 
+          | && | ||
+          |  ? | :    // see note below
 
-Assignment: =
-Operators: + - * / %
-Functions: stringToNumber numberToString
+  Operators have the same precedence as in Java
+
+  Note: `<expr> ? <expr> : <expr>' is currently parsed as
+        `(<expr> ? (<expr> : <expr>))', where `?' looks for 
+        `:' in its second argument.
+
+Statements:
+
+  <stmt|defn> := <stmt> 
+              | <defn>          // in non-tail positions, only
+
+  <stmt> := <expr> ;
+         |  if (<expr>) <branch>
+         |  if (<expr>) <branch> else <branch>
+         |  return <stmt>        // in tail positions, only
+         |  time <expr> ;
+
+  <branch> := { <stmt>* }
+           |  <stmt>
+
+Imports and exports:
+
+ <stmt|defn|impexp> := <stmt|defn>
+                    |  provide <id>,* ;
+
+------------------------------------------------------------------------
+
+About Honu Parsing and Typechecking
+-----------------------------------
+
+A Honu program is first parsed by using the MzScheme reader, which
+goes into H-expression mode due to the leading #honu. This read phase
+tokenizes and groups based on parens, braces, brackets, and (under
+certain circumstances) angle brackets. See the MzScheme manual for
+details.
+
+The program is then parsed, expanded (including translation to
+Scheme), and type-checked all at once. Thus, the parsing of a term can
+depend on the type assigned by the context.
+
+Parsing proceeds by taking the first thing in the reader's output and
+checking whether it has a binding as a Honu transformer. For example
+`int' will have a binding to a transformer that expands the next bit
+of the stream to a variable or function definition. This transformer
+check is performed when the stream starts with an identifier or a
+parenthesized group (<h-expr> ...) includes only one operator
+identifier; in the latter case, the operator is used for looking up a
+transformer. For example, `(int -> int)' starts a definition because
+`->' is bound to a transformer.
+
+A transformer takes the current stream and a context object; it
+returns a Scheme expression and the unconsumed part of the stream. The
+Scheme expression is likely to contain unparsed H-expression
+representations in a `honu-unparsed-block' form, which is bound to a
+Scheme macro in the usual way to continue parsing later.
+
+A context object can be anything. The base Honu grammar implies
+several kinds of contexts, each with its own record type (described
+later). A transformer should expand only in contexts that it
+recognizes, and it should raise a syntax error when given any context
+that it doesn't recognize. A transformer might expand differently in
+different contexts. For example, `int' expands to a definition in a
+block context (e.g., at the top level), but to a type description in a
+type context (e.g., in a procedure's formal argument list).
+
+When the start of the stream offers no other guidance, it is parsed as
+an expression. The expression-parsing rules are essentially hardwired
+to the Java grammar rules. (In the future, programmers will likely
+have control over precedence, at least.)
+
+[to be continued]
