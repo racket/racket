@@ -1208,6 +1208,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_INTP(val)) {
         Tsint8 tmp;
         tmp = (Tsint8)(SCHEME_INT_VAL(val));
+        (((Tsint8*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","int8",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1222,6 +1223,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_INTP(val)) {
         Tuint8 tmp;
         tmp = (Tuint8)(SCHEME_UINT_VAL(val));
+        (((Tuint8*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","uint8",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1236,6 +1238,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_INTP(val)) {
         Tsint16 tmp;
         tmp = (Tsint16)(SCHEME_INT_VAL(val));
+        (((Tsint16*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","int16",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1250,6 +1253,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_INTP(val)) {
         Tuint16 tmp;
         tmp = (Tuint16)(SCHEME_UINT_VAL(val));
+        (((Tuint16*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","uint16",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1276,6 +1280,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_INTP(val)) {
         Tsint32 tmp;
         tmp = (Tsint32)(SCHEME_INT_VAL(val));
+        (((Tsint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","fixint",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1290,6 +1295,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_INTP(val)) {
         Tuint32 tmp;
         tmp = (Tuint32)(SCHEME_UINT_VAL(val));
+        (((Tuint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","ufixint",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1304,6 +1310,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_INTP(val)) {
         long tmp;
         tmp = (long)(SCHEME_INT_VAL(val));
+        (((long*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","fixnum",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1318,6 +1325,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_INTP(val)) {
         unsigned long tmp;
         tmp = (unsigned long)(SCHEME_UINT_VAL(val));
+        (((unsigned long*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","ufixnum",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1332,6 +1340,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_FLTP(val)) {
         float tmp;
         tmp = (float)(SCHEME_FLT_VAL(val));
+        (((float*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","float",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1346,6 +1355,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_DBLP(val)) {
         double tmp;
         tmp = (double)(SCHEME_DBL_VAL(val));
+        (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","double",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1360,6 +1370,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (SCHEME_REALP(val)) {
         double tmp;
         tmp = (double)(scheme_real_to_double(val));
+        (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","double*",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1374,6 +1385,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (1) {
         int tmp;
         tmp = (int)(SCHEME_TRUEP(val));
+        (((int*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","bool",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1395,7 +1407,6 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
           *basetype_p = FOREIGN_string_ucs_4;
           return tmp;
         }
-        (((mzchar**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","string/ucs-4",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1417,7 +1428,6 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
           *basetype_p = FOREIGN_string_utf_16;
           return tmp;
         }
-        (((unsigned short**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","string/utf-16",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1439,7 +1449,6 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
           *basetype_p = FOREIGN_bytes;
           return tmp;
         }
-        (((char**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","bytes",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1461,7 +1470,6 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
           *basetype_p = FOREIGN_path;
           return tmp;
         }
-        (((char**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","path",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1483,7 +1491,6 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
           *basetype_p = FOREIGN_symbol;
           return tmp;
         }
-        (((char**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","symbol",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1507,7 +1514,6 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
           *basetype_p = FOREIGN_pointer;
           return _offset ? tmp : (void*)W_OFFSET(tmp, toff);
         }
-        (((void**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","pointer",0,1,&(val));
         return NULL; /* shush the compiler */
@@ -1529,7 +1535,6 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
           *basetype_p = FOREIGN_scheme;
           return tmp;
         }
-        (((Scheme_Object**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","scheme",0,1,&(val));
         return NULL; /* shush the compiler */

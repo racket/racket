@@ -1027,7 +1027,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
                   (if offset
                       (~ "      return _offset ? tmp : ("ctype")W_OFFSET(tmp, toff);")
                       (~ "      return tmp;"))
-                  (~ "    }")
+                  (~ "    }"))
+                (when (not ptr?)
                   (~ "    "x" = tmp; return NULL;"))
                 (~ "  } else {" \\
                    "    "(wrong-type "val" stype) \\
