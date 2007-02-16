@@ -70,8 +70,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj delayimp.lib"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain.dll"
 				LinkIncremental="0"
 				SuppressStartupBanner="true"
@@ -165,8 +165,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mscoree.lib mzdyn.obj delayimp.lib"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mscoree.lib mzdyn.obj"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -259,8 +259,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj delayimp.lib"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -354,8 +354,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzsch3mxxxxxxx.dll"
-				AdditionalDependencies="htmlhelp.lib libmzsch3mxxxxxxx.lib mzdyn3m.obj delayimp.lib"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="htmlhelp.lib libmzsch3mxxxxxxx.lib mzdyn3m.obj"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\3m\mxmain.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

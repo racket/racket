@@ -5666,24 +5666,10 @@ void browserHwndMsgLoop (LPVOID p)
   free(destroy);
 }
 
-#ifdef MZ_PRECISE_GC
-# define DLL_RELATIVE_PATH L"../../../../../../../../lib"
-#else
-# define DLL_RELATIVE_PATH L"../../../../../../../lib"
-#endif
-#include "../mzscheme/delayed.inc"
-
 BOOL APIENTRY DllMain (HANDLE hModule, DWORD reason, LPVOID lpReserved)
 {
 
   if (reason == DLL_PROCESS_ATTACH) {
-
-#ifdef MZ_PRECISE_GC
-    load_delayed_dll((HINSTANCE)hModule, "libmzsch3mxxxxxxx.dll");
-#else
-    load_delayed_dll((HINSTANCE)hModule, "libmzgcxxxxxxx.dll");
-    load_delayed_dll((HINSTANCE)hModule, "libmzschxxxxxxx.dll");
-#endif
 
     hInstance = (HINSTANCE)hModule;
 
