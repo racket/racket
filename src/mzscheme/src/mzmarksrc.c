@@ -927,6 +927,7 @@ module_val {
   gcMARK(m->insp);
 
   gcMARK(m->hints);
+  gcMARK(m->ii_src);
 
   gcMARK(m->comp_prefix);
   gcMARK(m->prefix);

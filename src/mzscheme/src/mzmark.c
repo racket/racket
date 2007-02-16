@@ -2323,6 +2323,7 @@ static int module_val_MARK(void *p) {
   gcMARK(m->insp);
 
   gcMARK(m->hints);
+  gcMARK(m->ii_src);
 
   gcMARK(m->comp_prefix);
   gcMARK(m->prefix);
@@ -2358,6 +2359,7 @@ static int module_val_FIXUP(void *p) {
   gcFIXUP(m->insp);
 
   gcFIXUP(m->hints);
+  gcFIXUP(m->ii_src);
 
   gcFIXUP(m->comp_prefix);
   gcFIXUP(m->prefix);

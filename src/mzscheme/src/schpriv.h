@@ -2328,6 +2328,7 @@ typedef struct Scheme_Module
 			  and for module instantiation */
 
   Scheme_Object *hints; /* set by expansion; moved to properties */
+  Scheme_Object *ii_src; /* set by compile, temporary */
   Comp_Prefix *comp_prefix; /* set by body compile, temporary */
 
   int max_let_depth;
@@ -2442,6 +2443,11 @@ void scheme_wrong_syntax(const char *where,
 			 Scheme_Object *local_form,
 			 Scheme_Object *form,
 			 const char *detail, ...);
+void scheme_wrong_syntax_with_more_sources(const char *where,
+                                           Scheme_Object *detail_form,
+                                           Scheme_Object *form,
+                                           Scheme_Object *extra_sources,
+                                           const char *detail, ...);
 extern const char *scheme_compile_stx_string;
 extern const char *scheme_expand_stx_string;
 extern const char *scheme_application_stx_string;

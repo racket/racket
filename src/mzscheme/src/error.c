@@ -1399,13 +1399,14 @@ const char *scheme_set_stx_string = "set!";
 const char *scheme_var_ref_string = "#%variable-reference";
 const char *scheme_begin_stx_string = "begin";
 
-void scheme_wrong_syntax(const char *where,
-			 Scheme_Object *detail_form,
-			 Scheme_Object *form,
-			 const char *detail, ...)
+static void do_wrong_syntax(const char *where,
+                            Scheme_Object *detail_form,
+                            Scheme_Object *form,
+                            char *s, long slen,
+                            Scheme_Object *extra_sources)
 {
-  long len, slen, vlen, dvlen, blen, plen;
-  char *s, *buffer;
+  long len, vlen, dvlen, blen, plen;
+  char *buffer;
   char *v, *dv, *p;
   Scheme_Object *mod, *nomwho, *who;
   int show_src;
@@ -1414,20 +1415,9 @@ void scheme_wrong_syntax(const char *where,
   nomwho = NULL;
   mod = scheme_false;
 
-  if (!detail) {
+  if (!s) {
     s = "bad syntax";
     slen = strlen(s);
-  } else {
-    GC_CAN_IGNORE va_list args;
-
-    /* Precise GC: Don't allocate before getting hidden args off stack */
-    s = prepared_buf;
-
-    HIDE_FROM_XFORM(va_start(args, detail));
-    slen = sch_vsprintf(s, prepared_buf_len, detail, args);
-    HIDE_FROM_XFORM(va_end(args));
-
-    prepared_buf = init_buf(NULL, &prepared_buf_len);
   }
 
   /* Check for special strings that indicate `form' doesn't have a
@@ -1561,13 +1551,68 @@ void scheme_wrong_syntax(const char *where,
   /* We don't actually use nomwho and mod, anymore. */
 
   if (SCHEME_FALSEP(form))
-    form = scheme_null;
+    form = extra_sources;
   else
-    form = scheme_make_immutable_pair(form, scheme_null);
+    form = scheme_make_immutable_pair(form, extra_sources);
 
   scheme_raise_exn(MZEXN_FAIL_SYNTAX, 
 		   form,
 		   "%t", buffer, blen);
+}
+
+void scheme_wrong_syntax(const char *where,
+			 Scheme_Object *detail_form,
+			 Scheme_Object *form,
+			 const char *detail, ...)
+{
+  char *s;
+  long slen;
+
+  if (!detail) {
+    s = NULL;
+    slen = 0;
+  } else {
+    GC_CAN_IGNORE va_list args;
+
+    /* Precise GC: Don't allocate before getting hidden args off stack */
+    s = prepared_buf;
+
+    HIDE_FROM_XFORM(va_start(args, detail));
+    slen = sch_vsprintf(s, prepared_buf_len, detail, args);
+    HIDE_FROM_XFORM(va_end(args));
+
+    prepared_buf = init_buf(NULL, &prepared_buf_len);
+  }
+
+  do_wrong_syntax(where, detail_form, form, s, slen, scheme_null);
+}
+
+void scheme_wrong_syntax_with_more_sources(const char *where,
+                                           Scheme_Object *detail_form,
+                                           Scheme_Object *form,
+                                           Scheme_Object *extra_sources,
+                                           const char *detail, ...)
+{
+  char *s;
+  long slen;
+
+  if (!detail) {
+    s = NULL;
+    slen = 0;
+  } else {
+    GC_CAN_IGNORE va_list args;
+
+    /* Precise GC: Don't allocate before getting hidden args off stack */
+    s = prepared_buf;
+
+    HIDE_FROM_XFORM(va_start(args, detail));
+    slen = sch_vsprintf(s, prepared_buf_len, detail, args);
+    HIDE_FROM_XFORM(va_end(args));
+
+    prepared_buf = init_buf(NULL, &prepared_buf_len);
+  }
+
+  do_wrong_syntax(where, detail_form, form, s, slen, extra_sources);
 }
 
 void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv)

@@ -174,7 +174,7 @@ static Scheme_Object *global_shift_cache;
 
 typedef void (*Check_Func)(Scheme_Object *prnt_name, Scheme_Object *name, Scheme_Object *nominal_modname, 
 			   Scheme_Object *modname, Scheme_Object *srcname, 
-			   int isval, void *data, Scheme_Object *e, Scheme_Object *form);
+			   int isval, void *data, Scheme_Object *e, Scheme_Object *form, Scheme_Object *err_src);
 static Scheme_Object *parse_requires(Scheme_Object *form,
 				     Scheme_Object *base_modidx,
 				     Scheme_Env *env,
@@ -3501,6 +3501,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   m->insp = env->insp;
 
+  m->ii_src = ii;
+
   iidx = scheme_make_modidx(scheme_syntax_to_datum(ii, 0, NULL), 
 			    self_modidx,
 			    scheme_false);
@@ -3618,7 +3620,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     dummy = scheme_make_environment_dummy(env);
     m->dummy = dummy;
-
+    
     scheme_compile_rec_done_local(rec, drec);
     fm = scheme_compile_expr(fm, benv, rec, drec);
 
@@ -3630,11 +3632,15 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     if (restore_confusing_name)
       m->modname = kernel_symbol;
 
+    m->ii_src = NULL;
+
     fm = scheme_make_syntax_compiled(MODULE_EXPD, (Scheme_Object *)m);
   } else {
     Scheme_Object *hints, *formname;
 
     fm = scheme_expand_expr(fm, benv, rec, drec);
+
+    m->ii_src = NULL;
 
     hints = m->hints;
     m->hints = NULL;
@@ -3733,7 +3739,7 @@ Scheme_Object *scheme_apply_for_syntax_in_env(Scheme_Object *proc, Scheme_Env *e
 
 static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name, Scheme_Object *nominal_modidx,
 			       Scheme_Object *modidx, Scheme_Object *exname,
-			       int isval, void *tables, Scheme_Object *e, Scheme_Object *form)
+			       int isval, void *tables, Scheme_Object *e, Scheme_Object *form, Scheme_Object *err_src)
 {
   Scheme_Bucket_Table *toplevel, *syntax;
   Scheme_Hash_Table *required;
@@ -3753,6 +3759,10 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name, Sc
   /* Not required, or required from same module: */
   vec = scheme_hash_get(required, name);
   if (vec) {
+    Scheme_Object *srcs;
+    char *fromsrc = NULL, *fromsrc_colon = "";
+    long fromsrclen = 0;
+    
     if (same_resolved_modidx(SCHEME_VEC_ELS(vec)[1], modidx)
 	&& SAME_OBJ(SCHEME_VEC_ELS(vec)[2], exname)) {
       /* already required, same source; add redundant nominal (for re-provides) */
@@ -3760,8 +3770,29 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name, Sc
       SCHEME_VEC_ELS(vec)[0] = nml;
       return; 
     }
-    scheme_wrong_syntax("module", prnt_name, form, 
-			"identifier already imported (from a different source)");
+
+    srcs = scheme_null;
+    if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[5])) {
+      srcs = scheme_make_immutable_pair(SCHEME_VEC_ELS(vec)[5], srcs);
+      /* don't use error_write_to_string_w_max since this is code */
+      if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC))) {
+        fromsrc = scheme_write_to_string_w_max(scheme_syntax_to_datum(SCHEME_VEC_ELS(vec)[5], 0, NULL), 
+                                               &fromsrclen, 32);
+        fromsrc_colon = ":";
+      }
+    }
+      
+    if (!fromsrc) {
+      fromsrc = "a different source";
+      fromsrclen = strlen(fromsrc);
+    }
+
+    if (err_src)
+      srcs = scheme_make_immutable_pair(err_src, srcs);
+
+    scheme_wrong_syntax_with_more_sources("module", prnt_name, err_src, srcs,
+                                          "identifier already imported from%s %t",
+                                          fromsrc_colon, fromsrc, fromsrclen);
   }
 	    
   /* Not syntax: */
@@ -3772,13 +3803,14 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name, Sc
   }
 
   /* Remember require: */
-  vec = scheme_make_vector(5, NULL);
+  vec = scheme_make_vector(6, NULL);
   nml = scheme_make_pair(nominal_modidx, scheme_null);
   SCHEME_VEC_ELS(vec)[0] = nml;
   SCHEME_VEC_ELS(vec)[1] = modidx;
   SCHEME_VEC_ELS(vec)[2] = exname;
   SCHEME_VEC_ELS(vec)[3] = (isval ? scheme_true : scheme_false);
   SCHEME_VEC_ELS(vec)[4] = prnt_name;
+  SCHEME_VEC_ELS(vec)[5] = (err_src ? err_src : scheme_false);
   scheme_hash_set(required, name, vec);
 }
 
@@ -3936,8 +3968,15 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   {
     int i, numvals;
     Scheme_Module *iim;
-    Scheme_Object *midx, *nmidx, *vec, *nml;
+    Scheme_Object *midx, *nmidx, *vec, *nml, *orig_src;
 
+    /* stx src of original import: */
+    orig_src = env->genv->module->ii_src;
+    if (!orig_src)
+      orig_src = scheme_false;
+    else if (!SCHEME_STXP(orig_src))
+      orig_src = scheme_false;
+    
     nmidx = SCHEME_CAR(env->genv->module->requires);
     iim = module_load(scheme_module_resolve(nmidx, 1), env->genv, NULL);
     exs = iim->me->provides;
@@ -3953,13 +3992,14 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  midx = scheme_modidx_shift(midx, iim->me->src_modidx, nmidx);
       } else
 	midx = nmidx;
-      vec = scheme_make_vector(5, NULL);
+      vec = scheme_make_vector(6, NULL);
       nml = scheme_make_pair(nmidx, scheme_null);
       SCHEME_VEC_ELS(vec)[0] = nml;
       SCHEME_VEC_ELS(vec)[1] = midx;
       SCHEME_VEC_ELS(vec)[2] = exsns[i];
       SCHEME_VEC_ELS(vec)[3] = ((i < numvals) ? scheme_true : scheme_false);
       SCHEME_VEC_ELS(vec)[4] = exs[i];
+      SCHEME_VEC_ELS(vec)[5] = orig_src;
       scheme_hash_set(required, exs[i], vec);
     }
 
@@ -3968,13 +4008,14 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       numvals = kernel->me->num_var_provides;
       for (i = kernel->me->num_provides; i--; ) {
 	if (!SAME_OBJ(iim->me->kernel_exclusion, exs[i])) {
-	  vec = scheme_make_vector(5, NULL);
+	  vec = scheme_make_vector(6, NULL);
 	  nml = scheme_make_pair(nmidx, scheme_null);
 	  SCHEME_VEC_ELS(vec)[0] = nml;
 	  SCHEME_VEC_ELS(vec)[1] = kernel_symbol;
 	  SCHEME_VEC_ELS(vec)[2] = exs[i];
 	  SCHEME_VEC_ELS(vec)[3] = ((i < numvals) ? scheme_true : scheme_false);
 	  SCHEME_VEC_ELS(vec)[4] = exs[i];
+	  SCHEME_VEC_ELS(vec)[5] = orig_src;
 	  scheme_hash_set(required, exs[i], vec);
 	}
       } 
@@ -5431,7 +5472,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 			int can_save_marshal,
 			int *all_simple,
 			Check_Func ck, /* NULL or called for each addition */
-			void *data, Scheme_Object *form, Scheme_Object *cki /* ck args */
+			void *data, Scheme_Object *form, Scheme_Object *err_src, Scheme_Object *cki /* ck args */
 			)
 {
   int j, var_count;
@@ -5542,7 +5583,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
       }
 
       if (ck)
-	ck(prnt_iname, iname, nominal_modidx, modidx, exsns[j], (j < var_count), data, cki, form);
+	ck(prnt_iname, iname, nominal_modidx, modidx, exsns[j], (j < var_count), data, cki, form, err_src);
 	
       if (!is_kern) {
 	if (copy_vars && (j < var_count) && !env->module && !env->phase) {
@@ -5667,7 +5708,7 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
 		     0, 0, 1, 0,
 		     NULL,
 		     NULL,
-		     NULL, NULL, NULL);
+		     NULL, NULL, NULL, NULL);
 }
 
 Scheme_Object *parse_requires(Scheme_Object *form, 
@@ -5682,7 +5723,7 @@ Scheme_Object *parse_requires(Scheme_Object *form,
   Scheme_Object *ll = form;
   Scheme_Module *m;
   Scheme_Object *idxstx, *idx, *name, *i, *exns, *prefix, *iname, *ename, *aa;
-  Scheme_Object *imods, *mark_src;
+  Scheme_Object *imods, *mark_src, *err_src;
   Scheme_Hash_Table *onlys;
 
   imods = scheme_null;
@@ -5700,6 +5741,7 @@ Scheme_Object *parse_requires(Scheme_Object *form,
     else
       aa = NULL;
 
+    err_src = i;
     mark_src = i;
 
     if (aa && SAME_OBJ(prefix_symbol, SCHEME_STX_VAL(aa))) {
@@ -5902,7 +5944,7 @@ Scheme_Object *parse_requires(Scheme_Object *form,
 		       mark_src, 
 		       unpack_kern, copy_vars && start, 0, can_save_marshal,
 		       all_simple,
-		       ck, data, form, i);
+		       ck, data, form, err_src, i);
 
     if (onlys && onlys->count) {
       /* Something required in `only' wasn't provided by the module */
@@ -5919,7 +5961,7 @@ Scheme_Object *parse_requires(Scheme_Object *form,
 
 static void check_dup_require(Scheme_Object *prnt_name, Scheme_Object *name, Scheme_Object *nominal_modidx, 
 			      Scheme_Object *modidx, Scheme_Object *srcname, 
-			      int isval, void *ht, Scheme_Object *e, Scheme_Object *form)
+			      int isval, void *ht, Scheme_Object *e, Scheme_Object *form, Scheme_Object *err_src)
 {
   Scheme_Object *i;
 
