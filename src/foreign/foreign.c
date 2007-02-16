@@ -1167,7 +1167,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src, int delta, int ar
 #ifdef SCHEME_BIG_ENDIAN
 #define SCHEME2C(typ,dst,delta,val,basep,_offset,retloc) scheme_to_c(typ,dst,delta,val,basep,_offset,retloc)
 #else
-#define SCHEME2C(typ,dst,delta,val,basep,_offset,retloc) scheme_to_c(typ,dst,delta,val,_offset,basep)
+#define SCHEME2C(typ,dst,delta,val,basep,_offset,retloc) scheme_to_c(typ,dst,delta,val,basep,_offset)
 #endif
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
