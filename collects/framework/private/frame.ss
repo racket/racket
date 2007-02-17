@@ -263,45 +263,56 @@
           (super-new)
           (send (group:get-the-frame-group) insert-frame this)))
       
-      (define locked-message (string-constant read-only))
-      (define unlocked-message (string-constant read/write))
+  (define locked-message-line1 (string-constant read-only-line1))
+  (define locked-message-line2 (string-constant read-only-line2))
+  (define unlocked-message-line1 (string-constant read/write-line1))
+  (define unlocked-message-line2 (string-constant read/write-line2))
       
       (define lock-canvas%
         (class canvas%
           (field [locked? #f])
+          (inherit refresh)
           (define/public (set-locked l)
             (set! locked? l)
-            (on-paint))
+            (refresh))
           (inherit get-client-size get-dc)
           (define/override (on-paint)
             (let* ([dc (get-dc)]
                    [draw
-                    (λ (str bg-color bg-style line-color line-style)
-                      (send dc set-font normal-control-font)
+                    (λ (str1 str2 bg-color bg-style line-color line-style)
+                      (send dc set-font small-control-font)
                       (let-values ([(w h) (get-client-size)]
-                                   [(tw th ta td) (send dc get-text-extent str)])
+                                   [(tw1 th1 _1 _2) (send dc get-text-extent str1)]
+                                   [(tw2 th2 _3 _4) (send dc get-text-extent str2)])
                         (send dc set-pen (send the-pen-list find-or-create-pen line-color 1 line-style))
                         (send dc set-brush (send the-brush-list find-or-create-brush bg-color bg-style))
                         (send dc draw-rectangle 0 0 w h)
-                        (send dc draw-text str
-                              (- (/ w 2) (/ tw 2))
-                              (- (/ h 2) (/ th 2)))))])
+                        (send dc draw-text str1
+                              (- (/ w 2) (/ tw1 2))
+                              (- (* h 1/2) th1))
+                        (send dc draw-text str2
+                              (- (/ w 2) (/ tw2 2))
+                              (* h 1/2))))])
               (if locked?
-                  (draw locked-message "yellow" 'solid "black" 'solid)
-                  (draw unlocked-message (get-panel-background) 'transparent (get-panel-background) 'transparent))))
+                  (draw locked-message-line1 locked-message-line2
+                        "yellow" 'solid "black" 'solid)
+                  (draw unlocked-message-line1 unlocked-message-line2
+                        (get-panel-background) 'transparent (get-panel-background) 'transparent))))
           (inherit get-parent min-width min-height stretchable-width stretchable-height)
 
 	  (super-new [style '(transparent)])
 
           (let ([dc (get-dc)])
-            (send dc set-font normal-control-font)
-            (let-values ([(w1 h1 _1 _2) (send dc get-text-extent locked-message)]
-                         [(w2 h2 _3 _4) (send dc get-text-extent unlocked-message)])
+            (send dc set-font small-control-font)
+            (let-values ([(wl1 hl1 _1 _2) (send dc get-text-extent locked-message-line1)]
+                         [(wl2 hl2 _3 _4) (send dc get-text-extent locked-message-line2)]
+                         [(wu1 hu1 _5 _6) (send dc get-text-extent unlocked-message-line1)]
+                         [(wu2 hu2 _7 _8) (send dc get-text-extent unlocked-message-line2)])
               (stretchable-width #f)
               (stretchable-height #t)
-              (min-width (inexact->exact (floor (max w1 w2))))
-              (min-height (inexact->exact (floor (+ 4 (max h1 h2)))))))))
-
+              (min-width (inexact->exact (floor (max wl1 wl2 wu1 wu2))))
+              (min-height (inexact->exact (floor (+ hu1 hu2))))))))
+  
       (define status-line<%>
         (interface (basic<%>)
           open-status-line
@@ -844,19 +855,7 @@
 	  (super-new)
           
           (inherit get-info-panel)
-          
-          [define anchor-message
-            (make-object message%
-              (let ([b (icon:get-anchor-bitmap)])
-                (if (and #f (send b ok?))
-                    b
-                    (string-constant auto-extend-selection)))
-              (get-info-panel))]
-          (define overwrite-message 
-            (new message%
-                 [label (string-constant overwrite)]
-                 [parent (get-info-panel)]))
-          
+              
           (define position-parent (new click-pref-panel% 
                                        [border 2]
                                        [parent (get-info-panel)]
@@ -865,28 +864,49 @@
           (define position-canvas (new editor-canvas% 
                                        [parent position-parent]
                                        [style '(no-hscroll no-vscroll)]))
-          (define position-edit (new text%))
           
-          (define macro-recording-message
-            (instantiate message% ()
-              (label "c-x;(")
-              (parent (get-info-panel))))
+          (define position-edit (new text%))
+          (send (get-info-panel) change-children
+                (λ (l)
+                  (cons position-parent (remq position-parent l))))
+          
+          
+          (define-values (anchor-message
+                          overwrite-message 
+                          macro-recording-message)
+            (let* ([text-info-messages-parent
+                    (new vertical-panel% 
+                         [parent (get-info-panel)]
+                         [stretchable-width #f])]
+                   [anchor-message
+                    (new message%
+                         [font small-control-font]
+                         [label (string-constant auto-extend-selection)]
+                         [parent text-info-messages-parent])]
+                   [hp (new horizontal-panel% 
+                            [alignment '(left center)]
+                            [parent text-info-messages-parent]
+                            [stretchable-height #f])]
+                   [overwrite-message 
+                    (new message%
+                         [font small-control-font]
+                         [label (string-constant overwrite)]
+                         [parent hp])]
+                   [macro-recording-message
+                    (new message%
+                         [label "c-x;("]
+                         [font small-control-font]
+                         [parent hp])])
+              (send (get-info-panel) change-children
+                    (λ (l)
+                      (cons
+                       text-info-messages-parent
+                       (remq text-info-messages-parent l))))
+              (values anchor-message
+                      overwrite-message 
+                      macro-recording-message)))
           
           (inherit determine-width)
-          (let ([move-front
-                 (λ (x l)
-                   (cons x (remq x l)))])
-            (send (get-info-panel) change-children
-                  (λ (l)
-                    (move-front
-                     macro-recording-message
-                     (move-front
-                      anchor-message
-                      (move-front
-                       overwrite-message
-                       (move-front
-                        position-parent
-                        l)))))))
           (send macro-recording-message show #f)
           (send anchor-message show #f)
           (send overwrite-message show #f)
