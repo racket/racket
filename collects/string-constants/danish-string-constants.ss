@@ -196,8 +196,10 @@ please adhere to these guidelines:
   
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "GC")
-  (read-only "Skrivebeskyttet")
-  (read/write "Læs/Skriv")
+  (read-only-line1 "Skrivebeskyttet")
+  (read-only-line2 "")
+  (read/write-line1 "Læs/")
+  (read/write-line2 "Skriv")
   (auto-extend-selection "Auto-udvid")
   (overwrite "Overskriv")
   (running "kører")

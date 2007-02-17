@@ -196,8 +196,10 @@ please adhere to these guidelines:
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
- (read-only "Apenas Leitura")
- (read/write "Leitura/Escrita")
+ (read-only-line1 "Apenas")
+ (read-only-line2 "Leitura")
+ (read/write-line1 "Leitura/")
+ (read/write-line2 "Escrita")
  (auto-extend-selection "Auto-Extensível")
  (overwrite "Reescrever")
  (running "a executar")

@@ -98,8 +98,10 @@
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
- (read-only "Schreibgeschützt")
- (read/write "Lesen/Schreiben")
+  (read-only-line1 "Schreibgeschützt")
+  (read-only-line2 "")
+ (read/write-line1 "Lesen/")
+  (read/write-line2 "Schreiben")
  (auto-extend-selection "Automatisch erweitern")
  (overwrite "Überschreiben")
  (running "Programm läuft")

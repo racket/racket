@@ -196,8 +196,10 @@
 
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "Ramassage") ; de miettes
-  (read-only "Lecture seulement")
-  (read/write "Lecture/écriture")
+  (read-only-line1 "Lecture")
+  (read-only-line2 "seulement")
+  (read/write-line1 "Lecture/")
+  (read/write-line2 "écriture")
   (auto-extend-selection "Autosélection") ; "Sélection auto-étendable" ?
   (overwrite "Correction") ; vs Insertion ? surimpression ?
   (running "en cours")

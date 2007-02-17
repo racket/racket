@@ -104,8 +104,10 @@
  
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "Recolectar")
- (read-only "Sólo lectura")
- (read/write "Lectura/Escritura")
+ (read-only-line1 "Sólo")
+ (read-only-line2 "lectura")
+ (read/write-line1 "Lectura/")
+ (read/write-line2 "Escritura")
  (auto-extend-selection "Selección Auto-Extendida")
  (overwrite "Sobreescribir")
  (running "ejecutando")

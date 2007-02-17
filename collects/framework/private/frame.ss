@@ -287,12 +287,18 @@
                         (send dc set-pen (send the-pen-list find-or-create-pen line-color 1 line-style))
                         (send dc set-brush (send the-brush-list find-or-create-brush bg-color bg-style))
                         (send dc draw-rectangle 0 0 w h)
-                        (send dc draw-text str1
-                              (- (/ w 2) (/ tw1 2))
-                              (- (* h 1/2) th1))
-                        (send dc draw-text str2
-                              (- (/ w 2) (/ tw2 2))
-                              (* h 1/2))))])
+                        (cond
+                          [(string=? str2 "")
+                           (send dc draw-text str1
+                                 (- (/ w 2) (/ tw1 2))
+                                 (- (* h 1/2) (/ th1 2)))]
+                          [else
+                           (send dc draw-text str1
+                                 (- (/ w 2) (/ tw1 2))
+                                 (- (* h 1/2) th1))
+                           (send dc draw-text str2
+                                 (- (/ w 2) (/ tw2 2))
+                                 (* h 1/2))])))])
               (if locked?
                   (draw locked-message-line1 locked-message-line2
                         "yellow" 'solid "black" 'solid)
@@ -310,8 +316,8 @@
                          [(wu2 hu2 _7 _8) (send dc get-text-extent unlocked-message-line2)])
               (stretchable-width #f)
               (stretchable-height #t)
-              (min-width (inexact->exact (floor (max wl1 wl2 wu1 wu2))))
-              (min-height (inexact->exact (floor (+ hu1 hu2))))))))
+              (min-width (inexact->exact (floor (+ 2 (max (+ wl1 2) (+ wl2 2) wu1 wu2)))))
+              (min-height (inexact->exact (floor (+ 2 hu1 hu2))))))))
   
       (define status-line<%>
         (interface (basic<%>)

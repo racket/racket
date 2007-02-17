@@ -81,8 +81,10 @@
  
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
- (read-only "Alleen lezen")
- (read/write "Lezen/Schrijven")
+ (read-only-line1 "Alleen")
+  (read-only-line2 "lezen")
+ (read/write-line1 "Lezen/")
+  (read/write-line2 "Schrijven")
  (auto-extend-selection "Auto-extend") ; <**> -- when does this appear?
  (overwrite "Vervang")
  (running "Bezig")
