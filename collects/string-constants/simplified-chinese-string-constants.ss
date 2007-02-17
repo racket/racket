@@ -123,8 +123,10 @@
   
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "垃圾回收")
-  (read-only "只读")
-  (read/write "读/写")
+  (read-only-line1 "只")
+  (read-only-line2 "读")
+  (read/write-line1 "读/")
+  (read/write-line2 "写")
   (auto-extend-selection "自动扩展")
   (overwrite "覆盖")
   (running "运行中")
