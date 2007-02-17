@@ -315,6 +315,8 @@
  (default-text-color "Standard für Text") ;; used for configuring colors, but doesn't need the word "color"
  (choose-a-background-color "Hintergrundfarbe auswählen")
 
+ (revert-to-defaults "Standardeinstellung wiederherstellen")
+
  ; title of the color choosing dialog
 
  ; should have entire alphabet
