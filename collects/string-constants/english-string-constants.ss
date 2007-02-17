@@ -196,8 +196,10 @@ please adhere to these guidelines:
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
- (read-only "Read only")
- (read/write "Read/Write")
+  (read-only-line1 "Read")
+  (read-only-line2 "only")
+  (read/write-line1 "Read/")
+  (read/write-line2 "Write")
  (auto-extend-selection "Auto-extend")
  (overwrite "Overwrite")
  (running "running")
