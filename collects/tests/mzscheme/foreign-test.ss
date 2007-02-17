@@ -127,6 +127,13 @@
   (t  52 'grab7th   (_fun _pointer -> _int ) (ptr-add #"012345678" -3))
   )
 
+;; test setting vector elements
+(let* ([x #b01010101]
+       [l 20]
+       [v (make-u8vector l x)])
+  (do ([i 0 (add1 i)]) [(= i l)]
+    (test x u8vector-ref v i)))
+
 ;; Test pointer arithmetic and memmove-like operations
 (let ([p (malloc 10 _int)])
   (memset p 0 10 _int)
