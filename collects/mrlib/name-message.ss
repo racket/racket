@@ -13,6 +13,7 @@
   (define (min-h w) (flat-named-contract "draw-button-label-height" (lambda (h) (h . > . (* 2 border-inset)))))
   
   (provide/contract
+   [get-left-side-padding (-> number?)]
    (pad-xywh (number? number? (>=/c 0) (>=/c 0) . -> . (values number? number? (>=/c 0) (>=/c 0))))
    (draw-button-label
     (->r ([dc (is-a?/c dc<%>)]
@@ -22,13 +23,13 @@
           [w (and/c number? (min-w h))]
           [h (and/c number? (min-h w))]
           [mouse-over? boolean?]
-          [grabbed? boolean?])
+          [grabbed? boolean?]
+          [button-label-font (is-a?/c font%)])
          void?))
 
    (calc-button-min-sizes
-    (->*
-     ((is-a?/c dc<%>) string?)
-     (number? number?))))
+    (->* ((is-a?/c dc<%>) string? (is-a?/c font%))
+         (number? number?))))
   
   (provide name-message%)
   
@@ -47,7 +48,8 @@
       (define paths #f)
       
       ;; label : string
-      (init-field [label (string-constant untitled)])
+      (init-field [label (string-constant untitled)]
+                  [font small-control-font])
       
       (define full-name-window #f)
       
@@ -131,7 +133,7 @@
       
       (inherit get-parent)
       (define/private (update-min-sizes)
-        (let-values ([(w h) (calc-button-min-sizes (get-dc) label)])
+        (let-values ([(w h) (calc-button-min-sizes (get-dc) label font)])
           (min-width w)
           (min-height h)
           (send (get-parent) reflow-container)))
@@ -152,15 +154,14 @@
                  (send dc set-brush brush))]
               [else
                (when (and (> w 5) (> h 5))
-                 (draw-button-label dc label 0 0 w h mouse-over? mouse-grabbed?))]))))
+                 (draw-button-label dc label 0 0 w h mouse-over? mouse-grabbed? font))]))))
       
       (super-new [style '(transparent)])
       (update-min-sizes)
       (stretchable-width #f)
       (stretchable-height #f)))
   
-  (define button-label-font small-control-font)
-  
+  (define (get-left-side-padding) (+ button-label-inset circle-spacer))
   (define button-label-inset 1)
   (define black-color (make-object color% "BLACK"))
   
@@ -185,7 +186,7 @@
   (define mouse-grabbed-color (make-object color% 100 100 100))
   (define grabbed-fg-color (make-object color% 220 220 220))
   
-  (define (calc-button-min-sizes dc label)
+  (define (calc-button-min-sizes dc label button-label-font)
     (let-values ([(w h a d) (send dc get-text-extent label button-label-font)])
       (let-values ([(px py pw ph) (pad-xywh 0 0 w h)])
         (values pw ph))))
@@ -214,7 +215,7 @@
        ans-w
        ans-h)))
   
-  (define (draw-button-label dc label dx dy w h mouse-over? grabbed?)
+  (define (draw-button-label dc label dx dy w h mouse-over? grabbed? button-label-font)
     (when (or mouse-over? grabbed?)
       (let ([color (if grabbed?
 		       mouse-grabbed-color

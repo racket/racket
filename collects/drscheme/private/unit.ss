@@ -551,6 +551,26 @@ module browser threading seems wrong.
                 (set-modified #t))
               (set! next-settings _next-settings)
               (change-mode-to-match)
+              
+              (let ([f (get-top-level-window)])
+                (when (and f
+                           (is-a? f -frame<%>))
+                  (send f language-changed)))
+              
+              (let ([lang (drscheme:language-configuration:language-settings-language next-settings)]
+                    [sets (drscheme:language-configuration:language-settings-settings next-settings)])
+                (preferences:set
+                 'drscheme:recent-language-names
+                 (limit-length
+                  (remove-duplicates
+                   (cons (cons (send lang get-language-name)
+                               (send lang marshall-settings sets))
+                         (preferences:get 'drscheme:recent-language-names)))
+                  10)))
+              (preferences:set
+               drscheme:language-configuration:settings-preferences-symbol
+               next-settings)
+              
 	      (after-set-next-settings _next-settings))
 
 	    (define/pubment (after-set-next-settings s)
@@ -948,22 +968,22 @@ module browser threading seems wrong.
             (inner (void) after-percentage-change))
           (super-new)))
       
-      (define super-frame%
-        (drscheme:frame:mixin
-         (drscheme:frame:basics-mixin 
-          (frame:searchable-text-mixin 
-           (frame:searchable-mixin
-            (frame:text-info-mixin 
-             (frame:delegate-mixin
-              (frame:status-line-mixin
-               (frame:info-mixin
-                (frame:text-mixin
-                 (frame:open-here-mixin
-                  (frame:editor-mixin
-                   (frame:standard-menus-mixin
-                    (frame:register-group-mixin
-                     (frame:basic-mixin
-                      frame%)))))))))))))))
+    (define super-frame%
+      (drscheme:frame:mixin
+       (drscheme:frame:basics-mixin 
+        (frame:searchable-text-mixin 
+         (frame:searchable-mixin
+          (frame:text-info-mixin 
+           (frame:delegate-mixin
+            (frame:status-line-mixin
+             (frame:info-mixin
+              (frame:text-mixin
+               (frame:open-here-mixin
+                (frame:editor-mixin
+                 (frame:standard-menus-mixin
+                  (frame:register-group-mixin
+                   (frame:basic-mixin
+                    frame%)))))))))))))))
       
       (define tab%
         (class* object% (drscheme:rep:context<%> tab<%>)
@@ -1360,11 +1380,11 @@ module browser threading seems wrong.
                   (set! save-init-shown? mod?))
               (update-tab-label current-tab)))
 
-          (define/private (language-changed)
+          (define/public (language-changed)
             (let* ([settings (send definitions-text get-next-settings)]
                    [language (drscheme:language-configuration:language-settings-language settings)])
               (send func-defs-canvas language-changed language)
-              
+              (send language-message set-lang (send language get-language-name))
               (let ([label (send scheme-menu get-label)]
                     [new-label (send language capability-value 'drscheme:language-menu-title)])
                 (unless (equal? label new-label)
@@ -2736,6 +2756,14 @@ module browser threading seems wrong.
           (define special-menu 'special-menu-not-yet-init)
           (define/public (get-special-menu) special-menu)
           
+          (define/public (choose-language-callback)
+            (let ([new-settings (drscheme:language-configuration:language-dialog
+                                 #f
+                                 (send definitions-text get-next-settings)
+                                 this)])
+              (when new-settings
+                (send definitions-text set-next-settings new-settings))))
+          
           (define/private (initialize-menus)
             (let* ([mb (get-menu-bar)]
                    [language-menu-on-demand
@@ -2763,17 +2791,7 @@ module browser threading seems wrong.
               (make-object menu:can-restore-menu-item%
                 (string-constant choose-language-menu-item-label)
                 language-menu
-                (λ (_1 _2)
-                  (let ([new-settings (drscheme:language-configuration:language-dialog
-                                       #f
-                                       (send definitions-text get-next-settings)
-                                       this)])
-                    (when new-settings
-                      (send definitions-text set-next-settings new-settings)
-                      (language-changed)
-                      (preferences:set
-                       drscheme:language-configuration:settings-preferences-symbol
-                       new-settings))))
+                (λ (_1 _2) (choose-language-callback))
                 #\l)
               (make-object separator-menu-item% language-menu)
               (make-object menu:can-restore-menu-item%
@@ -3185,11 +3203,28 @@ module browser threading seems wrong.
             (set-save-init-shown?
              (and m (send m is-modified?))))
 
+          (define language-message
+            (let* ([info-panel (get-info-panel)]
+                   [vp (new vertical-panel% 
+                            [parent info-panel]
+                            [alignment '(left center)]
+                            [stretchable-width #f]
+                            [stretchable-height #f])]
+                   [spacer (new horizontal-panel% [parent info-panel])]
+                   [l-m-label (new language-label-message% [parent vp] [frame this])]
+                   [language-message (new language-message% [parent vp])])
+              (send info-panel change-children 
+                    (λ (l)
+                      (list* vp
+                             spacer 
+                             (remq* (list spacer vp) l))))
+              language-message))
+          
 	  (update-save-message)
           (update-save-button)
           (language-changed)
           
-	  (cond
+          (cond
             [filename
              (set! definitions-shown? #t)
              (set! interactions-shown? #f)]
@@ -3208,8 +3243,104 @@ module browser threading seems wrong.
           (update-toolbar-visiblity)
           (set! newest-frame this)
           (send definitions-canvas focus)))
-      
-      (define -frame% (frame-mixin super-frame%))
+    
+    (define (limit-length l n)
+      (let loop ([l l]
+                 [n n])
+        (cond
+          [(or (null? l) (zero? n))  null]
+          [else (cons (car l) (loop (cdr l) (- n 1)))])))
+    (define (remove-duplicates l)
+      (reverse
+       (let loop ([l (reverse l)])
+         (cond
+           [(null? l) l]
+           [else
+            (if (member (car l) (cdr l))
+                (loop (cdr l))
+                (cons (car l) (loop (cdr l))))]))))
+    
+    (define programming-language-label (string-constant programming-language-label))
+    (define second-line-indent 6)
+    (define language-message%
+      (class canvas%
+        (inherit get-dc get-client-size refresh)
+        (define message "")
+        (define/public (set-lang l)
+          (set! message l)
+          (update-min-widths)
+          (refresh))
+        
+        (define/override (on-paint)
+          (let ([dc (get-dc)])
+            (let-values ([(w h) (get-client-size)])
+              (send dc set-pen (get-panel-background) 1 'transparent)
+              (send dc set-brush (get-panel-background) 'transparent)
+              (send dc draw-rectangle 0 0 w h)
+              (send dc set-font small-control-font)
+              (send dc draw-text message (get-left-side-padding) 0))))
+        
+        (super-new [style '(transparent)])
+        (inherit stretchable-width stretchable-height)
+        (stretchable-width #f)
+        (stretchable-height #f)
+        
+        (inherit min-width min-height)
+        (define (update-min-widths)
+          (let ([dc (get-dc)])
+            (let-values ([(w2 h2 _3 _4) (send dc get-text-extent message small-control-font)])
+              (min-width (inexact->exact (floor (+ (get-left-side-padding) w2))))
+              (min-height (inexact->exact (floor h2))))))))
+    
+    (define language-label-message%
+      (class name-message%
+        (init-field frame)
+        (define/override (fill-popup menu reset)
+          (let ([added-one? #f])
+            (for-each
+             (λ (name/settings)
+               (let* ([name (car name/settings)]
+                      [marshalled-settings (cdr name/settings)]
+                      [lang (ormap
+                             (λ (l) (and (equal? (send l get-language-name) name) l))
+                             (drscheme:language-configuration:get-languages))]
+                      [settings (send lang unmarshall-settings marshalled-settings)])
+                 (when lang
+                   (unless added-one?
+                     (send (new menu-item%
+                                [label (string-constant recent-languages)]
+                                [callback void]
+                                [parent menu])
+                           enable #f))
+                   (set! added-one? #t)
+                   (new menu-item%
+                        [parent menu]
+                        [label (string-append "  "
+                                              (send lang get-language-name)
+                                              (if (send lang default-settings? settings)
+                                                  ""
+                                                  (string-append " " (string-constant custom))))]
+                        [callback
+                         (λ (x y)
+                           (send (send frame get-definitions-text)
+                                 set-next-settings
+                                 (drscheme:language-configuration:make-language-settings
+                                  lang
+                                  settings)))]))))
+             (preferences:get 'drscheme:recent-language-names))
+            (when added-one?
+              (new separator-menu-item% [parent menu])))
+          (new menu-item%
+               [label (string-constant choose-language-menu-item-label)]
+               [parent menu]
+               [callback 
+                (λ (x y)
+                  (send frame choose-language-callback))]))
+                  
+        (super-new [label programming-language-label]
+                   [font tiny-control-font])))
+    
+    (define -frame% (frame-mixin super-frame%))
 
       (define module-browser-dragable-panel%
         (class panel:horizontal-dragable%

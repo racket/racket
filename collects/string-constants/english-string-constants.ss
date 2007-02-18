@@ -921,6 +921,13 @@ please adhere to these guidelines:
  (use-repeating-decimals "Repeating decimals")
  (decimal-notation-for-rationals "Use decimal notation for rationals")
 
+  ; used in the bottom left of the drscheme frame as the label
+  ; above the programming language's name
+  (programming-language-label "Programming language:")
+  ; used the popup menu from the just above; greyed out and only
+  ; visible when some languages are in the history
+  (recent-languages "Recent languages:")
+  
  ;; startup wizard screen language selection section
  (please-select-a-language "Please select a language")
   
