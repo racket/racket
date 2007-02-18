@@ -578,8 +578,10 @@ module browser threading seems wrong.
             
             (define/public (needs-execution)
               (or needs-execution-state
-                  (and (not (equal? execute-settings next-settings))
+                  (and (not (this-and-next-language-the-same?))
                        (string-constant needs-execute-language-changed))))
+            
+            (define/public (this-and-next-language-the-same?) (equal? execute-settings next-settings))
             
             (define/pubment (teachpack-changed)
               (set! needs-execution-state (string-constant needs-execute-teachpack-changed)))
@@ -1384,7 +1386,13 @@ module browser threading seems wrong.
             (let* ([settings (send definitions-text get-next-settings)]
                    [language (drscheme:language-configuration:language-settings-language settings)])
               (send func-defs-canvas language-changed language)
-              (send language-message set-lang (send language get-language-name))
+              (send language-message set-yellow/lang
+                    (not (send definitions-text this-and-next-language-the-same?))
+                    (string-append (send language get-language-name)
+                                   (if (send language default-settings? 
+                                             (drscheme:language-configuration:language-settings-settings settings))
+                                       ""
+                                       (string-append " " (string-constant custom)))))
               (let ([label (send scheme-menu get-label)]
                     [new-label (send language capability-value 'drscheme:language-menu-title)])
                 (unless (equal? label new-label)
@@ -2078,6 +2086,7 @@ module browser threading seems wrong.
                 (log-definitions)
                 (log-interactions))
               (send definitions-text just-executed)
+              (send language-message set-yellow #f)
               (send interactions-canvas focus)
               (send interactions-text reset-console)
               (send interactions-text clear-undos)
@@ -3267,9 +3276,25 @@ module browser threading seems wrong.
         (inherit get-dc get-client-size refresh)
         (define message "")
         (define/public (set-lang l)
-          (set! message l)
-          (update-min-widths)
-          (refresh))
+          (unless (equal? l message)
+            (set! message l)
+            (update-min-widths)
+            (refresh)))
+        
+        (define yellow? #f)
+        
+        (define/public (set-yellow/lang y? l)
+          (unless (and (equal? y? yellow?)
+                       (equal? l message))
+            (set! yellow? y?)
+            (set! message l)
+            (update-min-widths)
+            (refresh)))
+        
+        (define/public (set-yellow y?)
+          (unless (equal? y? yellow?)
+            (set! yellow? y?)
+            (refresh)))
         
         (define/override (on-paint)
           (let ([dc (get-dc)])
@@ -3277,6 +3302,10 @@ module browser threading seems wrong.
               (send dc set-pen (get-panel-background) 1 'transparent)
               (send dc set-brush (get-panel-background) 'transparent)
               (send dc draw-rectangle 0 0 w h)
+              (when yellow?
+                (send dc set-pen "black" 1 'transparent)
+                (send dc set-brush "yellow" 'solid)
+                (send dc draw-rectangle (get-left-side-padding) 0 (- w (get-left-side-padding)) h))
               (send dc set-font small-control-font)
               (send dc draw-text message (get-left-side-padding) 0))))
         
