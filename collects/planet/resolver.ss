@@ -410,6 +410,12 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   (define (get-package-from-cache pkg-spec) 
     (lookup-package pkg-spec))
   
+  ;; get/uninstalled-cache-dummy : pkg-getter
+  ;; always fails, but records the package to the uninstalled package cache
+  ;; upon the success of some other getter later in the chain.
+  (define (get/uninstalled-cache-dummy module-spec pkg-spec success-k failure-k)
+    (failure-k save-to-uninstalled-pkg-cache! void (λ (x) x)))
+  
   ; get/uninstalled-cache : pkg-getter
   ; note: this does not yet work with minimum-required-version specifiers
   ; if you install a package and then use an older mzscheme
@@ -426,10 +432,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
             pkg-spec
             (pkg-maj p)
             (pkg-min p)))
-          (failure-k
-           save-to-uninstalled-pkg-cache!
-           void
-           (λ (x) x)))))
+          (failure-k void void (λ (x) x)))))
   
   ;; save-to-uninstalled-pkg-cache! : uninstalled-pkg -> path[file]
   ;; copies the given uninstalled package into the uninstalled-package cache,
@@ -714,8 +717,9 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
      (list
       get/linkage
       get/installed-cache
-      get/uninstalled-cache
-      get/server)))
+      get/uninstalled-cache-dummy
+      get/server
+      get/uninstalled-cache)))
   
   
   ; ============================================================

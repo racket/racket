@@ -80,8 +80,10 @@ cache, which contains compiled files and is specific to each
 particular version of PLT Scheme, the uninstalled package cache is
 shared by all versions of PLT Scheme that use the same package
 repository, and it is searched if a package is not installed in the
-primary cache. This behavior is intended to primarily benefit users
-who upgrade their PLT Scheme installations frequently.
+primary cache and cannot be downloaded from the central PLaneT repository
+(for instance due to a loss of Internet connectivity). This behavior
+is intended to primarily benefit users who upgrade their PLT Scheme
+installations frequently.
 
 > (LINKAGE-FILE) file-string
 > (LINKAGE-FILE file-string) -> void
@@ -234,6 +236,18 @@ a request to the PLaneT server for a new package that would satisfy
 the requirement. The server then finds the newest matching package
 and sends it back to the client, which then installs it and uses
 it to satisfy the original requirement.
+
+4. Cached installation archive
+
+If the remote server cannot be contacted (or fails in any way to
+deliver an acceptable package), the PLaneT client consults the 
+uninstalled-packages cache, a cache of all previously-downloaded
+packages, even those that are not currently installed. PLT Scheme 
+users who frequently upgrade their installations may have many 
+packages downloaded but not installed at any given time; this step 
+is intended to ensure that these users can still run programs even
+if they temporarily lose network connection.
+
 
 _The planet command-line tool_
 ------------------------------
