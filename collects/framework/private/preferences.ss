@@ -244,6 +244,7 @@ the state transitions / contracts are:
             (λ (a b)
               (preferences:restore-defaults))]
            [parent bottom-panel])
+      (new horizontal-panel% [parent bottom-panel]) ;; spacer
       (gui-utils:ok/cancel-buttons
        bottom-panel
        ok-callback
