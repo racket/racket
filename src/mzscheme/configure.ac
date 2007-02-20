@@ -42,7 +42,7 @@ AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original director
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 AC_ARG_ENABLE(llvm,    [  --enable-llvm           compile llvm support (disabled by default)], , enable_llvm=no)
 
-AC_ARG_ENABLE(sgc,     [  --enable-cgcdefault     use CGC (Boehm of Senora) as default build])
+AC_ARG_ENABLE(sgc,     [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
 AC_ARG_ENABLE(account, [  --enable-account        3m: use memory-accounting GC (enabled by default)], , enable_account=yes)

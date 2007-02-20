@@ -867,7 +867,7 @@ Optional Features:
   --enable-origtree       install with original directory structure
   --enable-foreign        compile foreign support (enabled by default)
   --enable-llvm           compile llvm support (disabled by default)
-  --enable-cgcdefault     use CGC (Boehm of Senora) as default build
+  --enable-cgcdefault     use CGC (Boehm or Senora) as default build
   --enable-sgc            use Senora GC instead of the Boehm GC
   --enable-sgcdebug       use Senora GC for debugging
   --enable-account        3m: use memory-accounting GC (enabled by default)
