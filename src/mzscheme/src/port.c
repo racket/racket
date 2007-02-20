@@ -2763,7 +2763,7 @@ scheme_char_ready (Scheme_Object *port)
   if (!scheme_byte_ready(port))
     return 0;
 
-  do_peekc_skip(port, scheme_make_integer(0), 0, &unavail);
+  do_peekc_skip(port, scheme_make_integer(0), 2, &unavail);
   
   return !unavail;
 }
