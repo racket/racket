@@ -2499,7 +2499,22 @@ Scheme_Object *scheme_stx_activate_certs(Scheme_Object *o)
 
 int scheme_stx_has_empty_wraps(Scheme_Object *o)
 {
-  return SCHEME_NULLP(((Scheme_Stx *)o)->wraps);
+  WRAP_POS awl;
+  Scheme_Object *mark = NULL, *v;
+
+  WRAP_POS_INIT(awl, ((Scheme_Stx *)o)->wraps);
+  while (!WRAP_POS_END_P(awl)) {
+    v = WRAP_POS_FIRST(awl);
+    if (mark) {
+      if (!SAME_OBJ(mark, v))
+        return 0;
+      mark = NULL;
+    } else
+      mark = v;
+    WRAP_POS_INC(awl);
+  }
+
+  return !mark;
 }
 
 /*========================================================================*/
