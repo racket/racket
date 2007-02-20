@@ -362,15 +362,24 @@ profile todo:
                      (display msg (current-error-port))))])
           (send error-text-style-delta set-delta-foreground (make-object color% 200 0 0))
           (send-out " in:" void)
-          (for-each (λ (expr)
-                      (display " " (current-error-port))
-                      (send-out (format "~s" (syntax-object->datum expr))
-                                (λ (snp)
-                                  (send snp set-style
-                                        (send the-style-list find-or-create-style
-                                              (send snp get-style)
-                                              error-text-style-delta)))))
-                    (exn:fail:syntax-exprs exn))))
+          (let ([show-one
+                 (λ (expr)
+                   (display " " (current-error-port))
+                   (send-out (format "~s" (syntax-object->datum expr))
+                             (λ (snp)
+                               (send snp set-style
+                                     (send the-style-list find-or-create-style
+                                           (send snp get-style)
+                                           error-text-style-delta)))))]
+                [exprs (exn:fail:syntax-exprs exn)])
+            (cond
+              [(null? exprs) (void)]
+              [(null? (cdr exprs)) (show-one (car exprs))]
+              [else
+               (for-each (λ (expr)
+                           (display "\n " (current-error-port))
+                           (show-one expr))
+                         exprs)]))))
       
       ;; make-debug-error-display-handler : (string (union TST exn) -> void) -> string (union TST exn) -> void
       ;; adds in the bug icon, if there are contexts to display
