@@ -3382,6 +3382,9 @@ int scheme_is_complete_path(const char *s, long len, int kind)
   if (!len)
     return 0;
 
+  if (!kind)
+    kind = SCHEME_PLATFORM_PATH_KIND;
+
   if (!scheme_is_relative_path(s, len, kind)) {
     if (kind == SCHEME_WINDOWS_PATH_KIND) {
       if (IS_A_DOS_SEP(s[0]) && IS_A_DOS_SEP(s[1])) {
