@@ -159,8 +159,8 @@
 	 try-again
 	 s))
       (define (do-read-it s)
-	(if (char-ready? peeked-r)
-	    (read-bytes-avail!* s peeked-r)
+	(if (byte-ready? peeked-r)
+            (read-bytes-avail!* s peeked-r)
 	    ;; If nothing is saved from a peeking read,
 	    ;; dispatch to `read', otherwise return
 	    ;; previously peeked data
@@ -182,9 +182,9 @@
 			(when (null? special-peeked)
 			  (set! special-peeked-tail #f))))])))
       (define (peek-it-with-lock s skip unless-evt)
-	(if use-manager?
-	    (with-manager-lock (lambda () (do-peek-it s skip unless-evt)))
-	    (do-peek-it s skip unless-evt)))
+        (if use-manager?
+            (with-manager-lock (lambda () (do-peek-it s skip unless-evt)))
+            (do-peek-it s skip unless-evt)))
       (define (peek-it s skip unless-evt)
 	(let ([v (peek-bytes-avail!* s skip unless-evt peeked-r)])
 	  (if (eq? v 0)
@@ -417,7 +417,7 @@
 				(peek-it s skip #f))])
 	     (lambda (s skip unless-evt)
 	       (if (or unless-evt
-		       (char-ready? peeked-r)
+		       (byte-ready? peeked-r)
 		       (pair? special-peeked))
 		   (peek-it s skip unless-evt)
 		   (fast-peek s skip fast-peek-k))))
