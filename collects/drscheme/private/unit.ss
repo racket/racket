@@ -581,7 +581,15 @@ module browser threading seems wrong.
                   (and (not (this-and-next-language-the-same?))
                        (string-constant needs-execute-language-changed))))
             
-            (define/public (this-and-next-language-the-same?) (equal? execute-settings next-settings))
+            (define/public (this-and-next-language-the-same?)
+              (let ([execute-lang (drscheme:language-configuration:language-settings-language execute-settings)]
+                    [next-lang (drscheme:language-configuration:language-settings-language next-settings)])
+                (and (eq? execute-lang next-lang)
+                     (equal?
+                      (send execute-lang marshall-settings 
+                            (drscheme:language-configuration:language-settings-settings execute-settings))
+                      (send execute-lang marshall-settings 
+                            (drscheme:language-configuration:language-settings-settings next-settings))))))
             
             (define/pubment (teachpack-changed)
               (set! needs-execution-state (string-constant needs-execute-teachpack-changed)))
@@ -700,7 +708,7 @@ module browser threading seems wrong.
           (let* ([on-it? (box #f)]
                  [pos (send text find-position x y #f on-it?)])
             (and (unbox on-it?)
-                 pos))))                                                 
+                 pos))))
       
       (let ([old (keymap:add-to-right-button-menu)])
         (keymap:add-to-right-button-menu
@@ -1557,7 +1565,8 @@ module browser threading seems wrong.
                (ensure-rep-hidden)
 	       (send definitions-text begin-edit-sequence)
                (send definitions-text load-file/gui-error name)
-	       (send definitions-text end-edit-sequence)]
+	       (send definitions-text end-edit-sequence)
+               (send language-message set-yellow #f)]
               [name
                (send definitions-text set-filename name)]
               [else (send definitions-text clear)])
