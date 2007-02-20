@@ -15,7 +15,7 @@
 (define (scheme-id->c-name str)
   (let loop ([str (format "~a" str)]
              [substs '((#rx"->" "_to_") (#rx"[-/]" "_") (#rx"\\*" "S")
-                       (#rx"\\?$" "_p") (#rx"!$" ""))])
+                       (#rx"\\?$" "_p") (#rx"!$" "_bang"))])
     (if (null? substs)
       str
       (loop (regexp-replace* (caar substs) str (cadar substs)) (cdr substs)))))
