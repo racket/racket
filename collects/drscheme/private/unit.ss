@@ -494,7 +494,7 @@ module browser threading seems wrong.
                                             (send matching-language default-settings))))
                                         (set-modified #f)))))))))))
                     (unless found-language?
-                      (let* ([tp (open-input-text-editor this)]
+                      (let* ([tp (open-input-text-editor this 0 'end (lambda (s) s) this #t)]
                              [r1 (parameterize ([read-accept-reader #f]) (read tp))]
                              [r2 (parameterize ([read-accept-reader #f]) (read tp))])
                         (when (and (eof-object? r2)
