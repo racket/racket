@@ -17,7 +17,6 @@
   
   ;; build-color-selection-panel : (is-a?/c area-container<%>) symbol string string -> void
   ;; constructs a panel containg controls to configure the preferences panel.
-  ;; BUG: style changes don't update the check boxes.
   (define build-color-selection-panel
     (opt-lambda (parent 
                  pref-sym
@@ -61,23 +60,23 @@
                       (send delta set-style-on 'slant)
                       (send delta set-style-off 'base))
                     (λ (delta)
-                      (send delta set-style-on 'base)
-                      (send delta set-style-off 'slant))))
+                      (send delta set-style-on 'normal)
+                      (send delta set-style-off 'base))))
       (define bold-check
         (make-check (string-constant cs-bold)
                     (λ (delta)
                       (send delta set-weight-on 'bold)
                       (send delta set-weight-off 'base))
                     (λ (delta)
-                      (send delta set-weight-on 'base)
-                      (send delta set-weight-off 'bold))))
+                      (send delta set-weight-on 'normal)
+                      (send delta set-weight-off 'base))))
       (define underline-check
         (make-check (string-constant cs-underline)
                     (λ (delta)
                       (send delta set-underlined-on #t)
                       (send delta set-underlined-off #f))
                     (λ (delta)
-                      (send delta set-underlined-off #t)
+                      (send delta set-underlined-off #f)
                       (send delta set-underlined-on #f))))
       (define color-button
         (and (>= (get-display-depth) 8)
@@ -107,9 +106,18 @@
       (send e insert example-text)
       (send e set-position 0)
       
-      (send slant-check set-value (eq? (send style get-style) 'slant))
+      (send slant-check set-value (or (eq? (send style get-style) 'slant)
+                                      (eq? (send style get-style) 'italic)))
       (send bold-check set-value (eq? (send style get-weight) 'bold))
-      (send underline-check set-value (send style get-underlined))))
+      (send underline-check set-value (send style get-underlined))
+      (preferences:add-callback
+       pref-sym
+       (λ (p sd)
+         (send slant-check set-value (or (eq? (send style get-style) 'slant)
+                                         (eq? (send style get-style) 'italic)))
+         (send bold-check set-value (eq? (send sd get-weight-on) 'bold))
+         (send underline-check set-value (send sd get-underlined-on))))
+      (void)))
   
   (define (add/mult-set m v)
     (send m set (car v) (cadr v) (caddr v)))
@@ -285,9 +293,14 @@
          panel))))
   
   ;; see docs
-  (define (register-color-pref pref-name style-name color)
-    (let ([sd (new style-delta%)])
-      (send sd set-delta-foreground color)
+  (define (register-color-pref pref-name style-name color/sd)
+    (let ([sd (cond 
+                [(is-a? color/sd style-delta%)
+                 color/sd]
+                [else
+                 (let ([sd (new style-delta%)])
+                   (send sd set-delta-foreground color/sd)
+                   sd)])])
       (preferences:set-default pref-name sd (λ (x) (is-a? x style-delta%))))
     (preferences:set-un/marshall pref-name marshall-style unmarshall-style)
     (preferences:add-callback pref-name

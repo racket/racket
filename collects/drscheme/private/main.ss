@@ -364,6 +364,45 @@
          (preferences:set 'framework:exit-when-no-frames #f)]
         [else
          (preferences:set 'framework:exit-when-no-frames #t)])
+  
+
+  (let* ([sl (editor:get-standard-style-list)]
+         [sd (make-object style-delta%)])
+    (send sd set-delta-foreground (make-object color% 255 0 0))
+    (send sl new-named-style 
+          "drscheme:text:ports err"
+          (send sl find-or-create-style
+                (send sl find-named-style "text:ports err")
+                sd)))  
+  (define repl-error-pref 'drscheme:repl:error-color)
+  (define repl-out-pref 'drscheme:repl:out-color)
+  (define repl-value-pref 'drscheme:repl:value-color)
+  (color-prefs:register-color-pref repl-value-pref
+                                   "text:ports value"
+                                   (make-object color% 0 0 175))
+  (color-prefs:register-color-pref repl-error-pref
+                                   "text:ports err"
+                                   (let ([sd (make-object style-delta% 'change-italic)])
+                                     (send sd set-delta-foreground (make-object color% 255 0 0))
+                                     sd))
+  (color-prefs:register-color-pref repl-out-pref
+                                   "text:ports out"
+                                   (make-object color% 150 0 150))
+  (color-prefs:add-to-preferences-panel 
+   (string-constant repl-colors)
+   (λ (parent)
+     (color-prefs:build-color-selection-panel parent
+                                              repl-value-pref
+                                              "text:ports value"
+                                              (string-constant repl-value-color))
+     (color-prefs:build-color-selection-panel parent
+                                              repl-error-pref
+                                              "text:ports err"
+                                              (string-constant repl-error-color))
+     (color-prefs:build-color-selection-panel parent
+                                              repl-out-pref
+                                              "text:ports out"
+                                              (string-constant repl-out-color))))
       
       ;; Check for any files lost last time.
       ;; Ignore the framework's empty frames test, since

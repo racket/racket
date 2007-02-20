@@ -1365,8 +1365,8 @@
      "Extracts the z component of \\var{xyz}.")
     
     (color-prefs:register-color-pref 
-     (symbol? string? (is-a?/c color%) . -> . void?)
-     (pref-name style-name color)
+     (symbol? string? (or/c (is-a?/c color%) (is-a?/c style-delta%)) . -> . void?)
+     (pref-name style-name color/sd)
      "This function registers a color preference and initializes the"
      "style list returned from"
      "@flink editor:get-standard-style-list %"
@@ -1375,9 +1375,10 @@
      "and "
      "@flink preferences:set-un/marshall "
      "to install the pref for \\var{pref-name}, using"
-     "\\var{color} as the default color. The preference"
+     "\\var{color/sd} as the default color. The preference"
      "is bound to a \\iscmclass{style-delta}, and initially the \\iscmclass{style-delta}"
-     "changes the foreground color to \\var{color}."
+     "changes the foreground color to \\var{color/sd}, unless \\var{color/sd} is a style"
+     "delta already, in which case it is just used directly."
      "Then, it calls "
      "@flink editor:set-standard-style-list-delta"
      "passing the \\var{style-name} and the current value"

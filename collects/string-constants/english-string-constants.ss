@@ -474,6 +474,12 @@ please adhere to these guidelines:
  (add-keyword "Add")
  (remove-keyword "Remove")
  
+  ; repl color preferences
+  (repl-colors "REPL")
+  (repl-out-color "Output")
+  (repl-value-color "Values")
+  (repl-error-color "Errors")
+  
  ;;; find/replace
  (find-and-replace "Find and Replace")
  (find "Find")

@@ -972,6 +972,27 @@ WARNING: printf is rebound in the body of the unit to always
           (inherit set-flags get-flags)
           (set-flags (list* 'handles-events (get-flags)))))
       
+  (define out-style-name "text:ports out")
+  (define error-style-name "text:ports err")
+  (define value-style-name "text:ports value")
+  (let ([create-style-name
+         (λ (name sd)
+           (let* ([sl (editor:get-standard-style-list)])
+             (send sl new-named-style 
+                   name
+                   (send sl find-or-create-style
+                         (send sl find-named-style "Standard")
+                         sd))))])
+    (let ([out-sd (make-object style-delta% 'change-nothing)])
+      (send out-sd set-delta-foreground (make-object color% 150 0 150))
+      (create-style-name out-style-name out-sd))
+    (let ([err-sd (make-object style-delta% 'change-italic)])
+      (send err-sd set-delta-foreground (make-object color% 255 0 0))
+      (create-style-name error-style-name err-sd))
+    (let ([value-sd (make-object style-delta% 'change-nothing)])
+      (send value-sd set-delta-foreground (make-object color% 0 0 175))
+      (create-style-name value-style-name value-sd)))
+  
       (define ports-mixin
         (mixin (wide-snip<%>) (ports<%>)
           (inherit begin-edit-sequence
@@ -1111,18 +1132,9 @@ WARNING: printf is rebound in the body of the unit to always
           
           (define/pubment (submit-to-port? key) (inner #t submit-to-port? key))
           (define/pubment (on-submit) (inner (void) on-submit))
-          (define/public (get-out-style-delta) 
-            (let ([out-sd (make-object style-delta% 'change-nothing)])
-              (send out-sd set-delta-foreground (make-object color% 150 0 150))
-              out-sd))
-          (define/public (get-err-style-delta)
-            (let ([err-sd (make-object style-delta% 'change-italic)])
-              (send err-sd set-delta-foreground (make-object color% 255 0 0))
-              err-sd))
-          (define/public (get-value-style-delta)
-            (let ([value-sd (make-object style-delta% 'change-nothing)])
-              (send value-sd set-delta-foreground (make-object color% 0 0 175))
-              value-sd))
+          (define/public (get-out-style-delta) out-style-name)
+          (define/public (get-err-style-delta) error-style-name)
+          (define/public (get-value-style-delta) value-style-name)
 
           (define/public (get-box-input-editor-snip%) editor-snip%)
           (define/public (get-box-input-text%) input-box%)
@@ -1444,12 +1456,19 @@ WARNING: printf is rebound in the body of the unit to always
             
             (let* ([add-standard
                     (λ (sd)
-                      (let* ([style-list (get-style-list)] 
-                             [std (send style-list find-named-style "Standard")])
-                        (if std
-                            (send style-list find-or-create-style std sd)
-                            (let ([basic (send style-list find-named-style "Basic")])
-                              (send style-list find-or-create-style basic sd)))))]
+                      (cond
+                        [(string? sd)
+                         (let ([style-list (get-style-list)])
+                           (or (send style-list find-named-style sd)
+                               (send style-list find-named-style "Standard")
+                               (send style-list find-named-style "Basic")))]
+                        [sd
+                         (let* ([style-list (get-style-list)] 
+                                [std (send style-list find-named-style "Standard")])
+                           (if std
+                               (send style-list find-or-create-style std sd)
+                               (let ([basic (send style-list find-named-style "Basic")])
+                                 (send style-list find-or-create-style basic sd))))]))]
                    [out-style (add-standard (get-out-style-delta))]
                    [err-style (add-standard (get-err-style-delta))]
                    [value-style (add-standard (get-value-style-delta))])

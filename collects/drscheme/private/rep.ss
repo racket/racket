@@ -1572,7 +1572,6 @@ TODO
                                            (floor (/ width char-width)))])
                     (send dc set-font old-font)
                     (pretty-print-columns new-columns))))))
-          
           (super-new)
           (auto-wrap #t)
           (set-styles-sticky #f)
