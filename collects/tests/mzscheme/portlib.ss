@@ -297,6 +297,18 @@
   (test #\u7238 read p)
   (test 'lo read p))
 
+;; Check that make-input-port/read-to-peek isn't trying
+;; to use chars when it should use bytes:
+(let-values ([(pipe-r pipe-w) (make-pipe)])
+  (write-byte 200 pipe-w)
+  (let ([p (make-input-port/read-to-peek 'name
+                                         (lambda (s)
+                                           (read-bytes-avail!* s pipe-r))
+                                         #f
+                                         void)])
+    (test 200 peek-byte p)
+    (test 200 read-byte p)))
+
 ;; read synchronization events
 (define (go mk-hello sync atest btest)
   (test #t list? (list mk-hello sync atest btest))

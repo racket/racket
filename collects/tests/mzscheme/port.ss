@@ -64,6 +64,11 @@
   (test-file #f)
   (test-file #t))
 
+(let-values ([(r w) (make-pipe)])
+  (write-byte 200 w)
+  (test #t byte-ready? r)
+  (test #f char-ready? r))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Based on the MzScheme manual...
 
