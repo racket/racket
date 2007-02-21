@@ -463,7 +463,9 @@ module browser threading seems wrong.
                 (with-handlers ((exn:fail:read? void))
                   (let ([found-language? #f])
                     (let* ([tp (open-input-text-editor this)]
-                           [l (read-line tp)])
+                           [l (with-handlers ([exn:fail:contract? (λ (x) eof)])
+                                ;; catch exceptions that occur with GUI syntax in the beginning of the buffer
+                                (read-line tp))])
                       (unless (eof-object? l)
                         (unless (regexp-match #rx"[;#]" l) ;; no comments on the first line
                           (when (equal? #\) (get-character (- (last-position) 1)))
