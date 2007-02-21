@@ -933,6 +933,8 @@ please adhere to these guidelines:
   ; used the popup menu from the just above; greyed out and only
   ; visible when some languages are in the history
   (recent-languages "Recent languages:")
+  ; shows up in bottom-left programming language menu popup, when no langs are recorded
+  (no-recently-chosen-languages "no recently chosen languages") 
   
  ;; startup wizard screen language selection section
  (please-select-a-language "Please select a language")

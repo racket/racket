@@ -3337,6 +3337,11 @@ module browser threading seems wrong.
         (init-field frame)
         (define/override (fill-popup menu reset)
           (let ([added-one? #f])
+            (send (new menu-item%
+                       [label (string-constant recent-languages)]
+                       [callback void]
+                       [parent menu])
+                  enable #f)
             (for-each
              (λ (name/settings)
                (let* ([name (car name/settings)]
@@ -3346,12 +3351,6 @@ module browser threading seems wrong.
                              (drscheme:language-configuration:get-languages))]
                       [settings (send lang unmarshall-settings marshalled-settings)])
                  (when lang
-                   (unless added-one?
-                     (send (new menu-item%
-                                [label (string-constant recent-languages)]
-                                [callback void]
-                                [parent menu])
-                           enable #f))
                    (set! added-one? #t)
                    (new menu-item%
                         [parent menu]
@@ -3368,8 +3367,16 @@ module browser threading seems wrong.
                                   lang
                                   settings)))]))))
              (preferences:get 'drscheme:recent-language-names))
-            (when added-one?
-              (new separator-menu-item% [parent menu])))
+            (unless added-one?
+              (send (new menu-item% 
+                         [label (string-append
+                                 "  << "
+                                 (string-constant no-recently-chosen-languages)
+                                 " >>")]
+                         [parent menu]
+                         [callback void])
+                    enable #f))
+            (new separator-menu-item% [parent menu]))
           (new menu-item%
                [label (string-constant choose-language-menu-item-label)]
                [parent menu]
