@@ -57,7 +57,7 @@
       (define slant-check
         (make-check (string-constant cs-italic)
                     (λ (delta)
-                      (send delta set-style-on 'slant)
+                      (send delta set-style-on 'italic)
                       (send delta set-style-off 'base))
                     (λ (delta)
                       (send delta set-style-on 'normal)

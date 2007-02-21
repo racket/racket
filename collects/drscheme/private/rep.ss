@@ -419,7 +419,7 @@ TODO
       (define result-delta (make-object style-delta%)) ; used to be 'change-weight 'bold
       (define error-delta (make-object style-delta%
                             'change-style
-                            'slant))
+                            'italic))
       (send error-delta set-delta-foreground (make-object color% 255 0 0))
       (send result-delta set-delta-foreground (make-object color% 0 0 175))
       (send output-delta set-delta-foreground (make-object color% 150 0 150))

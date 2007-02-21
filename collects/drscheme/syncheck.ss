@@ -1146,7 +1146,7 @@ If the namespace does not, they are colored the unbound color.
                         (remove check-syntax-button-parent-panel l))))
           (update-button-visibility/tab (get-current-tab))))
       
-      (define report-error-style (make-object style-delta% 'change-style 'slant))
+      (define report-error-style (make-object style-delta% 'change-style 'italic))
       (send report-error-style set-delta-foreground "red")
       
       (define (add-check-syntax-key-bindings keymap)

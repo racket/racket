@@ -63,7 +63,7 @@ profile todo:
       (define (get-cm-key) cm-key)
 
       ;; error-delta : (instanceof style-delta%)
-      (define error-delta (make-object style-delta% 'change-style 'slant))
+      (define error-delta (make-object style-delta% 'change-style 'italic))
       (send error-delta set-delta-foreground (make-object color% 255 0 0))
       
       ;; error-color : (instanceof color%)
