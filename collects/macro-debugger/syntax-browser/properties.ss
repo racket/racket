@@ -3,7 +3,9 @@
   (require "interfaces.ss"
            "util.ss"
            (lib "class.ss")
-           (lib "mred.ss" "mred"))
+           (lib "mred.ss" "mred")
+           (lib "framework.ss" "framework")
+           (lib "interactive-value-port.ss" "mrlib"))
   (provide properties-view%
            properties-snip%)
 
@@ -54,7 +56,7 @@
           (else (error 'properties-view%:refresh "internal error: no such mode: ~s" mode))))
 
       ;; text : text%
-      (field (text (new text%)))
+      (field (text (new text%))) ;; text:wide-snip%)))
       (field (pdisplayer (new properties-displayer% (text text))))
 
       (send text set-styles-sticky #f)
@@ -118,6 +120,7 @@
                               (lambda (tp e)
                                 (set-mode
                                  (cdr (list-ref tab-choices (send tp get-selection))))))))
+      ;; canvas:wide-?%
       (define ecanvas (new editor-canvas% (editor text) (parent tab-panel)))))
 
   ;; properties-displayer%
@@ -203,7 +206,7 @@
           (when (null? keys)
             (display "No additional properties available.\n" n/a-sd))
           (when (pair? keys)
-            (for-each (lambda (k) (display-subkv k (syntax-property stx k)))
+            (for-each (lambda (k) (display-subkv/value k (syntax-property stx k)))
                       keys))))
 
       ;; display-kv : any any -> void
@@ -215,6 +218,23 @@
       (define/public (display-subkv k v)
         (display (format "~a: " k) sub-key-sd)
         (display (format "~a~n" v) #f))
+
+      (define/public (display-subkv/value k v)
+        (display-subkv k v)
+        #;
+        (begin
+          (display (format "~a:~n" k) sub-key-sd)
+          (let* ([value-text (new text:standard-style-list% (auto-wrap #t))]
+                 [value-snip (new editor-snip% (editor value-text))]
+                 [value-port (make-text-port value-text)])
+            (set-interactive-write-handler value-port)
+            (set-interactive-print-handler value-port)
+            (set-interactive-display-handler value-port)
+            (write v value-port)
+            (send value-text lock #t)
+            (send text insert value-snip)
+            (send text insert "\n")
+            #;(send ecanvas add-wide-snip value-snip))))
 
       ;; display : string style-delta -> void
       (define/private (display item sd)
@@ -238,7 +258,7 @@
                 (lift/id identifier-transformer-binding))
           (cons "in the template phase (\"for-template\")"
                 (lift/id identifier-template-binding))))
-  
+
   (define (uninterned? s)
     (not (eq? s (string->symbol (symbol->string s)))))
 
@@ -247,6 +267,20 @@
            'editor]
           [else s]))
   
+  ;; make-text-port : text -> port
+  ;; builds a port from a text object.  
+  (define (make-text-port text)
+    (make-output-port #f
+                      always-evt
+                      (lambda (s start end flush? enable-break?)
+                        (send text insert
+                              (bytes->string/utf-8 s #f start end))
+                        (- end start))
+                      void
+                      (lambda (special buffer? enable-break?)
+                        (send text insert special)
+                        #t)))
+
   ;; Styles
     
   (define key-sd
