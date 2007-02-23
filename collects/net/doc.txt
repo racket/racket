@@ -524,6 +524,7 @@ PROCEDURES -----------------------------------------------------------
                      [#:auth-user user-string-or-#f]
                      [#:auth-passwd pw-string-or-#f]
                      [#:tcp-connect proc]
+                     [#:tls-encode #f]
                      [port-no]) -> void
 
   The first argument is the IP address of the SMTP server. The
@@ -551,6 +552,17 @@ PROCEDURES -----------------------------------------------------------
   procedure to be used in place of `tcp-connect'. For example, use
   `ssl-connect' from `(lib "mzssl.ss" "openssl")' to connect to the
   server via SSL.
+
+  If the optional #:tls-encode keyword argument supplies a procedure
+  instead of #f, then the ESMTP STARTTLS protocol is used to request
+  SSL communication with the server. The procedure given as the
+  #:tls-encode argument should be like `ports->ssl-ports' from `(lib
+  "mzssl.ss" "openssl")'; it will be called as
+
+    (encode r w #:mode 'connect #:encrypt 'tls #:close-original? #t)
+
+  and it should return two values: an input port and an export port.
+  All further SMTP communication uses the returned ports.
 
   See the "head.ss" library for utilities that construct a message
   headers and validate mail address strings.
