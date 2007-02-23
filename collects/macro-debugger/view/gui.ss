@@ -448,6 +448,7 @@
             (send sbview add-text text)
             (send sbview add-text "\n\n"))
 
+
           ;; update/preserve-view : -> void
           (define/public (update/preserve-view)
             (define text (send sbview get-text))
@@ -462,7 +463,7 @@
             (for-each (lambda (d+sd)
                         (let ([e2 (lift/deriv-e2 (cdr d+sd))])
                           (if e2
-                              (send sbview add-syntax e2)
+                              (send sbview add-syntax e2 #:alpha-table alpha-table)
                               (send sbview add-text "Error\n"))))
                       (reverse derivs-prefix)))
           
@@ -501,13 +502,6 @@
             (insert-syntax/redex (step-term1 step) (step-foci1 step))
             (update:separator step)
             (insert-syntax/contractum (step-term2 step) (step-foci2 step))
-            ;; FIXME:
-            #;(begin (send sbview add-text "environment:\n")
-                   (module-identifier-mapping-for-each
-                    alpha-table
-                    (lambda (k v) (send sbview add-syntax k)))
-                   #;(for-each (lambda (id) (send sbview add-syntax id))
-                             (context-env (protostep-ctx step))))
             (update:show-lctx step))
 
           (define/private (update:show-prestep step)
@@ -529,7 +523,7 @@
             (send sbview add-text (exn-message (misstep-exn step)))
             (send sbview add-text "\n")
             (when (exn:fail:syntax? (misstep-exn step))
-              (for-each (lambda (e) (send sbview add-syntax e))
+              (for-each (lambda (e) (send sbview add-syntax e #:alpha-table alpha-table))
                         (exn:fail:syntax-exprs (misstep-exn step))))
             (update:show-lctx step))
 
@@ -537,7 +531,7 @@
             (let ([result (lift/deriv-e2 synth-deriv)])
               (when result
                 (send sbview add-text "Expansion finished\n")
-                (send sbview add-syntax result))
+                (send sbview add-syntax result #:alpha-table))
               (unless result
                 (send sbview add-text "Error\n"))))
 
@@ -545,7 +539,8 @@
             (when (pair? derivs)
               (for-each (lambda (suffix-deriv)
                           (send sbview add-syntax
-                                (lift/deriv-e1 suffix-deriv)))
+                                (lift/deriv-e1 suffix-deriv)
+                                #:alpha-table alpha-table))
                         (cdr derivs))))
 
           ;; update/save-position : -> void
@@ -577,19 +572,23 @@
 
           ;; insert-syntax : syntax -> void
           (define/private (insert-syntax stx)
-            (send sbview add-syntax stx))
+            (send sbview add-syntax stx #:alpha-table alpha-table))
           
           ;; insert-syntax/redex : syntax syntaxes -> void
           (define/private (insert-syntax/redex stx foci)
             (if (send config get-highlight-foci?)
-                (send sbview add-syntax stx foci "MistyRose")
-                (send sbview add-syntax stx)))
+                (send sbview add-syntax stx
+                      #:hi-stxs foci #:hi-color "MistyRose"
+                      #:alpha-table alpha-table)
+                (send sbview add-syntax stx #:alpha-table alpha-table)))
 
           ;; insert-syntax/contractum : syntax syntaxes -> void
           (define/private (insert-syntax/contractum stx foci)
             (if (send config get-highlight-foci?)
-                (send sbview add-syntax stx foci "LightCyan")
-                (send sbview add-syntax stx)))
+                (send sbview add-syntax stx
+                      #:hi-stxs foci #:hi-color "LightCyan"
+                      #:alpha-table alpha-table)
+                (send sbview add-syntax stx #:alpha-table alpha-table)))
 
           ;; enable/disable-buttons : -> void
           (define/private (enable/disable-buttons)

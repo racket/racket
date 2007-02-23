@@ -45,6 +45,9 @@
         (set! color-partition (send controller get-primary-partition))
         (apply-primary-partition-styles))
 
+      (define/public (get-range) range)
+      (define/public (get-identifier-list) identifier-list)
+
       ;; select-syntax : syntax -> void
       (define/public (select-syntax stx)
         (set! selected-syntax stx)

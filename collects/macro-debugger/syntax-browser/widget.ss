@@ -5,12 +5,15 @@
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
            (lib "list.ss")
+           (lib "kw.ss")
+           (lib "boundmap.ss" "syntax")
            "interfaces.ss"
            "params.ss"
            "controller.ss"
            "typesetter.ss"
            "hrule-snip.ss"
            "properties.ss"
+           "text.ss"
            "util.ss")
   (provide widget@
            widget-keymap-extension@
@@ -93,12 +96,30 @@
               (send -text insert text)))
           
           (define/public add-syntax
-            (case-lambda
-              [(stx) 
-               (internal-add-syntax stx null #f)]
-              [(stx hi-stxs hi-color)
-               (internal-add-syntax stx hi-stxs hi-color)]))
-          
+            (lambda/kw (stx #:key [hi-stxs null] hi-color alpha-table)
+              (when (and hi-stxs (not hi-color))
+                (error 'syntax-widget%::add-syntax "no highlight color specified"))
+              (let ([colorer (internal-add-syntax stx hi-stxs hi-color)])
+                (when alpha-table
+                  (let ([range (send colorer get-range)])
+                    (for-each (lambda (id)
+                                (let ([binder
+                                       (module-identifier-mapping-get alpha-table
+                                                                      id
+                                                                      (lambda () #f))])
+                                  (when binder
+                                    (for-each
+                                     (lambda (binder-r)
+                                       (for-each (lambda (id-r)
+                                                   (send -text add-arrow
+                                                         (car id-r) (cdr id-r)
+                                                         (car binder-r) (cdr binder-r)
+                                                         "blue"))
+                                                 (send range get-ranges id)))
+                                     (send range get-ranges binder)))))
+                              (send colorer get-identifier-list))))
+                colorer)))
+                    
           (define/public (add-separator)
             (with-unlock -text
               (send* -text
@@ -106,7 +127,9 @@
                 (insert "\n"))))
           
           (define/public (erase-all)
-            (with-unlock -text (send -text erase))
+            (with-unlock -text
+              (send -text erase)
+              (send -text delete-mouse-drawings))
             (send controller erase))
           
           (define/public (select-syntax stx)
@@ -127,8 +150,9 @@
                       (insert "\n")
                       (scroll-to-position current-position))
                     (unless (null? hi-stxs)
-                      (send new-colorer highlight-syntaxes hi-stxs hi-color)))))))
-          
+                      (send new-colorer highlight-syntaxes hi-stxs hi-color))
+                    new-colorer)))))
+
           (define/private (calculate-columns)
             (define style (code-style -text))
             (define char-width (send style get-text-width (send -ecanvas get-dc)))
@@ -176,6 +200,9 @@
           (super-new)))))
   
   (define browser-text%
-    (text:hide-caret/selection-mixin
-     (editor:standard-style-list-mixin text:basic%)))
+    (text:arrows-mixin
+     (text:mouse-drawings-mixin
+      (text:drawings-mixin
+       (text:hide-caret/selection-mixin
+        (editor:standard-style-list-mixin text:basic%))))))
   )

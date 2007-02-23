@@ -11,8 +11,8 @@
        (let* ([t text]
               [locked? (send t is-locked?)])
          (send t lock #f)
-         (let () . body)
-         (send t lock locked?))]))
+         (begin0 (let () . body)
+                 (send t lock locked?)))]))
 
   (define (mpi->string mpi)
     (if (module-path-index? mpi)
