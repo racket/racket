@@ -167,7 +167,7 @@
           (cond [(pair? b)
                  (let ([name (cadr b)]
                        [mod (car b)])
-                   (format "~a'~s' from module ~a"
+                   (format "~a'~s' from ~a"
                            prefix
                            name
                            (mpi->string mod)))]
