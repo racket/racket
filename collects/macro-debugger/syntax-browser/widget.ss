@@ -114,12 +114,12 @@
                                                    (send -text add-arrow
                                                          (car id-r) (cdr id-r)
                                                          (car binder-r) (cdr binder-r)
-                                                         "blue"))
+                                                         "purple"))
                                                  (send range get-ranges id)))
                                      (send range get-ranges binder)))))
                               (send colorer get-identifier-list))))
                 colorer)))
-                    
+          
           (define/public (add-separator)
             (with-unlock -text
               (send* -text
