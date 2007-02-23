@@ -531,7 +531,7 @@
             (let ([result (lift/deriv-e2 synth-deriv)])
               (when result
                 (send sbview add-text "Expansion finished\n")
-                (send sbview add-syntax result #:alpha-table))
+                (send sbview add-syntax result #:alpha-table alpha-table))
               (unless result
                 (send sbview add-text "Error\n"))))
 

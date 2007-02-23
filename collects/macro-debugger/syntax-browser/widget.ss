@@ -97,7 +97,7 @@
           
           (define/public add-syntax
             (lambda/kw (stx #:key [hi-stxs null] hi-color alpha-table)
-              (when (and hi-stxs (not hi-color))
+              (when (and (pair? hi-stxs) (not hi-color))
                 (error 'syntax-widget%::add-syntax "no highlight color specified"))
               (let ([colorer (internal-add-syntax stx hi-stxs hi-color)])
                 (when alpha-table
