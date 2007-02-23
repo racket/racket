@@ -143,6 +143,7 @@
            (cons (walk/foci (syntax->list #'(?formals ...))
                             (syntax->list #'(?formals* ...))
                             e1 mid 'rename-case-lambda)
+                 ;; FIXME: Missing renames frames here
                  (R mid (CASE-LAMBDA [FORMALS . BODY] ...)
                     [Block (BODY ...) (map cdr renames+bodies)]))))]
       [(AnyQ p:let-values (e1 e2 rs renames rhss body) exni)

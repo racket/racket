@@ -27,7 +27,7 @@
 
   ;; current-derivation : parameter of Derivation
   (define current-derivation (make-parameter #f))
-  
+
   (define-syntax with-context
     (syntax-rules ()
       [(with-context f . body)
@@ -95,10 +95,11 @@
        #'(let-values ([(form2-var foci1-var foci2-var description-var)
                        (with-syntax ([p f])
                          (values form2 foci1 foci2 description))])
-           (cons (walk/foci foci1-var foci2-var
-                            f form2-var
-                            description-var)
-                 (R** form2-var p . more)))]
+           (with-context (make-renames foci1-var foci2-var)
+             (cons (walk/foci foci1-var foci2-var
+                              f form2-var
+                              description-var)
+                   (R** form2-var p . more))))]
       [(R** f p [#:walk form2 description] . more)
        #'(let-values ([(form2-var description-var)
                        (with-syntax ([p f])

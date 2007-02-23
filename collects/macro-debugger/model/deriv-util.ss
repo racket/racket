@@ -19,7 +19,9 @@
 
            find-derivs
            find-deriv
-           find-derivs/syntax)
+           find-derivs/syntax
+           extract-all-fresh-names
+           flatten-identifiers)
 
   ;; IntW
   ;; Matches only interrupted wraps
@@ -138,20 +140,25 @@
   
   ;; find-derivs : (deriv -> boolean) (deriv -> boolean) deriv -> (list-of deriv)
   (define (find-derivs pred stop-short d)
-    (find-deriv/unit+join+zero pred stop-short d list append null))
+    (let ([stop (lambda (x) (or (pred x) (stop-short x)))])
+      (find-deriv/unit+join+zero pred stop d list append null)))
 
   ;; find-deriv : (deriv -> boolean) (deriv -> boolean) deriv -> deriv/#f
   ;; Finds the first deriv that matches; throws the rest away
   (define (find-deriv pred stop-short d)
-    (let/ec return (find-deriv/unit+join+zero pred stop-short d return (lambda _ #f) #f)))
+    (let ([stop (lambda (x) (or (pred x) (stop-short x)))])
+      (let/ec return (find-deriv/unit+join+zero pred stop d return (lambda _ #f) #f))))
 
   ;; find-deriv/unit+join+zero
   ;; Parameterized over monad operations for combining the results
   ;; For example, <list, append, null> collects the results into a list
   (define (find-deriv/unit+join+zero pred stop-short d unit join zero)
     (define (loop d)
+      (if (pred d)
+          (join (unit d) (loop-inner d))
+          (loop-inner d)))
+    (define (loop-inner d)
       (match d
-        [(? pred d) (unit d)]
         [(? stop-short d) zero]
         [(AnyQ mrule (_ _ tx next))
          (join (loop tx) (loop next))]
@@ -246,4 +253,66 @@
                   [(AnyQ lift-deriv (_ _ _ _ _)) #t]
                   [_ #f])
                  d))
-  )
+
+  ;; extract-all-fresh-names : Derivation -> syntaxlike
+  ;; FIXME: Missing case-lambda
+  (define (extract-all-fresh-names d)
+    (define (renaming-node? x)
+      (or (p:lambda? x)
+          (p:case-lambda? x)
+          (p:let-values? x)
+          (p:letrec-values? x)
+          (p:letrec-syntaxes+values? x)
+          (p:rename? x)))
+    (define (extract-fresh-names d)
+      (match d
+        [(struct p:lambda (e1 e2 rs renames body))
+         (if renames
+             (with-syntax ([(?formals . ?body) renames])
+               #'?formals)
+             null)]
+        [(struct p:let-values (e1 e2 rs renames rhss body))
+         (if renames
+             (with-syntax ([(((?vars ?rhs) ...) . ?body) renames])
+               #'(?vars ...))
+             null)]
+        [(struct p:letrec-values (e1 e2 rs renames rhss body))
+         (if renames
+             (with-syntax ([(((?vars ?rhs) ...) . ?body) renames])
+               #'(?vars ...))
+             null)]
+        [(struct p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body))
+         (cons
+          (if srenames
+              (with-syntax ([(((?svars ?srhs) ...) ((?vvars ?vrhs) ...) . ?body)
+                             srenames])
+                #'(?svars ... ?vvars ...))
+              null)
+          (if vrenames
+              (with-syntax ([(((?vvars ?vrhs) ...) . ?body) vrenames])
+                #'(?vvars ...))
+              null))]
+        [_ null]))
+
+    (let ([all-renaming-forms
+           (find-deriv/unit+join+zero
+            renaming-node?
+            (lambda (d) #f)
+            d
+            list
+            append
+            null)])
+      (flatten-identifiers (map extract-fresh-names all-renaming-forms))))
+
+  ;; flatten-identifiers : syntaxlike -> (list-of identifier)
+  (define (flatten-identifiers stx)
+    (syntax-case stx ()
+      [id (identifier? #'id) (list #'id)]
+      [() null]
+      [(x . y) (append (flatten-identifiers #'x) (flatten-identifiers #'y))]
+      [else (error 'flatten-identifers "neither syntax list nor identifier: ~s"
+                   (if (syntax? stx)
+                       (syntax-object->datum stx)
+                       stx))]))
+  
+)

@@ -220,6 +220,9 @@
           ;; steps : cursor
           (define steps #f)
 
+          ;; alpha-table : module-identifier-mapping[identifier => identifier]
+          (define alpha-table (make-module-identifier-mapping))
+
           ;; saved-position : number/#f
           (define saved-position #f)
 
@@ -227,6 +230,8 @@
 
           ;; add-deriv : Derivation -> void
           (define/public (add-deriv d)
+            (for-each (lambda (id) (module-identifier-mapping-put! alpha-table id id))
+                      (extract-all-fresh-names d))
             (set! derivs (append derivs (list d)))
             (ensure-nav:up+down-shown)
             (if (null? (cdr derivs))
@@ -496,6 +501,13 @@
             (insert-syntax/redex (step-term1 step) (step-foci1 step))
             (update:separator step)
             (insert-syntax/contractum (step-term2 step) (step-foci2 step))
+            ;; FIXME:
+            #;(begin (send sbview add-text "environment:\n")
+                   (module-identifier-mapping-for-each
+                    alpha-table
+                    (lambda (k v) (send sbview add-syntax k)))
+                   #;(for-each (lambda (id) (send sbview add-syntax id))
+                             (context-env (protostep-ctx step))))
             (update:show-lctx step))
 
           (define/private (update:show-prestep step)
@@ -619,9 +631,9 @@
           (define/public (refresh)
             (let ([deriv (car derivs)])
               (let ([d (synthesize deriv)])
-                (let ([s (cursor:new (reduce d))])
+                (let ([rseq (reduce d)])
                   (set! synth-deriv d)
-                  (set! steps s))))
+                  (set! steps (cursor:new rseq)))))
             (restore-position)
             (update))
 

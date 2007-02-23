@@ -1,13 +1,18 @@
 
 (module steps mzscheme
-  (require "deriv.ss")
+  (require "deriv.ss"
+           "deriv-util.ss")
 
   ;; A ReductionSequence is a (list-of Reduction)
 
   ;; A ProtoStep is (make-protostep Derivation BigContext StepType Context)
 
   ;; A Context is a list of Frames
-  ;; A Frame is (syntax -> syntax)
+  ;; A Frame is either:
+  ;;  - (syntax -> syntax)
+  ;;  - (make-renames syntax syntax)
+  ;;  - 'phase-up
+  (define-struct renames (old new))
 
   ;; A BigContext is (list-of BigFrame)
   ;; A BigFrame is (make-bigframe Derivation Context Syntaxes Syntax)
@@ -16,9 +21,9 @@
   ;; A Reduction is one of 
   ;;   - (make-step ... Syntaxes Syntaxes Syntax Syntax)
   ;;   - (make-misstep ... Syntax Syntax Exception)
-  
+
   (define-struct protostep (deriv lctx type ctx) #f)
-  
+
   (define-struct (step protostep) (foci1 foci2 e1 e2) #f)
   (define-struct (misstep protostep) (foci1 e1 exn) #f)
 
@@ -27,7 +32,22 @@
     (let loop ([ctx ctx] [stx stx])
       (if (null? ctx)
           stx
-          (loop (cdr ctx) ((car ctx) stx)))))
+          (let ([frame0 (car ctx)])
+            (if (procedure? frame0)
+                (loop (cdr ctx) (frame0 stx))
+                (loop (cdr ctx) stx))))))
+
+  ;; context-env : Context -> (list-of identifier)
+  (define (context-env ctx)
+    (let loop ([ctx ctx] [env null])
+      (if (null? ctx)
+          env
+          (let ([frame0 (car ctx)])
+            (if (renames? frame0)
+                (loop (cdr ctx)
+                      (append (flatten-identifiers (renames-new frame0))
+                              env))
+                (loop (cdr ctx) env))))))
 
   (define (step-term1 s)
     (context-fill (protostep-ctx s) (step-e1 s)))
@@ -39,7 +59,7 @@
 
   (define (bigframe-term bf)
     (context-fill (bigframe-ctx bf) (bigframe-e bf)))
-  
+
   ;; A StepType is a simple in the following alist.
 
   (define step-type-meanings
