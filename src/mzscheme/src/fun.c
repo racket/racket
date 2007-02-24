@@ -1229,7 +1229,8 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   np = num_params = data->num_params;
   if ((data->num_params == 1)
       && (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
-      && !(cl->local_flags[0] & SCHEME_WAS_USED)) {
+      && !(cl->local_flags[0] & SCHEME_WAS_USED)
+      && !convert) {
     /* (lambda args E) where args is not in E => drop the argument */
     new_info = scheme_resolve_info_extend(info, 0, 1, cl->base_closure_size);
     num_params = 0;
