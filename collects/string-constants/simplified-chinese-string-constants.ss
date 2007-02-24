@@ -347,6 +347,7 @@
   (background-color "背景颜色")
   (default-text-color "默认颜色") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "请选择背景颜色")
+  (revert-to-defaults "恢复默认")
   
   ; title of the color choosing dialog
   
@@ -399,6 +400,12 @@
   (already-used-keyword "“~a”已经是缩进关键词了")
   (add-keyword "添加")
   (remove-keyword "删除")
+  
+  ; repl color preferences
+  (repl-colors "REPL")
+  (repl-out-color "输出")
+  (repl-value-color "值")
+  (repl-error-color "错误")
   
   ;;; find/replace
   (find-and-replace "查找并替换")
@@ -792,8 +799,8 @@
   (exact-lucky-search-help-desk-for "在Help Desk中搜索最符合“~a”的一个页面")
   
   ;; collapse and expand popup menu items
-  (collapse-sexp "折叠sexpression")
-  (expand-sexp "扩展sexpression")
+  (collapse-sexp "折叠S表达式")
+  (expand-sexp "扩展S表达式")
   
   ;;; fraction dialog
   (enter-fraction "输入分数")
@@ -846,6 +853,17 @@
   (use-mixed-fractions "带分数")
   (use-repeating-decimals "循环小数")
   (decimal-notation-for-rationals "使用十进制表示有理数")
+  
+  ; used in the bottom left of the drscheme frame as the label
+  ; above the programming language's name
+  (programming-language-label "编程语言：")
+  ; used the popup menu from the just above; greyed out and only
+  ; visible when some languages are in the history
+  (recent-languages "最近使用的语言：")
+  ; shows up in bottom-left programming language menu popup, when no langs are recorded
+  (no-recently-chosen-languages "没有最近使用过的语言")
+  
+  ;; startup wizard screen language selection section
   (please-select-a-language "请选择语言")
   
   

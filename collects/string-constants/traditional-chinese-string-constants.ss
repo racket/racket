@@ -68,17 +68,17 @@
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
   
   ;;; bug report form
-  (cancel-bug-report? "取消程式錯誤報告？")
+  (cancel-bug-report? "取消程序錯誤報告？")
   (are-you-sure-cancel-bug-report?
-   "你確定要取消報告程式錯誤嗎？")
-  (bug-report-form "程式錯誤報告表")
+   "你確定要取消報告程序錯誤嗎？")
+  (bug-report-form "程序錯誤報告表")
   (bug-report-field-name "姓名")
   (bug-report-field-email "電子郵件")
   (bug-report-field-summary "標題")
   (bug-report-field-severity "嚴重度")
   (bug-report-field-class "類別")
   (bug-report-field-description "詳細描述")
-  (bug-report-field-reproduce1 "再現程式錯")
+  (bug-report-field-reproduce1 "再現程序錯")
   (bug-report-field-reproduce2 "誤的步驟")
   (bug-report-field-environment "環境")
   (bug-report-field-docs-installed "已安裝文檔")
@@ -89,13 +89,13 @@
   (bug-report-synthesized-information "綜合信息")  ;; dialog title
   (bug-report-show-synthesized-info "顯示綜合信息")
   (bug-report-submit "提交")
-  (bug-report-submit-menu-item "提交程式錯誤報告") ;; in Help Menu (drs & help desk)
-  (error-sending-bug-report "程式錯誤報告傳輸出錯")
-  (error-sending-bug-report-expln "在傳輸程式錯誤報告的過程中出現了錯誤。如果你能夠正常瀏覽網路，請訪問：\n\n    http://bugs.plt-scheme.org/\n\n使用網頁上的表單提交程式錯誤報告。對於由此產生的不便，我們表示抱歉。\n\n傳輸錯誤詳情：\n~a")
-  (illegal-bug-report "非法的程式錯誤報告")
+  (bug-report-submit-menu-item "提交程序錯誤報告") ;; in Help Menu (drs & help desk)
+  (error-sending-bug-report "程序錯誤報告傳輸出錯")
+  (error-sending-bug-report-expln "在傳輸程序錯誤報告的過程中出現了錯誤。如果你能夠正常瀏覽網路，請訪問：\n\n    http://bugs.plt-scheme.org/\n\n使用網頁上的表單提交程序錯誤報告。對於由此產生的不便，我們表示抱歉。\n\n傳輸錯誤詳情：\n~a")
+  (illegal-bug-report "非法的程序錯誤報告")
   (pls-fill-in-field "請填寫\"~a\"欄目")
   (malformed-email-address "電子郵件地址不符合格式")
-  (pls-fill-in-either-description-or-reproduce "在「詳細描述」和「再現程式錯誤的步驟」兩欄中，請至少填寫一項。")
+  (pls-fill-in-either-description-or-reproduce "在「詳細描述」和「再現程序錯誤的步驟」兩欄中，請至少填寫一項。")
   
   ;;; check syntax
   (check-syntax "檢查語法")
@@ -181,7 +181,7 @@
   (scheme-mode-color-comment "注釋")
   (scheme-mode-color-string "字元串")
   (scheme-mode-color-constant "常量")
-  (scheme-mode-color-parenthesis "括号")
+  (scheme-mode-color-parenthesis "括號")
   (scheme-mode-color-error "錯誤")
   (scheme-mode-color-other "其他")
   ;; the ~a is filled in with one of the above (scheme-mode-*)
@@ -230,7 +230,7 @@
   (plt:hd:help-on-help-details "如果你需要使用Help Desk的幫助，請在Help Desk的主頁中點擊連結「How to use Help Desk」。（要進入Help Desk的主頁，請單擊Help Desk窗口上方的「主頁」按鈕。）")
   (reload "刷新") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
-   "你選擇了一個指向全球資訊網的連結。請問您是要在Help Desk中打開該頁面，還是想使用瀏覽器程式瀏覽網頁？")
+   "你選擇了一個指向全球資訊網的連結。請問您是要在Help Desk中打開該頁面，還是想使用瀏覽器程序瀏覽網頁？")
   (plt:hd:homebrew-browser "Help Desk") ;; choice for the above string (in a button)
   (plt:hd:separate-browser "網路瀏覽器") ;; other choice for the above string (also in a button)
   (plt:hd:external-link-in-help "在Help中的外部URL")
@@ -292,7 +292,7 @@
   (install-plt-file/yes "安裝")
   (install-plt-file/no "編輯")
   
-  (plt-installer-progress-window-title "安裝程式") ;; frame title
+  (plt-installer-progress-window-title "安裝程序") ;; frame title
   (plt-installer-abort-installation "取消安裝") ;; button label
   (plt-installer-aborted "安裝中止。") ;; msg that appears in the installation window when installation is aborted
   
@@ -320,10 +320,10 @@
   (warnings-prefs-panel-label "警告")
   (editor-prefs-panel-label "編輯")
   (general-prefs-panel-label "常規")
-  (highlight-parens "加亮顯示匹配的括号")
-  (fixup-close-parens "自動調整閉括号")
-  (fixup-open-brackets "自動調整中括号")
-  (flash-paren-match "高亮顯示括号匹配")
+  (highlight-parens "加亮顯示匹配的括號")
+  (fixup-close-parens "自動調整閉括號")
+  (fixup-open-brackets "自動調整中括號")
+  (flash-paren-match "高亮顯示括號匹配")
   (auto-save-files "自動保存文件")
   (backup-files "保存備份文件")
   (map-delete-to-backspace "將delete轉換成backspace")
@@ -341,14 +341,15 @@
   (separate-dialog-for-searching "使用單獨的搜索對話框")
   (reuse-existing-frames "在打開新文件時，使用現有的框架")
   (default-fonts "預設字體")
-  (paren-match-color "高亮顯示括号所使用的顏色") ; in prefs dialog
-  (online-coloring-active "實時根據語法用顏色標記程式")
+  (paren-match-color "高亮顯示括號所使用的顏色") ; in prefs dialog
+  (online-coloring-active "實時根據語法用顏色標記程序")
   (open-files-in-tabs "在不同的標籤下打開多個文件（不使用多個窗口）")
-  (show-interactions-on-execute "在運行程式時自動打開交互窗口")
+  (show-interactions-on-execute "在運行程序時自動打開交互窗口")
   (limit-interactions-size "限制交互窗口的大小")
   (background-color "背景顏色")
   (default-text-color "預設顏色") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "請選擇背景顏色")
+  (revert-to-defaults "恢復預設")
   
   ; title of the color choosing dialog
   
@@ -387,7 +388,7 @@
   (indenting-prefs-panel-label "縮進")
   (indenting-prefs-extra-regexp "其他表達式")
   
-  (square-bracket-prefs-panel-label "中括号")
+  (square-bracket-prefs-panel-label "中括號")
   
   ; filled with define, lambda, or begin
   (enter-new-keyword "請輸入一個類似於~a的關鍵詞：")
@@ -395,12 +396,18 @@
   (x-like-keywords "~a類型的關鍵詞")
   
   ; used in Square bracket panel
-  (skip-subexpressions "出現在中括号前的表達式數量")
+  (skip-subexpressions "出現在中括號前的表達式數量")
   
   (expected-a-symbol "需要一個符號，得到a")
   (already-used-keyword "「~a」已經是縮進關鍵詞了")
   (add-keyword "添加")
   (remove-keyword "刪除")
+  
+  ; repl color preferences
+  (repl-colors "REPL")
+  (repl-out-color "輸出")
+  (repl-value-color "值")
+  (repl-error-color "錯誤")
   
   ;;; find/replace
   (find-and-replace "查找並替換")
@@ -514,6 +521,9 @@
   (print-info "列印當前文件")
   (print-menu-item "列印(&P)...")
   
+  (page-setup-info "設置列印參數")
+  (page-setup-menu-item "頁面設置...")
+  
   (close-info "關閉當前文件")
   (close-menu-item "關閉(&C)")
   
@@ -590,13 +600,13 @@
   (most-recent-window "最近的視窗")
   
   (view-menu-label "視圖(&V)")
-  (show-overview "顯示程式輪廓") 
-  (hide-overview "隱藏程式輪廓")
+  (show-overview "顯示程序輪廓") 
+  (hide-overview "隱藏程序輪廓")
   (show-module-browser "顯示module瀏覽器")
   (hide-module-browser "隱藏module瀏覽器")
   
   (help-menu-label "幫助(&H)")
-  (about-info "本程式的詳細信息以及致謝名單")
+  (about-info "本程序的詳細信息以及致謝名單")
   (about-menu-item "關於...")
   
   ;; open here's new menu item
@@ -641,7 +651,7 @@
   
   (autosave-show-autosave "自動保存文件") ;; title of a window showing the autosave file
   
-  (autosave-explanation "DrScheme發現了自動保存的文件，其中可能包含你沒有保存過的程式")
+  (autosave-explanation "DrScheme發現了自動保存的文件，其中可能包含你沒有保存過的程序")
   
   (autosave-recovered! "已恢復！") ;; status of an autosave file
   (autosave-deleted "已刪除")       ;; status of an autosave file
@@ -661,7 +671,7 @@
   (overwrite-file-button-label "保存")
   
   (definitions-modified 
-    "當前磁碟文件已被修改；請保存或恢復文件。")
+   "當前磁碟文件已被修改；請保存或恢復文件。")
   (drscheme-internal-error "DrScheme內部錯誤")
   
   ;;; tools
@@ -723,7 +733,7 @@
   ;;; scheme-menu
   (scheme-menu-name "S&cheme")
   (execute-menu-item-label "運行")
-  (execute-menu-item-help-string "運行定義窗口中的程式")
+  (execute-menu-item-help-string "運行定義窗口中的程序")
   (break-menu-item-label "中斷")
   (break-menu-item-help-string "中斷當前計算")
   (kill-menu-item-label "終止")
@@ -739,25 +749,25 @@
   (convert-to-semicolon-comment "轉化為（分號）注釋")
   
   ;;; executables
-  (create-executable-menu-item-label "創建可執行程式...")
-  (create-executable-title "創建可執行程式")
-  (must-save-before-executable "在創建可執行程式之前，你必須保存源程式")
-  (save-a-mred-launcher "保存為MrEd程式")
-  (save-a-mzscheme-launcher "保存為MzScheme程式")
-  (save-a-mred-stand-alone-executable "保存為MrEd可執行程式")
-  (save-a-mzscheme-stand-alone-executable "保存為MzScheme可執行程式")
-  (save-a-mred-distribution "保存為MrEd可發佈程式")
-  (save-a-mzscheme-distribution "保存為MzScheme可發佈程式")
+  (create-executable-menu-item-label "創建可執行程序...")
+  (create-executable-title "創建可執行程序")
+  (must-save-before-executable "在創建可執行程序之前，你必須保存源程序")
+  (save-a-mred-launcher "保存為MrEd程序")
+  (save-a-mzscheme-launcher "保存為MzScheme程序")
+  (save-a-mred-stand-alone-executable "保存為MrEd可執行程序")
+  (save-a-mzscheme-stand-alone-executable "保存為MzScheme可執行程序")
+  (save-a-mred-distribution "保存為MrEd可發佈程序")
+  (save-a-mzscheme-distribution "保存為MzScheme可發佈程序")
   
-  (definitions-not-saved "當前定義窗口中的程式並沒有被保存過。將使用最近保存過的版本來生成可執行程式。是否繼續？")
+  (definitions-not-saved "當前定義窗口中的程序並沒有被保存過。將使用最近保存過的版本來生成可執行程序。是否繼續？")
   ;; The "-explanatory-label" variants are the labels used for the radio buttons in
   ;;  the "Create Executable..." dialog for the "(module ...)" language.
-  (launcher "啟動程式")
-  (launcher-explanatory-label "啟動程式（僅在本機運行，運行原始碼）")
-  (stand-alone "獨立程式")
-  (stand-alone-explanatory-label "獨立程式（僅在本機運行，運行編譯代碼）")
-  (distribution "可發佈程式")
-  (distribution-explanatory-label "可發佈程式（可以在其它電腦上安裝並運行）")
+  (launcher "啟動程序")
+  (launcher-explanatory-label "啟動程序（僅在本機運行，運行原始碼）")
+  (stand-alone "獨立程序")
+  (stand-alone-explanatory-label "獨立程序（僅在本機運行，運行編譯代碼）")
+  (distribution "可發佈程序")
+  (distribution-explanatory-label "可發佈程序（可以在其它電腦上安裝並運行）")
   (executable-type "類型")
   (executable-base "基於")
   (filename "文件名：")
@@ -771,7 +781,7 @@
    "警告：目錄：\n\n  ~a\n\n將會被重置。繼續操作？")
   
   (distribution-progress-window-title "發佈進程")
-  (creating-executable-progress-status "創建可執行程式...")
+  (creating-executable-progress-status "創建可執行程序...")
   (assembling-distribution-files-progress-status "彙編...")
   (packing-distribution-progress-status "打包...")
   
@@ -779,7 +789,7 @@
   
   ; the ~a is a language such as "module" or "algol60"
   (create-servlet-unsupported-language
-   "無法為~a語言程式創建Servlet。")
+   "無法為~a語言程序創建Servlet。")
   
   ;;; buttons
   (execute-button-label "運行") 
@@ -791,8 +801,8 @@
   (exact-lucky-search-help-desk-for "在Help Desk中搜索最符合「~a」的一個頁面")
   
   ;; collapse and expand popup menu items
-  (collapse-sexp "摺疊sexpression")
-  (expand-sexp "擴展sexpression")
+  (collapse-sexp "摺疊S表達式")
+  (expand-sexp "擴展S表達式")
   
   ;;; fraction dialog
   (enter-fraction "輸入分數")
@@ -845,6 +855,17 @@
   (use-mixed-fractions "帶分數")
   (use-repeating-decimals "循環小數")
   (decimal-notation-for-rationals "使用十進位表示有理數")
+  
+  ; used in the bottom left of the drscheme frame as the label
+  ; above the programming language's name
+  (programming-language-label "程式語言：")
+  ; used the popup menu from the just above; greyed out and only
+  ; visible when some languages are in the history
+  (recent-languages "最近使用的語言：")
+  ; shows up in bottom-left programming language menu popup, when no langs are recorded
+  (no-recently-chosen-languages "沒有最近使用過的語言")
+  
+  ;; startup wizard screen language selection section
   (please-select-a-language "請選擇語言")
   
   
@@ -859,9 +880,9 @@
   (intermediate/lambda-one-line-summary "在中級的基礎上，增加了高階函數")
   (advanced-student "高級")
   (advanced-one-line-summary "在中級的基礎上，增加了lambda和賦值")
-  (how-to-design-programs "程式設計方法/How to Design Programs") ;; should agree with MIT Press on this one...
-  (pretty-big-scheme "Pretty Big (包括MrEd和高級)")
-  (pretty-big-scheme-one-line-summary "增加了HtDP(程式設計方法)語言的語法和函數")
+  (how-to-design-programs "程序設計方法/How to Design Programs") ;; should agree with MIT Press on this one...
+  (pretty-big-scheme "相當大（包括MrEd和HtDP高級）")
+  (pretty-big-scheme-one-line-summary "增加了HtDP(程序設計方法)語言的語法和函數")
   (r5rs-lang-name "標準(R5RS)")
   (r5rs-one-line-summary "Scheme語言標準第5修改稿")
   (expander "Expander")
@@ -900,9 +921,9 @@
   (files-interactions "~a的交互") ;; filled with a filename
   (current-interactions "交互")
   (current-definitions "定義")
-  (mzscheme-w/debug "Textual (MzScheme, 包含R5RS)")
+  (mzscheme-w/debug "文本（MzScheme，包含R5RS）")
   (mzscheme-one-line-summary "PLT的Scheme實現")
-  (mred-w/debug "Graphical (MrEd, 包含 MzScheme)")
+  (mred-w/debug "圖形（MrEd，包含MzScheme）")
   (mred-one-line-summary "在MzScheme的基礎上增加GUI支持")
   
   ;; profiling
@@ -911,23 +932,23 @@
   (profiling-choose-low-color "請選擇代表低的顏色")
   (profiling-choose-high-color "請選擇代表高的顏色")
   (profiling "Profiling")
-  (profiling-example-text "(define (whee) (whee))")
+  (profiling-example-text "(define (理) (理))")
   (profiling-color-config "Profiling色譜") 
-  (profiling-scale "Profiling顏色的比例")
+  (profiling-scale "Profiling的色彩比例")
   (profiling-sqrt "平方根")
   (profiling-linear "線性")
   (profiling-square "平方")
   (profiling-number "調用次數")
   (profiling-time "累積次數")
   (profiling-update "更新Profile")
-  (profiling-col-percent-time "% 次")
+  (profiling-col-percent-time "%次")
   (profiling-col-function "函數")
   (profiling-col-time-in-msec "毫秒")
   (profiling-col-calls "調用")
   (profiling-show-profile "顯示Profile")
   (profiling-hide-profile "隱藏Profile")
   (profiling-unknown-src "<< 未知 >>")
-  (profiling-no-information-available "沒有可用的profiling信息。請確定你（在語言設置中）啟用了profiling，並且運行了當前程式。")
+  (profiling-no-information-available "沒有可用的profiling信息。請確定你（在語言設置中）啟用了profiling，並且運行了當前程序。")
   (profiling-clear? "改變定義窗口的內容將導致profiling信息失效。是否繼續？")
   
   ;; test coverage
@@ -992,7 +1013,7 @@
   (module-browser-open-file-format "打開~a")
   (module-browser "Module瀏覽器") ;; frame title
   (module-browser... "Module瀏覽器...") ;; menu item title
-  (module-browser-error-expanding "展開程式時出錯：\n\n~a")
+  (module-browser-error-expanding "展開程序時出錯：\n\n~a")
   (module-browser-show-lib-paths "顯示通過(lib ..)載入的文件的路徑")
   (module-browser-progress "Module瀏覽器：~a") ;; prefix in the status line
   (module-browser-compiling-defns "Module瀏覽器：正在編譯定義")
@@ -1000,7 +1021,7 @@
   (module-browser-show-planet-paths/short "顯示planet調用") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "刷新") ;; button label in show module browser pane in drscheme window.
   (module-browser-only-in-plt-and-module-langs
-   "Module瀏覽器只能在PLT語言和module語言(並且要求程式中有module)中使用。")
+   "Module瀏覽器只能在PLT語言和module語言(並且要求程序中有module)中使用。")
   (module-browser-name-length "名稱長度")
   (module-browser-name-short "短")
   (module-browser-name-medium "中")
@@ -1043,18 +1064,19 @@
   (number-of-open-recent-items "最近使用項目的數量")
   (switch-anyway "Switch File Anyway")
   
-  (stepper-program-has-changed "注意：程式已改變。")
-  (stepper-program-window-closed "注意：程式窗口已關閉。")
+  (stepper-program-has-changed "注意：程序已改變。")
+  (stepper-program-window-closed "注意：程序窗口已關閉。")
   
-  (stepper-home "還原")
   (stepper-name "單步執行器")
   (stepper-language-level-message
    "您選擇的語言是「~a」。目前，單步執行只支持「~a」和「~a」之間的語言。")
   (stepper-button-label "單步執行")
+  (stepper-home "源程序")
   (stepper-previous-application "|< 調用")
   (stepper-previous "< 上一步")
   (stepper-next "下一步 >")
   (stepper-next-application "調用 >|")
+  (stepper-jump-to-end "最終運行結果")
   
   (debug-tool-button-name "調試")
   
@@ -1062,7 +1084,7 @@
   
   ;; warnings about closing a drscheme frame when the program
   ;; might still be doing something interesting
-  (program-is-still-running "定義窗口中的程式還在運行中。強制退出？")
+  (program-is-still-running "定義窗口中的程序還在運行中。強制退出？")
   (program-has-open-windows "定義窗口中的打開了其他窗口。強行關閉這些窗口？")
   
   ;; Profj
@@ -1092,7 +1114,7 @@
   ;; Slideshow
   (slideshow-show-slideshow-panel "顯示Slideshow面板")
   (slideshow-hide-slideshow-panel "隱藏Slideshow面板")
-  (slideshow-insert-pict-box "插入Pict框")
+  (slideshow-insert-pict-box "插入Pict框") 
   
   ;; GUI Tool
   (gui-tool-heading "GUI工具")
