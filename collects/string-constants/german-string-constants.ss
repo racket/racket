@@ -98,10 +98,10 @@
 
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
-  (read-only-line1 "Schreibgeschützt")
-  (read-only-line2 "")
- (read/write-line1 "Lesen/")
-  (read/write-line2 "Schreiben")
+ (read-only-line1 "Lese-")
+ (read-only-line2 "Modus")
+ (read/write-line1 "Schreib-")
+ (read/write-line2 "Modus")
  (auto-extend-selection "Automatisch erweitern")
  (overwrite "Überschreiben")
  (running "Programm läuft")
@@ -370,6 +370,12 @@
  (already-used-keyword "\"~a\" ist bereits ein Schlüsselwort mit Spezial-Einrückung")
  (add-keyword "Hinzufügen")
  (remove-keyword "Entfernen")
+
+ ;; repl color preferences
+ (repl-colors "REPL")
+ (repl-out-color "Ausgabe")
+ (repl-value-color "Werte")
+ (repl-error-color "Fehler")
  
  ;;; find/replace
  (find-and-replace "Suchen und Ersetzen")
@@ -811,11 +817,18 @@
  (use-mixed-fractions "gemischte Brüche")
  (use-repeating-decimals "Dezimalausgabe mit Perioden")
  (decimal-notation-for-rationals "Dezimalnotation für Brüche")
- (please-select-a-language "Bitte Sprache auswählen")
+
+ ;; used in the bottom left of the drscheme frame as the label
+ ;; above the programming language's name
+ (programming-language-label "Programmiersprache:")
+ ;; used the popup menu from the just above; greyed out and only
+ ;; visible when some languages are in the history
+ (recent-languages "Kürzlich verwendete Sprachen:")
+ ;; shows up in bottom-left programming language menu popup, when no langs are recorded
+ (no-recently-chosen-languages "keine kürzlich verwendete Sprache") 
 
  ;; startup wizard screen language selection section
  (please-select-a-language "Sprache auswählen")
-
  
  ;;; languages
  (beginning-student "Anfänger")
