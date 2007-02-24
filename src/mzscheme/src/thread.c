@@ -6653,8 +6653,9 @@ static void prepare_thread_for_GC(Scheme_Object *t)
 # define RUNSTACK_TUNE(x) /* x   - Used for performance tuning */
     RUNSTACK_TUNE( long size; );
 
-    if (!p->runstack_owner
-	|| (p == *p->runstack_owner)) {
+    if ((!p->runstack_owner
+         || (p == *p->runstack_owner))
+        && p->runstack_start) {
       long rs_end;
       Scheme_Object **rs_start;
 
@@ -6704,8 +6705,9 @@ static void prepare_thread_for_GC(Scheme_Object *t)
     }
   }
       
-  if (!p->cont_mark_stack_owner
-      || (p == *p->cont_mark_stack_owner)) {
+  if ((!p->cont_mark_stack_owner
+       || (p == *p->cont_mark_stack_owner))
+      && p->cont_mark_stack) {
     int segcount, i, segpos;
 
     /* release unused cont mark stack segments */
@@ -6795,10 +6797,12 @@ static void get_ready_for_GC()
   scheme_clear_bignum_cache();
 
 #ifdef RUNSTACK_IS_GLOBAL
-  scheme_current_thread->runstack = MZ_RUNSTACK;
-  scheme_current_thread->runstack_start = MZ_RUNSTACK_START;
-  scheme_current_thread->cont_mark_stack = MZ_CONT_MARK_STACK;
-  scheme_current_thread->cont_mark_pos = MZ_CONT_MARK_POS;
+  if (scheme_current_thread->running) {
+    scheme_current_thread->runstack = MZ_RUNSTACK;
+    scheme_current_thread->runstack_start = MZ_RUNSTACK_START;
+    scheme_current_thread->cont_mark_stack = MZ_CONT_MARK_STACK;
+    scheme_current_thread->cont_mark_pos = MZ_CONT_MARK_POS;
+  }
 #endif
 
   for_each_managed(scheme_thread_type, prepare_thread_for_GC);
@@ -6828,8 +6832,10 @@ static void done_with_GC()
 {
 #ifdef RUNSTACK_IS_GLOBAL
 # ifdef MZ_PRECISE_GC
-  MZ_RUNSTACK = scheme_current_thread->runstack;
-  MZ_RUNSTACK_START = scheme_current_thread->runstack_start;
+  if (scheme_current_thread->running) {
+    MZ_RUNSTACK = scheme_current_thread->runstack;
+    MZ_RUNSTACK_START = scheme_current_thread->runstack_start;
+  }
 # endif
 #endif
 #ifdef WINDOWS_PROCESSES
