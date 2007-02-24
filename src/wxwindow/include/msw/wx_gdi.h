@@ -148,6 +148,7 @@ class wxBitmap: public wxObject
   wxDC *selectedInto; // So bitmap knows whether it's been selected into
                       // a device context (for error checking)
   wxMemoryDC *mask_cache; // the cached mask
+  int cache_xsrc1, cache_ysrc1, cache_iw, cache_ih;
   Bool selectedIntoDC;
   wxGLConfig *gl_cfg;
 

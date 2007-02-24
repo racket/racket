@@ -2535,6 +2535,10 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
 
     if (mask->mask_cache
 	&& (mask->mask_cache == source->mask_cache)
+	&& (mask->cache_xsrc1 == xsrc1)
+	&& (mask->cache_ysrc1 == ysrc1)
+	&& (mask->cache_iw == iw)
+	&& (mask->cache_ih == ih)
 	&& (mask != selected_bitmap)
 	&& (source != selected_bitmap)
 	&& (source->mask_cache->selected_bitmap)) {
@@ -2648,10 +2652,21 @@ Bool wxDC::Blit(double xdest, double ydest, double width, double height,
 	source->ReleaseCachedMask();
 	orig_mask->mask_cache = invented_memdc;
 	source->mask_cache = invented_memdc;
+
+	orig_mask->cache_xsrc1 = xsrc1;
+	orig_mask->cache_ysrc1 = ysrc1;
+	orig_mask->cache_iw = iw;
+	orig_mask->cache_ih = ih;
+	source->cache_xsrc1 = xsrc1;
+	source->cache_ysrc1 = ysrc1;
+	source->cache_iw = iw;
+	source->cache_ih = ih;
+
 	if (source == orig_mask)
 	  invented_memdc->refcount = 1;
 	else
 	  invented_memdc->refcount = 2;
+
 	invented = NULL; /* indicates that we cached invented */
       }
     }
