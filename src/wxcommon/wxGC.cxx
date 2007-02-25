@@ -36,7 +36,7 @@ Authors: John R. Ellis and Jesse Hull
    omit `new' and `delete'. There should be no problem under Windows,
    due to the way DLL linking works. */
 
-#ifndef wx_msw
+#ifndef WIN32
 # if defined(OS_X) && defined(__POWERPC__)
 #  define MALLOC_FOR_BUILTIN_NEW
 #  include <stdio.h>
