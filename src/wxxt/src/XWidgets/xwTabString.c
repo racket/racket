@@ -176,7 +176,7 @@ static int xdoDraw(measure, font,
  *	counterpart.
  */
 static void
-doDrawImageString(display, drawable, gc, x, y, string, length, tabs, font, xfont, line, image, xon, clip)
+doDrawImageString(display, drawable, gc, x, y, string, length, tabs, font, xfont, line, image, xon, clip, doamps)
      Display *display;
      Drawable drawable;
      GC gc;
@@ -191,6 +191,7 @@ doDrawImageString(display, drawable, gc, x, y, string, length, tabs, font, xfont
      int image;
      int xon;
      Region clip;
+     int doamps;
 {
   register char	*p, *ep, *ap;
   register int	tx, tab;
@@ -242,7 +243,7 @@ doDrawImageString(display, drawable, gc, x, y, string, length, tabs, font, xfont
 	ep = strnchr(p, '\t', length);
       else
 	ep = NULL;
-      if (font)
+      if (doamps)
 	ap = strnchr(p, '&', length);
       else
 	ap = NULL;
@@ -312,11 +313,11 @@ XfwfDrawImageString(display, drawable, gc, x, y, string, length, tabs, fnt, xfnt
      int xon;
      Region clip;
 {
-  doDrawImageString(display, drawable, gc, x, y, string, length, tabs, fnt, xfnt, 1, 1, xon, clip);
+  doDrawImageString(display, drawable, gc, x, y, string, length, tabs, fnt, xfnt, 1, 1, xon, clip, 1);
 }
 
 void
-XfwfDrawString(display, drawable, gc, x, y, string, length, tabs, fnt, xfnt, xon, line, clip)
+XfwfDrawString(display, drawable, gc, x, y, string, length, tabs, fnt, xfnt, xon, line, clip, doamps)
      Display *display;
      Drawable drawable;
      GC gc;
@@ -330,8 +331,9 @@ XfwfDrawString(display, drawable, gc, x, y, string, length, tabs, fnt, xfnt, xon
      int line;
      int xon;
      Region clip;
+     int doamps;
 {
-  doDrawImageString(display, drawable, gc, x, y, string, length, tabs, fnt, xfnt, line, 0, xon, clip);
+  doDrawImageString(display, drawable, gc, x, y, string, length, tabs, fnt, xfnt, line, 0, xon, clip, doamps);
 }
 
 /*

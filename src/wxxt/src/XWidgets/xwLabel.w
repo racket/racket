@@ -404,8 +404,10 @@ text.
     values.background = $text_bg;
     if (!$xfont) {
       values.foreground = $foreground;
-      values.font = $font->fid;
-      fnt = GCFont;
+      if ($font) {
+        values.font = $font->fid;
+        fnt = GCFont;
+      }
     } else {
       if ($pixmap)
 	values.foreground = $foreground;

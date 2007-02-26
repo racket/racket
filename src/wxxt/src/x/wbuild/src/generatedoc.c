@@ -798,6 +798,7 @@ inline static void private_methods(FILE *f, tagpair *tag, Class c)
 						macro(f, tag, s);
 						break;
 					default:
+					  break;
 				}
 			}
 			fputs(tclose(t_section), f);

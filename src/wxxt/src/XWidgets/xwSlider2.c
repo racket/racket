@@ -124,8 +124,7 @@ static void create_gc(self)Widget self;
     if (((XfwfSlider2Widget)self)->xfwfLabel.gc != NULL) XtReleaseGC(self, ((XfwfSlider2Widget)self)->xfwfLabel.gc);
     values.background = ((XfwfSlider2Widget)self)->xfwfSlider2.thumbColor;
     values.foreground = ((XfwfSlider2Widget)self)->xfwfLabel.foreground;
-    values.font = ((XfwfSlider2Widget)self)->xfwfLabel.font->fid;
-    mask = GCFont | GCBackground | GCForeground;
+    mask = GCBackground | GCForeground;
     ((XfwfSlider2Widget)self)->xfwfLabel.gc = XtGetGC(self, mask, &values);
 }
 /*ARGSUSED*/

@@ -131,8 +131,8 @@ increased to make room for the indicators.
       if (!$indicatorSize || $indicatorSize > wx_ASCENT($font, ((wxExtFont)$xfont)))
 	$indicatorSize = wx_ASCENT($font, ((wxExtFont)$xfont));
     } else {
-      if (!$indicatorSize || $indicatorSize > $font->ascent)
-	$indicatorSize = $font->ascent + 2;
+      if (!$indicatorSize || $indicatorSize > ($font ? $font->ascent : 10))
+	$indicatorSize = ($font ? $font->ascent : 10) + 2;
     }
 
     $indicator_gc = NULL;

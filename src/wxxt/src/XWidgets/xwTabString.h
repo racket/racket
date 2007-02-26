@@ -11,8 +11,8 @@
 #ifdef WX_USE_XFT
 # define wxExtFont XftFont*
 # define wxEXT_FONT(x) x
-# define wx_ASCENT(f, xf) (xf ? xf->ascent : f->ascent)
-# define wx_DESCENT(f, xf) (xf ? xf->descent : f->descent)
+# define wx_ASCENT(f, xf) (xf ? xf->ascent : (f ? f->ascent : 10))
+# define wx_DESCENT(f, xf) (xf ? xf->descent : (f ? f->descent : 4))
 #else
 # define wxExtFont void*
 # define wxEXT_FONT(x) NULL
@@ -27,7 +27,7 @@ extern void	XfwfDrawImageString(Display *display, Drawable drawable,
 extern void     XfwfDrawString(Display *display, Drawable drawable,
 			       GC gc, int x, int y, String string, int length,
 			       int *tabs, XFontStruct *fnt, wxExtFont f, 
-			       int xon, int drawLine, Region clip);
+			       int xon, int drawLine, Region clip, int doamps);
 extern int *	XfwfTablist2Tabs(char *tablist);
 extern int	XfwfTextWidth(Display *display, XFontStruct *font, wxExtFont f, String str, int length,
 			      int *tabs);

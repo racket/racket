@@ -197,7 +197,7 @@ XfwfToggleClassRec xfwfToggleClassRec = {
 /* num_resources 	*/  7,
 /* xrm_class    	*/  NULLQUARK,
 /* compres_motion 	*/  True ,
-/* compress_exposure 	*/  XtExposeCompressMultiple ,
+/* compress_exposure 	*/  XtExposeCompressMaximal ,
 /* compress_enterleave 	*/  True ,
 /* visible_interest 	*/  False ,
 /* destroy      	*/  destroy,
@@ -309,8 +309,8 @@ static void initialize(request,self,args,num_args)Widget  request;Widget self;Ar
       if (!((XfwfToggleWidget)self)->xfwfToggle.indicatorSize || ((XfwfToggleWidget)self)->xfwfToggle.indicatorSize > wx_ASCENT(((XfwfToggleWidget)self)->xfwfLabel.font, ((wxExtFont)((XfwfToggleWidget)self)->xfwfLabel.xfont)))
 	((XfwfToggleWidget)self)->xfwfToggle.indicatorSize = wx_ASCENT(((XfwfToggleWidget)self)->xfwfLabel.font, ((wxExtFont)((XfwfToggleWidget)self)->xfwfLabel.xfont));
     } else {
-      if (!((XfwfToggleWidget)self)->xfwfToggle.indicatorSize || ((XfwfToggleWidget)self)->xfwfToggle.indicatorSize > ((XfwfToggleWidget)self)->xfwfLabel.font->ascent)
-	((XfwfToggleWidget)self)->xfwfToggle.indicatorSize = ((XfwfToggleWidget)self)->xfwfLabel.font->ascent + 2;
+      if (!((XfwfToggleWidget)self)->xfwfToggle.indicatorSize || ((XfwfToggleWidget)self)->xfwfToggle.indicatorSize > (((XfwfToggleWidget)self)->xfwfLabel.font ? ((XfwfToggleWidget)self)->xfwfLabel.font->ascent : 10))
+	((XfwfToggleWidget)self)->xfwfToggle.indicatorSize = (((XfwfToggleWidget)self)->xfwfLabel.font ? ((XfwfToggleWidget)self)->xfwfLabel.font->ascent : 10) + 2;
     }
 
     ((XfwfToggleWidget)self)->xfwfToggle.indicator_gc = NULL;

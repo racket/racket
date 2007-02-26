@@ -869,7 +869,7 @@ int row,column;
 		   strlen(MultiListItemString(item)),
 		   MultiListTabs(mlw), NULL, 
 		   MultiListXftFont(mlw), xmode,
-		   0, NULL);
+		   0, NULL, 0);
   }
 } /* End RedrawRowColumn */
 	

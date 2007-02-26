@@ -602,8 +602,7 @@ position of the thumb.
     if ($gc != NULL) XtReleaseGC($, $gc);
     values.background = $thumbColor;
     values.foreground = $foreground;
-    values.font = $font->fid;
-    mask = GCFont | GCBackground | GCForeground;
+    mask = GCBackground | GCForeground;
     $gc = XtGetGC($, mask, &values);
 }
 

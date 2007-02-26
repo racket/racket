@@ -70,8 +70,10 @@ static void make_gc(self)Widget self;
     values.background = ((XfwfLabelWidget)self)->xfwfLabel.text_bg;
     if (!((XfwfLabelWidget)self)->xfwfLabel.xfont) {
       values.foreground = ((XfwfLabelWidget)self)->xfwfLabel.foreground;
-      values.font = ((XfwfLabelWidget)self)->xfwfLabel.font->fid;
-      fnt = GCFont;
+      if (((XfwfLabelWidget)self)->xfwfLabel.font) {
+        values.font = ((XfwfLabelWidget)self)->xfwfLabel.font->fid;
+        fnt = GCFont;
+      }
     } else {
       if (((XfwfLabelWidget)self)->xfwfLabel.pixmap)
 	values.foreground = ((XfwfLabelWidget)self)->xfwfLabel.foreground;
