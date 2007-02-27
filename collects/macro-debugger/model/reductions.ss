@@ -385,7 +385,7 @@
                                                              estx estx)))])
                     (loop next (stx-cdr suffix) (cons estx2 prefix)
                           (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                            (cons (with-context (CC (?ds ?vars ?rhs) estx ?rhs)
+                            (cons (with-context (CC ?rhs estx (?ds ?vars ?rhs))
                                     (reductions rhs))
                                   (cons (reductions head)
                                         rss)))))]
