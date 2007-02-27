@@ -46,6 +46,7 @@
 
       ;; Primitives
       [(struct p:variable (e1 e2 rs))
+       (learn-definites (list e2))
        (if (bound-identifier=? e1 e2)
            null
            (list (walk e1 e2 'resolve-variable)))]
@@ -185,7 +186,7 @@
        (R e1
           [! exni]
           [#:pattern (?lsv ([?svars ?srhs] ...) ([?vvars ?vrhs] ...) . ?body)]
-          [#:bind (([?svars* ?srhs*] ...) ([?vvars* ?vrhs] ...) . ?body*) srenames]
+          [#:bind (([?svars* ?srhs*] ...) ([?vvars* ?vrhs*] ...) . ?body*) srenames]
           [#:rename
            (syntax/skeleton e1
                             (?lsv ([?svars* ?srhs*] ...) ([?vvars* ?vrhs*] ...)
@@ -217,6 +218,8 @@
                    (list (stumble tagged-stx (car exni)))
                    null))]
       [(AnyQ p:#%top (e1 e2 rs tagged-stx) exni)
+       (with-syntax ([(?top . ?var) tagged-stx])
+         (learn-definites (list #'?var)))
        (append (if (eq? e1 tagged-stx)
                    null
                    (list (walk e1 tagged-stx 'tag-top)))

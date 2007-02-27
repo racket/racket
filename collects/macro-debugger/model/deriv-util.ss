@@ -263,7 +263,11 @@
           (p:let-values? x)
           (p:letrec-values? x)
           (p:letrec-syntaxes+values? x)
-          (p:rename? x)))
+          (p:rename? x)
+          (b:defvals? x)
+          (b:defstx? x)
+          (p:define-values? x)
+          (p:define-syntaxes? x)))
     (define (extract-fresh-names d)
       (match d
         [(struct p:lambda (e1 e2 rs renames body))
@@ -292,6 +296,28 @@
               (with-syntax ([(((?vvars ?vrhs) ...) . ?body) vrenames])
                 #'(?vvars ...))
               null))]
+        [(struct b:defvals (rename head))
+         (let ([head-e2 (lift/deriv-e2 head)])
+           (if head-e2
+               (with-syntax ([(?dv ?vars ?rhs) head-e2])
+                 #'?vars)
+               null))]
+        [(struct b:defstx (rename head rhs))
+         (let ([head-e2 (lift/deriv-e2 head)])
+           (if head-e2
+               (with-syntax ([(?ds ?svars ?rhs) head-e2])
+                 #'?svars)
+               null))]
+        [(struct p:define-values (e1 e2 rs rhs))
+         (if rhs
+             (with-syntax ([(?dv ?vars ?rhs) e1])
+               #'?vars)
+             null)]
+        [(struct p:define-syntaxes (e1 e2 rs rhs))
+         (if rhs
+             (with-syntax ([(?ds ?svars ?srhs) e1])
+               #'?svars)
+             null)]
         [_ null]))
 
     (let ([all-renaming-forms
