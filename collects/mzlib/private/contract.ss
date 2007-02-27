@@ -95,7 +95,7 @@ add struct contracts for immutable structs?
 			   stx
 			   (syntax id))]
 	   [(name arg ...)
-	    (syntax 
+	    (syntax/loc stx
 	     ((begin-lifted
                 (-contract contract-id
                            id
