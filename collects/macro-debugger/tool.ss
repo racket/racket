@@ -15,6 +15,13 @@
            (prefix view: "view/prefs.ss")
            (prefix sb: "syntax-browser/embed.ss"))
 
+  (provide tool@
+           language/macro-stepper<%>)
+
+  (define language/macro-stepper<%>
+    (interface ()
+      enable-macro-stepper?))
+
   (define view-base/tool@
     (unit
       (import)
@@ -31,15 +38,20 @@
 
   (define-values/invoke-unit stepper@ (import) (export view:view^))
 
-  (provide tool@)
-
   (define tool@
     (unit (import drscheme:tool^)
           (export drscheme:tool-exports^)
       
-      (define (phase1) (void))
+      (define (phase1)
+        (drscheme:language:extend-language-interface
+         language/macro-stepper<%>
+         (mixin (drscheme:language:language<%>) (language/macro-stepper<%>)
+           (inherit get-language-position)
+           (define/public (enable-macro-stepper?)
+             (macro-stepper-works-for? (get-language-position)))
+           (super-new))))
       (define (phase2) (void))
-      
+
       (define drscheme-eventspace (current-eventspace))
 
       (define-local-member-name check-language)
@@ -80,15 +92,16 @@
 	    (inner (void) on-tab-change old new))
 
           (define/public (check-language)
-	    (if (debugger-works-for?
-                 (extract-language-level 
-                  (send (get-definitions-text) get-next-settings)))
-		(unless (send macro-debug-button is-shown?)
-		  (send macro-debug-panel
-                        add-child macro-debug-button))
-		(when (send macro-debug-button is-shown?)
-                  (send macro-debug-panel
-                        delete-child macro-debug-button))))
+            (let ([lang
+                   (drscheme:language-configuration:language-settings-language
+                    (send (get-definitions-text) get-next-settings))])
+              (if (send lang enable-macro-stepper?)
+                  (unless (send macro-debug-button is-shown?)
+                          (send macro-debug-panel
+                                add-child macro-debug-button))
+                  (when (send macro-debug-button is-shown?)
+                        (send macro-debug-panel
+                              delete-child macro-debug-button)))))
 
           (send (get-button-panel) change-children
                 (lambda (_)
@@ -180,13 +193,7 @@
 
       ;; Borrowed from mztake/debug-tool.ss
 
-      (define (extract-language-level settings)
-	(let* ([language
-                (drscheme:language-configuration:language-settings-language
-                 settings)])
-	  (send language get-language-position)))
-
-      (define (debugger-works-for? lang)
+      (define (macro-stepper-works-for? lang)
         (let ([main-group (car lang)]
               [second (and (pair? (cdr lang)) (cadr lang))]
               [third (and (pair? (cdr lang)) (pair? (cddr lang)) (caddr lang))])

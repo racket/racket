@@ -14,6 +14,8 @@ OUTLINE
   - syntax-browser.ss
 * Using the macro stepper
 * Using the syntax browser
+* Enabling the macro stepper in other languages
+* Notes for DrScheme language implementors
 
 Introduction
 ============
@@ -272,3 +274,24 @@ properties.
 
 The syntax browser does not preserve the distinction between
 parentheses and square brackets.
+
+
+Notes for DrScheme language implementors
+========================================
+
+The macro stepper works "out of the box" only with certain languages
+out of all the languages available from the DrScheme languages
+menu. For example, the macro stepper is disabled for the teaching
+languages.
+
+An implementor of a new DrScheme language can designate their language
+"macro-steppable" by overriding the 'enable-macro-stepper?' method of
+their implementation of 'drscheme:language:language<%>'. The default
+implementation in the mixin provided by
+'drscheme:language:get-default-mixin' returns false; override this
+method to return true if the macro stepper button should be shown for
+this language.
+
+Note: There is currently no way to customize the behavior of the macro
+stepper for different languages. When enabled, the macro stepper sees
+exactly those terms that pass through the 'current-eval' handler.
