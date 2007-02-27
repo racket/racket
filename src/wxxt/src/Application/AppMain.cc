@@ -53,6 +53,8 @@ int wx_visual_depth;
 Colormap wx_default_colormap;
 unsigned long wx_white_pixel, wx_black_pixel;
 
+int wx_single_instance = 0;
+
 //-----------------------------------------------------------------------------
 // wxApp implementation
 //-----------------------------------------------------------------------------
@@ -115,6 +117,8 @@ typedef struct {
   int arg_count;
 } X_flag_entry;
 
+#define SINGLE_INSTANCE "-singleInstance"
+
 X_flag_entry X_flags[] = {
   { "-display", 1 },
   { "-geometry", 1 },
@@ -134,6 +138,7 @@ X_flag_entry X_flags[] = {
   { "-title", 1 },
   { "-xnllanguage", 1 },
   { "-xrm", 1 },
+  { SINGLE_INSTANCE, 0},
   { NULL, 0 }
 };
 
@@ -188,6 +193,9 @@ int wxEntry(int argc, char *argv[])
 
   xargc = filter_x_readable(argv, argc, &x_display_str);
   ate = xargc - 1;
+
+  if (!x_display_str)
+    x_display_str = getenv("DISPLAY");
   
   /* Remember -display or DISPLAY, in case someone needs it: */
   wxsRememberDisplay(x_display_str);
@@ -199,14 +207,21 @@ int wxEntry(int argc, char *argv[])
 				&xargc, argv); // command line arguments
 
   if (!wxAPP_DISPLAY) {
-    if (!x_display_str)
-      x_display_str = getenv("DISPLAY");
     if (!x_display_str) {
       printf("DISPLAY environment variable not set and no -display argument\n");
     } else {
       printf("Cannot open display: %s\n", x_display_str);
     }
     exit(1);
+  }
+
+
+  if ((xargc > 1) && !strcmp("-singleInstance", argv[1])) {
+    wx_single_instance = 1;
+    --xargc;
+    if (xargc > 1) {
+      argv[1] = argv[2];
+    }
   }
 
   if (xargc != 1) {
@@ -236,7 +251,8 @@ int wxEntry(int argc, char *argv[])
 	wxAPP_VISUAL = vi2.visual;
 	wx_visual_depth = 24;
 	wx_default_colormap = XCreateColormap(wxAPP_DISPLAY, 
-					      RootWindow(wxAPP_DISPLAY, DefaultScreen(wxAPP_DISPLAY)),
+					      RootWindow(wxAPP_DISPLAY,
+							 DefaultScreen(wxAPP_DISPLAY)),
 					      wxAPP_VISUAL, 
 					      AllocNone);
 

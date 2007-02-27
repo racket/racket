@@ -918,7 +918,7 @@ static XFontStruct *wxLoadQueryFont(const char *name,
 			weight, underlined, 
 			0, sip, angle);
   }
-  
+
   return s;
 }
 

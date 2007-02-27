@@ -2359,10 +2359,7 @@ static char *win_find_home()
 static char *x_display_str;
 extern void wxsRememberDisplay(char *str)
 {
-  if (str)
-    x_display_str = str;
-  else
-    x_display_str = getenv("DISPLAY");
+  x_display_str = str;
 }
 #endif
 

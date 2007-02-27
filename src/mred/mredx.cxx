@@ -35,6 +35,9 @@ static int grab_stack_pos = 0, grab_stack_size = 0;
 
 extern Widget wx_clipWindow, wx_selWindow;
 
+Window wxAddClipboardWindowProperty(Atom prop);
+extern Atom wx_single_instance_tag;
+
 wxWindow *wxLocationToWindow(int x, int y);
 
 extern "C" {
@@ -152,6 +155,41 @@ static Window GetEventWindow(XEvent *e)
 static unsigned long lastUngrabTime;
 static unsigned long lastUnhideTime;
 
+class Check_Ungrab_Record {
+public:
+  Window window;
+  int x, y, x_root, y_root;
+  Check_Ungrab_Record *next;
+};
+
+static int cur_registered = 0;
+static Check_Ungrab_Record *first_cur = NULL, *last_cur = NULL;
+
+static void CheckUngrab(Display *dpy, Check_Ungrab_Record *cur)
+{     
+  Window root;
+  int x, y;
+  unsigned w, h, b, d;
+  
+  XGetGeometry(dpy, cur->window, 
+	       &root, &x, &y, &w, &h,
+	       &b, &d);
+  if ((cur->x < 0) || (cur->y < 0)
+      || ((unsigned int)cur->x > w) || ((unsigned int)cur->y > h)) {
+    /* Looks bad, but is it a click in a MrEd window
+       that we could care about? */
+    
+    wxWindow *w;
+    w = wxLocationToWindow(cur->x_root, cur->y_root);
+    
+    if (w) {
+      /* Looks like we need to ungrab */
+      XUngrabPointer(dpy, 0);
+      XUngrabKeyboard(dpy, 0);
+    }
+  }
+}
+
 static Bool CheckPred(Display *display, XEvent *e, char *args)
 {
   Window window;
@@ -197,28 +235,23 @@ static Bool CheckPred(Display *display, XEvent *e, char *args)
     /* lastUngrabTime keeps us from checking the same events
        over and over again. */
     if (e->xbutton.time > lastUngrabTime) {
-      Window root;
-      int x, y;
-      unsigned w, h, b, d;
-      
-      XGetGeometry(XtDisplay(widget), e->xbutton.window, 
-		   &root, &x, &y, &w, &h,
-		   &b, &d);
-      if ((e->xbutton.x < 0) || (e->xbutton.y < 0)
-	  || ((unsigned int)e->xbutton.x > w) || ((unsigned int)e->xbutton.y > h)) {
-	/* Looks bad, but is it a click in a MrEd window
-	   that we could care about? */
+      Check_Ungrab_Record *cur;
 
-	wxWindow *w;
-	w = wxLocationToWindow(e->xbutton.x_root, e->xbutton.y_root);
-	
-	if (w) {
-	  /* Looks like we need to ungrab */
-	  XUngrabPointer(XtDisplay(widget), 0);
-	  XUngrabKeyboard(XtDisplay(widget), 0);
-	}
+      if (!cur_registered) {
+	wxREGGLOB(first_cur);
+	wxREGGLOB(last_cur);
       }
-      
+      cur = new WXGC_PTRS Check_Ungrab_Record;
+      cur->window = e->xbutton.window;
+      cur->x = e->xbutton.x;
+      cur->y = e->xbutton.y;
+      cur->x_root = e->xbutton.x_root;
+      cur->y_root = e->xbutton.y_root;
+      if (last_cur)
+	last_cur->next = cur;
+      else
+	first_cur = cur;
+      last_cur = cur;
       lastUngrabTime = e->xbutton.time;
     }
   }
@@ -339,6 +372,7 @@ int MrEdGetNextEvent(int check_only, int current_only,
 		     XEvent *event, MrEdContext **which)
 {
   Display *d;
+  int got;
 
   if (which)
     *which = NULL;
@@ -351,7 +385,15 @@ int MrEdGetNextEvent(int check_only, int current_only,
   else
     d = XtDisplay(orig_top_level);
 
-  if (XCheckIfEvent(d, event, CheckPred, (char *)which)) {
+  got = XCheckIfEvent(d, event, CheckPred, (char *)which);
+
+  while (first_cur) {
+    CheckUngrab(d, first_cur);
+    first_cur = first_cur->next;
+  }
+  last_cur = NULL;
+
+  if (got) {
     just_check = 0;
     return 1;
   } else if (short_circuit) {
@@ -721,4 +763,180 @@ int wxUTF8StringToChar(char *str, int slen)
 		     s, 0, 1,
 		     NULL, 0, '?');
   return (int)s[0];
+}
+
+/***********************************************************************/
+
+static int has_property(Display *d, Window w, Atom atag)
+{
+  Atom actual;
+  int format;
+  unsigned long count, remaining;
+  unsigned char *data = 0;
+
+  XGetWindowProperty(d, w, atag,
+		     0, 0x8000000L, FALSE, 
+		     AnyPropertyType, &actual, &format,
+		     &count, &remaining, &data);
+
+  if (data)
+    XFree(data);
+
+  return (actual != None);
+}
+
+static int wxSendOrSetTag(char *pre_tag, char *tag, char *msg)
+{
+  Display *d;
+  Window root, parent, *children;
+  unsigned int n, i;
+  Atom atag, apre_tag;
+  Window target = 0, me;
+  int try_again = 0;
+
+  /* Elect a leader, relying on the fact that the X server serializes
+     its interactions.
+     
+     Each client sets a pre-tag, and then checks all windows. If any
+     window has a (non-pre) tag already, then that's the leader. If no
+     one else has a pre tag, then this client is elected, and it sets
+     the tag on itself.  If someone else has a pre tag, we try again;
+     if the other window id is lower, this client drops it pre tag, so
+     that the other will be elected eventually.  Note that if two
+     clients set a pre tag, then one must see the other (because
+     neither looks until its tag is set). Livelock is a possibility if
+     clients continuously appear with ever higher window ids, but that
+     possibility is exceedingly remote. */
+
+  if (!orig_top_level)
+    d = XtDisplay(save_top_level);
+  else
+    d = XtDisplay(orig_top_level);
+
+  apre_tag = XInternAtom(d, pre_tag, False);
+  atag = XInternAtom(d, tag, False);
+
+  wx_single_instance_tag = atag;
+
+  me = wxAddClipboardWindowProperty(apre_tag);
+
+  XFlush(d);
+
+  do {
+    XSync(d, FALSE);
+    if (XQueryTree(d, DefaultRootWindow(d),
+		   &root, &parent, &children, &n)) {
+      for (i = n; i--; ) {
+	if (children[i] != me) {
+	  if (has_property(d, children[i], atag)) {
+	    target = children[i];
+	    try_again = 0;
+	    break;
+	  } else if (has_property(d, children[i], apre_tag)) {
+	    if ((long)me >= (long)children[i])
+	      XDeleteProperty(d, me, apre_tag);
+	    try_again = 1;
+	  }
+	}
+      }
+      
+      if (children)
+	XFree(children);
+    }
+  } while (try_again);
+
+  if (target) {
+    GC_CAN_IGNORE XEvent xevent;
+    long mlen, offset = 0;
+    int sent_last = 0;
+
+    mlen = strlen(msg);
+
+    /* Send the message(s): */
+    while (!sent_last) {
+      memset(&xevent, 0, sizeof (xevent));
+      
+      xevent.xany.type = ClientMessage;
+      xevent.xany.display = d;
+      xevent.xclient.window = target;
+      xevent.xclient.message_type = atag;
+      xevent.xclient.format = 8;
+
+      {
+	int i = sizeof(Window);
+	long w = (long)me;
+
+	while (i--) {
+	  xevent.xclient.data.b[i] = (char)(w & 0xFF);
+	  w = w >> 8;
+	}
+      }
+
+      if (offset < mlen) {
+	long amt;
+	amt = mlen - offset;
+	if (amt > (int)(20 - sizeof(Window)))
+	  amt = 20 - sizeof(Window);
+	memcpy(xevent.xclient.data.b + sizeof(Window), msg + offset, amt);
+	offset += amt;
+	sent_last = (amt < (int)(20 - sizeof(Window)));
+      } else
+	sent_last = 1;
+
+      XSendEvent(d, target, 0, 0, &xevent);
+    }
+
+    XFlush(d);
+    XSync(d, FALSE);
+
+    return 1;
+  } else {
+    /* Set the property on the clipboard window */
+    wxAddClipboardWindowProperty(atag);
+
+    return 0;
+  }
+}
+
+# define SINGLE_INSTANCE_HANDLER_CODE \
+"(lambda (f)" \
+"  (let ([path (simplify-path" \
+"               (path->complete-path" \
+"                (or (find-executable-path (find-system-path 'run-file) #f)" \
+"                    (find-system-path 'run-file))" \
+"                (current-directory)))])" \
+"    (let ([tag (string->bytes/utf-8" \
+"                (format \"~a_~a\" path (version)))])" \
+"      (f tag " \
+"         (bytes-append #\"pre\" tag)" \
+"         (apply" \
+"          bytes-append" \
+"          (map (lambda (s)" \
+"                 (let ([s (path->string" \
+"                           (path->complete-path s (current-directory)))])" \
+"                   (string->bytes/utf-8" \
+"                    (format \"~a:~a\"" \
+"                            (string-length s)" \
+"                            s))))" \
+"               (vector->list" \
+"                (current-command-line-arguments))))))))"
+
+static Scheme_Object *prep_single_instance(int argc, Scheme_Object **argv)
+{
+  return (wxSendOrSetTag(SCHEME_BYTE_STR_VAL(argv[0]),
+			 SCHEME_BYTE_STR_VAL(argv[1]),
+			 SCHEME_BYTE_STR_VAL(argv[2]))
+	  ? scheme_true
+	  : scheme_false);
+}
+
+int wxCheckSingleInstance(Scheme_Env *global_env)
+{
+  Scheme_Object *a[1], *v;
+  a[0] = scheme_make_prim(prep_single_instance);
+  v = scheme_apply(scheme_eval_string(SINGLE_INSTANCE_HANDLER_CODE,
+				      global_env),
+		   1,
+		   a);
+  return SCHEME_TRUEP(v);
 }

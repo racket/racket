@@ -108,6 +108,14 @@ void wxInitClipboard(void)
   xa_clipboard = ATOM("CLIPBOARD");
 }
 
+Window wxAddClipboardWindowProperty(Atom prop)
+{
+  unsigned char data[1] = { 'm' };
+  XChangeProperty(XtDisplay(wx_clipWindow), XtWindow(wx_clipWindow),
+		  prop, prop, 8, PropModeReplace, data, 1);
+  return XtWindow(wx_clipWindow);
+}
+
 static void AddClipboardFrame(wxClipboard *cb, int on)
 {
   if (!on)

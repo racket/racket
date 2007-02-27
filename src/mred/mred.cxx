@@ -118,6 +118,9 @@ static Scheme_Thread *user_main_thread;
 
 extern void wxMediaIOCheckLSB(void);
 extern void wxMouseEventHandled(void);
+#ifdef wx_xt
+extern int wx_single_instance;
+#endif
 
 #include "mred.h"
 
@@ -3416,7 +3419,14 @@ void MrEdApp::RealInit(void)
     scheme_exit = CAST_EXIT MrEdExit;
 #endif
 
-  exit_val = mred_finish_cmd_line_run();
+#ifdef wx_xt
+  if (wx_single_instance) {
+    exit_val = wxCheckSingleInstance(global_env);
+  }
+#endif
+
+  if (!exit_val)
+    exit_val = mred_finish_cmd_line_run();
 
   scheme_kill_thread(scheme_current_thread);
 }
@@ -3809,10 +3819,9 @@ static unsigned long get_deeper_base()
 #endif
 
 /****************************************************************************/
-/*                              Mac AE support                              */
+/*                              AE-like support                             */
 /****************************************************************************/
 
-#if defined(wx_mac) || defined(wx_msw)
 static void wxDo(Scheme_Object *proc, int argc, Scheme_Object **argv)
 {
   mz_jmp_buf * volatile save, newbuf;
@@ -3852,11 +3861,16 @@ void wxDrop_Runtime(char **argv, int argc)
 
   for (i = 0; i < argc; i++) {
     Scheme_Object *p[1];
+#ifdef wx_xt
+    p[0] = scheme_char_string_to_path(scheme_make_utf8_string(argv[i]));
+#else
     p[0] = scheme_make_path(argv[i]);
+#endif
     wxDo(wxs_app_file_proc, 1, p);
   }
 }
 
+#if defined(wx_mac) || defined(wx_msw)
 void wxDrop_Quit()
 {
 #if WINDOW_STDIO

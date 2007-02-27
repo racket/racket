@@ -228,4 +228,5 @@ extern void WakeUpMrEd();
 
 #if defined(wx_xt)
 extern void wxUnhideAllCursors();
+int wxCheckSingleInstance(Scheme_Env *global_env);
 #endif

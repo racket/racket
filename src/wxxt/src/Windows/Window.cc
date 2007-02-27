@@ -74,9 +74,23 @@ static Bool grabbing_panel_regsitered;
 static int dnd_inited = 0;
 static DndClass dnd;
 
+Atom wx_single_instance_tag = 0;
+
 #ifndef NO_XMB_LOOKUP_STRING
 static XIM the_im;
 #endif
+
+class Accum_Single_Instance_Message {
+public:
+  long src;
+  char *accum;
+  int len, size;
+  Accum_Single_Instance_Message *next;
+};
+static int si_registered;
+static Accum_Single_Instance_Message *si_msgs;
+static void parse_and_drop_runtime(int len, char *s);
+extern void wxDrop_Runtime(char **argv, int argc);
 
 //-----------------------------------------------------------------------------
 // wxWindow constructor
@@ -1408,6 +1422,75 @@ void wxWindow::FrameEventHandler(Widget w,
       if (win->OnClose())
 	win->Show(FALSE);
     }
+    if (wx_single_instance_tag) {
+      if (xev->xclient.message_type == wx_single_instance_tag) {
+	/* Accumulate msg data */
+	long src = 0;
+	int i;
+	Accum_Single_Instance_Message *msg, *prev = NULL;
+
+	if (!si_registered) {
+	  wxREGGLOB(si_msgs);
+	}
+
+	for (i = sizeof(Window); i--; ) {
+	  src = (src << 8) | ((int)xev->xclient.data.b[i]);
+	}
+
+	for (msg = si_msgs; msg; msg = msg->next) {
+	  if (msg->src == src)
+	    break;
+	}
+	if (!msg) {
+	  char *s;
+	  s = new WXGC_ATOMIC char[128];
+	  msg = new WXGC_PTRS Accum_Single_Instance_Message;
+	  msg->next = si_msgs;
+	  si_msgs = msg;
+	  msg->src = src;
+	  msg->accum = s;
+	  msg->len = 0;
+	  msg->size = 128;
+	}
+	
+	{
+	  int len = sizeof(Window);
+	  while (len < 20 && xev->xclient.data.b[len]) {
+	    len++;
+	  }
+	  len -= sizeof(Window);
+
+	  if (len) {
+	    /* accumulate data */
+	    if (msg->size < msg->len + 1 + len) {
+	      char *naya;
+	      int new_size = msg->size * 2;
+	      naya = new WXGC_ATOMIC char[new_size];
+	      memcpy(naya, msg->accum, msg->len);
+	      msg->accum = naya;
+	      msg->size = new_size;
+	    }
+	    memcpy(msg->accum + msg->len, 
+		   xev->xclient.data.b + sizeof(Window),
+		   len);
+	    msg->len += len;
+	    if (len < (int)(20 - sizeof(Window)))
+	      len = 0; /* inidicate that we're done */
+	  } 
+
+	  if (!len) {
+	    /* done */
+	    if (prev)
+	      prev->next = msg->next;
+	    else
+	      si_msgs = msg->next;
+	    msg->accum[msg->len] = 0;
+
+	    parse_and_drop_runtime(msg->len, msg->accum);
+	  }
+	}
+      }
+    }
     if (dnd_inited) {
       if (xev->xclient.message_type == dnd.XdndEnter) {
 	/* Ok... */
@@ -2412,4 +2495,50 @@ wxWindow *wxWindow::FindChildByWidget(Widget w)
   }
 
   return NULL;
+}
+
+static void parse_and_drop_runtime(int len, char *s)
+{
+  char **argv, *a;
+  int cnt = 0, pos = 0;
+  int sz;
+
+  while (pos < len) {
+    sz = 0;
+    while ((pos < len) && (s[pos] != ':')) {
+      sz = (sz * 10) + (s[pos] - '0');
+      pos++;
+    }
+    pos++;
+    if (sz > 0)
+      pos += sz;
+    cnt++;
+  }
+  
+  argv = new WXGC_PTRS char*[cnt];
+  
+  pos = cnt = 0;
+  while (pos < len) {
+    sz = 0;
+    while ((pos < len) && (s[pos] != ':')) {
+      sz = (sz * 10) + (s[pos] - '0');
+      pos++;
+    }
+    pos++;
+
+    if (sz > len - pos)
+      sz = len - pos;
+    if (sz < 0)
+      sz = 0;
+    a = new WXGC_ATOMIC char[sz + 1];
+    memcpy(a, s + pos, sz);
+    a[sz] = 0;
+    argv[cnt] = a;
+    
+    if (sz > 0)
+      pos += sz;
+    cnt++;
+  }
+  
+  wxDrop_Runtime(argv, cnt);
 }
