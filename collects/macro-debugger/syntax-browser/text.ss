@@ -57,7 +57,8 @@
   
   (define text:arrows<%>
     (interface (text:mouse-drawings<%>)
-      add-arrow))
+      add-arrow
+      add-question-arrow))
   
   (define text:drawings-mixin
     (mixin (text:basic<%>) (text:drawings<%>)
@@ -136,8 +137,14 @@
       (define (?-font dc)
         (let ([size (send (send dc get-font) get-point-size)])
           (send the-font-list find-or-create-font size 'default 'normal 'bold)))
-      
+
       (define/public (add-arrow from1 from2 to1 to2 color)
+        (internal-add-arrow from1 from2 to1 to2 color #f))
+
+      (define/public (add-question-arrow from1 from2 to1 to2 color)
+        (internal-add-arrow from1 from2 to1 to2 color #t))
+      
+      (define/private (internal-add-arrow from1 from2 to1 to2 color question?)
         (unless (and (= from1 to1) (= from2 to2))
           (let ([draw 
                  (lambda (text dc left top right bottom dx dy)
@@ -158,15 +165,16 @@
                            (send dc set-brush arrow-brush)
                            (draw-arrow dc startx starty endx endy dx dy)
                            #;(send dc set-text-mode 'solid)
-                           (send dc set-font (?-font dc))
-                           (send dc set-text-foreground 
-                                 (send the-color-database find-color color))
-                           (send dc draw-text "?" 
-                                 (+ (+ startx dx) fw)
-                                 (- (+ starty dy) fh)))))))])
+                           (when question?
+                             (send dc set-font (?-font dc))
+                             (send dc set-text-foreground 
+                                   (send the-color-database find-color color))
+                             (send dc draw-text "?" 
+                                   (+ (+ startx dx) fw)
+                                   (- (+ starty dy) fh))))))))])
             (add-mouse-drawing from1 from2 draw)
             (add-mouse-drawing to1 to2 draw))))
-          
+
       (define/private (position->location p)
         (define xbox (box 0.0))
         (define ybox (box 0.0))

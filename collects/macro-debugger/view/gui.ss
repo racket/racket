@@ -488,7 +488,9 @@
               (for-each (lambda (bf)
                           (send sbview add-text 
                                 "while executing macro transformer in:\n")
-                          (insert-syntax/redex (bigframe-term bf) (bigframe-foci bf)))
+                          (insert-syntax/redex (bigframe-term bf)
+                                               (bigframe-foci bf)
+                                               (protostep-definites step)))
                         (reverse lctx))))
 
           (define/private (update:separator step)
@@ -499,31 +501,36 @@
              (step-type->string (protostep-type step))))
 
           (define/private (update:show-step step)
-            (insert-syntax/redex (step-term1 step) (step-foci1 step))
+            (insert-syntax/redex (step-term1 step) (step-foci1 step) (protostep-definites step))
             (update:separator step)
-            (insert-syntax/contractum (step-term2 step) (step-foci2 step))
+            (insert-syntax/contractum (step-term2 step) (step-foci2 step) (protostep-definites step))
             (update:show-lctx step))
 
           (define/private (update:show-prestep step)
             (update:separator/small step)
             (insert-syntax/redex (prestep-term1 step)
-                                 (prestep-foci1 step))
+                                 (prestep-foci1 step)
+                                 (protostep-definites step))
             (update:show-lctx step))
 
           (define/private (update:show-poststep step)
             (update:separator/small step)
             (insert-syntax/contractum (poststep-term2 step)
-                                      (poststep-foci2 step))
+                                      (poststep-foci2 step)
+                                      (protostep-definites))
             (update:show-lctx step))
           
           (define/private (update:show-misstep step)
             (insert-syntax/redex (misstep-term1 step)
-                                 (misstep-foci1 step))
+                                 (misstep-foci1 step)
+                                 (protostep-definites step))
             (update:separator step)
             (send sbview add-text (exn-message (misstep-exn step)))
             (send sbview add-text "\n")
             (when (exn:fail:syntax? (misstep-exn step))
-              (for-each (lambda (e) (send sbview add-syntax e #:alpha-table alpha-table))
+              (for-each (lambda (e) (send sbview add-syntax e
+                                          #:alpha-table alpha-table
+                                          #:definites (protostep-definites step)))
                         (exn:fail:syntax-exprs (misstep-exn step))))
             (update:show-lctx step))
 
@@ -570,25 +577,27 @@
                   'start)
             (enable/disable-buttons))
 
-          ;; insert-syntax : syntax -> void
-          (define/private (insert-syntax stx)
-            (send sbview add-syntax stx #:alpha-table alpha-table))
-          
-          ;; insert-syntax/redex : syntax syntaxes -> void
-          (define/private (insert-syntax/redex stx foci)
+          ;; insert-syntax/redex : syntax syntaxes identifiers -> void
+          (define/private (insert-syntax/redex stx foci definites)
             (if (send config get-highlight-foci?)
                 (send sbview add-syntax stx
                       #:hi-stxs foci #:hi-color "MistyRose"
-                      #:alpha-table alpha-table)
-                (send sbview add-syntax stx #:alpha-table alpha-table)))
+                      #:alpha-table alpha-table
+                      #:definites definites)
+                (send sbview add-syntax stx
+                      #:alpha-table alpha-table
+                      #:definites definites)))
 
-          ;; insert-syntax/contractum : syntax syntaxes -> void
-          (define/private (insert-syntax/contractum stx foci)
+          ;; insert-syntax/contractum : syntax syntaxes identifiers -> void
+          (define/private (insert-syntax/contractum stx foci definites)
             (if (send config get-highlight-foci?)
                 (send sbview add-syntax stx
                       #:hi-stxs foci #:hi-color "LightCyan"
-                      #:alpha-table alpha-table)
-                (send sbview add-syntax stx #:alpha-table alpha-table)))
+                      #:alpha-table alpha-table
+                      #:definites definites)
+                (send sbview add-syntax stx
+                      #:alpha-table alpha-table
+                      #:definites definites)))
 
           ;; enable/disable-buttons : -> void
           (define/private (enable/disable-buttons)
@@ -729,13 +738,13 @@
           (define/private (reduce:one-by-one rs)
             (let loop ([rs rs])
               (match rs
-                [(cons (struct step (d l t c redex contractum e1 e2)) rs)
-                 (list* (make-prestep d l "Find redex" c redex e1)
-                        (make-poststep d l t c contractum e2)
+                [(cons (struct step (d l t c df redex contractum e1 e2)) rs)
+                 (list* (make-prestep d l "Find redex" c df redex e1)
+                        (make-poststep d l t c df contractum e2)
                         (loop rs))]
-                [(cons (struct misstep (d l t c redex e1 exn)) rs)
-                 (list* (make-prestep d l "Find redex" c redex e1)
-                        (make-misstep d l t c redex e1 exn)
+                [(cons (struct misstep (d l t c df redex e1 exn)) rs)
+                 (list* (make-prestep d l "Find redex" c df redex e1)
+                        (make-misstep d l t c df redex e1 exn)
                         (loop rs))]
                 ['()
                  null])))

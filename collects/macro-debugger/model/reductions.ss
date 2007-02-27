@@ -13,7 +13,7 @@
 
   (define-syntax Expr
     (syntax-id-rules ()
-      [Expr (values reductions deriv-e1 deriv-e2)]))
+      [Expr (values reductions* deriv-e1 deriv-e2)]))
   (define-syntax List
     (syntax-id-rules ()
       [List (values list-reductions lderiv-es1 lderiv-es2)]))
@@ -34,6 +34,14 @@
 
   ;; reductions : Derivation -> ReductionSequence
   (define (reductions d)
+    (parameterize ((current-definites null))
+      (reductions* d)))
+  
+  (define (reductions* d)
+    (match d
+      [(AnyQ prule (e1 e2 rs))
+       (and rs (learn-definites rs))]
+      [_ (void)])
     (match/with-derivation d
 
       ;; Primitives
@@ -47,12 +55,12 @@
                [body-e1 (match body [(AnyQ deriv (body-e1 _)) body-e1])])
            (cons (walk e1 (ctx body-e1) 'tag-module-begin)
                  (with-context ctx
-                   (reductions body)))))]
+                   (reductions* body)))))]
       [(IntQ p:module (e1 e2 rs #t body))
        (with-syntax ([(?module name language . BODY) e1])
          (let ([ctx (lambda (x) (d->so e1 `(,#'?module ,#'name ,#'language ,x)))])
            (with-context ctx
-             (reductions body))))]
+             (reductions* body))))]
       [(AnyQ p:#%module-begin (e1 e2 rs pass1 pass2))
        (with-syntax ([(?#%module-begin form ...) e1])
          (let ([frame (lambda (x) (d->so e1 (cons #'?#%module-begin x)))])
@@ -67,57 +75,58 @@
                            (list (stumble (frame final-stxs2) (error-wrap-exn d))))
                    (append reductions1 reductions2))))))]
       [(AnyQ p:define-syntaxes (e1 e2 rs rhs) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?define-syntaxes formals RHS)]
           [Expr RHS rhs])]
       [(AnyQ p:define-values (e1 e2 rs rhs) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?define-values formals RHS)]
           [#:if rhs
                 [Expr RHS rhs]])]
       [(AnyQ p:if (e1 e2 rs full? test then else) exni)
        (if full?
-           (R e1 _
+           (R e1
               [! exni]
               [#:pattern (?if TEST THEN ELSE)]
               [Expr TEST test]
               [Expr THEN then]
               [Expr ELSE else])
-           (R e1 _
+           (R e1
               [! exni]
               [#:pattern (?if TEST THEN)]
               [Expr TEST test]
               [Expr THEN then]))]
       [(AnyQ p:wcm (e1 e2 rs key mark body) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?wcm KEY MARK BODY)]
           [Expr KEY key]
           [Expr MARK mark]
           [Expr BODY body])]
       [(AnyQ p:begin (e1 e2 rs lderiv) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?begin . LDERIV)]
           [List LDERIV lderiv])]
       [(AnyQ p:begin0 (e1 e2 rs first lderiv) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?begin0 FIRST . LDERIV)]
           [Expr FIRST first]
           [List LDERIV lderiv])]
       [(AnyQ p:#%app (e1 e2 rs tagged-stx lderiv) exni)
        (let ([tail
-              (R tagged-stx (?#%app . LDERIV)
+              (R tagged-stx
                  [! exni]
+                 [#:pattern (?#%app . LDERIV)]
                  [List LDERIV lderiv])])
          (if (eq? tagged-stx e1)
              tail
              (cons (walk e1 tagged-stx 'tag-app) tail)))]
       [(AnyQ p:lambda (e1 e2 rs renames body) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:bind (?formals* . ?body*) renames]
           [#:pattern (?lambda ?formals . ?body)]
@@ -127,7 +136,7 @@
           [Block ?body body])]
       [(struct p:case-lambda (e1 e2 rs renames+bodies))
        #;
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?case-lambda [?formals . ?body] ...)]
           [#:bind [(?formals* . ?body*) ...] (map car renames+bodies)]
@@ -144,10 +153,11 @@
                             (syntax->list #'(?formals* ...))
                             e1 mid 'rename-case-lambda)
                  ;; FIXME: Missing renames frames here
-                 (R mid (CASE-LAMBDA [FORMALS . BODY] ...)
+                 (R mid
+                    [#:pattern (CASE-LAMBDA [FORMALS . BODY] ...)]
                     [Block (BODY ...) (map cdr renames+bodies)]))))]
       [(AnyQ p:let-values (e1 e2 rs renames rhss body) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?let-values ([?vars ?rhs] ...) . ?body)]
           [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
@@ -159,7 +169,7 @@
           [Expr (?rhs ...) rhss]
           [Block ?body body])]
       [(AnyQ p:letrec-values (e1 e2 rs renames rhss body) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?letrec-values ([?vars ?rhs] ...) . ?body)]
           [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
@@ -172,7 +182,7 @@
           [Block ?body body])]
       [(AnyQ p:letrec-syntaxes+values
              (e1 e2 rs srenames srhss vrenames vrhss body) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (?lsv ([?svars ?srhs] ...) ([?vvars ?vrhs] ...) . ?body)]
           [#:bind (([?svars* ?srhs*] ...) ([?vvars* ?vrhs] ...) . ?body*) srenames]
@@ -216,18 +226,19 @@
       
       ;; The rest of the automatic primitives
       [(AnyQ p::STOP (e1 e2 rs) exni)
-       (R e1 _
+       (R e1
           [! exni])]
 
       [(AnyQ p:set!-macro (e1 e2 rs deriv) exni)
-       (R e1 _
+       (R e1
           [! exni]
           => (lambda (mid)
-               (reductions deriv)))]
+               (reductions* deriv)))]
       [(AnyQ p:set! (e1 e2 rs id-rs rhs) exni)
-       (R e1 _
+       (R e1
           [! exni]
           [#:pattern (SET! VAR RHS)]
+          [#:learn id-rs]
           [Expr RHS rhs])]
 
       ;; Synthetic primitives
@@ -245,7 +256,7 @@
                        [deriv0 (s:subterm-deriv subterm0)])
                   (let ([ctx (lambda (x) (path-replace term path0 x))])
                     (append (with-context ctx
-                              (reductions deriv0))
+                              (reductions* deriv0))
                             (loop (and (deriv? deriv0)
                                        (path-replace term path0 (deriv-e2 deriv0)))
                                   (cdr subterms)))))]
@@ -260,21 +271,21 @@
 
       ;; FIXME
       [(IntQ p:rename (e1 e2 rs rename inner))
-       (reductions inner)]
+       (reductions* inner)]
 
       ;; Error
 
       ;; Macros
       [(IntQ mrule (e1 e2 transformation next))
        (append (reductions-transformation transformation)
-               (reductions next))]
+               (reductions* next))]
 
       ;; Lifts
       
       [(IntQ lift-deriv (e1 e2 first lifted-stx second))
-       (append (reductions first)
+       (append (reductions* first)
                (list (walk (deriv-e2 first) lifted-stx 'capture-lifts))
-               (reductions second))]
+               (reductions* second))]
 
       ;; Skipped
       
@@ -287,13 +298,17 @@
   (define (reductions-transformation tx)
     (match tx
       [(struct transformation (e1 e2 rs me1 me2 locals seq))
+       (learn-definites rs)
        (append (reductions-locals e1 locals)
                (list (walk e1 e2 'macro-step)))]
       [(IntW transformation (e1 e2 rs me1 me2 locals seq) 'locals)
+       (learn-definites rs)
        (reductions-locals e1 locals)]
       [(ErrW transformation (e1 e2 rs me1 me2 locals seq) 'bad-transformer exn)
+       (learn-definites rs)
        (list (stumble e1 exn))]
       [(ErrW transformation (e1 e2 rs me1 me2 locals seq) 'transform exn)
+       (learn-definites rs)
        (append (reductions-locals e1 locals)
                (list (stumble e1 exn)))]))
 
@@ -306,13 +321,13 @@
   (define (reductions-local local)
     (match/with-derivation local
       [(struct local-expansion (e1 e2 me1 me2 deriv))
-       (reductions deriv)]
+       (reductions* deriv)]
       [(struct local-lift (expr id))
        (list (walk expr id 'local-lift))]
       [(struct local-lift-end (decl))
        (list (walk decl decl 'module-lift))]
       [(struct local-bind (deriv))
-       (reductions deriv)]))
+       (reductions* deriv)]))
 
   ;; list-reductions : ListDerivation -> ReductionSequence
   (define (list-reductions ld)
@@ -322,7 +337,7 @@
          (cond [(pair? derivs)
                 (append
                  (with-context (lambda (x) (cons x (stx-cdr suffix)))
-                   (reductions (car derivs)))
+                   (reductions* (car derivs)))
                  (with-context (lambda (x) (cons (deriv-e2 (car derivs)) x))
                    (loop (cdr derivs) (stx-cdr suffix))))]
                [(null? derivs)
@@ -362,17 +377,17 @@
                   (let ([estx (deriv-e2 head)])
                     (loop next (stx-cdr suffix) (cons estx prefix)
                           (cons (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                                  (reductions head))
+                                  (reductions* head))
                                 rss)))]
                  [(IntW b:expr (renames head) tag)
                   (loop next #f #f 
                         (cons (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                                (reductions head))
+                                (reductions* head))
                               rss))]
                  [(struct b:defvals (renames head))
                   (let ([head-rs 
                          (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
-                           (reductions head))])
+                           (reductions* head))])
                     (loop next (stx-cdr suffix) (cons (deriv-e2 head) prefix)
                           (cons head-rs rss)))]
                  [(AnyQ b:defstx (renames head rhs))
@@ -386,8 +401,8 @@
                     (loop next (stx-cdr suffix) (cons estx2 prefix)
                           (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
                             (cons (with-context (CC ?rhs estx (?ds ?vars ?rhs))
-                                    (reductions rhs))
-                                  (cons (reductions head)
+                                    (reductions* rhs))
+                                  (cons (reductions* head)
                                         rss)))))]
                  [(struct b:splice (renames head tail))
                   (loop next tail prefix
@@ -401,7 +416,7 @@
                                                'splice-block))
                               (cons (with-context (lambda (x) 
                                                     (revappend prefix (cons x (stx-cdr suffix))))
-                                      (reductions head))
+                                      (reductions* head))
                                     rss)))]
                  [(struct b:begin (renames head derivs))
                   ;; FIXME
@@ -430,24 +445,24 @@
                          [(struct mod:skip ())
                           (loop next (stx-cdr suffix) (cons (stx-car suffix) prefix))]
                          [(struct mod:cons (head))
-                          (append (with-context the-context (append (reductions head)))
+                          (append (with-context the-context (append (reductions* head)))
                                   (let ([estx (and (deriv? head) (deriv-e2 head))])
                                     (loop next (stx-cdr suffix) (cons estx prefix))))]
                          [(AnyQ mod:prim (head prim))
                           (append (with-context the-context
-                                    (append (reductions head)
-                                            (reductions prim)))
+                                    (append (reductions* head)
+                                            (reductions* prim)))
                                   (let ([estx 
                                          (if prim
                                              (lift/deriv-e2 prim)
                                              (and (deriv? head) (deriv-e2 head)))])
                                     (loop next (stx-cdr suffix) (cons estx prefix))))]
                          [(ErrW mod:splice (head stxs) exn)
-                          (append (with-context the-context (reductions head))
+                          (append (with-context the-context (reductions* head))
                                   (list (stumble (deriv-e2 head) exn)))]
                          [(struct mod:splice (head stxs))
                           (append
-                           (with-context the-context (reductions head))
+                           (with-context the-context (reductions* head))
                            (let ([suffix-tail (stx-cdr suffix)]
                                  [head-e2 (deriv-e2 head)])
                              (cons (walk/foci head-e2
@@ -460,7 +475,7 @@
                           (loop next stxs prefix))))]
                          [(struct mod:lift (head stxs))
                           (append
-                           (with-context the-context (reductions head))
+                           (with-context the-context (reductions* head))
                            (let ([suffix-tail (stx-cdr suffix)]
                                  [head-e2 (deriv-e2 head)])
                              (let ([new-suffix (append stxs (cons head-e2 suffix-tail))])

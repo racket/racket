@@ -96,10 +96,12 @@
               (send -text insert text)))
           
           (define/public add-syntax
-            (lambda/kw (stx #:key [hi-stxs null] hi-color alpha-table)
+            (lambda/kw (stx #:key [hi-stxs null] hi-color alpha-table [definites null])
               (when (and (pair? hi-stxs) (not hi-color))
                 (error 'syntax-widget%::add-syntax "no highlight color specified"))
-              (let ([colorer (internal-add-syntax stx hi-stxs hi-color)])
+              (let ([colorer (internal-add-syntax stx hi-stxs hi-color)]
+                    [definite-table (make-hash-table)])
+                (for-each (lambda (x) (hash-table-put! definite-table x #t)) definites)
                 (when alpha-table
                   (let ([range (send colorer get-range)])
                     (for-each (lambda (id)
@@ -111,10 +113,15 @@
                                     (for-each
                                      (lambda (binder-r)
                                        (for-each (lambda (id-r)
-                                                   (send -text add-arrow
-                                                         (car id-r) (cdr id-r)
-                                                         (car binder-r) (cdr binder-r)
-                                                         "purple"))
+                                                   (if (hash-table-get definite-table id #f)
+                                                       (send -text add-arrow
+                                                             (car id-r) (cdr id-r)
+                                                             (car binder-r) (cdr binder-r)
+                                                             "blue")
+                                                       (send -text add-question-arrow
+                                                             (car id-r) (cdr id-r)
+                                                             (car binder-r) (cdr binder-r)
+                                                             "purple")))
                                                  (send range get-ranges id)))
                                      (send range get-ranges binder)))))
                               (send colorer get-identifier-list))))

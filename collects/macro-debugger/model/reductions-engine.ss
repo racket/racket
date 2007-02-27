@@ -8,6 +8,8 @@
   (provide context
            big-context
            current-derivation
+           current-definites
+           learn-definites
            with-context
            with-derivation
            with-new-local-context
@@ -27,6 +29,9 @@
 
   ;; current-derivation : parameter of Derivation
   (define current-derivation (make-parameter #f))
+
+  ;; current-definites : parameter of (list-of identifier)
+  (define current-definites (make-parameter null))
 
   (define-syntax with-context
     (syntax-rules ()
@@ -49,6 +54,9 @@
                       [context null])
          . body)]))
 
+  (define (learn-definites ids)
+    (current-definites (append ids (current-definites))))
+
   ;; -----------------------------------
 
   ;; CC
@@ -62,7 +70,7 @@
   ;; the threaded reductions engine
   (define-syntax R
     (syntax-rules ()
-      [(R form pattern . clauses)
+      [(R form . clauses)
        (R** #f _ [#:set-syntax form] [#:pattern pattern] . clauses)]))
 
   (define-syntax (R** stx)
@@ -106,6 +114,9 @@
                          (values form2 description))])
            (cons (walk f form2-var description-var)
                  (R** form2-var p . more)))]
+      [(R** f p [#:learn ids] . more)
+       #'(begin (learn-definites ids)
+                (R** f p . more))]
 
       ;; Conditional
       [(R** f p [#:if test consequent ...] . more)
@@ -178,22 +189,22 @@
   ;; walk : syntax(es) syntax(es) StepType -> Reduction
   ;; Lifts a local step into a term step.
   (define (walk e1 e2 type)
-    (make-step (current-derivation) (big-context) type (context)
+    (make-step (current-derivation) (big-context) type (context) (current-definites)
                (foci e1) (foci e2) e1 e2))
   
   ;; walk/foci : syntaxes syntaxes syntax syntax StepType -> Reduction
   (define (walk/foci foci1 foci2 Ee1 Ee2 type)
-    (make-step (current-derivation) (big-context) type (context)
+    (make-step (current-derivation) (big-context) type (context) (current-definites)
                (foci foci1) (foci foci2) Ee1 Ee2))
 
   ;; stumble : syntax exception -> Reduction
   (define (stumble stx exn)
-    (make-misstep (current-derivation) (big-context) 'error (context)
+    (make-misstep (current-derivation) (big-context) 'error (context) (current-definites)
                   (foci stx) stx exn))
   
   ;; stumble/E : syntax(s) syntax exn -> Reduction
   (define (stumble/E focus Ee1 exn)
-    (make-misstep (current-derivation) (big-context) 'error (context)
+    (make-misstep (current-derivation) (big-context) 'error (context) (current-definites)
                   (foci focus) Ee1 exn))
   
   ;; ------------------------------------
