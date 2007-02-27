@@ -105,7 +105,7 @@
        (begin
          (define-syntax prompt
            (syntax-rules ()
-             [(reset expr0 expr (... ...))
+             [(prompt expr0 expr (... ...))
               (call-with-prompt (lambda () expr0 expr (... ...)))]))
          (define-syntax prompt-at
            (syntax-rules ()
