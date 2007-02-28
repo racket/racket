@@ -173,7 +173,8 @@
       (define no-arg-x-flags '((xk "-iconic") 
 			       (xl "-rv" "-reverse") 
 			       (xm "+rv") 
-			       (xn "-synchronous")))
+			       (xn "-synchronous")
+                               (xo "-singleInstance")))
 
       (define (skip-x-flags flags)
 	(let ([xfmem (lambda (flag) (lambda (xf) (member flag (cdr xf))))])
@@ -221,7 +222,7 @@
 	     no-arg-x-flags)
 	    (list
 	     (format (string-append
-		      "  *)\n    ~a~a~a  ;;\n"
+		      "  *)\n    ~a~a ~a  ;;\n"
 		      " esac\n"
 		      " shift\n"
 		      " if [ \"$oneargflag\" != '' ] ; then\n"
