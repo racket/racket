@@ -154,6 +154,7 @@ static Window GetEventWindow(XEvent *e)
 
 static unsigned long lastUngrabTime;
 static unsigned long lastUnhideTime;
+static int need_unhide = 0;
 
 class Check_Ungrab_Record {
 public:
@@ -201,7 +202,7 @@ static Bool CheckPred(Display *display, XEvent *e, char *args)
   case MotionNotify:
     if (e->xbutton.time > lastUnhideTime) {
       lastUnhideTime = e->xbutton.time;
-      wxUnhideAllCursors();
+      need_unhide = 1;
     }
     break;
   default:
@@ -385,6 +386,11 @@ int MrEdGetNextEvent(int check_only, int current_only,
     d = XtDisplay(orig_top_level);
 
   got = XCheckIfEvent(d, event, CheckPred, (char *)which);
+
+  if (need_unhide) {
+    need_unhide = 0;
+    wxUnhideAllCursors();
+  }
 
   while (first_cur) {
     CheckUngrab(d, first_cur);
