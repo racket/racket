@@ -1,5 +1,5 @@
 .\" dummy line
-.TH DRSCHEME 1 "May 2006"
+.TH DRSCHEME 1 "February 2007"
 .UC 4
 .SH NAME
 drscheme \- The PLT Scheme programming environment
@@ -60,6 +60,15 @@ When running in X11, DrScheme accepts the following standard
 .IR lang ,
 .B -xrm
 .IR file .
+.PP
+In addition, the option
+.B -singleInstance
+is treated like an X option (it must appear before all other
+options), and it runs MrEd in single-instance mode.
+In single-instance mode, when an existing instance
+is running with the same executable name, all non-option
+arguments are treated as file names and sent to the 
+existing instance.
 .PP
 
 .SH FILES
