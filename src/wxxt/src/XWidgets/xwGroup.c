@@ -103,8 +103,11 @@ static void make_textgc(self)Widget self;
     if (((XfwfGroupWidget)self)->xfwfGroup.textgc != NULL) XtReleaseGC(self, ((XfwfGroupWidget)self)->xfwfGroup.textgc);
     values.background = ((XfwfGroupWidget)self)->core.background_pixel;
     values.foreground = ((XfwfGroupWidget)self)->xfwfGroup.foreground;
-    values.font = ((XfwfGroupWidget)self)->xfwfGroup.font->fid;
     mask = GCFont | GCBackground | GCForeground;
+    if (((XfwfGroupWidget)self)->xfwfGroup.font) {
+      values.font = ((XfwfGroupWidget)self)->xfwfGroup.font->fid;
+      mask |= GCFont;
+    }
     ((XfwfGroupWidget)self)->xfwfGroup.textgc = XtGetGC(self, mask, &values);
 }
 /*ARGSUSED*/
@@ -275,7 +278,7 @@ XfwfGroupClassRec xfwfGroupClassRec = {
 /* num_resources 	*/  8,
 /* xrm_class    	*/  NULLQUARK,
 /* compres_motion 	*/  True ,
-/* compress_exposure 	*/  XtExposeCompressMultiple ,
+/* compress_exposure 	*/  XtExposeCompressMaximal ,
 /* compress_enterleave 	*/  True ,
 /* visible_interest 	*/  False ,
 /* destroy      	*/  destroy,

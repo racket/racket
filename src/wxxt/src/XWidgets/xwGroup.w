@@ -274,8 +274,11 @@ current value of the Group's |selection| resource.
     if ($textgc != NULL) XtReleaseGC($, $textgc);
     values.background = $background_pixel;
     values.foreground = $foreground;
-    values.font = $font->fid;
     mask = GCFont | GCBackground | GCForeground;
+    if ($font) {
+      values.font = $font->fid;
+      mask |= GCFont;
+    }
     $textgc = XtGetGC($, mask, &values);
 }
 
