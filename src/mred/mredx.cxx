@@ -236,7 +236,6 @@ static Bool CheckPred(Display *display, XEvent *e, char *args)
        over and over again. */
     if (e->xbutton.time > lastUngrabTime) {
       Check_Ungrab_Record *cur;
-
       if (!cur_registered) {
 	wxREGGLOB(first_cur);
 	wxREGGLOB(last_cur);
@@ -785,7 +784,7 @@ static int has_property(Display *d, Window w, Atom atag)
   return (actual != None);
 }
 
-static int wxSendOrSetTag(char *pre_tag, char *tag, char *msg)
+static int wxSendOrSetTag(char *tag, char *pre_tag, char *msg)
 {
   Display *d;
   Window root, parent, *children;
@@ -899,14 +898,14 @@ static int wxSendOrSetTag(char *pre_tag, char *tag, char *msg)
 }
 
 # define SINGLE_INSTANCE_HANDLER_CODE \
-"(lambda (f)" \
+"(lambda (f host)" \
 "  (let ([path (simplify-path" \
 "               (path->complete-path" \
 "                (or (find-executable-path (find-system-path 'run-file) #f)" \
 "                    (find-system-path 'run-file))" \
 "                (current-directory)))])" \
 "    (let ([tag (string->bytes/utf-8" \
-"                (format \"~a_~a\" path (version)))])" \
+"                (format \"~a:~a_~a\" host path (version)))])" \
 "      (f tag " \
 "         (bytes-append #\"pre\" tag)" \
 "         (apply" \
@@ -932,11 +931,18 @@ static Scheme_Object *prep_single_instance(int argc, Scheme_Object **argv)
 
 int wxCheckSingleInstance(Scheme_Env *global_env)
 {
-  Scheme_Object *a[1], *v;
+  Scheme_Object *a[2], *v;
+  char buf[256];
+
+  if (!wxGetHostName(buf, 256)) {
+    buf[0] = 0;
+  }
+
   a[0] = scheme_make_prim(prep_single_instance);
+  a[1] = scheme_make_byte_string(buf);
   v = scheme_apply(scheme_eval_string(SINGLE_INSTANCE_HANDLER_CODE,
 				      global_env),
-		   1,
+		   2,
 		   a);
   return SCHEME_TRUEP(v);
 }

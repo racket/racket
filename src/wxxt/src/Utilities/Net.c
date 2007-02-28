@@ -39,7 +39,7 @@
 int wxGetHostName(char *buf, int sz)
 {
 #ifndef WX_USE_GETHOSTBYNAME
-  return (sysinfo(SI_HOSTNAME, buf, maxSize) != -1);
+  return (sysinfo(SI_HOSTNAME, buf, sz - 1) != -1);
 #else /* BSD Sockets */
   char name[255];
   /* Get hostname */
