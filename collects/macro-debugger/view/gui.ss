@@ -501,9 +501,13 @@
              (step-type->string (protostep-type step))))
 
           (define/private (update:show-step step)
-            (insert-syntax/redex (step-term1 step) (step-foci1 step) (protostep-definites step))
+            (insert-syntax/redex (step-term1 step) (step-foci1 step)
+                                 (protostep-definites step)
+                                 (protostep-frontier step))
             (update:separator step)
-            (insert-syntax/contractum (step-term2 step) (step-foci2 step) (protostep-definites step))
+            (insert-syntax/contractum (step-term2 step) (step-foci2 step)
+                                      (protostep-definites step)
+                                      (protostep-frontier step))
             (update:show-lctx step))
 
           (define/private (update:show-prestep step)
@@ -577,24 +581,26 @@
                   'start)
             (enable/disable-buttons))
 
-          ;; insert-syntax/redex : syntax syntaxes identifiers -> void
-          (define/private (insert-syntax/redex stx foci definites)
+          ;; insert-syntax/redex : syntax syntaxes identifiers syntaxes -> void
+          (define/private (insert-syntax/redex stx foci definites frontier)
             (if (send config get-highlight-foci?)
                 (send sbview add-syntax stx
                       #:hi-stxs foci #:hi-color "MistyRose"
                       #:alpha-table alpha-table
-                      #:definites definites)
+                      #:definites definites
+                      #:hi2-stxs frontier #:hi2-color "WhiteSmoke")
                 (send sbview add-syntax stx
                       #:alpha-table alpha-table
                       #:definites definites)))
 
-          ;; insert-syntax/contractum : syntax syntaxes identifiers -> void
-          (define/private (insert-syntax/contractum stx foci definites)
+          ;; insert-syntax/contractum : syntax syntaxes identifiers syntaxes -> void
+          (define/private (insert-syntax/contractum stx foci definites frontier)
             (if (send config get-highlight-foci?)
                 (send sbview add-syntax stx
                       #:hi-stxs foci #:hi-color "LightCyan"
                       #:alpha-table alpha-table
-                      #:definites definites)
+                      #:definites definites
+                      #:hi2-stxs frontier #:hi2-color "WhiteSmoke")
                 (send sbview add-syntax stx
                       #:alpha-table alpha-table
                       #:definites definites)))
@@ -738,13 +744,13 @@
           (define/private (reduce:one-by-one rs)
             (let loop ([rs rs])
               (match rs
-                [(cons (struct step (d l t c df redex contractum e1 e2)) rs)
-                 (list* (make-prestep d l "Find redex" c df redex e1)
-                        (make-poststep d l t c df contractum e2)
+                [(cons (struct step (d l t c df fr redex contractum e1 e2)) rs)
+                 (list* (make-prestep d l "Find redex" c df fr redex e1)
+                        (make-poststep d l t c df fr contractum e2)
                         (loop rs))]
-                [(cons (struct misstep (d l t c df redex e1 exn)) rs)
-                 (list* (make-prestep d l "Find redex" c df redex e1)
-                        (make-misstep d l t c df redex e1 exn)
+                [(cons (struct misstep (d l t c df fr redex e1 exn)) rs)
+                 (list* (make-prestep d l "Find redex" c df fr redex e1)
+                        (make-misstep d l t c df fr redex e1 exn)
                         (loop rs))]
                 ['()
                  null])))

@@ -15,6 +15,8 @@
            outer-rewrap
            lift/deriv-e1
            lift/deriv-e2
+           lift/lderiv-es1
+           lift/lderiv-es2
            wrapped?
 
            find-derivs
@@ -131,6 +133,14 @@
   (define (lift/deriv-e2 x)
     (match x
       [(AnyQ deriv (_ e2)) e2]))
+
+  (define (lift/lderiv-es1 x)
+    (match x
+      [(AnyQ lderiv (es1 es2 _)) es1]))
+  
+  (define (lift/lderiv-es2 x)
+    (match x
+      [(AnyQ lderiv (es1 es2 _)) es2]))
   
   (define (wrapped? x)
     (or (interrupted-wrap? x)

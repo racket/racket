@@ -1,6 +1,7 @@
 
 (module reductions-engine mzscheme
-  (require "deriv.ss"
+  (require (lib "list.ss")
+           "deriv.ss"
            "stx-util.ss"
            "steps.ss")
   (provide (all-from "steps.ss"))
@@ -10,6 +11,10 @@
            current-derivation
            current-definites
            learn-definites
+           current-frontier
+           add-frontier
+           blaze-frontier
+           rename-frontier
            with-context
            with-derivation
            with-new-local-context
@@ -33,12 +38,15 @@
   ;; current-definites : parameter of (list-of identifier)
   (define current-definites (make-parameter null))
 
+  ;; current-frontier : parameter of (list-of syntax)
+  (define current-frontier (make-parameter null))
+
   (define-syntax with-context
     (syntax-rules ()
       [(with-context f . body)
        (let ([c (context)])
          (parameterize ([context (cons f c)])
-           . body))]))
+           (let () . body)))]))
 
   (define-syntax with-derivation
     (syntax-rules ()
@@ -56,6 +64,17 @@
 
   (define (learn-definites ids)
     (current-definites (append ids (current-definites))))
+
+  (define (add-frontier stxs)
+    (current-frontier (append stxs (current-frontier)))
+    #;(printf "new frontier: ~s~n" (current-frontier)))
+
+  (define (blaze-frontier stx)
+    #;(unless (memq stx (current-frontier))
+      (fprintf (current-error-port) "frontier does not contain term: ~s~n" stx)
+      (error 'blaze-frontier))
+    (current-frontier (remq stx (current-frontier)))
+    #;(printf "new frontier (blazed): ~s~n" (current-frontier)))
 
   ;; -----------------------------------
 
@@ -86,7 +105,7 @@
        #'(R** f p2 . more)]
       ;; Bind pattern variables
       [(R** f p [#:bind pattern rhs] . more)
-       #'(with-syntax ([pattern rhs])
+       #'(with-syntax ([pattern (with-syntax ([p f]) rhs)])
            (R** f p . more))]
       ;; Change syntax
       [(R** f p [#:set-syntax form] . more)
@@ -103,6 +122,7 @@
        #'(let-values ([(form2-var foci1-var foci2-var description-var)
                        (with-syntax ([p f])
                          (values form2 foci1 foci2 description))])
+           (rename-frontier f form2-var)
            (with-context (make-renames foci1-var foci2-var)
              (cons (walk/foci foci1-var foci2-var
                               f form2-var
@@ -116,6 +136,9 @@
                  (R** form2-var p . more)))]
       [(R** f p [#:learn ids] . more)
        #'(begin (learn-definites ids)
+                (R** f p . more))]
+      [(R** f p [#:frontier stxs] . more)
+       #'(begin (add-frontier (with-syntax ([p f]) stxs))
                 (R** f p . more))]
 
       ;; Conditional
@@ -183,28 +206,64 @@
                           (let ([form-var (ctx0 (get-e2 fill0))])
                             (R** form-var pattern . more))])))]))
   
-  
+
+  ;; Rename mapping
+
+  (define (rename-frontier from to)
+    (current-frontier (apply append (map (make-rename-mapping from to) (current-frontier)))))
+
+  (define (make-rename-mapping from to)
+    (define table (make-hash-table))
+    (let loop ([from from] [to to])
+      (cond [(syntax? from)
+             (hash-table-put! table from (flatten-syntaxes to))
+             (loop (syntax-e from) to)]
+            [(syntax? to)
+             (loop from (syntax-e to))]
+            [(pair? from)
+             (loop (car from) (car to))
+             (loop (cdr from) (cdr to))]
+            [(vector? from)
+             (loop (vector->list from) (vector->list to))]
+            [else (void)]))
+    (lambda (stx)
+      (let ([replacement (hash-table-get table stx #f)])
+        (if replacement
+            (begin #;(printf "  replacing ~s with ~s~n" stx replacement)
+                   replacement)
+            (begin #;(printf "  not replacing ~s~n" stx)
+                   (list stx))))))
+
+  (define (flatten-syntaxes x)
+    (cond [(syntax? x)
+           (list x)]
+          [(pair? x)
+           (append (flatten-syntaxes (car x) (cdr x)))]
+          [(vector? x)
+           (flatten-syntaxes (vector->list x))]
+          [else null]))
+
   ;; -----------------------------------
 
   ;; walk : syntax(es) syntax(es) StepType -> Reduction
   ;; Lifts a local step into a term step.
   (define (walk e1 e2 type)
-    (make-step (current-derivation) (big-context) type (context) (current-definites)
+    (make-step (current-derivation) (big-context) type (context) (current-definites) (current-frontier)
                (foci e1) (foci e2) e1 e2))
   
   ;; walk/foci : syntaxes syntaxes syntax syntax StepType -> Reduction
   (define (walk/foci foci1 foci2 Ee1 Ee2 type)
-    (make-step (current-derivation) (big-context) type (context) (current-definites)
+    (make-step (current-derivation) (big-context) type (context) (current-definites) (current-frontier)
                (foci foci1) (foci foci2) Ee1 Ee2))
 
   ;; stumble : syntax exception -> Reduction
   (define (stumble stx exn)
-    (make-misstep (current-derivation) (big-context) 'error (context) (current-definites)
+    (make-misstep (current-derivation) (big-context) 'error (context) (current-definites) (current-frontier)
                   (foci stx) stx exn))
   
   ;; stumble/E : syntax(s) syntax exn -> Reduction
   (define (stumble/E focus Ee1 exn)
-    (make-misstep (current-derivation) (big-context) 'error (context) (current-definites)
+    (make-misstep (current-derivation) (big-context) 'error (context) (current-definites) (current-frontier)
                   (foci focus) Ee1 exn))
   
   ;; ------------------------------------

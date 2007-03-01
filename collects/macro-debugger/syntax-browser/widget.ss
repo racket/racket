@@ -96,11 +96,16 @@
               (send -text insert text)))
           
           (define/public add-syntax
-            (lambda/kw (stx #:key [hi-stxs null] hi-color alpha-table [definites null])
+            (lambda/kw (stx #:key [hi-stxs null] hi-color alpha-table [definites null]
+                            hi2-color [hi2-stxs null])
               (when (and (pair? hi-stxs) (not hi-color))
                 (error 'syntax-widget%::add-syntax "no highlight color specified"))
-              (let ([colorer (internal-add-syntax stx hi-stxs hi-color)]
+              (let ([colorer (internal-add-syntax stx)]
                     [definite-table (make-hash-table)])
+                (when (and hi2-color (pair? hi2-stxs))
+                  (send colorer highlight-syntaxes hi2-stxs hi2-color))
+                (when (and hi-color (pair? hi-stxs))
+                  (send colorer highlight-syntaxes hi-stxs hi-color))
                 (for-each (lambda (x) (hash-table-put! definite-table x #t)) definites)
                 (when alpha-table
                   (let ([range (send colorer get-range)])
@@ -144,7 +149,7 @@
           
           (define/public (get-text) -text)
           
-          (define/private (internal-add-syntax stx hi-stxs hi-color)
+          (define/private (internal-add-syntax stx)
             (with-unlock -text
               (parameterize ((current-default-columns (calculate-columns)))
                 (let ([current-position (send -text last-position)])
@@ -156,8 +161,6 @@
                     (send* -text
                       (insert "\n")
                       (scroll-to-position current-position))
-                    (unless (null? hi-stxs)
-                      (send new-colorer highlight-syntaxes hi-stxs hi-color))
                     new-colorer)))))
 
           (define/private (calculate-columns)

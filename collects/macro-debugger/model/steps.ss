@@ -24,7 +24,7 @@
   ;;   - (make-step ... Syntaxes Syntaxes Syntax Syntax)
   ;;   - (make-misstep ... Syntax Syntax Exception)
 
-  (define-struct protostep (deriv lctx type ctx definites) #f)
+  (define-struct protostep (deriv lctx type ctx definites frontier) #f)
 
   (define-struct (step protostep) (foci1 foci2 e1 e2) #f)
   (define-struct (misstep protostep) (foci1 e1 exn) #f)

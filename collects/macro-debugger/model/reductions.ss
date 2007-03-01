@@ -34,13 +34,16 @@
 
   ;; reductions : Derivation -> ReductionSequence
   (define (reductions d)
-    (parameterize ((current-definites null))
+    (parameterize ((current-definites null)
+                   (current-frontier null))
+      (add-frontier (list (lift/deriv-e1 d)))
       (reductions* d)))
   
   (define (reductions* d)
     (match d
       [(AnyQ prule (e1 e2 rs))
-       (and rs (learn-definites rs))]
+       (and rs (learn-definites rs))
+       (blaze-frontier e1)]
       [_ (void)])
     (match/with-derivation d
 
@@ -56,20 +59,24 @@
                [body-e1 (match body [(AnyQ deriv (body-e1 _)) body-e1])])
            (cons (walk e1 (ctx body-e1) 'tag-module-begin)
                  (with-context ctx
+                   (add-frontier (list (lift/deriv-e1 body)))
                    (reductions* body)))))]
       [(IntQ p:module (e1 e2 rs #t body))
        (with-syntax ([(?module name language . BODY) e1])
          (let ([ctx (lambda (x) (d->so e1 `(,#'?module ,#'name ,#'language ,x)))])
            (with-context ctx
+             (add-frontier (list (lift/deriv-e1 body)))
              (reductions* body))))]
       [(AnyQ p:#%module-begin (e1 e2 rs pass1 pass2))
        (with-syntax ([(?#%module-begin form ...) e1])
          (let ([frame (lambda (x) (d->so e1 (cons #'?#%module-begin x)))])
            (let-values ([(reductions1 final-stxs1)
                          (with-context frame
+                           (add-frontier (syntax->list #'(form ...)))
                            (mbrules-reductions pass1 (syntax->list #'(form ...)) #t))])
              (let-values ([(reductions2 final-stxs2)
                            (with-context frame
+                             ;(add-frontier final-stxs1)
                              (mbrules-reductions pass2 final-stxs1 #f))])
                (if (error-wrap? d)
                    (append reductions1 reductions2 
@@ -79,11 +86,13 @@
        (R e1
           [! exni]
           [#:pattern (?define-syntaxes formals RHS)]
+          [#:frontier (list #'RHS)]
           [Expr RHS rhs])]
       [(AnyQ p:define-values (e1 e2 rs rhs) exni)
        (R e1
           [! exni]
           [#:pattern (?define-values formals RHS)]
+          [#:frontier (list #'RHS)]
           [#:if rhs
                 [Expr RHS rhs]])]
       [(AnyQ p:if (e1 e2 rs full? test then else) exni)
@@ -91,18 +100,21 @@
            (R e1
               [! exni]
               [#:pattern (?if TEST THEN ELSE)]
+              [#:frontier (list #'TEST #'THEN #'ELSE)]
               [Expr TEST test]
               [Expr THEN then]
               [Expr ELSE else])
            (R e1
               [! exni]
               [#:pattern (?if TEST THEN)]
+              [#:frontier (list #'TEST #'THEN)]
               [Expr TEST test]
               [Expr THEN then]))]
       [(AnyQ p:wcm (e1 e2 rs key mark body) exni)
        (R e1
           [! exni]
           [#:pattern (?wcm KEY MARK BODY)]
+          [#:frontier (list #'KEY #'MARK #'BODY)]
           [Expr KEY key]
           [Expr MARK mark]
           [Expr BODY body])]
@@ -110,11 +122,13 @@
        (R e1
           [! exni]
           [#:pattern (?begin . LDERIV)]
+          [#:frontier (stx->list #'LDERIV)]
           [List LDERIV lderiv])]
       [(AnyQ p:begin0 (e1 e2 rs first lderiv) exni)
        (R e1
           [! exni]
           [#:pattern (?begin0 FIRST . LDERIV)]
+          [#:frontier (cons #'FIRST (stx->list #'LDERIV))]
           [Expr FIRST first]
           [List LDERIV lderiv])]
       [(AnyQ p:#%app (e1 e2 rs tagged-stx lderiv) exni)
@@ -122,6 +136,7 @@
               (R tagged-stx
                  [! exni]
                  [#:pattern (?#%app . LDERIV)]
+                 [#:frontier (stx->list #'LDERIV)]
                  [List LDERIV lderiv])])
          (if (eq? tagged-stx e1)
              tail
@@ -131,6 +146,7 @@
           [! exni]
           [#:bind (?formals* . ?body*) renames]
           [#:pattern (?lambda ?formals . ?body)]
+          [#:frontier (stx->list #'?body)]
           [#:rename (syntax/skeleton e1 (?lambda ?formals* . ?body*))
                     #'?formals #'?formals*
                     'rename-lambda]
@@ -140,6 +156,7 @@
        (R e1
           [! exni]
           [#:pattern (?case-lambda [?formals . ?body] ...)]
+          ;; FIXME: frontier
           [#:bind [(?formals* . ?body*) ...] (map car renames+bodies)]
           [#:rename
            (syntax/skeleton e1 (?case-lambda [?formals* . ?body*] ...))
@@ -161,6 +178,7 @@
        (R e1
           [! exni]
           [#:pattern (?let-values ([?vars ?rhs] ...) . ?body)]
+          [#:frontier (append (syntax->list #'(?rhs ...)) (stx->list #'?body))]
           [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
           [#:rename
            (syntax/skeleton e1 (?let-values ([?vars* ?rhs*] ...) . ?body*))
@@ -173,6 +191,7 @@
        (R e1
           [! exni]
           [#:pattern (?letrec-values ([?vars ?rhs] ...) . ?body)]
+          [#:frontier (append (syntax->list #'(?rhs ...)) (stx->list #'?body))]
           [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
           [#:rename
            (syntax/skeleton e1 (?letrec-values ([?vars* ?rhs*] ...) . ?body*))
@@ -186,6 +205,9 @@
        (R e1
           [! exni]
           [#:pattern (?lsv ([?svars ?srhs] ...) ([?vvars ?vrhs] ...) . ?body)]
+          [#:frontier (append (syntax->list #'(?srhs ...))
+                              (syntax->list #'(?vrhs ...))
+                              (stx->list #'?body))]
           [#:bind (([?svars* ?srhs*] ...) ([?vvars* ?vrhs*] ...) . ?body*) srenames]
           [#:rename
            (syntax/skeleton e1
@@ -235,17 +257,20 @@
       [(AnyQ p:set!-macro (e1 e2 rs deriv) exni)
        (R e1
           [! exni]
+          [#:frontier (list e1)]
           => (lambda (mid)
                (reductions* deriv)))]
       [(AnyQ p:set! (e1 e2 rs id-rs rhs) exni)
        (R e1
           [! exni]
           [#:pattern (SET! VAR RHS)]
+          [#:frontier (list #'RHS)]
           [#:learn id-rs]
           [Expr RHS rhs])]
 
       ;; Synthetic primitives
       ;; These have their own subterm replacement mechanisms
+      ;; FIXME: Frontier
       [(and d (AnyQ p:synth (e1 e2 rs subterms)))
        (let loop ([term e1] [subterms subterms])
          (cond [(null? subterms) 
@@ -274,17 +299,22 @@
 
       ;; FIXME
       [(IntQ p:rename (e1 e2 rs rename inner))
+       ;; FIXME: frontier
        (reductions* inner)]
 
       ;; Error
 
       ;; Macros
       [(IntQ mrule (e1 e2 transformation next))
+       (blaze-frontier e1)
+       ;;(printf "frontier for mrule: ~s~n" (current-frontier))
        (append (reductions-transformation transformation)
-               (reductions* next))]
+               (begin (add-frontier (list (lift/deriv-e1 next)))
+                      (reductions* next)))]
 
       ;; Lifts
-      
+
+      ;; FIXME: frontier
       [(IntQ lift-deriv (e1 e2 first lifted-stx second))
        (append (reductions* first)
                (list (walk (deriv-e2 first) lifted-stx 'capture-lifts))
@@ -366,7 +396,8 @@
                        [(AnyQ lderiv (pass2-es1 _ _))
                         (list (walk stxs1 pass2-es1 'block->letrec))])
                      null)
-                 (list-reductions pass2)))]
+                 (begin (add-frontier (stx->list (lift/lderiv-es1 pass2)))
+                        (list-reductions pass2))))]
       [#f null]))
 
   ;; brules-reductions : (list-of-BRule) syntax-list -> ReductionSequence syntax-list
@@ -377,23 +408,27 @@
                    [next (cdr brules)])
                (match/with-derivation brule0
                  [(struct b:expr (renames head))
+                  (rename-frontier (car renames) (cdr renames))
                   (let ([estx (deriv-e2 head)])
                     (loop next (stx-cdr suffix) (cons estx prefix)
                           (cons (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
                                   (reductions* head))
                                 rss)))]
                  [(IntW b:expr (renames head) tag)
+                  (rename-frontier (car renames) (cdr renames))
                   (loop next #f #f 
                         (cons (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
                                 (reductions* head))
                               rss))]
                  [(struct b:defvals (renames head))
+                  (rename-frontier (car renames) (cdr renames))
                   (let ([head-rs 
                          (with-context (lambda (x) (revappend prefix (cons x (stx-cdr suffix))))
                            (reductions* head))])
                     (loop next (stx-cdr suffix) (cons (deriv-e2 head) prefix)
                           (cons head-rs rss)))]
                  [(AnyQ b:defstx (renames head rhs))
+                  (rename-frontier (car renames) (cdr renames))
                   (let* ([estx (deriv-e2 head)]
                          [estx2 (and (deriv? rhs)
                                      (with-syntax ([(?ds ?vars ?rhs) estx]
@@ -408,6 +443,7 @@
                                   (cons (reductions* head)
                                         rss)))))]
                  [(struct b:splice (renames head tail))
+                  (rename-frontier (car renames) (cdr renames))
                   (loop next tail prefix
                         (cons (list (walk/foci (deriv-e2 head)
                                                (stx-take tail
@@ -439,44 +475,62 @@
     (let* ([final-stxs #f]
            [reductions
             (let loop ([mbrules mbrules] [suffix all-stxs] [prefix null])
-              (define (the-context x)
-                (revappend prefix (cons x (stx-cdr suffix))))
+              (define (the-context x) (revappend prefix (cons x (stx-cdr suffix))))
               (cond [(pair? mbrules)
                      (let ([mbrule0 (car mbrules)]
                            [next (cdr mbrules)])
                        (match/with-derivation mbrule0
                          [(struct mod:skip ())
+                          ;(blaze-frontier (stx-car suffix))
                           (loop next (stx-cdr suffix) (cons (stx-car suffix) prefix))]
                          [(struct mod:cons (head))
+                          ;(blaze-frontier (stx-car suffix))
+                          (rename-frontier (stx-car suffix) (lift/deriv-e1 head))
+                          (add-frontier (list (lift/deriv-e1 head)))
                           (append (with-context the-context (append (reductions* head)))
                                   (let ([estx (and (deriv? head) (deriv-e2 head))])
                                     (loop next (stx-cdr suffix) (cons estx prefix))))]
                          [(AnyQ mod:prim (head prim))
+                          ;(blaze-frontier (stx-car suffix))
+                          (rename-frontier (stx-car suffix) (lift/deriv-e1 head))
+                          (add-frontier (list (lift/deriv-e1 head)))
                           (append (with-context the-context
                                     (append (reductions* head)
-                                            (reductions* prim)))
+                                            (begin
+                                              (when prim
+                                                (add-frontier (list (lift/deriv-e1 prim))))
+                                              (reductions* prim))))
                                   (let ([estx 
                                          (if prim
                                              (lift/deriv-e2 prim)
                                              (and (deriv? head) (deriv-e2 head)))])
                                     (loop next (stx-cdr suffix) (cons estx prefix))))]
                          [(ErrW mod:splice (head stxs) exn)
+                          ;(blaze-frontier (stx-car suffix))
+                          (rename-frontier (stx-car suffix) (lift/deriv-e1 head))
+                          (add-frontier (list (lift/deriv-e1 head)))
                           (append (with-context the-context (reductions* head))
                                   (list (stumble (deriv-e2 head) exn)))]
                          [(struct mod:splice (head stxs))
+                          ;(blaze-frontier (stx-car suffix))
+                          (rename-frontier (stx-car suffix) (lift/deriv-e1 head))
+                          (add-frontier (list (lift/deriv-e1 head)))
                           (append
                            (with-context the-context (reductions* head))
                            (let ([suffix-tail (stx-cdr suffix)]
                                  [head-e2 (deriv-e2 head)])
-                             (cons (walk/foci head-e2
-                                              (stx-take stxs
-                                                        (- (stx-improper-length stxs)
-                                                           (stx-improper-length suffix-tail)))
-                                              (revappend prefix (cons head-e2 suffix-tail))
-                                              (revappend prefix stxs)
-                                              'splice-module)
-                          (loop next stxs prefix))))]
+                             (let ([new-stxs (stx-take stxs
+                                                       (- (stx-improper-length stxs)
+                                                          (stx-improper-length suffix-tail)))])
+                               (cons (walk/foci head-e2
+                                                new-stxs
+                                                (revappend prefix (cons head-e2 suffix-tail))
+                                                (revappend prefix stxs)
+                                                'splice-module)
+                                     (begin (add-frontier new-stxs)
+                                            (loop next stxs prefix))))))]
                          [(struct mod:lift (head stxs))
+                          ;; FIXME: frontier
                           (append
                            (with-context the-context (reductions* head))
                            (let ([suffix-tail (stx-cdr suffix)]
@@ -491,6 +545,7 @@
                                            new-suffix
                                            prefix)))))]
                          [(struct mod:lift-end (tail))
+                          ;; FIXME: frontier
                           (append
                            (if (pair? tail)
                                (list (walk/foci null
