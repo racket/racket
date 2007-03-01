@@ -1409,20 +1409,39 @@ static Scheme_Object *do_memop(const char *who, int mode,
 /* mode 0=>memset, 1=>memmove, 2=>memcpy */
 {
   void *src = NULL, *dest = NULL;
-  long soff = 0, doff = 0, count, v, mult = 1;
-  int i = 0, j, ch = 0;
+  long soff = 0, doff = 0, count, v, mult = 0;
+  int i, j, ch = 0, argc1 = argc;
 
-  /* do the optional last ctype multiplier first, to use it later */
-  if (SCHEME_CTYPEP(argv[argc-1])) {
-    mult = ctype_sizeof(argv[argc-1]);
+  /* arg parsing: last optional ctype, then count, then fill byte for memset,
+   * then the first and second pointer+offset pair. */
+
+  /* get the optional last ctype multiplier */
+  if (SCHEME_CTYPEP(argv[argc1-1])) {
+    argc1--;
+    mult = ctype_sizeof(argv[argc1]);
     if (mult <= 0)
-      scheme_wrong_type(who, "non-void-C-type", argc-1, argc, argv);
+      scheme_wrong_type(who, "non-void-C-type", argc1, argc, argv);
   }
 
-  /* get the two pointers+offsets */
+  /* get the count argument */
+  argc1--;
+  if ((!scheme_get_int_val(argv[argc1], &count)) || (count < 0))
+    scheme_wrong_type(who, "count as " C_LONG_TYPE_STR, argc1, argc, argv);
+  if (mult) count *= mult;
+
+  /* get the fill byte for memset */
+  if (!mode) {
+    argc1--;
+    ch = SCHEME_INTP(argv[argc1]) ? SCHEME_INT_VAL(argv[argc1]) : -1;
+    if ((ch < 0) || (ch > 255))
+      scheme_wrong_type(who, "byte", argc1, argc, argv);
+  }
+
+  /* get the two pointers + offsets */
+  i = 0;
   for (j=0; j<2; j++) {
     if (!mode && j==1) break; /* memset needs only a dest argument */
-    if (!(i<argc))
+    if (!(i<argc1))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                        "%s: missing a pointer argument for %s",
                        who, (j == 0 ? "destination" : "source"));
@@ -1437,36 +1456,20 @@ static Scheme_Object *do_memop(const char *who, int mode,
             break;
     }
     i++;
-    if ((i<argc) && SCHEME_EXACT_INTEGERP(argv[i])) {
+    if ((i<argc1) && SCHEME_EXACT_INTEGERP(argv[i])) {
       if (!scheme_get_int_val(argv[i], &v))
         scheme_wrong_type(who, C_LONG_TYPE_STR, i, argc, argv);
-      if (j==0) doff += v * mult;
-      else      soff += v * mult;
+      if (mult) v *= mult;
+      switch (j) {
+      case 0: doff += v; break;
+      case 1: soff += v; break;
+      }
       i++;
     }
   }
 
-  /* get the fill byte for memset */
-  if (!mode) {
-    if (!(i<argc))
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "%s: missing the fill-byte argument", who);
-    ch = SCHEME_INTP(argv[i]) ? SCHEME_INT_VAL(argv[i]) : -1;
-    if ((ch < 0) || (ch > 255))
-      scheme_wrong_type(who, "byte", i, argc, argv);
-    i++;
-  }
-
-  /* get the count */
-  if (!(i<argc))
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT, "%s: missing count", who);
-  if (!scheme_get_int_val(argv[i], &count))
-    scheme_wrong_type(who, "count as " C_LONG_TYPE_STR, i, argc, argv);
-  count *= mult;
-  i++;
-
   /* verify that there are no unused leftovers */
-  if (!(i==argc || (i==(argc-1) && SCHEME_CTYPEP(argv[argc-1]))))
+  if (!(i==argc1))
     scheme_arg_mismatch(who, "unexpected extra argument: ", argv[i]);
 
   switch (mode) {
