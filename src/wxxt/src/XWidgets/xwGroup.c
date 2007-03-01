@@ -103,7 +103,7 @@ static void make_textgc(self)Widget self;
     if (((XfwfGroupWidget)self)->xfwfGroup.textgc != NULL) XtReleaseGC(self, ((XfwfGroupWidget)self)->xfwfGroup.textgc);
     values.background = ((XfwfGroupWidget)self)->core.background_pixel;
     values.foreground = ((XfwfGroupWidget)self)->xfwfGroup.foreground;
-    mask = GCFont | GCBackground | GCForeground;
+    mask = GCBackground | GCForeground;
     if (((XfwfGroupWidget)self)->xfwfGroup.font) {
       values.font = ((XfwfGroupWidget)self)->xfwfGroup.font->fid;
       mask |= GCFont;
