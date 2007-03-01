@@ -27,3 +27,6 @@ You can use this collection in several ways:
   This will start MzScheme with only the R5RS bindings (with #%require
   etc), and a reader that will reject use of square brackets and curly
   braces.
+
+(Note: do not use (lib "r5rs.ss" "r5rs") as a module -- it does some
+side effects like changing the global namespace.)
