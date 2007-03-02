@@ -538,8 +538,9 @@
                             rb)
                       (send edit position-location 0 lb)
                       (send canvas min-width 
-                            (+ magic-space (- (inexact->exact (floor (unbox rb)))
-                                              (inexact->exact (floor (unbox lb))))))))))
+                            (+ (get-client-width/view-delta edit canvas)
+                               (- (inexact->exact (floor (unbox rb)))
+                                  (inexact->exact (floor (unbox lb))))))))))
           
           (define outer-info-panel 'top-info-panel-uninitialized)
           
@@ -692,11 +693,18 @@
             (spacing 3)
             (border 3))))
       
-      (define text-info<%> (interface (info<%>)
-                             set-macro-recording
-                             overwrite-status-changed
-                             anchor-status-changed
-                             editor-position-changed))
+  (define (get-client-width/view-delta position-edit position-canvas)
+    (let ([admin (send position-edit get-admin)]
+          [wb (box 0)])
+      (send admin get-view #f #f wb #f)
+      (let-values ([(cw ch) (send position-canvas get-client-size)])
+        (inexact->exact (floor (- cw (unbox wb)))))))
+  
+  (define text-info<%> (interface (info<%>)
+                         set-macro-recording
+                         overwrite-status-changed
+                         anchor-status-changed
+                         editor-position-changed))
       (define text-info-mixin
         (mixin (info<%>) (text-info<%>)
           (inherit get-info-editor)
@@ -752,16 +760,12 @@
                      (set! last-start start)
                      (set! last-end end)
                      (when (object? position-edit)
-                       (send* position-edit
-                         (lock #f)
-                         (erase)
-                         (insert 
-                          (if (= start end)
-                              (make-one start)
-                              (string-append (make-one start)
-                                             "-"
-                                             (make-one end))))
-                         (lock #t)))))]
+                       (change-position-edit-contents
+                        (if (= start end)
+                            (make-one start)
+                            (string-append (make-one start)
+                                           "-"
+                                           (make-one end)))))))]
                 [else
                  (when (send position-canvas is-shown?)
                    (send position-canvas show #f))])))
@@ -872,6 +876,31 @@
                                        [style '(no-hscroll no-vscroll)]))
           
           (define position-edit (new text%))
+          
+          (define/private (change-position-edit-contents str)
+            (send position-edit begin-edit-sequence)
+            (send position-edit lock #f)
+            (send position-edit erase)
+            (send position-edit insert str)
+            (send position-canvas call-as-primary-owner
+                  (λ ()
+                    (let ([delta (get-client-width/view-delta position-edit position-canvas)]
+                          [lb (box 0)]
+                          [rb (box 0)])
+                      (send position-edit position-location 
+                            (send position-edit last-position)
+                            rb)
+                      (send position-edit position-location 0 lb)
+                      (let ([nw
+                             (+ delta (- (inexact->exact (floor (unbox rb)))
+                                         (inexact->exact (floor (unbox lb)))))])
+                        (when (< (send position-canvas min-client-width) nw)
+                          (send position-canvas min-client-width nw))))))
+            (send position-edit lock #t)
+            (send position-edit end-edit-sequence))
+          
+          
+          
           (send (get-info-panel) change-children
                 (λ (l)
                   (cons position-parent (remq position-parent l))))
@@ -921,7 +950,7 @@
             (set-editor position-edit)
             (stretchable-width #f)
             (stretchable-height #f))
-          (determine-width "0000:000-0000:000"
+          (determine-width "000:00-000:00"
                            position-canvas
                            position-edit)
           (editor-position-changed)
