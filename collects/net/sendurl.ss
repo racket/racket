@@ -27,13 +27,66 @@
          x
          (error 'external-browser "~a is not a valid browser preference" x)))))
 
+  (define osx-browser?
+    (delay (or (eq? (system-type) 'macosx)
+               (equal? "ppc-darwin" (path->string (system-library-subpath))))))
+
   ; send-url : str [bool] -> void
   (define/kw (send-url url-str
                        #:optional [separate-window? separate-by-default?])
+    (define external (external-browser))
+    (define stype (system-type))
     (cond
-      [(procedure? (external-browser))
-       ((external-browser) url-str)]
-      [(eq? (system-type) 'macos)
+      [(procedure? external) (external url-str)]
+      [(force osx-browser?)
+       ;; not sure what changed, but this is wrong now.... -robby
+       ;; (browser-process (format "osascript -e 'open location \"~a\"'"
+       ;;                          (regexp-replace* "%" url-str "%25")))
+       (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
+      [(eq? stype 'windows)
+       (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
+      [(eq? stype 'unix)
+       (let ([preferred (or external (get-preference 'external-browser))])
+         (cond
+           [(use-browser 'opera preferred)
+            =>
+            (lambda (exe)
+              ;; opera may not return -- always open asyncronously
+              ;; opera starts a new browser automatically, if it can't find one
+              (browser-process* exe "-remote"
+                                (format "openURL(~a)"
+                                        (if separate-window?
+                                          (format "~a,new-window" url-str)
+                                          url-str))))]
+           [(use-browser 'galeon preferred)
+            =>
+            (lambda (exe)
+              (browser-process* exe (if separate-window? "-w" "-x") url-str))]
+           [(or (use-browser 'netscape preferred)
+                (use-browser 'mozilla preferred))
+            =>
+            (lambda (exe)
+              ;; netscape's -remote returns with an error code, if no
+              ;; netscape is around. start a new netscape in that case.
+              (or (system* exe "-remote"
+                           (format "openURL(~a)"
+                                   (if separate-window?
+                                     (format "~a,new-window" url-str)
+                                     url-str)))
+                  (browser-process* exe url-str)))]
+           [(use-browser 'dillo preferred)
+            =>
+            (lambda (exe) (browser-process* exe url-str))]
+           [(custom-browser? preferred)
+            (let ([cmd (string-append (car preferred)
+                                      url-str
+                                      (cdr preferred))])
+              (browser-process cmd))]
+           [else
+            (error 'send-url "Couldn't find ~a to open URL: ~e"
+                   (orify unix-browser-list) url-str)]))]
+      #; ; macos is dead -- this code should be removed if nobody shouts
+      [(eq? stype 'macos)
        (if (regexp-match "Blue Box" (system-type 'machine))
          ;; Classic inside OS X:
          (let loop ([l '("MSIE" "NAVG")])
@@ -44,66 +97,19 @@
                (let loop ([retries 2]) ;; <<< Yuck <<<
                  (if (zero? retries)
                    (error "enough already") ; caught above
-                   (with-handlers ([exn:fail? (lambda (x)
-                                                (loop (sub1 retries)))])
-                     (let ([t (thread (lambda ()
-                                        (send-event (car l) "GURL" "GURL" url-str)))])
+                   (with-handlers ([exn:fail?
+                                    (lambda (x) (loop (sub1 retries)))])
+                     (let ([t (thread
+                               (lambda ()
+                                 (send-event (car l) "GURL" "GURL" url-str)))])
                        (sync/timeout 1 t) ;; <<< Yuck (timeout) <<<
                        (when (thread-running? t)
                          (kill-thread t)
                          (error "timeout")))))))))
          ;; Normal OS Classic:
          (send-event "MACS" "GURL" "GURL" url-str))]
-      [(or (eq? (system-type) 'macosx)
-           (equal? "ppc-darwin" (system-library-subpath)))
-       ;; not sure what changed, but this is wrong now.... -robby
-       ;;(browser-process (format "osascript -e 'open location \"~a\"'" (regexp-replace* "%" url-str "%25")))
-       (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
-      [(eq? (system-type) 'windows)
-       (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
-      [(eq? (system-type) 'unix)
-       (let ([preferred (or (external-browser) (get-preference 'external-browser))])
-         (cond
-           [(use-browser 'opera preferred)
-            =>
-            (lambda (browser-path)
-              ;; opera may not return -- always open asyncronously
-              ;; opera starts a new browser automatically, if it can't find one
-              (browser-process* browser-path "-remote"
-                                (format "openURL(~a)"
-                                        (if separate-window?
-                                          (format "~a,new-window" url-str)
-                                          url-str))))]
-           [(use-browser 'galeon preferred)
-            =>
-            (lambda (browser-path)
-              (browser-process* browser-path
-                                (if separate-window? "-w" "-x")
-                                url-str))]
-           [(or (use-browser 'netscape preferred)
-                (use-browser 'mozilla preferred))
-            =>
-            (lambda (browser-path)
-              ;; netscape's -remote returns with an error code, if no
-              ;; netscape is around. start a new netscape in that case.
-              (or (system* browser-path "-remote"
-                           (format "openURL(~a)"
-                                   (if separate-window?
-                                     (format "~a,new-window" url-str)
-                                     url-str)))
-                  (browser-process* browser-path url-str)))]
-           [(use-browser 'dillo preferred)
-            =>
-            (lambda (browser-path)
-              (browser-process* browser-path url-str))]
-           [(custom-browser? preferred)
-            (let ([cmd (string-append (car preferred)
-                                      url-str
-                                      (cdr preferred))])
-              (browser-process cmd))]
-           [else
-            (error 'send-url "Couldn't find ~a to open URL: ~e" (orify unix-browser-list) url-str)]))]
-      [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))]))
+      [else (error 'send-url
+                   "don't know how to open URL on platform: ~s" stype)]))
 
   (define unix-browser-list '(opera galeon netscape mozilla dillo))
 
@@ -113,10 +119,10 @@
       [(null? (cdr l)) (format "~a" (car l))]
       [(null? (cddr l)) (format "~a or ~a" (car l) (cadr l))]
       [else
-    (let loop ([l l])
-      (cond
-        [(null? (cdr l)) (format "or ~a" (car l))]
-        [else (string-append (format "~a, " (car l)) (loop (cdr l)))]))]))
+       (let loop ([l l])
+         (cond
+           [(null? (cdr l)) (format "or ~a" (car l))]
+           [else (string-append (format "~a, " (car l)) (loop (cdr l)))]))]))
 
   ; : sym sym -> (U #f str)
   ; to find the path for the named browser, unless another browser is preferred
@@ -128,11 +134,10 @@
   ;; run-browser : process-proc list-of-strings -> void
   (define (run-browser process*/ports args)
     (let-values ([(stdout stdin pid stderr control)
-                  (apply values (apply process*/ports
-                                       (open-output-nowhere)
-                                       #f
-                                       (current-error-port)
-                                       args))])
+                  (apply values
+                         (apply process*/ports
+                                (open-output-nowhere) #f (current-error-port)
+                                args))])
       (close-output-port stdin)
       (thread (lambda ()
                 (control 'wait)
@@ -143,5 +148,5 @@
   (define (browser-process* . args)
     (run-browser process*/ports args))
 
-  (define (browser-process cmd)
-    (run-browser process/ports (list cmd))))
+  (define (browser-process . args)
+    (run-browser process/ports args)))
