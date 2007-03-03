@@ -166,7 +166,9 @@
           [Block (?body ...) (map cdr renames+bodies)])
        (with-syntax ([(?case-lambda [?formals . ?body] ...) e1]
                      [((?formals* . ?body*) ...) (map car renames+bodies)])
+         (add-frontier (apply append (map stx->list (syntax->list #'(?body ...)))))
          (let ([mid (syntax/skeleton e1 (?case-lambda [?formals* . ?body*] ...))])
+           (rename-frontier #'(?formals ...) #'(?formals* ...))
            (cons (walk/foci (syntax->list #'(?formals ...))
                             (syntax->list #'(?formals* ...))
                             e1 mid 'rename-case-lambda)
@@ -272,6 +274,24 @@
       ;; These have their own subterm replacement mechanisms
       ;; FIXME: Frontier
       [(and d (AnyQ p:synth (e1 e2 rs subterms)))
+       ;; First, compute the frontier based on the expanded subterms
+       ;; Run through the renames in reverse order to get the pre-renamed terms
+       (define synth-frontier
+         (parameterize ((current-frontier null))
+           (let floop ([subterms subterms])
+             (cond [(null? subterms)
+                    (void)]
+                   [(s:subterm? (car subterms))
+                    (floop (cdr subterms))
+                    (add-frontier
+                     (list (lift/deriv-e1 (s:subterm-deriv (car subterms)))))]
+                   [(s:rename? (car subterms))
+                    (floop (cdr subterms))
+                    (rename-frontier (s:rename-after (car subterms))
+                                     (s:rename-before (car subterms)))]))
+           (current-frontier)))
+       (add-frontier synth-frontier)
+       ;; Then compute the reductions
        (let loop ([term e1] [subterms subterms])
          (cond [(null? subterms) 
                 (let ([exn (and (error-wrap? d) (error-wrap-exn d))])
@@ -292,6 +312,8 @@
                 (let* ([subterm0 (car subterms)])
                   ;; FIXME: add renaming steps?
                   ;; FIXME: if so, coalesce?
+                  (rename-frontier (s:rename-before subterm0)
+                                   (s:rename-after subterm0))
                   (loop (path-replace term
                                       (s:rename-path subterm0)
                                       (s:rename-after subterm0))
@@ -299,7 +321,7 @@
 
       ;; FIXME
       [(IntQ p:rename (e1 e2 rs rename inner))
-       ;; FIXME: frontier
+       (rename-frontier (car rename) (cdr rename))
        (reductions* inner)]
 
       ;; Error
@@ -314,11 +336,13 @@
 
       ;; Lifts
 
-      ;; FIXME: frontier
       [(IntQ lift-deriv (e1 e2 first lifted-stx second))
-       (append (reductions* first)
-               (list (walk (deriv-e2 first) lifted-stx 'capture-lifts))
-               (reductions* second))]
+       (blaze-frontier e1)
+       (let ([rs1 (reductions* first)])
+         (add-frontier (list lifted-stx))
+         (append rs1 
+                 (list (walk (deriv-e2 first) lifted-stx 'capture-lifts))
+                 (reductions* second)))]
 
       ;; Skipped
       
