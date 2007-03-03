@@ -1,7 +1,7 @@
 (module sendurl mzscheme
   (require (lib "process.ss")
            (lib "file.ss")
-           (lib "etc.ss")
+           (lib "kw.ss")
            (lib "port.ss")
            (lib "sendevent.ss"))
 
@@ -9,6 +9,10 @@
 
   (define separate-by-default?
     (get-preference 'new-browser-for-urls (lambda () #t)))
+
+  ; : any -> bool
+  (define (custom-browser? x)
+    (and (pair? x) (string? (car x)) (string? (cdr x))))
 
   ; : any -> bool
   (define (browser-preference? x)
@@ -20,46 +24,46 @@
      #f ; #f means "consult the preferences file"
      (lambda (x)
        (if (browser-preference? x)
-           x
-           (error 'external-browser "~a is not a valid browser preference" x)))))
+         x
+         (error 'external-browser "~a is not a valid browser preference" x)))))
 
   ; send-url : str [bool] -> void
-  (define send-url
-    (opt-lambda (url-str [separate-window? separate-by-default?])
-      (cond
-       [(procedure? (external-browser))
-        ((external-browser) url-str)]
-       [(eq? (system-type) 'macos)
-        (if (regexp-match "Blue Box" (system-type 'machine))
-            ;; Classic inside OS X:
-            (let loop ([l '("MSIE" "NAVG")])
-              (if (null? l)
-                  (error 'send-url "couldn't start Internet Explorer or Netscape")
-                  (with-handlers ([exn:fail? (lambda (x) (loop (cdr l)))])
-                    (subprocess #f #f #f "by-id" (car l))
-                    (let loop ([retries 2]) ;; <<< Yuck <<<
-                      (if (zero? retries)
-                          (error "enough already") ; caught above
-                          (with-handlers ([exn:fail? (lambda (x)
-                                                       (loop (sub1 retries)))])
-                            (let ([t (thread (lambda ()
-                                               (send-event (car l) "GURL" "GURL" url-str)))])
-                              (sync/timeout 1 t) ;; <<< Yuck (timeout) <<<
-                              (when (thread-running? t)
-                                (kill-thread t)
-                                (error "timeout")))))))))
-            ;; Normal OS Classic:
-            (send-event "MACS" "GURL" "GURL" url-str))]
-       [(or (eq? (system-type) 'macosx)
-            (equal? "ppc-darwin" (system-library-subpath)))
-        ;; not sure what changed, but this is wrong now.... -robby
-        ;;(browser-process (format "osascript -e 'open location \"~a\"'" (regexp-replace* "%" url-str "%25")))
-        (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
-       [(eq? (system-type) 'windows)
-        (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
-       [(eq? (system-type) 'unix)
-        (let ([preferred (or (external-browser) (get-preference 'external-browser))])
-          (cond
+  (define/kw (send-url url-str
+                       #:optional [separate-window? separate-by-default?])
+    (cond
+      [(procedure? (external-browser))
+       ((external-browser) url-str)]
+      [(eq? (system-type) 'macos)
+       (if (regexp-match "Blue Box" (system-type 'machine))
+         ;; Classic inside OS X:
+         (let loop ([l '("MSIE" "NAVG")])
+           (if (null? l)
+             (error 'send-url "couldn't start Internet Explorer or Netscape")
+             (with-handlers ([exn:fail? (lambda (x) (loop (cdr l)))])
+               (subprocess #f #f #f "by-id" (car l))
+               (let loop ([retries 2]) ;; <<< Yuck <<<
+                 (if (zero? retries)
+                   (error "enough already") ; caught above
+                   (with-handlers ([exn:fail? (lambda (x)
+                                                (loop (sub1 retries)))])
+                     (let ([t (thread (lambda ()
+                                        (send-event (car l) "GURL" "GURL" url-str)))])
+                       (sync/timeout 1 t) ;; <<< Yuck (timeout) <<<
+                       (when (thread-running? t)
+                         (kill-thread t)
+                         (error "timeout")))))))))
+         ;; Normal OS Classic:
+         (send-event "MACS" "GURL" "GURL" url-str))]
+      [(or (eq? (system-type) 'macosx)
+           (equal? "ppc-darwin" (system-library-subpath)))
+       ;; not sure what changed, but this is wrong now.... -robby
+       ;;(browser-process (format "osascript -e 'open location \"~a\"'" (regexp-replace* "%" url-str "%25")))
+       (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
+      [(eq? (system-type) 'windows)
+       (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
+      [(eq? (system-type) 'unix)
+       (let ([preferred (or (external-browser) (get-preference 'external-browser))])
+         (cond
            [(use-browser 'opera preferred)
             =>
             (lambda (browser-path)
@@ -68,8 +72,8 @@
               (browser-process* browser-path "-remote"
                                 (format "openURL(~a)"
                                         (if separate-window?
-                                            (format "~a,new-window" url-str)
-                                            url-str))))]
+                                          (format "~a,new-window" url-str)
+                                          url-str))))]
            [(use-browser 'galeon preferred)
             =>
             (lambda (browser-path)
@@ -85,8 +89,8 @@
               (or (system* browser-path "-remote"
                            (format "openURL(~a)"
                                    (if separate-window?
-                                       (format "~a,new-window" url-str)
-                                       url-str)))
+                                     (format "~a,new-window" url-str)
+                                     url-str)))
                   (browser-process* browser-path url-str)))]
            [(use-browser 'dillo preferred)
             =>
@@ -99,11 +103,7 @@
               (browser-process cmd))]
            [else
             (error 'send-url "Couldn't find ~a to open URL: ~e" (orify unix-browser-list) url-str)]))]
-       [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))])))
-
-  ; : tst -> bool
-  (define (custom-browser? x)
-    (and (pair? x) (string? (car x)) (string? (cdr x))))
+      [else (error 'send-url "don't know how to open URL on platform: ~s" (system-type))]))
 
   (define unix-browser-list '(opera galeon netscape mozilla dillo))
 
