@@ -2,55 +2,58 @@ PLT Scheme support for _SRFIs_ (`surfies')
 ==========================================
 
 This is an implementation of (some) SRFIs to the PLT Scheme
-system.  It is intended for PLT Scheme v200+.
+system.  It is intended for PLT Scheme v300+.
 
 If you need more information on SRFI, please visit:
 
-                    http://srfi.schemers.org/
+         http://srfi.schemers.org/
 
 Loading
 -------
 
-To load a SRFI with name conflicts (currently SRFIs 1, 19, 43,
-45, 48 and 69) in a module, please see the note below.
+To load a SRFI with name conflicts (currently SRFIs 1, 5,
+13, 17, 19, 43, 45, 48, 61, 63, 69 and 87) in a module,
+please see the note below.
 
 To load a SRFI, use the following form:
 
-                    (require (lib "N.ss" "srfi"))
+         (require (lib "N.ss" "srfi"))
 
-if you know the number of the SRFI you want to load.  This is the
-preferred method, or this one:
+if you know the number of the SRFI you want to load.  This
+is the preferred method, or this one:
 
-                    (require (lib "NAME.ss" "srfi" "N"))
+         (require (lib "NAME.ss" "srfi" "N"))
 
 if you know the `informative name' of the SRFI.
 
-N, is a number corresponding to the sub-collection that holds a
-particular SRFI, and NAME is a more descriptive name we assigned
-to the main file in which the SRFI is defined.  For instance, to
-load SRFI-34 you have to do either one of:
+N, is a number corresponding to the sub-collection that
+holds a particular SRFI, and NAME is a more descriptive
+name we assigned to the main file in which the SRFI is
+defined.  For instance, to load SRFI-34 you have to do
+either one of:
 
-                    (require (lib "34.ss" "srfi"))
+         (require (lib "34.ss" "srfi"))
 
 or,
 
-                    (require (lib "exception.ss" "srfi" "34"))
+         (require (lib "exception.ss" "srfi" "34"))
 
 NOTE on SRFIs with name conflicts
 ---------------------------------
 
-Certain SRFIs (currently SRFIs 1, 13, 19, 43, 45, 48 and 69)
-provide names which conflict with names provided by the
-'mzscheme' language.  Attempting to require one of these SRFIs in
-a module written in the 'mzscheme' language will result in an
-error.
+Certain SRFIs (currently SRFIs 1, 5, 13, 17, 19, 43, 45,
+48, 61, 63, 69 and 87) provide names which conflict with
+names provided by the 'mzscheme' language.  Attempting to
+require one of these SRFIs in a module written in the
+'mzscheme' language will result in an error.
 
-To address this problem, the PLT implementations of these SRFIs
-provide a different module which renames the problematic exports
-to avoid these conflicts.  For SRFI 1, this library is called
-list.ss, and should be required like this:
+To address this problem, the PLT implementations of these
+SRFIs provide a different module which renames the
+problematic exports to avoid these conflicts.  For SRFI 1,
+this library is called list.ss, and should be required like
+this:
 
-                    (require (lib "list.ss" "srfi" "1"))
+         (require (lib "list.ss" "srfi" "1"))
 
 which supplies the colliding names with a prefix of 's:'
 (e.g. "s:map", "s:reverse!") and is therefore suitable for
@@ -59,11 +62,11 @@ requires in a module.
 For SRFI 19, this library is called time.ss, and should be
 required like this:
 
-                    (require (lib "time.ss" "srfi" "19"))
+         (require (lib "time.ss" "srfi" "19"))
 
 which supplies the colliding names with a prefix of 'srfi:'
-(e.g. "srfi:date?", "srfi:date-second") and is therefore suitable
-for requires in a module.
+(e.g. "srfi:date?", "srfi:date-second") and is therefore
+suitable for requires in a module.
 
 Supported SRFIs
 ---------------
@@ -71,47 +74,53 @@ Supported SRFIs
 Here is a table that has an SRFI, file name, and the
 sub-collection number of the already ported SRFIs:
 
-  SRFI               File name               Sub-collection
- ========           ===========             ================
+  SRFI               File name              Sub-collection
+ ========           ===========             ==============
 
- SRFI-1             list.ss                        1
- SRFI-2             and-let.ss                     2
+ SRFI-1             list.ss                       1
+ SRFI-2             and-let.ss                    2
  SRFI-4(*1)         4.ss
- SRFI-5             let.ss                         5
+ SRFI-5             let.ss                        5
  SRFI-6(+)          6.ss
- SRFI-7             program.ss                     7
- SRFI-8             receive.ss                     8
- SRFI-9             record.ss                      9
+ SRFI-7             program.ss                    7
+ SRFI-8             receive.ss                    8
+ SRFI-9             record.ss                     9
  SRFI-11(+)         11.ss
- SRFI-13            string.ss                     13
- SRFI-14            char-set.ss                   14
+ SRFI-13            string.ss                    13
+ SRFI-14            char-set.ss                  14
  SRFI-16(+)         16.ss
- SRFI-17            set.ss                        17
+ SRFI-17            set.ss                       17
  SRFI-18(++)        18.ss
- SRFI-19(*2)        time.ss                       19
+ SRFI-19(*2)        time.ss                      19
  SRFI-23(+)         23.ss
- SRFI-25            array.ss                      25
- SRFI-26            cut.ss                        26
- SRFI-27            random-bits.ss                27
+ SRFI-25            array.ss                     25
+ SRFI-26            cut.ss                       26
+ SRFI-27            random-bits.ss               27
  SRFI-28(+)         28.ss
- SRFI-29            localization.ss               29
+ SRFI-29            localization.ss              29
  SRFI-30(+)         30.ss
- SRFI-31            rec.ss                        31
- SRFI-34            exception.ss                  34
+ SRFI-31            rec.ss                       31
+ SRFI-32            sort.scm                     32
+ SRFI-34            exception.ss                 34
  SRFI-38(+)         38.ss
  SRFI-39(+)         39.ss
- SRFI-40            stream.ss                     40
- SRFI-42            comprehensions.ss             42
- SRFI-43            vector-lib.ss                 43
- SRFI-45(*3)        lazy.ss                       45
- SRFI-48            format.ss                     48
- SRFI-57            records.ss                    57
- SRFI-59            vicinity.ss                   59
- SRFI-60            60.ss                         60
- SRFI-66            66.ss                         66
- SRFI-67            compare.ss                    67
- SRFI-69            hash.ss                       69
- SRFI-74            74.ss                         74
+ SRFI-40            stream.ss                    40
+ SRFI-42            comprehensions.ss            42
+ SRFI-43            vector-lib.ss                43
+ SRFI-45(*3)        lazy.ss                      45
+ SRFI-48            format.ss                    48
+ SRFI-57            records.ss                   57
+ SRFI-59            vicinity.ss                  59
+ SRFI-60            60.ss                        60
+ SRFI-61(+)         61.ss
+ SRFI-63            63.ss                        63
+ SRFI-66            66.ss                        66
+ SRFI-67            compare.ss                   67
+ SRFI-69            hash.ss                      69
+ SRFI-71            letvalues.ss                 71
+ SRFI-74            74.ss                        74
+ SRFI-78            check.ss                     78
+ SRFI-87            case.ss                      87
 
 
 Notes:
@@ -124,27 +133,28 @@ Notes:
 `--------------------
 
 ,--------------------
-| *1 The functionality is all part of mzscheme available via (lib
-| "foreign.ss"), the only missing part is the i/o syntax.
+| *1 The functionality is all part of mzscheme available
+| via (lib"foreign.ss"), the only missing part is the i/o
+| syntax.
 `--------------------
 
 ,--------------------
-| *2 The time module does not export its time structure (you have
-| to use the time-* procedures.)  It renames all the date-*
-| accessors to tm:date-* so that you won't get errors when
-| including this code in other modules.  Care most be taken NOT
-| to confuse the internal date structure with the PLT Scheme one,
-| they are not the same, and all procedures from this library
-| expect the former.
+| *2 The time module does not export its time structure
+| (you have to use the time-* procedures.)  It renames all
+| the date-* accessors to tm:date-* so that you won't get
+| errors when including this code in other modules.  Care
+| most be taken NOT to confuse the internal date structure
+| with the PLT Scheme one, they are not the same, and all
+| procedures from this library expect the former.
 `--------------------
 
 ,--------------------
-| *3 This port also provides |promise?| / |srfi-45-promise?|.
+| *3 This port also provides promise? / srfi-45-promise?.
 `--------------------
 
 
-That's it for now.  If you have ported other SRFIs, and want them
-added to this library, please let us know:
+That's it for now.  If you have ported other SRFIs, and
+want them added to this library, please let us know:
 
  + the main PLT Scheme discussion list:
 
