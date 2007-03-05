@@ -5,6 +5,7 @@
   
   (provide combinator-parser-tools@
            combinator-parser^
-           error-format-parameters^ language-format-parameters^ language-dictionary^)
+           error-format-parameters^ language-format-parameters^ language-dictionary^
+           terminals)
   
   )
