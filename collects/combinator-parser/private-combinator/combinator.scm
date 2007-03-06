@@ -153,7 +153,10 @@
                                    [rsts (walker next-preds rest curr-pred curr 
                                                  (or new-id curr-id) (cons curr-name seen) 
                                                  (+ old-used used) alts 
-                                                 (make-src-lst (res-first-tok old-result)))])
+                                                 (if src? 
+                                                     (make-src-lst (position-token-start (res-first-tok old-result))
+                                                                   (position-token-end (res-first-tok old-result)))
+                                                     last-src))])
                               (cond
                                 [(and (res? rsts) (res-a rsts))
                                  (next-res old-answer new-id old-used tok rsts)]
