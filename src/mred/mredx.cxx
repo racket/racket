@@ -797,7 +797,7 @@ static int wxSendOrSetTag(char *tag, char *pre_tag, char *msg)
   unsigned int n, i;
   Atom atag, apre_tag;
   Window target = 0, me;
-  int try_again = 0;
+  int try_again = 0, add_property_back = 0, found_nothing;
 
   /* Elect a leader, relying on the fact that the X server serializes
      its interactions.
@@ -825,24 +825,45 @@ static int wxSendOrSetTag(char *tag, char *pre_tag, char *msg)
 
   me = wxAddClipboardWindowProperty(apre_tag);
 
-  XFlush(d);
 
   do {
+    if (add_property_back) {
+      wxAddClipboardWindowProperty(apre_tag);
+      add_property_back = 1;
+    }
+
+    XFlush(d);
     XSync(d, FALSE);
+    
+    found_nothing = 1;
+
     if (XQueryTree(d, DefaultRootWindow(d),
 		   &root, &parent, &children, &n)) {
       for (i = n; i--; ) {
 	if (children[i] != me) {
 	  if (has_property(d, children[i], atag)) {
+	    /* Found the leader: */
 	    target = children[i];
 	    try_again = 0;
+	    found_nothing = 0;
 	    break;
 	  } else if (has_property(d, children[i], apre_tag)) {
+	    /* Found another candidate. If our ID is
+	       higher, then withdrawl candidacy. Loop
+	       to wait for some process to assume leadership. */
 	    if ((long)me >= (long)children[i])
 	      XDeleteProperty(d, me, apre_tag);
 	    try_again = 1;
+	    found_nothing = 0;
 	  }
 	}
+      }
+      
+      if (found_nothing && try_again) {
+	/* This can only happen if some candidate process
+	   (with a lower window ID) has now exited. Try 
+	   again to become the leader. */
+	add_property_back = 1;
       }
       
       if (children)
