@@ -85,7 +85,7 @@
   
   (define-unit/new-import-export combinator-parser-tools@
     (import error-format-parameters^ language-format-parameters^ language-dictionary^)
-    (export combinator-parser^)
+    (export combinator-parser^ err^)
     ((combinator-parser-forms^ parser^ out^) combinator-parser@ error-format-parameters^ language-format-parameters^
                             language-dictionary^))
            

@@ -186,8 +186,8 @@
  
   (define-signature error^ (fail-type->message))
   
-  (define-signature combinator-parser^ extends combinator-parser-forms^ 
-    (parser (struct err (msg src))))
+  (define-signature combinator-parser^ extends combinator-parser-forms^ (parser))
+  (define-signature err^ (err? err-msg err-src))
     
   )
      

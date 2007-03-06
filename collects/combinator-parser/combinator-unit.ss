@@ -4,7 +4,7 @@
            "private-combinator/parser-sigs.ss")
   
   (provide combinator-parser-tools@
-           combinator-parser^
+           combinator-parser^ err^
            error-format-parameters^ language-format-parameters^ language-dictionary^
            terminals)
   
