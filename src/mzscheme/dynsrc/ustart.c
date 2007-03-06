@@ -78,6 +78,7 @@ static X_flag_entry X_flags[] = {
   { "-title", 1 },
   { "-xnllanguage", 1 },
   { "-xrm", 1 },
+  { "-singleInstance", 0 },
   { NULL, 0 }
 };
 
