@@ -154,8 +154,8 @@
                                                  (or new-id curr-id) (cons curr-name seen) 
                                                  (+ old-used used) alts 
                                                  (if src? 
-                                                     (make-src-lst (position-token-start (res-first-tok old-result))
-                                                                   (position-token-end (res-first-tok old-result)))
+                                                     (make-src-lst (position-token-start-pos (res-first-tok old-result))
+                                                                   (position-token-end-pos (res-first-tok old-result)))
                                                      last-src))])
                               (cond
                                 [(and (res? rsts) (res-a rsts))
