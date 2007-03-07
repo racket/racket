@@ -2286,13 +2286,16 @@
 			 [r (let loop ([vars unique-vars][bindings var-bindings])
 			      (cond
 			       [(null? bindings) null]
-			       [(car bindings) (cons 
-						(datum->syntax-object
-						 (car vars)
-						 (syntax-e 
-						  (syntax-mapping-valvar (car bindings)))
-						 x)
-						(loop (cdr vars) (cdr bindings)))]
+			       [(car bindings)
+                                (cons
+                                 (syntax-property 
+                                  (datum->syntax-object
+                                   (car vars)
+                                   (syntax-e (syntax-mapping-valvar (car bindings)))
+                                   x)
+                                  'disappeared-use
+                                  (car vars))
+                                 (loop (cdr vars) (cdr bindings)))]
 			       [else  (loop (cdr vars) (cdr bindings))]))])
 		     (if (identifier? pattern)
 			 ;; Simple syntax-id lookup:
