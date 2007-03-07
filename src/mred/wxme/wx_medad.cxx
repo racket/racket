@@ -215,6 +215,14 @@ wxMediaCanvas::wxMediaCanvas(wxWindow *parent,
 			  1, 1,
 #endif
 			  1, 1, 0, 0, FALSE);
+
+#ifdef wx_mac
+  /* Fixes update, somehow. There's a similar call in
+     the constructor for wxCanvas, but somehow we need
+     another one after SetScrollbars: */
+  OnClientAreaDSize(1, 1, 1, 1);
+#endif
+
   if (fakeXScroll) {
     SimpleScroll *ss;
     ss = new WXGC_PTRS SimpleScroll(this, wxHORIZONTAL, 0, 1, 0) ;

@@ -769,6 +769,7 @@ void wxWindow::SetSize(int x, int y, int width, int height, int flags) // mac pl
     int dH = cWindowHeight - oldWindowHeight;
     int dX = cWindowX - oldWindowX;
     int dY = cWindowY - oldWindowY;
+
     OnWindowDSize(dW, dH, dX, dY);
   }
 }
@@ -1159,6 +1160,8 @@ void wxWindow::GetClipRect(wxArea* area, Rect* clipRect)
   // get clipRect in area c.s.
   ::SetRect(clipRect, 0, 0, area->Width(), area->Height()); // area c.s.
 
+  // Clipping to the parent area should be unnecessary.
+  // Try disabling this sometime...  [2007-MAR-07]
   if (ParentArea()) {
     wxWindow* windowParent;
     Rect parentClipRect;

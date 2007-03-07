@@ -167,6 +167,13 @@ void wxCanvas::InitDefaults(wxGLConfig *gl_cfg)
   if (cStyle & wxINVISIBLE)
     Show(FALSE);
   InitInternalGray();
+
+  if (cStyle & wxVSCROLL || cStyle & wxHSCROLL) {
+    /* Somehow fixes initial update. There's another
+       call like this one in the constructor for
+       wxMediaCanvas. */
+    OnClientAreaDSize(1, 1, 1, 1);
+  }
 }
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
