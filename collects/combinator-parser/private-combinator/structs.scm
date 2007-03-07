@@ -9,11 +9,11 @@
 
   ;make-src-lst: position position -> src-list
   (define (make-src-lst start end)
-    (list (position-line start)
-          (position-col start)
-          (position-offset start)
-          (- (position-offset end)
-             (position-offset start))))
+    (list (!!! (position-line start))
+          (!!! (position-col start))
+          (!!! (position-offset start))
+          (- (!!! (position-offset end))
+             (!!! (position-offset start)))))
   
   ;(make-fail-type float fail-src string int int)
   (define-struct fail-type (chance src name used may-use) (make-inspector))

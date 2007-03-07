@@ -39,7 +39,7 @@
                              (missclass name (token-name token))))]
                [make-fail
                 (lambda (c n k i u)
-                  (make-terminal-fail c (if src?
+                  (make-terminal-fail c (if (and src? i)
                                             (make-src-lst (position-token-start-pos i)
                                                           (position-token-end-pos i))
                                             null)
@@ -57,7 +57,7 @@
             (cond
               [(eq? input return-name) name]
               [(null? input) 
-               (make-terminal-fail null last-src .4 0 0 'end #f)]
+               (fail-res null (make-terminal-fail .4 last-src name 0 0 'end #f))]
               [(pred (if src? (position-token-token (car input)) (car input)))
                (make-res (list (builder (car input))) (cdr input) 
                          name (value (car input)) 1 #f (car input))]
@@ -153,7 +153,7 @@
                                    [rsts (walker next-preds rest curr-pred curr 
                                                  (or new-id curr-id) (cons curr-name seen) 
                                                  (+ old-used used) alts 
-                                                 (if src? 
+                                                 (if (and src? (res-first-tok old-result)) 
                                                      (make-src-lst (position-token-start-pos (res-first-tok old-result))
                                                                    (position-token-end-pos (res-first-tok old-result)))
                                                      last-src))])
@@ -170,8 +170,10 @@
                                     (previous? input) (previous? return-name) 
                                     look-back used curr-id seen alts last-src)]
                       [else
-                       #;(printf "seq-walker called: else case~n")
+                       #;(printf "seq-walker called: else case, ~a case of ~a~n" 
+                               seq-name (curr-pred return-name))
                          (let ([fst (curr-pred input last-src)])
+                           #;(printf "seq-walker predicate returned~n")
                            (cond
                              [(res? fst)
                               (cond
@@ -241,7 +243,10 @@
            (case error-kind
              [(choice options) prev-src]
              [(sub-seq misscase misspell end) src]
-             [(missclass wrong) (update-src-start src (position-token-start-pos tok))])))
+             [(missclass wrong) 
+              (if tok
+                  (update-src-start src (position-token-start-pos tok))
+                  src)])))
     
     ;build-sequence-error: result boolean result string int [U #f string] [listof string] int int -> result
     (define (sequence-error-gen name len)
@@ -419,7 +424,8 @@
       (list (position-line new-start)
             (position-col new-start)
             (position-offset new-start)
-            (+ (- (third src) (position-offset new-start))
+            (+ (- (!!! (third src))
+                  (!!! (position-offset new-start)))
                (fourth src))))
     
     (define (update-src-end src new-end)
