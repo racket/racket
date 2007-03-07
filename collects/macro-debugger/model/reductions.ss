@@ -7,7 +7,8 @@
            "deriv.ss"
            "reductions-engine.ss")
 
-  (provide reductions)
+  (provide reductions
+           reductions+definites)
 
   ;; Setup for reduction-engines
 
@@ -38,7 +39,14 @@
                    (current-frontier null))
       (add-frontier (list (lift/deriv-e1 d)))
       (reductions* d)))
-  
+
+  (define (reductions+definites d)
+    (parameterize ((current-definites null)
+                   (current-frontier null))
+      (add-frontier (list (lift/deriv-e1 d)))
+      (let ([rs (reductions* d)])
+        (values rs (current-definites)))))
+
   (define (reductions* d)
     (match d
       [(AnyQ prule (e1 e2 rs))
@@ -46,7 +54,6 @@
        (blaze-frontier e1)]
       [_ (void)])
     (match/with-derivation d
-
       ;; Primitives
       [(struct p:variable (e1 e2 rs))
        (learn-definites (list e2))
