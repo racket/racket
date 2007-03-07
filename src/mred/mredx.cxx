@@ -151,6 +151,42 @@ static Window GetEventWindow(XEvent *e)
 
 static unsigned long lastUngrabTime;
 static unsigned long lastUnhideTime;
+static int need_unhide = 0;
+
+class Check_Ungrab_Record {
+public:
+  Window window;
+  int x, y, x_root, y_root;
+  Check_Ungrab_Record *next;
+};
+
+static int cur_registered = 0;
+static Check_Ungrab_Record *first_cur = NULL, *last_cur = NULL;
+
+static void CheckUngrab(Display *dpy, Check_Ungrab_Record *cur)
+{     
+  Window root;
+  int x, y;
+  unsigned w, h, b, d;
+  
+  XGetGeometry(dpy, cur->window, 
+	       &root, &x, &y, &w, &h,
+	       &b, &d);
+  if ((cur->x < 0) || (cur->y < 0)
+      || ((unsigned int)cur->x > w) || ((unsigned int)cur->y > h)) {
+    /* Looks bad, but is it a click in a MrEd window
+       that we could care about? */
+    
+    wxWindow *w;
+    w = wxLocationToWindow(cur->x_root, cur->y_root);
+    
+    if (w) {
+      /* Looks like we need to ungrab */
+      XUngrabPointer(dpy, 0);
+      XUngrabKeyboard(dpy, 0);
+    }
+  }
+}
 
 static Bool CheckPred(Display *display, XEvent *e, char *args)
 {
@@ -163,7 +199,7 @@ static Bool CheckPred(Display *display, XEvent *e, char *args)
   case MotionNotify:
     if (e->xbutton.time > lastUnhideTime) {
       lastUnhideTime = e->xbutton.time;
-      wxUnhideAllCursors();
+      need_unhide = 1;
     }
     break;
   default:
@@ -197,28 +233,22 @@ static Bool CheckPred(Display *display, XEvent *e, char *args)
     /* lastUngrabTime keeps us from checking the same events
        over and over again. */
     if (e->xbutton.time > lastUngrabTime) {
-      Window root;
-      int x, y;
-      unsigned w, h, b, d;
-      
-      XGetGeometry(XtDisplay(widget), e->xbutton.window, 
-		   &root, &x, &y, &w, &h,
-		   &b, &d);
-      if ((e->xbutton.x < 0) || (e->xbutton.y < 0)
-	  || ((unsigned int)e->xbutton.x > w) || ((unsigned int)e->xbutton.y > h)) {
-	/* Looks bad, but is it a click in a MrEd window
-	   that we could care about? */
-
-	wxWindow *w;
-	w = wxLocationToWindow(e->xbutton.x_root, e->xbutton.y_root);
-	
-	if (w) {
-	  /* Looks like we need to ungrab */
-	  XUngrabPointer(XtDisplay(widget), 0);
-	  XUngrabKeyboard(XtDisplay(widget), 0);
-	}
+      Check_Ungrab_Record *cur;
+      if (!cur_registered) {
+	wxREGGLOB(first_cur);
+	wxREGGLOB(last_cur);
       }
-      
+      cur = new WXGC_PTRS Check_Ungrab_Record;
+      cur->window = e->xbutton.window;
+      cur->x = e->xbutton.x;
+      cur->y = e->xbutton.y;
+      cur->x_root = e->xbutton.x_root;
+      cur->y_root = e->xbutton.y_root;
+      if (last_cur)
+	last_cur->next = cur;
+      else
+	first_cur = cur;
+      last_cur = cur;
       lastUngrabTime = e->xbutton.time;
     }
   }
@@ -339,6 +369,7 @@ int MrEdGetNextEvent(int check_only, int current_only,
 		     XEvent *event, MrEdContext **which)
 {
   Display *d;
+  int got;
 
   if (which)
     *which = NULL;
@@ -351,7 +382,20 @@ int MrEdGetNextEvent(int check_only, int current_only,
   else
     d = XtDisplay(orig_top_level);
 
-  if (XCheckIfEvent(d, event, CheckPred, (char *)which)) {
+  got = XCheckIfEvent(d, event, CheckPred, (char *)which);
+
+  if (need_unhide) {
+    need_unhide = 0;
+    wxUnhideAllCursors();
+  }
+
+  while (first_cur) {
+    CheckUngrab(d, first_cur);
+    first_cur = first_cur->next;
+  }
+  last_cur = NULL;
+
+  if (got) {
     just_check = 0;
     return 1;
   } else if (short_circuit) {
