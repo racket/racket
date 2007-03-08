@@ -1128,102 +1128,102 @@ TODO
             
             (set! user-custodian (make-custodian))
             ; (custodian-limit-memory user-custodian 10000000 user-custodian)
-            (set! user-eventspace-box (make-weak-box
-                                       (parameterize ([current-custodian user-custodian])
-                                         (make-eventspace))))
-            (set! user-break-parameterization (parameterize-break 
-                                               #t 
-                                               (current-break-parameterization)))
-            (set! eval-thread-thunks null)
-            (set! eval-thread-state-sema (make-semaphore 1))
-            (set! eval-thread-queue-sema (make-semaphore 0))
-            
-            (let* ([init-thread-complete (make-semaphore 0)]
-                   [goahead (make-semaphore)])
+            (let ([user-eventspace (parameterize ([current-custodian user-custodian])
+                                      (make-eventspace))])
+              (set! user-eventspace-box (make-weak-box user-eventspace))
+              (set! user-break-parameterization (parameterize-break 
+                                                 #t 
+                                                 (current-break-parameterization)))
+              (set! eval-thread-thunks null)
+              (set! eval-thread-state-sema (make-semaphore 1))
+              (set! eval-thread-queue-sema (make-semaphore 0))
               
-              ; setup standard parameters
-              (let ([snip-classes
-                     ; the snip-classes in the DrScheme eventspace's snip-class-list
-                     (drscheme:eval:get-snip-classes)])
+              (let* ([init-thread-complete (make-semaphore 0)]
+                     [goahead (make-semaphore)])
+                
+                ; setup standard parameters
+                (let ([snip-classes
+                       ; the snip-classes in the DrScheme eventspace's snip-class-list
+                       (drscheme:eval:get-snip-classes)])
+                  (queue-user/wait
+                   (λ () ; =User=, =No-Breaks=
+                     ; No user code has been evaluated yet, so we're in the clear...
+                     (break-enabled #f)
+                     (set! user-thread-box (make-weak-box (current-thread)))
+                     (initialize-parameters snip-classes))))
+                
+                ;; disable breaks until an evaluation actually occurs
+                (send context set-breakables #f #f)
+                
+                ;; initialize the language
+                (send (drscheme:language-configuration:language-settings-language user-language-settings)
+                      on-execute
+                      (drscheme:language-configuration:language-settings-settings user-language-settings)
+                      (let ([run-on-user-thread (lambda (t) (queue-user/wait t))])
+                        run-on-user-thread))
+                
+                ;; setup the special repl values
+                (let ([raised-exn? #f]
+                      [exn #f])
+                  (queue-user/wait
+                   (λ () ; =User=, =No-Breaks=
+                     (with-handlers ((void (λ (x) 
+                                             (set! exn x)
+                                             (set! raised-exn? #t))))
+                       (drscheme:language:setup-setup-values))))
+                  (when raised-exn?
+                    (fprintf 
+                     (current-error-port)
+                     "copied exn raised when setting up snip values (thunk passed as third argume to drscheme:language:add-snip-value)\n")
+                    (raise exn)))
+                
+                ;; installs the teachpacks
+                ;; must happen after language is initialized.
                 (queue-user/wait
                  (λ () ; =User=, =No-Breaks=
-                   ; No user code has been evaluated yet, so we're in the clear...
-                   (break-enabled #f)
-                   (set! user-thread-box (make-weak-box (current-thread)))
-                   (initialize-parameters snip-classes))))
-
-              ;; disable breaks until an evaluation actually occurs
-              (send context set-breakables #f #f)
-              
-              ;; initialize the language
-              (send (drscheme:language-configuration:language-settings-language user-language-settings)
-                    on-execute
-                    (drscheme:language-configuration:language-settings-settings user-language-settings)
-                    (let ([run-on-user-thread (lambda (t) (queue-user/wait t))])
-                      run-on-user-thread))
-              
-              ;; setup the special repl values
-              (let ([raised-exn? #f]
-                    [exn #f])
-                (queue-user/wait
-                 (λ () ; =User=, =No-Breaks=
-                   (with-handlers ((void (λ (x) 
-                                           (set! exn x)
-                                           (set! raised-exn? #t))))
-                     (drscheme:language:setup-setup-values))))
-                (when raised-exn?
-                  (fprintf 
-                   (current-error-port)
-                   "copied exn raised when setting up snip values (thunk passed as third argume to drscheme:language:add-snip-value)\n")
-                  (raise exn)))
-              
-              ;; installs the teachpacks
-              ;; must happen after language is initialized.
-              (queue-user/wait
-               (λ () ; =User=, =No-Breaks=
-                 (drscheme:teachpack:install-teachpacks 
-                  user-teachpack-cache)))
-              
-              (parameterize ([current-eventspace (get-user-eventspace)])
-                (queue-callback
-                 (λ ()
-                   (set! in-evaluation? #f)
-                   (update-running #f)
-                   (send context set-breakables #f #f)
-              
-                   ;; after this returns, future event dispatches
-                   ;; will use the user's break parameterization
-                   (initialize-dispatch-handler)
-                   
-                   ;; let init-thread procedure return,
-                   ;; now that parameters are set
-                   (semaphore-post init-thread-complete)
-                   
-                   ; We're about to start running user code.
-                   
-                   ; Pause to let killed-thread get initialized
-                   (semaphore-wait goahead)
-                   
-                   (let loop () ; =User=, =Handler=, =No-Breaks=
-                     ; Wait for something to do
-                     (unless (semaphore-try-wait? eval-thread-queue-sema)
-                       ; User event callbacks run here; we turn on
-                       ;  breaks in the dispatch handler.
-                       (yield eval-thread-queue-sema))
-                     ; About to eval something
-                     (semaphore-wait eval-thread-state-sema)
-                     (let ([thunk (car eval-thread-thunks)])
-                       (set! eval-thread-thunks (cdr eval-thread-thunks))
-                       (semaphore-post eval-thread-state-sema)
-                       ; This thunk evals the user's expressions with appropriate
-                       ;   protections.
-                       (thunk))
-                     (loop)))))
-              (semaphore-wait init-thread-complete)
-              ; Start killed-thread
-              (initialize-killed-thread)
-              ; Let user expressions go...
-              (semaphore-post goahead)))
+                   (drscheme:teachpack:install-teachpacks 
+                    user-teachpack-cache)))
+                
+                (parameterize ([current-eventspace (get-user-eventspace)])
+                  (queue-callback
+                   (λ ()
+                     (set! in-evaluation? #f)
+                     (update-running #f)
+                     (send context set-breakables #f #f)
+                     
+                     ;; after this returns, future event dispatches
+                     ;; will use the user's break parameterization
+                     (initialize-dispatch-handler)
+                     
+                     ;; let init-thread procedure return,
+                     ;; now that parameters are set
+                     (semaphore-post init-thread-complete)
+                     
+                     ; We're about to start running user code.
+                     
+                     ; Pause to let killed-thread get initialized
+                     (semaphore-wait goahead)
+                     
+                     (let loop () ; =User=, =Handler=, =No-Breaks=
+                       ; Wait for something to do
+                       (unless (semaphore-try-wait? eval-thread-queue-sema)
+                         ; User event callbacks run here; we turn on
+                         ;  breaks in the dispatch handler.
+                         (yield eval-thread-queue-sema))
+                       ; About to eval something
+                       (semaphore-wait eval-thread-state-sema)
+                       (let ([thunk (car eval-thread-thunks)])
+                         (set! eval-thread-thunks (cdr eval-thread-thunks))
+                         (semaphore-post eval-thread-state-sema)
+                         ; This thunk evals the user's expressions with appropriate
+                         ;   protections.
+                         (thunk))
+                       (loop)))))
+                (semaphore-wait init-thread-complete)
+                ; Start killed-thread
+                (initialize-killed-thread)
+                ; Let user expressions go...
+                (semaphore-post goahead))))
           
           (define/private (queue-user/wait thnk)
             (let ([wait (make-semaphore 0)])
