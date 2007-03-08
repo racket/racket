@@ -367,8 +367,6 @@ static size_t round_to_apage_size(size_t sizeb)
 static unsigned long custodian_single_time_limit(int set);
 inline static int thread_get_owner(void *p);
 
-static int atomic_counter = 0;
-
 /* the core allocation functions */
 static void *allocate_big(size_t sizeb, int type)
 {

@@ -207,7 +207,7 @@ static unsigned long determine_max_heap_size()
 
   getrlimit(RLIMIT_RSS, rlim);
   retval = rlim->rlim_cur; free(rlim);
-  return (retval == RLIM_INFINITY) ? (1024 * 1024 * 1024) : retval;
+  return (retval == RLIM_INFINITY) ? (unsigned long)-1 : retval;
 }
 #endif
 

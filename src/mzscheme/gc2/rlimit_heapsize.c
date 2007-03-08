@@ -16,7 +16,7 @@ static size_type determine_max_heap_size(void)
   getrlimit(RLIMIT_DATA, &rlim);
 # endif
 
-  return (rlim.rlim_cur == RLIM_INFINITY) ? (1024 * 1024 * 1024) : rlim.rlim_cur;
+  return (rlim.rlim_cur == RLIM_INFINITY) ? (unsigned long)-1 : rlim.rlim_cur;
 }
 
 #endif
