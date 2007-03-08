@@ -17,6 +17,11 @@ __declspec(dllexport) void gc_fprintf(int ignored, const char *c, ...);
 
 #ifdef GCPRINT_TO_WINDOWS_CONSOLE
 
+static BOOL WINAPI IgnoreEverything(DWORD evt)
+{
+  return TRUE;
+}
+
 static void GC_prim_stringout(char *s, int len)
 {
   static HANDLE console;
@@ -24,14 +29,23 @@ static void GC_prim_stringout(char *s, int len)
 
   if (!console) {
     COORD size;
-    int is_new;
+    CONSOLE_SCREEN_BUFFER_INFO info;
+
     console = GetStdHandle(STD_ERROR_HANDLE);
-    if (console == INVALID_HANDLE_VALUE) {
+    if (!GetConsoleScreenBufferInfo(console, &info)) {
+      /* Since getting the screen buffer info failed, 
+	 we must be in GUI mode. Create a console
+	 window --- and set the handler so that closing
+	 the window doesn't abort MrEd! */
       AllocConsole();
       console = GetStdHandle(STD_ERROR_HANDLE);
-      size.X = 90;
-      size.Y = 500;
-      SetConsoleScreenBufferSize(console, size);
+      GetConsoleScreenBufferInfo(console, &info);
+      size = info.dwSize;
+      if (size.Y < 500) {
+	size.Y = 500;
+	SetConsoleScreenBufferSize(console, size);
+      }
+      SetConsoleCtrlHandler(IgnoreEverything, TRUE);
     }
   }
 

@@ -125,13 +125,34 @@ static void protect_pages(void *p, size_t len, int writeable)
 #ifndef DONT_NEED_MAX_HEAP_SIZE
 typedef unsigned long size_type;
 
+typedef BOOL (WINAPI * QueryInformationJobObject_Proc)(HANDLE hJob,
+						       JOBOBJECTINFOCLASS JobObjectInfoClass,
+						       LPVOID lpJobObjectInfo,
+						       DWORD cbJobObjectInfoLength,
+						       LPDWORD lpReturnLength);
 static size_type determine_max_heap_size(void)
 {
-  /* FIXME: should use QueryInformationJobObject() */
-#if 0
-  GCPRINT(GCOUTF, 
-	  "Don't know how to get heap size for Windows: assuming 1GB\n");
-#endif
-  return (1 * 1024 * 1024 * 1024);
+  QueryInformationJobObject_Proc qijo;
+  JOBOBJECT_EXTENDED_LIMIT_INFORMATION info;
+  HMODULE hm;
+  SYSTEM_INFO si;
+
+  hm = LoadLibrary("kernel32.dll");
+  if (hm)
+    qijo = (QueryInformationJobObject_Proc)GetProcAddress(hm, "QueryInformationJobObject");
+  else
+    qijo = NULL;
+
+  if (qijo) {
+    DWORD size;
+    if (qijo(NULL, JobObjectExtendedLimitInformation, &info, sizeof(info), &size)) {
+      if (info.BasicLimitInformation.LimitFlags & JOB_OBJECT_LIMIT_PROCESS_MEMORY) {
+	return info.ProcessMemoryLimit;
+      }
+    }
+  }
+
+  GetSystemInfo(&si);
+  return (size_type)si.lpMaximumApplicationAddress - (size_type)si.lpMinimumApplicationAddress;
 }
 #endif

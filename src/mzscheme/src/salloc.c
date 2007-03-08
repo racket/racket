@@ -1200,8 +1200,9 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   if (scheme_external_dump_arg)
     scheme_external_dump_arg(c ? p[0] : NULL);
 
-#ifdef USE_TAGGED_ALLOCATION
   scheme_console_printf("Begin Dump\n");
+
+#ifdef USE_TAGGED_ALLOCATION
   trace_path_type = -1;
   obj_type = -1;
   if (c && SCHEME_SYMBOLP(p[0])) {

@@ -12,6 +12,11 @@
 (define opt-flags "/O2 /Oy-")
 (define re:only #f)
 
+(unless (find-executable-path "cl.exe" #f)
+  (error (string-append
+	  "Cannot find executable \"cl.exe\".\n"
+	  "You may need to find and run \"vsvars32.bat\".")))
+
 (unless (directory-exists? "xsrc")
   (make-directory "xsrc"))
 

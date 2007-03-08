@@ -70,6 +70,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="user32.lib"
 				OutputFile="..\..\..\collects\launcher\$(ProjectName).exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
