@@ -29,6 +29,55 @@
   (define (warn tag message) ((current-hiding-warning-handler) tag message))
 
 
+  ;; current-unvisited-lifts : (paramter-of Derivation)
+  ;; The derivs for the lifts yet to be seen in the processing 
+  ;; of the first part of the current lift-deriv.
+  (define current-unvisited-lifts (make-parameter null))
+
+  ;; current-unhidden-lifts : (parameter-of Derivation)
+  ;; The derivs for those lifts that occur within unhidden macros.
+  ;; Derivs are moved from the current-unvisited-lifts to this list.
+  (define current-unhidden-lifts (make-parameter null))
+
+  ;; add-unhidden-lift : Derivation -> void
+  (define (add-unhidden-lift d)
+    (current-unhidden-lifts (cons d (current-unhidden-lifts))))
+
+  ;; extract/remove-unvisted-lift : identifier -> Derivation
+  (define (extract/remove-unvisited-lift id)
+    (define (get-defined-id d)
+      (match d
+        [(AnyQ deriv (e1 e2))
+         (with-syntax ([(?define-values (?id) ?expr) e1])
+           #'?id)]))
+    ;; The Wrong Way
+    (let ([unvisited (current-unvisited-lifts)])
+      (unless (pair? unvisited)
+        (error 'hide:extract/remove-unvisited-lift 
+               "out of lifts!"))
+      (let ([lift (car unvisited)])
+        (current-unvisited-lifts (cdr unvisited))
+        lift))
+    ;; The Right Way
+    ;; FIXME: Doesn't work inside of modules. Why not?
+    #;
+    (let loop ([lifts (current-unvisited-lifts)]
+               [prefix null])
+      (cond [(null? lifts)
+             #;(fprintf (current-error-port)
+                      "hide:extract/remove-unvisited-lift: couldn't find lift for ~s~n"
+                      id)
+             (raise (make-localactions))]
+            [(bound-identifier=? id (get-defined-id (car lifts)))
+             (let ([lift (car lifts)])
+               (current-unvisited-lifts
+                (let loop ([prefix prefix] [lifts (cdr lifts)])
+                  (if (null? prefix)
+                      lifts
+                      (loop (cdr prefix) (cons (car prefix) lifts)))))
+               lift)]
+            [else
+             (loop (cdr lifts) (cons (car lifts) prefix))])))
 
 ;                                               
 ;                                               
@@ -67,6 +116,7 @@
   ;; Benefits of 1:
   ;;   Preserves order of expansion, even if macro reorders (so effects happen right)
   ;;   May be easier to deal with marking/renaming
+  ;;   Easier to deal with lifting (lifts get seen in correct order)
   ;;   Gives finer control over handling of blocks (joining pass1 and pass2 expansions)
   ;; Drawbacks of 1:
   ;;   Need to process results more to find final syntax & nonlinear subterms
@@ -274,7 +324,7 @@
         [(AnyQ mrule (e1 e2 tx next))
          (let ([show-k
                 (lambda ()
-                  (recv #;[(tx) (for-transformation tx)]
+                  (recv [(tx) (for-transformation tx)]
                         [(next e2) (for-deriv next)]
                         (values (rewrap d (make-mrule e1 e2 tx next))
                                 e2)))])
@@ -296,113 +346,88 @@
 
         ;; Lift
         ;; Shaky invariant:
-        ;; Only normal lifts occur in first... no end-module-decl lifts.
+        ;; Only lift-exprs occur in first... no lift-end-module-decls
         ;; They occur in reverse order.
+        ;; PROBLEM: Hiding process may disturb order lifts are seen.
         [(IntQ lift-deriv (e1 e2 first lifted-stx second) tag)
-         ;; Option 1: Give up on first, hide on second
-         #;
-         (begin (warn 'lifts "lifts are unimplemented")
-                (let-values ([(second e2) (for-deriv second)])
-                  (values (rewrap d (make-lift-deriv e1 e2 first lifted-stx second))
-                          e2)))
          ;; Option 2: Hide first, show *all* lifted expressions,
          ;; and hide second (lifted defs only; replace last expr with first-e2)
          (let* ([second-derivs
                  (match second
                    [(IntQ p:begin (_ _ _ (IntQ lderiv (_ _ inners))))
                     (reverse inners)])]
-                [lift-stxs
-                 (with-syntax ([(?begin form ...) lifted-stx])
-                   (cdr (reverse (syntax->list #'(form ...)))))]
-                [lift-derivs
+                [lift-derivs/0
                  ;; If interrupted, then main-expr deriv will not be in list
+                 ;; second-derivs are already reversed
                  (if tag second-derivs (cdr second-derivs))]
                 [begin-stx (stx-car lifted-stx)])
-           (let-values ([(first-d first-e2) (for-deriv first)])
-             (define lifted-stx*
-               (datum->syntax-object lifted-stx
-                                     `(,begin-stx ,@(reverse lift-stxs) ,first-e2)
-                                     lifted-stx
-                                     lifted-stx))
-             (define main-deriv (make-p:stop first-e2 first-e2 null))
-             (define inner-derivs 
-               (reverse
-                ;; If interrupted, then main-expr deriv will not be in list
-                (if tag lift-derivs (cons main-deriv lift-derivs))))
-             (define lderiv*
-               (rewrap second
-                       (make-lderiv (map lift/deriv-e1 inner-derivs)
-                                    (and (not tag)
-                                         (map lift/deriv-e2 inner-derivs))
-                                    inner-derivs)))
-             (define-values (lderiv** es2**) (for-lderiv lderiv*))
-             (define e2*
-               (and es2**
-                    (datum->syntax-object e2 `(,begin-stx ,@es2**) e2 e2)))
-             (define second* 
-               (rewrap second (make-p:begin lifted-stx* e2* null lderiv**)))
-             (values (rewrap d (make-lift-deriv e1 e2* first-d lifted-stx* second*))
-                     e2*)))
-         #;
-         ;; Option3: Hide first, retaining transparent lifts and inlining opaque lifts
-         ;; Hide second, only on retained lifts
-         ;; Problem: lift order may be damaged by other hiding processes
-         (let* ([second-derivs
-                 (match second
-                   [(IntQ p:begin (_ _ _ (IntQ lderiv (_ _ inners))))
-                    (reverse inners)])]
-                [lift-stxs
-                 (with-syntax ([(?begin form ...) lifted-stx])
-                   (cdr (reverse (syntax->list #'(form ...)))))]
-                [lift-derivs (cdr second-derivs)]
-                [begin-stx (stx-car lifted-stx)])
-           (let-values ([(first-d first-e2 retained-lifts)
-                         (parameterize ((lifts-available (map cons lift-stxs lift-derivs))
-                                        (lifts-retained null))
-                           (let-values ([(first-d first-e2) (for-deriv first)])
-                             (unless (null? (lifts-available))
-                               (printf "hide: lift-deriv: unused lift derivs!~n"))
-                             (values first-d first-e2 (lifts-retained))))])
-             ;; If all the lifts were hidden, then remove lift-deriv node
-             ;; Otherwise, recreate with the retained lifts
-             (if (null? retained-lifts)
-                 (values first-d first-e2)
-                 (let ()
-                   (define retained-stxs (map car retained-lifts))
-                   (define retained-derivs (map cdr retained-lifts))
-                   (define lifted-stx*
-                     (datum->syntax-object lifted-stx
-                                           `(,begin-stx ,@retained-stxs ,first-e2)
-                                           lifted-stx
-                                           lifted-stx))
-                   (define main-deriv (make-p:stop first-e2 first-e2 null))
-                   (define inner-derivs 
-                     (if tag retained-derivs (append retained-derivs main-deriv)))
-                   (define lderiv*
-                     (rewrap second
-                             (make-lderiv (map lift/deriv-e1 inner-derivs)
-                                          (map lift/deriv-e2 inner-derivs)
-                                          inner-derivs)))
-                   (define-values (ld*-d ld*-es2) (for-lderiv lderiv*))
-                   (define e2*
-                     (and ld*-es2 
-                          (datum->syntax-object e2 `(,begin-stx ,@ld*-es2) e2 e2)))
-                   (define second* 
-                     (rewrap second (make-p:begin lifted-stx* e2* null ld*-d)))
-                   (values (make-lift-deriv e1 e2* first-d lifted-stx* second*)
-                           e2*)))))]
-
+           (define-values (first-d first-e2 lift-derivs)
+             ;; Note: lift-derivs are back in reverse order from current-unvisited-lifts
+             (parameterize ((current-unvisited-lifts lift-derivs/0)
+                            (current-unhidden-lifts null))
+               #;(printf "setting current-unvisited-lifts: ~s~n" (length lift-derivs/0))
+               (let-values ([(d e2) (for-deriv first)])
+                 (when (pair? (current-unvisited-lifts))
+                   (error 'hide:lift-deriv "missed ~s lift-expressions: ~s"
+                          (length (current-unvisited-lifts))
+                          (current-unvisited-lifts)))
+                 (values d e2 (current-unhidden-lifts)))))
+           (define lift-stxs (map lift/deriv-e1 lift-derivs))
+           (define main-deriv (make-p:stop first-e2 first-e2 null))
+           ;; If no lifted syntaxes remain, then simplify:
+           (if (null? lift-derivs)
+               (values first-d first-e2)
+               (let ()
+                 (define lifted-stx*
+                   (datum->syntax-object lifted-stx
+                                         `(,begin-stx ,@lift-stxs ,first-e2)
+                                         lifted-stx
+                                         lifted-stx))
+                 (define inner-derivs 
+                   ;; If interrupted, then main-expr deriv will not be in list
+                   (if tag lift-derivs (append lift-derivs (list main-deriv))))
+                 (define lderiv*
+                   (rewrap second
+                           (make-lderiv (map lift/deriv-e1 inner-derivs)
+                                        (and (not tag)
+                                             (map lift/deriv-e2 inner-derivs))
+                                        inner-derivs)))
+                 (define-values (lderiv** es2**) (for-lderiv lderiv*))
+                 (define e2*
+                   (and es2**
+                        (datum->syntax-object e2 `(,begin-stx ,@es2**) e2 e2)))
+                 (define second* 
+                   (rewrap second (make-p:begin lifted-stx* e2* null lderiv**)))
+                 (values (rewrap d (make-lift-deriv e1 e2* first-d lifted-stx* second*))
+                         e2*))))]
+         
         ;; Errors
 
         [#f (values #f #f)]))
 
     ;; for-transformation : Transformation -> Transformation???
-    #;
     (define (for-transformation tx)
       (match tx
-        [(IntQ transformation (e1 e2 rs me1 me2 locals _seq))
-         (error 'unimplemented "hide: for-transformation")]))
+        [(AnyQ transformation (e1 e2 rs me1 me2 locals _seq))
+         (let ([locals (map for-local-action (or locals null))])
+           (rewrap tx (make-transformation e1 e2 rs me1 me2 locals _seq)))]))
     
+    ;; for-local-action : LocalAction -> LocalAction
+    (define (for-local-action la)
+      (match la
+        [(struct local-expansion (e1 e2 me1 me2 deriv))
+         (let-values ([(deriv e2) (for-deriv deriv)])
+           (make-local-expansion e1 e2 me1 me2 deriv))]
+        [(struct local-lift (expr id))
+         (add-unhidden-lift (extract/remove-unvisited-lift id))
+         la]
+        [(struct local-lift-end (decl))
+         ;;(printf "hide:for-local-action: local-lift-end unimplemented~n")
+         la]
+        [(struct local-bind (deriv))
+         (let-values ([(deriv e2) (for-deriv deriv)])
+           (make-local-bind deriv))]))
+
     ;; for-rename : Rename -> (values Rename syntax)
     (define (for-rename rename)
       (values rename rename))
@@ -504,7 +529,8 @@
   (define (create-synth-deriv e1 subterm-derivs)
     (define (error? x)
       (and (s:subterm? x) 
-           (or (interrupted-wrap? (s:subterm-deriv x)) (error-wrap? (s:subterm-deriv x)))))
+           (or (interrupted-wrap? (s:subterm-deriv x))
+               (error-wrap? (s:subterm-deriv x)))))
     (let ([errors
            (map s:subterm-deriv (filter error? subterm-derivs))]
           [subterms (filter (lambda (x) (not (error? x))) subterm-derivs)])
@@ -520,23 +546,30 @@
   (define (subterm-derivations d)
 
     ;; for-deriv : Derivation -> (list-of Subterm)
-    ;; FIXME: finish
     (define (for-deriv d)
+      (let ([path (check-visible d)])
+        (if path
+            (let-values ([(d _) (hide d)])
+              (list (make-s:subterm path d)))
+            (for-unlucky-deriv/record-error d))))
+
+    ;; check-visible : Derivation -> Path/#f
+    (define (check-visible d)
       (match d
         [(AnyQ deriv (e1 e2))
          (let ([paths (table-get (subterms-table) e1)])
-           (cond [(null? paths)
-                  (for-unlucky-deriv/record-error d)]
+           (cond [(null? paths) #f]
                  [(null? (cdr paths))
-                  (let-values ([(d _) (hide d)])
-                    (list (make-s:subterm (car paths) d)))]
+                  (car paths)]
                  [else
                   ;; More than one path to the same(eq?) syntax object
                   ;; Not good.
                   ;; FIXME: Better to delay check to here, or check whole table first?
                   ;; FIXME
-                  (raise (make-nonlinearity "nonlinearity in original term" paths))]))]
-        [#f null]))
+                  (raise
+                   (make-nonlinearity
+                    "nonlinearity in original term" paths))]))]
+        [#f #f]))
 
     ;; for-unluck-deriv/record-error -> (list-of Subterm)
     ;; Guarantee: (deriv-e1 deriv) is not in subterms table
@@ -643,27 +676,25 @@
         [(AnyQ mrule (e1 e2 (and ew (struct error-wrap (_ _ _))) next))
          (list (make-s:subterm #f ew))]
 
-
+        
         [(AnyQ lift-deriv (e1 e2 first lifted-stx next))
+         #;(printf "encountered lift-deriv in seek mode!~n")
+         (raise (make-localactions))
          (>>Seek (for-deriv first)
                  (for-deriv next))]
-        
+
         ;; Errors
 
-;        [(struct error-wrap (exn tag (? deriv? inner)))
-;         (append (for-deriv inner)
-;                 (list (make-s:subterm #f (make-error-wrap exn tag #f))))]
         [#f null]
         ))
 
     ;; for-transformation : Transformation -> (values (list-of Subterm) Table)
     (define (for-transformation tx)
       (match tx
-        [(struct transformation (e1 e2 rs me1 me2 locals _seq))
+        [(IntQ transformation (e1 e2 rs me1 me2 locals _seq))
          ;; FIXME: We'll need to use e1/e2/me1/me2 to synth locals, perhaps
          ;; FIXME: and we'll also need to account for *that* marking, too...
-         (unless (null? locals)
-           (raise (make-localactions)))
+         (for-each for-local-action (or locals null))
          ;(let* ([table-at-end #f]
          ;       [subterms
          ;        (>>Seek [#:rename (do-rename e1 me1)]
@@ -674,25 +705,30 @@
          ;  (values subterms table-at-end))
          (let-values ([(rename-subterms1 table1) (do-rename e1 me1)])
            (parameterize ((subterms-table table1))
-             (let (#;[sss (map for-local locals)])
+             (let () ;; [sss (map for-local locals)]
                (let-values ([(rename-subterms2 table2) (do-rename me2 e2)])
                  ;; FIXME: Including these seems to produce evil results
                  ;; ie, parts of the hidden macro use appear as marked
                  ;;     when they shouldn't
-                 (values (append #;rename-subterms1
-                                 #;(apply append sss)
-                                 #;rename-subterms2)
-                         table2)))))]))
+                 (values null ;; (append rename-subterms1 (apply append sss) rename-subterms2)
+                         table2)))))]
+        [(ErrW transformation (e1 e2 rs me1 me2 locals _seq))
+         (for-each for-local-action (or locals null))
+         (values null #f)]))
 
-    ;; for-local : LocalAction -> (list-of Subterm)
-    #;
-    (define (for-local local)
+    ;; for-local-action : LocalAction -> (list-of Subterm)
+    (define (for-local-action local)
       (match local
-        [(IntQ local-expansion (e1 e2 me1 me2 deriv))
-         (error 'unimplemented "seek: for-local")]
-        ;; Also need to handle local-bind
-        ;; ...
-        [else null]))
+        [(struct local-expansion (e1 e2 me1 me2 deriv))
+         (raise (make-localactions))]
+        [(struct local-lift (expr id))
+         ;; FIXME: seek in the lifted deriv, transplant subterm expansions *here*
+         (extract/remove-unvisited-lift id)]
+        [(struct local-lift-end (decl))
+         ;; FIXME!!!
+         (void)]
+        [(struct local-bind (deriv))
+         (raise (make-localactions))]))
 
     ;; for-lderiv : ListDerivation -> (list-of Subterm)
     (define (for-lderiv ld)

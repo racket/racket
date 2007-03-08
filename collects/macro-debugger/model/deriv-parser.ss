@@ -157,7 +157,7 @@
        [(enter-local local-pre (? EE) local-post exit-local)
         (make-local-expansion $1 $5 $2 $4 $3)]
        [(lift)
-        (make-local-lift (car $1) (cdr $1))]
+        (make-local-lift (cdr $1) (car $1))]
        [(lift-statement)
         (make-local-lift-end $1)]
        [(phase-up (? EE/LetLifts))

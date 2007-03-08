@@ -173,7 +173,7 @@
         [(AnyQ mrule (_ _ tx next))
          (join (loop tx) (loop next))]
         [(AnyQ lift-deriv (_ _ first lift second))
-         (join (loop first) (loop lift) (loop second))]
+         (join (loop first) (loop second))]
         [(AnyQ transformation (_ _ _ _ _ locals _))
          (loops locals)]
         [(struct local-expansion (_ _ _ _ deriv))
@@ -259,8 +259,8 @@
                    (pred e1)]
                   [_ #f])
                  (match-lambda
+                  ;; FIXME: Why?
                   [(AnyQ p:module (_ _ _ _ _)) #t]
-                  [(AnyQ lift-deriv (_ _ _ _ _)) #t]
                   [_ #f])
                  d))
 

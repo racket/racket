@@ -37,13 +37,13 @@
   (define (reductions d)
     (parameterize ((current-definites null)
                    (current-frontier null))
-      (add-frontier (list (lift/deriv-e1 d)))
+      (when d (add-frontier (list (lift/deriv-e1 d))))
       (reductions* d)))
 
   (define (reductions+definites d)
     (parameterize ((current-definites null)
                    (current-frontier null))
-      (add-frontier (list (lift/deriv-e1 d)))
+      (when d (add-frontier (list (lift/deriv-e1 d))))
       (let ([rs (reductions* d)])
         (values rs (current-definites)))))
 
@@ -129,13 +129,13 @@
        (R e1
           [! exni]
           [#:pattern (?begin . LDERIV)]
-          [#:frontier (stx->list #'LDERIV)]
+          [#:frontier (stx->list* #'LDERIV)]
           [List LDERIV lderiv])]
       [(AnyQ p:begin0 (e1 e2 rs first lderiv) exni)
        (R e1
           [! exni]
           [#:pattern (?begin0 FIRST . LDERIV)]
-          [#:frontier (cons #'FIRST (stx->list #'LDERIV))]
+          [#:frontier (cons #'FIRST (stx->list* #'LDERIV))]
           [Expr FIRST first]
           [List LDERIV lderiv])]
       [(AnyQ p:#%app (e1 e2 rs tagged-stx lderiv) exni)
@@ -143,7 +143,7 @@
               (R tagged-stx
                  [! exni]
                  [#:pattern (?#%app . LDERIV)]
-                 [#:frontier (stx->list #'LDERIV)]
+                 [#:frontier (stx->list* #'LDERIV)]
                  [List LDERIV lderiv])])
          (if (eq? tagged-stx e1)
              tail
@@ -153,7 +153,7 @@
           [! exni]
           [#:bind (?formals* . ?body*) renames]
           [#:pattern (?lambda ?formals . ?body)]
-          [#:frontier (stx->list #'?body)]
+          [#:frontier (stx->list* #'?body)]
           [#:rename (syntax/skeleton e1 (?lambda ?formals* . ?body*))
                     #'?formals #'?formals*
                     'rename-lambda]
@@ -173,7 +173,7 @@
           [Block (?body ...) (map cdr renames+bodies)])
        (with-syntax ([(?case-lambda [?formals . ?body] ...) e1]
                      [((?formals* . ?body*) ...) (map car renames+bodies)])
-         (add-frontier (apply append (map stx->list (syntax->list #'(?body ...)))))
+         (add-frontier (apply append (map stx->list* (syntax->list #'(?body ...)))))
          (let ([mid (syntax/skeleton e1 (?case-lambda [?formals* . ?body*] ...))])
            (rename-frontier #'(?formals ...) #'(?formals* ...))
            (cons (walk/foci (syntax->list #'(?formals ...))
@@ -187,7 +187,7 @@
        (R e1
           [! exni]
           [#:pattern (?let-values ([?vars ?rhs] ...) . ?body)]
-          [#:frontier (append (syntax->list #'(?rhs ...)) (stx->list #'?body))]
+          [#:frontier (append (syntax->list #'(?rhs ...)) (stx->list* #'?body))]
           [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
           [#:rename
            (syntax/skeleton e1 (?let-values ([?vars* ?rhs*] ...) . ?body*))
@@ -200,7 +200,7 @@
        (R e1
           [! exni]
           [#:pattern (?letrec-values ([?vars ?rhs] ...) . ?body)]
-          [#:frontier (append (syntax->list #'(?rhs ...)) (stx->list #'?body))]
+          [#:frontier (append (syntax->list #'(?rhs ...)) (stx->list* #'?body))]
           [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
           [#:rename
            (syntax/skeleton e1 (?letrec-values ([?vars* ?rhs*] ...) . ?body*))
@@ -216,7 +216,7 @@
           [#:pattern (?lsv ([?svars ?srhs] ...) ([?vvars ?vrhs] ...) . ?body)]
           [#:frontier (append (syntax->list #'(?srhs ...))
                               (syntax->list #'(?vrhs ...))
-                              (stx->list #'?body))]
+                              (stx->list* #'?body))]
           [#:bind (([?svars* ?srhs*] ...) ([?vvars* ?vrhs*] ...) . ?body*) srenames]
           [#:rename
            (syntax/skeleton e1
@@ -338,7 +338,7 @@
        (blaze-frontier e1)
        ;;(printf "frontier for mrule: ~s~n" (current-frontier))
        (append (reductions-transformation transformation)
-               (begin (add-frontier (list (lift/deriv-e1 next)))
+               (begin (when next (add-frontier (list (lift/deriv-e1 next))))
                       (reductions* next)))]
 
       ;; Lifts
@@ -427,7 +427,7 @@
                        [(AnyQ lderiv (pass2-es1 _ _))
                         (list (walk stxs1 pass2-es1 'block->letrec))])
                      null)
-                 (begin (add-frontier (stx->list (lift/lderiv-es1 pass2)))
+                 (begin (add-frontier (stx->list* (lift/lderiv-es1 pass2)))
                         (list-reductions pass2))))]
       [#f null]))
 
@@ -590,5 +590,16 @@
                      (set! final-stxs (reverse prefix))
                      null]))])
       (values reductions final-stxs)))
-  
+
+  (define (stx->list* stx)
+    (cond [(pair? stx)
+           (cons (car stx) (stx->list* (cdr stx)))]
+          [(null? stx)
+           null]
+          [(syntax? stx)
+           (let ([x (syntax-e stx)])
+             (if (pair? x)
+                 (cons (car x) (stx->list* (cdr x)))
+                 (list stx)))]
+          [else null]))
   )
