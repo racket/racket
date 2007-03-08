@@ -1184,7 +1184,7 @@ TODO
                    (drscheme:teachpack:install-teachpacks 
                     user-teachpack-cache)))
                 
-                (parameterize ([current-eventspace (get-user-eventspace)])
+                (parameterize ([current-eventspace user-eventspace])
                   (queue-callback
                    (λ ()
                      (set! in-evaluation? #f)
