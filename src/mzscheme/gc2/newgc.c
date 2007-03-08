@@ -1216,9 +1216,11 @@ inline static void mark_threads(int owner)
 
   for(work = threads; work; work = work->next)
     if(work->owner == owner) {
-      normal_thread_mark(work->thread);
-      if (work->thread == scheme_current_thread) {
-        GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base);
+      if (((Scheme_Thread *)work->thread)->running) {
+        normal_thread_mark(work->thread);
+        if (work->thread == scheme_current_thread) {
+          GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base);
+        }
       }
     }
 }
@@ -1657,6 +1659,7 @@ static void do_btc_accounting(void)
     }
     mark_table[scheme_thread_type] = &BTC_thread_mark;
     mark_table[scheme_custodian_type] = &BTC_custodian_mark;
+    mark_table[ephemeron_tag] = btc_mark_ephemeron;
     
     /* clear the memory use numbers out */
     for(i = 1; i < owner_table_top; i++)
@@ -1686,6 +1689,7 @@ static void do_btc_accounting(void)
   
     mark_table[scheme_thread_type] = normal_thread_mark;
     mark_table[scheme_custodian_type] = normal_custodian_mark;
+    mark_table[ephemeron_tag] = mark_ephemeron;
     in_unsafe_allocation_mode = 0;
     doing_memory_accounting = 0;
     old_btc_mark = new_btc_mark;
@@ -1773,8 +1777,6 @@ static unsigned long custodian_super_require(void *c)
   if (!owner_table[set]->required_set) {
     unsigned long req = 0, r;
     struct account_hook *work = hooks;
-
-    printf("check: %p\n", c);
 
     while(work) {
       if ((work->type == MZACCT_REQUIRE) && (c == work->c2)) {
