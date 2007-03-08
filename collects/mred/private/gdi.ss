@@ -270,7 +270,7 @@
 			[else 1]))
   (define tiny-delta (case (system-type)
 			[(windows) 1]
-			[else 0]))
+			[else 2]))
 
   (define normal-control-font (make-object wx:font% (wx:get-control-font-size) 'system))
   (define small-control-font (make-object wx:font% (- (wx:get-control-font-size) small-delta) 'system))
