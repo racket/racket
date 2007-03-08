@@ -186,7 +186,6 @@ wxBitmap::wxBitmap(char **data, wxItem *WXUNUSED(anItem)) // anItem used for MOT
     } else {
 	// create failed: free all memory
 	XpmFreeAttributes(Xbitmap->xpm);
-	DELETE_VAL Xbitmap->xpm;
 	DELETE_OBJ Xbitmap;
 	Xbitmap = NULL;
     }
@@ -295,7 +294,6 @@ void wxBitmap::Destroy(void)
 	cm = *((Colormap*)(cmap->GetHandle()));
 	XFreeColors(wxAPP_DISPLAY, cm, Xbitmap->xpm->pixels, Xbitmap->xpm->npixels, 0);
 	XpmFreeAttributes(Xbitmap->xpm);
-	DELETE_VAL Xbitmap->xpm;
       }
       break;
     default:
@@ -392,7 +390,6 @@ else if (flags & wxBITMAP_TYPE_XPM) { // XPM file format
     } else {
       // read failed: free all memory
       XpmFreeAttributes(Xbitmap->xpm);
-      DELETE_VAL Xbitmap->xpm;
       DELETE_OBJ Xbitmap;
       Xbitmap = NULL;
     }
