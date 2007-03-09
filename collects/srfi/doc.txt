@@ -109,6 +109,7 @@ sub-collection number of the already ported SRFIs:
  SRFI-43            vector-lib.ss                43
  SRFI-45(*3)        lazy.ss                      45
  SRFI-48            format.ss                    48
+ SRFI-54            cat.ss                       54
  SRFI-57            records.ss                   57
  SRFI-59            vicinity.ss                  59
  SRFI-60            60.ss                        60
