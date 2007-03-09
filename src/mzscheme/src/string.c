@@ -996,7 +996,7 @@ static void get_substring_indices(const char *name, Scheme_Object *str,
     return;
   }
 
-  return scheme_get_substring_indices(name, str, argc, argv, spos, fpos, _start, _finish);
+  scheme_get_substring_indices(name, str, argc, argv, spos, fpos, _start, _finish);
 }
 
 /**********************************************************************/
