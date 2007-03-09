@@ -1879,7 +1879,9 @@ add struct contracts for immutable structs?
   |#
   (define-syntax (struct/c stx)
     (syntax-case stx ()
-      [(_ . args) (syntax (begin0 (do-struct/c . args)))]))
+      [(_ . args) 
+       (with-syntax ([x (syntax/loc stx (do-struct/c . args))])
+         (syntax/loc stx (begin0 x)))]))
   
   (define-syntax (do-struct/c stx)
     (syntax-case stx ()
