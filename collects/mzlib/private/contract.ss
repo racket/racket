@@ -1903,6 +1903,14 @@ add struct contracts for immutable structs?
                        (mutator-id ...)
                        super-id)
                       (syntax-local-value (syntax struct-name))])
+         (unless (= (length (syntax->list (syntax (rev-selector-id ...))))
+                    (length (syntax->list (syntax (args ...)))))
+           (raise-syntax-error 'struct/c 
+                               (format "expected ~a contracts because struct ~a has ~a fields"
+                                       (length (syntax->list (syntax (rev-selector-id ...))))
+                                       (syntax-e #'struct-name)
+                                       (length (syntax->list (syntax (rev-selector-id ...)))))
+                               stx))
          (with-syntax ([(selector-id ...) (reverse (syntax->list (syntax (rev-selector-id ...))))])
            (syntax
             (let ([ctc-x (coerce-contract 'struct/c args)] ...)
