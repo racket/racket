@@ -121,6 +121,7 @@ sub-collection number of the already ported SRFIs:
  SRFI-71            letvalues.ss                 71
  SRFI-74            74.ss                        74
  SRFI-78            check.ss                     78
+ SRFI-86            86.ss                        86
  SRFI-87            case.ss                      87
 
 
