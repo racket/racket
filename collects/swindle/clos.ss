@@ -479,7 +479,8 @@
 ;;>     should be used for creating the new class).
 ;;>   * :autoinitargs { #t | #f }
 ;;>     if set to `#t', make the class definition automatically generate
-;;>     initarg keywords from the slot names.
+;;>     initarg keywords from the slot names.  (The keywords have the same
+;;>     name as the slots, eg `:foo'.)
 ;;>   * :autoaccessors { #f | #t | :class-slot | :slot }
 ;;>     if set to non-`#f', generate accessor methods automatically --
 ;;>     either using the classname "-" slotname convention (`:class-slot')
