@@ -890,7 +890,7 @@ TODO
                  (user-custodian #f)
                  (user-eventspace-box (make-weak-box #f))
                  (user-namespace-box (make-weak-box #f))
-                 (user-thread-box (make-weak-box #f))
+                 (user-eventspace-main-thread #f)
                  (user-break-parameterization #f))
 
           (define/public (get-user-language-settings) user-language-settings)
@@ -898,7 +898,7 @@ TODO
           (define/public (get-user-teachpack-cache) user-teachpack-cache)
           (define/public (set-user-teachpack-cache tpc) (set! user-teachpack-cache tpc))
           (define/public (get-user-eventspace) (weak-box-value user-eventspace-box))
-          (define/public (get-user-thread) (weak-box-value user-thread-box))
+          (define/public (get-user-thread) user-eventspace-main-thread)
           (define/public (get-user-namespace) (weak-box-value user-namespace-box))
           (define/pubment (get-user-break-parameterization) user-break-parameterization) ;; final method
           
@@ -1087,7 +1087,7 @@ TODO
               (when user-custodian
                 (custodian-shutdown-all user-custodian))
 	      (set! user-custodian #f)
-              (set! user-thread-box (make-weak-box #f))))
+              (set! user-eventspace-main-thread #f)))
           
           (define/public (kill-evaluation) ; =Kernel=, =Handler=
             (when user-custodian
@@ -1149,7 +1149,7 @@ TODO
                    (λ () ; =User=, =No-Breaks=
                      ; No user code has been evaluated yet, so we're in the clear...
                      (break-enabled #f)
-                     (set! user-thread-box (make-weak-box (current-thread)))
+                     (set! user-eventspace-main-thread (current-thread))
                      (initialize-parameters snip-classes))))
                 
                 ;; disable breaks until an evaluation actually occurs
