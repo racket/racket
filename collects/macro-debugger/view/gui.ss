@@ -23,13 +23,7 @@
   (provide pre-stepper@
            view@
            context-menu-extension@
-           browser-extension@
-
-           catch-errors?)
-
-  ;; Debugging parameters / Not user configurable
-
-  (define catch-errors? (make-parameter #t))
+           browser-extension@)
 
   ;; Struct for one-by-one stepping
 
@@ -38,6 +32,27 @@
 
   (define (prestep-term1 s) (context-fill (protostep-ctx s) (prestep-e1 s)))
   (define (poststep-term2 s) (context-fill (protostep-ctx s) (poststep-e2 s)))
+
+  ;; TermRecords
+
+  (define-struct trec (deriv synth-deriv estx raw-steps steps definites) #f)
+
+  (define (new-trec deriv)
+    (make-trec deriv #f #f #f #f #f))
+
+  ;; trec:invalidate-synth! : TermRecord -> void
+  ;; Invalidates cached parts that depend on macro-hiding policy
+  (define (trec:invalidate-synth! trec)
+    (set-trec-synth-deriv! trec #f)
+    (set-trec-estx! trec #f)
+    (set-trec-raw-steps! trec #f)
+    (set-trec-definites! trec #f)
+    (trec:invalidate-steps! trec))
+
+  ;; trec:invalidate-steps! : TermRecord -> void
+  ;; Invalidates cached parts that depend on reductions config
+  (define (trec:invalidate-steps! trec)
+    (set-trec-steps! trec #f))
 
   ;; Macro Stepper
 
@@ -71,6 +86,8 @@
                         (notify-box/pref pref:one-by-one?))
           (field/notify extra-navigation?
                         (notify-box/pref pref:extra-navigation?))
+          (field/notify debug-catch-errors?
+                        (notify-box/pref pref:debug-catch-errors?))
           (super-new)))
 
       (define macro-stepper-frame%
@@ -191,12 +208,9 @@
             (menu-option/notify-box extras-menu
                                     "Extra navigation"
                                     (get-field extra-navigation? config))
-            (new checkable-menu-item%
-                 (label "(Debug) Catch internal errors?")
-                 (parent extras-menu)
-                 (checked (catch-errors?))
-                 (callback
-                  (lambda (c e) (catch-errors? (send c is-checked?))))))
+            (menu-option/notify-box extras-menu
+                                    "(Debug) Catch internal errors?"
+                                    (get-field debug-catch-errors? config)))
 
           (frame:reorder-menus this)
           ))
@@ -208,17 +222,23 @@
           (init-field parent)
           (init-field config)
 
-          ;; derivs : (list-of Derivation)
-          (define derivs null)
+          ;; Terms
 
-          ;; synth-deriv : Derivation
-          (define synth-deriv #f)
+          ;; terms : (Cursor-of TermRecord)
+          (define terms (cursor:new null))
 
-          ;; derivs-prefix : (list-of (cons Derivation Derivation))
-          (define derivs-prefix null)
+          ;; focused-term : -> TermRecord or #f
+          (define (focused-term)
+            (let ([term (cursor:next terms)])
+              (when term (recache term))
+              term))
 
-          ;; steps : cursor
-          (define steps #f)
+          ;; focused-steps : -> (Cursor-of Step) or #f
+          (define/private (focused-steps)
+            (let ([term (focused-term)])
+              (and term 
+                   (cursor? (trec-steps term))
+                   (trec-steps term))))
 
           ;; alpha-table : module-identifier-mapping[identifier => identifier]
           (define alpha-table (make-module-identifier-mapping))
@@ -226,30 +246,15 @@
           ;; saved-position : number/#f
           (define saved-position #f)
 
-          (define warnings-frame #f)
-
           ;; add-deriv : Derivation -> void
           (define/public (add-deriv d)
-            (for-each (lambda (id) (module-identifier-mapping-put! alpha-table id id))
-                      (extract-all-fresh-names d))
-            (set! derivs (append derivs (list d)))
-            (ensure-nav:up+down-shown)
-            (if (null? (cdr derivs))
-                ;; There is nothing currently displayed
-                (refresh/move/cached-prefix)
-                (update)))
-
-          (define/private (ensure-nav:up+down-shown)
-            (when (and (not (send nav:up is-shown?))
-                       (pair? (cdr (append derivs-prefix derivs))))
-              (send navigator change-children
-                    (lambda (_)
-                      (list nav:up
-                            nav:start
-                            nav:previous
-                            nav:next
-                            nav:end
-                            nav:down)))))
+            (let ([needs-display? (cursor:at-end? terms)])
+              (for-each (lambda (id) (module-identifier-mapping-put! alpha-table id id))
+                        (extract-all-fresh-names d))
+              (cursor:add-to-end! terms (list (new-trec d)))
+              (if needs-display?
+                  (refresh/move)
+                  (update))))
 
           (define/public (get-controller) sbc)
           (define/public (get-view) sbview)
@@ -288,6 +293,8 @@
                  (stepper this)
                  (config config)))
 
+          (define warnings-frame #f)
+
           (send config listen-show-syntax-properties?
                 (lambda (show?) (send sbview show-props show?)))
 
@@ -295,26 +302,23 @@
                 (lambda (show?) (show-macro-hiding-prefs show?)))
 
           (send sbc add-selection-listener
-                (lambda (stx)
-                  (send macro-hiding-prefs set-syntax stx)))
+                (lambda (stx) (send macro-hiding-prefs set-syntax stx)))
 
           (send config listen-highlight-foci?
                 (lambda (_) (update/preserve-view)))
 
           (send config listen-show-rename-steps?
-                (lambda (_) (refresh)))
+                (lambda (_) (refresh/re-reduce)))
 
           (send config listen-one-by-one?
-                (lambda (_) (refresh)))
+                (lambda (_) (refresh/re-reduce)))
 
           (send config listen-extra-navigation?
                 (lambda (show?) (show-extra-navigation show?)))
 
           (define nav:up
             (new button% (label "Previous term") (parent navigator)
-                 (style '(deleted))
                  (callback (lambda (b e) (navigate-up)))))
-
           (define nav:start
             (new button% (label "<-- Start") (parent navigator)
                  (callback (lambda (b e) (navigate-to-start)))))
@@ -327,18 +331,9 @@
           (define nav:end
             (new button% (label "End -->") (parent navigator)
                  (callback (lambda (b e) (navigate-to-end)))))
-          
           (define nav:down
-            (new button% (label "Next term") (parent navigator) (style '(deleted))
+            (new button% (label "Next term") (parent navigator)
                  (callback (lambda (b e) (navigate-down)))))
-
-          (define nav:zoom
-            (new button% (label "Zoom in") (parent extra-navigator)
-                 (callback (lambda (b e) (zoom)))))
-
-          (define nav:jump-to
-            (new button% (label "Jump to") (parent extra-navigator)
-                 (callback (lambda (b e) (jump-to)))))
 
           (define/public (show-macro-hiding-prefs show?)
             (send area change-children
@@ -357,77 +352,26 @@
           ;; Navigate
 
           (define/private (navigate-to-start)
-            (cursor:move-to-start steps)
+            (cursor:move-to-start (focused-steps))
             (update/save-position))
           (define/private (navigate-to-end)
-            (cursor:move-to-end steps)
+            (cursor:move-to-end (focused-steps))
             (update/save-position))
           (define/private (navigate-previous)
-            (cursor:move-previous steps)
+            (cursor:move-prev (focused-steps))
             (update/save-position))
           (define/private (navigate-next)
-            (cursor:move-next steps)
+            (cursor:move-next (focused-steps))
             (update/save-position))
-          
+
           (define/private (navigate-up)
-            (let ([d+sd (car derivs-prefix)])
-              (set! derivs (cons (car d+sd) derivs))
-              (set! synth-deriv (cdr d+sd))
-              (set! derivs-prefix (cdr derivs-prefix)))
-            (refresh/move/cached-prefix))
+            (cursor:move-prev terms)
+            (refresh/move))
           (define/private (navigate-down)
-            (let ([d0 (car derivs)])
-              (set! derivs-prefix (cons (cons d0 synth-deriv) derivs-prefix))
-              (set! derivs (cdr derivs))
-              (set! synth-deriv #f))
-            (refresh/move/cached-prefix))
+            (cursor:move-next terms)
+            (refresh/move))
 
-          ;; FIXME: selected stx must be in term1; doesn't work in term2
-          (define/public (zoom)
-            (let* ([selected-syntax (send sbc get-selected-syntax)]
-                   [step (and steps (cursor:current steps))]
-                   [deriv (and step (protostep-deriv step))])
-              (when (and selected-syntax deriv)
-                (for-each go/deriv (seek-syntax selected-syntax deriv)))))
-
-          (define/public (jump-to)
-            (let* ([selected-syntax (send sbc get-selected-syntax)]
-                   [step (and steps (cursor:current steps))]
-                   [deriv (and step (protostep-deriv step))])
-              (when (and selected-syntax deriv)
-                (let ([subderivs (seek-syntax selected-syntax deriv)])
-                  (cond [(null? subderivs)
-                         (message-box "Macro stepper - Jump to"
-                                      "Cannot find selected term in the expansion")]
-                        [(and (pair? subderivs) (null? (cdr subderivs)))
-                         (jump-to/deriv (car subderivs))]
-                        [else
-                         (message-box 
-                          "Macro stepper - Jump to"
-                          "Subterm occurs more than once in the expansion (non-linearity)")])))))
-
-          (define/private (jump-to/deriv subderiv)
-            (define all-step-derivs
-              (let ([ht (make-hash-table)])
-                (for-each (lambda (s) (hash-table-put! ht (protostep-deriv s) #t))
-                          (cursor-suffix->list steps))
-                ht))
-            (define target-deriv
-              subderiv
-              #;
-              (find-deriv
-               (lambda (d) (hash-table-get all-step-derivs d (lambda () #f)))
-               (lambda (d) #f)
-               subderiv))
-            (unless target-deriv
-              (message-box "Macro stepper - Jump to"
-                           "Could not find selected term in the expansion"))
-            (when target-deriv
-              (let loop ()
-                (unless (eq? (protostep-deriv (cursor:current steps)) target-deriv)
-                  (cursor:move-next steps)))
-              (update/save-position)))
-
+          ;; insert-step-separator : string -> void
           (define/private (insert-step-separator text)
             (send sbview add-text "\n    ")
             (send sbview add-text
@@ -438,6 +382,7 @@
             (send sbview add-text text)
             (send sbview add-text "\n\n"))
 
+          ;; insert-step-separator/small : string -> void
           (define/private (insert-step-separator/small text)
             (send sbview add-text "    ")
             (send sbview add-text
@@ -448,7 +393,6 @@
             (send sbview add-text text)
             (send sbview add-text "\n\n"))
 
-
           ;; update/preserve-view : -> void
           (define/public (update/preserve-view)
             (define text (send sbview get-text))
@@ -458,29 +402,49 @@
             (update)
             (send text scroll-to-position (unbox start-box) #f (unbox end-box)))
           
+          ;; update:show-prefix : -> void
           (define/private (update:show-prefix)
             ;; Show the final terms from the cached synth'd derivs
-            (for-each (lambda (d+sd)
-                        (let ([e2 (lift/deriv-e2 (cdr d+sd))])
+            (for-each (lambda (trec)
+                        (recache trec)
+                        (let ([e2 (trec-estx trec)]
+                              [definites
+                                (if (pair? (trec-definites trec))
+                                    (trec-definites trec)
+                                    null)])
                           (if e2
-                              (send sbview add-syntax e2 #:alpha-table alpha-table)
+                              (send sbview add-syntax e2
+                                    #:alpha-table alpha-table
+                                    #:definites definites)
                               (send sbview add-text "Error\n"))))
-                      (reverse derivs-prefix)))
-          
+                      (cursor:prefix->list terms)))
+
+          ;; update:show-current-step : -> void
           (define/private (update:show-current-step)
-            (when steps
-              (let ([step (cursor:current steps)])
-                (cond [(step? step)
-                       (update:show-step step)]
-                      [(misstep? step)
-                       (update:show-misstep step)]
-                      [(prestep? step)
-                       (update:show-prestep step)]
-                      [(poststep? step)
-                       (update:show-poststep step)]
-                      [(not step)
-                       (update:show-final)]))))
-          
+            (define steps (focused-steps))
+            (when (focused-term)
+              (when steps
+                (let ([step (cursor:next steps)])
+                  (cond [(step? step)
+                         (update:show-step step)]
+                        [(misstep? step)
+                         (update:show-misstep step)]
+                        [(prestep? step)
+                         (update:show-prestep step)]
+                        [(poststep? step)
+                         (update:show-poststep step)]
+                        [(not step)
+                         (update:show-final (focused-term))])))
+              (unless steps
+                (send sbview add-text
+                      "Internal error computing reductions. Original term:\n")
+                (send sbview add-syntax
+                      (lift/deriv-e1 (trec-deriv (focused-term))))
+                (print-struct #t)
+                (send sbview add-text
+                      (format "~s~n" (focused-term))))))
+
+          ;; update:show-lctx : Step -> void
           (define/private (update:show-lctx step)
             (define lctx (protostep-lctx step))
             (when (pair? lctx)
@@ -494,13 +458,16 @@
                                                (protostep-frontier step)))
                         (reverse lctx))))
 
+          ;; update:separator : Step -> void
           (define/private (update:separator step)
             (insert-step-separator (step-type->string (protostep-type step))))
 
+          ;; update:separator/small : Step -> void
           (define/private (update:separator/small step)
             (insert-step-separator/small
              (step-type->string (protostep-type step))))
-
+          
+          ;; update:show-step : Step -> void
           (define/private (update:show-step step)
             (insert-syntax/redex (step-term1 step)
                                  (step-foci1 step)
@@ -513,6 +480,7 @@
                                       (protostep-frontier step))
             (update:show-lctx step))
 
+          ;; update:show-prestep : Step -> void
           (define/private (update:show-prestep step)
             (update:separator/small step)
             (insert-syntax/redex (prestep-term1 step)
@@ -521,6 +489,7 @@
                                  (protostep-frontier step))
             (update:show-lctx step))
 
+          ;; update:show-poststep : Step -> void
           (define/private (update:show-poststep step)
             (update:separator/small step)
             (insert-syntax/contractum (poststep-term2 step)
@@ -528,7 +497,8 @@
                                       (protostep-definites step)
                                       (protostep-frontier step))
             (update:show-lctx step))
-          
+
+          ;; update:show-misstep : Step -> void
           (define/private (update:show-misstep step)
             (insert-syntax/redex (misstep-term1 step)
                                  (misstep-foci1 step)
@@ -544,21 +514,27 @@
                         (exn:fail:syntax-exprs (misstep-exn step))))
             (update:show-lctx step))
 
-          (define/private (update:show-final)
-            (let ([result (lift/deriv-e2 synth-deriv)])
-              (when result
-                (send sbview add-text "Expansion finished\n")
-                (send sbview add-syntax result #:alpha-table alpha-table))
-              (unless result
-                (send sbview add-text "Error\n"))))
+          ;; update:show-final : TermRecord -> void
+          (define/private (update:show-final trec)
+            (define result (trec-estx trec))
+            (when result
+              (send sbview add-text "Expansion finished\n")
+              (send sbview add-syntax result
+                    #:alpha-table alpha-table
+                    #:definites (let ([definites (trec-definites trec)])
+                                  (if (pair? definites) definites null))))
+            (unless result
+              (send sbview add-text "Error\n")))
 
+          ;; update:show-suffix : -> void
           (define/private (update:show-suffix)
-            (when (pair? derivs)
-              (for-each (lambda (suffix-deriv)
-                          (send sbview add-syntax
-                                (lift/deriv-e1 suffix-deriv)
-                                #:alpha-table alpha-table))
-                        (cdr derivs))))
+            (let ([suffix0 (cursor:suffix->list terms)])
+              (when (pair? suffix0)
+                (for-each (lambda (trec)
+                            (send sbview add-syntax
+                                  (lift/deriv-e1 (trec-deriv trec))
+                                  #:alpha-table alpha-table))
+                          (cdr suffix0)))))
 
           ;; update/save-position : -> void
           (define/private (update/save-position)
@@ -613,49 +589,109 @@
 
           ;; enable/disable-buttons : -> void
           (define/private (enable/disable-buttons)
-            (send nav:start enable (and steps (cursor:can-move-previous? steps)))
-            (send nav:previous enable (and steps (cursor:can-move-previous? steps)))
-            (send nav:next enable (and steps (cursor:can-move-next? steps)))
-            (send nav:end enable (and steps (cursor:can-move-next? steps)))
-            (send nav:up enable (and (pair? derivs-prefix)))
-            (send nav:down enable (and (pair? derivs))))
+            (define steps (focused-steps))
+            (send nav:start enable (and steps (cursor:has-prev? steps)))
+            (send nav:previous enable (and steps (cursor:has-prev? steps)))
+            (send nav:next enable (and steps (cursor:has-next? steps)))
+            (send nav:end enable (and steps (cursor:has-next? steps)))
+            (send nav:up enable (cursor:has-prev? terms))
+            (send nav:down enable (cursor:has-next? terms)))
 
           ;; --
 
-          ;; refresh/move/cached-prefix : -> void
-          ;; Resynth current derivation,
-          ;; Create reductions for current derivation,
-          ;; Show first step
-          (define/private (refresh/move/cached-prefix)
-            (clear-saved-position)
-            (if (pair? derivs)
-                (refresh)
-                (begin (set! synth-deriv #f)
-                       (set! steps #f)
-                       (update))))
+          ;; refresh/resynth : -> void
+          ;; Macro hiding policy has changed; invalidate cached parts of trec
+          (define/public (refresh/resynth)
+            (for-each trec:invalidate-synth! (cursor->list terms))
+            (refresh))
 
-          ;; refresh/resynth-prefix : -> void
-          ;; Resynth all of the derivations in prefix and refresh
-          (define/public (refresh/resynth-prefix)
-            (with-handlers ([(lambda (e) (catch-errors?))
-                             (lambda (e)
-                               (message-box "Error"
-                                            "Internal error in macro stepper (prefixes)")
-                               (send sbview erase-all))])
-              (let ([ds (map car derivs-prefix)])
-                (let ([sds (map (lambda (d) (synthesize d)) ds)])
-                  (set! derivs-prefix (map cons ds sds)))))
+          ;; refres/re-reduce : -> void
+          ;; Reduction config has changed; invalidate cached parts of trec
+          (define/private (refresh/re-reduce)
+            (for-each trec:invalidate-steps! (cursor->list terms))
+            (refresh))
+
+          ;; refresh/move : -> void
+          ;; Moving between terms; clear the saved position
+          (define/private (refresh/move)
+            (clear-saved-position)
             (refresh))
 
           ;; refresh : -> void
           (define/public (refresh)
-            (let ([deriv (car derivs)])
-              (let ([d (synthesize deriv)])
-                (let ([rseq (reduce d)])
-                  (set! synth-deriv d)
-                  (set! steps (cursor:new rseq)))))
             (restore-position)
             (update))
+
+          ;; recache : TermRecord -> void
+          (define/private (recache trec)
+            (unless (trec-synth-deriv trec)
+              (with-handlers ([(lambda (e) #t)
+                               (lambda (e)
+                                 (handle-recache-error e 'macro-hiding)
+                                 (set-trec-synth-deriv! trec 'error)
+                                 (set-trec-estx! trec (lift/deriv-e2 (trec-deriv trec))))])
+                (let-values ([(synth-deriv estx) (synthesize (trec-deriv trec))])
+                  (set-trec-synth-deriv! trec synth-deriv)
+                  (set-trec-estx! trec estx))))
+            (unless (trec-raw-steps trec)
+              (with-handlers ([(lambda (e) #t)
+                               (lambda (e)
+                                 (handle-recache-error e 'reductions)
+                                 (set-trec-raw-steps! trec 'error)
+                                 (set-trec-definites! trec 'error))])
+                (let-values ([(steps definites)
+                              (reductions+definites
+                               (or (trec-synth-deriv trec) (trec-deriv trec)))])
+                  (set-trec-raw-steps! trec steps)
+                  (set-trec-definites! trec definites))))
+            (unless (trec-steps trec)
+              (with-handlers ([(lambda (e) #t)
+                               (lambda (e)
+                                 (handle-recache-error e 'special-reductions)
+                                 (set-trec-steps! trec 'error))])
+                (set-trec-steps!
+                 trec
+                 (let ([raw-steps (trec-raw-steps trec)])
+                   (if (eq? raw-steps 'error)
+                       'error
+                       (let ([filtered-steps 
+                              (if (send config get-show-rename-steps?)
+                                  raw-steps
+                                  (filter (lambda (x) (not (rename-step? x))) raw-steps))])
+                         (cursor:new
+                          (if (send config get-one-by-one?)
+                              (reduce:one-by-one filtered-steps)
+                              filtered-steps)))))))))
+
+          ;; delayed-recache-errors : (list-of (cons exn string))
+          (define delayed-recache-errors null)
+
+          ;; handle-recache-error : exception string -> void
+          (define/private (handle-recache-error exn part)
+            (if (pref:debug-catch-errors?)
+                (begin
+                  (set! delayed-recache-errors 
+                        (cons (cons exn part) delayed-recache-errors))
+                  (queue-callback
+                   (lambda ()
+                     (when (pair? delayed-recache-errors)
+                       (message-box
+                        "Error"
+                        (string-append 
+                         "Internal errors in macro stepper:\n"
+                         (if (memq 'macro-hiding (map cdr delayed-recache-errors))
+                             (string-append 
+                              "Macro hiding failed on one or more terms. "
+                              "The macro stepper is showing the terms "
+                              "with macro hiding disabled.\n")
+                             "")
+                         (if (memq 'reductions (map cdr delayed-recache-errors))
+                             (string-append
+                              "The macro stepper failed to compute the reduction sequence "
+                              "for one or more terms.\n")
+                             "")))
+                       (set! delayed-recache-errors null)))))
+                (raise exn)))
 
           ;; update-saved-position : num -> void
           (define/private (update-saved-position pos)
@@ -667,8 +703,8 @@
 
           ;; save-position : -> void
           (define/private (save-position)
-            (when steps
-              (let ([step (cursor:current steps)])
+            (when (cursor? (focused-steps))
+              (let ([step (cursor:next (focused-steps))])
                 (cond [(not step)
                        ;; At end; go to the end when restored
                        (update-saved-position +inf.0)]
@@ -678,8 +714,9 @@
 
           ;; restore-position : number -> void
           (define/private (restore-position)
+            (define steps (focused-steps))
             (define (advance)
-              (let ([step (cursor:current steps)])
+              (let ([step (cursor:next steps)])
                 (cond [(not step)
                        ;; At end; stop
                        (void)]
@@ -702,50 +739,19 @@
                seq]
               [else #f]))
 
-          ;; synthesize : Derivation -> Derivation
+          ;; synthesize : Derivation -> Derivation Syntax
           (define/private (synthesize deriv)
             (let ([show-macro? (get-show-macro?)])
               (if show-macro?
-                  (with-handlers ([(lambda (e) (catch-errors?))
-                                   (lambda (e) (disable-hiding) deriv)])
-                    (parameterize ((current-hiding-warning-handler
-                                    (lambda (tag message)
-                                      (unless (send config get-suppress-warnings?)
-                                        (unless warnings-frame
-                                          (set! warnings-frame (new warnings-frame%)))
-                                        (send warnings-frame add-warning tag)))))
-                      (let-values ([(d s) (hide/policy deriv show-macro?)])
-                        d)))
-                  deriv)))
-
-          (define/private (disable-hiding)
-            (message-box
-             "Macro Debugger Internal Error"
-             (string-append
-              "This expansion triggers an internal error in the macro hiding code. "
-              "Trying again with macro hiding disabled."))
-            (queue-callback (lambda () (send config set-macro-hiding? #f))))
-
-          ;; reduce : Derivation -> ReductionSequence
-          (define/private (reduce d)
-            (with-handlers ([(lambda (e) (catch-errors?))
-                             (lambda (e)
-                               (message-box 
-                                "Error"
-                                "Internal error in macro stepper (reductions)")
-                               (set! synth-deriv #f)
-                               #f)])
-              (reduce:sequence d)))
-
-          (define/private (reduce:sequence d)
-            (define raw-seq (reductions d))
-            (define filtered-seq
-              (if (send config get-show-rename-steps?)
-                  raw-seq
-                  (filter (lambda (x) (not (rename-step? x))) raw-seq)))
-            (if (send config get-one-by-one?)
-                (reduce:one-by-one filtered-seq)
-                filtered-seq))
+                  (parameterize ((current-hiding-warning-handler
+                                  (lambda (tag message)
+                                    (unless (send config get-suppress-warnings?)
+                                      (unless warnings-frame
+                                        (set! warnings-frame (new warnings-frame%)))
+                                      (send warnings-frame add-warning tag)
+                                      (send warnings-frame show #t)))))
+                    (hide/policy deriv show-macro?))
+                  (values deriv (lift/deriv-e2 deriv)))))
 
           (define/private (reduce:one-by-one rs)
             (let loop ([rs rs])
@@ -780,7 +786,7 @@
           (send sbview show-props (send config get-show-syntax-properties?))
           (show-macro-hiding-prefs (send config get-show-hiding-panel?))
           (show-extra-navigation (send config get-extra-navigation?))
-          (refresh/move/cached-prefix)
+          (refresh/move)
           ))
 
       ;; Main entry points

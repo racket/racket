@@ -94,7 +94,7 @@
       (new grow-box-spacer-pane% (parent add-pane))
 
       (send add-editor lock #t)
-      
+
       ;; Methods
       
       (define/public (get-show-macro?)
@@ -103,12 +103,12 @@
       ;; refresh
       (define/public (refresh)
         (when (send config get-macro-hiding?)
-          (send stepper refresh/resynth-prefix)))
+          (send stepper refresh/resynth)))
 
       ;; force-refresh
       (define/private (force-refresh)
-        (send stepper refresh/resynth-prefix))
-      
+        (send stepper refresh/resynth))
+
       ;; set-syntax : syntax/#f -> void
       (define/public (set-syntax lstx)
         (set! stx lstx)

@@ -30,6 +30,7 @@
      pref:suppress-warnings?
      pref:one-by-one?
      pref:extra-navigation?
+     pref:debug-catch-errors?
      ))
 
   ;; macro-stepper-config%

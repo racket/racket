@@ -103,7 +103,7 @@
            (parent parent)
            (checked (send nb get))
            (callback
-            (lambda _ (send nb set (not (send nb get)))))))
+            (lambda _ (send nb set (send menu-item is-checked?))))))
     (send nb listen (lambda (value) (send menu-item check value)))
     menu-item)
 
