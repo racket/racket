@@ -204,7 +204,7 @@
   
   ;compare: val val (list symbol string ...) string (U #f object) boolean-> boolean
   (define (compare test act info src test-obj catch?)
-    (compare-within test act 0.0 info src test-obj catch? #f))
+    (compare-within test act 0.0001 info src test-obj catch? #f))
   
   (define exception (gensym 'exception))
   ;(make-exn-thrown exn boolean string)
@@ -218,7 +218,7 @@
                     (already-seen? v1 v2 visited-v1 visited-v2)
                     (cond 
                       ((and (number? v1) (number? v2))
-                       (if (or (inexact? v1) (inexact? v2) (not (= range 0.0)))
+                       (if (or (inexact? v1) (inexact? v2) (not (null? within?)))
                            (<= (abs (- v1 v2)) range)
                            (= v1 v2)))
                       ((and (object? v1) (object? v2))
