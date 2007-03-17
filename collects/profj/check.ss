@@ -2006,7 +2006,7 @@
            (handle-call-error 
             (lambda (exn)
               (when (not (access? expr)) (raise exn))
-              (when (or (field-access? (access-name expr)) (local-access? expr)) (raise exn))
+              (when (or (field-access? (access-name expr)) (local-access? (access-name expr))) (raise exn))
               (if (eq? level 'full)
                   (let ((record (car (find-static-class (append (access-name expr) (list name))
                                                         level type-recs))))
