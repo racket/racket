@@ -4890,6 +4890,8 @@ so that propagation occurs.
    (λ (x)
      (and (exn? x)
           (regexp-match #rx"on the-defined-variable4" (exn-message x)))))
+ 
+  (contract-eval `(,test 'pos guilty-party (with-handlers ((void values)) (contract not #t 'pos 'neg))))
   
   (report-errs)
   

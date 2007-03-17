@@ -6,6 +6,7 @@
   (require-for-syntax "contract-helpers.ss")
   
   (provide raise-contract-error
+           guilty-party
            contract-violation->string
            coerce-contract 
            
@@ -144,7 +145,8 @@
   
   (define-values (make-exn:fail:contract2 
                   exn:fail:contract2?
-                  exn:fail:contract2-srclocs)
+                  exn:fail:contract2-srclocs
+                  guilty-party)
     (let-values ([(exn:fail:contract2 
                    make-exn:fail:contract2 
                    exn:fail:contract2?
@@ -153,7 +155,7 @@
                   (parameterize ([current-inspector (make-inspector)])
                     (make-struct-type 'exn:fail:contract2
                                       struct:exn:fail:contract
-                                      1
+                                      2
                                       0
                                       #f
                                       (list (cons prop:exn:srclocs
@@ -162,7 +164,8 @@
       (values
        make-exn:fail:contract2 
        exn:fail:contract2?
-       (lambda (x) (get x 0)))))
+       (lambda (x) (get x 0))
+       (lambda (x) (get x 1)))))
   
   (define (default-contract-violation->string val src-info to-blame contract-sexp msg)
     (let ([blame-src (src-info-as-string src-info)]
@@ -207,7 +210,8 @@
                  (syntax-column src-info)
                  (syntax-position src-info)
                  (syntax-span src-info)))
-          '()))))
+          '())
+      blame)))
   
   (define print-contract-liner
     (let ([default (pretty-print-print-line)])
