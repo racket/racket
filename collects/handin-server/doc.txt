@@ -863,8 +863,8 @@ _utils.ss_
   submissions that were saved, but had problems); finally, `styles'
   can be used as a list of styles for a `message-box' dialog on the
   client side, and the resulting value is returned as the result of
-  `message'.  You can use that to send warnings to the student and
-  wait for confirmation.
+  `message'.  You can use that to send warnings to the student or ask
+  confirmation.
 
 > (set-run-status string-or-#f)
   Registers information about the current actions of the checker, in
@@ -925,10 +925,10 @@ checker that uses it looks like this:
 > (check: :key val ... body ...)
   Construct a checker procedure.
 
-The `check:' macro will construct an appropriate checker function,
-using keywords for features that you want, the body of the checker can
-contain arbitrary code, using all utilities from "utils.ss" (see
-above), as well as additional ones (see below).
+The `check:' macro will construct (and provide) an appropriate checker
+function, using keywords for features that you want, the body of the
+checker can contain arbitrary code, using all utilities from
+"utils.ss" (see above), as well as additional ones (see below).
 
 Keywords for configuring `check:':
 
@@ -1011,7 +1011,8 @@ Keywords for configuring `check:':
 * :extra-lines -- a list of lines to add after the student lines, all
   with a ";;> " or :markup-prefix too.  Defaults to a single line:
   "Maximum points for this assignment: <+100>".  (Can use
-  "{submission}" for the submission directory.)
+  "{submission}" for the submission directory.)  See also
+  `add-header-line!' below.
 
 * :user-error-message -- a string that is used to report an error that
   occurred during evaluation of the submitted code (not during
@@ -1145,8 +1146,9 @@ value from the submission code.
 
 > (add-header-line! line)
   During the checker operation, this procedure can be used to add
-  header lines to the text version of the submitted file.  It will not
-  have an effect if `:create-text?' is false.
+  header lines to the text version of the submitted file (in addition
+  to the `:extra-lines' setting).  It will not have an effect if
+  `:create-text?' is false.
 
 > (procedure/arity? proc arity)
   Returns `#t' if `proc' is a procedure that accepts `arity'
@@ -1176,16 +1178,29 @@ value from the submission code.
   equality procedure).  Note that the `result' and `equal?' forms are
   *not* evaluated in the submission context.
 
-> (!all-covered)
+> (!all-covered [proc])
   When coverage information is enabled (see `:coverage?' above), this
   procedure checks the collected coverage information and throws an
-  error with source information if some code is left uncovered.  The
-  collected information includes only execution coverage by submission
-  code, excluding additional checker tests.  You do not have to call
-  this explicitly -- it is called at the end of the process
-  automatically when `:coverage?' is enabled.  It is made available so
-  you can call it earlier (eg, before testing) to show clients a
-  coverage error first.
+  error with source information if some code is left uncovered.  If
+  the optional procedure argument is provided, it is applied on a
+  string argument that describes the location of the uncovered
+  expression ("<line>:<col>", "#<char-pos>", or "(unknown position)")
+  instead of throwing an error.  The collected information includes
+  only execution coverage by submission code, excluding additional
+  checker tests.  You do not have to call this explicitly -- it is
+  called at the end of the process automatically when `:coverage?' is
+  enabled.  It is made available so you can call it earlier (eg,
+  before testing) to show clients a coverage error first, or if you
+  want to avoid an error.  For example, you can do this:
+
+    (!all-covered
+     (lambda (where)
+       (case (message (string-append
+                       "Incomplete coverage at "where", do you want"
+                       " to save this submission with 10% penalty?"))
+         [(yes) (add-header-line! "No full coverage <*90%>")
+                (message "Handin saved with penalty.")]
+         [else (error "aborting submission")])))
 
 
 Multiple-File Submissions:

@@ -14,7 +14,6 @@
         (datum->syntax-object
          (quote-syntax here)
          (list* (quote-syntax #%plain-module-begin)
-                (datum->syntax-object stx (quote-syntax (provide checker)))
                 #'(define user-pre #f)
                 #'(define user-post #f)
                 (cdr e))
@@ -396,162 +395,160 @@
                      (when (car x)
                        (raise-syntax-error #f "unknown keyword" stx (cadr x))))
                    keyvals)
-         #'(define checker
-             (let ([allowed (let ([us users*])
-                              (if (list? us)
-                                (map (lambda (x)
-                                       (if (list? x)
-                                         (sort x string<?)
-                                         (list x)))
-                                     us)
-                                us))]
-                   [eval?          eval?*]
-                   [language       language*]
-                   [teachpacks     teachpacks*]
-                   [create-text?   create-text?*]
-                   [untabify?      untabify?*]
-                   [textualize?    textualize?*]
-                   [maxwidth       maxwidth*]
-                   [markup-prefix  markup-prefix*]
-                   [prefix-re      prefix-re*]
-                   [student-line   student-line*]
-                   [extra-lines    extra-lines*]
-                   [value-printer  value-printer*]
-                   [coverage?      coverage?*]
-                   [output-file    output*]
-                   [multi-file     multi-file*]
-                   [names-checker  names-checker*]
-                   [user-error-message user-error-message*])
-               ;; ========================================
-               ;; set defaults that depend on file name
-               (define suffix
-                 (let ([sfx (string->symbol
-                             (string-downcase
-                              (if multi-file
-                                (format "~a" multi-file)
-                                (and output-file
-                                     (regexp-replace
-                                      #rx"^.*[.]" output-file "")))))])
-                   (case sfx
-                     [(java c cc c++)
-                      (unless markup-prefix (set! markup-prefix "//> "))
-                      (unless prefix-re     (set! prefix-re     #rx"//>"))]
-                     [else
-                      (unless markup-prefix (set! markup-prefix ";;> "))
-                      (unless prefix-re     (set! prefix-re     #rx";>"))])
-                   sfx))
-               ;; ========================================
-               ;; verify submitting users
-               (define (pre users submission)
-                 (set-run-status "checking submission username(s)")
-                 (cond [(list? allowed)
-                        (unless (member users allowed)
-                          (error*
-                           "You are not registered ~a for this submission"
-                           (case (length users)
-                             [(1) "for individual submission"]
-                             [(2) "as a pair"]
-                             [else "as a group"])))]
-                       [(procedure? allowed) (allowed users)]
-                       [(not allowed) ; default is single-user submission
-                        (unless (= 1 (length users))
-                          (error*
-                           "This homework is for individual submissions"))]
-                       [else (error* "bad user specifications")])
-                 (when user-pre (user-pre users submission)))
-               ;; ========================================
-               ;; convert to text, evaluate, check
-               (define (check users submission)
-                 (define text-file (format "grading/text.~a" suffix))
-                 (define (prefix-line str)
-                   (printf "~a~a\n" markup-prefix str))
-                 (define generic-substs `(("submission" . ,submission-dir)))
-                 (define (prefix-line/substs str)
-                   (prefix-line (subst str generic-substs)))
-                 (define (write-text)
-                   (set-run-status "creating text file")
-                   (with-output-to-file text-file
-                     (lambda ()
-                       (for-each (lambda (user)
-                                   (prefix-line
-                                    (user-substs user student-line)))
-                                 users)
-                       (for-each prefix-line/substs extra-lines)
-                       (for-each prefix-line/substs
-                                 (or (thread-cell-ref added-lines) '()))
-                       (display submission-text))
-                     'truncate))
-                 (define submission-text
-                   (and create-text?
-                        (begin (set-run-status "reading submission")
-                               ((if multi-file
-                                  (unpack-multifile-submission
-                                   names-checker output-file)
-                                  submission->bytes)
-                                submission maxwidth textualize? untabify?
-                                markup-prefix prefix-re))))
-                 (when create-text? (make-directory "grading") (write-text))
-                 (when value-printer (current-value-printer value-printer))
-                 (when coverage? (coverage-enabled #t))
-                 (set-run-status "checking submission")
-                 (cond
-                   [(not eval?) (let () body ...)]
-                   [language
-                    (let ([eval
-                           (with-handlers
-                               ([void
-                                 (lambda (e)
-                                   (let ([m (if (exn? e)
-                                              (exn-message e)
-                                              (format "~a" e))])
-                                     (cond
-                                       [(procedure? user-error-message)
-                                        (user-error-message m)]
-                                       [(not (string? user-error-message))
-                                        (error*
-                                         "badly configured user-error-message")]
-                                       [(regexp-match? #rx"~[aesvAESV]"
-                                                       user-error-message)
-                                        (error* user-error-message m)]
-                                       [else
-                                        (error* "~a" user-error-message)])))])
-                             (call-with-evaluator/submission
-                              language teachpacks submission values))])
-                      (set-run-status "running tests")
-                      (parameterize ([submission-eval (wrap-evaluator eval)])
-                        (let-syntax ([with-submission-bindings
-                                      (syntax-rules ()
-                                        [(_ bindings body*1 body* (... ...))
-                                         (with-bindings eval bindings
-                                           body*1 body* (... ...))])])
-                          (let () body ...))
-                        ;; test coverage at the end (no harm if already done in
-                        ;; the checker since it's cheap):
-                        (when coverage? (!all-covered))
-                        (when (thread-cell-ref added-lines) (write-text))))]
-                   [else (error* "no language configured for submissions")])
-                 output-file)
-               ;; ========================================
-               ;; indirection for user-post (may be set after `check:')
-               (define (post users submission)
-                 (when user-post (user-post users submission)))
-               ;; ========================================
-               ;; configuration sanity checks
-               (let ([bad (cond [(and eval? (not language))
-                                 "`eval?' without `language'"]
-                                [(and (not create-text?) textualize?)
-                                 "`textualize?' without `create-text?'"]
-                                [(and maxwidth (not untabify?))
-                                 "`untabify?' without `maxwidth'"]
-                                [(and (not eval?) coverage?)
-                                 "`coverage?' without `eval?'"]
-                                ;; [(and textualize? coverage?)
-                                ;;  "`textualize?' and `coverage?'"]
-                                [else #f])])
-                 (when bad
-                   (error* "bad checker specifications: ~a" bad)))
-               ;; ========================================
-               (list pre check post))))])))
+         #'(begin
+             (provide checker)
+             (define checker
+               (let ([allowed (let ([us users*])
+                                (if (list? us)
+                                  (map (lambda (x)
+                                         (if (list? x)
+                                           (sort x string<?)
+                                           (list x)))
+                                       us)
+                                  us))]
+                     [eval?          eval?*]
+                     [language       language*]
+                     [teachpacks     teachpacks*]
+                     [create-text?   create-text?*]
+                     [untabify?      untabify?*]
+                     [textualize?    textualize?*]
+                     [maxwidth       maxwidth*]
+                     [markup-prefix  markup-prefix*]
+                     [prefix-re      prefix-re*]
+                     [student-line   student-line*]
+                     [extra-lines    extra-lines*]
+                     [value-printer  value-printer*]
+                     [coverage?      coverage?*]
+                     [output-file    output*]
+                     [multi-file     multi-file*]
+                     [names-checker  names-checker*]
+                     [uem            user-error-message*])
+                 ;; ========================================
+                 ;; set defaults that depend on file name
+                 (define suffix
+                   (let ([sfx (string->symbol
+                               (string-downcase
+                                (if multi-file
+                                  (format "~a" multi-file)
+                                  (and output-file
+                                       (regexp-replace
+                                        #rx"^.*[.]" output-file "")))))])
+                     (case sfx
+                       [(java c cc c++)
+                        (unless markup-prefix (set! markup-prefix "//> "))
+                        (unless prefix-re     (set! prefix-re     #rx"//>"))]
+                       [else
+                        (unless markup-prefix (set! markup-prefix ";;> "))
+                        (unless prefix-re     (set! prefix-re     #rx";>"))])
+                     sfx))
+                 ;; ========================================
+                 ;; verify submitting users
+                 (define (pre users submission)
+                   (set-run-status "checking submission username(s)")
+                   (cond [(list? allowed)
+                          (unless (member users allowed)
+                            (error*
+                             "You are not registered ~a for this submission"
+                             (case (length users)
+                               [(1) "for individual submission"]
+                               [(2) "as a pair"]
+                               [else "as a group"])))]
+                         [(procedure? allowed) (allowed users)]
+                         [(not allowed) ; default is single-user submission
+                          (unless (= 1 (length users))
+                            (error*
+                             "This homework is for individual submissions"))]
+                         [else (error* "bad user specifications")])
+                   (when user-pre (user-pre users submission)))
+                 ;; ========================================
+                 ;; convert to text, evaluate, check
+                 (define (check users submission)
+                   (define text-file (format "grading/text.~a" suffix))
+                   (define (prefix-line str)
+                     (printf "~a~a\n" markup-prefix str))
+                   (define generic-substs `(("submission" . ,submission-dir)))
+                   (define (prefix-line/substs str)
+                     (prefix-line (subst str generic-substs)))
+                   (define (write-text)
+                     (set-run-status "creating text file")
+                     (with-output-to-file text-file
+                       (lambda ()
+                         (for-each (lambda (user)
+                                     (prefix-line
+                                      (user-substs user student-line)))
+                                   users)
+                         (for-each prefix-line/substs extra-lines)
+                         (for-each prefix-line/substs
+                                   (or (thread-cell-ref added-lines) '()))
+                         (display submission-text))
+                       'truncate))
+                   (define submission-text
+                     (and create-text?
+                          (begin (set-run-status "reading submission")
+                                 ((if multi-file
+                                    (unpack-multifile-submission
+                                     names-checker output-file)
+                                    submission->bytes)
+                                  submission maxwidth textualize? untabify?
+                                  markup-prefix prefix-re))))
+                   (when create-text? (make-directory "grading") (write-text))
+                   (when value-printer (current-value-printer value-printer))
+                   (when coverage? (coverage-enabled #t))
+                   (set-run-status "checking submission")
+                   (cond
+                     [(not eval?) (let () body ...)]
+                     [language
+                      (let ([eval
+                             (with-handlers
+                                 ([void
+                                   (lambda (e)
+                                     (let ([m (if (exn? e)
+                                                (exn-message e)
+                                                (format "~a" e))])
+                                       (cond
+                                         [(procedure? uem) (uem m)]
+                                         [(not (string? uem))
+                                          (error* "badly configured ~a"
+                                                  "user-error-message")]
+                                         [(regexp-match? #rx"~[aesvAESV]" uem)
+                                          (error* uem m)]
+                                         [else (error* "~a" uem)])))])
+                               (call-with-evaluator/submission
+                                language teachpacks submission values))])
+                        (set-run-status "running tests")
+                        (parameterize ([submission-eval (wrap-evaluator eval)])
+                          (let-syntax ([with-submission-bindings
+                                        (syntax-rules ()
+                                          [(_ bindings body*1 body* (... ...))
+                                           (with-bindings eval bindings
+                                             body*1 body* (... ...))])])
+                            (let () body ...))
+                          ;; will do nothing when called a second time
+                          (when coverage? (!all-covered))
+                          (when (thread-cell-ref added-lines) (write-text))))]
+                     [else (error* "no language configured for submissions")])
+                   output-file)
+                 ;; ========================================
+                 ;; indirection for user-post (may be set after `check:')
+                 (define (post users submission)
+                   (when user-post (user-post users submission)))
+                 ;; ========================================
+                 ;; configuration sanity checks
+                 (let ([bad (cond [(and eval? (not language))
+                                   "`eval?' without `language'"]
+                                  [(and (not create-text?) textualize?)
+                                   "`textualize?' without `create-text?'"]
+                                  [(and maxwidth (not untabify?))
+                                   "`untabify?' without `maxwidth'"]
+                                  [(and (not eval?) coverage?)
+                                   "`coverage?' without `eval?'"]
+                                  ;; [(and textualize? coverage?)
+                                  ;;  "`textualize?' and `coverage?'"]
+                                  [else #f])])
+                   (when bad
+                     (error* "bad checker specifications: ~a" bad)))
+                 ;; ========================================
+                 (list pre check post)))))])))
 
 (define-syntax (with-bindings stx)
   (syntax-case stx ()
@@ -709,22 +706,26 @@
                  (->disp 'expr) (->disp val) (->disp result))))]))
 
 (provide !all-covered)
-(define (!all-covered)
-  (let ([uncovered (get-uncovered-expressions (submission-eval))])
-    (cond [(pair? uncovered)
-           (let ([stx (car uncovered)])
-             (when stx
-               (error*
-                "your code is not completely covered by tests~a"
-                (cond [(and (syntax-line stx) (syntax-column stx))
-                       (format ": uncovered expression at ~a:~a"
-                               (syntax-line stx) (syntax-column stx))]
-                      [(syntax-position stx)
-                       (format ": uncovered expression at position ~a"
-                               (syntax-position stx))]
-                      [else ""]))))]
-          [(null? uncovered) #f]
-          [else (error*
-                 "bad checker: no coverage information for !all-covered")])))
+(define coverage-checked (make-thread-cell #f))
+(define (!all-covered . proc)
+  (define uncovered (get-uncovered-expressions (submission-eval)))
+  (define (handler loc)
+    (error* "your code is not completely covered by tests: ~a ~a ~s"
+            "uncovered expression at" loc proc))
+  (cond
+    [(thread-cell-ref coverage-checked) #f]
+    [(pair? uncovered)
+     (let* ([stx (car uncovered)]
+            [loc
+             (cond [(not stx) #f]
+                   [(and (syntax-line stx) (syntax-column stx))
+                    (format "~a:~a" (syntax-line stx) (syntax-column stx))]
+                   [(syntax-position stx) => (lambda (p) (format "#~a" p))]
+                   [else "(unknown location)"])])
+       (when loc
+         (thread-cell-set! coverage-checked #t)
+         ((if (pair? proc) (car proc) handler) loc)))]
+    [(null? uncovered) #f]
+    [else (error* "bad checker: no coverage information for !all-covered")]))
 
 )
