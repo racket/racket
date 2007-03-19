@@ -95,10 +95,9 @@
                                    (lambda (sf bv)
                                      (set! **match-bound-vars** bv)
                                      (with-syntax ([((vars . vals) ...) (reverse bv)])
-                                       #'(begin (set! vars vals) ...))))]
+                                       #'(values vals ...))))]
                        [(vars ...) (map car (reverse **match-bound-vars**))])
-           #'(begin
-               (define vars #f) ...
+           #'(define-values (vars ...)
                (let ([the-exp exp])
                  compiled-match))))]))
   )
