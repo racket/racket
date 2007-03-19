@@ -72,6 +72,8 @@
                      f))))
                (lambda ()
                  (set! monitor-owner #f)
+                 (set! old-paramz #f)
+                 (set! old-break-paramz #f)
                  (semaphore-post monitor-sema)
                  (wx:in-atomic-region #f))))
          lock-tag))]))
