@@ -23,7 +23,7 @@
    Usually, MzScheme threads are implemented by copying the stack.
    The scheme_thread_block() function is called occassionally by the
    evaluator so that the current thread can be swapped out.
-   scheme_swap_thread() performs the actual swap. Threads can also be
+   do_swap_thread() performs the actual swap. Threads can also be
    implemented by the OS; the bottom part of this file contains
    OS-specific thread code.
 
@@ -174,6 +174,11 @@ MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
 
 static Scheme_Custodian *main_custodian;
 static Scheme_Custodian *last_custodian;
+
+/* On swap, put target in a static variable, instead of on the stack,
+   so that the swapped-out thread is less likely to have a pointer
+   to the target thread. */
+static Scheme_Thread *swap_target;
 
 static Scheme_Object *scheduled_kills;
 
@@ -1906,6 +1911,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     REGISTER_SO(scheme_main_thread);
     REGISTER_SO(scheme_first_thread);
     REGISTER_SO(thread_swap_callbacks);
+    REGISTER_SO(swap_target);
 
     scheme_current_thread = process;
     scheme_first_thread = scheme_main_thread = process;
@@ -2215,7 +2221,7 @@ int scheme_in_main_thread(void)
   return !scheme_current_thread->next;
 }
 
-void scheme_swap_thread(Scheme_Thread *new_thread)
+static void do_swap_thread()
 {
   scheme_zero_unneeded_rands(scheme_current_thread);
 
@@ -2257,6 +2263,8 @@ void scheme_swap_thread(Scheme_Thread *new_thread)
       scheme_takeover_stacks(scheme_current_thread);
     }
   } else {
+    Scheme_Thread *new_thread = swap_target;
+
     swap_no_setjmp = 0;
 
     /* We're leaving... */
@@ -2287,6 +2295,13 @@ void scheme_swap_thread(Scheme_Thread *new_thread)
 
     LONGJMP(scheme_current_thread);
   }
+}
+
+void scheme_swap_thread(Scheme_Thread *new_thread)
+{
+  swap_target = new_thread;
+  new_thread = NULL;
+  do_swap_thread();
 }
 
 static void select_thread()
@@ -2352,7 +2367,11 @@ static void select_thread()
     o = NULL;
   } while (!new_thread);
 
-  scheme_swap_thread(new_thread);
+  swap_target = new_thread;
+  new_thread = NULL;
+  o = NULL;
+  t_set = NULL;
+  do_swap_thread();
 }
 
 static void thread_is_dead(Scheme_Thread *r)
@@ -2460,6 +2479,12 @@ static void remove_thread(Scheme_Thread *r)
   r->cont_mark_stack = 0;
   r->cont_mark_stack_owner = NULL;
   r->cont_mark_stack_swapped = NULL;
+
+  r->ku.apply.tail_rator = NULL;
+  r->ku.apply.tail_rands = NULL;
+  r->tail_buffer = NULL;
+  r->ku.multiple.array = NULL;
+  r->values_buffer = NULL;
 
 #ifndef SENORA_GC_NO_FREE
   if (r->list_stack)
@@ -2707,10 +2732,18 @@ static Scheme_Object *thread_dead_p(int argc, Scheme_Object *args[])
   return MZTHREAD_STILL_RUNNING(running) ? scheme_false : scheme_true;
 }
 
-static int thread_wait_done(Scheme_Object *p)
+static int thread_wait_done(Scheme_Object *p, Scheme_Schedule_Info *sinfo)
 {
   int running = ((Scheme_Thread *)p)->running;
-  return !MZTHREAD_STILL_RUNNING(running);
+  if (MZTHREAD_STILL_RUNNING(running)) {
+    /* Replace the direct thread reference with an event, so that
+       the blocking thread can be dequeued: */
+    Scheme_Object *evt;
+    evt = scheme_get_thread_dead((Scheme_Thread *)p);
+    scheme_set_sync_target(sinfo, evt, p, NULL, 0, 0);
+    return 0;
+  } else
+    return 1;
 }
 
 static Scheme_Object *thread_wait(int argc, Scheme_Object *args[])
@@ -2723,7 +2756,7 @@ static Scheme_Object *thread_wait(int argc, Scheme_Object *args[])
   p = (Scheme_Thread *)args[0];
 
   if (MZTHREAD_STILL_RUNNING(p->running)) {
-    scheme_block_until(thread_wait_done, NULL, (Scheme_Object *)p, 0);
+    sch_sync(1, args);
   }
 
   return scheme_void;
@@ -2732,8 +2765,8 @@ static Scheme_Object *thread_wait(int argc, Scheme_Object *args[])
 static void register_thread_sync()
 {
   scheme_add_evt(scheme_thread_type, 
-		  thread_wait_done, 
-		  NULL, NULL, 0);
+                 (Scheme_Ready_Fun)thread_wait_done, 
+                 NULL, NULL, 0);
 }
 
 void scheme_add_swap_callback(Scheme_Closure_Func f, Scheme_Object *data)
@@ -3743,7 +3776,12 @@ void scheme_thread_block(float sleep_time)
 #endif
 
   if (next) {
-    scheme_swap_thread(next);
+    /* Swap in `next', but first clear references to other threads. */
+    next_in_set = NULL;
+    t_set = NULL;
+    swap_target = next;
+    next = NULL;
+    do_swap_thread();
   } else if (do_atomic && scheme_on_atomic_timeout) {
     scheme_on_atomic_timeout();
   } else {
@@ -5894,7 +5932,7 @@ static Scheme_Object *do_param(void *data, int argc, Scheme_Object *argv[])
   pos[1] = ((ParamData *)data)->defcell;
   
   return scheme_param_config("parameter-procedure", 
-			     (Scheme_Object *)pos,
+			     (Scheme_Object *)(void *)pos,
 			     argc, argv2,
 			     -2, NULL, NULL, 0);
 }

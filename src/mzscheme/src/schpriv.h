@@ -237,6 +237,7 @@ void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
 extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_void_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
+extern Scheme_Object *scheme_make_struct_type_proc;
 
 extern Scheme_Object *scheme_define_values_syntax, *scheme_define_syntaxes_syntax;
 extern Scheme_Object *scheme_lambda_syntax;

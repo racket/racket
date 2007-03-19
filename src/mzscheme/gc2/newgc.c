@@ -888,7 +888,7 @@ unsigned long GC_get_stack_base()
 
 #define GC_X_variable_stack GC_mark_variable_stack
 #define gcX(a) gcMARK(*a)
-#define X_source(p) set_backtrace_source(p, BT_STACK)
+#define X_source(stk, p) set_backtrace_source((stk ? stk : p), BT_STACK)
 #include "var_stack.c"
 #undef GC_X_variable_stack
 #undef gcX
@@ -896,7 +896,7 @@ unsigned long GC_get_stack_base()
 
 #define GC_X_variable_stack GC_fixup_variable_stack
 #define gcX(a) gcFIXUP(*a)
-#define X_source(p) /* */
+#define X_source(stk, p) /* */
 #include "var_stack.c"
 #undef GC_X_variable_stack
 #undef gcX
@@ -1219,7 +1219,7 @@ inline static void mark_threads(int owner)
       if (((Scheme_Thread *)work->thread)->running) {
         normal_thread_mark(work->thread);
         if (work->thread == scheme_current_thread) {
-          GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base);
+          GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base, NULL);
         }
       }
     }
@@ -1977,6 +1977,8 @@ long GC_get_memory_use(void *o)
    one that we export out, and it does a metric crapload of work. The second
    we use internally, and it doesn't do nearly as much. */
 
+void *watch_for; /* REMOVEME */
+
 /* This is the first mark routine. It's a bit complicated. */
 void GC_mark(const void *const_p)
 {
@@ -1986,6 +1988,10 @@ void GC_mark(const void *const_p)
   if(!p || (NUM(p) & 0x1)) {
     GCDEBUG((DEBUGOUTF, "Not marking %p (bad ptr)\n", p));
     return;
+  }
+
+  if (watch_for && (p == watch_for)) {
+    GCPRINT(GCOUTF, "Found it\n");
   }
   
   if((page = find_page(p))) {
@@ -2243,6 +2249,12 @@ static unsigned long num_major_collects = 0;
 #ifdef MZ_GC_BACKTRACE
 # define trace_page_t struct mpage
 # define trace_page_type(page) (page)->page_type
+static void *trace_pointer_start(struct mpage *page, void *p) { 
+  if (page->big_page) 
+    return PTR(NUM(page) + HEADER_SIZEB + WORD_SIZE); 
+  else 
+    return p; 
+}
 # define TRACE_PAGE_TAGGED PAGE_TAGGED
 # define TRACE_PAGE_ARRAY PAGE_ARRAY
 # define TRACE_PAGE_TAGGED_ARRAY PAGE_TARRAY
@@ -2386,7 +2398,7 @@ int GC_is_tagged(void *p)
 
 int GC_is_tagged_start(void *p)
 {
-  return 0;
+  return 1; /* REMOVEME */
 }
 
 void *GC_next_tagged_start(void *p)
@@ -2849,7 +2861,7 @@ static void garbage_collect(int force_full)
   mark_roots();
   mark_immobiles();
   TIME_STEP("rooted");
-  GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base);
+  GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base, NULL);
 
   TIME_STEP("stacked");
 
@@ -2897,7 +2909,7 @@ static void garbage_collect(int force_full)
   repair_weak_finalizer_structs();
   repair_roots();
   repair_immobiles();
-  GC_fixup_variable_stack(GC_variable_stack, 0, gc_stack_base);
+  GC_fixup_variable_stack(GC_variable_stack, 0, gc_stack_base, NULL);
   TIME_STEP("reparied roots");
   repair_heap();
   TIME_STEP("repaired");
@@ -2968,5 +2980,38 @@ static void garbage_collect(int force_full)
   DUMP_HEAP(); CLOSE_DEBUG_FILE();
 }
 
+#if MZ_GC_BACKTRACE
 
+static GC_get_type_name_proc stack_get_type_name;
+static GC_get_xtagged_name_proc stack_get_xtagged_name;
+static GC_print_tagged_value_proc stack_print_tagged_value;
 
+static void dump_stack_pos(void *a) 
+{
+  GCPRINT(GCOUTF, " @%p: ", a);
+  print_out_pointer("", *(void **)a, stack_get_type_name, stack_get_xtagged_name, stack_print_tagged_value);
+}
+
+# define GC_X_variable_stack GC_do_dump_variable_stack
+# define gcX(a) dump_stack_pos(a)
+# define X_source(stk, p) /* */
+# include "var_stack.c"
+# undef GC_X_variable_stack
+# undef gcX
+# undef X_source
+
+void GC_dump_variable_stack(void **var_stack,
+                            long delta,
+                            void *limit,
+                            void *stack_mem,
+                            GC_get_type_name_proc get_type_name,
+                            GC_get_xtagged_name_proc get_xtagged_name,
+                            GC_print_tagged_value_proc print_tagged_value)
+{
+  stack_get_type_name = get_type_name;
+  stack_get_xtagged_name = get_xtagged_name;
+  stack_print_tagged_value = print_tagged_value;
+  GC_do_dump_variable_stack(var_stack, delta, limit, stack_mem);
+}
+
+#endif

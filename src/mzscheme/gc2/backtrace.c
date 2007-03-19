@@ -50,6 +50,7 @@ static void *print_out_pointer(const char *prefix, void *p,
     GCPRINT(GCOUTF, "%s??? %p\n", prefix, p);
     return NULL;
   }
+  p = trace_pointer_start(page, p);
 
   if (trace_page_type(page) == TRACE_PAGE_TAGGED) {
     Type_Tag tag;

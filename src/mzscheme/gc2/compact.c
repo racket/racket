@@ -2690,9 +2690,9 @@ static int record_stack_source = 0;
 
 #define GC_X_variable_stack GC_mark_variable_stack
 #if RECORD_MARK_SRC
-# define X_source(p) if (record_stack_source) { mark_src = p; mark_type = MTYPE_STACK; }
+# define X_source(stk, p) if (record_stack_source) { mark_src = (stk ? stk : p); mark_type = MTYPE_STACK; }
 #else
-# define X_source(p) /* */
+# define X_source(stk, p) /* */
 #endif
 #define gcX(a) gcMARK(*a)
 #include "var_stack.c"
@@ -2702,7 +2702,7 @@ static int record_stack_source = 0;
 
 #define GC_X_variable_stack GC_fixup_variable_stack
 #define gcX(a) gcFIXUP(*a)
-#define X_source(p) /* */
+#define X_source(stk, p) /* */
 #include "var_stack.c"
 #undef GC_X_variable_stack
 #undef gcX
@@ -2748,7 +2748,7 @@ static void check_ptr(void **a)
 
 #define GC_X_variable_stack GC_do_check_variable_stack
 #define gcX(a) check_ptr(a)
-#define X_source(p) /* */
+#define X_source(stk, p) /* */
 #include "var_stack.c"
 #undef GC_X_variable_stack
 #undef gcX
@@ -2763,7 +2763,8 @@ void GC_check_variable_stack()
                              0,
                              (void **)(GC_get_thread_stack_base
                                        ? GC_get_thread_stack_base()
-                                       : stack_base));
+                                       : stack_base),
+                             NULL);
 # endif
 }
 #endif
@@ -2863,7 +2864,8 @@ static void do_roots(int fixup)
 			    0,
 			    (void *)(GC_get_thread_stack_base
 				     ? GC_get_thread_stack_base()
-				     : stack_base));
+				     : stack_base),
+                            NULL);
   else {
 #if RECORD_MARK_SRC
     record_stack_source = 1;
@@ -2872,7 +2874,8 @@ static void do_roots(int fixup)
 			   0,
 			   (void *)(GC_get_thread_stack_base
 				    ? GC_get_thread_stack_base()
-				    : stack_base));
+				    : stack_base),
+                           NULL);
 #if RECORD_MARK_SRC
     record_stack_source = 0;
 #endif
@@ -4223,6 +4226,12 @@ static void *trace_backpointer(MPage *page, void *p)
 
 # define trace_page_t MPage
 # define trace_page_type(page) (page)->type
+static void *trace_pointer_start(struct mpage *page, void *p) { 
+  if (page->flags & MFLAG_BIGBLOCK) 
+    return page->block_start;
+  else 
+    return p;
+}
 # define TRACE_PAGE_TAGGED MTYPE_TAGGED
 # define TRACE_PAGE_ARRAY MTYPE_ARRAY
 # define TRACE_PAGE_TAGGED_ARRAY MTYPE_TAGGED_ARRAY

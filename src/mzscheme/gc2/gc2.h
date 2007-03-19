@@ -314,10 +314,12 @@ GC2_EXTERN void GC_fixup(void *p);
 
 GC2_EXTERN void GC_mark_variable_stack(void **var_stack,
 				       long delta,
-				       void *limit);
+				       void *limit,
+                                       void *stack_mem);
 GC2_EXTERN void GC_fixup_variable_stack(void **var_stack,
 					long delta,
-					void *limit);
+					void *limit,
+                                        void *stack_mem);
 /*
    Can be called by a mark or fixup traversal proc to traverse and
    update a chunk of (atomically-allocated) memory containing an image
@@ -331,7 +333,10 @@ GC2_EXTERN void GC_fixup_variable_stack(void **var_stack,
    stack_address is the numerically lower bound for the copied stack
    region, regardless of which direction the stack grows). The `limit'
    argument corresponds to the value that would have been returned by
-   GC_get_thread_stack_base() at the time the stack was copied. */
+   GC_get_thread_stack_base() at the time the stack was copied. 
+
+   The `stack_mem' argument indicates the start of the allocated memory
+   that contains `var_stack'. It is used for backtraces. */
 
 # ifdef __cplusplus
 };

@@ -1,5 +1,5 @@
 
-void GC_X_variable_stack(void **var_stack, long delta, void *limit) 
+void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_mem)
 {
   long size, count;
   void ***p, **a;
@@ -35,7 +35,7 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit)
 	  a = (void **)((char *)a + delta);
 	  if (SHALLOWER_STACK_ADDRESS(a, limit)) {
 	    while (count--) {
-	      X_source(a);
+	      X_source(stack_mem, a);
 	      gcX(a);
 	      a++;
 	    }
@@ -43,7 +43,7 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit)
 	} else {
 	  a = (void **)((char *)a + delta);
 	  if (SHALLOWER_STACK_ADDRESS(a, limit)) {
-	    X_source(a);
+	    X_source(stack_mem, a);
 	    gcX(a);
 	  }
 	}
@@ -63,13 +63,13 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit)
 	size -= 2;
 	a = (void **)((char *)a + delta);
 	while (count--) {
-	  X_source(a);
+	  X_source(stack_mem, a);
 	  gcX(a);
 	  a++;
 	}
       } else {
 	a = (void **)((char *)a + delta);
-	X_source(a);
+	X_source(stack_mem, a);
 	gcX(a);
       }
       p++;

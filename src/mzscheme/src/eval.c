@@ -833,8 +833,32 @@ int scheme_omittable_expr(Scheme_Object *o, int vals)
   }
 
   if ((vtype == scheme_application_type)) {
-    /* Look for multiple values */
+    /* Look for multiple values, or for `make-struct-type'.
+       (The latter is especially useful to Honu.) */
     Scheme_App_Rec *app = (Scheme_App_Rec *)o;
+    if (((vals == 5) || (vals < 0))
+        && (app->num_args >= 4) && (app->num_args <= 10)
+        && SAME_OBJ(scheme_make_struct_type_proc, app->args[0])) {
+      /* Look for (make-struct-type sym #f non-neg-int non-neg-int [omitable null]) */
+      if (SCHEME_SYMBOLP(app->args[1])
+          && SCHEME_FALSEP(app->args[2])
+          && SCHEME_INTP(app->args[3])
+          && (SCHEME_INT_VAL(app->args[3]) >= 0)
+          && SCHEME_INTP(app->args[4])
+          && (SCHEME_INT_VAL(app->args[4]) >= 0)
+          && ((app->num_args < 5)
+              || scheme_omittable_expr(app->args[5], 1))
+          && ((app->num_args < 6)
+              || SCHEME_NULLP(app->args[6]))
+          && ((app->num_args < 7)
+              || SCHEME_FALSEP(app->args[7]))
+          && ((app->num_args < 8)
+              || SCHEME_FALSEP(app->args[8]))
+          && ((app->num_args < 9)
+              || SCHEME_NULLP(app->args[9]))) {
+        return 1;
+      }
+    }
     if ((app->num_args == vals) || (vals < 0)) {
       if (SAME_OBJ(scheme_values_func, app->args[0])) {
 	int i;
@@ -4082,7 +4106,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
         return form;
       }
     } else {
-      scheme_wrong_syntax(NULL, NULL, SCHEME_PTR1_VAL(var), "expanded syntax not in its original context");
+      scheme_wrong_syntax(NULL, NULL, SCHEME_PTR1_VAL(var), 
+                          "expanded syntax not in its original context");
     }
   }
 
@@ -7116,6 +7141,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
     obj = p->ku.apply.tail_rator;
     num_rands = p->ku.apply.tail_num_rands;
     rands = p->ku.apply.tail_rands;
+    p->ku.apply.tail_rator = NULL;
     p->ku.apply.tail_rands = NULL;
     RUNSTACK = old_runstack;
     RUNSTACK_CHANGED();

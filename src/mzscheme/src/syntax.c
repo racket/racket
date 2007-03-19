@@ -2630,7 +2630,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   Scheme_Let_Header *head = (Scheme_Let_Header *)form;
   Scheme_Compiled_Let_Value *clv, *pre_body, *retry_start;
   Scheme_Object *body, *value;
-  int i, j, pos, is_rec, all_simple = 1, skipped = 0;
+  int i, j, pos, is_rec, all_simple = 1;
   int size_before_opt, did_set_value;
 
   /* Special case: (let ([x E]) x) where E is lambda, case-lambda, or
@@ -2677,8 +2677,6 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   pos = 0;
   for (i = head->num_clauses; i--; ) {
     pre_body = (Scheme_Compiled_Let_Value *)body;
-    if (pre_body->count != 1)
-      all_simple = 0;
     for (j = pre_body->count; j--; ) {
       if (pre_body->flags[j] & SCHEME_WAS_SET_BANGED) {
 	scheme_optimize_mutated(body_info, pos + j);
@@ -2817,15 +2815,25 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
     body = head->body;
     pos = 0;
     for (i = head->num_clauses; i--; ) {
+      int used = 0, j;
       pre_body = (Scheme_Compiled_Let_Value *)body;
-      if (!scheme_optimize_is_used(body_info, pos)
-	  && scheme_omittable_expr(pre_body->value, 1)) {
-	skipped++;
-	if (pre_body->flags[0] & SCHEME_WAS_USED) {
-	  pre_body->flags[0] -= SCHEME_WAS_USED;
-	}
+      for (j = pre_body->count; j--; ) {
+        if (scheme_optimize_is_used(body_info, pos+j)) {
+          used = 1;
+          break;
+        }
+      }
+      if (!used
+	  && scheme_omittable_expr(pre_body->value, pre_body->count)) {
+        for (j = pre_body->count; j--; ) {
+          if (pre_body->flags[j] & SCHEME_WAS_USED) {
+            pre_body->flags[j] -= SCHEME_WAS_USED;
+          }
+        }
       } else {
-	pre_body->flags[0] |= SCHEME_WAS_USED;
+        for (j = pre_body->count; j--; ) {
+          pre_body->flags[j] |= SCHEME_WAS_USED;
+        }
       }
       pos += pre_body->count;
       body = pre_body->body;
@@ -3152,6 +3160,28 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
         info->max_let_depth = max_let_depth;
 
       return first;
+    } else {
+      /* Maybe some multi-binding lets, but all of them are unused
+         and the RHSes are omittable? This can happen with auto-generated
+         code. */
+      int total = 0, j;
+      clv = (Scheme_Compiled_Let_Value *)head->body;
+      for (i = head->num_clauses; i--; clv = (Scheme_Compiled_Let_Value *)clv->body) {
+        total += clv->count;
+        for (j = clv->count; j--; ) {
+          if (clv->flags[j] & SCHEME_WAS_USED)
+            break;
+        }
+        if (j >= 0)
+          break;
+        if (!scheme_omittable_expr(clv->value, clv->count))
+          break;
+      }
+      if (i < 0) {
+        /* All unused and omittable */
+        linfo = scheme_resolve_info_extend(info, 0, total, 0);
+        return scheme_resolve_expr((Scheme_Object *)clv, linfo);
+      }
     }
   }
 

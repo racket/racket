@@ -1985,7 +1985,9 @@ force_values(Scheme_Object *obj, int multi_ok)
 {
   if (SAME_OBJ(obj, SCHEME_TAIL_CALL_WAITING)) {
     Scheme_Thread *p = scheme_current_thread;
-
+    GC_CAN_IGNORE Scheme_Object *rator;
+    GC_CAN_IGNORE Scheme_Object **rands;
+      
     /* Watch out for use of tail buffer: */
     if (p->ku.apply.tail_rands == p->tail_buffer) {
       GC_CAN_IGNORE Scheme_Object **tb;
@@ -1994,14 +1996,20 @@ force_values(Scheme_Object *obj, int multi_ok)
       p->tail_buffer = tb;
     }
 
-    if (multi_ok)
-      return _scheme_apply_multi(p->ku.apply.tail_rator,
+    rator = p->ku.apply.tail_rator;
+    rands = p->ku.apply.tail_rands;
+    p->ku.apply.tail_rator = NULL;
+    p->ku.apply.tail_rands = NULL;
+      
+    if (multi_ok) {
+      return _scheme_apply_multi(rator,
 				 p->ku.apply.tail_num_rands,
-				 p->ku.apply.tail_rands);
-    else
-      return _scheme_apply(p->ku.apply.tail_rator,
+				 rands);
+    } else {
+      return _scheme_apply(rator,
 			   p->ku.apply.tail_num_rands,
-			   p->ku.apply.tail_rands);
+			   rands);
+    }
   } else if (SAME_OBJ(obj, SCHEME_EVAL_WAITING)) {
     Scheme_Thread *p = scheme_current_thread;
     if (multi_ok)

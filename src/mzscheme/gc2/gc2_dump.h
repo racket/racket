@@ -20,6 +20,14 @@ GC2_EXTERN void GC_dump_with_traces(int flags,
 				    GC_print_tagged_value_proc print_tagged_value,
 				    int path_length_limit);
 
+GC2_EXTERN void GC_dump_variable_stack(void **var_stack,
+                                       long delta,
+                                       void *limit,
+                                       void *stack_mem,
+                                       GC_get_type_name_proc get_type_name,
+                                       GC_get_xtagged_name_proc get_xtagged_name,
+                                       GC_print_tagged_value_proc print_tagged_value);
+
 # define GC_DUMP_SHOW_DETAILS  0x1
 # define GC_DUMP_SHOW_TRACE    0x2
 # define GC_DUMP_SHOW_FINALS   0x4

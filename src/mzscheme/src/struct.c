@@ -27,6 +27,7 @@ Scheme_Object *scheme_arity_at_least, *scheme_date;
 Scheme_Object *scheme_make_arity_at_least;
 Scheme_Object *scheme_source_property;
 Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
+Scheme_Object *scheme_make_struct_type_proc;
 
 /* locals */
 
@@ -316,11 +317,14 @@ scheme_init_struct (Scheme_Env *env)
 
   /*** basic interface ****/
 
+  REGISTER_SO(scheme_make_struct_type_proc);
+  scheme_make_struct_type_proc = scheme_make_prim_w_arity2(make_struct_type,
+                                                           "make-struct-type",
+                                                           4, 10,
+                                                           5, 5);
+
   scheme_add_global_constant("make-struct-type", 
-			    scheme_make_prim_w_arity2(make_struct_type,
-						      "make-struct-type",
-						      4, 10,
-						      5, 5),
+                             scheme_make_struct_type_proc,
 			    env);
 
   scheme_add_global_constant("make-struct-type-property", 

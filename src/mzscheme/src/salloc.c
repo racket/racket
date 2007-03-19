@@ -1034,7 +1034,7 @@ static void print_tagged_value(const char *prefix,
       memcpy(t2 + len, buffer, len2 + 1);
       len += len2;
       type = t2;
-    } else if (!scheme_strncmp(type, "#<continuation", 13)) {
+    } else if (!scheme_strncmp(type, "#<continuation>", 15)) {
       char buffer[256];
       char *t2;
       int len2;
@@ -1457,7 +1457,36 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   } else if (SCHEME_INTP(p[0])) {
     trace_for_tag = SCHEME_INT_VAL(p[0]);
     flags |= GC_DUMP_SHOW_TRACE;
+  } else if (SCHEME_THREADP(p[0])) {
+    Scheme_Thread *t = (Scheme_Thread *)p[0];
+    void **var_stack, *limit;
+    long delta;
+
+    scheme_console_printf("Thread: %p\n", t);
+    if (t->running) {
+      if (scheme_current_thread == t) {
+        scheme_console_printf(" swapped in\n");
+        var_stack = GC_variable_stack;
+        delta = 0;
+        limit = (void *)GC_get_thread_stack_base();
+      } else {
+        scheme_console_printf(" swapped out\n");
+        var_stack = (void **)t->jmpup_buf.gc_var_stack;
+        delta = (long)t->jmpup_buf.stack_copy - (long)t->jmpup_buf.stack_from;
+        /* FIXME: stack direction */
+        limit = (void *)t->jmpup_buf.stack_copy + t->jmpup_buf.stack_size;
+      }
+      GC_dump_variable_stack(var_stack, delta, limit, NULL,
+                             scheme_get_type_name,
+                             GC_get_xtagged_name,
+                             print_tagged_value);
+    } else {
+      scheme_console_printf(" done\n");
+    }
+    scheme_end_atomic();
+    return scheme_void;
   }
+
   if ((c > 1) && SCHEME_INTP(p[1]))
     path_length_limit = SCHEME_INT_VAL(p[1]);
   else if ((c > 1) && SCHEME_SYMBOLP(p[1]) && !strcmp("cons", SCHEME_SYM_VAL(p[1]))) {
@@ -1560,6 +1589,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
   scheme_console_printf(" (dump-memory-stats 'peek num v) - returns value if num is address of object, v otherwise.\n");
   scheme_console_printf(" (dump-memory-stats 'next v) - next tagged object after v, #f if none; start with #f.\n");
   scheme_console_printf(" (dump-memory-stats 'addr v) - returns the address of v.\n");
+  scheme_console_printf(" (dump-memory-stats thread) - shows information about the thread.\n");
   scheme_console_printf("End Help\n");
 
   result = cons_accum_result;
