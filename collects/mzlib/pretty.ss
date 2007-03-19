@@ -197,7 +197,7 @@
 							print-hook
 							(pretty-print-print-line))
 				    (print-graph) (print-struct) (print-hash-table)
-				    (and (not display?) (print-vector-length))
+				    (and (not display?) (print-vector-length)) (print-box)
 				    (pretty-print-depth)
 				    (lambda (o display?)
 				      (size-hook o display? port)))
@@ -369,7 +369,7 @@
 	     (write-string "        " port 0 n))))
 
    (define (generic-write obj display? width pport
-			  print-graph? print-struct? print-hash-table? print-vec-length?
+			  print-graph? print-struct? print-hash-table? print-vec-length? print-box?
 			  depth size-hook)
      
      (define table (make-hash-table)) ; Hash table for looking for loops
@@ -412,7 +412,8 @@
 	   (let loop ([obj obj])
 	     (and (or (vector? obj)
 		      (pair? obj)
-		      (box? obj)
+		      (and (box? obj)
+                           print-box?)
 		      (and (custom-write? obj)
 			   (not (struct-type? obj)))
 		      (and (struct? obj) print-struct?)
@@ -432,7 +433,7 @@
 				[(pair? obj)
 				 (or (loop (car obj))
 				     (loop (cdr obj)))]
-				[(box? obj) (loop (unbox obj))]
+				[(and (box? obj) print-box?) (loop (unbox obj))]
 				[(and (custom-write? obj)
 				      (not (struct-type? obj)))
 				 (loop (extract-sub-objects obj pport))]
@@ -456,7 +457,8 @@
 	 (let loop ([obj obj])
 	   (if (or (vector? obj)
 		   (pair? obj)
-		   (box? obj)
+		   (and (box? obj)
+                        print-box?)
 		   (and (custom-write? obj)
 			(not (struct-type? obj)))
 		   (and (struct? obj) print-struct?)
@@ -477,7 +479,7 @@
 			  [(pair? obj)
 			   (loop (car obj))
 			   (loop (cdr obj))]
-			  [(box? obj) (loop (unbox obj))]
+			  [(and (box? obj) print-box?) (loop (unbox obj))]
 			  [(and (custom-write? obj)
 				(not (struct-type? obj)))
 			   (loop (extract-sub-objects obj pport))]
@@ -639,7 +641,8 @@
 		(when print-vec-length?
 		  (out (number->string (vector-length obj))))
 		(wr-lst (vector->repeatless-list obj) #f depth)))]
-	    [(box? obj)        
+	    [(and (box? obj)
+                  print-box?)
 	     (check-expr-found
 	      obj pport #t
 	      #f #f
@@ -726,8 +729,9 @@
 	 ;; may have to split on multiple lines
 	 (let* ([can-multi (and width
                                 (not (size-hook obj display?))
-				(or (pair? obj) (vector? obj) 
-				    (box? obj) 
+				(or (pair? obj)
+                                    (vector? obj) 
+				    (and (box? obj) print-box?)
 				    (and (custom-write? obj)
 					 (not (struct-type? obj)))
 				    (and (struct? obj) print-struct?)
@@ -781,7 +785,7 @@
                                     "#hash"
                                     "#hasheq"))
 			   (pp-list (hash-table-map obj cons) extra pp-expr #f depth)]
-			  [(box? obj)
+			  [(and (box? obj) print-box?)
 			   (out "#&") 
 			   (pr (unbox obj) extra pp-pair depth)])
 			 (post-print pport obj)))))
