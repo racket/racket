@@ -950,7 +950,10 @@ Bool wxMediaPasteboard::_Delete(wxSnip *del_snip,
       snip->flags += wxSNIP_CAN_DISOWN;
       SnipSetAdmin(snip, NULL);
       snip->flags -= wxSNIP_CAN_DISOWN;
-
+      if (!del)
+        if (!snip->GetAdmin())
+          snip->flags -= wxSNIP_OWNED;
+      
       if (!modified)
 	SetModified(TRUE);
 
