@@ -460,6 +460,16 @@
 (err/rt-test (dynamic-require 'bad-order #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Check lifting of a function with only an unused rest arg:
+
+(test 1 'continue
+      (let/ec foo
+        (let ([continue (lambda extras
+                          (foo 1))])
+          (+ 1 (continue)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; call-with-values optimization
 
 ;; should get converted to let:
