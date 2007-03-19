@@ -68,6 +68,8 @@ typedef struct MrEdContext {
   wxTimer *timer;
   MrEdEvent event;
 
+  wxTimer *timers;
+
   /* Alternate condition for nested event loop pending some condition */
   wxDispatch_Check_Fun alternate;
   void *alt_data;

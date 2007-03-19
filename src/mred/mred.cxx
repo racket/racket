@@ -244,7 +244,7 @@ static MrEdContext *mred_only_context;
 static int only_context_just_once = 0;
 static MrEdContext *user_main_context;
 static MrEdContextFramesRef mred_frames; /* list of all frames (weak link to invisible ones) */
-static wxTimer *mred_timers;
+static Scheme_Hash_Table *timer_contexts;
 int mred_eventspace_param;
 int mred_event_dispatch_param;
 Scheme_Type mred_eventspace_type;
@@ -306,6 +306,7 @@ static int mark_eventspace_val(void *p)
   gcMARK_TYPED(Scheme_Thread_Cell_Table *, c->main_break_cell);
 
   gcMARK_TYPED(wxTimer *, c->timer);
+  gcMARK_TYPED(wxTimer **, c->timers);
 
   gcMARK_TYPED(void *, c->alt_data);
 
@@ -339,6 +340,7 @@ static int fixup_eventspace_val(void *p)
   gcFIXUP_TYPED(Scheme_Thread_Cell_Table *, c->main_break_cell);
 
   gcFIXUP_TYPED(wxTimer *, c->timer);
+  gcFIXUP_TYPED(wxTimer **, c->timers);
 
   gcFIXUP_TYPED(void *, c->alt_data);
 
@@ -675,11 +677,10 @@ static void kill_eventspace(Scheme_Object *ec, void *)
   }
 
   {
-    wxTimer *t, *next;
-    for (t = mred_timers; t; t = next) {
-      next = t->next;
-      if (t->context == (void *)c)
-	t->Stop();
+    wxTimer *t;
+    while (c->timers) {
+      t = c->timers;
+      t->Stop();
     }
   }
 
@@ -865,6 +866,24 @@ static void UnchainContextsList()
   }
 }
 
+static wxTimer *GlobalFirstTimer()
+{
+  wxTimer *timer = NULL;
+  int i;
+  for (i = timer_contexts->size; i--; ) {
+    if (timer_contexts->vals[i]) {
+      MrEdContext *c = (MrEdContext *)timer_contexts->keys[i];
+      if (c->ready && c->timers) {
+        if (!timer)
+          timer = c->timers;
+        else if (c->timers->expiration < timer->expiration)
+          timer = c->timers;
+      }
+    }
+  }
+  return timer;
+}
+
 #ifdef wx_xt
 void wxUnhideAllCursors()
 {
@@ -980,7 +999,6 @@ void *MrEdForEachFrame(ForEachFrameProc fp, void *data)
 static int check_eventspace_inactive(void *_c)
 {
   MrEdContext *c = (MrEdContext *)_c;
-  wxTimer *timer = mred_timers;
 
   if (c->nested_avail)
     return 0;
@@ -992,11 +1010,8 @@ static int check_eventspace_inactive(void *_c)
     return 0;
 
   /* Any running timers for the eventspace? */
-  while (timer) {
-    if (((MrEdContext *)timer->context) == c)
-      return 0;
-    timer = timer->next;
-  }
+  if (c->timers)
+    return 0;
 
   /* Any top-level windows visible in this eventspace */
   {
@@ -1053,16 +1068,12 @@ int mred_in_restricted_context()
 
 static wxTimer *TimerReady(MrEdContext *c)
 {
-  wxTimer *timer = mred_timers;
+  wxTimer *timer;
 
   if (c) {
-    while (timer && (timer->context != (void *)c)) {
-      timer = timer->next;
-    }
+    timer = c->timers;
   } else {
-    while (timer && !((MrEdContext *)timer->context)->ready) {
-      timer = timer->next;
-    }
+    timer = GlobalFirstTimer();
   }
 
   if (timer) {
@@ -1529,7 +1540,9 @@ static int try_dispatch(Scheme_Object *do_it)
   if (try_q_callback(do_it, 2))
     return 1;
 
-  if ((timer = TimerReady(NULL))) {
+  timer = TimerReady(NULL);
+
+  if (timer) {
     if (!do_it)
       return 1;
     if (SCHEME_FALSEP(do_it))
@@ -1738,11 +1751,9 @@ static void MrEdSleep(float secs, void *fds)
 
   now = scheme_get_inexact_milliseconds();
   {
-    wxTimer *timer = mred_timers;
+    wxTimer *timer;
 
-    while (timer && !((MrEdContext *)timer->context)->ready) {
-      timer = timer->next;
-    }
+    timer = GlobalFirstTimer();
 
     if (timer) {
       double done = timer->expiration;
@@ -1817,7 +1828,7 @@ Bool wxTimer::Start(int millisec, Bool _one_shot)
 {
   double now;
 
-  if (prev || next || (mred_timers == this))
+  if (prev || next || (((MrEdContext *)context)->timers == this))
     return FALSE;
 
   if (((MrEdContext *)context)->killed)
@@ -1831,8 +1842,8 @@ Bool wxTimer::Start(int millisec, Bool _one_shot)
   now = scheme_get_inexact_milliseconds();
   expiration = now + interval;
 
-  if (mred_timers) {
-    wxTimer *t = mred_timers;
+  if (((MrEdContext *)context)->timers) {
+    wxTimer *t = ((MrEdContext *)context)->timers;
 
     while (1) {
       int later;
@@ -1846,7 +1857,7 @@ Bool wxTimer::Start(int millisec, Bool _one_shot)
 	if (prev)
 	  prev->next = this;
 	else
-	  mred_timers = this;
+	  ((MrEdContext *)context)->timers = this;
 	return TRUE;
       }
 
@@ -1858,8 +1869,10 @@ Bool wxTimer::Start(int millisec, Bool _one_shot)
       }
       t = t->next;
     }
-  } else
-    mred_timers = this;
+  } else {
+    ((MrEdContext *)context)->timers = this;
+    scheme_hash_set(timer_contexts, (Scheme_Object *)context, scheme_true);
+  }
 
   return TRUE;
 }
@@ -1867,8 +1880,11 @@ Bool wxTimer::Start(int millisec, Bool _one_shot)
 void wxTimer::Dequeue(void)
 {
   if (!prev) {
-    if (mred_timers == this)
-      mred_timers = next;
+    if (((MrEdContext *)context)->timers == this) {
+      ((MrEdContext *)context)->timers = next;
+      if (!next)
+        scheme_hash_set(timer_contexts, (Scheme_Object *)context, NULL);
+    }
   }
 
   if (prev)
@@ -2791,11 +2807,6 @@ Scheme_Object *OBJDump(int, Scheme_Object *[])
 	 (long)GC_changing_list_current - (long)GC_changing_list_start);
 # endif
 
-  wxTimer *timer;
-  for (c = 0, timer = mred_timers; timer; timer = timer->next)
-    c++;
-  PRINT_IT("Timers: %d\n", c);
-
   Scheme_Thread *p;
   for (c = 0, p = scheme_first_thread; p; p = p->next)
     c++;
@@ -3232,7 +3243,8 @@ wxFrame *MrEdApp::OnInit(void)
 #endif
 
   wxREGGLOB(mred_frames);
-  wxREGGLOB(mred_timers);
+  wxREGGLOB(timer_contexts);
+  timer_contexts = scheme_make_hash_table(SCHEME_hash_ptr);
 
 #ifdef LIBGPP_REGEX_HACK
   new WXGC_PTRS Regex("a", 0);

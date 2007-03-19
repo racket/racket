@@ -1075,15 +1075,19 @@ void wxFrame::Show(Bool show)
   
   cUserHidden = !show;
 
-  if (window_parent) {
-    wxChildList *cl;
-    cl = window_parent->GetChildren();
-    cl->Show(this, show);
-  }
-  if (cParentArea) {
-    wxChildList *cl;
-    cl = cParentArea->Windows();
-    cl->Show(this, show);
+  /* Don't try to adjust the screen's window list, because it
+     doesn't keep a list of children. */
+  if (0) {
+    if (window_parent) {
+      wxChildList *cl;
+      cl = window_parent->GetChildren();
+      cl->Show(this, show);
+    }
+    if (cParentArea) {
+      wxChildList *cl;
+      cl = cParentArea->Windows();
+      cl->Show(this, show);
+    }
   }
   tlw = wxTopLevelWindows(ContextWindow());
   tlw->Show(this, show);

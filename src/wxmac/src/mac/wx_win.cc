@@ -152,16 +152,24 @@ wxWindow::wxWindow // Constructor (given parentScreen; i.e., this is frame)
   InitDefaults();
 
   cParentArea = parentScreen->ClientArea();
-  wl = cParentArea->Windows();
-  wl->Append(this);
+  /* See note on screen's list of children below */
+  if (0) {
+    wl = cParentArea->Windows();
+    wl->Append(this);
+  }
 
   window_parent = parentScreen;
-  window_parent->AddChild(this);
-
-  // Frames are initially hidden!
-  cl = window_parent->GetChildren();
-  cl->Show(this, FALSE);
-  wl->Show(this, FALSE);
+  /* The screen doesn't realy have a use for a list of children,
+     and keeping this list means that there's a GC path from
+     any frame to any other frame (which is bad for GC accounting) */
+  if (0) {
+    window_parent->AddChild(this);
+    
+    // Frames are initially hidden!
+    cl = window_parent->GetChildren();
+    cl->Show(this, FALSE);
+    wl->Show(this, FALSE);
+  }
 
   cMacDC = NULL; // will set cMacDC later
 
