@@ -2683,7 +2683,7 @@
                                                    ;; We're not really interested in the conversion.
                                                    ;; We just want to get live vars and
                                                    ;; complain about function calls in the decl area:
-                                                   (convert-function-calls (car el) extra-vars &-vars c++-class live-vars "in decls" #f #t)])
+                                                   (convert-function-calls (car el) extra-vars &-vars c++-class live-vars "decls" #f #t)])
                                        (dloop (cdr el) live-vars))))))])
                     ;; Calculate vars to push in this block. Make sure there are no duplicates.
                     (let ([newly-pushed (let ([ht (make-hash-table)])
