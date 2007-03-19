@@ -31,9 +31,9 @@
 		      (when (eq? editor% text%)
 			(st 'standard e get-file-format))
 		      (when path
-			(test #"WXME" 'content (with-input-from-file path
-						 (lambda ()
-						   (read-bytes 4))))))]
+			(test #"#reader(lib\"read.ss\"\"wxme\")WXME" 'content (with-input-from-file path
+                                                                                (lambda ()
+                                                                                  (read-bytes 31))))))]
 	 [ck-mode (lambda (-mode)
 		    (test (if (eq? editor% pasteboard%) 
 			      (if (eq? -mode 'copy)
@@ -74,12 +74,12 @@
 	(ck-mode 'text)
 	(ck-text #f)
 	(when (eq? editor% text%)
-	  (st "WXME" e get-text 0 4))
+          (st "#reader(lib\"read.ss\"\"wxme\")WXME"  e get-text 0 31))
 	(st #t e load-file "tmp98" 'same)
 	(ck-mode 'same)
 	(ck-text #f)
-	(when (eq? editor% text%)
-	  (st "WXME" e get-text 0 4))
+        (when (eq? editor% text%)
+          (st "#reader(lib\"read.ss\"\"wxme\")WXME"  e get-text 0 31))
 	(st #t e load-file "tmp98" 'guess)
 	(ck-mode 'guess)
 	(ck-binary #f)
@@ -472,6 +472,19 @@
 
 (test-undos #f)
 (test-undos #t)
+
+;; ----------------------------------------
+
+(let ([pb (new pasteboard%)]
+      [es (new editor-snip%)])
+  (send pb insert es)
+  (st es pb find-first-snip)
+  (send pb remove es)
+  (st #f es is-owned?)
+  (st #f pb find-first-snip)
+  (send pb insert es)
+  (st es pb find-first-snip)
+  (st #t es is-owned?))
 
 ;; ----------------------------------------
 
