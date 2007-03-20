@@ -179,7 +179,7 @@
 			  input-name 
 			  (build-path c-dir (c-prefix (append-c-suffix base))))
 		      (and 3m?
-			   (build-path c3m-dir (c-prefix (append-c-suffix (path-suffix base #"3m")))))
+			   (build-path c3m-dir (c3m-prefix (append-c-suffix (path-suffix base #"3m")))))
 		      (build-path o-dir (o-prefix (append-constant-pool-suffix base)))
 		      (build-path o-dir (o-prefix (append-object-suffix base)))
 		      (build-path dest-dir (append-extension-suffix base))
@@ -585,8 +585,10 @@
 			(s:process-filenames input-name dest-directory from-c?
 					     (compiler:option:3m)
 					     (and (compiler:option:clean-intermediate-files)
+						  (or (not c-only?)
+						      (compiler:option:3m)))
+					     (and (compiler:option:clean-intermediate-files)
 						  (not c-only?))
-					     (compiler:option:clean-intermediate-files)
 					     (and (compiler:option:clean-intermediate-files)
 						  (not multi-o?)))])
 	    (unless (or (not input-path) (file-exists? input-path))
@@ -1353,7 +1355,7 @@
 		     c3m-output-path
 		     (list (find-include-dir)
 			   (collection-path "compiler")))
-
+	      
 	      (clean-up-src-c))))
 
 	;;--------------------------------------------------------------------
@@ -1361,7 +1363,7 @@
 	;;
 	
 	(if c-only?
-	    (printf " [output to \"~a\"]~n" c-output-path)
+	    (printf " [output to \"~a\"]~n" (or c3m-output-path c-output-path))
 	    
 	    (begin
 	      (unless input-path
