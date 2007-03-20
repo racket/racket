@@ -48,41 +48,82 @@
     (case-lambda
      [(fn) (wx:file-creator-and-type fn)]
      [(fn c t) (wx:file-creator-and-type fn c t)]))
-  
-  (define (hide-cursor-until-moved) 
+
+  (define (hide-cursor-until-moved)
     (wx:hide-cursor))
+
+  (define unix-play-command
+    (delay
+      (let* (;; check user-set preference first
+             ;;  (can be a string with `~a', or a name of an executable)
+             [cmd (get-preference '|MrEd:playcmd| (lambda () #f))]
+             [cmd (cond [(not (string? cmd)) #f]
+                        [(regexp-match? #rx"~[aA]" cmd) cmd]
+                        [(find-executable-path cmd) => values]
+                        ;; maybe there are some redundant spaces?
+                        [(regexp-match #rx"^ *([^ ].*?) *$" cmd)
+                         => (lambda (m) (find-executable-path (cadr m)))]
+                        ;; bad setting: no ~a, and does not name an executable
+                        [else #f])]
+             ;; no setting => search for some known commands
+             [cmd (or cmd
+                      (ormap find-executable-path
+                             '("aplay" "play" "esdplay" "sndfile-play"
+                               "audioplay"))
+                      (error 'play-sound
+                             "not supported on this machine ~a"
+                             "(no default, and no known command found)"))]
+             [>null (open-output-file "/dev/null" 'append)]
+             [<null (open-input-file "/dev/null")]
+             [bufsize 500]) ; maximum number of chars from stderr that we show
+        (lambda (f async?)
+          (define file (path->string (expand-path f)))
+          ;; if find-executable-path was used, then cmd is a path, otherwise
+          ;; it's a string with `~a'.
+          (define cmd+args
+            (if (path? cmd)
+              (list cmd file)
+              (list "/bin/sh" "-c"
+                    (format cmd (string-append "\""
+                                               (regexp-replace*
+                                                #rx"([$\"\\])" file "\\\\\\1")
+                                               "\"")))))
+          (define-values (p pout pin perr)
+            (apply subprocess >null <null #f cmd+args))
+          (define buf (make-bytes bufsize))
+          (define (follow)
+            ;; buf holds the tail (`bufsize' chars) of the error output
+            (let loop ([i 0] [full? #f])
+              (let ([n (read-bytes! buf perr i)])
+                (cond
+                  [(eof-object? n)
+                   (let ([c (begin (subprocess-wait p) (subprocess-status p))])
+                     (if (zero? c)
+                       #t ; success => don't show error output
+                       (let ([err (current-error-port)])
+                         (cond [full?
+                                (display "...snip...\n")
+                                (write-bytes buf err i)
+                                (write-bytes buf err 0 i)]
+                               [(> i 0)
+                                (write-bytes buf err 0 i)])
+                         (unless async? ; no point in an async error
+                           (error 'play-sound
+                                  "running ~a returned an error code"
+                                  cmd+args)))))]
+                  [(= (+ n i) bufsize) (loop 0 #t)]
+                  [else (loop (+ n i) full?)]))))
+          (if async?
+            (begin (thread follow) #t)
+            (follow))))))
 
   (define (play-sound f async?)
     (unless (or (path? f) (string? f))
       (raise-type-error 'play-sound "string-or-path" f))
     (unless (file-exists? f)
       (error 'play-sound "file not found: ~e" f))
-    (if (not (eq? (system-type) 'unix))
-      (wx:play-sound f async?)
-      (let* (;; check user-set preference first
-             [cmd (get-preference '|MrEd:playcmd| (lambda () #f))]
-             [cmd (if (string? cmd)
-                    cmd
-                    (let ([subpath (path->string (system-library-subpath))])
-                      (cond [;; use play interface to sox
-                             (regexp-match #rx"linux" subpath) "play ~a"]
-                            [(regexp-match #rx"solaris" subpath) "audioplay ~a"]
-                            [else (raise-mismatch-error
-                                   'play-sound
-                                   "not supported by default on this platform"
-                                   subpath)])))])
-        ((if async?
-           (lambda (x)
-             (process/ports
-              (current-output-port) (current-input-port) (current-error-port) x)
-             #t)
-           system)
-         (format cmd (string-append
-                      "\""
-                      (regexp-replace* #rx"([$\"\\])"
-                                       (path->string (expand-path f))
-                                       "\\\\\\1")
-                      "\""))))))
+    ((if (eq? (system-type) 'unix) (force unix-play-command) wx:play-sound)
+     f async))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Timers:
