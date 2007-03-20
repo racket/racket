@@ -2050,6 +2050,18 @@ Scheme_Object *scheme_stx_add_inactive_certs(Scheme_Object *o, Scheme_Object *ce
   return add_certs(o, (Scheme_Cert *)certs, NULL, 0);
 }
 
+Scheme_Object *scheme_stx_propagate_inactive_certs(Scheme_Object *o, Scheme_Object *orig)
+{
+  Scheme_Cert *certs;
+
+  certs = INACTIVE_CERTS((Scheme_Stx *)orig);
+
+  if (certs)
+    return scheme_stx_add_inactive_certs(o, (Scheme_Object *)certs);
+  else
+    return o;
+}
+
 Scheme_Object *scheme_stx_extract_certs(Scheme_Object *o, Scheme_Object *base_certs)
 {
   return (Scheme_Object *)append_certs((Scheme_Cert *)base_certs,

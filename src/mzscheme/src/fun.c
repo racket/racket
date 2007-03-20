@@ -2296,7 +2296,8 @@ _scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands)
 
 static Scheme_Object *
 cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv, 
-		   Scheme_Object *orig_code, Scheme_Comp_Env *cenv, int phase, 
+		   Scheme_Object *orig_code, Scheme_Object *closest_code,
+                   Scheme_Comp_Env *cenv, int phase, 
 		   int deflt, int cadr_deflt)
 {
   Scheme_Object *prop;
@@ -2374,10 +2375,16 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
   if (SCHEME_STX_PAIRP(code)) {
     Scheme_Object *a, *d, *v;
     
+    if (SCHEME_STXP(code))
+      closest_code = code;
+
     a = SCHEME_STX_CAR(code);
-    a = cert_with_specials(a, mark, menv, orig_code, cenv, phase, cadr_deflt, 0);
+    a = scheme_stx_propagate_inactive_certs(a, closest_code);
+    a = cert_with_specials(a, mark, menv, orig_code, closest_code, cenv, phase, cadr_deflt, 0);
     d = SCHEME_STX_CDR(code);
-    d = cert_with_specials(d, mark, menv, orig_code, cenv, phase, 1, next_cadr_deflt);
+    if (SCHEME_STXP(d))
+      d = scheme_stx_propagate_inactive_certs(d, closest_code);
+    d = cert_with_specials(d, mark, menv, orig_code, closest_code, cenv, phase, 1, next_cadr_deflt);
 
     v = scheme_make_pair(a, d);
 
@@ -2428,7 +2435,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
      code = scheme_datum_to_syntax(code, orig_code, scheme_sys_wraps(env), 0, 0);
    }
 
-   code = cert_with_specials(code, mark, menv, orig_code, env, env->genv->phase, 0, 0);
+   code = cert_with_specials(code, mark, menv, orig_code, orig_code, env, env->genv->phase, 0, 0);
 
    code = scheme_stx_track(code, orig_code, name);
 
@@ -2463,7 +2470,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
    code = scheme_add_remove_mark(code, mark);
 
-   code = cert_with_specials(code, mark, menv, orig_code, env, env->genv->phase, 0, 0);
+   code = cert_with_specials(code, mark, menv, orig_code, orig_code, env, env->genv->phase, 0, 0);
 
    code = scheme_stx_track(code, orig_code, name);
 

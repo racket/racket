@@ -715,6 +715,7 @@ Scheme_Object *scheme_stx_activate_certs(Scheme_Object *stx);
 
 Scheme_Object *scheme_stx_extract_certs(Scheme_Object *o, Scheme_Object *base_certs);
 Scheme_Object *scheme_stx_add_inactive_certs(Scheme_Object *o, Scheme_Object *certs);
+Scheme_Object *scheme_stx_propagate_inactive_certs(Scheme_Object *o, Scheme_Object *orig);
 
 int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *certs,
 			      Scheme_Object *than_id, Scheme_Object *than_certs);
