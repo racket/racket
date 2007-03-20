@@ -1545,7 +1545,7 @@ static Scheme_Object *wxPlaySound(int argc, Scheme_Object **argv)
 				    SCHEME_GUARD_FILE_READ);
 
 #ifdef wx_msw  
-  ok = PlaySound(f, NULL, async ? SND_ASYNC : SND_SYNC);
+  ok = PlaySoundW(wxWIDE_STRING(f), NULL, async ? SND_ASYNC : SND_SYNC);
 #endif
 #ifdef wx_mac
   {

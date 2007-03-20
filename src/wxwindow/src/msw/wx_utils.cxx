@@ -152,6 +152,64 @@ void wxInitUserResource(char *s)
    wxUserResourceFile = s;
 }
 
+static int wxDoResource(HKEY key, const char *entry, char **value_get, char *value_set) 
+{
+  int key_needs_close = 0, elen, sep_pos, success = 0;
+  unsigned long rlen;
+  
+  /* Split the value name from the registry entry: */
+  elen = strlen(entry);
+  for (sep_pos = elen - 1; (sep_pos >= 0) && (entry[sep_pos] != '\\'); sep_pos -= 1) {
+  }
+  if (sep_pos >= 0) {
+    HKEY hKey;
+    char *new_entry;
+
+    new_entry = new char[sep_pos + 1];
+    memcpy(new_entry, entry, sep_pos);
+    new_entry[sep_pos] = 0;
+      
+    /* Get a key for the entry: */
+    if (RegOpenKeyEx(key, new_entry, 0, value_get ? KEY_QUERY_VALUE : KEY_SET_VALUE, &hKey)
+	== ERROR_SUCCESS) {
+      key = hKey;
+      key_needs_close = 1;
+    } else
+      return FALSE;
+    /* name starts after the separator */
+    sep_pos++;
+  } else
+    sep_pos = 0;
+
+  if (value_get) {
+    /* Get the value. Start by finding out how big it is: */
+    rlen = 0;
+    if (RegQueryValueEx(key, entry XFORM_OK_PLUS sep_pos, NULL, NULL, NULL, 
+			&rlen) == ERROR_SUCCESS) {
+      char *res;
+      res = new char[rlen + 1];
+      if (RegQueryValueEx(key, entry XFORM_OK_PLUS sep_pos, NULL, NULL, 
+			  (unsigned char *)res, &rlen) == ERROR_SUCCESS) {
+	res[rlen + 1] = 0;
+	*value_get = res;
+	success = 1;
+      }
+    }
+  } else {
+    if (RegSetValueEx(key, entry XFORM_OK_PLUS sep_pos, 0,
+		      REG_SZ, (BYTE *)value_set, strlen(value_set))
+	== ERROR_SUCCESS) {
+      success = 1;
+    } else
+      success = 0;
+  }
+
+  if (key_needs_close)
+    RegCloseKey(key);
+    
+  return success;
+}
+
 Bool wxWriteResource(const char *section, const char *entry, char *value, const char *file)
 {
   HKEY key;
@@ -167,10 +225,7 @@ Bool wxWriteResource(const char *section, const char *entry, char *value, const 
 #undef TRY_HKEY
 
   if (key) {
-    if (RegSetValue(key, entry, REG_SZ, value, strlen(value)) == ERROR_SUCCESS) {
-      return TRUE;
-    }
-    return FALSE;
+    return wxDoResource(key, entry, NULL, value);
   } else {
     if (file) {
       char *naya;
@@ -237,50 +292,7 @@ Bool wxGetResource(const char *section, const char *entry, char **value, const c
 #undef TRY_HKEY
 
   if (key) {
-    int key_needs_close = 0, elen, sep_pos, success = 0;
-    unsigned long rlen;
-
-    /* Split the value name from the registry entry: */
-    elen = strlen(entry);
-    for (sep_pos = elen - 1; (sep_pos >= 0) && (entry[sep_pos] != '\\'); sep_pos -= 1) {
-    }
-    if (sep_pos >= 0) {
-      HKEY hKey;
-      char *new_entry;
-
-      new_entry = new char[sep_pos + 1];
-      memcpy(new_entry, entry, sep_pos);
-      new_entry[sep_pos] = 0;
-      
-      /* Get a key for the entry: */
-      if (RegOpenKeyEx(key, new_entry, 0, KEY_QUERY_VALUE, &hKey) == ERROR_SUCCESS) {
-	key = hKey;
-	key_needs_close = 1;
-      } else
-	return FALSE;
-      /* name starts after the separator */
-      sep_pos++;
-    } else
-      sep_pos = 0;
-
-    /* Get the value. Start by finding out how big it is: */
-    rlen = 0;
-    if (RegQueryValueEx(key, entry XFORM_OK_PLUS sep_pos, NULL, NULL, NULL, 
-			&rlen) == ERROR_SUCCESS) {
-      char *res;
-      res = new char[rlen + 1];
-      if (RegQueryValueEx(key, entry XFORM_OK_PLUS sep_pos, NULL, NULL, 
-			  (unsigned char *)res, &rlen) == ERROR_SUCCESS) {
-	res[rlen + 1] = 0;
-	*value = res;
-	success = 1;
-      }
-    }
-
-    if (key_needs_close)
-      RegCloseKey(key);
-    
-    return success;
+    return wxDoResource(key, entry, value, NULL);
   } else {
     static const char defunkt[] = "$$default";
     int no_file = !file;
