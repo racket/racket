@@ -117,6 +117,31 @@
   (test "0.333" pp-string #i0.333)
   (test "2.0+1.0i" pp-string #i2+1i))
 
+(let ()
+  (define-struct wrap (content))
+  (define (add-wrappers x)
+    (let loop ([x x])
+      (cond
+        [(symbol? x) (make-wrap x)]
+        [(pair? x) (cons (loop (car x))
+                         (loop (cdr x)))]
+        [else x])))
+  (parameterize ([pretty-print-remap-stylable
+                  (λ (x)
+                    (and (wrap? x)
+                         (wrap-content x)))]
+                 [pretty-print-columns 6]
+                 [pretty-print-size-hook
+                  (λ (val dsp? port)
+                    (if (wrap? val)
+                        (string-length (format "~s" (wrap-content val)))
+                        #f))]
+                 [pretty-print-print-hook
+                  (λ (val dsp? port)
+                    (write (wrap-content val) port))])
+    (test "(lambda (x)\n  abcdef)" pp-string (add-wrappers '(lambda (x) abcdef)))
+    (test "(call/cc\n  call/cc)" pp-string (add-wrappers '(call/cc call/cc)))))
+
 (parameterize ([print-struct #t])
   (let ()
     (define-struct s (x) (make-inspector))
