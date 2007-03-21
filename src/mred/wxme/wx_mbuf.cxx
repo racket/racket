@@ -2796,10 +2796,18 @@ void wxStandardSnipAdmin::GetView(double *x, double *y, double *w, double *h, wx
 	  *x = l - sl;
 	if (y)
 	  *y = t - st;
-	if (w)
-	  *w = (r - l);
-	if (h)
-	  *h = (b - t);
+	if (w) {
+          if (r < l)
+            *w = 0;
+          else
+            *w = (r - l);
+        }
+	if (h) {
+          if (b < t)
+            *h = 0;
+          else
+            *h = (b - t);
+        }
 	
 	return;
       }
