@@ -123,7 +123,7 @@
     (unless (file-exists? f)
       (error 'play-sound "file not found: ~e" f))
     ((if (eq? (system-type) 'unix) (force unix-play-command) wx:play-sound)
-     f async))
+     f async?))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Timers:
