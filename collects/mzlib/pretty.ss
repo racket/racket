@@ -29,7 +29,8 @@
 	    pretty-print-style-table?
 	    pretty-print-current-style-table
 	    pretty-print-extend-style-table
-
+            pretty-print-remap-stylable
+            
 	    pretty-printing
 	    pretty-print-newline
 	    make-tentative-pretty-print-output-port
@@ -178,6 +179,23 @@
 
    (define pretty-printing
      (make-parameter #f (lambda (x) (and x #t))))
+  
+  (define pretty-print-remap-stylable
+    (make-parameter (λ (x) #f) 
+                    (λ (f) 
+                      (unless (can-accept-n? 1 f)
+                        (raise-type-error
+                         'pretty-print-remap-stylable
+                         "procedure of 1 argument"
+                         f))
+                      (λ (x)
+                        (let ([res (f x)])
+                          (unless (or (not res) (symbol? res))
+                            (raise-type-error
+                             'pretty-print-remap-stylable
+                             "result of parameter function to be a symbol or #f"
+                             res))
+                          res)))))
 
    (define make-pretty-print
      (lambda (display?)
@@ -801,12 +819,17 @@
 		   pp-expr
 		   depth))
 	     (let ((head (car expr)))
-	       (if (and (symbol? head)
-			(not (size-hook head display?)))
+	       (if (or (and (symbol? head)
+                            (not (size-hook head display?)))
+                       ((pretty-print-remap-stylable) head))
 		   (let ((proc (style head)))
 		     (if proc
 			 (proc expr extra depth)
-			 (if (> (string-length (symbol->string head))
+			 (if (> (string-length 
+                                 (symbol->string
+                                  (if (symbol? head)
+                                      head
+                                      ((pretty-print-remap-stylable) head))))
 				max-call-head-width)
 			     (pp-general expr extra #f #f #f pp-expr depth)
 			     (pp-list expr extra pp-expr #t depth))))
@@ -965,10 +988,7 @@
        (define max-call-head-width 5)
 
        (define (style head)
-	 (case (or (hash-table-get (pretty-print-style-table-hash
-				    (pretty-print-current-style-table))
-				   head
-				   (lambda () #f))
+	 (case (or (look-in-style-table head)
 		   head)
 	   ((lambda λ define define-macro define-syntax
 		    syntax-rules
@@ -1015,6 +1035,18 @@
 	   (wr* pport obj depth display?)))
      (let-values ([(l col p) (port-next-location pport)])
        ((printing-port-print-line pport) #f col width)))
+  
+  (define (look-in-style-table raw-head)
+    (let ([head 
+           (cond
+             [((pretty-print-remap-stylable) raw-head)
+              => 
+              values]
+             [else raw-head])])
+      (hash-table-get (pretty-print-style-table-hash
+                       (pretty-print-current-style-table))
+                      head
+                      #f)))
    
    (define (read-macro? l)
      (define (length1? l) (and (pair? l) (null? (cdr l))))
