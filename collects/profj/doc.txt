@@ -159,12 +159,23 @@ _Libraries available to ProfessorJ:
   java.lang.Number
   java.lang.Double (see exceptions) 
   java.lang.Float (see exceptions) 
-  java.lang.Boolean (see exceptions) 
+  java.lang.Boolean (see exceptions)
+  java.lang.Integer (see exceptions)
+  java.lang.Byte (see exceptions)
+  java.lang.Character (see exceptions)
+  java.lang.Short (see exceptions)
+  java.lang.Long (see exceptions)
+  java.lang.Math
+  java.lang.Util (see explanation)
+  
   java.io.Serializable
   java.util.Random
 
-  Teachpacks (PLT/collects/htdch)
+  Teachpacks (PLT/collects/htdch) -- Documentation for libraries can be found in draw and idraw
   draw.*
+  colors.*
+  geometry.*
+  idraw.*
 
   exceptions:
    String: String(byte[],int,int,String) -- incorrect
@@ -181,6 +192,27 @@ _Libraries available to ProfessorJ:
            longBitsToDouble -- not implemented
    Float:  floatToIntBits, floatToRawBits, longBitsToFloat -- not implemented
    Boolean: getBoolean(String) not implemented
+   Integer: May not correctly parse strings into integers in all cases
+   Short, Long, Byte: See Integer
+   Character: Does not supported nested Character classes, nor any unicode operations
+              isDefined -- unimplemented
+              isJavaIdentifierStart -- unimplemented
+              isJavaLetterOrDigit -- unimplemented
+              isJavaLetter -- unimplemented
+              isJavaIdentifierPart -- unimplemented
+              isUnicodeIdentifierStart -- unimplemented
+              isUnicodeIdentifierPart -- unimplemented
+              isIdentifierIgnorable -- unimplemented
+              getNumericValue -- unimplemented
+              getType -- unimplemented
+              getDirectionality -- unimplemented
+              isMirrored -- unimplemented
+              
+   explanations:
+    java.lang.Util is a class added to java.lang for pedagogic use
+      contains one method: error( String message ) -> dynamic
+       error can be used to signal a runtime error in a program, displaying the string value as
+       the error message              
 
 
 _Capabilities registerd by ProfJ
