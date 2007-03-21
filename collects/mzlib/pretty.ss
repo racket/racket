@@ -988,8 +988,7 @@
        (define max-call-head-width 5)
 
        (define (style head)
-	 (case (or (look-in-style-table head)
-		   head)
+	 (case (look-in-style-table head)
 	   ((lambda λ define define-macro define-syntax
 		    syntax-rules
 		    shared
@@ -1043,10 +1042,11 @@
               => 
               values]
              [else raw-head])])
-      (hash-table-get (pretty-print-style-table-hash
-                       (pretty-print-current-style-table))
-                      head
-                      #f)))
+      (or (hash-table-get (pretty-print-style-table-hash
+                           (pretty-print-current-style-table))
+                          head
+                          #f)
+          head)))
    
    (define (read-macro? l)
      (define (length1? l) (and (pair? l) (null? (cdr l))))
