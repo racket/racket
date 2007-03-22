@@ -279,12 +279,11 @@
       
       (define/augment (on-interactive-move evt)
         (invalidate-selected-snips)
-        #;(super on-interactive-move evt)
-        )
+        (inner (void) on-interactive-move evt))
       
       (define/augment (after-interactive-move evt)
         (invalidate-selected-snips)
-        #;(super on-interactive-move evt))
+        (inner (void) on-interactive-move evt))
       
       (define/override (interactive-adjust-move snip x y)
         (let ([dc (get-dc)])
@@ -296,7 +295,7 @@
         (let ([dc (get-dc)])
           (when dc
             (invalidate-to-children/parents snip dc)))
-        #;(super after-insert snip before x y))
+        (inner (void) after-insert snip before x y))
       
       ;; invalidate-selected-snips : -> void
       ;; invalidates the region around the selected
