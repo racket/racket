@@ -370,16 +370,15 @@ module browser threading seems wrong.
       
       (define (make-definitions-text%)
         (let ([definitions-super%
-               ((get-program-editor-mixin)
-                (drscheme:module-language:module-language-put-file-mixin
-                 (scheme:text-mixin
-                  (color:text-mixin
-                   (drscheme:rep:drs-bindings-keymap-mixin
-                    (mode:host-text-mixin
-                     (text:delegate-mixin
-                      (text:nbsp->space-mixin
+                ((get-program-editor-mixin)
+                 (drscheme:module-language:module-language-put-file-mixin
+                  (scheme:text-mixin
+                   (color:text-mixin
+                    (drscheme:rep:drs-bindings-keymap-mixin
+                     (mode:host-text-mixin
+                      (text:delegate-mixin
                        (text:foreground-color-mixin
-                        text:info%)))))))))])
+                        text:info%))))))))])
           (class* definitions-super% (definitions-text<%>)
             (inherit get-top-level-window)
             

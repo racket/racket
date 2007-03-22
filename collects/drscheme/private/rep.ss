@@ -1728,7 +1728,6 @@ TODO
              (text:info-mixin
               (editor:info-mixin
                (text:searching-mixin
-                (text:nbsp->space-mixin
-                 (mode:host-text-mixin
-                  (text:foreground-color-mixin
-                   text:clever-file-format%))))))))))))))
+                (mode:host-text-mixin
+                 (text:foreground-color-mixin
+                  text:clever-file-format%)))))))))))))
