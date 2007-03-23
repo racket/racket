@@ -252,11 +252,14 @@
       (login-page null (aget (request-bindings initial-request) 'handin) #f)))
 
   (define interface-version 'v2-transitional)
-  (define timeout 20)
+  (define timeout 600)
 
   (define (instance-expiration-handler failed-request)
-    `(html (body "Your session has expired, please "
-                 (a ([href "/servlets/status.ss"]) "restart")
-                 ".")))
+    (let ([this (servlet-url->url-string/no-continuation
+                 (request->servlet-url failed-request))])
+      `(html (head (meta [(http-equiv "refresh")
+                          (content ,(format "3;URL=~a" this))]))
+             (body "Your session has expired, "
+                   (a ([href ,this]) "restarting") " in 3 seconds."))))
 
   (provide interface-version timeout start instance-expiration-handler))
