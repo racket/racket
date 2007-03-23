@@ -42,9 +42,6 @@
                                         (if (path? tag) (path->string tag) tag)
                                         ""))))
 
-  (define (select-k request)
-    (aget (request-bindings request) 'tag))
-
   ;; `look-for' can be a username as a string (will find "bar+foo" for "foo"),
   ;; or a regexp that should match the whole directory name (used with
   ;; "^solution" below)
@@ -73,18 +70,17 @@
                                  string<?))))])
       (if (pair? l)
         (cdr (apply append
-                    (map (lambda (i) `((br) ,i))
-                         (map (lambda (f)
-                                (let ([hi (build-path dir f)])
-                                  `(font ()
-                                     (a ([href ,(make-k k hi)]) ,f)
-                                     " ("
-                                     ,(date->string
-                                       (seconds->date
-                                        (file-or-directory-modify-seconds hi))
-                                       #t)
-                                     ")")))
-                              l))))
+                    (map (lambda (f)
+                           (let ([hi (build-path dir f)])
+                             `((br)
+                               (a ([href ,(make-k k hi)]) ,f)
+                               " ("
+                               ,(date->string
+                                 (seconds->date
+                                  (file-or-directory-modify-seconds hi))
+                                 #t)
+                               ")")))
+                         l)))
         (list (format "No handins accepted so far for user ~s, assignment ~s"
                       user hi)))))
 
@@ -129,7 +125,7 @@
                       `(p ,@(solution-link k for-handin))
                       `(p (a ([href ,(make-k k "allofthem")])
                             ,(format "All handins for ~a" user))))))]
-           [tag (select-k next)])
+           [tag (aget (request-bindings next) 'tag)])
       (if (string=? tag "allofthem")
         (all-status-page user)
         (download user tag))))
@@ -156,7 +152,7 @@
                    (tr () ,@(map header '(nbsp "Files" "Grade" "Solution")))
                    ,@(append (map (row k #t) (get-conf 'active-dirs))
                              (map (row k #f) (get-conf 'inactive-dirs)))))))]
-           [tag (select-k next)])
+           [tag (aget (request-bindings next) 'tag)])
       (download user tag)))
 
   (define (download who tag)
@@ -255,7 +251,12 @@
     (parameterize ([current-session (web-counter)])
       (login-page null (aget (request-bindings initial-request) 'handin) #f)))
 
-  (provide interface-version timeout start)
-  (define interface-version 'v1)
-  (define timeout 180)
-  )
+  (define interface-version 'v2-transitional)
+  (define timeout 20)
+
+  (define (instance-expiration-handler failed-request)
+    `(html (body "Your session has expired, please "
+                 (a ([href "/servlets/status.ss"]) "restart")
+                 ".")))
+
+  (provide interface-version timeout start instance-expiration-handler))
