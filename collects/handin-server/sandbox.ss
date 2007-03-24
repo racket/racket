@@ -13,7 +13,9 @@
            sandbox-output
            get-output
            get-uncovered-expressions
-           make-evaluator)
+           make-evaluator
+           call-with-limits
+           with-limits)
 
   (define mred?
     (with-handlers ([void (lambda (_) #f)])
@@ -159,24 +161,6 @@
                                             (get-module-code (car todo))))
                                          list))))
                  (cons path r)))])))
-  ;; (define (module-spec->paths mod)
-  ;;   (let loop ([todo (list (simplify-path* (resolve-module-path mod #f)))]
-  ;;              [r '()])
-  ;;     (cond
-  ;;       [(null? todo) r]
-  ;;       [(member (car todo) r) (loop (cdr todo) r)]
-  ;;       [else
-  ;;        (let ([path (car todo)])
-  ;;          (loop (map (lambda (i)
-  ;;                       (simplify-path* (resolve-module-path-index i path)))
-  ;;                     (filter module-path-index?
-  ;;                             (apply append
-  ;;                                    (call-with-values
-  ;;                                        (lambda ()
-  ;;                                          (module-compiled-imports
-  ;;                                           (get-module-code (car todo))))
-  ;;                                        list))))
-  ;;                (cons path r)))])))
 
   ;; Execution ----------------------------------------------------------------
 
