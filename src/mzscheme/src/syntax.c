@@ -5301,14 +5301,13 @@ do_letrec_syntaxes(const char *where,
 	Scheme_Object *formname;
 	formname = SCHEME_STX_CAR(forms);
 	v = icons(formname, icons(bindings, icons(var_bindings, v)));
-      } else
-	/* Should this be `let' instead? */
-	v = icons(begin_symbol, v);
+      } else {
+	v = icons(let_values_symbol, icons(scheme_null, v));
+      }
 
       if (SCHEME_PAIRP(v))
 	v = scheme_datum_to_syntax(v, forms, scheme_sys_wraps(origenv), 
 				   0, 2);
-      
     }
   } else {
     /* Construct letrec-values expression: */
