@@ -11,7 +11,9 @@
   (provide (all-from (lib "turbo.ss" "swindle"))
            (all-from (lib "clos.ss" "swindle"))
            (all-from (lib "extra.ss" "swindle")))
-  (current-prompt-read (lambda () (display "=> ") (read)))
+  (current-prompt-read
+   (let ([old-prompt-read (current-prompt-read)])
+     (lambda () (display "=") (flush-output) (old-prompt-read))))
   (install-swindle-printer)
   ;; This comes out ugly in DrScheme.
   ;; (printf
