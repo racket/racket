@@ -94,19 +94,20 @@
       (make-security-guard
        orig-security
        (lambda (what path modes)
-         (let ([needed (let loop ([order permission-order])
-                         (cond [(null? order)
-                                (error 'default-sandbox-guard
-                                       "unknown access modes: ~e" modes)]
-                               [(memq (car order) modes) (car order)]
-                               [else (loop (cdr order))]))]
-               [bpath (parameterize ([current-security-guard orig-security])
-                        (path->bytes (simplify-path* path)))])
-           (unless (ormap (lambda (perm)
-                            (and (perm<=? needed (car perm))
-                                 (path-ok? bpath (cadr perm))))
-                          (sandbox-path-permissions))
-             (error what "file access denied ~a" (cons path modes)))))
+         (when path
+           (let ([needed (let loop ([order permission-order])
+                           (cond [(null? order)
+                                  (error 'default-sandbox-guard
+                                         "unknown access modes: ~e" modes)]
+                                 [(memq (car order) modes) (car order)]
+                                 [else (loop (cdr order))]))]
+                 [bpath (parameterize ([current-security-guard orig-security])
+                          (path->bytes (simplify-path* path)))])
+             (unless (ormap (lambda (perm)
+                              (and (perm<=? needed (car perm))
+                                   (path-ok? bpath (cadr perm))))
+                            (sandbox-path-permissions))
+               (error what "file access denied ~a" (cons path modes))))))
        (lambda (what . xs) (error what "network access denied: ~e" xs)))))
 
   (define sandbox-security-guard (make-parameter default-sandbox-guard))
