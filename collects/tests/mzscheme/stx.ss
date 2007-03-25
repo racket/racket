@@ -637,8 +637,8 @@
 ;; Disappearing syntax decls:
 (test #t has-stx-property? (expand #'(let () (define-syntax x 1) (define y 12) 10)) 'letrec-values 'x 'disappeared-binding)
 (test #t has-stx-property? (expand #'(let () (define-struct s (x)) 10)) 'letrec-values 's 'disappeared-binding)
-(test #t has-stx-property? (expand #'(let () (define-syntax x 1) 10)) 'begin 'x 'disappeared-binding)
-(test #f has-stx-property? (expand #'(fluid-let-syntax ([x 1]) 10)) 'begin 'x 'disappeared-binding)
+(test #t has-stx-property? (expand #'(let () (define-syntax x 1) 10)) 'let-values 'x 'disappeared-binding)
+(test #f has-stx-property? (expand #'(fluid-let-syntax ([x 1]) 10)) 'let-values 'x 'disappeared-binding)
 
 ;; Disappearing use:
 (test #t has-stx-property? (expand #'(let () (define-struct a (x)) (define-struct (b a) (z)) 10))
@@ -655,9 +655,9 @@
                 (printf "~s\n" (syntax-object->datum #'beg))
                 (let-values ([(bg e)
                               (syntax-case #'beg (#%app #%top list)
-                                [(bg (#%app (#%top . list) e))
+                                [(bg () (#%app (#%top . list) e))
                                  (values #'bg #'e)]
-                                [(bg e)
+                                [(bg () e)
                                  (values #'bg #'e)])])
                   (let ([o (syntax-property e 'origin)])
                     (test #t (lambda (db o)
@@ -1179,6 +1179,31 @@
   (go 10)) ; access to unchecked-go is allowed
 
 (require @-n)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Propagating inactive certificates through a transparent macro-expansion result:
+
+(module @!m mzscheme
+  (provide define-x)
+  
+  (define-syntax (define-x stx)
+    (syntax-case stx ()
+      [(_ x)
+       #'(define-syntax (x stx)
+           #'(begin
+               (define-y y 10)))]))
+  
+  (define-syntax define-y
+    (syntax-rules ()
+      [(_ id v)
+       (define id v)])))
+
+(module @!n mzscheme
+  (require @!m)
+  (define-x def-y)
+  (def-y))
+
+;; If we get here, then macro expansion didn't fail.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
