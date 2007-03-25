@@ -408,7 +408,9 @@ TODO
                   (send text copy-next-previous-expr)))
           
           (keymap:send-map-function-meta keymap "p" "put-previous-sexp")
-          (keymap:send-map-function-meta keymap "n" "put-next-sexp")))
+          (keymap:send-map-function-meta keymap "n" "put-next-sexp")
+          (send keymap map-function "c:up" "put-previous-sexp")
+          (send keymap map-function "c:down" "put-next-sexp")))
       
       (define scheme-interaction-mode-keymap (make-object keymap:aug-keymap%))
       (setup-scheme-interaction-mode-keymap scheme-interaction-mode-keymap)
