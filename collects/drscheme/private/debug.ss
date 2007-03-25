@@ -190,7 +190,6 @@ profile todo:
                            [(begin expr ...)
                             ;; Found a `begin', so expand/eval each contained 
                             ;; expression one at a time 
-                            
                             (let i-loop ([exprs (syntax->list #'(expr ...))]
                                          [last-one (list (void))])
                               (cond
@@ -201,24 +200,12 @@ profile todo:
                                          (call-with-values 
                                           (λ () 
                                             (call-with-continuation-prompt
-                                             (λ ()
-                                               (loop (car exprs)))))
-                                          list))]))
-                            
-                            ;; the version below behaves properly wrt continuations
-                            ;; but doesn't match mzscheme. So, we use the one above.
-                            #;
-                            (let ([exprs (syntax->list #'(expr ...))]
-                                  [last-one (list (void))])
-                              (let i-loop ()
-                                (cond
-                                  [(null? exprs) 
-                                   (apply values last-one)]
-                                  [else 
-                                   (let ([exp (car exprs)])
-                                     (set! exprs (cdr exprs))
-                                     (set! last-one (call-with-values (λ () (loop exp)) list))
-                                     (i-loop))])))]
+                                             (λ () (loop (car exprs)))
+                                             (default-continuation-prompt-tag)
+                                             (λ args
+                                               (abort-current-continuation 
+                                                (default-continuation-prompt-tag)))))
+                                          list))]))]
                            [_else 
                             ;; Not `begin', so proceed with normal expand and eval 
                             (let* ([annotated (annotate-top (expand-syntax top-e) #f)])
