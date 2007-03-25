@@ -143,4 +143,25 @@
               `(send (get-top-level-focus-window) close))))))))
   
   (test-open "frame:searchable open" 'frame:searchable%)
-  (test-open "frame:text open" 'frame:text%))
+  (test-open "frame:text open" 'frame:text%)
+  
+  
+  ;; test to be sure that shutting down one frame doesn't kill others
+  (test
+   "custodian shutdown old frame"
+   (lambda (x) (eq? 'passed x))
+   (lambda ()
+     (send-sexp-to-mred
+      `(let ([c (make-custodian)])
+         (parameterize ((current-custodian c))
+           (parameterize ((current-eventspace (make-eventspace)))
+             (send (new frame:basic% (label "to be shutdown"))
+                   show #t)))
+         (custodian-shutdown-all c)
+         (send (new frame:basic% (label "after shutdown")) show #t)))
+     (wait-for-frame "after shutdown")
+     (queue-sexp-to-mred
+      '(send (get-top-level-focus-window) close))
+     'passed))
+  
+  )
