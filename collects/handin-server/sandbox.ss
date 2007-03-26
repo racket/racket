@@ -11,8 +11,10 @@
            sandbox-path-permissions
            sandbox-input
            sandbox-output
+           sandbox-eval-limits
            get-output
            get-uncovered-expressions
+           set-eval-limits
            make-evaluator
            call-with-limits
            with-limits)
@@ -30,7 +32,7 @@
 
   (define sandbox-input  (make-parameter #f))
   (define sandbox-output (make-parameter #f))
-  (define null-input (open-input-bytes #""))
+  (define sandbox-eval-limits (make-parameter '(30 10))) ; 30sec, 10mb
 
   (define coverage-enabled (make-parameter #f))
 
@@ -264,99 +266,104 @@
   (define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
   (define make-eventspace    (mz/mr void make-eventspace))
   (define run-in-bg          (mz/mr thread queue-callback))
+  (define null-input         (open-input-bytes #""))
 
   (define (get-uncovered-expressions eval) (eval get-uncovered-expressions))
-  (define (get-output eval) (eval get-output))
+  (define (get-output eval)                (eval get-output))
+  (define (set-eval-limits eval . args)    (apply (eval set-eval-limits) args))
 
   (define (make-evaluator language teachpacks input-program)
-    (let ([coverage-enabled (coverage-enabled)]
-          [uncovered-expressions #f]
-          [input-ch  (make-channel)]
-          [result-ch (make-channel)]
-          [output    #f])
-      (parameterize
-          ([current-namespace (make-evaluation-namespace)]
-           [current-inspector (make-inspector)]
-           [current-library-collection-paths
-            (filter directory-exists?
-                    (append (sandbox-override-collection-paths)
-                            (current-library-collection-paths)))]
-           [exit-handler (lambda x (error 'exit "user code cannot exit"))]
-           [current-input-port
-            (let ([inp (sandbox-input)]) (if inp (input->port inp) null-input))]
-           [current-output-port
-            (let ([out (sandbox-output)])
-              (cond [(not out) (open-output-nowhere)]
-                    [(output-port? out) (set! output out) out]
-                    [(eq? out 'pipe)
-                     (let-values ([(i o) (make-pipe)]) (set! output i) o)]
-                    [(memq out '(bytes string))
-                     (let-values
-                         ([(open get)
-                           (if (eq? out 'bytes)
-                             (values open-output-bytes  get-output-bytes)
-                             (values open-output-string get-output-string))])
-                       (let ([o (open)])
-                         (set! output (lambda ()
-                                        (let ([o1 o])
-                                          (set! o (open))
-                                          (current-output-port o)
-                                          (get-output-bytes o1))))
-                         o))]
-                    [else (error 'make-evaluator "bad output: ~e" out)]))]
-           [sandbox-path-permissions
-            (append (sandbox-path-permissions)
-                    (get-lib-permissions (sandbox-override-collection-paths))
-                    (require-perms language teachpacks))]
-           [current-security-guard (sandbox-security-guard)])
-        ;; Note the above definition of `current-eventspace': in MzScheme, it
-        ;; is a parameter that is not used at all.  Also note that creating an
-        ;; eventspace starts a thread that will eventually run the callback
-        ;; code (which evaluates the program in `run-in-bg') -- so this
-        ;; parameterization must be nested in the above, or it will not use the
-        ;; new namespace.
-        (parameterize ([current-eventspace (make-eventspace)])
-          (run-in-bg
-           (lambda ()
-             ;; First read program and evaluate it as a module:
-             (with-handlers ([void (lambda (exn) (channel-put result-ch exn))])
-               (evaluate-program
-                language teachpacks input-program
-                (and coverage-enabled
-                     (lambda (exprs) (set! uncovered-expressions exprs))))
-               (channel-put result-ch 'ok))
-             ;; Now wait for interaction expressions:
-             (let loop ()
-               (let ([expr (channel-get input-ch)])
-                 (unless (eof-object? expr)
-                   (with-handlers ([void (lambda (exn)
-                                           (channel-put result-ch
-                                                        (cons 'exn exn)))])
-                     (channel-put result-ch
-                                  (cons 'vals (call-with-values
-                                                  (lambda () (eval expr))
-                                                  list))))
-                   (loop))))
-             (let loop ()
-               (channel-put result-ch '(exn . no-more-to-evaluate))
-               (loop))))
-          (let ([r (channel-get result-ch)])
-            (define (eval-in-user-context expr)
-              (channel-put input-ch expr)
-              (let ([r (channel-get result-ch)])
-                (if (eq? (car r) 'exn) (raise (cdr r)) (apply values (cdr r)))))
-            (if (eq? r 'ok)
-              ;; Initial program executed ok, so return an evaluator:
-              (lambda (expr)
-                (cond [(eq? expr get-uncovered-expressions)
-                       uncovered-expressions]
-                      [(eq? expr get-output)
-                       (if (procedure? output)
-                         (eval-in-user-context `(,output))
-                         output)]
-                      [else (eval-in-user-context expr)]))
-              ;; Program didn't execute:
-              (raise r)))))))
+    (define coverage? (coverage-enabled))
+    (define uncovered-expressions #f)
+    (define input-ch  (make-channel))
+    (define result-ch (make-channel))
+    (define output    #f)
+    (define limits    (sandbox-eval-limits))
+    (define (user-process)
+      ;; First read program and evaluate it as a module:
+      (with-handlers ([void (lambda (exn) (channel-put result-ch exn))])
+        (evaluate-program
+         language teachpacks input-program
+         (and coverage? (lambda (exprs) (set! uncovered-expressions exprs))))
+        (channel-put result-ch 'ok))
+      ;; Now wait for interaction expressions:
+      (let loop ()
+        (let ([expr (channel-get input-ch)])
+          (unless (eof-object? expr)
+            (with-handlers ([void (lambda (exn)
+                                    (channel-put result-ch (cons 'exn exn)))])
+              (let* ([sec (and limits (car limits))]
+                     [mb  (and limits (cadr limits))]
+                     [run (if (or sec mb)
+                            (lambda () (with-limits sec mb (eval expr)))
+                            (lambda () (eval expr)))])
+                (channel-put result-ch
+                             (cons 'vals (call-with-values run list)))))
+            (loop))))
+      (let loop ()
+        (channel-put result-ch '(exn . nothing-more-to-evaluate))
+        (loop)))
+    (define (user-eval expr)
+      (channel-put input-ch expr)
+      (let ([r (channel-get result-ch)])
+        (if (eq? (car r) 'exn) (raise (cdr r)) (apply values (cdr r)))))
+    (define (evaluator expr)
+      (cond [(eq? expr get-output)
+             (if (procedure? output) (user-eval `(,output)) output)]
+            [(eq? expr get-uncovered-expressions)
+             uncovered-expressions]
+            [(eq? expr set-eval-limits)
+             (lambda args (set! limits args))]
+            [else (user-eval expr)]))
+    (parameterize
+        ([current-namespace (make-evaluation-namespace)]
+         [current-inspector (make-inspector)]
+         [current-library-collection-paths
+          (filter directory-exists?
+                  (append (sandbox-override-collection-paths)
+                          (current-library-collection-paths)))]
+         [exit-handler (lambda x (error 'exit "user code cannot exit"))]
+         [current-input-port
+          (let ([inp (sandbox-input)]) (if inp (input->port inp) null-input))]
+         [current-output-port
+          (let ([out (sandbox-output)])
+            (cond [(not out) (open-output-nowhere)]
+                  [(output-port? out) (set! output out) out]
+                  [(eq? out 'pipe)
+                   (let-values ([(i o) (make-pipe)]) (set! output i) o)]
+                  [(memq out '(bytes string))
+                   (let-values
+                       ([(open get)
+                         (if (eq? out 'bytes)
+                           (values open-output-bytes  get-output-bytes)
+                           (values open-output-string get-output-string))])
+                     (let ([o (open)])
+                       (set! output (lambda ()
+                                      (let ([o1 o])
+                                        (set! o (open))
+                                        (current-output-port o)
+                                        (get-output-bytes o1))))
+                       o))]
+                  [else (error 'make-evaluator "bad output: ~e" out)]))]
+         [sandbox-path-permissions
+          (append (sandbox-path-permissions)
+                  (get-lib-permissions (sandbox-override-collection-paths))
+                  (require-perms language teachpacks))]
+         [current-security-guard (sandbox-security-guard)])
+      ;; Note the above definition of `current-eventspace': in MzScheme, it is
+      ;; a parameter that is not used at all.  Also note that creating an
+      ;; eventspace starts a thread that will eventually run the callback code
+      ;; (which evaluates the program in `run-in-bg') -- so this
+      ;; parameterization must be nested in the above, or it will not use the
+      ;; new namespace.
+      (parameterize ([current-eventspace (make-eventspace)])
+        (run-in-bg user-process)
+        (let ([r (channel-get result-ch)])
+          (if (eq? r 'ok)
+            ;; Initial program executed ok, so return an evaluator:
+            evaluator
+            ;; Program didn't execute:
+            (raise r))))))
 
   ;; Resources ----------------------------------------------------------------
 

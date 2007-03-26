@@ -644,12 +644,6 @@ by this function.
   (which means that the contents may be unreliable, but the position
   is).  The default is `#f'.
 
-> (get-uncovered-expressions evaluator)
-  When this is used with an evaluator that was created with
-  `make-evaluator', it will return a list of uncovered syntax
-  objects.  (It can also be provided as an argument to the evaluator,
-  with the same result.)
-
 > namespace-specs
   A parameter that holds a list of values that specify how to create a
   namespace for evaluation in `make-evaluator'.  The first item in the
@@ -724,18 +718,17 @@ by this function.
     `get-output' returns the input end of the pipe.
   (Note that error output is *not* redirected.)
 
-> (get-output evaluator)
-  When this is used with an evaluator that was created with
-  `make-evaluator', it will return the output of the evaluator.  (It
-  can also be provided as an argument to the evaluator, with the same
-  result.)  The result depends on the value of the `sandbox-output'
-  parameter at the time the evaluator was created: if it was `#f' then
-  `get-output' will return `#f', if it was the symbol `pipe' then
-  `get-output' returns an input port that is being fed by the pipe,
-  and if it was the symbol `bytes' or `string' then `get-output'
-  returns the accumulated output and resets the evaluator's output to
-  a new output string or byte string (so each call returns a piece of
-  the evaluator's output).
+> sandbox-eval-limits
+  A parameter that determines the default limits on each use of a
+  `make-evaluator' function.  Its value should be a list of two
+  numbers, the first is a timeout value in seconds, and the second is
+  for setting a memory limit in megabytes.  Either one can be `#f' for
+  disabling the corresponding limit (or the parameter can be set to
+  `#f' to disble both).  When limits are set `with-limits' (see blow)
+  is wrapped around any use of an evaluator, so consuming too much
+  time or memory results in an exception.  After an evaluator is
+  generated, its limits can be modified using `set-eval-limits' below
+  (the parameter value is used to initialize a new evaluator).
 
 > (make-evaluator language teachpack-paths input-program)
   This is the main entry point for the sandbox module.
@@ -774,15 +767,46 @@ by this function.
   See also `with-limits' below for adding resource limits, and
   `get-uncovered-expressions' above for enforcing test coverage.
 
+> (get-output evaluator)
+  When this is used with an evaluator that was created with
+  `make-evaluator', it will return the output of the evaluator.  (It
+  can also be provided as an argument to the evaluator, with the same
+  result.)  The result depends on the value of the `sandbox-output'
+  parameter at the time the evaluator was created: if it was `#f' then
+  `get-output' will return `#f', if it was the symbol `pipe' then
+  `get-output' returns an input port that is being fed by the pipe,
+  and if it was the symbol `bytes' or `string' then `get-output'
+  returns the accumulated output and resets the evaluator's output to
+  a new output string or byte string (so each call returns a piece of
+  the evaluator's output).
+
+> (get-uncovered-expressions evaluator)
+  When this is used with an evaluator that was created with
+  `make-evaluator', it will return a list of uncovered syntax
+  objects.  (It can also be provided as an argument to the evaluator,
+  with the same result.)
+
+> (set-eval-limits evaluator sec mb)
+  Changes the per-expression limits that the evaluator uses.  This
+  procedure should be used to modify an evaluator limits -- changing
+  the `sandbox-eval-limits' parameter (see above) does not affect
+  existing evaluators.  See also `with-limits' below.
+
 > (call-with-limits sec mb thunk)
   This function executes the given thunk with memory and time
   restrictions: if execution consumes more than `mb' megabytes or more
   that `sec' seconds, then the computation is aborted and an error is
   thrown.  Otherwise the result of the thunk is returned (a value,
   multiple values, or raise an exception).  Each of the two limits can
-  be `#f' to disable it.
+  be `#f' to disable it.  (Note: memory limits requires running in a
+  3m executable.)
 
-  (Note: memory limit requires running in a 3m executable.)
+  This is used in `make-evaluator' functions, according to the
+  `sandbox-eval-limits' setting and uses of `set-eval-limits': each
+  expression evaluation is protected from timeouts and memory
+  problems.  This means that you normally would not use it -- but you
+  may want to limit a whole testing session instead of each expression
+  (eg, when you want to run tests faster).
 
 > (with-limits sec mb body ...)
   A macro version of the above.
