@@ -5664,7 +5664,7 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
   }
 
   value = compose_continuation(cont, 0, NULL);
-
+  
   scheme_current_thread->next_meta -= 1;
 
   if (!value) {

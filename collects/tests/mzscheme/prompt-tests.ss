@@ -1613,6 +1613,60 @@
                            (k (lambda () (w 12))))
                          p1)))))))))))))
 
+;; Test capturing and invoking a composable continuation in a post thunk
+(let ()
+  (define call/pt call-with-continuation-prompt)
+  (define call/comp-cc call-with-composable-continuation)
+  (define (go p0 direct?)
+    (define accum null)
+    (define (print v) (set! accum (append accum (list v))))
+    (define a #f)
+    (define do-a? #t)
+    (call/pt
+     (lambda ()
+       (dynamic-wind
+           (lambda () (print 1))
+           (lambda ()
+             (begin
+               (dynamic-wind
+                   (lambda () (print 2))
+                   (lambda () 
+                     ((call/cc (lambda (k)
+                                 (begin
+                                   (set! a k)
+                                   (lambda () 12)))
+                               p0)))
+                   (lambda () (print 3)))
+               (dynamic-wind
+                   (lambda () (print 4))
+                   (lambda ()
+                     (if do-a?
+                         (begin
+                           (set! do-a? #f)
+                           (a (lambda () 11)))
+                         12))
+                   (lambda ()
+                     (begin
+                       (print 5)
+                       (call/comp-cc
+                        (lambda (k)
+                          (if direct?
+                              (k 10)
+                              (call/pt
+                               (lambda ()
+                                 (k 10))
+                               p0
+                               (lambda (x) x))))
+                        p0))))))
+           (lambda () (print 6))))
+     p0
+     (lambda (x) x))
+    accum)
+  (test '(1 2 3 4 5 1 6 2 3 4 5 1 6 6) go (default-continuation-prompt-tag) #t)
+  (test '(1 2 3 4 5 1 6 2 3 4 5 1 6 6) go (make-continuation-prompt-tag) #t)
+  (test '(1 2 3 4 5 1 2 3 4 5 1 6 6 2 3 4 5 1 6 6) go (default-continuation-prompt-tag) #f)
+  (test '(1 2 3 4 5 1 2 3 4 5 1 6 6 2 3 4 5 1 6 6) go (make-continuation-prompt-tag) #f))
+
 ;; ----------------------------------------
 ;; Try long chain of composable continuations
 

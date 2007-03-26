@@ -5817,15 +5817,18 @@ void scheme_recheck_prompt_and_barrier(Scheme_Cont *c)
   check_barrier(prompt, prompt_cont, prompt_pos, c);
 }
 
-static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int common_depth)
+static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int common_depth,
+                               Scheme_Dynamic_Wind **_common)
 {
   int meta_depth;
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Dynamic_Wind *dw;
   int old_cac = scheme_continuation_application_count;
 
+  *_common = common;
+
   for (dw = p->dw; 
-       ((common && common->id) ? dw->id != common->id : dw != common); 
+       (common ? dw->depth != common->depth : dw != common);  /* not id, which may be duplicated */
        ) {
     meta_depth = p->next_meta;
     p->next_meta += dw->next_meta;
@@ -5851,12 +5854,13 @@ static int exec_dyn_wind_posts(Scheme_Dynamic_Wind *common, Scheme_Cont *c, int 
       dw = p->dw;
 
       /* If any continuations were applied, then the set of dynamic
-         winds may be different now than before Re-compute the
+         winds may be different now than before. Re-compute the
          intersection. */
       if (scheme_continuation_application_count != old_cac) {
         old_cac = scheme_continuation_application_count;
         
         common = intersect_dw(p->dw, c->dw, c->prompt_tag, c->has_prompt_dw, &common_depth);
+        *_common = common;
       }
     } else
       dw = dw->prev;
@@ -5868,7 +5872,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Cont *c;
-  Scheme_Dynamic_Wind *common;
+  Scheme_Dynamic_Wind *common, *new_common;
   Scheme_Object *value;
   Scheme_Meta_Continuation *prompt_mc;
   MZ_MARK_POS_TYPE prompt_pos;
@@ -5925,7 +5929,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
 
     /* For dynamic-winds after `common' in this
        continuation, execute the post-thunks */
-    common_depth = exec_dyn_wind_posts(common, c, common_depth);
+    common_depth = exec_dyn_wind_posts(common, c, common_depth, &new_common);
     p = scheme_current_thread;
 
     if (orig_cac != scheme_continuation_application_count) {
@@ -5933,6 +5937,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
          get prompt & barrier again. */
       prompt = lookup_cont_prompt(c, &prompt_mc, &prompt_pos, "shouldn't fail!");
       barrier_prompt = scheme_get_barrier_prompt(NULL, NULL);
+      common = new_common;
     }
 
     c->common_dw_depth = common_depth;
