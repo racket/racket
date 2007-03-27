@@ -151,12 +151,14 @@
                      (if (eof-object? super-result)
                          #`(begin 
                              (current-module-name-prefix #f)
-                             (eval '(require #,(get-full-module-name)))
-                             (eval '(current-namespace (module->namespace '#,(get-full-module-name)))))
+                             (call-with-continuation-prompt
+                              (λ () (eval '(require #,(get-full-module-name))))))
                          (raise-syntax-error
                           'module-language
                           "there can only be one expression in the definitions window"
                           super-result)))]
+                  [(= 4 iteration-number)
+                   #`(eval '(current-namespace (module->namespace '#,(get-full-module-name))))]
                   [else eof]))))
           
           ;; printer settings are just ignored here.
