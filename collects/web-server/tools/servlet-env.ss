@@ -16,10 +16,13 @@
   (define-syntax (on-web:syntax stx)
     (syntax-case stx ()
       [(on-web:syntax servlet-expr)
+       (syntax
+        (on-web:syntax 8000 servlet-expr))]
+      [(on-web:syntax port servlet-expr)
        (with-syntax ([initial-request (datum->syntax-object (syntax servlet-expr) 'initial-request)])
          (syntax
           (on-web (lambda (initial-request) servlet-expr)
-                  8000
+                  port
                   "servlets/standalone.ss")))]))
   
   (define (on-web servlet-expr the-port the-path)
