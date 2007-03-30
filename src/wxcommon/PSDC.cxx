@@ -811,6 +811,8 @@ void wxPostScriptDC::DrawRectangle (double x, double y, double width, double hei
     }
   if (current_pen && current_pen->GetStyle () != wxTRANSPARENT)
     {
+      double pw;
+
       SetPen (current_pen);
 
       pstream->Out("newpath\n");
@@ -821,8 +823,14 @@ void wxPostScriptDC::DrawRectangle (double x, double y, double width, double hei
       pstream->Out("closepath\n");
       pstream->Out("stroke\n");
 
-      CalcBoundingBoxClip(XSCALEBND(x), YSCALEBND(y));
-      CalcBoundingBoxClip(XSCALEBND(x + width),  YSCALEBND(y + height));
+      if (current_pen) {
+        pw = current_pen->GetWidthF();
+        pw /= 2;
+      } else
+        pw = 0;
+
+      CalcBoundingBoxClip(XSCALEBND(x - pw), YSCALEBND(y - pw));
+      CalcBoundingBoxClip(XSCALEBND(x + width + pw),  YSCALEBND(y + height + pw));
     }
 }
 
@@ -908,8 +916,18 @@ void wxPostScriptDC::DrawRoundedRectangle (double x, double y, double width, dou
 
       pstream->Out("stroke\n");
 
-      CalcBoundingBoxClip(XSCALEBND(x), YSCALEBND(y));
-      CalcBoundingBoxClip(XSCALEBND(x + width), YSCALEBND(y + height));
+      {
+        double pw;
+
+        if (current_pen) {
+          pw = current_pen->GetWidthF();
+          pw /= 2;
+        } else
+          pw = 0;
+        
+        CalcBoundingBoxClip(XSCALEBND(x - pw), YSCALEBND(y - pw));
+        CalcBoundingBoxClip(XSCALEBND(x + width + pw),  YSCALEBND(y + height + pw));
+      }
     }
 }
 
@@ -937,9 +955,19 @@ void wxPostScriptDC::DrawEllipse (double x, double y, double width, double heigh
       pstream->Out(XSCALE(x + width / 2)); pstream->Out(" "); pstream->Out(YSCALE(y + height / 2)); pstream->Out(" ");
       pstream->Out(XSCALEREL(width / 2)); pstream->Out(" "); pstream->Out(YSCALEREL(height / 2)); pstream->Out(" 0 360 ellipse\n");
       pstream->Out("stroke\n");
+      
+      {
+        double pw;
 
-      CalcBoundingBoxClip (XSCALEBND(x), YSCALEBND(y));
-      CalcBoundingBoxClip (XSCALEBND(x + width), YSCALEBND(y + height));
+        if (current_pen) {
+          pw = current_pen->GetWidthF();
+          pw /= 2;
+        } else
+          pw = 0;
+        
+        CalcBoundingBoxClip(XSCALEBND(x - pw), YSCALEBND(y - pw));
+        CalcBoundingBoxClip(XSCALEBND(x + width + pw),  YSCALEBND(y + height + pw));
+      }
     }
 }
 
