@@ -45,7 +45,7 @@
                            enter-block block->list block->letrec splice
                            enter-list exit-list
                            enter-check exit-check
-                           local-post exit-local
+                           local-post exit-local exit-local/expr
                            phase-up module-body
                            renames-lambda
                            renames-case-lambda
@@ -155,7 +155,13 @@
       (LocalAction
        (#:no-wrap)
        [(enter-local local-pre (? EE) local-post exit-local)
-        (make-local-expansion $1 $5 $2 $4 $3)]
+        (make-local-expansion $1 $5 $2 $4 #f $3)]
+       [(enter-local phase-up local-pre (? EE) local-post exit-local)
+        (make-local-expansion $1 $6 $3 $5 #t $4)]
+       [(enter-local/expr local-pre (? EE) local-post exit-local/expr)
+        (make-local-expansion/expr $1 (car $5) $2 $4 #f (cdr $5) $3)]
+       [(enter-local/expr local-pre phase-up (? EE) local-post exit-local/expr)
+        (make-local-expansion/expr $1 (car $6) $3 $5 #t (cdr $6) $4)]
        [(lift)
         (make-local-lift (cdr $1) (car $1))]
        [(lift-statement)

@@ -419,9 +419,11 @@
     ;; for-local-action : LocalAction -> LocalAction
     (define (for-local-action la)
       (match la
-        [(struct local-expansion (e1 e2 me1 me2 deriv))
+        [(struct local-expansion (e1 e2 me1 me2 for-stx? deriv))
          (let-values ([(deriv e2) (for-deriv deriv)])
-           (make-local-expansion e1 e2 me1 me2 deriv))]
+           (make-local-expansion e1 e2 me1 me2 for-stx? deriv))]
+        [(struct local-expansion/expr (e1 e2 me1 me2 for-stx? opaque deriv))
+         (error 'hide:for-local-action "not implemented for local-expand-expr")]
         [(struct local-lift (expr id))
          (add-unhidden-lift (extract/remove-unvisited-lift id))
          la]
@@ -725,7 +727,9 @@
     ;; for-local-action : LocalAction -> (list-of Subterm)
     (define (for-local-action local)
       (match local
-        [(struct local-expansion (e1 e2 me1 me2 deriv))
+        [(struct local-expansion (e1 e2 me1 me2 for-stx? deriv))
+         (raise (make-localactions))]
+        [(struct local-expansion/expr (e1 e2 me1 me2 for-stx? opaque deriv))
          (raise (make-localactions))]
         [(struct local-lift (expr id))
          ;; FIXME: seek in the lifted deriv, transplant subterm expansions *here*

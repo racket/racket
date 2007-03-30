@@ -389,7 +389,11 @@
   ;; reductions-local : LocalAction -> ReductionSequence
   (define (reductions-local local)
     (match/with-derivation local
-      [(struct local-expansion (e1 e2 me1 me2 deriv))
+      [(struct local-expansion (e1 e2 me1 me2 for-stx? deriv))
+       (reductions* deriv)]
+      [(struct local-expansion/expr (e1 e2 me1 me2 for-stx? opaque deriv))
+       (fprintf (current-error-port)
+                "reductions: local-expand-expr not fully implemented")
        (reductions* deriv)]
       [(struct local-lift (expr id))
        (list (walk expr id 'local-lift))]

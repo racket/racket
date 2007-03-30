@@ -176,7 +176,9 @@
          (join (loop first) (loop second))]
         [(AnyQ transformation (_ _ _ _ _ locals _))
          (loops locals)]
-        [(struct local-expansion (_ _ _ _ deriv))
+        [(struct local-expansion (_ _ _ _ _ deriv))
+         (loop deriv)]
+        [(struct local-expansion/expr (_ _ _ _ _ _ deriv))
          (loop deriv)]
         [(struct local-bind (deriv))
          (loop deriv)]

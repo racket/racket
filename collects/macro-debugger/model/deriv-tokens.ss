@@ -3,7 +3,7 @@
   (require (lib "lex.ss" "parser-tools")
            "deriv.ss")
   (provide (all-defined))
-  
+
   (define-tokens basic-tokens
     (visit                ; syntax
      resolve              ; identifier
@@ -39,6 +39,9 @@
      local-pre            ; syntax
      local-post           ; syntax
      exit-local           ; syntax
+
+     enter-local/expr     ; syntax
+     exit-local/expr      ; (cons syntax expanded-expression)
      
      variable            ; (cons identifier identifier)
 
@@ -133,6 +136,8 @@
       (136 . ,token-lift/let-loop)
       (137 . ,token-module-lift-loop)
       (138 . prim-expression)
+      (139 . ,token-enter-local/expr)
+      (140 . ,token-exit-local/expr)
       ))
   
   (define (tokenize sig-n val pos)
