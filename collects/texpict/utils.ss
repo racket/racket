@@ -795,9 +795,11 @@
                  (if color
                      (colorize p2 color)
                      p2)))])
-        (if under?
-            (cc-superimpose arrows base)
-            (cc-superimpose base arrows)))))
+        (refocus
+         (if under?
+             (cc-superimpose arrows base)
+             (cc-superimpose base arrows))
+         base))))
 
   (define add-line
     (opt-lambda (base src find-src dest find-dest [thickness #f] [color #f] [under? #f])

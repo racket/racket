@@ -1155,9 +1155,13 @@ The _code^_ unit supplies the following
 >     $                        - typesets as a vertical bar (for no
                                  particularly good reason)
 
-> current-code-tt - parameter for a one-argument function to turn a
+> current-code-font - parameter for a base font used to typeset text.
+  The default is `(bold . modern).
+> current-code-tt - parameter for a one-argument procedure to turn a
   string into a pict, used to typeset text. The default is
-    (lambda (s) (text s `(bold . modern) (current-font-size)))
+    (lambda (s) (text s (current-code-font) (current-font-size)))
+  This procedure is not used to typeset subscripts or other items
+  that require font changes, but `current-code-font' is always used.
 
 > current-comment-color - parameter for a string or color% for comments
 > current-keyword-color - parameter for a string or color% for keywords
