@@ -184,6 +184,8 @@
          (loop rhs)]
         [(AnyQ p:define-values (_ _ _ rhs))
          (loop rhs)]
+        [(AnyQ p:expression (_ _ _ inner))
+         (loop inner)]
         [(AnyQ p:if (_ _ _ _ test then else))
          (join (loop test) (loop then) (loop else))]
         [(AnyQ p:wcm (_ _ _ key value body))

@@ -102,6 +102,11 @@
           [#:frontier (list #'RHS)]
           [#:if rhs
                 [Expr RHS rhs]])]
+      [(AnyQ p:expression (e1 e2 rs inner) exni)
+       (R e1
+          [! exni]
+          [#:pattern (?expr INNER)]
+          [Expr INNER inner])]
       [(AnyQ p:if (e1 e2 rs full? test then else) exni)
        (if full?
            (R e1

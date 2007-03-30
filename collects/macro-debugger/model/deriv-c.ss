@@ -38,6 +38,7 @@
   (define-struct (p:define-values prule) (rhs) #f)
   
   ;; Simple expressions
+  (define-struct (p:expression prule) (inner) #f)
   (define-struct (p:if prule) (full? test then else) #f)
   (define-struct (p:wcm prule) (key mark body) #f)
   (define-struct (p:set! prule) (id-resolves rhs) #f)

@@ -40,6 +40,8 @@
      local-post           ; syntax
      exit-local           ; syntax
      
+     variable            ; (cons identifier identifier)
+
      IMPOSSIBLE           ; useful for error-handling clauses that have no NoError counterpart
      ))
   
@@ -50,7 +52,7 @@
      renames-letrec-syntaxes  ; (cons (listof syntax) (cons (listof syntax) syntax))
      renames-block            ; (cons syntax syntax) ... different, contains both pre+post
      ))
-  (define-tokens prim-tokens
+  (define-empty-tokens prim-tokens
     (prim-module prim-#%module-begin
      prim-define-syntaxes prim-define-values
      prim-if prim-wcm prim-begin prim-begin0 prim-#%app prim-lambda
@@ -59,8 +61,7 @@
      prim-quote prim-quote-syntax prim-require prim-require-for-syntax
      prim-require-for-template prim-provide
      prim-set!
-     
-     variable            ; (cons identifier identifier)
+     prim-expression
      ))
   
   ;; ** Signals to tokens
@@ -131,6 +132,7 @@
       (135 . ,token-module-lift-end-loop)
       (136 . ,token-lift/let-loop)
       (137 . ,token-module-lift-loop)
+      (138 . prim-expression)
       ))
   
   (define (tokenize sig-n val pos)

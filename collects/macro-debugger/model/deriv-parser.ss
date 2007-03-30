@@ -205,6 +205,7 @@
        [((? Prim#%ModuleBegin)) ($1 e1 e2 rs)]
        [((? PrimDefineSyntaxes)) ($1 e1 e2 rs)]
        [((? PrimDefineValues)) ($1 e1 e2 rs)]
+       [((? PrimExpression)) ($1 e1 e2 rs)]
        [((? PrimIf)) ($1 e1 e2 rs)]
        [((? PrimWCM)) ($1 e1 e2 rs)]
        [((? PrimSet)) ($1 e1 e2 rs)]
@@ -326,6 +327,11 @@
         (make-p:define-values e1 e2 rs $3)])
       
       ;; Simple expressions
+      (PrimExpression
+       (#:args e1 e2 rs)
+       [(prim-expression ! (? EE 'inner))
+        (make-p:expression e1 e2 rs $3)])
+
       (PrimIf
        (#:args e1 e2 rs)
        [(prim-if ! (? EE 'test) next (? EE 'then) next (? EE 'else))

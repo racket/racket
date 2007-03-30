@@ -197,6 +197,10 @@
          (>>P d (make-p:define-values rhs)
               (define-values variables RHS)
               ([for-deriv RHS rhs]))]
+        [(AnyQ p:expression (e1 e2 rs inner))
+         (>>P d (make-p:expression inner)
+              (#%expression INNER)
+              ([for-deriv INNER inner]))]
         [(AnyQ p:if (e1 e2 rs full? test then else))
          (if full?
              (>>P d (make-p:if full? test then else)
@@ -603,6 +607,8 @@
          (>>Seek (for-deriv rhs))]
         [(AnyQ p:define-values (e1 e2 rs rhs))
          (>>Seek (for-deriv rhs))]
+        [(AnyQ p:expression (e1 e2 rs inner))
+         (>>Seek (for-deriv inner))]
         [(AnyQ p:if (e1 e2 rs full? test then else))
          (>>Seek (for-deriv test)
                  (for-deriv then)
