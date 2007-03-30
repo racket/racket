@@ -1,7 +1,7 @@
-; Reference implementation of SRFI-71 using PLT 208's modules
-; Sebastian.Egner@philips.com, 29-Apr-2005
+; Based on Sebastian's reference implementation
+; of SRFI-71 using PLT 208's modules
 
-(module letvalues mzscheme
+(module letvalues (lib "mzscheme-for-srfi-71-86.ss" "srfi")
   
   ;(provide (all-from-except mzscheme let let* letrec))
   
@@ -195,25 +195,25 @@
   ; --- standard procedures ---
   
   (define (uncons pair)
-    (values (car pair) (cdr pair)))
+    (s:values (car pair) (cdr pair)))
   
   (define (uncons-2 list)
-    (values (car list) (cadr list) (cddr list)))
+    (s:values (car list) (cadr list) (cddr list)))
   
   (define (uncons-3 list)
-    (values (car list) (cadr list) (caddr list) (cdddr list)))
+    (s:values (car list) (cadr list) (caddr list) (cdddr list)))
   
   (define (uncons-4 list)
-    (values (car list) (cadr list) (caddr list) (cadddr list) (cddddr list)))
+    (s:values (car list) (cadr list) (caddr list) (cadddr list) (cddddr list)))
   
   (define (uncons-cons alist)
-    (values (caar alist) (cdar alist) (cdr alist)))
+    (s:values (caar alist) (cdar alist) (cdr alist)))
   
   (define (unlist list)
-    (apply values list))
+    (apply s:values list))
   
   (define (unvector vector)
-    (apply values (vector->list vector)))
+    (apply s:values (vector->list vector)))
   
   ; --- standard macros ---
   

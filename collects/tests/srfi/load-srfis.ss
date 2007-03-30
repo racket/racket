@@ -37,6 +37,8 @@
 (require (lib "71.ss" "srfi"))
 (require (lib "74.ss" "srfi"))
 (require (lib "78.ss" "srfi"))
+(require (lib "86.ss" "srfi"))
+(require (lib "87.ss" "srfi"))
 
 (require (lib "list.ss" "srfi" "1"))
 (require (lib "time.ss" "srfi" "19"))
@@ -72,3 +74,5 @@
 (require (lib "letvalues.ss" "srfi" "71"))
 (require (lib "74.ss" "srfi" "74"))
 (require (lib "check.ss" "srfi" "78"))
+(require (lib "86.ss" "srfi" "86"))
+(require (lib "case.ss" "srfi" "87"))
