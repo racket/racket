@@ -2111,6 +2111,9 @@
         ;; matter?
         ;; ELI: changed the order so it fits better the expected results.
         (cond [(instance?    x) (instance-class x)]
+              [(struct? x)
+               (let-values ([(type _) (struct-info x)])
+                 (if type (struct-type->class type) <opaque-struct>))]
               [(procedure?   x) (cond [(parameter? x) <parameter>]
                                       [(primitive? x) <primitive-procedure>]
                                       [else <procedure>])]
@@ -2145,10 +2148,6 @@
                (if (file-stream-port? x) <input-stream-port> <input-port>)]
               [(output-port? x)
                (if (file-stream-port? x) <output-stream-port> <output-port>)]
-              ;; MzScheme stuff
-              [(struct? x)
-               (let-values ([(type _) (struct-info x)])
-                 (if type (struct-type->class type) <opaque-struct>))]
               [(void?           x) <void>]
               [(box?            x) <box>]
               [(weak-box?       x) <weak-box>]
