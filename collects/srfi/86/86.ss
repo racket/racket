@@ -1,4 +1,6 @@
-(module |86| (lib "mzscheme-for-srfi-71-86.ss" "srfi")
+(module |86| mzscheme
+  
+  (provide (all-from mzscheme))
   
   (provide mu nu
            alet alet*)

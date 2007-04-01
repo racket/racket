@@ -1,9 +1,9 @@
-; Based on Sebastian's reference implementation
-; of SRFI-71 using PLT 208's modules
+; Reference implementation of SRFI-71 using PLT 208's modules
+; Sebastian.Egner@philips.com, 29-Apr-2005
 
-(module letvalues (lib "mzscheme-for-srfi-71-86.ss" "srfi")
+(module letvalues mzscheme
   
-  ;(provide (all-from-except mzscheme let let* letrec))
+  (provide (all-from mzscheme))
   
   (provide srfi-let
            srfi-let*
@@ -195,25 +195,25 @@
   ; --- standard procedures ---
   
   (define (uncons pair)
-    (s:values (car pair) (cdr pair)))
+    (values (car pair) (cdr pair)))
   
   (define (uncons-2 list)
-    (s:values (car list) (cadr list) (cddr list)))
+    (values (car list) (cadr list) (cddr list)))
   
   (define (uncons-3 list)
-    (s:values (car list) (cadr list) (caddr list) (cdddr list)))
+    (values (car list) (cadr list) (caddr list) (cdddr list)))
   
   (define (uncons-4 list)
-    (s:values (car list) (cadr list) (caddr list) (cadddr list) (cddddr list)))
+    (values (car list) (cadr list) (caddr list) (cadddr list) (cddddr list)))
   
   (define (uncons-cons alist)
-    (s:values (caar alist) (cdar alist) (cdr alist)))
+    (values (caar alist) (cdar alist) (cdr alist)))
   
   (define (unlist list)
-    (apply s:values list))
+    (apply values list))
   
   (define (unvector vector)
-    (apply s:values (vector->list vector)))
+    (apply values (vector->list vector)))
   
   ; --- standard macros ---
   
