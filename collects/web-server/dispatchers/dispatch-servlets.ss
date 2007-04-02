@@ -357,7 +357,7 @@
                                 (create-timeout-manager
                                  default-servlet-instance-expiration-handler
                                  timeouts-servlet-connection
-                                 timeouts-default-servlet)
+                                 timeout)
                                 (v1.module->v1.lambda timeout start)))]
                [(v2-transitional) ; XXX: Undocumented
                 (let ([start (dynamic-require module-name 'start)]
