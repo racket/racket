@@ -31,6 +31,12 @@ PLANNED FEATURES:
     (command-line
      "planet"
      (current-command-line-arguments)
+     (once-each
+      (("--force")
+       ""
+       "Used in conjunction with --create-package; force a package to be"
+       "created even its info.ss file contains errors."
+       (force-package-building? #t)))
      (once-any
       (("-f" "--file")
        plt-file owner maj min

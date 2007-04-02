@@ -22,6 +22,7 @@
    current-cache-contents
    current-linkage
    make-planet-archive
+   force-package-building?
    get-installed-planet-archives
    get-hard-linked-packages
    remove-pkg
@@ -180,6 +181,7 @@
                 [else (error 'regexp->filter "not a regular expression")])])
       (lambda (p) (regexp-match re (path->bytes p)))))
   
+  (define force-package-building? (make-parameter #f))
   
   ;; make-planet-archive: directory [file] -> file
   ;; Makes a .plt archive file suitable for PLaneT whose contents are
@@ -205,7 +207,10 @@
             (λ (bad) (set! warnings (cons bad warnings)))
             (λ (err) (set! critical-errors (cons err critical-errors))))
            
-           (unless (null? critical-errors) (error '|PLaneT packager| "~a Refusing to continue packaging." (car critical-errors)))
+           (unless 
+               (or (null? critical-errors)
+                   (force-package-building?))
+             (error '|PLaneT packager| "~a Refusing to continue packaging." (car critical-errors)))
            
            (pack archive-name
                  "archive" 
@@ -253,9 +258,14 @@
                          ]
                         [blurb 
                          (λ (b) (and (list? b) (andmap xexpr? b)))
-                         (announce "Blurb: ~s\n" blurb)
+                         (announce "Package blurb: ~s\n" blurb)
                          (unless blurb
                            (warn "Package's info.ss does not contain a blurb field. Without a blurb field, the package will have no description on planet.plt-scheme.org."))]
+                        [release-notes 
+                         (λ (b) (and (list? b) (andmap xexpr? b)))
+                         (announce "Release notes: ~s\n" release-notes)
+                         (unless release-notes
+                           (warn "Package's info.ss does not contain a release-notes field. Without a release-notes field, the package will not have any listed release information on planet.plt-scheme.org beyond the contents of the blurb field."))]
                         [categories
                          (λ (s) (and (list? s) (andmap symbol? s)))
                          (cond
@@ -284,10 +294,18 @@
                            [else
                             (fail (format "The value of the package's info.ss homepage field, ~s, does not appear to be a legal URL." homepage))])]
                         [primary-file
-                         string?
+                         (λ (x) (or (string? x) (and (list? x) (andmap string? x))))
                          (begin
-                           (unless (file-in-current-directory? primary-file)
-                             (warn (format "Package's info.ss primary-file field is ~s, a file that does not exist in the package." primary-file)))
+                           (cond
+                             [(string? primary-file) 
+                              (unless (file-in-current-directory? primary-file)
+                                (warn (format "Package's info.ss primary-file field is ~s, a file that does not exist in the package." 
+                                              primary-file)))]
+                             [(pair? primary-file)
+                              (let ([bad-files (filter (λ (f) (not (file-in-current-directory? f))) primary-file)])
+                                (unless (null? bad-files)
+                                  (warn (format "Package's info.ss primary-file field is ~s, which contains non-existant files ~s."
+                                                primary-file bad-files))))])
                            (announce "Primary file: ~a\n" primary-file))
                          (unless primary-file
                            (warn "Package's info.ss does not contain a primary-file field. The package's listing on planet.plt-scheme.org will not have a valid require line for your package."))]
