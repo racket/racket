@@ -31,6 +31,8 @@
 	    pretty-print-extend-style-table
             pretty-print-remap-stylable
             
+            pretty-format
+            
 	    pretty-printing
 	    pretty-print-newline
 	    make-tentative-pretty-print-output-port
@@ -1122,5 +1124,20 @@
 				   (substring padded-s (- len 10-power) len)))
 			 ;; d has factor(s) other than 2 and 5.
 			 ;; Print as a fraction.
-			 (number->string x)))))))])))
+			 (number->string x)))))))]))
+  
+  (define pretty-format
+    (case-lambda
+      [(t) (pretty-format t (pretty-print-columns))]
+      [(t w)
+       (parameterize ([pretty-print-columns w])
+         (let ([op (open-output-string)])
+           (pretty-print t op)
+           (let ([s (get-output-string op)])
+             (if (eq? w 'infinity)
+                 s
+                 (substring s 0 (- (string-length s) 1))))))]))
+
+  
+  )
 

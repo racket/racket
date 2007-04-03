@@ -118,6 +118,18 @@
 		#f
                 void
                 void)
+     
+     ;; make sure only a single syntax error occurs when in nested begin situation
+     (make-test "(begin (lambda ()) (lambda ()))"
+                "lambda: bad syntax in: (lambda ())"
+                "{file.gif} repl-test-tmp.ss:1:7: lambda: bad syntax in: (lambda ())"
+                "lambda: bad syntax in: (lambda ())"
+                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:7: lambda: bad syntax in: (lambda ())"
+                (cons (make-loc 0 7 7) (make-loc 0 18 18))
+		#f
+                void
+                void)
+     
      (make-test "xx"
                 "reference to undefined identifier: xx"
                 "reference to undefined identifier: xx"
