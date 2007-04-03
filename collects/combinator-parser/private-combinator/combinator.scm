@@ -107,7 +107,7 @@
                                (res-first-tok (repeat-res-a r)))]))]
                [my-error (sequence-error-gen name sequence-length)]
                [my-walker (seq-walker id-position name my-error)])
-          (opt-lambda (input [alts 1] [last-src (list 0 0 0 0)])
+          (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
             #;(printf "seq ~a~n" name)
             (cond
               [(eq? input return-name) name]
