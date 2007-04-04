@@ -90,7 +90,7 @@
    "The \\var{input} argument specifies the source of the program."
    ""
    "The \\var{eval-compile-time-part?} argument indicates if"
-   "\\Mzhyperref{\rawscm{expand}}{mz:expansion}"
+   "\\Mzhyperref{\\rawscm{expand}}{mz:expansion}"
    "is called or if"
    "\\scheme|expand-top-level-with-compile-time-evals|"
    "is called when the program is expanded."
