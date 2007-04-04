@@ -4,10 +4,10 @@
 
 ; "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz" "AÂÀBCÇDEÉÊÈËFGHIÎÏJKLMNOÔPQRSTUÛÙÜVWXYZ"
 
-; Note: http://www.linux-france.org/prj/jargonf/ peut etre utile... Les dictionnaires online
-; anglais->francais sont tres pauvres en ce qui concerne le jargon technique, et l'academie
-; francaise (http://www-rocq.inria.fr/qui/Philippe.Deschamp/RETIF/) a quelques longueures de
-; retard. http://www-03.ibm.com/ondemand/ca/fr/dictionary/dictionnaire_u.html peut aider aussi...
+; Note: http://www.jargonf.org/ (ex http://www.linux-france.org/prj/jargonf/) peut etre utile...
+; Les dictionnaires online anglais->francais sont tres pauvres en ce qui concerne le jargon technique,
+; et l'academie francaise (http://www-rocq.inria.fr/qui/Philippe.Deschamp/RETIF/) a quelques longueures
+; de retard. http://www-03.ibm.com/ondemand/ca/fr/dictionary/dictionnaire_u.html peut aider aussi...
 ; http://www.dicofr.com/ permet les recherches a partir du mot anglais.
 ; http://www.francophonie.hachette-livre.fr/ est un dico standard de base
 ; http://zeus.inalf.fr/academie9.htm est le dico de l'academie (A-M pour l'instant seulement)
@@ -382,7 +382,11 @@
   ;;; preferences
   (preferences "Préférences")
   (error-saving-preferences "Erreur durant la sauvegarde des préférences : ~a.")
+  (error-saving-preferences-title "Erreur durant la sauvegarde des préférences")
   (error-reading-preferences "Erreur durant la lecture des préférences.")
+  (prefs-file-locked "Le fichier de préférences est verrouillé (car le fichier ~a existe), donc vos préférences n'ont pu être sauvegardées.  Annuler le changement des préférences ?")
+  (try-again "Essayer à nouveau") ;; button label
+  (prefs-file-still-locked "Le fichier de préférences est toujours verrouillé (car le fichier ~a existe), donc vos changements ne vont pas être sauvegardés.")
   (scheme-prefs-panel-label "Scheme")
   (warnings-prefs-panel-label "Avertissements")
   (editor-prefs-panel-label "Edition")
@@ -416,7 +420,8 @@
   (background-color "Couleur d'arrière-plan")
   (default-text-color "Couleur du texte") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "Sélectionnez une couleur d'avant-plan")
-  
+  (revert-to-defaults "Retour aux valeurs par défaut")
+
   ; title of the color choosing dialog
   
   ; should have entire alphabet
@@ -468,6 +473,12 @@
   (already-used-keyword "\"~a\" est déjà un mot clef avec une indentation spéciale.")
   (add-keyword "Ajouter")
   (remove-keyword "Enlever")
+  
+  ; repl color preferences
+  (repl-colors "REPL")
+  (repl-out-color "Sorties")
+  (repl-value-color "Valeurs")
+  (repl-error-color "Erreurs")
   
   ;;; find/replace
   (find-and-replace "Chercher et remplacer")
@@ -581,6 +592,9 @@
   (print-info "Envoyer ce fichier à une imprimante.")
   (print-menu-item "&Imprimer...")
   
+  (page-setup-info "Configurer les paramètres d'impression")
+  (page-setup-menu-item "Paramètres d'impression...")
+
   (close-info "Fermer ce fichier.")
   (close-menu-item "&Fermer")
   
@@ -913,6 +927,15 @@
   (use-repeating-decimals "Décimales répétitives")
   (decimal-notation-for-rationals "Utiliser la notation décimale pour les nombres rationnels")
 
+  ; used in the bottom left of the drscheme frame as the label
+  ; above the programming language's name
+  (programming-language-label "Langage de programmation :")
+  ; used the popup menu from the just above; greyed out and only
+  ; visible when some languages are in the history
+  (recent-languages "Langages récents :")
+  ; shows up in bottom-left programming language menu popup, when no langs are recorded
+  (no-recently-chosen-languages "pas de langage récent") 
+  
   ;; startup wizard screen language selection section
   (please-select-a-language "Veuillez sélectionner un langage")
   
@@ -952,6 +975,7 @@
   
   ; next two are before and after a language
   (start-with-before "Commencer avec ")
+  (start-with-after "")
 
   (seasoned-plt-schemer? "Programmeur PLT Scheme chevronné ?")
   (looking-for-standard-scheme? "À la recherche d'un langage Scheme standard ?")
@@ -1126,15 +1150,16 @@
   (stepper-program-has-changed "Avertissement : le programme a été modifié.")
   (stepper-program-window-closed "Avertissement : la fenêtre du programme a disparu.")
   
-  (stepper-home "Début") ; Accueil?
   (stepper-name "Pas à Pas")
   (stepper-language-level-message
    "Le langage actuellement utilisé est \"~a\". Le Pas à Pas ne fonctionne pour l'instant que pour les langages de \"~a\" à \"~a\"")
   (stepper-button-label "Pas")
+  (stepper-home "Début")
   (stepper-previous-application "|< Application")
   (stepper-previous "< Pas")
   (stepper-next "Pas >")
   (stepper-next-application "Application >|")
+  (stepper-jump-to-end "Fin")
   
   (debug-tool-button-name "Déboguer")
   
