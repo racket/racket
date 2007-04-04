@@ -85,7 +85,8 @@
                  message-to-date)]
                [(sub-seq choice)
                 (fail-type->message (sequence-fail-found fail-type)
-                                    (add-to-message (msg (format "An error occured in ~a.~n" id-name)) name message-to-date))]
+                                    (add-to-message (msg (format "An error occured in ~a.~n" id-name)) 
+                                                    name (sequence-fail-id fail-type) message-to-date))]
                [(options)
                 (let ([sorted-opts (sort (options-fail-opts (sequence-fail-found fail-type))
                                          (lambda (a b) (>= (fail-type-chance a) (fail-type-chance b))))])
@@ -93,7 +94,7 @@
                                       (add-to-message
                                        (msg (format "There is an error in this ~a after ~a, it is likely you intended a(n) ~a here.~n"
                                                     id-name (car (reverse show-sequence)) (fail-type-name (car sorted-opts))))
-                                       name message-to-date)))]))]
+                                       name (sequence-fail-id fail-type) message-to-date)))]))]
           [(options-fail? fail-type)
            #;(printf "selecting for options on ~a~n" name)
               (let* ([winners (select-errors (options-fail-opts fail-type))]
@@ -113,7 +114,7 @@
                               name 
                               (if (equal? top-name name) "" 
                                   (format ", it is likely you intended ~a ~a here" (a/an top-name) top-name)))]))
-                  name message-to-date)))]
+                  name  #f message-to-date)))]
            [(choice-fail? fail-type)
             #;(printf "selecting for ~a~n" name)
               (let* ([winners (select-errors (choice-fail-messages fail-type))]               
@@ -146,7 +147,7 @@
                                   (if (equal? name top-name) "" (format ", it is likely that you intended ~a ~a here"
                                                                         (a/an top-name) top-name))
                                   (if show-options " To see all options click here." ""))]))
-                  name message-to-date)))])))
+                  name #f message-to-date)))])))
     
     (define (chance-used a) (* (fail-type-chance a) (fail-type-used a)))
     (define (chance-may-use a) (* (fail-type-chance a) (fail-type-may-use a)))
@@ -235,14 +236,18 @@
          (remove-dups (cdr l) n)]
         [else (cons (car l) (remove-dups (cdr l) n))]))
     
-    (define-struct ms (who say))
+    (define-struct ms (who id? say))
     
     ;add-to-message: err string (list err) -> (list err)
-    (define (add-to-message msg name rest)
-      (let ([next (make-ms name msg)])
+    (define (add-to-message msg name id? rest)
+      (let ([next (make-ms name id? msg)]
+            [curr-len (length rest)])
         (cond
           [(null? rest) (list next)]
           [(equal? (ms-who (car rest)) name) (cons next (cdr rest))]
+          [(and id? (ms-id? (car rest)) (< curr-len max-depth)) (cons next rest)]
+          [(and id? (ms-id? (car rest))) (cons next (first-n (sub1 max-depth) rest))]
+          [id? (add-to-message msg name id? (cdr rest))]
           [(< (length rest) max-depth) (cons next rest)]
           [else (cons next (first-n (sub1 max-depth) rest))])))
     

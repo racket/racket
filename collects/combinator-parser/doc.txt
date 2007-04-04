@@ -124,8 +124,9 @@ The _language-format-parameters^_ requires two names
   input->output-name: token -> string - translates tokens into strings
   
 The _language-dictionary^_ requires three names
-  misspelled: string string -> boolean - 
-     check the spelling of the second arg against the first
+  misspelled: string string -> number - 
+     check the spelling of the second arg against the first, return a number 
+     that is the probability that the second is a misspelling of the first
   misscap: string string -> boolean - 
      check the capitalization of the second arg against the first
   missclass: string string -> boolean - 

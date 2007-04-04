@@ -57,7 +57,7 @@
             (cond
               [(eq? input return-name) name]
               [(null? input) 
-               (fail-res null (make-terminal-fail .4 last-src name 0 0 'end #f))]
+               (fail-res null (make-terminal-fail rank-end last-src name 0 0 'end #f))]
               [(pred (if src? (position-token-token (car input)) (car input)))
                (make-res (list (builder (car input))) (cdr input) 
                          name (value (car input)) 1 #f (car input))]
@@ -75,11 +75,11 @@
                  (fail-res (cdr input) 
                            (let-values ([(chance kind may-use)
                                          (cond
-                                           [(case? (car input)) (values 9/10 'misscase 1)]
-                                           [(spell? (car input))
-                                            (values 4/5 'misspell 1)]
-                                           [(class? (car input)) (values 2/5 'missclass 1)]
-                                           [else (values 1/5 'wrong 0)])])
+                                           [(case? (car input)) (values rank-caps 'misscase 1)]
+                                           [(> (spell? (car input)) 3/5)
+                                            (values (* rank-misspell (spell? (car input))) 'misspell 1)]
+                                           [(class? (car input)) (values rank-class 'missclass 1)]
+                                           [else (values rank-wrong 'wrong 0)])])
                              (make-fail chance name kind (car input) may-use)))])))))
     
     ;seq: ( (list ((list 'a) -> res)) ((list 'b) -> 'c) string -> ((list 'a) -> result)
@@ -167,7 +167,7 @@
                     (cond
                       [(null? next-preds)
                        (build-error (curr-pred input last-src) 
-                                    (previous? input) (previous? return-name) 
+                                    (previous? input) (previous? return-name) #f
                                     look-back used curr-id seen alts last-src)]
                       [else
                        #;(printf "seq-walker called: else case, ~a case of ~a~n" 
@@ -180,8 +180,8 @@
                                 [(res-a fst) (next-call fst fst (res-msg fst) (and id-spot? (res-id fst))
                                                         (res-first-tok fst) alts)]
                                 [else
-                                 (build-error fst (previous? input) (previous? return-name)
-                                              look-back used curr-id seen alts last-src)])]
+                                 (build-error fst (previous? input) (previous? return-name) 
+                                              (car next-preds) look-back used curr-id seen alts last-src)])]
                              [(repeat-res? fst) (next-call (repeat-res-a fst) fst 
                                                            (res-msg (repeat-res-a fst)) #f 
                                                            (res-first-tok (repeat-res-a fst)) alts)]
@@ -215,7 +215,7 @@
                                      (let ([fails (map (lambda (rst) 
                                                          (res-msg 
                                                           (build-error rst (previous? input) (previous? return-name)
-                                                                       look-back used curr-id seen alts last-src)))
+                                                                       (car next-preds) look-back used curr-id seen alts last-src)))
                                                        rsts)])
                                        (fail-res input 
                                                  (make-options-fail 
@@ -250,7 +250,7 @@
     
     ;build-sequence-error: result boolean result string int [U #f string] [listof string] int int -> result
     (define (sequence-error-gen name len)
-      (lambda (old-res prev prev-name look-back used id seen alts last-src)
+      (lambda (old-res prev prev-name next-pred look-back used id seen alts last-src)
         (cond
           [(and (pair? old-res) (null? (cdr old-res))) (car old-res)]
           [(repeat-res? old-res) 
@@ -274,6 +274,14 @@
                                                (fail-type-chance (res-msg old-res))))
                                        (repeat-res-stop look-back)]
                                       [else (res-msg old-res)])]
+                                   [(next-ok?)
+                                    (and (= (fail-type-may-use fail) 1)
+                                         next-pred
+                                         (next-pred (cdr (res-rest old-res))))]
+                                   [(next-used)
+                                    (if (and next-ok? (res? next-ok?) (res-a next-ok?))
+                                        (res-used next-ok?)
+                                        0)]
                                    [(kind expected found) (get-fail-info fail)]
                                    [(new-src) (update-src kind
                                                           (fail-type-src fail)
@@ -301,7 +309,7 @@
                           [else (compute-chance len seen-len used alts (fail-type-chance fail))])
                         (fail-type-src fail)
                         name used 
-                        (+ used (fail-type-may-use fail))
+                        (+ used (fail-type-may-use fail) next-used)
                         id kind (reverse seen) expected found (and (res? prev) (res-a prev) (res-msg prev))
                         prev-name)))])))
     

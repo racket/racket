@@ -20,25 +20,6 @@
                                                          (format "token-~a" (syntax-e e)))))
                                 (syntax->list #'(elt ...)))))]))
   
-  (define-for-syntax (insert-name stx name)
-    (let loop ([term stx]
-               [pos 0]
-               [id-pos 0]
-               [terms null])
-      (syntax-case term (sequence choose ^)
-        [((sequence a b) . rest)
-         (loop (syntax rest) (add1 pos) id-pos
-               (cons (quasisyntax (sequence a b #,name)) terms))]
-        [((choose a) . rest)
-         (loop (syntax rest) (add1 pos) id-pos
-               (cons (quasisyntax (choose a #,name)) terms))]
-        [((^ a) . rest)
-         (loop (syntax (a . rest))
-               pos (add1 pos) terms)]
-        [(a . rest)
-         (loop (syntax rest) (add1 pos) id-pos (cons (syntax a) terms))]
-        [() (list (reverse terms) id-pos)])))
-  
   (define-signature language-dictionary^ (misspelled misscap missclass))
     
   (define-signature combinator-parser-forms^ 
@@ -138,35 +119,48 @@
                        (lambda (token) #f)
                        (lambda (token) #f))) ...))))]))))
         
-     (define-syntaxes (sequence)
-       (values
-        (lambda (stx)
-          (syntax-case stx (^)
-            [(_ (term ...) proc) 
-             (syntax
-              (seq (list term ...) proc (symbol->string (gensym 'seq))))]
-            [(_ terms proc name)
-             (let ([new-terms (insert-name (syntax terms) (syntax name))])
-               (with-syntax (((term ...) (car new-terms))
-                             (id-pos (cadr new-terms)))
-                 (syntax (seq (list term ...) proc name id-pos))))]))))
-     
-     (define-syntaxes(choose)
-       (values
-        (lambda (stx)
-          (syntax-case stx ()
-            [(_ (term ...))
-             (syntax
-              (choice (list term ...) (symbol->string (gensym 'choice))))]
-            [(_ terms name)
-             (with-syntax (((term ...) [car (insert-name (syntax terms) (syntax name))]))
+     (define-syntaxes (sequence choose ^)
+       (let ([insert-name
+              (lambda (stx name)
+                (let loop ([term stx]
+                           [pos 0]
+                           [id-pos 0]
+                           [terms null])
+                  (syntax-case term (sequence choose ^)
+                    [((sequence a b) . rest)
+                     (loop (syntax rest) (add1 pos) id-pos
+                           (cons (quasisyntax (sequence a b #,name)) terms))]
+                    [((choose a) . rest)
+                     (loop (syntax rest) (add1 pos) id-pos
+                           (cons (quasisyntax (choose a #,name)) terms))]
+                    [((^ a) . rest)
+                     (loop (syntax (a . rest))
+                           pos (add1 pos) terms)]
+                    [(a . rest)
+                     (loop (syntax rest) (add1 pos) id-pos (cons (syntax a) terms))]
+                    [() (list (reverse terms) id-pos)])))])
+         (values
+          (lambda (stx)
+            (syntax-case stx (^)
+              [(_ (term ...) proc) 
                (syntax
-                (choice (list term ...) name)))]))))
-     
-     (define-syntaxes (^)
-       (values
-        (syntax-rules ()
-          [(_ f) f])))
+                (seq (list term ...) proc (symbol->string (gensym 'seq))))]
+              [(_ terms proc name)
+               (let ([new-terms (insert-name (syntax terms) (syntax name))])
+                 (with-syntax (((term ...) (car new-terms))
+                               (id-pos (cadr new-terms)))
+                   (syntax (seq (list term ...) proc name id-pos))))]))
+          (lambda (stx)
+            (syntax-case stx ()
+              [(_ (term ...))
+               (syntax
+                (choice (list term ...) (symbol->string (gensym 'choice))))]
+              [(_ terms name)
+               (with-syntax (((term ...) [car (insert-name (syntax terms) (syntax name))]))
+                 (syntax
+                  (choice (list term ...) name)))]))
+          (syntax-rules ()
+            [(_ f) f]))))
      
      (define-syntaxes (eta)
        (values (syntax-rules ()
@@ -182,7 +176,11 @@
   (define-signature error-format-parameters^ 
     (src? input-type show-options max-depth max-choice-depth))
   
-  (define-signature ranking-parameters^ (rank-choice))  
+  (define-signature ranking-parameters^ 
+    (rank-misspell rank-caps rank-class rank-wrong rank-end rank-choice))
+  
+  (define-signature updating-rank^
+    (blamed-terminal failed-last-parse))
  
   (define-signature error^ (fail-type->message))
   

@@ -77,10 +77,13 @@
             [else (!!! out)]))))
     )
   
-  (define-unit rank-max@
+  (define-unit rank-defaults@
     (import)
     (export ranking-parameters^)
-    (define (rank-choice choices) (apply max choices)))
+    (define (rank-choice choices) (apply max choices))
+    (define-values 
+      (rank-misspell rank-caps rank-class rank-wrong rank-end)
+      (4/5 9/10 2/5 1/5 2/5)))
   
   (define-unit out-struct@
     (import)
@@ -90,7 +93,7 @@
   (define-compound-unit/infer combinator-parser@
     (import error-format-parameters^ language-format-parameters^ language-dictionary^)
     (export combinator-parser-forms^ parser^ out^)
-    (link out-struct@ main-parser@ rank-max@ error-formatting@ combinators@))
+    (link out-struct@ main-parser@ rank-defaults@ error-formatting@ combinators@))
   
   (define-unit/new-import-export combinator-parser-tools@
     (import error-format-parameters^ language-format-parameters^ language-dictionary^)
