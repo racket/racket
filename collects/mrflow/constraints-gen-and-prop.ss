@@ -2374,6 +2374,7 @@
                              (make-hash-table)
                              sexp-e)])
                        (initialize-label-set-for-value-source null-label)
+                       (register-label-with-gui null-label)
                        null-label)
                      (let ([cons-label
                             (make-label-cons
