@@ -39,44 +39,52 @@
           [dybig (lambda (v) (if (<= (abs dx) (abs dy))
                                  v
                                  0))])
-      (let-values ([(x0 y0 x1 y1 xc yc mx0 mx1 my0 my1 mfx mfy)
+      (let-values ([(bx0 by0 bx1 by1 x0 y0 x1 y1 xc yc mx0 mx1 my0 my1 mfx mfy)
                     (case spike-pos
-                      [(w) (values 1 (/ (- h dh) 2)
+                      [(w) (values -1 -0.5 -1 0.5
+                                   1 (/ (- h dh) 2)
                                    1 (/ (+ h dh) 2)
                                    1 (/ h 2)
                                    0.5 1 0.5 -1
                                    1 0)]
-                      [(nw) (values 0 dh
+                      [(nw) (values 0 0 0 0
+                                    0 dh
                                     dw 0
                                     0 0
                                     1 -0.5 -1 0.5
                                     (dxbig 1) (dybig 1))]
-                      [(e) (values (sub1 w) (/ (- h dh) 2)
+                      [(e) (values 1 -0.5 1 0.5
+                                   (sub1 w) (/ (- h dh) 2)
                                    (sub1 w) (/ (+ h dh) 2)
                                    (sub1 w) (/ h 2)
                                    -1 -1 1 -1
                                    -1 0)]
-                      [(ne) (values (- w dw) 0
+                      [(ne) (values 0 0 0 0 
+                                    (- w dw) 0
                                     w dh
                                     w 0
                                     0.5 -1 0.5 -1
                                     (dxbig -1) (dybig 1))]
-                      [(s) (values (/ (- w dw) 2) (sub1 h)
+                      [(s) (values -0.5 1 0.5 1
+                                   (/ (- w dw) 2) (sub1 h)
                                    (/ (+ w dw) 2) (sub1 h)
                                    (/ w 2) (sub1 h)
                                    1 -1 -1 -1
                                    0 -1)]
-                      [(n) (values (/ (- w dw) 2) 1
+                      [(n) (values -0.5 -1 0.5 -1
+                                   (/ (- w dw) 2) 1
                                    (/ (+ w dw) 2) 1
                                    (/ w 2) 1
                                    1 -1 1 1
                                    0 1)]
-                      [(sw) (values 0 (- (sub1 h) dh)
+                      [(sw) (values 0 0 0 0
+                                    0 (- (sub1 h) dh)
                                     dw (sub1 h)
                                     0 (sub1 h)
                                     0.5 -1 0.5 -1
                                     (dxbig 1) (dybig -1))]
-                      [(se) (values (- w dw) (sub1 h)
+                      [(se) (values 0 1 0 1
+                                    (- w dw) (sub1 h)
                                     w (- (sub1 h) dh)
                                     w (sub1 h)
                                     0.5 -1 -1 0.5
@@ -105,9 +113,9 @@
                                                           (make-object point% (+ x1 (* i mx1)) (+ y1 (* i my1))))
                                     x y)
                               (send dc set-pen p)))
-                          (send dc draw-line (+ x x0 (* i mx0)) (+ y y0 (* i my0)) 
+                          (send dc draw-line (+ x x0 bx0 (* i mx0)) (+ y y0 by0 (* i my0)) 
                                 (+ x xf (* i mfx)) (+ y yf (* i mfy)))
-                          (send dc draw-line (+ x x1 (* i mx1)) (+ y y1 (* i my1))
+                          (send dc draw-line (+ x x1 bx1 (* i mx1)) (+ y y1 by1 (* i my1))
                                 (+ x xf (* i mfx)) (+ y yf (* i mfy))))])
                    (series dc 5
                            dark-color
@@ -115,7 +123,7 @@
                            (lambda (i) (draw-once i #t))
                            #t #t)
                    (send dc set-brush no-brush)
-                   (send dc set-pen (find-pen dark-color))
+                   (send dc set-pen (find-pen dark-color 0.5))
                    (draw-once 0 #f)
                    
                    (send dc set-pen p)
