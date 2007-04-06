@@ -493,7 +493,7 @@
                                   markup-prefix prefix-re))))
                    (when create-text? (make-directory "grading") (write-text))
                    (when value-printer (current-value-printer value-printer))
-                   (when coverage? (coverage-enabled #t))
+                   (when coverage? (sandbox-coverage-enabled #t))
                    (set-run-status "checking submission")
                    (cond
                      [(not eval?) (let () body ...)]

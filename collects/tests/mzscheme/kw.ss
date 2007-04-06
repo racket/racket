@@ -11,7 +11,7 @@
       [(t E => :rt-err:) (err/rt-test E)]
       [(t E => :st-err:) (syntax-test #'E)]
       [(t (f x ...) => res) (test res f x ...)]
-      [(t R => E more ...) (begin (t R => E) (t more ...))]
+      [(t E => R more ...) (begin (t E => R) (t more ...))]
       [(t R <= E more ...) (t E => R more ...)]))
 
   ;; make sure that lambda/kw behaves as lambda
