@@ -44,6 +44,8 @@
 
 (load-relative "kw.ss")
 
+(load-relative "sandbox.ss")
+
 ; Next-to-last, because it `require's mzscheme
 (load-relative "shared.ss")
 
