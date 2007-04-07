@@ -56,7 +56,10 @@
    (id 1) => 1
    (id (plus1 x)) => 1
    (loop) =err> "out of time"
-   (memory 1000000) =err> "out of memory"
+   --top--
+   (when (eq? '3m (system-type 'gc))
+     (t --eval-- (memory 1000000) =err> "out of memory"))
+   --eval--
    (printf "x = ~s\n" x) => (void)
    ,eof =err> "terminated"
    x =err> "terminated"
@@ -266,6 +269,4 @@
    (set! y 789) ; would be an error without the `set!' parameter
    y => 789
 
-   )
-
-  )
+   ))

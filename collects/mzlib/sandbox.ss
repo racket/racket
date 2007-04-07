@@ -173,12 +173,14 @@
 
   (define-struct (exn:fail:resource exn:fail) (resource))
 
+  (define 3m? (eq? '3m (system-type 'gc)))
+
   (define (call-with-limits sec mb thunk)
     (let ([cust (make-custodian)]
           [ch   (make-channel)]
           ;; use this to copy parameter changes from the sub-thread
           [p    current-preserved-thread-cell-values])
-      (when mb (custodian-limit-memory cust (* mb 1024 1024) cust))
+      (when (and mb 3m?) (custodian-limit-memory cust (* mb 1024 1024) cust))
       (let* ([work (parameterize ([current-custodian cust])
                      (thread (lambda ()
                                (channel-put ch
