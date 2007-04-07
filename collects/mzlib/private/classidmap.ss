@@ -54,11 +54,11 @@
            (syntax-case stx ()
              [(set! id expr)
               (module-identifier=? (syntax set!) set!-stx)
-              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [value expr]))]
-                            [trace (syntax/loc stx (set-event obj (quote id) value))]
+              (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [id expr]))]
+                            [trace (syntax/loc stx (set-event obj (quote id) id))]
                             [set (quasisyntax/loc stx
                                    ((unsyntax field-mutator)
-                                    obj (unsyntax-splicing field-pos/null) value))])
+                                    obj (unsyntax-splicing field-pos/null) id))])
                 (if trace-flag
                     (syntax/loc stx (let* bindings trace set))
                     (syntax/loc stx (let* bindings set))))]
