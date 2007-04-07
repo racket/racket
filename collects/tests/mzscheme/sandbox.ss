@@ -248,7 +248,7 @@
    (foo 3) => 4
    (bar 10) => 12
    --top--
-   (null? (get-uncovered-expressions ev #t))
+   (null? (get-uncovered-expressions ev #f))
    (pair? (get-uncovered-expressions ev)) ; no-tests coverage still the same
 
    ;; misc parameters
