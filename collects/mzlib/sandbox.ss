@@ -457,6 +457,7 @@
             [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
     (parameterize* ; the order in these matters
         ([current-custodian cust]
+         [current-thread-group (make-thread-group)]
          [current-namespace (make-evaluation-namespace)]
          [current-inspector (make-inspector)]
          [exit-handler (lambda x (error 'exit "user code cannot exit"))]
