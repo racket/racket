@@ -1343,6 +1343,12 @@
   (test-call overridden-tail-method)
   (test-call supercall-tail-method))
 
+;; ----------------------------------------
+;; Private field names
+
+(let ([c% (class object% (define foo (lambda () 10)) (define/public (get) foo) (super-new))])
+  (test 'foo object-name (send (new c%) get)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
