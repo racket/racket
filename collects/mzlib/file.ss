@@ -293,14 +293,28 @@
                    [current-readtable #f])
       (thunk)))
 
+  (define pref-cache (make-weak-box #f))
 
-  (define pref-box (make-weak-box #f)) ; non-weak box => need to save
-  (define (get-prefs flush? filename)
-    (define (read-prefs)
+  (define (path->key p)
+    (string->symbol (bytes->string/latin-1 (path->bytes p))))
+
+  (define (pref-cache-install! fn-key fn-date f)
+    (let ([table (or (weak-box-value pref-cache)
+                     (make-hash-table))])
+      (hash-table-put! table 
+                       (path->key fn-key)
+                       (cons
+                        (file-or-directory-modify-seconds fn-date #f (lambda () -inf.0))
+                        f))
+      (unless (eq? table (weak-box-value pref-cache))
+        (set! pref-cache (make-weak-box table)))))
+
+  (define (get-prefs flush-mode filename)
+    (define (read-prefs default-pref-file)
       (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
         (let* ([pref-file
                 (or filename
-                    (let ([f (find-system-path 'pref-file)])
+                    (let ([f default-pref-file])
                       (if (file-exists? f)
                         ;; Using `file-exists?' means there's technically a
                         ;; race condition, but something has gone really wrong
@@ -319,14 +333,25 @@
                            prefs))
             prefs
             null))))
-    (let ([f (and (not flush?) (not filename) (weak-box-value pref-box))])
-      (or f (let ([f (read-prefs)])
-              (unless filename (set! pref-box (make-weak-box f)))
-              f))))
+    (let* ([fn (path->complete-path
+                (or filename
+                    (find-system-path 'pref-file)))]
+           [cache (let ([table (weak-box-value pref-cache)])
+                    (and table (hash-table-get table (path->key fn) #f)))])
+      (if (and cache
+               (or (not flush-mode)
+                   (and (eq? flush-mode 'timestamp)
+                        (= (car cache)
+                           (file-or-directory-modify-seconds fn #f (lambda () -inf.0))))))
+          (cdr cache)
+          (let ([ts (file-or-directory-modify-seconds fn)]
+                [f (read-prefs fn)])
+            (pref-cache-install! fn fn f)
+            f))))
 
   (define/kw (get-preference name #:optional [fail-thunk (lambda () #f)]
-                                             [refresh-cache? #t]
-                                             filename)
+                                             [refresh-cache? 'timestamp]
+                                             [filename #f])
     (unless (symbol? name)
       (raise-type-error 'get-preference "symbol" name))
     (unless (and (procedure? fail-thunk)
@@ -386,8 +411,6 @@
                      (set-car! (cdr m) val)
                      (set! f (cons (list name val) f)))))
                names vals)
-              (unless filename
-                (set! pref-box (make-weak-box f)))
               ;; To write the file, copy the old one to a temporary name
               ;; (preserves permissions, etc), write to the temp file,
               ;; then move (atomicly) the temp file to the normal name.
@@ -421,6 +444,15 @@
                                      f)
                            (printf ")\n")))))
                     'truncate/replace)
+                  ;; Install the new table in the cache. It's possible that this
+                  ;; cache entry will be replaced by a reading thread before we
+                  ;; move the file, but that's ok. It just means that a future
+                  ;; reading thread will have to read again.
+                  (pref-cache-install! (path->complete-path
+                                        (or filename
+                                            (find-system-path 'pref-file)))
+                                       tmp-file
+                                       f)
                   (rename-file-or-directory tmp-file pref-file #t)))))
           (lambda ()
             ;; Release lock:
