@@ -34,7 +34,7 @@
                   [-pasteboard% pasteboard%]
                   [-text% text%]))
 
-  (init-depend mred^ framework:text^)
+  (init-depend mred^ framework:text^ framework:canvas^)
   
       (define (reorder-menus frame)
         (define items (send (send frame get-menu-bar) get-items))
@@ -1414,7 +1414,7 @@
           delegate-moved))
       
       (define delegatee-editor-canvas%
-        (class editor-canvas%
+        (class (canvas:color-mixin canvas:basic%)
           (init-field delegate-frame)
           (inherit get-editor get-dc)
           
@@ -1525,9 +1525,14 @@
               (let ([old-pen (send dc get-pen)]
                     [old-brush (send dc get-brush)])
                 (send dc set-pen
-                      (send the-pen-list find-or-create-pen "light blue" 1 'solid))
+                      (send the-pen-list find-or-create-pen 
+                            (preferences:get 'framework:delegatee-overview-color)
+                            1
+                            'solid))
                 (send dc set-brush
-                      (send the-brush-list find-or-create-brush "light blue" 'solid))
+                      (send the-brush-list find-or-create-brush 
+                            (preferences:get 'framework:delegatee-overview-color)
+                            'solid))
                 (let-values ([(x y w h) (get-rectangle start-para end-para)])
                   (when x
                     (send dc draw-rectangle 

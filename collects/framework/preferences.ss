@@ -228,7 +228,9 @@ the state transitions / contracts are:
                            (begin 
                              (v p value)
                              (cons callback (loop (cdr callbacks))))
-                           (loop (cdr callbacks))))]
+                           (begin
+                             (printf "lost a ~s callback\n" p)
+                             (loop (cdr callbacks)))))]
                     [else
                      (cb p value)
                      (cons callback (loop (cdr callbacks)))]))]))])
@@ -383,7 +385,12 @@ the state transitions / contracts are:
     "\\scmindex{exn:unknown-preference}\\rawscm{exn:unknown-preference}"
     "if the preference's default has not been set.")
    (preferences:add-callback
-    (opt-> (symbol? (symbol? any/c . -> . any/c))
+    (opt-> (symbol? 
+            
+            ;; important that this arg only has a flat contract
+            ;; so that no wrapper is created, so that
+            ;; the weak box stuff works ...
+            (λ (x) (and (procedure? x) (procedure-arity-includes? x 2))))
            (boolean?)
            (-> void?))
     ((p f)

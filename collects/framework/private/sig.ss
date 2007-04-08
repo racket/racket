@@ -369,7 +369,8 @@
      build-color-selection-panel
      add-background-preferences-panel
      marshall-style
-     unmarshall-style))  
+     unmarshall-style
+     set-default/color-scheme))  
   
   (define-signature scheme-class^
     (text<%>
@@ -393,6 +394,7 @@
      add-coloring-preferences-panel
      
      get-color-prefs-table
+     get-white-on-black-color-prefs-table
      short-sym->pref-name
      short-sym->style-name
      

@@ -422,6 +422,9 @@ please adhere to these guidelines:
  (choose-a-background-color "Please choose a background color")
  (revert-to-defaults "Revert to Defaults")
   
+  (black-on-white-color-scheme "Black on White") ;; these two appear in the color preferences dialog on butttons
+  (white-on-black-color-scheme "White on Black") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
+  
  ; title of the color choosing dialog
 
  ; should have entire alphabet

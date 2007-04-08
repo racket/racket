@@ -136,11 +136,24 @@
 
   
   (define clickback-delta (make-object style-delta% 'change-underline #t))
+  (define white-on-black-clickback-delta (make-object style-delta% 'change-underline #t))
   (send clickback-delta set-delta-foreground "BLUE")
-  (define (get-clickback-delta) clickback-delta)
+  (send white-on-black-clickback-delta set-delta-foreground "lightblue")
+  (define get-clickback-delta
+    (opt-lambda ([white-on-black? #f])
+      (if white-on-black? 
+          white-on-black-clickback-delta
+          clickback-delta)))
+  
   (define clicked-clickback-delta (make-object style-delta%))
+  (define white-on-black-clicked-clickback-delta (make-object style-delta%))
   (send clicked-clickback-delta set-delta-background "BLACK")
-  (define (get-clicked-clickback-delta) clicked-clickback-delta)
+  (send white-on-black-clicked-clickback-delta set-delta-background "white")
+  (define get-clicked-clickback-delta
+    (opt-lambda ([white-on-black? #f])
+      (if white-on-black? 
+          white-on-black-clicked-clickback-delta
+          clicked-clickback-delta)))
   
   (define next-untitled-name
     (let ([n 1])
@@ -475,26 +488,40 @@
     "caller's responsibility to avoid the dialog if not needed.")
 
    (gui-utils:get-clicked-clickback-delta
-    (-> (is-a?/c style-delta%))
-    ()
+    (opt->
+     ()
+     (boolean?)
+     (is-a?/c style-delta%))
+    (()
+     ((white-on-black? #f)))
     "This delta is designed for use with"
     "@link text set-clickback %"
     ". Use it as one of the \\iscmclass{style-delta} argument to"
     "@link text set-clickback %"
     "."
     ""
+    "If \\var{white-on-black?} is true, the function returns"
+    "a delta suitable for use on a black background."
+    ""
     "See also"
     "@flink gui-utils:get-clickback-delta %"
     ".")
 
    (gui-utils:get-clickback-delta
-    (-> (is-a?/c style-delta%))
-    ()
+    (opt-> 
+     ()
+     (boolean?)
+     (is-a?/c style-delta%))
+    (()
+     ((white-on-black? #f)))
     "This delta is designed for use with"
     "@link text set-clickback %"
     ". Use the result of this function as the style"
     "for the region"
     "text where the clickback is set." 
+    ""
+    "If \\var{white-on-black?} is true, the function returns"
+    "a delta suitable for use on a black background."
     ""
     "See also"
     "@flink gui-utils:get-clicked-clickback-delta %"

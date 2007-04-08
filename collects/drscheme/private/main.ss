@@ -379,7 +379,8 @@
   (define repl-value-pref 'drscheme:repl:value-color)
   (color-prefs:register-color-pref repl-value-pref
                                    "text:ports value"
-                                   (make-object color% 0 0 175))
+                                   (make-object color% 0 0 175)
+                                   (make-object color% 57 89 216))
   (color-prefs:register-color-pref repl-error-pref
                                    "text:ports err"
                                    (let ([sd (make-object style-delta% 'change-italic)])
@@ -387,7 +388,8 @@
                                      sd))
   (color-prefs:register-color-pref repl-out-pref
                                    "text:ports out"
-                                   (make-object color% 150 0 150))
+                                   (make-object color% 150 0 150)
+                                   (make-object color% 192 46 214))
   (color-prefs:add-to-preferences-panel 
    (string-constant repl-colors)
    (λ (parent)

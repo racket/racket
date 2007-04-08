@@ -527,7 +527,7 @@ TODO
       (define bug-icon 
         (let ([bitmap
                (make-object bitmap%
-                 (build-path (collection-path "icons") "bug09.gif"))])
+                 (build-path (collection-path "icons") "bug09.png"))])
           (if (send bitmap ok?)
               (make-object image-snip% bitmap)
               (make-object string-snip% "[err]"))))
@@ -1445,7 +1445,10 @@ TODO
             (set! setting-up-repl? #t)
             (insert/delta this (string-append (string-constant welcome-to) " ") welcome-delta)
             (let-values ([(before after)
-                          (insert/delta this (string-constant drscheme) click-delta drs-font-delta)])
+                          (insert/delta this 
+                                        (string-constant drscheme)
+                                        click-delta
+                                        drs-font-delta)])
               (insert/delta this (format (string-append ", " (string-constant version) " ~a [~a].\n") 
                                          (version:version) (system-type 'gc))
                             welcome-delta)

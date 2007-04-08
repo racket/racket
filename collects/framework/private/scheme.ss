@@ -267,18 +267,40 @@
   ;;;    ;;;  ;;; ;;;  ;;;  ;; ; ;;  ;;;     ;      ;;;   ;;;  ;;   ;;   ;;; 
                                                                              
  
-      (define color-prefs-table
-        (let ([constant-green (make-object color% 41 128 38)]
-              [symbol-blue (make-object color% 38 38 128)])
-          `((symbol ,symbol-blue ,(string-constant scheme-mode-color-symbol))
-            (keyword ,symbol-blue ,(string-constant scheme-mode-color-keyword))
-            (comment ,(make-object color% 194 116 31) ,(string-constant scheme-mode-color-comment))
-            (string ,constant-green ,(string-constant scheme-mode-color-string))
-            (constant ,constant-green ,(string-constant scheme-mode-color-constant))
-            (parenthesis ,(make-object color% "brown") ,(string-constant scheme-mode-color-parenthesis))
-            (error ,(make-object color% "red") ,(string-constant scheme-mode-color-error))
-            (other ,(make-object color% "black") ,(string-constant scheme-mode-color-other)))))
-      (define (get-color-prefs-table) color-prefs-table)
+  (define color-prefs-table
+    (let ([constant-green (make-object color% 41 128 38)]
+          [symbol-blue (make-object color% 38 38 128)])
+      `((symbol ,symbol-blue ,(string-constant scheme-mode-color-symbol))
+        (keyword ,symbol-blue ,(string-constant scheme-mode-color-keyword))
+        (comment ,(make-object color% 194 116 31) ,(string-constant scheme-mode-color-comment))
+        (string ,constant-green ,(string-constant scheme-mode-color-string))
+        (constant ,constant-green ,(string-constant scheme-mode-color-constant))
+        (parenthesis ,(make-object color% "brown") ,(string-constant scheme-mode-color-parenthesis))
+        (error ,(make-object color% "red") ,(string-constant scheme-mode-color-error))
+        (other ,(make-object color% "black") ,(string-constant scheme-mode-color-other)))))
+  
+  (define white-on-black-color-prefs-table
+    (let* ([sym/kwd (make-object color% 102 102 255)]
+           [new-entries
+            `((symbol ,sym/kwd)
+              (keyword ,sym/kwd)
+              (comment ,(make-object color% 249 148 40))
+              (string ,(make-object color% 51 174 51))
+              (constant ,(make-object color% 60 194 57))
+              (parenthesis ,(make-object color% 151 69 43))
+              (other ,(make-object color% "white")))])
+      (map 
+       (λ (line)
+         (let ([new (assoc (car line) new-entries)])
+           (if new
+               (list* (car line)
+                      (cadr new)
+                      (cddr line))
+               line)))
+       color-prefs-table)))
+
+  (define (get-color-prefs-table) color-prefs-table)
+  (define (get-white-on-black-color-prefs-table) white-on-black-color-prefs-table)
       
       (define (short-sym->pref-name sym) (string->symbol (short-sym->style-name sym)))
       (define sn-hash (make-hash-table))

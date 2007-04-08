@@ -133,9 +133,10 @@ profile todo:
           (set-flags (cons 'handles-events (get-flags)))))
       
       ;; make-note% : string -> (union class #f)
-      (define (make-note% filename)
+      (define (make-note% filename flag)
         (let ([bitmap (make-object bitmap% 
-                        (build-path (collection-path "icons") filename))])
+                        (build-path (collection-path "icons") filename)
+                        flag)])
           (and (send bitmap ok?)
                (letrec ([note%
                          (class clickable-image-snip%
@@ -148,9 +149,9 @@ profile todo:
                            (super-make-object bitmap))])
                  note%))))
       
-      (define bug-note% (make-note% "bug09.gif"))
-      (define mf-note% (make-note% "mf.gif"))
-      (define file-note% (make-note% "file.gif"))
+      (define bug-note% (make-note% "bug09.png" 'png/mask))
+      (define mf-note% (make-note% "mf.gif" 'gif))
+      (define file-note% (make-note% "file.gif" 'gif))
       
       ;; display-stats : (syntax -> syntax)
       ;; count the number of syntax expressions & number of with-continuation-marks in an 
@@ -476,7 +477,7 @@ profile todo:
                                  (instantiate message% ()
                                    (label (string-constant happy-birthday-matthias))
                                    (parent (send current-backtrace-window get-area-container))))]
-                 [ec (make-object canvas:wide-snip% 
+                 [ec (make-object (canvas:color-mixin canvas:wide-snip%)
                        (send current-backtrace-window get-area-container)
                        text)]
                  [di-vec (list->vector dis)]
@@ -516,7 +517,8 @@ profile todo:
                                                     (string-constant next-stack-frames))
                                                 num-to-show))))
                             (let ([hyper-end (send text last-position)])
-                              (send text change-style (gui-utils:get-clickback-delta)
+                              (send text change-style (gui-utils:get-clickback-delta
+                                                       (preferences:get 'framework:white-on-black?))
                                     hyper-start hyper-end)
                               (send text set-clickback
                                     hyper-start hyper-end
@@ -566,7 +568,10 @@ profile todo:
           (send text insert (format "~a: ~a-~a" fn start (+ start span)))
           (let ([end-pos (send text last-position)])
             (send text insert " ")
-            (send text change-style (gui-utils:get-clickback-delta) start-pos end-pos)
+            (send text change-style 
+                  (gui-utils:get-clickback-delta (preferences:get 'framework:white-on-black?))
+                  start-pos 
+                  end-pos)
             (send text set-clickback
                   start-pos end-pos
                   (λ x

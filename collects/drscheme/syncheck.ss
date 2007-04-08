@@ -1239,10 +1239,12 @@ If the namespace does not, they are colored the unbound color.
       
       (fw:color-prefs:register-color-pref lexically-bound-variable-style-pref
                                           lexically-bound-variable-style-name
-                                          (make-object color% 81 112 203))
+                                          (make-object color% 81 112 203)
+                                          (make-object color% 50 163 255))
       (fw:color-prefs:register-color-pref imported-variable-style-pref
                                           imported-variable-style-name
-                                          (make-object color% 68 0 203))
+                                          (make-object color% 68 0 203)
+                                          (make-object color% 166 0 255))
 
 
                                           

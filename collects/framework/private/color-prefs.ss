@@ -207,7 +207,20 @@
          (build-text-foreground-selection-panel vp
                                                 'framework:default-text-color
                                                 (editor:get-default-color-style-name)
-                                                (string-constant default-text-color))))))
+                                                (string-constant default-text-color))
+         
+         (let ([hp (new horizontal-panel% 
+                        [parent vp]
+                        [alignment '(center top)])])
+           (new button%
+                [label (string-constant white-on-black-color-scheme)]
+                [parent hp]
+                [callback (λ (x y) (white-on-black))])
+           (new button%
+                [label (string-constant black-on-white-color-scheme)]
+                [parent hp]
+                [callback (λ (x y) (black-on-white))]))))))
+  
   
   (define (build-text-foreground-selection-panel parent pref-sym style-name example-text)
     (define hp (new horizontal-panel% 
@@ -293,17 +306,76 @@
          panel))))
   
   ;; see docs
-  (define (register-color-pref pref-name style-name color/sd)
-    (let ([sd (cond 
-                [(is-a? color/sd style-delta%)
-                 color/sd]
-                [else
-                 (let ([sd (new style-delta%)])
-                   (send sd set-delta-foreground color/sd)
-                   sd)])])
-      (preferences:set-default pref-name sd (λ (x) (is-a? x style-delta%))))
-    (preferences:set-un/marshall pref-name marshall-style unmarshall-style)
-    (preferences:add-callback pref-name
-                              (λ (sym v)
-                                (editor:set-standard-style-list-delta style-name v)))
-    (editor:set-standard-style-list-delta style-name (preferences:get pref-name))))
+  (define register-color-pref
+    (opt-lambda (pref-name style-name color/sd [white-on-black-color #f])
+      (let ([sd (cond 
+                  [(is-a? color/sd style-delta%)
+                   color/sd]
+                  [else
+                   (let ([sd (new style-delta%)])
+                     (send sd set-delta-foreground color/sd)
+                     sd)])])
+        (preferences:set-default pref-name sd (λ (x) (is-a? x style-delta%)))
+        (when white-on-black-color
+          (set! color-scheme-colors
+                (cons (list pref-name
+                            color/sd
+                            (to-color white-on-black-color))
+                      color-scheme-colors)))
+        (preferences:set-un/marshall pref-name marshall-style unmarshall-style)
+        (preferences:add-callback pref-name
+                                  (λ (sym v)
+                                    (editor:set-standard-style-list-delta style-name v)))
+        (editor:set-standard-style-list-delta style-name (preferences:get pref-name)))))
+  
+  (define color-scheme-colors '())
+  
+  (define (set-default/color-scheme pref-sym black-on-white white-on-black)
+    (let ([bw-c (to-color black-on-white)]
+          [wb-c (to-color white-on-black)])
+      (set! color-scheme-colors
+            (cons (list pref-sym 
+                        (to-color black-on-white)
+                        (to-color white-on-black))
+                  color-scheme-colors))
+      
+      (preferences:set-default pref-sym bw-c (λ (x) (is-a? x color%)))
+      (preferences:set-un/marshall 
+       pref-sym
+       (λ (clr) (list (send clr red) (send clr green) (send clr blue)))
+       (λ (lst) (and (pair? lst)
+                     (pair? (cdr lst))
+                     (pair? (cddr lst))
+                     (null? (cdddr lst))
+                     (make-object color% (car lst) (cadr lst) (caddr lst)))))
+      (void)))
+  
+  (define (to-color c)
+    (cond
+      [(is-a? c color%) c]
+      [(is-a? c style-delta%)
+       (send c get-delta-foreground)]
+      [(string? c)
+       (or (send the-color-database find-color c)
+           (error 'register-color-scheme 
+                  "did not find color ~s in the-color-database"
+                  c))]))
+  
+  (define (black-on-white)
+    (preferences:set 'framework:white-on-black? #f)
+    (do-colorization cadr))
+  (define (white-on-black)
+    (preferences:set 'framework:white-on-black? #t)
+    (do-colorization caddr))
+  (define (do-colorization sel)
+    (for-each (λ (l) 
+                (let* ([p (car l)]
+                       [color (sel l)]
+                       [old (preferences:get p)])
+                  (cond
+                    [(is-a? old color%)
+                     (preferences:set p color)]
+                    [(is-a? old style-delta%)
+                     (send old set-delta-foreground color)
+                     (preferences:set p old)])))
+              color-scheme-colors)))

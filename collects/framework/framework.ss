@@ -1245,6 +1245,22 @@
      "@flink scheme:short-sym->pref-name"
      "and"
      "@flink scheme:short-sym->style-name %"
+     "."
+     ""
+     "See also"
+     "@flink scheme:get-white-on-black-color-prefs-table %"
+     ".")
+    
+    (scheme:get-white-on-black-color-prefs-table
+     (-> (listof (list/c symbol? (is-a?/c color%))))
+     ()
+     "Returns a table mapping from symbols (naming the categories that"
+     "the online colorer uses for Scheme mode coloring) to their"
+     "colors when the user chooses the white-on-black mode in the"
+     "preferences dialog."
+     ""
+     "See also"
+     "@flink scheme:get-color-prefs-table %"
      ".")
     
     (scheme:short-sym->pref-name
@@ -1364,9 +1380,29 @@
      (xyz)
      "Extracts the z component of \\var{xyz}.")
     
+    (color-prefs:set-default/color-scheme
+     (-> symbol?
+         (or/c (is-a?/c color%) string?) 
+         (or/c (is-a?/c color%) string?)
+         void?)
+     (pref-sym black-on-white-color white-on-black-color)
+     "Registers a preference whose value will be updated"
+     "when the user clicks on one of the color scheme default"
+     "settings in the preferences dialog."
+     ""
+     "Also calls "
+     "@flink preferences:set-default"
+     "and"
+     "@flink preferences:set-un/marshall"
+     "with appropriate arguments to register the preference.")
+    
     (color-prefs:register-color-pref 
-     (symbol? string? (or/c (is-a?/c color%) (is-a?/c style-delta%)) . -> . void?)
-     (pref-name style-name color/sd)
+     (opt->
+      (symbol? string? (or/c (is-a?/c color%) (is-a?/c style-delta%)))
+      ((or/c string? (is-a?/c color%) false/c))
+      void?)
+     ((pref-name style-name color/sd)
+      ((white-on-black-color #f)))
      "This function registers a color preference and initializes the"
      "style list returned from"
      "@flink editor:get-standard-style-list %"
@@ -1387,7 +1423,13 @@
      "Finally, it adds calls"
      "@flink preferences:add-callback "
      "to set a callback for \\var{pref-name} that"
-     "updates the style list when the preference changes.")
+     "updates the style list when the preference changes."
+     ""
+     "If \\var{white-on-black-color} is not \\scheme|#f|, then the color of the"
+     "\\var{color/sd} argument is used in combination with \\var{white-on-black-color}"
+     "to register this preference with"
+     "@flink color-prefs:set-default/color-scheme %"
+     ".")
       
     (color-prefs:add-background-preferences-panel
      (-> void?)
