@@ -302,7 +302,9 @@ currently exist).
   named `expected-module-sym' (plus a prefix, if
   `current-module-name-prefix' is set) --- at least if `module' is
   bound in the top-level to MzScheme's `module'. The syntax object
-  `stx' can contain a compiled expression.
+  `stx' can contain a compiled expression. Also, `stx' can be an
+  end-of-file, on the grounds that `read-syntax' can produce an
+  end-of-file.
 
   If `stx' can declare a module in an appropriate top-level, then the
   `check-module-form' procedure returns a syntax object that certainly
