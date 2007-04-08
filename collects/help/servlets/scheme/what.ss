@@ -83,7 +83,7 @@
                " are in both languages, Pretty Big behaves like Graphical"
                " (MrEd)."))
        "The " (a ([name "module"] [value "module"]))
-       ,(standout-text "module")
+       ,(standout-text "(module ...)")
        " language supports development using PLT Scheme's "
        ,(manual-entry "mzscheme" "modules" `(code "module"))
        " form, where the module's language is explicitly declared in the code."
@@ -98,6 +98,6 @@
        (a ([href "/servlets/manuals.ss"]) "manuals page") "."
        (p)
        (a ([name "lang-sel"] [value "language, setting"]))
-       "DrScheme's default language is Beginning Student.  To change the"
+       "To change the"
        " language, select the " (b "Choose Language...") " item in the "
        (B "Language") " menu."))))
