@@ -354,7 +354,16 @@
     (cond
       [(is-a? c color%) c]
       [(is-a? c style-delta%)
-       (send c get-delta-foreground)]
+       (let ([m (send c get-foreground-mult)])
+         (unless (and (= 0 (send m get-r))
+                      (= 0 (send m get-g))
+                      (= 0 (send m get-b)))
+           (error 'register-color-scheme "expected a style delta with foreground-mult that is all zeros"))
+         (let ([add (send c get-foreground-add)])
+           (make-object color% 
+             (send add get-r)
+             (send add get-g)
+             (send add get-b))))]
       [(string? c)
        (or (send the-color-database find-color c)
            (error 'register-color-scheme 
