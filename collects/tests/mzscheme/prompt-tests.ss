@@ -1668,6 +1668,27 @@
   (test '(1 2 3 4 5 1 2 3 4 5 1 6 6 2 3 4 5 1 6 6) go (make-continuation-prompt-tag) #f))
 
 ;; ----------------------------------------
+;; Run two levels of continuations where an explicit
+;; prompt in a capturing thread is represented by an
+;; implicit prompt in the calling thread.
+
+(let ()
+  (define (foo thunk)
+    (call-with-continuation-prompt
+     (lambda ()
+       (let/cc ret
+         (let ([run? #f])
+           (let/cc run
+             (thread (lambda ()
+                       (sync (system-idle-evt))
+                       (set! run? #t)
+                       (run))))
+           (when run? (ret (thunk))))))))
+  (define s (make-semaphore))
+  (foo (lambda () (semaphore-post s)))
+  (test s sync s))
+
+;; ----------------------------------------
 ;; Try long chain of composable continuations
 
 (let ([long-loop

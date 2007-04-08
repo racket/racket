@@ -5961,7 +5961,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
          created with a new thread or a barrier prompt. */
       p->meta_continuation = NULL; /* since prompt wasn't in any meta-continuation */
       p->meta_prompt = NULL;
-      if (c->barrier_prompt == barrier_prompt) {
+      if ((c->barrier_prompt == barrier_prompt) && barrier_prompt) {
         /* Barrier determines continuation end. */
         c->resume_to = NULL;
         p->stack_start = c->stack_start;
