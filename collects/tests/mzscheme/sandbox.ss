@@ -165,7 +165,8 @@
    (when (directory-exists? "/tmp") ; non-collects place to play with
      (let* ([mzlib    (path->string (collection-path "mzlib"))]
             [list-lib (path->string (build-path mzlib "list.ss"))]
-            [test-lib "/tmp/sandbox-test.ss"])
+            [test-lib (path->string (path->complete-path ; <- for windows
+                                     "/tmp/sandbox-test.ss"))])
        (t --top--
           (set! ev (make-evaluator 'mzscheme '()))
           --eval--
@@ -203,10 +204,15 @@
           (directory-list "/tmp") =err> "file access denied"
           --top--
           ;; explicitly allow access to /tmp
-          (set! ev (parameterize ([sandbox-path-permissions
-                                   `((read #rx#"^/tmp(?:/|$)")
-                                     ,@(sandbox-path-permissions))])
-                     (make-evaluator 'mzscheme '())))
+          (set! ev (let ([rx (if (eq? 'windows (system-type))
+                               ;; on windows this will have a drive letter
+                               #rx#"^[a-zA-Z]:[/\\]tmp(?:[/\\]|$)"
+                               #rx#"^/tmp(?:/|$)")])
+                     (parameterize ([sandbox-path-permissions
+                                     ;; allow all `/tmp' paths for windows
+                                     `((read ,rx)
+                                       ,@(sandbox-path-permissions))])
+                       (make-evaluator 'mzscheme '()))))
           --eval--
           (length (with-input-from-file ,test-lib read)) => 5
           (list? (directory-list "/tmp"))

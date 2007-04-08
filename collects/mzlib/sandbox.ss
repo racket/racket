@@ -509,8 +509,12 @@
              [reqs (cond [(not requires) '()]
                          [(not (list? requires))
                           (error 'make-evaluator "bad requires: ~e" requires)]
-                         [else (map (lambda (r) (if (pair? r) r `(file ,r)))
-                                    requires)])])
+                         [else
+                          (map (lambda (r)
+                                 (if (or (pair? r) (symbol? r))
+                                   r
+                                   `(file ,(path->string (simplify-path* r)))))
+                               requires)])])
          (make-evaluator* (init-for-language lang)
                           (require-perms lang reqs)
                           (lambda () (build-program lang reqs input-program))))]
