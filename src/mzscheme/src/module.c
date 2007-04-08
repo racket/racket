@@ -3600,12 +3600,13 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     if (!SAME_OBJ(mbval, modbeg_syntax)) {
       Scheme_Object *mb;
       mb = scheme_datum_to_syntax(module_begin_symbol, form, scheme_false, 0, 0);
-      mb = scheme_add_rename(mb, rn);
-      mb = scheme_add_rename(mb, et_rn);
-      mb = scheme_add_rename(mb, tt_rn);
       fm = scheme_make_pair(mb, scheme_make_pair(fm, scheme_null));
       fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
       fm = scheme_stx_property(fm, module_name_symbol, m->modname);
+      /* Since fm is a newly-created syntax object, we need to re-add renamings: */
+      fm = scheme_add_rename(fm, rn);
+      fm = scheme_add_rename(fm, et_rn);
+      fm = scheme_add_rename(fm, tt_rn);
       check_mb = 1;
     }
   }

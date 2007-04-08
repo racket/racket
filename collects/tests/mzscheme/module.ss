@@ -224,5 +224,51 @@
 (test 18 values w_cr)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test proper bindings for `#%module-begin'
+
+(test (void) eval
+      '(begin
+	 (module mod_beg2 mzscheme
+		 (provide (all-from-except mzscheme #%module-begin))
+		 (provide (rename mb #%module-begin))
+		 (define-syntax (mb stx)
+		   (syntax-case stx ()
+		     [(_ . forms)
+		      #`(#%plain-module-begin 
+			 #,(datum->syntax-object stx '(require-for-syntax mzscheme))
+			 . forms)])))
+	 (module m mod_beg2
+		 3)))
+
+
+(test (void) eval
+      '(begin
+	 (module mod_beg2 mzscheme
+		 (provide (all-from-except mzscheme #%module-begin))
+		 (provide (rename mb #%module-begin))
+		 (define-syntax (mb stx)
+		   (syntax-case stx ()
+		     [(_ . forms)
+		      #`(#%plain-module-begin 
+			 #,(datum->syntax-object stx '(require-for-syntax mzscheme))
+			 . forms)])))
+	 (module m mod_beg2
+		 3 4)))
+
+(test (void) eval
+      '(begin
+	 (module mod_beg2 mzscheme
+		 (provide (all-from-except mzscheme #%module-begin))
+		 (provide (rename mb #%module-begin))
+		 (define-syntax (mb stx)
+		   (syntax-case stx ()
+		     [(mb . forms)
+		      #`(#%plain-module-begin 
+			 #,(datum->syntax-object #'mb '(require-for-syntax mzscheme))
+			 . forms)])))
+	 (module m mod_beg2
+		 3)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
