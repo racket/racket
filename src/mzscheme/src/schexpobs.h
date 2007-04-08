@@ -106,6 +106,8 @@ extern Scheme_Object *scheme_get_expand_observe();
         _SCHEME_EXPOBS(observer,123,NULL)
 #define SCHEME_EXPAND_OBSERVE_PRIM_LETSTAR_VALUES(observer) \
         _SCHEME_EXPOBS(observer,124,NULL)
+#define SCHEME_EXPAND_OBSERVE_PRIM_EXPRESSION(obs) \
+        _SCHEME_EXPOBS(obs,138,scheme_false)
 
 #define SCHEME_EXPAND_OBSERVE_VARIABLE(observer,e1,e2)       \
         _SCHEME_EXPOBS(observer,125,scheme_make_pair(e1, e2))
@@ -136,5 +138,10 @@ extern Scheme_Object *scheme_get_expand_observe();
         _SCHEME_EXPOBS(obs,132,stx)
 #define SCHEME_EXPAND_OBSERVE_LOCAL_POST(obs,stx) \
         _SCHEME_EXPOBS(obs,133,stx)
+
+#define SCHEME_EXPAND_OBSERVE_ENTER_LOCAL_EXPR(obs,stx) \
+        _SCHEME_EXPOBS(obs,139,stx)
+#define SCHEME_EXPAND_OBSERVE_EXIT_LOCAL_EXPR(obs,stx,opaque) \
+        _SCHEME_EXPOBS(obs,140,scheme_make_pair(stx,opaque))
 
 #endif

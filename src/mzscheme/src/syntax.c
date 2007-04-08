@@ -4463,6 +4463,7 @@ static Scheme_Object *expression_syntax(Scheme_Object *form, Scheme_Comp_Env *en
 
 static Scheme_Object *expression_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  SCHEME_EXPAND_OBSERVE_PRIM_EXPRESSION(erec[drec].observer);
   return single_expand(form, scheme_no_defines(env), erec, drec, 0,
                        !(env->flags & SCHEME_TOPLEVEL_FRAME));
 }
@@ -4986,10 +4987,19 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   Resolve_Info *ri;
   Optimize_Info *oi;
   int vc, nc, j, i;
-  Scheme_Compile_Info mrec;
-  
-  certs = rec[drec].certs;
+  Scheme_Compile_Expand_Info mrec;
 
+  certs = rec[drec].certs;
+  eenv = scheme_new_comp_env(exp_env, insp, 0);
+
+  /* First expand for expansion-observation */
+  {
+    scheme_init_expand_recs(rec, drec, &mrec, 1);
+    SCHEME_EXPAND_OBSERVE_PHASE_UP(mrec.observer);
+    a = scheme_expand_expr_lift_to_let(a, eenv, &mrec, 0);
+  }
+
+  /* Then compile */
   mrec.comp = 1;
   mrec.dont_mark_local_use = 0;
   mrec.resolve_module_ids = 1;
@@ -4997,19 +5007,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   mrec.certs = certs;
   mrec.observer = NULL;
 
-  eenv = scheme_new_comp_env(exp_env, insp, 0);
-
-  {
-    mrec.comp = 0;
-    mrec.observer = rec[drec].observer;
-    SCHEME_EXPAND_OBSERVE_PHASE_UP(mrec.observer);
-    a = scheme_expand_expr_lift_to_let(a, eenv, &mrec, 0);
-    mrec.comp = 1;
-    mrec.observer = NULL;
-  }
-  
   a = scheme_compile_expr_lift_to_let(a, eenv, &mrec, 0);
-    
+
   /* For internal defn, don't simplify as resolving, because the
        expression may have syntax objects with a lexical rename that
        is still being extended. 

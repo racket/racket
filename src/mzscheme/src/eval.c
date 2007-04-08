@@ -7843,7 +7843,16 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   orig_l = l;
 
   observer = scheme_get_expand_observe();
-  SCHEME_EXPAND_OBSERVE_ENTER_LOCAL(observer, l);
+  if (observer) {
+    if (for_expr) {
+      SCHEME_EXPAND_OBSERVE_ENTER_LOCAL_EXPR(observer, l);
+    } else {
+      SCHEME_EXPAND_OBSERVE_ENTER_LOCAL(observer, l);
+    }
+    if (for_stx) {
+      SCHEME_EXPAND_OBSERVE_PHASE_UP(observer);
+    }
+  }
 
   if (local_mark) {
     /* Since we have an expression from local context,
@@ -7904,14 +7913,14 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     l = scheme_add_remove_mark(l, local_mark);
   }
 
-  SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(observer, l);
-
   if (for_expr) {
     Scheme_Object *a[2];
+    SCHEME_EXPAND_OBSERVE_EXIT_LOCAL_EXPR(observer, l, exp_expr);
     a[0] = l;
     a[1] = exp_expr;
     return scheme_values(2, a);
   } else
+    SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(observer, l);
     return l;
 }
 
