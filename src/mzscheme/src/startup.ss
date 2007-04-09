@@ -2904,9 +2904,15 @@
 			  letrec-syntaxes+values
 			  fluid-let-syntax
 			  with-continuation-mark
+                          #%expression
+                          #%variable-reference
 			  #%app
 			  #%top
-			  #%datum)))])
+			  #%datum
+                          provide 
+                          require
+                          require-for-syntax
+                          require-for-template)))])
 	     (syntax-case* e (begin define-values define-syntaxes require require-for-template) 
 			   module-transformer-identifier=?
 	       [(begin v ...)

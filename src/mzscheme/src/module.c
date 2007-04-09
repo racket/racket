@@ -4131,7 +4131,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	fm = scheme_append(fst, scheme_make_pair(e, fm));
         SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, fst);
       } else {
-	/* No lifts added... */
+	/* No definition lifts added... */
 	if (SCHEME_STX_PAIRP(e))
 	  fst = SCHEME_STX_CAR(e);
 	else
@@ -4155,7 +4155,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
             }
 	  }
 	} else
-	  break;
+          break;
       }
     }
     if (!e) break; /* (begin) expansion at end */

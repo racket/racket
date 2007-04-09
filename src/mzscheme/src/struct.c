@@ -1395,7 +1395,7 @@ static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object 
 {
   Scheme_Struct_Type *stype, *parent;
   Scheme_Object *insp, *ims;
-  int p;
+  int p, cnt;
 
   insp = check_type_and_inspector("struct-type-info", always, argc, argv);
   stype = (Scheme_Struct_Type *)argv[0];
@@ -1419,8 +1419,9 @@ static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object 
     parent = NULL;
 
   a[0] = stype->name;
-  a[1] = scheme_make_integer(stype->num_islots);
-  a[2] = scheme_make_integer(stype->num_slots - (parent ? parent->num_slots : 0) - stype->num_islots);
+  cnt = stype->num_islots - (parent ? parent->num_islots : 0);
+  a[1] = scheme_make_integer(cnt);
+  a[2] = scheme_make_integer(stype->num_slots - (parent ? parent->num_slots : 0) - cnt);
   a[3] = stype->accessor;
   a[4] = stype->mutator;
 
