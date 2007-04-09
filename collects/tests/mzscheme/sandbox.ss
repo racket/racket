@@ -67,7 +67,9 @@
 
    ;; i/o
    --top--
-   (set! ev (parameterize ([sandbox-input "3\n"] [sandbox-output 'string])
+   (set! ev (parameterize ([sandbox-input "3\n"]
+                           [sandbox-output 'string]
+                           [sandbox-error-output current-output-port])
               (make-evaluator 'mzscheme '() '(define x 123))))
    --eval-- (printf "x = ~s\n" x) => (void)
    --top--  (get-output ev) => "x = 123\n"

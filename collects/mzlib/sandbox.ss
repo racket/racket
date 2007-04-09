@@ -40,7 +40,7 @@
   (define sandbox-init-hook    (make-parameter void))
   (define sandbox-input        (make-parameter #f))
   (define sandbox-output       (make-parameter #f))
-  (define sandbox-error-output (make-parameter #t))
+  (define sandbox-error-output (make-parameter current-error-port))
   (define sandbox-eval-limits  (make-parameter '(30 10))) ; 30sec, 10mb
   (define sandbox-coverage-enabled (make-parameter #f))
 
@@ -350,6 +350,7 @@
   (define current-eventspace (mz/mr (make-parameter #f) current-eventspace))
   (define make-eventspace    (mz/mr void make-eventspace))
   (define run-in-bg          (mz/mr thread queue-callback))
+  (define bg-run->thread     (mz/mr values eventspace-handler-thread))
   (define null-input         (open-input-bytes #""))
 
   (define (kill-evaluator eval)            (eval kill-evaluator))
@@ -376,9 +377,14 @@
     (define output        #f)
     (define error-output  #f)
     (define limits        (sandbox-eval-limits))
-    (define user-running? #t)
+    (define user-thread   #t) ; set later to the thread
+    (define orig-cust (current-custodian))
     (define (kill-me)
-      (when user-running? (set! user-running? #f) (custodian-shutdown-all cust))
+      (when user-thread
+        (let ([t user-thread])
+          (set! user-thread #f)
+          (custodian-shutdown-all cust)
+          (kill-thread t))) ; just in case
       (void))
     (define (user-process)
       (with-handlers ([void (lambda (exn) (channel-put result-ch exn))])
@@ -407,7 +413,7 @@
                              (cons 'vals (call-with-values run list))))))
           (loop (add1 n)))))
     (define (user-eval expr)
-      (let ([r (if user-running?
+      (let ([r (if user-thread
                  (begin (channel-put input-ch expr) (channel-get result-ch))
                  eof)])
         (cond [(eof-object? r) (error 'evaluator "terminated")]
@@ -437,30 +443,32 @@
     (define linked-outputs? #f)
     (define (make-output what out set-out! allow-link?)
       (cond [(not out) (open-output-nowhere)]
-            [(and (eq? #t out) allow-link?)
-             (set! linked-outputs? #t) (current-output-port)]
+            [(and (procedure? out) (procedure-arity-includes? out 0)) (out)]
             [(output-port? out) out]
             [(eq? out 'pipe) (let-values ([(i o) (make-pipe)]) (set-out! i) o)]
             [(memq out '(bytes string))
-             (let-values ([(open get)
-                           (if (eq? out 'bytes)
-                             (values open-output-bytes  get-output-bytes)
-                             (values open-output-string get-output-string))])
-               (let ([o (open)])
-                 (set-out! (lambda ()
-                             (let ([o1 o])
-                               (set! o (open))
-                               (current-output-port o)
-                               (when linked-outputs? (current-error-port o))
-                               (get o1))))
-                 o))]
+             (let* ([bytes? (eq? 'bytes out)]
+                    ;; the following doesn't really matter: they're the same
+                    [out ((if bytes? open-output-bytes open-output-string))])
+               (set-out!
+                (lambda ()
+                  (parameterize ([current-custodian orig-cust])
+                    (let ([running? (and (thread? user-thread)
+                                         (thread-running? user-thread))])
+                      (when running? (thread-suspend user-thread))
+                      (let ([buf (subbytes (get-output-bytes out)
+                                           0 (file-position out))])
+                        (file-position out 0)
+                        (when running? (thread-resume user-thread))
+                        (if bytes? buf (bytes->string/utf-8 buf #\?)))))))
+               out)]
             [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
     (parameterize* ; the order in these matters
-        ([current-custodian cust]
+        (;; create a sandbox context first
+         [current-custodian cust]
          [current-thread-group (make-thread-group)]
          [current-namespace (make-evaluation-namespace)]
-         [current-inspector (make-inspector)]
-         [exit-handler (lambda x (error 'exit "user code cannot exit"))]
+         ;; set up the IO context
          [current-input-port
           (let ([inp (sandbox-input)])
             (if inp
@@ -473,6 +481,7 @@
          [current-error-port (make-output 'error-output (sandbox-error-output)
                                           (lambda (o) (set! error-output o))
                                           #t)]
+         ;; paths
          [current-library-collection-paths
           (filter directory-exists?
                   (append (sandbox-override-collection-paths)
@@ -482,7 +491,11 @@
                        (current-library-collection-paths))
                   require-perms
                   (sandbox-path-permissions))]
+         ;; restrict the sandbox context from this point
          [current-security-guard (sandbox-security-guard)]
+         [exit-handler (lambda x (error 'exit "user code cannot exit"))]
+         [current-inspector (make-inspector)]
+         ;; This breaks: [current-code-inspector (make-inspector)]
          ;; Note the above definition of `current-eventspace': in MzScheme, it
          ;; is an unused parameter.  Also note that creating an eventspace
          ;; starts a thread that will eventually run the callback code (which
@@ -490,7 +503,7 @@
          ;; must be nested in the above (which is what paramaterize* does), or
          ;; it will not use the new namespace.
          [current-eventspace (make-eventspace)])
-      (run-in-bg user-process)
+      (set! user-thread (bg-run->thread (run-in-bg user-process)))
       (let ([r (channel-get result-ch)])
         (if (eq? r 'ok)
           ;; initial program executed ok, so return an evaluator
