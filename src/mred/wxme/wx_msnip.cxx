@@ -425,6 +425,36 @@ void wxMediaSnip::Draw(wxDC *dc, double x, double y,
   r = ((r < right) ? r : right);
   b = ((b < bottom) ? b : bottom);
 
+  if (useStyleBG) {
+    if (style->GetTransparentTextBacking()) {
+      bgColor = NULL;
+    } else {
+      wxBrush *saveb, *fill;
+      wxPen *savep, *transPen;
+
+      bgColor = style->GetBackground();
+      
+      l = orig_x + leftInset;
+      t = orig_y + topInset;
+      r = l + (w + leftMargin + rightMargin - (leftInset + rightInset)) - 1;
+      b = t + (h + topMargin + bottomMargin - (topInset + bottomInset)) - 1;
+
+      transPen = wxThePenList->FindOrCreatePen(bgColor, 0, wxTRANSPARENT);
+      fill = wxTheBrushList->FindOrCreateBrush(bgColor, wxSOLID);
+
+      savep = dc->GetPen();
+      saveb = dc->GetBrush();
+
+      dc->SetPen(transPen);
+      dc->SetBrush(fill);
+
+      dc->DrawRectangle(l, t, r - l, b - t);
+
+      dc->SetBrush(saveb);
+      dc->SetPen(savep);
+    }
+  }
+
   if (me)
     me->Refresh(l - x, t - y, r - l, b - t, show_caret, bgColor);
 
@@ -484,7 +514,7 @@ wxSnip *wxMediaSnip::Copy(void)
 
 void wxMediaSnip::Write(wxMediaStreamOut *f)
 {
-  Bool wb = withBorder, tf = tightFit, ta = alignTopLine;
+  Bool wb = withBorder, tf = tightFit, ta = alignTopLine, usbg = useStyleBG;
 
   f->Put((me ? me->bufferType : 0));
   f->Put(wb);
@@ -502,6 +532,7 @@ void wxMediaSnip::Write(wxMediaStreamOut *f)
   f->Put(maxHeight);
   f->Put(tf);
   f->Put(ta);
+  f->Put(usbg);
 
   if (me)
     me->WriteToFile(f);
@@ -564,6 +595,19 @@ void wxMediaSnip::SetAlignTopLine(Bool t)
     admin->Resized(this, TRUE);
 }
 
+void wxMediaSnip::UseStyleBG(Bool useit)
+{
+  if ((useStyleBG ?  1 : 0) != (useit ? 1 : 0)) {
+    useStyleBG = (useit ? TRUE : FALSE);
+    RequestRefresh();
+  }
+}
+
+Bool wxMediaSnip::StyleBGUsed()
+{
+  return useStyleBG;
+}
+
 Bool wxMediaSnip::Resize(double w, double h)
 {
   w -= leftMargin + rightMargin;
@@ -586,23 +630,28 @@ Bool wxMediaSnip::Resize(double w, double h)
   return TRUE;
 }
 
+void wxMediaSnip::RequestRefresh()
+{
+  if (admin) {
+    wxDC *dc;
+    double w, h;
+
+    dc = admin->GetDC();
+    if (dc) {
+      w = h = 0.0;
+      GetExtent(dc, 0, 0, &w, &h);
+      admin->NeedsUpdate(this, leftInset, topInset, 
+                         w + rightMargin - rightInset, 
+                         h + bottomMargin - bottomInset);
+    }
+  }
+}
+
 void wxMediaSnip::ShowBorder(Bool show)
 {
   if ((withBorder ?  1 : 0) != (show ? 1 : 0)) {
     withBorder = (show ? TRUE : FALSE);
-    if (admin) {
-      wxDC *dc;
-      double w, h;
-
-      dc = admin->GetDC();
-      if (dc) {
-	w = h = 0.0;
-	GetExtent(dc, 0, 0, &w, &h);
-	admin->NeedsUpdate(this, leftInset, topInset, 
-				  w + rightMargin - rightInset, 
-				  h + bottomMargin - bottomInset);
-      }
-    }
+    RequestRefresh();
   }
 }
 

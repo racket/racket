@@ -356,14 +356,14 @@
 		 (unless (memq type '(text pasteboard))
 		   (raise-type-error (who->name '(method editor<%> on-new-box)) "symbol: text or pasteboard" type))
 		 (make-object editor-snip%
-			      (let ([e (make-object (cond
-						     [(eq? type 'pasteboard) pasteboard%]
-						     [else text%]))])
-				(send e set-keymap (get-keymap))
-				(send e set-style-list (get-style-list))
-				(send e set-max-undo-history (get-max-undo-history))
-				e))))])
-
+                              (let ([e (make-object (cond
+                                                     [(eq? type 'pasteboard) pasteboard%]
+                                                     [else text%]))])
+                                (send e set-keymap (get-keymap))
+                                (send e set-style-list (get-style-list))
+                                (send e set-max-undo-history (get-max-undo-history))
+                                e))))])
+               
 	    (apply super-make-object args)))
 
   (define text%

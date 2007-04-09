@@ -687,15 +687,22 @@
           (printf "#define __xform_nongcing__ /**/~n")
           ;; Another annotation to protect against GC conversion:
           (printf "#define HIDE_FROM_XFORM(x) x~n")
+          (printf "#define XFORM_HIDE_EXPR(x) x~n")
           (printf "#define HIDE_NOTHING_FROM_XFORM() /**/~n")
           ;; In case a conversion is unnecessary where we have this annotation:
           (printf "#define START_XFORM_SKIP /**/~n")
           (printf "#define END_XFORM_SKIP /**/~n")
           (printf "#define START_XFORM_SUSPEND /**/~n")
           (printf "#define END_XFORM_SUSPEND /**/~n")
+          (printf "#define XFORM_START_SKIP /**/~n")
+          (printf "#define XFORM_END_SKIP /**/~n")
+          (printf "#define XFORM_START_SUSPEND /**/~n")
+          (printf "#define XFORM_END_SUSPEND /**/~n")
           ;; For avoiding warnings:
           (printf "#define XFORM_OK_PLUS +~n")
           (printf "#define XFORM_OK_MINUS -~n")
+          (printf "#define XFORM_TRUST_PLUS +~n")
+          (printf "#define XFORM_TRUST_MINUS -~n")
           (printf "~n")
           
           ;; C++ cupport:
@@ -810,7 +817,8 @@
         ;; finding function calls
         (define non-functions
           '(<= < > >= == != !
-               \| \|\| & && |:| ? % + - * / ^ >> << ~ #csXFORM_OK_PLUS #csXFORM_OK_MINUS 
+               \| \|\| & && |:| ? % + - * / ^ >> << ~ 
+               #csXFORM_OK_PLUS #csXFORM_OK_MINUS #csXFORM_TRUST_PLUS #csXFORM_TRUST_MINUS 
                = >>= <<= ^= += *= /= -= %= \|= &= ++ --
                return sizeof if for while else switch case
                asm __asm __asm__ __volatile __volatile__ volatile __extension__
@@ -1194,7 +1202,8 @@
                    (newline/indent indent)
                    (display/indent v (tok-n v))
                    (display/indent v " ")]
-                  [(and (eq? '|HIDE_FROM_XFORM| (tok-n v))
+                  [(and (or (eq? '|HIDE_FROM_XFORM| (tok-n v))
+                            (eq? '|XFORM_HIDE_EXPR| (tok-n v)))
                         (pair? (cdr e))
                         (seq? (cadr e))
                         (null? (seq->list (seq-in (cadr e)))))
@@ -1465,23 +1474,28 @@
         
         (define (end-skip? e)
           (and (pair? e)
-               (eq? END_XFORM_SKIP (tok-n (car e)))))
+               (or (eq? END_XFORM_SKIP (tok-n (car e)))
+                   (eq? 'XFORM_END_SKIP (tok-n (car e))))))
         
         (define (start-suspend? e)
           (and (pair? e)
-               (eq? START_XFORM_SUSPEND (tok-n (car e)))))
+               (or (eq? START_XFORM_SUSPEND (tok-n (car e)))
+                   (eq? 'XFORM_START_SUSPEND (tok-n (car e))))))
         
         (define (end-suspend? e)
           (and (pair? e)
-               (eq? END_XFORM_SUSPEND (tok-n (car e)))))
+               (or (eq? END_XFORM_SUSPEND (tok-n (car e)))
+                   (eq? 'XFORM_END_SUSPEND (tok-n (car e))))))
         
         (define (start-arith? e)
           (and (pair? e)
-               (eq? START_XFORM_ARITH (tok-n (car e)))))
+               (or (eq? START_XFORM_ARITH (tok-n (car e)))
+                   (eq? 'XFORM_END_TRUST_ARITH (tok-n (car e))))))
         
         (define (end-arith? e)
           (and (pair? e)
-               (eq? END_XFORM_ARITH (tok-n (car e)))))
+               (or (eq? END_XFORM_ARITH (tok-n (car e)))
+                   (eq? 'XFORM_START_TRUST_ARITH (tok-n (car e))))))
         
         (define (access-modifier? e)
           (and (memq (tok-n (car e)) '(public private protected))
@@ -1719,7 +1733,8 @@
         ;; Parses a declaration  of one line (which may have multiple, comma-separated variables).
         ;; Returns a list of pointer declarations and a list of non-pointer declarations.
         (define (get-vars e comment union-ok?)
-          (let* ([e   (if (eq? GC_CAN_IGNORE (tok-n (car e)))
+          (let* ([e   (if (or (eq? GC_CAN_IGNORE (tok-n (car e)))
+                              (eq? 'XFORM_CAN_IGNORE (tok-n (car e))))
                           (list (make-tok semi #f #f)) ; drop everything
                           (filter (lambda (x) (not (memq (tok-n x) '(volatile __volatile__ __volatile const)))) e))]
                  [base (tok-n (car e))]
@@ -2863,7 +2878,7 @@
                (parens? (car e-))
                ;; Something precedes
                (not (null? (cdr e-)))
-               (eq? (tok-n (cadr e-)) '|HIDE_FROM_XFORM|)))
+               (memq (tok-n (cadr e-)) '(|HIDE_FROM_XFORM| |XFORM_HIDE_EXPR|))))
         
         (define (cast-or-call e- cast-k call-k)
           ;; Looks like a function call, although we don't know the
@@ -3033,7 +3048,9 @@
                                        [(and (>= (length e) 3)
                                              (let ([n (tok-n (car e))])
                                                (or (number? n) (symbol? n)))
-                                             (memq (tok-n (cadr e)) '(+ - * / #csXFORM_OK_PLUS #csXFORM_OK_MINUS)))
+                                             (memq (tok-n (cadr e)) '(+ - * / 
+                                                                        #csXFORM_OK_PLUS #csXFORM_OK_MINUS
+                                                                        #csXFORM_TRUST_PLUS #csXFORM_TRUST_MINUS)))
                                         (let ([k (lift-in-arithmetic? (cddr e))])
                                           (and k
                                                (lambda (wrap)
@@ -3047,7 +3064,9 @@
                                           (and (>= len 3)
                                                (let ([n (tok-n (list-ref e (sub1 len)))])
                                                  (or (number? n) (symbol? n)))
-                                               (memq (tok-n (list-ref e (- len 2))) '(+ - * / #csXFORM_OK_PLUS #csXFORM_OK_MINUS))))
+                                               (memq (tok-n (list-ref e (- len 2))) '(+ - * / 
+                                                                                        #csXFORM_OK_PLUS #csXFORM_OK_MINUS
+                                                                                        #csXFORM_TRUST_PLUS #csXFORM_TRUST_MINUS))))
                                         (let* ([last? (null? el)]
                                                [len (if last?
                                                         (length e)

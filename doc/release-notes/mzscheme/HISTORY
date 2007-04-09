@@ -1,3 +1,9 @@
+Version 369.9
+Module top-level enforces initial categorization of expressions
+ versus other forms
+Added procedure-struct-type?
+Inside MzScheme: XFORM_START_SKIP, etc.
+
 Version 369.8
 Added -p, -P, and -Q command-line options
 Changed H-expression parsing to represent angle brackets specially

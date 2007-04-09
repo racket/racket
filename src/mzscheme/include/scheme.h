@@ -1577,6 +1577,16 @@ extern void *scheme_malloc_envunbox(size_t);
 # define MZ_GC_NO_VAR_IN_REG(x)          /* empty */
 # define MZ_GC_REG()                     /* empty */
 # define MZ_GC_UNREG()                   /* empty */
+# define XFORM_HIDE_EXPR(x) x
+# define XFORM_START_SKIP /**/
+# define XFORM_END_SKIP /**/
+# define XFORM_START_SUSPEND /**/
+# define XFORM_END_SUSPEND /**/
+# define XFORM_START_TRUST_ARITH /**/
+# define XFORM_END_TRUST_ARITH /**/
+# define XFORM_CAN_IGNORE /**/
+# define XFORM_TRUST_PLUS +
+# define XFORM_TRUST_MINUS -
 #endif
 
 /*========================================================================*/

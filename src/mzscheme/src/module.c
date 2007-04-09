@@ -4092,7 +4092,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
      and provides. Also, flatten top-level `begin' expressions: */
   for (fm = SCHEME_STX_CDR(form); !SCHEME_STX_NULLP(fm); ) {
     Scheme_Object *e;
-    int normal;
+    int kind;
 
     while (1) {
       Scheme_Object *fst;
@@ -4226,7 +4226,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  }
           
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
-	  normal = 1;
+	  kind = 2;
 	} else if (scheme_stx_module_eq(scheme_define_syntaxes_stx, fst, 0)
 		   || scheme_stx_module_eq(define_for_syntaxes_stx, fst, 0)) {
 	  /************ define-syntaxes & define-values-for-syntax *************/
@@ -4364,7 +4364,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  }
           
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
-	  normal = 0;
+	  kind = 0;
 	} else if (scheme_stx_module_eq(require_stx, fst, 0)) {	
 	  /************ require *************/
 	  Scheme_Object *imods;
@@ -4385,7 +4385,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    e = NULL;
 
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
-	  normal = 0;
+	  kind = 0;
 	} else if (scheme_stx_module_eq(require_for_syntax_stx, fst, 0)) {	
 	  /************ require-for-syntax *************/
 	  Scheme_Object *imods;
@@ -4412,7 +4412,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    e = NULL;
 
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
-	  normal = 0;
+	  kind = 0;
 	} else if (scheme_stx_module_eq(require_for_template_stx, fst, 0)) {	
 	  /************ require-for-template *************/
 	  Scheme_Object *imods;
@@ -4439,7 +4439,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    e = NULL;
 
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
-	  normal = 0;
+	  kind = 0;
 	} else if (scheme_stx_module_eq(provide_stx, fst, 0)) {
 	  /************ provide *************/
 	  /* Add provides to table: */
@@ -4699,17 +4699,17 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    e = NULL;
 
           SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer, e);
-	  normal = 0;
+	  kind = 0;
 	} else {
-	  normal = 1;
+	  kind = 1;
         }
       } else
-	normal = 1;
+	kind = 1;
     } else
-      normal = 1;
+      kind = 1;
 
     if (e) {
-      p = scheme_make_pair(scheme_make_pair(e, normal ? scheme_true : scheme_false), scheme_null);
+      p = scheme_make_pair(scheme_make_pair(e, scheme_make_integer(kind)), scheme_null);
       if (last)
 	SCHEME_CDR(last) = p;
       else
@@ -4727,7 +4727,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       maybe_has_lifts = 0;
     }
   }
-  /* first =  a list of (cons semi-expanded-expression normal?) */
+  /* first =  a list of (cons semi-expanded-expression kind) */
 
   /* Pass 2 */
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);
@@ -4749,31 +4749,38 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   prev_p = NULL;
   for (p = first; !SCHEME_NULLP(p); ) {
     Scheme_Object *e, *l, *ll;
-    int normal;
+    int kind;
 
     e = SCHEME_CAR(p);
-    normal = SCHEME_TRUEP(SCHEME_CDR(e));
+    kind = SCHEME_INT_VAL(SCHEME_CDR(e));
     e = SCHEME_CAR(e);
     
     SCHEME_EXPAND_OBSERVE_NEXT(observer);
 
-    if (normal) {
+    if (kind) {
+      Scheme_Comp_Env *nenv;
+
       l = (maybe_has_lifts 
            ? scheme_frame_get_end_statement_lifts(cenv) 
            : scheme_null);
       scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data, l);
       maybe_has_lifts = 1;
 
+      if (kind == 2)
+        nenv = cenv;
+      else
+        nenv = scheme_new_compilation_frame(0, 0, cenv, NULL);
+
       if (rec[drec].comp) {
 	Scheme_Compile_Info crec1;
 	scheme_init_compile_recs(rec, drec, &crec1, 1);
 	crec1.resolve_module_ids = 0;
-	e = scheme_compile_expr(e, cenv, &crec1, 0);
+	e = scheme_compile_expr(e, nenv, &crec1, 0);
       } else {
 	Scheme_Expand_Info erec1;
 	scheme_init_expand_recs(rec, drec, &erec1, 1);
 	erec1.value_name = scheme_false;
-	e = scheme_expand_expr(e, cenv, &erec1, 0);
+	e = scheme_expand_expr(e, nenv, &erec1, 0);
       }
       
       l = scheme_frame_get_lifts(cenv);
@@ -4785,10 +4792,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       } else {
 	/* Lifts - insert them and try again */
         SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, scheme_copy_list(l));
-	e = scheme_make_pair(e, scheme_false); /* don't re-compile/-expand */
+	e = scheme_make_pair(e, scheme_make_integer(0)); /* don't re-compile/-expand */
 	SCHEME_CAR(p) = e;
 	for (ll = l; SCHEME_PAIRP(ll); ll = SCHEME_CDR(ll)) {
-	  e = scheme_make_pair(SCHEME_CAR(ll), scheme_true);
+	  e = scheme_make_pair(SCHEME_CAR(ll), scheme_make_integer(2));
 	  SCHEME_CAR(ll) = e;
 	}
 	p = scheme_append(l, p);
@@ -4810,7 +4817,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer, scheme_reverse(p));
       p = scheme_reverse(p);
       for (ll = p; SCHEME_PAIRP(ll); ll = SCHEME_CDR(ll)) {
-        e = scheme_make_pair(SCHEME_CAR(ll), scheme_true);
+        e = scheme_make_pair(SCHEME_CAR(ll), scheme_make_integer(1));
         SCHEME_CAR(ll) = e;
       }
       maybe_has_lifts = 0;

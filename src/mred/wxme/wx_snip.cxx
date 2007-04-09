@@ -1704,7 +1704,7 @@ static MediaSnipClass *TheMediaSnipClass;
 MediaSnipClass::MediaSnipClass(void)
 {
   classname = "wxmedia";
-  version = 3;
+  version = 4;
   required = TRUE;
 }
 
@@ -1712,7 +1712,7 @@ wxSnip *MediaSnipClass::Read(wxMediaStreamIn *f)
 {
   wxMediaBuffer *media;
   wxMediaSnip *snip;
-  Bool border, tightFit = 0, alignTopLine = 0;
+  Bool border, tightFit = 0, alignTopLine = 0, useStyleBG = 0;
   int lm, tm, rm, bm, li, ti, ri, bi, type;
   double w, W, h, H;
   wxStandardSnipClassList *scl;
@@ -1737,6 +1737,8 @@ wxSnip *MediaSnipClass::Read(wxMediaStreamIn *f)
     f->Get(&tightFit);
   if (f->ReadingVersion(this) > 2)
     f->Get(&alignTopLine);
+  if (f->ReadingVersion(this) > 3)
+    f->Get(&useStyleBG);
   
   if (!type)
     media = NULL;
@@ -1760,6 +1762,8 @@ wxSnip *MediaSnipClass::Read(wxMediaStreamIn *f)
     snip->SetTightTextFit(1);
   if (alignTopLine)
     snip->SetAlignTopLine(1);
+  if (useStyleBG)
+    snip->UseStyleBG(1);
   
   if (media) {
     wxStyleList *sl;

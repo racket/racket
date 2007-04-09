@@ -2647,9 +2647,8 @@ void wxMediaEdit::Refresh(double left, double top, double width, double height,
     wxBrush *brush;
     wxFont *font;
     wxColour *fg, *bg, *col;
-#ifndef NO_GET_CLIPPING_REGION
     wxRegion *rgn;
-#endif
+    int bgmode;
 
     pen = dc->GetPen();
     brush = dc->GetBrush();
@@ -2658,7 +2657,8 @@ void wxMediaEdit::Refresh(double left, double top, double width, double height,
     fg = new WXGC_PTRS wxColour(col);
     col = dc->GetTextBackground();
     bg = new WXGC_PTRS wxColour(col);
-
+    bgmode = dc->GetBackgroundMode();
+ 
     rgn = dc->GetClippingRegion();
     dc->SetClippingRect(left - x, top - y, width, height);
 
@@ -2671,6 +2671,7 @@ void wxMediaEdit::Refresh(double left, double top, double width, double height,
     dc->SetFont(font);
     dc->SetTextForeground(fg);
     dc->SetTextBackground(bg);
+    dc->SetBackgroundMode(bgmode);
   }
 
   EndSequenceLock();

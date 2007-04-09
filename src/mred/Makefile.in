@@ -103,8 +103,9 @@ bin:
 3m:
 	$(MAKE) ext-libs
 	$(MAKE) @WXVARIANT@-min
-	cd gc2; make gen-deps
-	cd gc2; make 3m
+	cd wxs; $(MAKE) ccsources
+	cd gc2; $(MAKE) gen-deps
+	cd gc2; $(MAKE) 3m
 
 cgc:
 	$(MAKE) ext-libs

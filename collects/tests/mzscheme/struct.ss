@@ -59,6 +59,7 @@
       (err/rt-test (make-struct-field-accessor sel 3) exn:application:mismatch?)
       (let ([an-a (make 'one 'two)]
 	    [an-ax (makex)])
+        (test #f procedure-struct-type? type)
 	(test #f procedure? an-a)
 	(test #f procedure? an-ax)
 
@@ -198,6 +199,7 @@
 		    ;; Derived, adds proc
 		    [(type3 make3 pred3 sel3 set3) (make-struct-type 'r struct:arity-at-least 1 1 (lambda (x) (pred3 x)) 
 								     null t-insp proc)])
+      (test #t procedure-struct-type? type)
       (let* ([bad1 (make 17)]
 	     [bad2 (make2 18 -18)]
 	     [bad3 (make3 #f 19)]

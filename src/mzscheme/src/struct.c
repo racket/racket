@@ -76,6 +76,7 @@ static Scheme_Object *handle_evt_p(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *struct_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_type_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *proc_struct_type_p(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *struct_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_type_info(int argc, Scheme_Object *argv[]);
@@ -386,6 +387,12 @@ scheme_init_struct (Scheme_Env *env)
 						     "struct-type-property?",
 						     1, 1, 1),
 			    env);
+  scheme_add_global_constant("procedure-struct-type?",
+			     scheme_make_folding_prim(proc_struct_type_p,
+						     "procedure-struct-type?",
+						     1, 1, 1),
+			    env);
+
 
   /*** Debugging ****/
 
@@ -1335,6 +1342,18 @@ struct_type_p(int argc, Scheme_Object *argv[])
 {
   return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_struct_type_type)
 	  ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *proc_struct_type_p(int argc, Scheme_Object *argv[])
+{
+  if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_struct_type_type)) {
+    if (((Scheme_Struct_Type *)argv[0])->proc_attr)
+      return scheme_true;
+    else
+      return scheme_false;
+  }
+  scheme_wrong_type("procedure-struct-type?", "struct-type", 0, argc, argv);
+  return NULL;
 }
 
 static Scheme_Object *struct_info(int argc, Scheme_Object *argv[])

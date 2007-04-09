@@ -142,6 +142,9 @@
 @ "show-border" : void ShowBorder(bool);
 @ "border-visible?" : bool BorderVisible();
 
+@ "use-style-background" : void UseStyleBG(bool);
+@ "style-background-used?" : bool StyleBGUsed();
+
 @ "set-margin" : void SetMargin(nnint,nnint,nnint,nnint);
 @ "get-margin" :void GetMargin(nnint*,nnint*,nnint*,nnint*);
 @ "set-inset" :void SetInset(nnint,nnint,nnint,nnint);

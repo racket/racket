@@ -1336,6 +1336,8 @@
     set-inset
     get-margin
     set-margin
+    style-background-used?
+    use-style-background
     border-visible?
     show-border
     set-align-top-line

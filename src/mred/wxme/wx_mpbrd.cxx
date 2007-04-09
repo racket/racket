@@ -1716,9 +1716,8 @@ void wxMediaPasteboard::Refresh(double localx, double localy, double w, double h
     wxBrush *brush;
     wxFont *font;
     wxColour *fg, *bg;
-#ifndef NO_GET_CLIPPING_REGION
+    int bgmode;
     wxRegion *rgn;
-#endif
 
     pen = dc->GetPen();
     brush = dc->GetBrush();
@@ -1730,23 +1729,21 @@ void wxMediaPasteboard::Refresh(double localx, double localy, double w, double h
       clr = dc->GetTextBackground();
       bg = new WXGC_PTRS wxColour(clr);
     }
+    bgmode = dc->GetBackgroundMode();
     
-#ifndef NO_GET_CLIPPING_REGION
     rgn = dc->GetClippingRegion();
     dc->SetClippingRect(localx - dx, localy - dy, w, h);
-#endif
 
     Draw(dc, -dx, -dy, localx, localy, w, h, show_caret, bgColor);
 
-#ifndef NO_GET_CLIPPING_REGION
     dc->SetClippingRegion(rgn);
-#endif
 
     dc->SetBrush(brush);
     dc->SetPen(pen);
     dc->SetFont(font);
     dc->SetTextForeground(fg);
     dc->SetTextBackground(bg);
+    dc->SetBackgroundMode(bgmode);
   }
 
   EndSequenceLock();

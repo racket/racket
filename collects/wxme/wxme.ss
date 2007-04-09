@@ -406,6 +406,8 @@
                  (read-integer who port vers "nested-editor tight-fit?"))
                (when (cvers . > . 2)
                  (read-integer who port vers "nested-editor alignment"))
+               (when (cvers . > . 3)
+                 (read-integer who port vers "use background color"))
                (let ([n (read-editor-snip who port vers header)])
                  (if (header-plain-text? header)
                      n

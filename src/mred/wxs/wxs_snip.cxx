@@ -8822,6 +8822,7 @@ class wxImageSnip *objscheme_unbundle_wxImageSnip(Scheme_Object *obj, const char
 
 
 
+
 class os_wxMediaSnip : public wxMediaSnip {
  public:
 
@@ -9981,6 +9982,49 @@ static Scheme_Object *os_wxMediaSnipSetMargin(int n,  Scheme_Object *p[])
 
   
   WITH_VAR_STACK(((wxMediaSnip *)((Scheme_Class_Object *)p[0])->primdata)->SetMargin(x0, x1, x2, x3));
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
+static Scheme_Object *os_wxMediaSnipStyleBGUsed(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  Bool r;
+  objscheme_check_valid(os_wxMediaSnip_class, "style-background-used? in editor-snip%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  r = WITH_VAR_STACK(((wxMediaSnip *)((Scheme_Class_Object *)p[0])->primdata)->StyleBGUsed());
+
+  
+  
+  READY_TO_RETURN;
+  return (r ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *os_wxMediaSnipUseStyleBG(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxMediaSnip_class, "use-style-background in editor-snip%", n, p);
+  Bool x0;
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+  x0 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+0], "use-style-background in editor-snip%"));
+
+  
+  WITH_VAR_STACK(((wxMediaSnip *)((Scheme_Class_Object *)p[0])->primdata)->UseStyleBG(x0));
 
   
   
@@ -11230,12 +11274,14 @@ void objscheme_setup_wxMediaSnip(Scheme_Env *env)
 
   wxREGGLOB(os_wxMediaSnip_class);
 
-  os_wxMediaSnip_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "editor-snip%", "snip%", (Scheme_Method_Prim *)os_wxMediaSnip_ConstructScheme, 44));
+  os_wxMediaSnip_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "editor-snip%", "snip%", (Scheme_Method_Prim *)os_wxMediaSnip_ConstructScheme, 46));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "get-inset" " method", (Scheme_Method_Prim *)os_wxMediaSnipGetInset, 4, 4));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "set-inset" " method", (Scheme_Method_Prim *)os_wxMediaSnipSetInset, 4, 4));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "get-margin" " method", (Scheme_Method_Prim *)os_wxMediaSnipGetMargin, 4, 4));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "set-margin" " method", (Scheme_Method_Prim *)os_wxMediaSnipSetMargin, 4, 4));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "style-background-used?" " method", (Scheme_Method_Prim *)os_wxMediaSnipStyleBGUsed, 0, 0));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "use-style-background" " method", (Scheme_Method_Prim *)os_wxMediaSnipUseStyleBG, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "border-visible?" " method", (Scheme_Method_Prim *)os_wxMediaSnipBorderVisible, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "show-border" " method", (Scheme_Method_Prim *)os_wxMediaSnipShowBorder, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaSnip_class, "set-align-top-line" " method", (Scheme_Method_Prim *)os_wxMediaSnipSetAlignTopLine, 1, 1));

@@ -375,6 +375,7 @@ class wxMediaSnip : public wxInternalSnip
   TF_Flag( withBorder );
   TF_Flag( tightFit );
   TF_Flag( alignTopLine );
+  TF_Flag( useStyleBG );
 #undef TF_Flag
 
   int leftMargin, topMargin, rightMargin, bottomMargin;
@@ -447,6 +448,8 @@ class wxMediaSnip : public wxInternalSnip
 
   void ShowBorder(Bool show);
   Bool BorderVisible();
+  void UseStyleBG(Bool useit);
+  Bool StyleBGUsed();
 
   void SetMargin(int lm, int tm, int rm, int bm);
   void GetMargin(int *lm, int *tm, int *rm, int *bm);
@@ -459,6 +462,8 @@ class wxMediaSnip : public wxInternalSnip
 
   wxMediaBuffer *GetThisMedia(void);
   void SetMedia(wxMediaBuffer *b);
+
+  void RequestRefresh();
 };
 
 /**********************************************************************/
