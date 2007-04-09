@@ -1673,21 +1673,27 @@
 ;; implicit prompt in the calling thread.
 
 (let ()
-  (define (foo thunk)
-    (call-with-continuation-prompt
-     (lambda ()
-       (let/cc ret
-         (let ([run? #f])
-           (let/cc run
-             (thread (lambda ()
-                       (sync (system-idle-evt))
-                       (set! run? #t)
-                       (run))))
-           (when run? (ret (thunk))))))))
-  (define s (make-semaphore))
-  (foo (lambda () (semaphore-post s)))
-  (test s sync s))
-
+  (define (go wrap)
+    (let ()
+      (define (foo thunk)
+        (call-with-continuation-prompt
+         (lambda ()
+           (wrap
+            (lambda ()
+              (let/cc ret
+                (let ([run? #f])
+                  (let/cc run
+                    (thread (lambda ()
+                              (sync (system-idle-evt))
+                              (set! run? #t)
+                              (run))))
+                  (when run? (ret (thunk))))))))))
+      (define s (make-semaphore))
+      (foo (lambda () (semaphore-post s)))
+      (test s sync s)))
+  (go (lambda (f) (f)))
+  (go (lambda (f) (dynamic-wind void f void))))
+  
 ;; ----------------------------------------
 ;; Try long chain of composable continuations
 

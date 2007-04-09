@@ -4564,11 +4564,13 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
         p->dw = common_dw;
         p->next_meta = common_next_meta;
         if (p->dw) { /* can be empty if there's only the pseudo-prompt */
+          /* also, there may be no dw with prompt_tag if there's only the pseudo prompt */
           all_dw = clone_dyn_wind(p->dw, cont->prompt_tag, -1, NULL, 1, 0);
-          for (dw = all_dw; !SAME_OBJ(dw->prompt_tag, cont->prompt_tag); dw = dw->prev) {
+          for (dw = all_dw; dw && !SAME_OBJ(dw->prompt_tag, cont->prompt_tag); dw = dw->prev) {
             p->dw = p->dw->prev;
           }
-          dw->next_meta += 1;
+          if (dw)
+            dw->next_meta += 1;
           p->dw = all_dw;
         }
       }
