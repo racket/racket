@@ -16,10 +16,11 @@
            sandbox-network-guard
            sandbox-eval-limits
            kill-evaluator
+           set-eval-limits
+           put-input
            get-output
            get-error-output
            get-uncovered-expressions
-           set-eval-limits
            make-evaluator
            call-with-limits
            with-limits
@@ -354,12 +355,12 @@
   (define null-input         (open-input-bytes #""))
 
   (define (kill-evaluator eval)            (eval kill-evaluator))
+  (define (set-eval-limits eval . args)    ((eval set-eval-limits) args))
+  (define (put-input eval . args)          (apply (eval put-input) args))
   (define (get-output eval)                (eval get-output))
   (define (get-error-output eval)          (eval get-error-output))
   (define (get-uncovered-expressions eval . args)
     (apply (eval get-uncovered-expressions) args))
-  (define (set-eval-limits eval . args)
-    (apply (eval set-eval-limits) args))
 
   (define-syntax parameterize*
     (syntax-rules ()
@@ -374,6 +375,7 @@
     (define uncovered     #f)
     (define input-ch      (make-channel))
     (define result-ch     (make-channel))
+    (define input         #f)
     (define output        #f)
     (define error-output  #f)
     (define limits        (sandbox-eval-limits))
@@ -430,15 +432,24 @@
            (if src
              (filter (lambda (x) (equal? src (syntax-source x))) uncovered)
              uncovered))]))
+    (define (output-getter p) (if (procedure? p) (user-eval `(,p)) p))
+    (define input-putter
+      (case-lambda
+        [() (input-putter input-putter)]
+        [(arg) (cond [(not input)
+                      (error 'put-input "evaluator input is not 'pipe")]
+                     [(or (string? arg) (bytes? arg))
+                      (display arg input) (flush-output input)]
+                     [(eof-object? arg) (close-output-port input)]
+                     [(eq? arg input-putter) input]
+                     [else (error 'put-input "bad input: ~e" arg)])]))
     (define (evaluator expr)
       (cond [(eq? expr kill-evaluator) (kill-me)]
-            [(eq? expr get-output)
-             (if (procedure? output) (user-eval `(,output)) output)]
-            [(eq? expr get-error-output)
-             (if (procedure? error-output)
-               (user-eval `(,error-output)) error-output)]
+            [(eq? expr set-eval-limits) (lambda (args) (set! limits args))]
+            [(eq? expr put-input) input-putter]
+            [(eq? expr get-output) (output-getter output)]
+            [(eq? expr get-error-output) (output-getter error-output)]
             [(eq? expr get-uncovered-expressions) get-uncovered]
-            [(eq? expr set-eval-limits) (lambda args (set! limits args))]
             [else (user-eval expr)]))
     (define linked-outputs? #f)
     (define (make-output what out set-out! allow-link?)
@@ -471,10 +482,13 @@
          ;; set up the IO context
          [current-input-port
           (let ([inp (sandbox-input)])
-            (if inp
-              (or (input->port inp)
-                  (error 'make-evaluator "bad sandbox-input: ~e" inp))
-              null-input))]
+            (cond
+              [(not inp) null-input]
+              [(input->port inp) => values]
+              [(and (procedure? inp) (procedure-arity-includes? inp 0)) (inp)]
+              [(eq? 'pipe inp)
+               (let-values ([(i o) (make-pipe)]) (set! input o) i)]
+              [else (error 'make-evaluator "bad sandbox-input: ~e" inp)]))]
          [current-output-port (make-output 'output (sandbox-output)
                                            (lambda (o) (set! output o))
                                            #f)]

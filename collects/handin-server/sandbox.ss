@@ -2,8 +2,9 @@
   (require (lib "sandbox.ss"))
   (provide (all-from (lib "sandbox.ss")))
 
-  ;; discard all outputs
-  (sandbox-output #f)
+  ;; no input/output
+  (sandbox-input        #f)
+  (sandbox-output       #f)
   (sandbox-error-output #f)
 
   ;; share these with evaluators

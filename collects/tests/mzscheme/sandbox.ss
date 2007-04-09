@@ -90,6 +90,26 @@
    --eval-- (begin (printf "a\n") (fprintf (current-error-port) "b\n"))
    --top--  (get-output ev) => "a\n"
             (get-error-output ev) => "b\n"
+   --top--
+   (set! ev (parameterize ([sandbox-input 'pipe]
+                           [sandbox-output 'bytes]
+                           [sandbox-error-output current-output-port]
+                           [sandbox-eval-limits '(0.25 10)])
+              (make-evaluator 'mzscheme '() '(define x 123))))
+   --eval--  (begin (printf "x = ~s\n" x)
+                    (fprintf (current-error-port) "err\n"))
+   --top--   (get-output ev) => #"x = 123\nerr\n"
+             (put-input ev "blah\n")
+             (put-input ev "blah\n")
+   --eval--  (read-line) => "blah"
+             (printf "line = ~s\n" (read-line))
+   --top--   (get-output ev) => #"line = \"blah\"\n"
+   --eval--  (read-line) =err> "out of time"
+   --top--   (put-input ev "blah\n")
+             (put-input ev eof)
+   --eval--  (read-line) => "blah"
+             (read-line) => eof
+             (read-line) => eof
    ;; test kill-evaluator here
    --top--
    (kill-evaluator ev) => (void)
