@@ -98,7 +98,8 @@
 	(let-values ([(prop:p3 p3? p3-ref) (make-struct-type-property 'prop3)]
 		     [(prop:p4 p4? p4-ref) (make-struct-type-property 'prop4)])
 	  (let-values ([(btype bmake bpred bsel bset) (make-struct-type 'b type 0 3 'unun (list (cons prop:p3 33) (cons prop:p4 44)) (make-inspector insp2))]
-		       [(btypex bmakex bpredx bselx bsetx) (make-struct-type 'bx typex 1 5 'nope (list (cons prop:p3 330)) (make-inspector insp1))])
+		       [(btypex bmakex bpredx bselx bsetx) (make-struct-type 'bx typex 1 5 'nope (list (cons prop:p3 330)) (make-inspector insp1))]
+		       [(ctype cmake cpred csel cset) (make-struct-type 'c type 3 2 #f null (make-inspector insp1))])
 	    (arity-test bmake 2 2)
 	    (arity-test bmakex 1 1)
 
@@ -180,6 +181,8 @@
 		  (put a-bx 0 'yep)
 		  (test 'yep get a-bx 0)
 		  (test (list 'bx 1 5 null #f #t) list name isize asize const super skipped?))
+                (let-values ([(name isize asize get put const super skipped?) (struct-type-info ctype)])
+		  (test (list 'c 3 2 null type #f) list name isize asize const super skipped?))
 
 		'...))))))))
 
