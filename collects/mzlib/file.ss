@@ -344,7 +344,7 @@
                         (= (car cache)
                            (file-or-directory-modify-seconds fn #f (lambda () -inf.0))))))
           (cdr cache)
-          (let ([ts (file-or-directory-modify-seconds fn)]
+          (let ([ts (file-or-directory-modify-seconds fn  #f (lambda () -inf.0))]
                 [f (read-prefs fn)])
             (pref-cache-install! fn fn f)
             f))))
