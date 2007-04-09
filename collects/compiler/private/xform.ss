@@ -1470,7 +1470,8 @@
         
         (define (start-skip? e)
           (and (pair? e)
-               (eq? START_XFORM_SKIP (tok-n (car e)))))
+               (or (eq? START_XFORM_SKIP (tok-n (car e)))
+                   (eq? 'XFORM_START_SKIP (tok-n (car e))))))
         
         (define (end-skip? e)
           (and (pair? e)
@@ -2649,9 +2650,9 @@
                                                                     (live-var-info-num-noreturn-calls live-vars)
                                                                     (live-var-info-num-empty-calls live-vars)
                                                                     (live-var-info-nonempty-calls? live-vars)))]
-                                  [(eq? (tok-n (caar body)) START_XFORM_SKIP)
+                                  [(memq (tok-n (caar body)) '(START_XFORM_SKIP XFORM_START_SKIP))
                                    (let skip-loop ([body (cdr body)])
-                                     (let*-values ([(end?) (eq? (tok-n (caar body)) END_XFORM_SKIP)]
+                                     (let*-values ([(end?) (memq (tok-n (caar body)) '(END_XFORM_SKIP XFORM_START_SKIP))]
                                                    [(rest live-vars) ((if end?
                                                                           loop
                                                                           skip-loop)
