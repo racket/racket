@@ -495,7 +495,6 @@ TODO
          'drscheme:console-previous-exprs
          marshall unmarshall))
       
-      (define error-color (make-object color% "PINK"))
       (define color? ((get-display-depth) . > . 8))
             
       ;; instances of this interface provide a context for a rep:text%
@@ -754,7 +753,7 @@ TODO
                                      [start (- (srcloc-position loc) 1)]
                                      [span (srcloc-span loc)]
                                      [finish (+ start span)])
-                                (send file highlight-range start finish error-color #f #f 'high)))
+                                (send file highlight-range start finish (drscheme:debug:get-error-color) #f #f 'high)))
                             locs)])
                   
                   (when (and definitions-text error-arrows)

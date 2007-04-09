@@ -59,6 +59,8 @@
      
      add-prefs-panel
      
+     get-error-color
+     
      show-error-and-highlight
      open-and-highlight-in-file
      show-backtrace-window

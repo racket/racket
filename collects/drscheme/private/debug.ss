@@ -66,8 +66,14 @@ profile todo:
       (define error-delta (make-object style-delta% 'change-style 'italic))
       (send error-delta set-delta-foreground (make-object color% 255 0 0))
       
-      ;; error-color : (instanceof color%)
-      (define error-color (make-object color% "PINK"))
+      ;; get-error-color : -> (instanceof color%)
+      (define get-error-color
+        (let ([w-o-b (make-object color% 63 0 0)]
+              [b-o-w (make-object color% "PINK")])
+          (λ ()
+            (if (preferences:get 'framework:white-on-black?)
+                w-o-b
+                b-o-w))))
       
       (define clickable-image-snip%
         (class image-snip%
@@ -618,10 +624,17 @@ profile todo:
 	      (send context-text hide-caret #t)
 	      (send text insert "  ")
 	      (let ([snip (make-object editor-snip% context-text)])
+                (send snip use-style-background #t)
 		(send editor-canvas add-wide-snip snip)
-		(send text insert snip))
-	      (send text insert #\newline))
+                (let ([p (send text last-position)])
+                  (send text insert snip p p)
+                  (send text insert #\newline)
+                  (when (preferences:get 'framework:white-on-black?)
+                    (send text change-style white-on-black-style p (+ p 1))))))
 	    (close-text))))
+    
+    (define white-on-black-style (make-object style-delta%))
+    (define stupid-internal-define-syntax1 (send white-on-black-style set-delta-foreground "white"))
 
       ;; copy/highlight-text : text number number -> text
       ;; copies the range from `start' to `finish', including the entire paragraph at
@@ -643,7 +656,7 @@ profile todo:
                        (< (send from-text get-snip-position snip) para-end-pos))
               (send to-text insert (send snip copy))
               (loop (send snip next))))
-          (send to-text highlight-range (- from-start 1) from-end error-color #f #f 'high)
+          (send to-text highlight-range (- from-start 1) from-end (get-error-color) #f #f 'high)
           to-text))
       
       ;; get-filename : debug-source -> string

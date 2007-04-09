@@ -138,7 +138,7 @@
   (define clickback-delta (make-object style-delta% 'change-underline #t))
   (define white-on-black-clickback-delta (make-object style-delta% 'change-underline #t))
   (send clickback-delta set-delta-foreground "BLUE")
-  (send white-on-black-clickback-delta set-delta-foreground "lightblue")
+  (send white-on-black-clickback-delta set-delta-foreground "deepskyblue")
   (define get-clickback-delta
     (opt-lambda ([white-on-black? #f])
       (if white-on-black? 
