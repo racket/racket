@@ -498,6 +498,7 @@ static OSStatus paintControlHandler(EventHandlerCallRef inCallRef,
 	    mdc->setCurrentUser(NULL);
 
 	    wx_window->SetCurrentDC();
+            ::TextMode(srcOr); /* for drawing labels */
 #if 0
 	    {
 	      Rect bounds;
