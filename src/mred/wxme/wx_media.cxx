@@ -979,11 +979,13 @@ Bool wxMediaEdit::ScrollToPosition(long start, Bool ateol, Bool refresh,
     end = start;
 
   if (delayRefresh) {
-    delayedscrollbox = FALSE;
-    delayedscroll = start;
-    delayedscrollend = end;
-    delayedscrollateol = ateol;
-    delayedscrollbias = bias;
+    if (admin) {
+      delayedscrollbox = FALSE;
+      delayedscroll = start;
+      delayedscrollend = end;
+      delayedscrollateol = ateol;
+      delayedscrollbias = bias;
+    }
     return FALSE;
   }
 
@@ -4354,14 +4356,16 @@ Bool wxMediaEdit::ScrollTo(wxSnip *snip, double localx, double localy,
     return FALSE;
 
   if (delayRefresh) {
-    delayedscroll = -1;
-    delayedscrollbox = TRUE;
-    delayedscrollsnip = snip;
-    delayedscrollX = localx;
-    delayedscrollY = localy;
-    delayedscrollW = w;
-    delayedscrollH = h;
-    delayedscrollbias = bias;
+    if (admin) {
+      delayedscroll = -1;
+      delayedscrollbox = TRUE;
+      delayedscrollsnip = snip;
+      delayedscrollX = localx;
+      delayedscrollY = localy;
+      delayedscrollW = w;
+      delayedscrollH = h;
+      delayedscrollbias = bias;
+    }
     return FALSE;
   } else {
     if (snip) {
