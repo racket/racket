@@ -421,6 +421,9 @@
   (default-text-color "Couleur du texte") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "Sélectionnez une couleur d'avant-plan")
   (revert-to-defaults "Retour aux valeurs par défaut")
+  
+  (black-on-white-color-scheme "Noir sur blanc") ;; these two appear in the color preferences dialog on butttons
+  (white-on-black-color-scheme "Blanc sur noir") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
 
   ; title of the color choosing dialog
   
