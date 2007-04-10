@@ -241,7 +241,7 @@
                        requires)]
            [requires (cond [(string? language) (cons language requires)]
                            [(not (pair? language)) requires]
-                           [(memq (car language) '(file planet))
+                           [(memq (car language) '(lib file planet))
                             (cons language requires)]
                            [(eq? (car language) 'begin)
                             (append (find-requires (cdr language)) requires)]
