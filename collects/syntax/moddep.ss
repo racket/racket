@@ -375,9 +375,9 @@
           (for-each (mk-loop " [for-template]") ft-imports)))))
 
   (define (module-path-v-string? v)
-    (and (regexp-match #rx"^[-a-zA-Z0-9./]+$" v)
-         (not (regexp-match #rx"^/" v))
-         (not (regexp-match #rx"/$" v))))
+    (and (regexp-match? #rx"^[-a-zA-Z0-9./]+$" v)
+         (not (regexp-match? #rx"^/" v))
+         (not (regexp-match? #rx"/$" v))))
 
   (define (module-path-v? v)
     (cond [(path? v) #t]
@@ -389,7 +389,7 @@
                           (null? (cddr v)))]
              [(lib) (and (pair? (cdr v))
                          (list? (cdr v))
-                         (map module-path-v-string? (cdr v)))]
+                         (andmap module-path-v-string? (cdr v)))]
              [(planet) #t]
              [else #f])]
           [else #f]))
