@@ -228,9 +228,7 @@ the state transitions / contracts are:
                            (begin 
                              (v p value)
                              (cons callback (loop (cdr callbacks))))
-                           (begin
-                             (printf "lost a ~s callback\n" p)
-                             (loop (cdr callbacks)))))]
+                           (loop (cdr callbacks))))]
                     [else
                      (cb p value)
                      (cons callback (loop (cdr callbacks)))]))]))])

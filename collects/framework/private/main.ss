@@ -86,7 +86,7 @@
               (* 3/4 256)
               (- (* 7/8 256) 1))])
      (make-object color% gray-level gray-level gray-level))
-   (make-object color% 50 50 50))
+   (make-object color% 30 30 30))
   
   (preferences:set-default 'framework:recently-opened-files/pos 
                            null 
