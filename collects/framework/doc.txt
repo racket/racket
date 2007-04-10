@@ -7,11 +7,8 @@ _hierlist-editor-snip.ss_ defines two classes:
 
 > decorated-editor-snip%, derived from editor-snip%
    
-This class operated just like a regular editor snip, except:
-
-  - it has a color and an icon in the top right hand corner
-  - it calls the use-style-background with #t when it
-    is initialized.
+This class operated just like a regular editor snip, except
+that it has a color and an icon in the top right hand corner.
 
 Overridable methods:
 

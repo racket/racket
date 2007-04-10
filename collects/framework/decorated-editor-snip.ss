@@ -173,9 +173,6 @@
           (top-margin top-margin)
           (left-margin left-margin)))
       
-      (inherit use-style-background)
-      (use-style-background #t)
-      
       (reset-min-sizes)))
   
   (define decorated-editor-snip%
@@ -193,14 +190,15 @@
       (define/override write
         (λ (stream-out)
           (send (get-editor) write-to-file stream-out 0 'eof)))
-      
+
       (define/override (copy)
         (let ([snip (make-snip)])
           (send snip set-editor (send (get-editor) copy-self))
           (send snip set-style (get-style))
           snip))
       
-      (super-new [editor (make-editor)])))
+        (super-new
+          (editor (make-editor)))))
   
   (define decorated-editor-snipclass%
     (class snip-class%
