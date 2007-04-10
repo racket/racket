@@ -274,7 +274,7 @@
           (let ([xml-delta (make-object style-delta% 'change-family 'default)])
             (send style-list new-named-style "XML" 
                   (send style-list find-or-create-style 
-                        (send style-list find-named-style "Standard")
+                        (send style-list find-named-style (editor:get-default-color-style-name))
                         xml-delta)))))
 
       (define xml-text-mixin

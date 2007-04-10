@@ -57,7 +57,8 @@
                                      '("Scheme (.ss)" "*.ss")
                                      (finder:default-filters)))
       (application:current-app-name (string-constant drscheme))
-      
+
+  
   (preferences:set-default 'drscheme:recent-language-names 
                            null 
                            (λ (x) 
@@ -177,6 +178,9 @@
        drscheme:teachpack:marshall-teachpack-cache
        drscheme:teachpack:unmarshall-teachpack-cache)
       
+  (preferences:set-default 'drscheme:switch-to-module-language-automatically? #t boolean?)
+
+  
       (drscheme:font:setup-preferences)
       (drscheme:help-desk:add-help-desk-font-prefs #t)
       (color-prefs:add-background-preferences-panel)
@@ -206,6 +210,11 @@
                            (string-constant show-interactions-on-execute)
                            editor-panel)
 
+           (make-check-box 'drscheme:switch-to-module-language-automatically?
+                           (string-constant switch-to-module-language-automatically)
+                           editor-panel)
+
+           
            ;; come back to this one.
            #;
            (letrec ([hp (new horizontal-panel% 

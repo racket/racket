@@ -505,13 +505,13 @@
           ;; returns the name after "(module " suffixed with .scm
           ;; in the beginning of the editor
           ;; or #f if the beginning doesn't match "(module "
-          (define (get-module-filename)
+          (define/private (get-module-filename)
             (let ([open-paren (skip-whitespace 0)])
               (or (match-paren open-paren "(")
                   (match-paren open-paren "[")
                   (match-paren open-paren "{"))))
           
-          (define (match-paren open-paren paren)
+          (define/private (match-paren open-paren paren)
             (and (matches open-paren paren)
                  (let ([module (skip-whitespace (+ open-paren 1))])
                    (and (matches module "module")
@@ -523,7 +523,7 @@
                                               ".scm")))))))
           
 
-          (define (matches start string)
+          (define/private (matches start string)
             (let ([last-pos (last-position)])
               (let loop ([i 0])
                 (cond
@@ -535,7 +535,7 @@
                   [(= i (string-length string)) #t]
                   [else #f]))))
           
-          (define (skip-whitespace start)
+          (define/private (skip-whitespace start)
             (let ([last-pos (last-position)])
               (let loop ([pos start])
                 (cond
@@ -547,7 +547,7 @@
                         (loop (+ pos 1))]
                        [else pos]))]))))
 
-          (define (skip-to-whitespace start)
+          (define/private (skip-to-whitespace start)
             (let ([last-pos (last-position)])
               (let loop ([pos start])
                 (cond
@@ -558,4 +558,4 @@
                   [else
                    (loop (+ pos 1))]))))
           
-          (super-instantiate ())))))
+          (super-new)))))

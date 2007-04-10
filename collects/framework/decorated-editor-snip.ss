@@ -5,7 +5,8 @@
            decorated-editor-snip-mixin)
 
   (require (lib "class.ss")
-           (lib "mred.ss" "mred"))
+           (lib "mred.ss" "mred")
+           "preferences.ss")
   
   (define (decorated-editor-snip-mixin super%)
     (class super%
@@ -15,7 +16,7 @@
       (define/public (get-corner-bitmap) #f)
       
       ;; get-color : -> (union string (is-a?/c color%))
-      (define/public (get-color) "black")
+      (define/public (get-color) (if (preferences:get 'framework:white-on-black?) "white" "black"))
       
       ;; get-menu : -> (union #f (is-a?/c popup-menu%))
       ;; returns the popup menu that should appear
@@ -30,7 +31,7 @@
       (define/public (get-position) 'top-right)
       
       [define/private (get-pen) (send the-pen-list find-or-create-pen (get-color) 1 'solid)]
-      [define/private (get-brush) (send the-brush-list find-or-create-brush "BLACK" 'transparent)]      
+      [define/private (get-brush) (send the-brush-list find-or-create-brush "BLACK" 'transparent)]
       
       (inherit get-admin)
       (define/override (on-event dc x y editorx editory evt)
@@ -88,10 +89,16 @@
           (get-margin bml bmt bmr bmb)
           (super draw dc x y left top right bottom dx dy draw-caret)
           (let* ([old-pen (send dc get-pen)]
-                 [old-brush (send dc get-brush)])
+                 [old-brush (send dc get-brush)]
+                 [white-on-black? (preferences:get 'framework:white-on-black?)])
             
-            (send dc set-pen (send the-pen-list find-or-create-pen "white" 1 'transparent))
-            (send dc set-brush (send the-brush-list find-or-create-brush "white" 'solid))
+            (send dc set-pen (send the-pen-list find-or-create-pen 
+                                   (if white-on-black? "black" "white")
+                                   1
+                                   'transparent))
+            (send dc set-brush (send the-brush-list find-or-create-brush 
+                                     (if white-on-black? "black" "white")
+                                     'solid))
             (case (get-position)
               [(top-right)
                (send dc draw-rectangle 
@@ -106,8 +113,13 @@
                      (- (unbox bml) (unbox bil))
                      (max 0 (- (unbox bh) (unbox bmt) (unbox bmb))))])
             
-            (send dc set-pen (send the-pen-list find-or-create-pen "black" 1 'solid))
-            (send dc set-brush (send the-brush-list find-or-create-brush "black" 'solid))
+            (send dc set-pen (send the-pen-list find-or-create-pen
+                                   (if white-on-black? "white" "black")
+                                   1
+                                   'solid))
+            (send dc set-brush (send the-brush-list find-or-create-brush 
+                                     (if white-on-black? "white" "black")
+                                     'solid))
 
             (when bm
               (let ([bm-w (send bm get-width)]
@@ -173,6 +185,9 @@
           (top-margin top-margin)
           (left-margin left-margin)))
       
+      (inherit use-style-background)
+      (use-style-background #t)
+      
       (reset-min-sizes)))
   
   (define decorated-editor-snip%
@@ -211,4 +226,4 @@
         (let ([snip (make-snip stream-in)])
           (send (send snip get-editor) read-from-file stream-in #f)
           snip))
-      (super-instantiate ()))))
+      (super-new))))
