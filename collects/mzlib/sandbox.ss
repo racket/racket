@@ -245,8 +245,8 @@
                             (cons language requires)]
                            [(eq? (car language) 'begin)
                             (append (find-requires (cdr language)) requires)]
-                           [else 'require-perms
-                                 "bad language spec: ~e" language])])
+                           [else (error 'require-perms
+                                        "bad language spec: ~e" language)])])
       (module-specs->path-permissions requires)))
 
   (define (input->port inp)
