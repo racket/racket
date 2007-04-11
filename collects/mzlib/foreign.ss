@@ -992,110 +992,125 @@
 
 (define-syntaxes (make-srfi-4 define-srfi-4-provider)
   (let ([bindings '()])
-    (values
-     (lambda (stx)
-       (syntax-case stx ()
-         [(_ TAG type) (identifier? #'TAG)
-          (let ([name (string-append
-                       (symbol->string (syntax-object->datum #'TAG))
-                       "vector")])
-            (define (make-TAG-id prefix suffix)
-              (datum->syntax-object #'TAG
-                                    (string->symbol
-                                     (string-append prefix name suffix))
-                                    #'TAG))
-            (with-syntax ([TAG?         (make-TAG-id "" "?")]
-                          [TAG          (make-TAG-id "" "")]
-                          [make-TAG     (make-TAG-id "make-" "")]
-                          [TAG-ptr      (make-TAG-id "" "-ptr")]
-                          [TAG-length   (make-TAG-id "" "-length")]
-                          [allocate-TAG (make-TAG-id "allocate-" "")]
-                          [TAG*         (make-TAG-id "" "*")]
-                          [list->TAG    (make-TAG-id "list->" "")]
-                          [TAG->list    (make-TAG-id "" "->list")]
-                          [TAG-ref      (make-TAG-id "" "-ref")]
-                          [TAG-set!     (make-TAG-id "" "-set!")]
-                          [_TAG         (make-TAG-id "_" "")]
-                          [_TAG*        (make-TAG-id "_" "*")]
-                          [TAGname      name])
-              (set! bindings (list* #'TAG?
-                                    #'TAG-length
-                                    #'make-TAG
-                                    #'TAG
-                                    #'TAG-ref
-                                    #'TAG-set!
-                                    #'TAG->list
-                                    #'list->TAG
-                                    #'_TAG
-                                    bindings))
-              #'(begin
-                  (define-struct TAG (ptr length))
-                  (provide TAG? TAG-length)
-                  (provide (rename allocate-TAG make-TAG))
-                  (define (allocate-TAG n . init)
-                    (let* ([p (if (eq? n 0) #f (malloc n type))]
-                           [v (make-TAG p n)])
-                      (when (and p (pair? init))
-                        (let ([init (car init)])
-                          (let loop ([i (sub1 n)])
-                            (unless (< i 0)
-                              (ptr-set! p type i init)
-                              (loop (sub1 i))))))
-                      v))
-                  (provide (rename TAG* TAG))
-                  (define (TAG* . vals)
-                    (list->TAG vals))
-                  (define* (TAG-ref v i)
-                    (if (TAG? v)
-                      (if (and (integer? i) (< -1 i (TAG-length v)))
-                        (ptr-ref (TAG-ptr v) type i)
-                        (error 'TAG-ref "bad index ~e for ~a bounds of 0..~e"
-                               i 'TAG (sub1 (TAG-length v))))
-                      (raise-type-error 'TAG-ref TAGname v)))
-                  (define* (TAG-set! v i x)
-                    (if (TAG? v)
-                      (if (and (integer? i) (< -1 i (TAG-length v)))
-                        (ptr-set! (TAG-ptr v) type i x)
-                        (error 'TAG-set! "bad index ~e for ~a bounds of 0..~e"
-                               i 'TAG (sub1 (TAG-length v))))
-                      (raise-type-error 'TAG-set! TAGname v)))
-                  (define* (TAG->list v)
-                    (if (TAG? v)
-                      (cblock->list (TAG-ptr v) type (TAG-length v))
-                      (raise-type-error 'TAG->list TAGname v)))
-                  (define* (list->TAG l)
-                    (make-TAG (list->cblock l type) (length l)))
-                  ;; same as the _cvector implementation
-                  (provide _TAG)
-                  (define _TAG*
-                    (make-ctype _pointer TAG-ptr
-                      (lambda (x)
-                        (error
-                         '_TAG
-                         "cannot automatically convert a C pointer to a ~a"
-                         TAGname))))
-                  (define-fun-syntax _TAG
-                    (syntax-id-rules (i o io)
-                      [(_ i   ) _TAG*]
-                      [(_ o  n) (type: _pointer
-                                       pre:  (malloc n type)
-                                       post: (x => (make-TAG x n)))]
-                      [(_ io  ) (type: _cvector*
-                                       bind: tmp
-                                       pre:  (x => (TAG-ptr x))
-                                       post: (x => tmp))]
-                      [(_ . xs)   (_TAG* . xs)]
-                      [_          _TAG*]))
-                  )))]))
-     (lambda (stx)
-       (syntax-case stx ()
-         [(_ x) (with-syntax ([(binding ...) bindings])
-                  #'(define-syntax x
-                      (syntax-rules ()
-                        [(_) (provide binding ...)])))])))))
+    (define (define-srfi-4-provider stx)
+      (syntax-case stx ()
+        [(_ x) (with-syntax ([(binding ...) bindings])
+                 #'(define-syntax x
+                     (syntax-rules ()
+                       [(_) (provide binding ...)])))]))
+    (define (make-srfi-4 stx)
+      (syntax-case stx ()
+        [(_ TAG type more ...) (identifier? #'TAG)
+         (let ([name (string-append
+                      (symbol->string (syntax-object->datum #'TAG))
+                      "vector")])
+           (define (make-TAG-id prefix suffix)
+             (datum->syntax-object #'TAG
+                                   (string->symbol
+                                    (string-append prefix name suffix))
+                                   #'TAG))
+           (with-syntax ([TAG?         (make-TAG-id "" "?")]
+                         [TAG          (make-TAG-id "" "")]
+                         [make-TAG     (make-TAG-id "make-" "")]
+                         [TAG-ptr      (make-TAG-id "" "-ptr")]
+                         [TAG-length   (make-TAG-id "" "-length")]
+                         [allocate-TAG (make-TAG-id "allocate-" "")]
+                         [TAG*         (make-TAG-id "" "*")]
+                         [list->TAG    (make-TAG-id "list->" "")]
+                         [TAG->list    (make-TAG-id "" "->list")]
+                         [TAG-ref      (make-TAG-id "" "-ref")]
+                         [TAG-set!     (make-TAG-id "" "-set!")]
+                         [_TAG         (make-TAG-id "_" "")]
+                         [_TAG*        (make-TAG-id "_" "*")]
+                         [TAGname      name])
+             (set! bindings (list* #'TAG?
+                                   #'TAG-length
+                                   #'make-TAG
+                                   #'TAG
+                                   #'TAG-ref
+                                   #'TAG-set!
+                                   #'TAG->list
+                                   #'list->TAG
+                                   #'_TAG
+                                   bindings))
+             (syntax-case #'(more ...) ()
+               [(X? X-length make-X X X-ref X-set! X->list list->X _X)
+                #'(provide (rename X?       TAG?      )
+                           (rename X-length TAG-length)
+                           (rename make-X   make-TAG  )
+                           (rename X        TAG       )
+                           (rename X-ref    TAG-ref   )
+                           (rename X-set!   TAG-set!  )
+                           (rename X->list  TAG->list )
+                           (rename list->X  list->TAG )
+                           (rename _X       _TAG      ))]
+               [()
+                #'(begin
+                    (define-struct TAG (ptr length))
+                    (provide TAG? TAG-length)
+                    (provide (rename allocate-TAG make-TAG))
+                    (define (allocate-TAG n . init)
+                      (let* ([p (if (eq? n 0) #f (malloc n type))]
+                             [v (make-TAG p n)])
+                        (when (and p (pair? init))
+                          (let ([init (car init)])
+                            (let loop ([i (sub1 n)])
+                              (unless (< i 0)
+                                (ptr-set! p type i init)
+                                (loop (sub1 i))))))
+                        v))
+                    (provide (rename TAG* TAG))
+                    (define (TAG* . vals)
+                      (list->TAG vals))
+                    (define* (TAG-ref v i)
+                      (if (TAG? v)
+                        (if (and (integer? i) (< -1 i (TAG-length v)))
+                          (ptr-ref (TAG-ptr v) type i)
+                          (error 'TAG-ref "bad index ~e for ~a bounds of 0..~e"
+                                 i 'TAG (sub1 (TAG-length v))))
+                        (raise-type-error 'TAG-ref TAGname v)))
+                    (define* (TAG-set! v i x)
+                      (if (TAG? v)
+                        (if (and (integer? i) (< -1 i (TAG-length v)))
+                          (ptr-set! (TAG-ptr v) type i x)
+                          (error 'TAG-set! "bad index ~e for ~a bounds of 0..~e"
+                                 i 'TAG (sub1 (TAG-length v))))
+                        (raise-type-error 'TAG-set! TAGname v)))
+                    (define* (TAG->list v)
+                      (if (TAG? v)
+                        (cblock->list (TAG-ptr v) type (TAG-length v))
+                        (raise-type-error 'TAG->list TAGname v)))
+                    (define* (list->TAG l)
+                      (make-TAG (list->cblock l type) (length l)))
+                    ;; same as the _cvector implementation
+                    (provide _TAG)
+                    (define _TAG*
+                      (make-ctype _pointer TAG-ptr
+                        (lambda (x)
+                          (error
+                           '_TAG
+                           "cannot automatically convert a C pointer to a ~a"
+                           TAGname))))
+                    (define-fun-syntax _TAG
+                      (syntax-id-rules (i o io)
+                        [(_ i   ) _TAG*]
+                        [(_ o  n) (type: _pointer
+                                         pre:  (malloc n type)
+                                         post: (x => (make-TAG x n)))]
+                        [(_ io  ) (type: _cvector*
+                                         bind: tmp
+                                         pre:  (x => (TAG-ptr x))
+                                         post: (x => tmp))]
+                        [(_ . xs)   (_TAG* . xs)]
+                        [_          _TAG*]))
+                    )])))]))
+    (values make-srfi-4 define-srfi-4-provider)))
 
 (make-srfi-4 s8  _int8)
-(make-srfi-4 u8  _uint8)
+;; this one is implemented as byte strings
+(make-srfi-4 u8 _uint8
+             bytes? bytes-length make-bytes bytes bytes-ref bytes-set!
+             bytes->list list->bytes _bytes)
 (make-srfi-4 s16 _int16)
 (make-srfi-4 u16 _uint16)
 (make-srfi-4 s32 _int32)
