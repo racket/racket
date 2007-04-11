@@ -126,13 +126,7 @@
   ;; computes permissions that are needed for require specs (`read' for all
   ;; files and "compiled" subdirs, `exists' for the base-dir)
   (define (module-specs->path-permissions mods)
-    (define _ (with-output-to-file "/dev/stderr"
-                (lambda () (printf ">>> mods = ~s\n" mods))
-                'append))
     (define paths (module-specs->non-lib-paths mods))
-    (define _1 (with-output-to-file "/dev/stderr"
-                 (lambda () (printf ">>> paths = ~s\n" paths))
-                 'append))
     (define bases
       (let loop ([paths paths] [bases '()])
         (if (null? paths)
