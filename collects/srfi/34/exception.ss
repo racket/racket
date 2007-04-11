@@ -4,7 +4,8 @@
 (module exception mzscheme
   
   (provide with-exception-handler
-           guard)
+           guard
+           raise)
   
   (define-syntax with-exception-handler
     (syntax-rules ()
