@@ -6,11 +6,6 @@
            (lib "etc.ss" "mzlib")
            (lib "contract.ss"))
   
-  (define (nonneg-int? x)
-    (and (integer? x)
-         (exact? x)
-         (not (negative? x))))
-  
   (define mutable-vector/c
     (and/c vector? (not/c immutable?)))
   
@@ -18,12 +13,12 @@
     (case->
      (-> vector? any)
      (->r ((vec vector?)
-           (start (and/c nonneg-int?
+           (start (and/c natural-number/c
                          (<=/c (vector-length vec)))))
           any)
      (->pp ((vec vector?)
-            (start nonneg-int?)
-            (end nonneg-int?))
+            (start natural-number/c)
+            (end natural-number/c))
            (<= start end (vector-length vec))
            any)))
   
@@ -55,7 +50,7 @@
     (->r ((f (lambda (f)
                (and (procedure? f)
                     (procedure-arity-includes? f (add1 (length seeds))))))
-          (len nonneg-int?))
+          (len natural-number/c))
           seeds list?
           any))
   
@@ -63,19 +58,19 @@
     (case->
      (-> vector? any)
      (->r ((vec vector?)
-           (start (and/c nonneg-int?
+           (start (and/c natural-number/c
                          (<=/c (vector-length vec)))))
           any)
      (->r ((vec vector?)
-           (start (and/c nonneg-int?
+           (start (and/c natural-number/c
                          (<=/c (vector-length vec))))
-           (end (and/c nonneg-int?
+           (end (and/c natural-number/c
                        (>=/c start))))
           any)
      (->r ((vec vector?)
-           (start (and/c nonneg-int?
+           (start (and/c natural-number/c
                          (<=/c (vector-length vec))))
-           (end (and/c nonneg-int?
+           (end (and/c natural-number/c
                        (>=/c start)))
            (fill any/c))
           any)))
@@ -663,35 +658,35 @@
   (define copy!-contract
     (case->
      (->r ((target mutable-vector/c)
-           (tstart (and/c nonneg-int?
+           (tstart (and/c natural-number/c
                           (<=/c (- (vector-length target)
                                    (vector-length source)))))
            (source vector?))
           any)
      (->r ((target mutable-vector/c)
-           (tstart (and/c nonneg-int?
+           (tstart (and/c natural-number/c
                           (<=/c (- (vector-length target)
                                    (- (vector-length source)
                                       sstart)))))
            (source vector?)
-           (sstart (and/c nonneg-int?
+           (sstart (and/c natural-number/c
                           (<=/c (vector-length source)))))
           any)
      (->pp ((target mutable-vector/c)
-            (tstart (and/c nonneg-int?
+            (tstart (and/c natural-number/c
                            (<=/c (- (vector-length target)
                                     (- send sstart)))))
             (source vector?)
-            (sstart nonneg-int?)
-            (send nonneg-int?))
+            (sstart natural-number/c)
+            (send natural-number/c))
            (<= sstart send (vector-length source))
            any)))
   
   (provide/contract (vector-swap!
                      (->r ((vec mutable-vector/c)
-                           (i (and/c nonneg-int?
+                           (i (and/c natural-number/c
                                      (</c (vector-length vec))))
-                           (j (and/c nonneg-int?
+                           (j (and/c natural-number/c
                                      (</c (vector-length vec)))))
                           any))
                     (rename my-vector-fill! s:vector-fill!
@@ -699,13 +694,13 @@
                              (-> vector? any/c any)
                              (->r ((vec vector?)
                                    (fill any/c)
-                                   (start (and/c nonneg-int?
+                                   (start (and/c natural-number/c
                                                  (<=/c (vector-length vec)))))
                                   any)
                              (->pp ((vec vector?)
                                     (fill any/c)
-                                    (start nonneg-int?)
-                                    (end nonneg-int?))
+                                    (start natural-number/c)
+                                    (end natural-number/c))
                                    (<= start end (vector-length vec))
                                    any)))
                     (vector-reverse! (vec-start-end-contract mutable-vector/c))
