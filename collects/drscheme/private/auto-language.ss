@@ -5,7 +5,7 @@
   (provide pick-new-language)
   
   (define (pick-new-language text module-spec->language module-language)
-    (with-handlers ((exn:fail:read? void))
+    (with-handlers ((exn:fail:read? (λ (x) #f)))
       (let ([found-language? #f])
         (let* ([tp (open-input-text-editor text)]
                [l (with-handlers ([exn:fail:contract? (λ (x) eof)])
