@@ -603,28 +603,23 @@
                              ;; (this is only an approximate test, but probably good enough)
                              (send dc draw-polygon points dx dy))
                            (when (named-link? from-link)
-                             (let*-values ([(text-len h d v) (send dc get-text-extent (link-label from-link))]
-                                           [(theta) (angle (- to-pt from-pt))] 
-                                           [(cx cy) (values (/ (+ from-x to-x) 2)
-                                                            (/ (+ from-y to-y) 2))]
-                                           
-                                           ;; ax, ay is the location of the beginning of the string
-                                           ;; offset from cx,cy by enough to make the string centered
-                                           ;; (but it doesn't seem to be quite right; i'm not sure why)
-                                           [(ax ay) (values (- cx (* 1/2 text-len (cos theta)))
-                                                            (- cy (* 1/2 text-len (sin theta))))]
-                                           
-                                           [(x y) (values (- ax (* h (cos theta)))
-                                                          (- ay (* h (sin theta))))]
-                                           [(sqr) (λ (x) (* x x))])
-                               (when (> (sqrt (+ (sqr (- to-x from-x)) (sqr (- to-y from-y)))) text-len)
-                                 (send dc draw-text (link-label from-link)
-                                       (+ dx x)
-                                       (+ dy y)
-                                       #f
-                                       0
-                                       (- theta)))
-                                 ))]))))))))
+                             (let-values ([(text-len h d v) (send dc get-text-extent (link-label from-link))])
+                               (let* ([arrow-end-x (send point3 get-x)]
+                                      [arrow-end-y (send point3 get-y)]
+                                      [arrowhead-end (make-rectangular arrow-end-x arrow-end-y)]
+                                      [vec (- arrowhead-end from-pt)]
+                                      [middle (+ from-pt
+                                                 (- (* 1/2 vec)
+                                                    (make-polar (/ text-len 2) (angle vec))))])
+                                 (when (> (sqrt (+ (sqr (- arrow-end-x from-x))
+                                                   (sqr (- arrow-end-y from-y))))
+                                          text-len)
+                                   (send dc draw-text (link-label from-link)
+                                         (+ dx (real-part middle))
+                                         (+ dy (imag-part middle))
+                                         #f
+                                         0
+                                         (- (angle vec)))))))]))))))))
           (define (named-link? l) (link-label l))
           
           (define (set-pen/brush from-link dark-lines?)
@@ -756,7 +751,6 @@
           (send point3 set-y t6y)
           (send point4 set-x t5x)
           (send point4 set-y t5y)))
-      ;; HERE!!!
       
       (define/private (should-hilite? snip)
         (let ([check-one-way
