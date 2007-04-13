@@ -11,6 +11,7 @@
 
   (provide hide/policy
            macro-policy
+           force-letrec-transformation
            seek-syntax
            current-hiding-warning-handler
            (struct nonlinearity (message paths))
@@ -473,16 +474,21 @@
 
     ;; for-bderiv : BlockDerivation -> (values BlockDerivation (list-of syntax))
     (define (for-bderiv bd)
-      (match bd
-        [(IntQ bderiv (es1 es2 pass1 trans pass2))
-         (let ([pass2 (bderiv->lderiv bd)])
-           (recv [(pass2 es2) (for-lderiv pass2)]
-                 (values (rewrap/nt bd (make-bderiv es1 es2 null 'list pass2))
-                         es2)))]
-        [#f (values #f #f)]))
+      (if (force-letrec-transformation)
+          (match bd
+            [(IntQ bderiv (es1 es2 pass1 trans pass2))
+             (recv [(pass2 es2) (for-lderiv pass2)]
+                   (values (rewrap/nt bd (make-bderiv es1 es2 pass1 trans pass2))
+                           es2))])
+          (match bd
+            [(IntQ bderiv (es1 es2 pass1 trans pass2))
+             (let ([pass2 (bderiv->lderiv bd)])
+               (recv [(pass2 es2) (for-lderiv pass2)]
+                     (values (rewrap/nt bd (make-bderiv es1 es2 null 'list pass2))
+                             es2)))]
+            [#f (values #f #f)])))
 
     (for-deriv deriv))
-
 
 
 ;                                      
@@ -728,9 +734,15 @@
     (define (for-local-action local)
       (match local
         [(struct local-expansion (e1 e2 me1 me2 for-stx? deriv))
-         (raise (make-localactions))]
+         (let-values ([(rename-subtersm2 table2) (do-rename me1 e1)])
+           (let ([subterms (for-deriv deriv)])
+             (when (pair? (filter s:subterm? subterms))
+               (raise (make-localactions)))))]
         [(struct local-expansion/expr (e1 e2 me1 me2 for-stx? opaque deriv))
-         (raise (make-localactions))]
+         (let-values ([(rename-subtersm2 table2) (do-rename me1 e1)])
+           (let ([subterms (for-deriv deriv)])
+             (when (pair? (filter s:subterm? subterms))
+               (raise (make-localactions)))))]
         [(struct local-lift (expr id))
          ;; FIXME: seek in the lifted deriv, transplant subterm expansions *here*
          (extract/remove-unvisited-lift id)]

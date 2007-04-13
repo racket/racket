@@ -11,6 +11,7 @@
            >>Prim
            >>Seek
            macro-policy
+           force-letrec-transformation
            subterms-table
            lifts-available
            lifts-retained
@@ -19,6 +20,9 @@
 
   ;; macro-policy : parameter of (identifier -> boolean)
   (define macro-policy (make-parameter (lambda (id) #t)))
+
+  ;; force-letrec-transformation : parameter of boolean
+  (define force-letrec-transformation (make-parameter #f))
 
   ;; subterms-table : parameter of hashtable[syntax => (list-of Path)]
   (define subterms-table (make-parameter #f))
