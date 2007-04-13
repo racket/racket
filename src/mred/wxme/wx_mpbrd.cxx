@@ -1554,7 +1554,7 @@ void wxMediaPasteboard::Draw(wxDC *dc, double dx, double dy,
     if (bgColor == wxWHITE)
       wb = whiteBrush;
     else
-      wb = wxTheBrushList->FindOrCreateBrush("WHITE", wxSOLID);
+      wb = wxTheBrushList->FindOrCreateBrush(bgColor, wxSOLID);
     dc->SetBrush(wb);
     dc->SetPen(invisiPen);
     dc->DrawRectangle(dcx, dcy,
