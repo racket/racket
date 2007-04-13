@@ -5,6 +5,8 @@
            (lib "framework.ss" "framework"))
   (provide warnings-frame%)
 
+  (define include-message? #f)
+
   ;; warnings-frame%
   (define warnings-frame%
     (class frame%
@@ -44,14 +46,16 @@
         (send text insert "\n\n")
         (send text lock #t))
       
-      (define/public (add-warning tag)
+      (define/public (add-warning tag message)
         (case tag
           ((nonlinearity)
            (add-nonlinearity-text))
           ((localactions)
            (add-localactions-text))
           ((lifts)
-           (add-lifts-text))))
+           (add-lifts-text)))
+        (when include-message?
+          (add-text message)))
 
       (send this show #t)))
   

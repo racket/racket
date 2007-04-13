@@ -12,6 +12,7 @@
            "warning.ss"
            "hiding-panel.ss"
            (prefix sb: "../syntax-browser/embed.ss")
+           (prefix sb: "../syntax-browser/params.ss")
            "../model/deriv.ss"
            "../model/deriv-util.ss"
            "../model/trace.ss"
@@ -78,6 +79,8 @@
                         (notify-box/pref pref:hide-libs?))
           (field/notify highlight-foci?
                         (notify-box/pref pref:highlight-foci?))
+          (field/notify highlight-frontier?
+                        (notify-box/pref pref:highlight-frontier?))
           (field/notify show-rename-steps?
                         (notify-box/pref pref:show-rename-steps?))
           (field/notify suppress-warnings?
@@ -88,6 +91,8 @@
                         (notify-box/pref pref:extra-navigation?))
           (field/notify debug-catch-errors?
                         (notify-box/pref pref:debug-catch-errors?))
+          (field/notify force-letrec-transformation?
+                        (notify-box/pref pref:force-letrec-transformation?))
           (super-new)))
 
       (define macro-stepper-frame%
@@ -189,13 +194,28 @@
           (menu-option/notify-box stepper-menu
                                   "Show macro hiding panel"
                                   (get-field show-hiding-panel? config))
+          (new (get-menu-item%) (label "Show in new frame") (parent stepper-menu)
+               (callback (lambda _ (send widget show-in-new-frame))))
           (let ([extras-menu
                  (new (get-menu%)
                       (label "Extra options")
                       (parent stepper-menu))])
+            (new checkable-menu-item%
+                 (label "Always suffix marked identifiers")
+                 (parent extras-menu)
+                 (callback
+                  (lambda (i e)
+                    (sb:current-suffix-option
+                     (if (send i is-checked?)
+                         'always
+                         'over-limit))
+                    (send widget update/preserve-view))))
             (menu-option/notify-box extras-menu
                                     "Highlight redex/contractum"
                                     (get-field highlight-foci? config))
+            (menu-option/notify-box extras-menu
+                                    "Highlight frontier"
+                                    (get-field highlight-frontier? config))
             (menu-option/notify-box extras-menu
                                     "Include renaming steps"
                                     (get-field show-rename-steps? config))
@@ -208,6 +228,9 @@
             (menu-option/notify-box extras-menu
                                     "Extra navigation"
                                     (get-field extra-navigation? config))
+            (menu-option/notify-box extras-menu
+                                    "Force block->letrec transformation"
+                                    (get-field force-letrec-transformation? config))
             (menu-option/notify-box extras-menu
                                     "(Debug) Catch internal errors?"
                                     (get-field debug-catch-errors? config)))
@@ -252,6 +275,7 @@
               (for-each (lambda (id) (module-identifier-mapping-put! alpha-table id id))
                         (extract-all-fresh-names d))
               (cursor:add-to-end! terms (list (new-trec d)))
+              (trim-navigator)
               (if needs-display?
                   (refresh/move)
                   (update))))
@@ -297,22 +321,20 @@
 
           (send config listen-show-syntax-properties?
                 (lambda (show?) (send sbview show-props show?)))
-
           (send config listen-show-hiding-panel?
                 (lambda (show?) (show-macro-hiding-prefs show?)))
-
           (send sbc add-selection-listener
                 (lambda (stx) (send macro-hiding-prefs set-syntax stx)))
-
           (send config listen-highlight-foci?
                 (lambda (_) (update/preserve-view)))
-
+          (send config listen-highlight-frontier?
+                (lambda (_) (update/preserve-view)))
           (send config listen-show-rename-steps?
                 (lambda (_) (refresh/re-reduce)))
-
           (send config listen-one-by-one?
                 (lambda (_) (refresh/re-reduce)))
-
+          (send config listen-force-letrec-transformation?
+                (lambda (_) (refresh/resynth)))
           (send config listen-extra-navigation?
                 (lambda (show?) (show-extra-navigation show?)))
 
@@ -335,12 +357,33 @@
             (new button% (label "Next term") (parent navigator)
                  (callback (lambda (b e) (navigate-down)))))
 
+          (define/private (trim-navigator)
+            (if (> (length (cursor->list terms)) 1)
+                (send navigator change-children
+                      (lambda _
+                        (list nav:up
+                              nav:start
+                              nav:previous
+                              nav:next
+                              nav:end
+                              nav:down)))
+                (send navigator change-children
+                      (lambda _
+                        (list nav:start
+                              nav:previous
+                              nav:next
+                              nav:end)))))
+
           (define/public (show-macro-hiding-prefs show?)
             (send area change-children
                   (lambda (children)
                     (if show?
                         (append (remq control-pane children) (list control-pane))
                         (remq control-pane children)))))
+
+          (define/public (show-in-new-frame)
+            (when (cursor:next terms)
+              (go/deriv (trec-deriv (cursor:next terms)))))
 
           (define/private (show-extra-navigation show?)
             (send supernavigator change-children
@@ -563,29 +606,23 @@
                   'start)
             (enable/disable-buttons))
 
+          ;; insert-syntax/color : syntax syntaxes identifiers syntaxes string -> void
+          (define/private (insert-syntax/color stx foci definites frontier hi-color)
+            (send sbview add-syntax stx
+                  #:definites definites
+                  #:alpha-table alpha-table
+                  #:hi-color hi-color
+                  #:hi-stxs (if (send config get-highlight-foci?) foci null)
+                  #:hi2-color "WhiteSmoke"
+                  #:hi2-stxs (if (send config get-highlight-frontier?) frontier null)))
+
           ;; insert-syntax/redex : syntax syntaxes identifiers syntaxes -> void
           (define/private (insert-syntax/redex stx foci definites frontier)
-            (if (send config get-highlight-foci?)
-                (send sbview add-syntax stx
-                      #:hi-stxs foci #:hi-color "MistyRose"
-                      #:alpha-table alpha-table
-                      #:definites definites
-                      #:hi2-stxs frontier #:hi2-color "WhiteSmoke")
-                (send sbview add-syntax stx
-                      #:alpha-table alpha-table
-                      #:definites definites)))
+            (insert-syntax/color stx foci definites frontier "MistyRose"))
 
           ;; insert-syntax/contractum : syntax syntaxes identifiers syntaxes -> void
           (define/private (insert-syntax/contractum stx foci definites frontier)
-            (if (send config get-highlight-foci?)
-                (send sbview add-syntax stx
-                      #:hi-stxs foci #:hi-color "LightCyan"
-                      #:alpha-table alpha-table
-                      #:definites definites
-                      #:hi2-stxs frontier #:hi2-color "WhiteSmoke")
-                (send sbview add-syntax stx
-                      #:alpha-table alpha-table
-                      #:definites definites)))
+            (insert-syntax/color stx foci definites frontier "LightCyan"))
 
           ;; enable/disable-buttons : -> void
           (define/private (enable/disable-buttons)
@@ -605,7 +642,7 @@
             (for-each trec:invalidate-synth! (cursor->list terms))
             (refresh))
 
-          ;; refres/re-reduce : -> void
+          ;; refresh/re-reduce : -> void
           ;; Reduction config has changed; invalidate cached parts of trec
           (define/private (refresh/re-reduce)
             (for-each trec:invalidate-steps! (cursor->list terms))
@@ -748,8 +785,10 @@
                                     (unless (send config get-suppress-warnings?)
                                       (unless warnings-frame
                                         (set! warnings-frame (new warnings-frame%)))
-                                      (send warnings-frame add-warning tag)
-                                      (send warnings-frame show #t)))))
+                                      (send warnings-frame add-warning tag message)
+                                      (send warnings-frame show #t))))
+                                 (force-letrec-transformation
+                                  (send config get-force-letrec-transformation?)))
                     (hide/policy deriv show-macro?))
                   (values deriv (lift/deriv-e2 deriv)))))
 

@@ -27,10 +27,12 @@
      pref:identifier=?
      pref:show-rename-steps?
      pref:highlight-foci?
+     pref:highlight-frontier?
      pref:suppress-warnings?
      pref:one-by-one?
      pref:extra-navigation?
      pref:debug-catch-errors?
+     pref:force-letrec-transformation?
      ))
 
   ;; macro-stepper-config%
