@@ -141,7 +141,7 @@
           (define/public (erase-all)
             (with-unlock -text
               (send -text erase)
-              (send -text delete-mouse-drawings))
+              (send -text delete-all-drawings))
             (send controller erase))
           
           (define/public (select-syntax stx)
