@@ -104,7 +104,7 @@
     (cond [(pair? stx)
 	   (cons x (cdr stx))]
 	  [(syntax? stx)
-	   (datum->syntax-object stx (cons x (stx-cdr stx)))]
+	   (datum->syntax-object stx (cons x (cdr (syntax-e stx))) stx stx)]
 	  [else (raise-type-error 'stx-replcar "stx-pair" stx)]))
 
   ;; stx-replcdr : syntax syntax -> syntax
@@ -112,7 +112,7 @@
     (cond [(pair? stx)
 	   (cons (car stx) x)]
 	  [(and (syntax? stx) (pair? (syntax-e stx)))
-	   (datum->syntax-object stx (cons (stx-car stx) x))]
+	   (datum->syntax-object stx (cons (car (syntax-e stx)) x) stx stx)]
 	  [else (raise-type-error 'stx-replcdr "stx-pair" stx)]))
   
   (define (sd x)
