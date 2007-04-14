@@ -1007,10 +1007,11 @@
                            get-canvas
                            get-editor))
       
-      (define editor-mixin
+  (define editor-mixin
         (mixin (standard-menus<%>) (-editor<%>)
           (init (filename #f))
-
+          (init-field (editor% #f))
+          
           (inherit get-area-container get-client-size 
                    show get-edit-target-window get-edit-target-object)
           
@@ -1080,7 +1081,8 @@
                        <%> %))
               (instantiate % () (parent (get-area-container)))))
           (define/public (get-editor%)
-	    (error 'editor-frame% "abstract method: no editor% class specified"))
+            (or editor%
+                (error 'editor-frame% "abstract method: no editor% class specified")))
           (define/public (get-editor<%>)
 	    editor:basic<%>)
           (define/public (make-editor)
@@ -1395,15 +1397,15 @@
       (define text-mixin
         (mixin (-editor<%>) (text<%>)
           (define/override (get-editor<%>) (class->interface text%))
-          (define/override (get-editor%) text:keymap%)
-          (super-new)))
+          (init (editor% text:keymap%))
+          (super-new (editor% editor%))))
       
       (define pasteboard<%> (interface (-editor<%>)))
       (define pasteboard-mixin
         (mixin (-editor<%>) (pasteboard<%>)
-          [define/override get-editor<%> (λ () (class->interface pasteboard%))]
-          [define/override get-editor% (λ () pasteboard:keymap%)]
-          (super-new)))
+          (define/override get-editor<%> (λ () (class->interface pasteboard%)))
+          (init (editor% text:pastebard%))
+          (super-new (editor% editor%))))
       
       (define delegate<%>
         (interface (status-line<%> text<%>)
@@ -1612,6 +1614,7 @@
             (send super-root change-children
                   (λ (l) (list rest-panel))))
           (define/public (show-delegated-text)
+            (printf "~s\n" (show-delegated-text))
             (open-status-line 'plt:delegate)
             (set! shown? #t)
             (send (get-delegated-text) set-delegate delegatee)
