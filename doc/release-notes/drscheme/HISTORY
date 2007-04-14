@@ -2,6 +2,19 @@
         Version 370
 ------------------------------
 
+  . changed the frame:editor-mixin, frame:text-mixin and
+    frame:pasteboard-mixin slightly so that one can supply
+    the editor class as an initialization argument
+    (overriding the get-editor% method still works, but now
+    that method defaults to the initialization argument)
+
+  . added an extra, mandatory argument to calc-button-sizes
+    and draw-button-label in mrlib's name-message.ss. Use
+    small-control-font to get the old behavior.
+
+  . added a new, optional, argument to the initializer of
+    name-message%. 
+
   . The teaching languages now add a `module' wrapper to
     saved files. Although the content of the file, when
     viewed in drscheme, does not change, this does mean that
