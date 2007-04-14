@@ -507,7 +507,7 @@
               [supers (if proc? (cons <primitive-procedure> supers) supers)]
               [this (parameterize ([*default-object-class* #f])
                       (make (if proc? <procedure-class> <primitive-class>)
-                            :name name :direct-supers (list super)))])
+                            :name name :direct-supers supers))])
          (hash-table-put! struct-to-class-table stype this)
          this)))))
 
