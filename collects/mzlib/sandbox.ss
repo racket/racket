@@ -42,7 +42,7 @@
   (define sandbox-input        (make-parameter #f))
   (define sandbox-output       (make-parameter #f))
   (define sandbox-error-output (make-parameter current-error-port))
-  (define sandbox-eval-limits  (make-parameter '(30 10))) ; 30sec, 10mb
+  (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
   (define sandbox-coverage-enabled (make-parameter #f))
 
   (define sandbox-namespace-specs
