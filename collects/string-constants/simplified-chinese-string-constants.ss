@@ -343,11 +343,15 @@
   (online-coloring-active "实时根据语法用颜色标记程序")
   (open-files-in-tabs "在不同的标签下打开多个文件（不使用多个窗口）")
   (show-interactions-on-execute "在运行程序时自动打开交互窗口")
+  (switch-to-module-language-automatically "打开module文件时自动切换至module语言")
   (limit-interactions-size "限制交互窗口的大小")
   (background-color "背景颜色")
   (default-text-color "默认颜色") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "请选择背景颜色")
   (revert-to-defaults "恢复默认")
+  
+  (black-on-white-color-scheme "白底黑字") ;; these two appear in the color preferences dialog on butttons
+  (white-on-black-color-scheme "黑底白字") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
   
   ; title of the color choosing dialog
   
