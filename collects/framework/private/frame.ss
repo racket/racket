@@ -1404,7 +1404,7 @@
       (define pasteboard-mixin
         (mixin (-editor<%>) (pasteboard<%>)
           (define/override get-editor<%> (λ () (class->interface pasteboard%)))
-          (init (editor% text:pastebard%))
+          (init (editor% pasteboard:keymap%))
           (super-new (editor% editor%))))
       
       (define delegate<%>
