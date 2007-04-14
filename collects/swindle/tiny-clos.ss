@@ -496,17 +496,20 @@
 (define* (struct-type->class stype)
   (hash-table-get
    struct-to-class-table stype
-   (thunk (let-values ([(name init-field-k auto-field-k accessor mutator
-                         immutable-k-list super skipped?)
-                        (struct-type-info stype)])
-            (let* ([super (cond [super (struct-type->class super)]
-                                [skipped? <opaque-struct>]
-                                [else <struct>])]
-                   [this (parameterize ([*default-object-class* #f])
-                           (make <primitive-class>
-                                 :name name :direct-supers (list super)))])
-              (hash-table-put! struct-to-class-table stype this)
-              this)))))
+   (thunk
+     (let-values ([(name init-field-k auto-field-k accessor mutator
+                    immutable-k-list super skipped?)
+                   (struct-type-info stype)])
+       (let* ([supers (list (cond [super (struct-type->class super)]
+                                  [skipped? <opaque-struct>]
+                                  [else <struct>]))]
+              [proc? (procedure-struct-type? stype)]
+              [supers (if proc? (cons <primitive-procedure> supers) supers)]
+              [this (parameterize ([*default-object-class* #f])
+                      (make (if proc? <procedure-class> <primitive-class>)
+                            :name name :direct-supers (list super)))])
+         (hash-table-put! struct-to-class-table stype this)
+         this)))))
 
 ;;>>...
 ;;> *** Common accessors
