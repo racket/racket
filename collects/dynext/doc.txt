@@ -110,9 +110,9 @@ Linking parameters:
      environment variable, or by using the LD or
      MZSCHEME_DYNEXT_LINKER environment variable if it is defined (and
      the latter takes precedence). Under Windows, it looks for cl.exe,
-     then ld.exe (gcc), then ilink32.exe (Borland). Under AIX, Mac OS
-     X, or Darwin, it looks for cc. Under other Unix variants, it
-     looks for ld. #f indicates that no linker could be found.
+     then ld.exe (gcc), then ilink32.exe (Borland). Under Cygwin, Solaris,
+     FreeBSD 2.x, or HP/UX, it looks for ld. Under other Unix variants, it
+     looks for cc. #f indicates that no linker could be found.
 
 >  current-extension-linker-flags - list of paths/strings and thunks
      (see `expand-for-link-variant' below). Under Windows, default is
