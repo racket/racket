@@ -28,8 +28,13 @@
 
       (define (get-unix-linker)
 	(let ([s (case (string->symbol (path->string (system-library-subpath #f)))
-		   [(rs6k-aix ppc-macosx i386-macosx ppc-darwin i386-darwin) "cc"]
-		   [else "ld"])])
+                   [(sparc-solaris i386-solaris 
+                                   sparc-sunos4
+                                   i386-freebsd-2.x
+                                   parisc-hpux
+                                   i386-cygwin)
+                    "ld"]
+		   [else "cc"])])
 	  (find-executable-path s s)))
       
       (define (check-valid-linker-path v)
