@@ -102,6 +102,9 @@
 	      (fail))
 	    exe)))
 
+      (define exe-suffix?
+	(delay (equal? #"i386-cygwin" (path->bytes (system-library-subpath)))))
+
       ;; Find the magic point in the binary:
       (define (find-cmdline what rx)
 	(let ([m (regexp-match-positions rx (current-input-port))])
@@ -625,7 +628,10 @@
 			   [(and mred? (eq? 'macosx (system-type)))
 			    (values (prepare-macosx-mred exe dest aux variant) #f #t)]
 			   [unix-starter?
-			    (let ([starter (build-path (find-lib-dir) "starter")])
+			    (let ([starter (build-path (find-lib-dir) 
+						       (if (force exe-suffix?)
+							   "starter.exe"
+							   "starter"))])
 			      (when (or (file-exists? dest)
 					(directory-exists? dest)
 					(link-exists? dest))
