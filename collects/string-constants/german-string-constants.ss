@@ -312,12 +312,16 @@
  (online-coloring-active "Syntax interaktiv einfärben")
  (open-files-in-tabs "Dateien in separaten Tabs öffnen (nicht separaten Fenstern)")
  (show-interactions-on-execute "Interaktionen beim Programmstart automatisch öffnen")
+ (switch-to-module-language-automatically "Automatisch in die `module'-Sprache wechseln, wenn ein Modul geöffnet wird")
  (limit-interactions-size "Umfang der Interaktionen einschränken")
  (background-color "Hintergrundfarbe")
  (default-text-color "Standard für Text") ;; used for configuring colors, but doesn't need the word "color"
  (choose-a-background-color "Hintergrundfarbe auswählen")
 
  (revert-to-defaults "Standardeinstellung wiederherstellen")
+
+  (black-on-white-color-scheme "Schwarz auf Weiß") ;; these two appear in the color preferences dialog on butttons
+  (white-on-black-color-scheme "Weiß auf Schwarz") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
 
  ; title of the color choosing dialog
 
