@@ -9,7 +9,8 @@
            notify-box/pref
            menu-option/notify-box
            menu-group/notify-box
-           check-box/notify-box)
+           check-box/notify-box
+           choice/notify-box)
 
   (define notification-lock (make-parameter #f))
 
@@ -117,6 +118,18 @@
             (lambda (c e) (send nb set (send c get-value))))))
     (send nb listen (lambda (value) (send checkbox set-value value)))
     checkbox)
+
+  (define (choice/notify-box parent label choices nb)
+    (define choice
+      (new choice%
+           (label label)
+           (parent parent)
+           (style '(horizontal-label))
+           (choices choices)
+           (callback (lambda (c e) (send nb set (send c get-string-selection))))))
+    (send choice set-string-selection (send nb get))
+    (send nb listen (lambda (value) (send choice set-string-selection value)))
+    choice)
 
   (define (menu-group/notify-box parent labels nb)
     (map (lambda (option)
