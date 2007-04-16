@@ -904,7 +904,7 @@ static Scheme_Object *wxSchemeGetFontFromUser(int argc, Scheme_Object **argv)
 	lf->lfPitchAndFamily |= FF_DECORATIVE;
 	break;
       case wxMODERN:
-	Lf->lfPitchAndFamily = FIXED_PITCH | FF_MODERN;
+	lf->lfPitchAndFamily = FIXED_PITCH | FF_MODERN;
 	break;
       case wxROMAN:
 	lf->lfPitchAndFamily |= FF_ROMAN;
