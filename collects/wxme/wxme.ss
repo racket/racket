@@ -5,11 +5,12 @@
            (lib "kw.ss")
            (lib "class.ss")
            (lib "contract.ss")
+           (lib "list.ss")
            "image.ss"
            "editor.ss"
            "private/compat.ss")
 
-  (define (decode who port snip-filter close?)
+  (define (decode who port snip-filter close? skip-content?)
     (expect #rx#"^WXME" port who "does not start with \"WXME\"")
     (expect #rx#"^01" port who "unrecognized format (not \"01\")")
     (let ([vers (string->number
@@ -17,8 +18,11 @@
                   (expect #rx#"^0[1-8]" port who "unrecognized version")))])
       (unless (vers . < . 4)
         (expect #rx#"^ ##[ \r\n]" port who "missing \" ## \" tag in the expected place"))
-      (let ([header (read-header who port vers snip-filter)])
-        (port->decoded-port who port vers header close?))))
+      (let ([header (read-header who port vers snip-filter skip-content?)])
+        (let ([port (port->decoded-port who port vers header close?)])
+          (if skip-content?
+              (extract-used header port)
+              port)))))
   
   (define (expect rx port who msg)
     (let ([m (regexp-match rx port)])
@@ -26,13 +30,27 @@
         (error who "bad WXME stream; ~a" msg))
       (car m)))
 
+  (define (extract-used header port)
+    (let loop ()
+      (unless (eof-object? (read-byte-or-special port))
+        (loop)))
+    (values
+     (filter values (map (lambda (c)
+                           (and (snip-class-used? c)
+                                (bytes->string/latin-1 (snip-class-name c))))
+                         (vector->list (header-classes header))))
+     (filter values (map (lambda (c)
+                           (and (data-class-used? c)
+                                (bytes->string/latin-1 (data-class-name c))))
+                         (vector->list (header-data-classes header))))))
+
   ;; ----------------------------------------
   
-  (define-struct header (classes data-classes styles snip-filter skip-unknown? snips-to-go stream))
+  (define-struct header (classes data-classes styles snip-filter skip-unknown? snips-to-go stream skip-content?))
   (define (header-plain-text? h)
     (not (header-snip-filter h)))
 
-  (define (read-header who port vers snip-filter)
+  (define (read-header who port vers snip-filter skip-content?)
     (let* ([classes (read-snip-class-list who port vers)]
            [data-classes (read-data-class-list who port vers)]
            [header (make-header classes 
@@ -41,7 +59,8 @@
                                 snip-filter 
                                 (unknown-extensions-skip-enabled)
                                 0
-                                #f)])
+                                #f
+                                skip-content?)])
       (set-header-stream! header (make-object stream% who port vers header))
       (let ([cnt (read-editor who port vers header)])
         (set-header-snips-to-go! header cnt))
@@ -76,7 +95,7 @@
                   (cons (read-snip who port vers header)
                         accum))))))
 
-  (define-struct snip-class (name version required? manager))
+  (define-struct snip-class (name version required? manager used?))
 
   (define (read-snip-class-list who port vers)
     (let ([cnt (read-integer who port vers "snip-class count")])
@@ -92,10 +111,11 @@
                                         ;; required? value isn't actually used; only a few
                                         ;;  built-in classes are required
                                         (member name '(#"wxtext" #"wxtab" #"wxmedia")))
+                                 #f
                                  #f))
               (loop (add1 i))))))))
 
-  (define-struct data-class (name required? manager))
+  (define-struct data-class (name required? manager used?))
 
   (define (read-data-class-list who port vers)
     (let ([cnt (read-integer who port vers "data-class count")])
@@ -107,6 +127,7 @@
               (let ([name (read-a-string who port vers "data-class name")])
                 (make-data-class name
                                  (equal? name #"wxloc")
+                                 #f
                                  #f))
               (loop (add1 i))))))))
 
@@ -174,7 +195,7 @@
         (unless (= i cnt)
           (let ([pos (read-integer who port vers "class-header class index")]
                 [len (read-fixed-integer who port vers "class-header length")])
-            (let ([class (find-class pos header who port vers)])
+            (let ([class (find-class pos header who port vers #f)])
               (if (and class
                        (object? (snip-class-manager class)))
                   (send (snip-class-manager class) read-header (snip-class-version class) (header-stream header))
@@ -183,12 +204,14 @@
 
   (define (read-snip who port vers header)
     (let ([pos (read-integer who port vers "snip class index")])
-      (let ([class (find-class pos header who port vers)])
+      (let ([class (find-class pos header who port vers #t)])
         (let ([len (and (or (not class)
                             (not (snip-class-required? class)))
                         (read-fixed-integer who port vers "snip length"))])
           (if (and class
-                   (snip-class-manager class))
+                   (snip-class-manager class)
+                   (not (and len
+                             (header-skip-content? header))))
               (let ([style (read-integer who port vers "snip style index")]
                     [m (snip-class-manager class)]
                     [cvers (snip-class-version class)])
@@ -209,16 +232,18 @@
                                           s)
                                    s)))])
                   (read-buffer-data who port vers header)
-                  (if (bytes? s)
-                      ;; Return bytes for the stream:
-                      s
-                      ;; Filter the non-bytes result, and then wrap it as
-                      ;;  a special stream result:
-                      (let ([s ((header-snip-filter header) s)])
-                        (lambda (src line col pos)
-                          (if (s . is-a? . readable<%>)
-                              (send s read-special src line col pos)
-                              s))))))
+                  (if (header-skip-content? header)
+                      #""
+                      (if (bytes? s)
+                          ;; Return bytes for the stream:
+                          s
+                          ;; Filter the non-bytes result, and then wrap it as
+                          ;;  a special stream result:
+                          (let ([s ((header-snip-filter header) s)])
+                            (lambda (src line col pos)
+                              (if (s . is-a? . readable<%>)
+                                  (send s read-special src line col pos)
+                                  s)))))))
               (begin
                 (skip-data port vers len)
                 #""))))))
@@ -227,7 +252,7 @@
     (let loop ()
       (let ([pos (read-integer who port vers "data-class index")])
         (unless (zero? pos)
-          (let ([data-class (find-data-class pos header who port vers)])
+          (let ([data-class (find-data-class pos header who port vers #t)])
             (let ([len (and (or (not data-class)
                                 (not (data-class-required? data-class)))
                             (read-fixed-integer who port vers "data length"))])
@@ -351,11 +376,13 @@
     (interface ()
       read-special))
   
-  (define (find-class pos header who port vers)
+  (define (find-class pos header who port vers used?)
     (define classes (header-classes header))
     (unless (< -1 pos (vector-length classes))
       (read-error who "integer less than class-list length" "class index" port))
     (let ([class (vector-ref classes pos)])
+      (when used?
+        (set-snip-class-used?! class #t))
       (unless (snip-class-manager class)
         (set-snip-class-manager!
          class
@@ -439,23 +466,27 @@
                        #"."
                        (make-object image% (if data #f filename) data w h dx dy)))))]
             [else
-             ;; Load a manager for this snip class?
-             (let ([lib (string->lib-path (bytes->string/latin-1 name))])
-               (if lib
-                   (let ([mgr (dynamic-require lib 'reader)])
-                     (unless (mgr . is-a? . snip-reader<%>)
-                       (error who "reader provided by ~s is not an instance of snip-reader<%>" lib))
-                     mgr)
-                   (if (header-skip-unknown? header)
-                       #f
-                       (error who "cannot load snip-class reader: ~s" name))))]))))
+             (if (header-skip-content? header)
+                 #f
+                 ;; Load a manager for this snip class?
+                 (let ([lib (string->lib-path (bytes->string/latin-1 name) #f)])
+                   (if lib
+                       (let ([mgr (dynamic-require lib 'reader)])
+                         (unless (mgr . is-a? . snip-reader<%>)
+                           (error who "reader provided by ~s is not an instance of snip-reader<%>" lib))
+                         mgr)
+                       (if (header-skip-unknown? header)
+                           #f
+                           (error who "cannot load snip-class reader: ~s" name)))))]))))
       class))
 
-  (define (find-data-class pos header who port vers)
+  (define (find-data-class pos header who port vers used?)
     (define data-classes (header-data-classes header))
     (unless (< -1 pos (vector-length data-classes))
       (read-error who "integer less than data-class-list length" "data-class index" port))
     (let ([data-class (vector-ref data-classes pos)])
+      (when used?
+        (set-data-class-used?! data-class #t))
       (unless (data-class-manager data-class)
         (set-data-class-manager!
          data-class
@@ -465,8 +496,10 @@
               (read-inexact who port vers "location x")
               (read-inexact who port vers "location y"))]
            [else
-            ;; Load a manager for this data class?
-            (error who "cannot load data-class managers, yet")])))
+            (if (header-skip-content? header)
+                #f
+                ;; Load a manager for this data class?
+                (error who "cannot load data-class managers, yet"))])))
       data-class))
 
   (define stream%
@@ -518,18 +551,24 @@
       (error 'register-lib-mapping! "given target is not a valid marshalable lib path: ~s" target))
     (hash-table-put! lib-mapping str target))
 
-  (define (string->lib-path str)
+  (define (string->lib-path str gui?)
     (or (let ([m (and (regexp-match #rx"^[(].*[)]$" str)
                       (let* ([p (open-input-string str)]
                              [m (read p)])
                         (and (eof-object? (read p))
                              m)))])
-          (and (and (list? m)
-                    (= (length m) 2)
-                    (ok-lib-path? (car m)
-                                  (ok-lib-path? (cadr m))))
-               (cadr m)))
-        (hash-table-get lib-mapping str #f)))
+          (or (and (and (list? m)
+                        (= (length m) 2)
+                        (ok-lib-path? (car m))
+                        (ok-lib-path? (cadr m)))
+                   (if gui?
+                       (car m)
+                       (cadr m)))
+              (and (and (ok-lib-path? m)
+                        gui?)
+                   m)))
+        (and (not gui?)
+             (hash-table-get lib-mapping str #f))))
 
   (register-compatibility-mappings! register-lib-mapping!)
 
@@ -599,7 +638,7 @@
     ;; read optional #reader header:
     (regexp-match/fail-without-reading #rx#"^#reader[(]lib\"read.ss\"\"wxme\"[)]" port)
     ;; decode:
-    (decode 'read-bytes port snip-filter close?))
+    (decode 'read-bytes port snip-filter close? #f))
 
   ;; ----------------------------------------
 
@@ -628,7 +667,7 @@
                         (send t insert-port port 'standard)
                         (open-input-text-editor t 0 'end values (object-name port) #t)))
                     ;; Non-GUI mode:
-                    (decode who port (lambda (x) x) #f))])
+                    (decode who port (lambda (x) x) #f #f))])
       (let ([v (read port)])
         (let ([v2 (let loop ()
                     (let ([v2 (read port)])
@@ -655,10 +694,17 @@
               (lambda (port)
                 (read-syntax source-name-v port)))))
 
+  (define (extract-used-classes port)
+    (if (is-wxme-stream? port)
+        (decode 'extract-used-classes port (lambda (x) x) #f #t)
+        (values null null)))
+
   (provide/contract [is-wxme-stream? (input-port? . -> . any)]
                     [wxme-port->text-port ((input-port?) (any/c) . opt-> . input-port?)]
                     [wxme-port->port ((input-port?) (any/c (any/c . -> . any)) . opt-> . input-port?)]
-                    [register-lib-mapping! (string? string? . -> . void?)])
+                    [register-lib-mapping! (string? string? . -> . void?)]
+                    [string->lib-path (string? any/c . -> . any)]
+                    [extract-used-classes (input-port? . -> . any)])
 
   (provide unknown-extensions-skip-enabled
            broken-wxme-big-endian?

@@ -46,12 +46,29 @@ special value.
 See "Snip Class Mapping" (below) for information about the kinds of
 non-text content that can be read.
 
+> (extract-used-classes input-port)
+
+Returns two values: a list of snip-class names (as strings) used by
+the given stream, and a list of data-class names (as strings) used by
+the stream. If the stream is now a WXME stream, the result is two
+empty lists. The given stream is not closed, and only data for a WXME
+stream (if any) is consumed.
+
 > (register-lib-mapping! string quoted-module-path)
 
 Maps a snip-class name to a quoted module path that provides a reader%
 implementation. The module path must have the form '(lib <str> ...),
 where each <str> contains only alpha-numeric ASCII characters, ".",
 "_", "-", and spaces.
+
+> (string->lib-path string mred?)
+
+Returns a quoted module path for `string' for either MrEd mode (when
+`mred?' is #t) or "wxme.ss" mode (when `mred?' is #f). For the latter,
+built-in mappings and mapping registered via `register-lib-mapping!'
+are used. If `string' cannot be parsed as a library path, and if no
+mapping is available (either because the class is built-in or not
+known), the result is #f.
 
 > unknown-extensions-skip-enabled
 
