@@ -193,7 +193,7 @@
         [(AnyQ p:define-syntaxes (e1 e2 rs rhs))
          (>>P d (make-p:define-syntaxes rhs)
               (define-syntaxes variables RHS)
-              ([for-deriv RHS rhs]))]
+              ([for-deriv/phase-up RHS rhs]))]
         [(AnyQ p:define-values (e1 e2 rs rhs))
          (>>P d (make-p:define-values rhs)
               (define-values variables RHS)
@@ -227,11 +227,7 @@
         [(AnyQ p:set!-macro (e1 e2 rs deriv))
          (>>Pn d (make-p:set!-macro deriv)
                INNER
-               ([for-deriv INNER deriv]))
-         #;
-         (recv [(rhs-d rhs-e2) (for-deriv deriv)]
-               (values (make-p:set!-macro e1 rhs-e2 rs rhs-d)
-                       rhs-e2))]
+               ([for-deriv INNER deriv]))]
         [(AnyQ p:begin (e1 e2 rs lderiv))
          (>>P d (make-p:begin lderiv)
               (begin . LDERIV)
@@ -298,7 +294,7 @@
                  (letrec-syntaxes+values ([SVARS SRHS] ...) ([VVARS VRHS] ...) . BODY)
                  ([for-renames (SVARS ...) svar-renames]
                   [for-renames (VVARS ...) vvar-renames]
-                  [for-derivs (SRHS ...) srhss]
+                  [for-derivs/phase-up (SRHS ...) srhss]
                   [for-derivs (VRHS ...) vrhss]
                   [for-bderiv BODY body])))]
         [(AnyQ p:#%datum (e1 e2 rs tagged-stx))
@@ -443,12 +439,22 @@
     (define (for-renames renames)
       (values renames renames))
 
+    ;; for-deriv/phase-up : Derivation -> (values Derivation syntax)
+    (define (for-deriv/phase-up d)
+      (parameterize ((phase (add1 (phase))))
+        (for-deriv d)))
+
     ;; for-derivs : (list-of Derivation) -> (values (list-of Derivation) (list-of syntax))
     (define (for-derivs derivs)
       (let ([results 
              (map (lambda (d) (let-values ([(a b) (for-deriv d)]) (cons a b)))
                   derivs)])
         (values (map car results) (map cdr results))))
+
+    ;; for-derivs/phase-up : (list-of Derivation) -> (values (list-of Derivation) (list-of syntax))
+    (define (for-derivs/phase-up derivs)
+      (parameterize ((phase (add1 (phase))))
+        (for-derivs derivs)))
 
     ;; for-cdr-bderivs : (list-of (cons 'a BlockDerivation))
     ;;               -> (values (list-of (cons 'a BlockDerivation)) (list-of syntax))
@@ -565,6 +571,11 @@
               (list (make-s:subterm path d)))
             (for-unlucky-deriv/record-error d))))
 
+    ;; for-deriv/phase-up : Derivation -> (list-of Subterm)
+    (define (for-deriv/phase-up d)
+      (parameterize ((phase (add1 (phase))))
+        (for-deriv d)))
+
     ;; check-visible : Derivation -> Path/#f
     (define (check-visible d)
       (match d
@@ -612,7 +623,7 @@
         [(AnyQ p:variable (e1 e2 rs))
          null]
         [(AnyQ p:define-syntaxes (e1 e2 rs rhs))
-         (>>Seek (for-deriv rhs))]
+         (>>Seek (for-deriv/phase-up rhs))]
         [(AnyQ p:define-values (e1 e2 rs rhs))
          (>>Seek (for-deriv rhs))]
         [(AnyQ p:expression (e1 e2 rs inner))
@@ -670,7 +681,7 @@
                  (for-bderiv body))]
         [(AnyQ p:letrec-syntaxes+values (e1 e2 rs srenames srhss vrenames vrhss body))
          (>>Seek [#:rename (do-rename/lsv1 e1 srenames)]
-                 [#:append (map for-deriv srhss)]
+                 [#:append (map for-deriv/phase-up srhss)]
                  [#:rename (do-rename/lsv2 srenames vrenames)]
                  [#:append (map for-deriv vrhss)]
                  (for-bderiv body))]
