@@ -1554,9 +1554,13 @@
 			    #f
 			    (lambda (r)
 			      (let ([l (hash-table-get ht (syntax-e r) null)])
-				(unless (and (pair? l)
-					     (ormap (lambda (i) (bound-identifier=? i r)) l))
-				  (hash-table-put! ht (syntax-e r) (cons r l)))))))])
+                                (let ([pr (and (pair? l)
+                                               (ormap (lambda (i) 
+                                                        (and (bound-identifier=? (car i) r) i))
+                                                      l))])
+                                  (if pr
+                                      (set-cdr! pr (cons r (cdr pr)))
+                                      (hash-table-put! ht (syntax-e r) (cons (cons r (list r)) l))))))))])
       (if proto-r
 	  `(lambda (r)
 	     ,(let ([main (let ([build (apply-to-r l)])
@@ -1578,8 +1582,12 @@
 		      ;; This is a trick to minimize the syntax structure we keep:
 		      (quote-syntax ,(datum->syntax-object #f '... p)))
 		    main)))
-	  ;; Get list of unique vars:
-	  (apply append (hash-table-map ht (lambda (k v) v))))))
+          (let ([l (apply append (hash-table-map ht (lambda (k v) v)))])
+            (values
+             ;; Get list of unique vars:
+             (map car l)
+             ;; All ids, including duplicates:
+             (map cdr l))))))
 
   ;; apply-to-r creates an S-expression that applies
   ;; rest to `r', but it also optimizes ((lambda (r) E) r)
@@ -2244,7 +2252,7 @@
       (datum->syntax-object
        here-stx
        (let ([pattern (stx-car (stx-cdr x))])
-	 (let ([unique-vars (make-pexpand pattern #f null #f)])
+	 (let-values ([(unique-vars all-varss) (make-pexpand pattern #f null #f)])
 	   (let ([var-bindings
 		  (map
 		   (lambda (var)
@@ -2283,7 +2291,7 @@
 			  ;; Even if we don't use the builder, we need to check
 			  ;; for a well-formed pattern:
 			  (make-pexpand pattern proto-r non-pattern-vars pattern)]
-			 [r (let loop ([vars unique-vars][bindings var-bindings])
+			 [r (let loop ([vars unique-vars][bindings var-bindings][all-varss all-varss])
 			      (cond
 			       [(null? bindings) null]
 			       [(car bindings)
@@ -2294,9 +2302,9 @@
                                    (syntax-e (syntax-mapping-valvar (car bindings)))
                                    x)
                                   'disappeared-use
-                                  (car vars))
-                                 (loop (cdr vars) (cdr bindings)))]
-			       [else  (loop (cdr vars) (cdr bindings))]))])
+                                  (car all-varss))
+                                 (loop (cdr vars) (cdr bindings) (cdr all-varss)))]
+			       [else  (loop (cdr vars) (cdr bindings) (cdr all-varss))]))])
 		     (if (identifier? pattern)
 			 ;; Simple syntax-id lookup:
 			 (car r)
