@@ -246,28 +246,53 @@ an appropriate subdirectory.
               [compat? (build-compatibility-fn (info 'can-be-loaded-with (lambda () 'none)))])
          (compat? pkg1))]))
   
+  ;; stx->origin-string : stx option -> string
+  ;; returns a description [e.g. file name, line#] of the given syntax
+  (define (stx->origin-string stx)
+    (if stx 
+        (format "~a" (syntax-source stx))
+        "[unknown]"))
   
-  (define (add-pkg-to-diamond-registry! pkg)
+  (define (add-pkg-to-diamond-registry! pkg stx)
     (let ((loaded-packages (hash-table-get (the-version-cache)
                                            (pkg->diamond-key pkg)
                                            (lambda () '()))))
       (begin
         (unless (list? loaded-packages)
           (error 'PLaneT "Inconsistent state: expected loaded-packages to be a list, received: ~s" loaded-packages))
-        (for-each
-         (lambda (already-loaded-pkg)
-           (unless (can-be-loaded-together? pkg already-loaded-pkg)
-             (raise (make-exn:fail (format
-                                    "Package ~a loaded twice with multiple incompatible versions:
-attempted to load version ~a.~a while version ~a.~a was already loaded"
-                                    (pkg-name pkg)
-                                    (pkg-maj pkg)
-                                    (pkg-min pkg)
-                                    (pkg-maj already-loaded-pkg)
-                                    (pkg-min already-loaded-pkg))
-                                   (current-continuation-marks)))))
-         loaded-packages)
-        (hash-table-put! (the-version-cache) (pkg->diamond-key pkg) (cons pkg loaded-packages)))))
+        (let* ([all-violations '()]
+               [_
+                (for-each
+                 (lambda (already-loaded-pkg-record)
+                   (let* ([already-loaded-pkg (car already-loaded-pkg-record)]
+                          [stx (cadr already-loaded-pkg-record)]
+                          [stx-origin-string (stx->origin-string stx)])
+                     (unless (can-be-loaded-together? pkg already-loaded-pkg)
+                       (set!
+                        all-violations
+                        (cons
+                         (list
+                          stx
+                          (make-exn:fail 
+                           (format
+                           "Package ~a loaded twice with multiple incompatible versions:
+~a attempted to load version ~a.~a while version ~a.~a was already loaded by ~a"
+                           (pkg-name pkg)
+                           (stx->origin-string stx)
+                           (pkg-maj pkg)
+                           (pkg-min pkg)
+                           (pkg-maj already-loaded-pkg)
+                           (pkg-min already-loaded-pkg)
+                           stx-origin-string)
+                          (current-continuation-marks)))
+                         all-violations)))))
+                 loaded-packages)])
+          (unless (null? all-violations)
+            (let ([worst (or (assq values all-violations) (car all-violations))])
+              (raise (cadr worst)))))
+        (hash-table-put! (the-version-cache)
+                         (pkg->diamond-key pkg) 
+                         (cons (list pkg stx) loaded-packages)))))
   
   ; ==========================================================================================
   ; MAIN LOGIC
@@ -279,7 +304,7 @@ attempted to load version ~a.~a while version ~a.~a was already loaded"
   ; environment
   (define (planet-resolve spec module-path stx load?)
     (let-values ([(path pkg) (get-planet-module-path/pkg spec module-path stx)])
-      (when load? (add-pkg-to-diamond-registry! pkg))
+      (when load? (add-pkg-to-diamond-registry! pkg stx))
       (do-require path (pkg-path pkg) module-path stx load?)))
   
   ;; resolve-planet-path : planet-require-spec -> path
