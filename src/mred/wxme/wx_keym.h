@@ -5,6 +5,11 @@
 #include "wx_stdev.h"
 #include "wx_hash.h"
 
+typedef unsigned int wxchar;
+extern int wxstrlen(wxchar *s);
+void wxme_utf8_decode(char *str, long len, wxchar **us, long *ulen);
+void wxme_utf8_encode(wxchar *us, long ulen, char **s, long *len);
+
 #define UNKNOWN_OBJ void*
 
 typedef Bool (*wxKMFunction)(UNKNOWN_OBJ media, wxEvent *event, void *data);
@@ -108,6 +113,7 @@ class wxKeymap : public wxObject
 			       int alt, int meta, int check_alt,
 			       char *fname, class wxKeycode *prevkey=NULL, 
 			       int keytype = wxKEY_FINAL);
+  void MapFunction(wxchar *keyname, char *fname);
   void MapFunction(char *keyname, char *fname);
 
   void AddFunction(char *name, wxKMFunction func, void *data);

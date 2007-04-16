@@ -226,7 +226,7 @@ static void BreakSequenceCallbackToScheme(KeymapCallbackToSchemeRec *data);
 @ v "handle-key-event" : bool HandleKeyEvent(UNKNOWN_OBJ/bAnythingFromVoid/ubAnythingToVoid/cAnything///push,wxKeyEvent!);
 @ v "handle-mouse-event" : bool HandleMouseEvent(UNKNOWN_OBJ/bAnythingFromVoid/ubAnythingToVoid/cAnything///push,wxMouseEvent!);
 @ "break-sequence" : void BreakSequence();
-@ "map-function" : void MapFunction(string,string);
+@ "map-function" : void MapFunction(mzstring,string);
 @ "add-function" : void AddFunction(string,wxKMFunction/bCallback/ubCallbackKM/cCallback//spCallbackKM/nopush,-unknown#void*=NULL); : : ubSetup / ubSetData[1.2]
 @ "set-grab-key-function" : void SetGrabKeyFunction(wxGrabKeyFunction/bCallback/ubCallbackGrabKey/cCallback//spCallbackGrabKey/nopush,-unknown#void*=NULL); : : ubSetup / ubSetData[0.1]
 @ "remove-grab-key-function" : void RemoveGrabKeyFunction()

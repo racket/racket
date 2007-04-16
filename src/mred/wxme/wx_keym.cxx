@@ -446,11 +446,23 @@ wxKeycode *wxKeymap::MapFunction(long code, int shift, int ctrl,
   return newkey;
 }
 
-static long GetCode(unsigned char *keyseq, int *_kp, int *fullset)
+static int wx_c_strcmp(wxchar *keyseq, char *s)
+{
+  int i = 0;
+
+  while (keyseq[i] && s[i]) {
+    if ((int)keyseq[i] != (int)s[i])
+      return 1;
+    i++;
+  }
+  return keyseq[i] || s[i];
+}
+
+static long GetCode(wxchar *keyseq, int *_kp, int *fullset)
 {
   long i, code, kp;
 #define MAX_BUF 256
-  unsigned char buffer[MAX_BUF], first;
+  wxchar buffer[MAX_BUF], first;
 
   kp = *_kp;
 
@@ -468,11 +480,11 @@ static long GetCode(unsigned char *keyseq, int *_kp, int *fullset)
     if (buffer[0] < 128)
       buffer[0] = tolower(buffer[0]);
     for (i = 0; keylist[i].str; i++) {
-      if (!strcmp((char *)buffer, keylist[i].str)) {
+      if (!wx_c_strcmp(buffer, keylist[i].str)) {
 	code = keylist[i].code;
-	if (!strcmp((char *)buffer, "leftbuttonseq")
-	    || !strcmp((char *)buffer, "middlebuttonseq")
-	    || !strcmp((char *)buffer, "rightbuttonseq"))
+	if (!wx_c_strcmp(buffer, "leftbuttonseq")
+	    || !wx_c_strcmp(buffer, "middlebuttonseq")
+	    || !wx_c_strcmp(buffer, "rightbuttonseq"))
 	  *fullset = 1;
 	break;
       }
@@ -485,9 +497,9 @@ static long GetCode(unsigned char *keyseq, int *_kp, int *fullset)
   return code;
 }
 
-void wxKeymap::MapFunction(char *keys, char *fname)
+void wxKeymap::MapFunction(wxchar *keys, char *fname)
 {
-  char *keyseq = keys;
+  wxchar *keyseq = keys;
   int num_keys, num_new_keys, kp, start_keys;
   wxKeycode **key, **new_key;
   int shift, ctrl, alt, meta, mod, checkOther;
@@ -522,11 +534,11 @@ void wxKeymap::MapFunction(char *keys, char *fname)
 	  kp++;
 	  goto do_mod;
 	}
-      } else if (isspace(keyseq[kp])) {
+      } else if (keyseq[kp] < 128 && isspace(keyseq[kp])) {
 	kp++;
       } else if (keyseq[kp + 1] == ':') {
       do_mod:
-	unsigned char mch;
+	wxchar mch;
 	mch = keyseq[kp];
 	if (mch < 128)
 	  mch = tolower(mch);
@@ -572,7 +584,7 @@ void wxKeymap::MapFunction(char *keys, char *fname)
 	kp += 2;
       } else {
       do_char:
-	code = GetCode((unsigned char *)keyseq, &kp, &fullset);
+	code = GetCode(keyseq, &kp, &fullset);
 	if (!code) {
 	  errstr = "bad keyname";
 	  goto key_error;
@@ -625,9 +637,24 @@ void wxKeymap::MapFunction(char *keys, char *fname)
   return;
 
  key_error:
-  sprintf(buffer, "keymap: %s in keystring: \"%.100s\", part %d", 
-	  errstr, keys, part);
-  wxsKeymapError(buffer);
+  {
+    long l;
+    char *r = NULL;
+    
+    wxme_utf8_encode(keys, wxstrlen(keys), &r, &l);
+    sprintf(buffer, "keymap: %s in keystring: \"%.100s\", part %d", 
+            errstr, r, part);
+    wxsKeymapError(buffer);
+  }
+}
+
+void wxKeymap::MapFunction(char *keys, char *fname)
+{
+  wxchar *us;
+  long ulen;
+  
+  wxme_utf8_decode(keys, strlen(keys), &us,  &ulen);
+  MapFunction(us, fname);
 }
 
 int wxKeymap::HandleEvent(long code, long other_code,  long alt_code,  long other_alt_code, 

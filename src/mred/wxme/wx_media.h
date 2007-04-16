@@ -18,12 +18,7 @@ class wxMediaEdit;
 class wxClickback;
 class wxClipboard;
 
-typedef unsigned int wxchar;
-extern int wxstrlen(wxchar *s);
 extern wxchar wx_empty_wxstr[1];
-
-void wxme_utf8_decode(char *str, long len, wxchar **us, long *ulen);
-void wxme_utf8_encode(wxchar *us, long ulen, char **s, long *len);
 
 #define wxFOCUS_IMMEDIATE 0
 #define wxFOCUS_DISPLAY 1

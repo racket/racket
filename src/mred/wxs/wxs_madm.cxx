@@ -4870,7 +4870,7 @@ static Scheme_Object *os_wxKeymapMapFunction(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   objscheme_check_valid(os_wxKeymap_class, "map-function in keymap%", n, p);
-  string x0 INIT_NULLED_OUT;
+  mzstring x0 INIT_NULLED_OUT;
   string x1 INIT_NULLED_OUT;
 
   SETUP_VAR_STACK_REMEMBERED(3);
@@ -4879,7 +4879,7 @@ static Scheme_Object *os_wxKeymapMapFunction(int n,  Scheme_Object *p[])
   VAR_STACK_PUSH(2, x1);
 
   
-  x0 = (string)WITH_VAR_STACK(objscheme_unbundle_string(p[POFFSET+0], "map-function in keymap%"));
+  x0 = (mzstring)WITH_VAR_STACK(objscheme_unbundle_mzstring(p[POFFSET+0], "map-function in keymap%"));
   x1 = (string)WITH_VAR_STACK(objscheme_unbundle_string(p[POFFSET+1], "map-function in keymap%"));
 
   
