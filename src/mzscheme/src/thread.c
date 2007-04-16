@@ -3615,6 +3615,8 @@ void scheme_thread_block(float sleep_time)
   check_scheduled_kills();
 
   if (!do_atomic && (sleep_end >= 0.0)) {
+    double msecs = 0.0;
+
     /* Find the next process. Skip processes that are definitely
        blocked. */
     
@@ -3683,9 +3685,12 @@ void scheme_thread_block(float sleep_time)
 	    if (f(next->blocker, &sinfo))
 	      break;
 	    next->sleep_end = sinfo.sleep_end;
+            msecs = 0.0; /* that could have taken a while */
 	  }
 	} else if (next->block_descriptor == SLEEP_BLOCKED) {
-	  if (next->sleep_end <= scheme_get_inexact_milliseconds())
+          if (!msecs)
+            msecs = scheme_get_inexact_milliseconds();
+	  if (next->sleep_end <= msecs)
 	    break;
 	} else
 	  break;
