@@ -15,6 +15,7 @@
            (lib "port.ss")
            (lib "list.ss")
            (lib "string.ss")
+           (lib "kw.ss")
            "url-structs.ss"
            "uri-codec.ss"
            "url-sig.ss"
@@ -87,7 +88,7 @@
               "")
             (combine-path-strings (url-path-absolute? url) path)
             ;; (if query (sa "?" (uri-encode query)) "")
-            (if (null? query) "" (sa "?"  (alist->form-urlencoded query)))
+            (if (null? query) "" (sa "?" (alist->form-urlencoded query)))
             (if fragment (sa "#" (uri-encode fragment)) ""))))
 
     ;; url->default-port : url -> num
@@ -103,9 +104,7 @@
       (let ([port-number (if proxy
                            (caddr proxy)
                            (or (url-port url) (url->default-port url)))]
-            [host (if proxy
-                    (cadr proxy)
-                    (url-host url))])
+            [host (if proxy (cadr proxy) (url-host url))])
         (tcp-connect host port-number)))
 
     ;; http://getpost-impure-port : bool x url x union (str, #f) x list (str) -> in-port
@@ -175,17 +174,12 @@
               [else (url-error "Scheme ~a unsupported" scheme)])))
 
     ;; get-impure-port : url [x list (str)] -> in-port
-    (define get-impure-port
-      (case-lambda
-        [(url) (get-impure-port url '())]
-        [(url strings) (getpost-impure-port #t url #f strings)]))
+    (define/kw (get-impure-port url #:optional [strings '()])
+      (getpost-impure-port #t url #f strings))
 
     ;; post-impure-port : url x bytes [x list (str)] -> in-port
-    (define post-impure-port
-      (case-lambda
-        [(url post-data) (post-impure-port url post-data '())]
-        [(url post-data strings)
-         (getpost-impure-port #f url post-data strings)]))
+    (define/kw (post-impure-port url post-data #:optional [strings '()])
+      (getpost-impure-port #f url post-data strings))
 
     ;; getpost-pure-port : bool x url x list (str) -> in-port
     (define (getpost-pure-port get? url post-data strings)
@@ -206,27 +200,17 @@
               [else (url-error "Scheme ~a unsupported" scheme)])))
 
     ;; get-pure-port : url [x list (str)] -> in-port
-    (define get-pure-port
-      (case-lambda
-        [(url) (get-pure-port url '())]
-        [(url strings) (getpost-pure-port #t url #f strings)]))
+    (define/kw (get-pure-port url #:optional [strings '()])
+      (getpost-pure-port #t url #f strings))
 
     ;; post-pure-port : url bytes [x list (str)] -> in-port
-    (define post-pure-port
-      (case-lambda
-        [(url post-data) (post-pure-port url post-data '())]
-        [(url post-data strings) (getpost-pure-port #f url post-data strings)]))
+    (define/kw (post-pure-port url post-data #:optional [strings '()])
+      (getpost-pure-port #f url post-data strings))
 
     ;; display-pure-port : in-port -> ()
     (define (display-pure-port server->client)
       (copy-port server->client (current-output-port))
       (close-input-port server->client))
-
-    (define (empty-url? url)
-      (and (not (url-scheme url))
-           (not (url-query url))
-           (not (url-fragment url))
-           (null? (url-path url))))
 
     ;; transliteration of code in rfc 3986, section 5.2.2
     (define (combine-url/relative Base string)
@@ -286,34 +270,30 @@
             [else (cons (car lst) (all-but-last (cdr lst)))]))
 
     ;; cribbed from 5.2.4 in rfc 3986
-    ;; the strange cases 2 and 4 implicitly change urls
+    ;; the strange [*] cases implicitly change urls
     ;; with paths segments "." and ".." at the end
     ;; into "./" and "../" respectively
     (define (remove-dot-segments path)
       (let loop ([path path] [result '()])
-        (cond
-          [(null? path) (reverse result)]
-          [(and (eq? (path/param-path (car path)) 'same)
-                (null? (cdr path)))
-           (loop (cdr path)
-                 (cons (make-path/param "" '()) result))]
-          [(eq? (path/param-path (car path)) 'same)
-           (loop (cdr path)
-                 result)]
-          [(and (eq? (path/param-path (car path)) 'up)
-                (null? (cdr path))
-                (not (null? result)))
-           (loop (cdr path)
-                 (cons (make-path/param "" '()) (cdr result)))]
-          [(and (eq? (path/param-path (car path)) 'up)
-                (not (null? result)))
-           (loop (cdr path) (cdr result))]
-          [(and (eq? (path/param-path (car path)) 'up)
-                (null? result))
-           ;; when we go up too far, just drop the "up"s.
-           (loop (cdr path) result)]
-          [else
-           (loop (cdr path) (cons (car path) result))])))
+        (if (null? path)
+          (reverse result)
+          (let ([fst (path/param-path (car path))]
+                [rst (cdr path)])
+            (loop rst
+                  (cond
+                    [(and (eq? fst 'same) (null? rst))
+                     (cons (make-path/param "" '()) result)] ; [*]
+                    [(eq? fst 'same)
+                     result]
+                    [(and (eq? fst 'up) (null? rst) (not (null? result)))
+                     (cons (make-path/param "" '()) (cdr result))] ; [*]
+                    [(and (eq? fst 'up) (not (null? result)))
+                     (cdr result)]
+                    [(and (eq? fst 'up) (null? result))
+                     ;; when we go up too far, just drop the "up"s.
+                     result]
+                    [else
+                     (cons (car path) result)]))))))
 
     ;; call/input-url : url x (url -> in-port) x (in-port -> T)
     ;;                  [x list (str)] -> T
@@ -333,23 +313,19 @@
     (define (purify-port port)
       (let ([m (regexp-match-peek-positions
                 #rx"^HTTP/.*?((\r\n\r\n)|(\n\n)|(\r\r))" port)])
-        (if m
-          (read-string (cdar m) port)
-          "")))
+        (if m (read-string (cdar m) port) "")))
 
     (define character-set-size 256)
 
     ;; netscape/string->url : str -> url
     (define (netscape/string->url string)
       (let ([url (string->url string)])
-        (if (url-scheme url)
-          url
-          (if (string=? string "")
-            (url-error "Can't resolve empty string as URL")
-            (begin
-              (set-url-scheme! url
-                (if (char=? (string-ref string 0) #\/) "file" "http"))
-              url)))))
+        (cond [(url-scheme url) url]
+              [(string=? string "")
+               (url-error "Can't resolve empty string as URL")]
+              [else (set-url-scheme! url
+                      (if (char=? (string-ref string 0) #\/) "file" "http"))
+                    url])))
 
     ;; URL parsing regexp
     ;; this is following the regexp in Appendix B of rfc 3986, except for using
@@ -451,41 +427,28 @@
                  (loop (cdr strings) (list* (car strings) sep r))))]))
 
     ;; delete-pure-port : url [x list (str)] -> in-port
-    (define delete-pure-port
-      (case-lambda
-        [(url) (delete-pure-port url '())]
-        [(url strings) (method-pure-port 'delete url #f strings)]))
+    (define/kw (delete-pure-port url #:optional [strings '()])
+      (method-pure-port 'delete url #f strings))
 
     ;; delete-impure-port : url [x list (str)] -> in-port
-    (define delete-impure-port
-      (case-lambda
-        [(url) (delete-impure-port url '())]
-        [(url strings) (method-impure-port 'delete url #f strings)]))
+    (define/kw (delete-impure-port url #:optional [strings '()])
+      (method-impure-port 'delete url #f strings))
 
     ;; head-pure-port : url [x list (str)] -> in-port
-    (define head-pure-port
-      (case-lambda
-        [(url) (head-pure-port url '())]
-        [(url strings) (method-pure-port 'head url #f strings)]))
+    (define/kw (head-pure-port url #:optional [strings '()])
+      (method-pure-port 'head url #f strings))
 
     ;; head-impure-port : url [x list (str)] -> in-port
-    (define head-impure-port
-      (case-lambda
-        [(url) (head-impure-port url '())]
-        [(url strings) (method-impure-port 'head url #f strings)]))
+    (define/kw (head-impure-port url #:optional [strings '()])
+      (method-impure-port 'head url #f strings))
 
     ;; put-pure-port : url bytes [x list (str)] -> in-port
-    (define put-pure-port
-      (case-lambda
-        [(url put-data) (put-pure-port url put-data '())]
-        [(url put-data strings) (method-pure-port 'put url put-data strings)]))
+    (define/kw (put-pure-port url put-data #:optional [strings '()])
+      (method-pure-port 'put url put-data strings))
 
     ;; put-impure-port : url x bytes [x list (str)] -> in-port
-    (define put-impure-port
-      (case-lambda
-        [(url put-data) (put-impure-port url put-data '())]
-        [(url put-data strings)
-         (method-impure-port 'put url put-data strings)]))
+    (define/kw (put-impure-port url put-data #:optional [strings '()])
+      (method-impure-port 'put url put-data strings))
 
     ;; method-impure-port : symbol x url x list (str) -> in-port
     (define (method-impure-port method url data strings)
@@ -519,13 +482,12 @@
 
     ;; http://metod-impure-port : symbol x url x union (str, #f) x list (str) -> in-port
     (define (http://method-impure-port method url data strings)
-      (define (method->string method)
-        (case method
-          ((get) "GET") ((post) "POST") ((head) "HEAD")
-          ((put) "PUT") ((delete) "DELETE")
-          (else (url-error "unsupported method: ~a" method))))
       (let*-values
-          ([(proxy) (assoc (url-scheme url) (current-proxy-servers))]
+          ([(method) (case method
+                       [(get) "GET"] [(post) "POST"] [(head) "HEAD"]
+                       [(put) "PUT"] [(delete) "DELETE"]
+                       [else (url-error "unsupported method: ~a" method)])]
+           [(proxy) (assoc (url-scheme url) (current-proxy-servers))]
            [(server->client client->server) (make-ports url proxy)]
            [(access-string) (url->string
                              (if proxy
@@ -538,7 +500,7 @@
         (define (println . xs)
           (for-each (lambda (x) (display x client->server)) xs)
           (display "\r\n" client->server))
-        (println (method->string method) " " access-string " HTTP/1.0")
+        (println method " " access-string " HTTP/1.0")
         (println "Host: " (url-host url)
                  (let ([p (url-port url)]) (if p (format ":~a" p) "")))
         (when data (println "Content-Length: " (bytes-length data)))
