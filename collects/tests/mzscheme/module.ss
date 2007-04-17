@@ -271,4 +271,24 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([f1 "tmp1.ss"]
+      [f2 "tmp2.ss"]
+      [exn:fail-cycle? (lambda (exn)
+                         (and (exn:fail? exn)
+                              (regexp-match? #rx"cycle" (exn-message exn))))])
+  (with-output-to-file f1
+    (lambda ()
+      (write `(module tmp1 mzscheme (require ,f2))))
+    'truncate/replace)
+  (with-output-to-file f2
+    (lambda ()
+      (write `(module tmp2 mzscheme (require ,f1))))
+    'truncate/replace)
+  (err/rt-test (dynamic-require f1 #f) exn:fail-cycle?)
+  (err/rt-test (dynamic-require f2 #f) exn:fail-cycle?)
+  (delete-file f1)
+  (delete-file f2))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
