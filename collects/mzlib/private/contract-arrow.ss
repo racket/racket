@@ -23,6 +23,7 @@
            case->
 	   opt->
            opt->*
+           unconstrained-domain->
            object-contract
            mixin-contract
            make-mixin-contract
@@ -32,6 +33,31 @@
            
            check-procedure)
   
+  
+  (define-syntax (unconstrained-domain-> stx)
+    (syntax-case stx ()
+      [(_ rngs ...)
+       (with-syntax ([(rngs-x ...) (generate-temporaries #'(rngs ...))]
+                     [(proj-x ...) (generate-temporaries #'(rngs ...))]
+                     [(p-app-x ...) (generate-temporaries #'(rngs ...))]
+                     [(res-x ...) (generate-temporaries #'(rngs ...))])
+         #'(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
+             (let ([proj-x ((proj-get rngs-x) rngs-x)] ...)
+               (make-proj-contract
+                (build-compound-type-name 'unconstrained-domain-> ((name-get rngs-x) rngs-x) ...)
+                (λ (pos-blame neg-blame src-info orig-str)
+                  (let ([p-app-x (proj-x pos-blame neg-blame src-info orig-str)] ...)
+                    (λ (val)
+                      (if (procedure? val)
+                          (λ args
+                            (let-values ([(res-x ...) (apply val args)])
+                              (values (p-app-x res-x) ...)))
+                          (raise-contract-error val
+                                                src-info
+                                                pos-blame
+                                                orig-str
+                                                "expected a procedure")))))
+                procedure?))))]))
   
   (define-syntax (any stx)
     (raise-syntax-error 'any "Use any out of an arrow contract" stx))

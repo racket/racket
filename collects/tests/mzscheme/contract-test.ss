@@ -173,6 +173,9 @@
   (test/no-error '(opt->* (integer?) (integer?) any))
   (test/no-error '(opt->* ((flat-contract integer?)) ((flat-contract integer?)) any))
   
+  (test/no-error '(unconstrained-domain-> number?))
+  (test/no-error '(unconstrained-domain-> (flat-contract number?)))
+  
   (test/no-error '(listof any/c))
   (test/no-error '(listof (lambda (x) #t)))
   
@@ -1377,6 +1380,31 @@
                         'neg)])
       (cf (lambda (x%) 'going-to-be-bad))))   
 
+  (test/spec-passed
+   'unconstrained-domain->1
+   '(contract (unconstrained-domain-> number?) (λ (x) x) 'pos 'neg))
+  (test/pos-blame
+   'unconstrained-domain->2
+   '(contract (unconstrained-domain-> number?) 1 'pos 'neg))
+  (test/spec-passed
+   'unconstrained-domain->3
+   '((contract (unconstrained-domain-> number?) (λ (x) x) 'pos 'neg) 1))
+  (test/pos-blame
+   'unconstrained-domain->4
+   '((contract (unconstrained-domain-> number?) (λ (x) x) 'pos 'neg) #f))
+  
+  (test/spec-passed/result
+   'unconstrained-domain->4
+   '((contract (->r ([size natural-number/c]
+                     [proc (and/c (unconstrained-domain-> number?)
+                                  (λ (p) (procedure-arity-includes? p size)))])
+                    number?)
+               (λ (i f) (apply f (build-list i add1)))
+               'pos
+               'neg)
+     10 +)
+   55)
+  
   (test/pos-blame
    'or/c1
    '(contract (or/c false/c) #t 'pos 'neg))
@@ -4054,6 +4082,8 @@ so that propagation occurs.
   
   (test-name '(case-> (-> integer? integer?) (-> integer? integer? integer?))
              (case-> (-> integer? integer?) (-> integer? integer? integer?)))
+
+  (test-name '(unconstrained-domain-> number?) (unconstrained-domain-> number?))
   
   (test-name '(or/c) (or/c))
   (test-name '(or/c integer? gt0?) (or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
