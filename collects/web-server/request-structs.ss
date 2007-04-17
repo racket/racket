@@ -1,13 +1,14 @@
 (module request-structs mzscheme
   (require (lib "contract.ss")
+           (lib "serialize.ss")
            (lib "plt-match.ss")
            (lib "url.ss" "net"))
   
   (define (bytes-ci=? b0 b1)
     (string-ci=? (bytes->string/utf-8 b0)
                  (bytes->string/utf-8 b1)))
-    
-  (define-struct header (field value))
+  
+  (define-serializable-struct header (field value))
   (define (headers-assq* f hs)
     (match hs
       [(list)
@@ -30,9 +31,9 @@
    [struct header ([field bytes?]
                    [value bytes?])])
   
-  (define-struct binding (id))
-  (define-struct (binding:form binding) (value))
-  (define-struct (binding:file binding) (filename content))
+  (define-serializable-struct binding (id))
+  (define-serializable-struct (binding:form binding) (value))
+  (define-serializable-struct (binding:file binding) (filename content))
   (define (bindings-assq ti bs)
     (match bs
       [(list)
@@ -50,8 +51,8 @@
                                    [filename bytes?]
                                    [content bytes?])])
   
-  (define-struct request (method uri headers/raw bindings/raw post-data/raw
-                                 host-ip host-port client-ip))
+  (define-serializable-struct request (method uri headers/raw bindings/raw post-data/raw
+                                              host-ip host-port client-ip))
   (provide/contract
    [struct request ([method symbol?] [uri url?] 
                                      [headers/raw (listof header?)]
