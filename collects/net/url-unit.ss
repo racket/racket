@@ -13,8 +13,8 @@
   (require (lib "file.ss")
            (lib "unit.ss")
            (lib "port.ss")
-           (lib "string.ss")
            (lib "list.ss")
+           (lib "string.ss")
            "url-structs.ss"
            "uri-codec.ss"
            "url-sig.ss"
@@ -351,26 +351,37 @@
                 (if (char=? (string-ref string 0) #\/) "file" "http"))
               url)))))
 
-    ;; string->url : str -> url
-    ;; New implementation, mostly provided by Neil Van Dyke
+    ;; URL parsing regexp
+    ;; this is following the regexp in Appendix B of rfc 3986, except for using
+    ;; `*' instead of `+' for the scheme part (it is checked later anyway, and
+    ;; we don't want to parse it as a path element), and the user@host:port is
+    ;; parsed here.
     (define url-rx
       (regexp (string-append
                "^"
-               "[ \t\f\r\n]*"
-               "(?:"                ; <A  front-opt
-               "(?:([^:&;?/]*):)?"  ; =1  scheme-colon-opt (see below)
-               "(?:"                ; <B  slashslash-opt
-               "//"
-               "(?:([^:/@;?#]*)@)?" ; =2  user-at-opt
-               "([^:/@;?#]*)?"      ; =3  host-opt
-               "(?::([0-9]*))?"     ; =4  colon-port-opt
-               ")?"                 ; >B  slashslash-opt
-               ")?"                 ; >A  front-opt
-               "([^?#]*)"           ; =5  path
-               "(?:\\?([^#]*))?"    ; =6  question-query-opt
-               "(?:#(.*))?"         ; =7  hash-fragment-opt
-               "[ \t\f\r\n]*"
+               "(?:"              ; / scheme-colon-opt
+               "([^:/?#]*)"       ; | #1 = scheme-opt
+               ":)?"              ; \
+               "(?://"            ; / slash-slash-authority-opt
+               "(?:"              ; | / user-at-opt
+               "([^/?#@]*)"       ; | | #2 = user-opt
+               "@)?"              ; | \
+               "([^/?#:]*)?"      ; | #3 = host-opt
+               "(?::"             ; | / colon-port-opt
+               "([0-9]*)"         ; | | #4 = port-opt
+               ")?"               ; | \
+               ")?"               ; \
+               "([^?#]*)"         ; #5 = path
+               "(?:\\?"           ; / question-query-opt
+               "([^#]*)"          ; | #6 = query-opt
+               ")?"               ; \
+               "(?:#"             ; / hash-fragment-opt
+               "(.*)"             ; | #7 = fragment-opt
+               ")?"               ; \
                "$")))
+
+    ;; string->url : str -> url
+    ;; Original version by Neil Van Dyke
     (define (string->url str)
       (apply
        (lambda (scheme user host port path query fragment)
@@ -382,21 +393,14 @@
                     (eq? 'windows url:os-type))
            (set! path (string-append host ":" path))
            (set! host #f))
-         (let* ([user   (uri-decode/maybe user)]
-                [port   (and port (string->number port))]
-                [abs?   (and (not (= 0 (string-length path)))
-                             (char=? #\/ (string-ref path 0)))]
-                [path   (separate-path-strings
-                         ;; If path is "" and the input is an absolute URL
-                         ;; with a hostname, then the intended path is "/",
-                         ;; but the URL is missing a "/" at the end.
-                         path
-                         #;
-                         (if (and (string=? path "") host) "/" path))]
-                [query   (if query (form-urlencoded->alist query) '())]
+         (let* ([scheme   (and scheme (string-downcase scheme))]
+                [host     (and host (string-downcase host))]
+                [user     (uri-decode/maybe user)]
+                [port     (and port (string->number port))]
+                [abs?     (regexp-match? #rx"^/" path)]
+                [path     (separate-path-strings path)]
+                [query    (if query (form-urlencoded->alist query) '())]
                 [fragment (uri-decode/maybe fragment)])
-           (when (string? scheme) (string-lowercase! scheme))
-           (when (string? host) (string-lowercase! host))
            (make-url scheme user host port abs? path query fragment)))
        (cdr (or (regexp-match url-rx str)
                 (url-error "Invalid URL string: ~e" str)))))
@@ -405,7 +409,7 @@
       ;; If #f, and leave unmolested any % that is followed by hex digit
       ;; if a % is not followed by a hex digit, replace it with %25
       ;; in an attempt to be "friendly"
-      (and f (uri-decode (regexp-replace* "%([^0-9a-fA-F])" f "%25\\1"))))
+      (and f (uri-decode (regexp-replace* #rx"%([^0-9a-fA-F])" f "%25\\1"))))
 
     ;; separate-path-strings : string[starting with /] -> (listof path/param)
     (define (separate-path-strings str)
@@ -445,13 +449,13 @@
                (if (null? strings)
                  (apply string-append (reverse! r))
                  (loop (cdr strings) (list* (car strings) sep r))))]))
-    
+
     ;; delete-pure-port : url [x list (str)] -> in-port
     (define delete-pure-port
       (case-lambda
         [(url) (delete-pure-port url '())]
         [(url strings) (method-pure-port 'delete url #f strings)]))
-    
+
     ;; delete-impure-port : url [x list (str)] -> in-port
     (define delete-impure-port
       (case-lambda
@@ -463,13 +467,13 @@
       (case-lambda
         [(url) (head-pure-port url '())]
         [(url strings) (method-pure-port 'head url #f strings)]))
-    
+
     ;; head-impure-port : url [x list (str)] -> in-port
     (define head-impure-port
       (case-lambda
         [(url) (head-impure-port url '())]
         [(url strings) (method-impure-port 'head url #f strings)]))
-    
+
     ;; put-pure-port : url bytes [x list (str)] -> in-port
     (define put-pure-port
       (case-lambda
@@ -482,7 +486,7 @@
         [(url put-data) (put-impure-port url put-data '())]
         [(url put-data strings)
          (method-impure-port 'put url put-data strings)]))
-    
+
     ;; method-impure-port : symbol x url x list (str) -> in-port
     (define (method-impure-port method url data strings)
       (let ([scheme (url-scheme url)])
@@ -494,7 +498,7 @@
               [(string=? scheme "file")
                (url-error "There are no impure file: ports")]
               [else (url-error "Scheme ~a unsupported" scheme)])))
-    
+
     ;; method-pure-port : symbol x url x list (str) -> in-port
     (define (method-pure-port method url data strings)
       (let ([scheme (url-scheme url)])
@@ -512,11 +516,11 @@
               [(string=? scheme "file")
                (file://get-pure-port url)]
               [else (url-error "Scheme ~a unsupported" scheme)])))
-    
+
     ;; http://metod-impure-port : symbol x url x union (str, #f) x list (str) -> in-port
     (define (http://method-impure-port method url data strings)
       (define (method->string method)
-        (case method 
+        (case method
           ((get) "GET") ((post) "POST") ((head) "HEAD")
           ((put) "PUT") ((delete) "DELETE")
           (else (url-error "unsupported method: ~a" method))))
@@ -544,6 +548,5 @@
         (flush-output client->server)
         (tcp-abandon-port client->server)
         server->client))
-    
-    
+
     ))
