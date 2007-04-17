@@ -3695,6 +3695,7 @@
   (define -path-cache (make-hash-table 'weak 'equal)) ; weak map from `lib' path + corrent-library-paths to symbols
   
   (define -loading-filename (gensym))
+  (define -loading-prompt-tag (make-continuation-prompt-tag 'module-loading))
   (define -prev-relto #f)
   (define -prev-relto-dir #f)
 
@@ -3860,9 +3861,13 @@
 			       filename)))
 			  (unless got
 			    ;; Currently loading?
-			    (let ([l (continuation-mark-set->list
-				      (current-continuation-marks)
-				      -loading-filename)]
+			    (let ([l (let ([tag (if (continuation-prompt-available? -loading-prompt-tag)
+                                                    -loading-prompt-tag
+                                                    (default-continuation-prompt-tag))])
+                                       (continuation-mark-set->list
+                                        (current-continuation-marks tag)
+                                        -loading-filename
+                                        tag))]
 				  [ns (current-namespace)])
 			      (for-each
 			       (lambda (s)
@@ -3875,12 +3880,16 @@
 				    (map cdr (reverse (cons s l))))))
 			       l))
 			    (let ([prefix (string->symbol abase)])
-			      (with-continuation-mark -loading-filename (cons (current-namespace) normal-filename)
-				(parameterize ([current-module-name-prefix prefix])
-				  ((current-load/use-compiled) 
-				   filename 
-				   (string->symbol (bytes->string/latin-1 (path->bytes no-sfx)))))))
-			    (hash-table-put! ht modname suffix))))
+                              ((if (continuation-prompt-available? -loading-prompt-tag)
+                                   (lambda (f) (f))
+                                   (lambda (f) (call-with-continuation-prompt f -loading-prompt-tag)))
+                               (lambda ()
+                                 (with-continuation-mark -loading-filename (cons (current-namespace) normal-filename)
+                                   (parameterize ([current-module-name-prefix prefix])
+                                     ((current-load/use-compiled) 
+                                      filename 
+                                      (string->symbol (bytes->string/latin-1 (path->bytes no-sfx))))))))
+                              (hash-table-put! ht modname suffix)))))
 		      ;; If a `lib' path, cache pathname manipulations
 		      (when (and (not (vector? s-parsed))
 				 (or (string? s)
