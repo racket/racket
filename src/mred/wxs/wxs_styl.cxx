@@ -3086,7 +3086,7 @@ static Scheme_Object *os_wxStyleGetSmoothing(int n,  Scheme_Object *p[])
   
   
   READY_TO_RETURN;
-  return WITH_REMEMBERED_STACK(bundle_symset_style(r));
+  return WITH_REMEMBERED_STACK(bundle_symset_smoothing(r));
 }
 
 static Scheme_Object *os_wxStyleGetStyle(int n,  Scheme_Object *p[])

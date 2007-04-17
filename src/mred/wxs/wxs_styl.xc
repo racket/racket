@@ -186,7 +186,7 @@
 @ "get-size" : int GetSize();
 @ "get-weight" : SYM[weight] GetWeight();
 @ "get-style" : SYM[style] GetStyle();
-@ "get-smoothing" : SYM[style] GetSmoothing();
+@ "get-smoothing" : SYM[smoothing] GetSmoothing();
 @ "get-underlined" : bool GetUnderlined();
 @ "get-size-in-pixels" : bool GetSizeInPixels();
 @ "get-font" : wxFont! GetFont();
