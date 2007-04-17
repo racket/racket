@@ -338,6 +338,12 @@ GC2_EXTERN void GC_fixup_variable_stack(void **var_stack,
    The `stack_mem' argument indicates the start of the allocated memory
    that contains `var_stack'. It is used for backtraces. */
 
+GC2_EXTERN void GC_write_barrier(void *p);
+/* 
+   Explicit write barrier to ensure that a write-barrier signal is not
+   triggered by a memory write.
+*/
+
 # ifdef __cplusplus
 };
 # endif

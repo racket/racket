@@ -1899,13 +1899,20 @@ int designate_modified(void *p)
   struct mpage *page = find_page(p);
 
   if(page) {
-    protect_pages(page, page->size, 1);
-    page->back_pointers = 1;
-    return 1;
+    if (!page->back_pointers) {
+      protect_pages(page, page->size, 1);
+      page->back_pointers = 1;
+      return 1;
+    }
   } else {
     GCPRINT(GCOUTF, "Seg fault (internal error) at %p\n", p);
-    return 0;
   }
+  return 0;
+}
+
+void GC_write_barrier(void *p) 
+{
+  (void)designate_modified(p);
 }
 
 #include "sighand.c"

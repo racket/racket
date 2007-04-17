@@ -2619,7 +2619,7 @@ void protect_old_mpages()
 
 #if GENERATIONS
 
-static int designate_modified(void *p)
+static int designate_modified_maybe(void *p, int no_barrier_ok)
 {
   unsigned long g = ((unsigned long)p >> MAPS_SHIFT);
   MPage *map;
@@ -2641,14 +2641,21 @@ static int designate_modified(void *p)
 	num_seg_faults++;
 	return 1;
       } else if (page->age) {
-	page->flags |= MFLAG_MODIFIED;
-	p = (void *)((long)p & MPAGE_START);
-	if (page->flags & MFLAG_BIGBLOCK)
-	  protect_pages(p, page->u.size, 1);
-	else
-	  protect_pages(p, MPAGE_SIZE, 1);
-	num_seg_faults++;
-	return 1;
+        if (page->flags & MFLAG_MODIFIED) {
+          if (no_barrier_ok)
+            return 0;
+        } else {
+          page->flags |= MFLAG_MODIFIED;
+          p = (void *)((long)p & MPAGE_START);
+          if (page->flags & MFLAG_BIGBLOCK)
+            protect_pages(p, page->u.size, 1);
+          else
+            protect_pages(p, MPAGE_SIZE, 1);
+          num_seg_faults++;
+          return 1;
+        }
+      } else if (no_barrier_ok) {
+        return 0;
       }
 
       GCPRINT(GCOUTF, "Seg fault (internal error) at %lx [%ld]\n", 
@@ -2665,6 +2672,16 @@ static int designate_modified(void *p)
   DebugBreak();
 #endif
   return 0;
+}
+
+static int designate_modified(void *p)
+{
+  designate_modified_maybe(p, 0);
+}
+
+void GC_write_barrier(void *p)
+{
+  designate_modified_maybe(p, 1);
 }
 
 /* The platform-specific signal handlers, and initialization function: */
