@@ -289,10 +289,15 @@ _docprovide.ss_: attaching documentation to exports
 _moddep.ss_: inspecting modules and module dependencies
 ======================================================================
 
-Interpretations of module paths in this library mimic that of the
-default module path resolver in MzScheme (which means that the library
-is limited, but certainly useful as no other module path resolvers
-currently exist).
+Re-exports "modread.ss", "modcode.ss", "modcollapse.ss", and
+"modresolve.ss", in addition to the following:
+
+> (show-import-tree module-path-v) - a debugging aid that prints the
+  import hierarchy starting from a given module path.
+
+======================================================================
+_modread.ss_: reading module source code
+======================================================================
 
 > (with-module-reading-parameterization thunk) - calls `thunk' with
   all reader parameters reset to their default values.
@@ -316,6 +321,10 @@ currently exist).
 
   If stx is eof or eof wrapped as a syntax object, then an error is
   raised or #f is returned.
+
+======================================================================
+_modcode.ss_: getting module compiled code
+======================================================================
 
 > (get-module-code path [compiled-subdir compile-proc ext-proc]) -
   returns a compiled expression for the declaration of the module
@@ -346,6 +355,29 @@ currently exist).
   raised (to report that an extension file cannot be used) when
   `ext-proc' is #f.
 
+> moddep-current-open-input-file
+ 
+  A parameter whose value is used like `open-input-file' to read a
+  module source or ".zo" file.
+
+
+> exn:get-module-code
+> exn:get-module-code?
+> exn:get-module-code-path
+> make-exn:get-module-code
+
+  An exception structure type for exceptions raised by
+  `get-module-code'.
+
+======================================================================
+_modresolve.ss_: resolving module paths to file paths
+======================================================================
+
+Interpretations of module paths in this library mimic that of the
+default module path resolver in MzScheme (which means that the library
+is limited, but certainly useful as no other module path resolvers
+currently exist).
+
 > (resolve-module-path module-path-v rel-to-path-string/thunk/#f) -
   resolves a module path to filename path. The module path is resolved
   relative to `rel-to-path-string/thunk/#f' if it is a path string
@@ -361,6 +393,15 @@ currently exist).
   index contains the "self" index.  If `module-path-index' depends on
   the "self" module path index, then an exception is raised unless
   `rel-to-path-string/thunk/#f' is a path string.
+
+======================================================================
+_modcollapse.ss_: simplifying module paths
+======================================================================
+
+Interpretations of module paths in this library mimic that of the
+default module path resolver in MzScheme (which means that the library
+is limited, but certainly useful as no other module path resolvers
+currently exist).
 
 > (collapse-module-path module-path-v rel-to-module-path-v) - returns
   a "simplified" module path by combining `module-path-v' with
@@ -380,9 +421,6 @@ currently exist).
   (see the MzScheme manual for details); in this case, the
   `rel-to-module-path-v' base is used where the module path index
   contains the "self" index.
-
-> (show-import-tree module-path-v) - a debugging aid that prints the
-  import hierarchy starting from a given module path.
 
 ======================================================================
 _readerr.ss_: signaling parse errors

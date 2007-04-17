@@ -1,6 +1,6 @@
 (module serialize mzscheme
   (require-for-syntax (lib "struct.ss" "syntax"))
-  (require (lib "moddep.ss" "syntax")
+  (require (lib "modcollapse.ss" "syntax")
 	   (lib "etc.ss")
 	   (lib "list.ss")
 	   "private/serialize-structs.ss")
