@@ -39,28 +39,7 @@
 						 (let ([s (send (send edit get-style-list) find-named-style "Standard")])
 						   (send s set-delta (font->delta f))))))]
 	       [p (make-object horizontal-pane% f)]
-	       [face (make-object list-box% #f
-				  (let ([l (wx:get-face-list)]
-					[ugly? (lambda (a)
-						 (and (positive? (string-length a))
-						      (not (or (char-alphabetic? (string-ref a 0))
-							       (char-numeric? (string-ref a 0))
-							       (char=? #\- (string-ref a 0))))))])
-				    ;; Sort space-starting first (for Xft), and
-				    ;;  otherwise push names that start with an
-				    ;;  ASCII non-letter/digit/hyphen to the end
-				    (sort l (lambda (a b)
-                                              (let ([a-sp? (char=? #\space (string-ref a 0))]
-                                                    [b-sp? (char=? #\space (string-ref b 0))]
-                                                    [a-ugly? (ugly? a)]
-                                                    [b-ugly? (ugly? b)])
-                                                (cond [(eq? a-sp? b-sp?)
-                                                       (cond
-                                                        [(eq? a-ugly? b-ugly?)
-                                                         (string-locale-ci<? a b)]
-                                                        [else b-ugly?])]
-                                                      [else a-sp?])))))
-				  p refresh-sample)]
+	       [face (make-object list-box% #f (get-face-list) p refresh-sample)]
 	       [p2 (make-object vertical-pane% p)]
 	       [p3 (instantiate horizontal-pane% (p2) [stretchable-width #f])]
 	       [style (let ([pnl (instantiate group-box-panel% ("Style" p3) [stretchable-height #f] [stretchable-width #f])])

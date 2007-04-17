@@ -1,6 +1,7 @@
 (module gdi mzscheme
   (require (lib "class.ss")
 	   (lib "class100.ss")
+           (lib "list.ss")
 	   (prefix wx: "kernel.ss")
 	   "lock.ss"
 	   "check.ss"
@@ -19,7 +20,8 @@
 	   small-control-font
 	   tiny-control-font
 	   view-control-font
-	   menu-control-font)
+	   menu-control-font
+           get-face-list)
 
   (define register-collecting-blit
     (case-lambda
@@ -190,6 +192,32 @@
 	  (error 'get-window-text-extent "couldn't allocate sizing bitmap"))
 	(let-values ([(w h d a) (send dc get-text-extent string font)])
 	  (values (inexact->exact w) (inexact->exact h)))])))
+
+  
+  (define ugly?
+    (lambda (a)
+      (and (positive? (string-length a))
+           (not (or (char-alphabetic? (string-ref a 0))
+                    (char-numeric? (string-ref a 0))
+                    (char=? #\- (string-ref a 0)))))))
+
+  (define compare-face-names
+    (lambda (a b)
+      (let ([a-sp? (char=? #\space (string-ref a 0))]
+            [b-sp? (char=? #\space (string-ref b 0))]
+            [a-ugly? (ugly? a)]
+            [b-ugly? (ugly? b)])
+        (cond [(eq? a-sp? b-sp?)
+               (cond
+                [(eq? a-ugly? b-ugly?)
+                 (string-locale-ci<? a b)]
+                [else b-ugly?])]
+              [else a-sp?]))))
+
+  (define get-face-list
+    (case-lambda
+     [() (get-face-list 'all)]
+     [(a) (sort (wx:get-face-list a) compare-face-names)]))
 
   (define x-has-xft? 'unknown)
   (define mswin-system #f)

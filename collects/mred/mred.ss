@@ -114,7 +114,6 @@
 	     font%
 	     font-list%
 	     font-name-directory<%>
-	     get-face-list
 	     get-resource
 	     get-the-editor-data-class-list
 	     get-the-snip-class-list
@@ -233,6 +232,7 @@
 	   message+check-box
 	   message-box/custom
 	   message+check-box/custom
+           get-face-list
 	   get-file
 	   get-file-list
 	   put-file
