@@ -252,12 +252,16 @@
   (test-s->u #("a+b-c456.d" #f "www.foo.com" #f #t (#("")) () #f)
              "a+b-c456.d://www.foo.com/")
 
-  ;; a colon can appear in absolute paths
-  (test-s->u #(#f #f #f #f #t (#("x:y") #("z")) () #f)
-             "/x:y/z")
+  ;; a colon and other junk (`sub-delims') can appear in usernames
+  (test #("http" "x:!$&'()*+,;=y" "www.drscheme.org" #f #t (#("a")) () #f)
+        string->url/vec
+        "http://x:!$&'()*+,;=y@www.drscheme.org/a")
+  ;; a colon and atsign can appear in absolute paths
+  (test-s->u #(#f #f #f #f #t (#("x:@y") #("z")) () #f)
+             "/x:@y/z")
   ;; and in relative paths as long as it's not in the first element
-  (test-s->u #(#f #f #f #f #f (#("x") #("y:z")) () #f)
-             "x/y:z")
+  (test-s->u #(#f #f #f #f #f (#("x") #("y:@z")) () #f)
+             "x/y:@z")
 
   ;; test bad schemes
   (err/rt-test (string->url "://www.foo.com/") url-exception?)
