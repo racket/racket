@@ -45,14 +45,14 @@
                  (f i seed)
                  (vector-set! vec i elt)
                  (unfold1! f vec (sub1 i) new-seed))))
-
+  
   (define unfold-contract
     (->r ((f (lambda (f)
                (and (procedure? f)
                     (procedure-arity-includes? f (add1 (length seeds))))))
           (len natural-number/c))
-          seeds list?
-          any))
+         seeds list?
+         any))
   
   (define copy-contract
     (case->
@@ -160,8 +160,8 @@
       (let ((new-vector
              (make-vector (- end start) fill)))
         (vector-copy! new-vector 0
-                       vec        start
-                       (min end (vector-length vec)))
+                      vec        start
+                      (min end (vector-length vec)))
         new-vector)))
   
   ;;; (VECTOR-REVERSE-COPY <vector> [<start> <end>]) -> vector
@@ -489,7 +489,7 @@
   ;;;   reached, return #F.
   (define vector-index
     (letrec ((loop1  (lambda (pred? vec len i)
-                       (cond ((= i len) #f)
+                       (cond ((>= i len) #f)
                              ((pred? (vector-ref vec i)) i)
                              (else (loop1 pred? vec len (add1 i))))))
              (loop2+ (lambda (pred? vectors len i)
@@ -592,15 +592,14 @@
   ;;;   element to VALUE with CMP.
   (define (vector-binary-search vec value cmp)
     (let loop ((start 0)
-               (end (vector-length vec))
-               (j -1))
-      (let ((i (quotient (+ start end) 2)))
-        (if (= i j)
-            #f
-            (let ((comparison (cmp (vector-ref vec i) value)))
-              (cond ((zero?     comparison) i)
-                    ((positive? comparison) (loop start i i))
-                    (else                   (loop i end i))))))))
+               (end (vector-length vec)))
+      (if (= start end)
+          #f
+          (let* ((i (quotient (+ start end) 2))
+                 (comparison (cmp (vector-ref vec i) value)))
+            (cond ((zero?     comparison) i)
+                  ((positive? comparison) (loop start i))
+                  (else                   (loop (add1 i) end)))))))
   
   ;;; (VECTOR-ANY <pred?> <vector> ...) -> value
   ;;;   Apply PRED? to each parallel element in each VECTOR ...; if PRED?
