@@ -328,6 +328,8 @@
 	      (make-directory* base)
 	      p))))
 
+      (define-struct extension (path))
+
       ;; Loads module code, using .zo if there, compiling from .scm if not
       (define (get-code filename module-path codes prefixes verbose? collects-dest on-extension)
 	(when verbose?
@@ -354,155 +356,170 @@
                                                (lambda (f l?)
                                                  (on-extension f l?)
                                                  #f)
-                                               #f))]
+                                               (lambda (file _loader?)
+                                                 (if _loader?
+                                                     (error 'create-embedding-executable
+                                                            "cannot use a _loader extension: ~e"
+                                                            file)
+                                                     (make-extension file)))))]
                     [name (let-values ([(base name dir?) (split-path filename)])
                             (path->string (path-replace-suffix name #"")))]
                     [prefix (let ([a (assoc filename prefixes)])
                               (if a
                                   (cdr a)
                                   (generate-prefix)))])
-                (if code
-                    (let-values ([(imports fs-imports ft-imports) (module-compiled-imports code)])
-                      (let ([all-file-imports (filter (lambda (x) (not (symbol? x)))
-                                                      (append imports fs-imports ft-imports))])
-                        (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
-                                              all-file-imports)]
-                              [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
-                                              all-file-imports)])
-                          ;; Get code for imports:
-                          (for-each (lambda (sub-filename sub-path)
-                                      (get-code sub-filename
-                                                sub-path
-                                                codes
-                                                prefixes
-                                                verbose?
-                                                collects-dest
-                                                on-extension))
-                                    sub-files sub-paths)
-                          (if (and collects-dest
-                                   (is-lib-path? module-path))
-                              ;; Install code as .zo:
-                              (begin
-                                (with-output-to-file (lib-module-filename collects-dest module-path)
-                                  (lambda ()
-                                    (write code))
-                                  'truncate/replace)
-                                ;; Record module as copied
-                                (set-box! codes
-                                          (cons (make-mod filename module-path #f
-                                                          #f #f #f #f)
-                                                (unbox codes))))
-                              ;; Build up relative module resolutions, relative to this one,
-                              ;; that will be requested at run-time.
-                              (let ([mappings (map (lambda (sub-i sub-filename sub-path)
-                                                     (and (not (and collects-dest
-                                                                    (is-lib-path? sub-path)))
-                                                          (let-values ([(path base) (module-path-index-split sub-i)])
-                                                            ;; Assert: base should refer to this module:
-                                                            (let-values ([(path2 base2) (module-path-index-split base)])
-                                                              (when (or path2 base2)
-                                                                (error 'embed "unexpected nested module path index")))
-                                                            (let ([m (assoc sub-filename (unbox codes))])
-                                                              (cons path (mod-full-name m))))))
-                                                   all-file-imports sub-files sub-paths)])
-                                ;; Record the module
-                                (set-box! codes
-                                          (cons (make-mod filename module-path code 
-                                                          name prefix (string->symbol
-                                                                       (format "~a~a" prefix name))
-                                                          (filter (lambda (p)
-                                                                    (and p (cdr p)))
-                                                                  mappings))
-                                                (unbox codes))))))))
-                    (set-box! codes
-                              (cons (make-mod filename module-path code 
-                                              name #f #f
-                                              null)
-                                    (unbox codes))))))))
+                (cond
+                 [(extension? code)
+                  (set-box! codes
+                            (cons (make-mod filename module-path code 
+                                            name prefix (string->symbol
+                                                         (format "~a~a" prefix name))
+                                            null)
+                                  (unbox codes)))]
+                 [code
+                  (let-values ([(imports fs-imports ft-imports) (module-compiled-imports code)])
+                    (let ([all-file-imports (filter (lambda (x) (not (symbol? x)))
+                                                    (append imports fs-imports ft-imports))])
+                      (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
+                                            all-file-imports)]
+                            [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
+                                            all-file-imports)])
+                        ;; Get code for imports:
+                        (for-each (lambda (sub-filename sub-path)
+                                    (get-code sub-filename
+                                              sub-path
+                                              codes
+                                              prefixes
+                                              verbose?
+                                              collects-dest
+                                              on-extension))
+                                  sub-files sub-paths)
+                        (if (and collects-dest
+                                 (is-lib-path? module-path))
+                            ;; Install code as .zo:
+                            (begin
+                              (with-output-to-file (lib-module-filename collects-dest module-path)
+                                (lambda ()
+                                  (write code))
+                                'truncate/replace)
+                              ;; Record module as copied
+                              (set-box! codes
+                                        (cons (make-mod filename module-path #f
+                                                        #f #f #f #f)
+                                              (unbox codes))))
+                            ;; Build up relative module resolutions, relative to this one,
+                            ;; that will be requested at run-time.
+                            (let ([mappings (map (lambda (sub-i sub-filename sub-path)
+                                                   (and (not (and collects-dest
+                                                                  (is-lib-path? sub-path)))
+                                                        (let-values ([(path base) (module-path-index-split sub-i)])
+                                                          ;; Assert: base should refer to this module:
+                                                          (let-values ([(path2 base2) (module-path-index-split base)])
+                                                            (when (or path2 base2)
+                                                              (error 'embed "unexpected nested module path index")))
+                                                          (let ([m (assoc sub-filename (unbox codes))])
+                                                            (cons path (mod-full-name m))))))
+                                                 all-file-imports sub-files sub-paths)])
+                              ;; Record the module
+                              (set-box! codes
+                                        (cons (make-mod filename module-path code 
+                                                        name prefix (string->symbol
+                                                                     (format "~a~a" prefix name))
+                                                        (filter (lambda (p)
+                                                                  (and p (cdr p)))
+                                                                mappings))
+                                              (unbox codes))))))))]
+                 [else
+                  (set-box! codes
+                            (cons (make-mod filename module-path code 
+                                            name #f #f
+                                            null)
+                                  (unbox codes)))])))))
 
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       (define (make-module-name-resolver code-l)
-	`(let ([orig (current-module-name-resolver)]
-	       [ns (current-namespace)]
-	       [mapping-table (quote
-			       ,(map
-				 (lambda (m)
-				   `(,(mod-full-name m)
-				     ,(mod-mappings m)))
-				 code-l))]
-	       [library-table (quote
-			       ,(filter values
-					(map (lambda (m)
-					       (let ([path (mod-mod-path m)])
-						 (if (and (pair? path)
-							  (eq? 'lib (car path)))
-						     (cons path (mod-full-name m))
-						     #f)))
-					     code-l)))])
-	   (letrec ([embedded-resolver
-                     (case-lambda 
-                      [(name)
-                       ;; a notification
-                       (orig name)]
-                      [(name rel-to stx)
-                       (embedded-resolver name rel-to stx #t)]
-                      [(name rel-to stx load?)
-                       (if (not (eq? (current-namespace) ns))
-                           ;; Wrong namespace
-                           (orig name rel-to stx load?)
-                           ;; Have a relative mapping?
-                           (let ([a (assoc rel-to mapping-table)])
-                             (if a
-                                 (let ([a2 (assoc name (cadr a))])
-                                   (if a2
-                                       (cdr a2)
-                                       ;; No relative mapping found (presumably a lib)
-                                       (orig name rel-to stx)))
-                                 ;; A library mapping that we have? 
-                                 (let ([a3 (and (pair? name)
-                                                (eq? (car name) 'lib)
-                                                (ormap (lambda (lib-entry)
-                                                         (with-handlers ([exn:fail? (lambda (x) #f)])
-                                                           ;; To check equality of library references,
-                                                           ;; we have to consider relative paths in the
-                                                           ;; filename part of the name.
-                                                           (let loop ([a (build-path
-                                                                          (apply build-path 
-                                                                                 'same
-                                                                                 (cddar lib-entry))
-                                                                          (cadar lib-entry))]
-                                                                      [b (build-path
-                                                                          (apply build-path 
-                                                                                 'same
-                                                                                 (let ([d (cddr name)])
-                                                                                   (if (null? d)
-                                                                                       '("mzlib")
-                                                                                       d)))
-                                                                          (cadr name))])
-                                                             (if (equal? a b)
-                                                                 lib-entry
-                                                                 (let-values ([(abase aname d?) (split-path a)])
-                                                                   (if (eq? aname 'same)
-                                                                       (loop abase b)
-                                                                       (let-values ([(bbase bname a?) (split-path b)])
-                                                                         (if (eq? bname 'same)
-                                                                             (loop a bbase)
-                                                                             (if (equal? aname bname)
-                                                                                 (loop abase bbase)
-                                                                                 #f)))))))))
-                                                       library-table))])
-                                   (if a3
-                                       ;; Have it:
-                                       (cdr a3)
-                                       ;; Let default handler try:
-                                       (orig name rel-to stx load?))))))])])
-             (current-module-name-resolver embedded-resolver))))
+        (let ([extensions (filter (lambda (m) (extension? (mod-code m))) code-l)])
+          `(let ([orig (current-module-name-resolver)]
+                 [ns (current-namespace)]
+                 [mapping-table (quote
+                                 ,(map
+                                   (lambda (m)
+                                     `(,(mod-full-name m)
+                                       ,(mod-mappings m)))
+                                   code-l))]
+                 [library-table (quote
+                                 ,(filter values
+                                          (map (lambda (m)
+                                                 (let ([path (mod-mod-path m)])
+                                                   (if (and (pair? path)
+                                                            (eq? 'lib (car path)))
+                                                       (cons path (mod-full-name m))
+                                                       #f)))
+                                               code-l)))])
+             (letrec ([embedded-resolver
+                       (case-lambda 
+                        [(name)
+                         ;; a notification
+                         (orig name)]
+                        [(name rel-to stx)
+                         (embedded-resolver name rel-to stx #t)]
+                        [(name rel-to stx load?)
+                         (if (not (eq? (current-namespace) ns))
+                             ;; Wrong namespace
+                             (orig name rel-to stx load?)
+                             ;; Have a relative mapping?
+                             (let ([a (assoc rel-to mapping-table)])
+                               (if a
+                                   (let ([a2 (assoc name (cadr a))])
+                                     (if a2
+                                         (cdr a2)
+                                         ;; No relative mapping found (presumably a lib)
+                                         (orig name rel-to stx)))
+                                   ;; A library mapping that we have? 
+                                   (let ([a3 (and (pair? name)
+                                                  (eq? (car name) 'lib)
+                                                  (ormap (lambda (lib-entry)
+                                                           (with-handlers ([exn:fail? (lambda (x) #f)])
+                                                             ;; To check equality of library references,
+                                                             ;; we have to consider relative paths in the
+                                                             ;; filename part of the name.
+                                                             (let loop ([a (build-path
+                                                                            (apply build-path 
+                                                                                   'same
+                                                                                   (cddar lib-entry))
+                                                                            (cadar lib-entry))]
+                                                                        [b (build-path
+                                                                            (apply build-path 
+                                                                                   'same
+                                                                                   (let ([d (cddr name)])
+                                                                                     (if (null? d)
+                                                                                         '("mzlib")
+                                                                                         d)))
+                                                                            (cadr name))])
+                                                               (if (equal? a b)
+                                                                   lib-entry
+                                                                   (let-values ([(abase aname d?) (split-path a)])
+                                                                     (if (eq? aname 'same)
+                                                                         (loop abase b)
+                                                                         (let-values ([(bbase bname a?) (split-path b)])
+                                                                           (if (eq? bname 'same)
+                                                                               (loop a bbase)
+                                                                               (if (equal? aname bname)
+                                                                                   (loop abase bbase)
+                                                                                   #f)))))))))
+                                                         library-table))])
+                                     (if a3
+                                         ;; Have it:
+                                         (cdr a3)
+                                         ;; Let default handler try:
+                                         (orig name rel-to stx load?))))))])])
+               (current-module-name-resolver embedded-resolver)))))
 
       ;; Write a module bundle that can be loaded with 'load' (do not embed it
       ;; into an executable). The bundle is written to the current output port.
       (define (write-module-bundle verbose? modules literal-files literal-expression collects-dest
-                                   on-extension)
+                                   on-extension program-name)
 	(let* ([module-paths (map cadr modules)]
 	       [files (map
 		       (lambda (mp)
@@ -539,13 +556,39 @@
 	  ;; Install a module name resolver that redirects
 	  ;; to the embedded modules
 	  (write (make-module-name-resolver (filter mod-code (unbox codes))))
-	  (let ([l (unbox codes)])
+          ;; Write the extension table and copy module code:
+	  (let* ([l (unbox codes)]
+                 [extensions (filter (lambda (m) (extension? (mod-code m))) l)])
+            (unless (null? extensions)
+              (write 
+               `(let ([eXtEnSiOn-modules ;; this name is magic for the exe -> distribution process
+                       (quote ,(map (lambda (m)
+                                      (let ([p (extension-path (mod-code m))])
+                                        (when verbose?
+                                          (fprintf (current-error-port) "Recording extension at ~s~n" p))
+                                        (list (path->bytes p)
+                                              (string->symbol (mod-prefix m))
+                                              ;; The program name isn't used. It just helps ensures that
+                                              ;; there's plenty of room in the executable for patching
+                                              ;; the path later when making a distribution.
+                                              (path->bytes program-name))))
+                                    extensions))])
+                  (for-each (lambda (pr)
+                              (current-module-name-prefix (cadr pr))
+                              (let ([p (bytes->path (car pr))])
+                                (load-extension (if (relative-path? p)
+                                                    (parameterize ([current-directory (find-system-path 'orig-dir)])
+                                                      (or (find-executable-path (find-system-path 'exec-file) p #t)
+                                                          (path->complete-path p (current-directory))))
+                                                    p))))
+                            eXtEnSiOn-modules))))
 	    (for-each
 	     (lambda (nc)
-	       (when verbose?
-		 (fprintf (current-error-port) "Writing module from ~s~n" (mod-file nc)))
-	       (write `(current-module-name-prefix ',(string->symbol (mod-prefix nc))))
-	       (write (mod-code nc)))
+               (unless (extension? (mod-code nc))
+                 (when verbose?
+                   (fprintf (current-error-port) "Writing module from ~s~n" (mod-file nc)))
+                 (write `(current-module-name-prefix ',(string->symbol (mod-prefix nc))))
+                 (write (mod-code nc))))
 	     l))
 	  (write '(current-module-name-prefix #f))
 	  (newline)
@@ -690,7 +733,8 @@
 		(let ([write-module
 		       (lambda ()
 			 (write-module-bundle verbose? modules literal-files literal-expression collects-dest
-                                              on-extension))])
+                                              on-extension
+                                              (file-name-from-path dest)))])
 		  (let-values ([(start end)
 				(if (and (eq? (system-type) 'macosx)
 					 (not unix-starter?))

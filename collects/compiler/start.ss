@@ -574,9 +574,6 @@
 			flags))
 	#:collects-path (exe-embedded-collects-path)
 	#:collects-dest (exe-embedded-collects-dest)
-        #:on-extension (lambda (file _loader?)
-                         (fprintf (current-error-port) 
-                                  " Skipping extension: ~a\n" file))
 	#:aux (exe-aux))
        (printf " [output to \"~a\"]~n" dest))]
     [(exe-dir)

@@ -13,11 +13,11 @@
   (provide assemble-distribution)
 
   (define/kw (assemble-distribution dest-dir 
-				    binaries
+				    orig-binaries
 				    #:key
 				    [collects-path #f] ; relative to dest-dir
 				    [copy-collects null])
-    (let* ([types (map get-binary-type binaries)]
+    (let* ([types (map get-binary-type orig-binaries)]
 	   [_ (unless (directory-exists? dest-dir)
 		(make-directory dest-dir))]
 	   [sub-dirs (map (lambda (b type)
@@ -27,7 +27,7 @@
 			     [(macosx) (if (memq type '(mredcgc mred3m))
 					   #f
 					   "bin")]))
-			  binaries
+			  orig-binaries
 			  types)]
 	   ;; Copy binaries into place:
 	   [binaries
@@ -47,14 +47,14 @@
 			     (begin
 			      (copy-file* b dest)
 			      dest))))))
-		 binaries
+		 orig-binaries
 		 sub-dirs
 		 types)]
 	   [single-mac-app? (and (eq? 'macosx (system-type))
 				 (= 1 (length types))
 				 (memq (car types) '(mredcgc mred3m)))])
-      ;; Create directories for libs and collects:
-      (let-values ([(lib-dir collects-dir relative-collects-dir)
+      ;; Create directories for libs, collects, and extensions:
+      (let-values ([(lib-dir collects-dir relative-collects-dir exts-dir relative-exts-dir)
 		    (if single-mac-app?
 			;; Special case: single Mac OS X MrEd app:
 			(let-values ([(base name dir?)
@@ -69,21 +69,28 @@
 							  "collects")))
 			   (if collects-path
 			       (build-path 'up 'up 'up collects-path)
-			       (build-path 'up "Resources" "collects"))))
+			       (build-path 'up "Resources" "collects"))
+                           (build-path base 'up "Resources" "exts")
+                           (build-path 'up "Resources" "exts")))
 			;; General case:
-			(let ([relative-collects-dir 
-			       (or collects-path
-				   (build-path "lib"
-					       "plt"
-					       (let-values ([(base name dir?) 
-							     (split-path (car binaries))])
-						 (path-replace-suffix name #""))
-					       "collects"))])
+			(let* ([specific-lib-dir
+                                (build-path "lib"
+                                            "plt"
+                                            (let-values ([(base name dir?) 
+                                                          (split-path (car binaries))])
+                                              (path-replace-suffix name #"")))]
+                               [relative-collects-dir 
+                                (or collects-path
+                                    (build-path specific-lib-dir
+                                                "collects"))])
 			  (values (build-path dest-dir "lib")
 				  (build-path dest-dir relative-collects-dir)
-				  relative-collects-dir)))])
+				  relative-collects-dir
+                                  (build-path dest-dir specific-lib-dir "exts")
+                                  (build-path specific-lib-dir "exts"))))])
 	(make-directory* lib-dir)
 	(make-directory* collects-dir)
+	(make-directory* exts-dir)
 	;; Copy libs into place
 	(install-libs lib-dir types)
 	;; Copy collections into place
@@ -96,23 +103,31 @@
 		  copy-collects)
 	;; Patch binaries to find libs
 	(patch-binaries binaries types)
-	;; Patch binaries to find collects
-	(for-each (lambda (b type sub-dir)
-		    (set-collects-path 
-		     b 
-		     (collects-path->bytes 
-		      (cond
-		       [sub-dir
-			(build-path 'up relative-collects-dir)]
-		       [(and (eq? 'macosx (system-type))
-			     (memq type '(mred mredx))
-			     (not single-mac-app?))
-			(build-path 'up 'up 'up relative-collects-dir)]
-		       [else
-			relative-collects-dir]))))
-		  binaries types sub-dirs))
-      ;; Done!
-      (void)))
+        (let ([relative->binary-relative
+               (lambda (sub-dir type relative-dir)
+                 (cond
+                  [sub-dir
+                   (build-path 'up relative-dir)]
+                  [(and (eq? 'macosx (system-type))
+                        (memq type '(mred mredx))
+                        (not single-mac-app?))
+                   (build-path 'up 'up 'up relative-dir)]
+                  [else
+                   relative-dir]))])
+          ;; Patch binaries to find collects
+          (for-each (lambda (b type sub-dir)
+                      (set-collects-path 
+                       b 
+                       (collects-path->bytes 
+                        (relative->binary-relative sub-dir type relative-collects-dir))))
+                    binaries types sub-dirs)
+          ;; Copy over extensions and adjust embedded paths:
+          (copy-extensions-and-patch-binaries orig-binaries binaries types sub-dirs
+                                              exts-dir 
+                                              relative-exts-dir
+                                              relative->binary-relative)
+          ;; Done!
+          (void)))))
 
   (define (install-libs lib-dir types)
     (case (system-type)
@@ -339,6 +354,82 @@
 		(write-bytes rest o)
 		(flush-output o)))
 	    'update)))))
+
+  (define (copy-extensions-and-patch-binaries orig-binaries binaries types sub-dirs 
+                                              exts-dir relative-exts-dir
+                                              relative->binary-relative)
+    (let loop ([orig-binaries orig-binaries]
+               [binaries binaries]
+               [types types]
+               [sub-dirs sub-dirs]
+               [counter 0])
+      (unless (null? binaries)
+        (let-values ([(exts start-pos end-pos)
+                      (with-input-from-file (car binaries)
+                        (lambda ()
+                          (let* ([i (current-input-port)]
+                                 [m (regexp-match-positions #rx#"eXtEnSiOn-modules" i)])
+                            (if m
+                                ;; Read extension table:
+                                (begin
+                                  (file-position i (cdar m))
+                                  (let ([l (read i)])
+                                    (values (cadr l) (cdar m) (file-position i))))
+                                ;; No extension table:
+                                (values null #f #f)))))])
+          (if (null? exts)
+              (loop (cdr orig-binaries) (cdr binaries) (cdr types) (cdr sub-dirs) counter)
+              (let-values ([(new-exts counter)
+                            ;; Copy over the extensions for this binary, generating a separate path
+                            ;; for each executable
+                            (let loop ([exts exts][counter counter])
+                              (if (null? exts)
+                                  (values null counter)
+                                  (let* ([src (path->complete-path 
+                                               (bytes->path (caar exts))
+                                               (let-values ([(base name dir?)
+                                                             (split-path (path->complete-path (car orig-binaries)
+                                                                                              (current-directory)))])
+                                                 base))]
+                                         [name (let-values ([(base name dir?) (split-path src)])
+                                                 name)]
+                                         [sub (format "e~a" counter)])
+                                    ; Make dest dir and copy
+                                    (make-directory* (build-path exts-dir sub))
+                                    (let ([f (build-path exts-dir sub name)])
+                                      (when (file-exists? f)
+                                        (delete-file f))
+                                      (copy-file src f))
+                                    ;; Generate the new extension entry for the table, and combine with
+                                    ;; recur result for the rest:
+                                    (let-values ([(rest-exts counter)
+                                                  (loop (cdr exts) (add1 counter))])
+                                      (values (cons (list (path->bytes 
+                                                           (relative->binary-relative (car types) 
+                                                                                      (car sub-dirs)
+                                                                                      (build-path relative-exts-dir sub name)))
+                                                          (cadr (car exts)))
+                                                    rest-exts)
+                                              counter)))))])
+                ;; Update the binary with the new paths
+                (let* ([str (string->bytes/utf-8 (format "~s" new-exts))]
+                       [extra-space 7] ; = "(quote" plus ")"
+                       [delta (- (- end-pos start-pos) (bytes-length str) extra-space)])
+                  (when (negative? delta)
+                    (error 'copy-extensions-and-patch-binaries
+                           "not enough room in executable for revised extension table"))
+                  (with-output-to-file (car binaries)
+                    (lambda ()
+                      (let ([o (current-output-port)])
+                        (file-position o start-pos)
+                        (write-bytes #"(quote" o)
+                        (write-bytes str o)
+                        ;; Add space before final closing paren. This preserves space in case the
+                        ;; genereated binary is input for a future distribution build.
+                        (write-bytes (make-bytes delta (char->integer #\space)) o)
+                        (write-bytes #")" o)))
+                  'update))
+                (loop (cdr orig-binaries) (cdr binaries) (cdr types) (cdr sub-dirs) counter)))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Utilities
