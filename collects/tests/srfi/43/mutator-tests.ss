@@ -1,8 +1,7 @@
 (module mutator-tests mzscheme
   
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
-  (require (all-except (lib "mutators.ss" "srfi" "43") vector-fill!)
-           (rename (lib "mutators.ss" "srfi" "43") s:vector-fill! vector-fill!))
+  (require (lib "vector-lib.ss" "srfi" "43"))
   
   (provide mutator-tests)
   

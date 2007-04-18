@@ -1,8 +1,7 @@
 (module conversion-tests mzscheme
   
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
-  (require (all-except (lib "conversion.ss" "srfi" "43") vector->list)
-           (rename (lib "conversion.ss" "srfi" "43") s:vector->list vector->list))
+  (require (lib "vector-lib.ss" "srfi" "43"))
   
   (provide conversion-tests)
   

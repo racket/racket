@@ -1,7 +1,7 @@
 (module constructor-tests mzscheme
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
-  (require (lib "constructors.ss" "srfi" "43"))
+  (require (lib "vector-lib.ss" "srfi" "43"))
 
   (provide constructor-tests)
 

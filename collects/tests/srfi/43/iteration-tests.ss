@@ -1,8 +1,7 @@
 (module iteration-tests mzscheme
   
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
-  (require (lib "iteration.ss" "srfi" "43")
-           (lib "constructors.ss" "srfi" "43"))
+  (require (lib "vector-lib.ss" "srfi" "43"))
   
   (provide iteration-tests)
   

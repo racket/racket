@@ -1,7 +1,7 @@
 (module searching-tests mzscheme
   
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
-  (require (lib "searching.ss" "srfi" "43"))
+  (require (lib "vector-lib.ss" "srfi" "43"))
   
   (provide searching-tests)
   
