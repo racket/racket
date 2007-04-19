@@ -283,6 +283,13 @@ void wxRadioButton::Paint(void)
   }
 }
 
+void wxRadioButton::ChangeToGray(Bool gray) 
+{
+  if (cPaintControl)
+    Refresh();
+  wxItem::ChangeToGray(gray);
+}
+
 void wxRadioButton::Highlight(Bool on)
 {
   if (on)

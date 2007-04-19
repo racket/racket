@@ -635,7 +635,8 @@ ALIST_API void			ALSetSelectAll(Boolean redrawIfChange, ALReference hAL);
 ALIST_API OSErr			ALGetInfo(ALSelector selector, void *info, ALReference hAL);
 ALIST_API OSErr			ALSetInfo(ALSelector selector, const void *info, ALReference hAL);
 ALIST_API short			ALFeatureFlag(unsigned long feature, short action, ALReference hAL);
-ALIST_API void				ALActivate(Boolean isActive, ALReference hAL);
+ALIST_API void                  ALActivate(Boolean isActive, ALReference hAL);
+ALIST_API int                   ALIsActive(ALReference hAL);
 ALIST_API ControlPartCode	ALSetFocus(ControlPartCode focusPart, ALReference hAL);
 ALIST_API ControlPartCode	ALPartFocused(ALReference hAL);
 

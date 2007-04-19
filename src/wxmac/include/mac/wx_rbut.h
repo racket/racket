@@ -105,6 +105,9 @@ class wxRadioButton: public wxItem
 
   virtual void OnSetFocus();
   virtual void OnKillFocus();
+
+ protected:
+  void ChangeToGray(Bool Gray);
 };
 
 #endif // IN_CPROTO

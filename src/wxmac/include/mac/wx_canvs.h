@@ -179,6 +179,9 @@ class wxCanvas: public wxbCanvas
   wxColor *GetCanvasBackground();
 
   Bool SetAsControl();
+
+ protected:
+  void ChangeToGray(Bool Gray);
 };
 
 #endif // IN_CPROTO

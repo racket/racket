@@ -710,6 +710,13 @@ void wxCanvas::ShowAsActive(Bool flag)
   /* Do nothing. */
 }
 
+void wxCanvas::ChangeToGray(Bool gray)
+{
+  if (cStyle & wxAS_CONTROL)
+    Refresh();
+  wxbCanvas::ChangeToGray(gray);
+}
+
 //-----------------------------------------------------------------------------
 void wxCanvas::ClientToLogical(int* x, int* y) // mac platform only; testing
 { // Transform point from client c.s. to logical c.s. (virtual canvas, scrolling)

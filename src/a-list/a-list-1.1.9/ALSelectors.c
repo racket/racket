@@ -204,6 +204,11 @@ ALIST_API void ALActivate(Boolean isActive, ALHandle hAL)
 	}
 } // ALActivate
 
+ALIST_API int ALIsActive(ALHandle hAL)
+{
+  return BTST((*hAL)->flags, alFActive) ? 1 : 0;
+}
+
 ALIST_API ControlPartCode ALSetFocus(ControlPartCode focusPart, ALHandle hAL)
 {	ControlPartCode	result;
 	Boolean			oldFocus;

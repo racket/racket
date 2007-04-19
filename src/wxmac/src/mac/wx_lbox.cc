@@ -80,7 +80,12 @@ static void MyDrawCell(ALData cellData, ALCellPtr cell, const Rect *cellRect, AL
     ::GetFontInfo(&fontInfo);
     MoveTo(cellRect->left, fontInfo.ascent + cellRect->top);
 
-    ForeColor(blackColor);
+    if (!ALIsActive(hAL)) {
+      RGBColor c;
+      c.red = c.green = c.blue = 0x7FFF;
+      RGBForeColor(&c);
+    } else
+      ForeColor(blackColor);
     CopyPascalStringToC(*(StringHandle)cellData, wxBuffer);
     TextMode(srcOr);
     wxDrawUnicodeText(wxBuffer, 0, -1, 0);
