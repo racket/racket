@@ -516,7 +516,7 @@ end-string
 (test "#:\\ ,#:a" "ccccoccc")
 (test "#:| |a,#:a" "ccccccoccc")
 (test "#:a#||#" "ccccccc")
-; (test "#:a#;1 2" "cccc;;;;")
+(test "#:a#;1 2" "cccc;;;;")
 (test "#:a#<<a" "ccccccc")
 (test "#:1#!1" "cccccc")
 (test "#:1+nan.0" "ccccccccc")
