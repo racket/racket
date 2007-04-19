@@ -51,7 +51,7 @@ PLoT collection: Quick Start
           + Using color shading
 (plot (shade 3dfun))
           + Using a gradient field
-(plot (field (gradient 3dfun)))
+(plot (vector-field (gradient 3dfun)))
        or in a 3d box
           + Displaying only the top of the surface
 (plot3d (surface 3dfun))
