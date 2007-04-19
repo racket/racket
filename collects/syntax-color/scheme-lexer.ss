@@ -268,8 +268,10 @@
            (make-num digit16 radix16))
       (ret lexeme 'constant #f start-pos end-pos)]
      [str (ret lexeme 'string #f start-pos end-pos)]
-     [(:or "#;" line-comment) 
+     [line-comment
       (ret lexeme 'comment #f start-pos end-pos)]
+     ["#;"
+      (ret lexeme 'sexp-comment #f start-pos end-pos)]
      ["#|" (read-nested-comment 1 start-pos input-port)]
      [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "(")
       (ret lexeme 'parenthesis '|(| start-pos end-pos)]

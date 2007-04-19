@@ -303,11 +303,14 @@
   (define (get-white-on-black-color-prefs-table) white-on-black-color-prefs-table)
       
       (define (short-sym->pref-name sym) (string->symbol (short-sym->style-name sym)))
+      (define (xlate-sym-style sym) (case sym
+                                      [(sexp-comment) 'comment]
+                                      [else sym]))
       (define sn-hash (make-hash-table))
       (define (short-sym->style-name sym)
 	(hash-table-get sn-hash sym
 			(λ ()
-			  (let ([s (format "framework:syntax-coloring:scheme:~a" sym)])
+			  (let ([s (format "framework:syntax-coloring:scheme:~a" (xlate-sym-style sym))])
 			    (hash-table-put! sn-hash sym s)
 			    s))))
       
@@ -462,7 +465,10 @@
 		     ;; "last" is the start of the S-exp just before "pos"
                      [last 
                       (if contains
-                          (backward-match end limit)
+                          (let ([p (get-backward-sexp end)])
+                            (if (and p (p . >= . limit))
+                                p
+                                (backward-match end limit)))
                           #f)]
                      [last-para (and last
                                      (position-paragraph last))])
@@ -782,25 +788,29 @@
               (let ([snip-pos (get-snip-position snip)])
                 (delete snip-pos (+ snip-pos 1)))
               (set-position pos pos)))
-          
-          
+
+          (define/private (stick-to-next-sexp? start-pos)
+            (let ([end-pos (forward-match start-pos (last-position))])
+              (and end-pos
+                   (member (get-text start-pos end-pos)
+                           '("'" "," ",@" "`"
+                             "#'" "#," "#`" "#,@"
+                             "#&" "#;"
+                             "#hash" "#hasheq"
+                             "#ci" "#cs")))))
+
           (define/public (get-forward-sexp start-pos) 
-            (forward-match start-pos (last-position))
-            
-            ;; the below is my first attempt to get forward/backward sexp 
-            ;;  to work properly with qutoe.
-            ;; it broke the tabber, so I took it out for now.
-            #;
-            (let ([one-forward (forward-match start-pos (last-position))])
+            ;; loop to work properly with quote, etc.
+            (let loop ([one-forward (forward-match start-pos (last-position))])
               (cond
                 [(and one-forward (not (= 0 one-forward)))
                  (let ([bw (backward-match one-forward 0)])
                    (cond
                      [(and bw 
-                           (= (- one-forward 1) bw)
-                           (member (get-character bw) '(#\, #\` #\')))
+                           (stick-to-next-sexp? bw))
                       (let ([two-forward (forward-match one-forward (last-position))])
-                        (or two-forward
+                        (if two-forward
+                            (loop two-forward)
                             one-forward))]
                      [else
                       one-forward]))]
@@ -832,7 +842,16 @@
               (if (and end-pos 
                        (or (not min-pos)
                            (end-pos . >= . min-pos)))
-                  end-pos
+                  ;; Can go backward, but check for preceding quote, unquote, etc.
+                  (let loop ([end-pos end-pos])
+                    (let ([next-end-pos (backward-match end-pos limit)])
+                      (if (and next-end-pos
+                               (or (not min-pos)
+                                   (end-pos . >= . min-pos))
+                               (stick-to-next-sexp? next-end-pos))
+                          (loop next-end-pos)
+                          end-pos)))
+                  ;; can't go backward at all:
                   #f)))
           [define flash-backward-sexp
             (λ (start-pos)

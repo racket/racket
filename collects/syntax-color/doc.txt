@@ -21,8 +21,8 @@ scheme-lexer returns 5 values:
    currently return an empty string.  This may change in the future to
    other string or non-string data.
 
- - A symbol in '(error comment white-space constant string no-color
-   parenthesis other symbol eof)
+ - A symbol in '(error comment sexp-comment white-space constant string 
+   no-color parenthesis other symbol eof)
 
  - A symbol in '(|(| |)| |[| |]| |{| |}|) or #f
 
