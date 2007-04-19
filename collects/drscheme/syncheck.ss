@@ -2034,7 +2034,8 @@ If the namespace does not, they are colored the unbound color.
                      (parameterize ([current-namespace user-namespace]
                                     [current-directory user-directory]
                                     [current-load-relative-directory user-directory])
-                       ((current-module-name-resolver) datum #f #f)))])
+                       (with-handlers ([exn:fail? (λ (x) #f)])
+                         ((current-module-name-resolver) datum #f #f))))])
           (and (symbol? sym)
                (module-name-sym->filename sym))))
       
