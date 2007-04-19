@@ -1,5 +1,10 @@
 #honu
 
+/*
+<a>a f(a x, a b) { return (obj)x; }
+((obj)f<string>)(1, "again");
+*/
+
 /* Some examples to consider when writing a test suite.
    //T means the example should be a type error.
    //R means the example should be a run-time error. */
@@ -17,6 +22,11 @@
 
 int b(int y) { 1 + y; }
 
+if (true) 1; else 2;
+if ((obj)true) 1; else 2;
+//T if (10) 1; else 2;
+//R if ((obj)10) 1; else 2;
+
 int f(int x, (string -> int) g) {
    if (x == 0) 1; else g("a");
 }
@@ -31,7 +41,9 @@ obj h = j;
 
 f(1, g);
 f(1, { obj g2 = g; g2; });
+//T f(1, j);
 f(0, h);
+//R f(1, h);
 
 string function(string x) { return x; };
 
@@ -61,15 +73,29 @@ else
 
 1 < 2 && 7 > 6;
 
-<a, b, c> b poly(a n) { if (n) poly<bool, b, c>(false); else { obj x = 12; x;} }
-poly<int, int, int> (1);
+<a, b, c> b polyX(a n) { if ((obj)n) (obj)1; else (obj)2; }
+
+/*
+
+//T <a, b, c> b poly0(a n) { if (n) (obj)1; else (obj)2; }
+//T <a, b, c> b poly0(a n) { if ((obj)n) 1; else 2; }
+<a, b, c> b polyX(a n) { if ((obj)n) (obj)1; else (obj)2; }
+/* but there's no valid way to use polyX... */
+//R polyX<bool, int, int> (true);
+
+<a, b, c> b polyY(bool t, a n) { if (t) polyY<bool, b, c>(false, true); else { obj x = 12; x;} }
+/* similarly, no valid way to use polyY... */
+//R polyY<int, int, int> (true, 1);
+
+<a, b, c> c poly(bool t, a n, c res) { if (t) poly<bool, b, c>(false, true, res); else res; }
+poly<int, int, int> (true, 1, -1);
 
 <a, b, c> obj paly(obj n, obj m) { return n; }
 
-obj pf0((a b c >-> (a -> b)) g) { return g<int,bool,int>(10); }
+obj pf0((a b c >-> (bool a c -> c)) g) { return g<int,bool,int>(true, 10, -3); }
 //R pf0(poly);
 
-obj pf((a b c >-> (a -> b)) g) { return g<int,int,int>(10); }
+obj pf((a b c >-> (bool a c -> c)) g) { return g<int,int,int>(true, 10, -3); }
 pf(poly);
 //T pf(paly);
 pf({ obj x = poly; x; } );
@@ -94,6 +120,19 @@ time loop3(1000000, false);
     return loop2<a>(n - 1, res);
 }
 time loop2<bool>(1000000, false);
+
+/* Compare this one, too: */
+<a> (int a -> a) getLoop() 
+{
+  a loop2(int n, a res) {
+   if (n == 0)
+    return res;
+   else
+     return loop2(n - 1, res);
+ }
+  return loop2;
+}
+time getloop<bool>()(1000000, false);
 
 int app((int int -> int) f) { return f(0, 1); }
 app(int function(int a, int b) { return a; });
@@ -122,3 +161,5 @@ int make_adder((int -> int) x) { x(10); }
 (int function(int b, int a) { return a + b; }) (1, 2);
 
 provide make_adder;
+
+ */
