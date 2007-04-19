@@ -210,8 +210,10 @@ profile todo:
                                              (λ () (loop (car exprs)))
                                              (default-continuation-prompt-tag)
                                              (λ args
-                                               (abort-current-continuation 
-                                                (default-continuation-prompt-tag)))))
+                                               (apply
+                                                abort-current-continuation 
+                                                (default-continuation-prompt-tag)
+                                                args))))
                                           list))]))]
                            [_else 
                             ;; Not `begin', so proceed with normal expand and eval 
