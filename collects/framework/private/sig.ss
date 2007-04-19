@@ -364,12 +364,12 @@
   (define-signature color-prefs-class^
     ())
   (define-signature color-prefs^ extends color-prefs-class^
-    (register-color-pref
+    (register-color-preference
      add-to-preferences-panel
      build-color-selection-panel
      add-background-preferences-panel
-     marshall-style
-     unmarshall-style
+     marshall-style-delta
+     unmarshall-style-delta
      set-default/color-scheme))  
   
   (define-signature scheme-class^

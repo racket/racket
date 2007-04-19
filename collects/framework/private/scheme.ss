@@ -310,7 +310,8 @@
       (define (short-sym->style-name sym)
 	(hash-table-get sn-hash sym
 			(λ ()
-			  (let ([s (format "framework:syntax-coloring:scheme:~a" (xlate-sym-style sym))])
+			  (let ([s (format "framework:syntax-color:scheme:~a"
+                                           (xlate-sym-style sym))])
 			    (hash-table-put! sn-hash sym s)
 			    s))))
       

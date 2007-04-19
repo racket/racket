@@ -45,8 +45,8 @@
       
       ;; short-sym->style-name : symbol->string
       ;; converts the short name (from the table above) into a name in the editor list
-      ;; (they are added in by `color-prefs:register-color-pref', called below)
-      (define (short-sym->style-name sym) (format "profj:syntax-coloring:scheme:~a" sym))
+      ;; (they are added in by `color-prefs:register-color-preference', called below)
+      (define (short-sym->style-name sym) (format "profj:syntax-colors:scheme:~a" sym))
       
       ;; extend-preferences-panel : vertical-panel -> void
       ;; adds in the configuration for the Java colors to the prefs panel
@@ -768,9 +768,9 @@
       (define (register line)
         (let ([sym (car line)]
               [color (cadr line)])
-          (color-prefs:register-color-pref (short-sym->pref-name sym)
-                                           (short-sym->style-name sym)
-                                           color)))
+          (color-prefs:register-color-preference (short-sym->pref-name sym)
+                                                 (short-sym->style-name sym)
+                                                 color)))
       (for-each register color-prefs-table)
       (for-each register coverage-color-prefs)
       

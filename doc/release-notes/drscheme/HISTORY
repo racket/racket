@@ -2,6 +2,22 @@
         Version 370
 ------------------------------
 
+  . changed the save format for color preferences. Due to a
+    bug in earlier versions, this means that color
+    preferences saved in earlier versions of DrScheme will
+    not be copied forward to this version. 
+
+    These functions are renamed:
+
+      color-prefs:marshall-style => color-prefs:marshall-style-delta
+      color-prefs:unmarshall-style => color-prefs:unmarshall-style-delta
+      color-prefs:register-color-pref => color-prefs:register-color-preference
+
+    If you used those functions before, do not use the new
+    ones with the same preference symbol as you used in old
+    versions, or else the old version of your app (or
+    drscheme) will fail to start up.
+
   . changed the frame:editor-mixin, frame:text-mixin and
     frame:pasteboard-mixin slightly so that one can supply
     the editor class as an initialization argument

@@ -255,10 +255,11 @@
               (let ([sym (car line)]
                     [color (cadr line)]
                     [white-on-black-color (cadr white-on-black-line)])
-                (color-prefs:register-color-pref (scheme:short-sym->pref-name sym)
-                                                 (scheme:short-sym->style-name sym)
-                                                 color
-                                                 white-on-black-color)))
+                (color-prefs:register-color-preference
+                 (scheme:short-sym->pref-name sym)
+                 (scheme:short-sym->style-name sym)
+                 color
+                 white-on-black-color)))
             (scheme:get-color-prefs-table)
             (scheme:get-white-on-black-color-prefs-table))
   (preferences:set-default 'framework:coloring-active #t boolean?)

@@ -1396,7 +1396,7 @@
      "@flink preferences:set-un/marshall"
      "with appropriate arguments to register the preference.")
     
-    (color-prefs:register-color-pref 
+    (color-prefs:register-color-preference 
      (opt->
       (symbol? string? (or/c (is-a?/c color%) (is-a?/c style-delta%)))
       ((or/c string? (is-a?/c color%) false/c))
@@ -1461,12 +1461,12 @@
      "and \\var{example-text} is shown in the panel so users can see"
      "the results of their configuration.")
 
-    (color-prefs:marshall-style
+    (color-prefs:marshall-style-delta
      (-> (is-a?/c style-delta%) printable/c)
      (style-delta)
      "Builds a printed representation for a style-delta.")
     
-    (color-prefs:unmarshall-style
+    (color-prefs:unmarshall-style-delta
      (-> printable/c (or/c false/c (is-a?/c style-delta%)))
      (marshalled-style-delta)
      "Builds a style delta from its printed representation."

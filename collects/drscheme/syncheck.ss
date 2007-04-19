@@ -1218,8 +1218,8 @@ If the namespace does not, they are colored the unbound color.
         (send keymap map-function "c:x;n" "jump to next bound occurrence")
         (send keymap map-function "c:x;d" "jump to definition (in other file)"))
 
-      (define lexically-bound-variable-style-pref 'drscheme:check-syntax:lexically-bound-identifier)
-      (define imported-variable-style-pref 'drscheme:check-syntax:imported-identifier)
+      (define lexically-bound-variable-style-pref 'drscheme:check-syntax:lexically-bound)
+      (define imported-variable-style-pref 'drscheme:check-syntax:imported)
       
       (define lexically-bound-variable-style-name (symbol->string lexically-bound-variable-style-pref))
       (define imported-variable-style-name (symbol->string imported-variable-style-pref))
@@ -1237,14 +1237,14 @@ If the namespace does not, they are colored the unbound color.
                                                     imported-variable-style-name
                                                     (string-constant cs-imported-variable)))
       
-      (fw:color-prefs:register-color-pref lexically-bound-variable-style-pref
-                                          lexically-bound-variable-style-name
-                                          (make-object color% 81 112 203)
-                                          (make-object color% 50 163 255))
-      (fw:color-prefs:register-color-pref imported-variable-style-pref
-                                          imported-variable-style-name
-                                          (make-object color% 68 0 203)
-                                          (make-object color% 166 0 255))
+      (fw:color-prefs:register-color-preference lexically-bound-variable-style-pref
+                                                lexically-bound-variable-style-name
+                                                (make-object color% 81 112 203)
+                                                (make-object color% 50 163 255))
+      (fw:color-prefs:register-color-preference imported-variable-style-pref
+                                                imported-variable-style-name
+                                                (make-object color% 68 0 203)
+                                                (make-object color% 166 0 255))
 
 
                                           

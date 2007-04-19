@@ -27,10 +27,11 @@
                     (let ([delta (preferences:get pref-sym)])
                       (func delta)
                       (preferences:set pref-sym delta)))])
-      (define hp (new horizontal-panel% 
-                      (parent parent)
-                      (style '(border))
-                      (stretchable-height #f)))
+      (define hp (new horizontal-panel%
+                      [parent parent]
+                      [style '(border)]
+                      [stretchable-height #f]))
+      
       (define e (new (class standard-style-list-text%
                        (inherit change-style get-style-list)
                        (define/augment (after-insert pos offset)
@@ -41,17 +42,20 @@
                            (change-style style pos (+ pos offset) #f)))
                        (super-new))))
       (define c (new canvas:color%
-                     (parent hp)
-                     (editor e)
-                     (style '(hide-hscroll
-                              hide-vscroll))))
+                     [parent hp]
+                     [min-width 150]
+                     [editor e]
+                     [style '(hide-hscroll hide-vscroll)]))
       
       (define (make-check name on off)
         (let* ([c (λ (check command)
                     (if (send check get-value)
                         (update-style-delta on)
                         (update-style-delta off)))]
-               [check (make-object check-box% name hp c)])
+               [check (new check-box% 
+                           [label name]
+                           [parent hp]
+                           [callback c])])
           check))
       
       (define slant-check
@@ -78,26 +82,65 @@
                     (λ (delta)
                       (send delta set-underlined-off #f)
                       (send delta set-underlined-on #f))))
+      
+      (define smoothing-options
+        '(default
+          partly-smoothed
+          smoothed
+          unsmoothed))
+      (define smoothing-option-strings
+        '("Default"
+          "Partly smoothed"
+          "Smoothed"
+          "Unsmoothed"))
+      
+      (define (smoothing->index s)
+        (let loop ([i 0]
+                   [l smoothing-options])
+          (cond
+            [(null? l) 
+             ;; if it is something strange or it is 'base, we go with 'default (which is 0)
+             0]
+            [else
+             (if (eq? (car l) s)
+                 i
+                 (loop (+ i 1)
+                       (cdr l)))])))
+      
+      (define smoothing-menu
+        (new choice%
+             [label #f]
+             [parent hp]
+             [choices smoothing-option-strings]
+             [callback 
+              (λ (c e)
+                (update-style-delta
+                 (λ (delta)
+                   (send delta set-smoothing-on 
+                         (list-ref smoothing-options
+                                   (send c get-selection))))))]))
+
       (define color-button
         (and (>= (get-display-depth) 8)
-             (make-object button%
-               (string-constant cs-change-color)
-               hp
-               (λ (color-button evt)
-                 (let* ([add (send (preferences:get pref-sym) get-foreground-add)]
-                        [color (make-object color%
-                                 (send add get-r)
-                                 (send add get-g)
-                                 (send add get-b))]
-                        [users-choice
-                         (get-color-from-user
-                          (format (string-constant syntax-coloring-choose-color) example-text)
-                          (send color-button get-top-level-window)
-                          color)])
-                   (when users-choice
-                     (update-style-delta
-                      (λ (delta)
-                        (send delta set-delta-foreground users-choice)))))))))
+             (new button%
+                  [label (string-constant cs-change-color)]
+                  [parent hp]
+                  [callback
+                   (λ (color-button evt)
+                     (let* ([add (send (preferences:get pref-sym) get-foreground-add)]
+                            [color (make-object color%
+                                     (send add get-r)
+                                     (send add get-g)
+                                     (send add get-b))]
+                            [users-choice
+                             (get-color-from-user
+                              (format (string-constant syntax-coloring-choose-color) example-text)
+                              (send color-button get-top-level-window)
+                              color)])
+                       (when users-choice
+                         (update-style-delta
+                          (λ (delta)
+                            (send delta set-delta-foreground users-choice))))))])))
       (define style (send (send e get-style-list) find-named-style style-name))
       
       (send c set-line-count 1)
@@ -110,13 +153,15 @@
                                       (eq? (send style get-style) 'italic)))
       (send bold-check set-value (eq? (send style get-weight) 'bold))
       (send underline-check set-value (send style get-underlined))
+      (send smoothing-menu set-selection (smoothing->index (send style get-smoothing)))
       (preferences:add-callback
        pref-sym
        (λ (p sd)
          (send slant-check set-value (or (eq? (send style get-style) 'slant)
                                          (eq? (send style get-style) 'italic)))
          (send bold-check set-value (eq? (send sd get-weight-on) 'bold))
-         (send underline-check set-value (send sd get-underlined-on))))
+         (send underline-check set-value (send sd get-underlined-on))
+         (send smoothing-menu set-selection (smoothing->index (send sd get-smoothing-on)))))
       (void)))
   
   (define (add/mult-set m v)
@@ -130,45 +175,90 @@
       (map unbox (list b1 b2 b3))))
   
   (define style-delta-get/set
-    (list (cons (λ (x) (send x get-alignment-off))
-                (λ (x v) (send x set-alignment-off v)))
-          (cons (λ (x) (send x get-alignment-on))
-                (λ (x v) (send x set-alignment-on v)))
-          (cons (λ (x) (add/mult-get (send x get-background-add)))
-                (λ (x v) (add/mult-set (send x get-background-add) v)))
-          (cons (λ (x) (add/mult-get (send x get-background-mult)))
-                (λ (x v) (add/mult-set (send x get-background-mult) v)))
-          (cons (λ (x) (send x get-face))
-                (λ (x v) (send x set-face v)))
-          (cons (λ (x) (send x get-family))
-                (λ (x v) (send x set-family v)))
-          (cons (λ (x) (add/mult-get (send x get-foreground-add)))
-                (λ (x v) (add/mult-set (send x get-foreground-add) v)))
-          (cons (λ (x) (add/mult-get (send x get-foreground-mult)))
-                (λ (x v) (add/mult-set (send x get-foreground-mult) v)))
-          (cons (λ (x) (send x get-size-add))
-                (λ (x v) (send x set-size-add v)))
-          (cons (λ (x) (send x get-size-mult))
-                (λ (x v) (send x set-size-mult v)))
-          (cons (λ (x) (send x get-style-off))
-                (λ (x v) (send x set-style-off v)))
-          (cons (λ (x) (send x get-style-on))
-                (λ (x v) (send x set-style-on v)))
-          (cons (λ (x) (send x get-underlined-off))
-                (λ (x v) (send x set-underlined-off v)))
-          (cons (λ (x) (send x get-underlined-on))
-                (λ (x v) (send x set-underlined-on v)))
-          (cons (λ (x) (send x get-weight-off))
-                (λ (x v) (send x set-weight-off v)))
-          (cons (λ (x) (send x get-weight-on))
-                (λ (x v) (send x set-weight-on v)))))
+    (let ([lo3n (λ (x) (and (list? x) (= (length x) 3) (andmap number? x)))])
+      (list (list (λ (x) (send x get-alignment-off))
+                  (λ (x v) (send x set-alignment-off v))
+                  (λ (x) (memq x '(base top center bottom))))
+            
+            (list (λ (x) (send x get-alignment-on))
+                  (λ (x v) (send x set-alignment-on v))
+                  (λ (x) (memq x '(base top center bottom))))
+            
+            (list (λ (x) (add/mult-get (send x get-background-add)))
+                  (λ (x v) (add/mult-set (send x get-background-add) v))
+                  lo3n)
+            
+            (list (λ (x) (add/mult-get (send x get-background-mult)))
+                  (λ (x v) (add/mult-set (send x get-background-mult) v))
+                  lo3n)
+            
+            (list (λ (x) (send x get-face))
+                  (λ (x v) (send x set-face v))
+                  (λ (x) (or (string? x) (not x))))
+            
+            (list (λ (x) (send x get-family))
+                  (λ (x v) (send x set-family v))
+                  (λ (x) (memq x '(base default decorative roman script swiss modern symbol system))))
+            
+            (list (λ (x) (add/mult-get (send x get-foreground-add)))
+                  (λ (x v) (add/mult-set (send x get-foreground-add) v))
+                  lo3n)
+            
+            (list (λ (x) (add/mult-get (send x get-foreground-mult)))
+                  (λ (x v) (add/mult-set (send x get-foreground-mult) v))
+                  lo3n)
+            
+            (list (λ (x) (send x get-size-add))
+                  (λ (x v) (send x set-size-add v))
+                  (λ (x) (and (integer? x) (exact? x) (<= 0 x 255))))
+            
+            (list (λ (x) (send x get-size-mult))
+                  (λ (x v) (send x set-size-mult v))
+                  (λ (x) (and (number? x) (real? x))))
+            
+            (list (λ (x) (send x get-style-off))
+                  (λ (x v) (send x set-style-off v))
+                  (λ (x) (memq x '(base normal italic slant))))
+            
+            (list (λ (x) (send x get-style-on))
+                  (λ (x v) (send x set-style-on v))
+                  (λ (x) (memq x '(base normal italic slant))))
+            
+            (list (λ (x) (send x get-underlined-off))
+                  (λ (x v) (send x set-underlined-off v))
+                  boolean?)
+            
+            (list (λ (x) (send x get-underlined-on))
+                  (λ (x v) (send x set-underlined-on v))
+                  boolean?)
+            
+            (list (λ (x) (send x get-weight-off))
+                  (λ (x v) (send x set-weight-off v))
+                  (λ (x) (memq x '(base normal bold light))))
+            
+            (list (λ (x) (send x get-weight-on))
+                  (λ (x v) (send x set-weight-on v))
+                  (λ (x) (memq x '(base normal bold light)))))))
   
-  (define (marshall-style style)
+  (define (marshall-style-delta style)
     (map (λ (fs) ((car fs) style)) style-delta-get/set))
   
-  (define (unmarshall-style info)
+  (define (unmarshall-style-delta info)
     (let ([style (make-object style-delta%)])
-      (for-each (λ (fs v) ((cdr fs) style v)) style-delta-get/set info)
+      
+      (when (list? info)
+        (let loop ([style-delta-get/set style-delta-get/set]
+                   [info info])
+          (cond
+            [(null? info) (void)]
+            [(null? style-delta-get/set) (void)]
+            [else (let ([v (car info)]
+                        [fs (car style-delta-get/set)])
+                    (when ((list-ref fs 2) v)
+                      ((list-ref fs 1) style v))
+                    (loop (cdr style-delta-get/set)
+                          (cdr info)))])))
+      
       style))
   
   (define (make-style-delta color bold? underline? italic?)
@@ -306,8 +396,10 @@
          panel))))
   
   ;; see docs
-  (define register-color-pref
-    (opt-lambda (pref-name style-name color/sd [white-on-black-color #f])
+  (define register-color-preference
+    (opt-lambda (pref-name style-name color/sd 
+                           [white-on-black-color #f]
+                           [use-old-marshalling? #t])
       (let ([sd (cond 
                   [(is-a? color/sd style-delta%)
                    color/sd]
@@ -322,7 +414,7 @@
                             color/sd
                             (to-color white-on-black-color))
                       color-scheme-colors)))
-        (preferences:set-un/marshall pref-name marshall-style unmarshall-style)
+        (preferences:set-un/marshall pref-name marshall-style-delta unmarshall-style-delta)
         (preferences:add-callback pref-name
                                   (λ (sym v)
                                     (editor:set-standard-style-list-delta style-name v)))
