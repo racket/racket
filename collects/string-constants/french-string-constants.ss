@@ -416,6 +416,7 @@
   (online-coloring-active "Colorier la syntaxe interactivement")
   (open-files-in-tabs "Ouvrir les fichiers dans de nouveaux onglets (pas dans de nouvelles fenêtres)")
   (show-interactions-on-execute "Automatiquement montrer la fenêtre d'interaction lors de l'exécution d'un programme")
+  (switch-to-module-language-automatically "Automatiquement utiliser le langage \"module\" lors de l'ouverture d'un fichier contenant un module")
   (limit-interactions-size "Limiter la taille de la fenêtre d'interaction")
   (background-color "Couleur d'arrière-plan")
   (default-text-color "Couleur du texte") ;; used for configuring colors, but doesn't need the word "color"
@@ -570,7 +571,7 @@
   ;;; more information is required from the user before completing
   ;;; the command.
   
-  (file-menu-label "Fichier")
+  (file-menu-label "&Fichier")
 
   (new-info  "Ouvrir un nouveau fichier.")
   (new-menu-item "&Nouvelle fenêtre")
@@ -599,7 +600,7 @@
   (page-setup-menu-item "Paramètres d'impression...")
 
   (close-info "Fermer ce fichier.")
-  (close-menu-item "&Fermer")
+  (close-menu-item "Fermer")
   
   (quit-info "Fermer toutes les fenêtres.")
   (quit-menu-item-windows "&Quitter")
@@ -1175,7 +1176,7 @@
   
   ;; ml-command-line-arguments is for the command line arguments
   ;; label in the module language details in the language dialog.
-  (ml-command-line-arguments "Arguments de ligne de commande, sous forme d'un vecteur de chaînes de caractères (syntaxe de read)")
+  (ml-command-line-arguments "Arguments de ligne de commande (vecteur de chaînes de caractères, syntaxe de \"read\")")
 
   ;; ml-cp names are all for the module language collection path
   ;; configuration. See the details portion of the language dialog
