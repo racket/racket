@@ -3069,6 +3069,15 @@
 		 expr1
 		 expr ...))))])))
 
+  (define-syntax parameterize*
+    (syntax-rules ()
+      [(_ () body1 body ...)
+       (let () body1 body ...)]
+      [(_ ([lhs1 rhs1] [lhs rhs] ...) body1 body ...)
+       (parameterize ([lhs1 rhs1])
+         (parameterize* ([lhs rhs] ...)
+                        body1 body ...))]))
+
   (define (current-parameterization)
     (extend-parameterization (continuation-mark-set-first #f parameterization-key)))
   
@@ -3288,7 +3297,7 @@
 	    (apply values v)))])))
 
   (provide case do delay force promise?
-	   parameterize current-parameterization call-with-parameterization
+	   parameterize parameterize* current-parameterization call-with-parameterization
 	   parameterize-break current-break-parameterization call-with-break-parameterization
 	   with-handlers with-handlers* call-with-exception-handler
            set!-values
@@ -3770,7 +3779,7 @@
 		    [(path? s) 
 		     (if (absolute-path? s)
 			 s
-			 (list "(a path must be absolute)"))]
+			 (list " (a path must be absolute)"))]
 		    [(or (not (pair? s))
 			 (not (list? s)))
 		     #f]

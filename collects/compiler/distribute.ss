@@ -109,7 +109,7 @@
                   [sub-dir
                    (build-path 'up relative-dir)]
                   [(and (eq? 'macosx (system-type))
-                        (memq type '(mred mredx))
+                        (memq type '(mredcgc mred3m))
                         (not single-mac-app?))
                    (build-path 'up 'up 'up relative-dir)]
                   [else
@@ -126,6 +126,11 @@
                                               exts-dir 
                                               relative-exts-dir
                                               relative->binary-relative)
+          ;; Copy over runtime files and adjust embedded paths:
+          (copy-runtime-files-and-patch-binaries orig-binaries binaries types sub-dirs
+                                                 exts-dir 
+                                                 relative-exts-dir
+                                                 relative->binary-relative)
           ;; Done!
           (void)))))
 
@@ -355,27 +360,30 @@
 		(flush-output o)))
 	    'update)))))
 
-  (define (copy-extensions-and-patch-binaries orig-binaries binaries types sub-dirs 
-                                              exts-dir relative-exts-dir
-                                              relative->binary-relative)
+  (define (copy-and-patch-binaries copy? magic
+                                   extract-src construct-dest transform-entry
+                                   init-counter inc-counter
+                                   orig-binaries binaries types sub-dirs 
+                                   exts-dir relative-exts-dir
+                                   relative->binary-relative)
     (let loop ([orig-binaries orig-binaries]
                [binaries binaries]
                [types types]
                [sub-dirs sub-dirs]
-               [counter 0])
+               [counter init-counter])
       (unless (null? binaries)
         (let-values ([(exts start-pos end-pos)
                       (with-input-from-file (car binaries)
                         (lambda ()
                           (let* ([i (current-input-port)]
-                                 [m (regexp-match-positions #rx#"eXtEnSiOn-modules" i)])
+                                 [m (regexp-match-positions magic i)])
                             (if m
-                                ;; Read extension table:
+                                ;; Read table:
                                 (begin
                                   (file-position i (cdar m))
                                   (let ([l (read i)])
                                     (values (cadr l) (cdar m) (file-position i))))
-                                ;; No extension table:
+                                ;; No table:
                                 (values null #f #f)))))])
           (if (null? exts)
               (loop (cdr orig-binaries) (cdr binaries) (cdr types) (cdr sub-dirs) counter)
@@ -385,51 +393,151 @@
                             (let loop ([exts exts][counter counter])
                               (if (null? exts)
                                   (values null counter)
-                                  (let* ([src (path->complete-path 
-                                               (bytes->path (caar exts))
-                                               (let-values ([(base name dir?)
-                                                             (split-path (path->complete-path (car orig-binaries)
-                                                                                              (current-directory)))])
-                                                 base))]
-                                         [name (let-values ([(base name dir?) (split-path src)])
-                                                 name)]
+                                  (let* ([src (extract-src (car exts) (car orig-binaries))]
+                                         [dest (construct-dest src)]
                                          [sub (format "e~a" counter)])
-                                    ; Make dest dir and copy
-                                    (make-directory* (build-path exts-dir sub))
-                                    (let ([f (build-path exts-dir sub name)])
-                                      (when (file-exists? f)
-                                        (delete-file f))
-                                      (copy-file src f))
+                                    (when (and src copy?)
+                                      ; Make dest and copy
+                                      (make-directory* (build-path exts-dir sub (or (path-only dest) 'same)))
+                                      (let ([f (build-path exts-dir sub dest)])
+                                        (when (or (file-exists? f)
+                                                  (directory-exists? f)
+                                                  (link-exists? f))
+                                          (delete-directory/files f))
+                                        (copy-directory/files src f)))
                                     ;; Generate the new extension entry for the table, and combine with
                                     ;; recur result for the rest:
                                     (let-values ([(rest-exts counter)
-                                                  (loop (cdr exts) (add1 counter))])
-                                      (values (cons (list (path->bytes 
-                                                           (relative->binary-relative (car types) 
-                                                                                      (car sub-dirs)
-                                                                                      (build-path relative-exts-dir sub name)))
-                                                          (cadr (car exts)))
-                                                    rest-exts)
+                                                  (loop (cdr exts) (inc-counter counter))])
+                                      (values (if src
+                                                  (cons (transform-entry
+                                                         (path->bytes 
+                                                          (relative->binary-relative (car sub-dirs) 
+                                                                                     (car types)
+                                                                                     (build-path relative-exts-dir sub dest)))
+                                                         (car exts))
+                                                        rest-exts)
+                                                  (cons (car exts)
+                                                        rest-exts))
                                               counter)))))])
-                ;; Update the binary with the new paths
-                (let* ([str (string->bytes/utf-8 (format "~s" new-exts))]
-                       [extra-space 7] ; = "(quote" plus ")"
-                       [delta (- (- end-pos start-pos) (bytes-length str) extra-space)])
-                  (when (negative? delta)
-                    (error 'copy-extensions-and-patch-binaries
-                           "not enough room in executable for revised extension table"))
-                  (with-output-to-file (car binaries)
-                    (lambda ()
-                      (let ([o (current-output-port)])
-                        (file-position o start-pos)
-                        (write-bytes #"(quote" o)
-                        (write-bytes str o)
-                        ;; Add space before final closing paren. This preserves space in case the
-                        ;; genereated binary is input for a future distribution build.
-                        (write-bytes (make-bytes delta (char->integer #\space)) o)
-                        (write-bytes #")" o)))
-                  'update))
+                (when copy?
+                  ;; Update the binary with the new paths
+                  (let* ([str (string->bytes/utf-8 (format "~s" new-exts))]
+                         [extra-space 7] ; = "(quote" plus ")"
+                         [delta (- (- end-pos start-pos) (bytes-length str) extra-space)])
+                    (when (negative? delta)
+                      (error 'copy-and-patch-binaries
+                             "not enough room in executable for revised ~s table"
+                             magic))
+                    (with-output-to-file (car binaries)
+                      (lambda ()
+                        (let ([o (current-output-port)])
+                          (file-position o start-pos)
+                          (write-bytes #"(quote" o)
+                          (write-bytes str o)
+                          ;; Add space before final closing paren. This preserves space in case the
+                          ;; genereated binary is input for a future distribution build.
+                          (write-bytes (make-bytes delta (char->integer #\space)) o)
+                          (write-bytes #")" o)))
+                      'update)))
                 (loop (cdr orig-binaries) (cdr binaries) (cdr types) (cdr sub-dirs) counter)))))))
+
+  (define (copy-extensions-and-patch-binaries orig-binaries binaries types sub-dirs 
+                                              exts-dir relative-exts-dir
+                                              relative->binary-relative)
+    (copy-and-patch-binaries #t #rx#"eXtEnSiOn-modules"
+                             ;; extract-src:
+                             (lambda (ext orig-binary)
+                               (path->complete-path 
+                                (bytes->path (car ext))
+                                (let-values ([(base name dir?)
+                                              (split-path (path->complete-path orig-binary
+                                                                               (current-directory)))])
+                                  base)))
+                             ;; construct-dest:
+                             (lambda (src)
+                               (let-values ([(base name dir?) (split-path src)])
+                                 name))
+                             ;; transform-entry
+                             (lambda (new-path ext)
+                               (list new-path (cadr ext)))
+                             0 add1 ; <- counter
+                             orig-binaries binaries types sub-dirs 
+                             exts-dir relative-exts-dir
+                             relative->binary-relative))
+
+  (define (copy-runtime-files-and-patch-binaries orig-binaries binaries types sub-dirs 
+                                                 exts-dir relative-exts-dir
+                                                 relative->binary-relative)
+    (let ([paths null])
+      ;; Pass 1: collect all the paths
+      (copy-and-patch-binaries #f #rx#"rUnTiMe-paths"
+                               ;; extract-src:
+                               (lambda (rt orig-binary)
+                                 (and (cadr rt)
+                                      (bytes->path (cadr rt))))
+                               ;; construct-dest:
+                               (lambda (src)
+                                 (when src
+                                   (set! paths (cons src paths)))
+                                 "dummy")
+                               ;; transform-entry
+                               (lambda (new-path ext) ext)
+                               "rt" values ; <- counter
+                               orig-binaries binaries types sub-dirs 
+                               exts-dir relative-exts-dir
+                               relative->binary-relative)
+      (unless (null? paths)
+        ;; Determine the shared path prefix:
+        (let* ([root-table (make-hash-table 'equal)]
+               [root->path-element (lambda (root)
+                                     (hash-table-get root-table
+                                                     root
+                                                     (lambda ()
+                                                       (let ([v (format "r~a" (hash-table-count root-table))])
+                                                         (hash-table-put! root-table root v)
+                                                         v))))]
+               [explode (lambda (src)
+                          (reverse
+                           (let loop ([src src])
+                             (let-values ([(base name dir?) (split-path src)])
+                               (if base
+                                   (cons name (loop base))
+                                   (list (root->path-element name)))))))]
+               ;; In reverse order, so we can pick off the paths
+               ;;  in the second pass:
+               [exploded (reverse (map explode paths))]
+               [max-len (apply max 0 (map length exploded))]
+               [common-len (let loop ([cnt 0])
+                             (cond
+                               [((add1 cnt) . = . max-len) cnt]
+                               [(andmap (let ([i (list-ref (car exploded) cnt)])
+                                          (lambda (e)
+                                            (equal? (list-ref e cnt) i)))
+                                        exploded)
+                                (loop (add1 cnt))]
+                               [else cnt]))])
+
+               
+          ;; Pass 2: change all the paths
+          (copy-and-patch-binaries #t #rx#"rUnTiMe-paths"
+                                   ;; extract-src:
+                                   (lambda (rt orig-binary)
+                                     (and (cadr rt)
+                                          (bytes->path (cadr rt))))
+                                   ;; construct-dest:
+                                   (lambda (src)
+                                     (and src
+                                          (begin0
+                                           (apply build-path (list-tail (car exploded) common-len))
+                                           (set! exploded (cdr exploded)))))
+                                   ;; transform-entry
+                                   (lambda (new-path ext)
+                                     (cons (car ext) (list new-path)))
+                                   "rt" values ; <- counter
+                                   orig-binaries binaries types sub-dirs 
+                                   exts-dir relative-exts-dir
+                                   relative->binary-relative)))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Utilities
@@ -503,7 +611,7 @@
 	      (link-exists? dest))
       (delete-directory/files dest))
     (copy-directory/files src dest))
-
+  
   (define (app-to-file b)
     (if (and (eq? 'macosx (system-type))
 	     (regexp-match #rx#"[.][aA][pP][pP]$" 

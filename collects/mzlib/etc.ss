@@ -380,24 +380,44 @@
     (not (eq? (namespace-variable-value n #t (lambda () ns-undefined))
               ns-undefined)))
 
+  (define (extract-module-directory stx)
+    (let ([srcmod (let ([mpi (syntax-source-module stx)])
+                    (if (module-path-index? mpi)
+                        (module-path-index-resolve mpi)
+                        mpi))])
+      (let ([str (symbol->string srcmod)])
+        (and ((string-length str) . > . 1)
+             (char=? #\, (string-ref str 0))
+             (let ([path (bytes->path (string->bytes/latin-1 (substring str 1)))])
+               (let-values ([(base name dir?) (split-path path)])
+                 (and (path? base)
+                      base)))))))
+
   (define-syntax (this-expression-source-directory stx)
     (syntax-case stx ()
       [(_)
-       (let* ([source (syntax-source stx)]
-              [source (and (path? source) source)]
-              [local (or (current-load-relative-directory) (current-directory))]
-              [dir (path->main-collects-relative
-                    (or (and source (file-exists? source)
-                             (let-values ([(base file dir?)
-                                           (split-path source)])
-                               (and (path? base)
-                                    (path->complete-path base local))))
-                        local))])
-         (if (and (pair? dir) (eq? 'collects (car dir)))
-           (with-syntax ([d dir])
-             #'(main-collects-relative->path 'd))
-           (with-syntax ([d (if (bytes? dir) dir (path->bytes dir))])
-             #'(bytes->path d))))]))
+       (let ([source-path
+              (let* ([source (syntax-source stx)]
+                     [source (and (path? source) source)]
+                     [local (or (current-load-relative-directory) (current-directory))]
+                     [dir (path->main-collects-relative
+                           (or (and source (file-exists? source)
+                                    (let-values ([(base file dir?)
+                                                  (split-path source)])
+                                      (and (path? base)
+                                           (path->complete-path base local))))
+                               local))])
+                (if (and (pair? dir) (eq? 'collects (car dir)))
+                    (with-syntax ([d dir])
+                      (syntax/loc stx (main-collects-relative->path 'd)))
+                    (with-syntax ([d (if (bytes? dir) dir (path->bytes dir))])
+                      (syntax/loc stx (bytes->path d)))))])
+         (let ([mpi (syntax-source-module stx)])
+           (if mpi
+               (quasisyntax/loc stx
+                 (or (extract-module-directory (quote-syntax #,stx))
+                     #,source-path))
+               source-path)))]))
 
   (define-syntax (this-expression-file-name stx)
     (syntax-case stx ()

@@ -362,13 +362,6 @@
   (define (get-uncovered-expressions eval . args)
     (apply (eval get-uncovered-expressions) args))
 
-  (define-syntax parameterize*
-    (syntax-rules ()
-      [(parameterize* ([p1 v1] [p v] ...) body ...)
-       (parameterize ([p1 v1]) (parameterize* ([p v] ...) body ...))]
-      [(parameterize* () body ...)
-       (begin body ...)]))
-
   (define (make-evaluator* init-hook require-perms program-or-maker)
     (define cust          (make-custodian))
     (define coverage?     (sandbox-coverage-enabled))

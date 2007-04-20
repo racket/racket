@@ -16,7 +16,8 @@
 (module mzssl mzscheme
   (require (lib "foreign.ss")
 	   (lib "port.ss")
-	   (lib "kw.ss"))
+	   (lib "kw.ss")
+           (lib "runtime-path.ss"))
 
   (provide ssl-available?
 	   ssl-load-fail-reason
@@ -48,6 +49,17 @@
 
   (unsafe!)
 
+  ;; We need to declare because they might be distributed with PLT Scheme
+  ;; in which case they should get bundled with stand-alone executables:
+  (define-runtime-path libcrypto-so
+    (case (system-type)
+      [(windows) '(so "libeay32")]
+      [else '(so "libcrypto")]))
+  (define-runtime-path libssl-so
+    (case (system-type)
+      [(windows) '(so "ssleay32")]
+      [else '(so "libssl")]))
+
   (define ssl-load-fail-reason #f)
 
   (define 3m? (regexp-match #rx#"3m" (path->bytes (system-library-subpath))))
@@ -56,22 +68,14 @@
     (with-handlers ([exn:fail? (lambda (x)
 				 (set! ssl-load-fail-reason (exn-message x))
 				 #f)])
-      (case (system-type)
-	[(windows)
-	 (ffi-lib "libeay32")]
-	[else
-	 (ffi-lib "libcrypto")])))
+      (ffi-lib libcrypto-so)))
 
   (define libssl
     (and libcrypto
 	 (with-handlers ([exn:fail? (lambda (x)
 				      (set! ssl-load-fail-reason (exn-message x))
 				      #f)])
-	   (case (system-type)
-	     [(windows)
-	      (ffi-lib "ssleay32")]
-	     [else
-	      (ffi-lib "libssl")]))))
+           (ffi-lib libssl-so))))
 
   (define libmz (ffi-lib #f))
 

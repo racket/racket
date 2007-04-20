@@ -1,11 +1,12 @@
 (module fit-low-level mzscheme
-  (require (lib "foreign.ss") (lib "etc.ss"))
+  (require (lib "foreign.ss") (lib "runtime-path.ss"))
   (unsafe!)
 
-  (define libfit
-    (ffi-lib (build-path (this-expression-source-directory)
-                         "compiled" "native" (system-library-subpath #f)
-                         "libfit")))
+  (define-runtime-path libfit-path
+    (build-path "compiled" "native" (system-library-subpath #f)
+                (path-replace-suffix "libfit" (system-type 'so-suffix))))
+
+  (define libfit (ffi-lib libfit-path))
 
   (define do-fit-int
     (get-ffi-obj "do_fit" libfit

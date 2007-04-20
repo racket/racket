@@ -107,7 +107,7 @@
 	    af
 	    (entry-point
 	     (lambda () (when (send af accept-drag?)
-			  (send af on-drop-file f))))))))))
+			      (send af on-drop-file f))))))))))
 
   (define (install-defh)
     (wx:application-file-handler (make-app-handler

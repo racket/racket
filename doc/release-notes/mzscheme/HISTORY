@@ -1,3 +1,9 @@
+Version 369.10
+Added parameterize*
+Added module-path-index-resolve
+Fixed mzc --exe to work with C-implemented extension modules
+Added runtime-paths.ss MzLib library to cooperate with mzc --exe
+
 Version 369.9
 Module top-level enforces initial categorization of expressions
  versus other forms

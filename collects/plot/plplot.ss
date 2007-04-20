@@ -1,17 +1,19 @@
 (module plplot mzscheme
 
-(require (lib "etc.ss") (lib "list.ss") (lib "foreign.ss"))
+(require (lib "etc.ss") (lib "list.ss") (lib "foreign.ss") (lib "runtime-path.ss"))
 (unsafe!)
 
-(define libplplot
-  (ffi-lib
-   (build-path (this-expression-source-directory)
-               "compiled" "native" (system-library-subpath #f) "libplplot")))
+(define-runtime-path plplot-path
+  (build-path "compiled" "native" (system-library-subpath #f)
+              (path-replace-suffix "libplplot" (system-type 'so-suffix))))
+(define-runtime-path font-dir "fonts")
+
+(define libplplot (ffi-lib plplot-path))
 
 (define plplotlibdir (get-ffi-obj "plplotLibDir" libplplot _string))
 
 ;; set the lib dir to contain the fonts:
-(let ([path (this-expression-source-directory)])
+(let ([path font-dir])
   ;; free current pointer, if any:
   (let ([p (get-ffi-obj "plplotLibDir" libplplot _pointer)])
     (when p (free p)))

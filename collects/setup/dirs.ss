@@ -8,10 +8,7 @@
   ;; path normalization is not really necessary by any existing code,
   ;; but there might be applications that rely on these paths, so it's
   ;; best to do some minor normalization.  This is similar to what
-  ;; "main-collects.ss" does.  Again, this makes mzscheme expand paths
-  ;; that begin with `~'.
-  ;; Note: (expand-path (simplify-path P #f)) is bogus, if P is
-  ;; "./~foo" or "~foo/.."
+  ;; "main-collects.ss" does.
   (define (system-path* what)
     (simplify-path (expand-path (find-system-path what)) #f))
 

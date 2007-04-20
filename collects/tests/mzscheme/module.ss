@@ -284,8 +284,8 @@
     (lambda ()
       (write `(module tmp2 mzscheme (require ,f1))))
     'truncate/replace)
-  (err/rt-test (dynamic-require f1 #f) exn:fail-cycle?)
-  (err/rt-test (dynamic-require f2 #f) exn:fail-cycle?)
+  (err/rt-test (dynamic-require (build-path (current-directory) f1) #f) exn:fail-cycle?)
+  (err/rt-test (dynamic-require (build-path (current-directory) f2) #f) exn:fail-cycle?)
   (delete-file f1)
   (delete-file f2))
 

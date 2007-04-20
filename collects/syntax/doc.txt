@@ -244,9 +244,6 @@ _docprovide.ss_: attaching documentation to exports
 > (provide-and-document doc-label-id doc-row ...) - a form that
   exports names and records documentation information.  
 
-  !! IMPORTANT: For now, the exporting module must be required with a
-     `lib' or `file' form. Relative paths do no work correctly !!
-
   The `doc-label-id' identifier is used as a key for accessing the
   documentation through `lookup-documentation'.  The actual
   documentation is organized into "rows", each with a section title.

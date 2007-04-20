@@ -4,33 +4,52 @@
 (Section 'embed)
 
 (require (lib "embed.ss" "compiler")
-	 (lib "process.ss"))
+         (lib "file.ss")
+	 (lib "process.ss")
+         (lib "distribute.ss" "compiler"))
+
+(define (mk-dest-bin mred?)
+  (case (system-type)
+    [(windows) "e.exe"]
+    [(unix) "e"]
+    [(macosx) (if mred?
+                  "e.app"
+                  "e")]))
 
 (define (mk-dest mred?)
   (build-path (find-system-path 'temp-dir) 
-	      (case (system-type)
-		[(windows) "e.exe"]
-		[(unix) "e"]
-		[(macosx) (if mred?
-			      "e.app"
-			      "e")])))
+              (mk-dest-bin mred?)))
 
 (define mz-dest (mk-dest #f))
 (define mr-dest (mk-dest #t))
+
+(define dist-dir (build-path (find-system-path 'temp-dir)
+                             "e-dist"))
+(define dist-mz-exe (build-path
+                     (case (system-type)
+                       [(windows) 'same]
+                       [else "bin"])
+                     (mk-dest-bin #f)))
+(define dist-mred-exe (build-path
+                       (case (system-type)
+                         [(windows macosx) 'same]
+                         [else "bin"])
+                       (mk-dest-bin #t)))
 
 (define (prepare exe src)
   (printf "Making ~a with ~a...~n" exe src)
   (when (file-exists? exe)
     (delete-file exe)))
 
-(define (try-exe exe expect mred?)
+(define (try-one-exe exe expect mred?)
+  (printf "Running ~a\n" exe)
   (let ([plthome (getenv "PLTHOME")]
 	[collects (getenv "PLTCOLLECTS")])
     ;; Try to hide usual collections:
     (when plthome
-      (putenv "PLTHOME" (path->string (find-system-path 'temp-dir))))
+      (putenv "PLTHOME" (path->string (build-path (find-system-path 'temp-dir) "NOPE"))))
     (when collects
-      (putenv "PLTCOLLECTS" (path->string (find-system-path 'temp-dir))))
+      (putenv "PLTCOLLECTS" (path->string (build-path (find-system-path 'temp-dir) "NOPE"))))
     ;; Execute:
     (parameterize ([current-directory (find-system-path 'temp-dir)])
       (when (file-exists? "stdout")
@@ -46,6 +65,24 @@
       (putenv "PLTCOLLECTS" collects))
     (test expect with-input-from-file (build-path (find-system-path 'temp-dir) "stdout") 
 	  (lambda () (read-string 5000)))))
+
+(define try-exe 
+  (case-lambda
+   [(exe expect mred?)
+    (try-exe exe expect mred? void)]
+   [(exe expect mred? dist-hook . collects)
+    (try-one-exe exe expect mred?)
+    ;; Build a distirbution directory, and try that, too:
+    (when (directory-exists? dist-dir)
+      (delete-directory/files dist-dir))
+    (assemble-distribution dist-dir (list exe) #:copy-collects collects)
+    (dist-hook)
+    (try-one-exe (build-path dist-dir
+                             (if mred?
+                                 dist-mred-exe
+                                 dist-mz-exe))
+                 expect mred?)
+    (delete-directory/files dist-dir)]))
 
 (define (mz-tests mred?)
   (define dest (if mred? mr-dest mz-dest))
@@ -161,19 +198,22 @@
 (mz-tests #f)
 (mz-tests #t)
 
-(prepare mr-dest "embed-me5.ss")
-(make-embedding-executable 
- mr-dest #t #f
- `((#t (lib "embed-me5.ss" "tests" "mzscheme")))
- null
- null
- `("-ZmvqL" "embed-me5.ss" "tests/mzscheme"))
-(try-exe mr-dest "This is 5: #<struct:class:button%>\n" #t)
+(begin
+  (prepare mr-dest "embed-me5.ss")
+  (make-embedding-executable 
+   mr-dest #t #f
+   `((#t (lib "embed-me5.ss" "tests" "mzscheme")))
+   null
+   null
+   `("-ZmvqL" "embed-me5.ss" "tests/mzscheme"))
+  (try-exe mr-dest "This is 5: #<struct:class:button%>\n" #t))
 
 ;; Try the mzc interface:
 (require (lib "dirs.ss" "setup")
 	 (lib "file.ss"))
-(define mzc (build-path (find-console-bin-dir) "mzc"))
+(define mzc (build-path (find-console-bin-dir) (if (eq? 'windows (system-type))
+                                                   "mzc.exe"
+                                                   "mzc")))
 
 (define (mzc-tests mred?)
   (parameterize ([current-directory (find-system-path 'temp-dir)])
@@ -206,7 +246,8 @@
 	     "--collects-path"
 	     (path->string (find-collects-dir))
 	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
-    (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
+    ;; Don't try a distribution for this one:
+    (try-one-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
     ;; Try --collects-dest mode
     (system* mzc 
@@ -216,7 +257,7 @@
 	     "--collects-dest" "cts"
 	     "--collects-path" "cts"
 	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
-    (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
+    (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
     (delete-directory/files "cts")
     (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
 
@@ -225,7 +266,65 @@
 (mzc-tests #t)
 (mzc-tests #f)
 
-;; One MrEd-specific test with mzc:
+(require (lib "file.ss" "dynext"))
+(define (extension-test mred?)
+  (parameterize ([current-directory (find-system-path 'temp-dir)])
+    
+    (define obj-file
+      (build-path (find-system-path 'temp-dir) (append-object-suffix "embed-me8")))
+
+    (define ext-base-dir
+      (build-path (find-system-path 'temp-dir)
+                  "compiled"))
+
+    (define ext-dir
+      (build-path ext-base-dir
+                  "native"
+                  (system-library-subpath)))
+
+    (define ext-file
+      (build-path ext-dir (append-extension-suffix "embed-me8")))
+
+    (define ss-file
+      (build-path (find-system-path 'temp-dir) "embed-me9.ss"))
+
+    (make-directory* ext-dir)
+    
+    (system* mzc 
+             "--cc"
+             "-d" (path->string (path-only obj-file))
+             (path->string (build-path (collection-path "tests" "mzscheme") "embed-me8.c")))
+    (system* mzc 
+             "--ld"
+             (path->string ext-file)
+             (path->string obj-file))
+
+    (when (file-exists? ss-file)
+      (delete-file ss-file))
+    (copy-file (build-path (collection-path "tests" "mzscheme") "embed-me9.ss")
+               ss-file)
+
+    (system* mzc 
+             (if mred? "--gui-exe" "--exe")
+             (path->string (mk-dest mred?))
+             (path->string ss-file))
+
+    (delete-file ss-file)
+
+    (try-exe (mk-dest mred?) "Hello, world!\n" mred? (lambda ()
+                                                       (delete-directory/files ext-base-dir)))
+
+    ;; openssl, which needs extra binaries under Windows
+    (system* mzc 
+             (if mred? "--gui-exe" "--exe")
+             (path->string (mk-dest mred?))
+             (path->string (build-path (collection-path "tests" "mzscheme") "embed-me10.ss")))
+    (try-exe (mk-dest mred?) "#t\n" mred?)))
+
+(extension-test #f)
+(extension-test #t)
+
+;; A MrEd-specific test with mzc:
 (parameterize ([current-directory (find-system-path 'temp-dir)])
   (system* mzc 
 	   "--gui-exe"
@@ -233,6 +332,19 @@
 	   (path->string (build-path (collection-path "tests" "mzscheme") "embed-me5.ss")))
   (try-exe (mk-dest #t) "This is 5: #<struct:class:button%>\n" #t))
 
+;; Another MrEd-specific: try embedding plot, which has extra DLLs and font files:
+(parameterize ([current-directory (find-system-path 'temp-dir)])
+  (define direct (build-path (find-system-path 'temp-dir) "direct.ps"))
 
+  (system* (build-path (find-console-bin-dir) "mred")
+           "-qu"
+           (path->string (build-path (collection-path "tests" "mzscheme") "embed-me7.ss"))
+           (path->string direct))
+
+  (system* mzc 
+           "--gui-exe"
+           (path->string (mk-dest #t))
+           (path->string (build-path (collection-path "tests" "mzscheme") "embed-me7.ss")))
+  (try-exe (mk-dest #t) "plotted\n" #t))
 
 (report-errs)

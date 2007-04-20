@@ -3371,15 +3371,19 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve)
       src = SCHEME_VEC_ELS(vec)[1];
       dest = SCHEME_VEC_ELS(vec)[2];
 
-      if (!chain_from) {
-	srcmod = dest;
-      } else if (!SAME_OBJ(chain_from, dest)) {
-	srcmod = scheme_modidx_shift(dest,
-				     chain_from,
-				     srcmod);
+      /* If src is #f, shift is just for phase; no redirection */
+      if (!SCHEME_FALSEP(src)) {
+        
+        if (!chain_from) {
+          srcmod = dest;
+        } else if (!SAME_OBJ(chain_from, dest)) {
+          srcmod = scheme_modidx_shift(dest,
+                                       chain_from,
+                                       srcmod);
+        }
+        
+        chain_from = src;
       }
-
-      chain_from = src;
     }
 
     WRAP_POS_INC(w);
@@ -4185,31 +4189,24 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
       /* chain-specific cache; drop it */
     } else {
       /* box, a phase shift */
-      /* Any more rename tables? */
-      WRAP_POS l;
-      WRAP_POS_COPY(l, w);
-      while (!WRAP_POS_END_P(l)) {
-	if (SCHEME_RENAMESP(WRAP_POS_FIRST(l)))
-	  break;
-	WRAP_POS_INC(l);
+      /* We used to drop a phase shift if there are no following
+         rename tables. However, the phase shift also identifies
+         the source module, which can be relevant. So, keep the
+         phase shift. */
+      /* Need the phase shift, but drop the export table, if any: */
+      Scheme_Object *aa;
+      aa = SCHEME_BOX_VAL(a);
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(aa)[3])) {
+        a = scheme_make_vector(4, NULL);
+        SCHEME_VEC_ELS(a)[0] = SCHEME_VEC_ELS(aa)[0];
+        SCHEME_VEC_ELS(a)[1] = SCHEME_VEC_ELS(aa)[1];
+        SCHEME_VEC_ELS(a)[2] = SCHEME_VEC_ELS(aa)[2];
+        SCHEME_VEC_ELS(a)[3] = scheme_false;
+        a = scheme_box(a);
       }
-      /* If l is the end, don't need the phase shift */
-      if (!WRAP_POS_END_P(l)) {
-	/* Need the phase shift, but drop the export table, if any: */
-	Scheme_Object *aa;
-	aa = SCHEME_BOX_VAL(a);
-	if (SCHEME_TRUEP(SCHEME_VEC_ELS(aa)[3])) {
-	  a = scheme_make_vector(4, NULL);
-	  SCHEME_VEC_ELS(a)[0] = SCHEME_VEC_ELS(aa)[0];
-	  SCHEME_VEC_ELS(a)[1] = SCHEME_VEC_ELS(aa)[1];
-	  SCHEME_VEC_ELS(a)[2] = SCHEME_VEC_ELS(aa)[2];
-	  SCHEME_VEC_ELS(a)[3] = scheme_false;
-	  a = scheme_box(a);
-	}
-
-	stack = CONS(a, stack);
-	stack_size++;
-      }
+      
+      stack = CONS(a, stack);
+      stack_size++;
     }
   }
 

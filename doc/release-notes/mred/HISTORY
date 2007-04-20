@@ -1,7 +1,13 @@
+Version 369.10
+
+Improved the disabled appearance of some controls under Mac OS X
+
+
 Version 369.9
 
-Added use-background-style and background-style-used? methods
+Added use-style-background and style-background-used? methods
  to editor-snip%; changes the editor-snip WXME format
+
 
 Version 369.6
 
@@ -1229,7 +1235,7 @@ wx:the-snip-class-list was replaced by (wx:get-the-snip-class-list)
 wx:the-buffer-data-class-list was replaced by (wx:get-the-buffer-data-class-list)
 Added transparent text backing for editor text
 Added wx:dc% try-colour method
-wx:window% capture-mode, release-mouse, and make-modal no longer supported
+wx:window% capture-mouse, release-mouse, and make-modal no longer supported
   Modal dialogs can be used instead of make-modal (modal is
   specified through the constructor). There is currently no
   replacement for capture-mouse and release-mouse, but a replacement is

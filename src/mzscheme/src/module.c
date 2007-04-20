@@ -50,6 +50,7 @@ static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_path_index_resolve(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_split(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[]);
 
@@ -347,6 +348,11 @@ void scheme_init_module(Scheme_Env *env)
 			     scheme_make_folding_prim(module_path_index_p,
 						      "module-path-index?",
 						      1, 1, 1),
+			     env);
+  scheme_add_global_constant("module-path-index-resolve",
+			     scheme_make_prim_w_arity(module_path_index_resolve,
+                                                      "module-path-index-resolve",
+                                                      1, 1),
 			     env);
   scheme_add_global_constant("module-path-index-split",
 			     scheme_make_prim_w_arity2(module_path_index_split,
@@ -1679,6 +1685,14 @@ static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[])
   return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type)
 	  ? scheme_true
 	  : scheme_false);
+}
+
+static Scheme_Object *module_path_index_resolve(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_module_index_type))
+    scheme_wrong_type("module-path-index-resolve", "module-path-index", 0, argc, argv);
+
+  return scheme_module_resolve(argv[0], 0);
 }
 
 static Scheme_Object *module_path_index_split(int argc, Scheme_Object *argv[])
