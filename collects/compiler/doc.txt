@@ -406,7 +406,9 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
 			       [#:collects-path path-or-list]
                                [#:on-extension ext-proc]
                                [#:launcher? launcher?]
-                               [#:verbose? verbose?])
+                               [#:verbose? verbose?]
+                               [#:compiler compile-proc]
+                               [#:expand-namespace expand-namespace])
   - Copies the MzScheme (if `mred?' is #f) or MrEd (otherwise) binary,
   embedding code into the copied executable to be loaded on startup.
   (Under Unix, the binary is actually a wrapper executable that execs
@@ -457,7 +459,11 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
   above might be '(require m).
 
   All modules are compiled before they are embedded into the target
-  executable.
+  executable; see also `compile-proc' below. When a module declares
+  run-time paths via the forms of MzLib's "runtime-path.ss", the
+  generated executable records the path (for use both by immediate
+  execution and for creating a distribution tha contains the
+  executable).
 
   When embedding into a copy of MrEd, a "-Z" flag should usually be
   included in the list of command-line flags, so that the target
@@ -466,11 +472,11 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
   the class library required into the top-level namespace, literal
   `require's for those libraries should be included at the start.
 
-   The optional `aux' argument is an association list for
-   platform-specific options (i.e., it is a list of pairs where the
-   first element of the pair is a key symbol and the second element is
-   the value for that key). The currently supported keys are as
-   follows:
+  The optional `aux' argument is an association list for
+  platform-specific options (i.e., it is a list of pairs where the
+  first element of the pair is a key symbol and the second element is
+  the value for that key). The currently supported keys are as
+  follows:
 
       _'icns_ (Mac OS X) - an icon file path (suffix ".icns") to
               use for the executable's desktop icon
@@ -580,6 +586,20 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
    binary to use for embedding. The default is `(system-type 'gc)';
    see `current-launcher-variant' in the "launcher" collection for
    more information.
+
+   The `compile-proc' argument is used to compile the source of
+   modules to be included in the executable (when a compiled form is
+   not already available). It should accept a single argument that is
+   a syntax object for a `module' form. The default procedure uses
+   `compile' parameterized to set the current namespace to
+   `expand-namespace'.
+
+   The `expand-namespace' argument selects a namespace for expanding
+   extra modules (and for compiling using the default `compile-proc').
+   Extra-module expansion is needed to detect run-time path
+   declarations in included modules, so that the path resolutions can
+   be directed to the current locations (and, unltimately, redirected
+   to copies in a distribution).
 
 > (make-embedding-executable dest mred? verbose? mod-list literal-file-list literal-sexpr cmdline-list [aux launcher? variant])
 
