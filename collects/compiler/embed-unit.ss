@@ -364,7 +364,9 @@
                                                      (error 'create-embedding-executable
                                                             "cannot use a _loader extension: ~e"
                                                             file)
-                                                     (make-extension file)))))]
+                                                     (make-extension file))))
+					   ;; Prefer extensions if we're handling them:
+					   (not on-extension))]
                     [name (let-values ([(base name dir?) (split-path filename)])
                             (path->string (path-replace-suffix name #"")))]
                     [prefix (let ([a (assoc filename prefixes)])
@@ -373,6 +375,8 @@
                                   (generate-prefix)))])
                 (cond
                   [(extension? code)
+		   (when verbose?
+		     (fprintf (current-error-port) " using extension: ~s~n" (extension-path code)))
                    (set-box! codes
                              (cons (make-mod filename module-path code 
                                              name prefix (string->symbol

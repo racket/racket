@@ -14,7 +14,8 @@
    [get-module-code ([path-string?]
                      [(and/c path-string? relative-path?)
                       (any/c . -> . any)
-                      (or/c false/c (path? boolean? . -> . any))]
+                      (or/c false/c (path? boolean? . -> . any))
+		      any/c]
                      . opt-> .
                      any)])
 
@@ -64,7 +65,7 @@
 
   (define/kw (get-module-code path
                #:optional
-               [sub-path "compiled"] [compiler compile] [extension-handler #f])
+               [sub-path "compiled"] [compiler compile] [extension-handler #f] [prefer-so? #f])
     (unless (path-string? path)
       (raise-type-error 'get-module-code "path or string (sans nul)" path))
     (let*-values ([(path) (resolve path)]
@@ -90,16 +91,17 @@
         (cond
           ;; Use .zo, if it's new enough
           [(date>=? zo path-d) (read-one zo #f)]
-          ;; Otherwise, use source if it exists
-          [path-d (with-dir (lambda () (compiler (read-one path #t))))]
-          ;; No source --- maybe there's an .so?
-          [(and (not path-d) (date>=? so path-d))
+          ;; Maybe there's an .so? Use it only if we don't prefer source.
+          [(and (or (not path-d) prefer-so?)
+		(date>=? so path-d))
            (if extension-handler
              (extension-handler so #f)
              (raise (make-exn:get-module-code
                      (format "get-module-code: cannot use extension file; ~e" so)
                      (current-continuation-marks)
                      so)))]
+          ;; Use source if it exists
+          [path-d (with-dir (lambda () (compiler (read-one path #t))))]
           ;; Or maybe even a _loader.so?
           [(and (not path-d)
                 (date>=? _loader-so path-d)

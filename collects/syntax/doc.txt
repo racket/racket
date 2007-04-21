@@ -323,7 +323,7 @@ _modread.ss_: reading module source code
 _modcode.ss_: getting module compiled code
 ======================================================================
 
-> (get-module-code path [compiled-subdir compile-proc ext-proc]) -
+> (get-module-code path [compiled-subdir compile-proc ext-proc prefer-ext?]) -
   returns a compiled expression for the declaration of the module
   specified by `module-path-v'. The `module-path-v' argument is a
   quoted module path, as for MzScheme's `dynamic-require' using the
@@ -347,10 +347,11 @@ _modcode.ss_: getting module compiled code
   (in one of the directories specified by `compiled-subdir'), then it
   is used instead of the source. Native-code versions of `path' are
   ignored --- unless only a native-code version exists (i.e., `path'
-  itself does not exist). If only a native-code version exists, it is
-  supplied to `ext-proc' when `ext-proc' is #f, or an exception is
-  raised (to report that an extension file cannot be used) when
-  `ext-proc' is #f.
+  itself does not exist), or `prefer-ext?' is true and the native-code
+  file is not a _loader variant. If a native-code version is prefer or
+  is the only file that exists, it is supplied to `ext-proc' when
+  `ext-proc' is #f, or an exception is raised (to report that an
+  extension file cannot be used) when `ext-proc' is #f.
 
 > moddep-current-open-input-file
  

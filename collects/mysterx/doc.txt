@@ -20,7 +20,7 @@ _MysterX_
  Installation
  ------------
 
- Two Windows .DLL's support low-level operations in MysterX:
+ Two Windows DLLs support low-level operations in MysterX:
  "myspage.dll" and "myssink.dll".  Both are installed in the registry
  (using `REGSVR32 <name-of-DLL>') when Setup PLT runs the the MysterX
  post-installer. If you move the location of your PLT installation,
@@ -29,6 +29,37 @@ _MysterX_
  version of PLT Scheme to use the DLLs registered by another. (Prior
  to version 369.4, myssink.dll was version-specific; its GUID was
  changed when it was made version-independent.)
+
+ If you build a stand-alone executable that uses MysterX, you need to
+ specifically include "myspage.dll" and "myssink.dll" with your
+ distribution, and the DLLs will need to be registered on the end
+ user's machine. One way to do that is to include the following little
+ setup program (as an executable) in your distribution:
+
+  (module setup mzscheme
+    (require (lib "runtime-path.ss")
+             (lib "process.ss"))
+
+    ;; Ensure that DLLs are included with the distibution:
+    (define-runtime-path myspage-dll '(so "myspage"))
+    (define-runtime-path myssink-dll '(so "myssink"))
+
+    ;; Register the DLLs:
+    (define regsvr32 
+      (path->string (find-executable-path "regsvr32.exe" #f)))
+    (system* regsvr32 (path->string myspage-dll))
+    (system* regsvr32 (path->string myssink-dll)))
+    
+ Running a Demo
+ --------------
+
+ Try 
+
+  (require (lib "mxdemo.ss" "mysterx"))
+
+ The demo requires the MSCal Calendar control.  The calendar control
+ is normally installed with Microsoft Office, but it can also be
+ downloaded from elsewhere; look for "mscal.ocx".
 
  Loading
  -------
