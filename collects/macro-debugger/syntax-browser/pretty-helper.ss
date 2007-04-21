@@ -124,9 +124,7 @@
          (let ([kw (car stx-list)]
                [expr (cadr stx-list)])
            (and (identifier? kw)
-                (memq (syntax-e kw)
-                      '(quote quasiquote unquote unquote-splicing
-                              syntax quasisyntax unsyntax unsyntax-splicing))
+                (memq (syntax-e kw) special-expression-keywords)
                 (bound-identifier=? kw (datum->syntax-object stx (syntax-e kw)))
                 (andmap (lambda (f) (equal? (f stx) (f kw)))
                         (list syntax-source
@@ -137,6 +135,10 @@
                               syntax-source-module))
                 (cons (syntax-e kw)
                       (list expr))))))
+
+  (define special-expression-keywords
+    '(quote quasiquote unquote unquote-splicing syntax))
+  ;; FIXME: quasisyntax unsyntax unsyntax-splicing
 
   (define (unintern sym)
     (string->uninterned-symbol (symbol->string sym)))
