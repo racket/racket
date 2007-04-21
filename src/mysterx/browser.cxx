@@ -142,11 +142,11 @@ Scheme_Object *mx_make_browser(int argc,Scheme_Object **argv) {
 
   browser = (MX_Browser_Object *)scheme_malloc_tagged(sizeof(MX_Browser_Object));
   browser->so.type = mx_browser_type;
-  browser->destroy = destroy;
 
   destroy = (int *)malloc(sizeof(int)); /* freed by msg loop */
   *destroy = 0;
   browserWindowInit.destroy = destroy;
+  browser->destroy = destroy;
 
   // use _beginthread instead of CreateThread
   // because the use of HTMLHelp requires the use of
@@ -381,7 +381,7 @@ Scheme_Object *mx_register_navigate_handler(int argc,Scheme_Object **argv) {
 
   // register handler for NavigateComplete2 event (memID = 259)
 
-  pISink->register_handler(259,argv[1]);
+  pISink->register_handler(259, mx_wrap_handler(argv[1]));
 
   return scheme_void;
 }

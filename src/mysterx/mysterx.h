@@ -901,7 +901,7 @@ extern unsigned long browserCount;
       sprintf(buff,"Can't push argument with VARIANT tag = %X",va.vt); \
       scheme_signal_error(buff); }; } while (0)
 
-
+void *mx_wrap_handler(Scheme_Object *h);
 
 /* This indirection lets us delayload libmzsch.dll: */
 #define scheme_false (scheme_make_false())

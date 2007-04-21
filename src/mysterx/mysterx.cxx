@@ -5466,6 +5466,11 @@ void mx_cleanup (void)
   /* looks like CoUninitialize() gets called automatically */
 }
 
+void *mx_wrap_handler(Scheme_Object *h)
+{
+  return GC_HANDLER_BOX(h);
+}
+
 Scheme_Object *scheme_module_name (void)
 {
     return scheme_intern_symbol (MXMAIN);
@@ -5551,7 +5556,7 @@ Scheme_Object *scheme_initialize (Scheme_Env *env)
 
   initMysSinkTable();
 
-  if (isatty (fileno (stdin))) {
+  if (0 && isatty (fileno (stdin))) {
     fprintf (stderr,
 	    "MysterX extension for PLT Scheme, "
 	    "Copyright (c) 1999-2003 PLT (Paul Steckler)\n");
