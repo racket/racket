@@ -403,7 +403,7 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
                                [#:mred? mred?]
                                [#:variant variant]
                                [#:aux aux]
-			       [#:collects-path path-or-list]
+                               [#:collects-path path-or-list]
                                [#:on-extension ext-proc]
                                [#:launcher? launcher?]
                                [#:verbose? verbose?]
