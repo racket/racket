@@ -8,17 +8,20 @@
   
   (define mutable-vector/c
     (and/c vector? (not/c immutable?)))
+  (define index/c
+    (and/c natural-number/c
+           exact?))
   
   (define (vec-start-end-contract vector?)
     (case->
      (-> vector? any)
      (->r ((vec vector?)
-           (start (and/c natural-number/c
+           (start (and/c index/c
                          (<=/c (vector-length vec)))))
           any)
      (->pp ((vec vector?)
-            (start natural-number/c)
-            (end natural-number/c))
+            (start index/c)
+            (end index/c))
            (<= start end (vector-length vec))
            any)))
   
@@ -50,7 +53,7 @@
     (->r ((f (lambda (f)
                (and (procedure? f)
                     (procedure-arity-includes? f (add1 (length seeds))))))
-          (len natural-number/c))
+          (len index/c))
          seeds list?
          any))
   
@@ -58,19 +61,19 @@
     (case->
      (-> vector? any)
      (->r ((vec vector?)
-           (start (and/c natural-number/c
+           (start (and/c index/c
                          (<=/c (vector-length vec)))))
           any)
      (->r ((vec vector?)
-           (start (and/c natural-number/c
+           (start (and/c index/c
                          (<=/c (vector-length vec))))
-           (end (and/c natural-number/c
+           (end (and/c index/c
                        (>=/c start))))
           any)
      (->r ((vec vector?)
-           (start (and/c natural-number/c
+           (start (and/c index/c
                          (<=/c (vector-length vec))))
-           (end (and/c natural-number/c
+           (end (and/c index/c
                        (>=/c start)))
            (fill any/c))
           any)))
@@ -489,7 +492,7 @@
   ;;;   reached, return #F.
   (define vector-index
     (letrec ((loop1  (lambda (pred? vec len i)
-                       (cond ((>= i len) #f)
+                       (cond ((= i len) #f)
                              ((pred? (vector-ref vec i)) i)
                              (else (loop1 pred? vec len (add1 i))))))
              (loop2+ (lambda (pred? vectors len i)
@@ -657,35 +660,35 @@
   (define copy!-contract
     (case->
      (->r ((target mutable-vector/c)
-           (tstart (and/c natural-number/c
+           (tstart (and/c index/c
                           (<=/c (- (vector-length target)
                                    (vector-length source)))))
            (source vector?))
           any)
      (->r ((target mutable-vector/c)
-           (tstart (and/c natural-number/c
+           (tstart (and/c index/c
                           (<=/c (- (vector-length target)
                                    (- (vector-length source)
                                       sstart)))))
            (source vector?)
-           (sstart (and/c natural-number/c
+           (sstart (and/c index/c
                           (<=/c (vector-length source)))))
           any)
      (->pp ((target mutable-vector/c)
-            (tstart (and/c natural-number/c
+            (tstart (and/c index/c
                            (<=/c (- (vector-length target)
                                     (- send sstart)))))
             (source vector?)
-            (sstart natural-number/c)
-            (send natural-number/c))
+            (sstart index/c)
+            (send index/c))
            (<= sstart send (vector-length source))
            any)))
   
   (provide/contract (vector-swap!
                      (->r ((vec mutable-vector/c)
-                           (i (and/c natural-number/c
+                           (i (and/c index/c
                                      (</c (vector-length vec))))
-                           (j (and/c natural-number/c
+                           (j (and/c index/c
                                      (</c (vector-length vec)))))
                           any))
                     (rename my-vector-fill! s:vector-fill!
@@ -693,13 +696,13 @@
                              (-> vector? any/c any)
                              (->r ((vec vector?)
                                    (fill any/c)
-                                   (start (and/c natural-number/c
+                                   (start (and/c index/c
                                                  (<=/c (vector-length vec)))))
                                   any)
                              (->pp ((vec vector?)
                                     (fill any/c)
-                                    (start natural-number/c)
-                                    (end natural-number/c))
+                                    (start index/c)
+                                    (end index/c))
                                    (<= start end (vector-length vec))
                                    any)))
                     (vector-reverse! (vec-start-end-contract mutable-vector/c))
@@ -804,15 +807,15 @@
   ;;;   between START, whose default is 0, and END, whose default is the
   ;;;   length of VECTOR, from VECTOR.
   (define my-vector->list
-    (opt-lambda (vec (start 0) (end (vector-length vec)))
-      ;(unfold (lambda (i)        ; No SRFI 1.
-      ;          (< i start))
-      ;        (lambda (i) (vector-ref vec i))
-      ;        (lambda (i) (sub1 i))
-      ;        (sub1 end))
-      (do ((i (sub1 end) (sub1 i))
-           (result '() (cons (vector-ref vec i) result)))
-        ((< i start) result))))
+    (case-lambda
+      ((vec)
+       (vector->list vec)) ;+++
+      ((vec start)
+       (my-vector->list start (vector-length vec)))
+      ((vec start end)
+       (do ((i (sub1 end) (sub1 i))
+            (result '() (cons (vector-ref vec i) result)))
+         ((< i start) result)))))
   
   ;;; (REVERSE-VECTOR->LIST <vector> [<start> <end>]) -> list
   ;;;   Produce a list containing the elements in the locations between
