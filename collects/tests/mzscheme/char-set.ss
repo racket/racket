@@ -52,7 +52,8 @@
 (test #t char-set-contains? char-set:letter+digit #\A)
 (test #t char-set-contains? char-set:letter+digit #\Z)
 
-(test 90547 char-set-size char-set:letter)
+;; As of Unicode 4.1:
+(test 91395 char-set-size char-set:letter)
 
 (test #t char-set= char-set:letter+digit (char-set-union char-set:letter char-set:digit))
 ;; Slow!:
@@ -108,8 +109,9 @@
 
 ;; Iterating over character sets ----------------------------------------
 
-;; The number 268 comes from "grep Nd UnicodeData.txt | wc -l"
-(test 268 char-set-size char-set:digit)
+;; The number 270 comes from "grep Nd UnicodeData.txt | wc -l"
+;; in Unicode 4.1
+(test 270 char-set-size char-set:digit)
 
 (test #t char-set=
       char-set:digit
@@ -489,6 +491,11 @@
        (lambda (d i)
 	 (and (char-set= d (->char-set "0123456789"))
 	      (char-set= i (->char-set "abcdefABCDEF"))))))))
+
+;; ----------------------------------------
+
+;; PR 8624 --- make sure there's no error:
+(test #t values (string? (char-set->string (char-set-complement char-set:graphic))))
 
 ;; ----------------------------------------
 

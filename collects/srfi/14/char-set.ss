@@ -244,10 +244,10 @@
      [(cs . more)
       (fold-set char-set-delete cs more)]))
 
-  (define (char-set-complement cs)
-    (make-char-set
-     (union (complement (char-set-set cs) #x0 #xD7FF)
-	    (complement (char-set-set cs) #xE000 #x10FFFF))))
+   (define (char-set-complement cs)
+     (make-char-set
+      (difference (complement (char-set-set cs) 0 #x10FFFF)
+  	         (make-range #xD800 #xDFFF))))
 
   (define-syntax define-set-op
     (syntax-rules ()
