@@ -681,12 +681,13 @@ it's a ".dmg" disk image; under Unix, it's a ".tgz" archive.
   a file extension is added automatcially (using the first result
   of `bundle-put-file-extension+style+filters').
 
-  By default, the created archive contains a directory with the same
-  name as `dir'. If `for-exe?' is true under Mac OS X, and if `dir'
-  contains a single file, then the created disk image contains just
-  the file.
+  The created archive contains a directory with the same name as `dir'
+  --- except under Mac OS X when `for-exe?' is true and `dir' contains
+  a single a single file or directory, in which case the created disk
+  image contains just the file or directory. The default for
+  `for-exe?' is #f.
 
-  Archive creation files if `dist-file' exists.
+  Archive creation fails if `dist-file' exists.
 
 > (bundle-put-file-extension+style+filters)
 

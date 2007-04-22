@@ -79,8 +79,8 @@
 			 "-mode" "555" 
 			 "-volname" (path->string
 				     (path-replace-suffix (file-name-from-path target) #""))
-			 "-srcfolder" (path->string (path->complete-path dir))
-			 (path->string (path->complete-path target)))])
+			 "-srcfolder" (path->string (expand-path (path->complete-path dir)))
+			 (path->string (expand-path (path->complete-path target))))])
 		((list-ref p 4) 'wait)
 		(unless (eq? ((list-ref p 4) 'status) 'done-ok)
 		  (error 'bundle-directory
