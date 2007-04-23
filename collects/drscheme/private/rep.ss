@@ -896,6 +896,14 @@ TODO
           (field (user-language-settings #f)
                  (user-teachpack-cache (preferences:get 'drscheme:teachpacks))
                  (user-custodian #f)
+                 (custodian-limit (and (with-handlers ([exn:fail:unsupported? (λ (x) #f)])
+                                         (let ([c (make-custodian)])
+                                           (custodian-limit-memory 
+                                            c
+                                            100
+                                            c))
+                                         #t)
+                                       (preferences:get 'drscheme:limit-memory)))
                  (user-eventspace-box (make-weak-box #f))
                  (user-namespace-box (make-weak-box #f))
                  (user-eventspace-main-thread #f)
@@ -913,9 +921,9 @@ TODO
           (define/public (get-user-thread) user-eventspace-main-thread)
           (define/public (get-user-namespace) (weak-box-value user-namespace-box))
           (define/pubment (get-user-break-parameterization) user-break-parameterization) ;; final method
-          
+          (define/pubment (get-custodian-limit) custodian-limit)
+          (define/pubment (set-custodian-limit c) (set! custodian-limit c))
           (field (in-evaluation? #f)
-                 (should-collect-garbage? #f)
                  (ask-about-kill? #f))
           (define/public (get-in-evaluation?) in-evaluation?)
           
@@ -1033,9 +1041,6 @@ TODO
             (send context reset-offer-kill)
             (send context set-breakables (get-user-thread) (get-user-custodian))
             (reset-pretty-print-width)
-            (when should-collect-garbage?
-              (set! should-collect-garbage? #f)
-              (collect-garbage))
             (set! in-evaluation? #t)
             (update-running #t)
             (set! need-interaction-cleanup? #t)
@@ -1140,7 +1145,8 @@ TODO
             (set! user-language-settings (send definitions-text get-next-settings))
             
             (set! user-custodian (make-custodian))
-            ; (custodian-limit-memory user-custodian 10000000 user-custodian)
+            (when custodian-limit
+              (custodian-limit-memory user-custodian custodian-limit user-custodian))
             (let ([user-eventspace (parameterize ([current-custodian user-custodian])
                                       (make-eventspace))])
               (set! user-eventspace-box (make-weak-box user-eventspace))
@@ -1168,18 +1174,20 @@ TODO
                      
                      (let ([drscheme-exit-handler
                             (λ (x)
-                              (let ([s (make-semaphore)])
-                                (parameterize ([current-eventspace drs-eventspace])
-                                  (queue-callback
-                                   (λ ()
-                                     (set! user-exit-code 
-                                           (if (and (integer? x)
-                                                    (<= 0 x 255))
-                                               x
-                                               0))
-                                     (semaphore-post s))))
-                                (semaphore-wait s)
-                                (custodian-shutdown-all user-custodian)))])
+                              (parameterize-break
+                               #f
+                               (let ([s (make-semaphore)])
+                                 (parameterize ([current-eventspace drs-eventspace])
+                                   (queue-callback
+                                    (λ ()
+                                      (set! user-exit-code 
+                                            (if (and (integer? x)
+                                                     (<= 0 x 255))
+                                                x
+                                                0))
+                                      (semaphore-post s))))
+                                 (semaphore-wait s)
+                                 (custodian-shutdown-all user-custodian))))])
                        (exit-handler drscheme-exit-handler))
                      (initialize-parameters snip-classes))))
                 
@@ -1411,7 +1419,6 @@ TODO
             (clear-box-input-port)
             (clear-output-ports)
             (set-allow-edits #t)
-            (set! should-collect-garbage? #t)
             
             ;; in case the last evaluation thread was killed, clean up some state.
             (lock #f)

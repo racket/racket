@@ -58,6 +58,10 @@
                                      (finder:default-filters)))
       (application:current-app-name (string-constant drscheme))
 
+  (preferences:set-default 'drscheme:limit-memory #f
+                           (λ (x) (or (boolean? x)
+                                      (integer? x)
+                                      (x . >= . (* 1024 1024 100)))))
   
   (preferences:set-default 'drscheme:recent-language-names 
                            null 

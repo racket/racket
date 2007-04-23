@@ -1630,9 +1630,63 @@ module browser threading seems wrong.
                             (preferences:get 'framework:print-output-mode)))))
             (super file-menu:between-print-and-close file-menu))
           
+          (define limit-memory-menu-item #f)
+          
           (define/override (edit-menu:between-find-and-preferences edit-menu)
             (super edit-menu:between-find-and-preferences edit-menu)
-            (add-modes-submenu edit-menu))
+            (add-modes-submenu edit-menu)
+            (when (with-handlers ([exn:fail:unsupported? (λ (x) #f)])
+                    (let ([c (make-custodian)])
+                      (custodian-limit-memory 
+                       c
+                       100
+                       c))
+                    #t)
+            (set! limit-memory-menu-item
+                  (new menu-item%
+                       [label ""]
+                       [parent edit-menu]
+                       [callback
+                        (λ (item b)
+                          (let ([current-limit (send interactions-text get-custodian-limit)])
+                            (cond
+                              [current-limit
+                               (preferences:set 'drscheme:limit-memory #f)
+                               (send interactions-text set-custodian-limit #f)]
+                              [else
+                               (let ([num-str 
+                                      (get-text-from-user 
+                                       (string-constant drscheme)
+                                       (string-append
+                                        "Please choose a limit, in megabytes\n"
+                                        "The limit will take effect on the next Run of the program.")
+                                       this
+                                       (format "~a" (* 1/2 1024)))])
+                                 (when num-str
+                                   (let ([num (string->number num-str)])
+                                     (cond
+                                       [(and num
+                                             (integer? num)
+                                             (num . >= . 100))
+                                        (preferences:set 'drscheme:limit-memory (* 1024 1024 num))
+                                        (send interactions-text set-custodian-limit (* 1024 1024 num))]
+                                       [else
+                                        (message-box (string-constant drscheme)
+                                                     "Expected a positive integer (as a series of digits without commas) that is greater than 100"
+                                                     this)]))))])
+                            (update-limit-memory-menu-item-label
+                             (send interactions-text get-custodian-limit))))])))
+            
+            (update-limit-memory-menu-item-label (preferences:get 'drscheme:limit-memory)))
+          
+          (define/private (update-limit-memory-menu-item-label limit)
+            (when limit-memory-menu-item
+              (send limit-memory-menu-item set-label
+                    (if limit
+                        (format "Disable memory limit (currently ~a megabytes)"
+                                (floor (/ limit 1024 1024)))
+                        "Limit memory..."))))
+            
                     
           
 ;                                            
@@ -2226,6 +2280,9 @@ module browser threading seems wrong.
               (let ([delegate (send from-defs get-delegate)])
                 (send from-defs set-delegate #f)
                 (send to-defs set-delegate delegate)))
+            
+            (update-limit-memory-menu-item-label
+             (send interactions-text get-custodian-limit))
             
             (inner (void) on-tab-change from-tab to-tab))
           
