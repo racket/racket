@@ -7,6 +7,8 @@
   (require (lib "etc.ss")
 	   (lib "list.ss")
 	   (lib "docprovide.ss" "syntax"))
+
+  (provide require)
   
   ;; Implements the forms:
   (require "private/teach.ss"

@@ -7,6 +7,8 @@
 	   (lib "list.ss")
 	   (lib "docprovide.ss" "syntax"))
 
+  (provide require)
+  
   ;; syntax:
   (provide (rename intermediate-define define)
 	   (rename intermediate-define-struct define-struct)

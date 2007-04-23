@@ -9,6 +9,8 @@
 	   (lib "docprovide.ss" "syntax")
 	   "posn.ss")
 
+  (provide require)
+  
   ;; syntax:
   (provide (rename advanced-define define)
 	   (rename advanced-define-struct define-struct)

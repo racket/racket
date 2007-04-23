@@ -5,6 +5,8 @@
 	   (lib "math.ss")
 	   (lib "docprovide.ss" "syntax"))
 
+  (provide require)
+  
   ;; Implements the forms:
   (require "private/teach.ss"
 	   "private/contract-forms.ss"
