@@ -423,20 +423,24 @@ module browser threading seems wrong.
             (inherit begin-edit-sequence end-edit-sequence
                      delete insert last-position paragraph-start-position
                      get-character)
+            
+            (define save-file-metadata #f)
             (define/augment (on-save-file filename fmt)
               (inner (void) on-save-file filename fmt)
-              (let ([name-mod (send (drscheme:language-configuration:language-settings-language next-settings)
-                                    get-save-module)])
-                (when name-mod
-                  (begin-edit-sequence)
-                  (let-values ([(base name dir) (split-path filename)])
-                    (insert (format "(module ~s ~s\n" 
-                                    (string->symbol (regexp-replace #rx"\\.[^.]*$"
-                                                                    (path->string name)
-                                                                    ""))
-                                    name-mod)
-                            0 0))
-                  (insert ")" (last-position) (last-position)))))
+              (let* ([lang (drscheme:language-configuration:language-settings-language next-settings)]
+                     [settings (drscheme:language-configuration:language-settings-settings next-settings)]
+                     [name-mod (send lang get-reader-module)])
+                (when name-mod ;; the reader-module method's result is used a test of whether or not the get-metadata method is used for this language
+                  (let ([metadata (send lang get-metadata (filename->modname filename) settings)])
+                    (begin-edit-sequence)
+                    (set! save-file-metadata metadata)
+                    (insert metadata 0 0)))))
+            (define/private (filename->modname filename)
+              (let-values ([(base name dir) (split-path filename)])
+                (string->symbol (regexp-replace #rx"\\.[^.]*$"
+                                                (path->string name)
+                                                ""))))
+
             (define/augment (after-save-file success?)
               (when success?
                 (let ([filename (get-filename)])
@@ -446,15 +450,13 @@ module browser threading seems wrong.
                     (with-handlers ([exn:fail:filesystem? void])
                       (let-values ([(creator type) (file-creator-and-type filename)])
                         (file-creator-and-type filename #"DrSc" type))))))
-              (let ([name-mod (send (drscheme:language-configuration:language-settings-language next-settings)
-                                    get-save-module)])
-                (when name-mod
-                  (delete (- (last-position) 1) (last-position))
-                  (delete (paragraph-start-position 0)
-                          (paragraph-start-position 1))
-                  (end-edit-sequence)
-                  (set-modified #f)))
+              (when save-file-metadata
+                (delete 0 (string-length save-file-metadata))
+                (set! save-file-metadata #f)
+                (end-edit-sequence)
+                (set-modified #f))
               (inner (void) after-save-file success?))
+            
             (define/augment (on-load-file filename format)
               (inner (void) on-load-file filename format)
               (begin-edit-sequence))
@@ -466,26 +468,20 @@ module browser threading seems wrong.
                               (λ (lang)
                                 (and (is-a? lang drscheme:module-language:module-language<%>)
                                      lang))
-                              (drscheme:language-configuration:get-languages)))]
-                       [matching-language (pick-new-language
-                                           this
-                                           (λ (module-spec)
-                                             (ormap 
-                                              (λ (lang)
-                                                (and (equal? module-spec (send lang get-save-module))
-                                                     lang))
-                                              (drscheme:language-configuration:get-languages)))
-                                           module-language)])
-                  (when matching-language
-                    (unless (eq? (drscheme:language-configuration:language-settings-language 
-                                  next-settings)
-                                 matching-language)
+                              (drscheme:language-configuration:get-languages)))])
+                  (let-values ([(matching-language settings)
+                                (pick-new-language
+                                 this
+                                 (drscheme:language-configuration:get-languages)
+                                 module-language)])
+                    (when matching-language
                       (set-next-settings
                        (drscheme:language-configuration:make-language-settings 
                         matching-language
-                        (send matching-language default-settings))
-                       #f)))))
-
+                        settings)
+                       #f))))
+                (set-modified #f))
+              
               (end-edit-sequence)
               (inner (void) after-load-file success?))
                               
@@ -514,13 +510,14 @@ module browser threading seems wrong.
              [execute-settings (preferences:get drscheme:language-configuration:settings-preferences-symbol)]
              [next-settings execute-settings])
             
+            
             (define/pubment (get-next-settings) next-settings)
             (define/pubment set-next-settings
               (opt-lambda (_next-settings [update-prefs? #t])
                 (when (or (send (drscheme:language-configuration:language-settings-language _next-settings)
-                                get-save-module)
+                                get-reader-module)
                           (send (drscheme:language-configuration:language-settings-language next-settings)
-                                get-save-module))
+                                get-reader-module))
                   (set-modified #t))
                 (set! next-settings _next-settings)
                 (change-mode-to-match)

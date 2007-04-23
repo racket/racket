@@ -19,13 +19,14 @@ tracing todo:
            (lib "unit.ss")
            (lib "class.ss")
            (lib "list.ss")
-           (lib "file.ss")
-           (lib "port.ss")
+           (lib "struct.ss")
            (lib "tool.ss" "drscheme")
            (lib "mred.ss" "mred")
            (lib "bday.ss" "framework" "private")
            (lib "moddep.ss" "syntax")
            (lib "cache-image-snip.ss" "mrlib")
+           (lib "embed.ss" "compiler")
+
            
            ;; this module is shared between the drscheme's namespace (so loaded here) 
            ;; and the user's namespace in the teaching languages
@@ -67,6 +68,7 @@ tracing todo:
       (define drs-eventspace (current-eventspace))
       
       (define-struct (htdp-lang-settings drscheme:language:simple-settings) (tracing?))
+      (define htdp-lang-settings->vector (make-->vector htdp-lang-settings))
       
       (define image-string "<image>")
       
@@ -289,6 +291,7 @@ tracing todo:
                       abbreviate-cons-as-list
                       allow-sharing?
                       manual
+                      reader-module
                       (use-function-output-syntax? #f)
                       (accept-quasiquote? #t)
                       (read-accept-dot #f)
@@ -323,40 +326,22 @@ tracing todo:
 		    #t 
 		    (string-constant save-a-mred-distribution))])
               (when dist-filename
-                (let ([wrapper-filename (make-temporary-file "drs-htdp-lang-executable~a.ss")]
-                      [teachpack-specs
-                       (map (lambda (x) `(file ,(path->string x)))
-                            (drscheme:teachpack:teachpack-cache-filenames teachpack-cache))])
-                  (call-with-output-file wrapper-filename
-                    (lambda (outp)
-                      (write
-                       `(module #%htdp-lang-language mzscheme
-                          (require (prefix #%htdp: ,(get-module)))
-                          (provide ,@(map (lambda (x) `(rename ,(symbol-append '#%htdp: x) ,x))
-                                          (get-export-names (get-module))))
-                          (require ,@teachpack-specs)
-                          ,@(map (lambda (x) `(provide ,@(get-export-names x)))
-                                 teachpack-specs))
-                       outp)
-                      (newline outp)
-                      (newline outp)
-                      (fprintf outp "(module #%htdp-lang-executable #%htdp-lang-language\n")
-                      (call-with-input-file program-filename
-                        (lambda (inp)
-                          (copy-port inp outp)))
-                      (fprintf outp "\n)\n\n")
-                      (write `(require #%htdp-lang-executable) outp)
-                      (newline outp))
-                    'truncate)
-                  (drscheme:language:create-module-based-distribution
-                   wrapper-filename
-                   dist-filename
-                   (get-module)
-                   (get-transformer-module)
-                   (get-init-code setting teachpack-cache)
-                   #t
-                   (use-namespace-require/copy?))
-                  (delete-file wrapper-filename)))))
+                (drscheme:language:create-distribution-for-executable 
+                 dist-filename
+                 #t
+                 (λ (exe-name)
+                   (create-embedding-executable 
+                    exe-name
+                    #:modules `((#f ,program-filename))
+                    #:literal-expression `(require ,(filename->require-symbol program-filename))
+                    #:cmdline '("-Zmvq")
+                    #:mred? #t))))))
+
+          (define/private (filename->require-symbol fn)
+            (let-values ([(base name dir) (split-path fn)])
+              (string->symbol
+               (path->string
+                (path-replace-suffix name #"")))))
           
           (define/private (get-export-names sexp)
             (let* ([sym-name ((current-module-name-resolver) sexp #f #f)]
@@ -450,9 +435,35 @@ tracing todo:
               [else (inner (drscheme:language:get-capability-default key) 
                            capability-value
                            key)]))
-          
-          (define/override (get-save-module) (get-module))
         
+          (inherit-field reader-module)
+          (define/override (get-reader-module) reader-module)
+          (define/override (get-metadata modname settings)
+            (string-append
+             ";; The first three lines of this file were inserted by DrScheme. They record metadata\n"
+             ";; about the language level of this file in a form that our tools can easily process.\n"
+             (format "#reader~s~s\n"
+                     reader-module
+                     `((modname ,modname)
+                       (read-case-sensitive ,(drscheme:language:simple-settings-case-sensitive settings))
+                       (htdp-settings ,(htdp-lang-settings->vector settings))))))
+          
+          (inherit default-settings)
+          (define/override (metadata->settings metadata)
+            (let* ([table (metadata->table metadata)] ;; extract the table
+                   [ssv (assoc 'htdp-settings table)])
+              (if ssv
+                  (apply make-htdp-lang-settings (vector->list (cadr ssv)))
+                  (default-settings))))
+          
+          (define/private (metadata->table metadata)
+            (let ([p (open-input-string metadata)])
+              (regexp-match #rx"\n#reader" p) ;; skip to reader
+              (read p) ;; skip module
+              (read p)))
+          
+          (define/override (get-metadata-lines) 3)
+          
           (super-new)))
       
       (define (stepper-settings-language %)
@@ -955,6 +966,7 @@ tracing todo:
            (sharing-printing #t)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #t)
+           (reader-module '(lib "htdp-advanced-reader.ss" "lang"))
            (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
@@ -980,6 +992,7 @@ tracing todo:
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
+           (reader-module '(lib "htdp-intermediate-lambda-reader.ss" "lang"))
            (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
@@ -997,6 +1010,7 @@ tracing todo:
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
            (use-function-output-syntax? #t)
+           (reader-module '(lib "htdp-intermediate-reader.ss" "lang"))
            (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
@@ -1013,6 +1027,7 @@ tracing todo:
            (sharing-printing #f)
            (abbreviate-cons-as-list #t)
            (allow-sharing? #f)
+           (reader-module '(lib "htdp-beginner-abbr-reader.ss" "lang"))
            (stepper:enable-let-lifting #t)))
         
         (add-htdp-language
@@ -1030,6 +1045,7 @@ tracing todo:
            (abbreviate-cons-as-list #f)
            (allow-sharing? #f)
            (accept-quasiquote? #f)
+           (reader-module '(lib "htdp-beginner-reader.ss" "lang"))
            (stepper:enable-let-lifting #t)))
         
         (drscheme:get/extend:extend-unit-frame frame-tracing-mixin)

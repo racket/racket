@@ -55,7 +55,11 @@
       
       create-executable
       
-      get-save-module
+      get-reader-module
+      get-metadata
+      metadata->settings
+      get-metadata-lines
+      
       get-language-position
       get-language-name
       get-style-delta
@@ -508,9 +512,7 @@
 	(mixin (module-based-language<%>) (language<%>)
 	  (inherit get-module get-transformer-module use-namespace-require/copy?
                    get-init-code use-mred-launcher get-reader)
-          
-          (define/public (get-save-module) #f)
-          
+                    
           (define/pubment (capability-value s) 
             (inner (get-capability-default s) capability-value s))
           
@@ -543,7 +545,12 @@
                                                      (get-init-code setting teachpacks)
                                                      (use-mred-launcher)
                                                      (use-namespace-require/copy?)))
-          (super-instantiate ())))
+          (define/public (get-reader-module) #f)
+          (define/public (get-metadata a b c) #f)
+          (define/public (metadata->settings m) #f)
+          (define/public (get-metadata-lines) #f)
+
+          (super-new)))
 
       ;; create-module-based-language-executable :  
       ;; (is-a?/c area-container<%>) string module-spec module-spec sexp (union boolean? 'ask) boolean?
@@ -908,18 +915,17 @@
                   (map (λ (x) (list #f x))
                        pre-to-be-embedded-module-specs4)])
 
-            (make-embedding-executable 
+            (create-embedding-executable 
              executable-filename
-             gui?
-             #f ;; verbose?
-             to-be-embedded-module-specs
-             (list 
-              bootstrap-tmp-filename
-              program-filename)
-             #f
-             (if gui?
-                 (list "-mvqZ")
-                 (list "-mvq"))))
+             #:mred gui?
+             #:verbose? #f ;; verbose?
+             #:modules to-be-embedded-module-specs
+             #:literal-files (list 
+                              bootstrap-tmp-filename
+                              program-filename)
+             #:cmdline (if gui?
+                           (list "-mvqZ")
+                           (list "-mvq"))))
           (delete-file init-code-tmp-filename)
           (delete-file bootstrap-tmp-filename)
           (void)))

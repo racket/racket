@@ -49,7 +49,12 @@
 
       (define lang%
         (class* object% (drscheme:language:language<%>)
-          (define/public (get-save-module) #f)
+          (define/public (get-reader-module) #f)
+          (define/public (get-metadata a b) #f)
+          (define/public (metadata->settings m) #f)
+          (define/public (metadata->teachpacks m) #f)
+          (define/public (get-metadata-lines) #f)
+          
           (define/public (capability-value s) (drscheme:language:get-capability-default s))
           (define/public (first-opened) (void))
           (define/public (config-panel parent)

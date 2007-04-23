@@ -150,7 +150,11 @@
       (define (java-lang-mixin level name number one-line dyn?)
         (when dyn? (dynamic? #t))
         (class* object% (drscheme:language:language<%>)
-          (define/public (get-save-module) #f)
+          (define/public (get-reader-module) #f)
+          (define/public (get-metadata a b) #f)
+          (define/public (metadata->settings m) #f)
+          (define/public (get-metadata-lines) #f)
+          
           (define/public (capability-value s) 
             (cond
               [(eq? s 'drscheme:language-menu-title) (string-constant profj-java)]
