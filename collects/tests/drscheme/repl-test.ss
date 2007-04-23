@@ -3,6 +3,7 @@
   (require "drscheme-test-util.ss"
            (lib "class.ss")
            (lib "file.ss")
+           (lib "string.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework"))
   
@@ -46,8 +47,15 @@
   (define (to-strings . args)
     (apply string-append (map (λ (x) (format "~s\n" x)) args)))
   
+  (define (add-load-handler-context str)
+    (regexp
+     (string-append (regexp-quote "{bug09.png} {file.gif} ../../mred/private/snipfile.ss:")
+                    "[0-9]+:[0-9]+: "
+                    (regexp-quote str))))
+  
   (define test-data
     (list
+     
      ;; basic tests
      (make-test "1"
                 "1"
@@ -90,20 +98,20 @@
                 void)
      
      (make-test "("
-                "{bug09.gif} read: expected a `)'"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: read: expected a `)'"
+                "{bug09.png} read: expected a `)'"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: read: expected a `)'"
                 "read: expected a `)'"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: read: expected a `)'"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: read: expected a `)'"
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
 		#f
                 void
                 void)
      
      (make-test "."
-                "{bug09.gif} read: illegal use of \".\""
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: read: illegal use of \".\""
+                "{bug09.png} read: illegal use of \".\""
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: read: illegal use of \".\""
                 "read: illegal use of \".\""
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: read: illegal use of \".\""
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: read: illegal use of \".\""
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
                 #f
 		void
@@ -111,9 +119,9 @@
 
      (make-test "(lambda ())"
                 "lambda: bad syntax in: (lambda ())"
-                "{file.gif} repl-test-tmp.ss:1:0: lambda: bad syntax in: (lambda ())"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: lambda: bad syntax in: (lambda ())"
                 "lambda: bad syntax in: (lambda ())"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: lambda: bad syntax in: (lambda ())"
+                "{file.gif} repl-test-tmp.ss:1:0: lambda: bad syntax in: (lambda ())"
                 (cons (make-loc 0 0 0) (make-loc 0 11 11))
 		#f
                 void
@@ -122,9 +130,9 @@
      ;; make sure only a single syntax error occurs when in nested begin situation
      (make-test "(begin (lambda ()) (lambda ()))"
                 "lambda: bad syntax in: (lambda ())"
-                "{file.gif} repl-test-tmp.ss:1:7: lambda: bad syntax in: (lambda ())"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:7: lambda: bad syntax in: (lambda ())"
                 "lambda: bad syntax in: (lambda ())"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:7: lambda: bad syntax in: (lambda ())"
+                "{file.gif} repl-test-tmp.ss:1:7: lambda: bad syntax in: (lambda ())"
                 (cons (make-loc 0 7 7) (make-loc 0 18 18))
 		#f
                 void
@@ -132,9 +140,9 @@
      
      (make-test "xx"
                 "reference to undefined identifier: xx"
-                "reference to undefined identifier: xx"
-                "{bug09.gif} reference to undefined identifier: xx"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::1: reference to undefined identifier: xx"
+                (add-load-handler-context "reference to undefined identifier: xx")
+                "{bug09.png} reference to undefined identifier: xx"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::1: reference to undefined identifier: xx"
                 (cons (make-loc 0 0 0) (make-loc 0 2 2))
 		#f
                 void
@@ -220,9 +228,9 @@
 
      (make-test "(begin xx (printf \"hi\\n\"))"
                 "reference to undefined identifier: xx"
-                "reference to undefined identifier: xx"
-                "{bug09.gif} reference to undefined identifier: xx"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::1: reference to undefined identifier: xx"
+                (add-load-handler-context "reference to undefined identifier: xx")
+                "{bug09.png} reference to undefined identifier: xx"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::8: reference to undefined identifier: xx"
                 (cons (make-loc 0 7 7) (make-loc 0 9 9))
 		#f
                 void
@@ -234,9 +242,9 @@
                  "(require n)\n"
                  "s")
                 "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-                "{file.gif} repl-test-tmp.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
                 "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+                "{file.gif} repl-test-tmp.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
                 (cons (make-loc 0 43 43) (make-loc 0 44 44))
                 #f
                 void
@@ -256,9 +264,9 @@
 
      (make-test "#!/bin/sh\nxx"
                 "reference to undefined identifier: xx"
-                "reference to undefined identifier: xx"
-                "{bug09.gif} reference to undefined identifier: xx"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::11: reference to undefined identifier: xx"
+                (add-load-handler-context "reference to undefined identifier: xx")
+                "{bug09.png} reference to undefined identifier: xx"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::11: reference to undefined identifier: xx"
                 (cons (make-loc 1 0 10) (make-loc 1 2 12))
 		#f
                 void
@@ -288,18 +296,18 @@
      
      (make-test "    (eval '(lambda ()))"
                 "lambda: bad syntax in: (lambda ())"
-                "lambda: bad syntax in: (lambda ())"
-                "{bug09.gif} lambda: bad syntax in: (lambda ())"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::5: lambda: bad syntax in: (lambda ())"
+                "{bug09.png} lambda: bad syntax in: (lambda ())"
+                "{bug09.png} lambda: bad syntax in: (lambda ())"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::5: lambda: bad syntax in: (lambda ())"
                 (cons (make-loc 0 4 4) (make-loc 0 23 23))
                 #f
                 void
                 void)
      (make-test "    (eval 'x)"
                 "reference to undefined identifier: x"
-                "reference to undefined identifier: x"
-                "{bug09.gif} reference to undefined identifier: x"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::5: reference to undefined identifier: x"
+                (add-load-handler-context "reference to undefined identifier: x")
+                "{bug09.png} reference to undefined identifier: x"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::5: reference to undefined identifier: x"
 		(cons (make-loc 0 4 4) (make-loc 0 13 13))
 		#f
                 void
@@ -324,12 +332,13 @@
 		#f
                 void
                 void)
+     
      ; printer setup test
      (make-test "(car (void))"
                 "car: expects argument of type <pair>; given #<void>"
-                "car: expects argument of type <pair>; given #<void>"
-                "{bug09.gif} car: expects argument of type <pair>; given #<void>"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::1: car: expects argument of type <pair>; given #<void>"
+                (add-load-handler-context "car: expects argument of type <pair>; given #<void>")
+                "{bug09.png} car: expects argument of type <pair>; given #<void>"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::1: car: expects argument of type <pair>; given #<void>"
                 (cons (make-loc 0 0 0) (make-loc 0 12 12))
                 #f
                 void
@@ -337,37 +346,37 @@
      
      ;; error in the middle
      (make-test "1 2 ( 3 4"
-                "1\n2\n{bug09.gif} read: expected a `)'"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: read: expected a `)'"
+                "1\n2\n{bug09.png} read: expected a `)'"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: read: expected a `)'"
                 "1\n2\nread: expected a `)'"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: read: expected a `)'"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: read: expected a `)'"
 		(cons (make-loc 0 4 4) (make-loc 0 9 9))
 		#f
                 void
                 void)
      (make-test "1 2 . 3 4"
-                "1\n2\n{bug09.gif} read: illegal use of \".\""
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: read: illegal use of \".\""
+                "1\n2\n{bug09.png} read: illegal use of \".\""
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: read: illegal use of \".\""
                 "1\n2\nread: illegal use of \".\""
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: read: illegal use of \".\""
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: read: illegal use of \".\""
 		(cons (make-loc 0 4 4) (make-loc 0 5 5))
 		#f
                 void
                 void)
      (make-test "1 2 (lambda ()) 3 4"
                 "1\n2\nlambda: bad syntax in: (lambda ())"
-                "{file.gif} repl-test-tmp.ss:1:4: lambda: bad syntax in: (lambda ())"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: lambda: bad syntax in: (lambda ())"
                 "1\n2\nlambda: bad syntax in: (lambda ())"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:4: lambda: bad syntax in: (lambda ())"
+                "{file.gif} repl-test-tmp.ss:1:4: lambda: bad syntax in: (lambda ())"
 		(cons (make-loc 0 4 4) (make-loc 0 15 15))
                 #f
                 void
                 void)
      (make-test "1 2 x 3 4"
                 "1\n2\nreference to undefined identifier: x"
-                "reference to undefined identifier: x"
-                "1\n2\n{bug09.gif} reference to undefined identifier: x"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::5: reference to undefined identifier: x"
+                (add-load-handler-context "reference to undefined identifier: x")
+                "1\n2\n{bug09.png} reference to undefined identifier: x"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::5: reference to undefined identifier: x"
 		(cons (make-loc 0 4 4) (make-loc 0 5 5))
                 #f
                 void
@@ -394,10 +403,10 @@
      ;; error across separate files
      (make-test
       "(load \"repl-test-tmp2.ss\") (define (g) (+ 1 (car 1))) (f g)"
-      "{bug09.gif} car: expects argument of type <pair>; given 1"
-      "{bug09.gif} {file.gif} repl-test-tmp.ss:1:27: car: expects argument of type <pair>; given 1"
-      "{bug09.gif} car: expects argument of type <pair>; given 1"
-      "{bug09.gif} {file.gif} repl-test-tmp.ss::45: car: expects argument of type <pair>; given 1"
+      "{bug09.png} car: expects argument of type <pair>; given 1"
+      "{bug09.png} {file.gif} repl-test-tmp.ss:1:27: car: expects argument of type <pair>; given 1"
+      "{bug09.png} car: expects argument of type <pair>; given 1"
+      "{bug09.png} {file.gif} repl-test-tmp.ss::45: car: expects argument of type <pair>; given 1"
       (cons (make-loc -1 -1 44)
             (make-loc -1 -1 51))
       #f
@@ -412,19 +421,19 @@
      ;; new namespace test
      (make-test "(current-namespace (make-namespace))\nif"
                 "if: bad syntax in: if"
-                "{file.gif} repl-test-tmp.ss:2:0: if: bad syntax in: if"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:2:0: if: bad syntax in: if"
                 "if: bad syntax in: if"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:2:0: if: bad syntax in: if"
+                "{file.gif} repl-test-tmp.ss:2:0: if: bad syntax in: if"
 		(cons (make-loc 1 0 37) (make-loc 1 2 39))
 		#f
                 void
                 void)
      
      (make-test "(current-namespace (make-namespace 'empty))\nif"
-                "compile: bad syntax; reference to top-level identifier is not allowed, because no #%top syntax transformer is bound in: if"
-                "{file.gif} repl-test-tmp.ss:2:0: compile: bad syntax; reference to top-level identifier is not allowed, because no #%top syntax transformer is bound in: if"
-                "compile: bad syntax; reference to top-level identifier is not allowed, because no #%top syntax transformer is bound in: if"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:2:0: compile: bad syntax; reference to top-level identifier is not allowed, because no #%top syntax transformer is bound in: if"
+                "application: bad syntax in: (#%top-interaction . if)"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:2:0: compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
+                "application: bad syntax (illegal use of `.') in: (#%top-interaction . if)"
+                "{file.gif} repl-test-tmp.ss:2:0: compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
 		(cons (make-loc 1 0 44) (make-loc 1 0 46))
 		#f
                 void
@@ -445,9 +454,9 @@
      (make-test
       "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (car))\n(lambda () (error-escape-handler old))))\n10))"
       "car: expects 1 argument, given 0\n15"
-      "car: expects 1 argument, given 0\n15"
-      "{bug09.gif} car: expects 1 argument, given 0\n15"
-      "{bug09.gif} {file.gif} repl-test-tmp.ss::153: car: expects 1 argument, given 0\n15"
+      (add-load-handler-context "car: expects 1 argument, given 0\n15")
+      "{bug09.png} car: expects 1 argument, given 0\n15"
+      "{bug09.png} {file.gif} repl-test-tmp.ss::153: car: expects 1 argument, given 0\n15"
       'definitions
       #f
       void
@@ -524,9 +533,9 @@
       ;; comes and messes up the source location for the error.
       "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (car))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
       "car: expects 1 argument, given 0"
-      "car: expects 1 argument, given 0"
-      "{bug09.gif} car: expects 1 argument, given 0"
-      "{bug09.gif} {file.gif} repl-test-tmp.ss::100: car: expects 1 argument, given 0"
+      (add-load-handler-context "car: expects 1 argument, given 0")
+      "{bug09.png} car: expects 1 argument, given 0"
+      "{bug09.png} {file.gif} repl-test-tmp.ss::100: car: expects 1 argument, given 0"
       (cons (make-loc 0 99 99) (make-loc 0 104 104))
       #f
       void
@@ -585,9 +594,9 @@
 
      (make-test "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
 		"procedure application: expected procedure, given: 3; arguments were: 3"
-                "procedure application: expected procedure, given: 3; arguments were: 3"
-                "{bug09.gif} procedure application: expected procedure, given: 3; arguments were: 3"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::74: procedure application: expected procedure, given: 3; arguments were: 3"
+                (add-load-handler-context "procedure application: expected procedure, given: 3; arguments were: 3")
+                "{bug09.png} procedure application: expected procedure, given: 3; arguments were: 3"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::74: procedure application: expected procedure, given: 3; arguments were: 3"
 		(cons (make-loc 3 19 73) (make-loc 3 24 78))
 		#f
                 void
@@ -599,6 +608,24 @@
                 "right"
                 "right"
                 "right"
+                'interactions
+                #f
+                void
+                void)
+     
+     (make-test (format "~s"
+                        '(call-with-continuation-prompt
+                          (lambda ()
+                            (eval '(begin (abort-current-continuation
+                                           (default-continuation-prompt-tag)
+                                           1 2 3)
+                                          10)))
+                          (default-continuation-prompt-tag)
+                          list))
+                "(1 2 3)"
+                "(1 2 3)"
+                "(1 2 3)"
+                "(1 2 3)"
                 'interactions
                 #f
                 void
@@ -617,9 +644,9 @@
      
      (make-test (list "(" '("Special" "Insert λ") "())")
                 "λ: bad syntax in: (λ ())"
-                "{file.gif} repl-test-tmp.ss:1:0: λ: bad syntax in: (λ ())"
+                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: λ: bad syntax in: (λ ())"
                 "λ: bad syntax in: (λ ())"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss:1:0: λ: bad syntax in: (λ ())"
+                "{file.gif} repl-test-tmp.ss:1:0: λ: bad syntax in: (λ ())"
                 (cons (make-loc 0 0 0) (make-loc 0 5 5))
 		#f
                 void
@@ -629,8 +656,8 @@
      (make-test "(begin (thread (lambda () x)) (sleep 1/10))"
                 "reference to undefined identifier: x"
                 "reference to undefined identifier: x"
-                "{bug09.gif} reference to undefined identifier: x"
-                "{bug09.gif} {file.gif} repl-test-tmp.ss::27: reference to undefined identifier: x"
+                "{bug09.png} reference to undefined identifier: x"
+                "{bug09.png} {file.gif} repl-test-tmp.ss::27: reference to undefined identifier: x"
                 (cons (make-loc 0 26 26) (make-loc 0 27 27))
                 #f
                 void
@@ -712,7 +739,6 @@
       #f
       void 
       void)
-
      ))
   ;; these tests aren't used at the moment.
   (define xml-tests
@@ -784,7 +810,7 @@
       void
       void)))
   
-  (define backtrace-image-string "{bug09.gif}")
+  (define backtrace-image-string "{bug09.png}")
   (define file-image-string "{file.gif}")
 
   (define tmp-load-directory
@@ -1013,7 +1039,7 @@
     (define (reset) (set! tests 0) (set! failures 0))
     (define (final-report)
       (if (= 0 failures)
-          (printf "tests finished: ALL ~a TESTS PASSED\n" tests)
+          (printf "tests finished: all ~a tests passed\n" tests)
           (printf "tests finished: ~a failed out of ~a total\n" failures tests)))
     
     (define (run-test-in-language-level raw?)
@@ -1090,7 +1116,7 @@
         
         (let* ([end (- (get-int-pos) 1)]
                [output (fetch-output drscheme-frame start end)]
-               [expected "{bug09.gif} reference to undefined identifier: x"])
+               [expected "{bug09.png} reference to undefined identifier: x"])
           (unless (equal? output expected)
             (error 'callcc-test "expected ~s, got ~s" expected output)))))
     
@@ -1115,7 +1141,8 @@
                  [output (fetch-output drscheme-frame start end)]
                  [expected "(+ 1 2)"])
             (unless (equal? output expected)
-              (error 'top-interaction-test "expected ~s, got ~s" expected output))))
+              (error 'top-interaction-test "expected.1 ~s, got ~s" expected output))
+            (next-test)))
         
         (for-each test:keystroke (string->list "(+ 4 5)"))
         (let ([start (+ 1 (send interactions-text last-position))])
@@ -1125,36 +1152,15 @@
                  [output (fetch-output drscheme-frame start end)]
                  [expected "(+ 4 5)"])
             (unless (equal? output expected)
-              (error 'top-interaction-test "expected ~s, got ~s" expected output))))
-        
-        (do-execute drscheme-frame)
-        (wait-for-execute)
-        (let ([start (+ 1 (send interactions-text last-position))])
-          (type-in-definitions drscheme-frame "(define-syntax #%top-interaction (syntax-rules () [(_ . e) 'e]))\n(+ 1 2)\n")
-          (do-execute drscheme-frame)
-          (wait-for-execute)
-          (let* ([end (- (get-int-pos) 1)]
-                 [output (fetch-output drscheme-frame ints-just-after-welcome end)]
-                 [expected "(+ 4 5)"])
-            (unless (equal? output expected)
-              (error 'top-interaction-test "expected ~s, got ~s" expected output))))
-        
-        (for-each test:keystroke (string->list "(+ 4 5)"))
-        (let ([start (+ 1 (send interactions-text last-position))])
-          (test:keystroke #\return)
-          (wait-for-execute)
-          (let* ([end (- (get-int-pos) 1)]
-                 [output (fetch-output drscheme-frame start end)]
-                 [expected "(+ 4 5)"])
-            (unless (equal? output expected)
-              (error 'top-interaction-test "expected ~s, got ~s" expected output))))))
+              (error 'top-interaction-test "expected.2 ~s, got ~s" expected output))
+            (next-test)))))
     
     (when (file-exists? tmp-load-filename)
       (delete-file tmp-load-filename))
     (save-drscheme-window-as tmp-load-filename)
 
-    (run-test-in-language-level #t)
     (run-test-in-language-level #f)
+    (run-test-in-language-level #t)
     (kill-tests)
     (callcc-test)
     (top-interaction-test)
