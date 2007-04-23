@@ -98,15 +98,18 @@
   ;; IOTA count [start step]	(start start+step ... start+(count-1)*step)
   
   (define iota
-	(opt-lambda (count [start 0] [step 1])
-	  (check-arg integer? count 'iota)
-	  (check-arg number? start 'iota)
-	  (check-arg number? step 'iota)
-	  (let ((last-val (+ start (* (- count 1) step))))
-		(do ((count count (- count 1))
-			 (val last-val (- val step))
-			 (ans '() (cons val ans)))
-			((<= count 0)  ans)))))
+    (opt-lambda (count [start 0] [step 1])
+      (check-arg integer? count 'iota)
+      (check-arg number? start 'iota)
+      (check-arg number? step 'iota)
+      (unless (or (zero? count) (positive? count))
+        (error 'iota "count expected to be non-negative, got: ~a" count))
+      (let loop ([n 0])
+        (cond
+          [(= n count)   '()]
+          [else          (cons (+ start (* n step))
+                               (loop (add1 n)))]))))
+  
 
   )
 
