@@ -531,11 +531,18 @@ TODO
               (make-object image-snip% bitmap)
               (make-object string-snip% "[err]"))))
       
-      (define (no-user-evaluation-message frame)
-        (message-box
-         (string-constant evaluation-terminated)
-         (format (string-constant evaluation-terminated-explanation))
-         frame))
+    (define (no-user-evaluation-message frame exit-code)
+      (message-box
+       (string-constant evaluation-terminated)
+       (if exit-code
+           (string-append
+            (string-constant evaluation-terminated-explanation)
+            "\n\n"
+            (if (zero? exit-code)
+                (string-constant exited-successfully)
+                (format (string-constant exited-with-error-code) exit-code)))
+           (string-constant evaluation-terminated-explanation))
+       frame))
       
       ;; insert/delta : (instanceof text%) (union snip string) (listof style-delta%) *-> (values number number)
       ;; inserts the string/stnip into the text at the end and changes the
@@ -892,7 +899,11 @@ TODO
                  (user-eventspace-box (make-weak-box #f))
                  (user-namespace-box (make-weak-box #f))
                  (user-eventspace-main-thread #f)
-                 (user-break-parameterization #f))
+                 (user-break-parameterization #f)
+                 
+                 ;; user-exit-code (union #f (integer-in 0 255))
+                 ;; #f indicates that exit wasn't called. Integer indicates exit code
+                 (user-exit-code #f))
 
           (define/public (get-user-language-settings) user-language-settings)
           (define/public (get-user-custodian) user-custodian)
@@ -928,7 +939,8 @@ TODO
                 (no-user-evaluation-message
                  (let ([canvas (get-active-canvas)])
                    (and canvas
-                        (send canvas get-top-level-window)))))))
+                        (send canvas get-top-level-window)))
+                 user-exit-code))))
           (field (need-interaction-cleanup? #f))
           
           (define/private (cleanup-interaction) ; =Kernel=, =Handler=
@@ -1138,6 +1150,7 @@ TODO
               (set! eval-thread-thunks null)
               (set! eval-thread-state-sema (make-semaphore 1))
               (set! eval-thread-queue-sema (make-semaphore 0))
+              (set! user-exit-code #f)
               
               (let* ([init-thread-complete (make-semaphore 0)]
                      [goahead (make-semaphore)])
@@ -1145,12 +1158,29 @@ TODO
                 ; setup standard parameters
                 (let ([snip-classes
                        ; the snip-classes in the DrScheme eventspace's snip-class-list
-                       (drscheme:eval:get-snip-classes)])
+                       (drscheme:eval:get-snip-classes)]
+                      [drs-eventspace (current-eventspace)])
                   (queue-user/wait
                    (λ () ; =User=, =No-Breaks=
                      ; No user code has been evaluated yet, so we're in the clear...
                      (break-enabled #f)
                      (set! user-eventspace-main-thread (current-thread))
+                     
+                     (let ([drscheme-exit-handler
+                            (λ (x)
+                              (let ([s (make-semaphore)])
+                                (parameterize ([current-eventspace drs-eventspace])
+                                  (queue-callback
+                                   (λ ()
+                                     (set! user-exit-code 
+                                           (if (and (integer? x)
+                                                    (<= 0 x 255))
+                                               x
+                                               0))
+                                     (semaphore-post s))))
+                                (semaphore-wait s)
+                                (custodian-shutdown-all user-custodian)))])
+                       (exit-handler drscheme-exit-handler))
                      (initialize-parameters snip-classes))))
                 
                 ;; disable breaks until an evaluation actually occurs

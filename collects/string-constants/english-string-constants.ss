@@ -1041,6 +1041,11 @@ please adhere to these guidelines:
  (evaluation-terminated "Evaluation Terminated")
  (evaluation-terminated-explanation
   "The evaluation thread is no longer running, so no evaluation can take place until the next execution.")
+  
+  ; next two constants show up in the same dialog as the above evaluation-terminated string
+  ; constants, but only when the user calls 'exit' (possibly with a status code).
+  (exited-successfully "Exited successfully.")
+  (exited-with-error-code "Exited with error code ~a.") ;; ~a is filled in with a number between 1 and 255
  (last-stack-frame "show the last stack frame")
  (last-stack-frames "show the last ~a stack frames")
  (next-stack-frames "show the next ~a stack frames")

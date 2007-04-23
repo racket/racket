@@ -172,9 +172,6 @@
         (error-print-width 250)
         (current-ps-setup (make-object ps-setup%))
 
-        (let ([user-custodian (current-custodian)])
-          (exit-handler (λ (arg) ; =User=
-                          (custodian-shutdown-all user-custodian))))
         (current-namespace (make-namespace 'empty))
         (for-each (λ (x) (namespace-attach-module drscheme:init:system-namespace x))
                   to-be-copied-module-names))
