@@ -9,7 +9,10 @@
            exn:get-module-code
            exn:get-module-code?
            exn:get-module-code-path
-           make-exn:get-module-code)
+           make-exn:get-module-code
+           get-module-code)
+  #;
+  ;; Contracts don't yet play well with keyword arguments:
   (provide/contract
    [get-module-code ([path-string?]
                      [(and/c path-string? relative-path?)
@@ -65,7 +68,9 @@
 
   (define/kw (get-module-code path
                #:optional
-               [sub-path "compiled"] [compiler compile] [extension-handler #f] [prefer-so? #f])
+               [sub-path "compiled"] [compiler compile] [extension-handler #f] 
+               #:key
+               [choose (lambda (src zo so) #f)])
     (unless (path-string? path)
       (raise-type-error 'get-module-code "path or string (sans nul)" path))
     (let*-values ([(path) (resolve path)]
@@ -87,13 +92,19 @@
                                          (if (path? base)
                                            base
                                            (current-directory))])
-                           (t)))])
+                           (t)))]
+             [prefer (choose path zo so)])
         (cond
           ;; Use .zo, if it's new enough
-          [(date>=? zo path-d) (read-one zo #f)]
+          [(or (eq? prefer 'zo)
+               (and (not prefer)
+                    (date>=? zo path-d)))
+           (read-one zo #f)]
           ;; Maybe there's an .so? Use it only if we don't prefer source.
-          [(and (or (not path-d) prefer-so?)
-		(date>=? so path-d))
+          [(or (eq? prefer 'so)
+               (and (not prefer)
+                    (or (not path-d)
+                        (date>=? so path-d))))
            (if extension-handler
              (extension-handler so #f)
              (raise (make-exn:get-module-code
@@ -101,7 +112,9 @@
                      (current-continuation-marks)
                      so)))]
           ;; Use source if it exists
-          [path-d (with-dir (lambda () (compiler (read-one path #t))))]
+          [(or (eq? prefer 'src)
+               path-d)
+           (with-dir (lambda () (compiler (read-one path #t))))]
           ;; Or maybe even a _loader.so?
           [(and (not path-d)
                 (date>=? _loader-so path-d)

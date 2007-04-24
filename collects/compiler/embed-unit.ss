@@ -328,6 +328,10 @@
           (let-values ([(base name dir?) (split-path p)])
             (make-directory* base)
             p))))
+
+    (define (file-date f)
+      (with-handlers ([exn:fail:filesystem? (lambda (x) -inf.0)])
+        (file-or-directory-modify-seconds f)))
     
     (define-struct extension (path))
     
@@ -365,8 +369,15 @@
                                                             "cannot use a _loader extension: ~e"
                                                             file)
                                                      (make-extension file))))
-					   ;; Prefer extensions if we're handling them:
-					   (not on-extension))]
+                                           #:choose
+                                           ;; Prefer extensions, if we're handling them:
+                                           (lambda (src zo so)
+                                             (if on-extension
+                                                 #f
+                                                 (if (and (file-exists? so)
+                                                          ((file-date so) . >= . (file-date zo)))
+                                                     'so
+                                                     #f))))]
                     [name (let-values ([(base name dir?) (split-path filename)])
                             (path->string (path-replace-suffix name #"")))]
                     [prefix (let ([a (assoc filename prefixes)])
@@ -549,7 +560,7 @@
     ;; Write a module bundle that can be loaded with 'load' (do not embed it
     ;; into an executable). The bundle is written to the current output port.
     (define (write-module-bundle verbose? modules literal-files literal-expression collects-dest
-                                 on-extension program-name compiler expand-namespace)
+                                 on-extension program-name compiler expand-namespace src-filter)
       (let* ([module-paths (map cadr modules)]
              [files (map
                      (lambda (mp)
@@ -676,7 +687,11 @@
                (when verbose?
                  (fprintf (current-error-port) "Writing module from ~s~n" (mod-file nc)))
                (write `(current-module-name-prefix ',(string->symbol (mod-prefix nc))))
-               (write (mod-code nc))))
+               (if (src-filter (mod-file nc))
+                   (with-input-from-file (mod-file nc)
+                     (lambda ()
+                       (copy-port (current-input-port) (current-output-port))))
+                   (write (mod-code nc)))))
            l))
         (write '(current-module-name-prefix #f))
         (newline)
@@ -729,7 +744,8 @@
                                             [expand-namespace (current-namespace)]
                                             [compiler (lambda (expr)
                                                         (parameterize ([current-namespace expand-namespace])
-                                                          (compile expr)))])
+                                                          (compile expr)))]
+                                            [src-filter (lambda (filename) #f)])
       (define keep-exe? (and launcher?
                              (let ([m (assq 'forget-exe? aux)])
                                (or (not m)
@@ -828,7 +844,8 @@
                                           on-extension
                                           (file-name-from-path dest)
                                           compiler
-                                          expand-namespace))])
+                                          expand-namespace
+                                          src-filter))])
               (let-values ([(start end)
                             (if (and (eq? (system-type) 'macosx)
                                      (not unix-starter?))

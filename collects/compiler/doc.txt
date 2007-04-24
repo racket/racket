@@ -408,7 +408,8 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
                                [#:launcher? launcher?]
                                [#:verbose? verbose?]
                                [#:compiler compile-proc]
-                               [#:expand-namespace expand-namespace])
+                               [#:expand-namespace expand-namespace]
+                               [#:src-filter src-filter-proc])
   - Copies the MzScheme (if `mred?' is #f) or MrEd (otherwise) binary,
   embedding code into the copied executable to be loaded on startup.
   (Under Unix, the binary is actually a wrapper executable that execs
@@ -600,6 +601,13 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
    declarations in included modules, so that the path resolutions can
    be directed to the current locations (and, unltimately, redirected
    to copies in a distribution).
+
+   The `src-filter-proc' takes a path and returns true if the
+   corresponding file source be included in the embedding executable
+   in source form (insteda of compiled form), #f otherwise. The
+   default returns #f for all paths. Beware that the current output
+   port may be redirected to the result executable when the filter
+   procedure is called.
 
 > (make-embedding-executable dest mred? verbose? mod-list literal-file-list literal-sexpr cmdline-list [aux launcher? variant])
 

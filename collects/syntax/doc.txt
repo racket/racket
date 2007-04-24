@@ -323,7 +323,8 @@ _modread.ss_: reading module source code
 _modcode.ss_: getting module compiled code
 ======================================================================
 
-> (get-module-code path [compiled-subdir compile-proc ext-proc prefer-ext?]) -
+> (get-module-code path [compiled-subdir compile-proc ext-proc]
+                   [#:choose choose-proc]) -
   returns a compiled expression for the declaration of the module
   specified by `module-path-v'. The `module-path-v' argument is a
   quoted module path, as for MzScheme's `dynamic-require' using the
@@ -337,21 +338,29 @@ _modcode.ss_: getting module compiled code
   available.
 
   The `ext-proc' argument defaults to #f. If it is not #f, it must be
-  a procedure of two arguments that is used when `path' does not exist
-  and no ".zo" version of `path' can be found, but an extension
-  implementing `path' is found. In that case, the arguments to
+  a procedure of two arguments that is called when a native-code
+  version of `path' is should be used. In that case, the arguments to
   `ext-proc' are the path for the extension, and a boolean indicating
   whether the extension is a _loader file (#t) or not (#f).
 
-  If a ".zo" version of `path' is available and newer than var `path'
-  (in one of the directories specified by `compiled-subdir'), then it
-  is used instead of the source. Native-code versions of `path' are
-  ignored --- unless only a native-code version exists (i.e., `path'
-  itself does not exist), or `prefer-ext?' is true and the native-code
-  file is not a _loader variant. If a native-code version is prefer or
-  is the only file that exists, it is supplied to `ext-proc' when
-  `ext-proc' is #f, or an exception is raised (to report that an
-  extension file cannot be used) when `ext-proc' is #f.
+  The `choose-proc' argument is a procedure that takes three paths: a
+  source path, a .zo file path, and an extension path (for a
+  non-_loader extension). Some of the paths may not exist. The result
+  should be either 'src, 'zo, 'so, or #f, indicating which variant
+  should be used or (in the case of #f) that the default choice should
+  be used.
+
+  The default choice is computed as follows: if a ".zo" version of
+  `path' is available and newer than `path' itself (in one of the
+  directories specified by `compiled-subdir'), then it is used instead
+  of the source. Native-code versions of `path' are ignored, unless
+  only a native-code non_loader version exists (i.e., `path' itself
+  does not exist). A _loader extension is selected a last resort.
+
+  If an extension is prefered or is the only file that exists, it is
+  supplied to `ext-proc' when `ext-proc' is #f, or an exception is
+  raised (to report that an extension file cannot be used) when
+  `ext-proc' is #f.
 
 > moddep-current-open-input-file
  
