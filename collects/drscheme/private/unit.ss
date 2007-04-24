@@ -1634,58 +1634,15 @@ module browser threading seems wrong.
           
           (define/override (edit-menu:between-find-and-preferences edit-menu)
             (super edit-menu:between-find-and-preferences edit-menu)
-            (add-modes-submenu edit-menu)
-            (when (with-handlers ([exn:fail:unsupported? (λ (x) #f)])
-                    (let ([c (make-custodian)])
-                      (custodian-limit-memory 
-                       c
-                       100
-                       c))
-                    #t)
-            (set! limit-memory-menu-item
-                  (new menu-item%
-                       [label ""]
-                       [parent edit-menu]
-                       [callback
-                        (λ (item b)
-                          (let ([current-limit (send interactions-text get-custodian-limit)])
-                            (cond
-                              [current-limit
-                               (preferences:set 'drscheme:limit-memory #f)
-                               (send interactions-text set-custodian-limit #f)]
-                              [else
-                               (let ([num-str 
-                                      (get-text-from-user 
-                                       (string-constant drscheme)
-                                       (string-append
-                                        "Please choose a limit, in megabytes\n"
-                                        "The limit will take effect on the next Run of the program.")
-                                       this
-                                       (format "~a" (* 1/2 1024)))])
-                                 (when num-str
-                                   (let ([num (string->number num-str)])
-                                     (cond
-                                       [(and num
-                                             (integer? num)
-                                             (num . >= . 100))
-                                        (preferences:set 'drscheme:limit-memory (* 1024 1024 num))
-                                        (send interactions-text set-custodian-limit (* 1024 1024 num))]
-                                       [else
-                                        (message-box (string-constant drscheme)
-                                                     "Expected a positive integer (as a series of digits without commas) that is greater than 100"
-                                                     this)]))))])
-                            (update-limit-memory-menu-item-label
-                             (send interactions-text get-custodian-limit))))])))
-            
-            (update-limit-memory-menu-item-label (preferences:get 'drscheme:limit-memory)))
+            (add-modes-submenu edit-menu))
           
           (define/private (update-limit-memory-menu-item-label limit)
             (when limit-memory-menu-item
               (send limit-memory-menu-item set-label
                     (if limit
-                        (format "Disable memory limit (currently ~a megabytes)"
+                        (format "Disable Memory Limit (Currently ~a Megabytes)"
                                 (floor (/ limit 1024 1024)))
-                        "Limit memory..."))))
+                        "Limit Memory..."))))
             
                     
           
@@ -2881,6 +2838,35 @@ module browser threading seems wrong.
                 (λ (_1 _2) (send interactions-text kill-evaluation))
                 #\k
                 (string-constant kill-menu-item-help-string))
+              (when (with-handlers ([exn:fail:unsupported? (λ (x) #f)])
+                      (let ([c (make-custodian)])
+                        (custodian-limit-memory 
+                         c
+                         100
+                         c))
+                      #t)
+                (set! limit-memory-menu-item
+                      (new menu-item%
+                           [label ""]
+                           [parent scheme-menu]
+                           [callback
+                            (λ (item b)
+                              (let ([current-limit (send interactions-text get-custodian-limit)])
+                                (cond
+                                  [current-limit
+                                   (preferences:set 'drscheme:limit-memory #f)
+                                   (send interactions-text set-custodian-limit #f)]
+                                  [else
+                                   (let ([num (get-mbytes this)])
+                                     (when num
+                                       (preferences:set 'drscheme:limit-memory 
+                                                        (* 1024 1024 num))
+                                       (send interactions-text set-custodian-limit
+                                             (* 1024 1024 num))))])
+                                (update-limit-memory-menu-item-label
+                                 (send interactions-text get-custodian-limit))))]))
+              
+                (update-limit-memory-menu-item-label (preferences:get 'drscheme:limit-memory)))
               (new menu:can-restore-menu-item%
                    (label (string-constant clear-error-highlight-menu-item-label))
                    (parent scheme-menu)
@@ -3290,6 +3276,64 @@ module browser threading seems wrong.
           (update-toolbar-visiblity)
           (set! newest-frame this)
           (send definitions-canvas focus)))
+    
+    ;; get-mbytes : top-level-window -> (union #f integer[>=100])
+    (define (get-mbytes parent)
+      (define d (new dialog%
+                     [label (string-constant drscheme)]
+                     [parent parent]))
+      (define msg1 (new message% 
+                        [parent d]
+                        [label "Please choose a limit on the amount of memory, in megabytes."]))
+      (define msg2 (new message%
+                        [parent d]
+                        [label "The limit will take effect the next time the program is Run."]))
+      (define tb
+        (new text-field%
+             [label #f]
+             [parent d]
+             [init-value "512"]
+             [callback
+              (λ (tf e)
+                (let ([ed (send tf get-editor)])
+                  (cond 
+                    [(is-valid-number? ed)
+                     (background clear-sd ed)
+                     (send ok-button enable #t)]
+                    [else
+                     (background yellow-sd ed)
+                     (send ok-button enable #f)])))]))
+      (define bp (new horizontal-panel% [parent d]))
+      (define-values (ok-button cancel-button)
+        (gui-utils:ok/cancel-buttons
+         bp 
+         (λ (a b) 
+           (set! result (string->number (send (send tb get-editor) get-text)))
+           (send d show #f))
+         (λ (a b) (send d show #f))))
+      (define result #f)
+      
+      (define clear-sd (make-object style-delta%))
+      (define yellow-sd (make-object style-delta%))
+      
+      (define (is-valid-number? txt)
+        (let* ([n (string->number (send txt get-text))])
+          (and n
+               (integer? n)
+               (100 . <= . n))))
+      
+      (define (background sd txt) (send txt change-style sd 0 (send txt last-position)))
+      (send clear-sd set-delta-background "white")
+      (send yellow-sd set-delta-background "yellow")
+      (send d set-alignment 'left 'center)
+      (send bp set-alignment 'right 'center)
+      (send tb focus)
+      (let ([e (send tb get-editor)])
+        (send e set-position 0 (send e last-position)))
+      (send d show #t)
+      result)
+
+
     
     (define (limit-length l n)
       (let loop ([l l]
