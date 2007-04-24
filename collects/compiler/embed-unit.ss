@@ -337,7 +337,7 @@
     
     ;; Loads module code, using .zo if there, compiling from .scm if not
     (define (get-code filename module-path codes prefixes verbose? collects-dest on-extension 
-                      compiler expand-namespace)
+                      compiler expand-namespace get-extra-imports)
       (let ([a (assoc filename (unbox codes))])
         (if a
             ;; Already have this module. Make sure that library-referenced
@@ -397,7 +397,8 @@
                   [code
                    (let-values ([(imports fs-imports ft-imports) (module-compiled-imports code)])
                      (let ([all-file-imports (filter (lambda (x) (not (symbol? x)))
-                                                     (append imports fs-imports ft-imports))])
+                                                     (append imports fs-imports ft-imports
+                                                             (get-extra-imports filename code)))])
                        (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
                                              all-file-imports)]
                              [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
@@ -412,7 +413,8 @@
                                                collects-dest
                                                on-extension
                                                compiler
-                                               expand-namespace))
+                                               expand-namespace
+                                               get-extra-imports))
                                    sub-files sub-paths)
                          (let ([runtime-paths
                                 (parameterize ([current-namespace expand-namespace])
@@ -560,7 +562,8 @@
     ;; Write a module bundle that can be loaded with 'load' (do not embed it
     ;; into an executable). The bundle is written to the current output port.
     (define (write-module-bundle verbose? modules literal-files literal-expression collects-dest
-                                 on-extension program-name compiler expand-namespace src-filter)
+                                 on-extension program-name compiler expand-namespace 
+                                 src-filter get-extra-imports)
       (let* ([module-paths (map cadr modules)]
              [files (map
                      (lambda (mp)
@@ -589,7 +592,8 @@
              ;; loasing imports, so the list in the right order.
              [codes (box null)])
         (for-each (lambda (f mp) (get-code f mp codes prefix-mapping verbose? collects-dest
-                                           on-extension compiler expand-namespace))
+                                           on-extension compiler expand-namespace
+                                           get-extra-imports))
                   files
                   collapsed-mps)
         ;; Drop elements of `codes' that just record copied libs:
@@ -745,7 +749,8 @@
                                             [compiler (lambda (expr)
                                                         (parameterize ([current-namespace expand-namespace])
                                                           (compile expr)))]
-                                            [src-filter (lambda (filename) #f)])
+                                            [src-filter (lambda (filename) #f)]
+                                            [get-extra-imports (lambda (filename code) null)])
       (define keep-exe? (and launcher?
                              (let ([m (assq 'forget-exe? aux)])
                                (or (not m)
@@ -845,7 +850,8 @@
                                           (file-name-from-path dest)
                                           compiler
                                           expand-namespace
-                                          src-filter))])
+                                          src-filter
+                                          get-extra-imports))])
               (let-values ([(start end)
                             (if (and (eq? (system-type) 'macosx)
                                      (not unix-starter?))

@@ -409,7 +409,8 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
                                [#:verbose? verbose?]
                                [#:compiler compile-proc]
                                [#:expand-namespace expand-namespace]
-                               [#:src-filter src-filter-proc])
+                               [#:src-filter src-filter-proc]
+                               [#:get-extra-imports extra-imports-proc])
   - Copies the MzScheme (if `mred?' is #f) or MrEd (otherwise) binary,
   embedding code into the copied executable to be loaded on startup.
   (Under Unix, the binary is actually a wrapper executable that execs
@@ -608,6 +609,14 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
    default returns #f for all paths. Beware that the current output
    port may be redirected to the result executable when the filter
    procedure is called.
+  
+   The `extra-imports-proc' takes a source pathname and compiled
+   module for each module to be included in the executable. It returns
+   a list of module path indices for extra modules to be included in
+   the executable (in addition to the modules that the source module
+   requires). For example, these modules might correspond to reader
+   extensions needed to parse a module that will be included as
+   source.
 
 > (make-embedding-executable dest mred? verbose? mod-list literal-file-list literal-sexpr cmdline-list [aux launcher? variant])
 
