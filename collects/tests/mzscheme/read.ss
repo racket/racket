@@ -952,6 +952,11 @@
 (test #\{ syntax-property (read-syntax 'x (open-input-string "#{1 2}")) 'paren-shape)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test read error on a character not in any port
+
+(err/rt-test (read/recursive (open-input-string ";") #\. #f) exn:fail:read?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 

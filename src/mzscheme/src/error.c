@@ -1323,6 +1323,11 @@ void scheme_read_err(Scheme_Object *port,
 
   show_loc = SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC));
 
+  /* Via read/recursive, it's possible that the reader will try to
+     complain about a character that precedes the start of a port.
+     In that case, pos can be 0. */
+  if (!pos) line = col = pos = -1;
+
   if (stxsrc) {
     Scheme_Object *xsrc;
 
