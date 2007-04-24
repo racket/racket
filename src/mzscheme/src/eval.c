@@ -7761,7 +7761,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     kind = SCHEME_INTDEF_FRAME;
   else  {
     scheme_wrong_type(name,
-		      "'expression, 'module, 'top-level, or non-empty list",
+		      "'expression, 'module, 'module-begin, 'top-level, or non-empty list",
 		      1, argc, argv);
     return NULL;
   }
