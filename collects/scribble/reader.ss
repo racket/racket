@@ -37,7 +37,7 @@
             (let ([s (make-string n #\space)])
               (hash-table-put! t n s) s))))))
 
-  (define (dispatcher char inp source-name line-num col-num position)
+  (define ((dispatcher start-inside?) char inp source-name line-num col-num position)
     (define/kw (next-syntax readtable #:optional plain?)
       (let ([read (if plain? read-syntax read-syntax/recursive)])
         (parameterize ([current-readtable readtable])
@@ -91,7 +91,7 @@
            (let loop ([attrs '()])
              (let ([a (get-attr)])
                (if a (loop (append! (reverse! a) attrs)) (reverse! attrs))))))
-    (define ((get-line open open-re close close-re item-re unquote-re level))
+    (define ((get-line eof-ok? open open-re close close-re item-re unquote-re level))
       (let-values ([(line col pos) (port-next-location inp)])
         (define (make-stx sexpr)
           (datum->syntax-object #f
@@ -124,7 +124,9 @@
                => (lambda (m)
                     (make-stx (car m)))]
               [(regexp-match/fail-without-reading #rx#"^$" inp)
-               (read-error "missing `~a'" close)]
+               (if eof-ok?
+                   #f
+                   (read-error "missing `~a'" close))]
               [else (read-error "internal error")])))
     ;; adds stx (new syntax) to the list of stxs, merging it if both are
     ;; strings, except for newline markers
@@ -162,9 +164,12 @@
                                  stx)
                                r)
                         (cons stx r)))))))))
-    (define (get-lines)
+    (define (get-lines inside?)
       (define get
-        (cond [(regexp-match/fail-without-reading open-lines-special inp)
+        (cond [inside?
+               (get-line #t "{" open-lines "}" close-lines
+                         line-item bslash-unquote (box 0))]
+              [(regexp-match/fail-without-reading open-lines-special inp)
                => (lambda (m)
                     (let* ([open     (cadr m)]
                            [close    (reverse-bytes open)]
@@ -176,13 +181,13 @@
                                    (bytes-append (car pfx/sfx)
                                                  re
                                                  (cadr pfx/sfx))))])
-                      (get-line open (bre open-lines* open-re)
+                      (get-line #f open (bre open-lines* open-re)
                                 close (bre close-lines* close-re)
                                 (bre line-item* either-re)
                                 (bre bslash-unquote* either-re)
                                 (box 0))))]
               [(regexp-match/fail-without-reading open-lines inp)
-               (get-line "{" open-lines "}" close-lines
+               (get-line #f "{" open-lines "}" close-lines
                          line-item bslash-unquote (box 0))]
               [else #f]))
       (and get (let loop ([lines '()] [more '()])
@@ -228,9 +233,13 @@
                             #t))]
               [else (values (next-syntax cmd-readtable) #f)])))
     (cond
+     [start-inside?
+      (datum->syntax-object #f 
+                            (get-lines #t)
+                            (list source-name line-num col-num position (span-from position)))]
      [(regexp-match/fail-without-reading comment-start inp)
       (if (regexp-match-peek-positions open-lines inp)
-        (get-lines) (regexp-match comment-line inp))
+        (get-lines #f) (regexp-match comment-line inp))
       (make-special-comment #f)]
      [else
       (let* ([pfx   (get-rprefixes)]
@@ -238,7 +247,7 @@
              [cmd   (let-values ([(cmd bs?) (get-command)])
                       (set! bars? bs?) cmd)] ; #f means no command
              [attrs (and (not bars?) (get-attrs))]
-             [lines (and (not bars?) (get-lines))]
+             [lines (and (not bars?) (get-lines #f))]
              [stx   (and (or attrs lines)
                          (append (or attrs '()) (or lines '())))]
              [stx   (or (and cmd stx (cons cmd stx)) ; all parts
@@ -254,7 +263,7 @@
           (list source-name line-num col-num position (span-from position))))]))
 
   (define at-readtable
-    (make-readtable #f cmd-char 'terminating-macro dispatcher))
+    (make-readtable #f cmd-char 'terminating-macro (dispatcher #f)))
 
   ;; similar to plain Scheme, but with `|' as a terminating macro
   (define cmd-readtable
@@ -282,14 +291,32 @@
     (port-count-lines! (current-input-port))
     (current-readtable at-readtable))
 
+  (define default-src (gensym))
+  (define (src-name src port)
+    (if (eq? src default-src)
+        (object-name port)
+        src))
+
   (define/kw (*read #:optional [inp (current-input-port)])
     (parameterize ([current-readtable at-readtable])
       (read inp)))
 
-  (define/kw (*read-syntax #:optional src [port (current-input-port)])
+  (define/kw (*read-syntax #:optional [src default-src] [port (current-input-port)])
     (parameterize ([current-readtable at-readtable])
-      (read-syntax (or src (object-name port)) port)))
+      (read-syntax (src-name src port) port)))
 
-  (provide (rename *read read) (rename *read-syntax read-syntax))
+  (define/kw (read-inside #:optional [inp (current-input-port)])
+    (let-values ([(line col pos) (port-next-location inp)])
+      (parameterize ([current-readtable at-readtable])
+        (syntax-object->datum
+         ((dispatcher #t) #f inp (object-name inp) line col pos)))))
+
+  (define/kw (read-inside-syntax #:optional [src default-src] [port (current-input-port)])
+    (let-values ([(line col pos) (port-next-location port)])
+      (parameterize ([current-readtable at-readtable])
+        ((dispatcher #t) #f port (src-name src port) line col pos))))
+
+  (provide (rename *read read) (rename *read-syntax read-syntax)
+           read-inside read-inside-syntax)
 
   )

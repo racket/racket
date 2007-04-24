@@ -49,6 +49,11 @@ the at-readtable.  You can do this in a single command line:
 
   mzscheme -Le reader.ss scribble "(use-at-readtable)"
 
+In addition to `read' and `read-syntax', which are used by #reader,
+the "reader.ss" library provides the procedures `read-inside' and
+`read-inside-syntax'; these `-inner' variants parse as if inside a
+"@{}", and they return a (syntactic) list.
+
 *** Concrete Syntax
 
 The *concrete* syntax of @-commands is (informally, more details below):
