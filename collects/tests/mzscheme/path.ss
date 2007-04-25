@@ -708,7 +708,8 @@
   (test (bytes->path #"\\\\?\\\\\\c:\\") simplify-path (coerce "\\\\?\\\\\\c:\\") #f)
   (test (bytes->path #"\\\\?\\\\\\c:") simplify-path (coerce "\\\\?\\\\\\c:") #f)
 
-  (test (bytes->path #"\\\\?\\c:\\a\\b//c\\d") expand-path (coerce "\\\\?\\c:\\a\\b//c\\d"))
+  (when (eq? 'windows (system-type))
+    (test (bytes->path #"\\\\?\\c:\\a\\b//c\\d") expand-path (coerce "\\\\?\\c:\\a\\b//c\\d")))
 
   (test (bytes->path #"\\\\?\\UNC\\a\\b/c\\") simplify-path (coerce "\\\\?\\\\UNC\\a\\b/c") #f)
   (test (bytes->path #"\\\\a\\b\\") simplify-path (coerce "\\\\?\\\\UNC\\a\\b") #f)
