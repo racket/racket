@@ -634,9 +634,12 @@
 
   ;; ----------------------------------------
 
+  (define (skip-reader port)
+    (regexp-match/fail-without-reading #rx#"^#reader[(]lib\"read.ss\"\"wxme\"[)]" port))
+
   (define (wxme-convert-port port close? snip-filter)
     ;; read optional #reader header:
-    (regexp-match/fail-without-reading #rx#"^#reader[(]lib\"read.ss\"\"wxme\"[)]" port)
+    (skip-reader port)
     ;; decode:
     (decode 'read-bytes port snip-filter close? #f))
 
@@ -696,7 +699,9 @@
 
   (define (extract-used-classes port)
     (if (is-wxme-stream? port)
-        (decode 'extract-used-classes port (lambda (x) x) #f #t)
+        (begin
+          (skip-reader port)
+          (decode 'extract-used-classes port (lambda (x) x) #f #t))
         (values null null)))
 
   (provide/contract [is-wxme-stream? (input-port? . -> . any)]
