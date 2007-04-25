@@ -4620,14 +4620,6 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
     }
   }
 
-  if (filename && !scheme_directory_exists(filename)) {
-    if (break_ok)
-      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		       "directory-list: could not open \"%q\"",
-		       filename);
-    return NULL;
-  }
-
 # ifdef USE_FINDFIRST
 
   if (!filename)
@@ -4671,11 +4663,14 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
 
   hfile = FIND_FIRST(WIDE_PATH(pattern), &info);
   if (FIND_FAILED(hfile)) {
-    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		     "directory-list: could not open \"%q\" (%E)",
-		     filename,
-		     GetLastError());  
-    return scheme_null;
+    if (!filename)
+      return scheme_null;
+    if (break_ok)
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "directory-list: could not open \"%q\" (%E)",
+                       filename,
+                       GetLastError());  
+    return NULL;
   }
 
   do {
@@ -4711,8 +4706,16 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
 # else
   
   dir = opendir(filename ? filename : ".");
-  if (!dir)
-    return scheme_null;
+  if (!dir) {
+    if (!filename)
+      return scheme_null;
+    if (break_ok)
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "directory-list: could not open \"%q\" (%e)",
+                       filename,
+                       errno);
+    return NULL;
+  }
   
   while ((e = readdir(dir))) {
 #  ifdef DIRENT_NO_NAMLEN
