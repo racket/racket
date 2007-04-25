@@ -3272,7 +3272,10 @@ module browser threading seems wrong.
                      [parent parent]))
       (define msg1 (new message%
                         [parent d]
-                        [label "The limit will take effect the next time the program is Run."]))
+                        [label "The limit will take effect the next time the program"]))
+      (define msg1.5 (new message%
+                          [parent d]
+                          [label "is Run, and it must be at least 100 megabytes."]))
       
       (define outer-hp (new horizontal-panel% [parent d] [alignment '(center bottom)]))
       (define rb (new radio-box%
