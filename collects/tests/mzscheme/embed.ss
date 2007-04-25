@@ -347,4 +347,33 @@
            (path->string (build-path (collection-path "tests" "mzscheme") "embed-me7.ss")))
   (try-exe (mk-dest #t) "plotted\n" #t))
 
+;; Try including source that needs a reader extension
+
+(define (try-reader-test mred?)
+  (define dest (mk-dest mred?))
+  (define filename "embed-me11.ss")
+  (define (flags s)
+    (string-append "-" (if mred? "Z" "") "mvq" s))
+
+  (create-embedding-executable 
+   dest
+   #:modules `((#t (lib ,filename "tests" "mzscheme")))
+   #:cmdline `(,(flags "L") ,filename "tests/mzscheme")
+   #:src-filter (lambda (f)
+                  (let-values ([(base name dir?) (split-path f)])
+                    (equal? name (string->path filename))))
+   #:get-extra-imports (lambda (f code)
+                         (let-values ([(base name dir?) (split-path f)])
+                           (if (equal? name (string->path filename))
+                               '((lib "embed-me11-rd.ss" "tests" "mzscheme"))
+                               null)))
+   #:mred? mred?)
+
+  (putenv "ELEVEN" "eleven")
+  (try-exe dest "It goes to eleven!\n" mred?)
+  (putenv "ELEVEN" "done"))
+
+(try-reader-test #f)
+(try-reader-test #t)
+
 (report-errs)

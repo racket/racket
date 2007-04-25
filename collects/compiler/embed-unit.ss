@@ -397,12 +397,15 @@
                   [code
                    (let-values ([(imports fs-imports ft-imports) (module-compiled-imports code)])
                      (let ([all-file-imports (filter (lambda (x) (not (symbol? x)))
-                                                     (append imports fs-imports ft-imports
-                                                             (get-extra-imports filename code)))])
+                                                     (append imports fs-imports ft-imports))]
+                           [extra-paths (get-extra-imports filename code)])
                        (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
                                              all-file-imports)]
                              [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
-                                             all-file-imports)])
+                                             all-file-imports)]
+                             [extra-files (map (lambda (i) (normalize (resolve-module-path-index (module-path-index-join i 'root)
+                                                                                                 filename)))
+                                               extra-paths)])
                          ;; Get code for imports:
                          (for-each (lambda (sub-filename sub-path)
                                      (get-code sub-filename
@@ -415,7 +418,8 @@
                                                compiler
                                                expand-namespace
                                                get-extra-imports))
-                                   sub-files sub-paths)
+                                   (append sub-files extra-files)
+                                   (append sub-paths extra-paths))
                          (let ([runtime-paths
                                 (parameterize ([current-namespace expand-namespace])
                                   (eval code)
@@ -602,7 +606,7 @@
         ;; to the embedded modules
         (write (make-module-name-resolver (filter mod-code (unbox codes))))
         ;; Write the extension table and copy module code:
-        (let* ([l (unbox codes)]
+        (let* ([l (reverse (unbox codes))]
                [extensions (filter (lambda (m) (extension? (mod-code m))) l)]
                [runtimes (filter (lambda (m) (pair? (mod-runtime-paths m))) l)]
                [table-mod

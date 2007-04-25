@@ -612,11 +612,13 @@ _embedr-sig.ss_ library provides the signature, _compiler:embed^_.
   
    The `extra-imports-proc' takes a source pathname and compiled
    module for each module to be included in the executable. It returns
-   a list of module path indices for extra modules to be included in
-   the executable (in addition to the modules that the source module
-   requires). For example, these modules might correspond to reader
-   extensions needed to parse a module that will be included as
-   source.
+   a list of quoted module paths (absolute, as opposed to relative to
+   the module) for extra modules to be included in the executable in
+   addition to the modules that the source module `require's,
+   `require-for-syntax's, and `require-for-template's. For example,
+   these modules might correspond to reader extensions needed to parse
+   a module that will be included as source, as long as the reader is
+   referenced through an absolute module path.
 
 > (make-embedding-executable dest mred? verbose? mod-list literal-file-list literal-sexpr cmdline-list [aux launcher? variant])
 
