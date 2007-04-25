@@ -176,6 +176,14 @@ the state transitions / contracts are:
     (letrec ([stashed-prefs (preferences:get-prefs-snapshot)]
              [frame-stashed-prefs%
               (class frame:basic%
+                (define/override (on-subwindow-char receiver event)
+                  (cond
+                    [(eq? 'escape (send event get-key-code))
+                     (cancel-callback)]
+                    [else 
+                     (super on-subwindow-char receiver event)]))
+                (define/augment (on-close)
+                  (cancel-callback))
                 (define/override (show on?)
                   (when on?
                     (set! stashed-prefs (preferences:get-prefs-snapshot)))
@@ -235,7 +243,7 @@ the state transitions / contracts are:
                                (λ (f) (f))
                                on-close-dialog-callbacks)
                               (hide-dialog)))]
-             [cancel-callback (λ (_1 _2)
+             [cancel-callback (λ ()
                                 (hide-dialog)
                                 (preferences:restore-prefs-snapshot stashed-prefs))])
       (new button%
@@ -248,7 +256,7 @@ the state transitions / contracts are:
       (gui-utils:ok/cancel-buttons
        bottom-panel
        ok-callback
-       cancel-callback)
+       (λ (a b) (cancel-callback)))
       (make-object grow-box-spacer-pane% bottom-panel)
       (send* bottom-panel
         (stretchable-height #f)
