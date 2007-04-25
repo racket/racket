@@ -1544,105 +1544,7 @@ module browser threading seems wrong.
               [else (send definitions-text clear)])
             (send definitions-canvas focus))
 
-          (define execute-menu-item #f)
-          (define file-menu:print-transcript-item #f)
-          (define file-menu:create-new-tab-item #f)
-          
-          (define/override (file-menu:between-new-and-open file-menu)
-            (set! file-menu:create-new-tab-item
-                  (new menu:can-restore-menu-item%
-                       (label (string-constant new-tab))
-                       (shortcut #\=)
-                       (parent file-menu)
-                       (callback
-                        (λ (x y)
-                          (create-new-tab))))))
-          [define/override file-menu:between-open-and-revert
-            (lambda (file-menu)
-              (super file-menu:between-open-and-revert file-menu)
-              (make-object separator-menu-item% file-menu))]
-          (define close-tab-menu-item #f)
-          (define/override (file-menu:between-close-and-quit file-menu)
-            (set! close-tab-menu-item
-                  (new (get-menu-item%)
-                       (label (string-constant close-tab))
-                       (demand-callback
-                        (λ (item)
-                          (send item enable (1 . < . (send tabs-panel get-number)))))
-                       (parent file-menu)
-                       (callback
-                        (λ (x y)
-                          (close-current-tab)))))
-            (super file-menu:between-close-and-quit file-menu))
-          
-          (define/override (file-menu:save-string) (string-constant save-definitions))
-          (define/override (file-menu:save-as-string) (string-constant save-definitions-as))
-          (define/override (file-menu:between-save-as-and-print file-menu)
-            (let ([sub-menu (make-object menu% (string-constant save-other) file-menu)])
-              (make-object menu:can-restore-menu-item%
-                (string-constant save-definitions-as-text)
-                sub-menu
-                (λ (_1 _2)
-                  (let ([filename (send definitions-text put-file #f #f)])
-                    (when filename
-                      (send definitions-text save-file/gui-error filename 'text)))))
-              (make-object menu:can-restore-menu-item%
-                (string-constant save-interactions)
-                sub-menu
-                (λ (_1 _2) 
-                  (send interactions-text save-file/gui-error)))
-              (make-object menu:can-restore-menu-item%
-                (string-constant save-interactions-as)
-                sub-menu
-                (λ (_1 _2)
-                  (let ([filename (send interactions-text put-file #f #f)])
-                    (when filename
-                      (send interactions-text save-file/gui-error filename 'standard)))))
-              (make-object menu:can-restore-menu-item%
-                (string-constant save-interactions-as-text)
-                sub-menu
-                (λ (_1 _2)
-                  (let ([filename (send interactions-text put-file #f #f)])
-                    (when filename
-                      (send interactions-text save-file/gui-error filename 'text)))))
-              (make-object separator-menu-item% file-menu)
-              (set! logging-menu-item
-                    (make-object menu:can-restore-menu-item%
-                      (string-constant log-definitions-and-interactions)
-                      file-menu
-                      (λ (x y)
-                        (if logging
-                            (stop-logging)
-                            (start-logging)))))
-              (make-object separator-menu-item% file-menu)
-              (super file-menu:between-save-as-and-print file-menu)))
-          
-          [define/override file-menu:print-string (λ () (string-constant print-definitions))]
-          (define/override (file-menu:between-print-and-close file-menu)
-            (set! file-menu:print-transcript-item
-                  (make-object menu:can-restore-menu-item%
-                    (string-constant print-interactions)
-                    file-menu
-                    (λ (_1 _2)
-                      (send interactions-text print
-                            #t 
-                            #t
-                            (preferences:get 'framework:print-output-mode)))))
-            (super file-menu:between-print-and-close file-menu))
-          
-          (define limit-memory-menu-item #f)
-          
-          (define/override (edit-menu:between-find-and-preferences edit-menu)
-            (super edit-menu:between-find-and-preferences edit-menu)
-            (add-modes-submenu edit-menu))
-          
-          (define/private (update-limit-memory-menu-item-label limit)
-            (when limit-memory-menu-item
-              (send limit-memory-menu-item set-label
-                    (if limit
-                        (format "Disable Memory Limit (Currently ~a Megabytes)"
-                                (floor (/ limit 1024 1024)))
-                        "Limit Memory..."))))
+
             
                     
           
@@ -2238,9 +2140,6 @@ module browser threading seems wrong.
                 (send from-defs set-delegate #f)
                 (send to-defs set-delegate delegate)))
             
-            (update-limit-memory-menu-item-label
-             (send interactions-text get-custodian-limit))
-            
             (inner (void) on-tab-change from-tab to-tab))
           
           (define/public (next-tab) (change-to-delta-tab +1))
@@ -2697,6 +2596,96 @@ module browser threading seems wrong.
 ;                                            
 ;                                            
 
+                    (define execute-menu-item #f)
+          (define file-menu:print-transcript-item #f)
+          (define file-menu:create-new-tab-item #f)
+          
+          (define/override (file-menu:between-new-and-open file-menu)
+            (set! file-menu:create-new-tab-item
+                  (new menu:can-restore-menu-item%
+                       (label (string-constant new-tab))
+                       (shortcut #\=)
+                       (parent file-menu)
+                       (callback
+                        (λ (x y)
+                          (create-new-tab))))))
+          [define/override file-menu:between-open-and-revert
+            (lambda (file-menu)
+              (super file-menu:between-open-and-revert file-menu)
+              (make-object separator-menu-item% file-menu))]
+          (define close-tab-menu-item #f)
+          (define/override (file-menu:between-close-and-quit file-menu)
+            (set! close-tab-menu-item
+                  (new (get-menu-item%)
+                       (label (string-constant close-tab))
+                       (demand-callback
+                        (λ (item)
+                          (send item enable (1 . < . (send tabs-panel get-number)))))
+                       (parent file-menu)
+                       (callback
+                        (λ (x y)
+                          (close-current-tab)))))
+            (super file-menu:between-close-and-quit file-menu))
+          
+          (define/override (file-menu:save-string) (string-constant save-definitions))
+          (define/override (file-menu:save-as-string) (string-constant save-definitions-as))
+          (define/override (file-menu:between-save-as-and-print file-menu)
+            (let ([sub-menu (make-object menu% (string-constant save-other) file-menu)])
+              (make-object menu:can-restore-menu-item%
+                (string-constant save-definitions-as-text)
+                sub-menu
+                (λ (_1 _2)
+                  (let ([filename (send definitions-text put-file #f #f)])
+                    (when filename
+                      (send definitions-text save-file/gui-error filename 'text)))))
+              (make-object menu:can-restore-menu-item%
+                (string-constant save-interactions)
+                sub-menu
+                (λ (_1 _2) 
+                  (send interactions-text save-file/gui-error)))
+              (make-object menu:can-restore-menu-item%
+                (string-constant save-interactions-as)
+                sub-menu
+                (λ (_1 _2)
+                  (let ([filename (send interactions-text put-file #f #f)])
+                    (when filename
+                      (send interactions-text save-file/gui-error filename 'standard)))))
+              (make-object menu:can-restore-menu-item%
+                (string-constant save-interactions-as-text)
+                sub-menu
+                (λ (_1 _2)
+                  (let ([filename (send interactions-text put-file #f #f)])
+                    (when filename
+                      (send interactions-text save-file/gui-error filename 'text)))))
+              (make-object separator-menu-item% file-menu)
+              (set! logging-menu-item
+                    (make-object menu:can-restore-menu-item%
+                      (string-constant log-definitions-and-interactions)
+                      file-menu
+                      (λ (x y)
+                        (if logging
+                            (stop-logging)
+                            (start-logging)))))
+              (make-object separator-menu-item% file-menu)
+              (super file-menu:between-save-as-and-print file-menu)))
+          
+          [define/override file-menu:print-string (λ () (string-constant print-definitions))]
+          (define/override (file-menu:between-print-and-close file-menu)
+            (set! file-menu:print-transcript-item
+                  (make-object menu:can-restore-menu-item%
+                    (string-constant print-interactions)
+                    file-menu
+                    (λ (_1 _2)
+                      (send interactions-text print
+                            #t 
+                            #t
+                            (preferences:get 'framework:print-output-mode)))))
+            (super file-menu:between-print-and-close file-menu))
+          
+          (define/override (edit-menu:between-find-and-preferences edit-menu)
+            (super edit-menu:between-find-and-preferences edit-menu)
+            (add-modes-submenu edit-menu))
+          
           ;; capability-menu-items : hash-table[menu -o> (listof (list menu-item number key)))
           (define capability-menu-items (make-hash-table))
           (define/public (register-capability-menu-item key menu)
@@ -2845,28 +2834,25 @@ module browser threading seems wrong.
                          100
                          c))
                       #t)
-                (set! limit-memory-menu-item
-                      (new menu-item%
-                           [label ""]
-                           [parent scheme-menu]
-                           [callback
-                            (λ (item b)
-                              (let ([current-limit (send interactions-text get-custodian-limit)])
-                                (cond
-                                  [current-limit
-                                   (preferences:set 'drscheme:limit-memory #f)
-                                   (send interactions-text set-custodian-limit #f)]
-                                  [else
-                                   (let ([num (get-mbytes this)])
-                                     (when num
-                                       (preferences:set 'drscheme:limit-memory 
-                                                        (* 1024 1024 num))
-                                       (send interactions-text set-custodian-limit
-                                             (* 1024 1024 num))))])
-                                (update-limit-memory-menu-item-label
-                                 (send interactions-text get-custodian-limit))))]))
-              
-                (update-limit-memory-menu-item-label (preferences:get 'drscheme:limit-memory)))
+                (new menu-item%
+                     [label "Limit memory..."]
+                     [parent scheme-menu]
+                     [callback
+                      (λ (item b)
+                        (let ([num (get-mbytes this 
+                                               (let ([limit (send interactions-text get-custodian-limit)])
+                                                 (and limit
+                                                      (floor (/ limit 1024 1024)))))])
+                          (when num
+                            (cond
+                              [(eq? num #t)
+                               (preferences:set 'drscheme:limit-memory #f)
+                               (send interactions-text set-custodian-limit #f)]
+                              [else
+                               (preferences:set 'drscheme:limit-memory 
+                                                (* 1024 1024 num))
+                               (send interactions-text set-custodian-limit
+                                     (* 1024 1024 num))]))))]))
               (new menu:can-restore-menu-item%
                    (label (string-constant clear-error-highlight-menu-item-label))
                    (parent scheme-menu)
@@ -3277,44 +3263,87 @@ module browser threading seems wrong.
           (set! newest-frame this)
           (send definitions-canvas focus)))
     
-    ;; get-mbytes : top-level-window -> (union #f integer[>=100])
-    (define (get-mbytes parent)
+    ;; get-mbytes : top-level-window -> (union #f  ;; cancel
+    ;;                                         integer[>=100] ;; a limit
+    ;;                                         #t) ;; no limit
+    (define (get-mbytes parent current-limit)
       (define d (new dialog%
                      [label (string-constant drscheme)]
                      [parent parent]))
-      (define msg1 (new message% 
-                        [parent d]
-                        [label "Please choose a limit on the amount of memory, in megabytes."]))
-      (define msg2 (new message%
+      (define msg1 (new message%
                         [parent d]
                         [label "The limit will take effect the next time the program is Run."]))
+      
+      (define outer-hp (new horizontal-panel% [parent d] [alignment '(center bottom)]))
+      (define rb (new radio-box%
+                      [label #f]
+                      [choices '("Unlimited" "Limited")]
+                      [callback (λ (a b) (grayizie))]
+                      [parent outer-hp]))
+      
+      (define (grayizie)
+        (case (send rb get-selection)
+          [(0) 
+           (send tb enable #f)
+           (send msg2 enable #f)
+           (background gray-foreground-sd)]
+          [(1)
+           (send tb enable #t)
+           (send msg2 enable #t)
+           (background black-foreground-sd)
+           (let ([e (send tb get-editor)])
+             (send e set-position 0 (send e last-position)))
+           (send tb focus)])
+        (update-ok-button-state))
+      
+      (define hp (new horizontal-panel% 
+                      [parent outer-hp] 
+                      [stretchable-height #f]
+                      [stretchable-width #f]))
+      
       (define tb
         (new text-field%
              [label #f]
-             [parent d]
-             [init-value "512"]
+             [parent hp]
+             [init-value (if current-limit
+                             (format "~a" current-limit)
+                             "128")]
+             [stretchable-width #f]
+             [min-width 100]
              [callback
               (λ (tf e)
                 (let ([ed (send tf get-editor)])
                   (cond 
                     [(is-valid-number? ed)
-                     (background clear-sd ed)
-                     (send ok-button enable #t)]
+                     (background clear-sd)]
                     [else
-                     (background yellow-sd ed)
-                     (send ok-button enable #f)])))]))
+                     (background yellow-sd)]))
+                (update-ok-button-state))]))
+      
+      (define (update-ok-button-state)
+        (case (send rb get-selection)
+          [(0) (send ok-button enable #t)]
+          [(1) (send ok-button enable (is-valid-number? (send tb get-editor)))]))
+      
+      (define msg2 (new message% [parent hp] [label "Megabytes"]))
       (define bp (new horizontal-panel% [parent d]))
       (define-values (ok-button cancel-button)
         (gui-utils:ok/cancel-buttons
          bp 
          (λ (a b) 
-           (set! result (string->number (send (send tb get-editor) get-text)))
+           (case (send rb get-selection)
+             [(0) (set! result #t)]
+             [(1) (set! result (string->number (send (send tb get-editor) get-text)))])
            (send d show #f))
          (λ (a b) (send d show #f))))
+      
       (define result #f)
       
       (define clear-sd (make-object style-delta%))
       (define yellow-sd (make-object style-delta%))
+      
+      (define black-foreground-sd (make-object style-delta%))
+      (define gray-foreground-sd (make-object style-delta%))
       
       (define (is-valid-number? txt)
         (let* ([n (string->number (send txt get-text))])
@@ -3322,11 +3351,20 @@ module browser threading seems wrong.
                (integer? n)
                (100 . <= . n))))
       
-      (define (background sd txt) (send txt change-style sd 0 (send txt last-position)))
+      (define (background sd)
+        (let ([txt (send tb get-editor)])
+          (send txt change-style sd 0 (send txt last-position))))
+      
       (send clear-sd set-delta-background "white")
       (send yellow-sd set-delta-background "yellow")
+      (send black-foreground-sd set-delta-foreground "black")
+      (send gray-foreground-sd set-delta-foreground "gray")
       (send d set-alignment 'left 'center)
       (send bp set-alignment 'right 'center)
+      (when current-limit
+        (send rb set-selection 1))
+      (update-ok-button-state)
+      (grayizie)
       (send tb focus)
       (let ([e (send tb get-editor)])
         (send e set-position 0 (send e last-position)))
