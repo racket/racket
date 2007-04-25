@@ -26,7 +26,8 @@ tracing todo:
            (lib "moddep.ss" "syntax")
            (lib "cache-image-snip.ss" "mrlib")
            (lib "embed.ss" "compiler")
-
+           (lib "wxme.ss" "wxme")
+           
            
            ;; this module is shared between the drscheme's namespace (so loaded here) 
            ;; and the user's namespace in the teaching languages
@@ -335,6 +336,40 @@ tracing todo:
                     #:modules `((#f ,program-filename))
                     #:literal-expression `(require ,(filename->require-symbol program-filename))
                     #:cmdline '("-Zmvq")
+                    #|
+                    #:src-filter
+                    (λ (path)
+                      (call-with-input-file path
+                        (λ (port) 
+                          (and (is-wxme-stream? port)
+                               (let ([special-port (wxme-port->port port #f)])
+                                 (let loop ()
+                                   (let ([c (read-byte-or-special port)])
+                                     (cond
+                                       [(eof-object? c)
+                                        (close-input-port special-port)
+                                        #f]
+                                       [(byte? c)
+                                        (loop)]
+                                       [else
+                                        (close-input-port special-port)
+                                        #t]))))))))
+                    #:get-extra-imports
+                    (λ (path cm)
+                      (fprintf (current-error-port) "path ~s\n" path)
+                      (call-with-input-file path
+                        (λ (port)
+                          (cond
+                            [(is-wxme-stream? port)
+                             (let-values ([(snip-class-names data-class-names)
+                                           (extract-used-classes port)])
+                               (fprintf (current-error-port) 
+                                        "snip-class-names ~s data-class-names ~s\n"
+                                        snip-class-names data-class-names)
+                               '())]
+                            [else
+                             '()]))))
+|#                                 
                     #:mred? #t))))))
 
           (define/private (filename->require-symbol fn)
