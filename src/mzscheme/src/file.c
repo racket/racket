@@ -126,6 +126,7 @@ long scheme_creator_id = 'MzSc';
 #define DOS_FN_SEP '\\'
 #define IS_A_DOS_SEP(x) (((x) == '/') || ((x) == '\\'))
 #define IS_A_DOS_PRIM_SEP(x) ((x) == '\\')
+#define IS_A_DOS_X_SEP(prim, x) (prim ? IS_A_DOS_PRIM_SEP(x) : IS_A_DOS_SEP(x))
 
 #define FN_SEP(kind) ((kind == SCHEME_UNIX_PATH_KIND) ? UNIX_FN_SEP : DOS_FN_SEP)
 #define IS_A_SEP(kind, x) ((kind == SCHEME_UNIX_PATH_KIND) ? IS_A_UNIX_SEP(x) : IS_A_DOS_SEP(x))
@@ -1214,7 +1215,7 @@ static int check_dos_slashslash_qm(const char *next, int len,
 
    If it's a \\?\ path, then drive_end is set to the first character
    after the root specification. For example, if the drive is
-   terminated by \\\ (a weird "root), then drive_end is set to after
+   terminated by \\\ (a weird "root"), then drive_end is set to after
    the third \.  If the drive is \\?\C:\, then drive_end is after the
    last slash, unless thre's one extra slash, in which case drive_end
    is after that slash, too. In the case of \\?\UNC\..., drive_end
@@ -1237,17 +1238,24 @@ static int check_dos_slashslash_qm(const char *next, int len,
       && (next[1] == '\\')
       && (next[2] == '?')
       && (next[3] == '\\')) {
+    int base;
     if (!drive_end && !clean_start && !add_sep)
       return 1;
+    if (next[4] == '\\')
+      base = 5;
+    else
+      base = 4;
     /* If there's two backslashes in a row at the end, count everything
-       as the drive. There's an exception: two backslashes are ok
-       at the end in the form \\?\C:\\ */
+       as the drive. There are two exceptions: two backslashes are ok
+       at the end in the form \\?\C:\\, and \\?\\\ is \\?\ */
     if ((len > 5)
 	&& (next[len - 1] == '\\')
 	&& (next[len - 2] == '\\')) {
-      if ((len != 8)
-	  || !is_drive_letter(next[4])
-	  || (next[5] != ':')) {
+      if (len == 6) {
+	/* \\?\ is the root */
+      } else if ((len != 8)
+	  || !is_drive_letter(next[base])
+	  || (next[base+1] != ':')) {
 	if (drive_end)
 	  *drive_end = len;
 	if (clean_start)
@@ -1259,9 +1267,9 @@ static int check_dos_slashslash_qm(const char *next, int len,
     }
     /* If there's three backslashes in a row, count everything
        up to the slashes as the drive. */
-    {
+    if (len > 6) {
       int i;
-      for (i = len; --i > 3; ) {
+      for (i = len; --i > 5; ) {
 	if ((next[i] == '\\')
 	    && (next[i-1] == '\\')
 	    && (next[i-2] == '\\')) {
@@ -1275,31 +1283,32 @@ static int check_dos_slashslash_qm(const char *next, int len,
     }
 
     if ((len > 6)
-	&& is_drive_letter(next[4])
-	&& next[5] == ':'
-	&& next[6] == '\\') {
+	&& is_drive_letter(next[base])
+	&& next[base+1] == ':'
+	&& next[base+2] == '\\') {
       if (clean_start)
-	*clean_start = 6;
+	*clean_start = base+2;
       if (drive_end) {
-	if ((len > 7) && next[7] == '\\')
-	  *drive_end = 8;
+	if ((len > base+3) && next[base+3] == '\\')
+	  *drive_end = base+4;
 	else
-	  *drive_end = 7;
+	  *drive_end = base+3;
       }
-    } else if ((len > 7)
-	       && (next[4] == 'U')
-	       && (next[5] == 'N')
-	       && (next[6] == 'C')
-	       && (next[7] == '\\')
+    } else if ((len > base+3)
+	       && ((next[base] == 'U') || (next[base] == 'u'))
+	       && ((next[base+1] == 'N') || (next[base+1] == 'n'))
+	       && ((next[base+2] == 'C') || (next[base+2] == 'c'))
+	       && (next[base+3] == '\\')
 	       && check_dos_slashslash_drive(next, 
-					     (((len > 8) && (next[8] == '\\'))
-					      ? 9
-					      : 8),
+					     (((len > (base+4)) && (next[base+4] == '\\'))
+					      ? base+5
+					      : base+4),
 					     len, drive_end, 0, 1)) {
       /* drive_end set by check_dos_slashslash_drive */
       if (clean_start)
-	*clean_start = 7;
-    } else if ((len > 8)
+	*clean_start = base+3;
+    } else if ((base == 4) 
+	       && (len > 8)
 	       && (next[4] == 'R')
 	       && (next[5] == 'E')
 	       && ((next[6] == 'L') || (next[6] == 'D'))
@@ -1314,7 +1323,8 @@ static int check_dos_slashslash_qm(const char *next, int len,
       if (drive_end)
 	*drive_end = 4;
       if (clean_start) {
-	if ((len == 5) && (next[4] == '\\'))
+	if (((len == 5) && (next[4] == '\\'))
+	    || ((len == 6) && (next[4] == '\\') && (next[5] == '\\')))
 	  *clean_start = 3;
 	else
 	  *clean_start = 4;
@@ -1809,6 +1819,12 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       if (is_drive_letter(filename[4])
 	  && (filename[5] == ':'))
 	drive_end = 6;
+    } else if (drive_end == 9) {
+      /* For \\?\\c:\\ path, start clean up after colon. */
+      if ((filename[4] == '\\')
+	  && is_drive_letter(filename[5])
+	  && (filename[6] == ':'))
+	drive_end = 7;
     } else {
       drive_end = clean_start;
     }
@@ -1823,11 +1839,11 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       insert_initial_sep = 1;
       fixit = 1;
     } else {
-      int found_slash = 0;
+      int found_slash = 0, prim_only = drive_end;
       
       for (i = ilen; i-- > drive_end; ) {
-	if (IS_A_DOS_SEP(filename[i])) {
-	  if (IS_A_DOS_SEP(filename[i - 1])) {
+	if (IS_A_DOS_X_SEP(prim_only, filename[i])) {
+	  if (IS_A_DOS_X_SEP(prim_only, filename[i - 1])) {
 	    if ((i > 1) || !found_slash)
 	      fixit = 1;
 	    break;
@@ -1838,7 +1854,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
     }
 
     if (fixit) {
-      int pos;
+      int pos, prim_only = drive_end;
       char *naya;
       
       if (expanded)
@@ -1859,8 +1875,8 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       }
       
       while (i < ilen) {
-	if (IS_A_DOS_SEP(filename[i])
-	    && IS_A_DOS_SEP(filename[i + 1])) {
+	if (IS_A_DOS_X_SEP(prim_only, filename[i])
+	    && IS_A_DOS_X_SEP(prim_only, filename[i + 1])) {
 	  i++;
 	} else
 	  naya[pos++] = filename[i++];
@@ -1872,12 +1888,22 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 
       if (drive_end == 4) {
 	/* If the root was \\?\, there's a chance that we removed a
-	   backslash and changed the root. In that case, add a \ after \\?\: */
+	   backslash and changed the root. In that case, add two \\s after \\?\: */
 	check_dos_slashslash_qm(filename, ilen, &drive_end, NULL, NULL);
 	if (drive_end != 4) {
 	  /* There's room to expand, because insert_initial_sep couldn't be -1. */
-	  memmove(filename + 5, filename + 4, ilen - 3);
-	  filename[4] = '\\'; /* Actually, this is redundant. */
+	  if (filename[4] == '\\') {
+	    /* Need one more */
+	    memmove(filename + 5, filename + 4, ilen - 3);
+	    filename[4] = '\\'; /* Actually, this is redundant. */
+	    ilen += 1;
+	  } else {
+	    /* Need two more */
+	    memmove(filename + 6, filename + 4, ilen - 3);
+	    filename[4] = '\\'; /* Actually, this is redundant. */
+	    filename[5] = '\\';
+	    ilen += 2;
+	  }
 	}
       }
     }
@@ -2016,101 +2042,67 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Objec
 		    mzlonglong *filesize)
   /* dirname must be absolute */
 {
-  int strip_end, strip_char;
-  struct MSC_IZE(_stat64) buf;
-  int v;
+  /* Note: stat() doesn't work with UNC "drive" names or \\?\ paths.
+     Also, stat() doesn't distinguish between the ability to
+     list a directory's content and the fact to detect that the
+     directory exists. So, we use GetFileAttributesExW(). */
+  char *copy;
+  WIN32_FILE_ATTRIBUTE_DATA fd;
+  int must_be_dir = 0;
 
   if (isdir)
     *isdir = 0;
   if (date)
     *date = scheme_false;
 
-  if ((len > 1) && IS_A_DOS_SEP(dirname[0]) 
-      && (check_dos_slashslash_qm(dirname, len, NULL, NULL, NULL) /* dirname is absolute */
-	  || check_dos_slashslash_drive(dirname, 0, len, NULL, 1, 0))) {
-    /* stat doesn't work with UNC "drive" names or \\?\ paths */
-    char *copy;
-    WIN32_FILE_ATTRIBUTE_DATA fd;
-    int must_be_dir = 0;
-    
-    copy = scheme_malloc_atomic(len + 14);
-    if (check_dos_slashslash_qm(dirname, len, NULL, NULL, NULL)) {
-      memcpy(copy, dirname, len + 1);
-    } else {
-      memcpy(copy, dirname, len + 1);
-      while (IS_A_DOS_SEP(copy[len - 1])) {
-	--len;
-	copy[len] = 0;
-	must_be_dir = 1;
-      }
-    }
-    /* If we ended up with "\\?\X:", then drop the "\\?\" */
-    if ((copy[2] == '?') && is_drive_letter(copy[4]) && (copy[5] == ':') && !copy[6]) {
-      memmove(copy, copy + 4, len - 4);
-      len -= 4;
+  copy = scheme_malloc_atomic(len + 14);
+  if (check_dos_slashslash_qm(dirname, len, NULL, NULL, NULL)) {
+    memcpy(copy, dirname, len + 1);
+  } else {
+    memcpy(copy, dirname, len + 1);
+    while (IS_A_DOS_SEP(copy[len - 1])) {
+      --len;
       copy[len] = 0;
+      must_be_dir = 1;
     }
-    if (!GetFileAttributesExW(WIDE_PATH(copy), GetFileExInfoStandard, &fd)) {
-      errno = -1;
-      return 0;
-    } else {
-      if (must_be_dir && !(GET_FF_ATTRIBS(fd) & FF_A_DIR))
-	return 0;
-      if (flags)
-	*flags = MZ_UNC_READ | MZ_UNC_EXEC | ((GET_FF_ATTRIBS(fd) & FF_A_RDONLY) ? 0 : MZ_UNC_WRITE);
-      if (date) {
-	Scheme_Object *dt;
-	time_t mdt;
-	mdt = GET_FF_MODDATE(fd);
-	dt = scheme_make_integer_value_from_time(mdt);
-	*date = dt;
-      }
-      if (isdir) {
-	*isdir = (GET_FF_ATTRIBS(fd) & FF_A_DIR);
-      }
-      if (filesize) {
-	*filesize = ((mzlonglong)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
-      }
-      return 1;
-    }
-  } else if ((len > 1) && (dirname[len - 1] == '\\' || dirname[len - 1] == '/')
-	     && (dirname[len - 2] != ':')) {
-    strip_end = len - 1;
-    strip_char = dirname[strip_end];
-    dirname[strip_end] = 0;
-    if (isdir)
-      *isdir = 1;
-  } else
-    strip_end = strip_char = 0;
-
-  while (1) {
-    v = !MSC_W_IZE(stat64)(MSC_WIDE_PATH(dirname), &buf);
-    if (v || (errno != EINTR))
-      break;
   }
-
-  if (v) {
-    if (isdir && S_ISDIR(buf.st_mode))
-      *isdir = 1;
+  /* If we ended up with "\\?\X:", then drop the "\\?\" */
+  if ((copy[0] == '\\')&& (copy[1] == '\\') && (copy[2] == '?') && (copy[3] == '\\') 
+      && is_drive_letter(copy[4]) && (copy[5] == ':') && !copy[6]) {
+    memmove(copy, copy + 4, len - 4);
+    len -= 4;
+    copy[len] = 0;
+  }
+  /* If we ended up with "\\?\X:", then drop the "\\?\\" */
+  if ((copy[0] == '\\') && (copy[1] == '\\') && (copy[2] == '?') && (copy[3] == '\\') 
+      && (copy[4] == '\\') && is_drive_letter(copy[5]) && (copy[6] == ':') && !copy[7]) {
+    memmove(copy, copy + 5, len - 5);
+    len -= 5;
+    copy[len] = 0;
+  }
+  if (!GetFileAttributesExW(WIDE_PATH(copy), GetFileExInfoStandard, &fd)) {
+    errno = -1;
+    return 0;
+  } else {
+    if (must_be_dir && !(GET_FF_ATTRIBS(fd) & FF_A_DIR))
+      return 0;
+    if (flags)
+      *flags = MZ_UNC_READ | MZ_UNC_EXEC | ((GET_FF_ATTRIBS(fd) & FF_A_RDONLY) ? 0 : MZ_UNC_WRITE);
     if (date) {
       Scheme_Object *dt;
-      dt = scheme_make_integer_value_from_time(buf.st_mtime);
-      (*date) = dt;
+      time_t mdt;
+      mdt = GET_FF_MODDATE(fd);
+      dt = scheme_make_integer_value_from_time(mdt);
+      *date = dt;
     }
-    if (flags) {
-      if (buf.st_mode & MSC_IZE(S_IREAD))
-	*flags |= MZ_UNC_READ | MZ_UNC_EXEC;
-      if (buf.st_mode & MSC_IZE(S_IWRITE))
-	*flags |= MZ_UNC_WRITE;
+    if (isdir) {
+      *isdir = (GET_FF_ATTRIBS(fd) & FF_A_DIR);
     }
-    if (filesize)
-      *filesize = buf.st_size;
+    if (filesize) {
+      *filesize = ((mzlonglong)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+    }
+    return 1;
   }
-
-  if (strip_end)
-    dirname[strip_end] = strip_char;
-
-  return v;
 }
 #endif
 
@@ -2561,6 +2553,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
   int first_len = 0;
   int needs_extra_slash = 0;
   int pre_unc = 0;
+  int pre_qm = 0;
   const char *who = (idelta ? "build-path/convention-type" : "build-path");
 
   str = buffer;
@@ -2816,8 +2809,9 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 		      no_sep = 1;
 		  } else {
 		    /* One last possibility: str is \\?\ (which counts as a bizaare
-		       root). We need an extra slash. */
+		       root). We need two extra slashes. */
 		    if (!new_rel_base && (pos == 4)) {
+		      str[pos++] = '\\';
 		      str[pos++] = '\\';
 		    }
 		  }
@@ -2829,6 +2823,7 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
 		first_len = len;
 	      }
 	    } else {
+	      /* non-REL/RED \\?\ path */
               is_drive = (drive_end == len);
 	      needs_extra_slash = plus_sep;
 	      if (!i) {
@@ -2890,10 +2885,20 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
       }
       
       if (kind == SCHEME_WINDOWS_PATH_KIND) {
-        if (i)
+        if (i) {
           pre_unc = check_dos_slashslash_drive(str, 0, pos, NULL, 0, 0);
-        else
+	  if (!pre_unc) {
+	    int de;
+	    if (check_dos_slashslash_qm(str, pos, &de, NULL, NULL)) {
+	      if (de == 4) /* \\?\ */
+		pre_qm = 1;
+	    }
+	  } else
+	    pre_qm = 0;
+        } else {
           pre_unc = 1;
+	  pre_qm = 0;
+	}
 
         if (no_final_simplify
             && (len == 2) 
@@ -2963,6 +2968,46 @@ static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, 
           memmove(str, str+1, pos - 1);
           --pos;
         }
+	if (pre_qm) {
+	  int de;
+
+	  /* Normalize path separators for the addition: */
+	  {
+	    int i;
+	    for (i = first_len; i < pos; i++) {
+	      if (str[i] == '/') {
+		str[i] = '\\';
+	      }
+	    }
+	  }
+
+	  /* check the \\?\ parsing */
+	  check_dos_slashslash_qm(str, pos, &de, NULL, NULL);
+	  if (de != 4) {
+	    /* Added to \\?\ to get something that now looks like 
+	       a \\?\UNC path. Insert a backslash or two. */
+	    int amt = ((str[4] == '\\') ? 1 : 2);
+	
+	    if (pos + amt >= alloc) {
+	      char *naya;
+	      int newalloc;
+	      
+	      newalloc = 2 * alloc;
+	      naya = (char *)scheme_malloc_atomic(newalloc);
+	      memcpy(naya, str, pos);
+	      alloc = newalloc;
+	      
+	      str = naya;
+	    }
+	    memmove(str + 4 + amt, str + 4, pos - 4);
+	    str[4] = '\\';
+	    if (amt == 2)
+	      str[5] = '\\';
+	    pos += amt;
+	    first_len += amt;
+	  }
+	}
+
         if (needs_extra_slash) {
           if (needs_extra_slash >= pos)
             str[pos++] = '\\';
@@ -3914,7 +3959,7 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
   char *s = SCHEME_PATH_VAL(path);
   int drive_end, clean_start, len = SCHEME_PATH_LEN(path), fixed = 0, i;
   int drop_extra_slash = -1, set_slash = -1, element_start;
-  int found_bad = 0, start_special_check = 0, is_dir = 0;
+  int found_bad = 0, start_special_check = 0, is_dir = 0, norm_unc = 0, drop_ss_slash = 0;
 
   if ((s[len - 1] == '\\')
       && (s[len - 2] != '\\')
@@ -3930,6 +3975,14 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
     /* Maybe don't need \\?\ for \\?\C:\... */
     start_special_check = 7;
     drive_end = 4;
+  } else if ((drive_end == 8)
+	     && (s[4] == '\\')
+	     && is_drive_letter(s[5])
+	     && (s[6] == ':')) {
+    /* Maybe don't need \\?\\ for \\?\\C:\... */
+    start_special_check = 8;
+    drive_end = 5;
+    drop_ss_slash = 1;
   } else if (drive_end == -2) {
     /* \\?\RED\ */
     int lit_start;
@@ -3952,15 +4005,29 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
       is_dir = 1;
     }
   } else if ((clean_start == 7) 
-	     && (s[4] == 'U')
-	     && (s[5] == 'N')
-	     && (s[6] == 'C')) {
+	     && ((s[4] == 'U') || (s[4] == 'u'))
+	     && ((s[5] == 'N') || (s[5] == 'n'))
+	     && ((s[6] == 'C') || (s[6] == 'c'))) {
     if (drive_end == len) {
       is_dir = 1;
     }
     drive_end = 6;
     start_special_check = 7; /* \\?\UNC */
     set_slash = 6;
+    norm_unc = 1;
+  } else if ((clean_start == 8) 
+	     && (s[4] == '\\')
+	     && ((s[5] == 'U') || (s[5] == 'u'))
+	     && ((s[6] == 'N') || (s[6] == 'n'))
+	     && ((s[7] == 'C') || (s[7] == 'c'))) {
+    if (drive_end == len) {
+      is_dir = 1;
+    }
+    drive_end = 7;
+    start_special_check = 8; /* \\?\\UNC */
+    set_slash = 7;
+    norm_unc = 1;
+    drop_ss_slash = 1;
   } else {
     /* We have a weird root. Give up. */
     found_bad = 1;
@@ -4001,10 +4068,33 @@ static Scheme_Object *simplify_qm_path(Scheme_Object *path)
   }
 
   if (found_bad) {
+    if (norm_unc) {
+      if ((s[4 + drop_ss_slash] == 'U')
+	  && (s[5 + drop_ss_slash] == 'N')
+	  && (s[6 + drop_ss_slash] == 'C'))
+	norm_unc = 0;
+    }
+    if (norm_unc || drop_ss_slash) {
+      if (!fixed) {
+	char *naya;
+	naya = (char *)scheme_malloc_atomic(len);
+	memcpy(naya, s, len);
+	s = naya;
+	fixed = 1;
+      }
+      if (drop_ss_slash) {
+	memmove(s + 3, s + 4, len - 4);
+	len--;
+      }
+      if (norm_unc) {
+	s[4] = 'U';
+	s[5] = 'N';
+	s[6] = 'C';
+      }
+    }
     if (fixed)
-      return scheme_make_sized_offset_kind_path(s, 0, len, 1, SCHEME_WINDOWS_PATH_KIND);
-    else
-      return path;
+      path = scheme_make_sized_offset_kind_path(s, 0, len, 1, SCHEME_WINDOWS_PATH_KIND);
+    return path;
   } else {
     if (drop_extra_slash > -1) {
       char *naya;
@@ -4067,7 +4157,18 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
     } else if (add_sep) {
       int len = SCHEME_PATH_LEN(path);
       if ((add_sep < len) && (s[add_sep] != '\\')) {
-        /* Add a \, as in \\?\c -> \\?\\c */
+        /* Add two \, as in \\?\c -> \\?\\\c */
+        char *naya;
+        naya = (char *)scheme_malloc_atomic(len + 3);
+        memcpy(naya, s, add_sep);
+        naya[add_sep] = '\\';
+        naya[add_sep+1] = '\\';
+        memcpy(naya + add_sep + 2, s + add_sep, len + 1 - add_sep);
+        len += 2;
+        path = scheme_make_sized_offset_kind_path(naya, 0, len, 0, SCHEME_WINDOWS_PATH_KIND);
+      }
+      if ((add_sep < len) && (s[add_sep] == '\\') && (s[add_sep+1] != '\\')) {
+        /* Add \, as in \\?\\c -> \\?\\\c */
         char *naya;
         naya = (char *)scheme_malloc_atomic(len + 2);
         memcpy(naya, s, add_sep);
@@ -4091,17 +4192,31 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
 
     if (kind == SCHEME_WINDOWS_PATH_KIND) {
       if (!skip && check_dos_slashslash_qm(s, len, NULL, NULL, NULL)) {
-        if (!force_rel_up)
-          return simplify_qm_path(path);
-        else
+        if (!force_rel_up) {
+	  int drive_end;
+          path = simplify_qm_path(path);
+	  len = SCHEME_PATH_LEN(path);
+	  if (check_dos_slashslash_qm(SCHEME_PATH_VAL(path), len, &drive_end, NULL, NULL)) {
+	    /* If it's a drive... */
+	    if (drive_end == len) {
+	      /* Make it a directory path. */
+	      path = scheme_path_to_directory_path(path);
+	    }
+	  }
+	  return path;
+        } else {
+	  /* force_rel_up means that we want a directory: */
           return scheme_path_to_directory_path(path);
+	}
       }
       if (!skip && check_dos_slashslash_drive(s, 0, len, NULL, 1, 0)) {
-        /* Remove trailing slashes, if any: */
+        /* A UNC drive (with no further elements). 
+	   Remove extra trailing slashes, if any... */
         for (i = len; IS_A_DOS_SEP(s[i-1]); i--) { }
-        if (i != len) {
+        if (i < len - 1) {
           path = scheme_make_sized_offset_kind_path(s, 0, i, 1, SCHEME_WINDOWS_PATH_KIND);
         }
+	/* ... but make it a directory path. */
         path = scheme_path_to_directory_path(path);
       }
 
@@ -4555,8 +4670,13 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
   }
 
   hfile = FIND_FIRST(WIDE_PATH(pattern), &info);
-  if (FIND_FAILED(hfile))
+  if (FIND_FAILED(hfile)) {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+		     "directory-list: could not open \"%q\" (%E)",
+		     filename,
+		     GetLastError());  
     return scheme_null;
+  }
 
   do {
     if ((GET_FF_NAME(info)[0] == '.')
