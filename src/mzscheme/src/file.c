@@ -2044,8 +2044,8 @@ static int UNC_stat(char *dirname, int len, int *flags, int *isdir, Scheme_Objec
 {
   /* Note: stat() doesn't work with UNC "drive" names or \\?\ paths.
      Also, stat() doesn't distinguish between the ability to
-     list a directory's content and the fact to detect that the
-     directory exists. So, we use GetFileAttributesExW(). */
+     list a directory's content and whether the directory exists. 
+     So, we use GetFileAttributesExW(). */
   char *copy;
   WIN32_FILE_ATTRIBUTE_DATA fd;
   int must_be_dir = 0;
