@@ -2,6 +2,7 @@
   (require (lib "unit.ss")
            (lib "kw.ss")
            (lib "list.ss")
+           (lib "etc.ss")
            (lib "contract.ss"))
   (require "configuration-structures.ss"
            "configuration-table-structs.ss"
@@ -80,7 +81,8 @@
              (lambda (spec)
                (if (symbol? spec)
                    spec
-                   ((current-module-name-resolver) spec #f #f)))])
+                   (with-handlers ([exn? (lambda _ #f)])
+                     ((current-module-name-resolver) spec #f #f))))])
         (map get-name 
              (append default-to-be-copied-module-specs
                      to-be-copied-module-specs))))
@@ -91,7 +93,8 @@
       (parameterize ([current-namespace new-namespace])
         (for-each (lambda (name)
                     (with-handlers ([exn? void])
-                      (namespace-attach-module server-namespace name)))
+                      (when name
+                        (namespace-attach-module server-namespace name))))
                   to-be-copied-module-names)
         new-namespace)))
   
