@@ -1290,9 +1290,7 @@
    (drscheme:language:simple-settings? . -> . vector?)
    (simple-settings)
    
-   "Constructs a vector whose first index is the symbol"
-   "\\rawscm{'struct:simple-settings}"
-   "and the other elements are the fields of \\var{simple-settings}.")
+   "Constructs a vector whose elements are the fields of \\var{simple-settings}.")
   
   
   ;                                                                   
