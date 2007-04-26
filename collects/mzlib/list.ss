@@ -244,7 +244,7 @@
               [else (let ([a (car l)])
                       #,(case (syntax-e #'mode)
                           [(member) #'(if (f a) l (loop (cdr l)))]
-                          [(find)   #'(if (f a) (car l) (loop (cdr l)))]
+                          [(find)   #'(if (f a) a (loop (cdr l)))]
                           [(assoc)  #'(if (pair? a)
                                         (if (f (car a)) a (loop (cdr l)))
                                         (raise-mismatch-error
