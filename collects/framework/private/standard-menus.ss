@@ -160,15 +160,15 @@
      (preferences:add-callback
        'framework:menu-bindings
        (λ (p v)
-        (let loop ((menu (get-menu-bar)))
-          (when (is-a? menu menu:can-restore<%>)
-            (if v (send menu restore-keybinding) (send menu set-shortcut #f)))
-          (when (is-a? menu menu:can-restore-underscore<%>)
-            (if v
-              (send menu restore-underscores)
-              (send menu erase-underscores)))
-          (when (is-a? menu menu-item-container<%>)
-            (for-each loop (send menu get-items)))))))
+         (let loop ((menu (get-menu-bar)))
+           (when (is-a? menu menu:can-restore<%>)
+             (if v (send menu restore-keybinding) (send menu set-shortcut #f)))
+           (when (is-a? menu menu:can-restore-underscore<%>)
+             (if v
+               (send menu restore-underscores)
+               (send menu erase-underscores)))
+           (when (is-a? menu menu-item-container<%>)
+             (for-each loop (send menu get-items)))))))
    (inherit get-menu-bar show can-close? get-edit-target-object)
    (define/augment
      on-close
@@ -270,128 +270,117 @@
    (define/public file-menu:after-quit (λ (menu) (void)))
    (define/public
      edit-menu:undo-callback
-     (λ
-      (menu evt)
-      (let ((edit (get-edit-target-object)))
-        (when (and edit (is-a? edit editor<%>))
-          (send edit do-edit-operation 'undo)))
-      #t))
+     (λ (menu evt)
+       (let ((edit (get-edit-target-object)))
+         (when (and edit (is-a? edit editor<%>))
+           (send edit do-edit-operation 'undo)))
+       #t))
    (define/public (edit-menu:get-undo-item) edit-menu:undo-item)
    (define/public (edit-menu:undo-string) (string-constant undo-menu-item))
    (define/public (edit-menu:undo-help-string) (string-constant undo-info))
    (define/public
      edit-menu:undo-on-demand
-     (λ
-      (item)
-      (let* ((editor (get-edit-target-object))
-             (enable?
-               (and editor
-                    (is-a? editor editor<%>)
-                    (send editor can-do-edit-operation? 'undo))))
-        (send item enable enable?))))
+     (λ (item)
+       (let* ((editor (get-edit-target-object))
+              (enable?
+                (and editor
+                     (is-a? editor editor<%>)
+                     (send editor can-do-edit-operation? 'undo))))
+         (send item enable enable?))))
    (define/public (edit-menu:create-undo?) #t)
    (define/public
      edit-menu:redo-callback
-     (λ
-      (menu evt)
-      (let ((edit (get-edit-target-object)))
-        (when (and edit (is-a? edit editor<%>))
-          (send edit do-edit-operation 'redo)))
-      #t))
+     (λ (menu evt)
+       (let ((edit (get-edit-target-object)))
+         (when (and edit (is-a? edit editor<%>))
+           (send edit do-edit-operation 'redo)))
+       #t))
    (define/public (edit-menu:get-redo-item) edit-menu:redo-item)
    (define/public (edit-menu:redo-string) (string-constant redo-menu-item))
    (define/public (edit-menu:redo-help-string) (string-constant redo-info))
    (define/public
      edit-menu:redo-on-demand
-     (λ
-      (item)
-      (let* ((editor (get-edit-target-object))
-             (enable?
-               (and editor
-                    (is-a? editor editor<%>)
-                    (send editor can-do-edit-operation? 'redo))))
-        (send item enable enable?))))
+     (λ (item)
+       (let* ((editor (get-edit-target-object))
+              (enable?
+                (and editor
+                     (is-a? editor editor<%>)
+                     (send editor can-do-edit-operation? 'redo))))
+         (send item enable enable?))))
    (define/public (edit-menu:create-redo?) #t)
    (define/public
      edit-menu:between-redo-and-cut
      (λ (menu) (make-object separator-menu-item% menu)))
    (define/public
      edit-menu:cut-callback
-     (λ
-      (menu evt)
-      (let ((edit (get-edit-target-object)))
-        (when (and edit (is-a? edit editor<%>))
-          (send edit do-edit-operation 'cut)))
-      #t))
+     (λ (menu evt)
+       (let ((edit (get-edit-target-object)))
+         (when (and edit (is-a? edit editor<%>))
+           (send edit do-edit-operation 'cut)))
+       #t))
    (define/public (edit-menu:get-cut-item) edit-menu:cut-item)
    (define/public (edit-menu:cut-string) (string-constant cut-menu-item))
    (define/public (edit-menu:cut-help-string) (string-constant cut-info))
    (define/public
      edit-menu:cut-on-demand
-     (λ
-      (item)
-      (let* ((editor (get-edit-target-object))
-             (enable?
-               (and editor
-                    (is-a? editor editor<%>)
-                    (send editor can-do-edit-operation? 'cut))))
-        (send item enable enable?))))
+     (λ (item)
+       (let* ((editor (get-edit-target-object))
+              (enable?
+                (and editor
+                     (is-a? editor editor<%>)
+                     (send editor can-do-edit-operation? 'cut))))
+         (send item enable enable?))))
    (define/public (edit-menu:create-cut?) #t)
    (define/public edit-menu:between-cut-and-copy (λ (menu) (void)))
    (define/public
      edit-menu:copy-callback
-     (λ
-      (menu evt)
-      (let ((edit (get-edit-target-object)))
-        (when (and edit (is-a? edit editor<%>))
-          (send edit do-edit-operation 'copy)))
-      #t))
+     (λ (menu evt)
+       (let ((edit (get-edit-target-object)))
+         (when (and edit (is-a? edit editor<%>))
+           (send edit do-edit-operation 'copy)))
+       #t))
    (define/public (edit-menu:get-copy-item) edit-menu:copy-item)
    (define/public (edit-menu:copy-string) (string-constant copy-menu-item))
    (define/public (edit-menu:copy-help-string) (string-constant copy-info))
    (define/public
      edit-menu:copy-on-demand
-     (λ
-      (item)
-      (let* ((editor (get-edit-target-object))
-             (enable?
-               (and editor
-                    (is-a? editor editor<%>)
-                    (send editor can-do-edit-operation? 'copy))))
-        (send item enable enable?))))
+     (λ (item)
+       (let* ((editor (get-edit-target-object))
+              (enable?
+                (and editor
+                     (is-a? editor editor<%>)
+                     (send editor can-do-edit-operation? 'copy))))
+         (send item enable enable?))))
    (define/public (edit-menu:create-copy?) #t)
    (define/public edit-menu:between-copy-and-paste (λ (menu) (void)))
    (define/public
      edit-menu:paste-callback
-     (λ
-      (menu evt)
-      (let ((edit (get-edit-target-object)))
-        (when (and edit (is-a? edit editor<%>))
-          (send edit do-edit-operation 'paste)))
-      #t))
+     (λ (menu evt)
+       (let ((edit (get-edit-target-object)))
+         (when (and edit (is-a? edit editor<%>))
+           (send edit do-edit-operation 'paste)))
+       #t))
    (define/public (edit-menu:get-paste-item) edit-menu:paste-item)
    (define/public (edit-menu:paste-string) (string-constant paste-menu-item))
    (define/public (edit-menu:paste-help-string) (string-constant paste-info))
    (define/public
      edit-menu:paste-on-demand
-     (λ
-      (item)
-      (let* ((editor (get-edit-target-object))
-             (enable?
-               (and editor
-                    (is-a? editor editor<%>)
-                    (send editor can-do-edit-operation? 'paste))))
-        (send item enable enable?))))
+     (λ (item)
+       (let* ((editor (get-edit-target-object))
+              (enable?
+                (and editor
+                     (is-a? editor editor<%>)
+                     (send editor can-do-edit-operation? 'paste))))
+         (send item enable enable?))))
    (define/public (edit-menu:create-paste?) #t)
    (define/public edit-menu:between-paste-and-clear (λ (menu) (void)))
    (define/public
      edit-menu:clear-callback
-     (λ
-      (menu evt)
-      (let ((edit (get-edit-target-object)))
-        (when (and edit (is-a? edit editor<%>))
-          (send edit do-edit-operation 'clear)))
-      #t))
+     (λ (menu evt)
+       (let ((edit (get-edit-target-object)))
+         (when (and edit (is-a? edit editor<%>))
+           (send edit do-edit-operation 'clear)))
+       #t))
    (define/public (edit-menu:get-clear-item) edit-menu:clear-item)
    (define/public
      (edit-menu:clear-string)
@@ -401,24 +390,22 @@
    (define/public (edit-menu:clear-help-string) (string-constant clear-info))
    (define/public
      edit-menu:clear-on-demand
-     (λ
-      (item)
-      (let* ((editor (get-edit-target-object))
-             (enable?
-               (and editor
-                    (is-a? editor editor<%>)
-                    (send editor can-do-edit-operation? 'clear))))
-        (send item enable enable?))))
+     (λ (item)
+       (let* ((editor (get-edit-target-object))
+              (enable?
+                (and editor
+                     (is-a? editor editor<%>)
+                     (send editor can-do-edit-operation? 'clear))))
+         (send item enable enable?))))
    (define/public (edit-menu:create-clear?) #t)
    (define/public edit-menu:between-clear-and-select-all (λ (menu) (void)))
    (define/public
      edit-menu:select-all-callback
-     (λ
-      (menu evt)
-      (let ((edit (get-edit-target-object)))
-        (when (and edit (is-a? edit editor<%>))
-          (send edit do-edit-operation 'select-all)))
-      #t))
+     (λ (menu evt)
+       (let ((edit (get-edit-target-object)))
+         (when (and edit (is-a? edit editor<%>))
+           (send edit do-edit-operation 'select-all)))
+       #t))
    (define/public (edit-menu:get-select-all-item) edit-menu:select-all-item)
    (define/public
      (edit-menu:select-all-string)
@@ -428,14 +415,13 @@
      (string-constant select-all-info))
    (define/public
      edit-menu:select-all-on-demand
-     (λ
-      (item)
-      (let* ((editor (get-edit-target-object))
-             (enable?
-               (and editor
-                    (is-a? editor editor<%>)
-                    (send editor can-do-edit-operation? 'select-all))))
-        (send item enable enable?))))
+     (λ (item)
+       (let* ((editor (get-edit-target-object))
+              (enable?
+                (and editor
+                     (is-a? editor editor<%>)
+                     (send editor can-do-edit-operation? 'select-all))))
+         (send item enable enable?))))
    (define/public (edit-menu:create-select-all?) #t)
    (define/public
      edit-menu:between-select-all-and-find
@@ -446,12 +432,11 @@
    (define/public (edit-menu:find-help-string) (string-constant find-info))
    (define/public
      edit-menu:find-on-demand
-     (λ
-      (item)
-      (send item enable
-        (let
-         ((target (get-edit-target-object)))
-         (and target (is-a? target editor<%>))))))
+     (λ (item)
+       (send item enable
+         (let
+          ((target (get-edit-target-object)))
+          (and target (is-a? target editor<%>))))))
    (define/public (edit-menu:create-find?) #f)
    (define/public edit-menu:find-again-callback (λ (item control) (void)))
    (define/public (edit-menu:get-find-again-item) edit-menu:find-again-item)
@@ -463,12 +448,11 @@
      (string-constant find-again-info))
    (define/public
      edit-menu:find-again-on-demand
-     (λ
-      (item)
-      (send item enable
-        (let
-         ((target (get-edit-target-object)))
-         (and target (is-a? target editor<%>))))))
+     (λ (item)
+       (send item enable
+         (let
+          ((target (get-edit-target-object)))
+          (and target (is-a? target editor<%>))))))
    (define/public (edit-menu:create-find-again?) #f)
    (define/public
      edit-menu:replace-and-find-again-callback
@@ -484,19 +468,17 @@
      (string-constant replace-and-find-again-info))
    (define/public
      edit-menu:replace-and-find-again-on-demand
-     (λ
-      (item)
-      (send item enable
-        (let
-         ((target (get-edit-target-object)))
-         (and target (is-a? target editor<%>))))))
+     (λ (item)
+       (send item enable
+         (let
+          ((target (get-edit-target-object)))
+          (and target (is-a? target editor<%>))))))
    (define/public (edit-menu:create-replace-and-find-again?) #f)
    (define/public
      edit-menu:between-find-and-preferences
-     (λ
-      (menu)
-      (unless (current-eventspace-has-standard-menus?)
-        (make-object separator-menu-item% menu))))
+     (λ (menu)
+       (unless (current-eventspace-has-standard-menus?)
+         (make-object separator-menu-item% menu))))
    (define/public
      edit-menu:preferences-callback
      (λ (item control) (preferences:show-dialog) #t))
@@ -782,16 +764,14 @@
             (parent edit-menu)
             (callback
              (let ((edit-menu:replace-and-find-again-callback
-                     (λ
-                      (item evt)
-                      (edit-menu:replace-and-find-again-callback item evt))))
+                     (λ (item evt)
+                       (edit-menu:replace-and-find-again-callback item evt))))
                edit-menu:replace-and-find-again-callback))
             (shortcut (if (eq? (system-type) 'macosx) #f #\h))
             (help-string (edit-menu:replace-and-find-again-help-string))
             (demand-callback
-             (λ
-              (menu-item)
-              (edit-menu:replace-and-find-again-on-demand menu-item))))))
+             (λ (menu-item)
+               (edit-menu:replace-and-find-again-on-demand menu-item))))))
    (edit-menu:between-find-and-preferences (get-edit-menu))
    (define edit-menu:preferences-item
      (and (edit-menu:create-preferences?)
@@ -802,7 +782,10 @@
              (let ((edit-menu:preferences-callback
                      (λ (item evt) (edit-menu:preferences-callback item evt))))
                edit-menu:preferences-callback))
-            (shortcut #\;)
+            (shortcut
+             (begin
+               (printf "system-type ~s\n" (system-type))
+               (case (system-type) ((macosx) #\,) (else #\;))))
             (help-string (edit-menu:preferences-help-string))
             (demand-callback
              (λ (menu-item) (edit-menu:preferences-on-demand menu-item))))))

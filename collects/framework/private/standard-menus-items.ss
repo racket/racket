@@ -368,7 +368,9 @@
           (make-an-item 'edit-menu 'preferences 
                         '(string-constant preferences-info)
                         '(λ (item control) (preferences:show-dialog) #t)
-                        #\; 
+                        '(case (system-type)
+                           [(macosx) #\,]
+                           [else #\;])
                         '(string-constant preferences-menu-item)
                         on-demand-do-nothing
                         '(not (current-eventspace-has-standard-menus?)))
