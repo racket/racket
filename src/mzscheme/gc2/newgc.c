@@ -126,6 +126,7 @@ static unsigned long pages_in_heap = 0;
 static unsigned long max_heap_size = 0;
 static unsigned long max_used_pages = 0;
 static unsigned long used_pages = 0;
+static unsigned long actual_pages_size = 0;
 static unsigned long in_unsafe_allocation_mode = 0;
 static void (*unsafe_allocation_abort)();
 static void garbage_collect(int);
@@ -161,9 +162,9 @@ inline static void free_used_pages(size_t len)
 
 #define CHECK_USED_AGAINST_MAX(len) check_used_against_max(len)
 #define LOGICALLY_ALLOCATING_PAGES(len) /* empty */
-#define ACTUALLY_ALLOCATING_PAGES(len) /* empty */
+#define ACTUALLY_ALLOCATING_PAGES(len) actual_pages_size += len
 #define LOGICALLY_FREEING_PAGES(len) free_used_pages(len)
-#define ACTUALLY_FREEING_PAGES(len) /* empty */
+#define ACTUALLY_FREEING_PAGES(len) actual_pages_size -= len
 
 #include "page_range.c"
 
@@ -2376,6 +2377,9 @@ void GC_dump_with_traces(int flags,
   GCWARN((GCOUTF,"\n"));
   GCWARN((GCOUTF,"Current memory use: %li\n", GC_get_memory_use(NULL)));
   GCWARN((GCOUTF,"Peak memory use after a collection: %li\n",peak_memory_use));
+  GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %li (+%li)\n", 
+          used_pages * APAGE_SIZE, 
+          actual_pages_size - (used_pages * APAGE_SIZE)));
   GCWARN((GCOUTF,"# of major collections: %li\n", num_major_collects));
   GCWARN((GCOUTF,"# of minor collections: %li\n", num_minor_collects));
   GCWARN((GCOUTF,"# of installed finalizers: %i\n", num_fnls));
@@ -2936,6 +2940,11 @@ static void garbage_collect(int force_full)
 
   /* new we do want the allocator freaking if we go over half */
   in_unsafe_allocation_mode = 0;
+
+  /* If we have too many idle pages, flush: */
+  if (actual_pages_size > ((used_pages << (LOG_APAGE_SIZE + 1)))) {
+    flush_freed_pages();
+  }
 
   /* update some statistics */
   if(gc_full) num_major_collects++; else num_minor_collects++;
