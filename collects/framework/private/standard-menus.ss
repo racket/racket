@@ -784,7 +784,6 @@
                edit-menu:preferences-callback))
             (shortcut
              (begin
-               (printf "system-type ~s\n" (system-type))
                (case (system-type) ((macosx) #\,) (else #\;))))
             (help-string (edit-menu:preferences-help-string))
             (demand-callback
