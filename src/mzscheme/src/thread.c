@@ -175,6 +175,7 @@ MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
 
 static Scheme_Custodian *main_custodian;
 static Scheme_Custodian *last_custodian;
+static Scheme_Hash_Table *limited_custodians = NULL;
 
 /* On swap, put target in a static variable, instead of on the stack,
    so that the swapped-out thread is less likely to have a pointer
@@ -935,6 +936,15 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
     }
   }
 
+  if (!limited_custodians)
+    limited_custodians = scheme_make_hash_table(SCHEME_hash_ptr);
+  scheme_hash_set(limited_custodians, args[0], scheme_true);
+  ((Scheme_Custodian *)args[0])->has_limit = 1;
+  if (argc > 2) {
+    scheme_hash_set(limited_custodians, args[2], scheme_true);
+    ((Scheme_Custodian *)args[2])->has_limit = 1;
+  }
+
 #ifdef MZ_PRECISE_GC
   if (GC_set_account_hook(MZACCT_LIMIT, args[0], lim, (argc > 2) ? args[2] : args[0]))
     return scheme_void;
@@ -1423,6 +1433,10 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     /* Remove this custodian from its parent */
     adjust_custodian_family(m, m);
 
+    if (m->has_limit) {
+      scheme_hash_set(limited_custodians, (Scheme_Object *)m, NULL);
+    }
+    
     m = next_m;
   }
 
@@ -6075,6 +6089,7 @@ static void make_initial_config(Scheme_Thread *p)
 
   REGISTER_SO(main_custodian);
   REGISTER_SO(last_custodian);
+  REGISTER_SO(limited_custodians);
   main_custodian = scheme_make_custodian(NULL);
   last_custodian = main_custodian;
   init_param(cells, paramz, MZCONFIG_CUSTODIAN, (Scheme_Object *)main_custodian);

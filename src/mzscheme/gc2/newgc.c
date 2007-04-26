@@ -1985,8 +1985,6 @@ long GC_get_memory_use(void *o)
    one that we export out, and it does a metric crapload of work. The second
    we use internally, and it doesn't do nearly as much. */
 
-void *watch_for; /* REMOVEME */
-
 /* This is the first mark routine. It's a bit complicated. */
 void GC_mark(const void *const_p)
 {
@@ -1998,10 +1996,6 @@ void GC_mark(const void *const_p)
     return;
   }
 
-  if (watch_for && (p == watch_for)) {
-    GCPRINT(GCOUTF, "Found it\n");
-  }
-  
   if((page = find_page(p))) {
     /* toss this over to the BTC mark routine if we're doing accounting */
     if(doing_memory_accounting) { memory_account_mark(page,p); return; }
@@ -2409,7 +2403,7 @@ int GC_is_tagged(void *p)
 
 int GC_is_tagged_start(void *p)
 {
-  return 1; /* REMOVEME */
+  return 0;
 }
 
 void *GC_next_tagged_start(void *p)
