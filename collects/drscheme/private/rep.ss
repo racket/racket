@@ -482,13 +482,17 @@ TODO
       (let ([marshall 
              (λ (lls)
                (map (λ (ls)
-                      (map (λ (s)
-                             (cond
-                               [(is-a? s string-snip%)
-                                (send s get-text 0 (send s get-count))]
-                               [(string? s) s]
-                               [else "'non-string-snip"]))
-                           ls))
+                      (list
+                       (apply
+                        string-append
+                        (reverse
+                         (map (λ (s)
+                                (cond
+                                  [(is-a? s string-snip%)
+                                   (send s get-text 0 (send s get-count))]
+                                  [(string? s) s]
+                                  [else "'non-string-snip"]))
+                              ls)))))
                     lls))]
             [unmarshall (λ (x) x)])
         (preferences:set-un/marshall
@@ -531,7 +535,8 @@ TODO
               (make-object image-snip% bitmap)
               (make-object string-snip% "[err]"))))
       
-    (define (no-user-evaluation-message frame exit-code)
+    (define (no-user-evaluation-message frame exit-code memory-killed?)
+      ; (printf "memory-killed? ~s\n" memory-killed?)
       (message-box
        (string-constant evaluation-terminated)
        (if exit-code
@@ -895,6 +900,8 @@ TODO
           
           (field (user-language-settings #f)
                  (user-teachpack-cache (preferences:get 'drscheme:teachpacks))
+                 (user-custodian-parent #f)
+                 (memory-killed-thread #f)
                  (user-custodian #f)
                  (custodian-limit (and (with-handlers ([exn:fail:unsupported? (λ (x) #f)])
                                          (let ([c (make-custodian)])
@@ -948,7 +955,8 @@ TODO
                  (let ([canvas (get-active-canvas)])
                    (and canvas
                         (send canvas get-top-level-window)))
-                 user-exit-code))))
+                 user-exit-code
+                 (not (thread-running? memory-killed-thread))))))
           (field (need-interaction-cleanup? #f))
           
           (define/private (cleanup-interaction) ; =Kernel=, =Handler=
@@ -1144,9 +1152,16 @@ TODO
           (define/private (init-evaluation-thread) ; =Kernel=
             (set! user-language-settings (send definitions-text get-next-settings))
             
-            (set! user-custodian (make-custodian))
+            (set! user-custodian-parent (make-custodian))
+            (set! user-custodian (parameterize ([current-custodian user-custodian-parent])
+                                   (make-custodian)))
+            (set! memory-killed-thread 
+                  (parameterize ([current-custodian user-custodian-parent])
+                    (thread (λ () (semaphore-wait (make-semaphore 0))))))
             (when custodian-limit
-              (custodian-limit-memory user-custodian custodian-limit user-custodian))
+              (custodian-limit-memory user-custodian-parent 
+                                      custodian-limit
+                                      user-custodian-parent))
             (let ([user-eventspace (parameterize ([current-custodian user-custodian])
                                       (make-eventspace))])
               (set! user-eventspace-box (make-weak-box user-eventspace))
@@ -1549,24 +1564,22 @@ TODO
                 (set-position (last-position))
                 (end-edit-sequence))))
           
-          (define/public copy-next-previous-expr
-            (λ ()
-              (let ([previous-exprs (get-previous-exprs)])
-                (unless (null? previous-exprs)
-                  (set! previous-expr-pos
-                        (if (< (add1 previous-expr-pos) (length previous-exprs))
-                            (add1 previous-expr-pos)
-                            0))
-                  (copy-previous-expr)))))
-          (define/public copy-prev-previous-expr
-            (λ ()
-              (let ([previous-exprs (get-previous-exprs)])
-                (unless (null? previous-exprs)
-                  (set! previous-expr-pos
-                        (if (previous-expr-pos . <= . 0)
-                            (sub1 (length previous-exprs))
-                            (sub1 previous-expr-pos)))
-                  (copy-previous-expr)))))
+          (define/public (copy-next-previous-expr)
+            (let ([previous-exprs (get-previous-exprs)])
+              (unless (null? previous-exprs)
+                (set! previous-expr-pos
+                      (if (< (add1 previous-expr-pos) (length previous-exprs))
+                          (add1 previous-expr-pos)
+                          0))
+                (copy-previous-expr))))
+          (define/public (copy-prev-previous-expr)
+            (let ([previous-exprs (get-previous-exprs)])
+              (unless (null? previous-exprs)
+                (set! previous-expr-pos
+                      (if (previous-expr-pos . <= . 0)
+                          (sub1 (length previous-exprs))
+                          (sub1 previous-expr-pos)))
+                (copy-previous-expr))))
           
           ;; private fields
           (define global-previous-exprs (preferences:get 'drscheme:console-previous-exprs))
