@@ -4874,6 +4874,37 @@ so that propagation occurs.
       (eval '(require pc18-pos))
       (eval '(make-s))))
 
+  (test/spec-passed/result
+   'provide/contract19
+   '(begin
+      (eval '(module pc19-a mzscheme
+               (require (lib "contract.ss"))
+               (define-struct a (x))
+               (provide/contract [struct a ([x number?])])))
+
+      (eval '(module pc19-b mzscheme
+               (require pc19-a
+                        (lib "contract.ss"))
+               (define-struct (b a) (y))
+               (provide/contract [struct (b a) ([x number?] [y number?])])))
+
+      (eval '(module pc19-c mzscheme
+               (require pc19-b
+                        (lib "contract.ss"))
+               
+               (define-struct (c b) (z))
+               (provide/contract [struct (c b) ([x number?] [y number?] [z number?])])))
+
+      (eval' (module pc19-d mzscheme
+               (require pc19-a pc19-c)
+               (define pc19-ans (a-x (make-c 1 2 3)))
+               (provide pc19-ans)))
+      
+      (eval '(require pc19-d))
+      (eval 'pc19-ans))
+   1)
+
+  
   (contract-error-test
    #'(begin
        (eval '(module pce1-bug mzscheme

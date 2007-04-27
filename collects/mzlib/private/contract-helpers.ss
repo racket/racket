@@ -1,6 +1,7 @@
 (module contract-helpers mzscheme
 
-  (provide module-source-as-symbol build-src-loc-string mangle-id
+  (provide module-source-as-symbol build-src-loc-string 
+           mangle-id mangle-id-for-maker
            build-struct-names
            nums-up-to
            add-name-prop
@@ -32,6 +33,24 @@
           (lambda (id)
             (format "-~a" (syntax-object->datum id)))
           ids)))))))
+  
+  (define (mangle-id-for-maker main-stx prefix id . ids)
+    (let ([id-w/out-make (regexp-replace #rx"^make-" (format "~a" (syntax-object->datum id)) "")])
+      (datum->syntax-object
+       #f
+       (string->symbol
+        (string-append
+         "make-"
+         prefix
+         (format 
+          "-~a~a"
+          id-w/out-make
+          (apply 
+           string-append 
+           (map 
+            (lambda (id)
+              (format "-~a" (syntax-object->datum id)))
+            ids))))))))
   
   ;; (cons X (listof X)) -> (listof X)
   ;; returns the elements of `l', minus the last element

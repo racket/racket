@@ -18,6 +18,7 @@ add struct contracts for immutable structs?
                       "contract-opt-guts.ss"
                       (lib "list.ss")
                       (lib "stx.ss" "syntax")
+                      (lib "etc.ss")
                       (lib "name.ss" "syntax"))
   
   (require (lib "etc.ss")
@@ -461,7 +462,8 @@ add struct contracts for immutable structs?
                              (build-constructor-contract stx
                                                          field-contract-ids 
                                                          predicate-id)
-                             #f)]
+                             #f
+                             #t)]
                            [(field-contracts ...) field-contracts]
                            [(field-contract-ids ...) field-contract-ids])
                (with-syntax ([(rev-selector-new-names ...) (reverse (syntax->list (syntax (selector-new-names ...))))]
@@ -548,14 +550,18 @@ add struct contracts for immutable structs?
                         provide-stx
                         struct-name)]
                       [else
-                       (cons (cons (length fields) (constructor->struct-name constructor))
+                       (cons (cons (length fields) (constructor->struct-name provide-stx constructor))
                              (loop (list-ref parent-info 5)))]))]))))
          
-         (define (constructor->struct-name stx)
+         (define (constructor->struct-name orig-stx stx)
            (and stx
                 (let ([m (regexp-match #rx"^make-(.*)$" (format "~a" (syntax-e stx)))])
-                  (and m
-                       (cadr m)))))
+                  (cond
+                    [m (cadr m)]
+                    [else (raise-syntax-error 'contract.ss
+                                              "unable to cope with a struct maker whose name doesn't begin with `make-'"
+                                              orig-stx)]))))
+                       
                   
          
          ;; extract-parent-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
@@ -626,40 +632,44 @@ add struct contracts for immutable structs?
          ;; given the syntax for an identifier and a contract,
          ;; builds a begin expression for the entire contract and provide
          ;; the first syntax object is used for source locations
-         (define (code-for-one-id/new-name stx id ctrct user-rename-id)
-           (with-syntax ([id-rename (a:mangle-id provide-stx
-                                                 "provide/contract-id" 
-                                                 (or user-rename-id id))]
-                         [contract-id (a:mangle-id provide-stx
-                                                   "provide/contract-contract-id" 
-                                                   (or user-rename-id id))]
-                         [pos-module-source (a:mangle-id provide-stx 
-                                                         "provide/contract-pos-module-source"
-                                                         (or user-rename-id id))]
-                         [pos-stx (datum->syntax-object id 'here)]
-                         [id id]
-                         [ctrct (syntax-property ctrct 'inferred-name id)]
-                         [external-name (or user-rename-id id)]
-                         [where-stx stx])
-             (with-syntax ([code
-                            (syntax/loc stx
-                              (begin
-                                (provide (rename id-rename external-name))
-                                
-                                (define pos-module-source (module-source-as-symbol #'pos-stx))
-                                (define contract-id (verify-contract ctrct))
-                                
-                                (define-syntax id-rename
-				  (make-provide/contract-transformer (quote-syntax contract-id)
-								     (quote-syntax id)
-								     (quote-syntax pos-module-source)))))])
-               
-               (syntax-local-lift-module-end-declaration
-                #'(begin 
-                    (-contract contract-id id pos-module-source 'ignored #'id)
-                    (void)))
-               
-               (syntax (code id-rename)))))
+         (define code-for-one-id/new-name
+           (opt-lambda (stx id ctrct user-rename-id [mangle-for-maker? #f])
+             (with-syntax ([id-rename ((if mangle-for-maker? 
+                                           a:mangle-id-for-maker
+                                           a:mangle-id)
+                                       provide-stx
+                                       "provide/contract-id" 
+                                       (or user-rename-id id))]
+                           [contract-id (a:mangle-id provide-stx
+                                                     "provide/contract-contract-id" 
+                                                     (or user-rename-id id))]
+                           [pos-module-source (a:mangle-id provide-stx 
+                                                           "provide/contract-pos-module-source"
+                                                           (or user-rename-id id))]
+                           [pos-stx (datum->syntax-object id 'here)]
+                           [id id]
+                           [ctrct (syntax-property ctrct 'inferred-name id)]
+                           [external-name (or user-rename-id id)]
+                           [where-stx stx])
+               (with-syntax ([code
+                              (syntax/loc stx
+                                (begin
+                                  (provide (rename id-rename external-name))
+                                  
+                                  (define pos-module-source (module-source-as-symbol #'pos-stx))
+                                  (define contract-id (verify-contract ctrct))
+                                  
+                                  (define-syntax id-rename
+                                    (make-provide/contract-transformer (quote-syntax contract-id)
+                                                                       (quote-syntax id)
+                                                                       (quote-syntax pos-module-source)))))])
+                 
+                 (syntax-local-lift-module-end-declaration
+                  #'(begin 
+                      (-contract contract-id id pos-module-source 'ignored #'id)
+                      (void)))
+                 
+                 (syntax (code id-rename))))))
          
          (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])
            (syntax 
