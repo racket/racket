@@ -312,7 +312,7 @@
     ;; purify-port : in-port -> header-string
     (define (purify-port port)
       (let ([m (regexp-match-peek-positions
-                #rx"^HTTP/.*?((\r\n\r\n)|(\n\n)|(\r\r))" port)])
+                #rx"^HTTP/.*?(?:\r\n\r\n|\n\n|\r\r)" port)])
         (if m (read-string (cdar m) port) "")))
 
     (define character-set-size 256)

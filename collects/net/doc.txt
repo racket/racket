@@ -204,13 +204,13 @@ PROCEDURES -----------------------------------------------------------
   The "head.ss" library provides procedures, such as `extract-field,
   for manipulating the header.
 
-  Since web server sometimes return mis-formatted replies,
+  Since web servers sometimes return mis-formatted replies,
   `purify-port' is liberal in what it accepts as a header. as a
   result, the result string may be ill formed, but it will either be
   the empty string, or it will be a string matching the following
   regexp:
 
-      #rx"^HTTP/.*?((\r\n\r\n)|(\n\n)|(\r\r))"
+      #rx"^HTTP/.*?(\r\n\r\n|\n\n|\r\r)"
 
 > (call/input-url url url->port-proc port->X-proc [list-of-strings]) -> X
 
