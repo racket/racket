@@ -154,6 +154,7 @@
                    (and (s:equal? (vector-ref obj1 idx)
                                   (vector-ref obj2 idx))
                         (lp (sub1 idx))))))
+        (cond
           ((my-array? obj1)                
            (and (array? obj2)
                 (equal? (array-dimensions obj1) (array-dimensions obj2))
@@ -169,7 +170,7 @@
                        (not obj2-skipped?)
                        (s:equal? (struct->vector obj1)
                                  (struct->vector obj2))))))
-          (else #f)))
+          (else #f))))
   
   (define (array-rank obj)
     (if (array? obj) (length (array-dimensions obj)) 0))
