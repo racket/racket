@@ -841,7 +841,7 @@
 		    (set! bk (- bk 8))
 		    (set! buf-pos (sub1 buf-pos))
 		    (loop)))
-                (read-bytes! buffer input-port buf-pos)
+                (read-bytes! buffer input-port 0 buf-pos)
 		(flush-output wp)
 		#t = (void)))
 	  #f))))
@@ -912,7 +912,8 @@
 						   #t)))])
 	    (dynamic-wind
 	     void
-	     (lambda () (inflate in out))
+	     (lambda () (begin0 (inflate in out)
+                                (read-bytes 8 in))) ; read CRC32 and ISIZE
 	     (lambda () (when close? (close-output-port out)))))))))
   
   (define (gunzip-through-ports in out)
