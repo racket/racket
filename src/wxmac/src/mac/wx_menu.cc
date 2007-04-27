@@ -729,7 +729,7 @@ void wxSetUpAppleMenu(wxMenuBar *mbar)
 
    if (!::GetIndMenuItemWithCommandID (NULL, 'pref', 1, &mnu, &idx)) {
      if (wxCan_Do_Pref()) {
-       ::SetMenuItemCommandKey(mnu, idx, FALSE, ';');
+       ::SetMenuItemCommandKey(mnu, idx, FALSE, ',');
        ::EnableMenuItem(mnu, idx);
      } else {
        ::DisableMenuItem(mnu, idx);
