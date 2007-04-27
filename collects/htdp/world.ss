@@ -591,7 +591,13 @@
     (define image-count 0)
     (define (save-image img)
       (define total (length event-history))
-      (define bm (send img get-bitmap))
+      ;; --- in lieu of (define bm (send img get-bitmap))
+      (define-values (w h) (send img get-size))
+      (define bm (make-object bitmap% w h))
+      (define dc (make-object bitmap-dc% bm))
+      (send dc clear)
+      (send img draw dc 0 0 0 0 w h 0 0 #f)
+      ;; ---
       (set! image-count (+ image-count 1))
       (send bm save-file (format "i~a.png" image-count) 'png)
       (update-frame (text (format "~a/~a created" image-count total) 18 'red)))
@@ -600,12 +606,14 @@
     (define target:dir
       (let* ([cd (current-directory)]
              [dd (get-directory "Select directory for images" #f cd)])
-        
         (if dd dd cd)))
     (parameterize ([current-directory target:dir])
       (let pb ([ev event-history][world the-world0][img (circle 1 'solid 'red)])
+        #;
+	(printf "event history: ~s\n" ev)
         (cond
           [(null? ev) 
+	   "THIS DESERVES A SECOND LOOK"
            (when (regexp-match "/Users/matthias/" (path->string target:dir))
              (create-animated-gif-on-my-mac))
            (update-frame img)]
