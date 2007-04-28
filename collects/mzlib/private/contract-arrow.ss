@@ -60,7 +60,7 @@
                 procedure?))))]))
   
   (define-syntax (any stx)
-    (raise-syntax-error 'any "use of any outside of an arrow contract" stx))
+    (raise-syntax-error 'any "use of 'any' outside of an arrow contract" stx))
 
   ;; FIXME: need to pass in the name of the contract combinator.
   (define (build--> name doms doms-rest rngs rng-any? func)
