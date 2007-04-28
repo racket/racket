@@ -1,15 +1,39 @@
 #| TODO
-   - stress test the history mechanism
-     does it work when kids play games for several minutes?
-     when the mouse is used a lot?
-     it would mean tens of thousands of interactions or more. 
    - image manipulation functions should accept plain numbers, not insist on nat
    - make scene distinct from image? 
 |#
 
+#|
+At Thu, 21 Dec 2006 14:10:35 -0500, Matthias Felleisen wrote:
+2. The history mechanism collects a record in a list for every event.
+    This means say 30 tick events per second, plus mice and keyboard  
+callbacks.
+    Say we get 50 events at the upper limit per second.
+    After playing for one minute, the event list contains 3,000 records.
+    After playing for ten minutes, the event list contains 30,000  
+records.
+    Each record consists of, on the average, 3 numbers, so it's like  
+gathering
+    a list of 100,000 numbers.
+
+    Is this going to become a bottleneck?
+
+That's a largish list. It could only get that big with mouse-motion
+events, right?
+
+I suggest that when you receive three mouse-motion events in a row,
+drop the middle one, unless the time between the middle one and the
+oldest one is greater than 100 msecs. (Dropping the middle one means
+that you keep the endpoints, which are likely to be the interesting
+ones.)
+
+Matthew
+|#
+
+;; Sat Apr 28 13:31:02 EDT 2007: fixed the image and animated-gif thing, using Matthew's lib
 ;; Fri Dec 22 11:51:53 EST 2006: cleaned up the callback code with macro
 ;; Thu Dec 21 13:59:23 EST 2006: fixed add-line and place-image to accept numbers
-;; Wed Dec 20 18:17:03 EST 2060: recording events and creating images
+;; Wed Dec 20 18:17:03 EST 2006: recording events and creating images
 ;; Sun Dec 09 23:17:41 EST 2006: add-line fixed so it cuts off lines before drawing
 ;; Mon Mar 27 10:29:28 EST 2006: integrated Felix's mouse events
 ;; Wed Jan 25 13:38:42 EST 2006: on-redraw: proc is now called on installation
@@ -18,17 +42,18 @@
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 (module world mzscheme
-  (require
-   (lib "class.ss")
-   (lib "etc.ss")
-   (lib "list.ss")
-   (lib "process.ss")
-   (lib "port.ss")
-   (lib "mred.ss" "mred")
-   (lib "error.ss" "htdp")
-   (lib "image.ss" "htdp")
-   (only (lib "htdp-beginner.ss" "lang") image?)
-   (lib "prim.ss" "lang"))
+  (require (lib "class.ss")
+           (lib "etc.ss")
+           (lib "list.ss")
+           (lib "process.ss")
+           (lib "port.ss")
+           (lib "mred.ss" "mred")
+           (lib "error.ss" "htdp")
+           (lib "image.ss" "htdp")
+           (only (lib "htdp-beginner.ss" "lang") image?)
+           (lib "prim.ss" "lang"))
+  
+  (require (lib "gif.ss" "mrlib"))
   
   (require (lib "bitmap-label.ss" "mrlib")
            (lib "string-constant.ss" "string-constants"))
@@ -176,20 +201,45 @@
   ;                 ;                                                      
   ;                                                                        
   
-  ;; Number Number Number World -> true
+  ;; Number Number Number World [Boolean] -> true
   ;; create the visible world (canvas)
-  (define (big-bang w h delta world)
-    (check-pos 'big-bang w "first")
-    (check-pos 'big-bang h "second")
-    (check-arg 'big-bang
-               (and (number? delta) (<= 0 delta 1000))
-               "number [of seconds] between 0 and 1000"
-               "first"
-               delta)
-    (when (vw-init?) (error 'big-bang "big-bang already called once"))
-    (install-world delta world) ;; call first to establish a visible world
-    (set-and-show-frame w h) ;; now show it
-    #t)
+  (define big-bang
+    (lambda x 
+      (define args (length x))
+      (if (or (= args 5) (= args 4))
+          (apply big-bang0 x) 
+          (error 'big-bang msg))))
+  (define msg
+    (string-append
+     "big-bang consumes 4 or 5 arguments:\n"
+     "-- (big-bang <width> <height> <rate> <world0>)\n"
+     "-- (big-bang <width> <height> <rate> <world0> <animated-gif>)\n"
+     "see Help Desk."))
+    
+  (define big-bang0
+    (case-lambda 
+      [(w h delta world) (big-bang w h delta world #f)]
+      [(w h delta world animated-gif) 
+       (check-pos 'big-bang w "first")
+       (check-pos 'big-bang h "second")
+       (check-arg 'big-bang
+                  (and (number? delta) (<= 0 delta 1000))
+                  "number [of seconds] between 0 and 1000"
+                  "third"
+                  delta)
+       (check-arg 'big-bang 
+                  (boolean? animated-gif)
+                  "boolean expected"
+                  "fifth"
+                  animated-gif)
+       (when (vw-init?) (error 'big-bang "big-bang already called once"))
+       (install-world delta world) ;; call first to establish a visible world
+       (set-and-show-frame w h animated-gif) ;; now show it
+       (unless animated-gif (set! add-event void)) ;; no recording if image undesired
+       (set! *the-delta* delta)
+       #t]))
+  
+  (define *the-delta* 0.0)
   
   (define (end-of-time s)
     (printf "end of time: ~a~n" s)
@@ -460,7 +510,7 @@
   ;; Text-- The One and Only Visible World
   (define visible-world #f)
   
-  ;; -> Void
+  ;; Bool -> Void
   (define (vw-setup)
     (set! visible-world (new text%))
     (send visible-world set-cursor (make-object cursor% 'arrow))
@@ -479,13 +529,14 @@
     (send visible-world lock #t)
     (send visible-world end-edit-sequence))
   
-  ;; Nat Nat -> Void
+  ;; Nat Nat Boolean -> Void
   ;; effect: create, show and set the-frame
   ;; assume: visible-world is a text%, i.e., install-world has been called. 
-  (define (set-and-show-frame w h)
+  (define (set-and-show-frame w h animated-gif)
     (define the-play-back-custodian (make-custodian))
     (define frame (create-frame the-play-back-custodian))
-    (add-stop-and-image-buttons frame the-play-back-custodian)
+    (when animated-gif
+      (add-stop-and-image-buttons frame the-play-back-custodian))
     (add-editor-canvas frame visible-world w h)
     (send frame show #t))
   
@@ -579,6 +630,8 @@
     (set! event-history (cons (cons type stuff) event-history)))
   
   ;; --> Void
+  ;; re-play the history of events, creating a png per step, create animated gif
+  ;; effect: write to user-chosen file 
   (define (play-back)
     ;; --- state transitions 
     (define (world-transition world fst)
@@ -588,59 +641,47 @@
         [(mouse) (mouse-callback0 world (cadr fst) (caddr fst) (cadddr fst))]
         [else (error 'play-back "bad type of event: ~s" fst)]))
     ;; --- creating images 
+    (define total (+ (length event-history) 1))
     (define image-count 0)
+    (define bitmap-list '())
     (define (save-image img)
-      (define total (length event-history))
-      ;; --- in lieu of (define bm (send img get-bitmap))
-      (define-values (w h) (send img get-size))
-      (define bm (make-object bitmap% w h))
-      (define dc (make-object bitmap-dc% bm))
-      (send dc clear)
-      (send img draw dc 0 0 0 0 w h 0 0 #f)
-      ;; ---
+      (define-values (w h) (send img get-size)) 
+      (define (make-bitmap)
+        (define bm (make-object bitmap% w h))
+        (define dc (make-object bitmap-dc% bm))
+        (send dc clear)
+        (send img draw dc 0 0 0 0 w h 0 0 #f)
+        bm)
+      (define bm (make-bitmap)) 
+      (set! bitmap-list (cons make-bitmap bitmap-list))
       (set! image-count (+ image-count 1))
-      (send bm save-file (format "i~a.png" image-count) 'png)
-      (update-frame (text (format "~a/~a created" image-count total) 18 'red)))
-    ;; re-play the history of events, creating a png per step, 
-    ;; summing them into an animated gif at the end 
+      (send bm save-file (format "i~a.png" image-count) 'png))
+    ;; --- choose place 
     (define target:dir
       (let* ([cd (current-directory)]
              [dd (get-directory "Select directory for images" #f cd)])
         (if dd dd cd)))
     (parameterize ([current-directory target:dir])
-      (let pb ([ev event-history][world the-world0][img (circle 1 'solid 'red)])
-        #;
-	(printf "event history: ~s\n" ev)
+      (let replay ([ev event-history][world the-world0])
+        (define img (redraw-callback0 world))
+        (update-frame (text (format "~a/~a created" image-count total) 18 'red))
+        (save-image img)
         (cond
-          [(null? ev) 
-	   "THIS DESERVES A SECOND LOOK"
-           (when (regexp-match "/Users/matthias/" (path->string target:dir))
-             (create-animated-gif-on-my-mac))
-           (update-frame img)]
-          [else 
-           (let* ([w (world-transition world (car ev))]
-                  [i (redraw-callback0 w)])
-             (save-image i)
-             (pb (cdr ev) w i))]))))
+          [(null? ev) (update-frame (text "creating i-animated.gif" 18 'red))
+                      (create-animated-gif (reverse! bitmap-list))
+                      (update-frame img)]
+          [else (replay (cdr ev) (world-transition world (car ev)))]))))
+
+  ;; [Listof (-> bitmap)] -> Void
+  ;; turn the list of thunks into animated gifs 
+  ;; effect: overwrite the ANIMATED-GIF-FILE (in current directory)
+  (define (create-animated-gif bitmap-list)
+    (define intv (if (> +inf.0 *the-delta* 0) (inexact->exact (floor (* 100 *the-delta*))) 5))
+    (when (file-exists? ANIMATED-GIF-FILE)
+      (delete-file ANIMATED-GIF-FILE))
+    (write-animated-gif bitmap-list intv ANIMATED-GIF-FILE #:one-at-a-time? #t))
   
-  ;; --- creating the animated gif on my mac
-  ;; This is for personal use only.  -- Matthias
-  (define (create-animated-gif-on-my-mac)
-    (define files:dir (map path->string (directory-list)))
-    (define files:str
-      (filter (lambda (x) (regexp-match #rx"i[0-9]*.png" x)) files:dir))
-    (define files:s+i 
-      (map (lambda (f)
-             (cons f (string->number (car (regexp-match #rx"[0-9]+" f)))))
-           files:str))
-    (define files:sorted
-      (sort files:s+i (lambda (x y) (<= (cdr x) (cdr y)))))
-    (define files:pln 
-      (map (lambda (f) (format "~a" (car f))) files:sorted))
-    ; (define files (apply string-append files:pln))
-    (define convert (find-executable-path "convert"))
-    (define a* (append (list "-delay" "5") files:pln (list "i-animated.gif")))
-    (if convert (apply system* convert a*) (printf "can't find convert")))
+  (define ANIMATED-GIF-FILE "i-animated.gif")
   
   
   ;                                                                 
