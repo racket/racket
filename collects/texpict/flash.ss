@@ -41,10 +41,10 @@
         (let-values ([(bx by bw bh) (send p get-bounding-box)])
           (send p translate (- bx) (- by))
           (dc (lambda (dc x y)
-		(let ([b (or filled? (send dc get-brush))])
-		  (unless filled?
-		    (send dc set-brush no-brush))
+		(let ([b (send dc get-brush)])
+		  (if filled?
+                      (send dc set-brush (send (send dc get-pen) get-color) 'solid)
+                      (send dc set-brush no-brush))
 		  (send dc draw-path p x y)
-		  (unless filled?
-		    (send dc set-brush b))))
+                  (send dc set-brush b)))
               bw bh))))))
