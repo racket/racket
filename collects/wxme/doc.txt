@@ -50,7 +50,7 @@ non-text content that can be read.
 
 Returns two values: a list of snip-class names (as strings) used by
 the given stream, and a list of data-class names (as strings) used by
-the stream. If the stream is now a WXME stream, the result is two
+the stream. If the stream is not a WXME stream, the result is two
 empty lists. The given stream is not closed, and only data for a WXME
 stream (if any) is consumed.
 
