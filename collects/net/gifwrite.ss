@@ -67,7 +67,11 @@
       [(16) 4]
       [(32) 5]
       [(64) 6]
-      [(128) 7]))
+      [(128) 7]
+      [(256) 8]
+      [else (error 'bits-per-pixel
+                   "strange colormap size: ~e"
+                   (length ColorMap))]))
 
   (define (WRITE g bytes)
     (write-bytes bytes (gif-stream-port g)))
@@ -197,7 +201,8 @@
       (check-line-bytes (length cmap) Line)
 
       (EGifCompress GifFile
-                    (bits-per-pixel cmap)
+                    (max 2 ;; min code size of LZW is 2
+                         (bits-per-pixel cmap))
                     Line))
 
     (set-gif-stream-FileState! GifFile 'image-or-control))
@@ -437,13 +442,16 @@
     (let* ([len (quotient (bytes-length argb) 4)]
            [result (make-bytes len)])
       (let loop ([masks (list
+                         ;; 8 bits per color
                          (lambda (v) v)
+                         ;; 4 bits per color
                          (lambda (v)
                            (bitwise-ior
                             (bitwise-ior
                              v
                              (arithmetic-shift (bitwise-and v #x55) 1))
                             (arithmetic-shift (bitwise-and v #xCC) -1)))
+                         ;; 1 bit per color
                          (lambda (v)
                            (if (v . > . 127)
                                255
