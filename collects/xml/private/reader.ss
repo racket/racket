@@ -65,7 +65,7 @@
                                1
                                (- (location-offset (pos)) 1)))
                              "expected root element - received ~a"
-                             start)]))
+                             (if (pcdata? start) (pcdata-string start) start))]))
       
       ;; read-misc : Input-port (-> Location) -> (listof Misc) Token
       (define (read-misc in pos)
