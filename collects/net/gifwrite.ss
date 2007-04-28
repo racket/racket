@@ -440,7 +440,16 @@
 
   (define (quantize argb)
     (let* ([len (quotient (bytes-length argb) 4)]
-           [result (make-bytes len)])
+           [result (make-bytes len)]
+           [rgb-key (lambda (r g b)
+                      (bitwise-ior (bitwise-ior
+                                    (arithmetic-shift r 16)
+                                    (arithmetic-shift g 8))
+                                   b))]
+           [key->rgb (lambda (k)
+                       (vector (arithmetic-shift k -16)
+                               (bitwise-and #xFF (arithmetic-shift k -8))
+                               (bitwise-and #xFF k)))])
       (let loop ([masks (list
                          ;; 8 bits per color
                          (lambda (v) v)
@@ -458,7 +467,7 @@
                                0)))])
         (let ([mask (car masks)]
               [transparent #f]
-              [table (make-hash-table 'equal)]
+              [table (make-hash-table)] ; relying on fixnums
               [idx 0])
           ;; Iterate over image to count colors
           ;; (as reduced by mask)
@@ -471,7 +480,7 @@
                              (set! transparent idx)
                              (set! idx (add1 idx)))
                            transparent)
-                         (let ([vec (vector
+                         (let ([vec (rgb-key
                                      (mask (bytes-ref argb (+ 1 pos)))
                                      (mask (bytes-ref argb (+ 2 pos)))
                                      (mask (bytes-ref argb (+ 3 pos))))])
@@ -481,8 +490,9 @@
                                    (hash-table-put! table vec idx)
                                    (set! idx (add1 idx))
                                    (sub1 idx))))))])
-                (bytes-set! result i (min 255 this-idx)))
-              (loop (add1 i) (+ pos 4))))
+                (unless (= this-idx 256)
+                  (bytes-set! result i this-idx)
+                  (loop (add1 i) (+ pos 4))))))
           (if ((hash-table-count table) . > . (if transparent
                                                   255
                                                   256))
@@ -505,6 +515,6 @@
                         (hash-table-for-each 
                          table
                          (lambda (k v)
-                           (vector-set! t v k)))
+                           (vector-set! t v (key->rgb k))))
                         (vector->list t))
                       transparent)))))))
