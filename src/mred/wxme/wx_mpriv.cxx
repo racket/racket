@@ -352,7 +352,7 @@ void wxMediaEdit::_ChangeStyle(long start, long end,
     
     if (!modified) {
       wxUnmodifyRecord *ur;
-      ur = new WXGC_PTRS wxUnmodifyRecord;
+      ur = new WXGC_PTRS wxUnmodifyRecord(delayedStreak);
       AddUndo(ur);
     }
     if (rec)

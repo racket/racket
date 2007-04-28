@@ -37,9 +37,9 @@ class wxSchemeModifyRecord : public wxChangeRecord
 
 class wxUnmodifyRecord : public wxChangeRecord
 {
-  int ok;
+  Bool ok, cont;
  public:
-  wxUnmodifyRecord(void);
+  wxUnmodifyRecord(Bool cont);
   Bool Undo(wxMediaBuffer *media);
   void DropSetUnmodified(void);
 #if CGREC_DEBUG

@@ -139,16 +139,17 @@ char *wxSchemeModifyRecord::GetName()
 #endif
 
 
-wxUnmodifyRecord::wxUnmodifyRecord(void)
+wxUnmodifyRecord::wxUnmodifyRecord(Bool _cont)
 {
   ok = 1;
+  cont = _cont;
 }
 
 Bool wxUnmodifyRecord::Undo(wxMediaBuffer *media)
 {
   if (ok)
     media->SetModified(FALSE);
-  return FALSE;
+  return cont;
 }
 
 void wxUnmodifyRecord::DropSetUnmodified(void)

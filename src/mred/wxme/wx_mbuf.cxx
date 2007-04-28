@@ -737,6 +737,7 @@ Bool wxReadMediaVersion(wxMediaStreamIn *mf, wxMediaStreamInBase *b, Bool parseF
     b->Read(vbuf, MRED_START_STR_LEN);
     if (strcmp(vbuf, MRED_START_STR)) {
       /* Maybe we have a #reader... prefix? */
+      memset(vbuf XFORM_OK_PLUS MRED_START_STR_LEN, 0, MRED_READER_STR_LEN - MRED_START_STR_LEN + 1);
       b->Read(vbuf XFORM_OK_PLUS MRED_START_STR_LEN, MRED_READER_STR_LEN - MRED_START_STR_LEN);
       if (!strcmp(vbuf, MRED_READER_STR)) {
         /* Yes, so try reading start again. */

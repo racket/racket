@@ -430,7 +430,7 @@ void wxMediaEdit::OnEvent(wxMouseEvent *event)
     return;
 
   if (!event->Moving())
-    EndStreaks(wxSTREAK_EXCEPT_KEY_SEQUENCE | wxSTREAK_EXCEPT_CURSOR);
+    EndStreaks(wxSTREAK_EXCEPT_KEY_SEQUENCE | wxSTREAK_EXCEPT_CURSOR | wxSTREAK_EXCEPT_DELAYED);
 
   if (event->ButtonDown() || caretSnip) {
     /* First, find clicked-on snip: */
@@ -1802,7 +1802,7 @@ void wxMediaEdit::_Insert(wxSnip *isnip, long strlen, wxchar *str, wxList *snips
 
   if (!modified) {
     wxUnmodifyRecord *ur;
-    ur = new WXGC_PTRS wxUnmodifyRecord;
+    ur = new WXGC_PTRS wxUnmodifyRecord(delayedStreak);
     AddUndo(ur);
   }
   if (!noundomode) {
@@ -1932,7 +1932,7 @@ void wxMediaEdit::Insert(wxchar a_char, long start, long end)
   streak = typingStreak;
   ifs = insertForceStreak;
 
-  EndStreaks();
+  EndStreaks(wxSTREAK_EXCEPT_DELAYED);
 
   insertForceStreak = streak;
   Insert(buffer, start, end);
@@ -2024,7 +2024,7 @@ void wxMediaEdit::_Delete(long start, long end, Bool withUndo, Bool scrollOk)
   if (withUndo) {
     if (!modified) {
       wxUnmodifyRecord *ur;
-      ur = new WXGC_PTRS wxUnmodifyRecord;
+      ur = new WXGC_PTRS wxUnmodifyRecord(delayedStreak);
       AddUndo(ur);
     }
     rec = new WXGC_PTRS wxDeleteRecord(start, end, deletionStreak || delayedStreak
@@ -2220,7 +2220,7 @@ void wxMediaEdit::Delete()
   dstreak = deletionStreak;
   dfs = deleteForceStreak;
 
-  EndStreaks();
+  EndStreaks(wxSTREAK_EXCEPT_DELAYED);
   deleteForceStreak = dstreak;
   Delete(startpos, (endpos == startpos) ? -1 : endpos);
 
