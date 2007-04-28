@@ -1,6 +1,6 @@
-;; testing world 
+;; testing world
 
-;; World = Nat 
+;; World = Nat
 
 (define world0 10)
 
@@ -21,7 +21,7 @@
     [(symbol=? ke 'right) 90]
     [else w]))
 
-;; run world run 
+;; run world run
 
 (big-bang 100 100 .1 world0)
 
