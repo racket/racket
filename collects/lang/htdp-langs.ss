@@ -336,40 +336,45 @@ tracing todo:
                     #:modules `((#f ,program-filename))
                     #:literal-expression `(require ,(filename->require-symbol program-filename))
                     #:cmdline '("-Zmvq")
-                    #|
                     #:src-filter
                     (λ (path)
                       (call-with-input-file path
                         (λ (port) 
-                          (and (is-wxme-stream? port)
-                               (let ([special-port (wxme-port->port port #f)])
-                                 (let loop ()
-                                   (let ([c (read-byte-or-special port)])
-                                     (cond
-                                       [(eof-object? c)
-                                        (close-input-port special-port)
-                                        #f]
-                                       [(byte? c)
-                                        (loop)]
-                                       [else
-                                        (close-input-port special-port)
-                                        #t]))))))))
+                          (let ([ok-to-compile-names 
+                                 (map (λ (x) (format "~s" x))
+                                      '(wxtext
+                                        (lib "comment-snip.ss" "framework")
+                                        (lib "xml-snipclass.ss" "xml")
+                                        (lib "scheme-snipclass.ss" "xml")))])
+                            (and (is-wxme-stream? port)
+                                 (let-values ([(snip-class-names data-class-names)
+                                               (extract-used-classes port)])
+                                   (not (and (andmap
+                                              (λ (used-name) (member used-name ok-to-compile-names))
+                                              snip-class-names)
+                                             (andmap
+                                              (λ (used-name) (member used-name ok-to-compile-names))
+                                              data-class-names)))))))))
                     #:get-extra-imports
                     (λ (path cm)
-                      (fprintf (current-error-port) "path ~s\n" path)
                       (call-with-input-file path
                         (λ (port)
                           (cond
                             [(is-wxme-stream? port)
                              (let-values ([(snip-class-names data-class-names)
                                            (extract-used-classes port)])
-                               (fprintf (current-error-port) 
-                                        "snip-class-names ~s data-class-names ~s\n"
-                                        snip-class-names data-class-names)
-                               '())]
+                               (list*
+                                '(lib "read.ss" "wxme")
+                                '(lib "mred.ss" "mred")
+                                reader-module
+                                (filter
+                                 values
+                                 (map (λ (x) (string->lib-path x #t))
+                                      (append
+                                       snip-class-names
+                                       data-class-names)))))]
                             [else
                              '()]))))
-|#                                 
                     #:mred? #t))))))
 
           (define/private (filename->require-symbol fn)

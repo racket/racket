@@ -28,7 +28,9 @@
            (opt-lambda ([source-name #f]
                         [port (current-input-port)])
              (let ([table (read port)])
-               `(module ,(lookup 'modname table) ,spec
-                  ,@(parameterize ([read-case-sensitive (lookup 'read-case-sensitive table)])
-                      (get-all-exps source-name port)))))])
+               (datum->syntax-object
+                #f
+                `(module ,(lookup 'modname table) ,spec
+                   ,@(parameterize ([read-case-sensitive (lookup 'read-case-sensitive table)])
+                       (get-all-exps source-name port))))))])
       read-syntax)))
