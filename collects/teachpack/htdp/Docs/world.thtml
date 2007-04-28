@@ -42,6 +42,11 @@ students to simulate a small world of animated drawings and games:
    makes it tick every n seconds, 
    and makes w the first world
 
+<li><code>{(idx big-bang)} : Nat Nat Number World Boolean -> true</code><br>
+  <code>big-bang</code> takes an optional fifth argument. If it is
+  <code>true</code>, the world allows the generation of images from the
+  animation, including an animated GIF image 
+
 <li><code>{(idx on-tick-event)} : (World -> World) -> true</code><br>
    <code>(on-tick-event tock)</code> means that DrScheme must call <code>tock</code>
    on the current world every time the clock ticks; it uses the result as the next world 
