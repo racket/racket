@@ -335,24 +335,8 @@
 	;;          pass now to superclass's show.
 	[show
 	 (lambda (on?)
-	   (when (and on? pending-redraws?)
-	     (force-redraw))
-	   (when (and on? use-default-position?)
-	     (set! use-default-position? #f)
-	     (if dlg?
-                 (center 'both)
-		 (let*-values ([(w) (get-width)]
-			       [(h) (get-height)]
-			       [(sw sh) (get-display-size)]
-			       [(x x-reset?) (if (< (+ top-x w) sw)
-						 (values top-x #f)
-						 (values (max 0 (- sw w 10)) #t))]
-			       [(y y-reset?) (if (< (+ top-y h) sh)
-						 (values top-y #f)
-						 (values (max 0 (- sh h 20)) #t))])
-		   (move x y)
-		   (set! top-x (if x-reset? init-top-x (+ top-x 10)))
-		   (set! top-y (if y-reset? init-top-y (+ top-y 20))))))
+           (when on?
+             (position-for-initial-show))
 	   (if on?
 	       (hash-table-put! top-level-windows this #t)
 	       (hash-table-remove! top-level-windows this))
@@ -390,6 +374,26 @@
 	       (wx:queue-callback (lambda () (resized)) #t))))])
 
       (public
+        [position-for-initial-show
+         (lambda ()
+	   (when pending-redraws?
+	     (force-redraw))
+	   (when use-default-position?
+	     (set! use-default-position? #f)
+	     (if dlg?
+                 (center 'both)
+		 (let*-values ([(w) (get-width)]
+			       [(h) (get-height)]
+			       [(sw sh) (get-display-size)]
+			       [(x x-reset?) (if (< (+ top-x w) sw)
+						 (values top-x #f)
+						 (values (max 0 (- sw w 10)) #t))]
+			       [(y y-reset?) (if (< (+ top-y h) sh)
+						 (values top-y #f)
+						 (values (max 0 (- sh h 20)) #t))])
+		   (move x y)
+		   (set! top-x (if x-reset? init-top-x (+ top-x 10)))
+		   (set! top-y (if y-reset? init-top-y (+ top-y 20)))))))]
 	[handle-traverse-key
 	 (lambda (e)
 	   (and panel
