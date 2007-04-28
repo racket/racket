@@ -85,6 +85,17 @@
               (for-each
                (λ (menu)
                  (for-each (λ (item) (send item delete)) (send menu get-items))
+                 (when (eq? (system-type) 'macosx)
+                   (new menu:can-restore-menu-item%
+                        [label (string-constant minimize)]
+                        [parent menu]
+                        [callback (λ (x y) (send (send (send menu get-parent) get-frame) iconize #t))]
+                        [shortcut #\m])
+                   (new menu:can-restore-menu-item%
+                        [label (string-constant zoom)]
+                        [parent menu]
+                        [callback (λ (x y) (send (send (send menu get-parent) get-frame) maximize #t))])
+                   (make-object separator-menu-item% menu)) 
                  (instantiate menu:can-restore-menu-item% ()
                    (label (string-constant bring-frame-to-front...))
                    (parent menu)

@@ -670,6 +670,8 @@ please adhere to these guidelines:
  (wrap-text-item "Wrap Text")
 
  (windows-menu-label "&Windows")
+ (minimize "Minimize") ;; minimize and zoom are only used under mac os x
+ (zoom "Zoom")
  (bring-frame-to-front "Bring Frame to Front")       ;;; title of dialog
  (bring-frame-to-front... "Bring Frame to Front...") ;;; corresponding title of menu item
  (most-recent-window "Most Recent Window")
