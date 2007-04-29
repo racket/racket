@@ -345,11 +345,15 @@
   (online-coloring-active "實時根據語法用顏色標記程序")
   (open-files-in-tabs "在不同的標籤下打開多個文件（不使用多個窗口）")
   (show-interactions-on-execute "在運行程序時自動打開交互窗口")
+  (switch-to-module-language-automatically "打開module文件時自動切換至module語言")
   (limit-interactions-size "限制交互窗口的大小")
   (background-color "背景顏色")
   (default-text-color "預設顏色") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "請選擇背景顏色")
   (revert-to-defaults "恢復預設")
+  
+  (black-on-white-color-scheme "白底黑字") ;; these two appear in the color preferences dialog on butttons
+  (white-on-black-color-scheme "黑底白字") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
   
   ; title of the color choosing dialog
   
@@ -671,7 +675,7 @@
   (overwrite-file-button-label "保存")
   
   (definitions-modified 
-   "當前磁碟文件已被修改；請保存或恢復文件。")
+    "當前磁碟文件已被修改；請保存或恢復文件。")
   (drscheme-internal-error "DrScheme內部錯誤")
   
   ;;; tools
@@ -966,6 +970,11 @@
   (evaluation-terminated "計算已終止")
   (evaluation-terminated-explanation
    "Evaluation執行緒已停止，在下一次執行之前不會進行計算。")
+  
+  ; next two constants show up in the same dialog as the above evaluation-terminated string
+  ; constants, but only when the user calls 'exit' (possibly with a status code).
+  (exited-successfully "成功退出。")
+  (exited-with-error-code "退出，錯誤代碼~a。") ;; ~a is filled in with a number between 1 and 255
   (last-stack-frame "顯示最新的stack frame")
   (last-stack-frames "顯示前~a個stack frames")
   (next-stack-frames "顯示後~a個stack frames")

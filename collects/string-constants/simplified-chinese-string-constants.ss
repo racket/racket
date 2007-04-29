@@ -968,6 +968,11 @@
   (evaluation-terminated "计算已终止")
   (evaluation-terminated-explanation
    "Evaluation线程已停止，在下一次执行之前不会进行计算。")
+  
+  ; next two constants show up in the same dialog as the above evaluation-terminated string
+  ; constants, but only when the user calls 'exit' (possibly with a status code).
+  (exited-successfully "成功退出。")
+  (exited-with-error-code "退出，错误代码~a。") ;; ~a is filled in with a number between 1 and 255
   (last-stack-frame "显示最新的stack frame")
   (last-stack-frames "显示前~a个stack frames")
   (next-stack-frames "显示后~a个stack frames")
