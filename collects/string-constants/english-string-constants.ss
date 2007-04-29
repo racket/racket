@@ -1044,10 +1044,13 @@ please adhere to these guidelines:
  (evaluation-terminated-explanation
   "The evaluation thread is no longer running, so no evaluation can take place until the next execution.")
   
-  ; next two constants show up in the same dialog as the above evaluation-terminated string
-  ; constants, but only when the user calls 'exit' (possibly with a status code).
+  ; The next three constants show up in the same dialog as the above evaluation-terminated string
+  ; constants.
+  ; The first two show up only when the user calls 'exit' (possibly with a status code).
+  ; The third shows up when the program runs out of memory.
   (exited-successfully "Exited successfully.")
   (exited-with-error-code "Exited with error code ~a.") ;; ~a is filled in with a number between 1 and 255
+  (program-ran-out-of-memory "The program ran out of memory.")
  (last-stack-frame "show the last stack frame")
  (last-stack-frames "show the last ~a stack frames")
  (next-stack-frames "show the next ~a stack frames")

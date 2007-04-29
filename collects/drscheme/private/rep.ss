@@ -536,17 +536,22 @@ TODO
               (make-object string-snip% "[err]"))))
       
     (define (no-user-evaluation-message frame exit-code memory-killed?)
-      ; (printf "memory-killed? ~s\n" memory-killed?)
       (message-box
        (string-constant evaluation-terminated)
-       (if exit-code
-           (string-append
-            (string-constant evaluation-terminated-explanation)
-            "\n\n"
-            (if (zero? exit-code)
-                (string-constant exited-successfully)
-                (format (string-constant exited-with-error-code) exit-code)))
-           (string-constant evaluation-terminated-explanation))
+       (string-append
+        (string-constant evaluation-terminated-explanation)
+        (if exit-code
+            (string-append
+             "\n\n"
+             (if (zero? exit-code)
+                 (string-constant exited-successfully)
+                 (format (string-constant exited-with-error-code) exit-code)))
+            "")
+        (if memory-killed?
+            (string-append 
+             "\n\n"
+             (string-constant program-ran-out-of-memory))
+            ""))
        frame))
       
       ;; insert/delta : (instanceof text%) (union snip string) (listof style-delta%) *-> (values number number)
@@ -903,13 +908,7 @@ TODO
                  (user-custodian-parent #f)
                  (memory-killed-thread #f)
                  (user-custodian #f)
-                 (custodian-limit (and (with-handlers ([exn:fail:unsupported? (λ (x) #f)])
-                                         (let ([c (make-custodian)])
-                                           (custodian-limit-memory 
-                                            c
-                                            100
-                                            c))
-                                         #t)
+                 (custodian-limit (and (custodian-memory-accounting-available?)
                                        (preferences:get 'drscheme:limit-memory)))
                  (user-eventspace-box (make-weak-box #f))
                  (user-namespace-box (make-weak-box #f))

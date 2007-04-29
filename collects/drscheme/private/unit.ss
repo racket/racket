@@ -2827,13 +2827,7 @@ module browser threading seems wrong.
                 (λ (_1 _2) (send interactions-text kill-evaluation))
                 #\k
                 (string-constant kill-menu-item-help-string))
-              (when (with-handlers ([exn:fail:unsupported? (λ (x) #f)])
-                      (let ([c (make-custodian)])
-                        (custodian-limit-memory 
-                         c
-                         100
-                         c))
-                      #t)
+              (when (custodian-memory-accounting-available?)
                 (new menu-item%
                      [label "Limit memory..."]
                      [parent scheme-menu]
