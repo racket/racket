@@ -275,6 +275,7 @@ static void prepare_this_thread_for_GC(Scheme_Thread *t);
 
 static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[]);
 static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[]);
+static Scheme_Object *custodian_can_mem(int argc, Scheme_Object *args[]);
 static Scheme_Object *new_tracking_fun(int argc, Scheme_Object *args[]);
 static Scheme_Object *union_tracking_val(int argc, Scheme_Object *args[]);
 
@@ -705,6 +706,11 @@ void scheme_init_thread(Scheme_Env *env)
 						      "custodian-limit-memory",
 						      2, 3),
 			     env);
+  scheme_add_global_constant("custodian-memory-accounting-available?",
+                             scheme_make_prim_w_arity(custodian_can_mem,
+                                                      "custodian-memory-accounting-available?",
+						      0, 0),
+			     env);
   
 
   scheme_add_global_constant("evt?", 
@@ -901,7 +907,7 @@ static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[])
                      "custodian-require-memory: second custodian is not a sub-custodian of the first custodian");
   }
 
-#ifdef MZ_PRECISE_GC
+#ifdef NEWGC_BTC_ACCOUNT
   if (GC_set_account_hook(MZACCT_REQUIRE, c1, lim, c2))
     return scheme_void;
 #endif
@@ -945,7 +951,7 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
     ((Scheme_Custodian *)args[2])->has_limit = 1;
   }
 
-#ifdef MZ_PRECISE_GC
+#ifdef NEWGC_BTC_ACCOUNT
   if (GC_set_account_hook(MZACCT_LIMIT, args[0], lim, (argc > 2) ? args[2] : args[0]))
     return scheme_void;
 #endif
@@ -953,6 +959,15 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
 		   "custodian-limit-memory: not supported");
   return NULL; /* doesn't get here */
+}
+
+static Scheme_Object *custodian_can_mem(int argc, Scheme_Object *args[])
+{
+#ifdef NEWGC_BTC_ACCOUNT
+  return scheme_true;
+#else
+  return scheme_false;
+#endif
 }
 
 static Scheme_Object *new_tracking_fun(int argc, Scheme_Object *args[])

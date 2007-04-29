@@ -556,6 +556,14 @@ Bool wxFrame::Iconized(void)
   return (Bool)::IsIconic(GetHWND());
 }
 
+Bool wxFrame::IsMaximized()
+{
+  if (IsShown())
+    return (Bool)::IsZoomed(GetHWND());
+  else
+    return hiddenmax;
+}
+
 void wxFrame::SetTitle(char *title)
 {
   if (is_mod) {

@@ -449,6 +449,8 @@
        (λ (k v)
          (unless (hash-table-get used-binding-table k (λ () #f))
            (raise-stx-err "this export is not supplied by the given unit" v))))))
+
+  (define (name-form n) (syntax-object->datum n))
   
   ;; complete-imports : (hash-tableof symbol (or identifier 'duplicate))
   ;;                    (listof link-record)
@@ -483,10 +485,10 @@
               [(eq? 'duplicate there?)
                (raise-stx-err
                 (if tag
-                    (format "Specified linkages satisfy (tag ~a ~a) import multiple times"
-                            tag (car (siginfo-names (link-record-siginfo import))))
-                    (format "Specified linkages satisfy untagged ~a import multiple times"
-                            (car (siginfo-names (link-record-siginfo import)))))
+                    (format "specified linkages satisfy (tag ~a ~a) import multiple times"
+                            tag (name-form (car (siginfo-names (link-record-siginfo import)))))
+                    (format "specified linkages satisfy untagged ~a import multiple times"
+                            (name-form (car (siginfo-names (link-record-siginfo import))))))
                 src)]
               [there?
                (loop (cdr unit-imports))]
@@ -498,10 +500,10 @@
                    [(eq? 'duplicate there?2)
                     (raise-stx-err 
                      (if tag
-                         (format "Multiple linkages satisfy (tag ~a ~a) import"
-                                 tag (car (siginfo-names (link-record-siginfo import))))
-                         (format "Multiple linkages satisfy untagged ~a import"
-                                 (car (siginfo-names (link-record-siginfo import)))))
+                         (format "multiple linkages satisfy (tag ~a ~a) import"
+                                 tag (name-form (car (siginfo-names (link-record-siginfo import)))))
+                         (format "multiple linkages satisfy untagged ~a import"
+                                 (name-form (car (siginfo-names (link-record-siginfo import))))))
                      src)]
                    [there?2
                     (for-each
@@ -518,10 +520,10 @@
                    [else
                     (raise-stx-err
                      (if tag
-                         (format "No linkages satisfy (tag ~a ~a) import"
-                                 tag (car (siginfo-names (link-record-siginfo import))))
-                         (format "No linkages satisfy untagged ~a import"
-                                 (car (siginfo-names (link-record-siginfo import)))))
+                         (format "no linkages satisfy (tag ~a ~a) import"
+                                 tag (name-form (car (siginfo-names (link-record-siginfo import)))))
+                         (format "no linkages satisfy untagged ~a import"
+                                 (name-form (car (siginfo-names (link-record-siginfo import))))))
                      src)]))]))]))))
 
   (define (unprocess-link-record-bind lr)

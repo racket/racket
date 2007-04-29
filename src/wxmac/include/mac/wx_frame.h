@@ -93,6 +93,7 @@ class wxFrame: public wxbFrame
   /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
   virtual void DoSetSize(int x, int y, int width, int height);
   void Maximize(Bool maximize);
+  Bool IsMaximized();
 
   /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
   /* Status line methods */

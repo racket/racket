@@ -208,7 +208,7 @@ MACXPRECOMP = macxsrc/xform_precomp.h
 macxsrc/xform_precomp.h : $(XFORMDEP) $(srcdir)/macprecomp.cxx $(srcdir)/../../mzscheme/src/schvers.h
 	env XFORM_PRECOMP=yes $(XFORM) $(MACXPRECOMP) $(srcdir)/macprecomp.cxx
 
-@INCLUDEDEP@ macprecomp.d
+@INCLUDEDEP@ macprecomp.dd
 
 wx_xt_XFORMWP = $(XFORMXX)
 wx_mac_XFORMWP = env XFORM_USE_PRECOMP=$(MACXPRECOMP) $(XFORMXX)

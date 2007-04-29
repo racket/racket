@@ -783,7 +783,8 @@ MZ_EXTERN Scheme_Object *scheme_make_fd_output_port(int fd, Scheme_Object *name,
 MZ_EXTERN Scheme_Object *scheme_make_byte_string_input_port(const char *str);
 MZ_EXTERN Scheme_Object *scheme_make_sized_byte_string_input_port(const char *str, long len);
 MZ_EXTERN Scheme_Object *scheme_make_byte_string_output_port();
-MZ_EXTERN char *scheme_get_sized_byte_string_output(Scheme_Object *, long *len);
+MZ_EXTERN char *scheme_get_sized_byte_string_output(Scheme_Object *port, long *len);
+MZ_EXTERN char *scheme_get_reset_sized_byte_string_output(Scheme_Object *port, long *len, int reset, long startpos, long endpos);
 
 MZ_EXTERN void scheme_pipe(Scheme_Object **read, Scheme_Object **write);
 MZ_EXTERN void scheme_pipe_with_limit(Scheme_Object **write, Scheme_Object **read, int maxsize);

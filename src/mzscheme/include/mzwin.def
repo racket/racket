@@ -380,6 +380,7 @@ EXPORTS
  scheme_make_sized_byte_string_input_port
  scheme_make_byte_string_output_port
  scheme_get_sized_byte_string_output
+ scheme_get_reset_sized_byte_string_output
  scheme_pipe
  scheme_pipe_with_limit
  scheme_make_null_output_port

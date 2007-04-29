@@ -487,6 +487,35 @@
   (st #t es is-owned?))
 
 ;; ----------------------------------------
+;; edit-sequences and undo
+
+(let ([t (new text%)])
+  (send t set-max-undo-history 100)
+  (send t begin-edit-sequence)
+  (send t begin-edit-sequence)
+  (send t insert "abcd\n")
+  (send t set-modified #f)
+  (send t end-edit-sequence)
+  (send t delete 0 1)
+  (send t end-edit-sequence)
+  (send t undo)
+  (st "" t get-text))
+  
+(let ([t (new text%)])
+  (send t set-max-undo-history 100)
+  (send t begin-edit-sequence)
+  (send t begin-edit-sequence)
+  (send t insert "abcd\n")
+  (send t end-edit-sequence)
+  (send t set-position 0 1)
+  (send t delete)
+  (send t set-position 0 1)
+  (send t delete)
+  (send t end-edit-sequence)
+  (send t undo)
+  (st "" t get-text))
+
+;; ----------------------------------------
 
 (report-errs)
 

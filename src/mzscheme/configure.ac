@@ -42,7 +42,7 @@ AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original director
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 AC_ARG_ENABLE(llvm,    [  --enable-llvm           compile llvm support (disabled by default)], , enable_llvm=no)
 
-AC_ARG_ENABLE(sgc,     [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
+AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
 AC_ARG_ENABLE(account, [  --enable-account        3m: use memory-accounting GC (enabled by default)], , enable_account=yes)
@@ -492,6 +492,7 @@ case $OS in
     esac
     ;;
   AIX)
+    enable_cgcdefault="yes"
     EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../mzscheme/include/mzscheme.exp"
     ;;
   FreeBSD)
@@ -505,6 +506,7 @@ case $OS in
     LIBS="$LIBS -rdynamic"
     ;;
   IRIX)
+    enable_cgcdefault="yes"
     STATICLINK="/usr/lib/libC.a /usr/lib/libmalloc.a"
     if test "$X_PRE_LIBS" = " -lSM -lICE" ; then
       # For some reason, works best to drop these
@@ -528,6 +530,7 @@ case $OS in
     esac
     ;;
   OSF1)
+    enable_cgcdefault="yes"
     if test "$CC" = "cc" ; then 
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then 
@@ -535,6 +538,7 @@ case $OS in
     fi
     ;;
   HP-UX)
+    enable_cgcdefault="yes"
     if test "$CC" = "gcc"; then
       COMPFLAGS="$COMPFLAGS -fPIC"
     else
@@ -550,6 +554,7 @@ case $OS in
     X_LIBS="-L/usr/contrib/X11R6/lib/ $X_LIBS"
     ;;
   CYGWIN*)
+    enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
@@ -559,6 +564,7 @@ case $OS in
     EXE_SUFFIX=".exe"
     ;;
   BeOS)
+    enable_cgcdefault="yes"
     if test "${enable_sgcdebug}" = "yes" ; then
       dummyvar=""
     else

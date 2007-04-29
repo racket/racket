@@ -1,3 +1,8 @@
+Version 369.11
+
+Added is-maximized? method to frame% (Windows, Mac OS X)
+
+
 Version 369.10
 
 Improved the disabled appearance of some controls under Mac OS X

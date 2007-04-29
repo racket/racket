@@ -173,6 +173,9 @@ enum {
   wxSMOOTHING_PARTIAL,
   wxSMOOTHING_ON,
   wxSMOOTHING_OFF,
+
+  wxDIM_OVER = 150,
+  wxFADE_OVER,
 };
 
 

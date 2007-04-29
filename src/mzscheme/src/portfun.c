@@ -299,7 +299,7 @@ scheme_init_port_fun(Scheme_Env *env)
   scheme_add_global_constant("get-output-bytes",
 			     scheme_make_prim_w_arity(get_output_byte_string,
 						      "get-output-bytes",
-						      1, 1),
+						      1, 4),
 			     env);
   scheme_add_global_constant("get-output-string",
 			     scheme_make_prim_w_arity(get_output_char_string,
@@ -1083,7 +1083,7 @@ scheme_make_byte_string_output_port (void)
 }
 
 char *
-scheme_get_sized_byte_string_output(Scheme_Object *port, long *size)
+scheme_get_reset_sized_byte_string_output(Scheme_Object *port, long *size, int reset, long startpos, long endpos)
 {
   Scheme_Output_Port *op;
   Scheme_Indexed_String *is;
@@ -1103,14 +1103,40 @@ scheme_get_sized_byte_string_output(Scheme_Object *port, long *size)
   if (is->u.hot > len)
     len = is->u.hot;
 
-  v = (char *)scheme_malloc_atomic(len + 1);
-  memcpy(v, is->string, len);
+  if (endpos < 0)
+    endpos = len;
+
+  if (reset) {
+    char *ca;
+    v = is->string;
+    is->size = 31;
+    ca = (char *)scheme_malloc_atomic((is->size) + 1);
+    is->string = ca;
+    is->index = 0;
+    is->u.hot = 0;
+    if ((startpos > 0) || (endpos < len)) {
+      len = endpos - startpos;
+      ca = (char *)scheme_malloc_atomic(len + 1);
+      memcpy(ca, v XFORM_OK_PLUS startpos, len);
+      v = ca;
+    }
+  } else {
+    len = endpos - startpos;
+    v = (char *)scheme_malloc_atomic(len + 1);
+    memcpy(v, is->string XFORM_OK_PLUS startpos, len);
+  }
   v[len] = 0;
 
   if (size)
     *size = len;
 
   return v;
+}
+
+char *
+scheme_get_sized_byte_string_output(Scheme_Object *port, long *size)
+{
+  return scheme_get_reset_sized_byte_string_output(port, size, 0, 0, -1);
 }
 
 char *
@@ -2783,17 +2809,61 @@ Scheme_Object *do_get_output_string(const char *who, int is_byte,
 {
   Scheme_Output_Port *op;
   char *s;
-  long size;
+  long size, startpos, endpos;
 
   op = scheme_output_port_record(argv[0]);
   if (!SCHEME_OUTPUT_PORTP(argv[0])
       || (op->sub_type != scheme_string_output_port_type))
     scheme_wrong_type(who, "string output port", 0, argc, argv);
 
-  s = scheme_get_sized_byte_string_output(argv[0], &size);
+  if (argc > 2) {
+    long len;
+    Scheme_Indexed_String *is;
+
+    is = (Scheme_Indexed_String *)op->port_data;
+    len = is->index;
+    if (is->u.hot > len)
+      len = is->u.hot;
+    
+    startpos = scheme_extract_index(who, 2, argc, argv, len+1, 0);
+    if (argc > 3) {
+      if (SCHEME_FALSEP(argv[3]))
+        endpos = len;
+      else {
+        endpos = scheme_extract_index(who, 3, argc, argv, len+1, 1);
+        if (endpos < 0) 
+          endpos = len+1;
+      }
+      
+      if (!(startpos <= len)) {
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "%s: starting index %V out of range [%d, %d] for port: %V",
+                         who, 
+                         argv[2], 0, len,
+                         argv[0]);
+        return NULL;
+      }
+      if (!(endpos >= startpos && endpos <= len)) {
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "%s: ending index %V out of range [%d, %d] for port: %V",
+                         who, 
+                         argv[3], startpos, len,
+                         argv[0]);
+        return NULL;
+      }
+    } else
+      endpos = -1;
+  } else {
+    startpos = 0;
+    endpos = -1;
+  }
+
+  s = scheme_get_reset_sized_byte_string_output(argv[0], &size, 
+                                                ((argc > 1) && SCHEME_TRUEP(argv[1])), 
+                                                startpos, endpos);
 
   if (is_byte)
-    return scheme_make_sized_byte_string(s, size, 1);
+    return scheme_make_sized_byte_string(s, size, 0);
   else
     return scheme_make_sized_utf8_string(s, size);
 }

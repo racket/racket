@@ -94,7 +94,9 @@
                    (new menu:can-restore-menu-item%
                         [label (string-constant zoom)]
                         [parent menu]
-                        [callback (λ (x y) (send (send (send menu get-parent) get-frame) maximize #t))])
+                        [callback (λ (x y) 
+                                    (let ([frame (send (send menu get-parent) get-frame)])
+                                      (send frame maximize (not (send frame is-maximized?)))))])
                    (make-object separator-menu-item% menu)) 
                  (instantiate menu:can-restore-menu-item% ()
                    (label (string-constant bring-frame-to-front...))

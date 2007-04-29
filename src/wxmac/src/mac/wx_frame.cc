@@ -676,6 +676,11 @@ void wxFrame::Maximize(Bool maximize)
     }
 }
 
+Bool wxFrame::IsMaximized()
+{
+  return cMaximized;
+}
+
 void wxFrame::EnforceSize(int minw, int minh, int maxw, int maxh, int incw, int inch)
 {
   RgnHandle screen;

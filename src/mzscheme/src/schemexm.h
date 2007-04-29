@@ -440,6 +440,7 @@
 #define scheme_make_sized_byte_string_input_port (scheme_extension_table->scheme_make_sized_byte_string_input_port)
 #define scheme_make_byte_string_output_port (scheme_extension_table->scheme_make_byte_string_output_port)
 #define scheme_get_sized_byte_string_output (scheme_extension_table->scheme_get_sized_byte_string_output)
+#define scheme_get_reset_sized_byte_string_output (scheme_extension_table->scheme_get_reset_sized_byte_string_output)
 #define scheme_pipe (scheme_extension_table->scheme_pipe)
 #define scheme_pipe_with_limit (scheme_extension_table->scheme_pipe_with_limit)
 #define scheme_make_null_output_port (scheme_extension_table->scheme_make_null_output_port)

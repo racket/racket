@@ -23,8 +23,9 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
 }
 #endif
 
-/* ========== FreeBSD signal handler ========== */
-#if defined(__FreeBSD__)
+/* ========== FreeBSD/NetBSD/OpenBSD signal handler ========== */
+/*  As of 2007/04/28, this is a guess for NetBSD and OpenBSD!  */
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # include <signal.h>
 void fault_handler(int sn, siginfo_t *si, void *ctx)
 {

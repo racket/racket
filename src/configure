@@ -1426,9 +1426,9 @@ else
   enable_llvm=no
 fi;
 
-# Check whether --enable-sgc or --disable-sgc was given.
-if test "${enable_sgc+set}" = set; then
-  enableval="$enable_sgc"
+# Check whether --enable-cgcdefault or --disable-cgcdefault was given.
+if test "${enable_cgcdefault+set}" = set; then
+  enableval="$enable_cgcdefault"
 
 fi;
 # Check whether --enable-sgc or --disable-sgc was given.
@@ -5363,6 +5363,7 @@ case $OS in
     esac
     ;;
   AIX)
+    enable_cgcdefault="yes"
     EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../mzscheme/include/mzscheme.exp"
     ;;
   FreeBSD)
@@ -5376,6 +5377,7 @@ case $OS in
     LIBS="$LIBS -rdynamic"
     ;;
   IRIX)
+    enable_cgcdefault="yes"
     STATICLINK="/usr/lib/libC.a /usr/lib/libmalloc.a"
     if test "$X_PRE_LIBS" = " -lSM -lICE" ; then
       # For some reason, works best to drop these
@@ -5399,6 +5401,7 @@ case $OS in
     esac
     ;;
   OSF1)
+    enable_cgcdefault="yes"
     if test "$CC" = "cc" ; then
       COMPFLAGS="$COMPFLAGS -ieee_with_inexact -assume noaligned_objects"
     elif test "$CC" = "gcc" ; then
@@ -5406,6 +5409,7 @@ case $OS in
     fi
     ;;
   HP-UX)
+    enable_cgcdefault="yes"
     if test "$CC" = "gcc"; then
       COMPFLAGS="$COMPFLAGS -fPIC"
     else
@@ -5421,6 +5425,7 @@ case $OS in
     X_LIBS="-L/usr/contrib/X11R6/lib/ $X_LIBS"
     ;;
   CYGWIN*)
+    enable_cgcdefault="yes"
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
@@ -5430,6 +5435,7 @@ case $OS in
     EXE_SUFFIX=".exe"
     ;;
   BeOS)
+    enable_cgcdefault="yes"
     if test "${enable_sgcdebug}" = "yes" ; then
       dummyvar=""
     else

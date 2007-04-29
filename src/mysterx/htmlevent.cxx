@@ -183,7 +183,7 @@ Scheme_Object *mx_event_x(int argc,Scheme_Object **argv) {
   long x;
   IEvent *ev;
 
-  getEventInterface(argv[0],"mx-event-x");
+  ev = getEventInterface(argv[0],"mx-event-x");
   ev->get_x(&x);
 
   return scheme_make_integer(x);

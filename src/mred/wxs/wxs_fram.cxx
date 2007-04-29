@@ -1099,6 +1099,27 @@ static Scheme_Object *os_wxFrameCreateStatusLine(int n,  Scheme_Object *p[])
   return scheme_void;
 }
 
+static Scheme_Object *os_wxFrameIsMaximized(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  Bool r;
+  objscheme_check_valid(os_wxFrame_class, "is-maximized? in frame%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  r = WITH_VAR_STACK(((wxFrame *)((Scheme_Class_Object *)p[0])->primdata)->IsMaximized());
+
+  
+  
+  READY_TO_RETURN;
+  return (r ? scheme_true : scheme_false);
+}
+
 static Scheme_Object *os_wxFrameMaximize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
@@ -1383,7 +1404,7 @@ void objscheme_setup_wxFrame(Scheme_Env *env)
 
   wxREGGLOB(os_wxFrame_class);
 
-  os_wxFrame_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "frame%", "window%", (Scheme_Method_Prim *)os_wxFrame_ConstructScheme, 26));
+  os_wxFrame_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "frame%", "window%", (Scheme_Method_Prim *)os_wxFrame_ConstructScheme, 27));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "on-drop-file" " method", (Scheme_Method_Prim *)os_wxFrameOnDropFile, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "pre-on-event" " method", (Scheme_Method_Prim *)os_wxFramePreOnEvent, 2, 2));
@@ -1402,6 +1423,7 @@ void objscheme_setup_wxFrame(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "system-menu" " method", (Scheme_Method_Prim *)os_wxFrameframeMenu, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "set-modified" " method", (Scheme_Method_Prim *)os_wxFrameSetFrameModified, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "create-status-line" " method", (Scheme_Method_Prim *)os_wxFrameCreateStatusLine, 0, 2));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "is-maximized?" " method", (Scheme_Method_Prim *)os_wxFrameIsMaximized, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "maximize" " method", (Scheme_Method_Prim *)os_wxFrameMaximize, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "status-line-exists?" " method", (Scheme_Method_Prim *)os_wxFrameStatusLineExists, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxFrame_class, "iconized?" " method", (Scheme_Method_Prim *)os_wxFrameIconized, 0, 0));

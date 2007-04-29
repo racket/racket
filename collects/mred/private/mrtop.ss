@@ -174,6 +174,7 @@
 		   [(i b) (send wx set-icon i b)]
 		   [(i b l?) (send wx set-icon i b l?)])]
 	[maximize (entry-point (lambda (on?) (send wx position-for-initial-show) (send wx maximize on?)))]
+        [is-maximized? (entry-point (lambda () (send wx is-maximized?)))]
 	[get-menu-bar (entry-point (lambda () (let ([mb (send wx get-the-menu-bar)])
 						(and mb (wx->mred mb)))))]
 	[modified (entry-point

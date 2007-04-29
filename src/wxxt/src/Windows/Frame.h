@@ -65,6 +65,7 @@ public:
     void  Iconize(Bool iconize);
     Bool  Iconized(void);
     void  Maximize(Bool maximize);
+    Bool  IsMaximized();
     // associated GDI objects
     wxMenuBar *GetMenuBar(void);
     void      SetIcon(wxBitmap *icon, wxBitmap *bg = NULL, int kind = 0);

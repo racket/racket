@@ -1581,11 +1581,14 @@
                     (syntax-case stx () ((_ . x) #'x))))))
       u))
                   
-  (define-syntax/err-param (define-compound-unit/infer stx)
+  (define-for-syntax (do-define-compound-unit/infer stx)
     (build-define-unit stx 
                        (lambda (clause)
                          (build-compound-unit/infer (check-compound/infer-syntax clause)))
                        "missing unit name"))
+
+  (define-syntax/err-param (define-compound-unit/infer stx)
+    (do-define-compound-unit/infer stx))
 
   (define-syntax/err-param (invoke-unit stx)
     (syntax-case stx (import)

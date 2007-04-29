@@ -95,6 +95,7 @@ static void DesignateRootFrame(wxFrame *f)
 @ "iconized?" : bool Iconized();
 @ "status-line-exists?" : bool StatusLineExists();
 @ "maximize" : void Maximize(bool)
+@ "is-maximized?" : bool IsMaximized()
 @ "create-status-line" : void CreateStatusLine(int = 1, string = "status_line")
 @ "set-modified" : void SetFrameModified(bool)
 

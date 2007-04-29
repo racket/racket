@@ -659,7 +659,8 @@ Scheme_Object *(*scheme_make_fd_output_port)(int fd, Scheme_Object *name, int re
 Scheme_Object *(*scheme_make_byte_string_input_port)(const char *str);
 Scheme_Object *(*scheme_make_sized_byte_string_input_port)(const char *str, long len);
 Scheme_Object *(*scheme_make_byte_string_output_port)();
-char *(*scheme_get_sized_byte_string_output)(Scheme_Object *, long *len);
+char *(*scheme_get_sized_byte_string_output)(Scheme_Object *port, long *len);
+char *(*scheme_get_reset_sized_byte_string_output)(Scheme_Object *port, long *len, int reset, long startpos, long endpos);
 void (*scheme_pipe)(Scheme_Object **read, Scheme_Object **write);
 void (*scheme_pipe_with_limit)(Scheme_Object **write, Scheme_Object **read, int maxsize);
 Scheme_Object *(*scheme_make_null_output_port)(int can_write_special);

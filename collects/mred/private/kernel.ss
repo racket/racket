@@ -537,6 +537,7 @@
     system-menu
     set-modified
     create-status-line
+    is-maximized?
     maximize
     status-line-exists?
     iconized?

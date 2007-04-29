@@ -1,3 +1,7 @@
+Version 369.11
+Added reset?, start-, and end-index arguments to get-output-bytes
+Added custodian-memory-accounting-available?
+
 Version 369.10
 Added parameterize*
 Added module-path-index-resolve
