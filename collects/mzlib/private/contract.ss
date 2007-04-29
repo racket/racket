@@ -3,8 +3,6 @@
 improve method arity mismatch contract violation error messages?
   (abstract out -> and friends even more?)
 
-add struct contracts for immutable structs?
-
 |#
 
 (module contract mzscheme
@@ -818,6 +816,7 @@ add struct contracts for immutable structs?
            listof list-immutableof 
            vectorof vector-immutableof vector/c vector-immutable/c 
            cons-immutable/c cons/c list-immutable/c list/c
+           listof-unsafe cons-unsafe/c list-unsafe/c
            box-immutable/c box/c
            promise/c
            struct/c
@@ -1569,6 +1568,9 @@ add struct contracts for immutable structs?
   
   (define list-immutableof
     (*-immutableof immutable-list? map-immutable immutable-list list-immutableof))
+  
+  (define listof-unsafe
+    (*-immutableof list? map list listof-unsafe))
 
   (define (immutable-vector? val) (and (immutable? val) (vector? val)))
   
@@ -1696,36 +1698,43 @@ add struct contracts for immutable structs?
   (define-syntax (*-immutable/c stx)
     (syntax-case stx ()
       [(_ predicate? constructor (arb? selectors ...) type-name name)
-       (eq? #f (syntax-object->datum (syntax arb?)))
-       (with-syntax ([(params ...) (generate-temporaries (syntax (selectors ...)))]
-                     [(p-apps ...) (generate-temporaries (syntax (selectors ...)))]
-                     [(ctc-x ...) (generate-temporaries (syntax (selectors ...)))]
-                     [(procs ...) (generate-temporaries (syntax (selectors ...)))]
-                     [(selector-names ...) (generate-temporaries (syntax (selectors ...)))])
-         (syntax
-          (let ([predicate?-name predicate?]
-                [constructor-name constructor]
-                [selector-names selectors] ...)
-            (λ (params ...)
-              (let ([ctc-x (coerce-contract 'name params)] ...)
-                (let ([procs (contract-proc ctc-x)] ...)
-                  (make-proj-contract
-                   (build-compound-type-name 'name (proc/ctc->ctc params) ...)
-                   (λ (pos-blame neg-blame src-info orig-str)
-                     (let ([p-apps (procs pos-blame neg-blame src-info orig-str)] ...)
-                       (λ (v)
-                         (if (and (immutable? v)
-                                  (predicate?-name v))
-                             (constructor-name (p-apps (selector-names v)) ...)
-                             (raise-contract-error
-                              v
-                              src-info
-                              pos-blame
-                              orig-str
-                              "expected <~a>, given: ~e"
-                              'type-name
-                              v)))))
-                   #f)))))))]
+       #'(*-immutable/c predicate? constructor (arb? selectors ...) type-name name #t)]
+      [(_ predicate? constructor (arb? selectors ...) type-name name test-immutable?)
+       (and (eq? #f (syntax-object->datum (syntax arb?)))
+            (boolean? (syntax-object->datum #'test-immutable?)))
+       (let ([test-immutable? (syntax-object->datum #'test-immutable?)])
+         (with-syntax ([(params ...) (generate-temporaries (syntax (selectors ...)))]
+                       [(p-apps ...) (generate-temporaries (syntax (selectors ...)))]
+                       [(ctc-x ...) (generate-temporaries (syntax (selectors ...)))]
+                       [(procs ...) (generate-temporaries (syntax (selectors ...)))]
+                       [(selector-names ...) (generate-temporaries (syntax (selectors ...)))])
+           #`(let ([predicate?-name predicate?]
+                   [constructor-name constructor]
+                   [selector-names selectors] ...)
+               (λ (params ...)
+                 (let ([ctc-x (coerce-contract 'name params)] ...)
+                   (let ([procs (contract-proc ctc-x)] ...)
+                     (make-proj-contract
+                      (build-compound-type-name 'name (proc/ctc->ctc params) ...)
+                      (λ (pos-blame neg-blame src-info orig-str)
+                        (let ([p-apps (procs pos-blame neg-blame src-info orig-str)] ...)
+                          (λ (v)
+                            (if #,(if test-immutable?
+                                      #'(and (predicate?-name v)
+                                             (immutable? v))
+                                      #'(predicate?-name v))
+                                (constructor-name (p-apps (selector-names v)) ...)
+                                (raise-contract-error
+                                 v
+                                 src-info
+                                 pos-blame
+                                 orig-str
+                                 #,(if test-immutable?
+                                       "expected immutable <~a>, given: ~e"
+                                       "expected <~a>, given: ~e")
+                                 'type-name
+                                 v)))))
+                      #f)))))))]
       [(_ predicate? constructor (arb? selector) correct-size type-name name)
        (eq? #t (syntax-object->datum (syntax arb?)))
        (syntax
@@ -1763,6 +1772,7 @@ add struct contracts for immutable structs?
                  #f))))))]))
   
   (define cons-immutable/c (*-immutable/c pair? cons-immutable (#f car cdr) immutable-cons cons-immutable/c))
+  (define cons-unsafe/c (*-immutable/c pair? cons (#f car cdr) cons cons-unsafe/c #f))
   (define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))
   (define vector-immutable/c (*-immutable/c vector?
                                             vector-immutable
@@ -1838,7 +1848,7 @@ add struct contracts for immutable structs?
                                     (and (procedure? x)
                                          (procedure-arity-includes? x 1))))
                     args)
-      (error 'list/c "expected flat contracts or procedures of arity 1, got: ~a"
+      (error 'list/c "expected contracts or procedures of arity 1, got: ~a"
              (let loop ([args args]) 
                (cond
                  [(null? args) ""]
@@ -1850,6 +1860,24 @@ add struct contracts for immutable structs?
       (cond
 	[(null? args) (flat-contract null?)]
 	[else (cons-immutable/c (car args) (loop (cdr args)))])))
+  
+  (define (list-unsafe/c . args)
+    (unless (andmap (λ (x) (or (contract? x)
+                               (and (procedure? x)
+                                    (procedure-arity-includes? x 1))))
+                    args)
+      (error 'list/c "expected contracts or procedures of arity 1, got: ~a"
+             (let loop ([args args]) 
+               (cond
+                 [(null? args) ""]
+                 [(null? (cdr args)) (format "~e" (car args))]
+                 [else (string-append
+                        (format "~e " (car args))
+                        (loop (cdr args)))]))))
+    (let loop ([args args])
+      (cond
+	[(null? args) (flat-contract null?)]
+	[else (cons-unsafe/c (car args) (loop (cdr args)))])))
 
   (define (syntax/c ctc-in)
     (let ([ctc (coerce-contract 'syntax/c ctc-in)])

@@ -2770,7 +2770,7 @@
 ;                                                                     
 ;                                                                     
 
-  
+
   (test/pos-blame
    'immutable1
    '(let ([ct (contract (list-immutableof (boolean? . -> . boolean?)) 
@@ -3071,6 +3071,180 @@
                           'pos
                           'neg))
    #t)
+
+  (test/pos-blame
+   'unsafe1
+   '(let ([ct (contract (listof-unsafe (boolean? . -> . boolean?)) 
+                        #f 
+                        'pos
+                        'neg)])
+      ((car ct) 1)))
+  
+  (test/neg-blame
+   'unsafe2
+   '(let ([ct (contract (listof-unsafe (boolean? . -> . boolean?)) 
+                        (list (lambda (x) x)) 
+                        'pos
+                        'neg)])
+      ((car ct) 1)))
+
+  (test/spec-passed
+   'unsafe2b
+   '(let ([ct (contract (listof-unsafe (boolean? . -> . boolean?)) 
+                        (list (lambda (x) x)) 
+                        'pos
+                        'neg)])
+      ((car ct) #t)))
+  
+  (test/neg-blame
+   'unsafe3
+   '(let ([ct (contract (listof-unsafe (number? . -> . boolean?)) 
+                        (list (lambda (x) 1)) 
+                        'pos
+                        'neg)])
+      ((car ct) #f)))
+  
+  (test/pos-blame
+   'unsafe4
+   '(let ([ct (contract (list-unsafe (number? . -> . boolean?)) 
+                        (list (lambda (x) 1)) 
+                        'pos
+                        'neg)])
+      ((car ct) 1)))
+  
+  (test/spec-passed
+   'unsafe5
+   '(let ([ct (contract (listof-unsafe (number? . -> . boolean?)) 
+                        (list (lambda (x) #t)) 
+                        'pos
+                        'neg)])
+      ((car ct) 1)))
+  
+
+  (test/pos-blame
+   'unsafe6
+   '(contract (cons-unsafe/c (boolean? . -> . boolean?) (boolean? . -> . boolean?)) 
+              #f 
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'unsafe7
+   '(contract (cons-unsafe/c (boolean? . -> . boolean?) (boolean? . -> . boolean?)) 
+              (cons (lambda (x) x) (lambda (x) x))
+              'pos
+              'neg))
+  
+  (test/neg-blame
+   'unsafe8
+   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) 1) (lambda (x) 1))
+                        'pos
+                        'neg)])
+      ((car ct) #f)))
+  
+  (test/neg-blame
+   'unsafe9
+   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) 1) (lambda (x) 1))
+                        'pos
+                        'neg)])
+      ((cdr ct) #f)))
+  
+  (test/pos-blame
+   'unsafe10
+   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) 1) (lambda (x) 1)) 
+                        'pos
+                        'neg)])
+      ((car ct) 1)))
+  
+  (test/pos-blame
+   'unsafe11
+   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) 1) (lambda (x) 1)) 
+                        'pos
+                        'neg)])
+      ((cdr ct) 1)))
+  
+  (test/spec-passed
+   'unsafe12
+   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) #t) (lambda (x) #t)) 
+                        'pos
+                        'neg)])
+      ((car ct) 1)))
+  
+  (test/spec-passed
+   'unsafe13
+   '(let ([ct (contract (cons-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                        (cons (lambda (x) #t) (lambda (x) #t)) 
+                        'pos
+                        'neg)])
+      ((cdr ct) 1)))
+  
+  (test/spec-passed/result
+   'unsafe14
+   '(contract (cons-unsafe/c number? boolean?) 
+              (cons 1 #t) 
+              'pos
+              'neg)
+   (cons-immutable 1 #t))
+  
+  (test/pos-blame
+   'unsafe15
+   '(contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+              #f
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'unsafe16
+   '(contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+              (list (lambda (x) #t) (lambda (x) #t)) 
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'unsafe17
+   '(contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+              (list (lambda (x) #t)) 
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'unsafe18
+   '(contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+              (list (lambda (x) #t) (lambda (x) #t) (lambda (x) #t)) 
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'unsafe19
+   '(let ([ctc (contract (list-unsafe/c (number? . -> . boolean?) (number? . -> . boolean?)) 
+                         (list (lambda (x) #t) (lambda (x) #t)) 
+                         'pos
+                         'neg)])
+      (for-each (lambda (x) (x 1)) ctc)))
+  
+  (test/spec-passed/result
+   'unsafe20
+   '(let ([ctc (contract (list-unsafe/c number?) 
+                         (list 1) 
+                         'pos
+                         'neg)])
+      (immutable? ctc))
+   #f)
+
+  (test/spec-passed/result
+   'unsafe21
+   '(let* ([orig-list (list 1 2 3)]
+           [ctc (contract (list-unsafe/c number?)
+                          orig-list
+                          'pos
+                          'neg)])
+      (eq? orig-list ctc))
+   #f)
 
   
   (test/pos-blame
