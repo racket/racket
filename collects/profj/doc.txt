@@ -20,7 +20,10 @@ _Testing in Java language levels:
 
 The ProfessorJ language levels support a language extension to support
 testing endeavors. This extension can be turned off with a language
-configuration option in ProfessorJ Full and Java + dynamic. The
+configuration option in ProfessorJ Full and Java + dynamic, and the 
+teaching levels support a restricted set of operators. 
+
+Within the language levels Beginner, Intermediate, and Advanced the
 extension adds two _check_ ... _expect_ expression forms to Java:
 
 check EXPR expect EXPR
@@ -32,23 +35,47 @@ type of both expressions is a boolean. The check expression compares
 the two subexpressions for equality (without using .equals). When the
 two subexpressions are floats or doubles, the check-within expression
 must be used. The within subexpression must be a number; non-doubles
-can be compared with the check-within expression. The within
+can be compared with the check ... within expression. The within
 subexpression specifies how precise different floats or doubles must
 be.
 
+Within the Full and Java + dynamic levels, three additional expression
+forms are supported:
+
+check EXPR expect EXPR by NAME
+check EXPR catch NAME
+EXPR -> EXPR
+
+The first expression compares the two values using the named method,
+that must be within the class of the first expression. In this form,
+== may be used instead of NAME. The second expression anticipates that
+the EXPR throws the named exception, NAME must refer to a subclass of
+Throwable. The -> operator suggests a logical relationship between
+the two expressions, throws away the first value, and returns a boolean.
+
 Additionally, the ProfessorJ languages support automatic execution of
 tests, which can also be turned off with a language configuration
-option. Any class with the word 'Example' in the name
-(i.e. CarExample, Examples, MyExamples) whose constructor does not
+option. 
+
+Within the three teaching levels, any class with the word 'Example' in 
+the name (i.e. CarExample, Examples, MyExamples) whose constructor does not
 require any arguments is instantiated on Run. Any method within this
 class that begins with the word 'test' (i.e. testAccelerate, test1)
 that does not require any arguments is called; a boolean return is
 expected. The test methods are run in the order in which they appear
 within the class, top to bottom.
 
+Within the Full and Java + dynamic levels, two additional forms are 
+supported, test and testcase. A test specifies a class-like entity that
+will include tests and behaves like an Example class on Run. A testcase
+specifies a method-like entity containing a set of checks for a specific
+circumstance. A testcase must return a boolean and accept no arguments.
+Operational inheritance is available in tests and testcases, access modifiers
+are not supported for these forms.
+
 A dockable window opens on Run reporting the result of executing all
-checks within each Example class and the result of executing each test
-method. Failed checks (i.e.  returning false) provide source
+checks within each Example class or test and the result of executing each test
+method or testcase. Failed checks (i.e.  returning false) provide source
 information. Coverage information is also available for each Example
 class and each testMethod. The collection of coverage information does
 slow execution and can be turned off with a language configuration;
