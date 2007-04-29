@@ -152,7 +152,10 @@
 	mz-inc
 	"xsrc/precomp.h"
 	""
-	"/D LIBMZ_EXPORTS /D NEWGC_BTC_ACCOUNT "
+	(string-append "/D LIBMZ_EXPORTS "
+		       (if accounting-gc?
+			   "/D NEWGC_BTC_ACCOUNT "
+			   ""))
 	"mz.pch"
 	#f))
  srcs)
