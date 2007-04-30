@@ -1,11 +1,11 @@
-(require (lib "unit.ss")
-         (lib "servlet-sig.ss" "web-server"))
-
-(unit (import servlet^)
-      (export)
+(module hello mzscheme
+  (provide (all-defined))
+  (define interface-version 'v1)
+  (define timeout +inf.0)
   
   (define the-text "Hello, Web!")
   
-  `(html (head (title ,the-text))
-         (body ([bgcolor "white"])
-               (p ,the-text))))
+  (define (start initial-request)
+    `(html (head (title ,the-text))
+           (body ([bgcolor "white"])
+                 (p ,the-text)))))

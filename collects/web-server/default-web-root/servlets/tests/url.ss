@@ -1,10 +1,13 @@
-(require (lib "unit.ss")
-         (lib "servlet-sig.ss" "web-server")
-         (lib "url.ss" "net"))
-(let ([count 0])
-  (unit
-    (import servlet^)
-    (export)
+(module url mzscheme
+  (require (lib "servlet.ss" "web-server")
+           (lib "url.ss" "net"))
+  (provide (all-defined))
+  (define interface-version 'v1)
+  (define timeout +inf.0)
+  
+  (define count 0)
+  
+  (define (start initial-request)
     (set! count (add1 count))
     `(html (head (title "URL Test"))
            (body (p "The method requested is: " ,(format "~s" (request-method initial-request)))

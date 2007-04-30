@@ -1,9 +1,10 @@
-(module mime mzscheme
+(module pr7935-other mzscheme
   (require (lib "servlet.ss" "web-server"))
   (provide (all-defined))
+  
   (define interface-version 'v1)
-  (define timeout +inf.0)
+  (define timeout 60)
+  
   (define (start initial-request)
-    `("text/uber-format"
-      "uber uber uber"
-      "-de-doo")))
+    ;(report-errors-to-browser send/back)
+    (/ 1 0)))

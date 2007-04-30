@@ -1,6 +1,6 @@
-(require (lib "unit.ss")
-         (lib "servlet-sig.ss" "web-server"))
-(unit
-  (import servlet^)
-  (export)
-  (raise 'kablooie))
+(module broken mzscheme
+  (provide (all-defined))
+  (define interface-version 'v1)
+  (define timeout +inf.0)
+  (define (start initial-request)
+    (raise 'kablooie)))

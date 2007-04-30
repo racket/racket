@@ -2,7 +2,6 @@
   (require (lib "url.ss" "net")
            (lib "kw.ss")
            (lib "plt-match.ss")
-           (lib "unit.ss")
            (lib "string.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
@@ -11,7 +10,6 @@
            "../private/response.ss"
            "../response-structs.ss"
            "../servlet.ss"
-           "../sig.ss"
            "../private/configuration.ss"
            "../private/util.ss"
            "../managers/manager.ss"
@@ -308,14 +306,6 @@
     ;;;;;; (XXX: I don't know what 'typed-model-split-store0 was, so it was removed.)
     ;;;; A response
     (define (load-servlet/path a-path)
-      (define (v0.servlet->v1.lambda servlet)
-        (lambda (initial-request)
-          (define servlet@ (unit-from-context servlet^))
-          (invoke-unit
-           (compound-unit 
-             (import) (export)
-             (link (((S : servlet^)) servlet@)
-                   (() servlet S))))))
       (define (v0.response->v1.lambda response-path response)
         (define go
           (box
@@ -333,16 +323,6 @@
         ; XXX load/use-compiled breaks errortrace
         (define s (load/use-compiled a-path))
         (cond
-          ;; signed-unit servlet
-          ; MF: I'd also like to test that s has the correct import signature.
-          [(unit? s) 
-           (make-servlet (current-custodian)
-                         (current-namespace)
-                         (create-timeout-manager
-                          default-servlet-instance-expiration-handler
-                          timeouts-servlet-connection
-                          timeouts-default-servlet)
-                         (v0.servlet->v1.lambda s))]
           ; FIX - reason about exceptions from dynamic require (catch and report if not already)
           ;; module servlet
           [(void? s)
@@ -359,7 +339,7 @@
                                  timeouts-servlet-connection
                                  timeout)
                                 (v1.module->v1.lambda timeout start)))]
-               [(v2-transitional) ; XXX: Undocumented
+               [(v2 v2-transitional) ; XXX: Undocumented
                 (let ([start (dynamic-require module-name 'start)]
                       [manager (with-handlers
                                    ([exn:fail:contract?

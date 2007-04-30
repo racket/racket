@@ -1,9 +1,11 @@
-(require (lib "unit.ss")
-         (lib "servlet-sig.ss" "web-server"))
-(let ([count 0])
-  (unit
-    (import servlet^)
-    (export)
+(module test mzscheme
+  (require (lib "servlet.ss" "web-server"))
+  (provide (all-defined))
+  (define interface-version 'v1)
+  (define timeout +inf.0)
+  (define count 0)
+  
+  (define (start initial-request)
     (with-handlers ([void (lambda (exn) `(html (body (p ,(exn-message exn)))))])
       (set! count (add1 count))
       `(html (head (title "Testing 1...2...3"))
