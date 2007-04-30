@@ -91,6 +91,7 @@ public:
 static int si_registered;
 static Accum_Single_Instance_Message *si_msgs;
 static void parse_and_drop_runtime(int len, char *s);
+static void decode_percent_escapes(char *s);
 extern void wxDrop_Runtime(char **argv, int argc);
 
 //-----------------------------------------------------------------------------
@@ -1554,20 +1555,33 @@ void wxWindow::FrameEventHandler(Widget w,
 	    char *data;
 	    data = wxTheClipboard->GetClipboardData("text/uri-list", &len, XDND_DROP_TIME(xev), dnd.XdndSelection);
 	    if (data) {
-              /* If file://... prefix (then drop it) */
-              if (!strncmp(data, "file://", 7)) {
-                int i = 7;
-                char *data2;
-                while ((i < len) && (data[i] != '/')) {
-                  i++;
-                }
-                if (i < len) {
-                  data2 = new WXGC_ATOMIC char[len - i + 1];
-                  memcpy(data2, data + i, len - i);
-                  data2[len - i] = 0;
-                  target->OnDropFile(data2);
-                }
-              }
+	      /* Newline-separate elements... */
+	      long offset = 0;
+	      while (offset < len) {
+		long elem_end;
+		for (elem_end = offset; 
+		     (elem_end < len) && (data[elem_end] != '\r');
+		     elem_end++) {
+		}
+		/* If file://... prefix (then drop it) */
+		if ((offset + 7 <= len)
+		    && !strncmp(data XFORM_OK_PLUS offset, "file://", 7)) {
+		  /* Now skip the root: */
+		  long i = offset + 7;
+		  char *data2;
+		  while ((i < elem_end) && (data[i] != '/')) {
+		    i++;
+		  }
+		  if (i < elem_end) {
+		    data2 = new WXGC_ATOMIC char[elem_end - i + 1];
+		    memcpy(data2, data + i, elem_end - i);
+		    data2[elem_end - i] = 0;
+		    decode_percent_escapes(data2);
+		    target->OnDropFile(data2);
+		  }
+		}
+		offset = elem_end + 2; /* assume CRLF */
+	      }
 	    }
 	  }
 	}
@@ -2542,4 +2556,35 @@ static void parse_and_drop_runtime(int len, char *s)
   }
   
   wxDrop_Runtime(argv, cnt);
+}
+
+static int ishexdig(char s) { 
+  return (((s >= '0') && (s <= '9'))
+	  || ((s >= 'a') && (s <= 'f'))
+	  || ((s >= 'A') && (s <= 'F'))); 
+}
+static int hexval(char s) { 
+  return (((s >= '0') && (s <= '9'))
+	  ? s - '0'
+	  : (((s >= 'a') && (s <= 'f'))
+	     ? s - 'a' + 10
+	     : s - 'A' + 10));
+}
+
+static void decode_percent_escapes(char *s)
+{
+  int src = 0, dest = 0;
+  while (s[src]) {
+    if ((s[src] == '%')
+	&& ishexdig(s[src+1])
+	&& ishexdig(s[src+2])) {
+      int v;
+      v = ((hexval(s[src+1]) << 4) + hexval(s[src+2]));
+      s[dest++] = v;
+      src += 3;
+    } else {
+      s[dest++] = s[src++];
+    }
+  }
+  s[dest] = 0;
 }
