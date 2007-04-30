@@ -114,12 +114,14 @@
   ; more here - parameterize error based on a configurable file, perhaps?
   ; This is slightly tricky since the (interesting) content comes from the exception.
   (define (servlet-loading-responder url exn)
+    ((error-display-handler)
+       (format "Servlet didn't load:\n~a\n" (exn-message exn))
+       exn)
     (make-response/full 500 "Servlet didn't load"
                         (current-seconds)
                         TEXT/HTML-MIME-TYPE
                         '() ; check
-                        (list "Servlet didn't load.\n"
-                              (exn->string exn))))
+                        (list "Servlet didn't load.\n")))
   
   ; gen-servlet-not-found : str -> url -> response
   (define (gen-servlet-not-found file-not-found-file)
