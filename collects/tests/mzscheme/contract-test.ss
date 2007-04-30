@@ -3106,7 +3106,7 @@
   
   (test/pos-blame
    'unsafe4
-   '(let ([ct (contract (list-unsafe (number? . -> . boolean?)) 
+   '(let ([ct (contract (list-unsafe/c (number? . -> . boolean?)) 
                         (list (lambda (x) 1)) 
                         'pos
                         'neg)])
@@ -3239,12 +3239,22 @@
   (test/spec-passed/result
    'unsafe21
    '(let* ([orig-list (list 1 2 3)]
-           [ctc (contract (list-unsafe/c number?)
+           [ctc (contract (listof-unsafe number?)
                           orig-list
                           'pos
                           'neg)])
       (eq? orig-list ctc))
    #f)
+  
+  (test/spec-passed/result
+   'listof-no-copy
+   '(let* ([orig-list (list 1 2 3)]
+           [ctc (contract (listof number?)
+                          orig-list
+                          'pos
+                          'neg)])
+      (eq? orig-list ctc))
+   #t)
 
   
   (test/pos-blame
