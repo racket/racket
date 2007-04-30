@@ -758,12 +758,14 @@ void wxMenuBar::Install(wxWindow *for_frame)
       if (!v) {
 	::DisableMenuItem(mh, 0);
       } else {
-	if (menu_bar_frame)
-	  v = menu_bar_frame->CanAcceptEvent();
-	else
+	if (menu_bar_frame) {
+          /* Don't use CanAcceptEvent(), because that depends on 
+             mouse capture, which is too transient for updating menus. */
+	  v = menu_bar_frame->IsEnable();
+	} else
 	  v = 1;
 	if (!v) {
-	  ::DisableMenuItem(mh, 0);
+          ::DisableMenuItem(mh, 0);
 	} else {
 	  ::EnableMenuItem(mh, 0);
 	}
