@@ -1,23 +1,21 @@
-;            ;                                                       
-;            ;;               ;     ;     ;;       ;;   ;   ;;       
-;       ;;   ;;               ;     ;     ;        ;    ;   ;    ;   
-;       ;    ;;     ;        ;;     ;     ;;       ;    ;   ;    ;   
-;       ;;;;;;;;;;;;;;         ;;;;;;;;;;;;        ; ;  ;   ;    ;   
-;      ;     ;;                     ;            ; ; ;;; ;;; ;;;;    
-;     ;      ;;             ;;;;;;;;;;;;;;;;;   ;; ;              ;  
-;            ;;      ;     ;;              ;    ;  ;   ;;;;;;;;;;;   
-;    ;;;;;;;;;;;;;;;; ;                 ;          ;    ;       ;    
-;           ;;;;               ;;;;;;;;;           ;     ;;;;;;;;    
-;          ; ;; ;                          ;;      ;     ;      ;    
-;         ;  ;;  ;         ;;;;;;;;;;;;;;;;        ;     ;      ;    
-;        ;   ;;   ;;            ;   ;  ;           ;    ;;;;;;;;;    
-;       ;    ;;    ;;;         ;    ;   ;;         ;      ;    ;     
-;     ;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
-;   ;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
-;            ;;                    ;               ;   ;;; ;; ;;;;   
-;                                                                    
-;                                                                    
-;                                                                    
+            ;                                                       
+            ;;               ;     ;     ;;       ;;   ;   ;;       
+       ;;   ;;               ;     ;     ;        ;    ;   ;    ;   
+       ;    ;;     ;        ;;     ;     ;;       ;    ;   ;    ;   
+       ;;;;;;;;;;;;;;         ;;;;;;;;;;;;        ; ;  ;   ;    ;   
+      ;     ;;                     ;            ; ; ;;; ;;; ;;;;    
+     ;      ;;             ;;;;;;;;;;;;;;;;;   ;; ;              ;  
+            ;;      ;     ;;              ;    ;  ;   ;;;;;;;;;;;   
+    ;;;;;;;;;;;;;;;; ;                 ;          ;    ;       ;    
+           ;;;;               ;;;;;;;;;           ;     ;;;;;;;;    
+          ; ;; ;                          ;;      ;     ;      ;    
+         ;  ;;  ;         ;;;;;;;;;;;;;;;;        ;     ;      ;    
+        ;   ;;   ;;            ;   ;  ;           ;    ;;;;;;;;;    
+       ;    ;;    ;;;         ;    ;   ;;         ;      ;    ;     
+     ;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
+   ;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
+            ;;                    ;               ;   ;;; ;; ;;;;   
+                                                                    
 (module traditional-chinese-string-constants "string-constant-lang.ss"
   (is-this-your-native-language "你的母語是繁體中文嗎？")
   
@@ -675,7 +673,7 @@
   (overwrite-file-button-label "保存")
   
   (definitions-modified 
-    "當前磁碟文件已被修改；請保存或恢復文件。")
+   "當前磁碟文件已被修改；請保存或恢復文件。")
   (drscheme-internal-error "DrScheme內部錯誤")
   
   ;;; tools
@@ -936,7 +934,7 @@
   (profiling-choose-low-color "請選擇代表低的顏色")
   (profiling-choose-high-color "請選擇代表高的顏色")
   (profiling "Profiling")
-  (profiling-example-text "(define (理) (理))")
+  (profiling-example-text "(define (馬) (馬))")
   (profiling-color-config "Profiling色譜") 
   (profiling-scale "Profiling的色彩比例")
   (profiling-sqrt "平方根")
@@ -1061,12 +1059,10 @@
   (xml-tool-xml-box "XML框")
   (xml-tool-scheme-box "Scheme框")
   (xml-tool-scheme-splice-box "Scheme接合框")
-  (xml-tool-switch-to-scheme "轉變成Scheme框")
-  (xml-tool-switch-to-scheme-splice "轉變成Scheme接合框")
-  (xml-tool-eliminate-whitespace-in-empty-tags
-   "Eliminiate whitespace in empty tags")
-  (xml-tool-leave-whitespace-alone
-   "Leave whitespace alone")
+  (xml-tool-switch-to-scheme "轉化為Scheme框")
+  (xml-tool-switch-to-scheme-splice "轉化為Scheme接合框")
+  (xml-tool-eliminate-whitespace-in-empty-tags "去除空白標籤中的whitespace")
+  (xml-tool-leave-whitespace-alone "保留whitespace")
   
   (show-recent-items-window-menu-item "在單獨窗口中顯示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
@@ -1123,7 +1119,12 @@
   ;; Slideshow
   (slideshow-show-slideshow-panel "顯示Slideshow面板")
   (slideshow-hide-slideshow-panel "隱藏Slideshow面板")
-  (slideshow-insert-pict-box "插入Pict框") 
+  (slideshow-freeze-picts "凍結這些圖片")
+  (slideshow-thaw-picts "顯示滑鼠下方的圖片")
+  (slideshow-hide-picts "隱藏圖片")
+  (slideshow-show-picts "顯示圖片")
+  (slideshow-cannot-show-picts "無法顯示圖片；請先運行程序從而獲知圖片的大小")
+  (slideshow-insert-pict-box "插入Pict框")
   
   ;; GUI Tool
   (gui-tool-heading "GUI工具")

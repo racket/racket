@@ -934,7 +934,7 @@
   (profiling-choose-low-color "请选择代表低的颜色")
   (profiling-choose-high-color "请选择代表高的颜色")
   (profiling "Profiling")
-  (profiling-example-text "(define (理) (理))")
+  (profiling-example-text "(define (马) (马))")
   (profiling-color-config "Profiling色谱") 
   (profiling-scale "Profiling的色彩比例")
   (profiling-sqrt "平方根")
@@ -1059,12 +1059,10 @@
   (xml-tool-xml-box "XML框")
   (xml-tool-scheme-box "Scheme框")
   (xml-tool-scheme-splice-box "Scheme接合框")
-  (xml-tool-switch-to-scheme "转变成Scheme框")
-  (xml-tool-switch-to-scheme-splice "转变成Scheme接合框")
-  (xml-tool-eliminate-whitespace-in-empty-tags
-   "Eliminiate whitespace in empty tags")
-  (xml-tool-leave-whitespace-alone
-   "Leave whitespace alone")
+  (xml-tool-switch-to-scheme "转化为Scheme框")
+  (xml-tool-switch-to-scheme-splice "转化为Scheme接合框")
+  (xml-tool-eliminate-whitespace-in-empty-tags "去除空白标签中的whitespace")
+  (xml-tool-leave-whitespace-alone "保留whitespace")
   
   (show-recent-items-window-menu-item "在单独窗口中显示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
@@ -1121,7 +1119,12 @@
   ;; Slideshow
   (slideshow-show-slideshow-panel "显示Slideshow面板")
   (slideshow-hide-slideshow-panel "隐藏Slideshow面板")
-  (slideshow-insert-pict-box "插入Pict框") 
+  (slideshow-freeze-picts "冻结这些图片")
+  (slideshow-thaw-picts "显示鼠标下方的图片")
+  (slideshow-hide-picts "隐藏图片")
+  (slideshow-show-picts "显示图片")
+  (slideshow-cannot-show-picts "无法显示图片；请先运行程序从而获知图片的大小")
+  (slideshow-insert-pict-box "插入Pict框")
   
   ;; GUI Tool
   (gui-tool-heading "GUI工具")
