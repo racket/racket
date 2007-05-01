@@ -210,7 +210,8 @@
   ;; Rename mapping
 
   (define (rename-frontier from to)
-    (current-frontier (apply append (map (make-rename-mapping from to) (current-frontier)))))
+    (current-frontier
+     (apply append (map (make-rename-mapping from to) (current-frontier)))))
 
   (define (make-rename-mapping from to)
     (define table (make-hash-table))
@@ -225,6 +226,8 @@
              (loop (cdr from) (cdr to))]
             [(vector? from)
              (loop (vector->list from) (vector->list to))]
+            [(box? from)
+             (loop (unbox from) (unbox to))]
             [else (void)]))
     (lambda (stx)
       (let ([replacement (hash-table-get table stx #f)])
@@ -238,9 +241,12 @@
     (cond [(syntax? x)
            (list x)]
           [(pair? x)
-           (append (flatten-syntaxes (car x) (cdr x)))]
+           (append (flatten-syntaxes (car x))
+                   (flatten-syntaxes (cdr x)))]
           [(vector? x)
            (flatten-syntaxes (vector->list x))]
+          [(box? x)
+           (flatten-syntaxes (unbox x))]
           [else null]))
 
   ;; -----------------------------------
@@ -248,22 +254,26 @@
   ;; walk : syntax(es) syntax(es) StepType -> Reduction
   ;; Lifts a local step into a term step.
   (define (walk e1 e2 type)
-    (make-step (current-derivation) (big-context) type (context) (current-definites) (current-frontier)
+    (make-step (current-derivation) (big-context) type (context)
+               (current-definites) (current-frontier)
                (foci e1) (foci e2) e1 e2))
   
   ;; walk/foci : syntaxes syntaxes syntax syntax StepType -> Reduction
   (define (walk/foci foci1 foci2 Ee1 Ee2 type)
-    (make-step (current-derivation) (big-context) type (context) (current-definites) (current-frontier)
+    (make-step (current-derivation) (big-context) type (context)
+               (current-definites) (current-frontier)
                (foci foci1) (foci foci2) Ee1 Ee2))
 
   ;; stumble : syntax exception -> Reduction
   (define (stumble stx exn)
-    (make-misstep (current-derivation) (big-context) 'error (context) (current-definites) (current-frontier)
+    (make-misstep (current-derivation) (big-context) 'error (context)
+                  (current-definites) (current-frontier)
                   (foci stx) stx exn))
   
   ;; stumble/E : syntax(s) syntax exn -> Reduction
   (define (stumble/E focus Ee1 exn)
-    (make-misstep (current-derivation) (big-context) 'error (context) (current-definites) (current-frontier)
+    (make-misstep (current-derivation) (big-context) 'error (context)
+                  (current-definites) (current-frontier)
                   (foci focus) Ee1 exn))
   
   ;; ------------------------------------
