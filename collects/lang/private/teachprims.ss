@@ -1,4 +1,13 @@
+#| tests are at plt/collects/tests/mzscheme/
+collects/tests/mzscheme/beginner.ss
+                    .../beginner-abbr.ss
+                    .../intermediate.ss
+                    .../intermediate-lam.ss
+                    .../advanced.ss
 
+Each one has to run separately, since they mangle the top-level
+namespace.
+|#
 (module teachprims mzscheme
 
   (require "../imageeq.ss" 
@@ -76,6 +85,7 @@
                  (format "~a: last argument must be of type <~a>, given ~e; other args:~a"
                          prim-name type
                          last
+			 ;; all-but-last:
                          (build-arg-list
                           (let loop ([args args])
                             (cond
@@ -143,9 +153,9 @@
       (apply list* x)))
   
   (define-teach beginner append
-    (lambda x
-      (check-last 'append x)
-      (apply append x)))
+    (lambda (a b . x)
+      (check-last 'append (cons a (cons b x)))
+      (apply append a b x)))
   
   (define-teach beginner error
     (lambda (sym str)
