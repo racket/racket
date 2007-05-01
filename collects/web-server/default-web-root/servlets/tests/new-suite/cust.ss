@@ -13,4 +13,3 @@
        (p ,(if (eq? (current-custodian) servlet-cust)
                "It didn't work."
                "It did work."))))))
-    

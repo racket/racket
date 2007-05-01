@@ -33,4 +33,3 @@
                                         `(html (head (title "Expiration demo"))
                                                (body (p (a ([href ,k-url]) "Forget the past.")))))))))])
                          "Prepare to forget the past."))))))))))
-                                     
