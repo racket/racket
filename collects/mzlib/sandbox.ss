@@ -174,14 +174,15 @@
 
   (define-struct (exn:fail:resource exn:fail) (resource))
 
-  (define 3m? (eq? '3m (system-type 'gc)))
+  (define memory-accounting? (custodian-memory-accounting-available?))
 
   (define (call-with-limits sec mb thunk)
     (let ([cust (make-custodian)]
           [ch   (make-channel)]
           ;; use this to copy parameter changes from the sub-thread
           [p    current-preserved-thread-cell-values])
-      (when (and mb 3m?) (custodian-limit-memory cust (* mb 1024 1024) cust))
+      (when (and mb memory-accounting?)
+        (custodian-limit-memory cust (* mb 1024 1024) cust))
       (let* ([work (parameterize ([current-custodian cust])
                      (thread (lambda ()
                                (channel-put ch
@@ -457,14 +458,8 @@
                (set-out!
                 (lambda ()
                   (parameterize ([current-custodian orig-cust])
-                    (let ([running? (and (thread? user-thread)
-                                         (thread-running? user-thread))])
-                      (when running? (thread-suspend user-thread))
-                      (let ([buf (subbytes (get-output-bytes out)
-                                           0 (file-position out))])
-                        (file-position out 0)
-                        (when running? (thread-resume user-thread))
-                        (if bytes? buf (bytes->string/utf-8 buf #\?)))))))
+                    (let ([buf (get-output-bytes out #t)])
+                      (if bytes? buf (bytes->string/utf-8 buf #\?))))))
                out)]
             [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
     (parameterize* ; the order in these matters
