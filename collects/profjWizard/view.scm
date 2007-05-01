@@ -1,4 +1,3 @@
-#cs
 (module view mzscheme 
   
   (require "assoc-list.scm"
@@ -131,23 +130,24 @@
       
       ;; switches for toString methods and template in comments 
       (define switch-pane (add-horizontal-panel p))
-      (define-values (string template diagram)
+      (define-values (string #;template diagram)
         (cond
           [switches? 
-           (values (make-checkbox switch-pane ADD-TOSTRING) 
+           (values (make-checkbox switch-pane ADD-TOSTRING)
+   	           #;
                    (let ([c (make-checkbox switch-pane ADD-TEMPLATE)])
                      (send c set-value #t)
                      c)
                    (make-checkbox switch-pane ADD-DIAGRAM))]
-          [no-diagram (values #f #f #f)]
-          [else (values #f #f (make-checkbox switch-pane ADD-DIAGRAM))]))          
+          [no-diagram (values #f #;#f #f)]
+          [else (values #f #;#f (make-checkbox switch-pane ADD-DIAGRAM))]))          
       (define (get-switch x) 
         (cond 
           [(eq? x diagram) (and (not no-diagram) (send x get-value))]
           [switches? (send x get-value)]
           [else #f]))
       (define/public (tostring?) (get-switch string))
-      (define/public (template?) (get-switch template))
+      (define/public (template?) #;(get-switch template) #f)
       (define/public (diagram?) (get-switch diagram))
       
       ;; --------------------------------------------------------------------
@@ -246,7 +246,7 @@
                        super-name (if (null? a-super) #f SUPER))
                       (send field-panel produce)
                       (send purpose get-value))
-                (tostring?) 
+                (tostring?)
                 (template?))))
       
       ;; if the class specification is proper, hide dialog

@@ -1,4 +1,3 @@
-#cs
 (module class mzscheme 
   (require "data-defs.scm"
            (lib "contract.ss")
@@ -38,7 +37,7 @@
             [super  (cadr the-class)]
             [fields (caddr the-class)]
             [prps   (class-purpose the-class)])
-        (define templates 
+	(define templates 
           (if (or (not template?) (eq? language BEGINNER))
               ""
               (enumerate-with-separator

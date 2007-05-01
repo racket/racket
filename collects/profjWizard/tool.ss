@@ -1,4 +1,3 @@
-#cs
 (module tool mzscheme
   (require "class.scm"
            "union.ss"
@@ -41,9 +40,8 @@
           
           (super-new)
           
-          (define (tee x) x)
-
-          #;(define-syntax tee
+	  #;
+          (define-syntax tee
             (syntax-rules ()
               ((_ x)
                (let* ([a (format "--> ~a\n" 'x)]
@@ -51,7 +49,9 @@
                       [b (format "==> ~a\n" y)])
                  (message-box "error" (format "~a~a" a b))
                  y))))
-          
+
+          (define (tee x) x)
+	  
           ;; String (LANGUAGE-LEVEL -> X) (X ... -> String) (X ... -> String) -> Void
           ;; create a menu item for inserting classes and interfaces 
           (define (make-menu-item% descr get-info make draw)
@@ -67,12 +67,15 @@
               ;; ---------------------------------------------------------------
               
               (define language-level 
-                (let ([simple* (member "ProfessorJ" current-language*)])
+                (let* ([simple* (tee (member "ProfessorJ" current-language*))]
+		       [begin-> (tee (and simple* (cadr simple*)))])
+		  (tee
                   (cond
+		    [begin-> begin->]
                     [(boolean? simple*) PROFESSIONAL]
                     [(eq? (cadr simple*) BEGINNER) BEGINNER]
                     [(eq? (cadr simple*) INTERMEDIATE) INTERMEDIATE]
-                    [else PROFESSIONAL])))
+                    [else PROFESSIONAL]))))
               
               ;; get the editor and insert the desired items ... 
               (define editor (get-edit-target-object))

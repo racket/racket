@@ -49,6 +49,9 @@ view
 
 FEATURES:
 
+** re-enable the method template creation in view
+== the creation of method stubs depends on language level 
+
 ** allow the introduction of an abstract class for common features in
    Unions (common fields, common methods) 
 
