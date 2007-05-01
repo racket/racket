@@ -177,6 +177,14 @@ static Scheme_Custodian *main_custodian;
 static Scheme_Custodian *last_custodian;
 static Scheme_Hash_Table *limited_custodians = NULL;
 
+#ifndef MZ_PRECISE_GC
+static int cust_box_count, cust_box_alloc;
+static Scheme_Custodian_Box **cust_boxes;
+# ifndef USE_SENORA_GC
+extern int GC_is_marked(void *);
+# endif
+#endif
+
 /* On swap, put target in a static variable, instead of on the stack,
    so that the swapped-out thread is less likely to have a pointer
    to the target thread. */
@@ -311,6 +319,8 @@ static Scheme_Object *custodian_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_custodian(int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[]);
+static Scheme_Object *custodian_box_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *current_namespace(int argc, Scheme_Object *args[]);
@@ -557,6 +567,16 @@ void scheme_init_thread(Scheme_Env *env)
 			     scheme_register_parameter(current_custodian,
 						       "current-custodian",
 						       MZCONFIG_CUSTODIAN),
+			     env);
+  scheme_add_global_constant("make-custodian-box",
+			     scheme_make_prim_w_arity(make_custodian_box,
+						      "make-custodian-box",
+						      2, 2),
+			     env);
+  scheme_add_global_constant("custodian-box-value",
+			     scheme_make_prim_w_arity(custodian_box_value,
+						      "custodian-box-value",
+						      1, 1),
 			     env);
   scheme_add_global_constant("call-in-nested-thread",
 			     scheme_make_prim_w_arity(call_as_nested_thread,
@@ -1667,6 +1687,102 @@ static Scheme_Object *current_custodian(int argc, Scheme_Object *argv[])
 			     -1, custodian_p, "custodian", 0);
 }
 
+static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[])
+{
+  Scheme_Custodian_Box *cb;
+
+  if (!SCHEME_CUSTODIANP(argv[0]))
+    scheme_wrong_type("make-custodian-box", "custodian", 0, argc, argv);
+
+  cb = MALLOC_ONE_TAGGED(Scheme_Custodian_Box);
+  cb->so.type = scheme_cust_box_type;
+  cb->cust = (Scheme_Custodian *)argv[0];
+  cb->v = argv[1];
+
+#ifdef MZ_PRECISE_GC
+  /* 3m  */
+  {
+    Scheme_Object *wb, *pr;
+    wb = GC_malloc_weak_box(cb, NULL, 0);
+    pr = scheme_make_raw_pair(wb, cb->cust->cust_boxes);
+    cb->cust->cust_boxes = pr;
+  }
+#else
+  /* CGC */
+  if (cust_box_count >= cust_box_alloc) {
+    Scheme_Custodian_Box **cbs;
+    if (!cust_box_alloc) {
+      cust_box_alloc = 16;
+      REGISTER_SO(cust_boxes);
+    } else {
+      cust_box_alloc = 2 * cust_box_alloc;
+    }
+    cbs = (Scheme_Custodian_Box **)scheme_malloc_atomic(cust_box_alloc * sizeof(Scheme_Custodian_Box *));
+    memcpy(cbs, cust_boxes, cust_box_count * sizeof(Scheme_Custodian_Box *));
+    cust_boxes = cbs;
+  }
+  cust_boxes[cust_box_count++] = cb;
+#endif
+
+  return (Scheme_Object *)cb;
+}
+
+static Scheme_Object *custodian_box_value(int argc, Scheme_Object *argv[])
+{
+  Scheme_Custodian_Box *cb;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cust_box_type))
+    scheme_wrong_type("custodian-box-value", "custodian-box", 0, argc, argv);
+
+  cb = (Scheme_Custodian_Box *)argv[0];
+  if (cb->cust->shut_down)
+    return scheme_false;
+
+  return cb->v;
+}
+
+#ifndef MZ_PRECISE_GC
+void scheme_clean_cust_box_list(void)
+{
+  int src = 0, dest = 0;
+  Scheme_Custodian_Box *cb;
+  void *b;
+
+  while (src < cust_box_count) {
+    cb = cust_boxes[src];
+    b = GC_base(cb);
+    if (b 
+#ifndef USE_SENORA_GC
+        && GC_is_marked(b)
+#endif
+        ) {
+      cust_boxes[dest++] = cb;
+      if (cb->v) {
+        if (cb->cust->shut_down) {
+          cb->v = NULL;
+        }
+      }
+    }
+    src++;
+  }
+  cust_box_count = dest;
+}
+
+static void shrink_cust_box_array(void)
+{
+  /* Call this function periodically to clean up. */
+  if (cust_box_alloc > 128 && (cust_box_count * 4 < cust_box_alloc)) {
+    Scheme_Custodian_Box **cbs;
+    cust_box_alloc = cust_box_count * 2;
+    cbs = (Scheme_Custodian_Box **)scheme_malloc_atomic(cust_box_alloc * sizeof(Scheme_Custodian_Box *));
+    memcpy(cbs, cust_boxes, cust_box_count * sizeof(Scheme_Custodian_Box *));
+    cust_boxes = cbs;
+  }
+}
+#else
+# define shrink_cust_box_array() /* empty */
+# define clean_cust_box_list()   /* empty */
+#endif
 
 static void run_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
 {
@@ -3614,6 +3730,8 @@ void scheme_thread_block(float sleep_time)
 
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
+
+  shrink_cust_box_array();
 
   if (scheme_active_but_sleeping)
     scheme_wake_up();
@@ -7104,6 +7222,7 @@ static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_will_executor_type, mark_will_executor_val);
   GC_REG_TRAV(scheme_custodian_type, mark_custodian_val);
+  GC_REG_TRAV(scheme_cust_box_type, mark_custodian_box_val);
   GC_REG_TRAV(scheme_thread_hop_type, mark_thread_hop);
   GC_REG_TRAV(scheme_evt_set_type, mark_evt_set);
   GC_REG_TRAV(scheme_thread_set_type, mark_thread_set);

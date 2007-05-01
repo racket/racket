@@ -1184,8 +1184,10 @@ struct thread {
   struct thread *next;
 };
 
-static Mark_Proc normal_thread_mark = NULL, normal_custodian_mark = NULL;
+static Mark_Proc normal_thread_mark = NULL, normal_custodian_mark = NULL, normal_cust_box_mark = NULL;
 static struct thread *threads = NULL;
+
+static unsigned short cust_box_tag;
 
 inline static void register_new_thread(void *t, void *c)
 {
@@ -1224,6 +1226,31 @@ inline static void mark_threads(int owner)
         }
       }
     }
+}
+
+inline static void mark_cust_boxes(Scheme_Custodian *cur)
+{
+  Scheme_Object *pr, *prev = NULL, *next;
+  GC_Weak_Box *wb;
+
+  /* cust boxes is a list of weak boxes to cust boxes */
+
+  pr = cur->cust_boxes;
+  while (pr) {
+    wb = (GC_Weak_Box *)SCHEME_CAR(pr);
+    next = SCHEME_CDR(pr);
+    if (wb->val) {
+      normal_cust_box_mark(wb->val);
+      prev = pr;
+    } else {
+      if (prev)
+        SCHEME_CDR(prev) = next;
+      else
+        cur->cust_boxes = next;
+    }
+    pr = next;
+  }
+  cur->cust_boxes = NULL;
 }
 
 inline static void clean_up_thread_list(void)
@@ -1555,6 +1582,10 @@ int BTC_custodian_mark(void *p)
     return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
 }
 
+int BTC_cust_box_mark(void *p)
+{
+  return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
+}
 
 inline static void mark_normal_obj(struct mpage *page, void *ptr)
 {
@@ -1657,11 +1688,13 @@ static void do_btc_accounting(void)
     if(!normal_thread_mark) {
       normal_thread_mark = mark_table[scheme_thread_type];
       normal_custodian_mark = mark_table[scheme_custodian_type];
+      normal_cust_box_mark = mark_table[cust_box_tag];
     }
     mark_table[scheme_thread_type] = &BTC_thread_mark;
     mark_table[scheme_custodian_type] = &BTC_custodian_mark;
     mark_table[ephemeron_tag] = btc_mark_ephemeron;
-    
+    mark_table[cust_box_tag] = BTC_cust_box_mark;
+
     /* clear the memory use numbers out */
     for(i = 1; i < owner_table_top; i++)
       if(owner_table[i])
@@ -1672,7 +1705,7 @@ static void do_btc_accounting(void)
       cur = (Scheme_Custodian*)SCHEME_PTR1_VAL(box);
       box = cur->global_next;
     }
-    
+
     /* walk backwards for the order we want */
     while(cur) {
       int owner = custodian_to_owner_set(cur);
@@ -1682,6 +1715,7 @@ static void do_btc_accounting(void)
 	       owner, cur));
       kill_propagation_loop = 0;
       mark_threads(owner);
+      mark_cust_boxes(cur);
       GCDEBUG((DEBUGOUTF, "Propagating accounting marks\n"));
       propagate_accounting_marks();
       
@@ -1691,6 +1725,7 @@ static void do_btc_accounting(void)
     mark_table[scheme_thread_type] = normal_thread_mark;
     mark_table[scheme_custodian_type] = normal_custodian_mark;
     mark_table[ephemeron_tag] = mark_ephemeron;
+    mark_table[cust_box_tag] = normal_cust_box_mark;
     in_unsafe_allocation_mode = 0;
     doing_memory_accounting = 0;
     old_btc_mark = new_btc_mark;
@@ -1918,13 +1953,16 @@ void GC_write_barrier(void *p)
 
 #include "sighand.c"
 
-void GC_init_type_tags(int count, int pair, int weakbox, int ephemeron, int weakarray)
+void GC_init_type_tags(int count, int pair, int weakbox, int ephemeron, int weakarray, int custbox)
 {
   static int initialized = 0;
 
   weak_box_tag = weakbox;
   ephemeron_tag = ephemeron;
   weak_array_tag = weakarray;
+# ifdef NEWGC_BTC_ACCOUNT
+  cust_box_tag = custbox;
+# endif
 
   if(!initialized) {
     initialized = 1;
@@ -2448,11 +2486,6 @@ static void prepare_pages_for_collection(void)
       }
     flush_protect_page_ranges(1);
   }
-
-  /* we do this here because, well, why not? */
-  init_weak_boxes();
-  init_weak_arrays();
-  init_ephemerons();
 }
 
 static void mark_backpointers(void)
@@ -2852,6 +2885,10 @@ static void garbage_collect(int force_full)
   TIME_STEP("started");
 
   prepare_pages_for_collection();
+  init_weak_boxes();
+  init_weak_arrays();
+  init_ephemerons();
+
   /* at this point, the page map should only include pages that contain
      collectable objects */
 

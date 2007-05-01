@@ -375,8 +375,15 @@ struct Scheme_Custodian {
 
 #ifdef MZ_PRECISE_GC
   int gc_owner_set;
+  Scheme_Object *cust_boxes;
 #endif
 };
+
+typedef struct Scheme_Custodian_Box {
+  Scheme_Object so;
+  Scheme_Custodian *cust;
+  Scheme_Object *v;
+} Scheme_Custodian_Box;
 
 Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_Func f);
 
@@ -887,6 +894,7 @@ Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int jit);
 
 Scheme_Object *scheme_native_stack_trace(void);
 void scheme_clean_native_symtab(void);
+void scheme_clean_cust_box_list(void);
 
 /*========================================================================*/
 /*                              control flow                              */

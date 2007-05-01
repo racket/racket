@@ -195,6 +195,7 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_svector_type, "<short-vector>");
 
   set_name(scheme_custodian_type, "<custodian>");
+  set_name(scheme_cust_box_type, "<custodian-box>");
   set_name(scheme_cont_mark_set_type, "<continuation-mark-set>");
   set_name(scheme_cont_mark_chain_type, "<chain>");
 

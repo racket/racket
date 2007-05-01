@@ -3676,6 +3676,8 @@ static int mark_custodian_val_MARK(void *p) {
   gcMARK(m->global_next);
   gcMARK(m->global_prev);
 
+  gcMARK(m->cust_boxes);
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Custodian));
 }
@@ -3695,12 +3697,49 @@ static int mark_custodian_val_FIXUP(void *p) {
   gcFIXUP(m->global_next);
   gcFIXUP(m->global_prev);
 
+  gcFIXUP(m->cust_boxes);
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Custodian));
 }
 
 #define mark_custodian_val_IS_ATOMIC 0
 #define mark_custodian_val_IS_CONST_SIZE 1
+
+
+static int mark_custodian_box_val_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Custodian_Box));
+}
+
+static int mark_custodian_box_val_MARK(void *p) {
+  Scheme_Custodian_Box *b = (Scheme_Custodian_Box *)p;
+  int sd = ((Scheme_Custodian *)GC_resolve(b->cust))->shut_down;
+
+  gcMARK(b->cust);
+  if (!sd) {
+    gcMARK(b->v);
+  }
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Custodian_Box));
+}
+
+static int mark_custodian_box_val_FIXUP(void *p) {
+  Scheme_Custodian_Box *b = (Scheme_Custodian_Box *)p;
+  int sd = ((Scheme_Custodian *)GC_resolve(b->cust))->shut_down;
+
+  gcFIXUP(b->cust);
+  if (!sd) {
+    gcFIXUP(b->v);
+  }
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Custodian_Box));
+}
+
+#define mark_custodian_box_val_IS_ATOMIC 0
+#define mark_custodian_box_val_IS_CONST_SIZE 1
 
 
 static int mark_thread_hop_SIZE(void *p) {

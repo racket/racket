@@ -431,7 +431,7 @@ void GC_set_stack_base(void *base)
   stack_base = (unsigned long)base;
 }
 
-void GC_init_type_tags(int count, int pair, int weakbox, int ephemeron, int weakarray)
+void GC_init_type_tags(int count, int pair, int weakbox, int ephemeron, int weakarray, int custbox)
 {
   pair_tag = pair;
   weak_box_tag = weakbox;

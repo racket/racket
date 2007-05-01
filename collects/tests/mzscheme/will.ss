@@ -55,4 +55,67 @@
 (arity-test will-execute 1 1)
 (arity-test will-try-execute 1 1)
 
+;; ----------------------------------------
+;; Test custodian boxes
+
+(let ([c (make-custodian)]
+      [we (make-will-executor)]
+      [removed null])
+  (let ([mk-finalized (lambda (n)
+                        (let ([l (list n)])
+                          (will-register we l (lambda (v)
+                                                (set! removed (cons (car v) removed))))
+                          (make-custodian-box c l)))]
+        [gc (lambda ()
+              (collect-garbage)
+              (collect-garbage)
+              (let loop ()
+                (when (will-try-execute we)
+                  (loop)))
+              (collect-garbage)
+              (collect-garbage))]
+        [b1 (make-custodian-box c 12)])
+    (let ([saved (map mk-finalized '(a b c d e f g h i))])
+      (let loop ([m 2])
+        (unless (zero? m)
+          (set! removed null)
+          (let loop ([n 100])
+            (unless (zero? n)
+              (mk-finalized n)
+              (loop (sub1 n))))
+          (gc)
+          ;; finalize at least half?
+          (test #t > (length removed) 50)
+          (test #f ormap symbol? removed)
+          (test 12 custodian-box-value b1)
+          (loop (sub1 m))))
+      (test #t andmap (lambda (x) (and (pair? x) (symbol? (car x))))
+            (map custodian-box-value saved))
+      (set! removed null)
+      (custodian-shutdown-all c)
+      (test #f custodian-box-value b1)
+      (test #f ormap values (map custodian-box-value saved))
+      (gc)
+      (test #t <= 5 (apply + (map (lambda (v) (if (symbol? v) 1 0)) removed))))))
+
+(when (custodian-memory-accounting-available?)
+  ;; Check custodian boxes for accounting
+  (let* ([c (map (lambda (n) (make-custodian))
+                 '(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20))]
+         [b (map (lambda (c)
+                   (make-custodian-box c (make-bytes 100000)))
+                 c)]
+         [t (map (lambda (c)
+                   ;; Each thread can reach all boxes:
+                   (parameterize ([current-custodian c])
+                     (thread (lambda () (sync (make-semaphore)) b))))
+                 c)])
+    ;; Each custodian must be charged at least 100000 bytes:
+    (collect-garbage)
+    (test #t andmap (lambda (c)
+                      ((current-memory-use c) . >= . 100000))
+          c)))
+
+;; ----------------------------------------
+
 (report-errs)

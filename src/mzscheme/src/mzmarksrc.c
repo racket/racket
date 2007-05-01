@@ -1497,8 +1497,24 @@ mark_custodian_val {
   gcMARK(m->global_next);
   gcMARK(m->global_prev);
 
+  gcMARK(m->cust_boxes);
+
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Custodian));
+}
+
+mark_custodian_box_val {
+ mark:
+  Scheme_Custodian_Box *b = (Scheme_Custodian_Box *)p;
+  int sd = ((Scheme_Custodian *)GC_resolve(b->cust))->shut_down;
+
+  gcMARK(b->cust);
+  if (!sd) {
+    gcMARK(b->v);
+  }
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Custodian_Box));
 }
 
 mark_thread_hop {

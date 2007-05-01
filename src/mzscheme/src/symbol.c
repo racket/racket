@@ -240,6 +240,9 @@ static void clean_symbol_table(void)
 # ifdef MZ_USE_JIT
   scheme_clean_native_symtab();
 # endif
+# ifndef MZ_PRECISE_GC
+  scheme_clean_cust_box_list();
+# endif
 }
 #endif
 
