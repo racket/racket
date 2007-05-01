@@ -838,21 +838,59 @@
 ;;
 
 (test (image->color-list (rectangle 1 1 'solid 'blue))
-      image->color-list
-      (shrink-tl (rectangle 10 10 'solid 'blue) 1.5 #e1.5))
-      
+      'shrink-tl-accepting-non-integers
+      (image->color-list (shrink-tl (rectangle 10 10 'solid 'blue) 1.5 #e1.5)))
 
 (test (image->color-list (rectangle 1 1 'solid 'blue))
-      image->color-list
-      (rectangle #e1.5 1.5 'solid 'blue))
+      'shrink-tr-accepting-non-integers
+      (image->color-list (shrink-tr (rectangle 10 10 'solid 'blue) 1.5 #e1.5)))
 
-#|
-circle
-ellipse
-triangle
-line
-star
-|#
+(test (image->color-list (rectangle 1 1 'solid 'blue))
+      'shrink-bl-accepting-non-integers
+      (image->color-list (shrink-bl (rectangle 10 10 'solid 'blue) 1.5 #e1.5)))
+
+(test (image->color-list (rectangle 1 1 'solid 'blue))
+      'shrink-br-accepting-non-integers
+      (image->color-list (shrink-br (rectangle 10 10 'solid 'blue) 1.5 #e1.5)))
+      
+(test (image->color-list (rectangle 2 2 'solid 'blue))
+      'rectangle-accepting-non-integers
+      (image->color-list (rectangle #e2.5 2.5 'solid 'blue)))
+
+(test (image->color-list (ellipse 2 2 'solid 'blue))
+      'ellipse-accepting-non-integers
+      (image->color-list (ellipse #e2.5 2.5 'solid 'blue)))
+
+(test (image->color-list (circle 2 'solid 'blue))
+      'circle-accepting-non-integers
+      (image->color-list (circle #e2.5 'solid 'blue)))
+
+(test (image->color-list (star 10 20 30 'solid 'blue))
+      'star-accepting-non-integers
+      (image->color-list (star 10 20.5 #e30.2 'solid 'blue)))
+
+(test (image->color-list (triangle 12 'solid 'blue))
+      'triangle-accepting-non-integers
+      (image->color-list (triangle 12.5 'solid 'blue)))
+
+(test (image->color-list (line 10 12 'blue))
+      'line-accepting-non-integer
+      (image->color-list (line 10.5 #e12.5 'blue)))
+
+(test (image->color-list (shrink (rectangle 10 10 'solid 'blue) 4 4 4 4))
+      'shrink-accepting-non-integers
+      (image->color-list
+       (shrink (rectangle 10 10 'solid 'blue)
+               4.1
+               4.2
+               #e4.3
+               4.4)))
+
+(test (image->color-list (add-line (rectangle 10 10 'solid 'blue)
+                                   0 0 2 2 'red))
+      'add-line-accepting-non-integers
+      (image->color-list (add-line (rectangle 10 10 'solid 'blue)
+                                   0.1 #e.2 2.1 2.2 'red)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

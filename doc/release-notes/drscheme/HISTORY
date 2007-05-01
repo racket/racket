@@ -2,6 +2,10 @@
         Version 370
 ------------------------------
 
+  . changed image.ss teachpack so that it accepts both exact
+    an inexact numbers (not just exact integers) for a
+    number of the primitives (it floors the numbers).
+
   . changed the save format for color preferences. Due to a
     bug in earlier versions, this means that color
     preferences saved in earlier versions of DrScheme will

@@ -76,10 +76,11 @@ plt/collects/tests/mzscheme/image-test.ss
 
   (define (check name p? v desc arg-posn) (check-arg name (p? v) desc arg-posn v))
 
-  (define (check-coordinate name val arg-posn) (check name number? val "number" arg-posn))
+  (define (check-coordinate name val arg-posn) (check name finite-real? val "finite real number" arg-posn))
   (define (check-integer-coordinate name val arg-posn) (check name nii? val "integer" arg-posn))
-  (define (check-size name val arg-posn) (check name posi? val "positive exact integer" arg-posn))
-  (define (check-size/0 name val arg-posn) (check name nnosi? val "non-negative exact integer" arg-posn))
+  (define (check-size name val arg-posn) (check name pos-number? val "positive number" arg-posn))
+  (define (check-posi-size name val arg-posn) (check name pos-integer? val "positive integer" arg-posn))
+  (define (check-size/0 name val arg-posn) (check name nn-number? val "non-negative number" arg-posn))
   (define (check-image name val arg-posn) (check name image? val "image" arg-posn))
   (define (check-image-color name val arg-posn) 
     (let ([simple-check (λ (x) (or (string? x) (symbol? x) (color? x)))])
@@ -88,10 +89,11 @@ plt/collects/tests/mzscheme/image-test.ss
         (error name "~e is not a valid color name" val))))
   (define (check-mode name val arg-posn) (check name mode? val mode-str arg-posn))
   
-  (define (posi? i) (and (number? i) (integer? i) (positive? i) (exact? i)))
-  (define (nnosi? i) (and (number? i) (integer? i) (exact? i) (or (zero? i) (positive? i))))
+  (define (pos-number? i) (and (number? i) (positive? i)))
+  (define (pos-integer? i) (and (number? i) (positive? i) (integer? i)))
+  (define (nn-number? i) (and (number? i) (or (zero? i) (positive? i))))
   (define (nii? x) (and (integer? x) (not (= x +inf.0)) (not (= x -inf.0))))
-
+  (define (finite-real? x) (and (real? x) (not (= x +inf.0)) (not (= x -inf.0))))
   
   (define (check-sizes who w h)
     (unless (and (< 0 w 10000) (< 0 h 10000))
@@ -199,13 +201,13 @@ plt/collects/tests/mzscheme/image-test.ss
 
   (define (overlay/xy a dx dy b)
     (check-image 'overlay/xy a "first")
-    (check-integer-coordinate 'overlay/xy dx "second")
-    (check-integer-coordinate 'overlay/xy dy "third")
+    (check-coordinate 'overlay/xy dx "second")
+    (check-coordinate 'overlay/xy dy "third")
     (check-image 'overlay/xy b "fourth")
     (real-overlay/xy 'overlay/xy 
                      a
-                     (if (exact? dx) dx (inexact->exact dx))
-                     (if (exact? dy) dy (inexact->exact dy))
+                     (floor (if (exact? dx) dx (inexact->exact dx)))
+                     (floor (if (exact? dy) dy (inexact->exact dy)))
                      b))
 
   (define (real-overlay/xy name raw-a raw-delta-x raw-delta-y raw-b)
@@ -245,13 +247,17 @@ plt/collects/tests/mzscheme/image-test.ss
                [py new-py])))))
   ;; ------------------------------------------------------------
   
-  (define (shrink raw-img left up right down)
+  (define (shrink raw-img in-left in-up in-right in-down)
     (check-image 'shrink raw-img "first")
-    (check-size/0 'shrink left "second")
-    (check-size/0 'shrink up "third")
-    (check-size/0 'shrink right "fourth")
-    (check-coordinate 'shrink down "fifth")
-    (let ([img (coerce-to-cache-image-snip raw-img)])
+    (check-size/0 'shrink in-left "second")
+    (check-size/0 'shrink in-up "third")
+    (check-size/0 'shrink in-right "fourth")
+    (check-size/0 'shrink in-down "fifth")
+    (let ([left (inexact->exact (floor in-left))]
+          [up (inexact->exact (floor in-up))]
+          [right (inexact->exact (floor in-right))]
+          [down (inexact->exact (floor in-down))]
+          [img (coerce-to-cache-image-snip raw-img)])
       (let-values ([(i-px i-py) (send img get-pinhole)]
                    [(i-width i-height) (send img get-size)])
         (let* ([dc-proc (send img get-dc-proc)]
@@ -272,51 +278,61 @@ plt/collects/tests/mzscheme/image-test.ss
                [width width]
                [height height])))))
   
-  (define (shrink-tl raw-img x y)
+  (define (shrink-tl raw-img in-x in-y)
     (check-image 'shrink-tl raw-img "first")
-    (check-size 'shrink-tl x "second")
-    (check-size 'shrink-tl y "third")
-    (put-pinhole (shrink (put-pinhole raw-img 0 0) 0 0 (- x 1) (- y 1)) (/ x 2) (/ y 2)))
+    (check-size 'shrink-tl in-x "second")
+    (check-size 'shrink-tl in-y "third")
+    (let ([x (inexact->exact (floor in-x))]
+          [y (inexact->exact (floor in-y))])
+      (put-pinhole (shrink (put-pinhole raw-img 0 0) 0 0 (- x 1) (- y 1)) (/ x 2) (/ y 2))))
   
-  (define (shrink-tr raw-img x y)
+  (define (shrink-tr raw-img in-x in-y)
     (check-image 'shrink-tr raw-img "first")
-    (check-size 'shrink-tr x "second")
-    (check-size 'shrink-tr y "third")
-    (put-pinhole (shrink (put-pinhole raw-img (- (image-width raw-img) 1) 0) (- x 1) 0 0 (- y 1))
-                 (/ x 2)
-                 (/ y 2)))
+    (check-size 'shrink-tr in-x "second")
+    (check-size 'shrink-tr in-y "third")
+    (let ([x (inexact->exact (floor in-x))]
+          [y (inexact->exact (floor in-y))])
+      (put-pinhole (shrink (put-pinhole raw-img (- (image-width raw-img) 1) 0) (- x 1) 0 0 (- y 1))
+                   (/ x 2)
+                   (/ y 2))))
   
-  (define (shrink-bl raw-img x y)
+  (define (shrink-bl raw-img in-x in-y)
     (check-image 'shrink-bl raw-img "first")
-    (check-size 'shrink-bl x "second")
-    (check-size 'shrink-bl y "third")
+    (check-size 'shrink-bl in-x "second")
+    (check-size 'shrink-bl in-y "third")
+    (let ([x (inexact->exact (floor in-x))]
+          [y (inexact->exact (floor in-y))])
     (put-pinhole (shrink (put-pinhole raw-img 0 (- (image-height raw-img) 1)) 0 (- y 1) (- x 1) 0) 
                  (/ x 2)
-                 (/ y 2)))
+                 (/ y 2))))
   
-  (define (shrink-br raw-img x y)
+  (define (shrink-br raw-img in-x in-y)
     (check-image 'shrink-br raw-img "first")
-    (check-size 'shrink-br x "second")
-    (check-size 'shrink-br y "third")
-    (put-pinhole (shrink (put-pinhole raw-img (- (image-width raw-img) 1) (- (image-height raw-img) 1))
-                         (- x 1)
-                         (- y 1)
-                         0
-                         0)
-                 (/ x 2)
-                 (/ y 2)))
+    (check-size 'shrink-br in-x "second")
+    (check-size 'shrink-br in-y "third")
+    (let ([x (inexact->exact (floor in-x))]
+          [y (inexact->exact (floor in-y))])
+      (put-pinhole (shrink (put-pinhole raw-img (- (image-width raw-img) 1) (- (image-height raw-img) 1))
+                           (- x 1)
+                           (- y 1)
+                           0
+                           0)
+                   (/ x 2)
+                   (/ y 2))))
 
 
   ;; ------------------------------------------------------------
 
-  (define (line x y color)
-    (check-coordinate 'line x "first")
-    (check-coordinate 'line y "second")
+  (define (line in-x in-y color)
+    (check-coordinate 'line in-x "first")
+    (check-coordinate 'line in-y "second")
     (check-image-color 'line color "third")
-    (let ([w (+ (abs x) 1)]
-          [h (+ (abs y) 1)]
-          [px (abs (min x 0))]
-          [py (abs (min y 0))])
+    (let* ([x (floor (inexact->exact in-x))]
+           [y (floor (inexact->exact in-y))]
+           [w (+ (abs x) 1)]
+           [h (+ (abs y) 1)]
+           [px (abs (min x 0))]
+           [py (abs (min y 0))])
       (check-sizes 'line w h)
       (let* ([do-draw
               (λ (dc dx dy)
@@ -435,68 +451,76 @@ plt/collects/tests/mzscheme/image-test.ss
            [mask-proc (make-color-wrapper 'black brush pen do-draw)])
       (make-simple-cache-image-snip w h (floor (/ w 2)) (floor (/ h 2)) dc-proc mask-proc)))
   
-  (define (rectangle w h mode color)
-    (check-size 'rectangle w "first")
-    (check-size 'rectangle h "second")
+  (define (rectangle in-w in-h mode color)
+    (check-size 'rectangle in-w "first")
+    (check-size 'rectangle in-h "second")
     (check-mode 'rectangle mode "third")
     (check-image-color 'rectangle color "fourth")
-    (a-rect/circ 'rectangle
-                 (lambda (dc dx dy) (send dc draw-rectangle dx dy w h))
-                 w h color (mode->brush-symbol mode) (mode->pen-symbol mode)))
+    (let ([w (inexact->exact (floor in-w))]
+          [h (inexact->exact (floor in-h))])
+      (a-rect/circ 'rectangle
+                   (lambda (dc dx dy) (send dc draw-rectangle dx dy w h))
+                   w h color (mode->brush-symbol mode) (mode->pen-symbol mode))))
   
-  (define (ellipse w h mode color)
-    (check-size 'ellipse w "first")
-    (check-size 'ellipse h "second")
+  (define (ellipse in-w in-h mode color)
+    (check-size 'ellipse in-w "first")
+    (check-size 'ellipse in-h "second")
     (check-mode 'ellipse mode "third")
     (check-image-color 'ellipse color "fourth")
-    (a-rect/circ 'ellipse
-                 (lambda (dc dx dy) (send dc draw-ellipse dx dy w h))
-                 w h color (mode->brush-symbol mode) (mode->pen-symbol mode)))
+    (let ([w (inexact->exact (floor in-w))]
+          [h (inexact->exact (floor in-h))])
+      (a-rect/circ 'ellipse
+                   (lambda (dc dx dy) (send dc draw-ellipse dx dy w h))
+                   w h color (mode->brush-symbol mode) (mode->pen-symbol mode))))
   
-  (define (circle r mode color)
-    (check-size 'circle r "first")
+  (define (circle in-r mode color)
+    (check-size 'circle in-r "first")
     (check-mode 'circle mode "second")
     (check-image-color 'circle color "third")
-    (a-rect/circ 'circle
-                 (lambda (dc dx dy) (send dc draw-ellipse dx dy (* 2 r) (* 2 r)))
-                 (* 2 r) (* 2 r) color (mode->brush-symbol mode) (mode->pen-symbol mode)))
+    (let ([r (inexact->exact (floor in-r))])
+      (a-rect/circ 'circle
+                   (lambda (dc dx dy) (send dc draw-ellipse dx dy (* 2 r) (* 2 r)))
+                   (* 2 r) (* 2 r) color (mode->brush-symbol mode) (mode->pen-symbol mode))))
   
-  (define (triangle size mode color)
+  (define (triangle in-size mode color)
     (check 'triangle
            (lambda (x) (and (real? x) (< 2 x 10000)))
-           size 
+           in-size 
            "positive real number bigger than 2"
            "first")
     (check-mode 'triangle mode "second")
     (check-image-color 'triangle color "third")
-    (let* ([right (- size 1)]
+    (let* ([size (floor (inexact->exact in-size))]
+           [right (- size 1)]
            [bottom (inexact->exact (ceiling (* size (sin (* 2/3 pi)))))]
            [points (list (make-object point% 0 bottom)
                          (make-object point% right bottom)
-                         (make-object point% (/ size 2) 0))])
-      (let ([draw (make-color-wrapper
-                   color (mode->brush-symbol mode) 'solid
-                   (lambda (dc dx dy)
-                     (send dc draw-polygon points dx dy)))]
-            [mask-draw (make-color-wrapper
-                        'black (mode->brush-symbol mode) 'solid
-                        (lambda (dc dx dy)
-                          (send dc draw-polygon points dx dy)))]
-            [w size]
-            [h (+ bottom 1)])
-        (make-simple-cache-image-snip w h (floor (/ w 2)) (floor (/ h 2)) draw mask-draw))))
+                         (make-object point% (/ size 2) 0))]
+           [draw (make-color-wrapper
+                  color (mode->brush-symbol mode) 'solid
+                  (lambda (dc dx dy)
+                    (send dc draw-polygon points dx dy)))]
+           [mask-draw (make-color-wrapper
+                       'black (mode->brush-symbol mode) 'solid
+                       (lambda (dc dx dy)
+                         (send dc draw-polygon points dx dy)))]
+           [w size]
+           [h (+ bottom 1)])
+      (make-simple-cache-image-snip w h (floor (/ w 2)) (floor (/ h 2)) draw mask-draw)))
   
-  (define (star points inner-radius outer-radius mode color)
+  (define (star points in-inner-radius in-outer-radius mode color)
     (check 'star
            (lambda (x) (and (real? x) (< 3 x 10000)))
            points
            "positive real number bigger than or equal to 4"
            "first")
-    (check-size 'star inner-radius "second")
-    (check-size 'star outer-radius "second")
+    (check-size 'star in-inner-radius "second")
+    (check-size 'star in-outer-radius "second")
     (check-mode 'star mode "fourth")
     (check-image-color 'star color "fifth")
-    (let* ([points (star-points inner-radius outer-radius points)]
+    (let* ([inner-radius (inexact->exact (floor in-inner-radius))]
+           [outer-radius (inexact->exact (floor in-outer-radius))]
+           [points (star-points inner-radius outer-radius points)]
            [draw 
             (make-color-wrapper
              color (mode->brush-symbol mode) 'solid
@@ -832,67 +856,74 @@ converting from the computer's coordinates, we get:
                              (vector-ref v (- i 1)))
                             a))]))))
 
-  (define (color-list->image cl w h px py)
+  (define (color-list->image cl in-w in-h px py)
     (check 'color-list->image color-list? cl "list-of-colors" "first")
-    (check-size 'color-list->image w "second")
-    (check-size 'color-list->image h "third")
+    (check-posi-size 'color-list->image in-w "second")
+    (check-posi-size 'color-list->image in-h "third")
     (check-coordinate 'color-list->image px "fourth")
     (check-coordinate 'color-list->image py "fifth")
-    (unless (and (< 0 w 10000) (< 0 h 10000))
-      (error (format "cannot make ~a x ~a image" w h)))
-    (unless (= (* w h) (length cl))
-      (error (format "given width times given height is ~a, but the given color list has ~a items"
-		     (* w h) (length cl))))
-    (let* ([bm (make-object bitmap% w h)]
-           [mask-bm (make-object bitmap% w h)]
-	   [dc (make-object bitmap-dc% bm)]
-           [mask-dc (make-object bitmap-dc% mask-bm)])
-      (unless (send bm ok?)
-	(error (format "cannot make ~a x ~a image" w h)))
-      (let ([is (make-bytes (* 4 w h) 0)]
-            [mask-is (make-bytes (* 4 w h) 0)]
-	    [cols (list->vector (map (λ (x) 
-                                       (or (make-color% x)
-                                           (error 'color-list->image "color ~e is unknown" x)))
-                                     cl))])
-	(let yloop ([y 0][pos 0])
-	  (unless (= y h)
-	    (let xloop ([x 0][pos pos])
-	      (if (= x w)
-		  (yloop (add1 y) pos)
-		  (let* ([col (vector-ref cols (+ x (* y w)))]
-                         [r (pk (send col red))]
-                         [g (pk (send col green))]
-                         [b (pk (send col blue))])
-		    (bytes-set! is (+ 1 pos) r)
-		    (bytes-set! is (+ 2 pos) g)
-		    (bytes-set! is (+ 3 pos) b)
-                    (when (= 255 r g b)
-                      (bytes-set! mask-is (+ 1 pos) 255)
-                      (bytes-set! mask-is (+ 2 pos) 255)
-                      (bytes-set! mask-is (+ 3 pos) 255))
-                    (xloop (add1 x) (+ pos 4)))))))
-	(send dc set-argb-pixels 0 0 w h is)
-        (send mask-dc set-argb-pixels 0 0 w h mask-is))
-      (send dc set-bitmap #f)
-      (send mask-dc set-bitmap #f)
-      (bitmaps->cache-image-snip bm mask-bm px py)))
+    (let ([w (inexact->exact in-w)]
+          [h (inexact->exact in-h)])
+      (unless (and (< 0 w 10000) (< 0 h 10000))
+        (error 'color-list->image "cannot make ~a x ~a image" w h))
+      (unless (= (* w h) (length cl))
+        (error 'color-list->image
+               "given width times given height is ~a, but the given color list has ~a items"
+               (* w h) 
+               (length cl)))
+      (let* ([bm (make-object bitmap% w h)]
+             [mask-bm (make-object bitmap% w h)]
+             [dc (make-object bitmap-dc% bm)]
+             [mask-dc (make-object bitmap-dc% mask-bm)])
+        (unless (send bm ok?)
+          (error (format "cannot make ~a x ~a image" w h)))
+        (let ([is (make-bytes (* 4 w h) 0)]
+              [mask-is (make-bytes (* 4 w h) 0)]
+              [cols (list->vector (map (λ (x) 
+                                         (or (make-color% x)
+                                             (error 'color-list->image "color ~e is unknown" x)))
+                                       cl))])
+          (let yloop ([y 0][pos 0])
+            (unless (= y h)
+              (let xloop ([x 0][pos pos])
+                (if (= x w)
+                    (yloop (add1 y) pos)
+                    (let* ([col (vector-ref cols (+ x (* y w)))]
+                           [r (pk (send col red))]
+                           [g (pk (send col green))]
+                           [b (pk (send col blue))])
+                      (bytes-set! is (+ 1 pos) r)
+                      (bytes-set! is (+ 2 pos) g)
+                      (bytes-set! is (+ 3 pos) b)
+                      (when (= 255 r g b)
+                        (bytes-set! mask-is (+ 1 pos) 255)
+                        (bytes-set! mask-is (+ 2 pos) 255)
+                        (bytes-set! mask-is (+ 3 pos) 255))
+                      (xloop (add1 x) (+ pos 4)))))))
+          (send dc set-argb-pixels 0 0 w h is)
+          (send mask-dc set-argb-pixels 0 0 w h mask-is))
+        (send dc set-bitmap #f)
+        (send mask-dc set-bitmap #f)
+        (bitmaps->cache-image-snip bm mask-bm px py))))
   
   (define (pk col) (min 255 (max 0 col)))
   
-  (define (alpha-color-list->image cl w h px py)
+  (define (alpha-color-list->image cl in-w in-h px py)
     (check 'alpha-color-list->image alpha-color-list? cl "list-of-alpha-colors" "first")
-    (check-size 'alpha-color-list->image w "second")
-    (check-size 'alpha-color-list->image h "third")
+    (check-posi-size 'alpha-color-list->image in-w "second")
+    (check-posi-size 'alpha-color-list->image in-h "third")
     (check-coordinate 'alpha-color-list->image px "fourth")
     (check-coordinate 'alpha-color-list->image py "fifth")
-    (unless (and (< 0 w 10000) (< 0 h 10000))
-      (error (format "cannot make ~a x ~a image" w h)))
-    (unless (= (* w h) (length cl))
-      (error (format "given width times given height is ~a, but the given color list has ~a items"
-		     (* w h) (length cl))))
-    (let ([index-list (alpha-colors->ent-list cl)])
-      (argb->cache-image-snip (make-argb (list->vector index-list) w) px py)))
+    (let ([w (inexact->exact in-w)]
+          [h (inexact->exact in-h)])
+      (unless (and (< 0 w 10000) (< 0 h 10000))
+        (error 'alpha-color-list->image format "cannot make ~a x ~a image" w h))
+      (unless (= (* w h) (length cl))
+        (error 'alpha-color-list->image
+               "given width times given height is ~a, but the given color list has ~a items"
+               (* w h) (length cl)))
+      (let ([index-list (alpha-colors->ent-list cl)])
+        (argb->cache-image-snip (make-argb (list->vector index-list) w) px py))))
   
   ;; alpha-colors->ent-list : (listof alpha-color) -> (listof number)
   (define (alpha-colors->ent-list cl)

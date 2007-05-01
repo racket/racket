@@ -37,24 +37,24 @@ The following predicate precisely specifies what a valid image color is:
 
 The first group of functions creates basic shapes (<code>Image</code>):
 <menu>
-<li><code>{(idx rectangle)} :  Int Int Mode Color -> Image </code><br>
+<li><code>{(idx rectangle)} :  Number Number Mode Color -> Image </code><br>
  to create a rectangle using the given width, height, mode, and color
 
-<li><code>{(idx circle)} : Int Mode Color -> Image</code><br>
+<li><code>{(idx circle)} : Number Mode Color -> Image</code><br>
  to create a circle using the given radius, mode, and color
 
-<li><code>{(idx ellipse)} : Int Int Mode Color -> Image </code><br>
+<li><code>{(idx ellipse)} : Number Number Mode Color -> Image </code><br>
  to create an ellipse using the given width, height, and color
 
-<li><code>{(idx triangle)} : Int Mode Color -> Image</code><br>
+<li><code>{(idx triangle)} : Number Mode Color -> Image</code><br>
  to create an upward pointing equilateral triangle using the given edge size and color
 
-<li><code>{(idx star)} : Int[>=2] Int[>=1] Int[>=1] Mode Color -> Image</code><br>
+<li><code>{(idx star)} : Number[>=2] Number[>=1] Number[>=1] Mode Color -> Image</code><br>
  to create a multi-pointed star; the first number specifies
  the number of points, the second specifies the radius where
  the points begin and the third specifies the radius where they end.
 
-<li><code>{(idx line)} : Int Int Color -> Image </code><br> to create an
+<li><code>{(idx line)} : Number Number Color -> Image </code><br> to create an
  image with a colored line from (0,0) to the point with the given
  coordinates
 
@@ -157,31 +157,31 @@ from a list of colors:
 
 The shrink functions trim an image by eliminating extraneous pixels.
 <menu>
-<li><code>{(idx shrink-tl)} : Image Int Int -> Image </code><br>
+<li><code>{(idx shrink-tl)} : Image Number Number -> Image </code><br>
 to shrink the image, starting from the top-left corner. The
 two numbers indicate how many pixels to save.
 The pinhole of the resulting image is in the middle of the image.
 </li>
 
-<li><code>{(idx shrink-tr)} : Image Int Int -> Image </code><br>
+<li><code>{(idx shrink-tr)} : Image Number Number -> Image </code><br>
 to shrink the image, starting from the top-right corner. The
 two numbers indicate how many pixels to save.
 The pinhole of the resulting image is in the middle of the image.
 </li>
 
-<li><code>{(idx shrink-bl)} : Image Int Int -> Image </code><br>
+<li><code>{(idx shrink-bl)} : Image Number Number -> Image </code><br>
 to shrink the image, starting from the bottom-left corner. The
 two numbers indicate how many pixels to save.
 The pinhole of the resulting image is in the middle of the image.
 </li>
 
-<li><code>{(idx shrink-br)} : Image Int Int -> Image </code><br>
+<li><code>{(idx shrink-br)} : Image Number Number -> Image </code><br>
 to shrink the image, starting from the bottom-right corner. The
 two numbers indicate how many pixels to save.
 The pinhole of the resulting image is in the middle of the image.
 </li>
 
-<li><code>{(idx shrink)} : Image Int Int Int Int -> Image </code><br>
+<li><code>{(idx shrink)} : Image Number Number Number Number -> Image </code><br>
 to shrink an image around its pinhole. The numbers are the
 pixels to save to left, above, to the right, and below the
 pinhole, respectively. The pixel directly on the pinhole is
