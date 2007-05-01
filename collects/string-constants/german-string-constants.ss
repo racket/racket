@@ -567,6 +567,8 @@
  (wrap-text-item "Text umbrechen")
 
  (windows-menu-label "&Fenster")
+ (minimize "Minimieren") ;; minimize and zoom are only used under mac os x
+ (zoom "Zoomen")
  (bring-frame-to-front "Fenster nach vorn")       ;;; title of dialog
  (bring-frame-to-front... "Fenster nach vorn...") ;;; corresponding title of menu item
  (most-recent-window "Letztes Fenster")
@@ -932,6 +934,14 @@
  (evaluation-terminated "Auswertung abgebrochen")
  (evaluation-terminated-explanation
   "Der Auswertungs-Thread läuft nicht mehr; es findet also keine Auswertung bis zum nächsten Programmlauf statt.")
+
+  ; The next three constants show up in the same dialog as the above evaluation-terminated string
+  ; constants.
+  ; The first two show up only when the user calls 'exit' (possibly with a status code).
+  ; The third shows up when the program runs out of memory.
+  (exited-successfully "Erfolgreich beendet.")
+  (exited-with-error-code "Beendet mit Fehlercode ~a.") ;; ~a is filled in with a number between 1 and 255
+  (program-ran-out-of-memory "Dem Programm ist der Speicher ausgegangen.")
  (last-stack-frame "letzten Stack-Frame zeigen")
  (last-stack-frames "die letzten ~a Stack-Frames zeigen")
  (next-stack-frames "die nächsten ~a Stack-Frames zeigen")
