@@ -217,6 +217,11 @@
 (htdp-top-pop 1)
 (htdp-teachpack-pop)
 
+;; Check require
+(htdp-top (require (lib "unit.ss" "mzlib")))
+(htdp-test #f unit? 12)
+(htdp-top-pop 1)
+
 ;; Error messages
 (htdp-top (define my-x 5))
 (htdp-top (define (my-f x) (+ x 5)))

@@ -1171,7 +1171,9 @@
                           (something-else v)))
                        (check-string-form stx v))
                      s)
-           #'(require (lib . rest)))]
+           ;; use the original `lib', so that it binds correctly:
+           (syntax-case stx ()
+             [(_ ms) #'(require ms)]))]
         [(_ (planet . rest))
          (syntax-case stx (planet)
            [(_ (planet s1 (s2 s3 n1 n2)))
@@ -1184,7 +1186,9 @@
               (check-string-form stx #'s1)
               (check-string-form stx #'s2)
               (check-string-form stx #'s3)
-              #'(require (planet . rest)))]
+              ;; use the original `planet', so that it binds correctly:
+              (syntax-case stx ()
+                [(_ ms) #'(require ms)]))]
            [_else
             (teach-syntax-error
              'require
