@@ -50,14 +50,14 @@
                          "(define (plus1 x) x)"
                          "(define (loop) (loop))"
                          "(define (memory x) (make-vector x))")))
-   (set-eval-limits ev 1 1)
+   (set-eval-limits ev 1 2)
    --eval--
    x => 1
    (id 1) => 1
    (id (plus1 x)) => 1
    (loop) =err> "out of time"
    --top--
-   (when (eq? '3m (system-type 'gc))
+   (when (custodian-memory-accounting-available?)
      (t --eval-- (memory 1000000) =err> "out of memory"))
    --eval--
    (printf "x = ~s\n" x) => (void)
