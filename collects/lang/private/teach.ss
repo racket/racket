@@ -137,6 +137,7 @@
 			      beginner-and
 			      beginner-or
 			      beginner-quote
+                              beginner-require
 			      
 			      intermediate-define
 			      intermediate-define-struct
@@ -1113,6 +1114,103 @@
 	   (syntax/loc stx (quote expr)))]
 	[_else (bad-use-error 'quote stx)]))
 
+    ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; require
+    ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (define (check-string-form stx s)
+      (unless (regexp-match #rx#"^[-a-zA-Z0-9_. ]+(/+[-a-zA-Z0-9_. ]+)*$" (syntax-e s))
+        (teach-syntax-error
+         'require
+         stx
+         s
+         (cond
+          [(string=? "" (syntax-e s))
+           "a module-naming string cannot be empty"]
+          [(regexp-match #rx"^/" (syntax-e s))
+           "a module-naming string cannot start with a slash"]
+          [(regexp-match #rx"/$" (syntax-e s))
+           "a module-naming string cannot end with a slash"]
+          [else
+           "a module-naming string can contain only a-z, A-Z, 0-9, -, _, ., space, and slash"]))))
+
+    (define (version-number? n)
+      (and (number? n) (exact? n) (integer? n) (n . >= . 0)))
+
+    (define (beginner-require/proc stx)
+      (when (identifier? stx)
+        (bad-use-error 'require stx))
+      (unless (memq (syntax-local-context) '(top-level module module-begin))
+	(teach-syntax-error
+	 'define
+	 stx
+	 #f
+	 "found a module require that is not at the top level"))
+      (syntax-case stx (lib planet)
+        [(_ s)
+         (string? (syntax-e #'s))
+         (begin
+           (check-string-form stx #'s)
+           #'(require s))]
+        [(_ (lib . rest))
+         (let ([s (syntax->list #'rest)])
+           (unless ((length s) . >= . 2)
+             (teach-syntax-error
+              'require
+              stx
+              #f
+              "expected at least two strings with lib, found only ~a parts"
+              (length s)))
+           (for-each (lambda (v)
+                       (unless (string? (syntax-e v))
+                         (teach-syntax-error
+                          'require
+                          stx
+                          v
+                          "expected a string for a lib path, found ~a"
+                          (something-else v)))
+                       (check-string-form stx v))
+                     s)
+           #'(require (lib . rest)))]
+        [(_ (planet . rest))
+         (syntax-case stx (planet)
+           [(_ (planet s1 (s2 s3 n1 n2)))
+            (and (string? (syntax-e #'s1))
+                 (string? (syntax-e #'s2))
+                 (string? (syntax-e #'s3))
+                 (version-number? (syntax-e #'n1))
+                 (version-number? (syntax-e #'n2)))
+            (begin
+              (check-string-form stx #'s1)
+              (check-string-form stx #'s2)
+              (check-string-form stx #'s3)
+              #'(require (planet . rest)))]
+           [_else
+            (teach-syntax-error
+             'require
+             stx
+             #f
+             "not a valid planet path; should be: (require (planet STRING (STRING STRING NUMBER NUMBER)))")])]
+        [(_ thing)
+         (teach-syntax-error
+          'require
+          stx
+          #'thing
+          "expected a module name as a string, a `lib' form, or a `planet' form, found ~a"
+          (something-else #'thing))]
+        [(_)
+         (teach-syntax-error
+          'require
+          stx
+          #f
+          "expected a module name after `require', but found nothing")]
+        [(_ . rest)
+         (teach-syntax-error
+          'require
+          stx
+          #f
+          "expected a single module name after `require', but found ~a parts"
+          (length (syntax->list #'rest)))]))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; local

@@ -5,8 +5,6 @@
 	   (lib "math.ss")
 	   (lib "docprovide.ss" "syntax"))
 
-  (provide require)
-  
   ;; Implements the forms:
   (require "private/teach.ss"
 	   "private/contract-forms.ss"
@@ -23,6 +21,7 @@
 	   (rename beginner-if if)
 	   (rename beginner-and and)
 	   (rename beginner-or or)
+           (rename beginner-require require)
 	   ;; (rename beginner-contract contract)
 	   ;; (rename beginner-define-data define-data)
 	   (rename intermediate-quote quote)

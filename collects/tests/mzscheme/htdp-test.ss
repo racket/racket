@@ -64,7 +64,8 @@
 		  (and (exn:fail:syntax? x)
 		       (regexp-match rx (exn-message x)))))]))
 
-(require (rename mzscheme mz-let let))
+(require (rename mzscheme mz-let let)
+         (rename mzscheme mz-require require))
 
 (define-syntax (htdp-test stx)
   (syntax-case stx ()
@@ -133,8 +134,8 @@
 	 #,(strip-context stx)))
     (unless stx-err?
       (if exn?
-	  (err/rt-test (eval #`(require #,name)) exn?)
-	  (eval #`(require #,name))))))
+	  (err/rt-test (eval #`(mz-require #,name)) exn?)
+	  (eval #`(mz-require #,name))))))
 
 (define-syntax (htdp-eval stx)
   (syntax-case stx ()

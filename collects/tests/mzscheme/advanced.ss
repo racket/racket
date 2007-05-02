@@ -206,7 +206,7 @@
   (define x 10)
   (define (f y) f)
   (define-struct s (x y)))
-(require my-advanced-module)
+(mz-require my-advanced-module)
 (parameterize ([current-namespace (module->namespace 'my-advanced-module)])
   (eval #'(set! x 12))
   (eval #'(set! f 12))

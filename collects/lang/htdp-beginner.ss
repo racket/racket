@@ -8,8 +8,6 @@
 	   (lib "list.ss")
 	   (lib "docprovide.ss" "syntax"))
 
-  (provide require)
-  
   ;; Implements the forms:
   (require "private/teach.ss"
 	   "private/contract-forms.ss")
@@ -27,6 +25,7 @@
 	   (rename beginner-or or)
 	   (rename beginner-quote quote)
 	   (rename beginner-module-begin #%module-begin)
+           (rename beginner-require require)
 	   ; (rename beginner-contract contract)
 	   ; (rename beginner-define-data define-data)
 	   #%datum

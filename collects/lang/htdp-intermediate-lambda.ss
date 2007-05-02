@@ -6,8 +6,6 @@
 	   (lib "list.ss")
 	   (lib "docprovide.ss" "syntax"))
   
-  (provide require)
-  
   ;; syntax:
   (provide (rename intermediate-define define)
 	   (rename intermediate-define-struct define-struct)
@@ -24,6 +22,7 @@
 	   (rename beginner-if if)
 	   (rename beginner-and and)
 	   (rename beginner-or or)
+           (rename beginner-require require)
 	   (rename intermediate-quote quote)
 	   (rename intermediate-quasiquote quasiquote)
 	   (rename intermediate-unquote unquote)
