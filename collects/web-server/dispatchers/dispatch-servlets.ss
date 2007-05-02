@@ -257,8 +257,8 @@
                      (thread-cell-set! current-execution-context
                                        (make-execution-context
                                         conn req suspend))
-                     (let ([k ((manager-continuation-lookup manager) instance-id k-id salt)])
-                       (k req)))])
+                     (let ([kcb ((manager-continuation-lookup manager) instance-id k-id salt)])
+                       ((custodian-box-value kcb) req)))])
               (output-response conn response))
             (semaphore-post (servlet-instance-data-mutex data)))))
       ((manager-instance-unlock! manager) instance-id)

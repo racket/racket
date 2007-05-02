@@ -92,7 +92,10 @@
        (let/cc k
          (define instance-id (get-current-servlet-instance-id))
          (define ctxt (thread-cell-ref current-execution-context))
-         (define k-embedding ((manager-continuation-store! (current-servlet-manager)) instance-id k expiration-handler))
+         (define k-embedding ((manager-continuation-store! (current-servlet-manager))
+                              instance-id
+                              (make-custodian-box (current-custodian) k)
+                              expiration-handler))
          (define k-url ((current-url-transform)
                         (embed-ids 
                          (list* instance-id k-embedding)

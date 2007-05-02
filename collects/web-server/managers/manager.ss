@@ -21,8 +21,8 @@
                     [instance-lock! (number? . -> . void)]
                     [instance-unlock! (number? . -> . void)]
                     [clear-continuations! (number? . -> . void)]
-                    [continuation-store! (number? procedure? expiration-handler? . -> . (list/c number? number?))]
-                    [continuation-lookup (number? number? number? . -> . procedure?)])]
+                    [continuation-store! (number? any/c expiration-handler? . -> . (list/c number? number?))]
+                    [continuation-lookup (number? number? number? . -> . any/c)])]
    [struct (exn:fail:servlet-manager:no-instance exn:fail) 
            ([msg string?]
             [continuation-marks continuation-mark-set?]
