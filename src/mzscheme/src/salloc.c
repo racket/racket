@@ -67,6 +67,8 @@ void scheme_set_stack_base(void *base, int no_auto_statics)
                     scheme_pair_type, scheme_weak_box_type, 
                     scheme_ephemeron_type, scheme_rt_weak_array,
                     scheme_cust_box_type);
+  /* We want to be able to allocate symbols early. */
+  scheme_register_traversers();
 #endif
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
   GC_set_stack_base(base);

@@ -1055,7 +1055,12 @@ int mred_in_restricted_context()
   Scheme_Object *v;
   if (!scheme_current_thread) 
     return 1;
-  v = scheme_extract_one_cc_mark(NULL, mred_het_key);
+  
+  if (mred_het_key)
+    v = scheme_extract_one_cc_mark(NULL, mred_het_key);
+  else
+    v = NULL;
+
   if (v && SCHEME_BOX_VAL(v))
     return 1;
 #endif
@@ -1230,12 +1235,8 @@ static Scheme_Object *MrEdDoNextEvent(MrEdContext *c, wxDispatch_Check_Fun alt, 
 
 #ifdef NEED_HET_PARAM
   /* see wxHiEventTrampoline for info on mred_het_key: */
-  {
-    Scheme_Object *v;
-    v = scheme_extract_one_cc_mark(NULL, mred_het_key);
-    if (v && SCHEME_BOX_VAL(v))
-      restricted = 1;
-  }
+  if (mred_in_restricted_context())
+    restricted = 1;
 #endif
 
   if (alt) {
@@ -1346,12 +1347,8 @@ int MrEdEventReady(MrEdContext *c)
 
 #ifdef NEED_HET_PARAM
   /* see wxHiEventTrampoline for info on mred_het_key: */
-  {
-    Scheme_Object *v;
-    v = scheme_extract_one_cc_mark(NULL, mred_het_key);
-    if (v && SCHEME_BOX_VAL(v))
-      restricted = 1;
-  }
+  if (mred_in_restricted_context())
+    restricted = 1;
 #endif
 
   return (c->nested_avail
@@ -2043,6 +2040,14 @@ static void MrEdQueueWindowCallback(wxWindow *wx_window, Scheme_Closed_Prim *scp
   MrEdContext *c;
   Q_Callback *cb;
   Scheme_Object *p;
+
+  if (!scheme_current_thread) {
+    /* Scheme hasn't started yet, so call directly.
+       We might get here for an update to the stdio
+       window, for example. */
+    scp(data, 0, NULL);
+    return;
+  }
 
 #ifdef wx_mac
   c = MrEdGetContext(wx_window->GetRootFrame());
@@ -3286,10 +3291,6 @@ wxFrame *MrEdApp::OnInit(void)
   mred_eventspace_param = scheme_new_param();
   mred_event_dispatch_param = scheme_new_param();
   mred_ps_setup_param = scheme_new_param();
-#ifdef NEED_HET_PARAM
-  wxREGGLOB(mred_het_key);
-  mred_het_key = scheme_make_symbol("het"); /* uninterned */
-#endif
 
   wxInitSnips(); /* and snip classes */
 
@@ -3312,6 +3313,11 @@ wxFrame *MrEdApp::OnInit(void)
 			 mark_eventspace_hop_val,
 			 fixup_eventspace_hop_val,
 			 1, 0);
+#endif
+
+#ifdef NEED_HET_PARAM
+  wxREGGLOB(mred_het_key);
+  mred_het_key = scheme_make_symbol("het"); /* uninterned */
 #endif
 
 #ifdef MZ_PRECISE_GC
