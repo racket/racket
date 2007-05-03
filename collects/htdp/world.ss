@@ -83,8 +83,9 @@ Matthew
   (provide (all-from-except (lib "image.ss" "htdp") add-line))
   
   (provide
+    ;; Scene is Image with pinhole in origin 
    nw:rectangle ;; Number Number Mode Color -> Image
-   place-image  ;; Image Number Number Scence -> Scene
+   place-image  ;; Image Number Number Scene -> Scene
    empty-scene  ;; Number Number -> Scene 
    (rename add-line-to-scene add-line)
    ;; Scene Number Number Number Number Color -> Scene 
@@ -103,7 +104,7 @@ Matthew
    )
   
   (provide-higher-order-primitive
-   on-redraw (world-image) ;; (World -> Image) -> true
+   on-redraw (world-to-image) ;; (World -> Image) -> true
    )
   
   ;; KeyEvent is one of: 
@@ -111,7 +112,7 @@ Matthew
   ;; -- Symbol 
   
   (provide-higher-order-primitive
-   on-key-event (draw) ;; (World KeyEvent -> World) -> true
+   on-key-event (control) ;; (World KeyEvent -> World) -> true
    )
   
   ;; A MouseEventType is one of:
@@ -127,7 +128,7 @@ Matthew
    )
   
   (provide-higher-order-primitive
-   run-simulation (_ _ _ create-scene) ; (Nat Nat Number (Nat -> Image) -> true)
+   run-simulation (_ _ _ create-scene) ; (Number Number Number (Nat -> Scene) -> true)
    )
   
   (provide
@@ -162,7 +163,7 @@ Matthew
     (check-image 'place-image image "first")
     (check-arg 'place-image (number? x) 'integer "second" x)
     (check-arg 'place-image (number? y) 'integer "third" y)
-    (check-image 'place-image scene "fourth" "scene")
+    (check-scene 'place-image scene "fourth")
     (let ([x (number->integer x)]
 	  [y (number->integer y)])
       (place-image0 image x y scene)))
@@ -267,7 +268,17 @@ Matthew
   (define (on-redraw f)
     (check-proc 'on-redraw f 1 "on-redraw" "one argument")
     (check-world 'on-redraw)
-    (set-redraw-callback f)
+    (set-redraw-callback 
+     (lambda (x) 
+       (define result (f x))
+       (define fname (object-name f))
+       (define tname (if fname fname 'your-redraw-function))
+       (if (image? result)
+           (check-result tname scene? "scene" result
+                         (format "image with pinhole at (~s,~s)"
+                                 (pinhole-x result) (pinhole-y result)))
+           (check-result tname (lambda (x) (image? x)) "scene"))
+       result))
     (redraw-callback)
     #t)
   
@@ -331,6 +342,16 @@ Matthew
     (if (and (pair? other-message) (string? (car other-message)))
         (check-arg tag (image? i) (car other-message) rank i)
         (check-arg tag (image? i) "image" rank i)))
+
+  ;; Symbol Any String -> Void
+  (define (check-scene tag i rank)
+    (if (image? i)
+        (unless (and (= 0 (pinhole-x i)) (= 0 (pinhole-y i)))
+          (error tag "scene expected, given image whose pinhole is at (~s,~s) instead of (0,0)"
+                 (pinhole-x i) (pinhole-y i)))
+        (check-arg tag #f "image" rank i)))
+  
+  (define (scene? i) (and (image? i) (= 0 (pinhole-x i)) (= 0 (pinhole-y i))))
   
   ;; Symbol Any String -> Void
   (define (check-color tag width rank)
@@ -343,7 +364,7 @@ Matthew
 		       (eq? s 'outline)
 		       (string=? "solid" s)
 		       (string=? "outline" s)) "mode (solid or outline)" rank s))
-  
+
   ;                                                                        
   ;                                                                        
   ;   ;;;;;                                     ;;;;;                      
@@ -525,7 +546,7 @@ Matthew
     (send visible-world set-cursor (make-object cursor% 'arrow)))
   
   ;; -> Boolean 
-  (define (vw-init?) (procedure? visible-world))
+  (define (vw-init?) (is-a? visible-world pasteboard%))
   
   ;; Image -> Void
   ;; show the image in the visible world
@@ -542,7 +563,7 @@ Matthew
                         (values 0 0))]
                    [(cw ch)
                     (send c get-client-size)])
-        (send visible-world insert (send pict copy) (- (/ cw 2) px) (- (/ ch 2) py))))
+        (send visible-world insert (send pict copy) (- px) (- py))))
     (send visible-world lock #t)
     (send visible-world end-edit-sequence))
   
