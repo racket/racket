@@ -51,6 +51,7 @@ Matthew
            (lib "error.ss" "htdp")
            (lib "image.ss" "htdp")
            (only (lib "htdp-beginner.ss" "lang") image?)
+           (lib "cache-image-snip.ss" "mrlib")
            (lib "prim.ss" "lang"))
   
   (require (lib "gif.ss" "mrlib"))
@@ -512,9 +513,8 @@ Matthew
   
   ;; Bool -> Void
   (define (vw-setup)
-    (set! visible-world (new text%))
-    (send visible-world set-cursor (make-object cursor% 'arrow))
-    (send visible-world hide-caret #t))
+    (set! visible-world (new pasteboard%))
+    (send visible-world set-cursor (make-object cursor% 'arrow)))
   
   ;; -> Boolean 
   (define (vw-init?) (procedure? visible-world))
@@ -524,14 +524,23 @@ Matthew
   (define (update-frame pict)
     (send visible-world begin-edit-sequence)
     (send visible-world lock #f)
-    (send visible-world delete 0 (send visible-world last-position) #f)
-    (send visible-world insert (send pict copy) 0 0 #f)
+    (let ([s (send visible-world find-first-snip)])
+      (when s
+        (send visible-world delete s)))
+    (let ([c (send visible-world get-canvas)])
+      (let-values ([(px py)
+                    (if (is-a? pict cache-image-snip%)
+                        (send pict get-pinhole)
+                        (values 0 0))]
+                   [(cw ch)
+                    (send c get-client-size)])
+        (send visible-world insert (send pict copy) (- (/ cw 2) px) (- (/ ch 2) py))))
     (send visible-world lock #t)
     (send visible-world end-edit-sequence))
   
   ;; Nat Nat Boolean -> Void
   ;; effect: create, show and set the-frame
-  ;; assume: visible-world is a text%, i.e., install-world has been called. 
+  ;; assume: visible-world is a pasteboard%, i.e., install-world has been called. 
   (define (set-and-show-frame w h animated-gif)
     (define the-play-back-custodian (make-custodian))
     (define frame (create-frame the-play-back-custodian))
