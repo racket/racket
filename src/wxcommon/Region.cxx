@@ -705,15 +705,57 @@ void wxRegion::Union(wxRegion *r)
 void wxRegion::Intersect(wxRegion *r)
 {
   if (r->dc != dc) return;
+  if (ReallyEmpty())
+    return;
   if (r->ReallyEmpty()) {
     Cleanup();
     return;
   }
 
   if (!no_prgn) {
-    wxPathRgn *pr;
-    if (!r->prgn) abort();
-    pr = new WXGC_PTRS wxIntersectPathRgn(prgn, r->prgn);
+    wxPathRgn *rprgn, *pr;
+    rprgn = r->prgn;
+    if (!rprgn) abort();
+    if (prgn->is_rect 
+	&& rprgn->is_rect
+	&& (prgn->ox == rprgn->ox)
+	&& (prgn->oy == rprgn->oy)
+	&& (prgn->sx == rprgn->sx)
+	&& (prgn->sy == rprgn->sy)) {
+      /* Special case: both are rectangles with the same
+	 origin and scale. This is a common case, and it 
+	 can be a lot faster making a rectangle directly. */
+      wxRectanglePathRgn *r1 = (wxRectanglePathRgn *)prgn;
+      wxRectanglePathRgn *r2 = (wxRectanglePathRgn *)rprgn;
+      double px, py, pw, ph;
+
+      if (r1->x < r2->x)
+	px = r2->x;
+      else
+	px = r1->x;
+      if (r1->y < r2->y)
+	py = r2->y;
+      else
+	py = r1->y;
+      if (r1->x + r1->width < r2->x + r2->width)
+	pw = (r1->x + r1->width) - px;
+      else
+	pw = (r2->x + r2->width) - px;
+      if (r1->y + r1->height < r2->y + r2->height)
+	ph = (r1->y + r1->height) - py;
+      else
+	ph = (r2->y + r2->height) - py;
+      
+      if ((pw > 0) && (ph > 0))
+	pr = new WXGC_PTRS wxRectanglePathRgn(dc, px, py, pw, ph);
+      else {
+	/* empty */
+	Cleanup();
+	return;
+      }
+    } else {
+      pr = new WXGC_PTRS wxIntersectPathRgn(prgn, r->prgn);
+    }
     prgn = pr;
   }
 
@@ -1106,6 +1148,7 @@ wxPathRgn::wxPathRgn(wxDC *dc)
     ox = oy = 0.0;
     sx = sy = 1.0;
   }
+  is_rect = 0;
 }
 
 wxPathRgn::~wxPathRgn()
@@ -1223,6 +1266,7 @@ wxRectanglePathRgn::wxRectanglePathRgn(wxDC *dc_for_scale, double _x, double _y,
   y = _y;
   width = _width;
   height = _height;
+  is_rect = 1;
 }
 
 Bool wxRectanglePathRgn::Install(long target, Bool reverse, Bool align)

@@ -104,6 +104,7 @@ class wxPathRgn : public wxObject
 {
  public:
   double ox, oy, sx, sy;
+  int is_rect;
 
   wxPathRgn(wxDC *dc_for_scale);
   ~wxPathRgn();
