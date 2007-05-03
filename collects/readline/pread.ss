@@ -20,7 +20,13 @@
   (define (save-history)
     (put-preferences '(readline-input-history) (list (reverse local-history))))
 
+  ;; captured now so we don't flush some other output port
+  (define readline-output-port (current-output-port))
+
   (define (readline-bytes/hist p)
+    (when (eq? readline-output-port (current-output-port))
+      (let-values ([(line col pos) (port-next-location readline-output-port)])
+        (when (and col (< 0 col)) (newline))))
     (let ([s (readline-bytes p)])
       (when (and (bytes? s)
                  (or (keep-blanks) (not (zero? (bytes-length s))))
@@ -137,6 +143,7 @@
   (provide read-cmdline-syntax)
   (define (read-cmdline-syntax)
     (define prompt (current-prompt))
+    (flush-output)
     ;; needs to set `readline-prompt' to get a prompt when reading
     (parameterize ([read-accept-reader #t]
                    [readline-prompt prompt])

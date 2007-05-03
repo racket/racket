@@ -18,13 +18,14 @@ You can start MzScheme with
 or you can put the following in your ~/.mzschemerc so that MzScheme
 starts with readline support when appropriate:
 
-  (when (and (regexp-match? #rx"xterm" (getenv "TERM"))
-             (terminal-port? (current-input-port)))
+  (when (regexp-match? #rx"xterm" (getenv "TERM"))
     (dynamic-require '(lib "rep.ss" "readline") #f))
 
-(The first condition rules out running in dumb terminals, eg, inside
-Emacs, and the second condition avoids using it when input is
-redirected.)
+The "rep.ss" module is actually a wrapper around "rep-start.ss", it
+will *not* invoke it if the input port is not a terminal port (eg,
+when the input is redirected from a file).  Still the TERM condition
+above is useful for starting MzScheme in dumb terminals, eg, inside
+Emacs.
 
 The readline history is stored across invocations in MzScheme's
 preferences file, assuming MzScheme exits normally.
@@ -64,7 +65,6 @@ customized with these parameters:
 > keep-blanks
   If #f (the default), blank input lines are not kept in history.
 
-
 The new input port that you get when you require "rep.ss" is a custom
 port that uses readline for all inputs.  The problem is when you want
 to display a prompt and then read some input: readline will get
@@ -75,14 +75,17 @@ line, which is why it has a `prompt' argument.  To use this prompt:
     ...code-that-reads...)
 
 This will make the first call to readline use the prompt, and
-subsequent calls will use an all-spaces prompt of the same length
-(this can happen if you're reading an s-expression).  The normal value
-of `readline-prompt' is #f for an empty prompt (and 'spaces after the
+subsequent calls will use an all-spaces prompt of the same length (for
+example, when you're reading an s-expression).  The normal value of
+`readline-prompt' is #f for an empty prompt (and 'spaces after the
 prompt is used, which is why you should use `parameterize' to restore
 it to #f).
 
-(A proper solution would be to install a custom output port too which
-will keep track of text that is displayed without a trailing newline.)
+A proper solution would be to install a custom output port too which
+keeps track of text that is displayed without a trailing newline.  As
+a cheaper solution, if line-counting is enabled for the terminal's
+output-port, then a newline is printed before reading if the column is
+not 0.  ("rep.ss" enables line-counting for the output port.)
 
 
 Warning
