@@ -788,6 +788,7 @@
 (check-on-bitmap 'solid-triangle (triangle 10 'solid 'red))
 (check-on-bitmap 'outline-triangle (triangle 10 'outline 'red))
 (check-on-bitmap 'solid-star (star 4 10 20 'solid 'red))
+(check-on-bitmap 'solid-star/reverse-args (star 4 20 10 'solid 'red))
 (check-on-bitmap 'outline-star (star 4 10 20 'outline 'red))
 (check-on-bitmap 'line (line 10 7 'red))
 ; (check-on-bitmap 'text (text "XX" 12 'red)) ;; this test fails for reasons I can't control ... -robby

@@ -525,21 +525,30 @@ plt/collects/tests/mzscheme/image-test.ss
     (let* ([inner-radius (inexact->exact (floor in-inner-radius))]
            [outer-radius (inexact->exact (floor in-outer-radius))]
            [points (star-points inner-radius outer-radius points)]
+           [radial-offset
+            (if (<= inner-radius outer-radius)
+                0
+                (- inner-radius outer-radius))]
            [draw 
             (make-color-wrapper
              color (mode->brush-symbol mode) 'solid
              (λ (dc dx dy)
-               (send dc draw-polygon points dx dy)))]
+               (send dc draw-polygon points 
+                     (+ dx radial-offset)
+                     (+ dy radial-offset))))]
            [mask-draw 
             (make-color-wrapper
              'black (mode->brush-symbol mode) 'solid
              (λ (dc dx dy)
-               (send dc draw-polygon points dx dy)))])
+               (send dc draw-polygon points
+                     (+ dx radial-offset)
+                     (+ dy radial-offset))))]
+           [size-determining-radius (+ (max inner-radius outer-radius) 1)])
       (make-simple-cache-image-snip 
-       (* outer-radius 2)
-       (* outer-radius 2)
-       outer-radius
-       outer-radius
+       (* size-determining-radius 2)
+       (* size-determining-radius 2)
+       size-determining-radius
+       size-determining-radius
        draw
        mask-draw)))
   
