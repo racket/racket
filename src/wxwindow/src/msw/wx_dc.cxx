@@ -153,7 +153,7 @@ wxDC::~wxDC(void)
   
   if (current_pen) current_pen->Lock(-1);
   if (current_brush) current_brush->Lock(-1);
-  if (clipping) --clipping->locked;
+  if (clipping) clipping->Lock(-1);
 
   if (filename)
     delete[] filename;
@@ -417,25 +417,27 @@ void wxDC::SetClippingRegion(wxRegion *c)
   if (c && (c->dc != this)) return;
 
   if (clipping)
-    --clipping->locked;
+    clipping->Lock(-1);
 
   clipping = c;
 
   if (clipping)
-    clipping->locked++;
+    clipping->Lock(1);
 
   dc = ThisDC(FALSE);
   if (dc) DoClipping(dc);
   DoneDC(dc);
 }
 
-static HRGN empty_rgn;
+static HRGN empty_rgn, full_rgn;
 
 void wxDC::DoClipping(HDC dc)
 {
   if (clipping) {
-    if (clipping->rgn) {
-      SelectClipRgn(dc, clipping->rgn);
+    HRGN rgn;
+    rgn = clipping->GetRgn();
+    if (rgn) {
+      SelectClipRgn(dc, rgn);
       OffsetClipRgn(dc, canvas_scroll_dx, canvas_scroll_dy);
     } else {
       if (!empty_rgn)
@@ -443,10 +445,9 @@ void wxDC::DoClipping(HDC dc)
       SelectClipRgn(dc, empty_rgn);
     }
   } else {
-    HRGN rgn;
-    rgn = CreateRectRgn(0, 0, 32000, 32000);
-    SelectClipRgn(dc, rgn);
-    DeleteObject(rgn);
+    if (!full_rgn)
+      full_rgn = CreateRectRgn(0, 0, 32000, 32000);
+    SelectClipRgn(dc, full_rgn);
   }
 }
 
@@ -1204,8 +1205,13 @@ void wxDC::DrawPath(wxPath *p, double xoffset, double yoffset,int fillStyle)
 	k += j;
       }
 
-      if (clipping && clipping->rgn)
-	CombineRgn(rgn, clipping->rgn, rgn, RGN_AND);
+      if (clipping) {
+	HRGN crgn;
+	crgn = clipping->GetRgn();
+	if (crgn) {
+	  CombineRgn(rgn, crgn, rgn, RGN_AND);
+	}
+      }
 
       SelectClipRgn(dc, rgn);
       

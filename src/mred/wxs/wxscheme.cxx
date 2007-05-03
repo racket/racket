@@ -53,6 +53,7 @@
 
 #ifdef wx_msw
 # include "wx_pdf.h"
+extern void wx_release_lazy_regions();
 #endif
 
 #include <stdlib.h>
@@ -250,6 +251,9 @@ START_XFORM_SKIP;
 
 static void collect_start_callback(void)
 {
+#ifdef wx_msw
+  wx_release_lazy_regions();
+#endif
   draw_gc_bm(1);
   orig_collect_start_callback();
 }

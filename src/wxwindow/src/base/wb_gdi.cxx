@@ -704,6 +704,253 @@ wxIntPoint::~wxIntPoint (void)
 {
 }
 
+/**************************************************************************/
+
 #include "../../../wxcommon/FontDirectory.cxx"
+
+/**************************************************************************/
+
+#ifdef wx_msw
+
+class LazyRgn : public wxObject {  
+public:
+  int used_refcount;
+  HRGN cached_rgn, used_rgn;
+  LazyRgn *lazy_cache_prev, *lazy_cache_next;
+
+  LazyRgn();
+  HRGN GetRgn();
+  virtual HRGN DetatchRgn(HRGN rgn);
+  virtual void DoneRgn(HRGN rgn);
+  virtual HRGN ToRegion();
+
+  void Chain();
+  void Unchain();
+};
+
+static LazyRgn *lazy_rgn_cache;
+int lazy_cache_count;
+#define MAX_CACHE_SIZE 100
+
+LazyRgn::LazyRgn() : wxObject(WXGC_NO_CLEANUP) { }
+
+HRGN LazyRgn::DetatchRgn(HRGN rgn)
+{ 
+  if (rgn) {
+    HRGN rgn2;
+
+    rgn2 = CreateRectRgn(0, 0, 1, 1);
+    CombineRgn(rgn2, rgn, rgn2, RGN_COPY);
+
+    DoneRgn(rgn);
+
+    return rgn2;
+  } else {
+    DoneRgn(rgn);
+    return NULL;
+  }
+}
+
+void LazyRgn::DoneRgn(HRGN rgn)
+{
+  if (rgn && (rgn == used_rgn)) {
+    --used_refcount;
+    if (!used_refcount) {
+      used_rgn = NULL;
+      if (rgn) {
+	cached_rgn = rgn;
+	if (lazy_cache_count >= MAX_CACHE_SIZE) {
+	  LazyRgn *l;
+	  for (l = lazy_rgn_cache; l->lazy_cache_next; l = l->lazy_cache_next) { }
+	  l->Unchain();
+	  DeleteObject(l->cached_rgn);
+	  l->cached_rgn = NULL;
+	}
+	Chain();
+      }
+    }
+  } else {
+    if (rgn)
+      DeleteObject(rgn);
+  }
+}
+
+HRGN LazyRgn::GetRgn()
+{
+  if (used_rgn) {
+  } else if (cached_rgn) {
+    used_rgn = cached_rgn;
+    Unchain();
+    cached_rgn = NULL;
+  } else {
+    used_rgn = ToRegion();
+  }
+
+  if (used_rgn)
+    used_refcount++;
+
+  return used_rgn;
+}
+
+HRGN LazyRgn::ToRegion() { return NULL; }
+
+void LazyRgn::Chain()
+{
+  lazy_cache_next = lazy_rgn_cache;
+  lazy_cache_prev = NULL;
+  lazy_rgn_cache = this;
+  if (lazy_cache_next)
+    lazy_cache_next->lazy_cache_prev = this;
+  lazy_cache_count++;
+}
+
+void LazyRgn::Unchain()
+{
+  if (lazy_cache_next)
+    lazy_cache_next->lazy_cache_prev = lazy_cache_prev;
+  if (lazy_cache_prev)
+    lazy_cache_prev->lazy_cache_next = lazy_cache_next;
+  else
+    lazy_rgn_cache = lazy_cache_next;
+  --lazy_cache_count;
+}
+
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+void wx_release_lazy_regions(void)
+{
+  LazyRgn *l;
+  for (l = lazy_rgn_cache; l; l = l->lazy_cache_next) {
+    DeleteObject(l->cached_rgn);
+    l->cached_rgn = NULL;
+  }
+  lazy_rgn_cache = NULL;
+  lazy_cache_count = 0;
+}
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+
+/* - - -  - - -  - - -  - - -  - - -  - - -  */
+
+class RectLazyRgn : public LazyRgn {  
+public:
+  int ix, iy, iw, ih;
+  RectLazyRgn(int _ix, int _iy, int _iw, int _ih);
+  virtual HRGN ToRegion();
+};
+
+RectLazyRgn::RectLazyRgn(int _ix, int _iy, int _iw, int _ih) {
+  ix = _ix;
+  iy = _iy;
+  iw = _iw;
+  ih = _ih;
+}
+
+HRGN RectLazyRgn::ToRegion()
+{
+  return CreateRectRgn(ix, iy, ix + iw, iy + ih);
+}
+
+/* - - -  - - -  - - -  - - -  - - -  - - -  */
+
+class RoundRectLazyRgn : public LazyRgn {  
+public:
+  int ix, iy, iw, ih, xradius, yradius;
+  RoundRectLazyRgn(int _ix, int _iy, int _iw, int _ih, int _xr, int _yr);
+  virtual HRGN ToRegion();
+};
+
+RoundRectLazyRgn::RoundRectLazyRgn(int _ix, int _iy, int _iw, int _ih, int _xradius, int _yradius) {
+  ix = _ix;
+  iy = _iy;
+  iw = _iw;
+  ih = _ih;
+  xradius = _xradius;
+  yradius = _yradius;
+}
+
+HRGN RoundRectLazyRgn::ToRegion()
+{
+  return CreateRoundRectRgn(ix, iy, ix + iw, iy + ih, xradius, yradius);
+}
+
+/* - - -  - - -  - - -  - - -  - - -  - - -  */
+
+class EllipticLazyRgn : public LazyRgn {  
+public:
+  int ix, iy, iw, ih;
+  EllipticLazyRgn(int _ix, int _iy, int _iw, int _ih);
+  virtual HRGN ToRegion();
+};
+
+EllipticLazyRgn::EllipticLazyRgn(int _ix, int _iy, int _iw, int _ih) {
+  ix = _ix;
+  iy = _iy;
+  iw = _iw;
+  ih = _ih;
+}
+
+HRGN EllipticLazyRgn::ToRegion()
+{
+  return CreateEllipticRgn(ix, iy, ix + iw, iy + ih);
+}
+
+/* - - -  - - -  - - -  - - -  - - -  - - -  */
+
+class PolygonLazyRgn : public LazyRgn {  
+public:
+  POINT *cpoints;
+  int n, mode;
+  PolygonLazyRgn(POINT *_cpoints, int _n, int _mode);
+  virtual HRGN ToRegion();
+};
+
+PolygonLazyRgn::PolygonLazyRgn(POINT *_cpoints, int _n, int _mode)
+{
+  cpoints = _cpoints;
+  n = _n;
+  mode = _mode;
+}
+
+HRGN PolygonLazyRgn::ToRegion()
+{
+  return CreatePolygonRgn(cpoints, n, mode);
+}
+
+/* - - -  - - -  - - -  - - -  - - -  - - -  */
+
+class UnionLazyRgn : public LazyRgn {  
+public:
+  LazyRgn *a, *b;
+  int mode;
+  UnionLazyRgn(LazyRgn *_a, LazyRgn *_b, int _mode);
+  virtual HRGN ToRegion();
+};
+
+UnionLazyRgn::UnionLazyRgn(LazyRgn *_a, LazyRgn *_b, int _mode)
+{
+  a = _a;
+  b = _b;
+  mode = _mode;
+}
+
+HRGN UnionLazyRgn::ToRegion()
+{
+  HRGN ar, br;
+  ar = a->GetRgn();
+  br = b->GetRgn();
+  ar = a->DetatchRgn(ar);
+  CombineRgn(ar, ar, br, mode);
+  b->DoneRgn(br);
+  return ar;
+}
+
+#endif
+
+/**************************************************************************/
 
 #include "../../../wxcommon/Region.cxx"

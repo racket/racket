@@ -3662,7 +3662,7 @@ int wxHiEventTrampoline(int (*_wha_f)(void *), void *wha_data)
 
   if (het->in_progress) {
     /* We have leftover work; jump and finish it (non-atomically).
-       But don't swap until we've juped back in, because the jump-in
+       But don't swap until we've jumped back in, because the jump-in
        point might be trying to suspend the thread (and that should
        complete before any swap). */
     scheme_end_atomic_no_swap();

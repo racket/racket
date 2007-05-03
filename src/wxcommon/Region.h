@@ -41,12 +41,17 @@ typedef void *XtRegion;
 
 class wxPathRgn;
 class wxPath;
+#ifdef wx_msw
+class LazyRgn;
+#endif
 
 class wxRegion : public wxObject 
 {
  public:
 #ifdef wx_msw
-  HRGN rgn;
+  LazyRgn *lazy_rgn;
+  HRGN real_rgn;
+  HRGN GetRgn();
 #endif
 #ifdef wx_x
   XtRegion rgn;
@@ -56,12 +61,15 @@ class wxRegion : public wxObject
 #endif
   wxPathRgn *prgn;
   wxDC *dc;
-  char is_ps, locked, no_prgn;
+  char is_ps, no_prgn;
+  int locked;
 
   wxRegion(wxDC *dc, wxRegion *r = NULL, Bool no_prgn = FALSE);
   ~wxRegion();
 
   inline wxDC *GetDC() { return dc; }
+
+  void Lock(int v);
   
   void SetRectangle(double x, double y, double width, double height);
   void SetRoundedRectangle(double x, double y, double width, double height, double radius = 20.0);
