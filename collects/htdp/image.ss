@@ -270,8 +270,12 @@ plt/collects/tests/mzscheme/image-test.ss
                [px left]
                [py up]
                [dc-proc (lambda (dc dx dy)
-                          (let ([clip (send dc get-clipping-region)])
-                            (send dc set-clipping-rect dx dy width height)
+                          (let ([clip (send dc get-clipping-region)]
+				[rgn (make-object region% dc)])
+			    (send rgn set-rectangle dx dy width height)
+			    (when clip
+			      (send rgn intersect clip))
+                            (send dc set-clipping-region rgn)
                             (dc-proc dc (- dx delta-w) (- dy delta-h))
                             (send dc set-clipping-region clip)))]
                [argb-proc (lambda (argb dx dy) (argb-proc argb (- dx delta-w) (- dy delta-h)))]
