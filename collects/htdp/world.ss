@@ -223,6 +223,9 @@ Matthew
       [(w h delta world animated-gif) 
        (check-pos 'big-bang w "first")
        (check-pos 'big-bang h "second")
+       ;; ============================================
+       ;; WHAT IF THEY ARE NOT INTs?
+       ;; ============================================
        (check-arg 'big-bang
                   (and (number? delta) (<= 0 delta 1000))
                   "number [of seconds] between 0 and 1000"
@@ -233,13 +236,18 @@ Matthew
                   "boolean expected"
                   "fifth"
                   animated-gif)
-       (when (vw-init?) (error 'big-bang "big-bang already called once"))
-       (install-world delta world) ;; call first to establish a visible world
-       (set-and-show-frame w h animated-gif) ;; now show it
-       (unless animated-gif (set! add-event void)) ;; no recording if image undesired
-       (set! *the-delta* delta)
-       #t]))
-  
+       (let ([w (coerce w)]
+	     [h (coerce h)])
+	 (when (vw-init?) (error 'big-bang "big-bang already called once"))
+	 (install-world delta world) ;; call first to establish a visible world
+	 (set-and-show-frame w h animated-gif) ;; now show it
+	 (unless animated-gif (set! add-event void)) ;; no recording if image undesired
+	 (set! *the-delta* delta)
+	 #t)]))
+
+  ;; Number -> Int 
+  (define (coerce x) (inexact->exact (floor x)))
+
   (define *the-delta* 0.0)
   
   (define (end-of-time s)
@@ -315,7 +323,7 @@ Matthew
   
   ;; Symbol Any String -> Void
   (define (check-pos tag c rank)
-    (check-arg tag (and (number? c) (integer? c) (>= c 0)) 
+    (check-arg tag (and (number? c) (> (coerce c) 0))
                "positive integer" rank c))
   
   ;; Symbol Any String String *-> Void
