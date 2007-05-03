@@ -1,95 +1,70 @@
-Version 369.12
-Add custodian boxes
-
-Version 369.11
-Added reset?, start-, and end-index arguments to get-output-bytes
-Added custodian-memory-accounting-available?
-
-Version 369.10
-Added parameterize*
-Added module-path-index-resolve
-Fixed mzc --exe to work with C-implemented extension modules
-Added runtime-paths.ss MzLib library to cooperate with mzc --exe
-
-Version 369.9
-Module top-level enforces initial categorization of expressions
- versus other forms
-Added procedure-struct-type?
-Inside MzScheme: XFORM_START_SKIP, etc.
-
-Version 369.8
-Added -p, -P, and -Q command-line options
-Changed H-expression parsing to represent angle brackets specially
-Added syntax-local-expand-expression
-MzLib: foreign.ss: Added ptr-add, memmove, memcpy, and memset
-Inside MzScheme: added scheme_set_type_equality(), based on a patch
- from Dimitris Vyzovitis
-
-Version 369.7
-Added string->path-element and path-element->string
-
-Version 369.6
-Default load handler enables #reader (even when not reading a module)
-
-Version 369.5
-print-struct defaults to #t instead of #f
-Changed make-exn to automatically convert a mutable message string
- to an immutable string
-Added initial custodian argument to custodian-require-memory
-Added an argument to syntax-local-certifier indicating whether the
- generated procedure attaches active or inactive certificates
-
-Version 369.4
-Default build uses 3m instead of CGC
-Added 'gc and 'so-suffix flags for system-type
-Changed path->directory-path, simplify-path, and split-path to include
- a trailing path separator even when the result would be a directory
- path without it
-Changed simplify-path for Windows paths to replace / with \
-Changed current-directory to apply path->directory-path to given paths
-Added port-closed?
-
-Version 369.3
-Adjusted exception-handler calling to propagate any returned value
- to the previous exception handler
-
-Version 369.2
-Removed current-exception-handler and initial-exception-handler
-Added uncaught-exception-handler
-Default error escape handler aborts to default continuation
- tag with the void procedure
-Added call-with-exception-handler
-Changed read-eval-print-loop and the default load handler to wrap
- each evaluation with a prompt and with #%top-interaction
-Changed top-level begin to insert a prompt around each sub-expression
- except the last
-Added #%top-interaction and #%expression
-Added prop:input-port and prop:output-port
-Changed char-whitespace? to produce #t for #\u0085
-Inside MzScheme: use 
- SCHEME_INPUT_PORTP() instead of SCHEME_INPORTP()
- SCHEME_OUTPUT_PORTP() instead of SCHEME_OUTPORTP()
- scheme_input_port_record() instead of casting to Scheme_Input_Port*
- scheme_output_port_record() instead of casting to Scheme_Output_Port*
-
-Version 369.1
-Changed dyanmic-require to expand requests for exported syntax
- bindings
-Added vector->values
-MzLib: unit.ss: new unit system
-
-Version 360.2
-Added support for manipulating filesystem paths that work on 
- other platforms
-Added integer-length
-Added optional argument to tcp-addresses to get port numbers
-Added system-idle-evt
-MzLib: serialized path includes the path's convention
-
-Version 360.1
-Changed macro expansion of bound identifiers so that `local-expand'
- works with an empty stop list
-
+Version 370, May 2007
+Memory management:
+ Default build uses 3m instead of CGC
+ Added custodian boxes and custodian-memory-accounting-available?
+ Added initial custodian argument to custodian-require-memory
+Exceptions:
+ Removed current-exception-handler and initial-exception-handler
+ Added uncaught-exception-handler
+ Default error escape handler aborts to default continuation
+  tag with the void procedure
+ Added call-with-exception-handler
+ Changed read-eval-print-loop and the default load handler to wrap
+  each evaluation with a prompt and with #%top-interaction
+ Changed top-level begin to insert a prompt around each sub-expression
+  except the last
+ Added #%top-interaction and #%expression
+ Changed make-exn to automatically convert a mutable message string
+  to an immutable string
+Units:
+ New unit system provided by MzLib's "unit.ss"
+Ports and pathnames:
+ Added prop:input-port and prop:output-port
+ Added support for manipulating filesystem paths that work on 
+  other platforms
+ Added string->path-element and path-element->string
+ Changed path->directory-path, simplify-path, and split-path to include
+  a trailing path separator even when the result would be a directory
+  path without it
+ Changed simplify-path for Windows paths to replace / with \
+ Changed current-directory to apply path->directory-path to given paths
+ Added reset?, start-, and end-index arguments to get-output-bytes
+ Added port-closed?
+ Added optional argument to tcp-addresses to get port numbers
+Syntax and loading:
+ Default load handler enables #reader (even when not reading a module)
+ Added module-path-index-resolve
+ Added syntax-local-expand-expression
+ Changed dyanmic-require to expand requests for exported syntax
+  bindings
+ Added an argument to syntax-local-certifier indicating whether the
+  generated procedure attaches active or inactive certificates
+ Changed macro expansion of bound identifiers so that `local-expand'
+  works with an empty stop list
+ Module top-level enforces initial categorization of expressions
+  versus other forms
+ Changed H-expression parsing to represent angle brackets specially
+Misc:
+ Changed print-struct default to #t instead of #f
+ Added parameterize*
+ Added 'gc and 'so-suffix flags for system-type
+ Added vector->values
+ Changed char-whitespace? to produce #t for #\u0085
+ Added -p, -P, and -Q command-line options
+ Added procedure-struct-type?
+ Added system-idle-evt
+ Fixed mzc --exe to work with C-implemented extension modules
+MzLib:
+ serialize.ss: Path includes the path's convention
+ foreign.ss: Added ptr-add, memmove, memcpy, and memset
+ runtime-paths.ss: Cooperates with mzc --exe
+Inside MzScheme:
+ Use SCHEME_INPUT_PORTP() instead of SCHEME_INPORTP()
+     SCHEME_OUTPUT_PORTP() instead of SCHEME_OUTPORTP()
+     scheme_input_port_record() instead of cast to Scheme_Input_Port*
+     scheme_output_port_record() instead of cast to Scheme_Output_Port*
+ Added scheme_set_type_equality() with help from Dimitris Vyzovitis
+ Added XFORM_START_SKIP, etc.
 
 Version 360, November 2006
 Continuations:

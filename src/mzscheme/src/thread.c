@@ -321,6 +321,7 @@ static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_custodian(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_box_value(int argc, Scheme_Object *argv[]);
+static Scheme_Object *custodian_box_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *current_namespace(int argc, Scheme_Object *args[]);
@@ -577,6 +578,11 @@ void scheme_init_thread(Scheme_Env *env)
 			     scheme_make_prim_w_arity(custodian_box_value,
 						      "custodian-box-value",
 						      1, 1),
+			     env);
+  scheme_add_global_constant("custodian-box?",
+			     scheme_make_folding_prim(custodian_box_p,
+                                                      "custodian-box?",
+                                                      1, 1, 1),
 			     env);
   scheme_add_global_constant("call-in-nested-thread",
 			     scheme_make_prim_w_arity(call_as_nested_thread,
@@ -1739,6 +1745,14 @@ static Scheme_Object *custodian_box_value(int argc, Scheme_Object *argv[])
     return scheme_false;
 
   return cb->v;
+}
+
+static Scheme_Object *custodian_box_p(int argc, Scheme_Object *argv[])
+{
+  if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cust_box_type))
+    return scheme_true;
+  else
+    return scheme_false;
 }
 
 #ifndef MZ_PRECISE_GC

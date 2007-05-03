@@ -1,26 +1,10 @@
-Version 369.11
-
-Added is-maximized? method to frame% (Windows, Mac OS X)
-
-
-Version 369.10
-
-Improved the disabled appearance of some controls under Mac OS X
-
-
-Version 369.9
-
-Added use-style-background and style-background-used? methods
- to editor-snip%; changes the editor-snip WXME format
-
-
-Version 369.6
+Version 370, May 2007
 
 WXME file format changed to include a #reader() prefix
-
-
-Version 369.5
-
+Added is-maximized? method to frame% (Windows, Mac OS X)
+Improved the disabled appearance of some controls under Mac OS X
+Added use-style-background and style-background-used? methods
+ to editor-snip%; changes the editor-snip WXME format
 Mac OS X printer-dc% uses scaling specified by the current ps-setup%
 
 ----------------------------------------------------------------------
