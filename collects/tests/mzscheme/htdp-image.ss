@@ -55,24 +55,40 @@
                          (bytes->list s1))))])
       
       ;; test that no drawing is outside the snip's drawing claimed drawing area
-      (let ([bm-clip (make-object bitmap% (+ width 100) (+ height 100))]
-            [bm-noclip (make-object bitmap% (+ width 100) (+ height 100))]
-            [s-clip (make-bytes (* (+ width 100) (+ height 100) 4))]
-            [s-noclip (make-bytes (* (+ width 100) (+ height 100) 4))])
+      (let* ([extra-space 100]
+             [bm-width (+ width extra-space)]
+             [bm-height (+ height extra-space)]
+             [bm-clip (make-object bitmap% bm-width bm-height)]
+             [bm-noclip (make-object bitmap% bm-width bm-height)]
+             [s-clip (make-bytes (* bm-width bm-height 4))]
+             [s-noclip (make-bytes (* bm-width bm-height 4))]
+             [s-trunc (make-bytes (* bm-width bm-height 4))])
         (send bdc set-bitmap bm-clip)
         (send bdc clear)
-        (send bdc set-clipping-rect 50 50 width height)
-        (send snp draw bdc 50 50 0 0 (+ width 100) (+ height 100) 0 0 #f)
+        (send bdc set-clipping-rect (/ extra-space 2) (/ extra-space 2) width height) 
+        (send snp draw bdc (/ extra-space 2) (/ extra-space 2) 0 0 (+ width extra-space) (+ height extra-space) 0 0 #f)
         (send bdc set-clipping-region #f)
-        (send bdc get-argb-pixels 0 0 (+ width 100) (+ height 100) s-clip)
+        (send bdc get-argb-pixels 0 0 (+ width extra-space) (+ height extra-space) s-clip)
         
         (send bdc set-bitmap bm-noclip)
         (send bdc clear)
-        (send snp draw bdc 50 50 0 0 (+ width 100) (+ height 100) 0 0 #f)
-        (send bdc get-argb-pixels 0 0 (+ width 100) (+ height 100) s-noclip)
+        (send snp draw bdc (/ extra-space 2) (/ extra-space 2) 0 0 (+ width extra-space) (+ height extra-space) 0 0 #f)
+        (send bdc get-argb-pixels 0 0 (+ width extra-space) (+ height extra-space) s-noclip)
         (send bdc set-bitmap #f)
-        (test (list 'bmclip name #t) (lambda () (list 'bmclip name (equal? s-clip s-noclip)))))
-      
+        
+        (test (list 'bmclip name #t) (lambda () (list 'bmclip name (equal? s-clip s-noclip))))
+        
+        (send bdc set-bitmap bm-noclip)
+        (send bdc set-pen "black" 1 'transparent)
+        (send bdc set-brush "white" 'solid)
+        (send bdc draw-rectangle 0 0 (/ extra-space 2) bm-height)
+        (send bdc draw-rectangle (- bm-width (/ extra-space 2)) 0 (/ extra-space 2) bm-height)
+        (send bdc draw-rectangle 0 0 bm-width (/ extra-space 2))
+        (send bdc draw-rectangle 0 (- bm-height (/ extra-space 2)) bm-width (/ extra-space 2))
+        (send bdc get-argb-pixels 0 0 (+ width extra-space) (+ height extra-space) s-trunc)
+        
+        (test (list 'bmtrunc name #t) (lambda () (list 'bmtrunc name (equal? s-noclip s-trunc)))))
+        
       (let ([bm-normal (make-object bitmap% width height)]
             [bm-bitmap (make-object bitmap% width height)]
             [s-normal (make-bytes (* width height 4))]
@@ -750,6 +766,19 @@
                                    (move-pinhole (rectangle 2 4 'solid 'red) -1 -2)))))
 
 
+(test (image->color-list
+       (overlay
+        (rectangle 11 11 'solid 'green)
+        (shrink (rectangle 11 11 'solid 'red)
+                1 1 1 1)))
+      'shrinking-twice-shrinks-both-times
+      (image->color-list
+       (overlay
+        (rectangle 11 11 'solid 'green)
+        (shrink (shrink (rectangle 11 11 'solid 'red)
+                        5 5 5 5)
+                1 1 1 1))))
+
 (check-on-bitmap 'solid-rect (rectangle 2 2 'solid 'red))
 (check-on-bitmap 'outline-rect (rectangle 2 2 'outline 'red))
 (check-on-bitmap 'solid-ellipse (ellipse 2 4 'solid 'red))
@@ -830,6 +859,11 @@
                            0 0
                            20 20
                            'red))
+
+(check-on-bitmap 'shrink
+                 (shrink (shrink (rectangle 11 11 'solid 'red)
+                                 5 5 5 5)
+                         1 1 1 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
