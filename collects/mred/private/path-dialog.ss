@@ -50,8 +50,8 @@
   (define-struct pname (path string isdir? okstring? nulstring))
   (define (path->pname path isdir?)
     (let* ([name (if (member (path->string path) '("." ".."))
-                   (path->string path) ; avoid segfault bug (PR8481)
-                   (bytes->string/locale (path-element->bytes path)))]
+                   (path->string path) ; avoid errors
+                   (path-element->string path))]
            [name (regexp-replace end-separators-rx name "")]
            [name (if (<= 199 (string-length name))
                    (string-append (substring name 0 195) "...")
