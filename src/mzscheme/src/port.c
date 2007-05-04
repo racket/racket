@@ -6537,16 +6537,10 @@ static void child_done(int ingored)
       prev = NULL;
       for (sc = scheme_system_children; sc; prev = sc, sc = sc->next) {
 	if (sc->id == result) {
-          /* Explicit write barriers avoid triggering a write-barrier signal,
-             just in case we're in some context where the signal is disabled
-             (which seems to happen in some OS X contexts). */
-          GC_write_barrier(sc);
-
-	  sc->done = 1;
+          sc->done = 1;
 	  sc->status = status;
 
 	  if (prev) {
-            GC_write_barrier(prev);
 	    prev->next = sc->next;
 	  } else
 	    scheme_system_children = sc->next;
