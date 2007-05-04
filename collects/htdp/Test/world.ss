@@ -26,7 +26,7 @@
 
 ;; run world run
 
-(big-bang 100 100 .1 world0)
+(big-bang 100 100 .1 world0 true) ;; get ready to create images 
 
 (on-redraw world->image)
 (on-tick-event world->next)

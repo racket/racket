@@ -23,6 +23,7 @@ ones.)
 Matthew
 |#
 
+;; Fri May  4 18:05:33 EDT 2007: define-run-time-path 
 ;; Thu May  3 22:06:16 EDT 2007: scene # image; pasteboard% for text%
 ;; Sat Apr 28 13:31:02 EDT 2007: fixed the image and animated-gif thing, using Matthew's lib
 ;; Fri Dec 22 11:51:53 EST 2006: cleaned up the callback code with macro
@@ -38,9 +39,6 @@ Matthew
 (module world mzscheme
   (require (lib "class.ss")
            (lib "etc.ss")
-           (lib "list.ss")
-           (lib "process.ss")
-           (lib "port.ss")
            (lib "mred.ss" "mred")
            (lib "error.ss" "htdp")
            (lib "image.ss" "htdp")
@@ -49,6 +47,7 @@ Matthew
            (lib "prim.ss" "lang"))
   
   (require (lib "gif.ss" "mrlib"))
+  (require (lib "runtime-path.ss"))
   
   (require (lib "bitmap-label.ss" "mrlib")
            (lib "string-constant.ss" "string-constants"))
@@ -578,22 +577,21 @@ Matthew
   ;; Frame [Box (union false Thread)] -> Void
   ;; adds the stop animation and image creation button, 
   ;; whose callbacks runs as a thread in the custodian
+  (define IMAGES "Images")
+  (define-runtime-path s:pth (build-path (collection-path "icons") "break.png"))
+  (define-runtime-path i:pth (build-path (collection-path "icons") "file.gif"))
   (define (add-stop-and-image-buttons  frame the-play-back-custodian)
     (define p (new horizontal-pane% [parent frame][alignment '(center center)]))
-    (define l-stop ((bitmap-label-maker 
-                     (string-constant break-button-label) 
-                     (build-path (collection-path "icons") "break.png")) '___))
-    (define l-imgs ((bitmap-label-maker 
-                     "Images"
-                     (build-path (collection-path "icons") "file.gif")) '___))
+    (define S ((bitmap-label-maker (string-constant break-button-label) s:pth) '_))
+    (define I ((bitmap-label-maker IMAGES i:pth) '_))
     (define stop-button
-      (new button% [parent p] [label l-stop] [style '(border)]
+      (new button% [parent p] [label S] [style '(border)]
            [callback (lambda (this-button e) 
                        (callback-stop!)
                        (send this-button enable #f)
                        (send image-button enable #t))]))
     (define image-button 
-      (new button% [parent p] [enabled #f] [label l-imgs] [style '(border)]
+      (new button% [parent p] [enabled #f] [label I] [style '(border)]
            [callback (lambda (b e)
                        (parameterize ([current-custodian the-play-back-custodian])
                          (define th (thread play-back))
