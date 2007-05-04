@@ -62,7 +62,7 @@
 
   (define ssl-load-fail-reason #f)
 
-  (define 3m? (regexp-match #rx#"3m" (path->bytes (system-library-subpath))))
+  (define 3m? (eq? '3m (system-type 'gc)))
 
   (define libcrypto
     (with-handlers ([exn:fail? (lambda (x)
