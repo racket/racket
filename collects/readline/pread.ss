@@ -1,7 +1,10 @@
 (module pread mzscheme
-  (require (lib "readline.ss" "readline") (lib "file.ss"))
+  (require (lib "readline.ss" "readline") (lib "file.ss")
+           (lib "list.ss") (lib "string.ss"))
 
-  ;; configuration
+  ;; --------------------------------------------------------------------------
+  ;; Configuration
+
   (define current-prompt   (make-parameter #"> "))
   (define show-all-prompts (make-parameter #t))
   (define max-history      (make-parameter 100))
@@ -10,6 +13,40 @@
   (provide current-prompt show-all-prompts
            max-history keep-duplicates keep-blanks)
 
+  ;; --------------------------------------------------------------------------
+  ;; Simple namespace-based completion
+
+  ;; efficiently convert symbols to byte strings
+  (define symbol->bstring
+    (let ([t (make-hash-table 'weak)])
+      (lambda (sym)
+        (or (hash-table-get t sym #f)
+            (let ([bstr (string->bytes/utf-8 (symbol->string sym))])
+              (hash-table-put! t sym bstr)
+              bstr)))))
+
+  ;; get a list of byte strings for current bindings, cache last result
+  (define get-namespace-bstrings
+    (let ([last-syms #f] [last-bstrs #f])
+      (lambda ()
+        (let ([syms (namespace-mapped-symbols)])
+          (unless (equal? syms last-syms)
+            (set! last-syms syms)
+            (set! last-bstrs (sort! (map symbol->bstring syms) bytes<?)))
+          last-bstrs))))
+
+  (define (namespace-completion pat)
+    (let* ([pat (if (string? pat) (string->bytes/utf-8 pat) pat)]
+           [pat (regexp-quote pat)]
+           [pat (regexp-replace* #px#"(\\w)\\b" pat #"\\1\\\\w*")]
+           [pat (byte-pregexp (bytes-append #"^" pat))])
+      (filter (lambda (bstr) (regexp-match pat bstr))
+              (get-namespace-bstrings))))
+
+  (set-completion-function! namespace-completion)
+
+
+  ;; --------------------------------------------------------------------------
   ;; History management
 
   (define local-history
@@ -45,7 +82,8 @@
    (let ([old (exit-handler)])
      (lambda (v) (save-history) (old v))))
 
-  ;; implement an input port that goes through readline
+  ;; --------------------------------------------------------------------------
+  ;; An input port that goes through readline
 
   ;; readline-prompt can be
   ;;   #f: no prompt (normal state),
@@ -105,6 +143,9 @@
                           (set! buffer #f)
                           (add1 left)]))])))
       (make-input-port 'readline reader #f close!)))
+
+  ;; --------------------------------------------------------------------------
+  ;; Reading functions
 
   ;; like read-syntax, but waits until valid input is ready
   (define read-complete-syntax
