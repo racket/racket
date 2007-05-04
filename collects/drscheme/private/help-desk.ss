@@ -12,8 +12,7 @@
 
    
       (import [prefix drscheme:frame: drscheme:frame^]
-              [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
-              [prefix drscheme:teachpack: drscheme:teachpack^])
+              [prefix drscheme:language-configuration: drscheme:language-configuration/internal^])
   (export (rename drscheme:help-desk^
                   [-add-help-desk-font-prefs add-help-desk-font-prefs]))
   
@@ -41,13 +40,7 @@
                    (cons name (cdr pr))))
                dirs)))
       
-      (define (get-teachpack-filenames)
-        (format "~s"
-                (drscheme:teachpack:teachpack-cache-filenames
-                 (preferences:get 'drscheme:teachpacks))))
-      
       (set-bug-report-info! "Computer Language" get-computer-language-info)
-      (set-bug-report-info! "Teachpack filenames" get-teachpack-filenames)
       
       (define drscheme-help-desk-mixin
         (mixin (help-desk-frame<%> frame:standard-menus<%>) ()

@@ -20,7 +20,6 @@
           [prefix drscheme:init: drscheme:init^]
           [prefix drscheme:debug: drscheme:debug^]
           [prefix drscheme:eval: drscheme:eval^]
-          [prefix drscheme:teachpack: drscheme:teachpack^]
           [prefix drscheme:modes: drscheme:modes^])
     (export drscheme:tools^)
       

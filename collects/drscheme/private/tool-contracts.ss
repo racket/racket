@@ -561,6 +561,19 @@
 ;               ;      
 ;               ;      
   
+  
+  (drscheme:rep:get-welcome-delta 
+   (-> (is-a?/c style-delta%))
+   ()
+   "Returns a style delta that matches the style and color of the "
+   "phrase ``Welcome to'' in the beginning of the interactions window.")
+  
+  (drscheme:rep:get-dark-green-delta
+   (-> (is-a?/c style-delta%))
+   ()
+   "Returns a style delta that matches the style and color of the "
+   "name of a language in the interactions window.")
+
   (drscheme:rep:get-drs-bindings-keymap
    (-> (is-a?/c keymap%))
    ()
@@ -1345,46 +1358,7 @@
    "they default to \\scmc{\\#t} \\Symbol{keyword+index} and \\Symbol{exact},"
    "and \\Symbol{all} respectively.")
   
-  ;                                                                  
-  ;                                                                  
-  ;                                                                  
-  ;                             ;                             ;      
-  ;                             ;                             ;      
-  ;   ;                         ;                             ;      
-  ;  ;;;;   ;;;   ;;;     ;;;   ; ;;    ; ;;    ;;;     ;;;   ;   ;  
-  ;   ;    ;   ; ;   ;   ;   ;  ;;  ;   ;;  ;  ;   ;   ;   ;  ;  ;   
-  ;   ;   ;    ;     ;  ;       ;   ;   ;    ;     ;  ;       ; ;    
-  ;   ;   ;;;;;;  ;;;;  ;       ;   ;   ;    ;  ;;;;  ;       ;;;    
-  ;   ;   ;      ;   ;  ;       ;   ;   ;    ; ;   ;  ;       ;  ;   
-  ;   ;    ;     ;   ;   ;   ;  ;   ;   ;;  ;  ;   ;   ;   ;  ;   ;  
-  ;    ;;   ;;;;  ;;;;;   ;;;   ;   ;   ; ;;    ;;;;;   ;;;   ;    ; 
-  ;                                     ;                            
-  ;                                     ;                            
-  ;                                     ;                            
-  
-  (drscheme:teachpack:install-teachpacks
-   (drscheme:teachpack:teachpack-cache? . -> . void?)
-   (teachpack-cache)
-   "Installs the teachpack cache in the current namespace."
-   "Passing \\scheme{'drscheme:teachpacks} to"
-   "@flink preferences:get"
-   "returns the user's currently selected TeachPacks.")
-  
-  (drscheme:teachpack:teachpack-cache?
-   (any/c . -> . boolean?)
-   (val)
-   "Determines if \\var{val} is a teachpack"
-   "cache or not.")
-  
-  (drscheme:teachpack:teachpack-cache-filenames
-   (drscheme:teachpack:teachpack-cache? . -> . (listof path?))
-   (teachpack-cache)
-   "Returns the list of filenames for the teachpacks"
-   "in \\var{teachpack-cache}."
-   ""
-   "See also"
-   "@flink drscheme:teachpack:install-teachpacks %"
-   ".")
+
   
   
   ;                                                     
@@ -1414,7 +1388,6 @@
      (create-executable (any/c
                          (or/c (is-a?/c dialog%) (is-a?/c frame%))
                          path?
-                         drscheme:teachpack:teachpack-cache?
                          . -> .
                          void?))
      (default-settings (-> any/c))
@@ -1422,12 +1395,10 @@
      (order-manuals ((listof bytes?) . -> . (values (listof bytes?) boolean?)))
      (front-end/complete-program (input-port?
                                   any/c
-                                  drscheme:teachpack:teachpack-cache?
                                   . -> .
                                   (-> any/c)))
      (front-end/interaction (input-port?
                              any/c
-                             drscheme:teachpack:teachpack-cache?
                              . -> .
                              (-> any/c)))
      (get-language-name (-> string?))

@@ -20,7 +20,6 @@
           [prefix drscheme:get/extend: drscheme:get/extend^]
           [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
           [prefix drscheme:language: drscheme:language^]
-          [prefix drscheme:teachpack: drscheme:teachpack^]
           [prefix drscheme:module-language: drscheme:module-language^]
           [prefix drscheme:tools: drscheme:tools^]
           [prefix drscheme:debug: drscheme:debug^]
@@ -173,15 +172,6 @@
          (or (eq? x #t)
              (not x))))
       
-      (preferences:set-default
-       'drscheme:teachpacks
-       (drscheme:teachpack:new-teachpack-cache) 
-       drscheme:teachpack:teachpack-cache?)
-      (preferences:set-un/marshall
-       'drscheme:teachpacks
-       drscheme:teachpack:marshall-teachpack-cache
-       drscheme:teachpack:unmarshall-teachpack-cache)
-      
   (preferences:set-default 'drscheme:switch-to-module-language-automatically? #t boolean?)
 
   
@@ -278,7 +268,11 @@
       (drscheme:language:register-capability 'drscheme:language-menu-title 
                                              (flat-contract string?)
                                              (string-constant scheme-menu-name))
-           
+  
+  (drscheme:language:register-capability 'drscheme:teachpack-menu-items
+                                         (or/c false/c (flat-contract drscheme:unit:teachpack-callbacks?))
+                                         #f)
+  
       (handler:current-create-new-window
        (let ([drscheme-current-create-new-window
 	      (λ (filename)

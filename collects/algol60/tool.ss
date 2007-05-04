@@ -49,10 +49,10 @@
 
       (define lang%
         (class* object% (drscheme:language:language<%>)
+          (define/public (extra-repl-information settings port) (void))
           (define/public (get-reader-module) #f)
           (define/public (get-metadata a b) #f)
           (define/public (metadata->settings m) #f)
-          (define/public (metadata->teachpacks m) #f)
           (define/public (get-metadata-lines) #f)
           
           (define/public (capability-value s) (drscheme:language:get-capability-default s))
@@ -72,8 +72,8 @@
 		    (compile-simplified 
 		     (simplify (parse-a60-port port name) base-importing-stx) 
 		     base-importing-stx)))))
-          (define/public (front-end/complete-program port settings teachpack-cache) (front-end port settings))
-          (define/public (front-end/interaction port settings teachpack-cache) (front-end port settings))
+          (define/public (front-end/complete-program port settings) (front-end port settings))
+          (define/public (front-end/interaction port settings) (front-end port settings))
           (define/public (get-style-delta) #f)
           (define/public (get-language-position)
 	    (list (string-constant experimental-languages)
@@ -107,7 +107,7 @@
           (define/public (render-value value settings port) (write value port))
           (define/public (render-value/format value settings port width) (write value port))
           (define/public (unmarshall-settings x) x)
-	  (define/public (create-executable settings parent src-file teachpacks)
+	  (define/public (create-executable settings parent src-file)
 	    (let ([dst-file (drscheme:language:put-executable
 			     parent src-file #f #f
 			     (string-constant save-a-mzscheme-stand-alone-executable))])

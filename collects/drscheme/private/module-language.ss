@@ -116,7 +116,7 @@
           (define/override (get-style-delta) module-language-style-delta)
           
           (inherit get-reader)
-          (define/override (front-end/complete-program port settings teachpack-cache)
+          (define/override (front-end/complete-program port settings)
             (let* ([super-thunk (λ () ((get-reader) (object-name port) port))]
                    [filename (get-filename port)]
                    [module-name #f]
@@ -162,7 +162,7 @@
                   [else eof]))))
           
           ;; printer settings are just ignored here.
-          (define/override (create-executable setting parent program-filename teachpacks)
+          (define/override (create-executable setting parent program-filename)
             (let* ([executable-specs (drscheme:language:create-executable-gui
                                       parent 
                                       program-filename

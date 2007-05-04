@@ -102,6 +102,7 @@
                         (drscheme:language-configuration:get-settings-preferences-symbol))]
                       [lang (drscheme:language-configuration:language-settings-language lang-settings)]
                       [settings (drscheme:language-configuration:language-settings-settings lang-settings)])
+                 
                  (drscheme:eval:expand-program
                   (drscheme:language:make-text/pos
                    (get-definitions-text)
@@ -119,10 +120,7 @@
                            (if ((string-length str) . <= . len)
                              str
                              (string-append (substring str 0 (max 0 (- len 3)))
-                                            "..."))))))
-                    (drscheme:teachpack:install-teachpacks
-                     ;; this belongs in model, but I'd need a unit rewrite
-                     (frame:preferences:get 'drscheme:teachpacks)))
+                                            "...")))))))
                   void ; kill
                   iter)))
              'program-expander

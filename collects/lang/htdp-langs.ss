@@ -1,8 +1,5 @@
 #|
 
-tracing todo:
- - shorten lines
-
 ;; we don't use the built in debugging, use our own
 ;; version here that has no bug icon and only
 ;; annotates code that comes from editors.
@@ -16,6 +13,7 @@ tracing todo:
            (prefix tr: (lib "stacktrace.ss" "trace"))
            (lib "pretty.ss")
            (prefix pc: (lib "pconvert.ss"))
+           (lib "file.ss")
            (lib "unit.ss")
            (lib "class.ss")
            (lib "list.ss")
@@ -27,7 +25,8 @@ tracing todo:
            (lib "cache-image-snip.ss" "mrlib")
            (lib "embed.ss" "compiler")
            (lib "wxme.ss" "wxme")
-           
+           (lib "struct.ss")
+           (lib "dirs.ss" "setup")
            
            ;; this module is shared between the drscheme's namespace (so loaded here) 
            ;; and the user's namespace in the teaching languages
@@ -49,6 +48,9 @@ tracing todo:
   
   (define init-eventspace (current-eventspace))
   
+  (define user-installed-teachpacks-collection "installed-teachpacks")
+  (define teachpack-installation-dir (build-path (find-user-collects-dir) user-installed-teachpacks-collection))
+  
   (define tool@
     (unit 
       (import drscheme:tool^)
@@ -68,7 +70,9 @@ tracing todo:
       
       (define drs-eventspace (current-eventspace))
       
-      (define-struct (htdp-lang-settings drscheme:language:simple-settings) (tracing?))
+      ;; tracing? : boolean
+      ;; teachpacks : (listof require-spec)
+      (define-struct (htdp-lang-settings drscheme:language:simple-settings) (tracing? teachpacks))
       (define htdp-lang-settings->vector (make-->vector htdp-lang-settings))
       
       (define image-string "<image>")
@@ -100,21 +104,24 @@ tracing todo:
              (get-sharing-printing)
              #t
              'none
-             #f))
+             #f 
+             '()))
           
           (define/override (default-settings? s)
             (and (super default-settings? s)
-                 (not (htdp-lang-settings-tracing? s))))
+                 (not (htdp-lang-settings-tracing? s))
+                 (null? (htdp-lang-settings-teachpacks s))))
           
           (define/override (marshall-settings x)
             (list (super marshall-settings x)
-                  (htdp-lang-settings-tracing? x)))
+                  (htdp-lang-settings-tracing? x)
+                  (htdp-lang-settings-teachpacks x)))
           
           (define/override (unmarshall-settings x)
-            (if (and (pair? x)
-                     (pair? (cdr x))
-                     (null? (cddr x))
-                     (boolean? (cadr x)))
+            (if (and (list? x)
+                     (= (length x) 3)
+                     (boolean? (list-ref x 1))
+                     (list-of-require-specs? (list-ref x 2)))
                 (let ([drs-settings (super unmarshall-settings (first x))])
                   (make-htdp-lang-settings
                    (drscheme:language:simple-settings-case-sensitive drs-settings)
@@ -123,8 +130,16 @@ tracing todo:
                    (drscheme:language:simple-settings-show-sharing  drs-settings)
                    (drscheme:language:simple-settings-insert-newlines  drs-settings)
                    (drscheme:language:simple-settings-annotations drs-settings)
-                   (cadr x)))
+                   (cadr x)
+                   (caddr x)))
                 (default-settings)))
+          
+          (define/private (list-of-require-specs? l)
+            (and (list? l)
+                 (andmap (λ (x)
+                           (and (list? x)
+                                (andmap string? x)))
+                         l)))
           
           (inherit get-allow-sharing? get-use-function-output-syntax? 
                    get-accept-quasiquote? get-read-accept-dot)
@@ -200,6 +215,16 @@ tracing todo:
                                (label (string-constant output-syntax))
                                (alignment '(left center)))]
                
+               [tp-group-box (instantiate group-box-panel% ()
+                               (label (string-constant teachpacks))
+                               (parent parent)
+                               (alignment '(center top)))]
+               [tp-panel (new vertical-panel%
+                              [parent tp-group-box]
+                              [alignment '(center center)]
+                              [stretchable-width #f]
+                              [stretchable-height #f])]
+               
                [case-sensitive (make-object check-box%
                                  (string-constant case-sensitive-label)
                                  input-panel
@@ -228,7 +253,9 @@ tracing todo:
                [tracing (new check-box%
                              (parent output-panel)
                              (label sc-tracing)
-                             (callback void))])
+                             (callback void))]
+               
+               [tps '()])
           
           (when allow-sharing-config?
             (set! show-sharing
@@ -261,7 +288,8 @@ tracing todo:
               (and allow-sharing-config? (send show-sharing get-value))
               (send insert-newlines get-value)
               'none
-              (send tracing get-value))]
+              (send tracing get-value)
+              tps)]
             [(settings)
              (send case-sensitive set-value (drscheme:language:simple-settings-case-sensitive settings))
              (send output-style set-selection
@@ -284,6 +312,17 @@ tracing todo:
                (send show-sharing set-value (drscheme:language:simple-settings-show-sharing settings)))
              (send insert-newlines set-value 
                    (drscheme:language:simple-settings-insert-newlines settings))
+             (set! tps (htdp-lang-settings-teachpacks settings))
+             (send tp-panel change-children (λ (l) '()))
+             (if (null? tps)
+                 (new message%
+                      [parent tp-panel]
+                      [label (string-constant teachpacks-none)])
+                 (for-each
+                  (λ (tp) (new message% 
+                               [parent tp-panel]
+                               [label (format "~s" tp)]))
+                  tps))
              (send tracing set-value (htdp-lang-settings-tracing? settings))])))
       
       (define simple-htdp-language%
@@ -314,12 +353,49 @@ tracing todo:
         (class %
           (inherit get-manual)
           
+          (define/override (extra-repl-information settings port) 
+            (define (go str sd)
+              (let* ([s (make-object string-snip% str)]
+                     [sl (editor:get-standard-style-list)]
+                     [std (send sl find-named-style "Standard")]
+                     [style (send sl find-or-create-style std sd)])
+                (send s set-style style)
+                (write-special s port)))
+            
+            (define tps (htdp-lang-settings-teachpacks settings))
+            
+            (unless (null? tps)
+              (go "Teachpack" (drscheme:rep:get-welcome-delta))
+              (cond
+                [(= 1 (length tps))
+                 (go ": " (drscheme:rep:get-welcome-delta))
+                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))]
+                [(= 2 (length tps))
+                 (go "s: " (drscheme:rep:get-welcome-delta))
+                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))
+                 (go " and " (drscheme:rep:get-welcome-delta))
+                 (go (cadr (cadr tps)) (drscheme:rep:get-dark-green-delta))]
+                [else
+                 (go "s: " (drscheme:rep:get-welcome-delta))
+                 (go (cadr (car tps)) (drscheme:rep:get-dark-green-delta))
+                 (let loop ([these-tps (cdr tps)])
+                   (cond
+                     [(null? (cdr these-tps))
+                      (go ", and " (drscheme:rep:get-welcome-delta))
+                      (go (cadr (car these-tps)) (drscheme:rep:get-dark-green-delta))]
+                     [else
+                      (go ", " (drscheme:rep:get-welcome-delta))
+                      (go (cadr (car these-tps)) (drscheme:rep:get-dark-green-delta))
+                      (loop (cdr these-tps))]))])
+              (go "." (drscheme:rep:get-welcome-delta))
+              (newline port)))
+ 
           (define/override (order-manuals x) 
             (values (list (get-manual) #"teachpack" #"drscheme" #"help") #f))
           
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)
-          (define/override (create-executable setting parent program-filename teachpack-cache)
+          (define/override (create-executable setting parent program-filename)
             (let ([dist-filename
 		   (drscheme:language:put-executable
 		    parent program-filename
@@ -429,7 +505,7 @@ tracing todo:
           
           (inherit get-reader set-printing-parameters)
           
-          (define/override (front-end/complete-program port settings teachpacks)
+          (define/override (front-end/complete-program port settings)
             (let ([state 'init]
                   ;; state : 'init => 'require => 'done
                   [reader (get-reader)])
@@ -444,16 +520,23 @@ tracing todo:
                               (if (eof-object? result)
                                   null
                                   (cons result (loop)))))]
-                         [language-module (get-module)]
-                         [require-specs 
-                          (drscheme:teachpack:teachpack-cache-require-specs teachpacks)])
-                     (rewrite-module 
+                         [language-module (get-module)])
+                     (for-each
+                      (λ (tp)
+                        (with-handlers ((exn:fail? (λ (x) (error 'teachpack (missing-tp-message tp)))))
+                          (unless (file-exists? (build-path (apply collection-path (cddr tp))
+                                                            (cadr tp)))
+                            (error))))
+                      (htdp-lang-settings-teachpacks settings))
+                     (rewrite-module
+                      settings
                       (expand
                        (datum->syntax-object
                         #f
                         `(,#'module #%htdp ,language-module 
-                           (,#'require ,@require-specs)
-                           ,@body-exps)))))]
+                                    ,@(map (λ (x) `(require ,x))
+                                           (htdp-lang-settings-teachpacks settings))
+                                    ,@body-exps)))))]
                   [(require) 
                    (set! state 'done)
                    (syntax
@@ -468,13 +551,73 @@ tracing todo:
                            (set! done-already? #t)
                            (current-namespace (module->namespace '#%htdp)))))))]
                   [(done) eof]))))
+          
+          (define/private (missing-tp-message x)
+            (let* ([m (regexp-match #rx"/([^/]*)$" (cadr x))]
+                   [name (if m
+                             (cadr m)
+                             (cadr x))])
+              (format "the teachpack '~a' was not found" name)))
 
           (define/augment (capability-value key)
             (case key
+              [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
               [else (inner (drscheme:language:get-capability-default key) 
                            capability-value
                            key)]))
+          
+          (define htdp-teachpack-callbacks
+            (drscheme:unit:make-teachpack-callbacks
+             (λ (settings) 
+               (map cadr (htdp-lang-settings-teachpacks settings)))
+             (λ (settings parent) 
+               (let ([teachpack (get-teachpack-from-user parent)])
+                 (if teachpack
+                     (let ([old-tps (htdp-lang-settings-teachpacks settings)])
+                       (if (member teachpack old-tps)
+                           (begin
+                             (message-box (string-constant drscheme)
+                                          (format (string-constant already-added-teachpack)
+                                                  (cadr teachpack)))
+                             settings)
+                           
+                           (make-htdp-lang-settings
+                            (drscheme:language:simple-settings-case-sensitive settings)
+                            (drscheme:language:simple-settings-printing-style settings)
+                            (drscheme:language:simple-settings-fraction-style settings)
+                            (drscheme:language:simple-settings-show-sharing settings)
+                            (drscheme:language:simple-settings-insert-newlines settings)
+                            (drscheme:language:simple-settings-annotations settings)
+                            (htdp-lang-settings-tracing? settings)
+                            (append old-tps (list teachpack)))
+                           
+                           #;
+                           (copy-struct htdp-lang-settings settings
+                                        [htdp-lang-settings-teachpacks 
+                                         (append old-tps (list teachpack))])))
+                     settings)))
+             (λ (settings name) 
+               (make-htdp-lang-settings
+                (drscheme:language:simple-settings-case-sensitive settings)
+                (drscheme:language:simple-settings-printing-style settings)
+                (drscheme:language:simple-settings-fraction-style settings)
+                (drscheme:language:simple-settings-show-sharing settings)
+                (drscheme:language:simple-settings-insert-newlines settings)
+                (drscheme:language:simple-settings-annotations settings)
+                (htdp-lang-settings-tracing? settings)
+                (filter (λ (x) (not (equal? (cadr x) name)))
+                        (htdp-lang-settings-teachpacks settings))))
+             (λ (settings) 
+               (make-htdp-lang-settings
+                (drscheme:language:simple-settings-case-sensitive settings)
+                (drscheme:language:simple-settings-printing-style settings)
+                (drscheme:language:simple-settings-fraction-style settings)
+                (drscheme:language:simple-settings-show-sharing settings)
+                (drscheme:language:simple-settings-insert-newlines settings)
+                (drscheme:language:simple-settings-annotations settings)
+                (htdp-lang-settings-tracing? settings)
+                '()))))
         
           (inherit-field reader-module)
           (define/override (get-reader-module) reader-module)
@@ -486,6 +629,7 @@ tracing todo:
                      reader-module
                      `((modname ,modname)
                        (read-case-sensitive ,(drscheme:language:simple-settings-case-sensitive settings))
+                       (teachpacks ,(htdp-lang-settings-teachpacks settings))
                        (htdp-settings ,(htdp-lang-settings->vector settings))))))
           
           (inherit default-settings)
@@ -493,7 +637,11 @@ tracing todo:
             (let* ([table (metadata->table metadata)] ;; extract the table
                    [ssv (assoc 'htdp-settings table)])
               (if ssv
-                  (apply make-htdp-lang-settings (vector->list (cadr ssv)))
+                  (let ([settings-list (vector->list (cadr ssv))])
+                    (if (equal? (length settings-list)
+                                (procedure-arity make-htdp-lang-settings))
+                        (apply make-htdp-lang-settings settings-list)
+                        (default-settings)))
                   (default-settings))))
           
           (define/private (metadata->table metadata)
@@ -506,6 +654,137 @@ tracing todo:
           
           (super-new)))
       
+      (define (get-teachpack-from-user parent)
+        (define tp-dir (collection-path "teachpack" "htdp"))
+        (define columns 2)
+        (define tps (filter
+                     (λ (x) (file-exists? (build-path tp-dir x)))
+                     (directory-list tp-dir)))
+        (define sort-order (λ (x y) (string<=? (path->string x) (path->string y))))
+        (define pre-installed-tps (sort tps sort-order))
+        (define dlg (new dialog% [parent parent] [label (string-constant drscheme)]))
+        (define hp (new horizontal-panel% [parent dlg]))
+        (define answer #f)
+        
+        (define pre-installed-gb (new group-box-panel%
+                                      [label (string-constant teachpack-pre-installed)]
+                                      [parent hp]))
+        (define user-installed-gb (new group-box-panel%
+                                       [label (string-constant teachpack-user-installed)]
+                                       [parent hp]))
+        
+        (define pre-installed-lb
+          (new list-box%
+               [label #f]
+               [choices (map path->string pre-installed-tps)]
+               [stretchable-height #t]
+               [min-height 300]
+               [min-width 200]
+               [callback
+                (λ (x evt)
+                  (case (send evt get-event-type)
+                    [(list-box-dclick) (selected pre-installed-lb)]
+                    [else
+                     (clear-selection user-installed-lb)
+                     (update-button)]))]
+               [parent pre-installed-gb]))
+        
+        (define user-installed-lb
+          (new list-box%
+               [label #f]
+               [choices '()]
+               [stretchable-height #t]
+               [min-width 200]
+               [callback
+                (λ (x evt)
+                  (case (send evt get-event-type)
+                    [(list-box-dclick) (selected user-installed-lb)]
+                    [else
+                     (clear-selection pre-installed-lb)
+                     (update-button)]))]
+               [parent user-installed-gb]))
+        
+        (define (selected lb)
+          (set! answer (figure-out-answer))
+          (send dlg show #f))
+        
+        (define (clear-selection lb)
+          (for-each
+           (λ (x) (send lb select x #f))
+           (send lb get-selections)))
+        
+        (define add-button (new button%
+                                [parent user-installed-gb]
+                                [label (string-constant install-teachpack...)]
+                                [callback (λ (x y) (install-teachpack))]))
+        
+        (define (install-teachpack)
+          (let ([file (get-file (string-constant select-a-teachpack) dlg)])
+            (when file
+              (let-values ([(base name dir) (split-path file)])
+                (let ([dest-file (build-path teachpack-installation-dir name)])
+                  (when (or (not (file-exists? dest-file))
+                            (equal? 1
+                                    (message-box/custom
+                                     (string-constant drscheme)
+                                     (format
+                                      (string-constant teachpack-already-installed)
+                                      (path->string name))
+                                     (string-constant overwrite)
+                                     (string-constant cancel)
+                                     #f
+                                     dlg
+                                     '(default=2 caution))))
+                    (make-directory* teachpack-installation-dir)
+                    (when (file-exists? dest-file)
+                      (delete-file dest-file))
+                    (copy-file file dest-file)
+                    (update-user-installed-lb)
+                    (clear-selection pre-installed-lb)
+                    (send user-installed-lb set-string-selection (path->string name))
+                    (update-button)))))))
+        
+        (define (update-user-installed-lb)
+          (let ([files
+                 (if (directory-exists? teachpack-installation-dir)
+                     (map path->string (directory-list teachpack-installation-dir))
+                     '())])
+            (send user-installed-lb set (sort files string<=?))))
+        
+        
+        (define (update-button)
+          (send ok-button enable (or (pair? (send user-installed-lb get-selections))
+                                     (pair? (send pre-installed-lb get-selections)))))
+        
+        (define button-panel (new horizontal-panel% 
+                                  [parent dlg]
+                                  [alignment '(right center)]
+                                  [stretchable-height #f]))
+        (define-values (ok-button cancel-button)
+          (gui-utils:ok/cancel-buttons button-panel
+                                       (λ (b e) 
+                                         (set! answer (figure-out-answer))
+                                         (send dlg show #f))
+                                       (λ (b e) (send dlg show #f))
+                                       (string-constant ok) (string-constant cancel)))
+        
+        (define (figure-out-answer)
+          (cond
+            [(send pre-installed-lb get-selection)
+             =>
+             (λ (i) `(lib ,(send pre-installed-lb get-string i) "teachpack" "htdp"))]
+            [(send user-installed-lb get-selection)
+             =>
+             (λ (i) `(lib ,(send user-installed-lb get-string i) ,user-installed-teachpacks-collection))]
+            [else (error 'figure-out-answer "no selection!")]))
+        
+        
+        (send ok-button enable #f)
+        (update-user-installed-lb)
+        
+        (send dlg show #t)
+        answer)
+      
       (define (stepper-settings-language %)
         (class* % (stepper-language<%>)
           (init-field stepper:enable-let-lifting)
@@ -513,16 +792,16 @@ tracing todo:
           (define/override (stepper:enable-let-lifting?) stepper:enable-let-lifting)
           (super-new)))
 
-      ;; rewrite-module : syntax -> syntax
+      ;; rewrite-module : settings syntax -> syntax
       ;; rewrites te module to print out results of non-definitions
-      (define (rewrite-module stx)
+      (define (rewrite-module settings stx)
         (syntax-case stx (module #%plain-module-begin)
           [(module name lang (#%plain-module-begin bodies ...))
            (with-syntax ([(rewritten-bodies ...) 
                           (rewrite-bodies (syntax->list (syntax (bodies ...))))])
-             (syntax (module name lang
-                       (#%plain-module-begin 
-                        rewritten-bodies ...))))]
+             #`(module name lang
+                 (#%plain-module-begin 
+                  rewritten-bodies ...)))]
           [else
            (raise-syntax-error 'htdp-languages "internal error .1")]))
       

@@ -150,6 +150,7 @@
       (define (java-lang-mixin level name number one-line dyn?)
         (when dyn? (dynamic? #t))
         (class* object% (drscheme:language:language<%>)
+          (define/public (extra-repl-information settings port) (void))
           (define/public (get-reader-module) #f)
           (define/public (get-metadata a b) #f)
           (define/public (metadata->settings m) #f)
@@ -446,7 +447,7 @@
           ;;execute-types: type-record 
           (define execute-types (create-type-record))
           
-          (define/public (front-end/complete-program port settings teachpack-cache)
+          (define/public (front-end/complete-program port settings)
             (set! execute-types (create-type-record))
             (mred? #t)
             (let ([name (object-name port)])
@@ -457,7 +458,7 @@
                        eof 
                        (datum->syntax-object #f `(parse-java-full-program ,(parse port name level)
                                                                           ,name) #f)))))))
-          (define/public (front-end/interaction port settings teachpack-cache)
+          (define/public (front-end/interaction port settings)
             (mred? #t)
             (let ([name (object-name port)]
                   [executed? #f])

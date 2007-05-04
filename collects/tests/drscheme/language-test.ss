@@ -66,7 +66,7 @@ the settings above should match r5rs
       (test-expression "(sqrt -1)" "0+1i")
 
       (test-expression "class" (regexp "class: bad syntax in: class"))
-      (test-expression "shared" "{bug09.gif} reference to undefined identifier: shared")
+      (test-expression "shared" "{bug09.png} reference to undefined identifier: shared")
       
       (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of \"\\.\"")
       (test-expression "'(1 . 2)" "(1 . 2)")
@@ -77,16 +77,16 @@ the settings above should match r5rs
       
       (test-expression "call/cc" "#<primitive:call-with-current-continuation>")
       
-      (test-expression "(error 'a \"~a\" 1)" "{bug09.gif} a: 1")
-      (test-expression "(error \"a\" \"a\")" "{bug09.gif} a \"a\"")
+      (test-expression "(error 'a \"~a\" 1)" "{bug09.png} a: 1")
+      (test-expression "(error \"a\" \"a\")" "{bug09.png} a \"a\"")
       
       (test-expression "(time 1)" 
                        #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
             
-      (test-expression "true" "{bug09.gif} reference to undefined identifier: true")
-      (test-expression "mred^" "{bug09.gif} reference to undefined identifier: mred^")
+      (test-expression "true" "{bug09.png} reference to undefined identifier: true")
+      (test-expression "mred^" "{bug09.png} reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "#f")
-      (test-expression "(set! x 1)" "{bug09.gif} set!: cannot set undefined identifier: x")
+      (test-expression "(set! x 1)" "{bug09.png} set!: cannot set undefined identifier: x")
       (test-expression "(define qqq 2) (set! qqq 1)" "")
       (test-expression "(cond [(= 1 2) 3])" "")
       (test-expression "(cons 1 2)" "(1 . 2)")
@@ -119,7 +119,7 @@ the settings above should match r5rs
       (test-expression "(exact? 1.5)" "#f")
       
       (test-expression "(list 1)" "(1)")
-      (test-expression "(car (list))" "{bug09.gif} car: expects argument of type <pair>; given ()")
+      (test-expression "(car (list))" "{bug09.png} car: expects argument of type <pair>; given ()")
 
       (test-expression "argv" "#0()")))
 
@@ -161,8 +161,8 @@ the settings above should match r5rs
       
       (test-expression "(sqrt -1)" "0+1i")
 
-      (test-expression "class" "{bug09.gif} reference to undefined identifier: class")
-      (test-expression "shared" "{bug09.gif} reference to undefined identifier: shared")
+      (test-expression "class" "{bug09.png} reference to undefined identifier: class")
+      (test-expression "shared" "{bug09.png} reference to undefined identifier: shared")
       
       (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of \"\\.\"")
       (test-expression "'(1 . 2)" "(1 . 2)")
@@ -173,16 +173,16 @@ the settings above should match r5rs
       
       (test-expression "call/cc" "#<primitive:call-with-current-continuation>")
       
-      (test-expression "(error 'a \"~a\" 1)" "{bug09.gif} a: 1")
-      (test-expression "(error \"a\" \"a\")" "{bug09.gif} a \"a\"")
+      (test-expression "(error 'a \"~a\" 1)" "{bug09.png} a: 1")
+      (test-expression "(error \"a\" \"a\")" "{bug09.png} a \"a\"")
       
       (test-expression "(time 1)" 
                        #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
       
-      (test-expression "true" "{bug09.gif} reference to undefined identifier: true")
-      (test-expression "mred^" "{bug09.gif} reference to undefined identifier: mred^")
+      (test-expression "true" "{bug09.png} reference to undefined identifier: true")
+      (test-expression "mred^" "{bug09.png} reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "#f")
-      (test-expression "(set! x 1)" "{bug09.gif} set!: cannot set undefined identifier: x")
+      (test-expression "(set! x 1)" "{bug09.png} set!: cannot set undefined identifier: x")
       (test-expression "(define qqq 2) (set! qqq 1)" "")
       (test-expression "(cond [(= 1 2) 3])" "")
       (test-expression "(cons 1 2)" "(1 . 2)")
@@ -215,7 +215,7 @@ the settings above should match r5rs
       (test-expression ",1" "unquote: not in quasiquote in: (unquote 1)")
 
       (test-expression "(list 1)" "(1)")
-      (test-expression "(car (list))" "{bug09.gif} car: expects argument of type <pair>; given ()")
+      (test-expression "(car (list))" "{bug09.png} car: expects argument of type <pair>; given ()")
       
       (test-expression "argv" "#0()")))
 
@@ -258,12 +258,12 @@ the settings above should match r5rs
       (test-expression "(define x 1)(define x 2)" "")
       
       (test-expression "(define-struct spider (legs))(make-spider 4)" 
-                       "{bug09.gif} reference to undefined identifier: define-struct")
+                       "{bug09.png} reference to undefined identifier: define-struct")
       
       (test-expression "(sqrt -1)" "0+1i")
 
-      (test-expression "class" "{bug09.gif} reference to undefined identifier: class")
-      (test-expression "shared" "{bug09.gif} reference to undefined identifier: shared")
+      (test-expression "class" "{bug09.png} reference to undefined identifier: class")
+      (test-expression "shared" "{bug09.png} reference to undefined identifier: shared")
       
       (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of \"\\.\"")
       (test-expression "'(1 . 2)" "(1 . 2)")
@@ -272,18 +272,18 @@ the settings above should match r5rs
       (test-expression "(define (f car) 1)" "")
       (test-expression "(define (f empty) 1)" "")
       
-      (test-expression "call/cc" "{bug09.gif} reference to undefined identifier: call/cc")
+      (test-expression "call/cc" "{bug09.png} reference to undefined identifier: call/cc")
       
-      (test-expression "(error 'a \"~a\" 1)" "{bug09.gif} reference to undefined identifier: error")
-      (test-expression "(error \"a\" \"a\")" "{bug09.gif} reference to undefined identifier: error")
+      (test-expression "(error 'a \"~a\" 1)" "{bug09.png} reference to undefined identifier: error")
+      (test-expression "(error \"a\" \"a\")" "{bug09.png} reference to undefined identifier: error")
       
       (test-expression "(time 1)" 
-                       "{bug09.gif} reference to undefined identifier: time")
+                       "{bug09.png} reference to undefined identifier: time")
       
-      (test-expression "true" "{bug09.gif} reference to undefined identifier: true")
-      (test-expression "mred^" "{bug09.gif} reference to undefined identifier: mred^")
+      (test-expression "true" "{bug09.png} reference to undefined identifier: true")
+      (test-expression "mred^" "{bug09.png} reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "#t")
-      (test-expression "(set! x 1)" "{bug09.gif} set!: cannot set undefined identifier: x")
+      (test-expression "(set! x 1)" "{bug09.png} set!: cannot set undefined identifier: x")
       (test-expression "(define qqq 2) (set! qqq 1)" "")
       (test-expression "(cond ((= 1 2) 3))" "")
       (test-expression "(cons 1 2)" "(1 . 2)")
@@ -317,9 +317,9 @@ the settings above should match r5rs
 
       (test-expression "(list 1)" "(1)")
       (test-expression "(car (list))"
-                       "{bug09.gif} car: expects argument of type <pair>; given ()")
+                       "{bug09.png} car: expects argument of type <pair>; given ()")
 
-      (test-expression "argv" "{bug09.gif} reference to undefined identifier: argv")))
+      (test-expression "argv" "{bug09.png} reference to undefined identifier: argv")))
                                                         
 ;;                      ;                               
  ;                                                      
@@ -336,7 +336,7 @@ the settings above should match r5rs
 
   
   (define (beginner)
-    (parameterize ([language (list "How to Design Programs" "Beginning Student")])
+    (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")])
       (check-top-of-repl)
 
       (generic-settings #t)
@@ -369,7 +369,8 @@ the settings above should match r5rs
                        "shared: name is not defined, not an argument, and not a primitive name"
                        "reference to undefined identifier: shared")
 
-      (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
+      (test-expression "(define (. x y) (* x y))"
+                       "read: illegal use of \".\"")
       (test-expression "'(1 . 2)" "read: illegal use of \".\"")
       
       (test-expression "call/cc"
@@ -458,7 +459,7 @@ the settings above should match r5rs
 
   (define (beginner/abbrev)
     (parameterize ([language (list "How to Design Programs" 
-                                   "Beginning Student with List Abbreviations")])
+                                   #rx"Beginning Student with List Abbreviations(;|$)")])
       (check-top-of-repl)
   
       (generic-settings #t)
@@ -579,7 +580,7 @@ the settings above should match r5rs
 
 
   (define (intermediate)
-    (parameterize ([language (list "How to Design Programs" "Intermediate Student")])
+    (parameterize ([language (list "How to Design Programs" #rx"Intermediate Student(;|$)")])
       (check-top-of-repl)
 
       (generic-settings #t)
@@ -692,7 +693,7 @@ the settings above should match r5rs
 
   (define (intermediate/lambda)
     (parameterize ([language (list "How to Design Programs" 
-                                   "Intermediate Student with lambda")])
+                                   #rx"Intermediate Student with lambda(;|$)")])
       (check-top-of-repl)
       
       (generic-settings #t)
@@ -803,7 +804,7 @@ the settings above should match r5rs
 
 
   (define (advanced)
-    (parameterize ([language (list "How to Design Programs" "Advanced Student")])
+    (parameterize ([language (list "How to Design Programs" #rx"Advanced Student(;|$)")])
       (check-top-of-repl)
 
       (generic-settings #t)
@@ -961,7 +962,7 @@ the settings above should match r5rs
              [get-line (lambda (n) (send interactions get-text 
                                          (send interactions paragraph-start-position n)
                                          (send interactions paragraph-end-position n)))]
-             [line0-expect (format "Welcome to DrScheme, version ~a." (version:version))]
+             [line0-expect (format "Welcome to DrScheme, version ~a [3m]." (version:version))]
              [line1-expect 
               (if (string? short-lang)
                   (format "Language: ~a." short-lang)
@@ -1207,7 +1208,7 @@ the settings above should match r5rs
              (when (regexp-match re:out-of-sync got)
                (error 'text-expression "got out of sync message"))
              (unless (check-expectation repl-expected got)
-               (printf (make-err-msg repl-expected) 'interactions (language) expression defs-expected got)))))]))
+               (printf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got)))))]))
   
   
   (define-syntax (go stx)
@@ -1219,14 +1220,10 @@ the settings above should match r5rs
                       (printf ">> finished ~a\n" (syntax-object->datum #'arg))))]))
   
   (define (run-test)
-    ;; clear teachpack
-    (let ([drs (wait-for-drscheme-frame)])
-      (fw:test:menu-select "Language" "Clear All Teachpacks"))
-
-    (go mred)
-    (go mzscheme)
-    (go beginner)
-    (go beginner/abbrev)
+    ;(go mred)
+    ;(go mzscheme)
+    ;(go beginner) ;; not really done
+    ;(go beginner/abbrev) ;; not really done
     (go intermediate)
     (go intermediate/lambda)
     (go advanced)

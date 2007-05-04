@@ -69,7 +69,6 @@ TODO
             (prefix drscheme:unit: drscheme:unit^)
             (prefix drscheme:text: drscheme:text^)
             (prefix drscheme:help-desk: drscheme:help-desk^)
-            (prefix drscheme:teachpack: drscheme:teachpack^)
             (prefix drscheme:debug: drscheme:debug^)
             [prefix drscheme:eval: drscheme:eval^])
     (export (rename drscheme:rep^
@@ -91,8 +90,6 @@ TODO
           get-user-eventspace
           get-user-thread
           get-user-namespace
-          get-user-teachpack-cache
-          set-user-teachpack-cache
 
           get-definitions-text
           
@@ -446,6 +443,8 @@ TODO
       (send* warning-style-delta
         (set-delta-foreground "BLACK")
         (set-delta-background "YELLOW"))
+    (define (get-welcome-delta) welcome-delta)
+    (define (get-dark-green-delta) dark-green-delta)
       
       ;; is-default-settings? : language-settings -> boolean
       ;; determines if the settings in `language-settings'
@@ -605,6 +604,7 @@ TODO
                    get-out-port
                    get-snip-position
                    get-start-position
+                   get-styles-fixed
                    get-style-list
                    get-text
                    get-top-level-window
@@ -635,6 +635,7 @@ TODO
                    set-insertion-point
                    set-position
                    set-styles-sticky
+                   set-styles-fixed
                    set-unread-start-point
                    split-snip
                    thaw-colorer)
@@ -904,7 +905,6 @@ TODO
                       (thread-running? (get-user-thread)))))
           
           (field (user-language-settings #f)
-                 (user-teachpack-cache (preferences:get 'drscheme:teachpacks))
                  (user-custodian-parent #f)
                  (memory-killed-thread #f)
                  (user-custodian #f)
@@ -921,8 +921,6 @@ TODO
 
           (define/public (get-user-language-settings) user-language-settings)
           (define/public (get-user-custodian) user-custodian)
-          (define/public (get-user-teachpack-cache) user-teachpack-cache)
-          (define/public (set-user-teachpack-cache tpc) (set! user-teachpack-cache tpc))
           (define/public (get-user-eventspace) (weak-box-value user-eventspace-box))
           (define/public (get-user-thread) user-eventspace-main-thread)
           (define/public (get-user-namespace) (weak-box-value user-namespace-box))
@@ -1060,8 +1058,8 @@ TODO
                       [dummy-value (box #f)]
                       [get-sexp/syntax/eof 
                        (if complete-program?
-                           (send lang front-end/complete-program port settings user-teachpack-cache)
-                           (send lang front-end/interaction port settings user-teachpack-cache))])
+                           (send lang front-end/complete-program port settings)
+                           (send lang front-end/interaction port settings))])
                  
                  ; Evaluate the user's expression. We're careful to turn on
                  ;   breaks as we go in and turn them off as we go out.
@@ -1229,13 +1227,6 @@ TODO
                      (current-error-port)
                      "copied exn raised when setting up snip values (thunk passed as third argume to drscheme:language:add-snip-value)\n")
                     (raise exn)))
-                
-                ;; installs the teachpacks
-                ;; must happen after language is initialized.
-                (queue-user/wait
-                 (λ () ; =User=, =No-Breaks=
-                   (drscheme:teachpack:install-teachpacks 
-                    user-teachpack-cache)))
                 
                 (parameterize ([current-eventspace user-eventspace])
                   (queue-callback
@@ -1476,17 +1467,14 @@ TODO
                             dark-green-delta))
             (insert/delta this ".\n" welcome-delta)
             
+            (let ([osf (get-styles-fixed)])
+              (set-styles-fixed #f)
+              (send (drscheme:language-configuration:language-settings-language user-language-settings)
+                    extra-repl-information
+                    (drscheme:language-configuration:language-settings-settings user-language-settings)
+                    (open-output-text-editor this 'end))
+              (set-styles-fixed osf))
             
-            (for-each
-             (λ (fn)
-               (insert/delta this
-                             (string-append (string-constant teachpack) ": ")
-                             welcome-delta)
-               (insert/delta this fn dark-green-delta)
-               (insert/delta this ".\n" welcome-delta))
-             (map path->string 
-                  (drscheme:teachpack:teachpack-cache-filenames 
-                   user-teachpack-cache)))
             (set! setting-up-repl? #f)
             
             (set! already-warned? #f)

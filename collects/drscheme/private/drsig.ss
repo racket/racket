@@ -21,7 +21,6 @@
            drscheme:draw-arrow^
            drscheme:help-desk^
            drscheme:language^
-           drscheme:teachpack^
            drscheme:multi-file-search^
            drscheme:module-overview^
            drscheme:font^
@@ -104,11 +103,7 @@
      get-default-language-settings
      settings-preferences-symbol
 
-     add-built-in-languages
-     
-     ;; for the language dialog
-     add-new-teachpack
-     clear-all-teachpacks))
+     add-built-in-languages))
   
   (define-signature drscheme:tools^
     ((struct successful-tool (spec bitmap name url))
@@ -142,7 +137,8 @@
      open-drscheme-window
      find-symbol
      get-program-editor-mixin
-     add-to-program-editor-mixin))
+     add-to-program-editor-mixin
+     (struct teachpack-callbacks (get-names remove add))))
   
   (define-signature drscheme:frame^
     (<%>
@@ -178,6 +174,8 @@
      current-value-port
      get-drs-bindings-keymap
      error-delta
+     get-welcome-delta 
+     get-dark-green-delta
      text%
      text<%>
      context<%>))
@@ -245,18 +243,6 @@
      simple-module-based-language->module-based-language-mixin
      module-based-language->language-mixin))
 
-  (define-signature drscheme:teachpack^
-    (install-teachpacks
-     marshall-teachpack-cache
-     unmarshall-teachpack-cache
-     launcher-init-code
-     launcher-modules-to-embed
-     new-teachpack-cache
-     teachpack-cache?
-     teachpack-cache-filenames
-     teachpack-cache-require-specs
-     set-teachpack-cache-filenames!))
-
   (define-signature drscheme:multi-file-search^
     (multi-file-search))
   
@@ -279,5 +265,4 @@
      (open (prefix drscheme:language: drscheme:language^))
      (open (prefix drscheme:help-desk: drscheme:help-desk^))
      (open (prefix drscheme:eval: drscheme:eval^))
-     (open (prefix drscheme:teachpack: drscheme:teachpack^))
      (open (prefix drscheme:modes: drscheme:modes^)))))

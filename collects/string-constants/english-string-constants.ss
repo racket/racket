@@ -904,7 +904,12 @@ please adhere to these guidelines:
  (clear-all-teachpacks-menu-item-label "Clear All Teachpacks")
  (drscheme-teachpack-message-title "DrScheme Teachpack")
  (already-added-teachpack "Already added ~a teachpack")
- 
+  
+  (teachpack-pre-installed "Preinstalled Teachpacks")
+  (teachpack-user-installed "User-installed Teachpacks")
+  (install-teachpack... "Install Teachpack...")
+  (teachpack-already-installed "A teachpack with the name '~a' has already been installed. Overwrite it?")
+  
  ;;; Language dialog
  (introduction-to-language-dialog
   "Please select a language. Students in most introductory courses should use the default language.")
@@ -920,6 +925,8 @@ please adhere to these guidelines:
  (input-syntax "Input Syntax")
  (dynamic-properties "Dynamic Properties")
  (output-syntax "Output Syntax")
+  (teachpacks "Teachpacks") ;; label in the language dialog for the teaching languages
+  (teachpacks-none "<< none >>") ;; shows up under the previous string, when there are no teachpacks
  (no-debugging-or-profiling "No debugging or profiling")
  (debugging "Debugging")
  (debugging-and-profiling "Debugging and profiling")

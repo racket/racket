@@ -22,7 +22,6 @@
            (lib "bundle-dist.ss" "compiler"))
 
   (import [prefix drscheme:debug: drscheme:debug^]
-          [prefix drscheme:teachpack: drscheme:teachpack^]
           [prefix drscheme:tools: drscheme:tools^]
           [prefix drscheme:help-desk: drscheme:help-desk^])
   (export drscheme:language^)
@@ -47,6 +46,8 @@
       front-end/interaction
       config-panel
       on-execute
+      extra-repl-information
+      
       first-opened
       render-value/format
       render-value
@@ -196,8 +197,8 @@
 	  
           (define/public (on-execute setting run-in-user-thread)
 	    (initialize-simple-module-based-language setting run-in-user-thread))
-          (define/public (get-init-code setting teachpacks)
-            (simple-module-based-language-get-init-code setting teachpacks))
+          (define/public (get-init-code setting)
+            (simple-module-based-language-get-init-code setting))
           
           (define/public (render-value/format value settings port width)
             (simple-module-based-language-render-value/format value settings port width))
@@ -443,8 +444,8 @@
            (current-inspector (make-inspector))
            (read-case-sensitive (simple-settings-case-sensitive setting)))))
       
-      ;; simple-module-based-language-get-init-code : setting teachpack-cache -> sexp[module]
-      (define (simple-module-based-language-get-init-code setting teachpack-cache)
+      ;; simple-module-based-language-get-init-code : setting -> sexp[module]
+      (define (simple-module-based-language-get-init-code setting)
         `(module mod-name mzscheme
            (require (lib "pconvert.ss")
                     (lib "pretty.ss"))
@@ -483,7 +484,6 @@
                 `(void))
 
            (define (init-code)
-             ,(drscheme:teachpack:launcher-init-code teachpack-cache)
              (current-inspector (make-inspector))
              (error-value->string-handler executable-error-value->string-handler)
              (read-case-sensitive ,(simple-settings-case-sensitive setting)))))
@@ -533,18 +533,19 @@
                                               (get-module)
                                               (get-transformer-module)
                                               run-in-user-thread))
-          (define/public (front-end/complete-program port settings teachpack-cache)
+          (define/public (front-end/complete-program port settings)
             (module-based-language-front-end port (get-reader)))
-          (define/public (front-end/interaction port settings teachpack-cache)
+          (define/public (front-end/interaction port settings)
             (module-based-language-front-end port (get-reader)))
-          (define/public (create-executable setting parent program-filename teachpacks)
+          (define/public (create-executable setting parent program-filename)
             (create-module-based-language-executable parent 
                                                      program-filename
                                                      (get-module)
                                                      (get-transformer-module)
-                                                     (get-init-code setting teachpacks)
+                                                     (get-init-code setting)
                                                      (use-mred-launcher)
                                                      (use-namespace-require/copy?)))
+          (define/public (extra-repl-information _1 _2) (void))
           (define/public (get-reader-module) #f)
           (define/public (get-metadata a b c) #f)
           (define/public (metadata->settings m) #f)
@@ -905,15 +906,11 @@
                   (cons `(file ,(path->string init-code-tmp-filename))
                         pre-to-be-embedded-module-specs1)]
                  [pre-to-be-embedded-module-specs3
-                  (append (drscheme:teachpack:launcher-modules-to-embed
-                           (preferences:get 'drscheme:teachpacks))
-                          pre-to-be-embedded-module-specs2)]
-                 [pre-to-be-embedded-module-specs4
                   (filter (λ (x) (not (eq? x 'mzscheme)))
-                          pre-to-be-embedded-module-specs3)]
+                          pre-to-be-embedded-module-specs2)]
                  [to-be-embedded-module-specs
                   (map (λ (x) (list #f x))
-                       pre-to-be-embedded-module-specs4)])
+                       pre-to-be-embedded-module-specs3)])
 
             (create-embedding-executable 
              executable-filename

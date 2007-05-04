@@ -31,6 +31,8 @@
                (datum->syntax-object
                 #f
                 `(module ,(lookup 'modname table) ,spec
+                   ,@(map (λ (x) `(require ,x))
+                          (lookup 'teachpacks table))
                    ,@(parameterize ([read-case-sensitive (lookup 'read-case-sensitive table)])
                        (get-all-exps source-name port))))))])
       read-syntax)))

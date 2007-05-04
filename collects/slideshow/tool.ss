@@ -699,15 +699,15 @@ pict snip :
       
       (define slideshow-mixin
         (mixin (drscheme:language:language<%>) ()
-          (define/override (front-end/complete-program input settings teachpack-cache)
-            (let ([st (super front-end/complete-program input settings teachpack-cache)])
+          (define/override (front-end/complete-program input settings)
+            (let ([st (super front-end/complete-program input settings)])
               (lambda ()
                 (let ([sv (st)])
                   (cond
                     [(syntax? sv) (rewrite-syntax sv)]
                     [else sv])))))
-          (define/override (front-end/interaction input settings teachpack-cache)
-            (let ([st (super front-end/interaction input settings teachpack-cache)])
+          (define/override (front-end/interaction input settings)
+            (let ([st (super front-end/interaction input settings)])
               (lambda ()
                 (let ([sv (st)])
                   (cond

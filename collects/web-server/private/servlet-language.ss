@@ -52,8 +52,8 @@
                  (eval '(define raw-servlet->unit/sig (dynamic-require '(lib "servlet-startup.ss" "web-server") 'raw-servlet->unit/sig)))
                  (eval '(define create-module-servlet (dynamic-require '(lib "servlet-startup.ss" "web-server") 'create-module-servlet)))))))
 
-          (define/override (front-end/complete-program input settings teachpack-cache)
-            (let ([super-thunk (super front-end/complete-program input settings teachpack-cache)])
+          (define/override (front-end/complete-program input settings)
+            (let ([super-thunk (super front-end/complete-program input settings)])
               (unless program-results
                 (let loop ([continue-with-results
                             (lambda (rslts)

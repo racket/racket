@@ -6,8 +6,7 @@
            "multi-file-search.ss"
            "debug.ss"
            "module-language.ss"
-           "teachpack.ss"
-	   "tools.ss"
+           "tools.ss"
            (lib "unit.ss")
 	   "language.ss"
            "language-configuration.ss"
@@ -35,9 +34,8 @@
             drscheme:language^
             drscheme:help-desk^
             drscheme:eval^
-            drscheme:teachpack^
             drscheme:modes^)
-    (link init@ tools@ modes@ text@ teachpack@ eval@ frame@ rep@ language@
+    (link init@ tools@ modes@ text@ eval@ frame@ rep@ language@
           module-overview@ unit@ debug@ multi-file-search@ get-extend@
           language-configuration@ font@ module-language@ help-desk@ app@ main@))
   
@@ -52,7 +50,6 @@
       (prefix drscheme:language: drscheme:language^)
       (prefix drscheme:help-desk: drscheme:help-desk^)
       (prefix drscheme:eval: drscheme:eval^)
-      (prefix drscheme:teachpack: drscheme:teachpack^)
       (prefix drscheme:modes: drscheme:modes^))
      drscheme-unit@)))
       

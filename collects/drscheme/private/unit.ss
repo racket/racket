@@ -52,7 +52,6 @@ module browser threading seems wrong.
             [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
             [prefix drscheme:language: drscheme:language^]
             [prefix drscheme:get/extend: drscheme:get/extend^]
-            [prefix drscheme:teachpack: drscheme:teachpack^]
             [prefix drscheme:module-overview: drscheme:module-overview^]
             [prefix drscheme:tools: drscheme:tools^]
             [prefix drscheme:eval: drscheme:eval^]
@@ -92,6 +91,15 @@ module browser threading seems wrong.
 	  get-next-settings
 	  after-set-next-settings))
       
+    (define-struct teachpack-callbacks 
+      (get-names   ;; settings -> (listof string)
+       add ;; settings path -> settings
+       remove  ;; string[returned from teachpack-names] settings -> settings
+       remove-all ;; settings -> settings
+       ))
+    
+    ;; get rid of set-user-teachpack-cache method
+    
       (keymap:add-to-right-button-menu
        (let ([old (keymap:add-to-right-button-menu)])
          (λ (menu text event)
@@ -269,8 +277,7 @@ module browser threading seems wrong.
                        create-executable
                        (drscheme:language-configuration:language-settings-settings settings)
                        frame
-                       program-filename
-                       (send (send frame get-interactions-text) get-user-teachpack-cache))))])))
+                       program-filename)))])))
       
       (define make-execute-bitmap 
         (bitmap-label-maker (string-constant execute-button-label) 
@@ -563,6 +570,8 @@ module browser threading seems wrong.
                       (send execute-lang marshall-settings 
                             (drscheme:language-configuration:language-settings-settings next-settings))))))
             
+            (define/pubment (set-needs-execution-message msg)
+              (set! needs-execution-state msg))
             (define/pubment (teachpack-changed)
               (set! needs-execution-state (string-constant needs-execute-teachpack-changed)))
             (define/pubment (just-executed)
@@ -2308,28 +2317,6 @@ module browser threading seems wrong.
           (define/public (get-definitions-text) definitions-text)
           (define/public (get-interactions-text) interactions-text)
           
-          (define/private (update-teachpack-menu)
-            (define user-teachpack-cache (send (get-interactions-text) get-user-teachpack-cache))
-            (for-each (λ (item) (send item delete)) teachpack-items)
-            (set! teachpack-items
-                  (map (λ (name)
-                         (make-object menu:can-restore-menu-item%
-                           (format (string-constant clear-teachpack) 
-                                   (mzlib:file:file-name-from-path name))
-                           language-menu
-                           (λ (item evt)
-                             (let ([new-teachpacks 
-                                    (drscheme:teachpack:new-teachpack-cache
-                                     (remove
-                                      name
-                                      (drscheme:teachpack:teachpack-cache-filenames
-                                       user-teachpack-cache)))])
-                               (send (get-interactions-text) set-user-teachpack-cache new-teachpacks)
-                               (preferences:set 'drscheme:teachpacks new-teachpacks)
-                               (send (get-definitions-text) teachpack-changed)))))
-                       (drscheme:teachpack:teachpack-cache-filenames
-                        user-teachpack-cache))))
-          
           (define/public (get-definitions/interactions-panel-parent)
             (get-area-container))
           
@@ -2757,11 +2744,54 @@ module browser threading seems wrong.
               (when new-settings
                 (send definitions-text set-next-settings new-settings))))
           
+          ;; must be called from on-demand (on each menu click), or the state won't be handled properly
+          (define/private (update-teachpack-menu)
+            (for-each (λ (item) (send item delete)) teachpack-items)
+            (let ([tp-callbacks (get-current-capability-value 'drscheme:teachpack-menu-items)])
+              (cond
+                [tp-callbacks
+                 (let* ([language (drscheme:language-configuration:language-settings-language
+                                   (send (get-definitions-text) get-next-settings))]
+                        [settings (drscheme:language-configuration:language-settings-settings
+                                   (send (get-definitions-text) get-next-settings))]
+                        [tp-names ((teachpack-callbacks-get-names tp-callbacks) settings)]
+                        [update-settings
+                         (λ (settings)
+                           (send (get-definitions-text) set-next-settings 
+                                 (drscheme:language-configuration:make-language-settings language settings))
+                           (send (get-definitions-text) teachpack-changed))])
+                   (set! teachpack-items
+                         (list*
+                          (make-object separator-menu-item% language-menu)
+                          (new menu:can-restore-menu-item%
+                               [label (string-constant add-teachpack-menu-item-label)]
+                               [parent language-menu]
+                               [callback
+                                (λ (_1 _2)
+                                  (update-settings ((teachpack-callbacks-add tp-callbacks) settings this)))])
+                          (let ([mi (new menu:can-restore-menu-item% 
+                                         [label (string-constant clear-all-teachpacks-menu-item-label)]
+                                         [parent language-menu]
+                                         [callback
+                                          (λ (_1 _2) 
+                                            (update-settings ((teachpack-callbacks-remove-all tp-callbacks) settings)))])])
+                            
+                            (send mi enable (not (null? tp-names)))
+                            mi)
+                          (map (λ (name)
+                                 (new menu:can-restore-menu-item%
+                                      [label (format (string-constant clear-teachpack) name)]
+                                      [parent language-menu]
+                                      [callback
+                                       (λ (item evt)
+                                         (update-settings ((teachpack-callbacks-remove tp-callbacks) settings name)))]))
+                               tp-names))))]
+                [else 
+                 (set! teachpack-items '())])))
+          
           (define/private (initialize-menus)
             (let* ([mb (get-menu-bar)]
-                   [language-menu-on-demand
-                    (λ (menu-item)
-                      (update-teachpack-menu))]
+                   [language-menu-on-demand (λ (menu-item) (update-teachpack-menu))]
                    [_ (set! language-menu (make-object (get-menu%) 
                                             (string-constant language-menu-name)
                                             mb
@@ -2786,27 +2816,6 @@ module browser threading seems wrong.
                 language-menu
                 (λ (_1 _2) (choose-language-callback))
                 #\l)
-              (make-object separator-menu-item% language-menu)
-              (make-object menu:can-restore-menu-item%
-                (string-constant add-teachpack-menu-item-label)
-                language-menu
-                (λ (_1 _2)
-                  (when (drscheme:language-configuration:add-new-teachpack this)
-                    (send (get-definitions-text) teachpack-changed))))
-              (let ([clear-all-on-demand
-                     (λ (menu-item)
-                       (send menu-item enable
-                             (not (null? (drscheme:teachpack:teachpack-cache-filenames
-                                          (preferences:get 'drscheme:teachpacks))))))])
-                (make-object menu:can-restore-menu-item% 
-                  (string-constant clear-all-teachpacks-menu-item-label)
-                  language-menu
-                  (λ (_1 _2) 
-                    (when (drscheme:language-configuration:clear-all-teachpacks)
-                      (send (get-definitions-text) teachpack-changed)))
-                  #f
-                  #f
-                  clear-all-on-demand))
               
               (set! execute-menu-item
                     (make-object menu:can-restore-menu-item%
