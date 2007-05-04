@@ -50,7 +50,7 @@
                          "(define (plus1 x) x)"
                          "(define (loop) (loop))"
                          "(define (memory x) (make-vector x))")))
-   (set-eval-limits ev 1 2)
+   (set-eval-limits ev 1 3)
    --eval--
    x => 1
    (id 1) => 1
