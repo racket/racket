@@ -2,8 +2,7 @@
 
 (module foreign mzscheme
 
-(require #%foreign
-	 (lib "dirs.ss" "setup"))
+(require #%foreign (lib "dirs.ss" "setup"))
 (require-for-syntax (lib "stx.ss" "syntax"))
 
 ;; This module is full of unsafe bindings that are not provided to requiring
@@ -141,44 +140,53 @@
 (define get-ffi-lib
   (case-lambda
    [(name) (get-ffi-lib name "")]
-   [(name version)
+   [(name version/s)
     (cond
-     [(not name) (ffi-lib name)] ; #f => NULL => open this executable
-     [(not (or (string? name) (path? name)))
-      (raise-type-error 'ffi-lib "library-name" name)]
-     [else
-      ;; A possible way that this might be misleading: say that there is a
-      ;; "foo.so" file in the current directory, which refers to some undefined
-      ;; symbol, trying to use this function with "foo.so" will try a dlopen
-      ;; with "foo.so" which isn't found, then it tries a dlopen with
-      ;; "/<curpath>/foo.so" which fails because of the undefined symbol, and
-      ;; since all fails, it will use (ffi-lib "foo.so") to raise the original
-      ;; file-not-found error.  This is because the dlopen doesn't provide a
-      ;; way to distinguish different errors (only dlerror, but that's
-      ;; unreliable).
-      (let* ([version (if (zero? (string-length version))
-                        "" (string-append "." version))]
-             [fullpath (lambda (p) (path->complete-path (expand-path p)))]
-             [absolute? (absolute-path? name)]
-             [name0 (path->string (expand-path name))]     ; orig name
-             [name  (if (regexp-match lib-suffix-re name0) ; name + suffix
-                      (string-append name0 version)
-                      (string-append name0 "." lib-suffix version))])
-        (or (and (not absolute?)
-                 (ormap (lambda (dir)
-                          ;; try good name first, then original
-                          (or (ffi-lib (build-path dir name) #t)
-                              (ffi-lib (build-path dir name0) #t)))
-                        (get-lib-search-dirs)))
-	    ;; Try without DLL path:
-	    (ffi-lib name #t)         ; try good name first
-            (ffi-lib name0 #t)        ; try original
-            (and (file-exists? name)  ; try a relative path
-                 (ffi-lib (fullpath name) #t))
-            (and (file-exists? name0) ; relative with original
-                 (ffi-lib (fullpath name0) #t))
-            ;; give up: call ffi-lib so it will raise an error
-            (ffi-lib name)))])]))
+      [(not name) (ffi-lib name)] ; #f => NULL => open this executable
+      [(not (or (string? name) (path? name)))
+       (raise-type-error 'ffi-lib "library-name" name)]
+      [else
+       ;; A possible way that this might be misleading: say that there is a
+       ;; "foo.so" file in the current directory, which refers to some
+       ;; undefined symbol, trying to use this function with "foo.so" will try
+       ;; a dlopen with "foo.so" which isn't found, then it tries a dlopen with
+       ;; "/<curpath>/foo.so" which fails because of the undefined symbol, and
+       ;; since all fails, it will use (ffi-lib "foo.so") to raise the original
+       ;; file-not-found error.  This is because the dlopen doesn't provide a
+       ;; way to distinguish different errors (only dlerror, but that's
+       ;; unreliable).
+       (let* ([versions (if (list? version/s) version/s (list version/s))]
+              [versions (map (lambda (v)
+                               (if (or (not v) (zero? (string-length v)))
+                                 "" (string-append "." v)))
+                             versions)]
+              [fullpath (lambda (p) (path->complete-path (expand-path p)))]
+              [absolute? (absolute-path? name)]
+              [name0 (path->string (expand-path name))]     ; orig name
+              [names (map (if (regexp-match lib-suffix-re name0) ; name+suffix
+                            (lambda (v) (string-append name0 v))
+                            (lambda (v) (string-append name0 "." lib-suffix v)))
+                          versions)]
+              [ffi-lib*  (lambda (name) (ffi-lib name #t))])
+         (or ;; try to look in our library paths first
+             (and (not absolute?)
+                  (ormap (lambda (dir)
+                           ;; try good names first, then original
+                           (or (ormap (lambda (name)
+                                        (ffi-lib* (build-path dir name)))
+                                      names)
+                               (ffi-lib* (build-path dir name0))))
+                         (get-lib-search-dirs)))
+             ;; try a system search
+             (ormap ffi-lib* names)    ; try good names first
+             (ffi-lib* name0)          ; try original
+             (ormap (lambda (name)     ; try relative paths
+                      (and (file-exists? name) (ffi-lib* (fullpath name))))
+                    names)
+             (and (file-exists? name0) ; relative with original
+                  (ffi-lib* (fullpath name0)))
+             ;; give up: call ffi-lib so it will raise an error
+             (ffi-lib (car names))))])]))
 
 (define (get-ffi-lib-internal x)
   (if (ffi-lib? x) x (get-ffi-lib x)))
@@ -377,12 +385,12 @@
    (let ([keys '()])
      (define (setkey! key val . id?)
        (cond
-        [(assq key keys)
-         (err "bad expansion of custom type (two `~a:'s)" key type)]
-        [(and (pair? id?) (car id?) (not (identifier? val)))
-         (err "bad expansion of custom type (`~a:' expects an identifier)"
-              key type)]
-        [else (set! keys (cons (cons key val) keys))]))
+         [(assq key keys)
+          (err "bad expansion of custom type (two `~a:'s)" key type)]
+         [(and (pair? id?) (car id?) (not (identifier? val)))
+          (err "bad expansion of custom type (`~a:' expects an identifier)"
+               key type)]
+         [else (set! keys (cons (cons key val) keys))]))
      (let loop ([t orig])
        (define (next rest . args) (apply setkey! args) (loop rest))
        (syntax-case* t (type: expr: bind: 1st-arg: prev-arg: pre: post:) id=?
@@ -1400,23 +1408,23 @@
                 (define (list->TYPE vals) (apply make-TYPE vals))
                 (define (list*->TYPE vals)
                   (cond
-                   [(TYPE? vals) vals]
-                   [(= (length vals) (length all-types))
-                    (let ([block (malloc _TYPE*)])
-                      (set-cpointer-tag! block all-tags)
-                      (for-each
-                       (lambda (type ofs value)
-                         (let-values
-                             ([(ptr tags types offsets T->list* list*->T)
-                               (cstruct-info
-                                type
-                                (lambda () (values #f '() #f #f #f #f)))])
-                           (ptr-set! block type 'abs ofs
-                                     (if list*->T (list*->T value) value))))
-                       all-types all-offsets vals)
-                      block)]
-                   [else (error '_TYPE "expecting ~s values, got ~s: ~e"
-                                (length all-types) (length vals) vals)]))
+                    [(TYPE? vals) vals]
+                    [(= (length vals) (length all-types))
+                     (let ([block (malloc _TYPE*)])
+                       (set-cpointer-tag! block all-tags)
+                       (for-each
+                        (lambda (type ofs value)
+                          (let-values
+                              ([(ptr tags types offsets T->list* list*->T)
+                                (cstruct-info
+                                 type
+                                 (lambda () (values #f '() #f #f #f #f)))])
+                            (ptr-set! block type 'abs ofs
+                                      (if list*->T (list*->T value) value))))
+                        all-types all-offsets vals)
+                       block)]
+                    [else (error '_TYPE "expecting ~s values, got ~s: ~e"
+                                 (length all-types) (length vals) vals)]))
                 (define (TYPE->list x)
                   (unless (TYPE? x)
                     (raise-type-error 'TYPE-list struct-string x))

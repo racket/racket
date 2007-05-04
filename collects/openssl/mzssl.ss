@@ -66,16 +66,17 @@
 
   (define libcrypto
     (with-handlers ([exn:fail? (lambda (x)
-				 (set! ssl-load-fail-reason (exn-message x))
-				 #f)])
-      (ffi-lib libcrypto-so)))
+                                 (set! ssl-load-fail-reason (exn-message x))
+                                 #f)])
+      (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7"))))
 
   (define libssl
     (and libcrypto
-	 (with-handlers ([exn:fail? (lambda (x)
-				      (set! ssl-load-fail-reason (exn-message x))
-				      #f)])
-           (ffi-lib libssl-so))))
+	 (with-handlers ([exn:fail?
+                          (lambda (x)
+                            (set! ssl-load-fail-reason (exn-message x))
+                            #f)])
+           (ffi-lib libssl-so '("" "0.9.8b" "0.9.8" "0.9.7")))))
 
   (define libmz (ffi-lib #f))
 
