@@ -4,7 +4,7 @@
 <p>The teachpack provides two kinds of functions. The first five allow
 students to simulate a small world of animated drawings and games: 
 <menu>
-<li><code>{(idx run-simulation)} : Nat Nat Number [Nat -> Image] -> true</code><br>
+<li><code>{(idx run-simulation)} : Nat Nat Number [Nat -> Scene] -> true</code><br>
  <code>(run-simulation width height r create-image)</code>
    creates and shows a <code>width</code> x <code>height</code> canvas, 
    starts a clock, ticking every <code>r</code> (usually fractional) seconds, 
@@ -28,11 +28,17 @@ students to simulate a small world of animated drawings and games:
 </pre>
 </p>
 
-<p>
- The <code>Stop</code> button on the frame allows users to stop the clock
- and thus the simulation. It also enables the <code>Images</code> button,
- which then allows users to create images of all the steps taken since the
- beginning of time. 
+<p>The teachpack assumes two basic kinds of data: 
+<ul>
+<li><code>World</code>, which is something you must define; 
+</li>
+<li><code>Image</code>, which are either inserted into DrScheme via the
+  "Special" menu or constructed from the functions below; and 
+</li>
+<li><code>Scene</code>, which are created from <code>Image</code>s. Indeed,
+  they are just special images. 
+</li>
+</ul>
 </p>
 
 <li><code>{(idx big-bang)} : Nat Nat Number World -> true</code><br>
@@ -114,7 +120,7 @@ students to simulate a small world of animated drawings and games:
    <code>(empty-scene width height)</code>
    creates a width x height "scene" (frame with origin in NW)
 
-<li><code>{(idx place-image)} : Image Number Number Scence -> Scene</code><br>
+<li><code>{(idx place-image)} : Image Number Number Scene -> Scene</code><br>
    <code>(place-image image x y scene)</code>
    places image at (x,y) into scene; (x,y) are comp. graph. coordinates
    
