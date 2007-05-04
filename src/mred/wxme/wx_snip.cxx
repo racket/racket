@@ -79,7 +79,7 @@ static void memmove(char *dest, char *src, long size)
 extern void *wxMallocAtomicIfPossible(size_t s);
 
 #define STRALLOC(n) new WXGC_ATOMIC wxchar[n]
-#define TRY_STRALLOC(n) (wxchar *)wxMallocAtomicIfPossible(n * sizeof(wxchar))
+#define TRY_STRALLOC(n) (wxchar *)wxMallocAtomicIfPossible((n) * sizeof(wxchar))
 #define STRFREE(s) /* empty */
 
 wxchar wx_empty_wxstr[1] = {0};
