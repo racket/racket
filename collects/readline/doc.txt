@@ -27,7 +27,10 @@ when the input is redirected from a file).  Still the TERM condition
 above is useful for starting MzScheme in dumb terminals, eg, inside
 Emacs.
 
-The readline history is stored across invocations in MzScheme's
+Completion is set to use the visible bindings in the current
+namespace; this is far from ideal, but it's better than readline's
+default filename completion which is rarely useful.  In addition, the
+readline history is stored across invocations in MzScheme's
 preferences file, assuming MzScheme exits normally.
 
 
@@ -101,7 +104,7 @@ mostly problems with detecting an EOF).
 Direct bindings for readline hackers
 ------------------------------------
 
-The _readline.ss_ library provides two functions:
+The _readline.ss_ library provides these functions:
 
 > (readline prompt-string)
   prints the given prompt string and reads a line
@@ -120,9 +123,10 @@ The _readline.ss_ library provides two functions:
 
 > (set-completion-function! proc [type])
   sets readline's `rl_completion_entry_function' function according to
-  proc, which is expected to be a `string -> (list-of string)'
+  proc, which is expected to be a `string -> (list-of string/bytes)'
   procedure; the `type' argument defaults to `_string' but you can use
-  it with `_bytes' instead
+  it with `_bytes' instead to have your function receive a byte
+  string.
 
 
 License Issues
