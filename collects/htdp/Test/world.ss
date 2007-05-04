@@ -1,3 +1,6 @@
+;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname world) (read-case-sensitive #t) (htdp-settings #7(#t constructor repeating-decimal #f #t none #f)))
 ;; testing world
 
 ;; World = Nat

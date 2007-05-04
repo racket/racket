@@ -1,8 +1,3 @@
-#| TODO
-   - image manipulation functions should accept plain numbers, not insist on nat
-   - make scene distinct from image? 
-|#
-
 #|
 At Thu, 21 Dec 2006 14:10:35 -0500, Matthias Felleisen wrote:
 2. The history mechanism collects a record in a list for every event.
@@ -10,10 +5,8 @@ At Thu, 21 Dec 2006 14:10:35 -0500, Matthias Felleisen wrote:
 callbacks.
     Say we get 50 events at the upper limit per second.
     After playing for one minute, the event list contains 3,000 records.
-    After playing for ten minutes, the event list contains 30,000  
-records.
-    Each record consists of, on the average, 3 numbers, so it's like  
-gathering
+    After playing for ten minutes, the event list contains 30,000 records.
+    Each record consists of, on the average, 3 numbers, so it's like gathering
     a list of 100,000 numbers.
 
     Is this going to become a bottleneck?
@@ -30,6 +23,7 @@ ones.)
 Matthew
 |#
 
+;; Thu May  3 22:06:16 EDT 2007: scene # image; pasteboard% for text%
 ;; Sat Apr 28 13:31:02 EDT 2007: fixed the image and animated-gif thing, using Matthew's lib
 ;; Fri Dec 22 11:51:53 EST 2006: cleaned up the callback code with macro
 ;; Thu Dec 21 13:59:23 EST 2006: fixed add-line and place-image to accept numbers
@@ -268,17 +262,7 @@ Matthew
   (define (on-redraw f)
     (check-proc 'on-redraw f 1 "on-redraw" "one argument")
     (check-world 'on-redraw)
-    (set-redraw-callback 
-     (lambda (x) 
-       (define result (f x))
-       (define fname (object-name f))
-       (define tname (if fname fname 'your-redraw-function))
-       (if (image? result)
-           (check-result tname scene? "scene" result
-                         (format "image with pinhole at (~s,~s)"
-                                 (pinhole-x result) (pinhole-y result)))
-           (check-result tname (lambda (x) (image? x)) "scene"))
-       result))
+    (set-redraw-callback f)
     (redraw-callback)
     #t)
   
@@ -346,12 +330,12 @@ Matthew
   ;; Symbol Any String -> Void
   (define (check-scene tag i rank)
     (if (image? i)
-        (unless (and (= 0 (pinhole-x i)) (= 0 (pinhole-y i)))
+        (unless (scene? i)
           (error tag "scene expected, given image whose pinhole is at (~s,~s) instead of (0,0)"
                  (pinhole-x i) (pinhole-y i)))
         (check-arg tag #f "image" rank i)))
   
-  (define (scene? i) (and (image? i) (= 0 (pinhole-x i)) (= 0 (pinhole-y i))))
+  (define (scene? i) (and (= 0 (pinhole-x i)) (= 0 (pinhole-y i))))
   
   ;; Symbol Any String -> Void
   (define (check-color tag width rank)
@@ -785,10 +769,16 @@ Matthew
   ;; f : [World -> Image]
   (define-callback redraw "redraw function" (f) ()
     (with-handlers ([exn:break? break-handler][exn? exn-handler])
-      (define img (f the-world))
-      (check-result 'on-redraw (lambda (x) (image? x)) "image" img)
-      (update-frame img)))
-  
+      (define result (f the-world))
+      (define fname (object-name f))
+      (define tname (if fname fname 'your-redraw-function))
+      (if (image? result)
+	  (check-result tname scene? "scene" result
+	    (format "image with pinhole at (~s,~s)"
+	      (pinhole-x result) (pinhole-y result)))
+	  (check-result tname (lambda (x) (image? x)) "scene" result))
+      (update-frame result)))
+
   ;; f : [World KeyEvent -> World]
   ;; esp : EventSpace 
   ;; e : KeyEvent 
