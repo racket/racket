@@ -578,8 +578,8 @@ Matthew
   ;; adds the stop animation and image creation button, 
   ;; whose callbacks runs as a thread in the custodian
   (define IMAGES "Images")
-  (define-runtime-path s:pth (build-path (collection-path "icons") "break.png"))
-  (define-runtime-path i:pth (build-path (collection-path "icons") "file.gif"))
+  (define-runtime-path s:pth '(lib "break.png" "icons"))
+  (define-runtime-path i:pth '(lib "file.gif" "icons"))
   (define (add-stop-and-image-buttons  frame the-play-back-custodian)
     (define p (new horizontal-pane% [parent frame][alignment '(center center)]))
     (define S ((bitmap-label-maker (string-constant break-button-label) s:pth) '_))

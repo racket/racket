@@ -674,6 +674,12 @@
                                                                                 (and (file-exists? p)
                                                                                      p)))
                                                                             (get-lib-search-dirs)))]
+                                                                  [(and (list? p)
+                                                                        (eq? 'lib (car p)))
+                                                                   (build-path (if (null? (cddr p))
+                                                                                   (collection-path "mzlib")
+                                                                                   (apply collection-path (cddr p)))
+                                                                               (cadr p))]
                                                                   [else p])])
                                                           (and p
                                                                (path->bytes 

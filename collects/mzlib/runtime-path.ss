@@ -67,6 +67,14 @@
 				       p)))
 			      (get-lib-search-dirs))
 		       (cadr p)))]
+		[(and (list? p)
+		      ((length p) . > . 1)
+		      (eq? 'lib (car p))
+		      (andmap string? (cdr p)))
+		 (let ([dir (if (null? (cddr p))
+                                (collection-path "mzlib")
+                                (apply collection-path (cddr p)))])
+                   (build-path dir (cadr p)))]
                 [else (error 'runtime-path "unknown form: ~e" p)])))
            paths)))
   
