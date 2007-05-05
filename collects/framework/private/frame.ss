@@ -1614,7 +1614,6 @@
             (send super-root change-children
                   (λ (l) (list rest-panel))))
           (define/public (show-delegated-text)
-            (printf "~s\n" (show-delegated-text))
             (open-status-line 'plt:delegate)
             (set! shown? #t)
             (send (get-delegated-text) set-delegate delegatee)
