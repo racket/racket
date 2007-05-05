@@ -37,7 +37,7 @@
   
   (define (activate-spelling t)
     (send t start-colorer
-          (lambda (s) (format "framework:syntax-coloring:scheme:~a" s))
+          (lambda (s) (format "framework:syntax-color:scheme:~a" s))
           get-word
           `((|(| |)|)
             (|[| |]|)
