@@ -331,22 +331,24 @@ improve method arity mismatch contract violation error messages?
                (unless (andmap/count is-id-ok? selector-ids)
 		 (unknown-info "selectors"
 			       (map (λ (x) (if (syntax? x)
-						    (syntax-object->datum x)
-						    x))
-						selector-ids)))
+                                               (syntax-object->datum x)
+                                               x))
+                                    selector-ids)))
                (unless (andmap/count is-id-ok? mutator-ids)
 		 (unknown-info "mutators"
 			       (map (λ (x) (if (syntax? x)
-						    (syntax-object->datum x)
-						    x))
+                                               (syntax-object->datum x)
+                                               x))
 				    mutator-ids))))
              
              (unless (equal? (length selector-ids)
                              (length field-contract-ids))
                (raise-syntax-error 'provide/contract
-                                   (format "found ~a fields in struct, but ~a contracts"
+                                   (format "found ~a field~a in struct, but ~a contract~a"
                                            (length selector-ids)
-                                           (length field-contract-ids))
+                                           (if (= 1 (length selector-ids)) "" "s")
+                                           (length field-contract-ids)
+                                           (if (= 1 (length field-contract-ids)) "" "s"))
                                    provide-stx
                                    struct-name))
              (unless (equal? (length mutator-ids)
@@ -374,9 +376,8 @@ improve method arity mismatch contract violation error messages?
                           [names (cdr names)]
                           [selector-strs (reverse (map (λ (x) (format "~a" (syntax-e x))) selector-ids))]
                           [field-names (reverse field-names)])
-                 
                  (cond
-                   [(or (null? counts) (null? names) (null? selector-strs) (null? field-names)) 
+                   [(or (null? selector-strs) (null? field-names)) 
                     (void)]
                    [(zero? count) 
                     (loop (car counts) (car names) (cdr counts) (cdr names) 

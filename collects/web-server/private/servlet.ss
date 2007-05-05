@@ -33,7 +33,7 @@
   
   (provide/contract
    [struct (exn:fail:servlet:instance exn:fail)
-           ([msg string?]
+           ([message string?]
             [continuation-marks continuation-mark-set?])]
    [struct servlet 
            ([custodian custodian?]

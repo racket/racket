@@ -5135,7 +5135,36 @@ so that propagation occurs.
    (λ (x)
      (and (exn? x)
           (regexp-match #rx"on the-defined-variable4" (exn-message x)))))
- 
+
+  (contract-error-test
+   #'(begin
+       (eval '(module pce5-bug mzscheme
+                (require (lib "contract.ss"))
+                
+                (define-struct bad (a b))
+                
+                (provide/contract
+                 [struct bad ((string? a) (string? b))])))
+       (eval '(require pce5-bug)))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
+  
+  (contract-error-test
+   #'(begin
+       (eval '(module pce6-bug mzscheme
+                (require (lib "contract.ss"))
+                
+                (define-struct bad-parent (a))
+                (define-struct (bad bad-parent) (b))
+                
+                (provide/contract
+                 [struct bad ((a string?) (string? b))])))
+       (eval '(require pce6-bug)))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
+  
   (contract-eval `(,test 'pos guilty-party (with-handlers ((void values)) (contract not #t 'pos 'neg))))
   
   (report-errs)

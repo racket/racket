@@ -24,10 +24,10 @@
                     [continuation-store! (number? any/c expiration-handler? . -> . (list/c number? number?))]
                     [continuation-lookup (number? number? number? . -> . any/c)])]
    [struct (exn:fail:servlet-manager:no-instance exn:fail) 
-           ([msg string?]
+           ([message string?]
             [continuation-marks continuation-mark-set?]
             [expiration-handler expiration-handler?])]
    [struct (exn:fail:servlet-manager:no-continuation exn:fail)
-           ([msg string?]
+           ([message string?]
             [continuation-marks continuation-mark-set?]
             [expiration-handler expiration-handler?])]))

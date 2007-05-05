@@ -23,11 +23,11 @@
   (provide/contract
    (exn:set? (any/c . -> . boolean?))
    (struct (exn:set:value-not-found exn:set) ((message (and/c string? immutable?))
-                                              (continuation-mark-set continuation-mark-set?)
+                                              (continuation-marks continuation-mark-set?)
                                               (set set?)
                                               (value any/c)))
    (struct (exn:set:duplicate-value exn:set) ((message (and/c string? immutable?))
-                                              (continuation-mark-set continuation-mark-set?)
+                                              (continuation-marks continuation-mark-set?)
                                               (set set?)
                                               (value any/c)))
    (set-make (() ((symbols 'equal)) . opt-> . set?))
