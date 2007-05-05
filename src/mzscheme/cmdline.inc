@@ -285,12 +285,14 @@ static char *make_embedded_load(const char *start, const char *end)
 #define mzcmd_LOAD 1
 #define mzcmd_MAIN 2
 
+/* To avoid having to create a specific mark procedure for
+   prcise GC, split argument information into purely atomic
+   and purely non-atomic records. */
+
 typedef struct {
   int start_with_req;
 #ifndef DONT_PARSE_COMMAND_LINE
-  char **evals_and_loads;
-  int *eval_kind, num_enl;
-  Scheme_Object *main_args;
+  int num_enl;
 #endif  
 #ifndef DONT_LOAD_INIT_FILE
   int no_init_file;
@@ -306,6 +308,15 @@ typedef struct {
   int alternate_rep;
   int no_front;
 #endif
+} FinishArgsAtoms;
+
+typedef struct {
+  FinishArgsAtoms *a;
+#ifndef DONT_PARSE_COMMAND_LINE
+  char **evals_and_loads;
+  int *eval_kind;
+  Scheme_Object *main_args;
+#endif  
   Scheme_Env *global_env;
 } FinishArgs;
 
@@ -315,12 +326,12 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 {
   volatile int exit_val = 0;
 
-  if (fa->start_with_req) {
+  if (fa->a->start_with_req) {
     scheme_eval_string("(require mzscheme)", fa->global_env);    
   }
 
 #ifndef DONT_LOAD_INIT_FILE
-  if (!fa->no_init_file) {
+  if (!fa->a->no_init_file) {
     char *filename;
     filename = GET_INIT_FILENAME(fa->global_env);
     if (filename) {
@@ -336,7 +347,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     volatile int i;
     mz_jmp_buf * volatile save, newbuf;
 
-    for (i = 0; i < fa->num_enl; i++) {
+    for (i = 0; i < fa->a->num_enl; i++) {
       if (fa->eval_kind[i] == mzcmd_LOAD) {
 	if (!scheme_load(fa->evals_and_loads[i])) {
 	  exit_val = 1;
@@ -404,7 +415,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 #endif
 
 #ifndef DONT_RUN_REP
-  if (!fa->no_rep && !fa->script_mode) {
+  if (!fa->a->no_rep && !fa->a->script_mode) {
     /* enter read-eval-print loop */
     mz_jmp_buf * volatile save, newbuf;
     Scheme_Thread * volatile p;
@@ -417,7 +428,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     } else {
       exit_val = 1;
 #ifdef VERSION_YIELD_FLAG
-      fa->add_yield = 0;
+      fa->a->add_yield = 0;
 #endif
     }
     p->error_buf = save;
@@ -425,7 +436,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 #endif /* DONT_RUN_REP */
 
 #ifdef VERSION_YIELD_FLAG
-  if (fa->add_yield) {
+  if (fa->a->add_yield) {
     mz_jmp_buf * volatile save, newbuf;
     Scheme_Thread * volatile p;
     p = scheme_get_current_thread();
@@ -532,6 +543,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
   int no_lib_path = 0;
   FinishArgs *fa;
+  FinishArgsAtoms *fa_a;
 
 #ifdef GC_THINKS_ITS_A_DLL_BUT_ISNT
   DllMain(NULL, DLL_PROCESS_ATTACH, NULL);
@@ -1198,27 +1210,29 @@ static int run_from_cmd_line(int argc, char *_argv[],
     init_mred(global_env);
 #endif
 
+  fa_a = (FinishArgsAtoms *)scheme_malloc_atomic(sizeof(FinishArgsAtoms));
   fa = (FinishArgs *)scheme_malloc(sizeof(FinishArgs));
-  fa->start_with_req = start_with_req;
+  fa->a = fa_a;
+  fa->a->start_with_req = start_with_req;
 #ifndef DONT_PARSE_COMMAND_LINE
   fa->evals_and_loads = evals_and_loads;
   fa->eval_kind = eval_kind;
-  fa->num_enl = num_enl;
+  fa->a->num_enl = num_enl;
   fa->main_args = sch_argv;
 #endif  
 #ifndef DONT_LOAD_INIT_FILE
-  fa->no_init_file = no_init_file;
+  fa->a->no_init_file = no_init_file;
 #endif
 #ifndef DONT_RUN_REP
-  fa->no_rep = no_rep;
-  fa->script_mode = script_mode;
+  fa->a->no_rep = no_rep;
+  fa->a->script_mode = script_mode;
 #endif
 #ifdef VERSION_YIELD_FLAG
-  fa->add_yield = add_yield;
+  fa->a->add_yield = add_yield;
 #endif
 #ifdef CMDLINE_STDIO_FLAG
-  fa->alternate_rep = alternate_rep;
-  fa->no_front = no_front;
+  fa->a->alternate_rep = alternate_rep;
+  fa->a->no_front = no_front;
 #endif
   fa->global_env = global_env;
 

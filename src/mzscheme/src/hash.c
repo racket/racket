@@ -953,6 +953,8 @@ static long equal_hash_key(Scheme_Object *o, long k)
       o = SCHEME_VEC_ELS(o)[len];
       break;
     }
+  case scheme_char_type:
+    return k + SCHEME_CHAR_VAL(o);
   case scheme_byte_string_type:
   case scheme_unix_path_type:
   case scheme_windows_path_type:
@@ -1183,6 +1185,8 @@ long scheme_equal_hash_key2(Scheme_Object *o)
       
       return k;
     }
+  case scheme_char_type:
+    return t;
   case scheme_byte_string_type:
   case scheme_unix_path_type:
   case scheme_windows_path_type:

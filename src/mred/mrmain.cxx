@@ -176,7 +176,7 @@ static void do_graph_repl(Scheme_Env *env)
   p->error_buf = &newbuf;
 
   if (!scheme_setjmp(newbuf)) {
-    if (xfa->alternate_rep)
+    if (xfa->a->alternate_rep)
       scheme_eval_string("(read-eval-print-loop)", env);
     else
       scheme_eval_string("(graphical-read-eval-print-loop)", env);
@@ -200,7 +200,7 @@ static int do_main_loop(FinishArgs *fa)
   xfa = fa;
 
 #ifdef wx_mac
-  if (!fa->no_front) {
+  if (!fa->a->no_front) {
     ProcessSerialNumber psn;
     GetCurrentProcess(&psn);    
     SetFrontProcess(&psn); /* kCurrentProcess doesn't work */

@@ -105,6 +105,10 @@
 (test #f equal? (make-vector 5 'b) (make-vector 5 'a))
 (test #f equal? (box "a") (box "b"))
 
+(test #t equal? #\a #\a)
+(test #t equal? (integer->char 1024) (integer->char 1024))
+(test #f equal? (integer->char 1024) (integer->char 1025))
+
 (arity-test eq? 2 2)
 (arity-test eqv? 2 2)
 (arity-test equal? 2 2)
@@ -1935,7 +1939,8 @@
 			    (hash-table-put! h1 (save 123456789123456789123456789) 'bignum)
 			    (hash-table-put! h1 (save 3.45) 'flonum)
 			    (hash-table-put! h1 (save 3/45) 'rational)
-			    (hash-table-put! h1 (save 3+45i) 'complex))]
+			    (hash-table-put! h1 (save 3+45i) 'complex)
+                            (hash-table-put! h1 (save (integer->char 955)) 'char))]
 		   [puts2 (lambda ()
 			    (hash-table-put! h1 (save (list 5 7)) 'another-list)
 			    (hash-table-put! h1 (save 3+0.0i) 'izi-complex)
@@ -1950,7 +1955,7 @@
 		     (puts1))
 		   (begin 
 		     (puts1) 
-		     (test 6 hash-table-count h1)
+		     (test 7 hash-table-count h1)
 		     (puts2))))
 
              (when reorder?
@@ -1962,7 +1967,7 @@
                    (loop (add1 i))
                    (hash-table-remove! h1 i))))
 
-	     (test 12 hash-table-count h1)
+	     (test 13 hash-table-count h1)
 	     (test 'list hash-table-get h1 l)
 	     (test 'list hash-table-get h1 (list 1 2 3))
 	     (test 'another-list hash-table-get h1 (list 5 7))
@@ -1980,6 +1985,7 @@
 	     (test #f hash-table-get h1 (make-ax 1 2) (lambda () #f))
 	     (test 'box hash-table-get h1 b)
 	     (test 'box hash-table-get h1 #&(1 2 3))
+	     (test 'char hash-table-get h1 (integer->char 955))
 	     (test #t
 		   andmap
 		   (lambda (i)
@@ -1997,13 +2003,14 @@
 		     (#(5 6 7) . vector)
 		     (,(make-a 1 (make-a 2 3)) . struct)
 		     (,an-ax . structx)
+                     (#\u3BB . char)
 		     (#&(1 2 3) . box)))
 	     (hash-table-remove! h1 (list 1 2 3))
-	     (test 11 hash-table-count h1)
+	     (test 12 hash-table-count h1)
 	     (test 'not-there hash-table-get h1 l (lambda () 'not-there))
 	     (let ([c 0])
 	       (hash-table-for-each h1 (lambda (k v) (set! c (add1 c))))
-	       (test 11 'count c))
+	       (test 12 'count c))
 	     ;; return the hash table:
 	     h1))])
 
