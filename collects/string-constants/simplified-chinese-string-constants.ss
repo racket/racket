@@ -597,6 +597,8 @@
   (wrap-text-item "自动换行")
   
   (windows-menu-label "视窗(&W)")
+  (minimize "最小化") ;; minimize and zoom are only used under mac os x
+  (zoom "缩放")
   (bring-frame-to-front "前端显示")       ;;; title of dialog
   (bring-frame-to-front... "前端显示...") ;;; corresponding title of menu item
   (most-recent-window "最近的视窗")
@@ -934,7 +936,7 @@
   (profiling-choose-low-color "请选择代表低的颜色")
   (profiling-choose-high-color "请选择代表高的颜色")
   (profiling "Profiling")
-  (profiling-example-text "(define (马) (马))")
+  (profiling-example-text "(define (理) (理))")
   (profiling-color-config "Profiling色谱") 
   (profiling-scale "Profiling的色彩比例")
   (profiling-sqrt "平方根")
@@ -969,10 +971,13 @@
   (evaluation-terminated-explanation
    "Evaluation线程已停止，在下一次执行之前不会进行计算。")
   
-  ; next two constants show up in the same dialog as the above evaluation-terminated string
-  ; constants, but only when the user calls 'exit' (possibly with a status code).
+  ; The next three constants show up in the same dialog as the above evaluation-terminated string
+  ; constants.
+  ; The first two show up only when the user calls 'exit' (possibly with a status code).
+  ; The third shows up when the program runs out of memory.
   (exited-successfully "成功退出。")
   (exited-with-error-code "退出，错误代码~a。") ;; ~a is filled in with a number between 1 and 255
+  (program-ran-out-of-memory "内存耗尽。")
   (last-stack-frame "显示最新的stack frame")
   (last-stack-frames "显示前~a个stack frames")
   (next-stack-frames "显示后~a个stack frames")
@@ -1059,10 +1064,12 @@
   (xml-tool-xml-box "XML框")
   (xml-tool-scheme-box "Scheme框")
   (xml-tool-scheme-splice-box "Scheme接合框")
-  (xml-tool-switch-to-scheme "转化为Scheme框")
-  (xml-tool-switch-to-scheme-splice "转化为Scheme接合框")
-  (xml-tool-eliminate-whitespace-in-empty-tags "去除空白标签中的whitespace")
-  (xml-tool-leave-whitespace-alone "保留whitespace")
+  (xml-tool-switch-to-scheme "转变成Scheme框")
+  (xml-tool-switch-to-scheme-splice "转变成Scheme接合框")
+  (xml-tool-eliminate-whitespace-in-empty-tags
+   "Eliminiate whitespace in empty tags")
+  (xml-tool-leave-whitespace-alone
+   "Leave whitespace alone")
   
   (show-recent-items-window-menu-item "在单独窗口中显示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
@@ -1119,12 +1126,7 @@
   ;; Slideshow
   (slideshow-show-slideshow-panel "显示Slideshow面板")
   (slideshow-hide-slideshow-panel "隐藏Slideshow面板")
-  (slideshow-freeze-picts "冻结这些图片")
-  (slideshow-thaw-picts "显示鼠标下方的图片")
-  (slideshow-hide-picts "隐藏图片")
-  (slideshow-show-picts "显示图片")
-  (slideshow-cannot-show-picts "无法显示图片；请先运行程序从而获知图片的大小")
-  (slideshow-insert-pict-box "插入Pict框")
+  (slideshow-insert-pict-box "插入Pict框") 
   
   ;; GUI Tool
   (gui-tool-heading "GUI工具")

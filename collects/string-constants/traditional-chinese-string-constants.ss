@@ -1,21 +1,20 @@
-            ;                                                       
-            ;;               ;     ;     ;;       ;;   ;   ;;       
-       ;;   ;;               ;     ;     ;        ;    ;   ;    ;   
-       ;    ;;     ;        ;;     ;     ;;       ;    ;   ;    ;   
-       ;;;;;;;;;;;;;;         ;;;;;;;;;;;;        ; ;  ;   ;    ;   
-      ;     ;;                     ;            ; ; ;;; ;;; ;;;;    
-     ;      ;;             ;;;;;;;;;;;;;;;;;   ;; ;              ;  
-            ;;      ;     ;;              ;    ;  ;   ;;;;;;;;;;;   
-    ;;;;;;;;;;;;;;;; ;                 ;          ;    ;       ;    
-           ;;;;               ;;;;;;;;;           ;     ;;;;;;;;    
-          ; ;; ;                          ;;      ;     ;      ;    
-         ;  ;;  ;         ;;;;;;;;;;;;;;;;        ;     ;      ;    
-        ;   ;;   ;;            ;   ;  ;           ;    ;;;;;;;;;    
-       ;    ;;    ;;;         ;    ;   ;;         ;      ;    ;     
-     ;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
-   ;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
-            ;;                    ;               ;   ;;; ;; ;;;;   
-                                                                    
+           ;                                                       
+           ;;               ;     ;     ;;       ;;   ;   ;;       
+      ;;   ;;               ;     ;     ;        ;    ;   ;    ;   
+      ;    ;;     ;        ;;     ;     ;;       ;    ;   ;    ;   
+      ;;;;;;;;;;;;;;         ;;;;;;;;;;;;        ; ;  ;   ;    ;   
+     ;     ;;                     ;            ; ; ;;; ;;; ;;;;    
+    ;      ;;             ;;;;;;;;;;;;;;;;;   ;; ;              ;  
+           ;;      ;     ;;              ;    ;  ;   ;;;;;;;;;;;   
+   ;;;;;;;;;;;;;;;; ;                 ;          ;    ;       ;    
+          ;;;;               ;;;;;;;;;           ;     ;;;;;;;;    
+         ; ;; ;                          ;;      ;     ;      ;    
+        ;  ;;  ;         ;;;;;;;;;;;;;;;;        ;     ;      ;    
+       ;   ;;   ;;            ;   ;  ;           ;    ;;;;;;;;;    
+      ;    ;;    ;;;         ;    ;   ;;         ;      ;    ;     
+    ;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
+  ;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
+           ;;                    ;               ;   ;;; ;; ;;;;   
 (module traditional-chinese-string-constants "string-constant-lang.ss"
   (is-this-your-native-language "你的母語是繁體中文嗎？")
   
@@ -597,6 +596,8 @@
   (wrap-text-item "自動換行")
   
   (windows-menu-label "視窗(&W)")
+  (minimize "最小化") ;; minimize and zoom are only used under mac os x
+  (zoom "縮放")
   (bring-frame-to-front "前端顯示")       ;;; title of dialog
   (bring-frame-to-front... "前端顯示...") ;;; corresponding title of menu item
   (most-recent-window "最近的視窗")
@@ -934,7 +935,7 @@
   (profiling-choose-low-color "請選擇代表低的顏色")
   (profiling-choose-high-color "請選擇代表高的顏色")
   (profiling "Profiling")
-  (profiling-example-text "(define (馬) (馬))")
+  (profiling-example-text "(define (理) (理))")
   (profiling-color-config "Profiling色譜") 
   (profiling-scale "Profiling的色彩比例")
   (profiling-sqrt "平方根")
@@ -969,10 +970,13 @@
   (evaluation-terminated-explanation
    "Evaluation執行緒已停止，在下一次執行之前不會進行計算。")
   
-  ; next two constants show up in the same dialog as the above evaluation-terminated string
-  ; constants, but only when the user calls 'exit' (possibly with a status code).
+  ; The next three constants show up in the same dialog as the above evaluation-terminated string
+  ; constants.
+  ; The first two show up only when the user calls 'exit' (possibly with a status code).
+  ; The third shows up when the program runs out of memory.
   (exited-successfully "成功退出。")
   (exited-with-error-code "退出，錯誤代碼~a。") ;; ~a is filled in with a number between 1 and 255
+  (program-ran-out-of-memory "記憶體耗盡。")
   (last-stack-frame "顯示最新的stack frame")
   (last-stack-frames "顯示前~a個stack frames")
   (next-stack-frames "顯示後~a個stack frames")
@@ -1059,10 +1063,12 @@
   (xml-tool-xml-box "XML框")
   (xml-tool-scheme-box "Scheme框")
   (xml-tool-scheme-splice-box "Scheme接合框")
-  (xml-tool-switch-to-scheme "轉化為Scheme框")
-  (xml-tool-switch-to-scheme-splice "轉化為Scheme接合框")
-  (xml-tool-eliminate-whitespace-in-empty-tags "去除空白標籤中的whitespace")
-  (xml-tool-leave-whitespace-alone "保留whitespace")
+  (xml-tool-switch-to-scheme "轉變成Scheme框")
+  (xml-tool-switch-to-scheme-splice "轉變成Scheme接合框")
+  (xml-tool-eliminate-whitespace-in-empty-tags
+   "Eliminiate whitespace in empty tags")
+  (xml-tool-leave-whitespace-alone
+   "Leave whitespace alone")
   
   (show-recent-items-window-menu-item "在單獨窗口中顯示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
@@ -1119,16 +1125,12 @@
   ;; Slideshow
   (slideshow-show-slideshow-panel "顯示Slideshow面板")
   (slideshow-hide-slideshow-panel "隱藏Slideshow面板")
-  (slideshow-freeze-picts "凍結這些圖片")
-  (slideshow-thaw-picts "顯示滑鼠下方的圖片")
-  (slideshow-hide-picts "隱藏圖片")
-  (slideshow-show-picts "顯示圖片")
-  (slideshow-cannot-show-picts "無法顯示圖片；請先運行程序從而獲知圖片的大小")
-  (slideshow-insert-pict-box "插入Pict框")
+  (slideshow-insert-pict-box "插入Pict框") 
   
   ;; GUI Tool
   (gui-tool-heading "GUI工具")
-  (gui-tool-before-clicking-message "在點擊工具圖標之前，請先使用「特殊符號」菜單中的「插入GUI」命令插入一個GUI根對象，或先選中另一個GUI。")
+  (gui-tool-before-clicking-message
+   "在點擊工具圖標之前，請先使用「特殊符號」菜單中的「插入GUI」命令插入一個GUI根對象，或先選中另一個GUI。")
   (gui-tool-show-gui-toolbar "顯示GUI工具欄")
   (gui-tool-hide-gui-toolbar "隱藏GUI工具欄")
   (gui-tool-insert-gui "插入GUI")
