@@ -4650,7 +4650,6 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
   base_stack_depth = SCHEME_VEC_ELS(data)[2];
   sdepth = SCHEME_INT_VAL(base_stack_depth);
 
-  data = SCHEME_CDDR(data);
   if (!SAME_TYPE(rp->so.type, scheme_resolve_prefix_type)
       || (sdepth < 0))
     scheme_ill_formed_code(port);
@@ -4662,8 +4661,9 @@ static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port,
     size = SCHEME_VEC_SIZE(data);
     for (i = 4; i < size; i++) {
       name = SCHEME_VEC_ELS(data)[i];
-      if (!SCHEME_SYMBOLP(name))
+      if (!SCHEME_SYMBOLP(name)) {
 	scheme_ill_formed_code(port);
+      }
     }
   }
 
