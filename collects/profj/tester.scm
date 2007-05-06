@@ -506,8 +506,8 @@
     (unless (null? covered)
       (let* ([editor (get-editor (car covered) #f)]
              [style-list (editor:get-standard-style-list)]
-             [uncover-color (send style-list find-named-style "profj:syntax-coloring:scheme:uncovered")]
-             [cover-color (send style-list find-named-style "profj:syntax-coloring:scheme:covered")])
+             [uncover-color (send style-list find-named-style "profj:syntax-colors:scheme:uncovered")]
+             [cover-color (send style-list find-named-style "profj:syntax-colors:scheme:covered")])
         (when editor
           ;(send cover-color set-delta-foreground "darkmagenta")
           ;(send uncover-color set-delta-foreground "black")
