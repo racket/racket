@@ -6,7 +6,7 @@
   
   (define reader-tag "#reader")
   
-  (define (pick-new-language text all-languages module-language)
+  (define (pick-new-language text all-languages module-language module-language-settings)
     (with-handlers ([exn:fail:read? (λ (x) (values #f #f))])
       (let ([found-language? #f]
             [settings #f])
@@ -38,7 +38,7 @@
                          (pair? r1)
                          (eq? (car r1) 'module))
                 (set! found-language? module-language)
-                (set! settings (send module-language default-settings))))))
+                (set! settings module-language-settings)))))
         
         (values found-language?
                 settings)))))
