@@ -6926,7 +6926,7 @@ static char *cmdline_protect(char *s)
     char *p;
     int wrote_slash = 0;
 
-    naya = scheme_malloc_atomic(strlen(s) + 3 + 3*has_quote);
+    naya = scheme_malloc_atomic(strlen(s) + 3 + 3*has_quote + was_slash);
     naya[0] = '"';
     for (p = naya + 1; *s; s++) {
       if (*s == '"') {
@@ -6945,6 +6945,9 @@ static char *cmdline_protect(char *s)
 	*(p++) = *s;
 	wrote_slash = 0;
       }
+    }
+    while (wrote_slash--) {
+      *(p++) = '\\';
     }
     *(p++) = '"';
     *p = 0;
