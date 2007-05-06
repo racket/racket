@@ -96,13 +96,12 @@
      (match-lambda
        [(? undefined?) (void)]
        [($ ring center radius color)
-        (when (> radius 2)
-          ((draw-ellipse pixmap)
-           (make-posn (- (posn-x center) radius)
-                      (- (posn-y center) radius))
-           (* 2 radius)
-           (* 2 radius)
-           color))]
+        ((draw-ellipse pixmap)
+         (make-posn (- (posn-x center) radius)
+                    (- (posn-y center) radius))
+         (max 2 (* 2 radius))
+         (max 2 (* 2 radius))
+         color)]
        [($ solid-ellipse ul w h color)
         ((draw-solid-ellipse pixmap) ul w h color)]
        [($ graph-string pos text color) ((draw-string pixmap) pos text color)]
