@@ -1,4 +1,17 @@
 ------------------------------------------------------------------------
+VERSION 370				  [Mon May  7 09:54:19 EDT 2007]
+
+* Added testing.ss teachpack. 
+
+* The world.ss teachpack now has a IMAGE capturing functionality, including
+  animated GIFs. It also supports simple simulations now. 
+
+* The world.ss and image.ss support real numbers for sizes and coordinates
+  now. 
+
+* The ProfessorJ wizard doesn't support templates for now. 
+
+------------------------------------------------------------------------
 VERSION 360				  [Tue Nov  7 12:45:48 EST 2006]
 
  * The world.ss teachpack has now callback hooks for mouse clicks. 
