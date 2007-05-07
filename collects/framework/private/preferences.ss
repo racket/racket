@@ -76,8 +76,6 @@ the state transitions / contracts are:
        vs
        fail-func)))
   
-  
-
   ;; ppanel-tree = 
   ;;  (union (make-ppanel-leaf string (union #f panel) (panel -> panel))
   ;;         (make-ppanel-interior string (union #f panel) (listof panel-tree)))

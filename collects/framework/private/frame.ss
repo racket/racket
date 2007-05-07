@@ -1397,15 +1397,15 @@
       (define text-mixin
         (mixin (-editor<%>) (text<%>)
           (define/override (get-editor<%>) (class->interface text%))
-          (init (editor% text:keymap%))
-          (super-new (editor% editor%))))
+          (init (filename #f) (editor% text:keymap%))
+          (super-new (filename filename) (editor% editor%))))
       
       (define pasteboard<%> (interface (-editor<%>)))
       (define pasteboard-mixin
         (mixin (-editor<%>) (pasteboard<%>)
           (define/override get-editor<%> (λ () (class->interface pasteboard%)))
-          (init (editor% pasteboard:keymap%))
-          (super-new (editor% editor%))))
+          (init (filename #f) (editor% pasteboard:keymap%))
+          (super-new (filename filename) (editor% editor%))))
       
       (define delegate<%>
         (interface (status-line<%> text<%>)
