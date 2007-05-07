@@ -3181,7 +3181,10 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       if (i < 0) {
         /* All unused and omittable */
         linfo = scheme_resolve_info_extend(info, 0, total, 0);
-        return scheme_resolve_expr((Scheme_Object *)clv, linfo);
+        first = scheme_resolve_expr((Scheme_Object *)clv, linfo);
+        if (info->max_let_depth < linfo->max_let_depth)
+          info->max_let_depth = linfo->max_let_depth;
+        return first;
       }
     }
   }
