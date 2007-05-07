@@ -892,7 +892,10 @@
                (let ([c-box (new java-comment-box%)]
                      [text (get-edit-target-object)])
                  (send text insert c-box)
-                 (send text set-caret-owner c-box 'global)))))
+                 (send text set-caret-owner c-box 'global))))
+            (demand-callback
+             (lambda (mi)
+               (send mi enable ((get-edit-target-object) . is-a? . text%)))))
           (register-capability-menu-item 'profj:special:java-comment-box (get-special-menu))
           ))
       

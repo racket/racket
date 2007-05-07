@@ -87,7 +87,13 @@
                     ;; ... the diagram 
                     (send editor insert (format "/*~n~a~n*/~n~n" (draw (car class-as-info)))))
                   (send editor insert class-as-text))))
-            (new menu-item% (label descr) (parent (get-special-menu)) (callback A)))
+            (define (enable mi)
+              (send mi enable ((get-edit-target-object) . is-a? . text%)))
+            (new menu-item% 
+                 (label descr) 
+                 (parent (get-special-menu))
+                 (callback A)
+                 (demand-callback enable)))
           
           (make-menu-item% INSERT-JAVA-CLASS get-class-info make-class class-draw)
           (register-capability-menu-item 'profjWizard:special:java-class (get-special-menu))
