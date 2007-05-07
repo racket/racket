@@ -1,5 +1,12 @@
 (module group-test mzscheme
   (require "test-suite-utils.ss")
+ 
+  (define windows-menu-prefix 
+    (let ([basics (list "Bring Frame to Front..." "Most Recent Window" 
+                        #f)])
+      (if (eq? (system-type) 'macosx)
+          (list* "Minimize" "Zoom" #f basics)
+          basics)))
   
   (test
    'exit-on
@@ -75,8 +82,7 @@
   (test
    'windows-menu
    (lambda (x)
-     (equal? x (list "Bring Frame to Front..." "Most Recent Window" 
-                     #f "first" "test")))
+     (equal? x (append windows-menu-prefix (list "first" "test"))))
    (lambda ()
      (send-sexp-to-mred
       '(let ([frame (make-object frame:basic% "test")])
@@ -92,8 +98,7 @@
   (test
    'windows-menu-unshown
    (lambda (x)
-     (equal? x (list "Bring Frame to Front..." "Most Recent Window"
-                     #f "first" "test")))
+     (equal? x (append windows-menu-prefix (list "first" "test"))))
    (lambda ()
      (send-sexp-to-mred
       '(let ([frame1 (make-object frame:basic% "test")]
@@ -110,8 +115,7 @@
   (test
    'windows-menu-sorted1
    (lambda (x)
-     (equal? x (list "Bring Frame to Front..." "Most Recent Window"
-                     #f "aaa" "bbb" "first")))
+     (equal? x (append windows-menu-prefix (list "aaa" "bbb" "first"))))
    (lambda ()
      (send-sexp-to-mred
       '(let ([frame (make-object frame:basic% "aaa")])
@@ -135,8 +139,7 @@
   (test
    'windows-menu-sorted2
    (lambda (x)
-     (equal? x (list "Bring Frame to Front..." "Most Recent Window"
-                     #f "aaa" "bbb" "first")))
+     (equal? x (append windows-menu-prefix (list "aaa" "bbb" "first"))))
    (lambda ()
      (send-sexp-to-mred
       '(let ([frame (make-object frame:basic% "bbb")])
