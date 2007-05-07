@@ -2,6 +2,25 @@
         Version 370
 ------------------------------
 
+  . changed teachpack support so that it is now
+    language-specific and languages no longer support
+    teachpacks by default.
+
+  . interface changes, related to teachpacks:
+
+    . create-executable method in
+      drscheme:language:language<%> no longer takes the
+      teachpack argument
+
+    . the get-init-code in
+      drscheme:language:simple-module-based-language no
+      longer accepts teachpacks as an argument.
+
+    . got rid of all drscheme:teachpack names
+
+    . front-end/complete-program and front-end/interaction
+      no longer accept a teachpack argument
+
   . changed image.ss teachpack so that it accepts both exact
     an inexact numbers (not just exact integers) for a
     number of the primitives (it floors the numbers).
