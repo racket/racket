@@ -452,6 +452,20 @@
 	 [else (error 'test:set-choice!
 		      "expected a string or a number as second arg, got: ~e (other arg: ~e)"
 		      str in-choice)]))))
+  
+  (define (set-list-box! in-lb str)
+    (control-action
+     'test:set-list-box!
+     'list-box
+     (find-object list-box% in-lb)
+     (λ (lb)
+       (cond
+	 [(number? str) (send lb set-selection str)]
+	 [(string? str) (send lb set-string-selection str)]
+	 [else (error 'test:set-list-box!
+		      "expected a string or a number as second arg, got: ~e (other arg: ~e)"
+		      str in-lb)]))))
+  
   ;;
   ;; KEYSTROKES 
   ;;
@@ -606,6 +620,7 @@
 	 (let ([menu-bar  (send frame get-menu-bar)])
 	   (unless menu-bar
 	     (error menu-tag "active frame does not have menu bar"))
+           (send menu-bar on-demand)
 	   (let* ([items (send menu-bar get-items)])
 	     (let loop ([items items]
 			[this-name (car item-names)]
@@ -832,6 +847,7 @@
   (define test:set-radio-box-item! set-radio-box-item!)
   (define test:set-check-box! set-check-box!)
   (define test:set-choice! set-choice!)
+  (define test:set-list-box! set-list-box!)
   (define test:keystroke keystroke)
   (define test:menu-select menu-select)
   (define test:mouse-click mouse-click)
@@ -959,11 +975,18 @@
     "otherwise it uses \\var{check-box} itself.")
 
    (test:set-choice!
-    ((or/c string? (is-a?/c choice%)) string? . -> . void?)
+    ((or/c string? (is-a?/c choice%)) (or/c string? (and/c number? exact? integer? positive?)) . -> . void?)
     (choice str)
     "Selects \\var{choice}'s item \\var{str}. If \\var{choice} is a string,"
     "this function searches for a \\iscmclass{choice} with a label matching"
     "that string, otherwise it uses \\var{choice} itself.")
+   
+   (test:set-list-box!
+    ((or/c string? (is-a?/c list-box%)) (or/c string? (and/c number? exact? integer? positive?)) . -> . void?)
+    (choice str)
+    "Selects \\var{list-box}'s item \\var{str}. If \\var{list-box} is a string,"
+    "this function searches for a \\iscmclass{list-box} with a label matching"
+    "that string, otherwise it uses \\var{list-box} itself.")
 
    (test:keystroke
     (opt->
