@@ -803,6 +803,11 @@
  (drscheme-teachpack-message-title "DrScheme-Teachpack")
  (already-added-teachpack "Teachpack ~a ist schon dabei")
  
+  (teachpack-pre-installed "Vorinstallierte Teachpacks")
+  (teachpack-user-installed "selbst installierte Teachpacks")
+  (install-teachpack... "Teachpack installieren...")
+  (teachpack-already-installed "Ein Teachpack names '~a' ist schon installiert. Überschreiben?")
+
  ;;; Language dialog
  (introduction-to-language-dialog
   "Bitte eine Sprache auswählen. Für den Anfängerkurs ist wahrscheinlich die voreingestellte Sprache die richtige.")
@@ -818,6 +823,8 @@
  (input-syntax "Eingabesyntax")
  (dynamic-properties "Laufzeit")
  (output-syntax "Ausgabesyntax")
+ (teachpacks "Teachpacks") ;; label in the language dialog for the teaching languages
+ (teachpacks-none "<< keine >>") ;; shows up under the previous string, when there are no teachpacks
  (no-debugging-or-profiling "Kein Debugging oder Profiling")
  (debugging "Debugging")
  (debugging-and-profiling "Debugging und Profiling")
