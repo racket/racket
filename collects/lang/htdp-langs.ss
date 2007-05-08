@@ -18,6 +18,8 @@
            (lib "class.ss")
            (lib "list.ss")
            (lib "struct.ss")
+           (lib "compile.ss")
+           (lib "struct.ss")
            (lib "tool.ss" "drscheme")
            (lib "mred.ss" "mred")
            (lib "bday.ss" "framework" "private")
@@ -25,7 +27,6 @@
            (lib "cache-image-snip.ss" "mrlib")
            (lib "embed.ss" "compiler")
            (lib "wxme.ss" "wxme")
-           (lib "struct.ss")
            (lib "dirs.ss" "setup")
            
            ;; this module is shared between the drscheme's namespace (so loaded here) 
@@ -665,6 +666,7 @@
         (define dlg (new dialog% [parent parent] [label (string-constant drscheme)]))
         (define hp (new horizontal-panel% [parent dlg]))
         (define answer #f)
+        (define compiling? #f)
         
         (define pre-installed-gb (new group-box-panel%
                                       [label (string-constant teachpack-pre-installed)]
@@ -705,8 +707,9 @@
                [parent user-installed-gb]))
         
         (define (selected lb)
-          (set! answer (figure-out-answer))
-          (send dlg show #f))
+          (unless compiling?
+            (set! answer (figure-out-answer))
+            (send dlg show #f)))
         
         (define (clear-selection lb)
           (for-each
@@ -739,10 +742,50 @@
                     (when (file-exists? dest-file)
                       (delete-file dest-file))
                     (copy-file file dest-file)
-                    (update-user-installed-lb)
-                    (clear-selection pre-installed-lb)
-                    (send user-installed-lb set-string-selection (path->string name))
-                    (update-button)))))))
+                    
+                    ;; compiling the teachpack should be the last thing in this GUI callback
+                    (compile-new-teachpack dest-file)))))))
+        
+        (define (compile-new-teachpack filename)
+          (let-values ([(_1 short-name _2) (split-path filename)])
+            (send compiling-message set-label
+                  (format (string-constant compiling-teachpack) 
+                          (path->string short-name)))
+            (starting-compilation)
+            (let ([nc (make-custodian)]
+                  [exn #f])
+              (let ([t 
+                     (parameterize ([current-custodian nc])
+                       (thread (λ () 
+                                 (with-handlers ((exn? (λ (x) (set! exn x))))
+                                   (compile-file filename)))))])
+                (thread
+                 (λ ()
+                   (thread-wait t)
+                   (queue-callback
+                    (λ () 
+                      (cond
+                        [exn
+                         (message-box (string-constant drscheme)
+                                      (exn-message exn))
+                         (delete-file filename)
+                         (update-user-installed-lb)]
+                        [else
+                         (update-user-installed-lb)
+                         (clear-selection pre-installed-lb)
+                         (send user-installed-lb set-string-selection (path->string short-name))])
+                      (done-compilation)
+                      (send compiling-message set-label "")))))))))
+        
+        (define (starting-compilation)
+          (set! compiling? #t)
+          (update-button)
+          (send cancel-button enable #f))
+        
+        (define (done-compilation)
+          (set! compiling? #f)
+          (update-button)
+          (send cancel-button enable #t))
         
         (define (update-user-installed-lb)
           (let ([files
@@ -753,29 +796,36 @@
         
         
         (define (update-button)
-          (send ok-button enable (or (pair? (send user-installed-lb get-selections))
-                                     (pair? (send pre-installed-lb get-selections)))))
+          (send ok-button enable 
+                (and (not compiling?)
+                     (or (pair? (send user-installed-lb get-selections))
+                         (pair? (send pre-installed-lb get-selections))))))
         
         (define button-panel (new horizontal-panel% 
                                   [parent dlg]
                                   [alignment '(right center)]
                                   [stretchable-height #f]))
+        (define compiling-message (new message% [parent button-panel] [label ""] [stretchable-width #t]))
         (define-values (ok-button cancel-button)
           (gui-utils:ok/cancel-buttons button-panel
                                        (λ (b e) 
                                          (set! answer (figure-out-answer))
                                          (send dlg show #f))
-                                       (λ (b e) (send dlg show #f))
+                                       (λ (b e) 
+                                         (send dlg show #f))
                                        (string-constant ok) (string-constant cancel)))
         
         (define (figure-out-answer)
           (cond
             [(send pre-installed-lb get-selection)
              =>
-             (λ (i) `(lib ,(send pre-installed-lb get-string i) "teachpack" "htdp"))]
+             (λ (i) `(lib ,(send pre-installed-lb get-string i) 
+                          "teachpack"
+                          "htdp"))]
             [(send user-installed-lb get-selection)
              =>
-             (λ (i) `(lib ,(send user-installed-lb get-string i) ,user-installed-teachpacks-collection))]
+             (λ (i) `(lib ,(send user-installed-lb get-string i)
+                          ,user-installed-teachpacks-collection))]
             [else (error 'figure-out-answer "no selection!")]))
         
         

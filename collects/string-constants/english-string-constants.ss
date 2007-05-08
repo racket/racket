@@ -911,6 +911,8 @@ please adhere to these guidelines:
  (drscheme-teachpack-message-title "DrScheme Teachpack")
  (already-added-teachpack "Already added ~a teachpack")
   
+  ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
+  (compiling-teachpack "Compiling ~a teachpack ...")
   (teachpack-pre-installed "Preinstalled Teachpacks")
   (teachpack-user-installed "User-installed Teachpacks")
   (install-teachpack... "Install Teachpack...")
