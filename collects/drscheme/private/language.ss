@@ -582,7 +582,7 @@
                       [(distribution) create-module-based-distribution])])
               (create-executable
                program-filename
-               executable-filename 
+               executable-filename
                module-language-spec
                transformer-module-language-spec
                init-code
@@ -602,15 +602,16 @@
       (define (create-executable-gui parent program-filename show-type show-base)
         (define dlg (make-object dialog% (string-constant create-executable-title) parent))
         (define filename-panel (make-object horizontal-panel% dlg))
-        (define filename-text-field (instantiate text-field% ()
-                                      (label (string-constant filename))
-                                      (parent filename-panel)
-                                      (init-value (path->string (default-executable-filename 
-                                                                  program-filename 
-                                                                  (if (eq? show-type #t) 'launcher show-type)
-                                                                  #f)))
-                                      (min-width 400)
-                                      (callback void)))
+        (define filename-text-field (new text-field% 
+                                         [label (string-constant filename)]
+                                         [parent filename-panel]
+                                         [init-value (path->string 
+                                                      (default-executable-filename 
+                                                        program-filename 
+                                                        (if (eq? show-type #t) 'launcher show-type)
+                                                        #f))]
+                                         [min-width 400]
+                                         [callback void]))
         (define filename-browse-button (instantiate button% ()
                                          (label (string-constant browse...))
                                          (parent filename-panel)
@@ -736,6 +737,7 @@
             
         (define cancelled? #t)
         
+        (reset-filename-suffix)
         (send dlg show #t)
         (cond
           [cancelled? #f]
@@ -911,10 +913,10 @@
                  [to-be-embedded-module-specs
                   (map (λ (x) (list #f x))
                        pre-to-be-embedded-module-specs3)])
-
+            
             (create-embedding-executable 
              executable-filename
-             #:mred gui?
+             #:mred? gui?
              #:verbose? #f ;; verbose?
              #:modules to-be-embedded-module-specs
              #:literal-files (list 
@@ -1090,7 +1092,9 @@
             (format "~s" (if gui?  
                              (list 'mzscheme '(lib "mred.ss" "mred"))
                              (list 'mzscheme))))
-           (path->string executable-filename))))
+           (if (path? executable-filename)
+               (path->string executable-filename)
+               executable-filename))))
       
       ;; initialize-module-based-language : boolean module-spec module-spec ((-> void) -> void)
       (define (initialize-module-based-language use-copy?
