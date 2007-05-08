@@ -692,13 +692,12 @@
 
         ;; Macros
 
-        [(AnyQ mrule (e1 e2 (? transformation? tx) next))
+        [(AnyQ mrule (e1 e2 (? error-wrap? ew) next))
+         (list (make-s:subterm #f ew))]
+        [(AnyQ mrule (e1 e2 tx next))
          (recv [(subterms table) (for-transformation tx)]
                (parameterize ((subterms-table table))
                  (append subterms (for-deriv next))))]
-        [(AnyQ mrule (e1 e2 (and ew (struct error-wrap (_ _ _))) next))
-         (list (make-s:subterm #f ew))]
-
         
         [(AnyQ lift-deriv (e1 e2 first lifted-stx next))
          #;(printf "encountered lift-deriv in seek mode!~n")
