@@ -317,7 +317,8 @@
                   (let ([ctx (lambda (x) (path-replace term path0 x))])
                     (append (with-context ctx
                               (reductions* deriv0))
-                            (loop (and (deriv? deriv0)
+                            (loop (and term
+                                       (deriv? deriv0)
                                        (path-replace term path0 (deriv-e2 deriv0)))
                                   (cdr subterms)))))]
                [(s:rename? (car subterms))
@@ -326,9 +327,10 @@
                   ;; FIXME: if so, coalesce?
                   (rename-frontier (s:rename-before subterm0)
                                    (s:rename-after subterm0))
-                  (loop (path-replace term
-                                      (s:rename-path subterm0)
-                                      (s:rename-after subterm0))
+                  (loop (and term
+                             (path-replace term
+                                           (s:rename-path subterm0)
+                                           (s:rename-after subterm0)))
                         (cdr subterms)))]))]
 
       ;; FIXME
