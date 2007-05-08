@@ -6,7 +6,8 @@
   (require "stacktrace.ss"
            "errortrace-key.ss"
            (lib "list.ss")
-           (lib "unit.ss"))
+           (lib "unit.ss")
+           (lib "runtime-path.ss"))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Test coverage run-time support
@@ -105,9 +106,11 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Stacktrace instrumenter
 
+  (define-runtime-path key-syntax
+    '(lib "errortrace-key-syntax.ss" "errortrace"))
+
   (define dynamic-errortrace-key
-    (dynamic-require '(lib "errortrace-key-syntax.ss" "errortrace")
-                     'errortrace-key-syntax))
+    (dynamic-require key-syntax 'errortrace-key-syntax))
 
   ;; with-mark : stx stx -> stx
   (define (with-mark mark expr)
