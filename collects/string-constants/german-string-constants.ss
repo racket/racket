@@ -708,6 +708,13 @@
  (break-menu-item-help-string "Momentane Auswertung unterbrechen")
  (kill-menu-item-label "Abbrechen")
  (kill-menu-item-help-string "Momentante Auswertung abbrechen")
+ (limit-memory-menu-item-label "Speicherverbrauch einschänken...")
+ (limit-memory-msg-1 "Das Limit wird beim nächsten Programmstart aktiv")
+ (limit-memory-msg-2 "und muß mindestens 100 Megabytes betragen.")
+ (limit-memory-unlimited "nicht einschränken")
+ (limit-memory-limited "einschränken")
+ (limit-memory-megabytes "Megabytes")
+
  (clear-error-highlight-menu-item-label "Fehlermarkierung entfernen")
  (clear-error-highlight-item-help-string "Entfernt die rosa Fehlermarkierung")
  (reindent-menu-item-label "&Einrücken")
@@ -1105,6 +1112,18 @@
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "Java-Modus")
+
+  (profj-beginner-lang "Anfänger")
+  (profj-beginner-lang-one-line-summary "Java-ähnliche Lehrsprache für Anfänger")
+  (profj-full-lang "Voller Sprachumfang")
+  (profj-full-lang-one-line-summary "Wie Java 1.0 (einige 1.1-Erweiterungen)")
+  (profj-advanced-lang "Fortgeschritten")
+  (profj-advanced-lang-one-line-summary "Java-ähnliche Lehrsprache für Fortgeschrittene")
+  (profj-intermediate-lang "Zwischenstufe")
+  (profj-intermediate-lang-one-line-summary "Java-ähnliche Lehrsprache, Zwischenstufe")
+  (profj-dynamic-lang "Java+dynamic")
+  (profj-dynamic-lang-one-summary "Java mit dynamischen Typen")
+
   (profj-java-mode-color-heading "Farben ändern") ; Heading for preference to choose editing colors  
   (profj-java-mode-color-keyword "Schlüsselwort")
   (profj-java-mode-color-string "Zeichenkette")
@@ -1120,13 +1139,20 @@
 
   (profj-language-config-display-preferences "Einstellungen Anzeige") ; Heading for preferences controlling printing
   (profj-language-config-display-style "Art der Anzeige")
-  (profj-language-config-display-field "Klassen + Felder") ; Class should not be translated
+  (profj-language-config-display-field "Klasse + Felder")
+  (profj-language-config-class "Klasse")
   (profj-language-config-display-array "Gesamten Inhalt von Arrays ausdrucken?")
   (profj-language-config-testing-preferences "Einstellungen Testen") ; Heading for preferences controlling test behavior
   (profj-language-config-testing-enable "Testresultate bei Start anzeigen?") ; Run should be the word found on the Run button
   (profj-language-config-testing-coverage "Abdeckungsinformationen für Tests sammeln?")
+  (profj-language-config-support-test-language "Spracherweiterung \"test\" unterstützen?")
   (profj-language-config-testing-check "Check-Ausdruck zulassen?") ; check should not be translated
+  (profj-language-config-classpath "Klassenpfad")
+  (profj-language-config-choose-classpath-directory "Verzeichnis für den Klassenpfad auswählren")
   (profj-language-config-classpath-display "Aktuellen Wert anzeigen") ; Button label to print the current classpath
+
+  (profj-test-name-close-to-example "Der Name von Klasse ~a enhält etwas, das so ähnlich wie \"Example\" aussieht.")
+  (profj-test-name-example-miscapitalized "Das \"example\" im Namen der Klasse ~a sollte \"Example\" geschrieben werden.")
 
    ;; Close testing window and do not run test cases any more
   (profj-test-results-close-and-disable "Schließen und Testen deaktivieren")
@@ -1134,8 +1160,19 @@
   (profj-test-results-hide-and-disable "Ausblenden und Testen deaktivieren")
   (profj-test-results-window-title "Testresultate")
 
+  (profj-unsupported "Nicht unterstützt")
+  (profj-executables-unsupported "Programmdateien sind für Java bisher noch nicht unterstützt")
+
+  (profj-convert-to-text-comment "Hier Textkommentar einfügen")
+  (profj-convert-to-comment "Hier Kommentar einfügen")
+
+  (profj-executing-main "main ausführen")
+
   (profj-insert-java-comment-box "Java-Kommentarkasten einfügen")
   (profj-insert-java-interactions-box "Java-Interaktions-Kasten einfügen")
+
+  (profjWizward-insert-java-class "Java-Klasse einfügen")
+  (profjWizard-insert-java-union "Java-Vereinigung einfügen")
 
   ;; The Test Suite Tool
   ;; Errors

@@ -2846,7 +2846,7 @@ module browser threading seems wrong.
                 (string-constant kill-menu-item-help-string))
               (when (custodian-memory-accounting-available?)
                 (new menu-item%
-                     [label "Limit memory..."]
+                     [label (string-constant limit-memory-menu-item-label)]
                      [parent scheme-menu]
                      [callback
                       (λ (item b)
@@ -3283,15 +3283,15 @@ module browser threading seems wrong.
                      [parent parent]))
       (define msg1 (new message%
                         [parent d]
-                        [label "The limit will take effect the next time the program"]))
+                        [label (string-constant limit-memory-msg-1)]))
       (define msg1.5 (new message%
                           [parent d]
-                          [label "is Run, and it must be at least 100 megabytes."]))
+                          [label (string-constant limit-memory-msg-2)]))
       
       (define outer-hp (new horizontal-panel% [parent d] [alignment '(center bottom)]))
       (define rb (new radio-box%
                       [label #f]
-                      [choices '("Unlimited" "Limited")]
+                      [choices (list (string-constant limit-memory-unlimited) (string-constant limit-memory-limited))]
                       [callback (λ (a b) (grayizie))]
                       [parent outer-hp]))
       
@@ -3339,7 +3339,7 @@ module browser threading seems wrong.
           [(0) (send ok-button enable #t)]
           [(1) (send ok-button enable (is-valid-number? (send tb get-editor)))]))
       
-      (define msg2 (new message% [parent hp] [label "Megabytes"]))
+      (define msg2 (new message% [parent hp] [label (string-constant limit-memory-megabytes)]))
       (define bp (new horizontal-panel% [parent d]))
       (define-values (ok-button cancel-button)
         (gui-utils:ok/cancel-buttons

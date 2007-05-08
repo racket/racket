@@ -16,10 +16,6 @@
   
   (provide tool@)
   
-  ;; Strings
-  (define INSERT-JAVA-CLASS "Insert Java Class")
-  (define INSERT-JAVA-UNION "Insert Java Union")
-  
   (define tool@
     (unit
       (import drscheme:tool^)
@@ -95,9 +91,9 @@
                  (callback A)
                  (demand-callback enable)))
           
-          (make-menu-item% INSERT-JAVA-CLASS get-class-info make-class class-draw)
+          (make-menu-item% (string-constant profjWizward-insert-java-class) get-class-info make-class class-draw)
           (register-capability-menu-item 'profjWizard:special:java-class (get-special-menu))
-          (make-menu-item% INSERT-JAVA-UNION get-union-info make-union dt-draw)
+          (make-menu-item% (string-constant profjWizard-insert-java-union) get-union-info make-union dt-draw)
           (register-capability-menu-item 'profjWizard:special:java-union (get-special-menu))))
       
       (drscheme:get/extend:extend-unit-frame java-class-wizard-mixin)

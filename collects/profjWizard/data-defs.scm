@@ -22,11 +22,13 @@
 #cs
 (module data-defs mzscheme 
   
+  (require (lib "string-constant.ss" "string-constants"))
+  
   ;; Those languages for which methods that satisfy an interface 
   ;; don't have to be decorated with public --- 
-  (define BEGINNER "Beginner")
-  (define INTERMEDIATE "Intermediate")
-  (define PROFESSIONAL "Professional")
+  (define BEGINNER (string-constant profj-beginner-lang))
+  (define INTERMEDIATE (string-constant profj-intermediate-lang))
+  (define PROFESSIONAL (string-constant profj-full-lang))
   (define *languages* (list BEGINNER INTERMEDIATE PROFESSIONAL))
   (define Language 
     (flat-named-contract "<Language>" (lambda (x) (member x *languages*))))

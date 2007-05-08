@@ -815,6 +815,12 @@ please adhere to these guidelines:
  (break-menu-item-help-string "Break the current evaluation")
  (kill-menu-item-label "Kill")
  (kill-menu-item-help-string "Kill the current evaluation")
+ (limit-memory-menu-item-label "Limit memory...")
+ (limit-memory-msg-1 "The limit will take effect the next time the program")
+ (limit-memory-msg-2 "is Run, and it must be at least 100 megabytes.")
+ (limit-memory-unlimited "Unlimited")
+ (limit-memory-limited "Limited")
+ (limit-memory-megabytes "Megabytes")
  (clear-error-highlight-menu-item-label "Clear Error Highlight")
  (clear-error-highlight-item-help-string "Removes the pink error highlighting")
  (reindent-menu-item-label "&Reindent")
@@ -1222,6 +1228,17 @@ please adhere to these guidelines:
   (profj-java "Java")
   (profj-java-mode "Java mode")
 
+  (profj-beginner-lang "Beginner")
+  (profj-beginner-lang-one-line-summary "Java-like Beginner teaching language")
+  (profj-full-lang "Full")
+  (profj-full-lang-one-line-summary "Like Java 1.0 (some 1.1)")
+  (profj-advanced-lang "Advanced")
+  (profj-advanced-lang-one-line-summary "Java-like Advanced teaching language")
+  (profj-intermediate-lang "Intermediate")
+  (profj-intermediate-lang-one-line-summary "Java-like Intermediate teaching language")
+  (profj-dynamic-lang "Java+dynamic")
+  (profj-dynamic-lang-one-summary "Java with dynamic typing capabilities")
+
   (profj-java-mode-color-heading "Edit Colors") ; Heading for preference to choose editing colors  
   (profj-java-mode-color-keyword "keyword")
   (profj-java-mode-color-string "string")
@@ -1237,22 +1254,40 @@ please adhere to these guidelines:
   
   (profj-language-config-display-preferences "Display Preferences") ; Heading for preferences controlling printing
   (profj-language-config-display-style "Display style")
-  (profj-language-config-display-field "Class + Fields") ; Class should not be translated
+  (profj-language-config-display-field "Class + Fields")
+  (profj-language-config-class "Class")
   (profj-language-config-display-array "Print entire contents of arrays?")
   (profj-language-config-testing-preferences "Testing Preferences") ; Heading for preferences controlling test behavior
   (profj-language-config-testing-enable "Display testing results on Run?") ; Run should be the word found on the Run button
   (profj-language-config-testing-coverage "Collect coverage information for tests?")
+  (profj-language-config-support-test-language "Support test Language extension?")
   (profj-language-config-testing-check "Allow check expression?") ; check should not be translated
+  (profj-language-config-classpath "Classpath")
+  (profj-language-config-choose-classpath-directory "Choose the directory to add to class path")
   (profj-language-config-classpath-display "Show current") ; Button label to print the current classpath
 
+  (profj-test-name-close-to-example "Class ~a's name contains a phrase close to Example.")
+  (profj-test-name-example-miscapitalized "Class ~a's name contains a miscapitalized example.")
+  
    ;; Close testing window and do not run test cases any more
   (profj-test-results-close-and-disable "Close and Disable Testing")
   ;; Hide docked testing window and do not run test cases any more
   (profj-test-results-hide-and-disable "Hide and Disable Testing")
   (profj-test-results-window-title "Test Results")
+  
+  (profj-unsupported "Unsupported")
+  (profj-executables-unsupported "Sorry - executables are not supported for Java at this time")
+
+  (profj-convert-to-text-comment "Convert to text comment")
+  (profj-convert-to-comment "Convert to comment")
+
+  (profj-executing-main "executing main")
 
   (profj-insert-java-comment-box "Insert Java Comment Box")
   (profj-insert-java-interactions-box "Insert Java Interactions Box")
+
+  (profjWizward-insert-java-class "Insert Java Class")
+  (profjWizard-insert-java-union "Insert Java Union")
 
   ;; The Test Suite Tool
   ;; Errors
