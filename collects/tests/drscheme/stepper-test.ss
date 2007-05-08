@@ -635,11 +635,22 @@
             [after null]
             [snips snips])
         
+        (define (die which when)
+          (printf "~a: didn't find ~s\n  ~s\n  ~s\n  ~s\n  ~s\n" which when
+                  program
+                  before 
+                  after 
+                  snips))
+        
         (define (hunt-for-list id)
           (let loop ()
             (cond
-              [(null? snips) (k #f)]
-              [(eq? 'unknown (car snips)) (k #f)]
+              [(null? snips)
+               (die 'hunt-for-list.1 id)
+               (k #f)]
+              [(eq? 'unknown (car snips))
+               (die 'hunt-for-list.2 id)
+               (k #f)]
               [(list? (car snips))
                (begin0 (car snips)
                        (set! snips (cdr snips)))]
@@ -648,8 +659,12 @@
         (define (hunt-for-list/error id)
           (let loop ()
             (cond
-              [(null? snips) (k #f)]
-              [(eq? 'unknown (car snips)) (k #f)]
+              [(null? snips) 
+               (die 'hunt-for-list/error.1 id)
+               (k #f)]
+              [(eq? 'unknown (car snips)) 
+               (die 'hunt-for-list/error.2 id)
+               (k #f)]
               [(or (err? (car snips)) (list? (car snips)))
                (begin0 (car snips)
                        (set! snips (cdr snips)))]
@@ -658,15 +673,16 @@
         (define (hunt-for-unknown id)
           (let loop ()
             (cond
-              [(null? snips) (k #f)]
+              [(null? snips) 
+               (die 'hunt-for-unknown id)
+               (k #f)]
               [(eq? 'unknown (car snips)) (set! snips (cdr snips))]
               [else (set! snips (cdr snips))
                     (loop)])))
         
-        (set! program (hunt-for-list 'program))
-        (hunt-for-unknown 'before)
+        ;(set! program (hunt-for-list 'program))
         (set! before (hunt-for-list 'before))
-        (hunt-for-unknown 'after)
+        (hunt-for-unknown 'between)
         (set! after (hunt-for-list/error 'after))
         
         (make-step program

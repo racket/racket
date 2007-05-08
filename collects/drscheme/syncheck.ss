@@ -2145,13 +2145,12 @@ If the namespace does not, they are colored the unbound color.
       ;; if someone just types `(λ (x) x)' it has no 'origin
       ;; field, but there still are keywords.
       (define (annotate-raw-keyword stx id-map)
-        (unless (syntax-property stx 'origin)
-          (let ([lst (syntax-e stx)])
-            (when (pair? lst)
-              (let ([f-stx (car lst)])
-                (when (and (syntax-original? f-stx)
-                           (identifier? f-stx))
-                  (add-id id-map f-stx)))))))
+        (let ([lst (syntax-e stx)])
+          (when (pair? lst)
+            (let ([f-stx (car lst)])
+              (when (and (syntax-original? f-stx)
+                         (identifier? f-stx))
+                (add-id id-map f-stx))))))
             
       ;; color-internal-structure : syntax str -> void
       (define (color-internal-structure stx style-name)

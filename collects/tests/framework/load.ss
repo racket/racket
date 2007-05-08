@@ -40,6 +40,7 @@
    ;; these extra evals let me submit multiple, independent top-level
    ;; expressions in the newly created namespace.
    '(begin (eval '(require (lib "unit.ss")))
+           (eval '(require-for-syntax mzscheme))
            (eval '(require-for-syntax (lib "unit-exptime.ss")))
            (eval '(define-syntax (signature->symbols stx)
                     (syntax-case stx ()

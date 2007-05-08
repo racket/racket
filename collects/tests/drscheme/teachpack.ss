@@ -158,10 +158,8 @@
      "3"))
   
   (define (good-tests)
-    (set-language-level! `("PLT" ,(regexp "Graphical")))
-    (generic-tests)
-    
     (set-language-level! '("How to Design Programs" "Beginning Student"))
+    (do-execute drs-frame)
     (generic-tests))
   
   (define (bad-tests)
@@ -196,28 +194,38 @@
                 (when (or (equal? #"ss" (filename-extension teachpack))
                           (equal? #"scm" (filename-extension teachpack)))
                   (unless (equal? "graphing.ss" (path->string teachpack))
-                    (printf "  testing ~a~n" (build-path dir teachpack))
-                    (let ([filename (normal-case-path (build-path dir teachpack))])
-                      (fw:test:menu-select "Language" "Clear All Teachpacks")
-                      (use-get/put-dialog
-                       (lambda ()
-                         (fw:test:menu-select "Language" "Add Teachpack..."))
-                       filename)
-                      (do-execute drs-frame)
-                      
-                      (let ([got (fetch-output drs-frame)]
-                            [expected (format "Teachpack: ~a.~n1" filename)])
-                        (unless (equal? got expected)
-                          (printf "FAILED built in teachpack test: ~a~n" filename)
-                          (printf "       got: ~s~n  expected: ~s~n" got expected))))))))]
+                    (printf "  testing ~a~n" teachpack)
+                    (fw:test:menu-select "Language" "Clear All Teachpacks")
+                    (fw:test:menu-select "Language" "Add Teachpack...")
+                    (wait-for-new-frame drs-frame)
+                    (let* ([tp-dialog (get-top-level-focus-window)]
+                           [choice (find-leftmost-choice tp-dialog)])
+                      (fw:test:set-list-box! choice (path->string teachpack))
+                      (fw:test:button-push "OK")
+                      (wait-for-new-frame tp-dialog))
+                    (do-execute drs-frame)
+                    
+                    (let ([got (fetch-output drs-frame)]
+                          [expected (format "Teachpack: ~a.\n1" (path->string teachpack))])
+                      (unless (equal? got expected)
+                        (printf "FAILED built in teachpack test: ~a~n" (path->string teachpack))
+                        (printf "       got: ~s~n  expected: ~s~n" got expected)))))))]
            [test-teachpacks
             (lambda (dir)
               (for-each (test-teachpack dir) 
                         (directory-list dir)))]
            [teachpack-dir (normalize-path (collection-path "teachpack"))])
       (set-language-level! '("How to Design Programs" "Advanced Student"))
-      (test-teachpacks teachpack-dir)
+      (do-execute drs-frame)
       (test-teachpacks (build-path teachpack-dir "htdp"))))
+  
+  (define (find-leftmost-choice frame)
+    (let loop ([p frame])
+      (cond
+        [(is-a? p list-box%) p]
+        [(is-a? p area-container<%>)
+         (ormap loop (send p get-children))]
+        [else #f])))
   
   (define (run-test)
     ;(good-tests)

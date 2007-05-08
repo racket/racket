@@ -258,7 +258,8 @@ the settings above should match r5rs
       (test-expression "(define x 1)(define x 2)" "")
       
       (test-expression "(define-struct spider (legs))(make-spider 4)" 
-                       "{bug09.png} reference to undefined identifier: define-struct")
+                       "{bug09.png} reference to undefined identifier: define-struct"
+                       "{bug09.png} reference to undefined identifier: define-struct\n{bug09.png} reference to undefined identifier: make-spider")
       
       (test-expression "(sqrt -1)" "0+1i")
 
@@ -358,7 +359,7 @@ the settings above should match r5rs
       
       (test-expression "(define-struct spider (legs))(make-spider 4)" 
                        "(make-spider 4)"
-                       "define-struct: cannot redefine name: spider")
+                       "define-struct: cannot redefine name: spider\n(make-spider 4)")
       
       (test-expression "(sqrt -1)" "0+1i")
 
@@ -403,7 +404,7 @@ the settings above should match r5rs
       (test-expression "'(1)" "quote: expected a name after a ', found something else")
       (test-expression "(define shrd (list 1)) (list shrd shrd)"
                        "(cons (cons 1 empty) (cons (cons 1 empty) empty))"
-                       "define: cannot redefine name: shrd")
+                       "define: cannot redefine name: shrd\n(cons (cons 1 empty) (cons (cons 1 empty) empty))")
       (test-expression "(local ((define x x)) 1)"
                        "local: name is not defined, not an argument, and not a primitive name"
                        "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
@@ -482,7 +483,7 @@ the settings above should match r5rs
       
       (test-expression "(define-struct spider (legs))(make-spider 4)"
                        "(make-spider 4)"
-                       "define-struct: cannot redefine name: spider")
+                       "define-struct: cannot redefine name: spider\n(make-spider 4)")
       
       (test-expression "(sqrt -1)" "0+1i")
 
@@ -525,7 +526,7 @@ the settings above should match r5rs
       (test-expression "'(1)" "(list 1)")
       (test-expression "(define shrd (list 1)) (list shrd shrd)"
                        "(list (list 1) (list 1))"
-                       "define: cannot redefine name: shrd")
+                       "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
       (test-expression "(local ((define x x)) 1)"
                        "local: name is not defined, not an argument, and not a primitive name"
                        "function call: expected a defined name or a primitive operation name after an open parenthesis, but found something else")
@@ -602,7 +603,7 @@ the settings above should match r5rs
       
       (test-expression "(define-struct spider (legs))(make-spider 4)"
                        "(make-spider 4)"
-                       "define-struct: cannot redefine name: spider")
+                       "define-struct: cannot redefine name: spider\n(make-spider 4)")
       
       (test-expression "(sqrt -1)" "0+1i")
 
@@ -644,7 +645,7 @@ the settings above should match r5rs
       (test-expression "'(1)" "(list 1)")
       (test-expression "(define shrd (list 1)) (list shrd shrd)"
                        "(list (list 1) (list 1))"
-                       "define: cannot redefine name: shrd")
+                       "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
       (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
       (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
       (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -714,7 +715,7 @@ the settings above should match r5rs
       
       (test-expression "(define-struct spider (legs))(make-spider 4)"
                        "(make-spider 4)"
-                       "define-struct: cannot redefine name: spider")
+                       "define-struct: cannot redefine name: spider\n(make-spider 4)")
       
       (test-expression "(sqrt -1)" "0+1i")
       
@@ -756,7 +757,7 @@ the settings above should match r5rs
       (test-expression "'(1)" "(list 1)")
       (test-expression "(define shrd (list 1)) (list shrd shrd)"
                        "(list (list 1) (list 1))"
-                       "define: cannot redefine name: shrd")
+                       "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
       (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
       (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
       (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -825,7 +826,7 @@ the settings above should match r5rs
       
       (test-expression "(define-struct spider (legs))(make-spider 4)"
                        "(make-spider 4)"
-                       "define-struct: cannot redefine name: spider")
+                       "define-struct: cannot redefine name: spider\n(make-spider 4)")
       
       (test-expression "(sqrt -1)" "0+1i")
 
@@ -858,13 +859,15 @@ the settings above should match r5rs
       (test-expression "(set! x 1)"
                        "x: name is not defined"
                        "set!: cannot set undefined identifier: x")
-      (test-expression "(define qqq 2) (set! qqq 1)" "(void)" "define: cannot redefine name: qqq")
+      (test-expression "(define qqq 2) (set! qqq 1)" 
+                       "(void)" 
+                       "define: cannot redefine name: qqq\n(void)")
       (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
       (test-expression "(cons 1 2)" "cons: second argument must be of type <list or cyclic list>, given 1 and 2")
       (test-expression "'(1)" "(list 1)")
       (test-expression "(define shrd (list 1)) (list shrd shrd)"
                        "(shared ((-1- (list 1))) (list -1- -1-))"
-                       "define: cannot redefine name: shrd")
+                       "define: cannot redefine name: shrd\n(shared ((-1- (list 1))) (list -1- -1-))")
       (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
       (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
       (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
@@ -1222,9 +1225,9 @@ the settings above should match r5rs
   (define (run-test)
     ;(go mred)
     ;(go mzscheme)
-    ;(go beginner) ;; not really done
-    ;(go beginner/abbrev) ;; not really done
-    (go intermediate)
+    ;(go beginner)
+    ;(go beginner/abbrev)
+    ;(go intermediate)
     (go intermediate/lambda)
     (go advanced)
     (go r5rs)))

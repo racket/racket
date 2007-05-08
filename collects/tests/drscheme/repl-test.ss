@@ -878,7 +878,7 @@
     ; directly, and second, we use the load command.  We compare the
     ; the results of these operations against expected results.
     (define ((run-single-test execute-text-start escape raw?) in-vector)
-      (printf "\n>> testing ~s\n" (test-program in-vector))
+      ;(printf "\n>> testing ~s\n" (test-program in-vector))
       (let* ([program (test-program in-vector)]
              [execute-answer (if raw?
                                  (test-raw-execute-answer in-vector)
@@ -1116,7 +1116,7 @@
         
         (let* ([end (- (get-int-pos) 1)]
                [output (fetch-output drscheme-frame start end)]
-               [expected "{bug09.png} reference to undefined identifier: x"])
+               [expected "reference to undefined identifier: x"])
           (unless (equal? output expected)
             (error 'callcc-test "expected ~s, got ~s" expected output)))))
     

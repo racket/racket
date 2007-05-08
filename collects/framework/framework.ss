@@ -118,6 +118,14 @@
     "the second case in the case-lambda sets"
     "the name of the application to \\var{name}.")
 
+   (preferences:put-preferences/gui
+    (-> (listof symbol?)
+        (listof any/c)
+        any)
+    (name-list val-list)
+    "Like \\scheme{put-preferences}, but passes along"
+    "a \\var{locked-proc} that asks the user if they want to"
+    "try again.")
    (preferences:add-panel
     ((or/c string? (cons/c string? (listof string?)))
      ((is-a?/c area-container-window<%>) 

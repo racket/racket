@@ -55,15 +55,16 @@ add this test:
                                                  (send text paragraph-start-position 2))))))
         (channel-get chan)))
     
-    (define (output-style x) (equal? (list-ref x 9) '(150 0 150)))
-    (define (error-style x) (equal? (list-ref x 9) '(255 0 0)))
+    (define (output-style x) (eq? x '|ports out|))
+    (define (error-style x) (eq? x '|ports err|))
+    (define (value-style x) (eq? x '|ports value|))
     
     (define prompt '("\n> " default-color))
     
     ;; this test has to be first to test an uninitialized state of the port
     ;; NOTE: missing a name for the "value" style ... so this test appears to fail (altho it actually passes)
     (check-output "(port-next-location (current-input-port))" 
-                  (list '("1\n0\n1\n" value-style)
+                  (list `("1\n0\n1\n" ,value-style)
                         prompt))
     
     (check-output "(display 1)" (list (list "1" output-style) prompt))
