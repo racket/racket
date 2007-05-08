@@ -1493,6 +1493,7 @@ static char *convert_to_backslashbackslash_qm(char *cleaned, int *_clen, char *s
         /* UNC */
         xdel = 1;
         plen = 7;
+        pos = 0; /* reset below */
       } else {
         /* Drive-relative absolute. */
         memcpy(str, "\\\\?\\RED\\", 8);
@@ -1502,6 +1503,7 @@ static char *convert_to_backslashbackslash_qm(char *cleaned, int *_clen, char *s
       }
     } else {
       plen = 4;
+      pos = 0; /* reset below */
     }
     if (plen) {
       memcpy(str, "\\\\?\\UNC", plen);
@@ -1876,6 +1878,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
       
       while (i < ilen) {
 	if (IS_A_DOS_X_SEP(prim_only, filename[i])
+            && ((i + 1) < ilen)
 	    && IS_A_DOS_X_SEP(prim_only, filename[i + 1])) {
 	  i++;
 	} else
@@ -4166,8 +4169,7 @@ static Scheme_Object *do_simplify_path(Scheme_Object *path, Scheme_Object *cycle
         memcpy(naya + add_sep + 2, s + add_sep, len + 1 - add_sep);
         len += 2;
         path = scheme_make_sized_offset_kind_path(naya, 0, len, 0, SCHEME_WINDOWS_PATH_KIND);
-      }
-      if ((add_sep < len) && (s[add_sep] == '\\') && (s[add_sep+1] != '\\')) {
+      } else if (((add_sep + 1) < len) && (s[add_sep] == '\\') && (s[add_sep+1] != '\\')) {
         /* Add \, as in \\?\\c -> \\?\\\c */
         char *naya;
         naya = (char *)scheme_malloc_atomic(len + 2);
