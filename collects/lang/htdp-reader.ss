@@ -27,10 +27,16 @@
     (let ([read-syntax
            (opt-lambda ([source-name #f]
                         [port (current-input-port)])
-             (let ([table (read port)])
+             (let* ([table (read port)]
+                    [path (object-name port)]
+                    [modname 
+                     (if path
+                         (let-values ([(base name dir) (split-path path)])
+                           (string->symbol (path->string (path-replace-suffix name #""))))
+                         (lookup 'modname table))])
                (datum->syntax-object
                 #f
-                `(module ,(lookup 'modname table) ,spec
+                `(module ,modname ,spec
                    ,@(map (λ (x) `(require ,x))
                           (lookup 'teachpacks table))
                    ,@(parameterize ([read-case-sensitive (lookup 'read-case-sensitive table)])
