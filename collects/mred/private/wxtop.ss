@@ -13,7 +13,8 @@
 	   "wxwindow.ss"
 	   "wxcontainer.ss")
 
-  (provide (protect active-main-frame)
+  (provide (protect active-main-frame
+                    set-root-menu-wx-frame!)
 	   get-display-size
 	   get-display-left-top-inset
 	   (protect make-top-container%
@@ -23,6 +24,10 @@
 
   ;; Weak boxed:
   (define active-main-frame (make-weak-box #f))
+  
+  (define root-menu-wx-frame #f)
+  (define (set-root-menu-wx-frame! f)
+    (set! root-menu-wx-frame f))
 
   (define get-display-size
     (opt-lambda ([full-screen? #f])
@@ -583,7 +588,8 @@
 			(when on?
 			  (set! act-date/seconds (current-seconds))
 			  (set! act-date/milliseconds (current-milliseconds))
-			  (when (wx:main-eventspace? (get-eventspace))
+			  (when (and (wx:main-eventspace? (get-eventspace))
+                                     (not (eq? this root-menu-wx-frame)))
 			    (set! active-main-frame (make-weak-box this))))
 			;; Send refresh to subwindows that need it
 			(set! activate-refresh-wins (filter weak-box-value activate-refresh-wins))

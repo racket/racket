@@ -239,7 +239,9 @@
 		       label parent))))))
 
   (define root-menu-frame #f)
-  (define (set-root-menu-frame! f) (set! root-menu-frame f))
+  (define (set-root-menu-frame! f) 
+    (set! root-menu-frame f)
+    (set-root-menu-wx-frame! (mred->wx f)))
   
   (define (get-top-level-windows)
     (remq root-menu-frame (map wx->mred (wx:get-top-level-windows))))
