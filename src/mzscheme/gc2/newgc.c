@@ -1365,14 +1365,19 @@ inline static void clear_stack_pages(void)
   if(int_top) {
     struct stacklet *temp, *base;
     int keep = 2;
-    
+
     /* go to the head of the list */
     for(; int_top->prev; int_top = int_top->prev) {}
     /* then go through and clear them out */
     base = int_top;
     for(; int_top; int_top = temp) {
       temp = int_top->next;
-      if(keep) keep--; else free(int_top);
+      if(keep) { 
+        keep--; 
+        if (!keep)
+          int_top->next = NULL;
+      } else 
+        free(int_top);
     }
     int_top = base;
     int_top->top = PPTR(int_top) + 4;
@@ -1730,8 +1735,8 @@ static void do_btc_accounting(void)
     doing_memory_accounting = 0;
     old_btc_mark = new_btc_mark;
     new_btc_mark = !new_btc_mark;
-    clear_stack_pages();
   }
+  clear_stack_pages();
 }
 
 struct account_hook {
