@@ -12,11 +12,11 @@
 
   (define unix-browser-list '(firefox galeon opera netscape mozilla dillo))
 
-  ; : any -> bool
+  ;; : any -> bool
   (define (custom-browser? x)
     (and (pair? x) (string? (car x)) (string? (cdr x))))
 
-  ; : any -> bool
+  ;; : any -> bool
   (define (browser-preference? x)
     (or (not x) (eq? 'plt x) (memq x unix-browser-list) (custom-browser? x)
         (procedure? x)))
@@ -27,7 +27,7 @@
      (lambda (x)
        (if (browser-preference? x)
          x
-         (error 'external-browser "~a is not a valid browser preference" x)))))
+         (error 'external-browser "~e is not a valid browser preference" x)))))
 
   ;; like (system-type), but return the real OS for OSX with XonX
   ;;  (could do the same for Cygwin, but that it doesn't have shell-execute)
