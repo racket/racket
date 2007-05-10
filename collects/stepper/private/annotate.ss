@@ -8,6 +8,7 @@
            "shared.ss"
            "my-macros.ss"
            #;"xml-box.ss"
+           #;(file "~/clements/scheme-scraps/eli-debug.ss")
            (prefix beginner-defined: "beginner-defined.ss"))
 
   (define-syntax (where stx)
@@ -270,7 +271,7 @@
   
   
   (define ((annotate/master input-is-top-level?) main-exp break track-inferred-names? language-level)
-    #;(define _ (fprintf (current-error-port) "input to annotate: ~v\n" (syntax-object->datum main-exp)))
+    #;(define _ (>>> (syntax-object->datum main-exp)))
 
     (define binding-indexer
       (let ([binding-index 0])
