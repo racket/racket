@@ -1433,12 +1433,19 @@
 			  [(rhs-expr ...) (map allow-local-lambda 
 					       (syntax->list (syntax (rhs-expr ...))))])
 	      (quasisyntax/loc stx
-		(let-values ([(tmp-id) rhs-expr] ...)
-		  (let-syntaxes ([(name) (make-undefined-check
-					  (quote-syntax check-not-undefined)
-					  (quote-syntax tmp-id))]
-				 ...)
-				expr))))]
+                (let-values ([(tmp-id) rhs-expr] ...)
+                  #,(stepper-syntax-property
+                     #`(let-syntaxes ([(name) (make-undefined-check
+                                               (quote-syntax check-not-undefined)
+                                               (quote-syntax tmp-id))]
+                                      ...)
+                                     expr)
+                     'stepper-skipto
+                     (append
+                      ;; body of let-values:
+                      skipto/third
+                      ;; body of let-values:
+                      skipto/third)))))]
 	   [_else (bad-let-form 'let stx stx)]))))
 
     (define (intermediate-let*/proc stx)
