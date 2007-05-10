@@ -27,22 +27,32 @@
          x
          (error 'external-browser "~a is not a valid browser preference" x)))))
 
-  (define osx-browser?
-    (delay (or (eq? (system-type) 'macosx)
-               (equal? "ppc-darwin" (path->string (system-library-subpath))))))
+  ;; like (system-type), but return the real OS for OSX with XonX
+  ;;  (could do the same for Cygwin, but that it doesn't have shell-execute)
+  (define systype
+    (delay (let ([t (system-type)])
+             (cond [(not (eq? t 'unix)) t]
+                   [(regexp-match? #rx"-darwin($|/)"
+                                   (path->string (system-library-subpath)))
+                    'macosx]
+                   [else t]))))
 
   ; send-url : str [bool] -> void
   (define/kw (send-url url-str
                        #:optional [separate-window? separate-by-default?])
     (define external (external-browser))
-    (define stype (system-type))
+    (define stype (force systype))
     (cond
       [(procedure? external) (external url-str)]
-      [(force osx-browser?)
-       (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
+      [(eq? stype 'macosx)
+       (browser-process
+        (format "osascript -e 'open location \"~a\"'"
+                url-str))]
       [(eq? stype 'windows)
        (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
-      [(eq? stype 'unix)
+      [(not (eq? stype 'unix))
+       (error 'send-url "don't know how to open URL on platform: ~s" stype)]
+      [else ; unix
        (let ([preferred (or external (get-preference 'external-browser))])
          (cond
            [(use-browser 'opera preferred)
@@ -81,9 +91,7 @@
               (browser-process cmd))]
            [else
             (error 'send-url "Couldn't find ~a to open URL: ~e"
-                   (orify unix-browser-list) url-str)]))]
-      [else (error 'send-url
-                   "don't know how to open URL on platform: ~s" stype)]))
+                   (orify unix-browser-list) url-str)]))]))
 
   (define unix-browser-list '(opera galeon netscape mozilla dillo))
 
