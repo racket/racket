@@ -10,6 +10,8 @@
   (define separate-by-default?
     (get-preference 'new-browser-for-urls (lambda () #t)))
 
+  (define unix-browser-list '(firefox galeon opera netscape mozilla dillo))
+
   ; : any -> bool
   (define (custom-browser? x)
     (and (pair? x) (string? (car x)) (string? (cdr x))))
@@ -42,6 +44,12 @@
                        #:optional [separate-window? separate-by-default?])
     (define external (external-browser))
     (define stype (force systype))
+    (define preferred '|? ? ?|)
+    (define (use-browser browser-name)
+      (when (eq? preferred '|? ? ?|)
+        (set! preferred (or external (get-preference 'external-browser))))
+      (and (or (not preferred) (eq? preferred browser-name))
+           (find-executable-path (symbol->string browser-name) #f)))
     (cond
       [(procedure? external) (external url-str)]
       [(eq? stype 'macosx)
@@ -52,66 +60,39 @@
        (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
       [(not (eq? stype 'unix))
        (error 'send-url "don't know how to open URL on platform: ~s" stype)]
-      [else ; unix
-       (let ([preferred (or external (get-preference 'external-browser))])
-         (cond
-           [(use-browser 'opera preferred)
-            =>
-            (lambda (exe)
-              ;; opera may not return -- always open asyncronously
-              ;; opera starts a new browser automatically, if it can't find one
-              (browser-process* exe "-remote"
-                                (format "openURL(~a)"
-                                        (if separate-window?
-                                          (format "~a,new-window" url-str)
-                                          url-str))))]
-           [(use-browser 'galeon preferred)
-            =>
-            (lambda (exe)
-              (browser-process* exe (if separate-window? "-w" "-x") url-str))]
-           [(or (use-browser 'netscape preferred)
-                (use-browser 'mozilla preferred))
-            =>
-            (lambda (exe)
-              ;; netscape's -remote returns with an error code, if no
-              ;; netscape is around. start a new netscape in that case.
-              (or (system* exe "-remote"
-                           (format "openURL(~a)"
-                                   (if separate-window?
-                                     (format "~a,new-window" url-str)
-                                     url-str)))
-                  (browser-process* exe url-str)))]
-           [(use-browser 'dillo preferred)
-            =>
-            (lambda (exe) (browser-process* exe url-str))]
-           [(custom-browser? preferred)
-            (let ([cmd (string-append (car preferred)
-                                      url-str
-                                      (cdr preferred))])
-              (browser-process cmd))]
-           [else
-            (error 'send-url "Couldn't find ~a to open URL: ~e"
-                   (orify unix-browser-list) url-str)]))]))
-
-  (define unix-browser-list '(opera galeon netscape mozilla dillo))
-
-  ; : (cons tst (listof tst)) -> str
-  (define (orify l)
-    (cond
-      [(null? (cdr l)) (format "~a" (car l))]
-      [(null? (cddr l)) (format "~a or ~a" (car l) (cadr l))]
+      ;; unix
+      [(use-browser 'opera)
+       => (lambda (exe)
+            ;; opera may not return -- always open asyncronously
+            ;; opera starts a new browser automatically, if it can't find one
+            (browser-process* exe "-remote"
+                              (format "openURL(~a)"
+                                      (if separate-window?
+                                        (format "~a,new-window" url-str)
+                                        url-str))))]
+      [(use-browser 'galeon)
+       => (lambda (exe)
+            (browser-process* exe (if separate-window? "-w" "-x") url-str))]
+      [(or (use-browser 'netscape)
+           (use-browser 'mozilla))
+       => (lambda (exe)
+            ;; netscape's -remote returns with an error code, if no netscape is
+            ;; around.  start a new netscape in that case.
+            (or (system* exe "-remote"
+                         (format "openURL(~a)"
+                                 (if separate-window?
+                                   (format "~a,new-window" url-str)
+                                   url-str)))
+                (browser-process* exe url-str)))]
+      [(use-browser 'dillo)
+       => (lambda (exe) (browser-process* exe url-str))]
+      [(custom-browser? preferred)
+       (let ([cmd (string-append (car preferred)
+                                 url-str
+                                 (cdr preferred))])
+         (browser-process cmd))]
       [else
-       (let loop ([l l])
-         (cond
-           [(null? (cdr l)) (format "or ~a" (car l))]
-           [else (string-append (format "~a, " (car l)) (loop (cdr l)))]))]))
-
-  ; : sym sym -> (U #f str)
-  ; to find the path for the named browser, unless another browser is preferred
-  (define (use-browser browser-name preferred)
-    (and (or (not preferred)
-             (eq? preferred browser-name))
-         (find-executable-path (symbol->string browser-name) #f)))
+       (error 'send-url "Couldn't find a browser to open URL: ~e" url-str)]))
 
   ;; run-browser : process-proc list-of-strings -> void
   (define (run-browser process*/ports args)
