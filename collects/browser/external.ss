@@ -104,8 +104,9 @@
            [ok? #f]
 	   [orig-external (fw:preferences:get 'external-browser)])
       (make-object message% title main-pane)
-      (when url
-	(make-object message% (format "URL: ~a" url) main-pane))
+      ;; No need to show the URL (it can be very long)
+      ;; (when url
+      ;;   (make-object message% (format "URL: ~a" url) main-pane))
       (let-values ([(panel callbacks) (make-help-browser-preference-panel internal-ok? #f (lambda (f) (f main-pane)))])
 	(let*-values ([(button-pane) (instantiate horizontal-panel% (main-pane)
 						  (alignment '(right center)))]
