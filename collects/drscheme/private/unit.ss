@@ -477,12 +477,15 @@ module browser threading seems wrong.
                                      lang))
                               (drscheme:language-configuration:get-languages)))]
                        [module-language-settings
-                        (let ([prefs-setting (preferences:get drscheme:language-configuration:settings-preferences-symbol)])
+                        (let ([prefs-setting (preferences:get 
+                                              drscheme:language-configuration:settings-preferences-symbol)])
                           (cond
                             [(eq? (drscheme:language-configuration:language-settings-language prefs-setting)
                                   module-language)
                              (drscheme:language-configuration:language-settings-settings prefs-setting)]
-                            [else (send module-language default-settings)]))])
+                            [else 
+                             (and module-language
+                                  (send module-language default-settings))]))])
                   (let-values ([(matching-language settings)
                                 (pick-new-language
                                  this
