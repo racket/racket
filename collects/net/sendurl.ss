@@ -39,9 +39,6 @@
     (cond
       [(procedure? external) (external url-str)]
       [(force osx-browser?)
-       ;; not sure what changed, but this is wrong now.... -robby
-       ;; (browser-process (format "osascript -e 'open location \"~a\"'"
-       ;;                          (regexp-replace* "%" url-str "%25")))
        (browser-process (format "osascript -e 'open location \"~a\"'" url-str))]
       [(eq? stype 'windows)
        (shell-execute #f url-str "" (current-directory) 'SW_SHOWNORMAL)]
@@ -85,29 +82,6 @@
            [else
             (error 'send-url "Couldn't find ~a to open URL: ~e"
                    (orify unix-browser-list) url-str)]))]
-      #; ; macos is dead -- this code should be removed if nobody shouts
-      [(eq? stype 'macos)
-       (if (regexp-match "Blue Box" (system-type 'machine))
-         ;; Classic inside OS X:
-         (let loop ([l '("MSIE" "NAVG")])
-           (if (null? l)
-             (error 'send-url "couldn't start Internet Explorer or Netscape")
-             (with-handlers ([exn:fail? (lambda (x) (loop (cdr l)))])
-               (subprocess #f #f #f "by-id" (car l))
-               (let loop ([retries 2]) ;; <<< Yuck <<<
-                 (if (zero? retries)
-                   (error "enough already") ; caught above
-                   (with-handlers ([exn:fail?
-                                    (lambda (x) (loop (sub1 retries)))])
-                     (let ([t (thread
-                               (lambda ()
-                                 (send-event (car l) "GURL" "GURL" url-str)))])
-                       (sync/timeout 1 t) ;; <<< Yuck (timeout) <<<
-                       (when (thread-running? t)
-                         (kill-thread t)
-                         (error "timeout")))))))))
-         ;; Normal OS Classic:
-         (send-event "MACS" "GURL" "GURL" url-str))]
       [else (error 'send-url
                    "don't know how to open URL on platform: ~s" stype)]))
 
