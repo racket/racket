@@ -88,3 +88,14 @@ PLTSTEPPERUNSAFE environment variable, though.
 Changes for v361:
 
 Bug fix for test cases
+
+Changes for v370:
+
+Added "End" button to stepper interface.
+
+Stepper supports "begin0".  Again, you'll never know it unless you use
+the PLTSTEPPERUNSAFE environment variable.
+
+There's a known bug with expressions of the form (let <bindings> (begin
+...)). (It's displayed as (let () X) rather than (begin X).
+
