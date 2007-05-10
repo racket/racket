@@ -1,3 +1,6 @@
+;; The main client of this module is browser/external.ss
+;;   (others just use the (send-url url [new?]) interface.)
+
 (module sendurl mzscheme
   (require (lib "process.ss")
            (lib "file.ss")

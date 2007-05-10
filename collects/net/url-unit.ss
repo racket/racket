@@ -44,7 +44,6 @@
                                (equal? (car v) "http")
                                (string? (car v))
                                (number? (caddr v))
-                               (exact? (caddr v))
                                (integer? (caddr v))
                                (<= 1 (caddr v) 65535)))
                         v))
