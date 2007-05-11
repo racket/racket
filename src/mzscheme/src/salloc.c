@@ -1458,10 +1458,10 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       scheme_end_atomic();      
       return scheme_make_integer_value((long)p[1]);
     }
-  } else if (SCHEME_INTP(p[0])) {
+  } else if (c && SCHEME_INTP(p[0])) {
     trace_for_tag = SCHEME_INT_VAL(p[0]);
     flags |= GC_DUMP_SHOW_TRACE;
-  } else if (SCHEME_THREADP(p[0])) {
+  } else if (c && SCHEME_THREADP(p[0])) {
     Scheme_Thread *t = (Scheme_Thread *)p[0];
     void **var_stack, *limit;
     long delta;

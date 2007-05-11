@@ -4794,6 +4794,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
      especially important one to zero out (otherwise we build up
      chains). */
   prompt_cont = NULL;
+  barrier_cont = NULL;
 
   if (scheme_setjmpup_relative(&cont->buf, cont, stack_start, sub_cont)) {
     /* We arrive here when the continuation is applied */
