@@ -31,7 +31,7 @@
   (define (proxy-pref? x)
     (match x
       [#f #t]
-      [`("http" ,(? string?) ,(? number?)) #t]
+      [`("http" ,(? string?) ,(? integer?)) #t]
       [else #f]))
 
   ;; sync-current-proxy-servers : proxy-pref -> void
