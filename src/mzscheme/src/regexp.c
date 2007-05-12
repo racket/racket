@@ -5106,7 +5106,7 @@ static char *build_call_name(const char *n)
   char *m;
   int l;
   l = strlen(n);
-  m = (char *)scheme_malloc_atomic(l + 32);
+  m = (char *)scheme_malloc_atomic(l + 42);
   memcpy(m, n, l);
   strcpy(m XFORM_OK_PLUS l, " (calling given filter procedure)");
   return m;
