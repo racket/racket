@@ -1037,6 +1037,7 @@ typedef struct Scheme_Cont {
   /* Arguments passed to a continuation invocation to the continuation restorer: */
   Scheme_Object *value; /* argument(s) to continuation */
   struct Scheme_Overflow *resume_to; /* meta-continuation return */
+  char empty_to_next_mc;
   struct Scheme_Cont *use_next_cont; /* more meta-continuation return */
   int common_dw_depth; /* id for common dw record */
   Scheme_Dynamic_Wind *common_dw; /* shared part with source cont */
@@ -1099,6 +1100,7 @@ extern unsigned long scheme_stack_boundary;
 typedef struct Scheme_Meta_Continuation {
   MZTAG_IF_REQUIRED
   char pseudo; /* if set, don't treat it as a prompt */
+  char empty_to_next; /* when pseudo, if the continuation is empty to the next one */
   char cm_caches; /* cached info in copied cm */
   char cm_shared; /* cm is shared, so copy before setting cache entries */
   int copy_after_captured; /* for mutating a meta-continuation in set_cont_stack_mark */

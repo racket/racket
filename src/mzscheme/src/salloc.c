@@ -1132,6 +1132,25 @@ static void print_tagged_value(const char *prefix,
       t3[len + len2 + 3] = 0;
       type = t3;
       len = len3;
+    } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_rt_meta_cont)) {
+      Scheme_Meta_Continuation *mc = (Scheme_Meta_Continuation *)v;
+      Scheme_Object *pt;
+      long len2, len3;
+      char *t2, *t3;
+
+      pt = mc->prompt_tag;
+      if (pt) {
+        t3 = scheme_write_to_string_w_max(pt, &len3, max_w);
+      } else {
+        t3 = "#f";
+        len3 = 2;
+      }
+
+      len2 = 32 + len3;
+      t2 = (char *)scheme_malloc_atomic(len2);
+      sprintf(t2, "#<meta-continuation>[%d;%s]", mc->pseudo, t3);
+      type = t2;
+      len = strlen(t2);
     } else if (!scheme_strncmp(type, "#<syntax", 8)) {
       char *t2, *t3;
       long len2, len3;

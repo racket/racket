@@ -264,6 +264,10 @@ scheme_init_type (Scheme_Env *env)
 
   set_name(_scheme_values_types_, "<resurrected>");
   set_name(_scheme_compiled_values_types_, "<internal>");
+
+#ifdef MZ_GC_BACKTRACE
+  set_name(scheme_rt_meta_cont, "<meta-continuation>");
+#endif
 }
 
 Scheme_Type scheme_make_type(const char *name)

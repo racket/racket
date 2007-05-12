@@ -3886,7 +3886,8 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
                                                  Scheme_Object *limit_tag, int limit_depth,
                                                  Scheme_Meta_Continuation *prompt_cont,
                                                  Scheme_Prompt *prompt,
-                                                 Scheme_Meta_Continuation *tail)
+                                                 Scheme_Meta_Continuation *tail,
+                                                 int for_composable)
 {
   Scheme_Meta_Continuation *naya, *first = NULL, *prev = NULL;
   int cnt = 0, depth;
@@ -3896,6 +3897,13 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
       break;
     if (!mc->pseudo && SAME_OBJ(mc->prompt_tag, limit_tag))
       break;
+    if (for_composable && mc->pseudo && mc->empty_to_next && mc->next  
+        && SAME_OBJ(mc->next->prompt_tag, limit_tag)) {
+      /* We don't need to keep the compose-introduced meta-continuation,
+         because it represents an empty continuation relative to the 
+         prompt. */
+      break;
+    }
     naya = MALLOC_ONE_RT(Scheme_Meta_Continuation);
     cnt++;
     memcpy(naya, mc, sizeof(Scheme_Meta_Continuation));
@@ -4168,10 +4176,12 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   cont->meta_tail_pos = (prompt ? prompt->boundary_mark_pos + 2 : 0);
   cont->init_config = p->init_config;
   cont->init_break_cell = p->init_break_cell;
-  if (prompt) {
+  if (for_prompt) {
+    cont->meta_continuation = NULL;
+  } else if (prompt) {
     Scheme_Meta_Continuation *mc;
     Scheme_Object *id;
-    mc = clone_meta_cont(p->meta_continuation, prompt_tag, -1, prompt_cont, prompt, NULL);
+    mc = clone_meta_cont(p->meta_continuation, prompt_tag, -1, prompt_cont, prompt, NULL, composable);
     cont->meta_continuation = mc;
     if (!prompt_cont) {
       /* Remember the prompt id, so we can maybe take a shortcut on 
@@ -4302,7 +4312,8 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
 }
 
 static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_prompt,
-                                 Scheme_Object *result, Scheme_Overflow *resume,
+                                 Scheme_Object *result, 
+                                 Scheme_Overflow *resume, int empty_to_next_mc,
                                  Scheme_Object *prompt_tag, Scheme_Cont *sub_cont,
                                  Scheme_Dynamic_Wind *common_dw, int common_next_meta, 
                                  Scheme_Prompt *shortcut_prompt,
@@ -4338,7 +4349,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
   } else {
     p->overflow = cont->save_overflow;
   }
-  {
+  if (!for_prompt) {
     Scheme_Meta_Continuation *mc, *resume_mc;
     if (resume) {
       resume_mc = MALLOC_ONE_RT(Scheme_Meta_Continuation);
@@ -4349,10 +4360,11 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
 
       resume_mc->prompt_tag = prompt_tag;
       resume_mc->pseudo = cont->composable;
+      resume_mc->empty_to_next = empty_to_next_mc;
       resume_mc->meta_tail_pos = cont->meta_tail_pos;
 
       if (!cm_cont) {
-        /* resume must correspond to the pseudo-prompt at
+        /* resume must correspond to the implicit prompt at
            the thread's beginning. */
       } else {
         resume_mc->cont_mark_stack = cm_cont->ss.cont_mark_stack;
@@ -4377,9 +4389,9 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
         prune_cont_marks(resume_mc, cont, extra_marks);
       }
       
-      mc = clone_meta_cont(cont->meta_continuation, NULL, -1, NULL, NULL, resume_mc);
+      mc = clone_meta_cont(cont->meta_continuation, NULL, -1, NULL, NULL, resume_mc, 0);
     } else if (shortcut_prompt) {
-      mc = clone_meta_cont(cont->meta_continuation, NULL, -1, NULL, NULL, p->meta_continuation);
+      mc = clone_meta_cont(cont->meta_continuation, NULL, -1, NULL, NULL, p->meta_continuation, 0);
     } else
       mc = cont->meta_continuation;
     p->meta_continuation = mc;
@@ -4564,8 +4576,8 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
            after the newly inserted meta-continuation for this tag. */
         p->dw = common_dw;
         p->next_meta = common_next_meta;
-        if (p->dw) { /* can be empty if there's only the pseudo-prompt */
-          /* also, there may be no dw with prompt_tag if there's only the pseudo prompt */
+        if (p->dw) { /* can be empty if there's only the implicit prompt */
+          /* also, there may be no dw with prompt_tag if there's only the implicit prompt */
           all_dw = clone_dyn_wind(p->dw, cont->prompt_tag, -1, NULL, 1, 0);
           for (dw = all_dw; dw && !SAME_OBJ(dw->prompt_tag, cont->prompt_tag); dw = dw->prev) {
             p->dw = p->dw->prev;
@@ -4803,7 +4815,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     Scheme_Cont *use_next_cont;
     Scheme_Dynamic_Wind *common_dw;
     Scheme_Prompt *shortcut_prompt;
-    int common_next_meta;
+    int common_next_meta, empty_to_next_mc;
 
     p = scheme_current_thread; /* maybe different than before */
 
@@ -4827,8 +4839,12 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   
     shortcut_prompt = cont->shortcut_prompt;
     cont->shortcut_prompt = NULL;
-  
-    restore_continuation(cont, p, 0, result, resume, prompt_tag, sub_cont, 
+
+    empty_to_next_mc = cont->empty_to_next_mc;
+    cont->empty_to_next_mc = 0;
+
+    restore_continuation(cont, p, 0, result, resume, empty_to_next_mc, 
+                         prompt_tag, sub_cont, 
                          common_dw, common_next_meta, shortcut_prompt,
                          !!resume, 1, 
                          use_next_cont, extra_marks);
@@ -4989,6 +5005,7 @@ Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Obje
       resume_mc->next = p->meta_continuation;
       resume_mc->depth = p->meta_continuation->depth + 1;
     }
+    resume_mc->meta_tail_pos = MZ_CONT_MARK_POS + 2;
     p->meta_continuation = resume_mc;
   }
 
@@ -5097,7 +5114,8 @@ Scheme_Object *scheme_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *pro
   return proc;
 }
 
-static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain, Scheme_Object *loop_prompt)
+static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain, 
+                                           Scheme_Object *loop_prompt, int empty_to_next_mc)
 /* continuation arguments should be in `cont' already */
 {
   /* Apply continuation as composable. There may or may not
@@ -5108,7 +5126,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain, Sc
   Scheme_Cont *saved;
   Scheme_Prompt *saved_meta_prompt;
   Scheme_Thread *p = scheme_current_thread;
-  
+
   scheme_about_to_move_C_stack();
 
   reset_cjs(&p->cjs);
@@ -5170,7 +5188,8 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain, Sc
     p->meta_prompt = saved_meta_prompt; /* Set meta_prompt before restoring runstack,
                                            since GC erases meta-prompt-blocked portion
                                            on the runstack. */
-    restore_continuation(saved, p, 1, v, NULL, NULL, NULL, 
+    restore_continuation(saved, p, 1, v, NULL, 0,
+                         NULL, NULL,
                          NULL, 0, NULL,
                          0, !p->cjs.jumping_to_continuation, 
                          NULL, NULL);
@@ -5213,6 +5232,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain, Sc
   saved->resume_to = overflow; /* used by eval to jump to current meta-continuation */
   cont->use_next_cont = saved;
   cont->resume_to = overflow;
+  cont->empty_to_next_mc = (char)empty_to_next_mc;
   scheme_current_thread->stack_start = cont->prompt_stack_start;
   scheme_longjmpup(&cont->buf);
 
@@ -5408,7 +5428,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
           target = (Scheme_Cont *)p->cjs.val;
           reset_cjs(&p->cjs);
 
-          v = compose_continuation(target, 1, (Scheme_Object *)prompt);
+          v = compose_continuation(target, 1, (Scheme_Object *)prompt, 0);
         
           if (v) {
             /* Got a result: */
@@ -5598,6 +5618,7 @@ Scheme_Object *_scheme_call_with_prompt_multi(Scheme_Closed_Prim f, void *data)
 Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Scheme_Object *value)
 {
   Scheme_Meta_Continuation *mc;
+  int empty_to_next_mc;
 
   if (num_rands != 1) {
     value = scheme_values(num_rands, (Scheme_Object **)value);
@@ -5665,9 +5686,14 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
     p->stack_start = mc->overflow->stack_start;
 
     scheme_longjmpup(&mc->overflow->jmp->cont);
+    return NULL;
+  } else if (mc && mc->meta_tail_pos == MZ_CONT_MARK_POS) {
+    empty_to_next_mc = 1;
+  } else {
+    empty_to_next_mc = 0;
   }
 
-  value = compose_continuation(cont, 0, NULL);
+  value = compose_continuation(cont, 0, NULL, empty_to_next_mc);
   
   scheme_current_thread->next_meta -= 1;
 
@@ -6935,7 +6961,7 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
       i++;
     rest = rest->next;
   }
-  mc = clone_meta_cont(p->meta_continuation, NULL, actual_depth, NULL, NULL, rest);
+  mc = clone_meta_cont(p->meta_continuation, NULL, actual_depth, NULL, NULL, rest, 0);
   p->meta_continuation = mc;
 
   /* strip the marks of the first actual_depth-1 meta continuations */
@@ -6986,7 +7012,7 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
   for (i = 0, rest = p->meta_continuation; i < actual_depth; i++) {
     rest = rest->next;
   }
-  old_mc = clone_meta_cont(old_mc, NULL, actual_depth, NULL, NULL, rest);
+  old_mc = clone_meta_cont(old_mc, NULL, actual_depth, NULL, NULL, rest, 0);
   p->meta_continuation = old_mc;
 }
 
