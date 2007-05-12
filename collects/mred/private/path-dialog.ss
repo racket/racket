@@ -517,6 +517,7 @@
       (define last-text-start 0)
       (define last-text-end   0)
       (define last-text-completed? #f) ; is the last region a completion?
+      (define completion-disabled? #f) ; are we allowed to insert completions?
 
       (define (reset-last-text-state)
         (set! last-text-value "")
@@ -535,7 +536,8 @@
             (set! last-text-value value)
             (set! last-text-start start)
             (set! last-text-end   end)
-            (set! last-text-completed? #f))
+            (set! last-text-completed? #f)
+            (set! completion-disabled? #f))
           (set! nonstring-path #f)
           (when change?
             ;; if entered an existing directory, go there
@@ -571,17 +573,16 @@
                    (set! last-text-start start))
                  (set! change? #f)]
                 [;; a b c d
-                 ;; a b c   => removed text
-                 (and last-text-completed? (prefix? value last-text-value #t))
-                 ;; => disable pending completions if any
-                 (send completion-timer stop)
-                 (restore-path-list-state)
-                 (set-state!)]
-                [;;    a b c
-                 ;;    any...| => typed some new text
-                 (and (= start end len)
-                      (not (prefix? value last-text-value)))
-                 ;; => complete in a while
+                 ;; a b c   => backspaced some text
+                 (and (= start end len) (prefix? value last-text-value #t))
+                 ;; filter as usual, but disallow completion text
+                 ;;   (otherwise it will pop up again, annoyingly)
+                 (send completion-timer reset)
+                 (set-state!)
+                 (set! completion-disabled? #t)]
+                [;; a b c
+                 ;; any...| => typed some new text
+                 (and (= start end len) change?)
                  (send completion-timer reset)
                  (set-state!)]
                 [;; something else changed? => stopped completing
@@ -652,7 +653,7 @@
                                     (member (pname-nulstring p) options))
                                   pnames))
                          (set! temp-paths? #t))
-                       (unless (= start end)
+                       (unless (or completion-disabled? (= start end))
                          (send text set-value found)
                          (send text* set-position start end #f #f 'local)
                          (set! last-text-value found)
