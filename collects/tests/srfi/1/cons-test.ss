@@ -213,10 +213,6 @@
       "iota:non-integer-step"
       (check-equal? (iota 5 0 1/2) (list 0 1/2 1 3/2 2)))
 
-     (test-case
-      "iota;negative-count"
-      (check-equal? (iota -1) (list)))
-
      ))
   )
 ;;; cons-test.ss ends here
