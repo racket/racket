@@ -509,6 +509,8 @@ scheme_init_fun (Scheme_Env *env)
   original_default_prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
   original_default_prompt->so.type = scheme_prompt_type;
   original_default_prompt->tag = scheme_default_prompt_tag;
+
+  REGISTER_SO(scheme_overflow_reply);
 }
 
 Scheme_Object *
@@ -1653,9 +1655,9 @@ void scheme_really_create_overflow(void *stack_base)
 
   scheme_init_jmpup_buf(&jmp->cont);
   if (scheme_setjmpup(&jmp->cont, jmp, stack_base)) {
-    /* A jump into here is a rquest to handle overflow.
+    /* A jump into here is a request to handle overflow.
        The way to continue is in scheme_overflow_k.
-       Whe we get back, put the result into
+       When we get back, put the result into
        scheme_overflow_reply. The route to return is
        in the thread's `overflow' field. */
     Scheme_Thread * volatile p;
@@ -3621,7 +3623,7 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
       }
 
       isaved->runstack_size = size;
-
+      
       start = MALLOC_N(Scheme_Object*, size);
       isaved->runstack_start = start;
       memcpy(isaved->runstack_start, 
@@ -3897,11 +3899,11 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
       break;
     if (!mc->pseudo && SAME_OBJ(mc->prompt_tag, limit_tag))
       break;
-    if (for_composable && mc->pseudo && mc->empty_to_next && mc->next  
+    if (0 /* FIXME! */ && for_composable && mc->pseudo && mc->empty_to_next && mc->next  
         && SAME_OBJ(mc->next->prompt_tag, limit_tag)) {
-      /* We don't need to keep the compose-introduced meta-continuation,
-         because it represents an empty continuation relative to the 
-         prompt. */
+      /* We don't need to keep the compose-introduced
+         meta-continuation, because it represents an empty
+         continuation relative to the prompt. */
       break;
     }
     naya = MALLOC_ONE_RT(Scheme_Meta_Continuation);
