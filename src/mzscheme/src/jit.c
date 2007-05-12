@@ -6408,6 +6408,55 @@ Scheme_Object *scheme_native_stack_trace(void)
   return first;
 }
 
+#if 0
+/* Sometimes useful for debugging MzScheme: */
+void scheme_dump_stack_trace(void)
+{
+  void *p, *q;
+  unsigned long stack_end, stack_start;
+  Get_Stack_Proc gs;
+  Scheme_Object *name;
+
+  gs = (Get_Stack_Proc)get_stack_pointer_code;
+  p = gs();
+  stack_start = scheme_approx_sp();
+
+  stack_end = (unsigned long)ADJUST_STACK_START(scheme_current_thread->stack_start);
+
+  while (STK_COMP((unsigned long)p, stack_end)
+	 && STK_COMP(stack_start, (unsigned long)p)) {
+    q = ((void **)p)[RETURN_ADDRESS_OFFSET];
+
+    name = find_symbol((unsigned long)q);
+    if (SCHEME_FALSEP(name)) {
+      /* Code uses special calling convention */
+#ifdef MZ_USE_JIT_PPC
+      /* JIT_LOCAL2 has the next return address */
+      q = ((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+#endif
+#ifdef MZ_USE_JIT_I386
+      /* Push after local stack of return-address proc
+	 has the next return address */
+      q = *(void **)p;
+      q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
+#endif
+      name = find_symbol((unsigned long)q);
+    }
+
+    if (name) {
+      printf(" scheme\n");
+    } else {
+      printf(" %p\n", q);
+    }
+
+    q = *(void **)p;
+    if (STK_COMP((unsigned long)q, (unsigned long)p))
+      break;
+    p = q;
+  }
+}
+#endif
+
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif

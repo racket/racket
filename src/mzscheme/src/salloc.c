@@ -1132,6 +1132,7 @@ static void print_tagged_value(const char *prefix,
       t3[len + len2 + 3] = 0;
       type = t3;
       len = len3;
+#ifdef MZTAG_REQUIRED
     } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_rt_meta_cont)) {
       Scheme_Meta_Continuation *mc = (Scheme_Meta_Continuation *)v;
       Scheme_Object *pt;
@@ -1151,6 +1152,7 @@ static void print_tagged_value(const char *prefix,
       sprintf(t2, "#<meta-continuation>[%d;%s]", mc->pseudo, t3);
       type = t2;
       len = strlen(t2);
+#endif
     } else if (!scheme_strncmp(type, "#<syntax", 8)) {
       char *t2, *t3;
       long len2, len3;

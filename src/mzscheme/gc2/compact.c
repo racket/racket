@@ -2676,7 +2676,7 @@ static int designate_modified_maybe(void *p, int no_barrier_ok)
 
 static int designate_modified(void *p)
 {
-  designate_modified_maybe(p, 0);
+  return designate_modified_maybe(p, 0);
 }
 
 void GC_write_barrier(void *p)
