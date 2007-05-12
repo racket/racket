@@ -3899,7 +3899,7 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
       break;
     if (!mc->pseudo && SAME_OBJ(mc->prompt_tag, limit_tag))
       break;
-    if (0 /* FIXME! */ && for_composable && mc->pseudo && mc->empty_to_next && mc->next  
+    if (for_composable && mc->pseudo && mc->empty_to_next && mc->next  
         && SAME_OBJ(mc->next->prompt_tag, limit_tag)) {
       /* We don't need to keep the compose-introduced
          meta-continuation, because it represents an empty
@@ -5049,9 +5049,14 @@ Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Obje
     resume_mc = p->meta_continuation;
     p->meta_continuation = p->meta_continuation->next;
 
-    if (!SAME_OBJ(resume_mc->prompt_tag, prompt_tag)) {
-      scheme_signal_error("meta-continuation prompt tag does not match current prompt tag");
-    }
+    /* The following test was once useful for finding bugs. However,
+       dropping meta-continuations that represent empty continuations
+       (see for_composable in clone_meta_cont) interferes with the test. */
+    /*
+      if (!SAME_OBJ(resume_mc->prompt_tag, prompt_tag)) {
+        scheme_signal_error("meta-continuation prompt tag does not match current prompt tag");
+      }
+    */
 
     if (cc_count == scheme_cont_capture_count) {
       memset(resume_mc, 0, sizeof(Scheme_Meta_Continuation));
