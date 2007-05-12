@@ -3,6 +3,7 @@
   (require (lib "class.ss")
            (lib "unit.ss")
            (lib "list.ss")
+           (lib "file.ss")
            (lib "plt-match.ss")
            (lib "mred.ss" "mred")
            (lib "framework.ss" "framework")
@@ -97,19 +98,32 @@
 
       (define macro-stepper-frame%
         (class base-frame%
+          (init-field (filename #f))
           (init (identifier=? (pref:identifier=?)))
           (init-field (config (new macro-stepper-config%)))
 
-          (inherit get-menu%
+          (define obsoleted? #f)
+          
+          (inherit get-area-container
+                   set-label
+                   get-menu%
                    get-menu-item%
                    get-menu-bar
                    get-file-menu
                    get-edit-menu
                    get-help-menu)
-
-          (super-new (label "Macro stepper")
+          
+          (super-new (label (make-label))
                      (width (send config get-width))
                      (height (send config get-height)))
+
+          (define/private (make-label)
+            (if filename
+                (string-append (path->string
+                                (file-name-from-path filename))
+                               (if obsoleted? " (old)" "")
+                               " - Macro stepper")
+                "Macro stepper"))
 
           (define/override (on-size w h)
             (send config set-width w)
@@ -142,13 +156,31 @@
             (new (get-menu%) (parent (get-menu-bar)) (label "Stepper")))
           (define help-menu (get-help-menu))
 
+          (define warning-panel
+            (new horizontal-panel%
+                 (parent (get-area-container))
+                 (stretchable-height #f)
+                 (style '(deleted))))
+          
           (define widget
             (new macro-stepper-widget%
-                 (parent (send this get-area-container))
+                 (parent (get-area-container))
                  (config config)))
 
           (define/public (get-widget) widget)
 
+          (define/public (add-obsoleted-warning)
+            (unless obsoleted?
+              (set! obsoleted? #t)
+              (new message%
+                   (label "Warning: This macro stepper session is obsolete. The program may have changed.")
+                   (parent warning-panel))
+              (set-label (make-label))
+              (send (get-area-container) change-children
+                    (lambda (children)
+                      (cons warning-panel
+                            (remq warning-panel children))))))
+          
           ;; Set up menus
 
           (menu-option/notify-box stepper-menu
@@ -483,9 +515,8 @@
                       "Internal error computing reductions. Original term:\n")
                 (send sbview add-syntax
                       (lift/deriv-e1 (trec-deriv (focused-term))))
-                (print-struct #t)
-                (send sbview add-text
-                      (format "~s~n" (focused-term))))))
+                #;(print-struct #t)
+                #;(send sbview add-text (format "~s~n" (focused-term))))))
 
           ;; update:show-lctx : Step -> void
           (define/private (update:show-lctx step)

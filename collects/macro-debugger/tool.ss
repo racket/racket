@@ -136,14 +136,21 @@
       (define (macro-debugger-interactions-text-mixin %)
         (class %
           (super-new)
-          (inherit run-in-evaluation-thread)
+          (inherit run-in-evaluation-thread
+                   get-top-level-window)
 
           (define debugging? #f)
+
+          (define current-stepper #f)
+          
           (define/public (enable-macro-debugging ?)
             (set! debugging? ?))
 
           (define/override (reset-console)
             (super reset-console)
+            (when current-stepper
+              (send current-stepper add-obsoleted-warning)
+              (set! current-stepper #f))
             (run-in-evaluation-thread
              (lambda ()
                (let-values ([(e mnr) 
@@ -152,13 +159,17 @@
                  (current-eval e)
                  (current-module-name-resolver mnr)))))
 
+          (define/private (make-stepper filename)
+            (let ([frame (new macro-stepper-frame% (filename filename))])
+              (set! current-stepper frame)
+              (send frame show #t)
+              (send frame get-widget)))
+
           (define/private (make-handlers original-eval-handler original-module-name-resolver)
-            (let ([stepper
-                   (delay 
-                     (let ([frame (new macro-stepper-frame%)])
-                       (send frame show #t)
-                       (send frame get-widget)))]
-                  [debugging? debugging?])
+            (let* ([filename (send (send (get-top-level-window) get-definitions-text)
+                                   get-filename/untitled-name)]
+                   [stepper (delay (make-stepper filename))]
+                   [debugging? debugging?])
               (values
                (lambda (expr)
                  (if (and debugging? (syntax? expr))
