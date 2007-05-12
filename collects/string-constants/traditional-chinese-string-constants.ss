@@ -1,27 +1,27 @@
            ;                                                       
-           ;;               ;     ;     ;;       ;;   ;   ;;       
-      ;;   ;;               ;     ;     ;        ;    ;   ;    ;   
-      ;    ;;     ;        ;;     ;     ;;       ;    ;   ;    ;   
-      ;;;;;;;;;;;;;;         ;;;;;;;;;;;;        ; ;  ;   ;    ;   
-     ;     ;;                     ;            ; ; ;;; ;;; ;;;;    
-    ;      ;;             ;;;;;;;;;;;;;;;;;   ;; ;              ;  
-           ;;      ;     ;;              ;    ;  ;   ;;;;;;;;;;;   
-   ;;;;;;;;;;;;;;;; ;                 ;          ;    ;       ;    
-          ;;;;               ;;;;;;;;;           ;     ;;;;;;;;    
-         ; ;; ;                          ;;      ;     ;      ;    
-        ;  ;;  ;         ;;;;;;;;;;;;;;;;        ;     ;      ;    
-       ;   ;;   ;;            ;   ;  ;           ;    ;;;;;;;;;    
-      ;    ;;    ;;;         ;    ;   ;;         ;      ;    ;     
-    ;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
-  ;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
-           ;;                    ;               ;   ;;; ;; ;;;;   
+;;               ;     ;     ;;       ;;   ;   ;;       
+;;   ;;               ;     ;     ;        ;    ;   ;    ;   
+;    ;;     ;        ;;     ;     ;;       ;    ;   ;    ;   
+;;;;;;;;;;;;;;         ;;;;;;;;;;;;        ; ;  ;   ;    ;   
+;     ;;                     ;            ; ; ;;; ;;; ;;;;    
+;      ;;             ;;;;;;;;;;;;;;;;;   ;; ;              ;  
+;;      ;     ;;              ;    ;  ;   ;;;;;;;;;;;   
+;;;;;;;;;;;;;;;; ;                 ;          ;    ;       ;    
+;;;;               ;;;;;;;;;           ;     ;;;;;;;;    
+; ;; ;                          ;;      ;     ;      ;    
+;  ;;  ;         ;;;;;;;;;;;;;;;;        ;     ;      ;    
+;   ;;   ;;            ;   ;  ;           ;    ;;;;;;;;;    
+;    ;;    ;;;         ;    ;   ;;         ;      ;    ;     
+;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
+;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
+;;                    ;               ;   ;;; ;; ;;;;   
 (module traditional-chinese-string-constants "string-constant-lang.ss"
   (is-this-your-native-language "你的母語是繁體中文嗎？")
   
   (are-you-sure-you-want-to-switch-languages
    "為了改變界面語言，現在需要重新啟動DrScheme。你確定嗎？")
   
-  (interact-with-drscheme-in-language "使用繁體中文作DrScheme界面語言")
+  (interact-with-drscheme-in-language "使用簡體中文作DrScheme界面語言")
   
   ;; these two should probably be the same in all languages excepet English.
   ;; they are the button labels (under macos and windows, respectively)
@@ -215,7 +215,7 @@
   ; Help Desk configuration
   ;; refreshing manuals
   (plt:hd:refreshing-manuals "重新下載手冊")
-  (plt:hd:refresh-downloading... "正在下載~a...")
+  (plt:hd:refresh-downloading... "下載~a...")
   (plt:hd:refresh-deleting... "刪除舊版本的~a...")
   (plt:hd:refresh-installing... "安裝新版本的~a...")
   (plt:hd:refresh-clearing-indicies "清除緩存中的索引")
@@ -355,7 +355,7 @@
   ; title of the color choosing dialog
   
   ; should have entire alphabet
-  (font-example-string "繁體中文 by 朱崇愷") 
+  (font-example-string "簡體中文 by 朱崇愷") 
   
   (change-font-button-label "更改")
   (fonts "字體")
@@ -674,7 +674,7 @@
   (overwrite-file-button-label "保存")
   
   (definitions-modified 
-   "當前磁碟文件已被修改；請保存或恢復文件。")
+    "當前磁碟文件已被修改；請保存或恢復文件。")
   (drscheme-internal-error "DrScheme內部錯誤")
   
   ;;; tools
@@ -741,6 +741,12 @@
   (break-menu-item-help-string "中斷當前計算")
   (kill-menu-item-label "終止")
   (kill-menu-item-help-string "終止當前計算")
+  (limit-memory-menu-item-label "限制記憶體使用...")
+  (limit-memory-msg-1 "記憶體限制會在下一次運行")
+  (limit-memory-msg-2 "時生效。記憶體限制最低值為100megabytes.")
+  (limit-memory-unlimited "無限制")
+  (limit-memory-limited "限制")
+  (limit-memory-megabytes "Megabytes")
   (clear-error-highlight-menu-item-label "清除錯誤高亮顯示")
   (clear-error-highlight-item-help-string "清除錯誤區域的粉紅色高亮顯示")
   (reindent-menu-item-label "調整縮進(&R)")
@@ -831,6 +837,13 @@
   (drscheme-teachpack-message-title "DrScheme教學包")
   (already-added-teachpack "教學包~a已裝載")
   
+  ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
+  (compiling-teachpack "編譯教學包~a...")
+  (teachpack-pre-installed "自帶的教學包")
+  (teachpack-user-installed "用戶安裝的教學包")
+  (install-teachpack... "安裝教學包...")
+  (teachpack-already-installed "已經存在一個名為'~a'的教學包。是否覆蓋？")
+  
   ;;; Language dialog
   (introduction-to-language-dialog
    "請選擇語言。大部分入門級的學生都可以使用預設語言。")
@@ -846,6 +859,8 @@
   (input-syntax "輸入語法")
   (dynamic-properties "Dynamic Properties")
   (output-syntax "輸出語法")
+  (teachpacks "教學包") ;; label in the language dialog for the teaching languages
+  (teachpacks-none "<< 無 >>") ;; shows up under the previous string, when there are no teachpacks
   (no-debugging-or-profiling "No debugging or profiling")
   (debugging "Debugging")
   (debugging-and-profiling "Debugging and profiling")
@@ -1099,16 +1114,6 @@
   (program-has-open-windows "定義窗口中的打開了其他窗口。強行關閉這些窗口？")
   
   ;; Profj
-  (profj-java "Java")
-  (profj-java-mode "Java模式")
-  (profj-java-mode-color-keyword "關鍵詞")
-  (profj-java-mode-color-string "字元串")
-  (profj-java-mode-color-literal "文字")
-  (profj-java-mode-color-comment "注釋")
-  (profj-java-mode-color-error "錯誤")
-  (profj-java-mode-color-identifier "標示符")
-  (profj-java-mode-color-default "預設值")
-  
   (profj-insert-java-comment-box "插入Java注釋框")
   (profj-insert-java-interactions-box "插入Java交互框")
   
@@ -1118,19 +1123,14 @@
   (test-case-disable-all "禁用所有Test Cases")
   (test-case-enable-all "允許所有Test Cases")
   
-  ;; Profj Boxes
-  (profjBoxes-insert-java-examples "插入Java Examples")
-  (profjBoxes-insert-java-interactions "插入Java Interactions")
-  
   ;; Slideshow
   (slideshow-show-slideshow-panel "顯示Slideshow面板")
   (slideshow-hide-slideshow-panel "隱藏Slideshow面板")
-  (slideshow-insert-pict-box "插入Pict框") 
+  (slideshow-insert-pict-box "插入圖片框")
   
   ;; GUI Tool
   (gui-tool-heading "GUI工具")
-  (gui-tool-before-clicking-message
-   "在點擊工具圖標之前，請先使用「特殊符號」菜單中的「插入GUI」命令插入一個GUI根對象，或先選中另一個GUI。")
+  (gui-tool-before-clicking-message "在點擊工具圖標之前，請先使用「特殊符號」菜單中的「插入GUI」命令插入一個GUI根對象，或先選中另一個GUI。")
   (gui-tool-show-gui-toolbar "顯示GUI工具欄")
   (gui-tool-hide-gui-toolbar "隱藏GUI工具欄")
   (gui-tool-insert-gui "插入GUI")

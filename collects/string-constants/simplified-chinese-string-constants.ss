@@ -216,7 +216,7 @@
   ; Help Desk configuration
   ;; refreshing manuals
   (plt:hd:refreshing-manuals "重新下载手册")
-  (plt:hd:refresh-downloading... "正在下载~a...")
+  (plt:hd:refresh-downloading... "下载~a...")
   (plt:hd:refresh-deleting... "删除旧版本的~a...")
   (plt:hd:refresh-installing... "安装新版本的~a...")
   (plt:hd:refresh-clearing-indicies "清除缓存中的索引")
@@ -675,7 +675,7 @@
   (overwrite-file-button-label "保存")
   
   (definitions-modified 
-   "当前磁盘文件已被修改；请保存或恢复文件。")
+    "当前磁盘文件已被修改；请保存或恢复文件。")
   (drscheme-internal-error "DrScheme内部错误")
   
   ;;; tools
@@ -742,6 +742,12 @@
   (break-menu-item-help-string "中断当前计算")
   (kill-menu-item-label "终止")
   (kill-menu-item-help-string "终止当前计算")
+  (limit-memory-menu-item-label "限制内存使用...")
+  (limit-memory-msg-1 "内存限制会在下一次运行")
+  (limit-memory-msg-2 "时生效。内存限制最低值为100megabytes.")
+  (limit-memory-unlimited "无限制")
+  (limit-memory-limited "限制")
+  (limit-memory-megabytes "Megabytes")
   (clear-error-highlight-menu-item-label "清除错误高亮显示")
   (clear-error-highlight-item-help-string "清除错误区域的粉红色高亮显示")
   (reindent-menu-item-label "调整缩进(&R)")
@@ -832,6 +838,13 @@
   (drscheme-teachpack-message-title "DrScheme教学包")
   (already-added-teachpack "教学包~a已装载")
   
+  ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
+  (compiling-teachpack "编译教学包~a...")
+  (teachpack-pre-installed "自带的教学包")
+  (teachpack-user-installed "用户安装的教学包")
+  (install-teachpack... "安装教学包...")
+  (teachpack-already-installed "已经存在一个名为'~a'的教学包。是否覆盖？")
+  
   ;;; Language dialog
   (introduction-to-language-dialog
    "请选择语言。大部分入门级的学生都可以使用默认语言。")
@@ -847,6 +860,8 @@
   (input-syntax "输入语法")
   (dynamic-properties "Dynamic Properties")
   (output-syntax "输出语法")
+  (teachpacks "教学包") ;; label in the language dialog for the teaching languages
+  (teachpacks-none "<< 无 >>") ;; shows up under the previous string, when there are no teachpacks
   (no-debugging-or-profiling "No debugging or profiling")
   (debugging "Debugging")
   (debugging-and-profiling "Debugging and profiling")
@@ -1100,16 +1115,6 @@
   (program-has-open-windows "定义窗口中的打开了其他窗口。强行关闭这些窗口？")
   
   ;; Profj
-  (profj-java "Java")
-  (profj-java-mode "Java模式")
-  (profj-java-mode-color-keyword "关键词")
-  (profj-java-mode-color-string "字符串")
-  (profj-java-mode-color-literal "文字")
-  (profj-java-mode-color-comment "注释")
-  (profj-java-mode-color-error "错误")
-  (profj-java-mode-color-identifier "标示符")
-  (profj-java-mode-color-default "默认值")
-  
   (profj-insert-java-comment-box "插入Java注释框")
   (profj-insert-java-interactions-box "插入Java交互框")
   
@@ -1119,14 +1124,10 @@
   (test-case-disable-all "禁用所有Test Cases")
   (test-case-enable-all "允许所有Test Cases")
   
-  ;; Profj Boxes
-  (profjBoxes-insert-java-examples "插入Java Examples")
-  (profjBoxes-insert-java-interactions "插入Java Interactions")
-  
   ;; Slideshow
   (slideshow-show-slideshow-panel "显示Slideshow面板")
   (slideshow-hide-slideshow-panel "隐藏Slideshow面板")
-  (slideshow-insert-pict-box "插入Pict框") 
+  (slideshow-insert-pict-box "插入图片框")
   
   ;; GUI Tool
   (gui-tool-heading "GUI工具")
