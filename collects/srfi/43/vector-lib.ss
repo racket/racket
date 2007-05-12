@@ -811,7 +811,7 @@
       ((vec)
        (vector->list vec)) ;+++
       ((vec start)
-       (my-vector->list start (vector-length vec)))
+       (my-vector->list vec start (vector-length vec)))
       ((vec start end)
        (do ((i (sub1 end) (sub1 i))
             (result '() (cons (vector-ref vec i) result)))
