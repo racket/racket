@@ -200,7 +200,7 @@ Bool wxListBox::Create(wxPanel *panel, wxFunction func,
 
   if (Title) {
     cListTitle = new WXGC_PTRS wxLabelArea(this, Title, label_font,
-						  labelPosition == wxVERTICAL ? wxTop : wxLeft);
+                                           labelPosition == wxVERTICAL ? wxTop : wxLeft);
   } else
     cListTitle = NULL;
   
@@ -274,8 +274,12 @@ void wxListBox::OnEvent(wxMouseEvent *event)
     SetCurrentDC();
 
     // For scroll bars:
-    startPt0.v = startV;
-    startPt0.h = startH - (cWindowWidth - 16);
+    {
+      int cw, ch;
+      GetClientSize(&cw, &ch);
+      startPt0.v = startV;
+      startPt0.h = startH - (cw - 16);
+    }
     
     startPt.v = startV + SetOriginY; // port c.s.
     startPt.h = startH + SetOriginX;
