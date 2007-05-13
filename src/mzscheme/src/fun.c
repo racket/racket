@@ -509,8 +509,6 @@ scheme_init_fun (Scheme_Env *env)
   original_default_prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
   original_default_prompt->so.type = scheme_prompt_type;
   original_default_prompt->tag = scheme_default_prompt_tag;
-
-  REGISTER_SO(scheme_overflow_reply);
 }
 
 Scheme_Object *
