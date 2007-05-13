@@ -802,6 +802,9 @@
  (clear-all-teachpacks-menu-item-label "Alle Teachpacks entfernen")
  (drscheme-teachpack-message-title "DrScheme-Teachpack")
  (already-added-teachpack "Teachpack ~a ist schon dabei")
+
+ ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
+ (compiling-teachpack "Teachpack ~a compilieren...")
  
   (teachpack-pre-installed "Vorinstallierte Teachpacks")
   (teachpack-user-installed "selbst installierte Teachpacks")
