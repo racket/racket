@@ -577,7 +577,7 @@
   (drscheme:rep:get-drs-bindings-keymap
    (-> (is-a?/c keymap%))
    ()
-   "Returns a keymap that bindings various DrScheme-specific"
+   "Returns a keymap that binds various DrScheme-specific"
    "keybindings. This keymap is used in the definitions"
    "and interactions window."
    ""
