@@ -6933,14 +6933,16 @@ static void prepare_thread_for_GC(Scheme_Object *t)
     if (segpos < p->cont_mark_seg_count) {
       Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[segpos];
       int stackpos = ((long)p->cont_mark_stack & SCHEME_MARK_SEGMENT_MASK);
-      for (i = stackpos; i < SCHEME_MARK_SEGMENT_SIZE; i++) {
-        if (seg[i].key) {
-          seg[i].key = NULL;
-          seg[i].val = NULL;
-          seg[i].cache = NULL;
-        } else {
-          /* NULL means we already cleared from here on. */
-          break;
+      if (seg) {
+        for (i = stackpos; i < SCHEME_MARK_SEGMENT_SIZE; i++) {
+          if (seg[i].key) {
+            seg[i].key = NULL;
+            seg[i].val = NULL;
+            seg[i].cache = NULL;
+          } else {
+            /* NULL means we already cleared from here on. */
+            break;
+          }
         }
       }
     }

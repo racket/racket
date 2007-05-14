@@ -2088,6 +2088,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   END_JIT_DATA(20);
 
   if (num_rands >= MAX_SHARED_CALL_RANDS) {
+    LOG_IT(("<-many args\n"));
     if (is_tail) {
       if (direct_prim) {
         generate_direct_prim_tail_call(jitter, num_rands);
@@ -2115,9 +2116,11 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       }
       code = shared_tail_code[dp][num_rands];
       if (direct_self) {
+        LOG_IT(("<-self\n"));
 	generate_self_tail_call(rator, jitter, num_rands, code, args_already_in_place);
 	CHECK_LIMIT();
       } else {
+        LOG_IT(("<-tail\n"));
         if (args_already_in_place) {
           jit_movi_l(JIT_R2, args_already_in_place);
           mz_set_local_p(JIT_R2, JIT_LOCAL2);
@@ -2132,6 +2135,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	code = generate_shared_call(num_rands, jitter, multi_ok, is_tail, direct_prim, direct_native);
 	shared_non_tail_code[dp][num_rands][mo] = code;
       }
+      LOG_IT(("<-non-tail %d %d %d\n", dp, num_rands, mo));
       code = shared_non_tail_code[dp][num_rands][mo];
 
       (void)jit_calli(code);
@@ -3699,6 +3703,9 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
       if (mark_pos_ends)
 	generate_non_tail_mark_pos_prefix(jitter);
       jit_ldi_p(JIT_R2, &scheme_current_cont_mark_stack);
+      /* mark stack is an integer... turn it into a pointer */
+      jit_lshi_l(JIT_R2, JIT_R2, 0x1);
+      jit_ori_l(JIT_R2, JIT_R2, 0x1);
       mz_pushr_p(JIT_R2);
       CHECK_LIMIT();
     }
@@ -3720,6 +3727,7 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
     }
     if (need_ends) {
       mz_popr_p(JIT_R2);
+      jit_rshi_l(JIT_R2, JIT_R2, 0x1); /* pointer back to integer */
       jit_sti_p(&scheme_current_cont_mark_stack, JIT_R2);
       if (mark_pos_ends)
 	generate_non_tail_mark_pos_suffix(jitter);

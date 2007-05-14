@@ -3727,22 +3727,22 @@ static void copy_in_mark_stack(Scheme_Thread *p, Scheme_Cont_Mark *cont_mark_sta
 
     if (needed > p->cont_mark_seg_count) {
       Scheme_Cont_Mark **segs, **old_segs = p->cont_mark_stack_segments;
-      int newcount = needed, oldcount = p->cont_mark_seg_count;
+      int newcount = needed, oldcount = p->cont_mark_seg_count, npos;
 
       /* Note: we perform allocations before changing p to avoid GC trouble,
 	 since MzScheme adjusts a thread's cont_mark_stack_segments on GC. */
       segs = MALLOC_N(Scheme_Cont_Mark *, needed);
 
-      while (needed--) {
-	if (needed < oldcount)
-	  segs[needed] = old_segs[needed]; /* might be NULL due to GC! */
+      for (npos = needed; npos--; ) {
+	if (npos < oldcount)
+	  segs[npos] = old_segs[npos]; /* might be NULL due to GC! */
 	else
-	  segs[needed] = NULL;
+	  segs[npos] = NULL;
 
-	if (!segs[needed]) {
+	if (!segs[npos]) {
 	  Scheme_Cont_Mark *cm;
 	  cm = scheme_malloc_allow_interior(sizeof(Scheme_Cont_Mark) * SCHEME_MARK_SEGMENT_SIZE);
-	  segs[needed] = cm;
+	  segs[npos] = cm;
 	}
       }
 
@@ -3996,7 +3996,7 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
     /* No pruning (nothing to compare against) or addition needed. */
     return;
   }
-  
+
   /* Compute the new set to have in the meta-continuation. */
   ht = scheme_make_hash_table(SCHEME_hash_ptr);
   
@@ -6362,7 +6362,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
     MZ_MARK_POS_TYPE vpos = 0;
     Scheme_Object *cache;
     Scheme_Meta_Continuation *mc = NULL;
-    GC_CAN_IGNORE Scheme_Cont_Mark *seg;
+    Scheme_Cont_Mark *seg;
     Scheme_Thread *p = scheme_current_thread;
 
     do {

@@ -359,6 +359,7 @@ cont_proc {
   gcMARK(c->runstack_saved);
 
   gcMARK(c->prompt_id);
+  gcMARK(c->prompt_buf);
 
   /* These shouldn't actually persist across a GC, but
      just in case... */

@@ -927,6 +927,7 @@ static int cont_proc_MARK(void *p) {
   gcMARK(c->runstack_saved);
 
   gcMARK(c->prompt_id);
+  gcMARK(c->prompt_buf);
 
   /* These shouldn't actually persist across a GC, but
      just in case... */
@@ -966,6 +967,7 @@ static int cont_proc_FIXUP(void *p) {
   gcFIXUP(c->runstack_saved);
 
   gcFIXUP(c->prompt_id);
+  gcFIXUP(c->prompt_buf);
 
   /* These shouldn't actually persist across a GC, but
      just in case... */
