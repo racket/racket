@@ -2494,7 +2494,8 @@
           (if (assignment-conversion then else-t type-recs) 
               then
               (if (assignment-conversion else-t then type-recs)
-                  else-t)))
+                  else-t
+                  (condition-mismatch-error then else-t src))))
          (else (condition-mismatch-error then else-t src)))
        (intersect-var-sets (type/env-e test/env) (type/env-e then/env) (type/env-e else/env)))))
 

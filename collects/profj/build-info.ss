@@ -1159,7 +1159,7 @@
                                 (apply append (map class-record-methods records))
                                 level)
              (method-error 'inherit-conflict 
-                           (method-record-name (car methods))
+                           (make-id (method-record-name (car methods)) #f)
                            (method-record-atypes (car methods))
                            (method-record-rtype (car methods))
                            (id-string (name-id from))
