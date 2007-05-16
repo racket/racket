@@ -670,6 +670,8 @@
   (wrap-text-item "Replier le texte")
   
   (windows-menu-label "Fe&nêtres")
+  (minimize "Minimiser") ;; minimize and zoom are only used under mac os x
+  (zoom "Agrandir") ; Zoomer?
   (bring-frame-to-front "Amener une fenêtre au premier plan")       ;;; title of dialog
   (bring-frame-to-front... "Amener une fenêtre au premier plan...") ;;; corresponding title of menu item
   (most-recent-window "Fenêtre la plus récente")
@@ -813,6 +815,12 @@
   (break-menu-item-help-string "Stopper l'exécution.")
   (kill-menu-item-label "Tuer")
   (kill-menu-item-help-string "Tuer l'exécution.")
+  (limit-memory-menu-item-label "Limiter la mémoire...")
+  (limit-memory-msg-1 "La limite prendra effet à la prochaine exécution du programme.")
+  (limit-memory-msg-2 "Elle doit être d'au moins 100 megaoctets.")
+  (limit-memory-unlimited "Illimitée")
+  (limit-memory-limited "Limitée")
+  (limit-memory-megabytes "Megaoctets")
   (clear-error-highlight-menu-item-label "Effacer le surlignage d'erreur")
   (clear-error-highlight-item-help-string "Efface le surlignage rose après une erreur")
   (reindent-menu-item-label "&Réindenter")
@@ -903,6 +911,13 @@
   (drscheme-teachpack-message-title "DrScheme teachpack")
   (already-added-teachpack "Le teachpack ~a a déjà été ajouté.")
   
+  ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
+  (compiling-teachpack "Compilation du teachpack ~a...")
+  (teachpack-pre-installed "Teachpacks préinstallés")
+  (teachpack-user-installed "Teachpacks installés par l'utilisateur")
+  (install-teachpack... "Installer le teachpack...")
+  (teachpack-already-installed "Un teachpack nommé '~a' a déjà été installé.  Voulez-vous l'écraser ?")
+  
   ;;; Language dialog
   (introduction-to-language-dialog
    "Veuillez sélectionner un langage. Un étudiant dans un cours d'introduction préférera le langage par défaut.")
@@ -918,6 +933,8 @@
   (input-syntax "Syntaxe d'entrée")
   (dynamic-properties "Propriétés dynamiques")
   (output-syntax "Syntaxe de sortie")
+  (teachpacks "Teachpacks") ;; label in the language dialog for the teaching languages
+  (teachpacks-none "<< aucun >>") ;; shows up under the previous string, when there are no teachpacks
   (no-debugging-or-profiling "Pas de débogage ou profilage") ; Profilage. Eurk...
   (debugging "Débogage")
   (debugging-and-profiling "Débogage et profilage")
@@ -1040,7 +1057,15 @@
   ;;; repl stuff
   (evaluation-terminated "Evaluation terminée.")
   (evaluation-terminated-explanation
-   "Le thread d'évaluation n'est plus en exécution, toute évaluation est donc impossible jusqu'à la prochaine exécution.")
+   "Le tâche d'évaluation n'est plus en exécution, toute évaluation est donc impossible jusqu'à la prochaine exécution.")
+  
+  ; The next three constants show up in the same dialog as the above evaluation-terminated string
+  ; constants.
+  ; The first two show up only when the user calls 'exit' (possibly with a status code).
+  ; The third shows up when the program runs out of memory.
+  (exited-successfully "Evaluation terminée avec succès.")
+  (exited-with-error-code "Evaluation terminée avec le code d'erreur ~a.") ;; ~a is filled in with a number between 1 and 255
+  (program-ran-out-of-memory "Le programme est à cours de mémoire.")
   (last-stack-frame "Montrer le dernier appel de fonction sur la pile.")
   (last-stack-frames "Montrer les derniers ~a appels de fonction sur la pile.")
   (next-stack-frames "Montrer les ~a appels de fonction suivants sur la pile.")
@@ -1205,6 +1230,17 @@
   (profj-java "Java")
   (profj-java-mode "mode Java")
   
+  (profj-beginner-lang "Débutant")
+  (profj-beginner-lang-one-line-summary "Langage Java restreint pour l'enseignement des etudiants niveau débutant")
+  (profj-full-lang "Complet")
+  (profj-full-lang-one-line-summary "Java 1.0 (et partiellement 1.1)")
+  (profj-advanced-lang "Avancé")
+  (profj-advanced-lang-one-line-summary "Langage Java restreint pour l'enseignement des etudiants niveau avancé")
+  (profj-intermediate-lang "Intermédiaire")
+  (profj-intermediate-lang-one-line-summary "Langage Java restreint pour l'enseignement des etudiants niveau intermédiaire")
+  (profj-dynamic-lang "Java + types dynamiques")
+  (profj-dynamic-lang-one-summary "Java, plus types dynamiques")
+
   (profj-java-mode-color-heading "Édition des couleurs") ; Heading for preference to choose editing colors  
   (profj-java-mode-color-keyword "mots réservés")
   (profj-java-mode-color-string "chaînes de caractères")
@@ -1220,23 +1256,41 @@
   
   (profj-language-config-display-preferences "Préférences pour l'affichage") ; Heading for preferences controlling printing
   (profj-language-config-display-style "Styles d'affichage")
-  (profj-language-config-display-field "classe et champs") ; Class should not be translated (ah oui?)
+  (profj-language-config-display-field "Classe et champs")
+  (profj-language-config-class "Classe")
   (profj-language-config-display-array "Montrer le contenu des tableaux ?")
   (profj-language-config-testing-preferences "Préférences pour les tests") ; Heading for preferences controlling test behavior
   (profj-language-config-testing-enable "Montrer le résultat des tests lors de l'exécution ?") ; Run should be the word found on the Run button
-  (profj-language-config-testing-coverage "Collecte de l'information de couvrage durant les tests ?")
+  (profj-language-config-testing-coverage "Collecter l'information de couvrage durant les tests ?")
+  (profj-language-config-support-test-language "Supporter l'extension de langage \"test\" ?")
   (profj-language-config-testing-check "Permettre les expressions de type \"check\" ?") ; check should not be translated
+  (profj-language-config-classpath "Chemin d'accès aux classes")
+  (profj-language-config-choose-classpath-directory "Choisissez le répertoire à ajouter au chemin d'accès aux classes")
   (profj-language-config-classpath-display "Montrer la valeur actuelle") ; Button label to print the current classpath
 
+  (profj-test-name-close-to-example "Le nom de classe ~a contient un mot qui ressemble au mot \"Example\".")
+  (profj-test-name-example-miscapitalized "Le mot \"example\" dans le nom de classe ~a doit être écrit \"Example\".")
+  
   ;; Close testing window and do not run test cases any more
   (profj-test-results-close-and-disable "Fermer la fenêtre et arrêter l'exécution des tests")
   ;; Hide docked testing window and do not run test cases any more
   (profj-test-results-hide-and-disable "Cacher la fenêtre et arrêter l'exécution des tests")
   (profj-test-results-window-title "Résultats des tests")
 
+  (profj-unsupported "Non-supporté")
+  (profj-executables-unsupported "Désolé - la création d'exécutables n'est pour l'instant pas supportée pour Java")
+
+  (profj-convert-to-text-comment "Convertir en commentaire texte")
+  (profj-convert-to-comment "Convertir en commentaire")
+
+  (profj-executing-main "exécution de \"main\"")
+
   (profj-insert-java-comment-box "Insérer une boite à commentaires Java")
   (profj-insert-java-interactions-box "Insérer une boite à interactions Java")
   
+  (profjWizward-insert-java-class "Insérer une classe Java")
+  (profjWizard-insert-java-union "Insérer un union Java")
+
   ;; The Test Suite Tool
   ;; Errors
   (test-case-empty-error "Test vide")
