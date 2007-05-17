@@ -400,7 +400,11 @@
                    (rewrap second (make-p:begin lifted-stx* e2* null lderiv**)))
                  (values (rewrap d (make-lift-deriv e1 e2* first-d lifted-stx* second*))
                          e2*))))]
-         
+
+        [(AnyQ lift/let-deriv (e1 e2 first lifted-stx next))
+         ;; FIXME
+         (error 'hide "lift/let unimplemented")]
+
         ;; Errors
 
         [#f (values #f #f)]))
@@ -704,6 +708,9 @@
          (raise (make-localactions))
          (>>Seek (for-deriv first)
                  (for-deriv next))]
+
+        [(AnyQ lift/let-deriv (e1 e2 first lifted-stx next))
+         (raise (make-localactions))]
 
         ;; Errors
 

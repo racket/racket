@@ -118,9 +118,7 @@
         [(AnyQ deriv (e1 e2))
          (values (if (eq? head-e2 e1)
                      tail
-                     (outer-rewrap 
-                      tail
-                      (make-p:rename head-e2 e2 head-rs (cons head-e2 e1) tail)))
+                     (wrap/rename-from head-e2 tail))
                  e2)]
         [#f (values (make-p:stop head-e2 head-e2 head-rs)
                     head-e2)]))
@@ -130,13 +128,18 @@
 
   ;; wrap-p:rename : syntax (cons syntax syntax) Derivation -> Derivation
   (define (wrap-p:rename e1 rename deriv)
-    (make-p:rename e1 (deriv-e2 deriv) null rename deriv))
+    (make-p:rename e1 (lift/deriv-e2 deriv) null rename deriv))
+
+  ;; wrap-rename : syntax (cons syntax syntax) Derivation -> Derivation
+  (define (wrap-rename e1 rename deriv)
+    (outer-rewrap deriv (wrap-p:rename e1 rename deriv)))
 
   ;; wrap/rename-from : syntax Derivation -> Derivation
+  ;; Wrap with renaming: given syntax to initial term of given deriv
   (define (wrap/rename-from e0 d)
     (match d
       [(AnyQ deriv (e1 e2))
-       (rewrap d (make-p:rename e0 e2 null (cons e0 e1) d))]))
+       (outer-rewrap d (wrap-p:rename e0 (cons e0 e1) d))]))
   
   ;; reconstruct-defval : syntax syntax Derivation -> Derivation
   ;; Reconstruct a define-values node from its rhs deriv
@@ -161,15 +164,11 @@
                  (and rhs-e2
                       (with-syntax ([?rhs** rhs-e2])
                         (syntax/skeleton dv1 (?dv ?vars* ?rhs**))))])
-           (outer-rewrap 
-            dvrhs
-            (make-p:rename
-             dv1
-             dv2
-             null
-             (cons (cons #'?vars #'?rhs)
-                   (cons #'?vars* #'?rhs*))
-             (outer-rewrap dvrhs (make-Definition dv1* dv2 null dvrhs))))))]))
+           (wrap-rename dv1
+                        (cons (cons #'?vars #'?rhs)
+                              (cons #'?vars* #'?rhs*))
+                        (outer-rewrap dvrhs
+                                      (make-Definition dv1* dv2 null dvrhs)))))]))
 
   ;; bderiv->lderiv : BlockDerivation -> ListDerivation
   ;; Combines pass1 and pass2 into a single pass(2) list derivation
@@ -294,7 +293,7 @@
          (define (to-deriv br stx)
            (match br
              [(struct b:expr (renames head))
-              (outer-rewrap head (make-p:rename stx (lift/deriv-e2 head) null renames head))]
+              (wrap-rename stx renames head)]
              [(struct b:begin (renames head inners))
               (with-syntax ([(?begin . ?inner-terms) (lift/deriv-e2 head)])
                 (let* ([inner-derivs (map to-deriv inners (syntax->list #'?inner-terms))]
@@ -334,6 +333,7 @@
                   (match pr
                     [(IntQ p:#%module-begin (e1 _ _ pass1 pass2))
                      (values (stx-cdr e1) pass1 pass2)])])
+
       ;; loop : number -> (list-of Derivation)
       ;; NOTE: Definitely returns a list of <number> elements; 
       ;; fills the end of the list with #f if necessary.
@@ -401,6 +401,7 @@
                       [inners-es2 (map deriv-e2 inners)]
                       [begin-stx1 #`(begin #,@inners-es1 #,(deriv-e2 deriv))]
                       [begin-stx2 #`(begin #,@inners-es2 #,(deriv-e2 deriv))])
+                 (eat-skip)
                  (cons
                   (make-lift-deriv 
                    head-e1 begin-stx2
@@ -416,6 +417,13 @@
                #;(printf "module-body->lderiv:loop2: unexpected null~n")
                (cons #f (loop2 (sub1 count)))])
             null))
+
+      ;; eat-skip : -> void
+      (define (eat-skip)
+        (match pass2
+          [(cons (struct mod:skip ()) next)
+           (set! pass2 next)]
+          [else (error 'eat-skip "expected skip!")]))
 
       (let* ([derivs (loop (stx-improper-length forms))]
              [es1 (map lift/deriv-e1 derivs)]
