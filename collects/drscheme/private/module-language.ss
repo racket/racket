@@ -268,7 +268,7 @@
                       (string-constant ml-cp-choose-a-collection-path)
                       (send parent get-top-level-window))])
             (when dir
-              (send lb append dir #f)
+              (send lb append (path->string dir) #f)
               (update-buttons))))
         
         (define (add-default-callback)
