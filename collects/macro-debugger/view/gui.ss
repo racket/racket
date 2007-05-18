@@ -172,8 +172,11 @@
           (define/public (add-obsoleted-warning)
             (unless obsoleted?
               (set! obsoleted? #t)
-              (new message%
-                   (label "Warning: This macro stepper session is obsolete. The program may have changed.")
+              (new warning-canvas%
+                   (warning
+                    (string-append
+                     "Warning: This macro stepper session is obsolete. "
+                     "The program may have changed."))
                    (parent warning-panel))
               (set-label (make-label))
               (send (get-area-container) change-children
@@ -1005,4 +1008,32 @@
             [((WIDGET : sb:widget^)) widget@ KEYMAP]
             [((VIEW : view^)) view@ PREFS BASE WIDGET])
       (export VIEW)))
+
+  ;; Stolen from stepper
+  
+  (define warning-color "yellow")
+  (define warning-font normal-control-font)
+
+  (define warning-canvas%
+    (class canvas%
+      (init-field warning)
+      (inherit get-dc get-client-size)
+      (define/override (on-paint)
+        (let ([dc (get-dc)])
+          (send dc set-font warning-font) 
+          (let-values ([(cw ch) (get-client-size)]
+                       [(tw th dont-care dont-care2) (send dc get-text-extent warning)])
+            (send dc set-pen (send the-pen-list find-or-create-pen warning-color 1 'solid))
+            (send dc set-brush (send the-brush-list find-or-create-brush warning-color 'solid))
+            (send dc draw-rectangle 0 0 cw ch)
+            (send dc draw-text 
+                  warning
+                  (- (/ cw 2) (/ tw 2))
+                  (- (/ ch 2) (/ th 2))))))
+      (super-new)
+      (inherit min-width min-height stretchable-height)
+      (let-values ([(tw th dc dc2) (send (get-dc) get-text-extent warning warning-font)])
+        (min-width (+ 2 (inexact->exact (ceiling tw))))
+        (min-height (+ 2 (inexact->exact (ceiling th)))))
+      (stretchable-height #f)))
   )
