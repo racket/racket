@@ -73,6 +73,14 @@
                                   ht))
 
 
+(parameterize ([pretty-print-abbreviate-read-macros #f])
+  (test "(quote a)" pretty-format ''a)
+  (test "(quasiquote a)" pretty-format '`a)
+  (test "(unquote a)" pretty-format ',a)
+  (test "(unquote-splicing a)" pretty-format ',@a)
+  (test "(syntax a)" pretty-format '#'a))
+
+
 (test "(1\n 2)" pretty-format '(1 2) 2)
 (test "(1 2)" pretty-format '(1 2) 'infinity)
 

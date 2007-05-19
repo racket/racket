@@ -78,7 +78,7 @@
           symbols like-symbols)
          (make-pretty-print-style-table new-ht))))
 
-  (define pretty-print-abbreviate-read-macros (make-parameter #f))
+  (define pretty-print-abbreviate-read-macros (make-parameter #t))
   
    (define pretty-print-current-style-table 
      (make-parameter 
