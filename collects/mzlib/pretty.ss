@@ -25,14 +25,14 @@
 	    pretty-print-show-inexactness
 	    pretty-print-exact-as-decimal
 	    pretty-print-.-symbol-without-bars
-
+            pretty-print-abbreviate-read-macros
+            
 	    pretty-print-style-table?
 	    pretty-print-current-style-table
 	    pretty-print-extend-style-table
             pretty-print-remap-stylable
             
             pretty-format
-            
 	    pretty-printing
 	    pretty-print-newline
 	    make-tentative-pretty-print-output-port
@@ -78,6 +78,8 @@
           symbols like-symbols)
          (make-pretty-print-style-table new-ht))))
 
+  (define pretty-print-abbreviate-read-macros (make-parameter #f))
+  
    (define pretty-print-current-style-table 
      (make-parameter 
       (pretty-print-extend-style-table #f null null)
@@ -1052,15 +1054,16 @@
    
    (define (read-macro? l)
      (define (length1? l) (and (pair? l) (null? (cdr l))))
-     (let ((head (car l)) (tail (cdr l)))
-       (case head
-	 ((quote quasiquote unquote unquote-splicing syntax)
-	  (length1? tail))
-	 (else #f))))
+     (and (pretty-print-abbreviate-read-macros)
+          (let ((head (car l)) (tail (cdr l)))
+            (case head
+              ((quote quasiquote unquote unquote-splicing syntax)
+               (length1? tail))
+              (else #f)))))
    
    (define (read-macro-body l)
      (cadr l))
-   
+  
    (define (read-macro-prefix l)
      (let ((head (car l)))
        (case head
@@ -1071,7 +1074,7 @@
 	 ((syntax)            "#'")
 	 ((unsyntax)          "#,")
 	 ((unsyntax-splicing) "#,@"))))
-
+  
    (define pretty-print-handler
      (lambda (v)
        (unless (void? v)
