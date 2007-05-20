@@ -83,6 +83,10 @@ coverage information is not collected when test on Run has been
 disabled. Colors for the coverage information can be set in the Java
 color preference window.
 
+Note: Coverage collection is not space preserving. If your program consumes 
+an excessive amount of memory or executes very slowly, try turning off
+coverage collection during execution.
+
 _ProfessorJ Beginner_
  In Version 300, the Beginner language level has undergone significant
  changes.  Largest among these is that interfaces are supported within
