@@ -833,7 +833,7 @@
                ;; So we can ignore them:
                
                strlen cos sin exp pow log sqrt atan2 
-               isnan isinf fpclass _fpclass _isnan __isfinited
+               isnan isinf fpclass _fpclass _isnan __isfinited __isnanl __isinfl isnanf isinff
                floor ceil round fmod fabs __maskrune _errno __errno
                isalpha isdigit isspace tolower toupper
                fread fwrite socket fcntl setsockopt connect send recv close
