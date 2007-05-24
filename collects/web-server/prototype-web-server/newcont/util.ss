@@ -189,6 +189,5 @@
       [(#%variable-reference . v)
        stx]       
       [id (identifier? #'id)
-          stx]     
-      [_
-       (raise-syntax-error 'kerncase "Dropped through:" stx)])))
+       stx]     
+      [_ (raise-syntax-error 'kerncase "Dropped through:" stx)])))
