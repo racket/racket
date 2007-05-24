@@ -112,7 +112,7 @@
   (define/kw (exec #:body str)
     (make-element 'tt (decode-content str)))
   (define/kw (procedure #:body str)
-    (make-element 'tt (append (list "#<procedure:") (decode-content str) (list ">"))))
+    (make-element "schemeresult" (append (list "#<procedure:") (decode-content str) (list ">"))))
 
   (define/kw (link url #:body str)
     (make-element (make-target-url url) (decode-content str)))

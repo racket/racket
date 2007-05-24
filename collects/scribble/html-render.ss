@@ -42,16 +42,20 @@
                fns)
           ht))
 
+      (define/public (part-whole-page? d)
+        #f)
+
       (define/override (collect-part-tag d ht)
         (hash-table-put! ht 
                          `(part ,(part-tag d)) 
                          (list (current-output-file)
-                               (part-title-content d))))
+                               (part-title-content d)
+                               (part-whole-page? d))))
 
       (define/override (collect-target-element i ht)
         (hash-table-put! ht 
                          (target-element-tag i)
-                         (list (current-output-file) #f)))
+                         (list (current-output-file) #f #f)))
 
       ;; ----------------------------------------
 
@@ -129,10 +133,15 @@
          [(link-element? e)
           (let ([dest (hash-table-get ht (link-element-tag e) #f)])
             (if dest
-                `((a ((href ,(format "~a#~a" 
+                `((a ((href ,(format "~a~a~a" 
                                      (from-root (car dest)
                                                 (get-dest-directory))
-                                     (link-element-tag e)))
+                                     (if (caddr dest)
+                                         ""
+                                         "#")
+                                     (if (caddr dest)
+                                         ""
+                                         (link-element-tag e))))
                       ,@(if (string? (element-style e))
                             `((class ,(element-style e)))
                             null))
@@ -170,6 +179,7 @@
         `((table ((cellspacing "0") ,@(case (table-style t)
                                         [(boxed) '((width "100%") (bgcolor "lightgray"))]
                                         [(centered) '((align "center"))]
+                                        [(at-right) '((align "right"))]
                                         [else null]))
                  ,@(map (lambda (flows)
                           `(tr ,@(map (lambda (d a)
@@ -229,6 +239,9 @@
                                  (build-path fn "index.html"))
                                fns)))
 
+      (define/override (part-whole-page? d)
+        (= 2 (collecting-sub)))
+
       (define/override (collect-part d parent ht number)
         (let ([prev-sub (collecting-sub)])
           (parameterize ([collecting-sub (add1 prev-sub)])
@@ -253,6 +266,56 @@
              ds
              fns))
 
+      (define prev-content '(larr " prev"))
+      (define up-content '("up"))
+      (define next-content '("next " rarr))
+      (define no-next-content next-content)
+      (define sep-element (make-element #f '(nbsp nbsp)))
+      
+      (inherit render-table)
+
+      (define/private (navigation d ht)
+        (let ([parent (collected-info-parent (part-collected-info d))])
+          (let-values ([(prev next)
+                        (let loop ([l (if parent
+                                          (part-parts parent)
+                                          (if (null? (part-parts d))
+                                              (list d)
+                                              (list d (car (part-parts d)))))]
+                                   [prev #f])
+                          (cond
+                           [(eq? (car l) d) (values prev (and (pair? (cdr l)) 
+                                                              (cadr l)))]
+                           [else (loop (cdr l) (car l))]))])
+            (render-table (make-table
+                           'at-right
+                           (list 
+                            (list 
+                             (make-flow
+                              (list
+                               (make-paragraph
+                                (list
+                                 (if parent
+                                     (make-element
+                                      (make-target-url (if prev
+                                                           (derive-filename prev)
+                                                           "index.html"))
+                                      prev-content)
+                                     "")
+                                 sep-element
+                                 (if parent
+                                     (make-element
+                                      (make-target-url "index.html")
+                                      up-content)
+                                     "")
+                                 sep-element
+                                 (make-element
+                                  (and next
+                                       (make-target-url (derive-filename next)))
+                                  next-content))))))))
+                          d
+                          ht))))
+
       (define/override (render-part d ht)
         (let ([number (collected-info-number (part-collected-info d))])
           (cond
@@ -268,14 +331,15 @@
                   (lambda ()
                     (render-one-part d ht full-path number))
                   'truncate/replace)
-                null
-                #;
-                `((table 
-                   ((width "90%") (cellspacing "0") (align "center"))
-                   ,@(render-toc-entry d filename ht number)))))]
+                null))]
            [else
-            ;; Normal section render
-            (super render-part d ht)])))
+            (if ((length number) . <= . 1)
+                ;; Navigation bars;
+                `(,@(navigation d ht)
+                  ,@(super render-part d ht)
+                  ,@(navigation d ht))
+                ;; Normal section render
+                (super render-part d ht))])))
 
       (super-new)))
 
