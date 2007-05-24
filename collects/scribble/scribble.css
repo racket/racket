@@ -18,6 +18,13 @@
                .toclink { 
                text-decoration: none;
                color: blue;
+               font-size: 85%;
+               }
+
+               .toptoclink { 
+               text-decoration: none;
+               color: blue;
+               font-weight: bold;
                }
 
                .title {

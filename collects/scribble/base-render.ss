@@ -243,22 +243,31 @@
 
       (define/private (render-toc part)
         (let ([number (collected-info-number (part-collected-info part))])
-          (cons
-           (list (make-flow
-                  (list
-                   (make-paragraph
-                    (list
-                     (make-element 'hspace (list (make-string (* 2 (length number)) #\space)))
-                     (make-link-element "toclink"
-                                        (append
-                                         (format-number number 
-                                                        (list
-                                                         (make-element 'hspace '(" "))))
-                                         (part-title-content part))
-                                        `(part ,(part-tag part))))))))
-           (apply
-            append
-            (map (lambda (p) (render-toc p)) (part-parts part))))))
+          (let ([l (cons
+                    (list (make-flow
+                           (list
+                            (make-paragraph
+                             (list
+                              (make-element 'hspace (list (make-string (* 2 (length number)) #\space)))
+                              (make-link-element (if (= 1 (length number))
+                                                     "toptoclink"
+                                                     "toclink")
+                                                 (append
+                                                  (format-number number 
+                                                                 (list
+                                                                  (make-element 'hspace '(" "))))
+                                                  (part-title-content part))
+                                                 `(part ,(part-tag part))))))))
+                    (apply
+                     append
+                     (map (lambda (p) (render-toc p)) (part-parts part))))])
+            (if (and (= 1 (length number))
+                     (or (not (car number))
+                         ((car number) . > . 1)))
+                (cons (list (make-flow (list (make-paragraph (list
+                                                              (make-element 'hspace (list " ")))))))
+                      l)
+                l))))
 
       ;; ----------------------------------------
       
