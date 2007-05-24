@@ -3,4 +3,4 @@
 
   (provide value-color)
 
-  (define value-color "DarkBlue"))
+  (define value-color "schemevalue"))

@@ -336,7 +336,9 @@
             (if ((length number) . <= . 1)
                 ;; Navigation bars;
                 `(,@(navigation d ht)
+                  (p nbsp)
                   ,@(super render-part d ht)
+                  (p nbsp)
                   ,@(navigation d ht))
                 ;; Normal section render
                 (super render-part d ht))])))

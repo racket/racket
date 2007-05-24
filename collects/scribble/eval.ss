@@ -28,6 +28,8 @@
 
   (define image-counter 0)
 
+  (define maxlen 60)
+
   (define (interleave title expr-paras val-list+outputs)
     (make-table
      #f
@@ -45,12 +47,25 @@
                                (make-flow (list p))))))
              (append
               (if (string? (car val-list+outputs))
-                  (list 
-                   (list (make-flow (list (make-paragraph
-                                           (list
-                                            (hspace 2)
-                                            (span-class "schemeerror"
-                                                        (italic (car val-list+outputs)))))))))
+                  (map
+                   (lambda (s)
+                     (list (make-flow (list (make-paragraph
+                                             (list
+                                              (hspace 2)
+                                              (span-class "schemeerror"
+                                                          (italic s))))))))
+                   (let sloop ([s (car val-list+outputs)])
+                     (if ((string-length s) . > . maxlen)
+                         ;; break the error message into multiple lines:
+                         (let loop ([pos (sub1 maxlen)])
+                           (cond
+                            [(zero? pos) (cons (substring s 0 maxlen)
+                                               (sloop (substring s maxlen)))]
+                            [(char-whitespace? (string-ref s pos))
+                             (cons (substring s 0 pos)
+                                   (sloop (substring s (add1 pos))))]
+                            [else (loop (sub1 pos))]))
+                         (list s))))
                   (append
                    (if (string=? "" (cdar val-list+outputs))
                        null

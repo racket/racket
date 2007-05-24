@@ -21,51 +21,51 @@ language.
 The following BNF grammar sketches a simplified syntax for Scheme.
 Text with a gray background, such as @litchar{#module}, represents
 literal text. Whitespace must appear between separate such literals
-and nonterminals like @nonterm{identifier}, except that whitespace is
+and nonterminals like @nonterm{id}, except that whitespace is
 not required before or after @litchar{(}, @litchar{)}, @litchar{[}, or
 @litchar{]}.  Following the usual conventions, @kleenestar{} means
 zero or more repetitions of the preceding element, @kleeneplus{} means
 one or more repetitions of the preceding element, and @BNF-group{}
 groups a sequence as an element for repetition.
 
-@define[val-defn-stx @BNF-seq[@litchar{(}@litchar{define} @nonterm{identifier} @nonterm{expression} @litchar{)}]]
+@define[val-defn-stx @BNF-seq[@litchar{(}@litchar{define} @nonterm{id} @nonterm{expr} @litchar{)}]]
 @define[fun-defn-stx
-         @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{identifier} @kleenestar{@nonterm{identifier}} @litchar{)}
-                  @kleeneplus{@nonterm{expression}} @litchar{)}]]
+         @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{id} @kleenestar{@nonterm{id}} @litchar{)}
+                  @kleeneplus{@nonterm{expr}} @litchar{)}]]
 @define[fun-defn2-stx
-   @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{identifier} @kleenestar{@nonterm{identifier}} @litchar{)}
-                  @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expression}} @litchar{)}]]
-@define[app-expr-stx @BNF-seq[@litchar{(} @nonterm{identifier} @kleenestar{@nonterm{expression}} @litchar{)}]]
-@define[app2-expr-stx @BNF-seq[@litchar{(} @nonterm{expression} @kleenestar{@nonterm{expression}} @litchar{)}]]
-@define[if-expr-stx @BNF-seq[@litchar{(} @litchar{if} @nonterm{expression} @nonterm{expression} @nonterm{expression} @litchar{)}]]
+   @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{id} @kleenestar{@nonterm{id}} @litchar{)}
+                  @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expr}} @litchar{)}]]
+@define[app-expr-stx @BNF-seq[@litchar{(} @nonterm{id} @kleenestar{@nonterm{expr}} @litchar{)}]]
+@define[app2-expr-stx @BNF-seq[@litchar{(} @nonterm{expr} @kleenestar{@nonterm{expr}} @litchar{)}]]
+@define[if-expr-stx @BNF-seq[@litchar{(} @litchar{if} @nonterm{expr} @nonterm{expr} @nonterm{expr} @litchar{)}]]
 
-@define[lambda-expr-stx @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{identifier}} @litchar{)}
-                                              @kleeneplus{@nonterm{expression}} @litchar{)}]]
+@define[lambda-expr-stx @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{id}} @litchar{)}
+                                              @kleeneplus{@nonterm{expr}} @litchar{)}]]
 @define[lambda2-expr-stx
-         @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{identifier}} @litchar{)}
-                  @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expression}} @litchar{)}]]
-@define[and-expr-stx @BNF-seq[@litchar{(} @litchar{and} @kleenestar{@nonterm{expression}} @litchar{)}]]
-@define[or-expr-stx @BNF-seq[@litchar{(} @litchar{or} @kleenestar{@nonterm{expression}} @litchar{)}]]
+         @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{id}} @litchar{)}
+                  @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expr}} @litchar{)}]]
+@define[and-expr-stx @BNF-seq[@litchar{(} @litchar{and} @kleenestar{@nonterm{expr}} @litchar{)}]]
+@define[or-expr-stx @BNF-seq[@litchar{(} @litchar{or} @kleenestar{@nonterm{expr}} @litchar{)}]]
 @define[cond-expr-stx @BNF-seq[@litchar{(} @litchar{cond}
-                                              @kleenestar{@BNF-group[@litchar{[} @nonterm{expression} @nonterm{expression} @litchar{]}]}
+                                              @kleenestar{@BNF-group[@litchar{[} @nonterm{expr} @nonterm{expr} @litchar{]}]}
                                               @litchar{)}]]
 @define[(make-let-expr-stx kw)
          @BNF-seq[@litchar{(} kw @litchar{(}
-                      @kleenestar{@BNF-group[@litchar{[} @nonterm{identifier} @nonterm{expression} @litchar{]}]}
+                      @kleenestar{@BNF-group[@litchar{[} @nonterm{id} @nonterm{expr} @litchar{]}]}
                       @litchar{)}
-                   @kleeneplus{@nonterm{expression}} @litchar{)}]]
+                   @kleeneplus{@nonterm{expr}} @litchar{)}]]
 @define[let-expr-stx (make-let-expr-stx @litchar{let})]
 @define[let*-expr-stx (make-let-expr-stx @litchar{let*})]
 
 
 @BNF[(list @nonterm{module} @BNF-seq[@litchar{#module} @nonterm{langname} @kleenestar{@nonterm{topform}}])
      (list @nonterm{topform} @nonterm{definition}
-                             @nonterm{expression}
+                             @nonterm{expr}
                              @BNF-etc)
      (list @nonterm{definition} val-defn-stx
                                 fun-defn-stx
                                 @BNF-etc)
-     (list @nonterm{expression} @nonterm{identifier}
+     (list @nonterm{expr} @nonterm{id}
                                 @nonterm{constant}
                                 app-expr-stx
                                 if-expr-stx
@@ -87,20 +87,20 @@ A definition of the form
 
 @schemeblock[#, @val-defn-stx]
 
-binds @nonterm{identifier} to the result of @nonterm{expression}, while
+binds @nonterm{id} to the result of @nonterm{expr}, while
 
 @schemeblock[#, @fun-defn-stx]
 
-binds the first @nonterm{identifier} to a procedure that takes
-arguments as named by the remaining @nonterm{identifier}s. In the
-procedure case, the @nonterm{expression}s are the body of the
+binds the first @nonterm{id} to a procedure that takes
+arguments as named by the remaining @nonterm{id}s. In the
+procedure case, the @nonterm{expr}s are the body of the
 procedure. When the procedure is called, it returns the result of the
-last @nonterm{expression}.
+last @nonterm{expr}.
 
 @defexamples[
-(code:line (define five 5)           (code:comment #, @t{defines @scheme[five] to be @scheme[5]}))
-(define (piece str)       (code:comment #, @t{defines @scheme[piece] as a procedure of one argument})
-  (substring str 0 five))
+(code:line (define five 5)            (code:comment #, @t{defines @scheme[five] to be @scheme[5]}))
+(code:line (define (piece str)        (code:comment #, @t{defines @scheme[piece] as a procedure})
+             (substring str 0 five))  (code:comment #, @t{of one argument}))
 five
 (piece "hello world")
 ]
@@ -117,9 +117,9 @@ substring
 ]
 
 Within a module, each definition must bind a distinct
-@nonterm{identifier}, and only identifiers with no imported bindings
+@nonterm{id}, and only identifiers with no imported bindings
 can be defined. A definition in the REPL, in contrast, overwrites any
-previous definition for the same @nonterm{identifier}.
+previous definition for the same @nonterm{id}.
 
 @examples[
 (define five 5)
@@ -175,7 +175,7 @@ special characters
 
 and except for the sequences of characters that make number constants,
 almost any sequence of non-whitespace characters forms an
-@nonterm{identifier}. For example @schemeid[substring] is an
+@nonterm{id}. For example @schemeid[substring] is an
 identifier. Also, @schemeid[string-append] and @schemeid[a+b] are
 identifiers, as opposed to arithmetic expressions. Here are several
 more examples:
@@ -260,8 +260,8 @@ application is
 #, app-expr-stx
 ]
 
-where the number of @nonterm{expression}s determines the number of
-arguments supplied to the procedure named by @nonterm{identifier}.
+where the number of @nonterm{expr}s determines the number of
+arguments supplied to the procedure named by @nonterm{id}.
 
 The @schememodname[big] language pre-defines many procedure
 identifiers, such as @scheme[substring] and
@@ -272,7 +272,7 @@ pre-defined names are hyperlinked to the reference manual. So, you can
 click on an identifier to get full details about its use.
 
 @interaction[
-(code:line (string-append "hello"  " "  "scheme") (code:comment #, @t{append any number of strings}))
+(code:line (string-append "hello"  " "  "scheme") (code:comment #, @t{append strings}))
 (code:line (substring "hello scheme" 6 12)        (code:comment #, @t{extract a substring}))
 (code:line (string-length "scheme")               (code:comment #, @t{get a string's length}))
 (code:line (string? "hello scheme")               (code:comment #, @t{recognize strings}))
@@ -298,10 +298,10 @@ The next simplest kind of expression is an @scheme[if] conditional:
 #, if-expr-stx
 ]
 
-The first @nonterm{expression} is always evaluted. If it produces a
-non-@scheme[#f] value, then the second @nonterm{expression} is
+The first @nonterm{expr} is always evaluted. If it produces a
+non-@scheme[#f] value, then the second @nonterm{expr} is
 evaluted for the result of the whole @scheme[if] expression, otherwise
-the third @nonterm{expression} is evaluated for the result.
+the third @nonterm{expr} is evaluated for the result.
 
 @examples[
 (if (> 2 3) 
@@ -389,12 +389,12 @@ The shorthand for a sequence of tests is the @scheme[cond] form:
 ]
 
 A @scheme[cond] form contains a sequence of clauses between square
-brackets. In each clause, the first @nonterm{expression} is a test
+brackets. In each clause, the first @nonterm{expr} is a test
 expression. If it produces true, then the clause's second
-@nonterm{expression} provides the answer for the entire @scheme[cond]
+@nonterm{expr} provides the answer for the entire @scheme[cond]
 expression, and the rest of the clauses are ignored. If the test
-@nonterm{expression} produces @scheme[#f], then the clause's second
-@nonterm{expression} is ignored, and evaluation continues with the
+@nonterm{expr} produces @scheme[#f], then the clause's second
+@nonterm{expr} is ignored, and evaluation continues with the
 next clause. The last clause can use @scheme[else] as a synonym for
 a @scheme[#t] test expression.
 
@@ -429,13 +429,13 @@ few key places makes Scheme code even more readable.
 In our pretend grammar of Scheme, we oversimplified in the description
 of procedure applications.  The actual syntax of a procedure
 application allows an arbitrary expression for the procedure, instead
-of just an @nonterm{identifier}:
+of just an @nonterm{id}:
 
 @schemeblock[
 #, app2-expr-stx
 ]
 
-The first @nonterm{expression} is often an @nonterm{identifier}, such
+The first @nonterm{expr} is often an @nonterm{id}, such
 as @scheme[string-append] or @scheme[+], but it can be anything that
 evaluates to an procedure. For example, it can be a conditional
 expression:
@@ -539,9 +539,9 @@ procedure. In other words, the @scheme[lambda]-generated procedure
 ]
 
 We have so far referred to definitions of the form @scheme[(define #,
-@nonterm{identifier} #, @nonterm{expression})] as ``non-procedure
+@nonterm{id} #, @nonterm{expr})] as ``non-procedure
 definitions.'' This characterization is misleading, because the
-@nonterm{expression} could be a @scheme[lambda] form, in which case
+@nonterm{expr} could be a @scheme[lambda] form, in which case
 the definition is equivalent to using the ``procedure'' definition
 form. For example, the following two definitions of @scheme[louder]
 are equivalent:
@@ -600,11 +600,11 @@ of requiring a separate @scheme[define] for each identifier.
 #, let-expr-stx
 ]
 
-Each binding clause is an @nonterm{identifier} and a
-@nonterm{expression} surrounded by square brackets, and the
+Each binding clause is an @nonterm{id} and a
+@nonterm{expr} surrounded by square brackets, and the
 expressions after the clauses are the body of the @scheme[let]. In
-each clause, the @nonterm{identifier} is bound to the result of the
-@nonterm{expression} for use in the body.
+each clause, the @nonterm{id} is bound to the result of the
+@nonterm{expr} for use in the body.
 
 @interaction[
 (let ([x 1]
@@ -633,12 +633,12 @@ too simple even for this chapter. Here's the grammar that we have now:
 
 @BNF[(list @nonterm{module} @BNF-seq[@litchar{#module} @nonterm{langname} @kleenestar{@nonterm{topform}}])
      (list @nonterm{topform} @nonterm{definition}
-                             @nonterm{expression}
+                             @nonterm{expr}
                              @BNF-etc)
      (list @nonterm{definition} val-defn-stx
                                 fun-defn2-stx
                                 @BNF-etc)
-     (list @nonterm{expression} @nonterm{identifier}
+     (list @nonterm{expr} @nonterm{id}
                                 @nonterm{constant}
                                 app2-expr-stx
                                 if-expr-stx

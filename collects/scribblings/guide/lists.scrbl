@@ -55,7 +55,9 @@ The @scheme[for-each] procedure acts the most like a @tt{for} loop:
 @interaction[
 (for-each (lambda (elem) 
             (printf "I have ~a\n" elem))
-          (list "pie" "stew" "carrots and pizza, and pineapple, too"))
+          (list "pie" 
+                "stew"
+                "carrots and pizza, and pineapple, too"))
 ]
 
 The @scheme[for-each] procedure completely ignores the per-element
@@ -434,22 +436,22 @@ As you start reading Scheme code, you'll discover one more form that
 is commonly used to implement iterations and recursive functions:
 @idefterm{named @scheme[let]}.  A named @scheme[let] uses the same
 syntactic keyword as a simple sequence of local bindings, but an
-@nonterm{identifier} after the @scheme[let] (instead of an immediate
+@nonterm{id} after the @scheme[let] (instead of an immediate
 open parenthesis) triggers a different parsing. In general,
 
 @schemeblock[
-#, @BNF-seq[@litchar{(} @litchar{let} @nonterm{proc-identifier} @litchar{(}
-                        @kleenestar{@BNF-group[@litchar{[} @nonterm{arg-identifier} @nonterm{init-expression} @litchar{]}]}
+#, @BNF-seq[@litchar{(} @litchar{let} @nonterm{proc-id} @litchar{(}
+                        @kleenestar{@BNF-group[@litchar{[} @nonterm{arg-id} @nonterm{init-expr} @litchar{]}]}
                         @litchar{)}
-                    @kleeneplus{@nonterm{body-expression}} @litchar{)}]
+                    @kleeneplus{@nonterm{body-expr}} @litchar{)}]
 ]
 
 is equivalent to the sequence
 
 @schemeblock[
-#, @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{proc-identifier} @kleenestar{@nonterm{arg-identifier}} @litchar{)}
-                  @kleeneplus{@nonterm{body-expression}} @litchar{)}]
-#, @BNF-seq[@litchar{(}@nonterm{proc-identifier} @kleenestar{@nonterm{init-expression}}@litchar{)}]
+#, @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{proc-id} @kleenestar{@nonterm{arg-id}} @litchar{)}
+                  @kleeneplus{@nonterm{body-expr}} @litchar{)}]
+#, @BNF-seq[@litchar{(}@nonterm{proc-id} @kleenestar{@nonterm{init-expr}}@litchar{)}]
 ]
 
 except that the @scheme[let] form works in any expression

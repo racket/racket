@@ -24,7 +24,8 @@
         (printf "\\parskip=10pt%\n")
         (printf "\\parindent=0pt%\n")
         (printf "\\usepackage{graphicx}\n")
-        (printf "\\usepackage{fullpage}\n")
+        (printf "\\usepackage{times}\n")
+        ;; (printf "\\usepackage{fullpage}\n")
         (printf "\\usepackage{longtable}\n")
         (printf "\\usepackage[usenames,dvipsnames]{color}\n")
         (define-color "schemeplain" "black")
@@ -184,8 +185,8 @@
                 (case c
                   [(#\\) (display "$\\backslash$")]
                   [(#\_) (display "$\\_$")]
-                  [(#\>) (display "$>$")]
-                  [(#\<) (display "$<$")]
+                  [(#\>) (display "{\\texttt >}")]
+                  [(#\<) (display "{\\texttt <}")]
                   [(#\~) (display "$\\sim$")]
                   [(#\{ #\} #\# #\% #\&) (display "\\") (display c)]
                   [(#\uDF) (display "{\\ss}")]
