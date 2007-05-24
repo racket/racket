@@ -1,4 +1,4 @@
-(module wc-fake (lib "newcont.ss" "web-server" "prototype-web-server" "newcont")
+(module wc-fake (lib "lang.ss" "web-server" "prototype-web-server")
   (require (lib "url.ss" "net"))
   (provide start)
     

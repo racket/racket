@@ -170,5 +170,6 @@
      [(#%variable-reference . v)
       stx]       
      [id (identifier? #'id)
-      stx]
-     [_ (raise-syntax-error 'elim-callcc "Dropped through:" stx)])))
+         stx]
+     [_
+      (raise-syntax-error 'elim-callcc "Dropped through:" stx)])))

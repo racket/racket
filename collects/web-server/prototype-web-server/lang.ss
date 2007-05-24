@@ -1,11 +1,11 @@
-(module newcont mzscheme
+(module lang mzscheme
   (require-for-syntax (lib "etc.ss")
                       (lib "labels.ss" "web-server" "prototype-web-server")
-                      "util.ss"
-                      "elim-letrec.ss"
-                      "anormal.ss"
-                      "elim-callcc.ss"
-                      "defun.ss")
+                      "lang/util.ss"
+                      "lang/elim-letrec.ss"
+                      "lang/anormal.ss"
+                      "lang/elim-callcc.ss"
+                      "lang/defun.ss")
   (require (lib "abort-resume.ss" "web-server" "prototype-web-server"))
   (require (only (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
                  send/suspend/hidden
