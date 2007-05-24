@@ -32,12 +32,20 @@
   
   (define mred? (getenv "MREVAL"))
 
+  ;; This one needs to be relative, because it ends up in the
+  ;;  exprs.dat file:
   (define img-dir "quick/images") ; relative to scribbles dir
+
+  ;; This one can be absolute:
+  (define exprs-dat-file (build-path (collection-path "scribblings")
+                                     "quick"
+                                     "images"
+                                     "exprs.dat"))
 
   (define mr-eval-handler
     (if mred?
         (let ([eh (scribble-eval-handler)]
-              [log-file (open-output-file (build-path img-dir "exprs.dat") 'truncate/replace)])
+              [log-file (open-output-file exprs-dat-file 'truncate/replace)])
           (lambda (catching-exns? expr)
             (write (serialize expr) log-file)
             (newline log-file)
@@ -59,7 +67,7 @@
         (let ([log-file (with-handlers ([exn:fail:filesystem?
                                          (lambda (exn)
                                            (open-input-string ""))])
-                          (open-input-file (build-path img-dir "exprs.dat")))])
+                          (open-input-file exprs-dat-file))])
           (lambda (catching-exns? expr)
             (with-handlers ([exn:fail? (lambda (exn)
                                          (if catching-exns?
