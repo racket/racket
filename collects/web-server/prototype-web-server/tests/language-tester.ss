@@ -1,7 +1,7 @@
 (module language-tester mzscheme
   (provide make-module-eval
            make-eval/mod-path)
-
+  
   (define-syntax (make-module-eval m-expr)
     (syntax-case m-expr (module)
       [(_ (module m-id . rest))
@@ -23,7 +23,7 @@
       (parameterize ([current-namespace ns])
         (eval `(require (lib "client.ss" "web-server" "prototype-web-server")
                         (lib "serialize.ss")
-                        (file ,pth)))
+                        (file ,pth))))
       (lambda (expr)
         (parameterize ([current-namespace ns])
-          (eval expr)))))))
+          (eval expr))))))

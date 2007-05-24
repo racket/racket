@@ -8,7 +8,7 @@
                      (lambda (the-exn)
                        (or
                         (and
-                         (regexp-match ".*Attempt to capture a continuation from within an unsafe context$"
+                         (regexp-match ".*Attempt to capture a continuation from within an unsafe context"
                                        (exn-message the-exn))
                          #t)
                         (raise the-exn)))])

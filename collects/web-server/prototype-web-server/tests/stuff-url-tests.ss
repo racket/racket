@@ -34,11 +34,11 @@
       "Test same-module?"
       
       (assert-true
-       (same-module? `(file ,(build-absolute-path (find-collects-dir) "web-server" "prototype-web-sever" "abort-resume.ss"))
+       (same-module? `(file ,(path->string (build-absolute-path (find-collects-dir) "web-server" "prototype-web-server" "abort-resume.ss")))
                      '(lib "abort-resume.ss" "web-server" "prototype-web-server")))
       
       (assert-true
-       (same-module? `(file ,(build-absolute-path (current-directory) "../abort-resume.ss"))
+       (same-module? `(file ,(path->string (build-absolute-path (current-directory) "../abort-resume.ss")))
                      '(lib "abort-resume.ss" "web-server" "prototype-web-server")))
       
       (assert-true
@@ -49,25 +49,28 @@
      (make-test-case
       "compose url-parts and recover-serial (1)"
       (let* ([ev (make-eval/mod-path "modules/mm00.ss")]
-             [k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo))) "modules/mm00.ss")]
+             [k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
+                                      `(file "modules/mm00.ss"))]
              [k1 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
-                                      "modules/mm00.ss")]
+                                      `(file "modules/mm00.ss"))]
              [k2 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
-                                      "modules/mm00.ss")])
+                                      `(file "modules/mm00.ss"))])
         (assert-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3)))))))
      
      (make-test-case
       "compose url-parts and recover-serial (2)"
       (let* ([ev (make-eval/mod-path "modules/mm01.ss")]
-             [k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo))) "modules/mm01.ss")])
+             [k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
+                                      `(file "modules/mm01.ss"))])
         (assert-true (= 7 (ev `(dispatch (list (deserialize ',k0) 7)))))))
      
      (make-test-case
       "compose stuff-url and unstuff-url and recover the serial"
       (let* ([ev (make-eval/mod-path "modules/mm00.ss")]
-             [k0 (stuff-unstuff (ev '(serialize (dispatch-start 'foo))) uri0 "modules/mm00.ss")]
+             [k0 (stuff-unstuff (ev '(serialize (dispatch-start 'foo)))
+                                uri0 `(file "modules/mm00.ss"))]
              [k1 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
-                                uri0 "modules/mm00.ss")]
+                                uri0 `(file "modules/mm00.ss"))]
              [k2 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
-                                uri0 "modules/mm00.ss")])
+                                uri0 `(file "modules/mm00.ss"))])
         (assert-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3))))))))))

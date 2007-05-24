@@ -50,7 +50,7 @@
                             (#%app (lambda (#,cm)
                                      (lambda (#,x)
                                        (#%app abort
-                                              (lambda () (#%app resume #,ref-to-cm #,ref-to-x)))))
+                                              (lambda () (#%app resume #,ref-to-cm (#%app list #,ref-to-x))))))
                                    (#%app activation-record-list))))))]
       ;; this is (w e) where e is not a w. (w w) handled in next case.
       ;; m00.4 in persistent-interaction-tests.ss tests this distinction

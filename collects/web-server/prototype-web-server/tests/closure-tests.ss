@@ -111,6 +111,4 @@
         (assert = 3 (env5 'z))
         (assert = 4 (env6 'x))
         (assert = 5 (env6 'y))
-        (assert = 6 (env6 'z))))
-     
-     )))
+        (assert = 6 (env6 'z)))))))

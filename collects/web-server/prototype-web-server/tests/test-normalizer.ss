@@ -285,9 +285,9 @@
       
       ; this is supported now
       #;(make-test-case
-       "multiple body expressions in lambda"
-       (assert-true (check-unsupported-lambda
-                     (normalize-term (expand (syntax (lambda (x y z) 3 4)))))))
+         "multiple body expressions in lambda"
+         (assert-true (check-unsupported-lambda
+                       (normalize-term (expand (syntax (lambda (x y z) 3 4)))))))
       
       (make-test-case
        "zero-or-more argument lambda"
@@ -301,9 +301,9 @@
                         (normalize-term (expand (syntax (let-values ([(x y) (values 1 2)]) (+ x y))))))))
       ; this is supported now
       #; (make-test-case
-       "let/multiple clauses before body"
-       (assert-true (check-unsupported-let
-                     (normalize-term (expand (syntax (let ([x 1] [y 2]) (+ x y)))))))))
+          "let/multiple clauses before body"
+          (assert-true (check-unsupported-let
+                        (normalize-term (expand (syntax (let ([x 1] [y 2]) (+ x y)))))))))
      
      (make-test-suite
       "Miscellaneous tests"
