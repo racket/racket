@@ -29,6 +29,48 @@
 
   (define spacer (hspace 2))
 
+  (define ((norm-spacing base) p)
+    (cond
+     [(and (syntax->list p)
+           (not (null? (syntax-e p))))
+      (let loop ([e (syntax->list p)]
+                 [line (syntax-line (car (syntax-e p)))]
+                 [pos base]
+                 [second #f]
+                 [accum null])
+        (cond
+         [(null? e)
+          (datum->syntax-object
+           p
+           (reverse accum)
+           (list (syntax-source p)
+                 (syntax-line p)
+                 base
+                 (add1 base)
+                 (- pos base))
+           p)]
+         [else
+          (let* ([v ((norm-spacing (if (= line (syntax-line (car e)))
+                                       pos
+                                       (or second pos)))
+                     (car e))]
+                 [next-pos (+ (syntax-column v) (syntax-span v) 1)])
+            (loop (cdr e)
+                  (syntax-line v)
+                  next-pos
+                  (or second next-pos)
+                  (cons v accum)))]))]
+     [else
+      (datum->syntax-object
+       p
+       (syntax-e p)
+       (list (syntax-source p)
+             (syntax-line p)
+             base
+             (add1 base)
+             1)
+       p)]))
+
   (define (scribble-examples . lines)
     (make-table
      #f
@@ -39,7 +81,7 @@
                                    (let ([p (open-input-string line)])
                                      (port-count-lines! p)
                                      (if (regexp-match? #rx"\n" line)
-                                         (scribble:read-syntax #f p)
+                                         ((norm-spacing 0) (scribble:read-syntax #f p))
                                          (scribble:read p)))))
                             line)])
               (list (as-flow spacer)
