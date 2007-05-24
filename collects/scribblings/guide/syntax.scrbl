@@ -235,7 +235,7 @@ appear in a string constant.
 ]
 
 When a constant is evaluated in the REPL, it typically prints the same
-as its input syntax. In same cases, the printed form is a normalized
+as its input syntax. In some cases, the printed form is a normalized
 version of the input syntax. In other cases, the printed result of an
 expression does not correspond to input syntax at all, such as when an
 expression proceduces a procedure (instead of applying the
