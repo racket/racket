@@ -21,7 +21,10 @@
 ; After a-normalizations, all let expressions are "linearized": one
 ;  binding clause for each let-values expression. (Of course, the
 ;  single clause can bind multiple variables.) This linearization does
-;  not apply to letrec expressions.
+;  not apply to letrec expressions. Technically, it's the source of a bug
+;  compared to bytecode MzScheme: when call/cc is used on the RHS
+;  where an earlier LHS is mutable, the cell for the mutable LHS is
+;  allocated too early.
 
 ;;; Annotatitons: ----------------------------------------------
 ;;    begin0 - lexical-binding for storing 0th expression result
