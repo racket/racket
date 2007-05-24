@@ -1,6 +1,6 @@
-(module wc-comp (lib "newcont.ss" "newcont")
-  (require (lib "web-cells.ss" "newcont")
-           (lib "web-cell-component.ss" "newcont")
+(module wc-comp (lib "newcont.ss" "web-server" "prototype-web-server" "newcont")
+  (require (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
+           (lib "web-cell-component.ss" "web-server" "prototype-web-server" "newcont")
            (lib "url.ss" "net"))
   (provide start)
   

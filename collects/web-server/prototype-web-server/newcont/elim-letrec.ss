@@ -1,7 +1,6 @@
 (module elim-letrec mzscheme
-  (require-for-template
-   (lib "abort-resume.ss" "prototype-web-server")
-   mzscheme)
+  (require-for-template (lib "abort-resume.ss" "web-server" "prototype-web-server")
+                        mzscheme)
   (require (lib "kerncase.ss" "syntax")
            (lib "etc.ss")
            (lib "list.ss")

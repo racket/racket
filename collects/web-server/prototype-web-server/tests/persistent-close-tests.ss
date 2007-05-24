@@ -1,8 +1,8 @@
 (module persistent-close-tests mzscheme
-  (require (lib "file-vector.ss" "prototype-web-server")
+  (require (lib "file-vector.ss" "web-server" "prototype-web-server")
            (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
            (lib "serialize.ss")
-           (lib "persistent-close.ss" "prototype-web-server"))
+           (lib "persistent-close.ss" "web-server" "prototype-web-server"))
   
   (provide persistent-close-suite)
   

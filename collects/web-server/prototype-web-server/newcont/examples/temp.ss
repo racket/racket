@@ -1,4 +1,4 @@
-(module temp (lib "newcont.ss" "newcont")
+(module temp (lib "newcont.ss" "web-server" "prototype-web-server" "newcont")
   (provide start)
   
   (define msg (make-parameter "unknown"))

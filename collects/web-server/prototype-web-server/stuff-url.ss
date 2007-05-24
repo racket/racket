@@ -197,7 +197,7 @@
         [(and (same-module? pth (caar mm))
               (match-label (cdar mm)))
          => (lambda (lab) (cons lab (loop (cdr mm))))]
-        [(same-module? '(lib "abort-resume.ss" "prototype-web-server") (caar mm))
+        [(same-module? '(lib "abort-resume.ss" "web-server" "prototype-web-server") (caar mm))
          (cons (cdar mm) (loop (cdr mm)))]
         [else
          (error "cannot construct abreviated module map" mod-map)])))
@@ -239,18 +239,19 @@
                      1024)
               (error "the url is too big: " (url->string result-uri))))))))
   
+  ; XXX Abstract this
   (require (lib "md5.ss"))
   (define (md5-store str)
     (define hash (md5 (string->bytes/utf-8 str)))
     (with-output-to-file
-        (format "/Users/jay/Development/plt/urls/~a" hash)
+        (build-path (find-system-path 'home-dir) ".urls" (format "~a" hash))
       (lambda ()
         (write str))
       'replace)
     (bytes->string/utf-8 hash))
   (define (md5-lookup hash)
     (with-input-from-file
-        (format "/Users/jay/Development/plt/urls/~a" hash)
+        (build-path (find-system-path 'home-dir) ".urls" (format "~a" hash))
       (lambda () (read))))
   
   (define (stuff-url svl uri pth)

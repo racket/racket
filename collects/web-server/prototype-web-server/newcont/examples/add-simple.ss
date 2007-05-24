@@ -1,7 +1,7 @@
-(module add-simple (lib "newcont.ss" "newcont")
+(module add-simple (lib "newcont.ss" "web-server" "prototype-web-server" "newcont")
   (require (lib "url.ss" "net")
            (lib "servlet-helpers.ss" "web-server" "private")
-           (lib "web-param.ss" "newcont"))
+           (lib "web-param.ss" "web-server" "prototype-web-server" "newcont"))
   (provide start)
   
   (define msg (make-web-parameter "unknown"))

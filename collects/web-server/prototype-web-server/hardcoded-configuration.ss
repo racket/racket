@@ -1,7 +1,8 @@
 (module hardcoded-configuration mzscheme
   (require (lib "configuration-structures.ss" "web-server" "private")
            (lib "util.ss" "web-server" "private")
-           (lib "response.ss" "web-server"))
+           (lib "response.ss" "web-server")
+           (lib "dirs.ss" "setup"))
   
   (provide config:port
            config:max-waiting
@@ -141,7 +142,7 @@
       ; file-root
       (build-path server-root-path "htdocs")
       ; servlet-root
-      (build-path "~" "Development" "Projects" "exp" "prototype-web-server")
+      (build-path (find-collects-dir) "web-server" "prototype-web-server")
       ; mime-types
       (build-path server-root-path "mime.types")             
       ; password-authentication

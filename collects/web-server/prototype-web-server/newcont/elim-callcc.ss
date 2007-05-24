@@ -1,6 +1,6 @@
 (module elim-callcc mzscheme
   (require-for-template mzscheme)
-  (require-for-template (lib "abort-resume.ss" "prototype-web-server"))
+  (require-for-template (lib "abort-resume.ss" "web-server" "prototype-web-server"))
   (require (lib "kerncase.ss" "syntax")
            #;(lib "etc.ss")
            (lib "list.ss")

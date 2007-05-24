@@ -10,14 +10,14 @@
            (lib "plt-match.ss")           
            (lib "configuration-structures.ss" "web-server" "private")
            (lib "dispatch.ss" "web-server" "dispatchers")
-           (lib "session.ss" "prototype-web-server")
-           (only (lib "abort-resume.ss" "prototype-web-server")
+           (lib "session.ss" "web-server" "prototype-web-server")
+           (only (lib "abort-resume.ss" "web-server" "prototype-web-server")
                  abort/cc
                  safe-call?
                  the-cont-key)
-           (only (lib "persistent-web-interaction.ss" "prototype-web-server")
+           (only (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
                  start-servlet)           
-           (lib "web-cells.ss" "newcont")
+           (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
            "xexpr-extras.ss"
            "utils.ss"
            "hardcoded-configuration.ss")
@@ -210,9 +210,9 @@
   
   (define to-be-copied-module-specs
     '(mzscheme
-      (lib "web-cells.ss" "newcont")
-      (lib "abort-resume.ss" "prototype-web-server")
-      (lib "session.ss" "prototype-web-server")
+      (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
+      (lib "abort-resume.ss" "web-server" "prototype-web-server")
+      (lib "session.ss" "web-server" "prototype-web-server")
       (lib "request.ss" "web-server" "private")))
   
   ;; get the names of those modules.

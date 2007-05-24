@@ -1,12 +1,13 @@
 (module stuff-url-tests mzscheme
-  (require (lib "stuff-url.ss" "prototype-web-server")
+  (require (lib "stuff-url.ss" "web-server" "prototype-web-server")
            (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
            (planet "util.ss" ("schematics" "schemeunit.plt" 1))
            (lib "url.ss" "net")
+           (lib "dirs.ss" "setup")
            (lib "file.ss")
            "language-tester.ss")
   
-  (require/expose (lib "stuff-url.ss" "prototype-web-server")
+  (require/expose (lib "stuff-url.ss" "web-server" "prototype-web-server")
                   (same-module? url-parts recover-serial))
   
   (provide stuff-url-suite)
@@ -33,17 +34,17 @@
       "Test same-module?"
       
       (assert-true
-       (same-module? `(file ,(build-path "~/Development/Projects/exp/prototype-web-server/abort-resume.ss"))
-                     '(lib "abort-resume.ss" "prototype-web-server")))
+       (same-module? `(file ,(build-absolute-path (find-collects-dir) "web-server" "prototype-web-sever" "abort-resume.ss"))
+                     '(lib "abort-resume.ss" "web-server" "prototype-web-server")))
       
       (assert-true
        (same-module? `(file ,(build-absolute-path (current-directory) "../abort-resume.ss"))
-                     '(lib "abort-resume.ss" "prototype-web-server")))
+                     '(lib "abort-resume.ss" "web-server" "prototype-web-server")))
       
       (assert-true
        (same-module?
-        '(lib "abort-resume.ss" "prototype-web-server")
-        '(lib "./abort-resume.ss" "prototype-web-server"))))
+        '(lib "abort-resume.ss" "web-server" "prototype-web-server")
+        '(lib "./abort-resume.ss" "web-server" "prototype-web-server"))))
      
      (make-test-case
       "compose url-parts and recover-serial (1)"

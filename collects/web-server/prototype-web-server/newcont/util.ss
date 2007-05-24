@@ -1,5 +1,6 @@
 (module util mzscheme
-  (require-for-template mzscheme)
+  (require-for-template mzscheme
+                        (lib "abort-resume.ss" "web-server" "prototype-web-server"))
   (require (lib "kerncase.ss" "syntax")
            (lib "etc.ss")
            (lib "list.ss")
@@ -76,7 +77,6 @@
       [_
        (inner stx)]))
   
-  (require-for-template (lib "abort-resume.ss" "prototype-web-server"))  
   (define ((make-lang-module-begin make-labeling transform) stx)
     (syntax-case stx ()                     
       ((mb forms ...)

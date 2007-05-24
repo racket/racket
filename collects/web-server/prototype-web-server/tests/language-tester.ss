@@ -21,7 +21,7 @@
   (define (make-eval/mod-path pth)
     (let ([ns (make-namespace)])
       (parameterize ([current-namespace ns])
-        (eval `(require (lib "client.ss" "prototype-web-server")
+        (eval `(require (lib "client.ss" "web-server" "prototype-web-server")
                         (lib "serialize.ss")
                         (file ,pth)))
       (lambda (expr)

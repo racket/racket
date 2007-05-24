@@ -1,5 +1,5 @@
-(module wc (lib "newcont.ss" "newcont")
-  (require (lib "web-cells.ss" "newcont")
+(module wc (lib "newcont.ss" "web-server" "prototype-web-server" "newcont")
+  (require (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
            (lib "url.ss" "net"))
   (provide start)
   

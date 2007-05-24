@@ -8,7 +8,7 @@
            (lib "stx.ss" "syntax")
            "util.ss"
            "freevars.ss"
-           (lib "closure.ss" "prototype-web-server"))
+           (lib "closure.ss" "web-server" "prototype-web-server"))
   (provide defun)
   
   ; make-new-clouse-label : (syntax -> syntax) syntax -> syntax

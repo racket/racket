@@ -1,4 +1,4 @@
-(module quiz01 (lib "persistent-web-interaction.ss" "prototype-web-server")
+(module quiz01 (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
   (require "quiz-lib.ss"
            (lib "url.ss" "net")
            (lib "servlet-helpers.ss" "web-server" "private"))

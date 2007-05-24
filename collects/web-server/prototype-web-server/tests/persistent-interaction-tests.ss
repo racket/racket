@@ -274,7 +274,7 @@
        
        (let ([test-m06.1
               (make-module-eval
-               (module m06.1 (lib "persistent-interaction.ss" "prototype-web-server")
+               (module m06.1 (lib "persistent-interaction.ss" "web-server" "prototype-web-server")
                  (define (id x) x)
                  
                  (define (gn which)

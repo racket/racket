@@ -1,4 +1,4 @@
-(module add (lib "newcont.ss" "newcont")
+(module add (lib "newcont.ss" "web-server" "prototype-web-server" "newcont")
   (require (lib "url.ss" "net")
            (lib "servlet-helpers.ss" "web-server" "private"))
   (provide start)

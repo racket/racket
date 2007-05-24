@@ -1,4 +1,4 @@
-(module mm00 (lib "persistent-interaction.ss" "prototype-web-server")
+(module mm00 (lib "persistent-interaction.ss" "web-server" "prototype-web-server")
   
   (define (gn which)
     (cadr
