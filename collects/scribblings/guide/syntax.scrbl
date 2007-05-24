@@ -117,7 +117,7 @@ substring
 ]
 
 Within a module, each definition must bind a distinct
-@nonterm{id}, and only identifiers with no imported bindings
+@nonterm{id}, and only identifiers without an imported binding
 can be defined. A definition in the REPL, in contrast, overwrites any
 previous definition for the same @nonterm{id}.
 
@@ -413,8 +413,8 @@ clearly written as follows:
    [else "huh?"]))
 (reply-more "hello scheme")
 (reply-more "goodbye cruel world")
-(reply-more "what is the airspeed velocity of an unladen swallow?")
-(reply-more "but I like the cookie!")
+(reply-more "what is your favorite color?")
+(reply-more "mine is lime green")
 ]
 
 The use of square brackets for @scheme[cond] clauses is a

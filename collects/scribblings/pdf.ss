@@ -33,9 +33,12 @@
 
   (for-each (lambda (name)
               (let ([pdf (path-replace-suffix name #".pdf")])
+                (rename-file-or-directory (build-path temp-dir pdf)
+                                          (build-path temp-dir "tmp.pdf")
+                                          #t)
                 (when (file-exists? pdf)
                   (delete-file pdf))
-                (copy-file (build-path temp-dir  pdf) pdf)))
+                (copy-file (build-path temp-dir "tmp.pdf") pdf)))
             names))
 
 

@@ -33,7 +33,7 @@ Many predefined procedures operate on lists. Here are a few examples:
 
 @interaction[
 (code:line (length (list "a" "b" "c"))        (code:comment #, @t{count the elements}))
-(code:line (list-ref (list "a" "b" "c") 0)    (code:comment #, @t{extract an element by position}))
+(code:line (list-ref (list "a" "b" "c") 0)    (code:comment #, @t{extract by position}))
 (list-ref (list "a" "b" "c") 1)
 (code:line (append (list "a" "b") (list "c")) (code:comment #, @t{combine lists}))
 (code:line (reverse (list "a" "b" "c"))       (code:comment #, @t{reverse order}))
@@ -50,22 +50,7 @@ languages. The body of a Scheme iteration is packaged into a procedure
 to be applied to each element, so the @scheme[lambda] form becomes
 particularly handy in combination with iteration procedures.
 
-The @scheme[for-each] procedure acts the most like a @tt{for} loop:
-
-@interaction[
-(for-each (lambda (elem) 
-            (printf "I have ~a\n" elem))
-          (list "pie" 
-                "stew"
-                "carrots and pizza, and pineapple, too"))
-]
-
-The @scheme[for-each] procedure completely ignores the per-element
-result of the iteration body, so it is used with loop bodies that have
-a side-effect (such as printing output). Keeping in mind that Scheme
-programmers avoid side-effects, they also avoid @scheme[for-each].
-
-Other list-iteration procedures use the per-element results, but in
+Different list-iteration procedures combine iteration results in
 different ways. The @scheme[map] procedure uses the per-element
 results to create a new list:
 
@@ -93,10 +78,10 @@ is true, and discards elements for which it is @scheme[#f]:
 (filter positive? (list 1 -2 6 7 0))
 ]
 
-The @scheme[for-each], @scheme[map], @scheme[andmap], @scheme[ormap],
-and @scheme[filter] procedures can all handle multiple lists, instead
-of just a single list. The lists must all have the same length, and
-the given procedure must accept one argument for each list:
+The @scheme[map], @scheme[andmap], @scheme[ormap], and @scheme[filter]
+procedures can all handle multiple lists, instead of just a single
+list. The lists must all have the same length, and the given procedure
+must accept one argument for each list:
 
 @interaction[
 (map (lambda (s n) (substring s 0 n))
@@ -385,18 +370,20 @@ tail-recursive programs automatically run the same as a loop, lead
 Scheme programmers to embrace recursive forms rather than avoid them.
 
 Suppose, for example, that you want to remove consecutive duplicates
-from a list. While that procedure can be written as a loop that
+from a list. While such a procedure can be written as a loop that
 remembers the previous element for each iteration, a Scheme programmer
 would more likely just write the following:
 
 @def+int[
 (define (remove-dups l)
   (cond
-   [(empty? l)                           empty]
-   [(empty? (rest l))                    l]
-   [(equal? (first l) (first (rest l)))  (remove-dups (rest l))]
-   [else                                 (cons (first l) 
-                                               (remove-dups (rest l)))]))
+   [(empty? l) empty]
+   [(empty? (rest l)) l]
+   [else
+    (let ([i (first l)])
+      (if (equal? i (first (rest l)))
+          (remove-dups (rest l))
+          (cons i (remove-dups (rest l)))))]))
 (remove-dups (list "a" "b" "b" "b" "c" "c"))
 ]
 
@@ -405,10 +392,9 @@ list of length @math{n}, but that's fine, since it produces an
 @math{O(n)} result. If the input list happens to be mostly consecutive
 duplicates, then the resulting list can be much smaller than
 @math{O(n)}---and @scheme[remove-dups] will also use much less than
-@math{O(n)} space! The reason is that the third case in the
-@scheme[cond], which discards duplicates, returns the result of a
-@scheme[remove-dups] call directly, so the tail-call ``optimization''
-kicks in:
+@math{O(n)} space! The reason is that when the procedure discards
+duplicates, it returns the result of a @scheme[remove-dups] call
+directly, so the tail-call ``optimization'' kicks in:
 
 @schemeblock[
 (remove-dups (list "a" "b" "b" "b" "b" "b"))

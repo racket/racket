@@ -5,6 +5,7 @@
   (provide render-mixin)
 
   (define current-table-depth (make-parameter 0))
+  (define rendering-tt (make-parameter #f))
 
   (define-struct (toc-paragraph paragraph) ())
 
@@ -24,7 +25,7 @@
         (printf "\\parskip=10pt%\n")
         (printf "\\parindent=0pt%\n")
         (printf "\\usepackage{graphicx}\n")
-        (printf "\\usepackage{times}\n")
+        (printf "\\renewcommand{\\rmdefault}{ptm}\n")
         ;; (printf "\\usepackage{fullpage}\n")
         (printf "\\usepackage{longtable}\n")
         (printf "\\usepackage[usenames,dvipsnames]{color}\n")
@@ -37,17 +38,17 @@
         (define-color "schemesymbol" "NavyBlue")
         (define-color "schemevalue" "ForestGreen")
         (define-color "schemevaluelink" "blue")
-        (define-color "schemeresult" "blue")
+        (define-color "schemeresult" "NavyBlue")
         (define-color "schemestdout" "Purple")
         (define-color "schemevariablecol" "NavyBlue")
         (printf "\\newcommand{\\schemevariable}[1]{{\\schemevariablecol{\\textsl{#1}}}}\n")
         (define-color "schemeerrorcol" "red")
-        (printf "\\newcommand{\\schemeerror}[1]{{\\schemeerrorcol{\\textit{#1}}}}\n")
+        (printf "\\newcommand{\\schemeerror}[1]{{\\schemeerrorcol{\\textrm{\\textit{#1}}}}}\n")
         (printf "\\newcommand{\\schemeopt}[1]{#1}\n")
         (printf "\\newcommand{\\textsub}[1]{$_{#1}$}\n")
         (printf "\\newcommand{\\textsuper}[1]{$^{#1}$}\n")
-        (printf "\\definecolor{LightGray}{rgb}{0.85,0.85,0.85}\n")
-        (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\schemeinputcol{#1}}}\n")
+        (printf "\\definecolor{LightGray}{rgb}{0.90,0.90,0.90}\n")
+        (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\hspace{-0.5ex}\\schemeinputcol{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\begin{document}\n")
         (when (part-title-content d)
           (printf "\\title{")
@@ -82,7 +83,7 @@
       (define/override (render-paragraph p part ht)
         (printf "\n\n")
         (if (toc-paragraph? p)
-            (printf "\\tableofcontents")
+            (printf "\\newpage \\tableofcontents \\newpage")
             (super render-paragraph p part ht))
         (printf "\n\n")
         null)
@@ -90,30 +91,36 @@
       (define/override (render-element e part ht)
         (when (and (link-element? e)
                    (pair? (link-element-tag e))
-                   (eq? 'part (car (link-element-tag e))))
+                   (eq? 'part (car (link-element-tag e)))
+                   (null? (element-content e)))
           (printf "\\S\\ref{section:~a} " (cadr (link-element-tag e))))
         (let ([style (and (element? e)
                           (element-style e))]
-              [wrap (lambda (e s)
+              [wrap (lambda (e s tt?)
                       (printf "{\\~a{" s)
-                      (super render-element e part ht)
+                      (parameterize ([rendering-tt (or tt?
+                                                       (rendering-tt))])
+                        (super render-element e part ht))
                       (printf "}}"))])
           (cond
            [(symbol? style)
             (case style
-              [(italic) (wrap e "textit")]
-              [(bold) (wrap e "textbf")]
-              [(tt) (wrap e "texttt")]
-              [(sf) (wrap e "textsf")]
-              [(subscript) (wrap e "textsub")]
-              [(superscript) (wrap e "textsuper")]
+              [(italic) (wrap e "textit" #f)]
+              [(bold) (wrap e "textbf" #f)]
+              [(tt) (wrap e "texttt" #t)]
+              [(sf) (wrap e "textsf" #f)]
+              [(subscript) (wrap e "textsub" #f)]
+              [(superscript) (wrap e "textsuper" #f)]
               [(hspace) (let ([s (content->string (element-content e))])
-                          (unless (zero? (string-length s))
-                            (printf "{\\texttt ~a}"
-                                    (regexp-replace* #rx"." s "~"))))]
+                          (case (string-length s)
+                            [(0) (void)]
+                            [(1) (printf "{\\texttt{ }}")] ; allows a line break to replace the space
+                            [else
+                             (printf "{\\texttt{~a}}"
+                                     (regexp-replace* #rx"." s "~"))]))]
               [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
            [(string? style)
-            (wrap e style)]
+            (wrap e style (regexp-match? #px"^scheme(?!error)" style))]
            [(image-file? style) 
             (let ([fn (install-file (image-file-path style))])
               (printf "\\includegraphics{~a}" fn))]
@@ -135,11 +142,13 @@
             (parameterize ([current-table-depth (add1 (current-table-depth))])
               (if index?
                   (printf "\n\n\\begin{theindex}\n")
-                  (printf "\n\n~a\\begin{~a}~a{@{}~a@{}}\n"
+                  (printf "\n\n~a\\begin{~a}~a{@{}~a}\n"
                           (if boxed? "\\vspace{4ex}\\hrule\n\\vspace{-2ex}\n" "")
                           tableform
                           opt
-                          (make-string (length (car (table-flowss t))) #\l)))
+                          (apply string-append
+                                 (map (lambda (i) "l@{}")
+                                      (car (table-flowss t))))))
               (for-each (lambda (flows)
                           (let loop ([flows flows])
                             (unless (null? flows)
@@ -150,7 +159,11 @@
                           (unless index?
                             (printf " \\\\\n")))
                         (table-flowss t))
-              (printf "\n\n\\end{~a}\n" tableform))))
+              (printf "\n\n\\end{~a}~a\n" 
+                      tableform
+                      (if (equal? tableform "longtable")
+                          "\\vspace{-3ex}" ;; counteracts mysterious space added after longtable
+                          "")))))
         null)
 
       (define/override (render-itemization t part ht)
@@ -185,16 +198,28 @@
                 (case c
                   [(#\\) (display "$\\backslash$")]
                   [(#\_) (display "$\\_$")]
-                  [(#\>) (display "{\\texttt >}")]
-                  [(#\<) (display "{\\texttt <}")]
+                  [(#\>) (if (rendering-tt)
+                             (display "{\\texttt >}")
+                             (display "$>$"))]
+                  [(#\<) (if (rendering-tt)
+                             (display "{\\texttt <}")
+                             (display "$<$"))]
+                  [(#\? #\! #\. #\:) (if (rendering-tt)
+                                         (printf "{\\hbox{\\texttt{~a}}}" c)
+                                         (display c))]
                   [(#\~) (display "$\\sim$")]
                   [(#\{ #\} #\# #\% #\&) (display "\\") (display c)]
                   [(#\uDF) (display "{\\ss}")]
-                  [(#\u039A #\u0391 #\u039F #\u03A3
-                    #\u03BA #\u03b1 #\u03BF #\u03C3)
-                   (printf "$\\backslash$u~a"
-                           (let ([s (format "0000~x" (char->integer c))])
-                             (substring s (- (string-length s) 4))))]
+                  [(#\u039A) (display "K")] ; kappa
+                  [(#\u0391) (display "A")] ; alpha
+                  [(#\u039F) (display "O")] ; omicron
+                  [(#\u03A3) (display "$\\Sigma$")]
+                  [(#\u03BA) (display "$\\kappa$")]
+                  [(#\u03B1) (display "$\\alpha$")]
+                  [(#\u03BF) (display "o")] ; omicron
+                  [(#\u03C3) (display "$\\sigma$")]
+                  [(#\u03BB) (display "$\\lambda$")]
+                  [(#\u03BC) (display "$\\mu$")]
                   [else (display c)]))
               (loop (add1 i))))))
                   

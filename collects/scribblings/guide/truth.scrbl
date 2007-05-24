@@ -133,7 +133,7 @@ map
 (eval:alts (symbol->string (#, @scheme[quote] #, @schemeidfont{map})) (symbol->string 'map))
 ]
 
-Naturally, when @scheme[quote] is used on a parenthesized sequence of
+When @scheme[quote] is used on a parenthesized sequence of
 identifiers, it creates a list of symbols:
 
 @interaction[
@@ -164,8 +164,8 @@ however, we routinely assume that standard bindings are in scope, and
 so we paint quoted forms in green for extra clarity.
 
 A @litchar{'} expands to a @scheme[quote] form in quite a literal
-way. You can see this if you put a quote in front of a form that has a
-quote:
+way. You can see this if you put a @litchar{'} in front of a form that has a
+@litchar{'}:
 
 @interaction[
 (eval:alts (car '(#, @schemevalfont{quote} #, @schemevalfont{road})) 'quote)
@@ -182,8 +182,8 @@ Beware, however, that the REPL's printer recognizes the symbol
 (eval:alts '(#, @schemevalfont{quote} #, @schemevalfont{road}) ''road)
 ]
 
-There is a method to this madness; it has to do with the true nature
-of Scheme syntax (which we discuss in the next section) and the
+There's a method to this madness; it has to do with the true nature of
+Scheme syntax (which we discuss in the next section) and the
 traditional Lisp approach to meta-programming (which we discuss in the
 @seclink["quote-eval"]{section afterward}).
 
@@ -267,7 +267,7 @@ conversion enables a kind of general infix notation:
 '(1 . < . 2)
 ]
 
-This two-dot convension is untraditional, and it has essentially
+This two-dot convension is non-traditional, and it has essentially
 nothing to do with the dot notation for non-list pairs. PLT Scheme
 programmers use the infix convension sparingly---mostly for asymmetric
 binary operators such as @scheme[<] and @scheme[is-a?].
