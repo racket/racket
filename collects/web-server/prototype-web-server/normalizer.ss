@@ -2,8 +2,7 @@
   (require "syntax-utils.ss")
   (require-for-template mzscheme)
   (provide normalize-term
-           normalize-definition
-           )
+           normalize-definition)
   ;; **************************************************
   ;; SOURCE LANGUAGE
   ;;
@@ -12,9 +11,11 @@
   ;; definition ::= (define-values (var ...) expr)
   ;;
   ;; expr ::= var
-  ;;       |  (lambda (var ...) expr)
+  ;;       |  (lambda (var ...) expr ...)
   ;;       |  (if expr expr)
   ;;       |  (if expr expr expr)
+  ;;       |  (let-values () expr)
+  ;;       |  (let-values () expr ...)
   ;;       |  (let-values ([(var)] expr) expr)
   ;;       |  (let-values ([(var ...)] expr) expr)
   ;;       |  (let-values ([(var ...)] expr) expr ...)
@@ -69,8 +70,10 @@
       [(lambda (formals ...) body)
        (with-syntax ([body (recertify #'body expr)])
          (ctxt #`(lambda (formals ...) #,(normalize-term #'body))))]
+      [(lambda (formals ...) bodies ...)
+       (normalize ctxt #'(lambda (formals ...) (begin bodies ...)))]
       [(lambda . anything)
-       (raise-syntax-error #f "Not all lambda-expressions supported" expr)]
+       (raise-syntax-error #f "normalize: Not all lambda-expressions supported" expr)]
       [(if tst-expr csq-expr)
        (with-syntax ([(tst-expr csq-expr) (recertify* (list #'tst-expr #'csq-expr) expr)])
          (normalize
@@ -87,6 +90,12 @@
                            #,(normalize-term #'csq-expr)
                            #,(normalize-term #'alt-expr))))
           #'tst-expr))]
+      [(let-values () body)
+       (normalize ctxt (recertify #'body expr))]
+      [(let-values () body-expr rest-body-exprs ...)
+       (with-syntax ([(body-expr rest-body-exprs ...)
+                      (recertify* (syntax->list #'(body-expr rest-body-exprs ...)) expr)])
+         (normalize ctxt #'(let-values ([(throw-away) body-expr]) rest-body-exprs ...)))]
       [(let-values ([(var) rhs-expr]) body)
        (with-syntax ([(rhs-expr body) (recertify* (list #'rhs-expr #'body) expr)])
          (normalize ctxt #'(#%app (lambda (var) body) rhs-expr)))]
@@ -156,6 +165,4 @@
     (if (eq? ctxt id) frame
         (lambda (val)
           (let-values ([(x ref-to-x) (generate-formal 'x)])
-            #`(#%app (lambda (#,x) #,(ctxt ref-to-x)) #,(frame val))))))
-  )
-
+            #`(#%app (lambda (#,x) #,(ctxt ref-to-x)) #,(frame val)))))))

@@ -11,10 +11,8 @@
   ;; (listof syntax) syntax -> syntax
   ;; recertify a list of syntax parts given the whole
   (define (recertify* exprs old-expr)
-    (map
-     (lambda (expr)
-       (syntax-recertify expr old-expr (current-code-inspector) #f))
-     exprs))
+    (map (lambda (expr) (recertify expr old-expr))
+         exprs))
   
   ;; generate-formal: -> identifier
   (define (generate-formal sym-name)
@@ -23,8 +21,7 @@
                      (if (syntax-transforming?)
                          (local-expand #`(lambda (#,name) #,name) 'expression '())
                          #`(lambda (#,name) #,name))])
-        (values #'formal #'ref-to-formal))))
-    )
+        (values #'formal #'ref-to-formal)))))
   
   
   

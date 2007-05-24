@@ -3,7 +3,8 @@
            (all-except "expander.ss" send/suspend)
            "utils.ss"
            "session.ss"
-           (lib "request-parsing.ss" "web-server")
+           (lib "list.ss")
+           (lib "request-structs.ss" "web-server")
            (lib "url.ss" "net"))
   
   (provide (all-from-except mzscheme #%module-begin)
@@ -38,19 +39,24 @@
     (let ([n 0])
       (lambda (k)
         (set! n (add1 n))
+        (printf "Adding ~a to ~S~n" n (hash-table-map k-table (lambda (k v) k)))
         (hash-table-put! k-table n k)
+        (printf "Now: ~S~n" (hash-table-map k-table (lambda (k v) k)))
         n)))
   
   ;; url/id->continuation: url -> (union continuation #f)
   ;; extract the key from the url and then lookup the continuation
   (define (url/id->continuation req-uri)
-    (let ([ses-uri (session-url (current-session))])
-      (let ([url-path-suffix (split-url-path ses-uri req-uri)])
-        (and url-path-suffix
-             (not (null? url-path-suffix))
-             (hash-table-get k-table
-                             (string->number (car url-path-suffix))
-                             (lambda () #f))))))
+    (define ses-uri (session-url (current-session)))
+    (define url-path-suffix (split-url-path ses-uri req-uri))
+    (if ((length url-path-suffix) . >= . 1)
+        (let ([k-id (string->number (first url-path-suffix))])
+          (hash-table-get k-table k-id 
+                          (lambda ()
+                            (printf "continuation ~a not found in ~S~n" 
+                                    k-id (hash-table-map k-table (lambda (k v) k)))
+                            #f)))
+        #f))
   
   ;; encode-k-id-in-url: continuation -> url
   ;; encode a continuation id in a url
@@ -61,7 +67,7 @@
        (url-user uri)
        (url-host uri)
        (url-port uri)
-       (append (url-path uri) (list (number->string (continuation->number k))))
+       #t
+       (append (url-path uri) (list (make-path/param (number->string (continuation->number k)) empty)))
        (url-query uri)
-       (url-fragment uri))))
-  )
+       (url-fragment uri)))))

@@ -1,9 +1,8 @@
 (module session mzscheme
   (require (lib "contract.ss")
            (lib "url.ss" "net")
-           (lib "request-parsing.ss" "web-server")
+           (lib "request-structs.ss" "web-server")
            (lib "response.ss" "web-server"))
-  (require-for-syntax (lib "url.ss" "net"))
   (provide current-session)
   
   (define-struct session (id cust namespace handler url mod-path))
@@ -67,12 +66,12 @@
     (replace-path
      (lambda (old-path)
        (if (null? old-path)
-           (list (make-path/param "" new-param-str))
+           (list (make-path/param "" (list new-param-str)))
            (let* ([car-old-path (car old-path)])
              (cons (make-path/param (if (path/param? car-old-path)
                                         (path/param-path car-old-path)
                                         car-old-path)
-                                    new-param-str)
+                                    (list new-param-str))
                    (cdr old-path)))))
      in-url))
   
@@ -87,12 +86,7 @@
        (url-user in-url)
        (url-host in-url)
        (url-port in-url)
+       #t
        new-path
        (url-query in-url)
-       (url-fragment in-url))))
-
-  )
-  
-    
-
-  
+       (url-fragment in-url)))))

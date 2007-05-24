@@ -1,27 +1,35 @@
 (module server mzscheme
-  (require (lib "connection-manager.ss" "web-server")
-           (lib "request-parsing.ss" "web-server")
-           (lib "response.ss"  "web-server")
-           ;(lib "util.ss" "web-server")
+  (require (lib "connection-manager.ss" "web-server" "private")
+           (lib "request.ss" "web-server" "private")
+           (lib "response.ss" "web-server")
+           (lib "servlet-helpers.ss" "web-server" "private")
+           (lib "response.ss" "web-server" "private")
+           (lib "util.ss" "web-server" "private")
            (lib "url.ss" "net")
-           (lib "string.ss")
            (lib "list.ss")
-
-           (lib "configuration-structures.ss" "web-server")
-
+           (lib "plt-match.ss")           
+           (lib "configuration-structures.ss" "web-server" "private")
+           (lib "dispatch.ss" "web-server" "dispatchers")
+           (lib "session.ss" "prototype-web-server")
+           (only (lib "abort-resume.ss" "prototype-web-server")
+                 abort/cc
+                 safe-call?
+                 the-cont-key)
+           (only (lib "persistent-web-interaction.ss" "prototype-web-server")
+                 start-servlet)           
+           (lib "web-cells.ss" "newcont")
+           "xexpr-extras.ss"
            "utils.ss"
-           "hardcoded-configuration.ss"
-           "session.ss"
-           )
-
-  (provide serve)
-
-  (define myprint printf)
-
+           "hardcoded-configuration.ss")
+  
+  (provide serve dispatch)
+  
+  (define myprint printf #;(lambda _ (void)))
+  
   (define thread-connection-state (make-thread-cell #f))
   (define-struct connection-state (conn req))
   (define top-cust (current-custodian))
-
+  
   ;; ************************************************************
   ;; serve: -> -> void
   ;; start the server and return a thunk to shut it down
@@ -41,7 +49,7 @@
              (server-loop get-ports)))))
       (lambda ()
         (custodian-shutdown-all the-server-custodian))))
-
+  
   ;; ************************************************************
   ;; server-loop: (-> i-port o-port) -> void
   ;; start a thread to handle each incoming connection
@@ -56,7 +64,7 @@
                 (new-connection config:initial-connection-timeout
                                 ip op (current-custodian) #f)))))))
       (loop)))
-
+  
   ;; ************************************************************
   ;; serve-connection: connection -> void
   ;; respond to all requests on this connection
@@ -79,39 +87,26 @@
           (cond
             [close? (kill-connection! conn)]
             [else (connection-loop)])))))
-
-  ;; get-host : Url (listof (cons Symbol String)) -> String
-  ;; host names are case insesitive---Internet RFC 1034
-  (define DEFAULT-HOST-NAME "<none>")
-  (define (get-host uri headers)
-    (let ([lower!
-           (lambda (s)
-             (string-lowercase! s #;(bytes->string/utf-8 s))
-             s)])
-      (cond
-        [(url-host uri) => lower!]
-        [(assq 'host headers)
-         =>
-         (lambda (h) (lower! (bytes->string/utf-8 (cdr h))))]
-        [else DEFAULT-HOST-NAME])))
-
+  
   ;; ************************************************************
   ;; dispatch: connection request host -> void
   ;; trivial dispatcher
   (define (dispatch conn req host-info)
+    (define-values (uri method path) (decompose-request req))
     (myprint "dispatch~n")
-
-    (adjust-connection-timeout!
-     conn
-     (timeouts-servlet-connection (host-timeouts host-info)))
-    ;; more here - make timeouts proportional to size of bindings
-    (servlet-content-producer conn req host-info))
-
-
+    (if (regexp-match #rx"^/servlets" path)
+        (begin
+          (adjust-connection-timeout!
+           conn
+           (timeouts-servlet-connection (host-timeouts host-info)))
+          ;; more here - make timeouts proportional to size of bindings
+          (servlet-content-producer conn req host-info))    
+        (next-dispatcher)))
+  
   ;; ************************************************************
   ;; ************************************************************
   ;; SERVING SERVLETS
-
+  
   ;; servlet-content-producer: connection request host -> void
   (define (servlet-content-producer conn req host-info)
     (myprint "servlet-content-producer~n")
@@ -124,10 +119,6 @@
             '() (list "ignored"))
            meth)
           (let ([uri (request-uri req)])
-            (set-request-bindings!
-             req
-             (read-bindings/handled conn meth uri (request-headers req)
-                                    host-info))
             (thread-cell-set! thread-connection-state
                               (make-connection-state conn req))
             (with-handlers ([void
@@ -145,63 +136,42 @@
                       (resume-session session-id host-info))]
                 [else
                  (begin-session host-info)]))))))
-
-  ;; read-bindings/handled: connection symbol url headers host -> (listof (list (symbol string))
-  ;; read the bindings and handle any exceptions
-  (define (read-bindings/handled conn meth uri headers host-info)
-    (with-handlers ([exn? (lambda (e)
-                            (output-response/method
-                             conn
-                             ;((responders-protocol (host-responders host-info))
-                             ; (exn-message e))
-                             ((responders-servlet-loading (host-responders
-                                                           host-info))
-                              uri e)
-
-
-                             meth)
-                            '())])
-      (read-bindings conn meth uri headers)))
-
+  
   ;; Parameter Parsing
-
-  ;; old style: ;id15*0
-  ;(define URL-PARAMS:REGEXP (regexp "([^\\*]*)\\*(.*)"))
-
+  
   ;; encodes a simple number:
-  (define URL-PARAMS:REGEXP (regexp "[0-9]*"))
-
-
+  (define URL-PARAMS:REGEXP (regexp "([0-9]+)"))
+  
   (define (match-url-params x) (regexp-match URL-PARAMS:REGEXP x))
-
+  
   ;; resume-session? url -> (union number #f)
   ;; Determine if the url encodes a session-id and extract it
   (define (resume-session? a-url)
     (myprint "resume-session?: url-string = ~s~n" (url->string a-url))
-    (let ([str (url->param a-url)])
-      (and str
-           (let ([param-match (match-url-params str)])
-             (and (not (null? param-match))
-                  (string->number (car param-match)))))))
-
+    (let ([k-params (filter match-url-params
+                            (apply append
+                                   (map path/param-param (url-path a-url))))])
+      (myprint "resume-session?: ~S~n" k-params)
+      (if (empty? k-params)
+          #f
+          (match (match-url-params (first k-params))
+            [(list _ n)
+             (myprint "resume-session?: Found ~a~n" n)
+             (string->number n)]
+            [_
+             #f]))))
+  
   ;; url->param: url -> (union string #f)
   (define (url->param a-url)
     (let ([l (filter path/param? (url-path a-url))])
       (and (not (null? l))
            (path/param-param (car l)))))
-
+  
   ;(resume-session? (string->url "http://localhost:9000/;123"))
   ;(resume-session? (string->url "http://localhost:9000/;foo"))
   ;(resume-session? (string->url "http://localhost:9000/foo/bar"))
-
-
   
   ;; ************************************************************
-  
-  ;; directory-part: path -> path
-  (define (directory-part a-path)
-    (let-values ([(base name must-be-dir?) (split-path a-path)])
-      base))  
   
   ;; begin-session: connection request host-info
   (define (begin-session host-info)
@@ -221,18 +191,30 @@
                                [current-namespace ns]
                                [current-session ses])
                   (let* ([module-name `(file ,(path->string a-path))])
-                    (dynamic-require module-name #f)))
+                    (myprint "dynamic-require ...~n")
+                    (with-handlers ([exn:fail:contract?
+                                     (lambda _
+                                       (dynamic-require module-name #f))])
+                      (let ([start (dynamic-require module-name 'start)])
+                        (abort/cc 
+                         (with-continuation-mark safe-call? '(#t start)
+                           (start
+                            (with-continuation-mark the-cont-key start
+                              (start-servlet)))))))))
+                (myprint "resume-session~n")
                 (resume-session (session-id ses) host-info)))
             (output-response/method
              (connection-state-conn (thread-cell-ref thread-connection-state))
              ((responders-file-not-found (host-responders host-info))  uri)
              (request-method (connection-state-req (thread-cell-ref thread-connection-state))))))))
-    
+  
   (define to-be-copied-module-specs
     '(mzscheme
+      (lib "web-cells.ss" "newcont")
+      (lib "abort-resume.ss" "prototype-web-server")
       (lib "session.ss" "prototype-web-server")
-      (lib "request-parsing.ss" "web-server")))
-
+      (lib "request.ss" "web-server" "private")))
+  
   ;; get the names of those modules.
   (define to-be-copied-module-names
     (let ([get-name
@@ -241,7 +223,7 @@
                  spec
                  ((current-module-name-resolver) spec #f #f)))])
       (map get-name to-be-copied-module-specs)))
-
+  
   (define (make-servlet-namespace)
     (let ([server-namespace (current-namespace)]
           [new-namespace (make-namespace)])
@@ -249,27 +231,11 @@
         (for-each (lambda (name) (namespace-attach-module server-namespace name))
                   to-be-copied-module-names)
         new-namespace)))
-
-  ;; ripped this off from url-unit.ss
-  (define (url-path->string strs)
-    (apply
-     string-append
-     (let loop ([strs strs])
-       (cond
-         [(null? strs) '()]
-         [else (list* "/"
-                      (maybe-join-params (car strs))
-                      (loop (cdr strs)))]))))
-
-  ;; needs to unquote things!
-  (define (maybe-join-params s)
-    (cond
-      [(string? s) s]
-      [else (path/param-path s)]))
-
+  
   ;; ************************************************************
   ;; resume-session: connection request number host-info
   (define (resume-session ses-id host-info)
+    ; XXX Check if session is for same servlet!
     (myprint "resume-session: ses-id = ~s~n" ses-id)
     (cond
       [(lookup-session ses-id)
@@ -287,17 +253,13 @@
                                    the-exn)
                                   (request-method
                                    (connection-state-req (thread-cell-ref thread-connection-state)))))])
+                (printf "session-handler ~S~n" (session-handler ses))
                 (output-response
                  (connection-state-conn (thread-cell-ref thread-connection-state))
-                 ((session-handler ses)
-                  (connection-state-req (thread-cell-ref thread-connection-state)))))))]
+                 (xexpr+extras->xexpr
+                  ((session-handler ses)
+                   (connection-state-req (thread-cell-ref thread-connection-state))))))))]
       [else
+       (myprint "resume-session: Unknown ses~n")
        ;; TODO: should just start a new session here.
-       (output-response/method
-        (connection-state-conn (thread-cell-ref thread-connection-state))
-        ((responders-file-not-found (host-responders host-info))
-         (request-uri (connection-state-req (thread-cell-ref thread-connection-state))))
-        (request-method
-         (connection-state-req (thread-cell-ref thread-connection-state))))]))
-
-  )
+       (begin-session host-info)])))

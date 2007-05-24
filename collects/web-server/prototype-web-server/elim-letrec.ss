@@ -34,7 +34,7 @@
   ;; definition ::= (define-values (var ...) expr)
   ;;
   ;; expr ::= var
-  ;;       |  (lambda (var ...) expr)
+  ;;       |  (lambda (var ...) expr ...)
   ;;       |  (if expr expr)
   ;;       |  (if expr expr expr)
   ;;       |  (let-values ([(var ...)] expr) expr)
@@ -78,12 +78,16 @@
                    (#%app set-box! vars new-rhss) ...
                    new-body)))))]
       [(letrec-values . anything)
-       (raise-syntax-error #f "Not all letrec-values-expressions supported" expr)]
-      [(lambda (formals ...) body)
-       (with-syntax ([body (recertify #'body expr)])
-         #`(lambda (formals ...) #,(elim-letrec/ids #'body ids)))]
+       (raise-syntax-error #f "elim-letrec: Not all letrec-values-expressions supported" expr)]
+      [(lambda (formals ...) body-expr ...)
+       (with-syntax ([(body-expr ...) (recertify* (syntax->list #'(body-expr ...)) expr)])
+         #`(lambda (formals ...)
+             #,@(map
+                 (lambda (an-expr)
+                   (elim-letrec/ids an-expr ids))
+                 (syntax->list #'(body-expr ...)))))]
       [(lambda . anything)
-       (raise-syntax-error #f "Not all lambda-expressions supported" expr)]
+       (raise-syntax-error #f "elim-letrec: Not all lambda-expressions supported" expr)]
       [(if tst-expr csq-expr)
        (with-syntax ([(tst-expr csq-expr) (recertify* (list #'tst-expr #'csq-expr) expr)])
          #`(if #,(elim-letrec/ids #'tst-expr ids)
@@ -129,7 +133,7 @@
            #'(#%app unbox id)
            #'id)]
       [_else
-       (raise-syntax-error #f "eliminate-letrec: unsupported form" expr)]))
+       (raise-syntax-error #f "elim-letrec: unsupported form" expr)]))
   
   (define myprint printf)
   

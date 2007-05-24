@@ -33,11 +33,11 @@
       "Test same-module?"
       
       (assert-true
-       (same-module? (build-path "~/plt-exp/collects/prototype-web-server/abort-resume.ss")
+       (same-module? `(file ,(build-path "~/Development/Projects/exp/prototype-web-server/abort-resume.ss"))
                      '(lib "abort-resume.ss" "prototype-web-server")))
       
       (assert-true
-       (same-module? (build-absolute-path (current-directory) "../abort-resume.ss")
+       (same-module? `(file ,(build-absolute-path (current-directory) "../abort-resume.ss"))
                      '(lib "abort-resume.ss" "prototype-web-server")))
       
       (assert-true

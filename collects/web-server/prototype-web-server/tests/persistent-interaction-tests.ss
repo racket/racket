@@ -287,7 +287,7 @@
                  (let ([ignore (start-interaction car)])
                    (let ([result (+ (gn "first") (gn "second"))])
                      (let ([ignore (printf "The answer is: ~s~n" result)])
-                       result)))))])
+                       result)))))])         
          
          (let* ([first-key (test-m06.1 '(dispatch-start 'foo))]
                 [second-key (test-m06.1 `(dispatch (list (deserialize (serialize ,first-key)) 1)))]

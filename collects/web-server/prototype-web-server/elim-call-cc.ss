@@ -113,10 +113,4 @@
        #`(lambda (formals ...)
            (with-continuation-mark safe-call? #t
              body))]
-      [_else w]))
-  )
-
-
-
-
-
+      [_else w])))

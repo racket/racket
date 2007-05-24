@@ -2,23 +2,29 @@
   (require-for-template mzscheme
                         (lib "serialize.ss")
                         (lib "etc.ss"))
-  (provide make-closure-definition-syntax) 
+  (require (lib "list.ss")
+           (lib "serialize.ss"))
+  (provide make-closure-definition-syntax
+           closure->deserialize-name) 
   
   (define myprint printf)
-   
+  
+  (define (closure->deserialize-name proc)
+    (cdr (first (second (serialize proc)))))
+  
   ;; borrowed this from Matthew's code
   ;; creates the deserialize-info identifier
   (define (make-deserialize-name id)
-	(datum->syntax-object
-	 id
-	 (string->symbol
-	  (format "web-deserialize-info:~a" (syntax-e id)))
-	 id))
+    (datum->syntax-object
+     id
+     (string->symbol
+      (format "web-deserialize-info:~a" (syntax-e id)))
+     id))
   
-  (define (make-closure-definition-syntax tag formals fvars proc-body)
+  (define (make-closure-definition-syntax tag fvars proc)
     (let ([make-id (lambda (str)
-                       (datum->syntax-object
-                        tag (string->symbol (format str (syntax-object->datum tag)))))])
+                     (datum->syntax-object
+                      tag (string->symbol (format str (syntax-object->datum tag)))))])
       (let ([deserialize-info:CLOSURE (make-deserialize-name tag)])
         (with-syntax ([CLOSURE:serialize-info (make-id "~a:serialize-info")]
                       [make-CLOSURE (make-id "make-~a")]
@@ -29,41 +35,48 @@
                       [set-CLOSURE-env! (make-id "set-~a-env!")]
                       [struct:CLOSURE (make-id "struct:~a")])
           (values 
-           #'make-CLOSURE
+           (syntax/loc proc make-CLOSURE)
            (list
-            #`(define #,deserialize-info:CLOSURE
+            (quasisyntax/loc proc 
+              (define #,deserialize-info:CLOSURE
                 (make-deserialize-info
                  
                  ;; make-proc: value ... -> CLOSURE
-                 #,(if (null? fvars)
-                       #'(lambda () (make-CLOSURE))
-                       #`(lambda #,fvars (make-CLOSURE (lambda () (values #,@fvars)))))
+                 (lambda args
+                   (apply #,(if (null? fvars)
+                                (syntax/loc proc (lambda () (make-CLOSURE)))
+                                (quasisyntax/loc proc (lambda #,fvars (make-CLOSURE (lambda () (values #,@fvars))))))
+                          args))
                  
                  ;; cycle-make-proc: -> (values CLOSURE (CLOSURE -> void))
                  (lambda ()
                    (let ([new-closure
                           #,(if (null? fvars)
-                                #'(make-CLOSURE)
-                                #'(make-CLOSURE (lambda () (error "closure not initialized"))))])
+                                (syntax/loc proc (make-CLOSURE))
+                                (syntax/loc proc (make-CLOSURE (lambda () (error "closure not initialized")))))])
                      (values
                       new-closure
                       #,(if (null? fvars)
-                            #'void
-                            #'(lambda (clsr)
-                                (set-CLOSURE-env! new-closure (CLOSURE-env clsr)))))))))
+                            (syntax/loc proc void)
+                            (syntax/loc proc 
+                              (lambda (clsr)
+                                (set-CLOSURE-env! new-closure (CLOSURE-env clsr)))))))))))
             
-            #`(provide #,deserialize-info:CLOSURE)
+            (quasisyntax/loc proc 
+              (provide #,deserialize-info:CLOSURE))
             
-            #`(define CLOSURE:serialize-info
+            (quasisyntax/loc proc 
+              (define CLOSURE:serialize-info
                 (make-serialize-info
                  
                  ;; to-vector: CLOSURE -> vector
                  #,(if (null? fvars)
-                       #'(lambda (clsr) (vector))
-                       #'(lambda (clsr)
+                       (syntax/loc proc (lambda (clsr) (vector)))
+                       (syntax/loc proc
+                         (lambda (clsr)
                            (call-with-values
                             (lambda () ((CLOSURE-env clsr)))
-                            vector)))
+                            vector))))
                  
                  ;; The serializer id: --------------------
                  ;(syntax deserialize-info:CLOSURE)
@@ -80,11 +93,13 @@
                  
                  ;; Directory for last-ditch resolution --------------------
                  (or (current-load-relative-directory) (current-directory))
-                 ))
+                 )))
             
-            #`(define-values (struct:CLOSURE make-CLOSURE CLOSURE? #,@(if (null? fvars)
-                                                                          #'()
-                                                                          #'(CLOSURE-env set-CLOSURE-env!)))
+            (quasisyntax/loc proc
+              (define-values (struct:CLOSURE make-CLOSURE CLOSURE? 
+                                             #,@(if (null? fvars)
+                                                    (syntax/loc proc ())
+                                                    (syntax/loc proc (CLOSURE-env set-CLOSURE-env!))))
                 (let-values ([(struct:CLOSURE make-CLOSURE CLOSURE? CLOSURE-ref CLOSURE-set!)
                               (make-struct-type '#,tag ;; the tag goes here
                                                 #f  ; no super type
@@ -99,14 +114,17 @@
                                                 
                                                 ;; the struct apply proc:
                                                 #,(if (null? fvars)
-                                                      #`(lambda (clsr #,@formals)
-                                                          #,proc-body)
-                                                      #`(lambda (clsr #,@formals)
+                                                      (quasisyntax/loc proc
+                                                        (lambda (clsr . args)
+                                                          (apply #,proc args)))
+                                                      (quasisyntax/loc proc
+                                                        (lambda (clsr . args)
                                                           (let-values ([#,fvars ((CLOSURE-env clsr))])
-                                                            #,proc-body)))
+                                                            (apply #,proc args)))))
                                                 )])
                   (values struct:CLOSURE make-CLOSURE CLOSURE?
                           #,@(if (null? fvars)
-                                 #'()
-                                 #'((lambda (clsr) (CLOSURE-ref clsr 0))
-                                    (lambda (clsr new-env) (CLOSURE-set! clsr 0 new-env))))))))))))))
+                                 (syntax/loc proc ())
+                                 (syntax/loc proc
+                                   ((lambda (clsr) (CLOSURE-ref clsr 0))
+                                    (lambda (clsr new-env) (CLOSURE-set! clsr 0 new-env))))))))))))))))

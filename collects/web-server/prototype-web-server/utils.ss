@@ -1,5 +1,6 @@
 (module utils mzscheme
-  (require (lib "url.ss" "net"))
+  (require (lib "url.ss" "net")
+           (lib "list.ss"))
   (provide url->servlet-path
            make-session-url
            split-url-path)
@@ -15,7 +16,9 @@
      (url-user uri)
      (url-host uri)
      (url-port uri)
-     new-path
+     #t
+     (map (lambda (p) (make-path/param p empty))
+          new-path)
      '()
      #f
      ))
@@ -73,7 +76,7 @@
   ;;   The second value is the prefix of the url-path used to find the servlet.
   ;;   The third value is the remaining suffix of the url-path.
   (define (url->servlet-path servlet-dir uri)
-    (printf "   current-directory = ~s~n" (current-directory))
+    #;(printf "   current-directory = ~s~n" (current-directory))
     (let loop ([base-path servlet-dir]
                [servlet-path '()]
                [path-list (simplify-url-path uri)])
@@ -82,7 +85,7 @@
        (values #f #f #f)
        (let* ([next-path-segment (car path-list)]
               [new-base (build-path base-path next-path-segment)])
-         (printf "   new-base = ~s~n" new-base)
+         #;(printf "   new-base = ~s~n" new-base)
          (cond
            [(file-exists? new-base)
             (values new-base

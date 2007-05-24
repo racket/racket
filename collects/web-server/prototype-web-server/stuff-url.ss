@@ -1,6 +1,12 @@
 (module stuff-url mzscheme
   (require (lib "url.ss" "net")
+           (lib "list.ss")
+           (lib "plt-match.ss")
            "utils.ss")
+  
+  ; XXX url: first try continuation, then turn into hash
+  
+  ; XXX different ways to hash, different ways to store (maybe cookie?)
 
   ;; before reading this, familiarize yourself with serializable values
   ;; covered in ch 36 in the MzScheme manual.
@@ -56,8 +62,67 @@
   ;; If the graph and fixups are trivial, then they will be omitted from the query.
   
   (provide stuff-url
+           extend-url-query
            unstuff-url
            find-binding)
+  
+  (define (read/string str)
+    (read (open-input-string str)))
+  (define (write/string v)
+    (define str (open-output-string))
+    (write v str)
+    (get-output-string str))
+  
+  ;; compress-mod-map : (listof (cons mod-spec symbol)) -> (listof (cons (or mod-spec number) symbol))
+  (define (compress-mod-map mm)
+    (compress-mod-map/seen empty mm))
+  
+  (define (lookup-seen ms seen)
+    (match seen
+      [(list)
+       (values #f (list ms))]
+      [(list-rest ms+ seen+)
+       (if (equal? ms ms+)
+           (values 0 (list* ms+ seen+))
+           (let-values ([(i seen++) (lookup-seen ms seen+)])
+             (values (if i (add1 i) #f) (list* ms+ seen++))))]))
+  
+  (define (compress-mod-map/seen seen mm)
+    (match mm
+      [(list) 
+       (list)]
+      [(list-rest (list-rest mod-spec sym) mm)
+       (define-values (i seen+) (lookup-seen mod-spec seen))
+       (if i
+           (list* (cons i sym) (compress-mod-map/seen seen+ mm))
+           (list* (cons mod-spec sym) (compress-mod-map/seen seen+ mm)))]))
+  
+  ;; decompress-mod-map : (listof (cons (or mod-spec number) symbol)) -> (listof (cons mod-spec symbol))
+  (define (decompress-mod-map cmm)
+    (decompress-mod-map/seen empty cmm))
+    
+  (define (decompress-mod-map/seen seen cmm)
+    (match cmm
+      [(list)
+       (list)]
+      [(list-rest (list-rest mod-spec-or-n sym) cmm)
+       (if (number? mod-spec-or-n)
+           (list* (cons (list-ref seen mod-spec-or-n) sym)
+                  (decompress-mod-map/seen seen cmm))
+           (list* (cons mod-spec-or-n sym)
+                  (decompress-mod-map/seen (append seen (list mod-spec-or-n)) cmm)))]))
+  
+  ; compress-serial : serial -> serial (with compressed mod-map)
+  (define compress-serial
+    (match-lambda
+      [(list e0 mm e2 e3 e4 e5)
+       (list e0 (compress-mod-map mm) e2 e3 e4 e5)]))
+  
+  ; decompress-serial : serial (with compressed mod-map) -> serial
+  (define decompress-serial
+    (match-lambda
+      [(list e0 cmm e2 e3 e4 e5)
+       (list e0 (decompress-mod-map cmm) e2 e3 e4 e5)]))
   
   ;; url-parts: module-path serial -> string (listof (union number 'k)) s-expr s-expr s-expr
   ;; compute the parts for the url:
@@ -88,8 +153,8 @@
   (define (reconstruct-mod-map mod-path label-code simple-map)
     (map
      (lambda (n-or-k)
-       (if (eqv? n-or-k 'k)
-           '((lib "abort-resume.ss" "prototype-web-server") . web-deserialize-info:kont)
+       (if (symbol? n-or-k)
+           `((lib "abort-resume.ss" "prototype-web-server") . ,n-or-k)
            (cons
             mod-path
             (string->symbol
@@ -123,7 +188,7 @@
     (let ([match? (regexp-match WEB-DESERIALIZE-INFO-REGEXP (symbol->string sym))])
       (and match? (string->number (caddr match?)))))
   
-  ;; simplify-module-map: module-path string module-map -> (listof (union number 'k))
+  ;; simplify-module-map: module-path string module-map -> (listof (union number symbol))
   ;; convert the module-map into a simple list
   (define (simplify-module-map pth labeling-code mod-map)
     (let loop ([mm mod-map])
@@ -133,7 +198,7 @@
               (match-label (cdar mm)))
          => (lambda (lab) (cons lab (loop (cdr mm))))]
         [(same-module? '(lib "abort-resume.ss" "prototype-web-server") (caar mm))
-         (cons 'k (loop (cdr mm)))]
+         (cons (cdar mm) (loop (cdr mm)))]
         [else
          (error "cannot construct abreviated module map" mod-map)])))
   
@@ -145,15 +210,15 @@
   
   ;; stuff-url: serial url path -> url
   ;; encode in the url
-  (define (stuff-url svl uri pth)
+  #;(define (stuff-url svl uri pth)
     (let-values ([(l-code simple-mod-map graph fixups sv)
                   (url-parts pth svl)])
       (let ([new-query
              `(,(cons 'c l-code)
                 ,@(if (null? graph) '()
-                      (cons 'g (format "~s" graph)))
+                      (list (cons 'g (format "~s" graph))))
                 ,@(if (null? fixups) '()
-                      (cons 'f (format "~s" fixups)))
+                      (list (cons 'f (format "~s" fixups))))
                 ,(cons 'v (format "~s" sv)))])
         (let ([result-uri
                (make-url
@@ -161,9 +226,10 @@
                 (url-user uri)
                 (url-host uri)
                 (url-port uri)
+                #t
                 (append (url-path uri)
                         (map
-                         (lambda (n-or-sym) (format "~a" n-or-sym))
+                         (lambda (n-or-sym) (make-path/param (format "~a" n-or-sym) empty))
                          simple-mod-map))
                 new-query
                 (url-fragment uri))])
@@ -172,23 +238,70 @@
             (when (> (string-length (url->string result-uri))
                      1024)
               (error "the url is too big: " (url->string result-uri))))))))
+  
+  (require (lib "md5.ss"))
+  (define (md5-store str)
+    (define hash (md5 (string->bytes/utf-8 str)))
+    (with-output-to-file
+        (format "/Users/jay/Development/plt/urls/~a" hash)
+      (lambda ()
+        (write str))
+      'replace)
+    (bytes->string/utf-8 hash))
+  (define (md5-lookup hash)
+    (with-input-from-file
+        (format "/Users/jay/Development/plt/urls/~a" hash)
+      (lambda () (read))))
+  
+  (define (stuff-url svl uri pth)
+    #;(printf "stuff: ~s~n" svl)
+    (let ([result-uri
+           (make-url
+            (url-scheme uri)
+            (url-user uri)
+            (url-host uri)
+            (url-port uri)
+            #t
+            (url-path uri)
+            (list (cons 'c (md5-store (write/string (compress-serial svl)))))
+            (url-fragment uri))])
+      (begin0
+        result-uri
+        (when (> (string-length (url->string result-uri))
+                 1024)
+          (error "the url is too big: " (url->string result-uri))))))
+  
+  (define (extend-url-query uri key val)
+    (make-url
+     (url-scheme uri)
+     (url-user uri)
+     (url-host uri)
+     (url-port uri)
+     #t
+     (url-path uri)
+     (list* (cons key val)
+            (url-query uri))
+     (url-fragment uri)))
     
   ;; unstuff-url: url url path -> serial
   ;; decode from the url and reconstruct the serial
-  (define (unstuff-url req-url ses-url mod-path)
+  #;(define (unstuff-url req-url ses-url mod-path)
     (let ([suff (split-url-path ses-url req-url)]
-          [qry (url-query req-url)])
+          [qry (url-query req-url)])      
       (recover-serial
        mod-path
        (find-binding 'c qry)
        (map
         (lambda (elt)
-          (if (string=? elt "k") 'k
-              (string->number elt)))
+          (define nelt (string->number elt))
+          (if (not nelt) (string->symbol elt)
+              nelt))
         suff)
        (or (find-binding 'g qry) '())
        (or (find-binding 'f qry) '())
        (find-binding 'v qry))))
+  (define (unstuff-url req-url ses-url mod-path)
+    (decompress-serial (read/string (md5-lookup (find-binding 'c (url-query req-url))))))
   
   ;; find-binding: symbol (list (cons symbol string)) -> (union string #f)
   ;; find the binding in the query or return false
@@ -197,5 +310,4 @@
       [(null? qry) #f]
       [(eqv? key (caar qry))
        (read (open-input-string (cdar qry)))]
-      [else (find-binding key (cdr qry))]))
-  )
+      [else (find-binding key (cdr qry))])))

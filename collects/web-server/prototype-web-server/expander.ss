@@ -85,6 +85,4 @@
       [(_ rev-defs [])
        (raise-syntax-error #f "module has no body expression" stx)]
       [_else
-       (raise-syntax-error #f "extra body expression, or expression out of order" stx)]))
-
-  )
+       (raise-syntax-error #f "extra body expression, or expression out of order" stx)])))

@@ -23,7 +23,7 @@
       (parameterize ([current-namespace ns])
         (eval `(require (lib "client.ss" "prototype-web-server")
                         (lib "serialize.ss")
-                        ,pth))
+                        (file ,pth)))
       (lambda (expr)
         (parameterize ([current-namespace ns])
           (eval expr)))))))

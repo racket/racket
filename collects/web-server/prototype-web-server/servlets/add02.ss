@@ -1,6 +1,7 @@
 (module add02 "../web-interaction.ss"
   (require (lib "url.ss" "net")
-           (lib "request-parsing.ss" "web-server"))
+           (lib "request.ss" "web-server" "private")
+           (lib "request-structs.ss" "web-server"))
   
   ;; get-number-from-user: string -> number
   ;; ask the user for a number
@@ -24,6 +25,4 @@
            (body
             (h1 "Final Page")
             (p ,(format "The answer is ~a"
-                        (+ (gn "first") (gn "second")))))))
-  
-  )
+                        (+ (gn "first") (gn "second"))))))))

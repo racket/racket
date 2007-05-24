@@ -43,7 +43,7 @@
   ;; defunctionalize: expr (-> symbol) -> (values expr (listof definition))
   ;; remove lambdas from an expression
   (define (defunctionalize expr labeling)
-    (syntax-case expr (if #%app lambda let-values #%top #%datum with-continuation mark quote)
+    (syntax-case expr (if #%app lambda let-values #%top #%datum with-continuation-mark quote)
       [(if test-expr csq-expr)
        (with-syntax ([(tst-expr csq-expr) (recertify* (list #'tst-expr #'csq-expr) expr)])
          (let-values ([(new-test-expr test-defs) (defunctionalize #'test-expr labeling)]
@@ -66,7 +66,6 @@
             defs)))]
       [(let-values ([(f) rhs])
          (#%app f-apply (with-continuation-mark ignore-key f-mark body-expr)))
-       ;; (and (bound-identifier=? #'f #'f-apply) (bound-identifier=? #'f #'f-mark))
        (with-syntax ([(rhs f-apply ignore-key f-mark body-expr)
                       (recertify* (syntax->list #'(rhs f-apply ignore-key f-mark body-expr)) expr)])
          (let-values ([(new-rhs rhs-defs) (defunctionalize #'rhs labeling)]
@@ -89,7 +88,8 @@
            (let ([fvars (free-vars expr)]
                  [tag (labeling)])
              (let-values ([(make-CLOSURE closure-definitions)
-                           (make-closure-definition-syntax tag (syntax->list #'(formals ...)) fvars new-body-expr)])
+                           (make-closure-definition-syntax tag fvars
+                                                           #`(lambda (formals ...) #,new-body-expr))])
                (values
                 (if (null? fvars)
                     #`(#,make-CLOSURE)

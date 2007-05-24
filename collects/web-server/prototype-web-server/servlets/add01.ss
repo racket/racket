@@ -1,8 +1,8 @@
 (module add01 mzscheme
   (require (lib "session.ss" "prototype-web-server")
-           (lib "request-parsing.ss" "web-server")
-           (lib "url.ss" "net")
-           )
+           (lib "request.ss" "web-server" "private")
+           (lib "request-structs.ss" "web-server")
+           (lib "url.ss" "net"))
 
   (define (dispatch req)
     (let* ([uri (request-uri req)]

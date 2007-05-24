@@ -1,7 +1,6 @@
 (module quiz-lib mzscheme
   (require (lib "serialize.ss")
-           (lib "url.ss" "net")
-           )
+           (lib "url.ss" "net"))
   (provide (struct mc-question (cue answers correct-answer))
            make-cue-page
            quiz)

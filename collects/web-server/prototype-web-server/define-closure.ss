@@ -5,11 +5,10 @@
   
   (define-syntax (define-closure stx)
     (syntax-case stx ()
-      [(_ tag (formals ...) (free-vars ...) body)
+      [(_ tag formals (free-vars ...) body)
        (let-values ([(make-CLOSURE closure-definitions)
                      (make-closure-definition-syntax
                       #'tag
-                      (syntax->list #'(formals ...))
                       (syntax->list #'(free-vars ...))
-                      #'body)])
+                      #`(lambda formals body))])
          #`(begin #,@closure-definitions))])))

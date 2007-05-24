@@ -106,8 +106,9 @@
       [(_ expr)
        #'(with-handlers ([(lambda (x) #t)
                           (lambda (the-exn)
-                            (string=? "lambda: Not all lambda-expressions supported"
-                                      (exn-message the-exn)))])
+                            (and (regexp-match "normalize: Not all lambda-expressions supported"
+                                               (exn-message the-exn))
+                                 #t))])
            expr)]))
   
   (define-syntax (check-unsupported-let stx)
@@ -282,7 +283,8 @@
      (make-test-suite
       "Check that certain errors are raised"
       
-      (make-test-case
+      ; this is supported now
+      #;(make-test-case
        "multiple body expressions in lambda"
        (assert-true (check-unsupported-lambda
                      (normalize-term (expand (syntax (lambda (x y z) 3 4)))))))

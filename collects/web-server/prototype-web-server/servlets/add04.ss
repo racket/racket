@@ -1,6 +1,6 @@
 (module add04 (lib "persistent-web-interaction.ss" "prototype-web-server")
   (require (lib "url.ss" "net")
-           (lib "servlet-helpers.ss" "web-server"))
+           (lib "servlet-helpers.ss" "web-server" "private"))
   
   ;; get-number-from-user: string -> number
   ;; ask the user for a number
@@ -26,5 +26,4 @@
            (body
             (h1 "Final Page")
             (p ,(format "The answer is ~a"
-                        (+ (gn "first") (gn "second")))))))
-  )
+                        (+ (gn "first") (gn "second"))))))))

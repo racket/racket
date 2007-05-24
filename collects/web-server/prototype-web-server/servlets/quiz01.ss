@@ -1,7 +1,7 @@
 (module quiz01 (lib "persistent-web-interaction.ss" "prototype-web-server")
   (require "quiz-lib.ss"
            (lib "url.ss" "net")
-           (lib "servlet-helpers.ss" "web-server"))
+           (lib "servlet-helpers.ss" "web-server" "private"))
   
   ;; get-answer: mc-question -> number
   ;; get an answer for a multiple choice question
