@@ -1,6 +1,7 @@
-(module toobig (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
+(module toobig (lib "lang.ss" "web-server" "prototype-web-server")
   (require (lib "url.ss" "net")
            (lib "servlet-helpers.ss" "web-server" "private"))
+  (provide start)
   
   (define (get-n)
     (let ([req
@@ -31,7 +32,7 @@
                        (a ([href ,(url->string k-url)]) "OK!")))))])
       the-bytes))
   
-  (let ([initial-request (start-servlet)])
+  (define (start initial-request)
     `(html (head (title "You got here!"))
            (body
             (h1 ,(bytes->string/utf-8 (get-bytes)))))))

@@ -1,6 +1,7 @@
-(module add04 (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
+(module add04 (lib "lang.ss" "web-server" "prototype-web-server")
   (require (lib "url.ss" "net")
            (lib "servlet-helpers.ss" "web-server" "private"))
+  (provide start)
   
   ;; get-number-from-user: string -> number
   ;; ask the user for a number
@@ -21,7 +22,7 @@
         'number
         (request-bindings req)))))
   
-  (let ([initial-request (start-servlet)])
+  (define (start initial-request)
     `(html (head (title "Final Page"))
            (body
             (h1 "Final Page")

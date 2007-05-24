@@ -1,13 +1,15 @@
-(module add02 (lib "web-interaction.ss" "web-server" "prototype-web-server")
+(module add02 (lib "lang.ss" "web-server" "prototype-web-server")
   (require (lib "url.ss" "net")
-           (lib "request.ss" "web-server" "private")
            (lib "request-structs.ss" "web-server"))
+  (provide start)
+  
+  ;; XXX This demonstrates that if we hide the K in a query, it will be overridden.
   
   ;; get-number-from-user: string -> number
   ;; ask the user for a number
   (define (gn msg)
     (let ([req
-           (send/suspend
+           (send/suspend/url
             (lambda (k-url)
               `(hmtl (head (title ,(format "Get ~a number" msg)))
                      (body
@@ -20,7 +22,7 @@
       (string->number
        (cdr (assoc 'number (url-query (request-uri req)))))))
   
-  (let ([initial-request (start-servlet)])
+  (define (start initial-request)
     `(html (head (title "Final Page"))
            (body
             (h1 "Final Page")

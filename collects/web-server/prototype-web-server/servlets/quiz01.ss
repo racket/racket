@@ -1,7 +1,7 @@
-(module quiz01 (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
+(module quiz01 (lib "lang.ss" "web-server" "prototype-web-server")
   (require "quiz-lib.ss"
-           (lib "url.ss" "net")
            (lib "servlet-helpers.ss" "web-server" "private"))
+  (provide start)
   
   ;; get-answer: mc-question -> number
   ;; get an answer for a multiple choice question
@@ -35,12 +35,11 @@
        (add1 (tally-results (cdr mc-qs) (cdr answs)))]
       [else (tally-results (cdr mc-qs) (cdr answs))]))
   
-  (let ([initial-request (start-servlet)])
+  (define (start initial-request)
     `(html (head (title "Final Page"))
            (body
             (h1 "Quiz Results")
             (p ,(format "You got ~a correct out of ~a questions."
                         (tally-results quiz (get-answers quiz))
                         (length quiz)))
-            (p "Thank you for taking the quiz"))))
-  )
+            (p "Thank you for taking the quiz")))))

@@ -82,5 +82,4 @@
        "love"
        "angular momentum"
        "sex")
-      0)
-     )))
+      0))))

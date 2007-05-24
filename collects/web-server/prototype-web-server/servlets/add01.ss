@@ -1,10 +1,10 @@
 (module add01 mzscheme
   (require (lib "session.ss" "web-server" "prototype-web-server")
-           (lib "request.ss" "web-server" "private")
            (lib "request-structs.ss" "web-server")
            (lib "url.ss" "net"))
+  (provide start)
 
-  (define (dispatch req)
+  (define (start req)
     (let* ([uri (request-uri req)]
            [qry (url-query uri)])
       (cond
@@ -35,8 +35,4 @@
                         [method "get"] [enctype "application/x-www-form-urlencoded"])
                          "Enter the first number to add: "
                          (input ([type "text"] [name "first"] [value ""]))
-                         (input ([type "submit"] [name "enter"] [value "Enter"])))))])))
-
-  (start-session dispatch))
-
-    
+                         (input ([type "submit"] [name "enter"] [value "Enter"])))))]))))
