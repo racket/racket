@@ -131,6 +131,19 @@
                          (list (index-element-plain-seq i)
                                (index-element-entry-seq i))))
 
+      (define/public (lookup part ht key)
+        (let ([v (hash-table-get (if part
+                                     (collected-info-info (part-collected-info part))
+                                     ht)
+                                 key
+                                 #f)])
+          (or v
+              (and part
+                   (lookup (collected-info-parent
+                            (part-collected-info part))
+                           ht
+                           key)))))
+
       ;; ----------------------------------------
       ;; render methods
 
@@ -192,7 +205,7 @@
         (cond
          [(and (link-element? i)
                (null? (element-content i)))
-          (let ([v (hash-table-get ht (link-element-tag i) #f)])
+          (let ([v (lookup part ht (link-element-tag i))])
             (if v
                 (render-content v part ht)
                 (render-content (list "[missing]") part ht)))]
@@ -265,7 +278,7 @@
                      (or (not (car number))
                          ((car number) . > . 1)))
                 (cons (list (make-flow (list (make-paragraph (list
-                                                              (make-element 'hspace (list " ")))))))
+                                                              (make-element 'hspace (list "")))))))
                       l)
                 l))))
 

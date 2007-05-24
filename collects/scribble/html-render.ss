@@ -27,7 +27,8 @@
                collect-part
                install-file
                get-dest-directory
-               format-number)
+               format-number
+               lookup)
 
       (define/override (get-suffix) #".html")
 
@@ -131,7 +132,7 @@
          [(target-element? e)
           `((a ((name ,(target-element-tag e))) ,@(render-plain-element e part ht)))]
          [(link-element? e)
-          (let ([dest (hash-table-get ht (link-element-tag e) #f)])
+          (let ([dest (lookup part ht (link-element-tag e))])
             (if dest
                 `((a ((href ,(format "~a~a~a" 
                                      (from-root (car dest)
