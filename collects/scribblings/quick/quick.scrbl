@@ -1,0 +1,561 @@
+#reader(lib "docreader.ss" "scribble")
+
+@title{An Introduction to PLT Scheme with Pictures}
+
+@; ----------------------------------------------------------------------
+
+@require[(lib "manual.ss" "scribble")]
+@require["mreval.ss"]
+@require[(lib "urls.ss" "scribble")]
+
+@mr-interaction-eval[(require (lib "slideshow.ss" "slideshow"))]
+@mr-interaction-eval[(require-for-syntax mzscheme)]
+
+@; ----------------------------------------------------------------------
+@section{Why Pictures? Why DrScheme?}
+
+This tutorial provides a brief introduction to the PLT Scheme
+programming language by using one of its picture-drawing
+libraries. Even if you don't intend to use Scheme for your artistic
+endeavours, the picture library supports interesting and enlightening
+examples. After all, a picture is worth five hundred ``hello world''s.
+
+Along the same lines, we assume that you will run the examples using
+@link[url:download-drscheme]{DrScheme}. Using DrScheme is the fastest
+way to get a sense of what the language and system feels like, even if
+you eventually use Scheme with Emacs, vi, or some other editor.
+
+@; ----------------------------------------------------------------------
+@section{Ready...}
+
+@link[url:download-drscheme]{Download PLT Scheme}, install, and then
+start DrScheme.
+
+@; ----------------------------------------------------------------------
+@section{Set...}
+
+To draw pictures, we must first load the picture library.  Copy the
+following into the @defterm{definitions area}, which is the top text
+area that you see in DrScheme:
+
+@schememod[slideshow]
+
+Then click the @onscreen{Run} button. You'll see the text caret move
+to the bottom text area, which is the @defterm{interactions area}.
+
+If you've used DrScheme before, you might need to manually reset the
+language to @onscreen{Module} via the @menuitem["Language" "Choose
+Language..."] menu item before clicking @onscreen{Run}.
+
+@; ----------------------------------------------------------------------
+@section{Go!}
+
+When you type an expression after the @onscreen{>} in the interactions
+window and hit Enter, DrScheme evaluates the expression and prints its result. An
+expression can be just a value, such as the number @scheme[5] or the
+string @scheme["art gallery"]:
+
+@mr-interaction[5 "art gallery"]
+
+An expression can also be a procedure call. To call a procedure, put
+an open parenthesis before the procedure name, then expressions for the
+procedure arguments, and then a close parenthesis, like this:
+
+@mr-interaction[(circle 10)]
+
+A result from the @scheme[circle] procedure is a picture value, which
+prints as an expression result in much the same way that numbers or
+strings print.  The argument to @scheme[circle] determines the
+circle's size in pixels.  As you might guess, there's a
+@scheme[rectangle] procedure that takes two arguments instead of one:
+
+@mr-interaction[(rectangle 10 20)]
+
+Try giving @scheme[circle] the wrong number of arguments, just to see
+what happens:
+
+@mr-interaction[(circle 10 20)]
+
+Note that DrScheme highlights the source of the error in pink.
+
+In addition to basic picture constructors like @scheme[circle] and
+@scheme[rectangle], there's a @scheme[hc-append] procedure that
+combines pictures. When you start composing procedure calls in Scheme,
+it looks like this:
+
+@mr-interaction[(hc-append (circle 10) (rectangle 10 20))]
+
+The hyphen in the name @scheme[hc-append] is just a part of the
+identifier; it's not @scheme[hc] minus @scheme[append]. The procedure
+name starts with @scheme[h] because it combines pictures horizontally,
+and the next letter is @scheme[c] because the pictures are centered
+vertically. If you wonder what other functions exist (perhaps a way to
+stack pictures vertically and left-aligned), move the text caret to
+the name @scheme[hc-append] and press the F1 key in DrScheme. A Help
+Desk window will appear, and it will give you a link to the
+documentation for @scheme[hc-append]. Click the link, and you'll see
+lots of other functions.
+
+@; ----------------------------------------------------------------------
+@section{Definitions}
+
+To use a particular circle and rectangle picture many times, it's
+simpler to give them names. Move back to the definitions area (the top
+area) and add two definitions, so that the complete content of the
+definitions area looks like this:
+
+@mr-schememod+eval[
+slideshow
+(define c (circle 10))
+(define r (rectangle 10 20))
+]
+
+Then click @onscreen{Run} again. Now, you can just type @scheme[c] or
+@scheme[r]:
+
+@mr-interaction[r (hc-append c r) (hc-append 20 c r c)]
+
+As you can see, the @scheme[hc-append] function accepts an optional
+number argument before the picture arguments, and it accepts any
+number of picture arguments. When a number is provided, it specifies
+the amount of space to add between pictures.
+
+We could have evaluated the @scheme[define] forms for @scheme[c] and
+@scheme[r] in the interactions area instead of the interactions
+area. In practice, though, the definitions area is where your program
+lives---it's the file that you save---while the interaction area is
+for transient explorations and debugging tasks.
+
+Let's add a procedure definition to the program. A procedure
+definition uses @scheme[define], just like our shape definitions, but with
+an open parenthesis before the procedure name, and names for the
+procedure arguments before the matching close parenthesis:
+
+@mr-schemeblock+eval[
+(define (square n)
+  (code:comment #, @t{A semi-colon starts a line comment.})
+  (code:comment #, @t{The expresson below is the function body.})
+  (filled-rectangle n n))
+]
+
+The syntax of the definition mirrors the syntax of a procedure
+call:
+
+@mr-interaction[(square 10)]
+
+In the same way that definitions can be evaluated in the interactions
+area, expressions can be included in the definitions area. When a
+program is run, expression results from the definition area are shown
+in the interaction area. From now on, we'll write our example
+definitions and expressions together, and you can put them in
+whichever area you prefer. The examples will build on each other,
+however, so it's best to put at least the definitions in the
+definition area.
+
+@; ----------------------------------------------------------------------
+@section{Local Binding}
+
+The @scheme[define] form can be used in some places to create local
+bindings. For example, it can be used inside a procedure body:
+
+@mr-def+int[
+(define (four p)
+  (define two-p (hc-append p p))
+  (vc-append two-p two-p))
+(four (circle 10))
+]
+
+More typically, Schemers use the @scheme[let] or @scheme[let*] form
+for local binding. An advantage of @scheme[let] is that it can be used
+in any expression position. Also, it binds many identifiers at once,
+instead of requiring a separate @scheme[define] for each identifier:
+
+@mr-def+int[
+(define (checker p1 p2)
+  (let ([p12 (hc-append p1 p2)]
+        [p21 (hc-append p2 p1)])
+    (vc-append p12 p21)))
+(checker (colorize (square 10) "red") 
+         (colorize (square 10) "black"))
+]
+
+A @scheme[let] form binds many identifiers at the same time, so the
+bindings cannot refer to each other. The @scheme[let*] form, in
+contrast, allows later bindings to use earlier bindings:
+
+@mr-def+int[
+(define (checkerboard p)
+  (let* ([rp (colorize p "red")]
+         [bp (colorize p "black")]
+         [c (checker rp bp)]
+         [c4 (four c)])
+    (four c4)))
+(checkerboard (square 10))
+]
+
+@; ----------------------------------------------------------------------
+@section{Procedures are Values}
+
+Instead of calling @scheme[circle] as a procedure, try evaluating just
+@scheme[circle] as an expression:
+
+@mr-interaction[circle]
+
+That is, the identifier @scheme[circle] is bound to a procedure, just
+like @scheme[c] is bound to a circle. Unlike a cicrle picture, there's
+not a simple way of completely printing the procedure, so DrScheme just
+prints @procedure{circle}.
+
+This example shows that procedures are values, just like numbers and
+pictures (even if they don't print as nicely). Since procedures are
+values, you can define procedures that expect other procedures as
+arguments:
+
+@mr-def+int[
+(define (series mk)
+  (hc-append 4 (mk 5) (mk 10) (mk 20)))
+(series circle)
+(series square)
+]
+
+When calling a procedure that accepts a procedure argument, the
+argument procedure often isn't needed anywhere else. Having to write
+down the function via @scheme[define] would be a hassle, because you
+have to make up a name and find a place to put the procedure
+definition. The alternative is to use @scheme[lambda], which creates an
+anonymous procedure:
+
+@mr-interaction[(series (lambda (size) (checkerboard (square size))))]
+
+The parenthesized name(s) after a @scheme[lambda] are the argument to
+the procedure, and the expression after the argument names is the
+procedure body. Using the word ``lambda'' instead of ``function'' or
+``procedure'' is part of Scheme's history and culture.
+
+A procedure-form @scheme[define] is really a shorthand for a simple
+@scheme[define] using @scheme[lambda] as the value. For example, the
+@scheme[series] definition could be written as
+
+@schemeblock[
+(define series
+  (lambda (mk)
+    (hc-append 4 (mk 5) (mk 10) (mk 20))))
+]
+
+Most Schemers prefer to use the shorthand procedure form with
+@scheme[define] instead of expanding to @scheme[lambda], but
+@scheme[lambda] shows up often with @scheme[letrec] to define mutually
+recursive procedures; see @link["elsewhere"]{elsewhere} for
+examples.
+
+@; ----------------------------------------------------------------------
+@section{Lexical Scope}
+
+Scheme is a lexically scoped language, which means that whenever an
+identifier is used as an expression, something in the textual
+environment of the expression determines the identifier's
+binding. This rule applies to identifiers in a @scheme[lambda] body as
+well as anywhere else.
+
+For example, in the following @scheme[color-series] procedure the uses
+of @scheme[mk] in each @scheme[lambda] form refer to the argument of
+@scheme[color-series], since that's the binding that textually in
+scope:
+
+@mr-def+int[
+(define (rgb-series mk)
+  (vc-append
+   (series (lambda (sz) (colorize (mk sz) "red")))
+   (series (lambda (sz) (colorize (mk sz) "green")))
+   (series (lambda (sz) (colorize (mk sz) "blue")))))
+(rgb-series circle)
+(rgb-series square)
+]
+
+Here's another example, where @scheme[rgb-maker] takes a procedure and
+returns a new one that remembers and uses the original procedure.
+
+@mr-def+int[
+(define (rgb-maker mk)
+  (lambda (sz)
+    (vc-append (colorize (mk sz) "red")
+               (colorize (mk sz) "green")
+               (colorize (mk sz) "blue"))))
+(series (rgb-maker circle))
+(series (rgb-maker square))
+]
+
+Note how composing procedures via @scheme[rgb-maker] creates a
+different alignment of objects within the picture compared to using
+@scheme[rgb-series].
+
+@; ----------------------------------------------------------------------
+@section{Lists}
+
+Scheme inherits much of its style from the langauge Lisp, whose name
+originally stood for ``LISt Processor,'' and lists remain an important
+part of Scheme.
+
+The @scheme[list] procedure takes any number of arguments and returns
+a list containing the given values:
+
+@mr-interaction[(list "red" "green" "blue")
+             (list (circle 10) (square 10))]
+
+As you can see, a list prints as a pair of parentheses wrapped around
+the printed form of the list elements. There's room for confusion
+here, because parentheses are used for both expressions, such as
+@scheme[(circle 10)], and printed results, such as
+@schemeresult[("red" "green" "blue")]. This connection between
+expressions and printed results is no coincidence, but we save that
+bit of culture for @link["elsewhere"]{discussion elsewhere}.
+
+If you have a list, then you'll eventually want to do something with
+each of the elements. The @scheme[map] procedure takes a list and a
+procedure to apply to each element of the list; it returns a new list
+to report the procedure's results:
+
+@mr-def+int[
+(define (rainbow p)
+  (map (lambda (color)
+         (colorize p color))
+       (list "red" "orange" "yellow" "green" "blue" "purple")))
+(rainbow (square 5))
+]
+
+Another procedure that works with lists is @scheme[apply]. Like
+@scheme[map], it takes a procedure and a list, but a procedure given
+to @scheme[apply] should take all of the arguments at once, instead of
+each one individually. The @scheme[apply] function is especially
+useful with functions that take any number of arguments, such as
+@scheme[vc-append]:
+
+@mr-interaction[
+(apply vc-append (rainbow (square 5)))
+]
+
+Note that @scheme[(vc-append (rainbow (square 5)))] would not work,
+because @scheme[vc-append] does not want a list as an argument; it
+wants a picture as an argument, and it is willing to accept any number
+of them. The @scheme[apply] procedure bridges the gap between a
+procedure that wants many arguments and a list of those arguments as a
+single value.
+
+@; ----------------------------------------------------------------------
+@section{Modules}
+
+Since your program in the definitions window starts with
+
+@schememod[slideshow]
+
+all of the code that you put in the definitions window is inside a
+module. Furthermore, the module intially imports everything from the
+module designated by @schememodname[slideshow], which exports
+picture-making procedures as well as more commonly used procedures
+such as @scheme[list] and @scheme[map].
+
+To import additional libraries, use the @scheme[require] form. For
+example, the library @scheme[(lib "flash.ss" "texpict")] provides a
+@scheme[filled-flash] procedure:
+
+@mr-def+int[
+(require (lib "flash.ss" "texpict"))
+(filled-flash 40 30)
+]
+
+Modules are named and distributed in various ways:
+
+@itemize[
+
+ @item{Some modules are packaged in the PLT Scheme distribution or
+       otherwise installed into a hierarchy of
+       @defterm{collections}. For example, the module name
+       @schememodname[(lib "flash.ss" "texpict")] means ``the module
+       implemented in the file @file{flash.ss} that is located in the
+       @file{texpict} collection.''  The @schememodname[slideshow]
+       specification with @schemefont{#module} is a shorthand for
+       @schememodname[(lib "lang.ss" "slideshow")].}
+
+ @item{Some modules are distributed through the
+       @link[url:planet]{@PLaneT} server, and they can be
+       downloaded automatically on demand. For example, the first time
+       that you evaluate the following fragment:
+
+       @mr-def+int[
+        (require (planet "random.ss" ("schematics" "random.plt" 1 0)))
+        (random-gaussian)
+       ]
+
+       DrScheme automatically downloads version 1.0 of the
+       @file{random.plt} library and then imports the
+       @file{random.ss} module.}
+
+ @item{Some modules live relative to other modules, without
+       necessarily belonging to any particular collection or package.
+       For example, in DrScheme, if save your definitions so far in a
+       file @file{quick.ss} and add the line
+
+        @schemeblock[(provide rainbow square)]
+
+       then you can open a new tab or window in DrScheme, type the new
+       program @file{use.ss} in the same directory as @file{quick.ss}:
+
+        @schememod[
+         little
+         (require "quick.ss")
+         (rainbow square)
+        ]
+
+        and when you run this later program, a rainbow list of squares
+        is the output. Note that @file{use.ss} is written using the
+        initial import @schememodname[little], which does not
+        supply any picture-making procedures itself---but does provide
+        @scheme[require] and the procedure-calling syntax.}
+
+]
+
+Schemers typically write new programs and libraries as modules that
+import each other through relative paths, and that use existing
+libraries via @scheme[lib] and @scheme[planet]. When a program or
+library developed this way seems useful to others, it can be uploaded
+as a @PLaneT package or distributed in the more old-fashioned way as
+an installable collection archive (in either case without modifying
+the internal relative references among modules).
+
+@; ----------------------------------------------------------------------
+@section{Macros}
+
+Here's another library to try:
+
+@mr-def+int[
+(require (lib "code.ss" "slideshow"))
+(code (circle 10))
+]
+
+Instead of a circle, the result is a picture of the code that, if it
+were used as an expression, would produce a circle. In other words,
+@scheme[code] is not a procedure, but instead a new syntactic form for
+creating pictures; the bit between the opening parenthesese with
+@scheme[code] is not an expression, but instead manipulated by the
+@scheme[code] syntactic form.
+
+This helps explain what we meant in the previous section when we said
+that @schememodname[little] provides @scheme[require] and the
+procedure-calling syntax. Libraries are not restricted to exporting
+values, such as procedures; they can also define new syntax. In this
+sense, Scheme isn't exactly language at all; it's more of an idea for
+how to structure a language to that you can extend it or create
+entirely new languages.
+
+One way to introduce a new syntactic form is through
+@scheme[define-syntax] with @scheme[syntax-rules]:
+
+@mr-def+int[
+(define-syntax pict+code
+  (syntax-rules ()
+    [(pict+code expr)
+     (hc-append 10
+                expr
+                (code expr))]))
+(pict+code (circle 10))
+]
+
+This kind of definition is a macro. The @scheme[(pict+code expr)] part
+is a pattern for uses of the macro; instances of the pattern in a
+program are replaced by instances of the corresponding template, which
+is @scheme[(hc-append 10 expr (code expr))].  In particular,
+@scheme[(pict+code (circle 10))] matches the pattern with
+@scheme[(circle 10)] as @scheme[expr], so it is replaced with
+@scheme[(hc-append 10 (circle 10) (code (circle 10)))].
+
+Of course, the sword of syntactic extension cuts both ways: inventing
+a new language can make it easer to say what you want, but harder for
+others to understand. As it happens, the developers of Scheme are
+constantly giving talks and writing papers that involve Scheme code,
+and it's worthwhile for everyone who works on those products to know
+about @scheme[code].
+
+In fact, you might want to take a look at the @link["quick/quick.scrbl"]{source of
+this document}. You'll see that it starts with @schemefont{#module},
+but otherwise doesn't look a lot like Scheme; nevertheless, we build
+this document by running its source as a PlT Scheme program. We have
+to use a lot more than @scheme[syntax-rules] to extend Scheme's syntax
+enough for writing documents, but Scheme's syntactic extension can
+take you a long way!
+
+@; ----------------------------------------------------------------------
+@section{Objects}
+
+An object system is another example of a sophisticated language
+extension that is worth learning and using for a Scheme users. Objects
+are sometimes better than procedures, even when you have
+@scheme[lambda], and objects work especially well for graphical user
+interfaces. The API for Scheme's GUI and graphics system is expressed
+in terms of objects and classes.
+
+The class system itself is implemented by the @schememodname[(lib
+"class.ss" "mzlib")] library, and the @schememodname[(lib "mred.ss"
+"mred")] library provides the GUI and drawing classes. By convention,
+the MrEd classes are given names that end with @scheme[%]:
+
+@mr-defs+int[
+[(require (lib "class.ss" "mzlib")
+          (lib "mred.ss" "mred"))
+ (define f (new frame% [label "My Art"]
+                       [width 300]
+                       [height 300]
+                       [alignment '(center center)]))]
+(send f show #t)
+]
+
+@mr-interaction-eval[(send f show #f)]
+
+The @scheme[new] form creates an instances of a class, where
+initialization arguments like @scheme[label] and @scheme[width] are
+provided by name. The @scheme[send] form calls a method of the object,
+such as @scheme[show], with arguments after the method name; the
+argument @scheme[#t] in this case is the boolean constant ``true.''
+
+Pictures generated with @schememodname[slideshow] encapsulate a
+function that uses MrEd's drawing commands to render the picture to a
+drawing context, such as a canvas in a frame. The
+@scheme[make-pict-drawer] procedure from @schememodname[slideshow]
+exposes a picture's drawing procedure. We can use
+@scheme[make-pict-drawer] in a canvas-painting callback to draw a
+picture into a canvas:
+
+@mr-def+int[
+(define (add-drawing p)
+  (let ([drawer (make-pict-drawer p)])
+    (new canvas% [parent f]
+                 [style '(border)]
+                 [paint-callback (lambda (self dc)
+                                   (drawer dc 0 0))])))
+(add-drawing (pict+code (circle 10)))
+(add-drawing (colorize (filled-flash 50 30) "yellow"))
+]
+
+@centerline{@mr-interaction-eval-show[(scale (bitmap "quick/art.png") 0.5)]}
+
+Each canvas stratches to fill an equal portion of the frame, because
+that's how a frame manages its children by default.
+
+@; ----------------------------------------------------------------------
+@section{Where to Go From Here}
+
+This introduction to PLT Scheme purposely avoids many of the
+traditional ways of introducing and distinguishing Lisp or Scheme:
+prefix arithmetic notation, symbols, quoting and quasiquoting lists,
+@scheme[eval], first-class continuations, and the idea that all syntax
+is really just a @scheme[lambda] in disguise. While those are all part
+of PLT Scheme, they are not the main ingredients of day-to-day programming
+in PLT Scheme.
+
+Instead, PLT Scheme programmers typically program with procedures,
+records, objects, exceptions, regular expressions, modules, and
+threads. That is, instead of a ``minimalist'' language---which is the
+way that Scheme is often described---PLT Scheme offers a rich language
+with an extensive set of libraries and tools.
+
+To start learning about the full PLT Scheme language and tools in
+depth, move on to @link["../guide/index.html"]{A Guide to PLT Scheme}.

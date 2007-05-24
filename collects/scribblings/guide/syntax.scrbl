@@ -1,0 +1,670 @@
+#reader(lib "docreader.ss" "scribble")
+@require[(lib "manual.ss" "scribble")]
+@require[(lib "eval.ss" "scribble")]
+@require[(lib "bnf.ss" "scribble")]
+@require["guide-utils.ss"]
+
+@title[#:tag "syntax-overview"]{Just Enough Scheme Syntax}
+
+The syntax of a Scheme program is specified in an unusual way compared
+to most programming languages. In particular, importing a module can
+introduce new definition and expression forms, so the syntax of a
+Scheme module cannot be written as a context-free grammar. Even more
+radically, the language name after @schemefont{#module} determines the
+token-level syntax of the code that follows it.
+
+As a starting point, however, we can pretend that Scheme's syntax
+follows a context-free grammar. We'll start with this approximation,
+and work from there to build up a more complete picture of the
+language.
+
+The following BNF grammar sketches a simplified syntax for Scheme.
+Text with a gray background, such as @litchar{#module}, represents
+literal text. Whitespace must appear between separate such literals
+and nonterminals like @nonterm{identifier}, except that whitespace is
+not required before or after @litchar{(}, @litchar{)}, @litchar{[}, or
+@litchar{]}.  Following the usual conventions, @kleenestar{} means
+zero or more repetitions of the preceding element, @kleeneplus{} means
+one or more repetitions of the preceding element, and @BNF-group{}
+groups a sequence as an element for repetition.
+
+@define[val-defn-stx @BNF-seq[@litchar{(}@litchar{define} @nonterm{identifier} @nonterm{expression} @litchar{)}]]
+@define[fun-defn-stx
+         @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{identifier} @kleenestar{@nonterm{identifier}} @litchar{)}
+                  @kleeneplus{@nonterm{expression}} @litchar{)}]]
+@define[fun-defn2-stx
+   @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{identifier} @kleenestar{@nonterm{identifier}} @litchar{)}
+                  @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expression}} @litchar{)}]]
+@define[app-expr-stx @BNF-seq[@litchar{(} @nonterm{identifier} @kleenestar{@nonterm{expression}} @litchar{)}]]
+@define[app2-expr-stx @BNF-seq[@litchar{(} @nonterm{expression} @kleenestar{@nonterm{expression}} @litchar{)}]]
+@define[if-expr-stx @BNF-seq[@litchar{(} @litchar{if} @nonterm{expression} @nonterm{expression} @nonterm{expression} @litchar{)}]]
+
+@define[lambda-expr-stx @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{identifier}} @litchar{)}
+                                              @kleeneplus{@nonterm{expression}} @litchar{)}]]
+@define[lambda2-expr-stx
+         @BNF-seq[@litchar{(} @litchar{lambda} @litchar{(} @kleenestar{@nonterm{identifier}} @litchar{)}
+                  @kleenestar{@nonterm{definition}} @kleeneplus{@nonterm{expression}} @litchar{)}]]
+@define[and-expr-stx @BNF-seq[@litchar{(} @litchar{and} @kleenestar{@nonterm{expression}} @litchar{)}]]
+@define[or-expr-stx @BNF-seq[@litchar{(} @litchar{or} @kleenestar{@nonterm{expression}} @litchar{)}]]
+@define[cond-expr-stx @BNF-seq[@litchar{(} @litchar{cond}
+                                              @kleenestar{@BNF-group[@litchar{[} @nonterm{expression} @nonterm{expression} @litchar{]}]}
+                                              @litchar{)}]]
+@define[(make-let-expr-stx kw)
+         @BNF-seq[@litchar{(} kw @litchar{(}
+                      @kleenestar{@BNF-group[@litchar{[} @nonterm{identifier} @nonterm{expression} @litchar{]}]}
+                      @litchar{)}
+                   @kleeneplus{@nonterm{expression}} @litchar{)}]]
+@define[let-expr-stx (make-let-expr-stx @litchar{let})]
+@define[let*-expr-stx (make-let-expr-stx @litchar{let*})]
+
+
+@BNF[(list @nonterm{module} @BNF-seq[@litchar{#module} @nonterm{langname} @kleenestar{@nonterm{topform}}])
+     (list @nonterm{topform} @nonterm{definition}
+                             @nonterm{expression}
+                             @BNF-etc)
+     (list @nonterm{definition} val-defn-stx
+                                fun-defn-stx
+                                @BNF-etc)
+     (list @nonterm{expression} @nonterm{identifier}
+                                @nonterm{constant}
+                                app-expr-stx
+                                if-expr-stx
+                                lambda-expr-stx
+                                let-expr-stx
+                                let*-expr-stx
+                                @BNF-etc)]
+ 
+The syntax for comments, which are are treated the same as whitespace,
+is not shown in the grammar above. A comment starts with @litchar{;}
+and runs until the end of the line.
+
+The REPL evaluates @nonterm{topform}s, just like the body of a module.
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section{Definitions}
+
+A definition of the form
+
+@schemeblock[#, @val-defn-stx]
+
+binds @nonterm{identifier} to the result of @nonterm{expression}, while
+
+@schemeblock[#, @fun-defn-stx]
+
+binds the first @nonterm{identifier} to a procedure that takes
+arguments as named by the remaining @nonterm{identifier}s. The
+@nonterm{expression}s are the body of the procedure. When called, the
+procedure returns the result of the last @nonterm{expression}.
+
+@defexamples[
+(code:line (define five 5)           (code:comment #, @t{defines @scheme[five] to be @scheme[5]}))
+(define (piece str)       (code:comment #, @t{defines @scheme[piece] as a procedure of one argument})
+  (substring str 0 five))
+five
+(piece "hello world")
+]
+
+Under the hood, a procedure definition is really the same as a
+non-procedure definition. Consequently, a procedure name does not have to be
+used in a procedure call. A procedure is just another kind of value,
+though the printed form is necessarily less complete than the printed
+form of a number or string.
+
+@examples[
+piece
+substring
+]
+
+Within a module, each definition must bind a distinct
+@nonterm{identifier}, and only identifiers with no imported bindings
+can be defined. A definition in the REPL, in contrast, overwrites any
+previous definition for the same @nonterm{identifier}.
+
+@examples[
+(define five 5)
+(substring "hello world" 0 five)
+(define five 8)
+(substring "hello world" 0 five)
+]
+
+A procedure definition can include multiple expressions for the
+procedure's body. In that case, only the value of the last expression
+is returned when the procedure is called. The other expressions are
+evaluated only for some side-effect, such as printing.
+
+@defexamples[
+(define (greet name)
+  (printf "returning a greeting for ~a...\n" name)
+  (string-append "hello " name))
+(greet "universe")
+]
+
+Although you should generally avoid side-effects, it's important to
+understand that multiple expressions are allowed in a definition
+body. It explains why the following @scheme[nogreet] procedure simply
+returns its argument:
+
+@def+int[
+(define (nogreet name)
+  string-append "hello " name)
+(nogreet "world")
+]
+
+There are no parentheses around @scheme[string-append "hello " name],
+so they are three separate expressions instead of one procedure-call
+expression. The expressions @scheme[string-append] and
+@scheme["hello "] are evaluated, but the results are never
+used. Instead, the result of the procedure is just the result of
+the expression @scheme[name].
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section{Identifiers}
+
+Scheme's syntax for identifiers is especially liberal. Excluding the
+special characters
+
+@t{
+  @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]} 
+  @litchar["{"] @litchar["}"]
+  @litchar{"} @litchar{,} @litchar{'} @litchar{`}
+  @litchar{;} @litchar{#} 
+}
+
+and except for the sequences of characters that make number constants,
+almost any sequence of non-whitespace characters forms an
+@nonterm{identifier}. For example @schemeid[substring] is an
+identifier. Also, @schemeid[string-append] and @schemeid[a+b] are
+identifiers, as opposed to arithmetic expressions. Here are several
+more examples:
+
+@schemeblock[
+#, @schemeid[+]
+#, @schemeid[Apple]
+#, @schemeid[integer?]
+#, @schemeid[call/cc]
+#, @schemeid[call-with-composable-continuation]
+#, @schemeid[x-1+3i]
+#, @schemeid[define]
+]
+
+Since @schemeid[define] is itself an identifier, you could
+re-define @schemeid[define] in the REPL. That's rarely a good idea,
+of course, and it's not allowed in any module where
+@scheme[define] already has a meaning.
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section{Constants}
+
+Scheme constants include numbers, booleans, strings, and byte
+strings. In documentation examples and in DrScheme, constant
+expressions are shown in green.
+
+@defterm{Numbers} are written in the usual way, including fractions
+and imagnary numbers. Numbers that use decimal points or exponent
+markers are implemented as double-precision floating-point numbers,
+and they are called @defterm{inexact} numbers in Scheme
+terminology. Other numbers are implemented as @defterm{exact} with
+arbitrary precision. In the example number constants below, the ones
+on the left are exact, and the ones on the right are inexact
+approximations:
+
+@schemeblock[
+1                        1.0
+1/2                      0.5
+1+2i                     1.0+2i
+9999999999999999999999   1e+22
+]
+
+@defterm{Booleans} are @scheme[#t] for true and @scheme[#f] for
+false. In conditionals, however, all non-@scheme[#f] values are
+treated as true.
+
+@defterm{Strings} are written between double quotes. Within a string,
+backslash is an escaping character; for example, a backslash followed
+by a double-quote includes a little double-quote in the string. Except
+for an unescaped double-quote or backslash, any Unicode character can
+appear in a string constant.
+
+@schemeblock[
+"hello world"
+"A \"fancy\" string"
+"\u03BBx:(\u03BC\u03B1.\u03B1\u2192\u03B1).xx"
+]
+
+When a constant is evaluated in the REPL, it typically prints the same
+as its input syntax. In same cases, the printed form is a normalized
+version of the input syntax. In other cases, the printed result of an
+expression does not correspond to input syntax at all, such as when an
+expression proceduces a procedure (instead of applying the
+procedure). In documentation and in DrScheme's REPL, results are
+printed in blue instead of green to highlight the difference between
+an input expression and a printed result.
+
+@examples[
+(eval-example-string "1.0000")
+(eval-example-string "\"A \\u0022fancy\\u0022 string\"")
+string-append
+]
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section{Procedure Applications}
+
+We have already seen many procedure calls---or @defterm{procedure
+applications} in Scheme termonology. The syntax of a procedure
+call is
+
+@schemeblock[
+#, app-expr-stx
+]
+
+where the number of @nonterm{expression}s determines the number of
+arguments supplied to the procedure named by @nonterm{identifier}.
+
+The @schememodname[big] language pre-defines many procedure
+identifiers, such as @scheme[substring] and
+@scheme[string-append]. More examples are below.
+
+In example Scheme code throughout the documentation, uses of
+pre-defined names are hyperlinked to the reference manual. So, you can
+click on an identifier to get full details about its use.
+
+@interaction[
+(code:line (string-append "hello"  " "  "scheme") (code:comment #, @t{append any number of strings}))
+(code:line (substring "hello scheme" 6 12)        (code:comment #, @t{extract a substring}))
+(code:line (string-length "scheme")               (code:comment #, @t{get a string's length}))
+(code:line (string? "hello scheme")               (code:comment #, @t{recognize strings}))
+(string? 1)
+(code:line (sqrt 16)                              (code:comment #, @t{find a square root}))
+(sqrt -16)
+(code:line (+ 1 2)                                (code:comment #, @t{add numbers}))
+(code:line (- 2 1)                                (code:comment #, @t{subtract numbers}))
+(code:line (< 2 1)                                (code:comment #, @t{compare numbers}))
+(>= 2 1)
+(code:line (number? "hello scheme")               (code:comment #, @t{recognize numbers}))
+(number? 1)
+(code:line (equal? 1 "hello")                     (code:comment #, @t{compare anything}))
+(equal? 1 1)
+]
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section{Conditionals with @scheme[if], @scheme[and], @scheme[or], and @scheme[cond]}
+
+After identifiers and constants, the next simplest kind of expression
+is an @scheme[if] conditional:
+
+@schemeblock[
+#, if-expr-stx
+]
+
+The first @nonterm{expression} is always evaluted. If it produces a
+non-@scheme[#f] value, then the second @nonterm{expression} is
+evaluted for the result of the whole @scheme[if] expression, otherwise
+the third @nonterm{expression} is evaluated for the result.
+
+The @scheme[if] form is often used with procedures whose names end in
+@schemeid[?]:
+
+@interaction[
+(if (> 2 3) 
+    "bigger"
+    "smaller")
+]
+
+@def+int[
+(define (reply s)
+  (if (equal? "hello" (substring s 0 5))
+      "hi!"
+      "huh?"))
+(reply "hello scheme")
+(reply "\u03BBx:(\u03BC\u03B1.\u03B1\u2192\u03B1).xx")
+]
+
+More complex conditionals can be formed by nesting @scheme[if]
+expressions. For example, you could make the @scheme[reply] procedure
+work when given non-strings:
+
+@schemeblock[
+(define (reply s)
+  (if (string? s)
+      (if (equal? "hello" (substring s 0 5)
+          "hi!"
+          "huh?"))
+      "huh?"))
+]
+
+Instead of duplicating the @scheme["huh?"] case, this procedure is
+better written as
+
+@schemeblock[
+(define (reply s)
+  (if (if (string? s)
+          (equal? "hello" (substring s 0 5)
+          #f))
+      "hi!"
+      "huh?"))
+]
+
+but these kinds of nested @scheme[if]s are difficult to read.  Scheme
+provides a more readable shortcut through the @scheme[and] and
+@scheme[or] forms, which work with any number of expressions:
+
+@schemeblock[
+#, and-expr-stx
+#, or-expr-stx
+]
+
+The @scheme[and] form short-circuits: it stops and returns @scheme[#f]
+when and expression produces @scheme[#f], otherwise it keeps
+going. The @scheme[or] form similarly short-circuits when it
+encounters a true result.
+
+@defexamples[
+(define (reply s)
+  (if (and (string? s)
+           (>= (string-length s) 5)
+           (equal? "hello" (substring s 0 5)))
+      "hi!"
+      "huh?"))
+(reply "hello scheme")
+(reply 17)
+]
+
+Another common pattern of nested @scheme[if]s involves a sequence of
+tests, each with its own result:
+
+@schemeblock[
+(define (reply-more s)
+  (if (equal? "hello" (substring s 0 5))
+      "hi!"
+      (if (equal? "goodbye" (substring s 0 7))
+          "bye!"
+          (if (equal? "?" (substring s (- (string-length s) 1)))
+              "I don't know"
+              "huh?"))))
+]
+
+The shorthand for a sequence of tests is the @scheme[cond] form:
+
+@schemeblock[
+#, cond-expr-stx
+]
+
+A @scheme[cond] form contains a sequence of clauses between square
+brackets. In each clause, the first @nonterm{expression} is a test
+expression. If it produces true, then the clause's second
+@nonterm{expression} provides the answer for the entire @scheme[cond]
+expression, and the rest of the clauses are ignored. If the test
+@nonterm{expression} produces @scheme[#f], then the clause's second
+@nonterm{expression} is ignored, and evaluation continues with the
+next clause. The last clause can use @scheme[else] as a sononym for
+@scheme[#t] in place of a test expression.
+
+Using @scheme[cond], the @scheme[reply-more] procedure can be more
+clearly written as follows:
+
+@def+int[
+(define (reply-more s)
+  (cond
+   [(equal? "hello" (substring s 0 5)) 
+    "hi!"]
+   [(equal? "goodbye" (substring s 0 7)) 
+    "bye!"]
+   [(equal? "?" (substring s (- (string-length s) 1))) 
+    "I don't know"]
+   [else "huh?"]))
+(reply-more "hello scheme")
+(reply-more "goodbye cruel world")
+(reply-more "what is the airspeed velocity of an unladen swallow?")
+(reply-more "but I like the cookie!")
+]
+
+The use of square brackets for @scheme[cond] clauses is a
+convention. In Scheme, parentheses and square brackets are actually
+interchangable, as long as @litchar{(} is matched with @litchar{)} and
+@litchar{[} is matched with @litchar{]}. Using square brackets in a
+few key places makes Scheme code even more readable.
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section{Procedure Applications, Again}
+
+In our pretend grammar of Scheme, we oversimplified in the description
+of procedure applications.  The actual syntax of a procedure
+application allows an arbitrary expression for the procedure, instead
+of just an @nonterm{identifier}:
+
+@schemeblock[
+#, app2-expr-stx
+]
+
+The first @nonterm{expression} is often an @nonterm{identifier}, such
+as @scheme[string-append] or @scheme[+], but it can be anything that
+evaluates to an procedure. For example, it can be a conditional
+expression:
+
+@def+int[
+(define (double v)
+  ((if (string? v) string-append +) v v))
+(double "hello")
+(double 5)
+]
+
+Syntactically, the first expression in a procedure application could
+even be a number---but that leads to an error, since a number is not a
+procedure.
+
+@interaction[(1 2 3 4)]
+
+When you accidentally omit a procedure name or when you use
+parentheses around an expression, you'll most often get an ``expected
+a procedure'' error like this one.
+
+Technically, @scheme[(if #t 1 2)] can be parsed as a procedure
+application as well as a conditional in our pretend grammar of Scheme,
+since @schemeid[if] is an identifier. For now, we say that the
+application form has a weaker precedence than the other forms, and
+we'll leave a full explanation to our discussion of
+@secref["scheme-forms"].
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section{Anonymous Procedures with @scheme[lambda]}
+
+Programming in Scheme would be tedious if you had to name all of your
+numbers. Instead of writing @scheme[(+ 1 2)], you'd have to write
+
+@interaction[
+(define a 1)
+(define b 2)
+(+ a b)
+]
+
+It turns out that having to name all your procedures can be tedious,
+too. For example, you might have a procedure @scheme[twice] that takes
+a procedure and an argument. Using @scheme[twice] is convenient if you
+already have a name for the procedure, such as @scheme[sqrt]:
+
+@def+int[
+(define (twice f v)
+  (f (f v)))
+(twice sqrt 16)
+]
+
+If you want to apply a procedure that is not yet defined, you could
+define it, and then pass it to @scheme[twice]:
+
+@def+int[
+(define (louder s)
+  (string-append s "!"))
+(twice louder "hello")
+]
+
+But if the call to @scheme[twice] is the only place where
+@scheme[louder] is used, it's a shame to have to write a whole
+definition. In Scheme, you can use a @scheme[lambda] expression to
+produce a procedure directly. The @scheme[lambda] form is followed by
+identifiers for the procedure's arguments, and then the procedure's
+body expressions:
+
+@schemeblock[
+#, lambda-expr-stx
+]
+
+Evaluating a @scheme[lambda] form by itself produces a procedure:
+
+@interaction[(lambda (s) (string-append s "!"))]
+
+Using @scheme[lambda], the above call to @scheme[twice] can be
+re-written as
+
+@interaction[
+(twice (lambda (s) (string-append s "!"))
+       "hello")
+(twice (lambda (s) (string-append s "?!"))
+       "hello")
+]
+
+Another use of @scheme[lambda] is as a result for a procedure that
+generates procedures:
+
+@def+int[
+(define (make-add-suffix s2)
+  (lambda (s) (string-append s s2)))
+(twice (make-add-suffix "!") "hello")
+(twice (make-add-suffix "?!") "hello")
+(twice (make-add-suffix "...") "hello")
+]
+
+Scheme is a @defterm{lexically scoped} language, which means that
+@scheme[s2] in the procedure returned by @scheme[make-add-suffix]
+always refers to the argument for the call that created the
+procedure. In other words, the @scheme[lambda]-generated procedure
+``remembers'' the right @scheme[s2]:
+
+@interaction[
+(define louder (make-add-suffix "!"))
+(define less-sure (make-add-suffix "?"))
+(twice less-sure "yeah")
+(twice louder "yeah")
+]
+
+We have so far referred to definitions of the form @scheme[(define #,
+@nonterm{identifier} #, @nonterm{expression})] as ``non-procedure
+definitions.'' This characterization is misleading, because the
+@nonterm{expression} could be a @scheme[lambda] form, in which case
+the definition is equivalent to using the ``procedure'' definition
+form. For example, the following two definitions of @scheme[louder]
+are equivalent:
+
+@defs+int[
+[(define (louder s)
+   (string-append s "!"))
+ code:blank
+ (define louder
+   (lambda (s)
+     (string-append s "!")))]
+louder
+]
+
+Note that the expression for @scheme[louder] in the second case is an
+``anonymous'' procedure written with @scheme[lambda], but the compiler
+infers a name, anyway, for the purpose of printing the procedure.
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section[#:tag "local-binding-intro"]{Local Binding with with
+        @scheme[define], @scheme[let], and @scheme[let*]}
+
+It's time to retract another simplification in our pretend grammar of
+Scheme. In the body of a procedure, definitions can appear before the
+body expressions:
+
+@schemeblock[
+#, fun-defn2-stx
+#, lambda2-expr-stx
+]
+
+Definitions at the start of a procedure body are local to the
+procedure body.
+
+@defexamples[
+(define (converse s)
+  (define (starts? s2) (code:comment #, @t{local to @scheme[converse]})
+    (define len2 (string-length s2))  (code:comment #, @t{local to @scheme[starts?]})
+    (and (>= (string-length s) len2)
+         (equal? s2 (substring s 0 len2))))
+  (cond
+   [(starts? "hello") "hi!"]
+   [(starts? "goodbye") "bye!"]
+   [else "huh?"]))
+(converse "hello!")
+(converse "urp")
+(code:line starts? (code:comment #, @t{outside of @scheme[converse], so...}))
+]
+
+Another way to create local bindings is the @scheme[let] form. An
+advantage of @scheme[let] is that it can be used in any expression
+position. Also, @scheme[let] binds many identifiers at once, instead
+of requiring a separate @scheme[define] for each identifier.
+
+@schemeblock[
+#, let-expr-stx
+]
+
+Each binding clause is an @nonterm{identifier} and a
+@nonterm{expression} surrounded by square brackets, and the
+expressions after the clauses are the body of the @scheme[let]. In
+each clause, the @nonterm{identifier} is bound to the result of the
+@nonterm{expression} for use in the body.
+
+@interaction[
+(let ([x 1]
+      [y 2])
+  (format "adding ~s and ~s produces ~s" x y (+ x y)))
+]
+
+The bindings of a @scheme[let] form are available only in the body of
+the @scheme[let], so the binding clauses cannot refer to each
+other. The @scheme[let*] form, in contrast, allows later clauses to
+use earlier bindings:
+
+@interaction[
+(let* ([x 1]
+       [y 2]
+       [z (+ x y)])
+  (format "adding ~s and ~s produces ~s" x y z))
+]
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@section{The Language So Far}
+
+As you saw, the little grammar that we showed at the
+@seclink["syntax-overview"]{beginning} of the chapter turned out to be
+too simple even for this chapter. Here's the grammar that we have now:
+
+@BNF[(list @nonterm{module} @BNF-seq[@litchar{#module} @nonterm{langname} @kleenestar{@nonterm{topform}}])
+     (list @nonterm{topform} @nonterm{definition}
+                             @nonterm{expression}
+                             @BNF-etc)
+     (list @nonterm{definition} val-defn-stx
+                                fun-defn2-stx
+                                @BNF-etc)
+     (list @nonterm{expression} @nonterm{identifier}
+                                @nonterm{constant}
+                                app2-expr-stx
+                                if-expr-stx
+                                or-expr-stx
+                                and-expr-stx
+                                cond-expr-stx
+                                lambda2-expr-stx
+                                let-expr-stx
+                                let*-expr-stx
+                                @BNF-etc)]
+
+For an expanded grammar, it's still a pretty small language! This
+language is plenty, however, to write lots of interesting programs.
+
+Depending on your programming background, you may be struck by the
+apparent absence of an iteration form. But the above is enough to
+write any kind of loop, as we see in the next chapter. Moreover, an
+extra built-in datatype (to go along numbers, strings, etc.) gives us
+more interesting data to process with loops. The new datatype is also
+the key to understanding the true syntax of Scheme, which we get back
+to in @secref["scheme-read"] and @secref["scheme-forms"].

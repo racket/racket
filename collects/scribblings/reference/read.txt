@@ -1,0 +1,462 @@
+
+
+#|
+
+%
+\begin{itemize}
+
+\item Square brackets (``[''  and ``]'') and curly braces
+ (``\{'' and ``\}'') can be used in place of parentheses. An open
+ square bracket must be closed by a closing square bracket and an open
+ curly brace must be closed by a closing curly brace. Whether square
+ brackets are treated as parentheses is controlled by the
+ \scmfirst{read-square-bracket-as-paren} parameter (see
+ \SecRef{p:read-square-bracket-as-paren}). Similarly, the parsing of
+ curly braces is controlled with the
+ \scmfirst{read-curly-brace-as-paren} parameter. When square brackets
+ and curly braces are not treated as parentheses, they are disallowed
+ as input. By default, square brackets and curly braces are treated as
+ parentheses.
+
+\index{vectors}
+\item Vector constants can be unquoted, and a vector size can
+ be specified with a decimal integer between the \scheme{#} and opening
+ parenthesis. If the specified size is larger than the number of
+ vector elements that are provided, the last specified element is used
+ to fill the remaining vector slots. For example, \scheme{#4(1 2)} is
+ equivalent to \scheme{#(1 2 2 2)}. If no vector elements are specified,
+ the vector is filled with \scheme{0}. If a vector size is provided and
+ it is smaller than the number of elements provided, the
+ \exnraise{exn:fail:read}.
+
+\index{boxes} {\boxindex}
+%
+\item Boxed constants can be created using \scheme{#&}. The datum
+ following \scheme{#&} is treated as a quoted constant and put into
+ the new box.  (Space and comments following the \scheme{#&} are
+ ignored.)  Box reading is controlled with the
+ \scmfirst{read-accept-box} boolean parameter (see
+ \SecRef{p:read-accept-box}). Box reading is enabled by default. When
+ box reading is disabled and \scheme{#&} is provided as input, the
+ \exnraise{exn:fail:read}.
+
+\scmindex{\#'}\scmindex{\#`}\scmindex{\#,}\scmindex{\#,\atsign}
+\item Expressions beginning with \scheme{#'} are wrapped with \scheme{syntax}
+ in the same way that expressions starting with \scheme{'} are wrapped
+ with \scheme{quote}. Similarly, \scheme{#`} generates
+ \scheme{quasisyntax}, \scheme{#,} generates \scheme{unsyntax}, and
+ \scheme{#,@} generates \scheme{unsyntax-splicing}. See also
+ \SecRef{quasisyntax}.
+
+\index{characters!constants} 
+%
+\item The following character constants are recognized:
+%
+\begin{itemize}
+\item \scheme{#\nul} or \scheme{#\null} (ASCII 0) \scmchidx{nul} \scmchidx{null}
+\item \scheme{#\backspace} (ASCII 8)              \scmchidx{backspace}
+\item \scheme{#\tab} (ASCII 9)                    \scmchidx{tab}
+\item \scheme{#\newline} or \scheme{#\linefeed} (ASCII 10) \scmchidx{newline}\scmchidx{linefeed}
+\item \scheme{#\vtab} (ASCII 11)                  \scmchidx{vtab}
+\item \scheme{#\page} (ASCII 12)                  \scmchidx{page}
+\item \scheme{#\return} (ASCII 13)                \scmchidx{return}
+\item \scheme{#\space} (ASCII 32)                 \scmchidx{space}
+\item \scheme{#\rubout} (ASCII 127)               \scmchidx{rubout}
+\end{itemize} 
+%
+Whenever \scheme{#\ } is followed by at least two alphabetic characters,
+ characters are read from the input port until the next non-alphabetic
+ character is returned. If the resulting string of letters does not
+ match one of the above constants (case-insensitively), the
+ \exnraise{exn:fail:read}.
+
+Character constants can also be specified through direct Unicode values
+ in octal notation (up to 255): \rawscm{\#{\TTBackslash}\var{n$_1$}\var{n$_2$}\var{n$_3$}} where
+ \var{n$_1$} is in the range [\scheme{0}, \scheme{3}] and \var{n$_2$} and
+ \var{n$_3$} are in the range [\scheme{0}, \scheme{7}]. Whenever \scheme{#\ } is
+ followed by at least two characters in the range [\scheme{0}, \scheme{7}],
+ the next character must also be in this range, and the resulting octal
+ number must be in the range $000_8$ to $377_8$.
+
+Finally, character constants can be specified through direct Unicode
+ values in hexadecimal notation:
+ \rawscm{\#{\TTBackslash}u\var{n$_1$}...\var{n$_k$}}
+ or \rawscm{\#{\TTBackslash}U\var{n$_1$}...\var{n$_k$}}, where each
+ \var{n$_i$} is a hexadecimal digit (0-9, a-f, or A-F), and $k$ is no
+ more than $4$ for \rawscm{\#{\TTBackslash}u} or $6$ for \rawscm{\#{\TTBackslash}U}.
+ Whenever \scheme{#\ } is followed by a \scheme{u} or \scheme{U} and
+ one hexadecimal digit, the character constant is terminated by either
+ the first non-hexadecimal character in the stream, or the fourth/sixth
+ hexadecimal character, whichever comes first. The resulting
+ hexadecimal number must be a valid argument to
+ \rawscm{integer->char}, otherwise the \exnraise{exn:fail:read}.
+
+Unless otherwise specified above, character-constants are terminated
+ after the character following \scheme{#\ }. For example, if
+ \scheme{#\ } is followed by an alphabetic character other than
+ \rawscm{u} and then a non-alphabetic character, then the character
+ constant is terminated. If \scheme{#\ } is followed by a \scheme{8}
+ or \scheme{9}, then the constant is terminated. If \scheme{#\ } is
+ followed by a non-alphabetic, non-decimal-digit character then the
+ constant is terminated.
+
+\index{strings} 
+%
+ \item Within string constants, the following escape sequences are
+ recognized in addition to \stresc{"} and \stresc{{\TTBackslash}}:
+%
+\begin{itemize}
+ 
+ \item \istresc{a}: alarm (ASCII 7)
+ \item \istresc{b}: backspace (ASCII 8)
+ \item \istresc{t}: tab (ASCII 9)
+ \item \istresc{n}: linefeed (ASCII 10)
+ \item \istresc{v}: vertical tab (ASCII 11)
+ \item \istresc{f}: formfeed (ASCII 12)
+ \item \istresc{r}: return (ASCII 13)
+ \item \istresc{e}: escape (ASCII 27)
+
+ \item \istresc{'}: quote (i.e., the backslash has no effect)
+
+ \item \iistresc{o}{\var{o}}, \iistresc{oo}{\var{oo}}, or \iistresc{oo}{\var{ooo}}:
+        Unicode for octal \var{o}, \var{oo}, or \var{ooo}, where each
+        \var{o} is \rawscm{0}, \rawscm{1}, \rawscm{2}, \rawscm{3}, \rawscm{4},
+        \rawscm{5}, \rawscm{6}, or \rawscm{7}. The \stresc{\var{ooo}} form
+        takes precedence over the \stresc{\var{oo}} form, and
+        \stresc{\var{oo}} takes precedence over \stresc{\var{o}}.
+
+ \item \iistresc{xh}{x\var{h}} or \iistresc{xh}{x\var{hh}}: Unicode for hexadecimal
+        \var{h} or \var{hh}, where each \var{h} is \rawscm{0}, \rawscm{1},
+        \rawscm{2}, \rawscm{3}, \rawscm{4}, \rawscm{5}, \rawscm{6}, \rawscm{7}, \rawscm{a},
+        \rawscm{A}, \rawscm{b}, \rawscm{B}, \rawscm{c}, \rawscm{C}, \rawscm{d}, \rawscm{D},
+        \rawscm{e}, \rawscm{E}, \rawscm{f}, or \rawscm{F}. The \stresc{x\var{hh}}
+        form takes precedence over the \stresc{x\var{h}} form.
+
+ \item \iistresc{uh}{u\var{h}}, \iistresc{uhh}{u\var{hh}},
+       \iistresc{uhhh}{u\var{hhh}}, or \iistresc{uhhhh}{u\var{hhhh}}:
+       like \stresc{x}, but with up to four hexadecimal digits (longer
+       sequences take precedence).  The resulting hexadecimal number
+       must be a valid argument to \rawscm{integer->char}, otherwise
+       the \exnraise{exn:fail:read}.
+
+ \item \iistresc{Uh}{U\var{h}}, \iistresc{Uhh}{U\var{hh}}, \iistresc{Uhhh}{U\var{hhh}},
+       \iistresc{Uhhhh}{U\var{hhhh}}, \iistresc{Uhhhhh}{U\var{hhhhh}}, \iistresc{Uhhhhhh}{U\var{hhhhhh}},
+        \iistresc{Uhhhhhhh}{U\var{hhhhhhh}}, or  \iistresc{Uhhhhhhhh}{U\var{hhhhhhhh}}:
+       like \stresc{x}, but with up to eight hexadecimal digits (longer
+       sequences take precedence).  The resulting hexadecimal number
+       must be a valid argument to \rawscm{integer->char}, otherwise
+       the \exnraise{exn:fail:read}.
+
+\end{itemize}
+%
+Furthermore, a backslash followed by a linefeed, carriage return or
+ return-linefeed combination is elided, allowing string constants to
+ span lines. Any other use of backslash within a string constant is an
+ error.
+%
+
+
+\scmindex{\#""}
+\index{byte strings} 
+%
+ \item A string constant preceded by \scheme{#} is a byte-string
+ constant.  Byte string constants support the same escape sequences as
+ character strings except \stresc{u} and \stresc{U}.
+
+\index{here strings}\scmindex{\#<<}
+%
+ \item The sequence \scheme{#<<} starts a \pidefterm{here string}. The
+ characters following \scheme{#<<} until a newline character define a
+ terminator for the string. The content of the string includes all
+ characters between the \scheme{#<<} line and a line whose only
+ content is the specified terminator. More precisely, the content of
+ the string starts after a newline following \scheme{#<<}, and it ends
+ before a newline that is followed by the terminator, where the
+ terminator is itself followed by either a newline or end-of-file. No
+ escape sequences are recognized between the starting and terminating
+ lines; all characters are included in the string (and terminator)
+ literally. A return character is not treated as a line separator in
+ this context. If no characters appear between \scheme{#<<} and a
+ newline or end-of-file, or if an end-of-file is encountered before a
+ terminating line, the \exnraise{exn:fail:read}.
+
+\index{numbers} %
+%
+ \item The syntax for numbers is extended as described in
+ \SecRef{numbers}. Numbers containing a decimal point or exponent
+ (e.g., \scheme{1.3}, \scheme{2e78}) are normally read as inexact. If
+ the \scmfirst{read-decimal-as-inexact} parameter is set to
+ \scheme{#f}, then such numbers are instead read as exact. The
+ parameter does not affect the parsing of numbers with an explicit
+ exactness tag (\scheme{#e} or \scheme{#i}).
+
+\label{mz:infix}
+\index{infix} %
+%
+ \item A parenthesized sequence containing two delimited dots
+ (``\scheme{.}'')  triggers infix parsing. A single \var{datum} must
+ appear between the dots, and one or more \var{datum}s must appear
+ before the first dot and after the last dot:
+%
+\begin{center}
+\begin{schemebox}
+(left-datum \xdots . first-datum . right-datum \xdots)
+\end{schemebox}
+\end{center}
+%
+ The resulting list consists of the \var{datum} between the dots,
+ followed by the remaining \var{datum}s in order:
+%
+\begin{center}
+\begin{schemebox}
+(first-datum left-datum \xdots right-datum \xdots)
+\end{schemebox}
+\end{center}
+%
+ Consequently, the input expression \scheme{(1 . < . 2)} produces
+ \scheme{#t}, and \scheme{(1 2 . + . 3 4 5)} produces \scheme{15}.
+
+ \index{.}\index{`}\index{",}\index{","@}
+%
+ \item When the \scmfirst{read-accept-dot} parameter is set to
+ \scheme{#f}, then a delimited dot (``\scheme{.}'') is disallowed in
+ input. When the \scmfirst{read-accept-quasiquote} parameter is set to
+ \scheme{#f}, then a backquote or comma is disallowed in input.  These
+ modes simplify Scheme's input model for students.
+
+ \index{symbols} \scmindex{|} \index{{\Backslash}}
+%
+ \item MzScheme's identifier and symbol syntax is considerably more
+ liberal than the syntax specified by {\rfivers}. When input is
+ scanned for tokens, the following characters delimit an identifier in
+ addition to whitespace:
+
+ \scmline{" , ' ` ; ( ) [ ] \{ \}}
+
+ In addition, an identifier cannot start with a hash mark
+ (``\scheme{#}'') unless the hash mark is immediately followed by a
+ percent sign (``\scheme{%}''). The only other
+ special characters are backslash (``{\Backslash}'') and quoting
+ vertical bars (``$|$''); any other character is used as part of an
+ identifier.
+
+ Symbols containing special characters (including delimiters) are
+  expressed using an escaping backslash (``{\Backslash}'') or quoting
+  vertical bars (``$|$''):
+%
+\begin{itemize}
+
+ \item A backslash preceding any character includes that character in
+ the symbol literally; double backslashes produce a single backslash
+ in the symbol.
+
+ \item Characters between a pair of vertical bars are included in the
+ symbol literally. Quoting bars can be used for any part of a symbol,
+ or the whole symbol can be quoted. Backslashes and quoting bars can
+ be mixed within a symbol, but a backslash is \Em{not} a special
+ character within a pair of quoting bars.
+
+\end{itemize}
+%
+Characters quoted with a backslash or a vertical bar always preserve
+ their case, even when identifiers are read case-insensitively.
+
+An input token constructed in this way is an identifier when it is not
+ a numerical constant (following the extended number syntax described
+ in \SecRef{numbers}). A token containing a backslash or vertical bars
+ is never treated as a numerical constant.
+
+Examples:
+%
+\begin{itemize}
+
+ \item \rawscm{(\scmk{quote} a{\TTBackslash}(b)} produces the same symbol as
+ \scheme{(string->symbol "a(b")}.
+
+ \item \rawscm{(\scmk{quote} A{\TTBackslash}B)} produces the same
+ symbol as \scheme{(string->symbol "aB")} when identifiers are read
+ without case-sensitivity.
+
+ \item \rawscm{(\scmk{quote} a{\TTBackslash} b)}, \rawscm{(\scmk{quote} $|$a b$|$)}, and
+ \rawscm{(\scmk{quote} a$|$ $|$b)} all produce the same symbol as
+ \scheme{(string->symbol "a b")}.
+
+ \item \rawscm{(\scmk{quote} $|$a$||$b$|$)} is the same as \rawscm{(\scmk{quote} $|$ab$|$)},
+  which produces the same symbol as \scheme{(string->symbol "ab")}.
+
+ \item \rawscm{(\scmk{quote} 10)} is the number 10, but \rawscm{(\scmk{quote} $|$10$|$)}
+ produces the same symbol as \scheme{(string->symbol "10")}.
+
+\end{itemize}
+
+Whether a vertical bar is used as a special or normal symbol character
+ is controlled with the \scmfirst{read-accept-bar-quote} boolean
+ parameter (see \SecRef{p:read-accept-bar-quote}). Vertical bar quotes
+ are enabled by default. Quoting backslashes cannot be disabled.
+
+ \index{symbols!case sensitivity}
+%
+ \item By default, symbols are read case-sensitively.  Case
+ sensitivity for reading can be controlled in three ways:
+
+  \begin{itemize}
+
+  \item Quoting part of a symbol with an escaping backslash
+  (``{\Backslash}'') or quoting vertical bar (``$|$'') always
+  preserves the case of the quoted portion, as described above.
+
+  \item \scmindex{\#cs} \scmindex{\#ci} The sequence \rawscm{\#cs} can
+  be used as a prefix for any expression to make reading symbols
+  within the expression case-sensitive.  A \rawscm{\#ci} prefix
+  similarly makes reading symbols in an expression case-insensitive.
+  Whitespace can appear between a \rawscm{\#cs} or \rawscm{\#ci}
+  prefix and its expression, and prefixes can be nested. Backslash and
+  vertical-bar quotes override a \rawscm{\#ci} prefix.
+
+  \item When the \scmfirst{read-case-sensitive} parameter (see
+  \SecRef{p:read-case-sensitive}) is set to \scheme{#t}, then case is
+  preserved when reading symbols. The default is \scheme{#t}, and it
+  is set to \scheme{#t} while loading a module (see
+  \SecRef{modloadhandler}). A \rawscm{\#cs} or \rawscm{\#ci} prefix
+  overrides the parameter setting, as does backslash or vertical-bar
+  quoting.
+
+  \end{itemize}
+%
+Symbol case conversions are \emph{not} sensitive to the current locale
+ (see \SecRef{locales}).
+
+ \index{keywords} \scmindex{:} \scmindex{\#k+} \scmindex{\#k-}
+%
+ \item A symbol-like expression that starts with an unquoted hash and
+ colon (``\#:'') is parsed as a keyword constant. After the leading
+ colon, backslashes, vertical bars, and case sensitivity are handled
+ as for symbols, except that a keyword expression can never be
+ interpreted as a number.
+
+\index{regular expressions!constants}
+\scmindex{\#rx}
+\scmindex{\#rx\#}
+%
+ \item Expressions of the form \rawscm{\#rx\var{string}} are literal
+ regexp values (see \SecRef{regexp}) where \var{string} is a string
+ constant.  The regexp produced by  \rawscm{\#rx\var{string}} is the
+ same as produced by \rawscm{(regexp \var{string})}. If \var{string}
+ is not a valid pattern, the \exnraise{exn:fail:read}.
+
+ Expressions of the form \rawscm{\#rx\#\var{string}} are similarly literal
+ byte-regexp values.  The regexp produced by \rawscm{\#rx\#\var{string}} is the
+ same as produced by \rawscm{(byte-regexp \#\var{string})}.
+
+\index{regular expressions!constants}
+\scmindex{\#px}
+\scmindex{\#px\#}
+%
+ \item Expressions of the form \rawscm{\#px\var{string}} and
+ \rawscm{\#px\#\var{string}} are like the \rawscm{\#rx} variants,
+ except that the regexp is as produced by \rawscm{pregexp} and 
+ \rawscm{byte-pregexp} (see \SecRef{regexp}) instead of
+ \rawscm{regexp} and \rawscm{byte-regexp}.
+
+\index{hash tables!constants}
+\scmindex{\#hash}
+\scmindex{\#hasheq}
+%
+ \item Expressions of the form \rawscm{\#hash((\var{key-datum}
+ . \var{val-datum}) \odots)} are literal immutable hash tables.  The
+ hash table maps each \var{key-datum} to its \var{val-datum},
+ comparing keys with \scheme{equal?}. The table is constructed by
+ adding each \var{key-datum} mapping from left to right, so later
+ mappings can hide earlier mappings if the \var{key-datum}s are
+ \scheme{equal?}. An expression of the form
+ \rawscm{\#hasheq((\var{key-datum} . \var{val-datum}) \odots)}
+ produces an immutable hash table with keys compared using
+ \scheme{eq?}. If the value of \scmfirst{read-square-bracket-as-paren}
+ parameter (see \SecRef{p:read-square-bracket-as-paren}) is true,
+ matching parentheses in a \rawscm{\#hash} or \rawscm{\#hasheq}
+ constant can be replaced by matching square brackets. Similarly,
+ matching curly braces can be used if
+ \scmfirst{read-curly-brace-as-paren} is true.
+
+\index{graphs} \scmindex{\#\var{n}=} \scmindex{\#\var{n}\#}
+%
+\item Values with shared structure are expressed using 
+\rawscm{\#\var{n}=} and \rawscm{\#\var{n}\#}, where \var{n} is
+a decimal integer. See \SecRef{sexpressions}.
+
+\scmindex{\#\%}
+%
+ \item Expressions of the form \rawscm{\#\%\var{x}} are symbols, where
+ \var{x} can be a symbol or a number.
+
+\scmindex{\#{\Tilde}}
+%
+ \item Expressions beginning with \scheme{#~} are interpreted as
+ compiled MzScheme code. See \SecRef{compilation}.
+
+\index{comments}
+%
+ \item Multi-line comments are started with \rawscm{\#{\tt |}} and terminated
+ with \rawscm{{\tt |}\#}. Comments of this form can be nested arbitrarily.
+
+\scmindex{comments!S-expression}
+\scmindex{\#;}
+%
+ \item A \rawscm{\#;} comments out the next datum. Whitespace and
+ comments (including \rawscm{\#;} comments) may appear between the
+ \rawscm{\#;} and the commented-out datum. Graph-structure annotations
+ with \rawscm{\#\var{n}=} and \rawscm{\#\var{n}\#} work within the
+ comment as if the datum were not commented out (e.g., bindings can be
+ introduced with \rawscm{\#\var{n}=} for use in parts of the datum
+ that are not commented out). When \rawscm{\#;} appears at the
+ beginning of a top-level datum, however, graph-structure bindings are
+ discarded (along with the first following datum) before reading the
+ second following datum.
+
+\scmindex{load}
+\scmindex{\#"!}
+%
+ \item If the first line of a \scheme{load}ed file begins with
+ \scheme{#!}, it is ignored by the default load handler. If an ignored
+ line ends with a backslash (``{\Backslash}''), then the next line is
+ also ignored. (The \scheme{#!} convention is for shell scripts; see
+ \ChapRef{scripts} for details.)
+
+\scmindex{\#hx} \scmindex{\#sx}
+%
+ \item A \rawscm{\#hx} shifts the reader into H-expression mode (see
+ \SecRef{honu}) for one H-expression. A \rawscm{\#sx} has no effect in
+ normal mode, but in H-expression mode, it shifts the reader back to
+ (normal) S-expression mode. The \rawscm{read-honu} and
+ \rawscm{read-honu-syntax} procedures read as if the stream starts
+ with \rawscm{\#hx}.
+
+\scmindex{\#honu}
+%
+ \item A \rawscm{\#honu} shifts the reader into H-expression mode (see
+ \SecRef{honu}) and reads repeatedly until an end-of-file is
+ encountered. The H-expression results are wrapped in a module-formed
+ S-expression, as described in \SecRef{honu}.
+
+\scmindex{\#reader}
+%
+ \item A \rawscm{\#reader} must be followed by a datum. The datum is
+ passed to the procedure that is the value of the
+ \rawscm{current-reader-guard} parameter (see
+ \SecRef{p:current-reader-guard}), and the result is used as a module
+ path. The module path is passed to \rawscm{dynamic-require} (see
+ \SecRef{dynreq}) with either \Symbol{read} or \Symbol{read-syntax}
+ (depending on whether parsing started with \rawscm{read} or
+ \rawscm{read-syntax}). The resulting procedure should accept the same
+ arguments as \rawscm{read} or \rawscm{read-syntax} (with all optional
+ arguments as required). The procedure is given the port whose stream
+ contained \rawscm{\#reader}, and it should produce a datum result. If
+ the result is a syntax object in \rawscm{read} mode it is converted
+ to a datum using \rawscm{syntax-object->datum}; if the result is not
+ a syntax object in \rawscm{read-syntax} mode, it is converted to one
+ using \rawscm{datum->syntax-object}. See also
+ \SecRef{special-comments} and \SecRef{recursive-reads} for
+ information on special-comment results and recursive reads. If the
+ \rawscm{read-accept-reader} parameter is set to \scheme{#f}, then
+ \rawscm{\#reader} is disallowed as input.
+|#
