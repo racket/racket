@@ -202,11 +202,11 @@
                   (itemization-flows t)))))
 
       (define/override (render-other i part ht)
-        (list (cond
-               [(string? i) i]
-               [(eq? i 'mdash) `(span " " ndash " ")]
-               [(symbol? i) i]
-               [else (format "~s" i)])))
+        (cond
+         [(string? i) (list i)]
+         [(eq? i 'mdash) `(" " ndash " ")]
+         [(symbol? i) (list i)]
+         [else (list (format "~s" i))]))
       
       ;; ----------------------------------------
 

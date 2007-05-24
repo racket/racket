@@ -45,7 +45,14 @@ A single document is reprsented as a @defterm{part}:
                    @itemize{
 
                    @item{A string element is included in the result
-                         document verbatim.}
+                         document verbatim, except for space, and
+                         unless the element's style is
+                         @scheme['hspace]. In a style other than
+                         @scheme['hspace], consecutive spaces in the
+                         output may be collapsed togther or replaced
+                         with a line break. In the style
+                         @scheme['hspace], all text is converted to
+                         uncollapsable spaces.}
 
                    @item{A symbol element is either @scheme['mdash],
                          @scheme['ndash], @scheme['ldquo],

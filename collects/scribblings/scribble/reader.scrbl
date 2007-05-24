@@ -5,7 +5,7 @@
 
 @title[#:tag "reader"]{Scribble Reader}
 
-The Scribble @|at|-reader is designed to be a convenient facility for
+The  Scribble @|at|-reader is designed to be a convenient facility for
 using free-form text in Scheme code, where ``@at'' is chosen as one of
 the least-used characters in Scheme code.
 
@@ -247,7 +247,7 @@ have special meanings, but only in a few contexts.  As described
 above, the text turns to a sequence of string arguments for the
 resulting form.  Spaces at the beginning of lines are discarded (but
 see the information about indentation below), and newlines turn to
-individual @scheme["\n"] strings.  (Spcaces are preserved on a
+individual @scheme["\n"] strings.  (Spaces are preserved on a
 single-line text.)  As part of trying to do the ``right thing,'' an
 empty line at the beginning and at the end are discarded, so:
 

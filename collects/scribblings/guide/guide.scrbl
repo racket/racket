@@ -16,7 +16,7 @@ start with @|Quick|.
 For everyone else, this guide assumes some programming experience.
 After a somewhat gentle introduction to Scheme (chapters 1 through 4),
 we dive into the details of putting Scheme to work. This guide covers
-much of the PLT Scheme toolbox, but it leaves the nitty-gritty details
+much of the PLT Scheme toolbox, but it leaves the precise details
 to @|MzScheme| and other reference manuals.
 
 @table-of-contents[]

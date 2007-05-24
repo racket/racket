@@ -123,6 +123,16 @@
                                                       c)
                                 (loop (cdr l)
                                       (cons (car l) prev))))]))))))
+      (define (literalize-spaces i)
+        (let ([m (regexp-match-positions #rx"  +" i)])
+          (if m
+              (make-element
+               #f
+               (list (literalize-spaces (substring i 0 (caar m)))
+                     (make-element 'hspace
+                                   (list (substring i (caar m) (cdar m))))
+                     (literalize-spaces (substring i (cdar m)))))
+              i)))
       (define (loop init-line! quote-depth)
         (lambda (c)
           (cond
@@ -258,7 +268,7 @@
                                   [vd
                                    (make-link-element "schemevaluelink" (list s) vtag)]
                                   [else s])))))
-                           s)
+                           (literalize-spaces s))
                        (cond
                         [(positive? quote-depth) value-color]
                         [(or (number? (syntax-e c))
