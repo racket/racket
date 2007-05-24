@@ -1,4 +1,4 @@
-(module add02 "../web-interaction.ss"
+(module add02 (lib "web-interaction.ss" "web-server" "prototype-web-server")
   (require (lib "url.ss" "net")
            (lib "request.ss" "web-server" "private")
            (lib "request-structs.ss" "web-server"))

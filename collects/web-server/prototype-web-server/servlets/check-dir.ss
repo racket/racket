@@ -1,4 +1,4 @@
-(module check-dir "../web-interaction.ss"
+(module check-dir (lib "web-interaction.ss" "web-server" "prototype-web-server")
   (require (lib "url.ss" "net"))
   
   (define (directory-page n)

@@ -1,4 +1,4 @@
-(module add03 "../persistent-web-interaction.ss"
+(module add03 (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
   (require (lib "url.ss" "net")
            (lib "servlet-helpers.ss" "web-server" "private")
            (lib "request-structs.ss" "web-server"))

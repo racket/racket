@@ -22,25 +22,7 @@
                        [enctype "application/x-www-form-urlencoded"])
                       ,(format "Enter the ~a number to add: " msg)
                       (input ([type "text"] [name "number"] [value ""]))
-                      (input ([type "submit"])))))))))
-  
-  #;(define (gn msg)
-    (send/suspend/dispatch
-     (lambda (embed/url)
-       `(hmtl (head (title ,(format "Get ~a number" msg)))
-              (body
-               (form ([action ,(url->string 
-                                (embed/url
-                                 (lambda (req)
-                                   (string->number
-                                    (extract-binding/single
-                                     'number
-                                     (request-bindings req))))))]
-                      [method "post"]
-                      [enctype "application/x-www-form-urlencoded"])
-                     ,(format "Enter the ~a number to add: " msg)
-                     (input ([type "text"] [name "number"] [value ""]))
-                     (input ([type "submit"]))))))))
+                      (input ([type "submit"])))))))))  
   
   (let ([initial-request (start-servlet)])
     `(html (head (title "Final Page"))
