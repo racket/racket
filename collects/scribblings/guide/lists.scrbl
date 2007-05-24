@@ -45,10 +45,10 @@ Many predefined procedures operate on lists. Here are a few examples:
 
 In addition to simple operations like @scheme[append], Scheme includes
 procedures that iterate over the elements of a list. These iteration
-procedures play the same role as, say, @tt{for} in Java. The body of
-an iteration is packaged into a procedure to be applied to each
-element, so the @scheme[lambda] form becomes particularly handy in
-combination with iteration procedures.
+procedures play much the same role as @tt{for} in Java and other
+languages. The body of a Scheme iteration is packaged into a procedure
+to be applied to each element, so the @scheme[lambda] form becomes
+particularly handy in combination with iteration procedures.
 
 The @scheme[for-each] procedure acts the most like a @tt{for} loop:
 
@@ -58,12 +58,14 @@ The @scheme[for-each] procedure acts the most like a @tt{for} loop:
           (list "pie" "stew" "carrots and pizza, and pineapple, too"))
 ]
 
-Scheme includes many other list-iteration procedures, because there
-are multiple ways to combine the results from each iteration. The
-@scheme[for-each] procedure completely ignores the per-element result,
-so it is used with a loop body that has some side-effect (such as
-printing output). The @scheme[map] procedure, in contrast, uses the
-per-element results to create a new list:
+The @scheme[for-each] procedure completely ignores the per-element
+result of the iteration body, so it is used with loop bodies that have
+a side-effect (such as printing output). Keeping in mind that Scheme
+programmers avoid side-effects, they also avoid @scheme[for-each].
+
+Other list-iteration procedures use the per-element results, but in
+different ways. The @scheme[map] procedure uses the per-element
+results to create a new list:
 
 @interaction[
 (map sqrt (list 1 4 9 16))
@@ -81,10 +83,18 @@ by @scheme[and]ing or @scheme[or]ing:
 (ormap number? (list "a" "b" 6))
 ]
 
-The @scheme[for-each], @scheme[map], @scheme[andmap], and
-@scheme[ormap] procedures can all handle multiple lists, instead of
-just a single list. The lists must all have the same length, and the
-given procedure must accept one argument for each list:
+The @scheme[filter] procedure keeps elements for which the body result
+is true, and discards elements for which it is @scheme[#f]:
+
+@interaction[
+(filter string? (list "a" "b" 6))
+(filter positive? (list 1 -2 6 7 0))
+]
+
+The @scheme[for-each], @scheme[map], @scheme[andmap], @scheme[ormap],
+and @scheme[filter] procedures can all handle multiple lists, instead
+of just a single list. The lists must all have the same length, and
+the given procedure must accept one argument for each list:
 
 @interaction[
 (map (lambda (s n) (substring s 0 n))
@@ -95,7 +105,7 @@ given procedure must accept one argument for each list:
 The @scheme[foldl] procedure generalizes some iteration procedures. It
 uses the per-element procedure to both process an element and combine
 it with the ``current'' value, so the per-element procedure takes an
-extra first argument. Also, a starting ``current ' value must be
+extra first argument. Also, a starting ``current'' value must be
 provided before the lists:
 
 @interaction[
@@ -106,9 +116,9 @@ provided before the lists:
 ]
 
 Despite its generality, @scheme[foldl] is not as popular as the other
-procedures. The main reason is that @scheme[for-each], @scheme[map],
-@scheme[ormap], and @scheme[andmap] cover the most common kinds of
-loops.
+procedures. One reason is that @scheme[map], @scheme[ormap],
+@scheme[andmap], and @scheme[filter] cover the most common kinds of
+list loops.
 
 @;------------------------------------------------------------------------
 @section{Iterative Folds and Comprehensions: @scheme[fold-for] and @scheme[list-for]}
@@ -151,7 +161,7 @@ and implicitly accumulates each result into a list:
 ]
 
 The @scheme[list-for] form is a @defterm{list compherension} form, as
-in Haskell, Ruby, Python, and other languages. Its advantage over
+in Haskell, Ruby, Python, and other languages. One advantage over
 @scheme[map] is that it can iterate over more things than just lists.
 For example, @scheme[list-for] can iterate over a range of numbers:
 
@@ -191,15 +201,15 @@ simpler (just a procedure call).
 
 We have ignored several other variants of the interation
 form---including plain @scheme[for], which is use when the iteration
-body is to be run only for its effect. We explain the full set in
-@secref["iterations+comprehensions"].
+body is to be run only for its effect. For more complete information,
+see @secref["iterations+comprehensions"].
 
 @;------------------------------------------------------------------------
 @section{List Iteration from Scratch}
 
 Although @scheme[map] and @scheme[list-for] are predefined, they are
 not primitive in any interesting sense. You can write equivalent
-iterations using just a handful of list primitives.
+iterations using a handful of list primitives.
 
 Since a Scheme list is a linked list, the two core operations on a
 non-empty list are
@@ -231,8 +241,7 @@ empty
 To process a list, you need to be able to distinguish empty lists from
 non-empty lists, because @scheme[first] and @scheme[rest] work only on
 non-empty lists. The @scheme[empty?] procedure detects empty lists,
-and @scheme[cons?] detects non-empty lists (which pair an element with
-another list):
+and @scheme[cons?] detects non-empty lists:
 
 @interaction[
 (empty? empty)
@@ -261,14 +270,13 @@ With these pieces, you can write your own versions of the
 (my-map string-upcase (list "ready" "set" "go"))
 ]
 
-If the definitions are mysterious to you, consider reading @|HtDP|. If
-you are merely suspicious of the use of recursive calls instead of a
-looping construct, then read on.
+If the derivation of the above definitions is mysterious to you,
+consider reading @|HtDP|. But if you are merely suspicious of the use
+of recursive calls instead of a looping construct, then read on.
 
 Both the @scheme[my-length] and @scheme[my-map] procedures run in
 @math{O(n)} time for a list of length @math{n}. This is easy to see by
-imagining how @scheme[(my-length (list "a" "b" "c"))] must evaluate
-sub-expression:
+imagining how @scheme[(my-length (list "a" "b" "c"))] must evaluate:
 
 @schemeblock[
 (my-length (list "a" "b" "c"))
@@ -283,8 +291,13 @@ sub-expression:
 
 For a list with @math{n} elements, evalution will stack up @math{n}
 @scheme[(+ 1 ...)] additions, and then finally add them up when the
-list is exhausted. You can avoid piling up additions by adding along
-the way, accumulating the length in a variable @scheme[len].
+list is exhausted.
+
+You can avoid piling up additions by adding along the way. To
+accumulate a length this way, we need a procedure that takes both a
+list and the length of the list seem so far; the code below uses a
+local procedure @scheme[iter] that accumulates the length in an
+argument @scheme[len]:
 
 @schemeblock[
 (define (my-length lst)
@@ -310,16 +323,18 @@ Now evaluation looks like this:
 
 The revised @scheme[my-length] runs in constant space, just as the
 evaluation steps above suggest. That is, when the result of a
-procedure call is the result of some other procedure call, then the
-original procedure doesn't have to wait around for the result, taking
-up space for no good reason. This evaluation behavior is sometimes
-called @idefterm{tail-call optimization}, but it's not merely an
-``optimization'' in Scheme; it's a guarantee about the way the code
-will run.
+procedure call, like @scheme[(iter (list "b" "c") 1)], is exactly the
+result of some other procedure call, like @scheme[(iter (list "c")
+2)], then the first one doesn't have to wait around for the second
+one, because that takes up space for no good reason.
+
+This evaluation behavior is sometimes called @idefterm{tail-call
+optimization}, but it's not merely an ``optimization'' in Scheme; it's
+a guarantee about the way the code will run.
 
 In the case of @scheme[my-map], @math{O(n)} space compelxity is
-reasonable, since it has to generate an @math{O(n)}
-result. Nevertheless, you can reduce the constant factor by
+reasonable, since it has to generate a result of size
+@math{O(n)}. Nevertheless, you can reduce the constant factor by
 accumulating the result list. The only catch is that the accumulated
 list will be backwards, so you'll have to reverse it at the very end:
 
@@ -350,11 +365,11 @@ use. The difference is merely syntactic convenience.
 @section{Recursion versus Iteration}
 
 The @scheme[my-length] and @scheme[my-map] examples demonstrate that
-iteration is just a special case of recursion. In many languages, it
-is important to try to fit as many computations as possible into
-iteration form, otherwise performance will be bad and moderately large
-inputs can lead to stack overflow.  Similarly, in Scheme, it is often
-important to make sure that tail recursion is used to avoid
+iteration is just a special case of recursion. In many languages, it's
+important to try to fit as many computations as possible into
+iteration form. Otherwise, performance will be bad, and moderately
+large inputs can lead to stack overflow.  Similarly, in Scheme, it is
+often important to make sure that tail recursion is used to avoid
 @math{O(n)} space consumption when the computation is easily performed
 in constant space.
 
@@ -368,9 +383,9 @@ tail-recursive programs automatically run the same as a loop, lead
 Scheme programmers to embrace recursive forms rather than avoid them.
 
 Suppose, for example, that you want to remove consecutive duplicates
-from a list. While that can be written as a loop that remembers the
-previous element for each iteration, a Scheme programmer would more
-likely just write the following:
+from a list. While that procedure can be written as a loop that
+remembers the previous element for each iteration, a Scheme programmer
+would more likely just write the following:
 
 @def+int[
 (define (remove-dups l)
@@ -405,22 +420,22 @@ kicks in:
 ]
 
 Tail-call behavior becomes even more important when dealing with
-non-list data and when using an object-oriented style. In the latter
-case, an object must frequently dispatch to another object; if the
+non-list data or when using an object-oriented style. In the latter
+case, an object must sometimes dispatch to another object; if the
 other object's result is the complete answer, there's no reason for
-the first object to wait around. We defer this extended discussion
-until @secref["datatypes"], at which point we'll have more forms of
+the first object to wait around. We defer futher discussion of this
+point until @secref["datatypes"], after which we'll have more forms of
 data to consider.
 
 @;------------------------------------------------------------------------
 @section{Named @scheme[let]}
 
 As you start reading Scheme code, you'll discover one more form that
-is commonly used to implement recursive functions: @idefterm{named @scheme[let]}.
-A named @scheme[let] uses the same syntactic keyword as a simple
-sequence of local bindings, but an @nonterm{identifier} after the
-@scheme[let] (instead of an immediate open parenthesis) triggers a
-different parsing. In general,
+is commonly used to implement iterations and recursive functions:
+@idefterm{named @scheme[let]}.  A named @scheme[let] uses the same
+syntactic keyword as a simple sequence of local bindings, but an
+@nonterm{identifier} after the @scheme[let] (instead of an immediate
+open parenthesis) triggers a different parsing. In general,
 
 @schemeblock[
 #, @BNF-seq[@litchar{(} @litchar{let} @nonterm{proc-identifier} @litchar{(}
@@ -442,9 +457,10 @@ context.
 
 That is, a named @scheme[let] binds a procedure identifier that is
 visible only in the procedure's body, and it implicitly calls the
-procedure with the values of some initial expressions.  It looks
-similar to the start of @scheme[fold-for], but the recursive calls in
-the body are explicit, and they are not constrained to tail position.
+procedure with the values of some initial expressions.  A named
+@scheme[let] looks similar to the start of @scheme[fold-for], but the
+recursive calls in the body are explicit, and they are not constrained
+to tail position.
 
 As an example, here is @scheme[my-map] once again, using a named let
 to bind the local @scheme[iter] procedure:

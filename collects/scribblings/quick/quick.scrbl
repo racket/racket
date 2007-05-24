@@ -227,7 +227,7 @@ anonymous procedure:
 
 @mr-interaction[(series (lambda (size) (checkerboard (square size))))]
 
-The parenthesized name(s) after a @scheme[lambda] are the argument to
+The parenthesized names after a @scheme[lambda] are the arguments to
 the procedure, and the expression after the argument names is the
 procedure body. Using the word ``lambda'' instead of ``function'' or
 ``procedure'' is part of Scheme's history and culture.
@@ -243,10 +243,7 @@ A procedure-form @scheme[define] is really a shorthand for a simple
 ]
 
 Most Schemers prefer to use the shorthand procedure form with
-@scheme[define] instead of expanding to @scheme[lambda], but
-@scheme[lambda] shows up often with @scheme[letrec] to define mutually
-recursive procedures; see @link["elsewhere"]{elsewhere} for
-examples.
+@scheme[define] instead of expanding to @scheme[lambda].
 
 @; ----------------------------------------------------------------------
 @section{Lexical Scope}
@@ -258,8 +255,8 @@ binding. This rule applies to identifiers in a @scheme[lambda] body as
 well as anywhere else.
 
 For example, in the following @scheme[color-series] procedure the uses
-of @scheme[mk] in each @scheme[lambda] form refer to the argument of
-@scheme[color-series], since that's the binding that textually in
+of @scheme[mk] in each @scheme[lambda] form to refer to the argument of
+@scheme[color-series], since that's the binding that is textually in
 scope:
 
 @mr-def+int[
@@ -300,7 +297,7 @@ The @scheme[list] procedure takes any number of arguments and returns
 a list containing the given values:
 
 @mr-interaction[(list "red" "green" "blue")
-             (list (circle 10) (square 10))]
+                (list (circle 10) (square 10))]
 
 As you can see, a list prints as a pair of parentheses wrapped around
 the printed form of the list elements. There's room for confusion
@@ -308,12 +305,14 @@ here, because parentheses are used for both expressions, such as
 @scheme[(circle 10)], and printed results, such as
 @schemeresult[("red" "green" "blue")]. This connection between
 expressions and printed results is no coincidence, but we save that
-bit of culture for @link["elsewhere"]{discussion elsewhere}.
+bit of culture for @link["elsewhere"]{discussion elsewhere}. In the
+documentation and in DrScheme, result parentheses are printed in blue,
+unlike expression parentheses.
 
 If you have a list, then you'll eventually want to do something with
 each of the elements. The @scheme[map] procedure takes a list and a
 procedure to apply to each element of the list; it returns a new list
-to report the procedure's results:
+to combine the procedure's results:
 
 @mr-def+int[
 (define (rainbow p)
@@ -444,7 +443,7 @@ that @schememodname[little] provides @scheme[require] and the
 procedure-calling syntax. Libraries are not restricted to exporting
 values, such as procedures; they can also define new syntax. In this
 sense, Scheme isn't exactly language at all; it's more of an idea for
-how to structure a language to that you can extend it or create
+how to structure a language so that you can extend it or create
 entirely new languages.
 
 One way to introduce a new syntactic form is through

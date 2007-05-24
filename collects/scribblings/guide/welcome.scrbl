@@ -39,15 +39,10 @@ command-line @exec{mzscheme} interpreter and your favorite text
 editor. The rest of this guide presents the language mostly
 independent of the tool that you use.
 
-If you read @Quick and you're still using DrScheme, you already know
-about interactions and definitions. You can safely skip to
-@secref["indentation"], with the caveat that we call the interactions
-window the @defterm{REPL} in this guide.
-
-Otherwise, if you're using DrScheme, you'll need to set it in the
-right mode, because DrScheme is less biased to a particular Scheme
-variant than @exec{mzscheme}. Assuming that you've never used DrScheme
-before, start it up, type the line
+If you're using DrScheme, you'll need to set it in the right mode,
+because DrScheme is less biased to a particular Scheme variant than
+@exec{mzscheme}. Assuming that you've never used DrScheme before,
+start it up, type the line
 
 @schememod[big]
 
@@ -167,7 +162,7 @@ bad performance, and awkward scripting to combine and run
 programs. The problems are not in @exec{mzscheme}'s implementation;
 they're fundamental limitations of the traditional top-level
 environment, which Scheme and Lisp implementations have historically
-combated through ad hoc command-line flags, compiler directives, and
+fought with ad hoc command-line flags, compiler directives, and
 build tools. The module system is to designed to avoid the problems,
 so start with @schemefont{#module}, and you'll be happier with Scheme
 in the long run.

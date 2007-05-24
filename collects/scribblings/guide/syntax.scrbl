@@ -4,7 +4,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "syntax-overview"]{Just Enough Scheme Syntax}
+@title[#:tag "syntax-overview"]{Basic Scheme Syntax}
 
 The syntax of a Scheme program is specified in an unusual way compared
 to most programming languages. In particular, importing a module can
@@ -92,9 +92,10 @@ binds @nonterm{identifier} to the result of @nonterm{expression}, while
 @schemeblock[#, @fun-defn-stx]
 
 binds the first @nonterm{identifier} to a procedure that takes
-arguments as named by the remaining @nonterm{identifier}s. The
-@nonterm{expression}s are the body of the procedure. When called, the
-procedure returns the result of the last @nonterm{expression}.
+arguments as named by the remaining @nonterm{identifier}s. In the
+procedure case, the @nonterm{expression}s are the body of the
+procedure. When the procedure is called, it returns the result of the
+last @nonterm{expression}.
 
 @defexamples[
 (code:line (define five 5)           (code:comment #, @t{defines @scheme[five] to be @scheme[5]}))
@@ -105,7 +106,7 @@ five
 ]
 
 Under the hood, a procedure definition is really the same as a
-non-procedure definition. Consequently, a procedure name does not have to be
+non-procedure definition, and a procedure name does not have to be
 used in a procedure call. A procedure is just another kind of value,
 though the printed form is necessarily less complete than the printed
 form of a number or string.
@@ -139,10 +140,12 @@ evaluated only for some side-effect, such as printing.
 (greet "universe")
 ]
 
-Although you should generally avoid side-effects, it's important to
-understand that multiple expressions are allowed in a definition
-body. It explains why the following @scheme[nogreet] procedure simply
-returns its argument:
+You should generally avoid side-effects in Scheme; printing is a
+reasonable effect to use in some programs, but it's no substitute for
+simply returning a value. In any case, you should understand that
+multiple expressions are allowed in a definition body, because it
+explains why the following @scheme[nogreet] procedure simply returns
+its argument:
 
 @def+int[
 (define (nogreet name)
@@ -150,12 +153,12 @@ returns its argument:
 (nogreet "world")
 ]
 
-There are no parentheses around @scheme[string-append "hello " name],
-so they are three separate expressions instead of one procedure-call
-expression. The expressions @scheme[string-append] and
-@scheme["hello "] are evaluated, but the results are never
-used. Instead, the result of the procedure is just the result of
-the expression @scheme[name].
+Withing @scheme[nogreet], there are no parentheses around
+@scheme[string-append "hello " name], so they are three separate
+expressions instead of one procedure-call expression. The expressions
+@scheme[string-append] and @scheme["hello "] are evaluated, but the
+results are never used. Instead, the result of the procedure is just
+the result of the expression @scheme[name].
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Identifiers}
@@ -251,7 +254,7 @@ string-append
 
 We have already seen many procedure calls---or @defterm{procedure
 applications} in Scheme termonology. The syntax of a procedure
-call is
+application is
 
 @schemeblock[
 #, app-expr-stx
@@ -289,8 +292,7 @@ click on an identifier to get full details about its use.
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Conditionals with @scheme[if], @scheme[and], @scheme[or], and @scheme[cond]}
 
-After identifiers and constants, the next simplest kind of expression
-is an @scheme[if] conditional:
+The next simplest kind of expression is an @scheme[if] conditional:
 
 @schemeblock[
 #, if-expr-stx
@@ -301,10 +303,7 @@ non-@scheme[#f] value, then the second @nonterm{expression} is
 evaluted for the result of the whole @scheme[if] expression, otherwise
 the third @nonterm{expression} is evaluated for the result.
 
-The @scheme[if] form is often used with procedures whose names end in
-@schemeid[?]:
-
-@interaction[
+@examples[
 (if (> 2 3) 
     "bigger"
     "smaller")
@@ -319,7 +318,7 @@ The @scheme[if] form is often used with procedures whose names end in
 (reply "\u03BBx:(\u03BC\u03B1.\u03B1\u2192\u03B1).xx")
 ]
 
-More complex conditionals can be formed by nesting @scheme[if]
+Complex conditionals can be formed by nesting @scheme[if]
 expressions. For example, you could make the @scheme[reply] procedure
 work when given non-strings:
 
@@ -345,7 +344,7 @@ better written as
 ]
 
 but these kinds of nested @scheme[if]s are difficult to read.  Scheme
-provides a more readable shortcut through the @scheme[and] and
+provides more readable shortcuts through the @scheme[and] and
 @scheme[or] forms, which work with any number of expressions:
 
 @schemeblock[
@@ -396,8 +395,8 @@ expression. If it produces true, then the clause's second
 expression, and the rest of the clauses are ignored. If the test
 @nonterm{expression} produces @scheme[#f], then the clause's second
 @nonterm{expression} is ignored, and evaluation continues with the
-next clause. The last clause can use @scheme[else] as a sononym for
-@scheme[#t] in place of a test expression.
+next clause. The last clause can use @scheme[else] as a synonym for
+a @scheme[#t] test expression.
 
 Using @scheme[cond], the @scheme[reply-more] procedure can be more
 clearly written as follows:
@@ -457,13 +456,6 @@ procedure.
 When you accidentally omit a procedure name or when you use
 parentheses around an expression, you'll most often get an ``expected
 a procedure'' error like this one.
-
-Technically, @scheme[(if #t 1 2)] can be parsed as a procedure
-application as well as a conditional in our pretend grammar of Scheme,
-since @schemeid[if] is an identifier. For now, we say that the
-application form has a weaker precedence than the other forms, and
-we'll leave a full explanation to our discussion of
-@secref["scheme-forms"].
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Anonymous Procedures with @scheme[lambda]}
@@ -659,12 +651,8 @@ too simple even for this chapter. Here's the grammar that we have now:
                                 @BNF-etc)]
 
 For an expanded grammar, it's still a pretty small language! This
-language is plenty, however, to write lots of interesting programs.
+language is enough, however, to write lots of interesting programs.
 
 Depending on your programming background, you may be struck by the
-apparent absence of an iteration form. But the above is enough to
-write any kind of loop, as we see in the next chapter. Moreover, an
-extra built-in datatype (to go along numbers, strings, etc.) gives us
-more interesting data to process with loops. The new datatype is also
-the key to understanding the true syntax of Scheme, which we get back
-to in @secref["scheme-read"] and @secref["scheme-forms"].
+apparent absence of an iteration form. We'll add one in the next
+chapter, but also explain why it isn't really necessary.
