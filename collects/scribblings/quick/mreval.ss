@@ -138,8 +138,8 @@
           (((ss:make-pict-drawer) ((ss:colorize) v value-color)) dc 0 0)
           (send bm save-file fn 'png)
           (make-element #f (list (make-element (make-image-file fn) (list "[image]"))))))]
-     [(is-a? v (mred:canvas%))
-      (make-object:canvas%)]
      [(pair? v) (cons (fixup-picts (car v))
                       (fixup-picts (cdr v)))]
-     [else v])))
+     [(serializable? v) v]
+     [else (make-element value-color (list (format "~s" v)))])))
+
