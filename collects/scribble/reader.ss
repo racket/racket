@@ -1,6 +1,14 @@
+;; temporary copy of the scribble reader, so that we can experiment
+;;  without having to modify the main PLT tree
+
 ;; Implements the @-reader macro for embedding text in Scheme code.
 (module reader mzscheme
   (require (lib "string.ss") (lib "kw.ss") (lib "readerr.ss" "syntax"))
+
+  (provide read-insert-indents
+           read-accept-=-keyword)
+  (define read-insert-indents (make-parameter #t))
+  (define read-accept-=-keyword (make-parameter #t))
 
   (define cmd-char #\@)
 
@@ -76,11 +84,13 @@
                        ;; hack: if we see an open paren or other nested
                        ;; constructs, use the usual readtable so a nested `='
                        ;; behaves correctly
-                       (if (regexp-match-peek-positions
-                            #rx#"^[ \t\r\n]*['`,]*[[({@]" inp)
+                       (if (or (not (read-accept-=-keyword))
+                               (regexp-match-peek-positions
+                                #rx#"^[ \t\r\n]*['`,]*[[({@]" inp))
                          at-readtable attr-readtable)
                        #t)]
-                 [snd (and (symbol? (syntax-e fst))
+                 [snd (and (read-accept-=-keyword)
+                           (symbol? (syntax-e fst))
                            (regexp-match/fail-without-reading attr-sep inp)
                            (next-syntax at-readtable))])
             (if snd
@@ -147,7 +157,8 @@
                 (cdr stxs)))
         (cons stx stxs)))
     (define (add-indents stxs)
-      (if (or (null? stxs)
+      (if (or (not (read-insert-indents))
+              (null? stxs)
               (not (andmap (lambda (s) (and (syntax-line s) (syntax-column s)))
                            stxs)))
         stxs
