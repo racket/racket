@@ -307,7 +307,7 @@ the end of the text.  They are therefore allowed, as long as they are
 balanced.
 
 @scribble-examples[
-  "@foo{f{o}o}"]
+  "@foo{f{o}o}"
 ]
 
 There is also an alternative syntax for the body, one that specifies a
@@ -492,8 +492,8 @@ the need for functions, for example:
 @verbatim[
 #<<EOS
   > (define (important . text) @`b{@u{@big{@,@text}}})
-  > (important @`p{This is an important announcement!
+  > (important @`p{An important announcement!
                    Read it!})
-  (b (u (big (p "This is an important announcement!" "\n" "Read it!"))))
+  (b (u (big (p "An important announcement!" "\n" "Read it!"))))
 EOS
 ]

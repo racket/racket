@@ -55,13 +55,15 @@
 									  (string->path s))))])
 				 (cond
 				  [m (bytes->path (cadr m))]
-				  [p (error p "not a ~a filename (doesn't end with ~a): ~a" kind simple s)]
+				  [p (if simple
+                                         (error p "not a ~a filename (doesn't end with ~a): ~a" kind simple s)
+                                         (path-replace-suffix s #""))]
 				  [else #f]))]
 			      [(s) (extract-base-filename s #f)])])
 		     extract-base-filename)))])
 	  (values
 	   (mk 'extract-base-filename/ss 
-	       #"[sS][sS]|[sS][cC][mM]" "Scheme" ".ss or .scm")
+	       #"[sS][sS]|[sS][cC][mM]" "Scheme" #f)
 	   (mk 'extract-base-filename/c
 	       #"[cC]|[cC][cC]|[cC][xX][xX]|[cC][pP][pP]|[cC][+][+]|[mM]" "C" ".c, .cc, .cxx, .cpp, .c++, or .m")
 	   (mk 'extract-base-filename/kp

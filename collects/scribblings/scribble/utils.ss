@@ -35,7 +35,12 @@
      (map (lambda (line)
             (let ([line (if (string? line)
                             (list (litchar/lines line)
-                                  (scheme:to-element (scribble:read (open-input-string line))))
+                                  (scheme:to-paragraph
+                                   (let ([p (open-input-string line)])
+                                     (port-count-lines! p)
+                                     (if (regexp-match? #rx"\n" line)
+                                         (scribble:read-syntax #f p)
+                                         (scribble:read p)))))
                             line)])
               (list (as-flow spacer)
                     (as-flow (if line (car line) ""))

@@ -274,5 +274,5 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (map (lambda (impl)
          (map (lambda (bm)
                 (run-benchmark impl bm))
-              actual-benchmarks-to-run ))
+              actual-benchmarks-to-run))
        actual-implementations-to-run))

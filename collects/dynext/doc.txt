@@ -186,22 +186,26 @@ _file.ss_
    extension file suffix to the path/string s, returning a path.
 
 > (extract-base-filename/ss s program) - strips the Scheme file suffix
+   from the path/string s and returns a stripped path. Unlike the
+   other functions below, when `program' is not #f, then any suffix
+   (including no suffix) is allowed. If s is not a Scheme file and
+   `program' is #f, #f is returned. The `program' argument is optional
+   and defaults to #f.
+
+> (extract-base-filename/c s program) - strips the Scheme file suffix
    from the path/string s and returns a stripped path. If s is not a
    Scheme file name and `program' is a symbol, and error is signaled.
    If s is not a Scheme file and `program' is #f, #f is returned. The
    `program' argument is optional and defaults to #f.
 
-> (extract-base-filename/c s program) - same as
-   extract-base-filename/ss, but for C source files.
-
 > (extract-base-filename/kp s program) - same as
-   extract-base-filename/ss, but for constant pool files.
+   extract-base-filename/c, but for constant pool files.
 
 > (extract-base-filename/o s program) - same as
-   extract-base-filename/ss, but for compiled object files.
+   extract-base-filename/c, but for compiled object files.
 
 > (extract-base-filename/ext s program) - same as
-   extract-base-filename/ss, but for extension files.
+   extract-base-filename/c, but for extension files.
 
 The unit form _dynext:file@_ from _file-unit.ss_ requires no
 imports and exports _dynext:file^_ from _file-sig.ss_.

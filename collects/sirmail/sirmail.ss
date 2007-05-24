@@ -29,6 +29,10 @@
   (require (lib "hierlist-sig.ss" "hierlist")
 	   (lib "hierlist.ss" "hierlist"))
 
+  ;; For testing purposes, cause GC accounting to be
+  ;;  enabled:
+  (current-memory-use (current-custodian))
+
   ;; Constants:
   (define inbox-name "Inbox")
   (define default-mailbox-options null)
