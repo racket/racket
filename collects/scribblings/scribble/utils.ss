@@ -1,9 +1,9 @@
 
 (module utils mzscheme
-  (require "../struct.ss"
-           "../manual.ss"
-           (prefix scheme: "../scheme.ss")
-           (prefix scribble: "../reader.ss")
+  (require (lib "struct.ss" "scribble")
+           (lib "manual.ss" "scribble")
+           (prefix scheme: (lib "scheme.ss" "scribble"))
+           (prefix scribble: (lib "reader.ss" "scribble"))
            (lib "string.ss"))
 
   (provide at

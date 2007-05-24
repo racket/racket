@@ -8,7 +8,7 @@
            (lib "file.ss")
            (lib "runtime-path.ss")
            (lib "serialize.ss")
-           "exn.ss")
+           (lib "exn.ss" "scribblings" "quick"))
 
   (define-syntax define-mr
     (syntax-rules ()
@@ -32,8 +32,7 @@
   
   (define mred? (getenv "MREVAL"))
 
-  (define-runtime-path img-dir "images")
-  (define-runtime-path exn-module "exn.ss")
+  (define img-dir "quick/images") ; relative to scribbles dir
 
   (define mr-eval-handler
     (if mred?
@@ -87,13 +86,13 @@
   
   (define mr-namespace
     (if mred?
-        (current-int-namespace ((dynamic-require '(lib "mred.ss" "mred") 'make-namespace-with-mred)))
+        ((dynamic-require '(lib "mred.ss" "mred") 'make-namespace-with-mred))
         (let ([ns (make-namespace)])
           (namespace-attach-module (current-namespace)
                                    '(lib "struct.ss" "scribble")
                                    ns)
           (namespace-attach-module (current-namespace)
-                                   exn-module
+                                   '(lib "exn.ss" "scribblings" "quick")
                                    ns)
           ns)))
   
@@ -120,7 +119,7 @@
   (define (fixup-picts v)
     (cond
      [((ss:pict?) v)
-      (let ([fn (build-path img-dir (format "img~a.png" image-counter))])
+      (let ([fn (format "~a/img~a.png" img-dir image-counter)])
         (set! image-counter (add1 image-counter))
         (let* ([bm (make-object (mred:bitmap%)
                                 (inexact->exact (ceiling ((ss:pict-width) v)))

@@ -1,6 +1,6 @@
-#reader"../docreader.ss"
-@require["../manual.ss"]
-@require["../bnf.ss"]
+#reader(lib "docreader.ss" "scribble")
+@require[(lib "manual.ss" "scribble")]
+@require[(lib "bnf.ss" "scribble")]
 @require["utils.ss"]
 
 @title[#:tag "docreader"]{Document Reader}

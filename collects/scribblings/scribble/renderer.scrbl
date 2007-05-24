@@ -1,5 +1,5 @@
-#reader"../docreader.ss"
-@require["../manual.ss"]
+#reader(lib "docreader.ss" "scribble")
+@require[(lib "manual.ss" "scribble")]
 @require["utils.ss"]
 
 @title[#:tag "renderer"]{Renderer}

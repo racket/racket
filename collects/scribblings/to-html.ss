@@ -16,7 +16,8 @@
                          (build-path main-doc-dir (car names)))])
         (unless multi?
           (make-directory* doc-dir))
-        (parameterize ([current-directory doc-dir]
+        (parameterize ([current-directory dir]
+                       [current-dest-directory doc-dir]
                        [current-render-mixin (if multi?
                                                  multi-html:render-mixin
                                                  html:render-mixin)]
