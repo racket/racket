@@ -1,5 +1,5 @@
 (module pr7823 mzscheme
-  (require (lib "response.ss" "web-server"))
+  (require (lib "response-structs.ss" "web-server"))
   
   (define x (make-response/full
              200 "OK" (current-seconds) #"text/html" '()
