@@ -15,7 +15,7 @@
                  abort/cc
                  safe-call?
                  the-cont-key)
-           (only (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
+           (only "persistent-web-interaction.ss"
                  start-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
            "xexpr-extras.ss"

@@ -1,5 +1,5 @@
 (module web-cells mzscheme
-  (require (lib "closure.ss" "web-server" "prototype-web-server")
+  (require "../closure.ss"
            (lib "serialize.ss")
            (lib "list.ss")
            (lib "plt-match.ss")

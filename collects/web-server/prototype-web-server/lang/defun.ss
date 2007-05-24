@@ -1,14 +1,11 @@
 (module defun mzscheme
   (require-for-template mzscheme)
   (require (lib "kerncase.ss" "syntax")
-           #;(lib "etc.ss")
            (lib "list.ss")
-           (lib "toplevel.ss" "syntax")
            (lib "plt-match.ss")
-           (lib "stx.ss" "syntax")
            "util.ss"
            "freevars.ss"
-           (lib "closure.ss" "web-server" "prototype-web-server"))
+           "../closure.ss")
   (provide defun)
   
   ; make-new-clouse-label : (syntax -> syntax) syntax -> syntax

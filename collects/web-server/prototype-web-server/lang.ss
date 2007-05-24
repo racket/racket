@@ -1,13 +1,13 @@
 (module lang mzscheme
   (require-for-syntax (lib "etc.ss")
-                      (lib "labels.ss" "web-server" "prototype-web-server")
+                      "labels.ss"
                       "lang/util.ss"
                       "lang/elim-letrec.ss"
                       "lang/anormal.ss"
                       "lang/elim-callcc.ss"
                       "lang/defun.ss")
-  (require (lib "abort-resume.ss" "web-server" "prototype-web-server"))
-  (require (only (lib "persistent-web-interaction.ss" "web-server" "prototype-web-server")
+  (require "abort-resume.ss"
+           (only "persistent-web-interaction.ss"
                  send/suspend/hidden
                  send/suspend/url
                  send/suspend/dispatch
@@ -15,7 +15,7 @@
                  redirect/get
                  start-servlet))
   (provide (rename lang-module-begin #%module-begin))
-  (provide (all-from (lib "abort-resume.ss" "web-server" "prototype-web-server"))
+  (provide (all-from "abort-resume.ss")
            (all-from-except mzscheme #%module-begin)
            send/suspend/hidden
            send/suspend/url

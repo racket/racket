@@ -1,7 +1,6 @@
 (module add-simple (lib "lang.ss" "web-server" "prototype-web-server")
   (require (lib "url.ss" "net")
-           (lib "servlet-helpers.ss" "web-server" "private")
-           (lib "web-param.ss" "web-server" "prototype-web-server" "newcont"))
+           (lib "servlet-helpers.ss" "web-server" "private"))
   (provide start)
   
   (define msg (make-web-parameter "unknown"))

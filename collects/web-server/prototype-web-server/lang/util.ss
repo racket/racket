@@ -1,11 +1,7 @@
 (module util mzscheme
-  (require-for-template mzscheme
-                        (lib "abort-resume.ss" "web-server" "prototype-web-server"))
+  (require-for-template mzscheme)
   (require (lib "kerncase.ss" "syntax")
-           (lib "etc.ss")
-           (lib "list.ss")
-           (lib "toplevel.ss" "syntax")
-           (lib "stx.ss" "syntax"))
+           (lib "list.ss"))
   (provide (all-defined))
   
   (define current-code-labeling

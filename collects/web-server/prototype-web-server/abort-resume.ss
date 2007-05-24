@@ -2,7 +2,7 @@
   (require "define-closure.ss"
            (lib "plt-match.ss")
            (lib "serialize.ss")
-           (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont"))
+           "newcont/web-cells.ss")
   (provide
    
    ;; AUXILLIARIES

@@ -1,5 +1,4 @@
 (module web-cell-component mzscheme
-  (require (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont"))
   (provide define-component)
   
   (define-syntax define-component
