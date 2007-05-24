@@ -339,7 +339,8 @@
                   (p nbsp)
                   ,@(super render-part d ht)
                   (p nbsp)
-                  ,@(navigation d ht))
+                  ,@(navigation d ht)
+                  (p nbsp))
                 ;; Normal section render
                 (super render-part d ht))])))
 
