@@ -52,14 +52,12 @@
                          [collapsed? (= 1 (send stream read-integer "test-case-box collapsed?"))]
                          [error-box? (= 1 (send stream read-integer "test-case-box error-box?"))])])])
            (if text?
-               (apply
-                bytes-append
-                (map concat
-                     (send v get-comment)
-                     (send v get-test)
-                     (send v get-expected)
-                     (send v get-predicate)
-                     (send v get-should-raise)
-                     (send v error-message)))
+               (bytes-append
+                (or (send v get-comment) #"")
+                (or (send v get-test) #"")
+                (or (send v get-expected) #"")
+                (or (send v get-predicate) #"")
+                (or (send v get-should-raise) #"")
+                (or (send v get-error-message) #""))
                v)))
        (super-new)))))
