@@ -1,17 +1,15 @@
-(require "../client.ss"
+(require "../abort-resume.ss"
          (lib "serialize.ss"))
  
-(module m08 "../persistent-interaction.ss"
-  (define (id x) x)
-  
+(module m08 "../lang.ss"
+  (provide start)
   (define (gn which)
     (cadr
      (send/suspend
       (lambda (k)
         (let ([ignore (printf "Please send the ~a number.~n" which)])
           k)))))
-  
-  (let ([ignore (start-interaction car)])
+  (define (start ignore)
     (letrec ([f (let ([n (gn "first")])
                   (lambda (m) (+ n m)))]
              [g (let ([n (gn "second")])
@@ -20,7 +18,8 @@
         (let ([ignore (printf "The answer is: ~s~n" result)])
           result)))))
 
-(require m08)
+(require (prefix m08: m08))
+(run-start (lambda () (start-interaction car)) m08:start)
 
 ;; trace *without* serialization
 (define k0 (dispatch-start 'foo))

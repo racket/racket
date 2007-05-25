@@ -5,14 +5,13 @@
   (define (go ns)
     (lambda ()
       (parameterize ([current-namespace ns])
-        (eval '(abort/cc 
-                (with-continuation-mark safe-call? '(#t start)
-                  (start
-                   (with-continuation-mark the-cont-key start
-                     (start-interaction 
+        (eval '(run-start 
+                (lambda ()
+                  (start-interaction 
                       (lambda (k*v)
                         (lambda (k*v)
-                          ((car k*v) k*v))))))))))))
+                          ((car k*v) k*v)))))
+                start)))))
   
   (define-syntax (make-module-eval m-expr)
     (syntax-case m-expr (module)

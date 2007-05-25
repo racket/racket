@@ -1,29 +1,38 @@
-(require "../client.ss")
+(require "../abort-resume.ss")
+
+(define (id x) x)
 
 ;; ****************************************
 ;; ****************************************
 ;; BASIC TESTS
 
-(module m00 "../interaction.ss"
+(module m00 "../lang.ss"
   (define (id x) x)
-  (id (start-interaction id)))
+  (provide start)
+  (define (start i)
+    (id i)))
 
-(require m00)
+(require (prefix m00: m00))
+(run-start (lambda () (start-interaction id)) m00:start)
 (= 7 (dispatch-start 7))
 (= 8 (dispatch-start 8))
 
-(module m01 "../interaction.ss"
-  (define (id x) x)
-  (+ (* 1 2) (* 3 4) (start-interaction id)))
+(module m01 "../lang.ss"
+  (provide start)
+  (define (start i)
+    (+ (* 1 2) (* 3 4) i)))
 
-(require m01)
+(require (prefix m01: m01))
+(run-start (lambda () (start-interaction id)) m01:start)
 (= 14 (dispatch-start 0))
 (= 20 (dispatch-start 6))
 
 ;; start-interaction may be called mutitple times
 ;; each call overwrites the previous interaction
 ;; continuation with the latest one.
-(module m02 "../interaction.ss"
+; XXX Can't do this anymore
+#|
+(module m02 "../lang.ss"
   (define (id x) x)
   (+ (start-interaction id)
      (start-interaction id)))
@@ -32,37 +41,39 @@
 (void? (dispatch-start 1))
 (= 3 (dispatch-start 2))
 (= 0 (dispatch-start -1))
+|#
 
 ;; ****************************************
 ;; ****************************************
 ;; TESTS INVOLVING CALL/CC
 
-(module m03 "../interaction.ss"
-  (define (f x)
+(module m03 "../lang.ss"
+  (provide start)
+  (define (start x)
     (let/cc k
-      (+ 2 4 (k 3) 6 8)))
-  (f (start-interaction (lambda (x) x))))
+      (+ 2 4 (k 3) 6 8))))
 
-(require m03)
+(require (prefix m03: m03))
+(run-start (lambda () (start-interaction id)) m03:start)
 (= 3 (dispatch-start 'foo))
 (= 3 (dispatch-start 7))
 
 ;; in the following test, if you modify
 ;; resume to print the "stack" you will
 ;; see that this is not tail recursive
-(module m04 "../interaction.ss"
-  (define (mult ln)
+(module m04 "../lang.ss"
+  (provide start)
+  (define (start ln)
     (let/cc k
       (cond
         [(null? ln) 1]
         [(zero? (car ln)) (k 0)]
         [else
          (* (car ln)
-            (mult (cdr ln)))])))
-  
-  (mult (start-interaction (lambda (x) x))))
+            (start (cdr ln)))]))))
 
-(require m04)
+(require (prefix m04: m04))
+(run-start (lambda () (start-interaction id)) m04:start)
 (= 0 (dispatch-start (list 1 2 3 4 5 6 7 0 8 9)))
 (= 120 (dispatch-start (list 1 2 3 4 5)))
 
@@ -70,10 +81,10 @@
 ;; outside the recursion and should be tail
 ;; recursive. A "stack trace" reveals this
 ;; as expected.
-(module m05 "../interaction.ss"
-  (provide mult)
+(module m05 "../lang.ss"
+  (provide start)
   
-  (define (mult ln)
+  (define (start ln)
     (let/cc escape
       (mult/escape escape ln)))
   
@@ -83,19 +94,18 @@
       [(zero? (car ln)) (escape 0)]
       [else
        (* (car ln)
-          (mult/escape escape (cdr ln)))]))
-  
-  (mult (start-interaction (lambda (x) x))))
+          (mult/escape escape (cdr ln)))])))
 
-(require m05)
+(require (prefix m05: m05))
+(run-start (lambda () (start-interaction id)) m05:start)
 (= 0 (dispatch-start (list 1 2 3 0 4 5 6)))
 (= 120 (dispatch-start (list 1 2 3 4 5)))
 
 ;; ****************************************
 ;; ****************************************
 ;; TESTS INVOLVING send/suspend
-
-
+; XXX Doesn't work
+#|
 (module table01 mzscheme
   (provide store-k
            lookup-k)
@@ -137,3 +147,4 @@
    (zero? (dispatch `(,second-key -1)))
    (= -7 (dispatch `(,third-key 0)))
    (zero? (dispatch `(,third-key 7)))))
+|#

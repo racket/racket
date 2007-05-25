@@ -196,11 +196,7 @@
                                      (lambda _
                                        (dynamic-require module-name #f))])
                       (let ([start (dynamic-require module-name 'start)])
-                        (abort/cc 
-                         (with-continuation-mark safe-call? '(#t start)
-                           (start
-                            (with-continuation-mark the-cont-key start
-                              (start-servlet)))))))))
+                        (run-start start-servlet start)))))
                 (myprint "resume-session~n")
                 (resume-session (session-id ses) host-info)))
             (output-response/method

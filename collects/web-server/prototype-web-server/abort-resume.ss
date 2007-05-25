@@ -20,6 +20,7 @@
    send/suspend
    
    ;; "CLIENT" INTERFACE
+   run-start
    dispatch-start
    dispatch
    )
@@ -149,6 +150,13 @@
   ;; **********************************************************************
   ;; **********************************************************************
   ;; "CLIENT" INTERFACE
+  
+  (define (run-start harness start)
+    (abort/cc 
+     (with-continuation-mark safe-call? '(#t start)
+       (start
+        (with-continuation-mark the-cont-key start
+          (harness))))))
   
   ;; dispatch-start: request -> reponse
   ;; pass the initial request to the starting interaction point
