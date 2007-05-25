@@ -1,5 +1,6 @@
 (module lang mzscheme
   (require-for-syntax (lib "etc.ss")
+                      (lib "list.ss")
                       "labels.ss"
                       "lang/util.ss"
                       "lang/elim-letrec.ss"

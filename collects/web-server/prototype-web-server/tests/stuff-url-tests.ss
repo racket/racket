@@ -48,29 +48,32 @@
      
      (make-test-case
       "compose url-parts and recover-serial (1)"
-      (let* ([ev (make-eval/mod-path "modules/mm00.ss")]
-             [k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
-                                      `(file "modules/mm00.ss"))]
-             [k1 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
-                                      `(file "modules/mm00.ss"))]
-             [k2 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
-                                      `(file "modules/mm00.ss"))])
-        (assert-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3)))))))
+      (let-values ([(go ev) (make-eval/mod-path "modules/mm00.ss")])
+        (go)
+        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
+                                        `(file "modules/mm00.ss"))]
+               [k1 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
+                                        `(file "modules/mm00.ss"))]
+               [k2 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
+                                        `(file "modules/mm00.ss"))])
+          (assert-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3))))))))
      
      (make-test-case
       "compose url-parts and recover-serial (2)"
-      (let* ([ev (make-eval/mod-path "modules/mm01.ss")]
-             [k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
-                                      `(file "modules/mm01.ss"))])
-        (assert-true (= 7 (ev `(dispatch (list (deserialize ',k0) 7)))))))
+      (let-values ([(go ev) (make-eval/mod-path "modules/mm01.ss")])
+        (go)
+        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
+                                        `(file "modules/mm01.ss"))])
+          (assert-true (= 7 (ev `(dispatch (list (deserialize ',k0) 7))))))))
      
      (make-test-case
       "compose stuff-url and unstuff-url and recover the serial"
-      (let* ([ev (make-eval/mod-path "modules/mm00.ss")]
-             [k0 (stuff-unstuff (ev '(serialize (dispatch-start 'foo)))
-                                uri0 `(file "modules/mm00.ss"))]
-             [k1 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
-                                uri0 `(file "modules/mm00.ss"))]
-             [k2 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
-                                uri0 `(file "modules/mm00.ss"))])
-        (assert-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3))))))))))
+      (let-values ([(go ev) (make-eval/mod-path "modules/mm00.ss")])
+        (go)
+        (let* ([k0 (stuff-unstuff (ev '(serialize (dispatch-start 'foo)))
+                                  uri0 `(file "modules/mm00.ss"))]
+               [k1 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
+                                  uri0 `(file "modules/mm00.ss"))]
+               [k2 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
+                                  uri0 `(file "modules/mm00.ss"))])
+          (assert-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3)))))))))))

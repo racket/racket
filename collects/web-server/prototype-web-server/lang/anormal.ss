@@ -34,133 +34,135 @@
       (anormal id stx))  
     
     (define (anormal ctxt stx)
-      (kernel-syntax-case
-          stx #f 
-        [(begin)
-         (anormal ctxt (syntax/loc stx (#%app (#%top . void))))]
-        [(begin lbe)
-         (anormal ctxt (syntax/loc stx lbe))]
-        [(begin fbe be ...)
-         ; XXX Am I a bug?
-         (anormal ctxt 
-                  (syntax/loc stx 
-                    (let-values ([(throw-away) fbe])
-                           (begin be ...))))]
-        [(begin0)
-         (anormal ctxt (syntax/loc stx (#%app (#%top . void))))]
-        [(begin0 lbe)
-         (anormal ctxt (syntax/loc stx lbe))]
-        [(begin0 fbe be ...)
-         (anormal ctxt 
-                  (syntax/loc stx 
-                    (let-values ([(save) fbe])
-                           (begin be ... save))))]
-        [(define-values (v ...) ve)
-         (with-syntax ([ve (anormal-term #'ve)])
-           (syntax/loc stx 
-             (define-values (v ...) ve)))]
-        [(define-syntaxes (v ...) ve)
-         (with-syntax ([ve (anormal-term #'ve)])
-           (syntax/loc stx 
-             (define-values (v ...) ve)))]
-        [(define-values-for-syntax (v ...) ve)
-         (with-syntax ([ve (anormal-term #'ve)])
-           (syntax/loc stx 
-             (define-values-for-syntax (v ...) ve)))]
-        [(set! v ve)
-         (anormal
-          (compose ctxt
-                   (lambda (val)
-                     (quasisyntax/loc stx (set! v #,val))))
-          #'ve)]
-        [(let-values () be)
-         (anormal ctxt (syntax/loc stx be))]
-        [(let-values ([(v) ve]) be)
-         (anormal ctxt
-                  (syntax/loc stx 
-                    (#%app (lambda (v) be)
-                           ve)))]
-        [(let-values ([(v ...) ve]) be)
-         (anormal ctxt
-                  (syntax/loc stx 
-                    (#%app call-with-values
-                           (lambda () ve)
-                           (lambda (v ...) be))))]
-        [(let-values ([(fv ...) fve] [(v ...) ve] ...) be)
-         (anormal ctxt
-                  (syntax/loc stx 
-                    (let-values ([(fv ...) fve])
-                      (let-values ([(v ...) ve] ...)
-                        be))))]
-        [(let-values ([(v ...) ve] ...) be ...)
-         (anormal ctxt
-                  (syntax/loc stx 
-                    (let-values ([(v ...) ve] ...)
-                      (begin be ...))))]
-        [(letrec-values ([(v ...) ve] ...) be ...)
-         (anormal ctxt
-                  (elim-letrec-term stx))]
-        [(lambda formals be ...)
-         (with-syntax ([nbe (anormal-term (syntax/loc stx (begin be ...)))])
-           (ctxt (syntax/loc stx (lambda formals nbe))))]
-        [(case-lambda [formals be] ...)
-         (with-syntax ([(be ...) (map anormal-term (syntax->list #'(be ...)))])
-           (ctxt (syntax/loc stx (case-lambda [formals be] ...))))]
-        [(case-lambda [formals be ...] ...)
-         (anormal ctxt
-                  (syntax/loc stx (case-lambda [formals (begin be ...)] ...)))]
-        [(if te ce ae)
-         (anormal
-          (compose ctxt
-                   (lambda (val)
-                     (quasisyntax/loc stx 
-                       (if #,val
-                           #,(anormal-term #'ce)
-                           #,(anormal-term #'ae)))))
-          #'te)]
-        [(if te ce)
-         (anormal ctxt (syntax/loc stx (if te ce (#%app void))))]
-        [(quote datum)
-         (ctxt stx)]
-        [(quote-syntax datum)
-         (ctxt stx)]
-        [(letrec-syntaxes+values ([(sv ...) se] ...)
-           ([(vv ...) ve] ...)
-           be ...)
-         (raise-syntax-error 'anormal "XXX What do I do with letrec-syntaxes+values?" stx)]
-        [(with-continuation-mark ke me be)
-         (anormal
-          (compose ctxt
-                   (lambda (kev)
-                     (anormal 
-                      (lambda (mev)
-                        (quasisyntax/loc stx 
-                          (with-continuation-mark #,kev #,mev
-                            #,(anormal-term #'be))))
-                      #'me)))
-          #'ke)]
-        [(#%expression . d)
-         (ctxt stx)]
-        [(#%app fe e ...)
-         (anormal
-          (lambda (val0)
-            (anormal*
-             (compose ctxt
-                      (lambda (rest-vals)
-                        (quasisyntax/loc stx 
-                          (#%app #,val0 #,@rest-vals))))
-             (syntax->list #'(e ...))))
-          #'fe)]
-        [(#%top . v)
-         (ctxt stx)]
-        [(#%datum . d)
-         (ctxt stx)]
-        [(#%variable-reference . v)
-         (ctxt stx)]
-        [id (identifier? #'id)
-            (ctxt #'id)]
-        [_
-         (raise-syntax-error 'anormal "Dropped through:" stx)]))
+      (recertify
+       stx
+       (kernel-syntax-case
+           stx #f 
+         [(begin)
+          (anormal ctxt (syntax/loc stx (#%app (#%top . void))))]
+         [(begin lbe)
+          (anormal ctxt (syntax/loc stx lbe))]
+         [(begin fbe be ...)
+          ; XXX Am I a bug?
+          (anormal ctxt 
+                   (syntax/loc stx 
+                     (let-values ([(throw-away) fbe])
+                       (begin be ...))))]
+         [(begin0)
+          (anormal ctxt (syntax/loc stx (#%app (#%top . void))))]
+         [(begin0 lbe)
+          (anormal ctxt (syntax/loc stx lbe))]
+         [(begin0 fbe be ...)
+          (anormal ctxt 
+                   (syntax/loc stx 
+                     (let-values ([(save) fbe])
+                       (begin be ... save))))]
+         [(define-values (v ...) ve)
+          (with-syntax ([ve (anormal-term #'ve)])
+            (syntax/loc stx 
+              (define-values (v ...) ve)))]
+         [(define-syntaxes (v ...) ve)
+          (with-syntax ([ve (anormal-term #'ve)])
+            (syntax/loc stx 
+              (define-values (v ...) ve)))]
+         [(define-values-for-syntax (v ...) ve)
+          (with-syntax ([ve (anormal-term #'ve)])
+            (syntax/loc stx 
+              (define-values-for-syntax (v ...) ve)))]
+         [(set! v ve)
+          (anormal
+           (compose ctxt
+                    (lambda (val)
+                      (quasisyntax/loc stx (set! v #,val))))
+           #'ve)]
+         [(let-values () be)
+          (anormal ctxt (syntax/loc stx be))]
+         [(let-values ([(v) ve]) be)
+          (anormal ctxt
+                   (syntax/loc stx 
+                     (#%app (lambda (v) be)
+                            ve)))]
+         [(let-values ([(v ...) ve]) be)
+          (anormal ctxt
+                   (syntax/loc stx 
+                     (#%app call-with-values
+                            (lambda () ve)
+                            (lambda (v ...) be))))]
+         [(let-values ([(fv ...) fve] [(v ...) ve] ...) be)
+          (anormal ctxt
+                   (syntax/loc stx 
+                     (let-values ([(fv ...) fve])
+                       (let-values ([(v ...) ve] ...)
+                         be))))]
+         [(let-values ([(v ...) ve] ...) be ...)
+          (anormal ctxt
+                   (syntax/loc stx 
+                     (let-values ([(v ...) ve] ...)
+                       (begin be ...))))]
+         [(letrec-values ([(v ...) ve] ...) be ...)
+          (anormal ctxt
+                   (elim-letrec-term stx))]
+         [(lambda formals be ...)
+          (with-syntax ([nbe (anormal-term (syntax/loc stx (begin be ...)))])
+            (ctxt (syntax/loc stx (lambda formals nbe))))]
+         [(case-lambda [formals be] ...)
+          (with-syntax ([(be ...) (map anormal-term (syntax->list #'(be ...)))])
+            (ctxt (syntax/loc stx (case-lambda [formals be] ...))))]
+         [(case-lambda [formals be ...] ...)
+          (anormal ctxt
+                   (syntax/loc stx (case-lambda [formals (begin be ...)] ...)))]
+         [(if te ce ae)
+          (anormal
+           (compose ctxt
+                    (lambda (val)
+                      (quasisyntax/loc stx 
+                        (if #,val
+                            #,(anormal-term #'ce)
+                            #,(anormal-term #'ae)))))
+           #'te)]
+         [(if te ce)
+          (anormal ctxt (syntax/loc stx (if te ce (#%app void))))]
+         [(quote datum)
+          (ctxt stx)]
+         [(quote-syntax datum)
+          (ctxt stx)]
+         [(letrec-syntaxes+values ([(sv ...) se] ...)
+            ([(vv ...) ve] ...)
+            be ...)
+          (raise-syntax-error 'anormal "XXX What do I do with letrec-syntaxes+values?" stx)]
+         [(with-continuation-mark ke me be)
+          (anormal
+           (compose ctxt
+                    (lambda (kev)
+                      (anormal 
+                       (lambda (mev)
+                         (quasisyntax/loc stx 
+                           (with-continuation-mark #,kev #,mev
+                             #,(anormal-term #'be))))
+                       #'me)))
+           #'ke)]
+         [(#%expression . d)
+          (ctxt stx)]
+         [(#%app fe e ...)
+          (anormal
+           (lambda (val0)
+             (anormal*
+              (compose ctxt
+                       (lambda (rest-vals)
+                         (quasisyntax/loc stx 
+                           (#%app #,val0 #,@rest-vals))))
+              (syntax->list #'(e ...))))
+           #'fe)]
+         [(#%top . v)
+          (ctxt stx)]
+         [(#%datum . d)
+          (ctxt stx)]
+         [(#%variable-reference . v)
+          (ctxt stx)]
+         [id (identifier? #'id)
+             (ctxt #'id)]
+         [_
+          (raise-syntax-error 'anormal "Dropped through:" stx)])))
     
     ;; anormal*: ((listof w) -> target-expr) (listof source-expr) -> target-expr
     ;; normalize an expression given as a context and list of sub-expressions
