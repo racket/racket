@@ -1,6 +1,5 @@
 (module add01 mzscheme
-  (require (lib "session.ss" "web-server" "prototype-web-server" "private")
-           (lib "request-structs.ss" "web-server")
+  (require (lib "request-structs.ss" "web-server")
            (lib "url.ss" "net"))
   (provide start)
 
@@ -31,7 +30,7 @@
          `(html (head (title "Hello"))
                 (body
                  (h1 "Hello World!")
-                 (form ([action ,(url->string (session-url (current-session)))]
+                 (form ([action ,(url->string uri)]
                         [method "get"] [enctype "application/x-www-form-urlencoded"])
                          "Enter the first number to add: "
                          (input ([type "text"] [name "first"] [value ""]))
