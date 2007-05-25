@@ -27,6 +27,37 @@
   (define-struct connection-state (conn req))
   (define top-cust (current-custodian))
   
+  ;; Parameter Parsing
+  
+  ;; encodes a simple number:
+  (define (match-url-params x) (regexp-match #rx"([0-9]+)" x))
+  
+  ;; resume-session? url -> (union number #f)
+  ;; Determine if the url encodes a session-id and extract it
+  (define (resume-session? a-url)
+    (myprint "resume-session?: url-string = ~s~n" (url->string a-url))
+    (let ([k-params (filter match-url-params
+                            (apply append
+                                   (map path/param-param (url-path a-url))))])
+      (myprint "resume-session?: ~S~n" k-params)
+      (if (empty? k-params)
+          #f
+          (match (match-url-params (first k-params))
+            [(list _ n)
+             (myprint "resume-session?: Found ~a~n" n)
+             (string->number n)]
+            [_
+             #f]))))
+    
+  (define make-servlet-namespace
+    (make-make-servlet-namespace
+     #:to-be-copied-module-specs
+     '(mzscheme
+      (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
+      (lib "abort-resume.ss" "web-server" "prototype-web-server")
+      (lib "session.ss" "web-server" "prototype-web-server")
+      (lib "request.ss" "web-server" "private"))))
+  
   (define/kw (make #:key
                    [servlet-root "servlets"]
                    [timeouts-servlet-connection (* 60 60 24)]
@@ -83,42 +114,6 @@
                   [else
                    (begin-session)]))))))
     
-    ;; Parameter Parsing
-    
-    ;; encodes a simple number:
-    (define URL-PARAMS:REGEXP (regexp "([0-9]+)"))
-    
-    (define (match-url-params x) (regexp-match URL-PARAMS:REGEXP x))
-    
-    ;; resume-session? url -> (union number #f)
-    ;; Determine if the url encodes a session-id and extract it
-    (define (resume-session? a-url)
-      (myprint "resume-session?: url-string = ~s~n" (url->string a-url))
-      (let ([k-params (filter match-url-params
-                              (apply append
-                                     (map path/param-param (url-path a-url))))])
-        (myprint "resume-session?: ~S~n" k-params)
-        (if (empty? k-params)
-            #f
-            (match (match-url-params (first k-params))
-              [(list _ n)
-               (myprint "resume-session?: Found ~a~n" n)
-               (string->number n)]
-              [_
-               #f]))))
-    
-    ;; url->param: url -> (union string #f)
-    (define (url->param a-url)
-      (let ([l (filter path/param? (url-path a-url))])
-        (and (not (null? l))
-             (path/param-param (car l)))))
-    
-    ;(resume-session? (string->url "http://localhost:9000/;123"))
-    ;(resume-session? (string->url "http://localhost:9000/;foo"))
-    ;(resume-session? (string->url "http://localhost:9000/foo/bar"))
-    
-    ;; ************************************************************
-    
     ;; begin-session: connection request host-info
     (define (begin-session)
       (myprint "begin-session~n")
@@ -147,30 +142,6 @@
                (connection-state-conn (thread-cell-ref thread-connection-state))
                (responders-file-not-found uri)
                (request-method (connection-state-req (thread-cell-ref thread-connection-state))))))))
-    
-    (define to-be-copied-module-specs
-      '(mzscheme
-        (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
-        (lib "abort-resume.ss" "web-server" "prototype-web-server")
-        (lib "session.ss" "web-server" "prototype-web-server")
-        (lib "request.ss" "web-server" "private")))
-    
-    ;; get the names of those modules.
-    (define to-be-copied-module-names
-      (let ([get-name
-             (lambda (spec)
-               (if (symbol? spec)
-                   spec
-                   ((current-module-name-resolver) spec #f #f)))])
-        (map get-name to-be-copied-module-specs)))
-    
-    (define (make-servlet-namespace)
-      (let ([server-namespace (current-namespace)]
-            [new-namespace (make-namespace)])
-        (parameterize ([current-namespace new-namespace])
-          (for-each (lambda (name) (namespace-attach-module server-namespace name))
-                    to-be-copied-module-names)
-          new-namespace)))
     
     ;; ************************************************************
     ;; resume-session: connection request number host-info
