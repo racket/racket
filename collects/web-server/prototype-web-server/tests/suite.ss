@@ -5,7 +5,7 @@
            "test-normalizer.ss"
            "closure-tests.ss"
            "labels-tests.ss"
-           "persistent-interaction-tests.ss"
+           "lang-tests.ss"
            "stuff-url-tests.ss")
   
   (test/graphical-ui
@@ -16,5 +16,5 @@
     test-normalizer-suite
     closure-tests-suite
     labels-tests-suite
-    persistent-interaction-suite
+    lang-suite
     )))
