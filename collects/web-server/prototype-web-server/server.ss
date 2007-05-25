@@ -1,6 +1,5 @@
 (module server mzscheme
   (require (lib "connection-manager.ss" "web-server" "private")
-           (lib "request.ss" "web-server" "private")
            (lib "response.ss" "web-server")
            (lib "servlet-helpers.ss" "web-server" "private")
            (lib "response.ss" "web-server" "private")
@@ -17,74 +16,15 @@
                  start-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
            "xexpr-extras.ss"
-           "utils.ss"
-           "hardcoded-configuration.ss")
+           "utils.ss")
   
-  (provide serve dispatch)
+  (provide dispatch)
   
   (define myprint printf #;(lambda _ (void)))
   
   (define thread-connection-state (make-thread-cell #f))
   (define-struct connection-state (conn req))
   (define top-cust (current-custodian))
-  
-  ;; ************************************************************
-  ;; serve: -> -> void
-  ;; start the server and return a thunk to shut it down
-  (define (serve . port)
-    (let ([the-server-custodian (make-custodian)])
-      (start-connection-manager the-server-custodian)
-      (parameterize ([current-custodian the-server-custodian])
-        (let ([get-ports
-               (let ([listener (tcp-listen (if (not (null? port))
-                                               (car port)
-                                               config:port)
-                                           config:max-waiting
-                                           #t config:listen-ip)])
-                 (lambda () (tcp-accept listener)))])
-          (thread
-           (lambda ()
-             (server-loop get-ports)))))
-      (lambda ()
-        (custodian-shutdown-all the-server-custodian))))
-  
-  ;; ************************************************************
-  ;; server-loop: (-> i-port o-port) -> void
-  ;; start a thread to handle each incoming connection
-  (define (server-loop get-ports)
-    (let loop ()
-      (let ([connection-cust (make-custodian)])
-        (parameterize ([current-custodian connection-cust])
-          (let-values ([(ip op) (get-ports)])
-            (thread
-             (lambda ()
-               (serve-connection
-                (new-connection config:initial-connection-timeout
-                                ip op (current-custodian) #f)))))))
-      (loop)))
-  
-  ;; ************************************************************
-  ;; serve-connection: connection -> void
-  ;; respond to all requests on this connection
-  (define (serve-connection conn)
-    (myprint "serve-connection~n")
-    (let connection-loop ()
-      (let-values ([(req close?) (read-request (connection-i-port conn))])
-        (let* ([host (get-host (request-uri req) (request-headers req))]
-               [host-conf (config:virtual-hosts host)])
-          (set-connection-close?! conn close?)
-          (dispatch conn req host-conf)
-          (adjust-connection-timeout! conn config:initial-connection-timeout)
-          ; TODO: track down bus-error here
-          ;   1. uncomment next line
-          ;   2. comment-out cond expression
-          ;   3. use error-servlet01.ss
-          ;; TODO: while I think of it. The session object needs
-          ;;  to be guarded by a mutex.
-          ;(kill-connection! conn)
-          (cond
-            [close? (kill-connection! conn)]
-            [else (connection-loop)])))))
   
   ;; ************************************************************
   ;; dispatch: connection request host -> void
