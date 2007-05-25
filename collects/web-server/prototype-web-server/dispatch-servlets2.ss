@@ -15,7 +15,7 @@
                  run-start)
            (only "private/persistent-web-interaction.ss"
                  start-servlet)           
-           (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
+           (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
            "xexpr-extras.ss"
            "private/utils.ss")
   
@@ -51,7 +51,7 @@
     (make-make-servlet-namespace
      #:to-be-copied-module-specs
      '(mzscheme
-      (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
+      (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
       (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
       (lib "session.ss" "web-server" "prototype-web-server" "private")
       (lib "request.ss" "web-server" "private"))))
