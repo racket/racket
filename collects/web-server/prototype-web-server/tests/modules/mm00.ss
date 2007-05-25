@@ -1,4 +1,5 @@
-(module mm00 (lib "persistent-interaction.ss" "web-server" "prototype-web-server")
+(module mm00 (lib "lang.ss" "web-server" "prototype-web-server")
+  (provide start)
   
   (define (gn which)
     (cadr
@@ -7,9 +8,9 @@
         (let ([ignore (printf "Please send the ~a number.~n" which)])
           k)))))
   
-  (let* ([ignore (start-interaction car)]
-         [ans (+ (gn "first")
-                 (gn "second")
-                 (gn "third"))])
-    (printf "The answer is: ~s~n" ans)
-    ans))
+  (define (start initial)
+    (let ([ans (+ (gn "first")
+                  (gn "second")
+                  (gn "third"))])
+      (printf "The answer is: ~s~n" ans)
+      ans)))

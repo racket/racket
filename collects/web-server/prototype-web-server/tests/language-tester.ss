@@ -7,14 +7,25 @@
       [(_ (module m-id . rest))
        #'(let ([ns (make-namespace)])
            (parameterize ([current-namespace ns])
-             (eval '(require "../client.ss"
+             (eval '(require "../abort-resume.ss"
                              (lib "serialize.ss")))
              (eval '(module m-id . rest))
              (eval '(require m-id)))
            
-           (lambda (s-expr)
-             (parameterize ([current-namespace ns])
-               (eval s-expr))))]
+           (values
+            (lambda ()
+              (parameterize ([current-namespace ns])
+                (eval '(abort/cc 
+                        (with-continuation-mark safe-call? '(#t start)
+                          (start
+                           (with-continuation-mark the-cont-key start
+                             (start-interaction 
+                              (lambda (k*v)
+                                (lambda (k*v)
+                                  ((car k*v) k*v)))))))))))
+            (lambda (s-expr)
+              (parameterize ([current-namespace ns])
+                (eval s-expr)))))]
       [else
        (raise-syntax-error #f "make-module-evel: dropped through" m-expr)]))
   

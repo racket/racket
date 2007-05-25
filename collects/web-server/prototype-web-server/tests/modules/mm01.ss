@@ -1,5 +1,5 @@
-(module mm01 (lib "persistent-interaction.ss" "web-server" "prototype-web-server")
-  
+(module mm01 (lib "lang.ss" "web-server" "prototype-web-server")
+  (provide start)
   (define (gn which)
     (cadr
      (send/suspend
@@ -7,5 +7,5 @@
         (let ([ignore (printf "Please send the ~a number.~n" which)])
           k)))))
   
-  (let ([ignore (start-interaction car)])
+  (define (start initial)
     (gn "first")))

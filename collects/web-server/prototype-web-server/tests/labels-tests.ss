@@ -109,8 +109,4 @@
      
      (make-test-case
       "Check for race condition on delete-tag-list!"
-      (assert-false (delete-tag-list!-race? 256)))   
-     )))
-
-
-
+      (assert-false (delete-tag-list!-race? 256))))))

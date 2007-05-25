@@ -1,6 +1,6 @@
 (module test-normalizer mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
-           "../normalizer.ss")
+           "../lang/anormal.ss")
   (provide test-normalizer-suite)
   
   (define (empty-env var)
@@ -101,6 +101,8 @@
   (define (alpha= expr1 expr2)
     (alpha=/env empty-env empty-env expr1 expr2))
   
+  (define normalize-term (make-anormal-term (lambda _ (error 'anormal "No elim-letrec given."))))
+  
   (define-syntax (check-unsupported-lambda stx)
     (syntax-case stx ()
       [(_ expr)
@@ -110,6 +112,14 @@
                                                (exn-message the-exn))
                                  #t))])
            expr)]))
+  
+  (define-syntax (check-supported stx)
+    (syntax-case stx ()
+      [(_ expr)
+       #'(with-handlers ([(lambda (x) #t)
+                          (lambda (the-exn) #f)])
+           expr
+           #t)]))
   
   (define-syntax (check-unsupported-let stx)
     (syntax-case stx ()
@@ -158,7 +168,7 @@
       (make-test-case
        "one-armed-if"
        (assert alpha= (normalize-term (expand (syntax (if #t 1))))
-               (expand (syntax (if #t 1)))))
+               (expand (syntax (if #t 1 (void))))))
       
       
       (make-test-case
@@ -202,7 +212,7 @@
       (make-test-case
        "one-armed if with prim-app in test posn"
        (assert alpha= (normalize-term (expand (syntax (if (+ 1 2) 3))))
-               (expand (syntax ((lambda (x) (if x 3)) (+ 1 2))))))
+               (expand (syntax ((lambda (x) (if x 3 (void))) (+ 1 2))))))
       
       (make-test-case
        "two-armed if with prim-app in test posn"
@@ -283,26 +293,24 @@
      (make-test-suite
       "Check that certain errors are raised"
       
-      ; this is supported now
-      #;(make-test-case
+      ; XXX Turn these tests into checking versions
+      (make-test-case
          "multiple body expressions in lambda"
-         (assert-true (check-unsupported-lambda
+         (assert-true (check-supported
                        (normalize-term (expand (syntax (lambda (x y z) 3 4)))))))
       
       (make-test-case
        "zero-or-more argument lambda"
-       (assert-true (check-unsupported-lambda
+       (assert-true (check-supported
                      (normalize-term (expand (syntax (lambda x x)))))))
       
-      ; this is supported now
-      #; (make-test-case
+      (make-test-case
           "multi-valued let-values"
-          (assert-true (check-unsupported-let
+          (assert-true (check-supported
                         (normalize-term (expand (syntax (let-values ([(x y) (values 1 2)]) (+ x y))))))))
-      ; this is supported now
-      #; (make-test-case
+      (make-test-case
           "let/multiple clauses before body"
-          (assert-true (check-unsupported-let
+          (assert-true (check-supported
                         (normalize-term (expand (syntax (let ([x 1] [y 2]) (+ x y)))))))))
      
      (make-test-suite
