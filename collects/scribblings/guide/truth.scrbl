@@ -5,7 +5,7 @@
 
 @interaction-eval[(require (lib "list.ss"))]
 
-@title{The Truth about Pairs, Lists, and Scheme Syntax}
+@title{Pairs, Lists, and Scheme Syntax}
 
 The @scheme[cons] procedure actually accepts any two values, not just
 a list for the second argument. When the second argument is not
