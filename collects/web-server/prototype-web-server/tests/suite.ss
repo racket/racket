@@ -1,7 +1,7 @@
 (module suite mzscheme
-  (require (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 1))
-           (planet "text-ui.ss" ("schematics" "schemeunit.plt" 1))
-           (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2))
+           (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2))
+           (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            "persistent-close-tests.ss"
            "anormal-test.ss"
            "closure-tests.ss"
@@ -11,7 +11,7 @@
            "stuff-url-tests.ss")
   
   (test/graphical-ui
-   (make-test-suite
+   (test-suite
     "Main Tests for Prototype Web Server"
     persistent-close-suite
     stuff-url-suite
@@ -19,5 +19,4 @@
     closure-tests-suite
     labels-tests-suite
     lang-suite
-    certify-suite
-    )))
+    certify-suite)))

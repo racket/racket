@@ -1,5 +1,5 @@
 (module certify-tests mzscheme
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            "util.ss")
   (provide certify-suite)
     
@@ -9,13 +9,13 @@
          ((car k*v) k*v))))
 
   (define certify-suite
-    (make-test-suite
+    (test-suite
      "Test the certification process"
      
-     (make-test-suite
+     (test-suite
       "Splicing tests"
             
-      (make-test-case
+      (test-case
        "quasi-quote with splicing: need to recertify context for qq-append"
        (let-values ([(go test-m01.1)
                      (make-module-eval
@@ -24,10 +24,10 @@
                         (define (start initial)
                           `(,@(list 1 2 initial)))))])         
          (go the-dispatch)
-         (assert equal? (list 1 2 3) (test-m01.1 '(dispatch-start 3)))
-         (assert equal? (list 1 2 'foo) (test-m01.1 '(dispatch-start 'foo)))))
+         (check equal? (list 1 2 3) (test-m01.1 '(dispatch-start 3)))
+         (check equal? (list 1 2 'foo) (test-m01.1 '(dispatch-start 'foo)))))
       
-      (make-test-case
+      (test-case
        "recertify context test (1)"
        (let-values ([(go test-m01.2)
                      (make-module-eval
@@ -36,9 +36,9 @@
                         (define (start initial)
                           `(foo ,@(list 1 2 3)))))])
          (go the-dispatch)
-         (assert-true #t)))
+         (check-true #t)))
       
-      (make-test-case
+      (test-case
        "recertify context test (2)"
        (let-values ([(go test-m01.3)
                      (make-module-eval  
@@ -47,9 +47,9 @@
                         (define (start n)
                           `(n ,@(list 1 2 3)))))])
          (go the-dispatch)
-         (assert-true #t)))
+         (check-true #t)))
       
-      (make-test-case
+      (test-case
        "recertify context test (3)"
        (let-values ([(go test-m01.4)
                      (make-module-eval
@@ -60,4 +60,4 @@
                             `(n ,@(list 1 2 3)))
                           (bar 7))))])
          (go the-dispatch)
-         (assert-true #t)))))))
+         (check-true #t)))))))

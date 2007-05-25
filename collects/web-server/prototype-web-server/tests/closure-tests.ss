@@ -1,6 +1,6 @@
 (module closure-tests mzscheme
   (provide closure-tests-suite)
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "serialize.ss")
            (lib "match.ss")
            "../define-closure.ss")  
@@ -50,48 +50,48 @@
   (define eval-app (make-clsr:eval-app (lambda () evaluate)))
   
   (define closure-tests-suite
-    (make-test-suite
+    (test-suite
      "Tests for closure.ss"
      
-     (make-test-case
+     (test-case
       "serialize id procedure"
-      (assert = 7 ((deserialize (serialize (make-id))) 7)))
+      (check = 7 ((deserialize (serialize (make-id))) 7)))
      
-     (make-test-case
+     (test-case
       "id procedure"
-      (assert = 7 ((make-id) 7)))
+      (check = 7 ((make-id) 7)))
      
-     (make-test-case
+     (test-case
       "add-y procedure"
-      (assert = 2 ((make-add-y (lambda () 1)) 1)))
+      (check = 2 ((make-add-y (lambda () 1)) 1)))
      
-     (make-test-case
+     (test-case
       "serialize the add-y procedure"
-      (assert = 2 ((deserialize (serialize (make-add-y (lambda () 1)))) 1)))
+      (check = 2 ((deserialize (serialize (make-add-y (lambda () 1)))) 1)))
      
-     (make-test-case
+     (test-case
       "even-p procedure"
-      (assert-true (even-p 8)))
+      (check-true (even-p 8)))
      
-     (make-test-case
+     (test-case
       "serialize the even-p procedure"
-      (assert-true ((deserialize (serialize even-p)) 64)))
+      (check-true ((deserialize (serialize even-p)) 64)))
      
-     (make-test-case
+     (test-case
       "simple interpreter case"
-      (assert = 3 (evaluate 3 (make-the-empty-env))))
+      (check = 3 (evaluate 3 (make-the-empty-env))))
      
-     (make-test-case
+     (test-case
       "serialize simple interpreter case"
-      (assert = 3 ((deserialize (serialize evaluate))
+      (check = 3 ((deserialize (serialize evaluate))
                    3
                    (deserialize (serialize (make-the-empty-env))))))
      
-     (make-test-case
+     (test-case
       "apply identity"
-      (assert = 3 (evaluate '((lambda (x) x) 3) (make-the-empty-env))))
+      (check = 3 (evaluate '((lambda (x) x) 3) (make-the-empty-env))))
      
-     (make-test-case
+     (test-case
       "serialize environments"
       (let* ([e0 (make-the-empty-env)]
              [e1 (make-extended-env (lambda () (values e0 'x 1)))]
@@ -103,12 +103,12 @@
              [env3 (deserialize (serialize e3))]
              [env5 (deserialize (serialize e5))]
              [env6 (deserialize (serialize e6))])
-        (assert = 1 (env3 'x))
-        (assert = 2 (env3 'y))
-        (assert = 3 (env3 'z))
-        (assert = 4 (env5 'x))
-        (assert = 5 (env5 'y))
-        (assert = 3 (env5 'z))
-        (assert = 4 (env6 'x))
-        (assert = 5 (env6 'y))
-        (assert = 6 (env6 'z)))))))
+        (check = 1 (env3 'x))
+        (check = 2 (env3 'y))
+        (check = 3 (env3 'z))
+        (check = 4 (env5 'x))
+        (check = 5 (env5 'y))
+        (check = 3 (env5 'z))
+        (check = 4 (env6 'x))
+        (check = 5 (env6 'y))
+        (check = 6 (env6 'z)))))))

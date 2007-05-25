@@ -1,5 +1,5 @@
 (module lang-tests mzscheme
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            "util.ss")
   (provide lang-suite)
   
@@ -20,16 +20,16 @@
          ((car k*v) k*v))))
   
   (define lang-suite
-    (make-test-suite
+    (test-suite
      "Test the Web language"
      
      ;; ****************************************
      ;; ****************************************
      ;; BASIC TESTS  
-     (make-test-suite
+     (test-suite
       "Basic Tests"
       
-      (make-test-case
+      (test-case
        "Function application with single argument in tail position"
        (let-values ([(go test-m00.4)
                      (make-module-eval
@@ -39,9 +39,9 @@
                           (let ([f (let ([m 7]) m)])
                             (+ f initial)))))])
          (go the-dispatch)
-         (assert = 8 (test-m00.4 '(dispatch-start 1)))))
+         (check = 8 (test-m00.4 '(dispatch-start 1)))))
       
-      (make-test-case
+      (test-case
        "start-interaction in argument position of a function call"
        (let-values ([(go test-m00.3)
                      (make-module-eval
@@ -51,9 +51,9 @@
                         (define (start initial)
                           (foo initial))))])
          (go the-dispatch)
-         (assert eqv? 'foo (test-m00.3 '(dispatch-start 7)))))
+         (check eqv? 'foo (test-m00.3 '(dispatch-start 7)))))
       
-      (make-test-case
+      (test-case
        "identity interaction, dispatch-start called multiple times"
        (let-values ([(go test-m00)
                      (make-module-eval
@@ -63,10 +63,10 @@
                         (define (start initial)
                           (id initial))))])
          (go the-dispatch)
-         (assert = 7 (test-m00 '(dispatch-start 7)))
-         (assert eqv? 'foo (test-m00 '(dispatch-start 'foo)))))
+         (check = 7 (test-m00 '(dispatch-start 7)))
+         (check eqv? 'foo (test-m00 '(dispatch-start 'foo)))))
       
-      (make-test-case
+      (test-case
        "start-interaction in argument position of a primitive"
        (let-values ([(go test-m00.1)
                      (make-module-eval
@@ -75,9 +75,9 @@
                         (define (start initial)
                           (+ 1 initial))))])         
          (go the-dispatch)
-         (assert = 2 (test-m00.1 '(dispatch-start 1)))))
+         (check = 2 (test-m00.1 '(dispatch-start 1)))))
       
-      (make-test-case
+      (test-case
        "dispatch-start called multiple times for s-i in non-trivial context"
        (let-values ([(go test-m00.2)
                      (make-module-eval
@@ -86,10 +86,10 @@
                         (define (start initial)
                           (+ (+ 1 1) initial))))])         
          (go the-dispatch)
-         (assert = 14 (test-m00.2 '(dispatch-start 12)))
-         (assert = 20 (test-m00.2 '(dispatch-start 18)))))
+         (check = 14 (test-m00.2 '(dispatch-start 12)))
+         (check = 20 (test-m00.2 '(dispatch-start 18)))))
       
-      (make-test-case
+      (test-case
        "start-interaction in third position"
        (let-values ([(go test-m01)
                      (make-module-eval
@@ -98,14 +98,14 @@
                         (define (start initial)
                           (+ (* 1 2) (* 3 4) initial))))])         
          (go the-dispatch)
-         (assert = 14 (test-m01 '(dispatch-start 0)))
-         (assert = 20 (test-m01 '(dispatch-start 6)))))     
+         (check = 14 (test-m01 '(dispatch-start 0)))
+         (check = 20 (test-m01 '(dispatch-start 6)))))     
       
       ;; start-interaction may be called mutitple times
       ;; each call overwrites the previous interaction
       ;; continuation with the latest one.
       ; XXX We have taken this power away.
-      #;(make-test-case
+      #;(test-case
          "start-interaction called twice, dispatch-start will invoke different continuations"
          (let ([test-m02
                 (make-module-eval
@@ -114,19 +114,19 @@
                    (+ (start-interaction id)
                       (start-interaction id))))])
            
-           (assert-true (void? (test-m02 '(dispatch-start 1))))
-           (assert = 3 (test-m02 '(dispatch-start 2)))
-           (assert = 0 (test-m02 '(dispatch-start -1))))))
+           (check-true (void? (test-m02 '(dispatch-start 1))))
+           (check = 3 (test-m02 '(dispatch-start 2)))
+           (check = 0 (test-m02 '(dispatch-start -1))))))
      
      
      
      ;; ****************************************
      ;; ****************************************
      ;; TESTS INVOLVING CALL/CC
-     (make-test-suite
+     (test-suite
       "Tests Involving call/cc"
       
-      (make-test-case
+      (test-case
        "continuation invoked in non-trivial context from within proc"
        (let-values ([(go test-m03)
                      (make-module-eval
@@ -136,13 +136,13 @@
                           (let/cc k
                             (+ 2 4 (k 3) 6 8)))))])         
          (go the-dispatch)
-         (assert = 3 (test-m03 '(dispatch-start 'foo)))
-         (assert = 3 (test-m03 '(dispatch-start 7)))))
+         (check = 3 (test-m03 '(dispatch-start 'foo)))
+         (check = 3 (test-m03 '(dispatch-start 7)))))
       
       ;; in the following test, if you modify
       ;; resume to print the "stack" you will
       ;; see that this is not tail recursive
-      (make-test-case
+      (test-case
        "non-tail-recursive 'escaping' continuation"
        (let-values ([(go test-m04)
                      (make-module-eval
@@ -157,14 +157,14 @@
                                (* (car ln)
                                   (start (cdr ln)))])))))])
          (go the-dispatch)
-         (assert = 0 (test-m04 '(dispatch-start (list 1 2 3 4 5 6 7 0 8 9))))
-         (assert = 120 (test-m04 '(dispatch-start (list 1 2 3 4 5))))))
+         (check = 0 (test-m04 '(dispatch-start (list 1 2 3 4 5 6 7 0 8 9))))
+         (check = 120 (test-m04 '(dispatch-start (list 1 2 3 4 5))))))
       
       ;; this version captures the continuation
       ;; outside the recursion and should be tail
       ;; recursive. A "stack trace" reveals this
       ;; as expected.
-      (make-test-case
+      (test-case
        "tail-recursive escaping continuation"
        (let-values ([(go test-m05)
                      (make-module-eval
@@ -183,17 +183,17 @@
                              (* (car ln)
                                 (mult/escape escape (cdr ln)))]))))])     
          (go the-dispatch)
-         (assert = 0 (test-m05 '(dispatch-start (list 1 2 3 0 4 5 6))))
-         (assert = 120 (test-m05 '(dispatch-start (list 1 2 3 4 5)))))))
+         (check = 0 (test-m05 '(dispatch-start (list 1 2 3 0 4 5 6))))
+         (check = 120 (test-m05 '(dispatch-start (list 1 2 3 4 5)))))))
      
      ;; ****************************************
      ;; ****************************************
      ;; TESTS INVOLVING send/suspend
-     (make-test-suite
+     (test-suite
       "Tests Involving send/suspend"
       
       ; XXX This doesn't work, because we don't allow a different dispatcher
-      #;(make-test-case
+      #;(test-case
          "curried add with send/suspend"
          (let ([table-01-eval
                 (make-module-eval
@@ -229,13 +229,13 @@
            (let* ([first-key (table-01-eval '(dispatch-start 'foo))]
                   [second-key (table-01-eval `(dispatch '(,first-key 1)))]
                   [third-key (table-01-eval `(dispatch '(,first-key -7)))])                    
-             (assert = 3 (table-01-eval `(dispatch '(,second-key 2))))
-             (assert = 4 (table-01-eval `(dispatch '(,second-key 3))))
-             (assert-true (zero? (table-01-eval `(dispatch '(,second-key -1)))))
-             (assert = -7 (table-01-eval `(dispatch '(,third-key 0))))
-             (assert-true (zero? (table-01-eval `(dispatch '(,third-key 7))))))))
+             (check = 3 (table-01-eval `(dispatch '(,second-key 2))))
+             (check = 4 (table-01-eval `(dispatch '(,second-key 3))))
+             (check-true (zero? (table-01-eval `(dispatch '(,second-key -1)))))
+             (check = -7 (table-01-eval `(dispatch '(,third-key 0))))
+             (check-true (zero? (table-01-eval `(dispatch '(,third-key 7))))))))
       
-      (make-test-case
+      (test-case
        "curried with send/suspend and serializaztion"
        
        (let-values ([(go test-m06.1)
@@ -257,20 +257,19 @@
          (let* ([first-key (test-m06.1 '(dispatch-start 'foo))]
                 [second-key (test-m06.1 `(dispatch (list (deserialize (serialize ,first-key)) 1)))]
                 [third-key (test-m06.1 `(dispatch (list (deserialize (serialize ,first-key)) -7)))])
-           (values
-            (assert = 3 (test-m06.1 `(dispatch (list ,second-key 2))))
-            (assert = 4 (test-m06.1 `(dispatch (list ,second-key 3))))
-            (assert-true (zero? (test-m06.1 `(dispatch (list ,second-key -1)))))
-            (assert = -7 (test-m06.1 `(dispatch (list ,third-key 0))))
-            (assert-true (zero? (test-m06.1 `(dispatch (list ,third-key 7))))))))))
+           (check = 3 (test-m06.1 `(dispatch (list ,second-key 2))))
+           (check = 4 (test-m06.1 `(dispatch (list ,second-key 3))))
+           (check-true (zero? (test-m06.1 `(dispatch (list ,second-key -1)))))
+           (check = -7 (test-m06.1 `(dispatch (list ,third-key 0))))
+           (check-true (zero? (test-m06.1 `(dispatch (list ,third-key 7)))))))))
      
      ;; ****************************************
      ;; ****************************************
      ;; TESTS INVOLVING LETREC
-     (make-test-suite
+     (test-suite
       "Tests Involving letrec"
       
-      (make-test-case
+      (test-case
        "mutually recursive even? and odd?"
        (let-values ([(go test-m07)
                      (make-module-eval
@@ -285,12 +284,12 @@
                                                 (even? (sub1 n))))])
                             (even? initial)))))])         
          (go the-dispatch)
-         (assert-true (test-m07 '(dispatch-start 0)))
-         (assert-true (test-m07 '(dispatch-start 16)))
-         (assert-false (test-m07 '(dispatch-start 1)))
-         (assert-false (test-m07 '(dispatch-start 7)))))
+         (check-true (test-m07 '(dispatch-start 0)))
+         (check-true (test-m07 '(dispatch-start 16)))
+         (check-false (test-m07 '(dispatch-start 1)))
+         (check-false (test-m07 '(dispatch-start 7)))))
       
-      (make-test-case
+      (test-case
        "send/suspend on rhs of letrec binding forms"
        (let-values ([(go test-m08)
                      (make-module-eval
@@ -315,21 +314,21 @@
          (let* ([k0 (test-m08 '(serialize (dispatch-start 'foo)))]
                 [k1 (test-m08 `(serialize (dispatch (list (deserialize ',k0) 1))))]
                 [k2 (test-m08 `(serialize (dispatch (list (deserialize ',k1) 2))))])
-           (assert = 6 (test-m08 `(dispatch (list (deserialize ',k2) 3))))
-           (assert = 9 (test-m08 `(dispatch (list (deserialize ',k2) 6))))
+           (check = 6 (test-m08 `(dispatch (list (deserialize ',k2) 3))))
+           (check = 9 (test-m08 `(dispatch (list (deserialize ',k2) 6))))
            (let* ([k1.1 (test-m08 `(serialize (dispatch (list (deserialize ',k0) -1))))]
                   [k2.1 (test-m08 `(serialize (dispatch (list (deserialize ',k1.1) -2))))])
-             (assert-true (zero? (test-m08 `(dispatch (list (deserialize ',k2.1) 3)))))
-             (assert = 6 (test-m08 `(dispatch (list (deserialize ',k2) 3)))))))))
+             (check-true (zero? (test-m08 `(dispatch (list (deserialize ',k2.1) 3)))))
+             (check = 6 (test-m08 `(dispatch (list (deserialize ',k2) 3)))))))))
      
      ;; ****************************************
      ;; ****************************************
      ;; TEST UNSAFE CONTEXT CONDITION
-     (make-test-suite
+     (test-suite
       "Unsafe Context Condition Tests"
       
       ; XXX Bizarre
-      #;(make-test-case
+      #;(test-case
          "simple attempt to capture a continuation from an unsafe context"
          
          (let-values ([(go nta-eval)
@@ -349,10 +348,10 @@
            
            (nta-eval '(require m09))
            
-           (assert-true (catch-unsafe-context-exn
-                         (lambda () (nta-eval '(dispatch-start 'foo)))))))
+           (check-true (catch-unsafe-context-exn
+                        (lambda () (nta-eval '(dispatch-start 'foo)))))))
       
-      (make-test-case
+      (test-case
        "sanity-check: capture continuation from safe version of context"
        
        (let-values ([(go m10-eval)
@@ -366,9 +365,9 @@
                         (define (start ignore)
                           (nta (lambda (x) (let/cc k (k x))) 7))))])         
          (go the-dispatch)
-         (assert = 7 (m10-eval '(dispatch-start 'foo)))))
+         (check = 7 (m10-eval '(dispatch-start 'foo)))))
       
-      (make-test-case
+      (test-case
        "attempt continuation capture from standard call to map"
        
        (let-values ([(go m11-eval)
@@ -380,13 +379,13 @@
                            (lambda (x) (let/cc k k))
                            (list 1 2 3)))))])         
          (go the-dispatch)
-         (assert-true (catch-unsafe-context-exn
-                       (lambda () (m11-eval '(dispatch-start 'foo)))))))
+         (check-true (catch-unsafe-context-exn
+                      (lambda () (m11-eval '(dispatch-start 'foo)))))))
       
       ;; if the continuation-capture is attempted in tail position then we
       ;; should be just fine.
       ; XXX Weird
-      #;(make-test-case
+      #;(test-case
          "continuation capture from tail position of untranslated procedure"
          
          (let ([ta-eval
@@ -406,9 +405,9 @@
            
            (ta-eval '(require m12))
            
-           (assert = 2 (ta-eval '(dispatch-start 1)))))
+           (check = 2 (ta-eval '(dispatch-start 1)))))
       
-      (make-test-case
+      (test-case
        "attempt send/suspend from standard call to map"
        
        (let-values ([(go m13-eval)
@@ -423,11 +422,11 @@
                                             k))))
                            (list 1 2 3)))))])
          (go the-dispatch)
-         (assert-true (catch-unsafe-context-exn
-                       (lambda () (m13-eval '(dispatch-start 'foo)))))))
+         (check-true (catch-unsafe-context-exn
+                      (lambda () (m13-eval '(dispatch-start 'foo)))))))
       
       ; XXX Weird
-      #;(make-test-case
+      #;(test-case
          "attempt send/suspend from tail position of untranslated procedure"
          
          (let-values ([(go ta-eval)
@@ -452,5 +451,5 @@
            (ta-eval '(require m14))
            
            (let ([k0 (ta-eval '(dispatch-start 'foo))])
-             (assert = 3 (ta-eval `(dispatch (list ,k0 2))))
-             (assert = 0 (ta-eval `(dispatch (list ,k0 -1)))))))))))
+             (check = 3 (ta-eval `(dispatch (list ,k0 2))))
+             (check = 0 (ta-eval `(dispatch (list ,k0 -1)))))))))))

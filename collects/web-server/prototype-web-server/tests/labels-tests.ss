@@ -1,11 +1,11 @@
 (module labels-tests mzscheme
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
-           (planet "util.ss" ("schematics" "schemeunit.plt" 1))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+           (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (lib "etc.ss")
            "../labels.ss")
            
   
-  (require/expose "../labels.ss" (add1/string))
+  (require/expose (lib "labels.ss" "web-server" "prototype-web-server") (add1/string))
   
   (define THE-TEST-FILENAME "labels-test-file")
   
@@ -78,35 +78,35 @@
                  syms))))))
   
   (define labels-tests-suite
-    (make-test-suite
+    (test-suite
      "Tests for labels.ss"
      
-     (make-test-case
+     (test-case
       "Test the tag incrementing scheme"
-      (assert string=? "b" (add1/string ""))
-      (assert string=? "A" (add1/string "z"))
-      (assert string=? "B" (add1/string "A"))
-      (assert string=? "b" (add1/string "a"))
-      (assert string=? "ab" (add1/string "Z"))
-      (assert string=? "aab" (add1/string "ZZ"))
-      (assert string=? "Azz" (add1/string "zzz"))
-      (assert string=? "aaaab" (add1/string "ZZZZ"))
-      (assert string=? "baaab" (add1/string "aaaab")))
+      (check string=? "b" (add1/string ""))
+      (check string=? "A" (add1/string "z"))
+      (check string=? "B" (add1/string "A"))
+      (check string=? "b" (add1/string "a"))
+      (check string=? "ab" (add1/string "Z"))
+      (check string=? "aab" (add1/string "ZZ"))
+      (check string=? "Azz" (add1/string "zzz"))
+      (check string=? "aaaab" (add1/string "ZZZZ"))
+      (check string=? "baaab" (add1/string "aaaab")))
      
      
-     (make-test-case
+     (test-case
       "The same program produces the same labeling"
-      (assert-eqv? (l1) (l2))
-      (assert-eqv? (l1) (l2)))
+      (check-eqv? (l1) (l2))
+      (check-eqv? (l1) (l2)))
      
-     (make-test-case
+     (test-case
       "Different programs produce different labelings"
-      (assert-false (eqv? (l3) (l4))))
+      (check-false (eqv? (l3) (l4))))
      
-     (make-test-case
+     (test-case
       "Check for race condition on make-labeling"
-      (assert-false (make-labeling-race? 256)))
+      (check-false (make-labeling-race? 256)))
      
-     (make-test-case
+     (test-case
       "Check for race condition on delete-tag-list!"
-      (assert-false (delete-tag-list!-race? 256))))))
+      (check-false (delete-tag-list!-race? 256))))))
