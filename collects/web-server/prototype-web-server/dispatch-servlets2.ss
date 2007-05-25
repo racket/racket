@@ -16,7 +16,6 @@
            (only "private/web.ss"
                  start-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
-           "xexpr-extras.ss"
            "private/utils.ss")
   
   (provide make)
@@ -155,8 +154,7 @@
                                     (request-method req)))])
                   (printf "session-handler ~S~n" (session-handler ses))
                   (output-response conn
-                                   (xexpr+extras->xexpr
-                                    ((session-handler ses) req))))))]
+                                   ((session-handler ses) req)))))]
         [else
          (myprint "resume-session: Unknown ses~n")
          ;; TODO: should just start a new session here.
