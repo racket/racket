@@ -150,7 +150,9 @@
   ;; dispatch-start: request -> reponse
   ;; pass the initial request to the starting interaction point
   (define (dispatch-start req0)
-    (abort/cc (lambda () (start-continuation req0))))
+    (abort/cc 
+     (lambda ()
+       (start-continuation req0))))
   
   ;; dispatch: request -> response
   ;; lookup the continuation for this request and invoke it
