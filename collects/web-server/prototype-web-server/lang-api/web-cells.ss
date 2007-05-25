@@ -1,9 +1,9 @@
 (module web-cells mzscheme
-  (require "../private/closure.ss"
-           (lib "serialize.ss")
+  (require (lib "serialize.ss")
            (lib "list.ss")
            (lib "plt-match.ss")
-           (lib "contract.ss"))
+           (lib "contract.ss")
+           "../private/closure.ss")
   ;; Implementation: Have a distinguished frame variable that is read and captured by send/suspend, 
   ;; installed on invocations of continuations by the server (and NOT from other continuation invocations)
   
@@ -77,10 +77,8 @@
       (env-replace (primitive-wc-id wc) nv
                    (frame-env (current-frame))))))
   
-  (provide make-web-cell
-           make-web-cell*)
+  (provide make-web-cell)
   (provide/contract
-   #;[make-web-cell* (symbol? any/c . -> . web-cell?)]
    [web-cell? (any/c . -> . boolean?)]
    [web-cell-ref (web-cell? . -> . any/c)]
    [web-cell-mask (web-cell? any/c . -> . void)]))

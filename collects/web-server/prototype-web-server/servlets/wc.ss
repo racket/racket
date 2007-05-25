@@ -1,6 +1,5 @@
 (module wc (lib "lang.ss" "web-server" "prototype-web-server")
-  (require (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
-           (lib "url.ss" "net"))
+  (require (lib "url.ss" "net"))
   (provide start)
   
   (define (start initial-request)

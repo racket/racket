@@ -2,7 +2,6 @@
   (require "../private/closure.ss"
            (lib "list.ss"))
   (provide make-web-parameter
-           next-web-parameter-id
            web-parameter?
            web-parameterize)
   
