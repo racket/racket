@@ -23,8 +23,6 @@
   
   (define myprint printf #;(lambda _ (void)))
   
-  (define thread-connection-state (make-thread-cell #f))
-  (define-struct connection-state (conn req))
   (define top-cust (current-custodian))
   
   ;; Parameter Parsing
@@ -69,7 +67,7 @@
                     (gen-file-not-found-responder "not-found.html")])
     
     ;; ************************************************************
-    ;; dispatch: connection request host -> void
+    ;; dispatch: connection request -> void
     ;; trivial dispatcher
     (define (dispatch conn req)
       (define-values (uri method path) (decompose-request req))
@@ -85,7 +83,7 @@
     ;; ************************************************************
     ;; SERVING SERVLETS
     
-    ;; servlet-content-producer: connection request host -> void
+    ;; servlet-content-producer: connection request -> void
     (define (servlet-content-producer conn req)
       (myprint "servlet-content-producer~n")
       (let ([meth (request-method req)])
@@ -97,27 +95,23 @@
               '() (list "ignored"))
              meth)
             (let ([uri (request-uri req)])
-              (thread-cell-set! thread-connection-state
-                                (make-connection-state conn req))
               (with-handlers ([void
                                (lambda (the-exn)
                                  (output-response/method
-                                  (connection-state-conn (thread-cell-ref thread-connection-state))
+                                  conn
                                   (responders-servlet-loading uri the-exn)
-                                  (request-method
-                                   (connection-state-req
-                                    (thread-cell-ref thread-connection-state)))))])
+                                  (request-method req)))])
                 (cond
                   [(resume-session? uri)
                    => (lambda (session-id)
-                        (resume-session session-id))]
+                        (resume-session session-id conn req))]
                   [else
-                   (begin-session)]))))))
+                   (begin-session conn req)]))))))
     
-    ;; begin-session: connection request host-info
-    (define (begin-session)
+    ;; begin-session: connection request
+    (define (begin-session conn req)
       (myprint "begin-session~n")
-      (let ([uri (request-uri (connection-state-req (thread-cell-ref thread-connection-state)))])
+      (let ([uri (request-uri req)])
         (let-values ([(a-path url-servlet-path url-path-suffix)
                       (url->servlet-path servlet-root uri)])
           (myprint "a-path = ~s~n" a-path)
@@ -129,7 +123,7 @@
                   (parameterize ([current-custodian cust]
                                  [current-namespace ns]
                                  [current-session ses])
-                    (let* ([module-name `(file ,(path->string a-path))])
+                    (let ([module-name `(file ,(path->string a-path))])
                       (myprint "dynamic-require ...~n")
                       (with-handlers ([exn:fail:contract?
                                        (lambda _
@@ -137,15 +131,15 @@
                         (let ([start (dynamic-require module-name 'start)])
                           (run-start start-servlet start)))))
                   (myprint "resume-session~n")
-                  (resume-session (session-id ses))))
+                  (resume-session (session-id ses)
+                                  conn req)))
               (output-response/method
-               (connection-state-conn (thread-cell-ref thread-connection-state))
+               conn
                (responders-file-not-found uri)
-               (request-method (connection-state-req (thread-cell-ref thread-connection-state))))))))
+               (request-method req))))))
     
-    ;; ************************************************************
-    ;; resume-session: connection request number host-info
-    (define (resume-session ses-id)
+    ;; resume-session: number connection request
+    (define (resume-session ses-id conn req)
       ; XXX Check if session is for same servlet!
       (myprint "resume-session: ses-id = ~s~n" ses-id)
       (cond
@@ -156,23 +150,16 @@
                 (with-handlers ([void
                                  (lambda (the-exn)
                                    (output-response/method
-                                    (connection-state-conn (thread-cell-ref thread-connection-state))
-                                    (responders-servlet
-                                     (request-uri
-                                      (connection-state-req
-                                       (thread-cell-ref thread-connection-state)))
-                                     the-exn)
-                                    (request-method
-                                     (connection-state-req (thread-cell-ref thread-connection-state)))))])
+                                    conn
+                                    (responders-servlet (request-uri req) the-exn)
+                                    (request-method req)))])
                   (printf "session-handler ~S~n" (session-handler ses))
-                  (output-response
-                   (connection-state-conn (thread-cell-ref thread-connection-state))
-                   (xexpr+extras->xexpr
-                    ((session-handler ses)
-                     (connection-state-req (thread-cell-ref thread-connection-state))))))))]
+                  (output-response conn
+                                   (xexpr+extras->xexpr
+                                    ((session-handler ses) req))))))]
         [else
          (myprint "resume-session: Unknown ses~n")
          ;; TODO: should just start a new session here.
-         (begin-session)]))
+         (begin-session conn req)]))
     
     dispatch))
