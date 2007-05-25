@@ -1,4 +1,4 @@
-(module server mzscheme
+(module dispatch-servlets2 mzscheme
   (require (lib "kw.ss")
            "../private/configuration.ss"           
            (lib "connection-manager.ss" "web-server" "private")
@@ -53,6 +53,7 @@
      '(mzscheme
       (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
       (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
+      (lib "session.ss" "web-server" "prototype-web-server" "private")
       (lib "request.ss" "web-server" "private"))))
   
   (define/kw (make #:key

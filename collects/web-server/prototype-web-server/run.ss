@@ -8,7 +8,7 @@
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers")))
   (require "hardcoded-configuration.ss"
-           (prefix prototype: "server.ss"))
+           (prefix servlets2: "dispatch-servlets2.ss"))
   
   (define port 8080)
   (define listen-ip #f)
@@ -18,7 +18,7 @@
   (define read-request http:read-request)
   (define dispatch
     (sequencer:make
-     (prototype:make #:servlet-root (paths-servlet (host-paths host-info))
+     (servlets2:make #:servlet-root (paths-servlet (host-paths host-info))
                      #:timeouts-servlet-connection (timeouts-servlet-connection (host-timeouts host-info))
                      #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
                      #:responders-servlet (responders-servlet (host-responders host-info))
