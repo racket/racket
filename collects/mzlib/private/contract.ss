@@ -160,7 +160,7 @@ improve method arity mismatch contract violation error messages?
 
   
   ;; (provide/contract p/c-ele ...)
-  ;; p/c-ele = (id expr) | (rename id id expr) | (struct (id expr) ...)
+  ;; p/c-ele = (id expr) | (rename id id expr) | (struct id (id expr) ...)
   ;; provides each `id' with the contract `expr'.
   (define-syntax (provide/contract provide-stx)
     (syntax-case provide-stx (struct)
