@@ -12,7 +12,7 @@
      
      (test-case
       "file-vector references"
-      (let ([fv (make-file-vector 'foo 1 2 3)])
+      (let ([fv (make-file-vector '/tmp/foo 1 2 3)])
         (check = 1 (file-vector-ref fv 0))
         (check = 2 (file-vector-ref fv 1))
         (check = 3 (file-vector-ref fv 2))
@@ -25,7 +25,7 @@
 
      (test-case
       "serializing file vectors"
-      (let* ([fv (make-file-vector 'foo -1 -2 -3)]
+      (let* ([fv (make-file-vector '/tmp/foo -1 -2 -3)]
              [fv2 (deserialize (serialize fv))])
         (check = -1 (file-vector-ref fv2 0))
         (check = -2 (file-vector-ref fv2 1))
