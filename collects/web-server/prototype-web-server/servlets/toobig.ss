@@ -1,6 +1,4 @@
 (module toobig (lib "lang.ss" "web-server" "prototype-web-server")
-  (require (lib "url.ss" "net")
-           (lib "servlet-helpers.ss" "web-server" "private"))
   (provide start)
   
   (define (get-n)
@@ -16,9 +14,10 @@
                             (input ([type "text"] [name "number"] [value ""]))
                             (input ([type "submit"])))))))])
       (string->number
-       (extract-binding/single
-        `number
-        (request-bindings req)))))
+       (bytes->string/utf-8
+        (binding:form-value
+         (bindings-assq #"number" 
+                        (request-bindings/raw req)))))))
   
   (define (get-bytes)
     (let* ([the-bytes

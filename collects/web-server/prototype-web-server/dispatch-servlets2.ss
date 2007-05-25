@@ -2,8 +2,8 @@
   (require (lib "kw.ss")
            "../private/configuration.ss"           
            (lib "connection-manager.ss" "web-server" "private")
-           (lib "response.ss" "web-server")
-           (lib "servlet-helpers.ss" "web-server" "private")
+           (lib "request-structs.ss" "web-server")
+           (lib "response-structs.ss" "web-server")
            (lib "response.ss" "web-server" "private")
            (lib "util.ss" "web-server" "private")
            (lib "url.ss" "net")
@@ -13,7 +13,7 @@
            (lib "session.ss" "web-server" "prototype-web-server" "private")
            (only (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
                  run-start)
-           (only "private/persistent-web-interaction.ss"
+           (only "private/web.ss"
                  start-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
            "xexpr-extras.ss"

@@ -1,8 +1,6 @@
 (module add-param (lib "lang.ss" "web-server" "prototype-web-server")
-  (require (lib "url.ss" "net")
-           (lib "servlet-helpers.ss" "web-server" "private"))
   (provide start)
-    
+  
   (define msg (make-parameter "unknown"))
   
   (define (gn)
@@ -20,9 +18,10 @@
                              (input ([type "text"] [name "number"] [value ""]))
                              (input ([type "submit"])))))))]
            [num (string->number
-                 (extract-binding/single
-                  'number
-                  (request-bindings req)))])
+                 (bytes->string/utf-8
+                  (binding:form-value
+                   (bindings-assq #"number" 
+                                  (request-bindings/raw req)))))])
       (printf "gn ~a ~a~n" (msg) num)
       num))
   

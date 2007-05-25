@@ -1,6 +1,4 @@
 (module add05 (lib "lang.ss" "web-server" "prototype-web-server")
-  (require (lib "url.ss" "net")
-           (lib "servlet-helpers.ss" "web-server" "private"))
   (provide start)
   
   ;; get-number-from-user: string -> number
@@ -16,9 +14,10 @@
                                   k-url
                                   (lambda (req)
                                     (string->number
-                                     (extract-binding/single
-                                      'number
-                                      (request-bindings req))))))]
+                                     (bytes->string/utf-8
+                                      (binding:form-value
+                                       (bindings-assq #"number" 
+                                                      (request-bindings/raw req))))))))]
                        [method "post"]
                        [enctype "application/x-www-form-urlencoded"])
                       ,(format "Enter the ~a number to add: " msg)

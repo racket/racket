@@ -1,19 +1,16 @@
 (module quiz02 (lib "lang.ss" "web-server" "prototype-web-server")
-  (require "quiz-lib.ss"
-           (lib "servlet-helpers.ss" "web-server" "private"))
+  (require "quiz-lib.ss")
   (provide start)
   
   ;; get-answer: mc-question -> number
   ;; get an answer for a multiple choice question
   (define (get-answer mc-q)
-    (let* ([req
-           (send/suspend/hidden (make-cue-page mc-q))]
-           [bdgs (request-bindings req)])
-      (if (exists-binding? 'answs bdgs)
-          (string->number
-           (extract-binding/single
-            'answs bdgs))
-          -1)))
+    (string->number
+     (bytes->string/utf-8
+      (binding:form-value
+       (bindings-assq #"answs" 
+                      (request-bindings/raw 
+                       (send/suspend/hidden (make-cue-page mc-q))))))))
     
   ;; get-answers: (-> (listof mc-question)) -> (listof number)
   ;; get answers for all of the quiz questions.

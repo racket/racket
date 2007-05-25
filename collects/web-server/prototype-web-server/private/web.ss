@@ -1,17 +1,16 @@
-(module persistent-web-interaction mzscheme
-  (require (rename "abort-resume.ss" send/suspend0 send/suspend)
+(module web mzscheme
+  (require (lib "serialize.ss")
+           (lib "plt-match.ss")
+           (lib "url.ss" "net")           
+           (lib "request-structs.ss" "web-server")
+           (rename "abort-resume.ss" send/suspend0 send/suspend)
            (all-except "abort-resume.ss" send/suspend)
            "session.ss"
-           "stuff-url.ss"
-           (lib "servlet-helpers.ss" "web-server" "private")
-           (lib "serialize.ss")
-           (lib "url.ss" "net"))
+           "stuff-url.ss")
   
   (provide send/suspend/hidden
            send/suspend/url
-           send/suspend/dispatch
            extract-proc/url embed-proc/url
-           redirect/get
            start-servlet)
   
   ;; start-servlet: -> request
@@ -63,28 +62,16 @@
   (define (extract-proc/url request)
     (define req-url (request-uri request))
     (define binds (url-query req-url))
-    (if (exists-binding? embed-label binds)
+    (define maybe-embedding (assq embed-label binds))
+    (if maybe-embedding
         (let* ([ses (current-session)]
-               [superkont-url (string->url (extract-binding/single embed-label binds))]
+               [superkont-url (string->url (cdr maybe-embedding))]
                [proc (deserialize 
                       (unstuff-url
                        superkont-url (session-url ses)
                        (session-mod-path ses)))])
           (proc request))
         (error 'send/suspend/dispatch "No ~a: ~S!" embed-label binds)))
-  
-  (define-syntax send/suspend/dispatch
-    (syntax-rules ()
-      [(_ response-generator)
-       (extract-proc/url
-        (send/suspend/url
-         (lambda (k-url)
-           (response-generator
-            (lambda (proc)
-              (embed-proc/url k-url proc))))))]))  
-  
-  (define (redirect/get)
-    (send/suspend/url (lambda (k-url) (redirect-to (url->string k-url) temporarily))))
   
   ;; request->continuation: req -> continuation
   ;; decode the continuation from the hidden field of a request
@@ -101,9 +88,7 @@
               req-url (session-url ses)
               (session-mod-path ses)))))
      ; Look in query for kont=<k>
-     (let ([bdgs (request-bindings req)])
-       (and (exists-binding? 'kont bdgs)
-            (deserialize
-             (read
-              (open-input-string
-               (extract-binding/single 'kont bdgs)))))))))
+     (match (bindings-assq #"kont" (request-bindings/raw req))
+       [(struct binding:form (id kont))
+        (deserialize (read (open-input-bytes kont)))]
+       [_ #f]))))
