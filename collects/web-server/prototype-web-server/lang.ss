@@ -7,12 +7,9 @@
                       "lang/anormal.ss"
                       "lang/elim-callcc.ss"
                       "lang/defun.ss")
-  (require "private/abort-resume.ss"
-           "private/persistent-web-interaction.ss")
+  (require "lang-api.ss")
   (provide (rename lang-module-begin #%module-begin))
-  (provide (all-from "private/abort-resume.ss")
-           (all-from-except mzscheme #%module-begin)
-           (all-from "private/persistent-web-interaction.ss"))
+  (provide (all-from "lang-api.ss"))
   
   (define-syntax lang-module-begin 
     (make-lang-module-begin 
