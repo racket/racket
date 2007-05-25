@@ -5257,7 +5257,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
       ok = access(filename, R_OK);
     } while ((ok == -1) && (errno == EINTR));
     read = !ok;
-    
+
     if (ok && (errno != EACCES))
       l = NULL;
     else {
@@ -5274,9 +5274,14 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
 	} while ((ok == -1) && (errno == EINTR));
 	execute = !ok;
       
-	if (ok && (errno != EACCES))
+        /* Don't fail at the exec step if the user is the
+           superuser and errno is EPERM; under Mac OS X,
+           at least, such a failure simply means tha the
+           file is not executable. */
+	if (ok && (errno != EACCES) 
+            && (uid || gid || (errno != EPERM))) {
 	  l = NULL;
-	else {
+	} else {
 	  if (read)
 	    l = scheme_make_pair(read_symbol, l);
 	  if (write)
