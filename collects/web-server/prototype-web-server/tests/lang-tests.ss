@@ -1,6 +1,6 @@
 (module lang-tests mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
-           "language-tester.ss")
+           "util.ss")
   (provide lang-suite)
   
   (define (catch-unsafe-context-exn thunk)

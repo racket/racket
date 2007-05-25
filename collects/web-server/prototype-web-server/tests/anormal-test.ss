@@ -1,7 +1,7 @@
-(module test-normalizer mzscheme
+(module anormal-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 1 1))
            "../lang/anormal.ss")
-  (provide test-normalizer-suite)
+  (provide anormal-tests)
   
   (define (empty-env var)
     (error "empty environment"))
@@ -134,7 +134,7 @@
   ;; **************************************************
   ;; ACTUAL TESTS
   
-  (define test-normalizer-suite
+  (define anormal-tests
     (make-test-suite
      "Tests for Normalization Phase"
      (make-test-suite

@@ -1,4 +1,4 @@
-(module language-tester mzscheme
+(module util mzscheme
   (provide make-module-eval
            make-eval/mod-path)
   
