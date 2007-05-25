@@ -1,5 +1,6 @@
 (module labels mzscheme
   (require (lib "md5.ss")
+           (lib "list.ss")
            (lib "etc.ss"))
   (provide make-labeling
            delete-tag-list!)
@@ -24,22 +25,24 @@
                (integer->char (add1 (char->integer (string-ref str 0))))
                (substring str 1))]))
     
-  (define tag-file-path (this-expression-source-directory))
-  (define default-file-name ".tag-list")
+  (define default-file-name (build-path (this-expression-source-directory) ".tag-list"))
   (define file-system-mutex (make-semaphore 1))
   
   ;; read-tag-list: string -> (listof (list bytes string))
   ;; read the tag list from the file system
   (define (read-tag-list filename)
-    (if (file-exists? (build-path tag-file-path filename))
-        (call-with-input-file (build-path tag-file-path filename)
-          read)
-        '()))
+    (if (file-exists? filename)
+        (let ([v (call-with-input-file filename
+                   read)])
+          (if (eof-object? v)
+              empty
+              v))
+        empty))
   
   ;; save-tag-list!: (listof (list bytes string)) string -> (listof (list bytes string))
   ;; save the tag list in the file system
   (define (save-tag-list! new-list filename)
-    (call-with-output-file (build-path tag-file-path filename)
+    (call-with-output-file filename
       (lambda (o-port)
         (write new-list o-port))
       'replace))
@@ -49,8 +52,8 @@
   (define delete-tag-list!
     (case-lambda
       [(filename)
-       (when (file-exists? (build-path tag-file-path filename))
-         (delete-file (build-path tag-file-path filename)))]
+       (when (file-exists? filename)
+         (delete-file filename))]
       [() (delete-tag-list! default-file-name)]))
   
   ;; lookup-tag: bytes string -> string

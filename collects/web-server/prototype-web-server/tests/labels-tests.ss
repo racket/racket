@@ -2,12 +2,12 @@
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (lib "etc.ss")
-           "../labels.ss")
-           
+           (lib "file.ss")
+           "../lang/labels.ss")
+             
+  (require/expose (lib "labels.ss" "web-server" "prototype-web-server" "lang") (add1/string))
   
-  (require/expose (lib "labels.ss" "web-server" "prototype-web-server") (add1/string))
-  
-  (define THE-TEST-FILENAME "labels-test-file")
+  (define THE-TEST-FILENAME (make-temporary-file))
   
   (provide labels-tests-suite)
   
@@ -16,7 +16,7 @@
   (define l3 (make-labeling #"bar" THE-TEST-FILENAME))
   (define l4 (make-labeling #"baz" THE-TEST-FILENAME))
   
-  (define race-test-file "race-test-file")
+  (define race-test-file (make-temporary-file))
   
   (define (genbytes)
     (string->bytes/utf-8
