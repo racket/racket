@@ -229,6 +229,9 @@
         ;; FIXME: isn't local to the section
         (make-toc-paragraph null))
 
+      (define/override (local-table-of-contents part ht)
+        (make-paragraph null))
+
       ;; ----------------------------------------
 
       (super-new))))

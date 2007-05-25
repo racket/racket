@@ -178,12 +178,18 @@
 
   ;; ----------------------------------------
 
-  (provide table-of-contents)
+  (provide table-of-contents
+           local-table-of-contents)
 
   (define (table-of-contents)
     (make-delayed-flow-element
      (lambda (renderer part ht)
-       (send renderer table-of-contents part ht)))))
+       (send renderer table-of-contents part ht))))
+
+  (define (local-table-of-contents)
+    (make-delayed-flow-element
+     (lambda (renderer part ht)
+       (send renderer local-table-of-contents part ht)))))
 
 
 

@@ -254,6 +254,9 @@
       (define/public (table-of-contents part ht)
         (make-table #f (render-toc part #t)))
 
+      (define/public (local-table-of-contents part ht)
+        (table-of-contents part ht))
+
       (define/private (render-toc part skip?)
         (let ([number (collected-info-number (part-collected-info part))])
           (let ([subs 

@@ -9,7 +9,7 @@ This chapter provides a quick introduction to Scheme as background for
 the rest of the guide. Readers with some Scheme experience can safely
 skip to @secref["datatypes"].
 
-@table-of-contents[]
+@local-table-of-contents[]
 
 @include-section["simple-data.scrbl"]
 @include-section["syntax.scrbl"]
