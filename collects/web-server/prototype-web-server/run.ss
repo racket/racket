@@ -3,7 +3,7 @@
            (lib "tcp-sig.ss" "net"))
   (require (lib "dispatch-server-sig.ss" "web-server" "private")
            (lib "dispatch-server-unit.ss" "web-server" "private")
-           (lib "request.ss" "web-server" "private")
+           (prefix http: (lib "request.ss" "web-server" "private"))
            (lib "configuration-structures.ss" "web-server" "private")
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers")))
@@ -15,6 +15,7 @@
   (define max-waiting 40)
   (define initial-connection-timeout 60)
   (define host-info hardcoded-host)
+  (define read-request http:read-request)
   (define dispatch
     (sequencer:make
      (prototype:make #:servlet-root (paths-servlet (host-paths host-info))
