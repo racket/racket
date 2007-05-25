@@ -10,14 +10,14 @@
            (lib "list.ss")
            (lib "plt-match.ss")
            (lib "dispatch.ss" "web-server" "dispatchers")
-           (lib "session.ss" "web-server" "prototype-web-server")
-           (only (lib "abort-resume.ss" "web-server" "prototype-web-server")
+           (lib "session.ss" "web-server" "prototype-web-server" "private")
+           (only (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
                  run-start)
-           (only "persistent-web-interaction.ss"
+           (only "private/persistent-web-interaction.ss"
                  start-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
            "xexpr-extras.ss"
-           "utils.ss")
+           "private/utils.ss")
   
   (provide make)
   
@@ -52,8 +52,8 @@
      #:to-be-copied-module-specs
      '(mzscheme
       (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
-      (lib "abort-resume.ss" "web-server" "prototype-web-server")
-      (lib "session.ss" "web-server" "prototype-web-server")
+      (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
+      (lib "session.ss" "web-server" "prototype-web-server" "private")
       (lib "request.ss" "web-server" "private"))))
   
   (define/kw (make #:key

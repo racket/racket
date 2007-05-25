@@ -154,7 +154,7 @@
     (map
      (lambda (n-or-k)
        (if (symbol? n-or-k)
-           `((lib "abort-resume.ss" "prototype-web-server") . ,n-or-k)
+           `((lib "abort-resume.ss" "web-server" "prototype-web-server" "private") . ,n-or-k)
            (cons
             mod-path
             (string->symbol
@@ -197,7 +197,7 @@
         [(and (same-module? pth (caar mm))
               (match-label (cdar mm)))
          => (lambda (lab) (cons lab (loop (cdr mm))))]
-        [(same-module? '(lib "abort-resume.ss" "web-server" "prototype-web-server") (caar mm))
+        [(same-module? '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private") (caar mm))
          (cons (cdar mm) (loop (cdr mm)))]
         [else
          (error "cannot construct abreviated module map" mod-map)])))

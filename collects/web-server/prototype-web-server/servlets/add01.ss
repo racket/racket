@@ -1,5 +1,5 @@
 (module add01 mzscheme
-  (require (lib "session.ss" "web-server" "prototype-web-server")
+  (require (lib "session.ss" "web-server" "prototype-web-server" "private")
            (lib "request-structs.ss" "web-server")
            (lib "url.ss" "net"))
   (provide start)

@@ -1,5 +1,5 @@
 (module web-param mzscheme
-  (require "../closure.ss"
+  (require "../private/closure.ss"
            (lib "list.ss"))
   (provide make-web-parameter
            next-web-parameter-id

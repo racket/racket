@@ -3,7 +3,7 @@
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "serialize.ss")
            (lib "match.ss")
-           "../define-closure.ss")  
+           "../private/define-closure.ss")  
   
   (define-closure id (x) () x)
   

@@ -5,7 +5,7 @@
            (lib "plt-match.ss")
            "util.ss"
            "freevars.ss"
-           "../closure.ss")
+           "../private/closure.ss")
   (provide defun)
   
   ; make-new-clouse-label : (syntax -> syntax) syntax -> syntax

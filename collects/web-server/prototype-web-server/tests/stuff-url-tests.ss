@@ -1,5 +1,5 @@
 (module stuff-url-tests mzscheme
-  (require (lib "stuff-url.ss" "web-server" "prototype-web-server")
+  (require (lib "stuff-url.ss" "web-server" "prototype-web-server" "private")
            (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (lib "url.ss" "net")
@@ -7,7 +7,7 @@
            (lib "file.ss")
            "util.ss")
   
-  (require/expose (lib "stuff-url.ss" "web-server" "prototype-web-server")
+  (require/expose (lib "stuff-url.ss" "web-server" "prototype-web-server" "private")
                   (same-module? url-parts recover-serial))
   
   (provide stuff-url-suite)
@@ -39,17 +39,17 @@
       "Test same-module?"
       
       (check-true
-       (same-module? `(file ,(path->string (build-absolute-path (find-collects-dir) "web-server" "prototype-web-server" "abort-resume.ss")))
-                     '(lib "abort-resume.ss" "web-server" "prototype-web-server")))
+       (same-module? `(file ,(path->string (build-absolute-path (find-collects-dir) "web-server" "prototype-web-server" "private" "abort-resume.ss")))
+                     '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private")))
       
       (check-true
-       (same-module? `(file ,(path->string (build-absolute-path (current-directory) "../abort-resume.ss")))
-                     '(lib "abort-resume.ss" "web-server" "prototype-web-server")))
+       (same-module? `(file ,(path->string (build-absolute-path (current-directory) "../private/abort-resume.ss")))
+                     '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private")))
       
       (check-true
        (same-module?
-        '(lib "abort-resume.ss" "web-server" "prototype-web-server")
-        '(lib "./abort-resume.ss" "web-server" "prototype-web-server"))))
+        '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
+        '(lib "./abort-resume.ss" "web-server" "prototype-web-server" "private"))))
      
      (test-case
       "compose url-parts and recover-serial (1)"
