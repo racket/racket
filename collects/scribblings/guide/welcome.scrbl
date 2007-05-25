@@ -166,38 +166,3 @@ fought with ad hoc command-line flags, compiler directives, and
 build tools. The module system is to designed to avoid the problems,
 so start with @schemefont{#module}, and you'll be happier with Scheme
 in the long run.
-
-@; ----------------------------------------------------------------------
-@section[#:tag "indentation"]{Scheme Program Formatting}
-
-Line breaks and indentation are not significant for parsing Scheme
-programs, but most Scheme programmer use a standard set of conventions
-to make code more readable. For example, the body of a definition is
-typically indented under the first line of the definition. Identifiers
-are written immediately after an open parenthesis with no extra space,
-and closing parentheses never go on their own line.
-
-DrScheme automatically indents according to the standard style when
-you type Enter in a program or REPL expression. For example, if you
-hit Enter after typing @litchar{(define (piece str)}, then DrScheme
-automatically inserts two spaces for the next line.  If you change a
-region of code, you can select it in DrScheme and hit Tab, and
-DrScheme will re-indent the code (without inserting any line breaks).
-Editors like Emacs offer a Scheme mode with similar indentation
-support.
-
-Re-indenting not only makes the code easier to read, it gives you
-extra feedback that your parentheses are matched in the way that you
-intended. For example, if you leave out a closing parenthesis after
-the last argument to a procedure, automatic indentation starts the
-next line under the first argument, instead of under the
-@scheme[define] keyword:
-
-@schemeblock[
-(define (piece str
-               (substring str 0 5)))
-]
-
-Furthermore, when an open parenthesis has no matching close
-parenthesis in a program, both @exec{mzscheme} and DrScheme use the
-source's indentation information to suggest where it might be missing.
