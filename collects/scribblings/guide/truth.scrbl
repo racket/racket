@@ -49,8 +49,8 @@ mistake, such as accidentally reversing the arguments to
 
 Non-list pairs are used intentionally, sometimes. For example, the
 @scheme[make-immutable-hash-table] procedure takes a list of pairs,
-where the @scheme[car] of each pair is a key and the @scheme[cdr] is a
-value.
+where the @scheme[car] of each pair is a key and the @scheme[cdr] is an
+arbitrary value.
 
 The only thing more confusing to new Schemers than non-list pairs is
 the printing convention for pairs where the second element @italic{is}
@@ -182,11 +182,6 @@ Beware, however, that the REPL's printer recognizes the symbol
 (eval:alts '(#, @schemevalfont{quote} #, @schemevalfont{road}) ''road)
 ]
 
-There's a method to this madness; it has to do with the true nature of
-Scheme syntax (which we discuss in the next section) and the
-traditional Lisp approach to meta-programming (which we discuss in the
-@seclink["quote-eval"]{section afterward}).
-
 @;------------------------------------------------------------------------
 @section{Lists and Scheme Syntax}
 
@@ -225,35 +220,6 @@ way of writing @scheme[(+ 1 2)]. It is practically never a good idea
 to write application expressions using this dot notation; it's just a
 consequence of the way Scheme's syntax is defined.
 
-The rule for converting @litchar{'} to a use of @scheme[quote] is also
-defined at the read level. If you (accidentally) use
-@schemeidfont{quote} as an identifier, the result makes sense only
-when you understand the reader's conversion:
-
-@def+int[
-(define (shakespeare quot)
-  (list 'shakespeare 'says quot))
-(shakespeare "to be or not to be")]
-@schemeblock[
-(define (shakey #, @schemeidfont{quote})
-  (list '#, @schemeidfont{shakey} '#, @schemeidfont{says} #, @schemeidfont{quote}))
-]
-
-@interaction[
-(eval:alts (shakey "to be or not to be") (let ([shakey (lambda (x) x)]) ("to be or not to be" shakey)))
-]
-
-The second example fails because @scheme['#, @schemeidfont{shakey}] is
-really @scheme[(#, @schemeidfont{quote} #, @schemeidfont{shakey})],
-which means the application of @scheme[shakey]'s argument (which turns
-out to be a string, not a procedure).
-
-A few other character combinations trigger @litchar{'}-like
-conversions, including @litchar{`}, @litchar{,}, @litchar["@,"], and
-@litchar{#`}. Also, @litchar{#module big} triggers a read-time
-conversion that bundles file content into a single
-@scheme[module] declaration (see @secref["module"]).
-
 Normally, @litchar{.} is allowed by the reader only with a
 parenthesized sequence, and only before the last element of the
 sequence. However, a pair of @litchar{.}s can also appear around a
@@ -271,11 +237,3 @@ This two-dot convension is non-traditional, and it has essentially
 nothing to do with the dot notation for non-list pairs. PLT Scheme
 programmers use the infix convension sparingly---mostly for asymmetric
 binary operators such as @scheme[<] and @scheme[is-a?].
-
-@;------------------------------------------------------------------------
-@section[#:tag "eval-quote"]{Traditional Metaprogramming}
-
-[The whole quote and printer thing has to do with manipulating
-programs as represented by pairs, symbols, etc. Not usually a good
-idea anymore...]
-

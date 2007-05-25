@@ -9,7 +9,7 @@ Depending on how you look at it, @bold{PLT Scheme} is
 
 @itemize{
 
- @item{a @defterm{programming language}---a dialect of Scheme, which
+ @item{a @defterm{programming language}---a descendant of Scheme, which
        is a dialect of Lisp;}
 
  @item{a @defterm{family} of programming languages---variants of
@@ -37,12 +37,12 @@ Most likely, you'll want to explore PLT Scheme using DrScheme,
 especially at the beginning. If you prefer, you can also work with the
 command-line @exec{mzscheme} interpreter and your favorite text
 editor. The rest of this guide presents the language mostly
-independent of the tool that you use.
+independent of your choice of editor.
 
-If you're using DrScheme, you'll need to set it in the right mode,
-because DrScheme is less biased to a particular Scheme variant than
-@exec{mzscheme}. Assuming that you've never used DrScheme before,
-start it up, type the line
+If you're using DrScheme, you'll need to choose the proper language,
+because DrScheme accommodates many different variants of
+Scheme. Assuming that you've never used DrScheme before, start it up,
+type the line
 
 @schememod[big]
 

@@ -252,36 +252,40 @@
       ;; ----------------------------------------
 
       (define/public (table-of-contents part ht)
-        (make-table #f (cdr (render-toc part))))
+        (make-table #f (render-toc part #t)))
 
-      (define/private (render-toc part)
+      (define/private (render-toc part skip?)
         (let ([number (collected-info-number (part-collected-info part))])
-          (let ([l (cons
-                    (list (make-flow
-                           (list
-                            (make-paragraph
-                             (list
-                              (make-element 'hspace (list (make-string (* 2 (length number)) #\space)))
-                              (make-link-element (if (= 1 (length number))
-                                                     "toptoclink"
-                                                     "toclink")
-                                                 (append
-                                                  (format-number number 
-                                                                 (list
-                                                                  (make-element 'hspace '(" "))))
-                                                  (part-title-content part))
-                                                 `(part ,(part-tag part))))))))
-                    (apply
-                     append
-                     (map (lambda (p) (render-toc p)) (part-parts part))))])
-            (if (and (= 1 (length number))
-                     (or (not (car number))
-                         ((car number) . > . 1)))
-                (cons (list (make-flow (list (make-paragraph (list
-                                                              (make-element 'hspace (list "")))))))
-                      l)
-                l))))
-
+          (let ([subs 
+                 (apply
+                  append
+                  (map (lambda (p) (render-toc p #f)) (part-parts part)))])
+            (if skip?
+                subs
+                (let ([l (cons
+                          (list (make-flow
+                                 (list
+                                  (make-paragraph
+                                   (list
+                                    (make-element 'hspace (list (make-string (* 2 (length number)) #\space)))
+                                    (make-link-element (if (= 1 (length number))
+                                                           "toptoclink"
+                                                           "toclink")
+                                                       (append
+                                                        (format-number number 
+                                                                       (list
+                                                                        (make-element 'hspace '(" "))))
+                                                        (part-title-content part))
+                                                       `(part ,(part-tag part))))))))
+                          subs)])
+                  (if (and (= 1 (length number))
+                           (or (not (car number))
+                               ((car number) . > . 1)))
+                      (cons (list (make-flow (list (make-paragraph (list
+                                                                    (make-element 'hspace (list "")))))))
+                            l)
+                      l))))))
+      
       ;; ----------------------------------------
       
       (super-new))))

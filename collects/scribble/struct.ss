@@ -56,6 +56,7 @@
           [collected-info (or/c false/c collected-info?)]
           [flow flow?]
           [parts (listof part?)])]
+   [(styled-part part) ([style any/c])]
    [(unnumbered-part part) ()]
    [flow ([paragraphs (listof flow-element?)])]
    [paragraph ([content list?])]

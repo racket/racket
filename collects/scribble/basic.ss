@@ -19,9 +19,9 @@
                      (content->string content)
                      "_"))
 
-  (define/kw (title #:key [tag #f] #:body str)
+  (define/kw (title #:key [tag #f] [style #f] #:body str)
     (let ([content (decode-content str)])
-      (make-title-decl (or tag (gen-tag content)) content)))
+      (make-title-decl (or tag (gen-tag content)) style content)))
   
   (define/kw (section #:key [tag #f] #:body str)
     (let ([content (decode-content str)])

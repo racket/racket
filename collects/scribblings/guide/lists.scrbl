@@ -118,7 +118,7 @@ the @scheme[fold-for] syntax as follows:
 @interaction[
 (fold-for ([sum 0])
           ([elem (list 1 2 3)])
-  (+ sum elem))
+  (+ sum (* elem elem)))
 ]
 
 Compare to analogous Java code, where @scheme[(list 1 2 3)] is
@@ -128,7 +128,7 @@ replaced by a collection @scheme[lst]:
 #<<EOS
   int sum = 0;
   for (Object elem : lst) {
-    sum = sum + elem;
+    sum = sum + elem * elem;
   }
   return sum;
 EOS
@@ -187,7 +187,7 @@ Scheme programmers tend to use them, partly because the syntax is
 simpler (just a procedure call).
 
 We have ignored several other variants of the interation
-form---including plain @scheme[for], which is use when the iteration
+form---including plain @scheme[for], which is used when the iteration
 body is to be run only for its effect. For more complete information,
 see @secref["iterations+comprehensions"].
 

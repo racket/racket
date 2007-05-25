@@ -14,6 +14,7 @@
 
   (provide-structs
    [title-decl ([tag any/c]
+                [style any/c]
                 [content list?])]
    [part-start ([depth integer?]
                 [tag (or/c false/c string?)]
@@ -48,14 +49,15 @@
         null
         (list (decode-paragraph (reverse (skip-whitespace accum))))))
 
-  (define (decode-flow* l tag title part-depth)
-    (let loop ([l l][next? #f][accum null][title title][tag tag])
+  (define (decode-flow* l tag style title part-depth)
+    (let loop ([l l][next? #f][accum null][title title][tag tag][style style])
       (cond
-       [(null? l) (make-part tag
-                             title 
-                             #f
-                             (make-flow (decode-accum-para accum))
-                             null)]
+       [(null? l) (make-styled-part tag
+                                    title 
+                                    #f
+                                    (make-flow (decode-accum-para accum))
+                                    null
+                                    style)]
        [(title-decl? (car l))
         (unless part-depth
           (error 'decode
@@ -65,30 +67,35 @@
           (error 'decode
                  "found extra title: ~v"
                  (car l)))
-        (loop (cdr l) next? accum (title-decl-content (car l)) (title-decl-tag (car l)))]
+        (loop (cdr l) next? accum 
+              (title-decl-content (car l))
+              (title-decl-tag (car l))
+              (title-decl-style (car l)))]
        [(or (paragraph? (car l))
             (table? (car l))
             (itemization? (car l))
             (delayed-flow-element? (car l)))
         (let ([para (decode-accum-para accum)]
-              [part (decode-flow* (cdr l) tag title part-depth)])
-          (make-part (part-tag part)
-                     (part-title-content part)
-                     (part-collected-info part)
-                     (make-flow (append para
-                                        (list (car l)) 
-                                        (flow-paragraphs (part-flow part))))
-                     (part-parts part)))]
+              [part (decode-flow* (cdr l) tag style title part-depth)])
+          (make-styled-part (part-tag part)
+                            (part-title-content part)
+                            (part-collected-info part)
+                            (make-flow (append para
+                                               (list (car l)) 
+                                               (flow-paragraphs (part-flow part))))
+                            (part-parts part)
+                            (styled-part-style part)))]
        [(part? (car l))
         (let ([para (decode-accum-para accum)]
-              [part (decode-part (cdr l) tag title part-depth)])
-          (make-part (part-tag part)
-                     (part-title-content part)
-                     (part-collected-info part)
-                     (make-flow (append para
-                                        (flow-paragraphs
-                                         (part-flow part))))
-                     (cons (car l) (part-parts part))))]
+              [part (decode-flow* (cdr l) tag style title part-depth)])
+          (make-styled-part (part-tag part)
+                            (part-title-content part)
+                            (part-collected-info part)
+                            (make-flow (append para
+                                               (flow-paragraphs
+                                                (part-flow part))))
+                            (cons (car l) (part-parts part))
+                            (styled-part-style part)))]
        [(and (part-start? (car l))
              (or (not part-depth)
                  ((part-start-depth (car l)) . <= . part-depth)))
@@ -109,38 +116,40 @@
                                       (part-start-title s)
                                       (add1 part-depth))]
                       [part (decode-part l tag title part-depth)])
-                  (make-part (part-tag part)
-                             (part-title-content part)
-                             (part-collected-info part)
-                             (make-flow para)
-                             (cons s (part-parts part))))
+                  (make-styled-part (part-tag part)
+                                    (part-title-content part)
+                                    (part-collected-info part)
+                                    (make-flow para)
+                                    (cons s (part-parts part))
+                                    (styled-part-style part)))
                 (loop (cdr l) (cons (car l) s-accum)))))]
        [(splice? (car l))
-	(loop (append (splice-run (car l)) (cdr l)) next? accum title tag)]
-       [(null? (cdr l)) (loop null #f (cons (car l) accum) title tag)]
+	(loop (append (splice-run (car l)) (cdr l)) next? accum title tag style)]
+       [(null? (cdr l)) (loop null #f (cons (car l) accum) title tag style)]
        [(and (pair? (cdr l))
 	     (splice? (cadr l)))
-	(loop (cons (car l) (append (splice-run (cadr l)) (cddr l))) next? accum title tag)]
+	(loop (cons (car l) (append (splice-run (cadr l)) (cddr l))) next? accum title tag style)]
        [(line-break? (car l))
 	(if next?
-	    (loop (cdr l) #t accum title tag)
+	    (loop (cdr l) #t accum title tag style)
 	    (let ([m (match-newline-whitespace (cdr l))])
               (if m
-                  (let ([part (loop m #t null title tag)])
-                    (make-part (part-tag part)
-                               (part-title-content part)
-                               (part-collected-info part)
-                               (make-flow (append (decode-accum-para accum)
-                                                  (flow-paragraphs (part-flow part))))
-                               (part-parts part)))
-                  (loop (cdr l) #f (cons (car l) accum) title tag))))]
-       [else (loop (cdr l) #f (cons (car l) accum) title tag)])))
+                  (let ([part (loop m #t null title tag style)])
+                    (make-styled-part (part-tag part)
+                                      (part-title-content part)
+                                      (part-collected-info part)
+                                      (make-flow (append (decode-accum-para accum)
+                                                         (flow-paragraphs (part-flow part))))
+                                      (part-parts part)
+                                      (styled-part-style part)))
+                  (loop (cdr l) #f (cons (car l) accum) title tag style))))]
+       [else (loop (cdr l) #f (cons (car l) accum) title tag style)])))
 
   (define (decode-part l tag title depth)
-    (decode-flow* l tag title depth))
+    (decode-flow* l tag #f title depth))
 
   (define (decode-flow l)
-    (part-flow (decode-flow* l #f #f #f)))
+    (part-flow (decode-flow* l #f #f #f #f)))
 
   (define (match-newline-whitespace l)
     (cond

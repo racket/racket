@@ -202,11 +202,8 @@
                font-family: monospace;
                }
 
-               .navigation {
-               color: red;
-               text-align: right;
-               font-size: medium;
-               font-style: italic;
+               .nonavigation {
+               color: gray;
                }
 
                .disable {

@@ -5,26 +5,23 @@
 
 @title{A Guide to PLT Scheme}
 
-This guide is intended for programmers who are new to Scheme, new to
-PLT Scheme, or new to some part of PLT Scheme. 
+This guide is intended for programmers who are new to Scheme, new to PLT
+Scheme, or new to some part of PLT Scheme. It definitely assumes some
+programming experience. If you are new to programming, consider
+instead reading @|HtDP|. If you want a quick and pretty overview of PLT
+Scheme, start with @|Quick|. 
 
-If you are new to programming, consider instead reading @|HtDP|.
-
-If you want a quicker, prettier, higher-level overview of PLT Scheme,
-start with @|Quick|.
-
-For everyone else, this guide assumes some programming experience.
-After a somewhat gentle introduction to Scheme (chapters 1 through 4),
-we dive into the details of putting Scheme to work. This guide covers
-much of the PLT Scheme toolbox, but it leaves the precise details
-to @|MzScheme| and other reference manuals.
+@seclink["to-scheme"]{Chapter 2} provides a somewhat gentle
+introduction to Scheme. After that, this guide dives into the details
+of putting Scheme to work. Even though this guide covers much of the
+PLT Scheme toolbox, it leaves precise details to @|MzScheme| and other
+reference manuals.
 
 @table-of-contents[]
 
 @include-section["welcome.scrbl"]
-@include-section["syntax.scrbl"]
-@include-section["lists.scrbl"]
-@include-section["truth.scrbl"]
+
+@include-section["to-scheme.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "datatypes"]{Built-In and Programmer-Defined Datatypes}

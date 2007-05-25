@@ -3,6 +3,7 @@
   (require "struct.ss"
            (lib "class.ss")
            (lib "file.ss")
+           (lib "list.ss")
            (lib "runtime-path.ss")
            (prefix xml: (lib "xml.ss" "xml")))
   (provide render-mixin
@@ -14,7 +15,8 @@
 
   (define current-subdirectory (make-parameter #f))
   (define current-output-file (make-parameter #f))
-  (define on-separate-page (make-parameter #f))
+  (define on-separate-page (make-parameter #t))
+  (define next-separate-page (make-parameter #f))
   (define collecting-sub (make-parameter 0))
 
   ;; ----------------------------------------
@@ -243,9 +245,15 @@
       (define/override (part-whole-page? d)
         (= 2 (collecting-sub)))
 
+      (define/private (toc-part? d)
+        (and (styled-part? d)
+             (eq? 'toc (styled-part-style d))))
+
       (define/override (collect-part d parent ht number)
         (let ([prev-sub (collecting-sub)])
-          (parameterize ([collecting-sub (add1 prev-sub)])
+          (parameterize ([collecting-sub (if (toc-part? d)
+                                             1
+                                             (add1 prev-sub))])
             (if (= 1 prev-sub)
                 (let ([filename (derive-filename d)])
                   (parameterize ([current-output-file (build-path (path-only (current-output-file))
@@ -275,19 +283,43 @@
       
       (inherit render-table)
 
+      (define/private (find-siblings d)
+        (let ([parent (collected-info-parent (part-collected-info d))])
+          (let loop ([l (if parent
+                            (part-parts parent)
+                            (if (null? (part-parts d))
+                                (list d)
+                                (list d (car (part-parts d)))))]
+                     [prev #f])
+            (cond
+             [(eq? (car l) d) (values prev 
+                                      (and (pair? (cdr l)) 
+                                           (cadr l)))]
+             [else (loop (cdr l) (car l))]))))
+        
       (define/private (navigation d ht)
         (let ([parent (collected-info-parent (part-collected-info d))])
-          (let-values ([(prev next)
-                        (let loop ([l (if parent
-                                          (part-parts parent)
-                                          (if (null? (part-parts d))
-                                              (list d)
-                                              (list d (car (part-parts d)))))]
-                                   [prev #f])
-                          (cond
-                           [(eq? (car l) d) (values prev (and (pair? (cdr l)) 
-                                                              (cadr l)))]
-                           [else (loop (cdr l) (car l))]))])
+          (let*-values ([(prev next) (find-siblings d)]
+                        [(prev) (if prev
+                                    (let loop ([prev prev])
+                                      (if (and (toc-part? prev)
+                                               (pair? (part-parts prev)))
+                                          (loop (car (last-pair (part-parts prev))))
+                                          prev))
+                                    (and parent
+                                         (toc-part? parent)
+                                         parent))]
+                        [(next) (cond
+                                 [(and (toc-part? d)
+                                       (pair? (part-parts d)))
+                                  (car (part-parts d))]
+                                 [(and (not next)
+                                       parent
+                                       (toc-part? parent))
+                                  (let-values ([(prev next)
+                                                (find-siblings parent)])
+                                    next)]
+                                 [else next])])
             (render-table (make-table
                            'at-right
                            (list 
@@ -306,13 +338,17 @@
                                  sep-element
                                  (if parent
                                      (make-element
-                                      (make-target-url "index.html")
+                                      (make-target-url 
+                                       (if (toc-part? parent)
+                                           (derive-filename parent)
+                                           "index.html"))
                                       up-content)
                                      "")
                                  sep-element
                                  (make-element
-                                  (and next
-                                       (make-target-url (derive-filename next)))
+                                  (if next
+                                      (make-target-url (derive-filename next))
+                                      "nonavigation")
                                   next-content))))))))
                           d
                           ht))))
@@ -321,7 +357,8 @@
         (let ([number (collected-info-number (part-collected-info d))])
           (cond
            [(and (not (on-separate-page))
-                 (= 1 (length number)))
+                 (or (= 1 (length number))
+                     (next-separate-page)))
             ;; Render as just a link, and put the actual 
             ;; content in a new file:
             (let* ([filename (derive-filename d)]
@@ -334,16 +371,19 @@
                   'truncate/replace)
                 null))]
            [else
-            (if ((length number) . <= . 1)
-                ;; Navigation bars;
-                `(,@(navigation d ht)
-                  (p nbsp)
-                  ,@(super render-part d ht)
-                  (p nbsp)
-                  ,@(navigation d ht)
-                  (p nbsp))
-                ;; Normal section render
-                (super render-part d ht))])))
+            (let ([sep? (on-separate-page)])
+              (parameterize ([next-separate-page (toc-part? d)]
+                             [on-separate-page #f])
+                (if sep?
+                    ;; Navigation bars;
+                    `(,@(navigation d ht)
+                      (p nbsp)
+                      ,@(super render-part d ht)
+                      (p nbsp)
+                      ,@(navigation d ht)
+                      (p nbsp))
+                    ;; Normal section render
+                    (super render-part d ht))))])))
 
       (super-new)))
 

@@ -4,29 +4,29 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "syntax-overview"]{Basic Scheme Syntax}
+@title[#:tag "syntax-overview"]{Simple Definitions and Expressions}
 
-The syntax of a Scheme program is specified in an unusual way compared
-to most programming languages. In particular, importing a module can
-introduce new definition and expression forms, so the syntax of a
-Scheme module cannot be written as a context-free grammar. Even more
-radically, the language name after @schemefont{#module} determines the
-token-level syntax of the code that follows it.
+A program module is written as
 
-As a starting point, however, we can pretend that Scheme's syntax
-follows a context-free grammar. We'll start with this approximation,
-and work from there to build up a more complete picture of the
-language.
+@schemeblock[
+#, @BNF-seq[@litchar{#module} @nonterm{langname} @kleenestar{@nonterm{topform}}]
+]
 
-The following BNF grammar sketches a simplified syntax for Scheme.
-Text with a gray background, such as @litchar{#module}, represents
-literal text. Whitespace must appear between separate such literals
-and nonterminals like @nonterm{id}, except that whitespace is
-not required before or after @litchar{(}, @litchar{)}, @litchar{[}, or
-@litchar{]}.  Following the usual conventions, @kleenestar{} means
-zero or more repetitions of the preceding element, @kleeneplus{} means
-one or more repetitions of the preceding element, and @BNF-group{}
-groups a sequence as an element for repetition.
+where a @nonterm{topform} is either a @nonterm{definition} or an
+@nonterm{expr}. The REPL also evaluates @nonterm{topform}s.
+
+In syntax specifications, text with a gray background, such as
+@litchar{#module}, represents literal text. Whitespace must appear
+between separate such literals and nonterminals like @nonterm{id},
+except that whitespace is not required before or after @litchar{(},
+@litchar{)}, @litchar{[}, or @litchar{]}.  A comment, which starts
+with @litchar{;} and runs until the end of the line, is treated the
+same as whitespace.
+
+Following the usual conventions, @kleenestar{} in a grammar means zero
+or more repetitions of the preceding element, @kleeneplus{} means one
+or more repetitions of the preceding element, and @BNF-group{} groups
+a sequence as an element for repetition.
 
 @define[val-defn-stx @BNF-seq[@litchar{(}@litchar{define} @nonterm{id} @nonterm{expr} @litchar{)}]]
 @define[fun-defn-stx
@@ -56,29 +56,6 @@ groups a sequence as an element for repetition.
                    @kleeneplus{@nonterm{expr}} @litchar{)}]]
 @define[let-expr-stx (make-let-expr-stx @litchar{let})]
 @define[let*-expr-stx (make-let-expr-stx @litchar{let*})]
-
-
-@BNF[(list @nonterm{module} @BNF-seq[@litchar{#module} @nonterm{langname} @kleenestar{@nonterm{topform}}])
-     (list @nonterm{topform} @nonterm{definition}
-                             @nonterm{expr}
-                             @BNF-etc)
-     (list @nonterm{definition} val-defn-stx
-                                fun-defn-stx
-                                @BNF-etc)
-     (list @nonterm{expr} @nonterm{id}
-                                @nonterm{constant}
-                                app-expr-stx
-                                if-expr-stx
-                                lambda-expr-stx
-                                let-expr-stx
-                                let*-expr-stx
-                                @BNF-etc)]
- 
-The syntax for comments, which are are treated the same as whitespace,
-is not shown in the grammar above. A comment starts with @litchar{;}
-and runs until the end of the line.
-
-The REPL evaluates @nonterm{topform}s, just like the body of a module.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Definitions}
@@ -116,18 +93,6 @@ piece
 substring
 ]
 
-Within a module, each definition must bind a distinct
-@nonterm{id}, and only identifiers without an imported binding
-can be defined. A definition in the REPL, in contrast, overwrites any
-previous definition for the same @nonterm{id}.
-
-@examples[
-(define five 5)
-(substring "hello world" 0 five)
-(define five 8)
-(substring "hello world" 0 five)
-]
-
 A procedure definition can include multiple expressions for the
 procedure's body. In that case, only the value of the last expression
 is returned when the procedure is called. The other expressions are
@@ -140,12 +105,10 @@ evaluated only for some side-effect, such as printing.
 (greet "universe")
 ]
 
-You should generally avoid side-effects in Scheme; printing is a
-reasonable effect to use in some programs, but it's no substitute for
-simply returning a value. In any case, you should understand that
-multiple expressions are allowed in a definition body, because it
-explains why the following @scheme[nogreet] procedure simply returns
-its argument:
+Scheme programmers prefer to avoid assignment statements; it's
+important, though, to understand that multiple expressions are allowed
+in a definition body, because it explains why the following
+@scheme[nogreet] procedure simply returns its argument:
 
 @def+int[
 (define (nogreet name)
@@ -187,66 +150,6 @@ more examples:
 #, @schemeid[call/cc]
 #, @schemeid[call-with-composable-continuation]
 #, @schemeid[x-1+3i]
-#, @schemeid[define]
-]
-
-Since @schemeid[define] is itself an identifier, you could
-re-define @schemeid[define] in the REPL. That's rarely a good idea,
-of course, and it's not allowed in any module where
-@scheme[define] already has a meaning.
-
-@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section{Constants}
-
-Scheme constants include numbers, booleans, strings, and byte
-strings. In documentation examples and in DrScheme, constant
-expressions are shown in green.
-
-@defterm{Numbers} are written in the usual way, including fractions
-and imagnary numbers. Numbers that use decimal points or exponent
-markers are implemented as double-precision floating-point numbers,
-and they are called @defterm{inexact} numbers in Scheme
-terminology. Other numbers are implemented as @defterm{exact} with
-arbitrary precision. In the example number constants below, the ones
-on the left are exact, and the ones on the right are inexact
-approximations:
-
-@schemeblock[
-1                        1.0
-1/2                      0.5
-1+2i                     1.0+2i
-9999999999999999999999   1e+22
-]
-
-@defterm{Booleans} are @scheme[#t] for true and @scheme[#f] for
-false. In conditionals, however, all non-@scheme[#f] values are
-treated as true.
-
-@defterm{Strings} are written between double quotes. Within a string,
-backslash is an escaping character; for example, a backslash followed
-by a double-quote includes a little double-quote in the string. Except
-for an unescaped double-quote or backslash, any Unicode character can
-appear in a string constant.
-
-@schemeblock[
-"hello world"
-"A \"fancy\" string"
-"\u03BBx:(\u03BC\u03B1.\u03B1\u2192\u03B1).xx"
-]
-
-When a constant is evaluated in the REPL, it typically prints the same
-as its input syntax. In some cases, the printed form is a normalized
-version of the input syntax. In other cases, the printed result of an
-expression does not correspond to input syntax at all, such as when an
-expression proceduces a procedure (instead of applying the
-procedure). In documentation and in DrScheme's REPL, results are
-printed in blue instead of green to highlight the difference between
-an input expression and a printed result.
-
-@examples[
-(eval-example-string "1.0000")
-(eval-example-string "\"A \\u0022fancy\\u0022 string\"")
-string-append
 ]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -426,10 +329,9 @@ few key places makes Scheme code even more readable.
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Procedure Applications, Again}
 
-In our pretend grammar of Scheme, we oversimplified in the description
-of procedure applications.  The actual syntax of a procedure
-application allows an arbitrary expression for the procedure, instead
-of just an @nonterm{id}:
+In our earlier grammar procedure applications, we oversimplified.  The
+actual syntax of a procedure application allows an arbitrary
+expression for the procedure, instead of just an @nonterm{id}:
 
 @schemeblock[
 #, app2-expr-stx
@@ -557,14 +459,15 @@ louder
 ]
 
 Note that the expression for @scheme[louder] in the second case is an
-``anonymous'' procedure written with @scheme[lambda], but the compiler
-infers a name, anyway, for the purpose of printing the procedure.
+``anonymous'' procedure written with @scheme[lambda], but, if
+possible, the compiler infers a name, anyway, to make printing and
+error reporting as informative as possible.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section[#:tag "local-binding-intro"]{Local Binding with with
-        @scheme[define], @scheme[let], and @scheme[let*]}
+@section[#:tag "local-binding-intro"]{Local Binding with
+         @scheme[define], @scheme[let], and @scheme[let*]}
 
-It's time to retract another simplification in our pretend grammar of
+It's time to retract another simplification in our grammar of
 Scheme. In the body of a procedure, definitions can appear before the
 body expressions:
 
@@ -623,36 +526,3 @@ use earlier bindings:
        [z (+ x y)])
   (format "adding ~s and ~s produces ~s" x y z))
 ]
-
-@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section{The Language So Far}
-
-As you saw, the little grammar that we showed at the
-@seclink["syntax-overview"]{beginning} of the chapter turned out to be
-too simple even for this chapter. Here's the grammar that we have now:
-
-@BNF[(list @nonterm{module} @BNF-seq[@litchar{#module} @nonterm{langname} @kleenestar{@nonterm{topform}}])
-     (list @nonterm{topform} @nonterm{definition}
-                             @nonterm{expr}
-                             @BNF-etc)
-     (list @nonterm{definition} val-defn-stx
-                                fun-defn2-stx
-                                @BNF-etc)
-     (list @nonterm{expr} @nonterm{id}
-                                @nonterm{constant}
-                                app2-expr-stx
-                                if-expr-stx
-                                or-expr-stx
-                                and-expr-stx
-                                cond-expr-stx
-                                lambda2-expr-stx
-                                let-expr-stx
-                                let*-expr-stx
-                                @BNF-etc)]
-
-For an expanded grammar, it's still a pretty small language! This
-language is enough, however, to write lots of interesting programs.
-
-Depending on your programming background, you may be struck by the
-apparent absence of an iteration form. We'll add one in the next
-chapter, but also explain why it isn't really necessary.
