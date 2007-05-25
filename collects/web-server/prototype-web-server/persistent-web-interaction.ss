@@ -1,15 +1,13 @@
 (module persistent-web-interaction mzscheme
-  (require (rename "persistent-expander.ss" send/suspend0 send/suspend)
-           (all-except "persistent-expander.ss" send/suspend)
+  (require (rename "abort-resume.ss" send/suspend0 send/suspend)
+           (all-except "abort-resume.ss" send/suspend)
            "session.ss"
            "stuff-url.ss"
            (lib "servlet-helpers.ss" "web-server" "private")
            (lib "serialize.ss")
            (lib "url.ss" "net"))
   
-  (provide (all-from-except mzscheme #%module-begin)
-           (rename lang-module-begin #%module-begin)
-           send/suspend/hidden
+  (provide send/suspend/hidden
            send/suspend/url
            send/suspend/dispatch
            extract-proc/url embed-proc/url

@@ -8,22 +8,11 @@
                       "lang/elim-callcc.ss"
                       "lang/defun.ss")
   (require "abort-resume.ss"
-           (only "persistent-web-interaction.ss"
-                 send/suspend/hidden
-                 send/suspend/url
-                 send/suspend/dispatch
-                 extract-proc/url embed-proc/url
-                 redirect/get
-                 start-servlet))
+           "persistent-web-interaction.ss")
   (provide (rename lang-module-begin #%module-begin))
   (provide (all-from "abort-resume.ss")
            (all-from-except mzscheme #%module-begin)
-           send/suspend/hidden
-           send/suspend/url
-           send/suspend/dispatch
-           extract-proc/url embed-proc/url
-           redirect/get
-           start-servlet)
+           (all-from "persistent-web-interaction.ss"))
   
   (define-syntax lang-module-begin 
     (make-lang-module-begin 

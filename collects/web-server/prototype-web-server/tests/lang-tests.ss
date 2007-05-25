@@ -109,7 +109,7 @@
          "start-interaction called twice, dispatch-start will invoke different continuations"
          (let ([test-m02
                 (make-module-eval
-                 (module m02 "../persistent-interaction.ss"
+                 (module m02 "../lang.ss"
                    (define (id x) x)
                    (+ (start-interaction id)
                       (start-interaction id))))])
