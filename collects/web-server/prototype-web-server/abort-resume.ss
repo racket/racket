@@ -11,7 +11,6 @@
    the-cont-key
    the-save-cm-key
    safe-call?
-   abort/cc
    the-undef
    activation-record-list
    
@@ -22,10 +21,7 @@
    ;; "CLIENT" INTERFACE
    run-start
    dispatch-start
-   dispatch
-   )
-  
-  (provide current-abort-continuation)
+   dispatch)
   
   ;; **********************************************************************
   ;; **********************************************************************
@@ -34,6 +30,7 @@
   (define the-cont-key (make-mark-key))
   (define the-save-cm-key (make-mark-key))
   (define safe-call? (make-mark-key))
+  (define web-prompt (make-continuation-prompt-tag 'web)) 
   
   ;; current-continuation-as-list: -> (listof value)
   ;; check the safety marks and return the list of marks representing the continuation
@@ -50,18 +47,11 @@
                  (reverse (continuation-mark-set->list* cm (list the-cont-key the-save-cm-key))))
           (error "Attempt to capture a continuation from within an unsafe context:" sl))))
   
-  ;; XXX BUGBUG this isn't thread safe
-  (define current-abort-continuation
-    (box 
-     (lambda _
-       (error 'abort-resume "current-abort-continuation uninitialized"))))
-  
   ;; abort: ( -> alpha) -> alpha
   ;; erase the stack and apply a thunk
   (define (abort thunk)
-    (let ([abort-k (unbox current-abort-continuation)])
-      #;(printf "abort ~S ~S~n" abort-k thunk)
-      (abort-k thunk)))
+    (printf "abort ~S~n" thunk)
+    (abort-current-continuation web-prompt thunk))
   
   ;; resume: (listof (value -> value)) value -> value
   ;; resume a computation given a value and list of frame procedures
@@ -97,12 +87,10 @@
          [(vector f (list-rest cm-key cm-val))
           (with-continuation-mark cm-key cm-val (rebuild-cms fs thunk))])]))
   
-  (define-syntax (abort/cc stx)
-    (syntax-case stx ()
-      [(_ expr)
-       #'((let/cc abort-k
-            (set-box! current-abort-continuation abort-k)
-            (lambda () expr)))]))  
+  (define (abort/cc thunk)
+    (call-with-continuation-prompt
+     thunk
+     web-prompt))
   
   ;; a serializable undefined value
   (define-serializable-struct undef ())
@@ -153,22 +141,24 @@
   
   (define (run-start harness start)
     (abort/cc 
-     (with-continuation-mark safe-call? '(#t start)
-       (start
-        (with-continuation-mark the-cont-key start
-          (harness))))))
+     (lambda ()
+       (with-continuation-mark safe-call? '(#t start)
+         (start
+          (with-continuation-mark the-cont-key start
+            (harness)))))))
   
   ;; dispatch-start: request -> reponse
   ;; pass the initial request to the starting interaction point
   (define (dispatch-start req0)
-    (abort/cc (start-continuation req0)))
+    (abort/cc (lambda () (start-continuation req0))))
   
   ;; dispatch: request -> response
   ;; lookup the continuation for this request and invoke it
   (define (dispatch req)   
     (abort/cc
-     (cond
-       [(decode-continuation req)
-        => (lambda (k) (k req))]
-       [else
-        (error "no continuation associated with the provided request")]))))
+     (lambda ()
+       (cond
+         [(decode-continuation req)
+          => (lambda (k) (k req))]
+         [else
+          (error "no continuation associated with the provided request")])))))
