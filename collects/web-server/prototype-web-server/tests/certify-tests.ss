@@ -3,6 +3,11 @@
            "language-tester.ss")
   (provide certify-suite)
     
+  (define the-dispatch
+    `(lambda (k*v)
+       (lambda (k*v)
+         ((car k*v) k*v))))
+
   (define certify-suite
     (make-test-suite
      "Test the certification process"
@@ -18,7 +23,7 @@
                         (provide start)
                         (define (start initial)
                           `(,@(list 1 2 initial)))))])         
-         (go)
+         (go the-dispatch)
          (assert equal? (list 1 2 3) (test-m01.1 '(dispatch-start 3)))
          (assert equal? (list 1 2 'foo) (test-m01.1 '(dispatch-start 'foo)))))
       
@@ -30,7 +35,7 @@
                         (provide start)
                         (define (start initial)
                           `(foo ,@(list 1 2 3)))))])
-         (go)
+         (go the-dispatch)
          (assert-true #t)))
       
       (make-test-case
@@ -41,7 +46,7 @@
                         (provide start)
                         (define (start n)
                           `(n ,@(list 1 2 3)))))])
-         (go)
+         (go the-dispatch)
          (assert-true #t)))
       
       (make-test-case
@@ -54,5 +59,5 @@
                           (define (bar n)
                             `(n ,@(list 1 2 3)))
                           (bar 7))))])
-         (go)
+         (go the-dispatch)
          (assert-true #t)))))))

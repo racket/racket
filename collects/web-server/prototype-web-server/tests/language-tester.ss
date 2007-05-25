@@ -3,14 +3,12 @@
            make-eval/mod-path)
   
   (define (go ns)
-    (lambda ()
+    (lambda (dispatch-sexpr)
       (parameterize ([current-namespace ns])
-        (eval '(run-start 
+        (eval `(run-start 
                 (lambda ()
                   (start-interaction 
-                      (lambda (k*v)
-                        (lambda (k*v)
-                          ((car k*v) k*v)))))
+                      ,dispatch-sexpr))
                 start)))))
   
   (define-syntax (make-module-eval m-expr)

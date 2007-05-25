@@ -14,6 +14,11 @@
                         (raise the-exn)))])
       (and (thunk) #f)))
   
+  (define the-dispatch
+    `(lambda (k*v)
+       (lambda (k*v)
+         ((car k*v) k*v))))
+  
   (define lang-suite
     (make-test-suite
      "Test the Web language"
@@ -33,7 +38,7 @@
                         (define (start initial)
                           (let ([f (let ([m 7]) m)])
                             (+ f initial)))))])
-         (go)
+         (go the-dispatch)
          (assert = 8 (test-m00.4 '(dispatch-start 1)))))
       
       (make-test-case
@@ -45,7 +50,7 @@
                         (provide start)
                         (define (start initial)
                           (foo initial))))])
-         (go)
+         (go the-dispatch)
          (assert eqv? 'foo (test-m00.3 '(dispatch-start 7)))))
       
       (make-test-case
@@ -57,7 +62,7 @@
                         (provide start)
                         (define (start initial)
                           (id initial))))])
-         (go)
+         (go the-dispatch)
          (assert = 7 (test-m00 '(dispatch-start 7)))
          (assert eqv? 'foo (test-m00 '(dispatch-start 'foo)))))
       
@@ -69,7 +74,7 @@
                         (provide start)
                         (define (start initial)
                           (+ 1 initial))))])         
-         (go)
+         (go the-dispatch)
          (assert = 2 (test-m00.1 '(dispatch-start 1)))))
       
       (make-test-case
@@ -80,7 +85,7 @@
                         (provide start)
                         (define (start initial)
                           (+ (+ 1 1) initial))))])         
-         (go)
+         (go the-dispatch)
          (assert = 14 (test-m00.2 '(dispatch-start 12)))
          (assert = 20 (test-m00.2 '(dispatch-start 18)))))
       
@@ -92,7 +97,7 @@
                         (provide start)
                         (define (start initial)
                           (+ (* 1 2) (* 3 4) initial))))])         
-         (go)
+         (go the-dispatch)
          (assert = 14 (test-m01 '(dispatch-start 0)))
          (assert = 20 (test-m01 '(dispatch-start 6)))))     
       
@@ -130,7 +135,7 @@
                         (define (start x)
                           (let/cc k
                             (+ 2 4 (k 3) 6 8)))))])         
-         (go)
+         (go the-dispatch)
          (assert = 3 (test-m03 '(dispatch-start 'foo)))
          (assert = 3 (test-m03 '(dispatch-start 7)))))
       
@@ -151,7 +156,7 @@
                               [else
                                (* (car ln)
                                   (start (cdr ln)))])))))])
-         (go)
+         (go the-dispatch)
          (assert = 0 (test-m04 '(dispatch-start (list 1 2 3 4 5 6 7 0 8 9))))
          (assert = 120 (test-m04 '(dispatch-start (list 1 2 3 4 5))))))
       
@@ -177,7 +182,7 @@
                             [else
                              (* (car ln)
                                 (mult/escape escape (cdr ln)))]))))])     
-         (go)
+         (go the-dispatch)
          (assert = 0 (test-m05 '(dispatch-start (list 1 2 3 0 4 5 6))))
          (assert = 120 (test-m05 '(dispatch-start (list 1 2 3 4 5)))))))
      
@@ -248,7 +253,7 @@
                           (let ([result (+ (gn "first") (gn "second"))])
                             (let ([ignore (printf "The answer is: ~s~n" result)])
                               result)))))])
-         (go)
+         (go the-dispatch)
          (let* ([first-key (test-m06.1 '(dispatch-start 'foo))]
                 [second-key (test-m06.1 `(dispatch (list (deserialize (serialize ,first-key)) 1)))]
                 [third-key (test-m06.1 `(dispatch (list (deserialize (serialize ,first-key)) -7)))])
@@ -279,7 +284,7 @@
                                            (and (not (zero? n))
                                                 (even? (sub1 n))))])
                             (even? initial)))))])         
-         (go)
+         (go the-dispatch)
          (assert-true (test-m07 '(dispatch-start 0)))
          (assert-true (test-m07 '(dispatch-start 16)))
          (assert-false (test-m07 '(dispatch-start 1)))
@@ -306,7 +311,7 @@
                             (let ([result (g (gn "third"))])
                               (let ([ignore (printf "The answer is: ~s~n" result)])
                                 result))))))])
-         (go)
+         (go the-dispatch)
          (let* ([k0 (test-m08 '(serialize (dispatch-start 'foo)))]
                 [k1 (test-m08 `(serialize (dispatch (list (deserialize ',k0) 1))))]
                 [k2 (test-m08 `(serialize (dispatch (list (deserialize ',k1) 2))))])
@@ -360,7 +365,7 @@
                             result))
                         (define (start ignore)
                           (nta (lambda (x) (let/cc k (k x))) 7))))])         
-         (go)
+         (go the-dispatch)
          (assert = 7 (m10-eval '(dispatch-start 'foo)))))
       
       (make-test-case
@@ -374,7 +379,7 @@
                           (map
                            (lambda (x) (let/cc k k))
                            (list 1 2 3)))))])         
-         (go)
+         (go the-dispatch)
          (assert-true (catch-unsafe-context-exn
                        (lambda () (m11-eval '(dispatch-start 'foo)))))))
       
@@ -417,7 +422,7 @@
                                           (let ([ignore (printf "n = ~s~n" n)])
                                             k))))
                            (list 1 2 3)))))])
-         (go)
+         (go the-dispatch)
          (assert-true (catch-unsafe-context-exn
                        (lambda () (m13-eval '(dispatch-start 'foo)))))))
       
