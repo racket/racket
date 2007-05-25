@@ -12,9 +12,7 @@
            (lib "dispatch.ss" "web-server" "dispatchers")
            (lib "session.ss" "web-server" "prototype-web-server")
            (only (lib "abort-resume.ss" "web-server" "prototype-web-server")
-                 abort/cc
-                 safe-call?
-                 the-cont-key)
+                 run-start)
            (only "persistent-web-interaction.ss"
                  start-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "newcont")
