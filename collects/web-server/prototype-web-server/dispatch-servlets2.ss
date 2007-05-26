@@ -152,7 +152,7 @@
                                     conn
                                     (responders-servlet (request-uri req) the-exn)
                                     (request-method req)))])
-                  (printf "session-handler ~S~n" (session-handler ses))
+                  #;(printf "session-handler ~S~n" (session-handler ses))
                   (output-response conn
                                    ((session-handler ses) req)))))]
         [else

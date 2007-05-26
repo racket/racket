@@ -86,7 +86,9 @@
          (markit 
           (quasisyntax/loc stx
             (with-continuation-mark #,ke-prime #,me-prime
-              (with-continuation-mark the-save-cm-key (#%app cons #,ke-prime #,me-prime)
+              (with-continuation-mark 
+                  the-save-cm-key 
+                (#%app current-saved-continuation-marks-and #,ke-prime #,me-prime)
                 #,be-prime)))))]
       [(#%expression . d)
        stx]

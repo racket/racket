@@ -1,5 +1,6 @@
 (module abort-resume mzscheme
   (require "define-closure.ss"
+           (lib "list.ss")
            (lib "plt-match.ss")
            (lib "serialize.ss")
            "../lang-api/web-cells.ss")
@@ -13,6 +14,7 @@
    safe-call?
    the-undef
    activation-record-list
+   current-saved-continuation-marks-and
    
    ;; "SERVLET" INTERFACE
    start-interaction
@@ -32,6 +34,15 @@
   (define safe-call? (make-mark-key))
   (define web-prompt (make-continuation-prompt-tag 'web)) 
   
+  (define (current-saved-continuation-marks-and key val)
+    (reverse
+     (list* (cons key val)
+            (let-values ([(current)
+                          (continuation-mark-set->list (current-continuation-marks) the-save-cm-key)])
+              (if (empty? current)
+                  empty
+                  (first current))))))
+  
   ;; current-continuation-as-list: -> (listof value)
   ;; check the safety marks and return the list of marks representing the continuation
   (define (activation-record-list)
@@ -43,14 +54,14 @@
                         x))
                   sl)
           (begin #;(printf "Safe continuation capture from ~S with cm ~S~n" sl cm)
-                 #;(printf "MSG CMs: ~S~n" (continuation-mark-set->list* cm (list 'msg the-cont-key the-save-cm-key)))
+                 #;(printf "CMs: ~S~n" (continuation-mark-set->list* cm (list the-cont-key the-save-cm-key)))
                  (reverse (continuation-mark-set->list* cm (list the-cont-key the-save-cm-key))))
           (error "Attempt to capture a continuation from within an unsafe context:" sl))))
   
   ;; abort: ( -> alpha) -> alpha
   ;; erase the stack and apply a thunk
   (define (abort thunk)
-    (printf "abort ~S~n" thunk)
+    #;(printf "abort ~S~n" thunk)
     (abort-current-continuation web-prompt thunk))
   
   ;; resume: (listof (value -> value)) value -> value
@@ -67,10 +78,16 @@
          [(vector f #f)
           (call-with-values (lambda () (with-continuation-mark the-cont-key f (resume fs val)))
                             f)]
-         [(vector #f (list-rest cm-key cm-val))
-          (with-continuation-mark the-save-cm-key (cons cm-key cm-val)
+         [(vector #f (list))
+          (resume fs val)]
+         [(vector #f (list-rest (list-rest cm-key cm-val) cms))
+          (with-continuation-mark 
+              the-save-cm-key 
+            (current-saved-continuation-marks-and cm-key cm-val)
             (with-continuation-mark cm-key cm-val
-              (resume fs val)))]
+              (begin
+                #;(printf "r: w-c-m ~S ~S~n" cm-key cm-val)
+                (resume (list* (vector #f cms) fs) val))))]
          [(vector f cm)
           (resume (list* (vector f #f) (vector #f cm) fs) val)])]))
   
@@ -84,8 +101,13 @@
        (match f
          [(vector f #f)
           (rebuild-cms fs thunk)]
-         [(vector f (list-rest cm-key cm-val))
-          (with-continuation-mark cm-key cm-val (rebuild-cms fs thunk))])]))
+         [(vector #f (list))
+          (rebuild-cms fs thunk)]
+         [(vector #f (list-rest (list-rest cm-key cm-val) cms))
+          (with-continuation-mark cm-key cm-val
+            (begin
+              #;(printf "rcm: w-c-m ~S ~S~n" cm-key cm-val)
+              (rebuild-cms (list* (vector #f cms) fs) thunk)))])]))
   
   (define (abort/cc thunk)
     (call-with-continuation-prompt
