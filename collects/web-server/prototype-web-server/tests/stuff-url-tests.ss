@@ -5,6 +5,7 @@
            (lib "url.ss" "net")
            (lib "dirs.ss" "setup")
            (lib "file.ss")
+           (lib "etc.ss")
            "util.ss")
   
   (require/expose (lib "stuff-url.ss" "web-server" "prototype-web-server" "private")
@@ -31,6 +32,9 @@
        (lambda (k*v)
          ((car k*v) k*v))))
   
+  (define m00 '(lib "mm00.ss" "web-server" "prototype-web-server" "tests" "modules")) 
+  (define m01 '(lib "mm01.ss" "web-server" "prototype-web-server" "tests" "modules")) 
+  
   (define stuff-url-suite
     (test-suite
      "Tests for stuff-url.ss"
@@ -43,7 +47,7 @@
                      '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private")))
       
       (check-true
-       (same-module? `(file ,(path->string (build-absolute-path (current-directory) "../private/abort-resume.ss")))
+       (same-module? `(file ,(path->string (build-absolute-path (this-expression-source-directory) "../private/abort-resume.ss")))
                      '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private")))
       
       (check-true
@@ -53,32 +57,32 @@
      
      (test-case
       "compose url-parts and recover-serial (1)"
-      (let-values ([(go ev) (make-eval/mod-path "modules/mm00.ss")])
+      (let-values ([(go ev) (make-eval/mod-path m00)])
         (go the-dispatch)
         (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
-                                        `(file "modules/mm00.ss"))]
+                                        m00)]
                [k1 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
-                                        `(file "modules/mm00.ss"))]
+                                        m00)]
                [k2 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
-                                        `(file "modules/mm00.ss"))])
+                                        m00)])
           (check-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3))))))))
      
      (test-case
       "compose url-parts and recover-serial (2)"
-      (let-values ([(go ev) (make-eval/mod-path "modules/mm01.ss")])
+      (let-values ([(go ev) (make-eval/mod-path m01)])
         (go the-dispatch)
         (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
-                                        `(file "modules/mm01.ss"))])
+                                        m01)])
           (check-true (= 7 (ev `(dispatch (list (deserialize ',k0) 7))))))))
      
-     (test-case
+     (test-case 
       "compose stuff-url and unstuff-url and recover the serial"
-      (let-values ([(go ev) (make-eval/mod-path "modules/mm00.ss")])
+      (let-values ([(go ev) (make-eval/mod-path m00)])
         (go the-dispatch)
         (let* ([k0 (stuff-unstuff (ev '(serialize (dispatch-start 'foo)))
-                                  uri0 `(file "modules/mm00.ss"))]
+                                  uri0 m00)]
                [k1 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
-                                  uri0 `(file "modules/mm00.ss"))]
+                                  uri0 m00)]
                [k2 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
-                                  uri0 `(file "modules/mm00.ss"))])
+                                  uri0 m00)])
           (check-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3)))))))))))

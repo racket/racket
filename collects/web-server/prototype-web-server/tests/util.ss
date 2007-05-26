@@ -34,7 +34,7 @@
       (parameterize ([current-namespace ns])
         (eval `(require (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
                         (lib "serialize.ss")
-                        (file ,pth))))
+                        ,pth)))
       (values (go ns)
               (lambda (expr)
                 (parameterize ([current-namespace ns])

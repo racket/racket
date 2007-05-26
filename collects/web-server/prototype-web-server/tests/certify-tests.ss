@@ -19,7 +19,7 @@
        "quasi-quote with splicing: need to recertify context for qq-append"
        (let-values ([(go test-m01.1)
                      (make-module-eval
-                      (module m01.1 "../lang.ss"
+                      (module m01.1 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           `(,@(list 1 2 initial)))))])         
@@ -31,7 +31,7 @@
        "recertify context test (1)"
        (let-values ([(go test-m01.2)
                      (make-module-eval
-                      (module m01.1 "../lang.ss"
+                      (module m01.1 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           `(foo ,@(list 1 2 3)))))])
@@ -42,7 +42,7 @@
        "recertify context test (2)"
        (let-values ([(go test-m01.3)
                      (make-module-eval  
-                      (module m01.3 "../lang.ss"
+                      (module m01.3 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start n)
                           `(n ,@(list 1 2 3)))))])
@@ -53,7 +53,7 @@
        "recertify context test (3)"
        (let-values ([(go test-m01.4)
                      (make-module-eval
-                      (module m1 "../lang.ss"
+                      (module m1 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (define (bar n)

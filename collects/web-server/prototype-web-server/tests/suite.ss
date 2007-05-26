@@ -13,10 +13,10 @@
   (test/graphical-ui
    (test-suite
     "Main Tests for Prototype Web Server"
-    persistent-close-suite
+    #;persistent-close-suite
     stuff-url-suite
-    anormal-tests
-    closure-tests-suite
-    labels-tests-suite
-    lang-suite
-    certify-suite)))
+    #;anormal-tests
+    #;closure-tests-suite
+    #;labels-tests-suite
+    #;lang-suite
+    #;certify-suite)))

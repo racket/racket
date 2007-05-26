@@ -33,7 +33,7 @@
        "Function application with single argument in tail position"
        (let-values ([(go test-m00.4)
                      (make-module-eval
-                      (module m00.4 "../lang.ss"
+                      (module m00.4 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (let ([f (let ([m 7]) m)])
@@ -45,7 +45,7 @@
        "start-interaction in argument position of a function call"
        (let-values ([(go test-m00.3)
                      (make-module-eval
-                      (module m00.3 "../lang.ss"
+                      (module m00.3 (lib "lang.ss" "web-server" "prototype-web-server")
                         (define (foo x) 'foo)
                         (provide start)
                         (define (start initial)
@@ -57,7 +57,7 @@
        "identity interaction, dispatch-start called multiple times"
        (let-values ([(go test-m00)
                      (make-module-eval
-                      (module m00 "../lang.ss"
+                      (module m00 (lib "lang.ss" "web-server" "prototype-web-server")
                         (define (id x) x)
                         (provide start)
                         (define (start initial)
@@ -70,7 +70,7 @@
        "start-interaction in argument position of a primitive"
        (let-values ([(go test-m00.1)
                      (make-module-eval
-                      (module m00.1 "../lang.ss"
+                      (module m00.1 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (+ 1 initial))))])         
@@ -81,7 +81,7 @@
        "dispatch-start called multiple times for s-i in non-trivial context"
        (let-values ([(go test-m00.2)
                      (make-module-eval
-                      (module m00.2 "../lang.ss"
+                      (module m00.2 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (+ (+ 1 1) initial))))])         
@@ -93,7 +93,7 @@
        "start-interaction in third position"
        (let-values ([(go test-m01)
                      (make-module-eval
-                      (module m01 "../lang.ss"
+                      (module m01 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (+ (* 1 2) (* 3 4) initial))))])         
@@ -109,7 +109,7 @@
          "start-interaction called twice, dispatch-start will invoke different continuations"
          (let ([test-m02
                 (make-module-eval
-                 (module m02 "../lang.ss"
+                 (module m02 (lib "lang.ss" "web-server" "prototype-web-server")
                    (define (id x) x)
                    (+ (start-interaction id)
                       (start-interaction id))))])
@@ -130,7 +130,7 @@
        "continuation invoked in non-trivial context from within proc"
        (let-values ([(go test-m03)
                      (make-module-eval
-                      (module m03 "../lang.ss"
+                      (module m03 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start x)
                           (let/cc k
@@ -146,7 +146,7 @@
        "non-tail-recursive 'escaping' continuation"
        (let-values ([(go test-m04)
                      (make-module-eval
-                      (module m04 "../lang.ss"
+                      (module m04 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start ln)
                           (let/cc k
@@ -168,7 +168,7 @@
        "tail-recursive escaping continuation"
        (let-values ([(go test-m05)
                      (make-module-eval
-                      (module m05 "../lang.ss"
+                      (module m05 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)                 
                         
                         (define (start ln)
@@ -210,7 +210,7 @@
                    (define (lookup-k key-pair)
                      (hash-table-get the-table (car key-pair) (lambda () #f)))))])         
            (table-01-eval
-            '(module m06 "../lang.ss"
+            '(module m06 (lib "lang.ss" "web-server" "prototype-web-server")
                (require table01)
                (provide start)
                
@@ -273,7 +273,7 @@
        "mutually recursive even? and odd?"
        (let-values ([(go test-m07)
                      (make-module-eval
-                      (module m07 "../lang.ss"
+                      (module m07 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (letrec ([even? (lambda (n)
@@ -293,7 +293,7 @@
        "send/suspend on rhs of letrec binding forms"
        (let-values ([(go test-m08)
                      (make-module-eval
-                      (module m08 "../lang.ss"
+                      (module m08 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (gn which)
                           (cadr
@@ -340,7 +340,7 @@
                             (let ([result (apply f args)])
                               (printf "result = ~s~n" result)
                               result))))])
-           (nta-eval '(module m09 "../lang.ss"
+           (nta-eval '(module m09 (lib "lang.ss" "web-server" "prototype-web-server")
                         (require nta)
                         (provide start)
                         (define (start ignore)
@@ -356,7 +356,7 @@
        
        (let-values ([(go m10-eval)
                      (make-module-eval
-                      (module m10 "../lang.ss"
+                      (module m10 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (nta f arg)
                           (let ([result (f arg)])
@@ -372,7 +372,7 @@
        
        (let-values ([(go m11-eval)
                      (make-module-eval
-                      (module m11 "../lang.ss"
+                      (module m11 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start ignore)
                           (map
@@ -396,7 +396,7 @@
                    (define (tail-apply f . args)
                      (apply f args))))])
            
-           (ta-eval '(module m12 "../lang.ss"
+           (ta-eval '(module m12 (lib "lang.ss" "web-server" "prototype-web-server")
                        (require ta)
                        (provide start)
                        (define (start initial)
@@ -412,7 +412,7 @@
        
        (let-values ([(go m13-eval)
                      (make-module-eval
-                      (module m11 "../lang.ss"
+                      (module m11 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (map
@@ -437,7 +437,7 @@
                           (define (tail-apply f . args)
                             (apply f args))))])
            
-           (ta-eval '(module m14 "../lang.ss"
+           (ta-eval '(module m14 (lib "lang.ss" "web-server" "prototype-web-server")
                        (require ta)
                        (provide start)
                        (define (start ignore)
