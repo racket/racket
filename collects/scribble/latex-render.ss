@@ -47,6 +47,7 @@
         (printf "\\newcommand{\\schemeopt}[1]{#1}\n")
         (printf "\\newcommand{\\textsub}[1]{$_{#1}$}\n")
         (printf "\\newcommand{\\textsuper}[1]{$^{#1}$}\n")
+        (printf "\\newcommand{\\refcontent}[1]{#1}\n")
         (printf "\\definecolor{LightGray}{rgb}{0.90,0.90,0.90}\n")
         (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\hspace{-0.5ex}\\schemeinputcol{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\begin{document}\n")
