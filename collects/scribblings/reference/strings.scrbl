@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "strings"]{Strings}
+@title[#:tag "mz:strings"]{Strings}
 
 A @pidefterm{string} is a fixed-length arary of
 @seclink["characters"]{characters}.

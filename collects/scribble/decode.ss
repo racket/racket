@@ -115,7 +115,7 @@
                                       (part-start-tag s)
                                       (part-start-title s)
                                       (add1 part-depth))]
-                      [part (decode-part l tag title part-depth)])
+                      [part (decode-flow* l tag style title part-depth)])
                   (make-styled-part (part-tag part)
                                     (part-title-content part)
                                     (part-collected-info part)

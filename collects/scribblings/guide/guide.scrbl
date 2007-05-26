@@ -11,11 +11,11 @@ programming experience. If you are new to programming, consider
 instead reading @|HtDP|. If you want a quick and pretty overview of PLT
 Scheme, start with @|Quick|. 
 
-@seclink["to-scheme"]{Chapter 2} provides a somewhat gentle
-introduction to Scheme. After that, this guide dives into the details
-of putting Scheme to work. Even though this guide covers much of the
-PLT Scheme toolbox, it leaves precise details to @|MzScheme| and other
-reference manuals.
+@seclink["to-scheme"]{Chapter 2} provides a brief introduction to
+Scheme. After that, this guide dives into the details of putting
+Scheme to work. Even though this guide covers much of the PLT Scheme
+toolbox, it leaves precise details to @|MzScheme| and other reference
+manuals.
 
 @table-of-contents[]
 
@@ -23,16 +23,7 @@ reference manuals.
 
 @include-section["to-scheme.scrbl"]
 
-@; ----------------------------------------------------------------------
-@section[#:tag "datatypes"]{Built-In and Programmer-Defined Datatypes}
-
-We have seen some of Scheme's built-in datatypes, including numbers,
-strings, lists, and procedures. This section provides a more complete
-coverage of the built-in datatypes, and also introduces the
-@scheme[define-struct] form for creating your own datatypes. We defer
-a discussion of the class-based object system to @secref["classes"].
-
-...
+@include-section["data.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "scheme-read"]{Reading and Printing}

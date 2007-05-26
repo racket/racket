@@ -9,6 +9,22 @@
                margin-right: auto;
                }
 
+               .refpara { 
+                display: block;
+                position: relative;
+                left: 37em;
+                top: -1em;
+                height: 0em;
+               }
+
+               .refcontent { 
+                background-color: beige;
+                display: block;
+                position: relative;
+                width: 10em;
+                font-size: 85%;
+               }
+
                h1,h2,h3,h4,h5,h6 {
                margin-top: .5em;
                }

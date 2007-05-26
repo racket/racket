@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "numbers"]{Numbers}
+@title[#:tag "mz:numbers"]{Numbers}
 
 All numbers are @idefterm{complex numbers}. Some of them are
 @idefterm{real numbers}, and all of the real numbers that can be
@@ -11,13 +11,12 @@ to the number produces the same number.
 
 Orthogonal to those categories, each number is also either
 @idefterm{exact} or @idefterm{inexact}. Unless otherwise specified,
-computations that involve an inexact number produce inexact results,
-so that inexactness acts as a kind of taint on numbers. Certain
-operations on inexact numbers, however, produce an exact number, such
-as multiplying an inexact number with an exact @scheme[0]. Some
-operations, which can produce an irrational number for rational
-arguments (e.g., @scheme[sqrt]), may produce inexact results even for
-exact arguments.
+computations that involve an inexact number produce inexact
+results. Certain operations on inexact numbers, however, produce an
+exact number, such as multiplying an inexact number with an exact
+@scheme[0]. Some operations, which can produce an irrational number
+for rational arguments (e.g., @scheme[sqrt]), may produce inexact
+results even for exact arguments.
 
 In the case of complex numbers, either the real and imaginary parts
 are both exact or inexact, or the number has an exact zero real part

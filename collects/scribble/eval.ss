@@ -121,8 +121,19 @@
         (parameterize ([current-output-port o])
           (with-handlers ([exn? (lambda (e)
                                   (exn-message e))])
-            (cons (do-plain-eval s #t)
+            (cons (let ([v (do-plain-eval s #t)])
+                    (copy-value v))
                   (get-output-string o)))))]))
+
+  ;; Since we evaluate everything in an interaction before we typeset,
+  ;;  copy each value to avoid side-effects.
+  (define (copy-value v)
+    (cond
+     [(string? v) (string-copy v)]
+     [(bytes? v) (bytes-copy v)]
+     [(pair? v) (cons (copy-value (car v))
+                      (copy-value (cdr v)))]
+     [else v]))
 
   (define (strip-comments s)
     (cond

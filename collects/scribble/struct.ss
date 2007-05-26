@@ -60,6 +60,7 @@
    [(unnumbered-part part) ()]
    [flow ([paragraphs (listof flow-element?)])]
    [paragraph ([content list?])]
+   [(styled-paragraph paragraph) ([style any/c])]
    [table ([style any/c]
            [flowss (listof (listof flow?))])]
    [delayed-flow-element ([render (any/c part? any/c . -> . flow-element?)])]

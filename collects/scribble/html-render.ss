@@ -127,7 +127,10 @@
         (render-flow* p part ht #t))
 
       (define/override (render-paragraph p part ht)
-        `((p ,@(super render-paragraph p part ht))))
+        `((p ,@(if (styled-paragraph? p)
+                   `(((class ,(styled-paragraph-style p))))
+                   null)
+             ,@(super render-paragraph p part ht))))
 
       (define/override (render-element e part ht)
         (cond

@@ -10,29 +10,23 @@ DrScheme and documentation examples (when you read the documentation
 in color), value expression are shown in green.
 
 @defterm{Numbers} are written in the usual way, including fractions
-and imagnary numbers. Numbers that use decimal points or exponent
-markers are implemented as double-precision floating-point numbers,
-and they are called @defterm{inexact} numbers in Scheme
-terminology. Other numbers are implemented as @defterm{exact} with
-arbitrary precision. In the example number constants below, the ones
-on the left are exact, and the ones on the right are inexact
-approximations:
+and imagnary numbers:
 
 @schemeblock[
 1                        1.0
 1/2                      0.5
-1+2i                     1.0+2i
 9999999999999999999999   1e+22
+1+2i                     1.0+2.0i
 ]
 
 @defterm{Booleans} are @scheme[#t] for true and @scheme[#f] for
 false. In conditionals, however, all non-@scheme[#f] values are
 treated as true.
 
-@defterm{Strings} are written between double quotes. Within a string,
+@defterm{Strings} are written between doublequotes. Within a string,
 backslash is an escaping character; for example, a backslash followed
-by a double-quote includes a little double-quote in the string. Except
-for an unescaped double-quote or backslash, any Unicode character can
+by a doublequote includes a little doublequote in the string. Except
+for an unescaped doublequote or backslash, any Unicode character can
 appear in a string constant.
 
 @schemeblock[
