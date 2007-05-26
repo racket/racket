@@ -2370,7 +2370,7 @@ read_list(Scheme_Object *port,
     if (shape == mz_shape_hash_list) {
       /* Make sure we found a parenthesized something. */
       if (!(effective_ch == '(')
-	  && ! (effective_ch == '[' && params->square_brackets_are_parens)
+	  && !(effective_ch == '[' && params->square_brackets_are_parens)
 	  && !(effective_ch == '{' && params->curly_braces_are_parens)) {
 	long xl, xc, xp;
         const char *sbname, *cbname;
@@ -2551,7 +2551,8 @@ read_list(Scheme_Object *port,
 	return list;
       }
     } else {
-      if ((ch == SCHEME_SPECIAL) || (params->table && (ch != EOF))) {
+      if ((ch == SCHEME_SPECIAL) 
+          || (params->table && (ch != EOF) && (shape != mz_shape_hash_list))) {
 	/* We have to try the read, because it might be a comment. */
 	scheme_ungetc(ch, port);
 	prefetched = read_inner(port, stxsrc, ht, indentation, params, 
