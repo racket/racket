@@ -153,7 +153,7 @@ in Haskell, Ruby, Python, and other languages. One advantage over
 For example, @scheme[list-for] can iterate over a range of numbers:
 
 @interaction[
-(list-for ([i (range 0 10)])
+(list-for ([i (in-range 0 10)])
   i)
 ]
 
@@ -162,7 +162,7 @@ numbers in parallel:
 
 @interaction[
 (list-for ([s (list "a" "b" "c")]
-           [n (range 0 3)])
+           [n (in-range 0 3)])
   (if (= n 2)
       "oops!"
        s))
