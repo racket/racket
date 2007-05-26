@@ -272,21 +272,21 @@
  		    (set! resizing-gap #f)]
  		   [(and resizing-dim (send evt moving?))
  		    (let-values ([(width height) (get-client-size)])
- 		      (let* ([before (gap-before resizing-gap)]
- 			     [before-percentage (gap-before-percentage resizing-gap)]
- 			     [after (gap-after resizing-gap)]
+ 		      (let* ([before-percentage (gap-before-percentage resizing-gap)]
+                             [orig-before (percentage-% before-percentage)]
  			     [after-percentage (gap-after-percentage resizing-gap)]
+                             [orig-after (percentage-% after-percentage)]
  			     [available-extent (get-available-extent)]
  			     [change-in-percentage (/ (- resizing-dim (event-get-dim evt)) available-extent)]
  			     [new-before (- (percentage-% before-percentage) change-in-percentage)]
  			     [new-after (+ (percentage-% after-percentage) change-in-percentage)])
- 			(when (and ((* new-before available-extent) . > . (min-extent before))
- 				   ((* new-after available-extent) . > . (min-extent after)))
- 			  (set-percentage-%! before-percentage new-before)
- 			  (set-percentage-%! after-percentage new-after)
- 			  (after-percentage-change)
- 			  (set! resizing-dim (event-get-dim evt))
- 			  (container-flow-modified))))]
+                        (when ((floor (* new-before available-extent)) . > . (min-extent (gap-before resizing-gap)))
+                          (when ((floor (* new-after available-extent)) . > . (min-extent (gap-after resizing-gap)))
+                            (set-percentage-%! before-percentage new-before)
+                            (set-percentage-%! after-percentage new-after)
+                            (after-percentage-change)
+                            (set! resizing-dim (event-get-dim evt))
+                            (container-flow-modified)))))]
  		   [else (super on-subwindow-event receiver evt)]))
 		(begin
 		  (set-cursor #f)
@@ -319,7 +319,7 @@
  		    (when (null? children) (show-error 4))
  		    (unless (null? (cdr infos)) (show-error 5))
  		    (unless (null? (cdr children)) (show-error 6))
- 		    (if (get-vertical?)
+                    (if (get-vertical?)
  			(list (list 0 dim width (- height dim)))
  			(list (list dim 0 (- width dim) height)))]
  		   [else
@@ -330,7 +330,7 @@
  		    (let* ([info (car infos)]
  			   [percentage (car percentages)]
  			   [this-space (floor (* (percentage-% percentage) available-extent))])
- 		      (set! cursor-gaps (cons (make-gap (car children)
+                      (set! cursor-gaps (cons (make-gap (car children)
  							(+ dim this-space)
  							percentage
  							(cadr children)
