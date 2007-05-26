@@ -1721,6 +1721,7 @@
         (send define-regexp-text set-value (or (object-name (caddr pref)) ""))
         (send lambda-regexp-text set-value (or (object-name (cadddr pref)) ""))))
     (preferences:add-callback 'framework:tabify (λ (p v) (update-gui v)))
+    (update-gui (preferences:get 'framework:tabify))
     main-panel)
       
       )
