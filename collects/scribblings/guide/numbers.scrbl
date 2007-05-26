@@ -34,7 +34,7 @@ A Scheme @defterm{number} is either exact or inexact:
               as @scheme[2.0] or @scheme[3.14e87], where the IEEE
               infinitities and not-a-number are written
               @scheme[+inf.0], @scheme[-inf.0], and @scheme[+nan.0]
-              (or @scheme[-nan.0]); or}
+              (or @schemevalfont{-nan.0}); or}
 
         @item{a complex number with real and imaginary parts that are
               IEEE floating-point representations, such as

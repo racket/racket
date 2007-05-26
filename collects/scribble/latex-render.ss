@@ -15,7 +15,9 @@
 
       (inherit render-flow
                render-content
-               install-file)
+               install-file
+               format-number
+               lookup)
 
       (define (define-color s s2)
         (printf "\\newcommand{\\~a}[1]{{\\texttt{\\color{~a}{#1}}}}\n" s s2))
@@ -94,7 +96,14 @@
                    (pair? (link-element-tag e))
                    (eq? 'part (car (link-element-tag e)))
                    (null? (element-content e)))
-          (printf "\\S\\ref{section:~a} " (cadr (link-element-tag e))))
+          (printf "\\S")
+          (render-content (let ([dest (lookup part ht (link-element-tag e))])
+                            (if dest
+                                (format-number (cadr dest) null)
+                                (list "???")))
+                          part
+                          ht)
+          (printf " "))
         (let ([style (and (element? e)
                           (element-style e))]
               [wrap (lambda (e s tt?)

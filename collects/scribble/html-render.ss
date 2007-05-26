@@ -48,7 +48,7 @@
       (define/public (part-whole-page? d)
         #f)
 
-      (define/override (collect-part-tag d ht)
+      (define/override (collect-part-tag d ht number)
         (hash-table-put! ht 
                          `(part ,(part-tag d)) 
                          (list (current-output-file)
@@ -92,7 +92,7 @@
                         [(0) 'h2]
                         [(1) 'h3]
                         [else 'h4])
-                     ,@(format-number number '((tt nbsp)))
+                     ,@(format-number number '("." (tt nbsp)))
                      ,@(if (part-tag d)
                            `((a ((name ,(format "~a" `(part ,(part-tag d)))))))
                            null)

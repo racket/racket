@@ -24,13 +24,14 @@
                 (andmap not number))
             null
             (cons
-             (apply
-              string-append
-              (map (lambda (n) 
-                     (if n
-                         (format "~s." n)
-                         ""))
-                   (reverse number)))
+             (let ([s (apply
+                       string-append
+                       (map (lambda (n) 
+                              (if n
+                                  (format "~s." n)
+                                  ""))
+                            (reverse number)))])
+               (substring s 0 (sub1 (string-length s))))
              sep)))
 
       ;; ----------------------------------------
@@ -61,7 +62,7 @@
           (when (part-title-content d)
             (collect-content (part-title-content d) p-ht))
           (when (part-tag d)
-            (collect-part-tag d p-ht))
+            (collect-part-tag d p-ht number))
           (collect-flow (part-flow d) p-ht)
           (let loop ([parts (part-parts d)]
                      [pos 1])
@@ -82,8 +83,8 @@
                                (lambda (k v)
                                  (hash-table-put! ht k v)))))
 
-      (define/public (collect-part-tag d ht)
-        (hash-table-put! ht `(part ,(part-tag d)) (part-title-content d)))
+      (define/public (collect-part-tag d ht number)
+        (hash-table-put! ht `(part ,(part-tag d)) (list (part-title-content d) number)))
       
       (define/public (collect-content c ht)
         (for-each (lambda (i)
@@ -124,7 +125,7 @@
                     (element-content i))))
 
       (define/public (collect-target-element i ht)
-        (hash-table-put! ht (target-element-tag i) i))
+        (hash-table-put! ht (target-element-tag i) (list i)))
 
       (define/public (collect-index-element i ht)
         (hash-table-put! ht `(index-entry ,(index-element-tag i))
@@ -207,7 +208,7 @@
                (null? (element-content i)))
           (let ([v (lookup part ht (link-element-tag i))])
             (if v
-                (render-content v part ht)
+                (render-content (car v) part ht)
                 (render-content (list "[missing]") part ht)))]
          [(element? i)
           (render-content (element-content i) part ht)]
@@ -277,6 +278,7 @@
                                                        (append
                                                         (format-number number 
                                                                        (list
+                                                                        "."
                                                                         (make-element 'hspace '(" "))))
                                                         (part-title-content part))
                                                        `(part ,(part-tag part))))))))
