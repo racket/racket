@@ -122,19 +122,36 @@
           (with-handlers ([exn? (lambda (e)
                                   (exn-message e))])
             (cons (let ([v (do-plain-eval s #t)])
-                    (copy-value v))
+                    (copy-value v (make-hash-table)))
                   (get-output-string o)))))]))
+
+  (define (install ht v v2)
+    (hash-table-put! ht v v2)
+    v2)
 
   ;; Since we evaluate everything in an interaction before we typeset,
   ;;  copy each value to avoid side-effects.
-  (define (copy-value v)
+  (define (copy-value v ht)
     (cond
-     [(string? v) (string-copy v)]
-     [(bytes? v) (bytes-copy v)]
-     [(pair? v) (cons (copy-value (car v))
-                      (copy-value (cdr v)))]
+     [(and v (hash-table-get ht v #f))
+      => (lambda (v) v)]
+     [(string? v) (install ht v (string-copy v))]
+     [(bytes? v) (install ht v (bytes-copy v))]
+     [(pair? v) (let ([p (cons #f #f)])
+                  (hash-table-put! ht v p)
+                  (set-car! p (copy-value (car v) ht))
+                  (set-cdr! p (copy-value (cdr v) ht))
+                  p)]
+     [(vector? v) (let ([v2 (make-vector (vector-length v))])
+                    (hash-table-put! ht v v2)
+                    (let loop ([i (vector-length v2)])
+                      (unless (zero? i)
+                        (let ([i (sub1 i)])
+                          (vector-set! v2 i (copy-value (vector-ref v i) ht))
+                          (loop i))))
+                    v2)]
      [else v]))
-
+            
   (define (strip-comments s)
     (cond
      [(and (pair? s)

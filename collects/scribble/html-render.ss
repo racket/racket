@@ -92,7 +92,7 @@
                         [(0) 'h2]
                         [(1) 'h3]
                         [else 'h4])
-                     ,@(format-number number '("." (tt nbsp)))
+                     ,@(format-number number '((tt nbsp)))
                      ,@(if (part-tag d)
                            `((a ((name ,(format "~a" `(part ,(part-tag d)))))))
                            null)
@@ -186,6 +186,7 @@
                                         [(boxed) '((width "100%") (bgcolor "lightgray"))]
                                         [(centered) '((align "center"))]
                                         [(at-right) '((align "right"))]
+                                        [(at-left) '((align "left"))]
                                         [else null]))
                  ,@(map (lambda (flows)
                           `(tr ,@(map (lambda (d a)
@@ -278,6 +279,8 @@
              ds
              fns))
 
+      (define contents-content '("contents"))
+      (define index-content '("index"))
       (define prev-content '(larr " prev"))
       (define up-content '("up"))
       (define next-content '("next " rarr))
@@ -299,9 +302,12 @@
                                       (and (pair? (cdr l)) 
                                            (cadr l)))]
              [else (loop (cdr l) (car l))]))))
+
+      (define/private (part-parent d)
+        (collected-info-parent (part-collected-info d)))
         
       (define/private (navigation d ht)
-        (let ([parent (collected-info-parent (part-collected-info d))])
+        (let ([parent (part-parent d)])
           (let*-values ([(prev next) (find-siblings d)]
                         [(prev) (if prev
                                     (let loop ([prev prev])
@@ -322,39 +328,78 @@
                                   (let-values ([(prev next)
                                                 (find-siblings parent)])
                                     next)]
-                                 [else next])])
-            (render-table (make-table
-                           'at-right
-                           (list 
-                            (list 
-                             (make-flow
-                              (list
-                               (make-paragraph
-                                (list
-                                 (if parent
+                                 [else next])]
+                        [(index) (let loop ([d d])
+                                   (let ([p (part-parent d)])
+                                     (if p
+                                         (loop p)
+                                         (let ([subs (part-parts d)])
+                                           (and (pair? subs)
+                                                (let ([d (car (last-pair subs))])
+                                                  (and (equal? '("Index") (part-title-content d))
+                                                       d)))))))])
+            `(,@(render-table (make-table
+                               'at-left
+                               (list
+                                (cons
+                                 (make-flow
+                                  (list
+                                   (make-paragraph
+                                    (list
                                      (make-element
-                                      (make-target-url (if prev
-                                                           (derive-filename prev)
-                                                           "index.html"))
+                                      (if parent
+                                          (make-target-url "index.html")
+                                          "nonavigation")
+                                      contents-content)))))
+                                 (if index
+                                     (list
+                                      (make-flow
+                                       (list
+                                        (make-paragraph
+                                         (list
+                                          'nbsp
+                                          (if (eq? d index)
+                                              (make-element
+                                               "nonavigation"
+                                               index-content)
+                                              (make-link-element
+                                               #f
+                                               index-content
+                                               `(part ,(part-tag index)))))))))
+                                     null))))
+                              d ht)
+              ,@(render-table (make-table
+                               'at-right
+                               (list 
+                                (list 
+                                 (make-flow
+                                  (list
+                                   (make-paragraph
+                                    (list
+                                     (make-element
+                                      (if parent
+                                          (make-target-url (if prev
+                                                               (derive-filename prev)
+                                                               "index.html"))
+                                          "nonavigation")
                                       prev-content)
-                                     "")
-                                 sep-element
-                                 (if parent
+                                     sep-element
                                      (make-element
-                                      (make-target-url 
-                                       (if (toc-part? parent)
-                                           (derive-filename parent)
-                                           "index.html"))
+                                      (if parent
+                                          (make-target-url 
+                                           (if (toc-part? parent)
+                                               (derive-filename parent)
+                                               "index.html"))
+                                          "nonavigation")
                                       up-content)
-                                     "")
-                                 sep-element
-                                 (make-element
-                                  (if next
-                                      (make-target-url (derive-filename next))
-                                      "nonavigation")
-                                  next-content))))))))
-                          d
-                          ht))))
+                                     sep-element
+                                     (make-element
+                                      (if next
+                                          (make-target-url (derive-filename next))
+                                          "nonavigation")
+                                      next-content))))))))
+                              d
+                              ht)))))
 
       (define/override (render-part d ht)
         (let ([number (collected-info-number (part-collected-info d))])

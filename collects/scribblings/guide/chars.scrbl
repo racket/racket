@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "characters"]{Characters (Unicode)}
+@title[#:tag "characters"]{Characters}
 
 A Scheme @defterm{character} corresponds to a Unicode @defterm{scalar
 value}. Roughly, a scalar value is an unsigned integer whose
@@ -38,8 +38,8 @@ and linefeed characters print as @scheme[#\space] and
 ]
 
 The @scheme[display] procedure directly writes a character to the
-current output stream, in contrast to the character-constant syntax
-used to print a character result.
+current output port (see @secref["output"]), in contrast to the
+character-constant syntax used to print a character result.
 
 @examples[
 #\A

@@ -430,7 +430,7 @@ constant, the @exnraise[exn:fail:read].
 
 @index['("byte strings" "parsing")]{A} string constant preceded by
 @litchar{#} is parsed as a byte-string. (That is, @as-index{@litchar{#"}} starts
-a byte-string literal.) See @secref["byte-strings"] for
+a byte-string literal.) See @secref["mz:bytestrings"] for
 information on byte strings. Byte string constants support the same
 escape sequences as character strings, except @litchar["\\u"] and
 @litchar["\\U"].

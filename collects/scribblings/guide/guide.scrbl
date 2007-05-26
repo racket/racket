@@ -6,16 +6,15 @@
 @title{A Guide to PLT Scheme}
 
 This guide is intended for programmers who are new to Scheme, new to PLT
-Scheme, or new to some part of PLT Scheme. It definitely assumes some
-programming experience. If you are new to programming, consider
+Scheme, or new to some part of PLT Scheme. It assumes some
+programming experience, so if you are new to programming, consider
 instead reading @|HtDP|. If you want a quick and pretty overview of PLT
 Scheme, start with @|Quick|. 
 
 @seclink["to-scheme"]{Chapter 2} provides a brief introduction to
-Scheme. After that, this guide dives into the details of putting
-Scheme to work. Even though this guide covers much of the PLT Scheme
-toolbox, it leaves precise details to @|MzScheme| and other reference
-manuals.
+Scheme. From @seclink["datatypes"]{Chapter 3} on, this guide dives
+into details---covering much of the PLT Scheme toolbox, but leaving
+precise details to @|MzScheme| and other reference manuals.
 
 @table-of-contents[]
 
@@ -24,29 +23,6 @@ manuals.
 @include-section["to-scheme.scrbl"]
 
 @include-section["data.scrbl"]
-
-@; ----------------------------------------------------------------------
-@section[#:tag "scheme-read"]{Reading and Printing}
-
-As we mentioned @seclink["syntax-overview"]{before}, the syntax
-of a Scheme program is specified in an unusual way. Specifically, it
-is defined by two phases:
-
-@itemize{
-
- @item{a @defterm{read} phase, which parses a stream of characters
-       into a tree-structured @defterm{S-expression}; and}
-
- @item{an @defterm{expand} phase, which parses the S-expression into a
-       program.}
-
-}
-
-The second phase is particularly easy to extend, so that Scheme has no
-grammar in the traditional sense. At the same time, the first phase is
-useful on it's own, and directly available through the @scheme[read]
-function. Furthermore, reading of data is naturally matched with
-conventions for @defterm{printing} data.
 
 @; ----------------------------------------------------------------------
 @section[#:tag "scheme-forms"]{Programs and Expressions}

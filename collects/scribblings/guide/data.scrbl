@@ -37,4 +37,5 @@ other than @scheme[#f] counts as true.
 @include-section["numbers.scrbl"]
 @include-section["chars.scrbl"]
 @include-section["char-strings.scrbl"]
-
+@include-section["byte-strings.scrbl"]
+@include-section["vectors.scrbl"]

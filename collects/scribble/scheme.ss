@@ -200,15 +200,21 @@
                  (convert-infix c quote-depth))
             => (lambda (converted)
                  ((loop init-line! quote-depth) converted))]
-           [(pair? (syntax-e c))
+           [(or (pair? (syntax-e c))
+                (vector? (syntax-e c)))
             (let* ([sh (or (syntax-property c 'paren-shape)
                            #\()]
+                   [quote-depth (if (vector? (syntax-e c))
+                                    +inf.0
+                                    quote-depth)]
                    [p-color (if (positive? quote-depth) 
                                 value-color
                                 (if (eq? sh #\?)
                                     opt-color
                                     paren-color))])
               (advance c init-line!)
+              (when (vector? (syntax-e c))
+                (out (format "#~a" (vector-length (syntax-e c))) p-color))
               (out (case sh
                      [(#\[ #\?) "["]
                      [(#\{) "{"]
@@ -216,7 +222,9 @@
                    p-color)
               (set! src-col (+ src-col 1))
               (hash-table-put! col-map src-col dest-col)
-              (let lloop ([l c])
+              (let lloop ([l (if (vector? (syntax-e c))
+                                 (vector->short-list (syntax-e c) syntax-e)
+                                 c)])
                 (cond
                  [(and (syntax? l)
                        (pair? (syntax-e l)))
@@ -357,6 +365,29 @@
 
   (define syntax-ize-hook (make-parameter (lambda (v col) #f)))
 
+  (define (vector->short-list v extract)
+    (let ([l (vector->list v)])
+      (reverse (list-tail
+                (reverse l)
+                (- (vector-length v)
+                   (let loop ([i (sub1 (vector-length v))])
+                     (cond
+                      [(zero? i) 1]
+                      [(eq? (extract (vector-ref v i))
+                            (extract (vector-ref v (sub1 i))))
+                       (loop (sub1 i))]
+                      [else (add1 i)])))))))
+
+  (define (short-list->vector v l)
+    (list->vector
+     (let ([n (length l)])
+       (if (n . < . (vector-length v))
+           (reverse (let loop ([r (reverse l)][i (- (vector-length v) n)])
+                      (if (zero? i)
+                          r
+                          (loop (cons (car r) r) (sub1 i)))))
+           l))))
+
   (define (syntax-ize v col)
     (cond
      [((syntax-ize-hook) v col)
@@ -370,20 +401,29 @@
                                     c)
                               (list #f 1 col (+ 1 col)
                                     (+ 1 (syntax-span c)))))]
-     [(list? v)
-      (let ([l (let loop ([col (+ col 1)]
-                          [v v])
-                 (if (null? v)
-                     null
-                     (let ([i (syntax-ize (car v) col)])
-                       (cons i
-                             (loop (+ col 1 (syntax-span i)) (cdr v))))))])
-        (datum->syntax-object #f
-                              l
-                              (list #f 1 col (+ 1 col)
-                                    (+ 2
-                                       (sub1 (length l))
-                                       (apply + (map syntax-span l))))))]
+     [(or (list? v)
+          (vector? v))
+      (let* ([vec-sz (if (vector? v)
+                         (+ 1 (string-length (format "~a" (vector-length v))))
+                         0)])
+        (let ([l (let loop ([col (+ col 1 vec-sz)]
+                            [v (if (vector? v)
+                                   (vector->short-list v values)
+                                   v)])
+                   (if (null? v)
+                       null
+                       (let ([i (syntax-ize (car v) col)])
+                         (cons i
+                               (loop (+ col 1 (syntax-span i)) (cdr v))))))])
+          (datum->syntax-object #f
+                                (if (vector? v)
+                                    (short-list->vector v l)
+                                    l)
+                                (list #f 1 col (+ 1 col)
+                                      (+ 2
+                                         vec-sz
+                                         (sub1 (length l))
+                                         (apply + (map syntax-span l)))))))]
      [(pair? v)
       (let* ([a (syntax-ize (car v) (+ col 1))]
              [sep (if (pair? (cdr v)) 0 3)]

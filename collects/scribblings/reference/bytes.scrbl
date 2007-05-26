@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:tag "bytestrings"]{Byte Strings}
+@title[#:tag "mz:bytestrings"]{Byte Strings}
 
 A @pidefterm{byte string} is a fixed-length arary of bytes. A
  @pidefterm{byte} is an exact integer between @scheme[0] and

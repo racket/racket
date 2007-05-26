@@ -278,7 +278,6 @@
                                                        (append
                                                         (format-number number 
                                                                        (list
-                                                                        "."
                                                                         (make-element 'hspace '(" "))))
                                                         (part-title-content part))
                                                        `(part ,(part-tag part))))))))
