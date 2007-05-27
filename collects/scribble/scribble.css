@@ -18,11 +18,12 @@
                }
 
                .refcontent { 
-                background-color: beige;
+                background-color: #F5F5DC;
                 display: block;
                 position: relative;
                 width: 10em;
                 font-size: 85%;
+                border: 0.5em solid #F5F5DC;
                }
 
                h1,h2,h3,h4,h5,h6 {

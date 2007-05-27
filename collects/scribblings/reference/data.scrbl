@@ -90,7 +90,7 @@ ephemeron key (see @secref["ephemeron"]).
 @section[#:tag "keywords"]{Keywords}
 
 @; ----------------------------------------------------------------------
-@section[#:tag "pairs"]{Pairs and Lists}
+@section[#:tag "mz:pairs"]{Pairs and Lists}
 
 @defproc[(cons [a any/c] [d any/c]) pair?]{Returns a pair whose first
 element is @scheme[a] and second element is @scheme[d].}

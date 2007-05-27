@@ -183,7 +183,7 @@
 
       (define/override (render-table t part ht)
         `((table ((cellspacing "0") ,@(case (table-style t)
-                                        [(boxed) '((width "100%") (bgcolor "lightgray"))]
+                                        [(boxed) '((width "100%") (bgcolor "#E8E8FF"))]
                                         [(centered) '((align "center"))]
                                         [(at-right) '((align "right"))]
                                         [(at-left) '((align "left"))]
