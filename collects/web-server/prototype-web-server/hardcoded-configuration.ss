@@ -4,21 +4,8 @@
            (lib "response.ss" "web-server")
            (lib "dirs.ss" "setup"))
   
-  (provide config:port
-           config:max-waiting
-           config:listen-ip
-           config:initial-connection-timeout
-           config:virtual-hosts
-           hardcoded-host)
-  
-  ;; ************************************************************
-  ;; HARDCODED CONFIGURATION STUFF
-  
-  (define config:port 8000)
-  (define config:max-waiting 20)
-  (define config:listen-ip #f)
-  (define config:initial-connection-timeout 30)
-  
+  (provide hardcoded-host)
+    
   ;; ************************************************************
   ;; HARDCODED HOST
   
@@ -146,10 +133,4 @@
       ; mime-types
       (build-path server-root-path "mime.types")             
       ; password-authentication
-      (build-path server-root-path "passwords"))))
-  
-  ;; config:virtual-hosts: alpha -> host
-  ;; return a default host structure
-  (define config:virtual-hosts
-    (lambda (ignore)
-      hardcoded-host)))
+      (build-path server-root-path "passwords")))))
