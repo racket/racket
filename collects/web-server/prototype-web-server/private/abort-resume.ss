@@ -101,9 +101,9 @@
        (match f
          [(vector f #f)
           (rebuild-cms fs thunk)]
-         [(vector #f (list))
+         [(vector f (list))
           (rebuild-cms fs thunk)]
-         [(vector #f (list-rest (list-rest cm-key cm-val) cms))
+         [(vector f (list-rest (list-rest cm-key cm-val) cms))
           (with-continuation-mark cm-key cm-val
             (begin
               #;(printf "rcm: w-c-m ~S ~S~n" cm-key cm-val)

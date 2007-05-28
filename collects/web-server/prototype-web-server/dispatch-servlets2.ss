@@ -20,7 +20,7 @@
   
   (provide make)
   
-  (define myprint printf #;(lambda _ (void)))
+  (define myprint #;printf (lambda _ (void)))
   
   (define top-cust (current-custodian))
   
@@ -45,15 +45,15 @@
              (string->number n)]
             [_
              #f]))))
-    
+  
   (define make-servlet-namespace
     (make-make-servlet-namespace
      #:to-be-copied-module-specs
      '(mzscheme
-      (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
-      (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
-      (lib "session.ss" "web-server" "prototype-web-server" "private")
-      (lib "request.ss" "web-server" "private"))))
+       (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
+       (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
+       (lib "session.ss" "web-server" "prototype-web-server" "private")
+       (lib "request.ss" "web-server" "private"))))
   
   (define/kw (make #:key
                    [servlet-root "servlets"]
@@ -107,6 +107,8 @@
                   [else
                    (begin-session conn req)]))))))
     
+    ;; XXX Currently there are just sessions, should be servlets and sessions
+    
     ;; begin-session: connection request
     (define (begin-session conn req)
       (myprint "begin-session~n")
@@ -124,11 +126,8 @@
                                  [current-session ses])
                     (let ([module-name `(file ,(path->string a-path))])
                       (myprint "dynamic-require ...~n")
-                      (with-handlers ([exn:fail:contract?
-                                       (lambda _
-                                         (dynamic-require module-name #f))])
-                        (let ([start (dynamic-require module-name 'start)])
-                          (run-start start-servlet start)))))
+                      (let ([start (dynamic-require module-name 'start)])
+                        (run-start start-servlet start))))
                   (myprint "resume-session~n")
                   (resume-session (session-id ses)
                                   conn req)))
@@ -137,27 +136,38 @@
                (responders-file-not-found uri)
                (request-method req))))))
     
+    ; same-servlet? : url? url? -> boolean?
+    (define (same-servlet? u v)
+      (define (abstract-url u)
+        (path->string
+         (apply build-path
+                (map path/param-path
+                     (url-path u)))))
+      (string=? (abstract-url u)
+                (abstract-url v)))
+    
     ;; resume-session: number connection request
     (define (resume-session ses-id conn req)
-      ; XXX Check if session is for same servlet!
       (myprint "resume-session: ses-id = ~s~n" ses-id)
       (cond
         [(lookup-session ses-id)
          => (lambda (ses)
-              (parameterize ([current-custodian (session-cust ses)]
-                             [current-session ses])
-                (with-handlers ([void
-                                 (lambda (the-exn)
-                                   (output-response/method
-                                    conn
-                                    (responders-servlet (request-uri req) the-exn)
-                                    (request-method req)))])
-                  #;(printf "session-handler ~S~n" (session-handler ses))
-                  (output-response conn
-                                   ((session-handler ses) req)))))]
+              (if (same-servlet? (request-uri req)
+                                 (session-url ses))
+                  (parameterize ([current-custodian (session-cust ses)]
+                                 [current-session ses])
+                    (with-handlers ([void
+                                     (lambda (the-exn)
+                                       (output-response/method
+                                        conn
+                                        (responders-servlet (request-uri req) the-exn)
+                                        (request-method req)))])
+                      #;(printf "session-handler ~S~n" (session-handler ses))
+                      (output-response conn
+                                       ((session-handler ses) req))))
+                  (begin-session conn req)))]
         [else
          (myprint "resume-session: Unknown ses~n")
-         ;; TODO: should just start a new session here.
          (begin-session conn req)]))
     
     dispatch))
