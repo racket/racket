@@ -281,6 +281,8 @@
                class-name
                (lambda () 
                  (let ((location (string-append class suffix))
+                       #;(old-type-cloc (send type-recs get-compilation-location))
+                       #;(old-type-loc (send type-recs get-location))
                        (old-dynamic? (dynamic?)))
                    (when (eq? 'dynamic-full (unbox new-level))
                      (dynamic? #t) (set-box! new-level 'full))
@@ -290,7 +292,9 @@
                      (build-info ast (unbox new-level) type-recs 'not_look_up)
                      (begin0 (send type-recs get-class-record class-name #f 
                                    (lambda () 'internal-error "Failed to add record"))
-                             (dynamic? old-dynamic?))
+                             (dynamic? old-dynamic?)
+                             #;(send type-recs set-compilation-location old-type-cloc)
+                             #;(send type-recs set-location! old-type-loc))
                      ))))
          (send type-recs add-require-syntax class-name (build-require-syntax class path dir #t #f)))
         (else (file-error 'file (cons class path) caller-src level)))
@@ -342,14 +346,15 @@
                                     (and (equal? (apply build-path package) cur)
                                          (make-dir-path (build-path 'same) #f))))))
            (classes (if dir (get-class-list dir) null)))
-      ;(printf "~n~nadd-my-package package ~a~n" package)
+      ;(printf "~n~nadd-my-package package ~a loc ~a ~n" package loc)
       ;(printf "add-my-package: dir ~a class ~a~n" dir classes)
-      (for-each (lambda (c) 
-                  (import-class c package 
-                                (make-dir-path (build-path 'same) #f) loc type-recs level #f #t)
-                  (send type-recs add-to-env c package loc))
-                (filter (lambda (c) (not (contained-in? defs c))) classes))
-      (send type-recs add-package-contents package classes)))
+      (let ([external-classes (filter (lambda (c) (not (contained-in? defs c))) classes)])
+        (for-each (lambda (c) (send type-recs add-to-env c package loc)) external-classes)
+        (for-each (lambda (c)
+                    (import-class c package 
+                                  (make-dir-path (build-path 'same) #f) loc type-recs level #f #t))
+                  external-classes)
+        (send type-recs add-package-contents package classes))))
       
   ;contained-in? (list definition) definition -> bool
   (define (contained-in? defs class)
@@ -478,6 +483,7 @@
     (when (equal? name child-name)
       (dependence-error 'immediate (name-id n) (name-src n)))
     (let ((record (send type-recs get-class-record name)))
+      #;(printf "~a, ~a~n" name record)
       (cond
         ((class-record? record) record)
         ((procedure? record) 
@@ -537,7 +543,12 @@
                                           (name->list super))))
                       (super-record (get-parent-record super-name super cname level type-recs))
                       (iface-records (map (lambda (i)
-                                            (get-parent-record (name->list i) i #f level type-recs))
+                                            (let ([name-list 
+                                                   (if (null? (name-path i))
+                                                       (cons (id-string (name-id i))
+                                                             (send type-recs lookup-path (id-string (name-id i)) (lambda () null)))
+                                                       (name->list i))])
+                                              (get-parent-record name-list i #f level type-recs)))
                                           (header-implements info)))
                       (members (def-members class))
                       (modifiers (header-modifiers info))
@@ -563,6 +574,9 @@
                    
                  (unless (class-record-class? super-record)
                    (extension-error 'class-iface (header-id info) super (name-src super)))
+                 
+                 #;(printf "~a~n" (header-implements info))
+                 #;(printf "~a~n" iface-records)
                  
                  (when (ormap class-record-class? iface-records)
                    (letrec ((find-class
@@ -763,12 +777,17 @@
              (lambda ()
                (send type-recs add-to-records iname 'in-progress)
                (let* ((super-names (map name->list (header-extends info)))
-                      (super-records (map (lambda (n sc) (get-parent-record n sc iname level type-recs))
-                                          super-names
-                                          (header-extends info)))
+                      (super-records 
+                       (map (lambda (n sc) (get-parent-record n sc iname level type-recs))
+                            super-names
+                            (header-extends info)))
                       (object-methods (class-record-methods (send type-recs get-class-record object-type)))
                       (members (def-members iface))
-                      (reqs (map (lambda (name-list) (make-req (car name-list) (cdr name-list)))
+                      (reqs (map (lambda (name-list)
+                                   (if (= (length name-list) 1)
+                                       (make-req (car name-list)
+                                                 (send type-recs lookup-path (car name-list) (lambda () null)))
+                                       (make-req (car name-list) (cdr name-list))))
                                  super-names))
                       (old-loc (send type-recs get-location)))
                  (send type-recs set-location! (def-file iface))
@@ -998,7 +1017,6 @@
   ;find-member: (U field-record method-record) (list member) symbol type-records -> member
   (define (find-member member-record members level type-recs)
     (when (null? members)
-      (print-struct #t)
       (printf "~a~n" member-record)
       (error 'internal-error "Find-member given a member that is not contained in the member list"))
     (cond
@@ -1241,7 +1259,7 @@
                                                                  (ref-type-path t)) #f)
                                                  0 #f))
                   ((array-type? t) (make-type-spec (type-spec-name (type->type-spec (array-type-type t)))
-                                                   (array-type-dim t))))))
+                                                   (array-type-dim t) #f)))))
              (copy-method-record
               (lambda (m)
                 (make-method-record (method-record-name m)

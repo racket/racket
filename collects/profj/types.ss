@@ -279,9 +279,10 @@
   ;;Is c1 a subclass of c2?
   ;; is-subclass?: (U type (list string) 'string) ref-type type-records -> boolean
   (define (is-subclass? c1 c2 type-recs)
-    (let ((cr (get-record (send type-recs get-class-record c1) type-recs)))
-      (member (cons (ref-type-class/iface c2) (ref-type-path c2))
-              (class-record-parents cr))))
+    (or (type=? object-type c2)
+        (let ((cr (get-record (send type-recs get-class-record c1) type-recs)))
+          (member (cons (ref-type-class/iface c2) (ref-type-path c2))
+                  (class-record-parents cr)))))
 
   ;Does c1 implement c2?
   ;; implements?: (U type (list string) 'string) ref-type type-records -> boolean
@@ -461,13 +462,14 @@
       
       ;add-to-env: string (list string) file -> void
       (define/public (add-to-env class path loc)
-        (hash-table-put! (hash-table-get class-environment loc
-                                         (lambda ()
-                                           (let ((new-t (make-hash-table 'equal)))
-                                             (hash-table-put! class-environment loc new-t)
-                                             new-t)))
-                         class
-                         path))
+        #;(printf "add-to-env class ~a path ~a loc ~a~n~n" class path loc)
+        (unless (hash-table-get (hash-table-get class-environment loc
+                                                (lambda () 
+                                                  (let ([new-t (make-hash-table 'equal)])
+                                                    (hash-table-put! class-environment loc new-t)
+                                                    new-t)))
+                                class (lambda () #f))
+          (hash-table-put! (hash-table-get class-environment loc) class path)))
       
       ;Returns the environment of classes for the current location
       ;get-class-env: -> (list string)
@@ -479,8 +481,8 @@
       
       ;lookup-path: string ( -> 'a) -> (U (list string) #f)
       (define/public (lookup-path class fail)
-        ;(printf "class ~a location ~a~n" class location)
-        ;(printf "lookup ~a~n" class)
+        #;(printf "class ~a location ~a~n" class location)
+        #;(printf "lookup ~a~n" class)
         #;(hash-table-for-each (hash-table-get class-environment location)
                             (lambda (k v) (printf "~a -> ~a~n" k v)))
         (if location
