@@ -6,6 +6,7 @@
            (prefix http: (lib "request.ss" "web-server" "private"))
            (lib "configuration-structures.ss" "web-server" "private")
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
+           (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers")))
   (require "hardcoded-configuration.ss"
            (prefix servlets2: "dispatch-servlets2.ss"))
@@ -18,11 +19,13 @@
   (define read-request http:read-request)
   (define dispatch
     (sequencer:make
-     (servlets2:make #:servlet-root (paths-servlet (host-paths host-info))
-                     #:timeouts-servlet-connection (timeouts-servlet-connection (host-timeouts host-info))
-                     #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
-                     #:responders-servlet (responders-servlet (host-responders host-info))
-                     #:responders-file-not-found (responders-file-not-found (host-responders host-info)))
+     (filter:make
+      #rx"^/servlets"
+      (servlets2:make #:servlet-root (paths-servlet (host-paths host-info))
+                      #:timeouts-servlet-connection (timeouts-servlet-connection (host-timeouts host-info))
+                      #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
+                      #:responders-servlet (responders-servlet (host-responders host-info))
+                      #:responders-file-not-found (responders-file-not-found (host-responders host-info))))
      (files:make #:htdocs-path (paths-htdocs (host-paths host-info))
                  #:mime-types-path (paths-mime-types (host-paths host-info))
                  #:indices (host-indices host-info)

@@ -65,19 +65,10 @@
                    [responders-file-not-found
                     (gen-file-not-found-responder "not-found.html")])
     
-    ;; dispatch: connection request -> void
+    ;; dispatch : connection request -> void
     (define (dispatch conn req)
-      (define-values (uri method path) (decompose-request req))
-      (myprint "dispatch~n")
-      (if (regexp-match #rx"^/servlets" path)
-          (begin
-            (adjust-connection-timeout! conn timeouts-servlet-connection)
-            ;; more here - make timeouts proportional to size of bindings
-            (servlet-content-producer conn req))    
-          (next-dispatcher)))
-       
-    ;; servlet-content-producer: connection request -> void
-    (define (servlet-content-producer conn req)
+      (adjust-connection-timeout! conn timeouts-servlet-connection)
+      ;; more here - make timeouts proportional to size of bindings
       (myprint "servlet-content-producer~n")
       (let ([meth (request-method req)])
         (if (eq? meth 'head)
