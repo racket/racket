@@ -65,9 +65,7 @@
                    [responders-file-not-found
                     (gen-file-not-found-responder "not-found.html")])
     
-    ;; ************************************************************
     ;; dispatch: connection request -> void
-    ;; trivial dispatcher
     (define (dispatch conn req)
       (define-values (uri method path) (decompose-request req))
       (myprint "dispatch~n")
@@ -77,11 +75,7 @@
             ;; more here - make timeouts proportional to size of bindings
             (servlet-content-producer conn req))    
           (next-dispatcher)))
-    
-    ;; ************************************************************
-    ;; ************************************************************
-    ;; SERVING SERVLETS
-    
+       
     ;; servlet-content-producer: connection request -> void
     (define (servlet-content-producer conn req)
       (myprint "servlet-content-producer~n")
