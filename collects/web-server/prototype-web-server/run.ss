@@ -20,8 +20,8 @@
   (define dispatch
     (sequencer:make
      (filter:make
-      #rx"^/servlets"
-      (servlets2:make #:servlet-root (paths-servlet (host-paths host-info))
+      #rx"\\.ss$"
+      (servlets2:make #:htdocs-path (paths-htdocs (host-paths host-info))
                       #:timeouts-servlet-connection (timeouts-servlet-connection (host-timeouts host-info))
                       #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
                       #:responders-servlet (responders-servlet (host-responders host-info))

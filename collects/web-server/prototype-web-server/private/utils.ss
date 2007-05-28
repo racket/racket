@@ -76,10 +76,12 @@
   ;;   The second value is the prefix of the url-path used to find the servlet.
   ;;   The third value is the remaining suffix of the url-path.
   (define (url->servlet-path servlet-dir uri)
+    (printf "~S~n" `(url->servlet-path ,servlet-dir ,uri))
     #;(printf "   current-directory = ~s~n" (current-directory))
     (let loop ([base-path servlet-dir]
                [servlet-path '()]
                [path-list (simplify-url-path uri)])
+      (printf "~S~n" `(loop ,base-path ,servlet-path ,path-list))
       (if
        (null? path-list)
        (values #f #f #f)

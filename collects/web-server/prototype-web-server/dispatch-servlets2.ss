@@ -56,7 +56,7 @@
        (lib "request.ss" "web-server" "private"))))
   
   (define/kw (make #:key
-                   [servlet-root "servlets"]
+                   [htdocs-path "servlets"]
                    [timeouts-servlet-connection (* 60 60 24)]
                    [responders-servlet-loading
                     servlet-loading-responder]
@@ -99,7 +99,7 @@
       (myprint "begin-session~n")
       (let ([uri (request-uri req)])
         (let-values ([(a-path url-servlet-path url-path-suffix)
-                      (url->servlet-path servlet-root uri)])
+                      (url->servlet-path htdocs-path uri)])
           (myprint "a-path = ~s~n" a-path)
           (if a-path
               (parameterize ([current-directory (directory-part a-path)])
