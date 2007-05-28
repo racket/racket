@@ -16,9 +16,9 @@
   ;; start-servlet: -> request
   ;; set the initial interaction point for the servlet
   (define (start-servlet)
-    (printf "start-session~n")
+    #;(printf "start-session~n")
     (start-session dispatch)
-    (printf "start-interaction~n")
+    #;(printf "start-interaction~n")
     (start-interaction
      (lambda (req)
        (or (request->continuation req)
