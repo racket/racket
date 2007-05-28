@@ -17,11 +17,9 @@
    current-saved-continuation-marks-and
    
    ;; "SERVLET" INTERFACE
-   start-interaction
    send/suspend
    
    ;; "CLIENT" INTERFACE
-   run-start
    dispatch-start
    dispatch)
   
@@ -74,7 +72,7 @@
       [(list-rest f fs)
        (match f
          [(vector #f #f)
-          (error 'resume "Empty frame!")]
+          (error 'resume "Empty frame")]
          [(vector f #f)
           (call-with-values (lambda () (with-continuation-mark the-cont-key f (resume fs val)))
                             f)]
@@ -121,23 +119,6 @@
   ;; **********************************************************************
   ;; **********************************************************************
   ;; "SERVLET" INTERFACE  
-  (define decode-continuation
-    (lambda (k-val)
-      (error "interactive module not initialized: decode")))
-  
-  (define (start-continuation val)
-    (error "interactive module not initialized: start"))
-  
-  ;; start-interaction: (request -> continuation) -> request
-  ;; register the decode proc and start the interaction with the current-continuation
-  (define (start-interaction decode)
-    (set! decode-continuation decode)
-    ((lambda (k0) 
-       (abort (lambda () (set! start-continuation k0))))
-     (let ([current-marks
-            (reverse
-             (continuation-mark-set->list* (current-continuation-marks) (list the-cont-key the-save-cm-key)))])
-       (lambda x (abort (lambda () (resume current-marks x)))))))
   
   (define-closure kont x (wcs current-marks)
     (abort (lambda ()
@@ -161,24 +142,19 @@
   ;; **********************************************************************
   ;; "CLIENT" INTERFACE
   
-  (define (run-start harness start)
+  ;; dispatch-start: (request -> response) request -> reponse
+  ;; pass the initial request to the starting interaction point
+  (define (dispatch-start start req0)
     (abort/cc 
      (lambda ()
        (with-continuation-mark safe-call? '(#t start)
          (start
           (with-continuation-mark the-cont-key start
-            (harness)))))))
+            req0))))))
   
-  ;; dispatch-start: request -> reponse
-  ;; pass the initial request to the starting interaction point
-  (define (dispatch-start req0)
-    (abort/cc 
-     (lambda ()
-       (start-continuation req0))))
-  
-  ;; dispatch: request -> response
+  ;; dispatch: (request -> (request -> response)) request -> response
   ;; lookup the continuation for this request and invoke it
-  (define (dispatch req)   
+  (define (dispatch decode-continuation req)   
     (abort/cc
      (lambda ()
        (cond

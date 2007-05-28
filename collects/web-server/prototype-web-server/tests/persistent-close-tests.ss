@@ -8,7 +8,7 @@
   
   (define persistent-close-suite
     (test-suite
-     "tests for persistent-close.ss"
+     "Tests for persistent-close.ss"
      
      (test-case
       "file-vector references"

@@ -20,7 +20,7 @@
       
       (test-case
        "web-parameterize does not overwrite with multiple parameters"
-       (let-values ([(go meval)
+       (let-values ([(meval)
                      (make-module-eval
                       (module m (lib "lang.ss" "web-server" "prototype-web-server")
                         (define first (make-web-parameter #f))
@@ -30,13 +30,12 @@
                           (web-parameterize ([first 1]
                                              [second 2])
                                             (+ (first) (second))))))])
-         (go the-dispatch)
-         (check = 3 (meval '(dispatch-start #f)))))
+         (check = 3 (meval '(dispatch-start start #f)))))
       
       (test-case
        "web-parameterize does not overwrite with multiple parameters across send/suspend"
        
-       (let-values ([(go meval)
+       (let-values ([(meval)
                      (make-module-eval
                       (module m (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
@@ -47,6 +46,5 @@
                                              [second 2])
                                             (send/suspend (lambda (k) k))
                                             (+ (first) (second))))))])
-         (go the-dispatch)
-         (let ([first-key (meval '(dispatch-start #f))])
-           (check = 3 (meval `(dispatch (list ,first-key #f)))))))))))
+         (let ([first-key (meval '(dispatch-start start #f))])
+           (check = 3 (meval `(dispatch ,the-dispatch (list ,first-key #f)))))))))))

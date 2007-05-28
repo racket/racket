@@ -31,120 +31,134 @@
       
       (test-case
        "Function application with single argument in tail position"
-       (let-values ([(go test-m00.4)
+       (let-values ([(test-m00.4)
                      (make-module-eval
                       (module m00.4 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (let ([f (let ([m 7]) m)])
                             (+ f initial)))))])
-         (go the-dispatch)
-         (check = 8 (test-m00.4 '(dispatch-start 1)))))
+         (check = 8 (test-m00.4 '(dispatch-start start 1)))))
       
       (test-case
        "start-interaction in argument position of a function call"
-       (let-values ([(go test-m00.3)
+       (let-values ([(test-m00.3)
                      (make-module-eval
                       (module m00.3 (lib "lang.ss" "web-server" "prototype-web-server")
                         (define (foo x) 'foo)
                         (provide start)
                         (define (start initial)
                           (foo initial))))])
-         (go the-dispatch)
-         (check eqv? 'foo (test-m00.3 '(dispatch-start 7)))))
+         (check eqv? 'foo (test-m00.3 '(dispatch-start start 7)))))
       
       (test-case
        "identity interaction, dispatch-start called multiple times"
-       (let-values ([(go test-m00)
+       (let-values ([(test-m00)
                      (make-module-eval
                       (module m00 (lib "lang.ss" "web-server" "prototype-web-server")
                         (define (id x) x)
                         (provide start)
                         (define (start initial)
                           (id initial))))])
-         (go the-dispatch)
-         (check = 7 (test-m00 '(dispatch-start 7)))
-         (check eqv? 'foo (test-m00 '(dispatch-start 'foo)))))
+         (check = 7 (test-m00 '(dispatch-start start 7)))
+         (check eqv? 'foo (test-m00 '(dispatch-start start 'foo)))))
       
       (test-case
        "start-interaction in argument position of a primitive"
-       (let-values ([(go test-m00.1)
+       (let-values ([(test-m00.1)
                      (make-module-eval
                       (module m00.1 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (+ 1 initial))))])         
-         (go the-dispatch)
-         (check = 2 (test-m00.1 '(dispatch-start 1)))))
+         (check = 2 (test-m00.1 '(dispatch-start start 1)))))
       
       (test-case
        "dispatch-start called multiple times for s-i in non-trivial context"
-       (let-values ([(go test-m00.2)
+       (let-values ([(test-m00.2)
                      (make-module-eval
                       (module m00.2 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (+ (+ 1 1) initial))))])         
-         (go the-dispatch)
-         (check = 14 (test-m00.2 '(dispatch-start 12)))
-         (check = 20 (test-m00.2 '(dispatch-start 18)))))
+         (check = 14 (test-m00.2 '(dispatch-start start 12)))
+         (check = 20 (test-m00.2 '(dispatch-start start 18)))))
       
       (test-case
        "start-interaction in third position"
-       (let-values ([(go test-m01)
+       (let-values ([(test-m01)
                      (make-module-eval
                       (module m01 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start initial)
                           (+ (* 1 2) (* 3 4) initial))))])         
-         (go the-dispatch)
-         (check = 14 (test-m01 '(dispatch-start 0)))
-         (check = 20 (test-m01 '(dispatch-start 6)))))     
+         (check = 14 (test-m01 '(dispatch-start start 0)))
+         (check = 20 (test-m01 '(dispatch-start start 6))))))          
+     
+     (test-suite
+      "Tests involving multiple values"
+      (test-case
+       "begin with intermediate multiple values"
+       (let-values ([(test)
+                     (make-module-eval
+                      (module m03 (lib "lang.ss" "web-server" "prototype-web-server")
+                        (provide start)
+                        (define (start x)
+                          (begin (printf "Before~n")
+                                 (values 1 x)
+                                 (printf "After~n")
+                                 x))))])
+         (check = 3 (test `(dispatch-start start 3)))))
       
-      ;; start-interaction may be called mutitple times
-      ;; each call overwrites the previous interaction
-      ;; continuation with the latest one.
-      ; XXX We have taken this power away.
-      #;(test-case
-         "start-interaction called twice, dispatch-start will invoke different continuations"
-         (let ([test-m02
-                (make-module-eval
-                 (module m02 (lib "lang.ss" "web-server" "prototype-web-server")
-                   (define (id x) x)
-                   (+ (start-interaction id)
-                      (start-interaction id))))])
-           
-           (check-true (void? (test-m02 '(dispatch-start 1))))
-           (check = 3 (test-m02 '(dispatch-start 2)))
-           (check = 0 (test-m02 '(dispatch-start -1))))))
+      (test-case
+       "begin0 with intermediate multiple values"
+       (let-values ([(test)
+                     (make-module-eval
+                      (module m03 (lib "lang.ss" "web-server" "prototype-web-server")
+                        (provide start)
+                        (define (start x)
+                          (begin0 x
+                                  (printf "Before~n")
+                                  (values 1 x)
+                                  (printf "After~n")))))])
+         (check = 3 (test `(dispatch-start start 3)))))
+      
+      (test-case
+       "begin0 with multiple values"
+       (let-values ([(test)
+                     (make-module-eval
+                      (module m03 (lib "lang.ss" "web-server" "prototype-web-server")
+                        (provide start)
+                        (define (start x)
+                          (let-values ([(_ ans)
+                                        (begin0 (values 1 x) 
+                                                (printf "Before~n")
+                                                x
+                                                (printf "After~n"))])
+                            ans))))])
+         (check = 3 (test `(dispatch-start start 3))))))
      
-     
-     
-     ;; ****************************************
-     ;; ****************************************
-     ;; TESTS INVOLVING CALL/CC
      (test-suite
       "Tests Involving call/cc"
       
       (test-case
        "continuation invoked in non-trivial context from within proc"
-       (let-values ([(go test-m03)
+       (let-values ([(test-m03)
                      (make-module-eval
                       (module m03 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
                         (define (start x)
                           (let/cc k
                             (+ 2 4 (k 3) 6 8)))))])         
-         (go the-dispatch)
-         (check = 3 (test-m03 '(dispatch-start 'foo)))
-         (check = 3 (test-m03 '(dispatch-start 7)))))
+         (check = 3 (test-m03 '(dispatch-start start 'foo)))
+         (check = 3 (test-m03 '(dispatch-start start 7)))))
       
       ;; in the following test, if you modify
       ;; resume to print the "stack" you will
       ;; see that this is not tail recursive
       (test-case
        "non-tail-recursive 'escaping' continuation"
-       (let-values ([(go test-m04)
+       (let-values ([(test-m04)
                      (make-module-eval
                       (module m04 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
@@ -156,9 +170,8 @@
                               [else
                                (* (car ln)
                                   (start (cdr ln)))])))))])
-         (go the-dispatch)
-         (check = 0 (test-m04 '(dispatch-start (list 1 2 3 4 5 6 7 0 8 9))))
-         (check = 120 (test-m04 '(dispatch-start (list 1 2 3 4 5))))))
+         (check = 0 (test-m04 '(dispatch-start start (list 1 2 3 4 5 6 7 0 8 9))))
+         (check = 120 (test-m04 '(dispatch-start start (list 1 2 3 4 5))))))
       
       ;; this version captures the continuation
       ;; outside the recursion and should be tail
@@ -166,7 +179,7 @@
       ;; as expected.
       (test-case
        "tail-recursive escaping continuation"
-       (let-values ([(go test-m05)
+       (let-values ([(test-m05)
                      (make-module-eval
                       (module m05 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)                 
@@ -182,9 +195,8 @@
                             [else
                              (* (car ln)
                                 (mult/escape escape (cdr ln)))]))))])     
-         (go the-dispatch)
-         (check = 0 (test-m05 '(dispatch-start (list 1 2 3 0 4 5 6))))
-         (check = 120 (test-m05 '(dispatch-start (list 1 2 3 4 5)))))))
+         (check = 0 (test-m05 '(dispatch-start start (list 1 2 3 0 4 5 6))))
+         (check = 120 (test-m05 '(dispatch-start start (list 1 2 3 4 5)))))))
      
      ;; ****************************************
      ;; ****************************************
@@ -192,53 +204,52 @@
      (test-suite
       "Tests Involving send/suspend"
       
-      ; XXX This doesn't work, because we don't allow a different dispatcher
-      #;(test-case
-         "curried add with send/suspend"
-         (let ([table-01-eval
-                (make-module-eval
-                 (module table01 mzscheme
-                   (provide store-k
-                            lookup-k)
-                   
-                   (define the-table (make-hash-table))
-                   
-                   (define (store-k k)
-                     (let ([key (string->symbol (symbol->string (gensym 'key)))])
-                       (hash-table-put! the-table key k)
-                       key))
-                   (define (lookup-k key-pair)
-                     (hash-table-get the-table (car key-pair) (lambda () #f)))))])         
-           (table-01-eval
-            '(module m06 (lib "lang.ss" "web-server" "prototype-web-server")
-               (require table01)
-               (provide start)
-               
-               (define (gn which)
-                 (cadr
-                  (send/suspend
-                   (lambda (k)
-                     (let ([ignore (printf "Please send the ~a number.~n" which)])
-                       (store-k k))))))
-               
-               (define (start ignore)
-                 (let ([result (+ (gn "first") (gn "second"))])
-                   (let ([ignore (printf "The answer is: ~s~n" result)])
-                     result)))))         
-           (table-01-eval '(require m06))         
-           (let* ([first-key (table-01-eval '(dispatch-start 'foo))]
-                  [second-key (table-01-eval `(dispatch '(,first-key 1)))]
-                  [third-key (table-01-eval `(dispatch '(,first-key -7)))])                    
-             (check = 3 (table-01-eval `(dispatch '(,second-key 2))))
-             (check = 4 (table-01-eval `(dispatch '(,second-key 3))))
-             (check-true (zero? (table-01-eval `(dispatch '(,second-key -1)))))
-             (check = -7 (table-01-eval `(dispatch '(,third-key 0))))
-             (check-true (zero? (table-01-eval `(dispatch '(,third-key 7))))))))
+      (test-case
+       "curried add with send/suspend"
+       (let ([table-01-eval
+              (make-module-eval
+               (module table01 mzscheme
+                 (provide store-k
+                          lookup-k)
+                 
+                 (define the-table (make-hash-table))
+                 
+                 (define (store-k k)
+                   (let ([key (string->symbol (symbol->string (gensym 'key)))])
+                     (hash-table-put! the-table key k)
+                     key))
+                 (define (lookup-k key-pair)
+                   (hash-table-get the-table (car key-pair) (lambda () #f)))))])         
+         (table-01-eval
+          '(module m06 (lib "lang.ss" "web-server" "prototype-web-server")
+             (require table01)
+             (provide start)
+             
+             (define (gn which)
+               (cadr
+                (send/suspend
+                 (lambda (k)
+                   (let ([ignore (printf "Please send the ~a number.~n" which)])
+                     (store-k k))))))
+             
+             (define (start ignore)
+               (let ([result (+ (gn "first") (gn "second"))])
+                 (let ([ignore (printf "The answer is: ~s~n" result)])
+                   result)))))         
+         (table-01-eval '(require m06))         
+         (let* ([first-key (table-01-eval '(dispatch-start start 'foo))]
+                [second-key (table-01-eval `(dispatch lookup-k '(,first-key 1)))]
+                [third-key (table-01-eval `(dispatch lookup-k '(,first-key -7)))])                    
+           (check = 3 (table-01-eval `(dispatch lookup-k '(,second-key 2))))
+           (check = 4 (table-01-eval `(dispatch lookup-k '(,second-key 3))))
+           (check-true (zero? (table-01-eval `(dispatch lookup-k '(,second-key -1)))))
+           (check = -7 (table-01-eval `(dispatch lookup-k '(,third-key 0))))
+           (check-true (zero? (table-01-eval `(dispatch lookup-k '(,third-key 7))))))))
       
       (test-case
        "curried with send/suspend and serializaztion"
        
-       (let-values ([(go test-m06.1)
+       (let-values ([(test-m06.1)
                      (make-module-eval
                       (module m06.1 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
@@ -253,25 +264,21 @@
                           (let ([result (+ (gn "first") (gn "second"))])
                             (let ([ignore (printf "The answer is: ~s~n" result)])
                               result)))))])
-         (go the-dispatch)
-         (let* ([first-key (test-m06.1 '(dispatch-start 'foo))]
-                [second-key (test-m06.1 `(dispatch (list (deserialize (serialize ,first-key)) 1)))]
-                [third-key (test-m06.1 `(dispatch (list (deserialize (serialize ,first-key)) -7)))])
-           (check = 3 (test-m06.1 `(dispatch (list ,second-key 2))))
-           (check = 4 (test-m06.1 `(dispatch (list ,second-key 3))))
-           (check-true (zero? (test-m06.1 `(dispatch (list ,second-key -1)))))
-           (check = -7 (test-m06.1 `(dispatch (list ,third-key 0))))
-           (check-true (zero? (test-m06.1 `(dispatch (list ,third-key 7)))))))))
+         (let* ([first-key (test-m06.1 '(dispatch-start start 'foo))]
+                [second-key (test-m06.1 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) 1)))]
+                [third-key (test-m06.1 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) -7)))])
+           (check = 3 (test-m06.1 `(dispatch ,the-dispatch (list ,second-key 2))))
+           (check = 4 (test-m06.1 `(dispatch ,the-dispatch (list ,second-key 3))))
+           (check-true (zero? (test-m06.1 `(dispatch ,the-dispatch (list ,second-key -1)))))
+           (check = -7 (test-m06.1 `(dispatch ,the-dispatch (list ,third-key 0))))
+           (check-true (zero? (test-m06.1 `(dispatch ,the-dispatch (list ,third-key 7)))))))))
      
-     ;; ****************************************
-     ;; ****************************************
-     ;; TESTS INVOLVING LETREC
      (test-suite
       "Tests Involving letrec"
       
       (test-case
        "mutually recursive even? and odd?"
-       (let-values ([(go test-m07)
+       (let-values ([(test-m07)
                      (make-module-eval
                       (module m07 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
@@ -283,15 +290,14 @@
                                            (and (not (zero? n))
                                                 (even? (sub1 n))))])
                             (even? initial)))))])         
-         (go the-dispatch)
-         (check-true (test-m07 '(dispatch-start 0)))
-         (check-true (test-m07 '(dispatch-start 16)))
-         (check-false (test-m07 '(dispatch-start 1)))
-         (check-false (test-m07 '(dispatch-start 7)))))
+         (check-true (test-m07 '(dispatch-start start 0)))
+         (check-true (test-m07 '(dispatch-start start 16)))
+         (check-false (test-m07 '(dispatch-start start 1)))
+         (check-false (test-m07 '(dispatch-start start 7)))))
       
       (test-case
        "send/suspend on rhs of letrec binding forms"
-       (let-values ([(go test-m08)
+       (let-values ([(test-m08)
                      (make-module-eval
                       (module m08 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
@@ -310,51 +316,46 @@
                             (let ([result (g (gn "third"))])
                               (let ([ignore (printf "The answer is: ~s~n" result)])
                                 result))))))])
-         (go the-dispatch)
-         (let* ([k0 (test-m08 '(serialize (dispatch-start 'foo)))]
-                [k1 (test-m08 `(serialize (dispatch (list (deserialize ',k0) 1))))]
-                [k2 (test-m08 `(serialize (dispatch (list (deserialize ',k1) 2))))])
-           (check = 6 (test-m08 `(dispatch (list (deserialize ',k2) 3))))
-           (check = 9 (test-m08 `(dispatch (list (deserialize ',k2) 6))))
-           (let* ([k1.1 (test-m08 `(serialize (dispatch (list (deserialize ',k0) -1))))]
-                  [k2.1 (test-m08 `(serialize (dispatch (list (deserialize ',k1.1) -2))))])
-             (check-true (zero? (test-m08 `(dispatch (list (deserialize ',k2.1) 3)))))
-             (check = 6 (test-m08 `(dispatch (list (deserialize ',k2) 3)))))))))
+         (let* ([k0 (test-m08 '(serialize (dispatch-start start 'foo)))]
+                [k1 (test-m08 `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) 1))))]
+                [k2 (test-m08 `(serialize (dispatch ,the-dispatch (list (deserialize ',k1) 2))))])
+           (check = 6 (test-m08 `(dispatch ,the-dispatch (list (deserialize ',k2) 3))))
+           (check = 9 (test-m08 `(dispatch ,the-dispatch (list (deserialize ',k2) 6))))
+           (let* ([k1.1 (test-m08 `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) -1))))]
+                  [k2.1 (test-m08 `(serialize (dispatch ,the-dispatch (list (deserialize ',k1.1) -2))))])
+             (check-true (zero? (test-m08 `(dispatch ,the-dispatch (list (deserialize ',k2.1) 3)))))
+             (check = 6 (test-m08 `(dispatch ,the-dispatch (list (deserialize ',k2) 3)))))))))
      
-     ;; ****************************************
-     ;; ****************************************
-     ;; TEST UNSAFE CONTEXT CONDITION
      (test-suite
       "Unsafe Context Condition Tests"
       
-      ; XXX Bizarre
-      #;(test-case
-         "simple attempt to capture a continuation from an unsafe context"
+      (test-case
+       "simple attempt to capture a continuation from an unsafe context"
+       
+       (let-values ([(nta-eval)
+                     (make-module-eval
+                      (module nta mzscheme
+                        (provide non-tail-apply)
+                        
+                        (define (non-tail-apply f . args)
+                          (let ([result (apply f args)])
+                            (printf "result = ~s~n" result)
+                            result))))])
+         (nta-eval '(module m09 (lib "lang.ss" "web-server" "prototype-web-server")
+                      (require nta)
+                      (provide start)
+                      (define (start ignore)
+                        (non-tail-apply (lambda (x) (let/cc k (k x))) 7))))
          
-         (let-values ([(go nta-eval)
-                       (make-module-eval
-                        (module nta mzscheme
-                          (provide non-tail-apply)
-                          
-                          (define (non-tail-apply f . args)
-                            (let ([result (apply f args)])
-                              (printf "result = ~s~n" result)
-                              result))))])
-           (nta-eval '(module m09 (lib "lang.ss" "web-server" "prototype-web-server")
-                        (require nta)
-                        (provide start)
-                        (define (start ignore)
-                          (non-tail-apply (lambda (x) (let/cc k (k x))) 7))))
-           
-           (nta-eval '(require m09))
-           
-           (check-true (catch-unsafe-context-exn
-                        (lambda () (nta-eval '(dispatch-start 'foo)))))))
+         (nta-eval '(require m09))
+         
+         (check-true (catch-unsafe-context-exn
+                      (lambda () (nta-eval '(dispatch-start start 'foo)))))))
       
       (test-case
        "sanity-check: capture continuation from safe version of context"
        
-       (let-values ([(go m10-eval)
+       (let-values ([(m10-eval)
                      (make-module-eval
                       (module m10 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
@@ -364,13 +365,12 @@
                             result))
                         (define (start ignore)
                           (nta (lambda (x) (let/cc k (k x))) 7))))])         
-         (go the-dispatch)
-         (check = 7 (m10-eval '(dispatch-start 'foo)))))
+         (check = 7 (m10-eval '(dispatch-start start 'foo)))))
       
       (test-case
        "attempt continuation capture from standard call to map"
        
-       (let-values ([(go m11-eval)
+       (let-values ([(m11-eval)
                      (make-module-eval
                       (module m11 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
@@ -378,39 +378,37 @@
                           (map
                            (lambda (x) (let/cc k k))
                            (list 1 2 3)))))])         
-         (go the-dispatch)
          (check-true (catch-unsafe-context-exn
-                      (lambda () (m11-eval '(dispatch-start 'foo)))))))
+                      (lambda () (m11-eval '(dispatch-start start 'foo)))))))
       
       ;; if the continuation-capture is attempted in tail position then we
       ;; should be just fine.
-      ; XXX Weird
-      #;(test-case
-         "continuation capture from tail position of untranslated procedure"
+      (test-case
+       "continuation capture from tail position of untranslated procedure"
+       
+       (let ([ta-eval
+              (make-module-eval
+               (module ta mzscheme
+                 (provide tail-apply)
+                 
+                 (define (tail-apply f . args)
+                   (apply f args))))])
          
-         (let ([ta-eval
-                (make-module-eval
-                 (module ta mzscheme
-                   (provide tail-apply)
-                   
-                   (define (tail-apply f . args)
-                     (apply f args))))])
-           
-           (ta-eval '(module m12 (lib "lang.ss" "web-server" "prototype-web-server")
-                       (require ta)
-                       (provide start)
-                       (define (start initial)
-                         (+ initial 
-                            (tail-apply (lambda (x) (let/cc k (k x))) 1)))))
-           
-           (ta-eval '(require m12))
-           
-           (check = 2 (ta-eval '(dispatch-start 1)))))
+         (ta-eval '(module m12 (lib "lang.ss" "web-server" "prototype-web-server")
+                     (require ta)
+                     (provide start)
+                     (define (start initial)
+                       (+ initial 
+                          (tail-apply (lambda (x) (let/cc k (k x))) 1)))))
+         
+         (ta-eval '(require m12))
+         
+         (check = 2 (ta-eval '(dispatch-start start 1)))))
       
       (test-case
        "attempt send/suspend from standard call to map"
        
-       (let-values ([(go m13-eval)
+       (let-values ([(m13-eval)
                      (make-module-eval
                       (module m11 (lib "lang.ss" "web-server" "prototype-web-server")
                         (provide start)
@@ -421,35 +419,33 @@
                                           (let ([ignore (printf "n = ~s~n" n)])
                                             k))))
                            (list 1 2 3)))))])
-         (go the-dispatch)
          (check-true (catch-unsafe-context-exn
-                      (lambda () (m13-eval '(dispatch-start 'foo)))))))
+                      (lambda () (m13-eval '(dispatch-start start 'foo)))))))
       
-      ; XXX Weird
-      #;(test-case
-         "attempt send/suspend from tail position of untranslated procedure"
+      (test-case
+       "attempt send/suspend from tail position of untranslated procedure"
+       
+       (let-values ([(ta-eval)
+                     (make-module-eval
+                      (module ta mzscheme
+                        (provide tail-apply)
+                        
+                        (define (tail-apply f . args)
+                          (apply f args))))])
          
-         (let-values ([(go ta-eval)
-                       (make-module-eval
-                        (module ta mzscheme
-                          (provide tail-apply)
-                          
-                          (define (tail-apply f . args)
-                            (apply f args))))])
-           
-           (ta-eval '(module m14 (lib "lang.ss" "web-server" "prototype-web-server")
-                       (require ta)
-                       (provide start)
-                       (define (start ignore)
-                         (+ 1 (tail-apply
-                               (lambda (n)
-                                 (cadr
-                                  (send/suspend
-                                   (lambda (k)
-                                     (let ([ignore (printf "n = ~s~n" n)])
-                                       k))))) 7)))))
-           (ta-eval '(require m14))
-           
-           (let ([k0 (ta-eval '(dispatch-start 'foo))])
-             (check = 3 (ta-eval `(dispatch (list ,k0 2))))
-             (check = 0 (ta-eval `(dispatch (list ,k0 -1)))))))))))
+         (ta-eval '(module m14 (lib "lang.ss" "web-server" "prototype-web-server")
+                     (require ta)
+                     (provide start)
+                     (define (start ignore)
+                       (+ 1 (tail-apply
+                             (lambda (n)
+                               (cadr
+                                (send/suspend
+                                 (lambda (k)
+                                   (let ([ignore (printf "n = ~s~n" n)])
+                                     k))))) 7)))))
+         (ta-eval '(require m14))
+         
+         (let ([k0 (ta-eval '(dispatch-start start 'foo))])
+           (check = 3 (ta-eval `(dispatch ,the-dispatch (list ,k0 2))))
+           (check = 0 (ta-eval `(dispatch ,the-dispatch (list ,k0 -1)))))))))))

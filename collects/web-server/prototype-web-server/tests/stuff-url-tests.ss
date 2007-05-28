@@ -57,32 +57,29 @@
      
      (test-case
       "compose url-parts and recover-serial (1)"
-      (let-values ([(go ev) (make-eval/mod-path m00)])
-        (go the-dispatch)
-        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
+      (let-values ([(ev) (make-eval/mod-path m00)])
+        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start start 'foo)))
                                         m00)]
-               [k1 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
+               [k1 (simplify-unsimplify (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) 1))))
                                         m00)]
-               [k2 (simplify-unsimplify (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
+               [k2 (simplify-unsimplify (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k1) 2))))
                                         m00)])
-          (check-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3))))))))
+          (check-true (= 6 (ev `(dispatch ,the-dispatch (list (deserialize ',k2) 3))))))))
      
      (test-case
       "compose url-parts and recover-serial (2)"
-      (let-values ([(go ev) (make-eval/mod-path m01)])
-        (go the-dispatch)
-        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start 'foo)))
+      (let-values ([(ev) (make-eval/mod-path m01)])
+        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start start 'foo)))
                                         m01)])
-          (check-true (= 7 (ev `(dispatch (list (deserialize ',k0) 7))))))))
+          (check-true (= 7 (ev `(dispatch ,the-dispatch (list (deserialize ',k0) 7))))))))
      
      (test-case 
       "compose stuff-url and unstuff-url and recover the serial"
-      (let-values ([(go ev) (make-eval/mod-path m00)])
-        (go the-dispatch)
-        (let* ([k0 (stuff-unstuff (ev '(serialize (dispatch-start 'foo)))
+      (let-values ([(ev) (make-eval/mod-path m00)])
+        (let* ([k0 (stuff-unstuff (ev '(serialize (dispatch-start start 'foo)))
                                   uri0 m00)]
-               [k1 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k0) 1))))
+               [k1 (stuff-unstuff (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) 1))))
                                   uri0 m00)]
-               [k2 (stuff-unstuff (ev `(serialize (dispatch (list (deserialize ',k1) 2))))
+               [k2 (stuff-unstuff (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k1) 2))))
                                   uri0 m00)])
-          (check-true (= 6 (ev `(dispatch (list (deserialize ',k2) 3)))))))))))
+          (check-true (= 6 (ev `(dispatch ,the-dispatch (list (deserialize ',k2) 3)))))))))))

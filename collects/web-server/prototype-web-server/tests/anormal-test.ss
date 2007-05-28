@@ -1,6 +1,7 @@
 (module anormal-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           "../lang/anormal.ss")
+           "../lang/anormal.ss"
+           "../lang/util.ss")
   (provide anormal-tests)
   
   (define (empty-env var)
@@ -68,14 +69,14 @@
                 [dat2 (syntax-object->datum #'datum2)])
             (equal? dat1 dat2))]
          [_else #f])]
-      [(lambda (formals1 ...) body1)
+      [(lambda formals1 body1)
        (syntax-case expr2 (lambda)
-         [(lambda (formals2 ...) body2)
-          (let ([syms (map gensym (syntax->symbols #'(formals1 ...)))])
-            (and (= (length syms) (length (syntax->list #'(formals2 ...))))
+         [(lambda formals2 body2)
+          (let ([syms (map gensym (syntax->symbols (formals-list #'formals1)))])
+            (and (= (length syms) (length (formals-list #'formals2)))
                  (alpha=/env
-                  (extend env1 (syntax->symbols #'(formals1 ...)) syms)
-                  (extend env2 (syntax->symbols #'(formals2 ...)) syms)
+                  (extend env1 (syntax->symbols (formals-list #'formals1)) syms)
+                  (extend env2 (syntax->symbols (formals-list #'formals2)) syms)
                   #'body1 #'body2)))]
          [_else #f])]
       [x1 (symbol? (syntax-object->datum #'x1))
@@ -197,7 +198,7 @@
                (expand (syntax ()))))
       
       (test-case
-       "qoted list of constants"
+       "quoted list of constants"
        (check alpha= (normalize-term (expand (syntax '(1 2 3))))
                (expand (syntax '(1 2 3))))))
      
@@ -329,9 +330,13 @@
       (test-case
        "begin with multiple expressions"
        (check alpha= (normalize-term (expand (syntax (begin 1 2 3))))
-               (normalize-term (expand (syntax (let ([throw-away 1])
-                                                 (let ([throw-away 2])
-                                                   3)))))))
+               (normalize-term (expand (syntax (call-with-values
+                                                (lambda () 1)
+                                                (lambda throw-away
+                                                  (call-with-values
+                                                   (lambda () 2)
+                                                   (lambda throw-away
+                                                     3)))))))))
       
       (test-case
        "cond expression"

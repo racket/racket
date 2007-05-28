@@ -11,10 +11,8 @@
            (lib "plt-match.ss")
            (lib "dispatch.ss" "web-server" "dispatchers")
            (lib "session.ss" "web-server" "prototype-web-server" "private")
-           (only (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
-                 run-start)
            (only "private/web.ss"
-                 start-servlet)           
+                 initialize-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
            "private/utils.ss")
   
@@ -68,7 +66,7 @@
     ;; dispatch : connection request -> void
     (define (dispatch conn req)
       (adjust-connection-timeout! conn timeouts-servlet-connection)
-      ;; more here - make timeouts proportional to size of bindings
+      ;; XXX - make timeouts proportional to size of bindings
       (myprint "servlet-content-producer~n")
       (let ([meth (request-method req)])
         (if (eq? meth 'head)
@@ -112,7 +110,8 @@
                     (let ([module-name `(file ,(path->string a-path))])
                       (myprint "dynamic-require ...~n")
                       (let ([start (dynamic-require module-name 'start)])
-                        (run-start start-servlet start))))
+                        (set-session-servlet! ses
+                                              (initialize-servlet start)))))
                   (myprint "resume-session~n")
                   (resume-session (session-id ses)
                                   conn req)))
@@ -127,19 +126,19 @@
         (map path/param-path
              (url-path u)))
       (define ans
-      (let loop ([rp (abstract-url req)]
-                 [sp (abstract-url ses)])
-        (match sp
-          [(list)
-           #t]
-          [(list-rest s sp)
-           (match rp
-             [(list)
-              #f]
-             [(list-rest r rp)
-              (if (string=? s r)
-                  (loop rp sp)
-                  #f)])])))
+        (let loop ([rp (abstract-url req)]
+                   [sp (abstract-url ses)])
+          (match sp
+            [(list)
+             #t]
+            [(list-rest s sp)
+             (match rp
+               [(list)
+                #f]
+               [(list-rest r rp)
+                (if (string=? s r)
+                    (loop rp sp)
+                    #f)])])))
       (myprint "~S => ~S~n" `(same-servlet? ,(url->string req) ,(url->string ses)) ans)
       ans)
     
@@ -158,9 +157,9 @@
                                         conn
                                         (responders-servlet (request-uri req) the-exn)
                                         (request-method req)))])
-                      (myprint "session-handler ~S~n" (session-handler ses))
+                      (myprint "session-handler ~S~n" (session-servlet ses))
                       (output-response conn
-                                       ((session-handler ses) req))))
+                                       ((session-servlet ses) req))))
                   (begin-session conn req)))]
         [else
          (myprint "resume-session: Unknown ses~n")

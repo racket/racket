@@ -2,7 +2,7 @@
   (require-for-template mzscheme)
   (require (lib "kerncase.ss" "syntax")
            (lib "list.ss"))
-  (provide (all-defined))
+  (provide (all-defined-except template))
   
   (define (recertify old-expr expr)
     (syntax-recertify expr old-expr (current-code-inspector) #f))

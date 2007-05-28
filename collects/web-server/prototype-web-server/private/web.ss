@@ -8,21 +8,30 @@
            "session.ss"
            "stuff-url.ss")
   
-  (provide send/suspend/hidden
-           send/suspend/url
-           extract-proc/url embed-proc/url
-           start-servlet)
+  (provide 
+   ;; Server Interface
+   initialize-servlet
+   
+   ;; Servlet Interface
+   send/suspend/hidden
+   send/suspend/url
+   extract-proc/url
+   embed-proc/url)
   
-  ;; start-servlet: -> request
-  ;; set the initial interaction point for the servlet
-  (define (start-servlet)
-    #;(printf "start-session~n")
-    (start-session dispatch)
-    #;(printf "start-interaction~n")
-    (start-interaction
-     (lambda (req)
-       (or (request->continuation req)
-           (lambda (req) (dispatch-start req))))))
+  ;; initial-servlet : (request -> response) -> (request -> response?)
+  (define (initialize-servlet start)
+    (let ([params (current-parameterization)])
+      (lambda (req0)
+        (call-with-parameterization 
+         params
+         (lambda ()
+           (dispatch
+            (lambda (req1)
+              (or (request->continuation req1)
+                  ; Try to decode a continuation from the request,
+                  ; or, use the start procedure to initialize a session
+                  (lambda (req2) (dispatch-start start req2))))
+            req0))))))
   
   ;; send/suspend/hidden: (url input-field -> response) -> request
   ;; like send/suspend except the continuation is encoded in a hidden field

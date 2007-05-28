@@ -1,11 +1,8 @@
 (module anormal mzscheme
   (require-for-template mzscheme)
   (require (lib "kerncase.ss" "syntax")
-           #;(lib "etc.ss")
            (lib "list.ss")
-           (lib "toplevel.ss" "syntax")
            (lib "plt-match.ss")
-           (lib "stx.ss" "syntax")
            "util.ss")
   (provide make-anormal-term)
   
@@ -43,20 +40,25 @@
          [(begin lbe)
           (anormal ctxt (syntax/loc stx lbe))]
          [(begin fbe be ...)
-          ; XXX Am I a bug?
           (anormal ctxt 
                    (syntax/loc stx 
-                     (let-values ([(throw-away) fbe])
-                       (begin be ...))))]
+                     (#%app call-with-values
+                            (lambda () fbe)
+                            (lambda throw-away
+                              (begin be ...)))))]
          [(begin0)
           (anormal ctxt (syntax/loc stx (#%app (#%top . void))))]
          [(begin0 lbe)
           (anormal ctxt (syntax/loc stx lbe))]
          [(begin0 fbe be ...)
-          (anormal ctxt 
-                   (syntax/loc stx 
-                     (let-values ([(save) fbe])
-                       (begin be ... save))))]
+          (let-values ([(save ref-to-save) (generate-formal 'save)])
+            (anormal ctxt 
+                     (quasisyntax/loc stx 
+                       (#%app call-with-values
+                              (lambda () fbe)
+                              (lambda #,save
+                                (begin be ... 
+                                       (#%app apply values #,ref-to-save)))))))]
          [(define-values (v ...) ve)
           (with-syntax ([ve (anormal-term #'ve)])
             (syntax/loc stx 
@@ -129,7 +131,8 @@
          [(letrec-syntaxes+values ([(sv ...) se] ...)
             ([(vv ...) ve] ...)
             be ...)
-          (raise-syntax-error 'anormal "XXX What do I do with letrec-syntaxes+values?" stx)]
+          (anormal ctxt
+                   (elim-letrec-term stx))]
          [(with-continuation-mark ke me be)
           (anormal
            (compose ctxt

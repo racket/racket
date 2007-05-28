@@ -5,18 +5,17 @@
            (lib "response.ss" "web-server"))
   (provide current-session)
   
-  (define-struct session (id cust namespace handler url mod-path))
+  (define-struct session (id cust namespace servlet url mod-path))
   
   (provide/contract
    [struct session ([id number?]
                     [cust custodian?]
                     [namespace namespace?]
-                    [handler (request? . -> . response?)]
+                    [servlet (request? . -> . response?)]
                     [url url?]
                     [mod-path path?])]
    [lookup-session (number? . -> . (union session? boolean?))]
-   [new-session (custodian? namespace? url? path? . -> . session?)]
-   [start-session ((request? . -> . response?) . -> . any)])
+   [new-session (custodian? namespace? url? path? . -> . session?)])
   
   (define current-session (make-parameter #f))
   
@@ -31,25 +30,16 @@
   
   ;; new-session: namespace path -> session
   (define (new-session cust ns uri mod-path)
-    (let ([new-id (new-session-id)])
-      (make-session
-       new-id
-       cust
-       ns
-       (lambda (req) (error "session not initialized"))
-       (encode-session uri new-id)
-       mod-path)))
-  
-  ;; start-session: (request -> response) -> void
-  ;; register the session handler.
-  (define (start-session handler)
-    (let ([ses (current-session)])
-      (let ([params (current-parameterization)])
-        (set-session-handler!
-         ses
-         (lambda (req)
-           (call-with-parameterization params (lambda () (handler req))))))
-      (hash-table-put! the-session-table (session-id ses) ses)))
+    (let* ([new-id (new-session-id)]
+           [ses (make-session
+                 new-id
+                 cust
+                 ns
+                 (lambda (req) (error "session not initialized"))
+                 (encode-session uri new-id)
+                 mod-path)])
+      (hash-table-put! the-session-table new-id ses)
+      ses))
   
   ;; lookup-session: number -> (union session #f)
   (define (lookup-session ses-id)
