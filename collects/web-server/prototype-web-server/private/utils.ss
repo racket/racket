@@ -1,10 +1,11 @@
 (module utils mzscheme
   (require (lib "url.ss" "net")
+           (lib "plt-match.ss")
            (lib "list.ss"))
   (provide url->servlet-path
            make-session-url
            split-url-path)
-
+  
   ;; make-session-url: url (listof string) -> url
   ;; produce a new url for this session:
   ;;   Minimal path to the servlet.
@@ -22,7 +23,7 @@
      '()
      #f
      ))
-
+  
   ;; build-root-path: -> path
   ;; build the root path for whatever this OS is
   (define (build-root-path)
@@ -32,9 +33,9 @@
           prev
           (loop next
                 (simplify-path (build-path next 'up))))))
-
+  
   (define the-root-path (build-root-path))
-
+  
   ;; simplify-url-path: url -> (listof string)
   ;; take the dots out of the url-path
   ;; Note: we simplify the url path relative to a hypothetical root,
@@ -56,7 +57,7 @@
                            (path/param-path path-elt)
                            path-elt))
                      (url-path uri))))))))
-
+  
   ;; path->list pth
   ;; convert an absolute path to a list of strings
   (define (path->list pth)
@@ -66,8 +67,8 @@
          (if base
              (cons (path->string name) (path->list base))
              '())))))
-
-
+  
+  
   ;; url->servlet-path: path url -> (values (union path #f)
   ;;                                        (union (listof url->string) #f)
   ;;                                        (union (listof string) #f))
@@ -82,20 +83,20 @@
                [servlet-path '()]
                [path-list (simplify-url-path uri)])
       #;(printf "~S~n" `(loop ,base-path ,servlet-path ,path-list))
-      (if
-       (null? path-list)
-       (values #f #f #f)
-       (let* ([next-path-segment (car path-list)]
-              [new-base (build-path base-path next-path-segment)])
-         #;(printf "   new-base = ~s~n" new-base)
-         (cond
-           [(file-exists? new-base)
-            (values new-base
-                    (reverse (cons next-path-segment servlet-path))
-                    (cdr path-list))]
-           [else (loop new-base
-                       (cons next-path-segment servlet-path)
-                       (cdr path-list))])))))
+      (match path-list
+        [(list)
+         (values #f #f #f)]
+        [(list-rest next-path-segment rest-of-path)
+         (let ([new-base (build-path base-path next-path-segment)])
+           #;(printf "   new-base = ~s~n" new-base)
+           (cond
+             [(file-exists? new-base)
+              (values new-base
+                      (reverse (list* next-path-segment servlet-path))
+                      rest-of-path)]
+             [else (loop new-base
+                         (list* next-path-segment servlet-path)
+                         rest-of-path)]))])))
   
   ;; split-url-path: url url -> (union (listof string) #f)
   ;; the first url's path is a prefix of the path of the second

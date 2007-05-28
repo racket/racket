@@ -122,14 +122,26 @@
                (request-method req))))))
     
     ; same-servlet? : url? url? -> boolean?
-    (define (same-servlet? u v)
+    (define (same-servlet? req ses)
       (define (abstract-url u)
-        (path->string
-         (apply build-path
-                (map path/param-path
-                     (url-path u)))))
-      (string=? (abstract-url u)
-                (abstract-url v)))
+        (map path/param-path
+             (url-path u)))
+      (define ans
+      (let loop ([rp (abstract-url req)]
+                 [sp (abstract-url ses)])
+        (match sp
+          [(list)
+           #t]
+          [(list-rest s sp)
+           (match rp
+             [(list)
+              #f]
+             [(list-rest r rp)
+              (if (string=? s r)
+                  (loop rp sp)
+                  #f)])])))
+      (myprint "~S => ~S~n" `(same-servlet? ,(url->string req) ,(url->string ses)) ans)
+      ans)
     
     ;; resume-session: number connection request
     (define (resume-session ses-id conn req)
@@ -137,8 +149,7 @@
       (cond
         [(lookup-session ses-id)
          => (lambda (ses)
-              (if (same-servlet? (request-uri req)
-                                 (session-url ses))
+              (if (same-servlet? (request-uri req) (session-url ses))
                   (parameterize ([current-custodian (session-cust ses)]
                                  [current-session ses])
                     (with-handlers ([void
@@ -147,7 +158,7 @@
                                         conn
                                         (responders-servlet (request-uri req) the-exn)
                                         (request-method req)))])
-                      #;(printf "session-handler ~S~n" (session-handler ses))
+                      (myprint "session-handler ~S~n" (session-handler ses))
                       (output-response conn
                                        ((session-handler ses) req))))
                   (begin-session conn req)))]

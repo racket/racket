@@ -59,7 +59,7 @@
   (define dispatch
     (sequencer:make
      (filter:make
-      #rx"\\.ss$"
+      #rx"\\.ss"
       (servlets2:make #:htdocs-path htdocs-path
                       #:timeouts-servlet-connection 86400
                       #:responders-servlet-loading responders-servlet-loading
