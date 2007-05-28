@@ -17,7 +17,6 @@
 
   (define tests
     (list
-     
      (make-test "" 
                 #f
                 (regexp "module-language: the definitions window must contain a module"))
@@ -103,7 +102,21 @@
                       (provide s)
                       (define-syntax (s stx) e)))
       (format "~s ~s" '(require m) 's)
-      ". module-lang-test-tmp2.ss:1:70: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")))
+      #rx"module-lang-test-tmp2.ss:1:70: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1$")
+    
+     (make-test (format "~s"
+                        '(module tmp mzscheme
+                           (provide (rename app #%app)
+                                    (rename -current-namespace current-namespace)
+                                    (rename -module->namespace module->namespace))
+                           (define x 2)
+                           (define -current-namespace error)
+                           (define -module->namespace error)
+                           (define-syntax app
+                             (syntax-rules ()
+                               ((app . x) '(app . x))))))
+                "x"
+                "2")))
   
   ;; set up for tests that need external files
   (call-with-output-file (build-path this-dir "module-lang-test-tmp.ss")
