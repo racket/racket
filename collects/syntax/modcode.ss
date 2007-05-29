@@ -40,7 +40,7 @@
 
   (define (read-one path src?)
     (let ([p ((moddep-current-open-input-file) path)])
-      (when src? (port-count-lines! p) (strip-shell-command-start p))
+      (when src? (port-count-lines! p))
       (dynamic-wind
         void
         (lambda ()

@@ -181,6 +181,8 @@ scheme_remove_all_finalization
 scheme_dont_gc_ptr
 scheme_gc_ptr_ok
 scheme_collect_garbage
+scheme_malloc_immobile_box
+scheme_free_immobile_box
 scheme_make_bucket_table
 scheme_add_to_table
 scheme_change_in_table

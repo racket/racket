@@ -156,7 +156,7 @@
                (when (and (> w 5) (> h 5))
                  (draw-button-label dc label 0 0 w h mouse-over? mouse-grabbed? font))]))))
       
-      (super-new [style '(transparent)])
+      (super-new [style '(transparent no-focus)])
       (update-min-sizes)
       (stretchable-width #f)
       (stretchable-height #f)))

@@ -659,9 +659,9 @@ START_XFORM_SKIP;
 @INCLUDE wxs_draw.xci
 
 // Also in wxWindow:
-@ m "get-text-extent" : void[]/CastToSO//spAnything MyTextExtent(mzstring,wxFont^=NULL,bool=FALSE,nnint=0); : : /CheckStringIndex["get-text-extent".0.3]
-@ Q "get-char-height" : double GetCharHeight();
-@ Q "get-char-width" : double GetCharWidth();
+@ m "get-text-extent" : void[]/CastToSO//spAnything MyTextExtent(mzstring,wxFont^=NULL,bool=FALSE,nnint=0); : : /CheckStringIndex["get-text-extent".0.3]|CheckOk[METHODNAME("dc<%>","get-text-extent")]
+@ Q "get-char-height" : double GetCharHeight(); : : /CheckOk[METHODNAME("dc<%>","get-char-height")]
+@ Q "get-char-width" : double GetCharWidth(); : : /CheckOk[METHODNAME("dc<%>","get-char-width")]
 
 @MACRO rZERO = return 0;
 @MACRO rFALSE = return FALSE;
@@ -718,7 +718,7 @@ START_XFORM_SKIP;
 @ Q "end-doc" : void EndDoc(); : : /CheckOk[METHODNAME("dc<%>","end-doc-line")]
 @ Q "end-page" : void EndPage(); : : /CheckOk[METHODNAME("dc<%>","end-page")]
 
-@ "glyph-exists?" : bool GlyphAvailable(mzchar,wxFont^=NULL)
+@ "glyph-exists?" : bool GlyphAvailable(mzchar,wxFont^=NULL) : : /CheckOk[METHODNAME("dc<%>","glyph-exists?")]
 
 @END
 

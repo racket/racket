@@ -424,6 +424,16 @@
                 (quote-syntax no!))
            ''ok)
 
+(test-comp '(values 10)
+           10)
+(test-comp '(let ([x (values 10)])
+              (values x))
+           10)
+(test-comp '(let ([x (random)])
+              (values x))
+           '(let ([x (random)])
+              x))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions
 

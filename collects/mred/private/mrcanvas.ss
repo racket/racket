@@ -92,7 +92,8 @@
       (sequence 
 	(let ([cwho '(constructor canvas)])
 	  (check-container-parent cwho parent)
-	  (check-style cwho #f '(border hscroll vscroll gl deleted control-border combo no-autoclear transparent resize-corner) 
+	  (check-style cwho #f '(border hscroll vscroll gl deleted control-border combo no-autoclear 
+                                        transparent resize-corner no-focus)
 		       style)
 	  (check-callback cwho paint-callback)
 	  (check-label-string/false cwho label)))

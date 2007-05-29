@@ -9,7 +9,7 @@ A @defterm{hash table} implements a maping from keys to values, where
 both keys can values can be arbitrary Scheme values, and access and
 update to the tabel are normally constant-time operations. Keys are
 compared using @scheme[equal?] or @scheme[eq?], depending on whether
-the hash table is created with @scheme['equal] or @scheme['eq].
+the hash table is created with the @scheme['equal] flag.
 
 @examples[
 (define ht (make-hash-table 'equal))
@@ -35,7 +35,7 @@ key--value pair. Literal hash tables are immutable.
 
 @refdetails["mz:parse-hashtable"]{the syntax of hash table literals}
 
-A hash table can optionally retain its keys @defterm{weakly}, so the
+A hash table can optionally retain its keys @defterm{weakly}, so each
 mapping is retained only so long as the key is retained elsewhere.
 
 @examples[
@@ -45,12 +45,12 @@ mapping is retained only so long as the key is retained elsewhere.
 (eval:alts (hash-table-count ht) 0)
 ]
 
-Beware that a weak hash table retains its values strongly, as long as
-the corresponding key is accessible. This creates a catch-22
-dependency in the case that a value refers back to its key, so that
-the mapping is retained permanently. To break the cycle, map the key
-to an @seclink["ephemerons"]{ephemeron} that pair the value with its
-key (in addition to the implicit pairing of the hash table).
+Beware that even a weak hash table retains its values strongly, as
+long as the corresponding key is accessible. This creates a catch-22
+dependency when a value refers back to its key, so that the mapping is
+retained permanently. To break the cycle, map the key to an
+@seclink["ephemerons"]{ephemeron} that pair the value with its key (in
+addition to the implicit pairing of the hash table).
 
 @examples[
 (define ht (make-hash-table 'weak))
@@ -67,3 +67,5 @@ key (in addition to the implicit pairing of the hash table).
 (collect-garbage)
 (eval:alts (hash-table-count ht) 0)
 ]
+
+@refdetails["mz:hashtables"]{hash tables and hash-table procedures}

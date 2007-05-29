@@ -775,7 +775,8 @@ void *scheme_enlarge_runstack(long size, void *(*k)())
 
 int scheme_omittable_expr(Scheme_Object *o, int vals)
      /* Checks whether the bytecode `o' returns `vals' values with no
-        side-effects. -1 for vals means that any return count is ok. */
+        side-effects and without pushing and using continuation marks. 
+        -1 for vals means that any return count is ok. */
 {
   Scheme_Type vtype;
 
@@ -2291,8 +2292,13 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
     if (le)
       return le;
   }
-  
-  info->size += 1;
+
+  if (SAME_OBJ(scheme_values_func, app->rator)
+      && scheme_omittable_expr(app->rand, 1)) {
+    info->preserves_marks = 1;
+    info->single_result = 1;
+    return app->rand;
+  }
 
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);
@@ -7376,7 +7382,7 @@ Scheme_Object *scheme_load_compiled_stx_string(const char *str, long len)
 
   port = scheme_make_sized_byte_string_input_port(str, -len);
 
-  expr = scheme_internal_read(port, NULL, 1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
+  expr = scheme_internal_read(port, NULL, 1, 0, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
 
   expr = _scheme_eval_compiled(expr, scheme_get_env(NULL));
 

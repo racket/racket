@@ -124,6 +124,7 @@ typedef short int WXTYPE;
 #define wxHORIZONTAL_LABEL   0x00400000
 #define wxTRANSPARENT_WIN    0x00800000
 #define wxCOMBO_SIDE         0x04000000
+#define wxNEVER_FOCUS        0x01000000
 
 enum {
 // Text font families

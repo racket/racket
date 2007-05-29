@@ -957,6 +957,32 @@
 (err/rt-test (read/recursive (open-input-string ";") #\. #f) exn:fail:read?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Some hash-table reading trickyness with readtables
+
+(test #hash((apple . (red round))
+            (banana . (yellow long)))
+      values
+      (parameterize ([current-readtable
+                      (make-readtable #f
+                                      #\! 'terminating-macro (lambda (ch port . args)
+                                                               (read/recursive port)))])
+        (read (open-input-string
+               "!#hash((apple . (red round)) (banana . (yellow long)))"))))
+
+
+(test #hash((apple . (red round))
+            (banana . (yellow long)))
+      values
+      (parameterize ([current-readtable
+                      (make-readtable #f
+                                      #\! 'terminating-macro (lambda (ch port . args)
+                                                               (read/recursive port))
+                                      #\* 'terminating-macro (lambda args
+                                                               (make-special-comment #f)))])
+        (read (open-input-string
+               "!#hash((apple . (red round)) * (banana . (yellow long)))"))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 

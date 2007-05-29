@@ -312,6 +312,8 @@ void *(*GC_resolve)(void *p);
 void (*GC_mark)(const void *p);
 void (*GC_fixup)(void *p);
 #endif
+void **(*scheme_malloc_immobile_box)(void *p);
+void (*scheme_free_immobile_box)(void **b);
 /*========================================================================*/
 /*                             hash tables                                */
 /*========================================================================*/

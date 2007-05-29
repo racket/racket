@@ -56,14 +56,15 @@
                                     ...))]))))])))))
 
 (provide* ctype-sizeof ctype-alignof compiler-sizeof
-          malloc free end-stubborn-change
+          (unsafe malloc) (unsafe free) end-stubborn-change
           cpointer? ptr-equal? ptr-add (unsafe ptr-ref) (unsafe ptr-set!)
           ctype? make-ctype make-cstruct-type make-sized-byte-string
           _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
           _fixint _ufixint _fixnum _ufixnum
           _float _double _double*
           _bool _pointer _scheme _fpointer
-          (unsafe memcpy) (unsafe memmove) (unsafe memset))
+          (unsafe memcpy) (unsafe memmove) (unsafe memset)
+          (unsafe malloc-immobile-cell) (unsafe free-immobile-cell))
 
 (define-syntax define*
   (syntax-rules ()

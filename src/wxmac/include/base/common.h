@@ -103,6 +103,7 @@ typedef short int WXTYPE;
 #define wxRESIZE_CORNER    0x00200000
 #define wxCOMBO_SIDE       0x00400000
 #define wxAS_CONTROL       0x00800000
+#define wxNEVER_FOCUS      0x01000000
 
 # define wxFLAT            0x00000100
 

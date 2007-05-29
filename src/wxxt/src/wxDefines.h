@@ -427,6 +427,7 @@ enum {
 #define wxGL_CONTEXT                    0x02000000
 #define wxNO_AUTOCLEAR                  0x04000000
 #define wxCOMBO_SIDE                    0x08000000
+#define wxNEVER_FOCUS                   0x01000000
 
 #define wxALIGN_CENTRE		0
 #define wxALIGN_LEFT		1

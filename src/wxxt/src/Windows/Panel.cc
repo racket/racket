@@ -271,3 +271,8 @@ void wxPanel::OnDefaultAction(wxItem *WXUNUSED(item))
   }
 }
 
+Bool wxPanel::WantsFocus(void)
+{
+  return FALSE;
+}
+

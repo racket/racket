@@ -943,6 +943,9 @@ void wxWindow::SetFocus(void)
   if (IsGray() || !IsShown())
     return;
 
+  if (!WantsFocus())
+    return;
+
   if (misc_flags & FOCUS_FLAG)
     /* focus is already here */
     return;
@@ -953,20 +956,6 @@ void wxWindow::SetFocus(void)
     if (wxSubType(win->__type, wxTYPE_FRAME))
       break;
   }
-  
-#if 0
-  /* MATTHEW: Is the frame currently active? */
-  if (win && (win->misc_flags & FOCUS_FLAG)) {
-    /* MATTHEW: Avoids trying to set focus when it's already there: */
-    if (XtIsSubclass(X->frame, xfwfCommonWidgetClass)) {
-      Time time = CurrentTime;
-      
-      XtCallAcceptFocus(X->frame, &time);
-      
-      return;
-    }
-  }
-#endif
 
   // if found: set focus
   if (win)
@@ -2196,8 +2185,9 @@ void wxWindow::WindowEventHandler(Widget w,
 		  f = (wxFrame *)(win->GetParent());
 		  f->OnMenuClick();
 		}
-	      } else if (!wxSubType(win->__type, wxTYPE_PANEL)) {
-		win->SetFocus();
+	      } else {
+                if (win->WantsFocus())
+                  win->SetFocus();
 	      }
 	    }
 
@@ -2364,6 +2354,11 @@ void wxWindow::WindowEventHandler(Widget w,
 #ifdef MZ_PRECISE_GC
   XFORM_RESET_VAR_STACK;
 #endif
+}
+
+Bool wxWindow::WantsFocus(void)
+{
+  return TRUE;
 }
 
 //-----------------------------------------------------------------------------

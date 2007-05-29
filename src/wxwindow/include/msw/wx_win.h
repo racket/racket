@@ -117,6 +117,8 @@ class wxWindow: public wxbWindow
 
   virtual wxWindow *FindFocusWindow();
 
+  virtual Bool AcceptsExplicitFocus();
+
   void InitEnable();
 };
 

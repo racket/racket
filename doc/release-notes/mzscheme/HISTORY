@@ -1,3 +1,10 @@
+Version 370.2
+Added make-sibling-inspector
+Added graph? argument to read[-syntax]/recursive
+Changed `#! ' and `#!/' to general comment forms
+Inside MzScheme: GC_{malloc,free}_immobile_box
+foreign.ss: added {malloc,free}-immobile-box
+
 Version 370, May 2007
 Memory management:
  Default build uses 3m instead of CGC

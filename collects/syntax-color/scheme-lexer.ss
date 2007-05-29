@@ -105,8 +105,8 @@
    [radix10 (:or "#d" "#D")]
    [radix16 (:or "#x" "#X")]
    
-   [script (:: "#!" (:* (:~ #\newline) (:: #\\ #\newline)))]
-   
+   [script (:: "#!" (:or #\space #\/) (:* (:~ #\newline) (:: #\\ #\newline)))]
+
    [identifier-delims (:or (char-set "\",'`()[]{};") scheme-whitespace)]
    [identifier-chars (:~ identifier-delims "\\" "|")]
    [identifier-escapes (:or (:: "\\" any-char)
@@ -273,6 +273,8 @@
      ["#;"
       (ret lexeme 'sexp-comment #f start-pos end-pos)]
      ["#|" (read-nested-comment 1 start-pos input-port)]
+     [script
+      (ret lexeme 'comment #f start-pos end-pos)]
      [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "(")
       (ret lexeme 'parenthesis '|(| start-pos end-pos)]
      [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "[")
@@ -283,7 +285,7 @@
       (ret lexeme 'parenthesis (string->symbol lexeme) start-pos end-pos)]
      [(:or "'" "`" "#'" "#`" "#&")
       (ret lexeme 'constant #f start-pos end-pos)]
-     [(:or script sharing reader-command "." "," ",@" "#," "#,@")
+     [(:or sharing reader-command "." "," ",@" "#," "#,@")
       (ret lexeme 'other #f start-pos end-pos)]
      [identifier
       (ret lexeme 'symbol #f start-pos end-pos)]

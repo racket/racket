@@ -255,6 +255,41 @@ Scheme_Object *scheme_make_offset_cptr(void *cptr, long offset, Scheme_Object *t
   return o;
 }
 
+#ifndef MZ_PRECISE_GC
+static Scheme_Hash_Table *immobiles;
+#endif
+
+void **scheme_malloc_immobile_box(void *p)
+{
+#ifdef MZ_PRECISE_GC
+  return GC_malloc_immobile_box(p);
+#else
+  void **b;
+
+  if (!immobiles) {
+    REGISTER_SO(immobiles);
+    immobiles = scheme_make_hash_table(SCHEME_hash_ptr);
+  }
+
+  b = scheme_malloc(sizeof(void *));
+  *b = p;
+  scheme_hash_set(immobiles, (Scheme_Object *)(void *)b, scheme_true);
+
+  return b;
+#endif
+}
+
+void scheme_free_immobile_box(void **b)
+{
+#ifdef MZ_PRECISE_GC
+  GC_free_immobile_box(b);
+#else
+  if (immobiles) {
+    scheme_hash_set(immobiles, (Scheme_Object *)(void *)b, NULL);
+  }
+#endif
+}
+
 static void (*save_oom)(void);
 
 static void raise_out_of_memory(void)

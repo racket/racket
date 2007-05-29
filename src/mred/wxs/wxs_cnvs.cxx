@@ -85,6 +85,7 @@ static Scheme_Object *canvasStyle_wxNO_AUTOCLEAR_sym = NULL;
 static Scheme_Object *canvasStyle_wxINVISIBLE_sym = NULL;
 static Scheme_Object *canvasStyle_wxTRANSPARENT_WIN_sym = NULL;
 static Scheme_Object *canvasStyle_wxRESIZE_CORNER_sym = NULL;
+static Scheme_Object *canvasStyle_wxNEVER_FOCUS_sym = NULL;
 
 static void init_symset_canvasStyle(void) {
   REMEMBER_VAR_STACK();
@@ -108,12 +109,14 @@ static void init_symset_canvasStyle(void) {
   canvasStyle_wxTRANSPARENT_WIN_sym = WITH_REMEMBERED_STACK(scheme_intern_symbol("transparent"));
   wxREGGLOB(canvasStyle_wxRESIZE_CORNER_sym);
   canvasStyle_wxRESIZE_CORNER_sym = WITH_REMEMBERED_STACK(scheme_intern_symbol("resize-corner"));
+  wxREGGLOB(canvasStyle_wxNEVER_FOCUS_sym);
+  canvasStyle_wxNEVER_FOCUS_sym = WITH_REMEMBERED_STACK(scheme_intern_symbol("no-focus"));
 }
 
 static int unbundle_symset_canvasStyle(Scheme_Object *v, const char *where) {
   SETUP_VAR_STACK(1);
   VAR_STACK_PUSH(0, v);
-  if (!canvasStyle_wxRESIZE_CORNER_sym) WITH_VAR_STACK(init_symset_canvasStyle());
+  if (!canvasStyle_wxNEVER_FOCUS_sym) WITH_VAR_STACK(init_symset_canvasStyle());
   Scheme_Object *i INIT_NULLED_OUT, *l = v;
   long result = 0;
   while (SCHEME_PAIRP(l)) {
@@ -129,6 +132,7 @@ static int unbundle_symset_canvasStyle(Scheme_Object *v, const char *where) {
   else if (i == canvasStyle_wxINVISIBLE_sym) { result = result | wxINVISIBLE; }
   else if (i == canvasStyle_wxTRANSPARENT_WIN_sym) { result = result | wxTRANSPARENT_WIN; }
   else if (i == canvasStyle_wxRESIZE_CORNER_sym) { result = result | wxRESIZE_CORNER; }
+  else if (i == canvasStyle_wxNEVER_FOCUS_sym) { result = result | wxNEVER_FOCUS; }
   else { break; } 
   l = SCHEME_CDR(l);
   }

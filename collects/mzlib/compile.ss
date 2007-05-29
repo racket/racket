@@ -25,7 +25,6 @@
 	 void
 	 (lambda ()
 	   (port-count-lines! in)
-	   (strip-shell-command-start in)
 	   (with-handlers ([void
 			    (lambda (exn)
 			      (with-handlers ([void void])

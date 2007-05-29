@@ -24,7 +24,7 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["data.scrbl"]
 
-@section{Programmer-Defined Datatypes}
+@include-section["define-struct.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "scheme-forms"]{Programs and Expressions}

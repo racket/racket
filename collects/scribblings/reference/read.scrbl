@@ -127,6 +127,8 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar["#|"]]{starts a block comment; see @secref["mz:parse-comment"]}
   @dispatch[@litchar["#;"]]{starts an S-expression comment; see @secref["mz:parse-comment"]}
   @dispatch[@litchar{#,}]{starts a syntax quote; see @secref["mz:parse-quote"]}
+  @dispatch[@litchar["#! "]]{starts a line comment; see @secref["mz:parse-comment"]}
+  @dispatch[@litchar["#!/"]]{starts a line comment; see @secref["mz:parse-comment"]}
   @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["mz:parse-quote"]}
   @dispatch[@litchar{#,}]{starts an syntax unquote or splicing unquote; see @secref["mz:parse-quote"]}
   @dispatch[@litchar["#~"]]{starts compiled code; see @secref["compilation"]}
@@ -500,12 +502,19 @@ encounters @litchar{#;}, it recursively reads one datum, and then
 discards the datum (continuing on to the next datum for the read
 result).
 
+A @litchar{#! } (which is @litchar{#!} followed by a space) or
+@litchar{#!/} starts a line comment that can be continued to the next
+line by ending a line with @litchar["\\"]. This form of comment
+normally appears at the beginning of a Unix script file.
+
 @reader-examples
 [
 "; comment"
 "#| a |# 1"
 "#| #| a |# 1 |# 2"
 "#;1 2"
+"#!/bin/sh"
+"#! /bin/sh"
 ]
 
 @subsection[#:tag "mz:parse-vector"]{Reading Vectors}

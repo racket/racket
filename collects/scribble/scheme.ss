@@ -248,6 +248,12 @@
                    p-color)
               (set! src-col (+ src-col 1))
               (hash-table-put! col-map src-col dest-col))]
+           [(box? (syntax-e c))
+            (advance c init-line!)
+            (out "#&" value-color)
+            (set! src-col (+ src-col 2))
+            (hash-table-put! col-map src-col dest-col)
+            ((loop init-line! +inf.0) (unbox (syntax-e c)))]
            [(hash-table? (syntax-e c))
             (advance c init-line!)
             (let ([equal-table? (hash-table? (syntax-e c) 'equal)])
@@ -444,5 +450,11 @@
                               (cons a b)
                               (list #f 1 col (+ 1 col)
                                     (+ 2 sep (syntax-span a) (syntax-span b)))))]
+     [(box? v)
+      (let ([a (syntax-ize (unbox v) (+ col 2))])
+        (datum->syntax-object #f
+                              (box a)
+                              (list #f 1 col (+ 1 col)
+                                    (+ 2 (syntax-span a)))))]
      [else
       (datum->syntax-object #f v (list #f 1 col (+ 1 col) 1))])))

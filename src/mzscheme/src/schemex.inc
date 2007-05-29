@@ -212,6 +212,8 @@
   scheme_extension_table->GC_mark = GC_mark;
   scheme_extension_table->GC_fixup = GC_fixup;
 #endif
+  scheme_extension_table->scheme_malloc_immobile_box = scheme_malloc_immobile_box;
+  scheme_extension_table->scheme_free_immobile_box = scheme_free_immobile_box;
   scheme_extension_table->scheme_make_bucket_table = scheme_make_bucket_table;
   scheme_extension_table->scheme_add_to_table = scheme_add_to_table;
   scheme_extension_table->scheme_change_in_table = scheme_change_in_table;

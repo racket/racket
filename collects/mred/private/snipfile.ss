@@ -249,7 +249,6 @@
   ;; build-input-port : string -> (values input any)
   ;; constructs an input port for the load handler. Also
   ;; returns a value representing the source of code read from the file.
-  ;; if the file's first lines begins with #!, skips the first chars of the file.
   (define (build-input-port filename)
     (let ([p (open-input-file filename)])
       (port-count-lines! p)
@@ -261,21 +260,6 @@
 		   (open-input-text-editor t))]
 		[else p])])
 	(port-count-lines! p) ; in case it's new
-	(let loop ()
-	  ;; Wrap regexp check with `with-handlers' in case the file
-	  ;;  starts with non-text input
-	  (when (with-handlers ([exn:fail? (lambda (x) #f)])
-		  (regexp-match-peek #rx"^#!" p))
-	    ;; Throw away chars/specials up to eol,
-	    ;;  and continue if line ends in backslash
-	    (let lloop ([prev #f])
-	      (let ([c (read-char-or-special p)])
-		(if (or (eof-object? c)
-			(eq? c #\return)
-			(eq? c #\newline))
-		    (when (eq? prev #\\)
-		      (loop))
-		    (lloop c))))))
 	(values p filename))))
 
   (define (open-input-graphical-file filename)

@@ -1,3 +1,9 @@
+Version 370.2
+
+Added 'no-focus style for canvas%
+
+----------------------------------------------------------------------
+
 Version 370, May 2007
 
 WXME file format changed to include a #reader() prefix

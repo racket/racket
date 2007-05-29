@@ -76,17 +76,6 @@
                         (open-input-text-editor t))]
                      [else p])])
         (port-count-lines! p)
-        (let loop ()
-          (when (with-handlers ([exn:fail? (lambda (x) #f)])
-                  (regexp-match-peek "^#!" p))
-            (let lloop ([prev #f])
-              (let ([c (read-char-or-special p)])
-                (if (or (eof-object? c)
-                        (eq? c #\return)
-                        (eq? c #\newline))
-                    (when (eq? prev #\\)
-                      (loop))
-                    (lloop c))))))
         (values p filename))))
   
   

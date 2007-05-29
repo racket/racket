@@ -17,6 +17,7 @@
            defs+int
            examples
            defexamples
+           as-examples
 
            current-int-namespace
            eval-example-string
@@ -150,6 +151,10 @@
                           (vector-set! v2 i (copy-value (vector-ref v i) ht))
                           (loop i))))
                     v2)]
+     [(box? v) (let ([v2 (box #f)])
+                 (hash-table-put! ht v v2)
+                 (set-box! v2 (copy-value (unbox v) ht))
+                 v2)]
      [else v]))
             
   (define (strip-comments s)
@@ -209,10 +214,13 @@
                      (make-paragraph null))))
 
   (define-syntax (schemedefinput* stx)
-    (syntax-case stx (eval-example-string define)
+    (syntax-case stx (eval-example-string define define-struct)
       [(_ (eval-example-string s))
        #'(schemeinput* (eval-example-string s))]
       [(_ (define . rest))
+       (syntax-case stx ()
+         [(_ e) #'(defspace (schemeblock e))])]
+      [(_ (define-struct . rest))
        (syntax-case stx ()
          [(_ e) #'(defspace (schemeblock e))])]
       [(_ (code:line (define . rest) . rest2))
@@ -266,5 +274,11 @@
   (define-syntax defexamples
     (syntax-rules ()
       [(_ e ...)
-       (titled-interaction example-title schemedefinput* e ...)])))
+       (titled-interaction example-title schemedefinput* e ...)]))
+
+  (define (as-examples t)
+    (make-table #f
+                (list
+                 (list example-title)
+                 (list (make-flow (list t)))))))
 

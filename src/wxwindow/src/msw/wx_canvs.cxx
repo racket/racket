@@ -178,10 +178,20 @@ Bool wxCanvas::Show(Bool show)
 
 wxWindow *wxCanvas::FindFocusWindow()
 {
-  if (!wxSubType(__type, wxTYPE_PANEL))
+  if (GetWindowStyleFlag() & wxNEVER_FOCUS)
+    return NULL;
+  else if (!wxSubType(__type, wxTYPE_PANEL))
     return IsShown() ? this : NULL;
   else
     return wxWindow::FindFocusWindow();
+}
+
+Bool wxCanvas::AcceptsExplicitFocus()
+{
+  if (GetWindowStyleFlag() & wxNEVER_FOCUS)
+    return FALSE;
+  else
+    return TRUE;
 }
 
 /*

@@ -250,6 +250,9 @@ void wxWindow::SetFocus(void)
   if (!IsShownTree())
     return;
 
+  if (!AcceptsExplicitFocus())
+    return;
+
   p = GetTopLevel();
   
   if (p && wxSubType(p->__type, wxTYPE_FRAME)
@@ -286,6 +289,11 @@ void wxWindow::SetFocus(void)
       }
     }
   }
+}
+
+Bool wxWindow::AcceptsExplicitFocus()
+{
+  return TRUE;
 }
 
 /* Enable state flags:

@@ -8,9 +8,7 @@
 The @seclink["to-scheme"]{little Scheme section} introduced some of
 Scheme's built-in datatype: numbers, booleans, strings, lists, and
 procedures. This section provides a more complete coverage of the
-built-in datatypes, and also introduces the @scheme[define-struct]
-form for creating your own datatypes. We defer a discussion of the
-class-based object system to @secref["classes"].
+built-in datatypes for simple forms of data.
 
 @local-table-of-contents[]
 
@@ -23,3 +21,6 @@ class-based object system to @secref["classes"].
 @include-section["pairs.scrbl"]
 @include-section["vectors.scrbl"]
 @include-section["hash-tables.scrbl"]
+@include-section["keywords.scrbl"]
+@include-section["boxes.scrbl"]
+@include-section["void-and-undef.scrbl"]

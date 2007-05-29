@@ -60,6 +60,7 @@ static void wxSetResizeCorner(wxCanvas *c, Bool v)
 @SYM "deleted" : wxINVISIBLE
 @SYM "transparent" : wxTRANSPARENT_WIN
 @SYM "resize-corner" : wxRESIZE_CORNER
+@SYM "no-focus" : wxNEVER_FOCUS
 @ENDSYMBOLS
 
 @INCLUDE wxs_ornt.xci

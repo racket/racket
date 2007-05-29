@@ -489,3 +489,10 @@ void wxCanvas::OnChar(wxKeyEvent *event)
     }
 }
 
+Bool wxCanvas::WantsFocus(void)
+{
+  if (GetWindowStyleFlag() & wxNEVER_FOCUS)
+    return FALSE;
+  else
+    return TRUE;
+}

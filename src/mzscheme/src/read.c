@@ -978,8 +978,11 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	  return honu_semicolon;
       } else {
 	while (((ch = scheme_getc_special_ok(port)) != '\n') && (ch != '\r')) {
-	  if (ch == EOF)
+	  if (ch == EOF) {
+            if (comment_mode & RETURN_FOR_COMMENT)
+              return NULL;
 	    return scheme_eof;
+          }
 	  if (ch == SCHEME_SPECIAL)
 	    scheme_get_ready_read_special(port, stxsrc, ht);
 	}
@@ -1524,6 +1527,43 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	    }
 	  }
 	  break;
+        case '!':
+          ch = scheme_getc_special_ok(port);
+          if ((ch == ' ') || (ch == '/')) {
+            /* line comment, with '\' as a continuation */
+            int was_backslash = 0, was_backslash_cr = 0, prev_backslash_cr;
+            while(1) {
+              prev_backslash_cr = was_backslash_cr;
+              was_backslash_cr = 0;
+              ch = scheme_getc_special_ok(port);
+              if (ch == EOF) {
+                break;
+              } else if (ch == SCHEME_SPECIAL) {
+		scheme_get_ready_read_special(port, stxsrc, ht);
+              } else if (ch == '\r') {
+                if (was_backslash) {
+                  was_backslash_cr = 1;
+                } else
+                  break;
+              } else if (ch == '\n') {
+                if (!was_backslash && !was_backslash_cr)
+                  break;
+              }
+              was_backslash = (ch == '\\');
+            }
+            if (comment_mode & RETURN_FOR_COMMENT)
+              return NULL;
+            goto start_over;
+          } else {
+            if (NOT_EOF_OR_SPECIAL(ch))
+              scheme_read_err(port, stxsrc, line, col, pos, 3, 
+                              ch, indentation, "read: bad syntax `#!%c'", ch);
+            else
+              scheme_read_err(port, stxsrc, line, col, pos, 2, 
+                              ch, indentation, "read: bad syntax `#!'", ch);
+            return NULL;
+          }
+          break;
 	default:
 	  if (!params->honu_mode) {
 	    int vector_length = -1;
@@ -1901,7 +1941,7 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
 
 Scheme_Object *
 _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int honu_mode, 
-		      int recur, int extra_char, Scheme_Object *init_readtable,
+		      int recur, int expose_comment, int extra_char, Scheme_Object *init_readtable,
 		      Scheme_Object *magic_sym, Scheme_Object *magic_val,
                       Scheme_Object *delay_load_info)
 {
@@ -1972,7 +2012,7 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int h
   do {
     v = read_inner_inner(port, stxsrc, ht, scheme_null, &params, 
 			 (RETURN_FOR_HASH_COMMENT 
-			  | (recur ? (RETURN_FOR_COMMENT | RETURN_FOR_SPECIAL_COMMENT) : 0)),
+			  | (expose_comment ? (RETURN_FOR_COMMENT | RETURN_FOR_SPECIAL_COMMENT) : 0)),
 			 extra_char, 
 			 (init_readtable 
 			  ? (SCHEME_FALSEP(init_readtable)
@@ -1996,7 +2036,7 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int h
 	*ht = NULL;
     }
 
-    if (!v && recur) {
+    if (!v && expose_comment) {
       /* Return to indicate comment: */
       v = scheme_alloc_small_object();
       v->type = scheme_special_comment_type;
@@ -2054,13 +2094,14 @@ static void *scheme_internal_read_k(void)
   }
 
   return (void *)_scheme_internal_read(port, stxsrc, p->ku.k.i1, p->ku.k.i2, 
-				       p->ku.k.i3, p->ku.k.i4, init_readtable,
+				       p->ku.k.i3 & 0x2, p->ku.k.i3 & 0x1, 
+                                       p->ku.k.i4, init_readtable,
 				       magic_sym, magic_val, delay_load_info);
 }
 
 Scheme_Object *
 scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cantfail, int honu_mode, 
-		     int recur, int pre_char, Scheme_Object *init_readtable, 
+		     int recur, int expose_comment, int pre_char, Scheme_Object *init_readtable, 
 		     Scheme_Object *magic_sym, Scheme_Object *magic_val,
                      Scheme_Object *delay_load_info)
 {
@@ -2074,7 +2115,7 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
     scheme_alloc_list_stack(p);
 
   if (cantfail) {
-    return _scheme_internal_read(port, stxsrc, crc, honu_mode, recur, -1, NULL, 
+    return _scheme_internal_read(port, stxsrc, crc, honu_mode, recur, expose_comment, -1, NULL, 
                                  magic_sym, magic_val, delay_load_info);
   } else {
     if (magic_sym)
@@ -2084,7 +2125,7 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
     p->ku.k.p2 = (void *)stxsrc;
     p->ku.k.i1 = crc;
     p->ku.k.i2 = honu_mode;
-    p->ku.k.i3 = recur;
+    p->ku.k.i3 = ((recur ? 0x2 : 0) | (expose_comment ? 0x1 : 0));
     p->ku.k.i4 = pre_char;
     p->ku.k.p3 = (void *)init_readtable;
     p->ku.k.p4 = (void *)magic_sym;
@@ -2096,12 +2137,12 @@ scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int ca
 
 Scheme_Object *scheme_read(Scheme_Object *port)
 {
-  return scheme_internal_read(port, NULL, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
+  return scheme_internal_read(port, NULL, -1, 0, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
 }
 
 Scheme_Object *scheme_read_syntax(Scheme_Object *port, Scheme_Object *stxsrc)
 {
-  return scheme_internal_read(port, stxsrc, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
+  return scheme_internal_read(port, stxsrc, -1, 0, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
 }
 
 Scheme_Object *scheme_resolve_placeholders(Scheme_Object *obj, int mkstx)

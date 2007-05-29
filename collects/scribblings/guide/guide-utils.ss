@@ -33,7 +33,3 @@
 
   (define (refsecref s)
     (make-element #f (list (secref s) " in " MzScheme))))
-
-
-
-

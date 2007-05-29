@@ -145,6 +145,7 @@ public:
     virtual void  Refresh(void);
     virtual void  ReleaseMouse(void);
     virtual void  SetFocus(void);
+    virtual Bool  WantsFocus(void);
     virtual void  SetUserEditMode(Bool edit) { user_edit_mode = edit; }
     virtual Bool  Show(Bool show);
     // event handling

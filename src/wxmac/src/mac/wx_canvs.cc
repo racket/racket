@@ -154,7 +154,6 @@ void wxCanvas::InitDefaults(wxGLConfig *gl_cfg)
   }
 
   if (!(cStyle & wxFLAT)) {
-    cStyle |= wxHIDE_MENUBAR;
     CreatePaintControl(-1, !(cStyle & wxTRANSPARENT_WIN));
   }
 
@@ -734,7 +733,7 @@ void wxCanvas::ClientToLogical(int* x, int* y) // mac platform only; testing
 
 Bool wxCanvas::WantsFocus(void)
 {
-  if (cStyle & wxAS_CONTROL)
+  if (cStyle & (wxAS_CONTROL | wxNEVER_FOCUS))
     return FALSE;
   else
     return !cHidden;
@@ -742,7 +741,9 @@ Bool wxCanvas::WantsFocus(void)
 
 Bool wxCanvas::AcceptsExplicitFocus(void)
 {
-  if (cStyle & wxAS_CONTROL)
+  if (cStyle & wxNEVER_FOCUS)
+    return FALSE;
+  else if (cStyle & wxAS_CONTROL)
     return wxAllControlsWantFocus();
   else
     return wxbCanvas::AcceptsExplicitFocus();

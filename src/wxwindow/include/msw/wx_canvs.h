@@ -70,6 +70,8 @@ class wxCanvas: public wxbCanvas
 
   virtual void GetSize(int *width, int *height);
 
+  virtual Bool AcceptsExplicitFocus();
+
  private:
   wxColour *bgcol;
 };

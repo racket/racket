@@ -438,8 +438,6 @@
 				  "file appears to have graphical syntax (try gmzc): ~a"
 				  path))
 			 p)))])
-	  ;; Skip leading "#!:
-	  (strip-shell-command-start p)
 	  p))
 
       ;;-------------------------------------------------------------------------------

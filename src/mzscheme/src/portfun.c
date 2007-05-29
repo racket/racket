@@ -364,7 +364,7 @@ scheme_init_port_fun(Scheme_Env *env)
   scheme_add_global_constant("read/recursive",
 			     scheme_make_noncm_prim(read_recur_f,
 						    "read/recursive",
-						    0, 3),
+						    0, 4),
 			     env);
   scheme_add_global_constant("read-syntax",
 			     scheme_make_noncm_prim(read_syntax_f,
@@ -374,7 +374,7 @@ scheme_init_port_fun(Scheme_Env *env)
   scheme_add_global_constant("read-syntax/recursive",
 			     scheme_make_noncm_prim(read_syntax_recur_f,
 						    "read-syntax/recursive",
-						    0, 4),
+						    0, 5),
 			     env);
   scheme_add_global_constant("read-honu",
 			     scheme_make_noncm_prim(read_honu_f,
@@ -3039,10 +3039,11 @@ static Scheme_Object *sch_default_read_handler(void *ignore, int argc, Scheme_Ob
   else
     src = NULL;
 
-  return scheme_internal_read(argv[0], src, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
+  return scheme_internal_read(argv[0], src, -1, 0, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
 }
 
-static int extract_recur_args(const char *who, int argc, Scheme_Object **argv, int delta, Scheme_Object **_readtable)
+static int extract_recur_args(const char *who, int argc, Scheme_Object **argv, int delta, 
+                              Scheme_Object **_readtable, int *_recur_graph)
 {
   int pre_char = -1;
 
@@ -3059,6 +3060,9 @@ static int extract_recur_args(const char *who, int argc, Scheme_Object **argv, i
 	scheme_wrong_type(who, "readtable or #f", delta + 2, argc, argv);
       }
       *_readtable = readtable;
+      if (argc > delta + 3) {
+        *_recur_graph = SCHEME_TRUEP(argv[delta + 3]);
+      }
     }
   }
 
@@ -3068,7 +3072,7 @@ static int extract_recur_args(const char *who, int argc, Scheme_Object **argv, i
 static Scheme_Object *do_read_f(const char *who, int argc, Scheme_Object *argv[], int honu_mode, int recur)
 {
   Scheme_Object *port, *readtable = NULL;
-  int pre_char = -1;
+  int pre_char = -1, recur_graph = recur;
   Scheme_Input_Port *ip;
 
   if (argc && !SCHEME_INPUT_PORTP(argv[0]))
@@ -3080,7 +3084,7 @@ static Scheme_Object *do_read_f(const char *who, int argc, Scheme_Object *argv[]
     port = CURRENT_INPUT_PORT(scheme_current_config());
 
   if (recur && !honu_mode) {
-    pre_char = extract_recur_args(who, argc, argv, 0, &readtable);
+    pre_char = extract_recur_args(who, argc, argv, 0, &readtable, &recur_graph);
   }
 
   ip = scheme_input_port_record(port);
@@ -3093,7 +3097,9 @@ static Scheme_Object *do_read_f(const char *who, int argc, Scheme_Object *argv[]
     if (port == scheme_orig_stdin_port)
       scheme_flush_orig_outputs();
 
-    return scheme_internal_read(port, NULL, -1, 0, honu_mode, recur, pre_char, readtable, 
+    return scheme_internal_read(port, NULL, -1, 0, honu_mode, 
+                                recur_graph, recur, 
+                                pre_char, readtable, 
                                 NULL, NULL, NULL);
   }
 }
@@ -3121,7 +3127,7 @@ static Scheme_Object *read_honu_recur_f(int argc, Scheme_Object *argv[])
 static Scheme_Object *do_read_syntax_f(const char *who, int argc, Scheme_Object *argv[], int honu_mode, int recur)
 {
   Scheme_Object *port, *readtable = NULL;
-  int pre_char = -1;
+  int pre_char = -1, recur_graph = recur;
   Scheme_Input_Port *ip;
 
   if ((argc > 1) && !SCHEME_INPUT_PORTP(argv[1]))
@@ -3133,7 +3139,7 @@ static Scheme_Object *do_read_syntax_f(const char *who, int argc, Scheme_Object 
     port = CURRENT_INPUT_PORT(scheme_current_config());
 
   if (recur && !honu_mode) {
-    pre_char = extract_recur_args(who, argc, argv, 1, &readtable);
+    pre_char = extract_recur_args(who, argc, argv, 1, &readtable, &recur_graph);
   }
   
   ip = scheme_input_port_record(port);
@@ -3160,7 +3166,9 @@ static Scheme_Object *do_read_syntax_f(const char *who, int argc, Scheme_Object 
     if (port == scheme_orig_stdin_port)
       scheme_flush_orig_outputs();
 
-    return scheme_internal_read(port, src, -1, 0, honu_mode, recur, pre_char, readtable, 
+    return scheme_internal_read(port, src, -1, 0, honu_mode, 
+                                recur, recur_graph,
+                                pre_char, readtable, 
                                 NULL, NULL, NULL);
   }
 }
@@ -4350,7 +4358,7 @@ static Scheme_Object *do_load_handler(void *data)
   Scheme_Env *genv;
   int save_count = 0, got_one = 0;
 
-  while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, 
+  while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, 0, -1, NULL, 
                                      NULL, NULL, lhd->delay_load_info))
 	 && !SCHEME_EOFP(obj)) {
     save_array = NULL;
@@ -4428,7 +4436,7 @@ static Scheme_Object *do_load_handler(void *data)
       }
 
       /* Check no more expressions: */
-      d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
+      d = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
       if (!SCHEME_EOFP(d)) {
         Scheme_Input_Port *ip;
         ip = scheme_input_port_record(port);
@@ -4504,7 +4512,7 @@ static Scheme_Object *do_load_handler(void *data)
 static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *port, *name, *expected_module, *v;
-  int ch, use_delay_load;
+  int use_delay_load;
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Config *config;
   LoadHandlerData *lhd;
@@ -4537,25 +4545,6 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
 	|| (SCHEME_CHAR_STR_VAL(argv[0])[len - 2] != 'z')
 	|| (SCHEME_CHAR_STR_VAL(argv[0])[len - 1] != 'o'))
       scheme_count_lines(port);
-  }
-
-  /* Skip over #! at beginning of file */
-  if ((ch = scheme_peek_byte(port)) == '#') {
-    if ((ch = scheme_peek_byte_skip(port, scheme_make_integer(1), NULL)) == '!') {
-      int oldch;
-      scheme_get_byte(port);
-      scheme_get_byte(port);
-    eol_loop:
-      oldch = 0;
-      while (1) {
-	ch = scheme_getc(port);
-	if (ch == EOF || ch == '\n' || ch == '\r')
-	  break;
-	oldch = ch;
-      }
-      if (oldch == '\\')
-	goto eol_loop;
-    }
   }
 
   config = scheme_current_config();

@@ -55,6 +55,7 @@ typedef struct {
 } Nack_Guard_Evt;
 
 static Scheme_Object *make_inspector(int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_sibling_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *inspector_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_code_inspector(int argc, Scheme_Object *argv[]);
@@ -455,6 +456,11 @@ scheme_init_struct (Scheme_Env *env)
 						      "make-inspector",
 						      0, 1),
 			     env);
+  scheme_add_global_constant("make-sibling-inspector",
+			     scheme_make_prim_w_arity(make_sibling_inspector,
+						      "make-sibling-inspector",
+						      0, 1),
+			     env);
   scheme_add_global_constant("inspector?",
 			     scheme_make_prim_w_arity(inspector_p,
 						      "inspector?",
@@ -555,6 +561,22 @@ static Scheme_Object *make_inspector(int argc, Scheme_Object **argv)
       scheme_wrong_type("make-inspector", "inspector", 0, argc, argv);
   } else
     superior = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+
+  return scheme_make_inspector(superior);
+}
+
+static Scheme_Object *make_sibling_inspector(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *superior;
+
+  if (argc) {
+    superior = argv[0];
+    if (!SAME_TYPE(SCHEME_TYPE(superior), scheme_inspector_type))
+      scheme_wrong_type("make-sibling-inspector", "inspector", 0, argc, argv);
+  } else
+    superior = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+
+  superior = (Scheme_Object *)((Scheme_Inspector *)superior)->superior;
 
   return scheme_make_inspector(superior);
 }

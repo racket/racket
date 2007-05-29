@@ -47,7 +47,7 @@ Scheme_Object *scheme_eval_compiled_sized_string_with_magic(const char *str, int
   if (!env)
     env = scheme_get_env(NULL);
     
-  expr = scheme_internal_read(port, NULL, 1, 1, 0, 0, -1, NULL, 
+  expr = scheme_internal_read(port, NULL, 1, 1, 0, 0, 0, -1, NULL, 
                               magic_sym, magic_val,
                               NULL);
 

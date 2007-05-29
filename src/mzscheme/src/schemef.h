@@ -385,6 +385,9 @@ MZ_EXTERN void GC_mark(const void *p);
 MZ_EXTERN void GC_fixup(void *p);
 #endif
 
+MZ_EXTERN void **scheme_malloc_immobile_box(void *p);
+MZ_EXTERN void scheme_free_immobile_box(void **b);
+
 /*========================================================================*/
 /*                             hash tables                                */
 /*========================================================================*/
