@@ -7,6 +7,7 @@
   
   (provide/contract
    [find-binding (symbol? (listof (cons/c symbol? string?)) . -> . (or/c serializable? false/c))]
+   [extend-url-query (url? symbol? string? . -> . url?)]
    [read/string (string? . -> . serializable?)]
    [write/string (serializable? . -> . string?)]
    [url->servlet-path ((path? url?) . ->* . ((or/c path? false/c) (or/c (listof string?) false/c) (or/c (listof string?) false/c)))]
@@ -21,6 +22,18 @@
       [(eqv? key (caar qry))
        (read/string (cdar qry))]
       [else (find-binding key (cdr qry))]))
+  
+  (define (extend-url-query uri key val)
+    (make-url
+     (url-scheme uri)
+     (url-user uri)
+     (url-host uri)
+     (url-port uri)
+     #t
+     (url-path uri)
+     (list* (cons key val)
+            (url-query uri))
+     (url-fragment uri)))
   
   (define (read/string str)
     (read (open-input-string str)))

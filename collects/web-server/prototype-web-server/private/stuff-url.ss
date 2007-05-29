@@ -12,7 +12,6 @@
   (provide/contract
    [stuff-url (serializable? url? . -> . url?)]
    [stuffed-url? (url? . -> . boolean?)]
-   [extend-url-query (url? symbol? string? . -> . url?)]
    [unstuff-url (url? . -> . serializable?)])
   
   ; XXX Abstract this
@@ -44,19 +43,7 @@
     (let* ([qry (url-query uri)]
            [l-code (find-binding 'c qry)])
       (and l-code
-           #t)))
-  
-  (define (extend-url-query uri key val)
-    (make-url
-     (url-scheme uri)
-     (url-user uri)
-     (url-host uri)
-     (url-port uri)
-     #t
-     (url-path uri)
-     (list* (cons key val)
-            (url-query uri))
-     (url-fragment uri)))
+           #t)))  
   
   ;; unstuff-url: url -> serial
   ;; decode from the url and reconstruct the serial

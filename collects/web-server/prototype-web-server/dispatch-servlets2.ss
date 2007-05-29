@@ -21,29 +21,7 @@
   (define myprint #;printf (lambda _ (void)))
   
   (define top-cust (current-custodian))
-  
-  ;; Parameter Parsing
-  
-  ;; encodes a simple number:
-  (define (match-url-params x) (regexp-match #rx"([0-9]+)" x))
-  
-  ;; resume-session? url -> (union number #f)
-  ;; Determine if the url encodes a session-id and extract it
-  (define (resume-session? a-url)
-    (myprint "resume-session?: url-string = ~s~n" (url->string a-url))
-    (let ([k-params (filter match-url-params
-                            (apply append
-                                   (map path/param-param (url-path a-url))))])
-      (myprint "resume-session?: ~S~n" k-params)
-      (if (empty? k-params)
-          #f
-          (match (match-url-params (first k-params))
-            [(list _ n)
-             (myprint "resume-session?: Found ~a~n" n)
-             (string->number n)]
-            [_
-             #f]))))
-  
+    
   (define make-servlet-namespace
     (make-make-servlet-namespace
      #:to-be-copied-module-specs
@@ -84,7 +62,7 @@
                                   (responders-servlet-loading uri the-exn)
                                   (request-method req)))])
                 (cond
-                  [(resume-session? uri)
+                  [(extract-session uri)
                    => (lambda (session-id)
                         (resume-session session-id conn req))]
                   [else

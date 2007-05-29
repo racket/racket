@@ -1,5 +1,7 @@
 (module session mzscheme
   (require (lib "contract.ss")
+           (lib "list.ss")
+           (lib "plt-match.ss")
            (lib "url.ss" "net")
            (lib "request-structs.ss" "web-server")
            (lib "response.ss" "web-server"))
@@ -13,6 +15,7 @@
                     [namespace namespace?]
                     [servlet (request? . -> . response?)]
                     [url url?])]
+   [extract-session (url? . -> . (or/c number? false/c))]
    [lookup-session (number? . -> . (or/c session? false/c))]
    [new-session (custodian? namespace? url? . -> . session?)])
   
@@ -46,6 +49,21 @@
   ;; encode-session: url number -> url
   (define (encode-session a-url ses-id)
     (insert-param a-url (number->string ses-id)))
+    
+  ;; extract-session url -> (union number #f)
+  ;; Determine if the url encodes a session-id and extract it
+  (define (extract-session a-url)
+    (define (match-url-params x) (regexp-match #rx"([0-9]+)" x))
+    (let ([k-params (filter match-url-params
+                            (apply append
+                                   (map path/param-param (url-path a-url))))])
+      (if (empty? k-params)
+          #f
+          (match (match-url-params (first k-params))
+            [(list _ n)
+             (string->number n)]
+            [_
+             #f]))))
   
   ;; insert-param: url string -> string
   ;; add a path/param to the path in a url
