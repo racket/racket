@@ -46,20 +46,18 @@
   ;; send/suspend/url: (url -> response) -> request
   ;; like send/suspend except the continuation is encoded in the url
   (define (send/suspend/url page-maker)
-    (let ([ses (current-session)])
-      (send/suspend0
-       (lambda (k)
-         (page-maker
-          (stuff-url (serialize k)
-                     (session-url ses)))))))
+    (send/suspend0
+     (lambda (k)
+       (page-maker
+        (stuff-url (serialize k)
+                   (session-url (current-session)))))))
   
   ; XXX Changing embedding to be a param
   (define embed-label 'superkont)  
   (define (embed-proc/url k-url proc)
-    (define ses (current-session))
     (define superkont-url
       (stuff-url (serialize proc)                                              
-                 (session-url ses)))
+                 (session-url (current-session))))
     (define result-uri
       (extend-url-query k-url embed-label 
                         (url->string superkont-url)))
@@ -72,10 +70,9 @@
     (define binds (url-query req-url))
     (define maybe-embedding (assq embed-label binds))
     (if maybe-embedding
-        (let* ([superkont-url (string->url (cdr maybe-embedding))]
-               [proc (deserialize 
-                      (unstuff-url
-                       superkont-url))])
+        (let ([proc (deserialize 
+                     (unstuff-url
+                      (string->url (cdr maybe-embedding))))])
           (proc request))
         (error 'send/suspend/dispatch "No ~a: ~S!" embed-label binds)))
   

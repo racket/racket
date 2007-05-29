@@ -5,17 +5,16 @@
            (lib "response.ss" "web-server"))
   (provide current-session)
   
-  (define-struct session (id cust namespace servlet url mod-path))
+  (define-struct session (id cust namespace servlet url))
   
   (provide/contract
    [struct session ([id number?]
                     [cust custodian?]
                     [namespace namespace?]
                     [servlet (request? . -> . response?)]
-                    [url url?]
-                    [mod-path path?])]
+                    [url url?])]
    [lookup-session (number? . -> . (union session? boolean?))]
-   [new-session (custodian? namespace? url? path? . -> . session?)])
+   [new-session (custodian? namespace? url? . -> . session?)])
   
   (define current-session (make-parameter #f))
   
@@ -29,15 +28,14 @@
   (define the-session-table (make-hash-table))
   
   ;; new-session: namespace path -> session
-  (define (new-session cust ns uri mod-path)
+  (define (new-session cust ns uri)
     (let* ([new-id (new-session-id)]
            [ses (make-session
                  new-id
                  cust
                  ns
                  (lambda (req) (error "session not initialized"))
-                 (encode-session uri new-id)
-                 mod-path)])
+                 (encode-session uri new-id))])
       (hash-table-put! the-session-table new-id ses)
       ses))
   

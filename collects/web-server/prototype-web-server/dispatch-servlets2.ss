@@ -103,7 +103,7 @@
               (parameterize ([current-directory (directory-part a-path)])
                 (let* ([cust (make-custodian top-cust)]
                        [ns (make-servlet-namespace)]
-                       [ses (new-session cust ns (make-session-url uri url-servlet-path) a-path)])
+                       [ses (new-session cust ns (make-session-url uri url-servlet-path))])
                   (parameterize ([current-custodian cust]
                                  [current-namespace ns]
                                  [current-session ses])
