@@ -7,7 +7,7 @@
            "private/configuration-table-structs.ss"
            "private/util.ss"
            "private/parse-table.ss"
-           "sig.ss")
+           "web-config-sig.ss")
   
   (define default-configuration-table-path
     (build-path (collection-path "web-server") "configuration-table"))

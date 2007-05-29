@@ -3,7 +3,7 @@
            (lib "unit.ss"))
   (require "../configuration.ss"
            "../web-server.ss"
-           "../sig.ss"
+           "../web-config-sig.ss"
            "../private/util.ss"
            "../response-structs.ss"
            "../managers/timeouts.ss"

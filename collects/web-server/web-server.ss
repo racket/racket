@@ -2,7 +2,8 @@
   (require (lib "tcp-sig.ss" "net")
            (lib "unit.ss")
            (lib "contract.ss")
-           "sig.ss"
+           "web-config-sig.ss"
+           "web-server-sig.ss"
            "web-server-unit.ss"
 	   "configuration.ss"
            "private/configuration-structures.ss")

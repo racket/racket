@@ -3,7 +3,7 @@
   
   (require (lib "unit.ss")
            (lib "etc.ss")
-           (lib "sig.ss" "web-server")
+           (lib "web-server-sig.ss" "web-server")
            (lib "tcp-sig.ss" "net")
            (lib "url-sig.ss" "net")
            "internal-hp.ss")

@@ -8,7 +8,7 @@
            "configuration-table-structs.ss"
            "util.ss"
            "cache-table.ss"
-           "../sig.ss"
+           "../web-config-sig.ss"
            "../response-structs.ss")
   
   ; : str configuration-table -> configuration

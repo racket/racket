@@ -1,7 +1,8 @@
 (module web-server-unit mzscheme
   (require (lib "tcp-sig.ss" "net")
            (lib "unit.ss"))
-  (require "sig.ss"
+  (require "web-server-sig.ss"
+           "web-config-sig.ss"
            "private/dispatch-server-unit.ss"
            "private/dispatch-server-sig.ss"
            "private/web-server-structs.ss"

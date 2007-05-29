@@ -1,6 +1,5 @@
 (module main (lib "a-unit.ss")
-  (require (lib "sig.ss" "web-server")
-           (lib "framework.ss" "framework")
+  (require (lib "framework.ss" "framework")
            (lib "mred.ss" "mred")
            (lib "class.ss")
            (lib "external.ss" "browser")

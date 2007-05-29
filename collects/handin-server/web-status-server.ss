@@ -6,7 +6,8 @@
            (lib "file.ss")
            (lib "etc.ss")
            (lib "web-server-unit.ss" "web-server")
-           (lib "sig.ss" "web-server")
+           (lib "web-server-sig.ss" "web-server")
+           (lib "web-config-sig.ss" "web-server")
            (lib "configuration.ss" "web-server")
            "private/config.ss")
 
