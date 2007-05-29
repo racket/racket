@@ -21,7 +21,7 @@
   
   (define current-session (make-parameter #f))
   
-  ;; new-session-id: -> number
+  ;; new-session-id : -> number
   (define new-session-id
     (let ([ses-id 0])
       (lambda ()
@@ -30,7 +30,7 @@
   
   (define the-session-table (make-hash-table))
   
-  ;; new-session: namespace path -> session
+  ;; new-session : namespace path -> session
   (define (new-session cust ns uri)
     (let* ([new-id (new-session-id)]
            [ses (make-session
@@ -42,46 +42,52 @@
       (hash-table-put! the-session-table new-id ses)
       ses))
   
-  ;; lookup-session: number -> (union session #f)
+  ;; lookup-session : number -> (union session #f)
   (define (lookup-session ses-id)
     (hash-table-get the-session-table ses-id (lambda () #f)))
   
-  ;; encode-session: url number -> url
+  ;; encode-session : url number -> url
   (define (encode-session a-url ses-id)
-    (insert-param a-url (number->string ses-id)))
+    (insert-param a-url 's (number->string ses-id)))
     
-  ;; extract-session url -> (union number #f)
+  ;; extract-session : url -> (union number #f)
   ;; Determine if the url encodes a session-id and extract it
   (define (extract-session a-url)
-    (define (match-url-params x) (regexp-match #rx"([0-9]+)" x))
+    (define id (extract-param a-url "s"))
+    (with-handlers ([exn? (lambda _ #f)])
+      (string->number id)))
+  
+  ;; extract-param : url string -> string
+  (define (extract-param url key)
+    (define (match-url-params x) (regexp-match (format "^~a=(.+)$" key) x))
     (let ([k-params (filter match-url-params
                             (apply append
-                                   (map path/param-param (url-path a-url))))])
+                                   (map path/param-param (url-path url))))])
       (if (empty? k-params)
           #f
           (match (match-url-params (first k-params))
-            [(list _ n)
-             (string->number n)]
+            [(list _ val)
+             val]
             [_
              #f]))))
   
-  ;; insert-param: url string -> string
+  ;; insert-param : url string string -> url
   ;; add a path/param to the path in a url
   ;; (assumes that there is only one path/param)
-  (define (insert-param in-url new-param-str)
+  (define (insert-param in-url key new-param-str)
     (replace-path
      (lambda (old-path)
        (if (null? old-path)
-           (list (make-path/param "" (list new-param-str)))
+           (list (make-path/param "" (list (format "~a=~a" key new-param-str))))
            (let* ([car-old-path (car old-path)])
              (cons (make-path/param (if (path/param? car-old-path)
                                         (path/param-path car-old-path)
                                         car-old-path)
-                                    (list new-param-str))
+                                    (list (format "~a=~a" key new-param-str)))
                    (cdr old-path)))))
      in-url))
   
-  ;; replace-path: (url-path -> url-path) url -> url
+  ;; replace-path : (url-path -> url-path) url -> url
   ;; make a new url by replacing the path part of a url with a function
   ;; of the url's old path
   ;; also remove the query
