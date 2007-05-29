@@ -1,5 +1,6 @@
 (module stuff-url-tests mzscheme
   (require (lib "stuff-url.ss" "web-server" "prototype-web-server" "private")
+           (lib "mod-map.ss" "web-server" "prototype-web-server" "private")
            (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (lib "url.ss" "net")
@@ -8,20 +9,14 @@
            (lib "etc.ss")
            "util.ss")
   
-  (require/expose (lib "stuff-url.ss" "web-server" "prototype-web-server" "private")
-                  (same-module? url-parts recover-serial))
-  
   (provide stuff-url-suite)
   
-  (define uri0 (string->url "www.google.com"))
+  (define uri0 (string->url "www.google.com"))  
   
-  (define (simplify-unsimplify svl pth)
-    (let-values ([(l-code simple-mod-map graph fixups sv)
-                  (url-parts pth svl)])
-      (recover-serial
-       pth
-       l-code
-       simple-mod-map graph fixups sv)))
+  (define (simplify-unsimplify v)
+    (decompress-serial
+     (compress-serial
+      v)))
   
   (define (stuff-unstuff svl uri mod-path)
     (let ([result-uri (stuff-url svl uri mod-path)])
@@ -37,40 +32,20 @@
   
   (define stuff-url-suite
     (test-suite
-     "Tests for stuff-url.ss"
-     
-     (test-case
-      "Test same-module?"
-      
-      (check-true
-       (same-module? `(file ,(path->string (build-absolute-path (find-collects-dir) "web-server" "prototype-web-server" "private" "abort-resume.ss")))
-                     '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private")))
-      
-      (check-true
-       (same-module? `(file ,(path->string (build-absolute-path (this-expression-source-directory) "../private/abort-resume.ss")))
-                     '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private")))
-      
-      (check-true
-       (same-module?
-        '(lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
-        '(lib "./abort-resume.ss" "web-server" "prototype-web-server" "private"))))
+     "Tests for stuff-url.ss"     
      
      (test-case
       "compose url-parts and recover-serial (1)"
       (let-values ([(ev) (make-eval/mod-path m00)])
-        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start start 'foo)))
-                                        m00)]
-               [k1 (simplify-unsimplify (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) 1))))
-                                        m00)]
-               [k2 (simplify-unsimplify (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k1) 2))))
-                                        m00)])
+        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start start 'foo))))]
+               [k1 (simplify-unsimplify (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) 1)))))]
+               [k2 (simplify-unsimplify (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k1) 2)))))])
           (check-true (= 6 (ev `(dispatch ,the-dispatch (list (deserialize ',k2) 3))))))))
      
      (test-case
       "compose url-parts and recover-serial (2)"
       (let-values ([(ev) (make-eval/mod-path m01)])
-        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start start 'foo)))
-                                        m01)])
+        (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start start 'foo))))])
           (check-true (= 7 (ev `(dispatch ,the-dispatch (list (deserialize ',k0) 7))))))))
      
      (test-case 

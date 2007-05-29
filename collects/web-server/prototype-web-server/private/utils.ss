@@ -6,11 +6,21 @@
            (lib "serialize.ss"))
   
   (provide/contract
+   [find-binding (symbol? (listof (cons/c symbol? string?)) . -> . (or/c serializable? false/c))]
    [read/string (string? . -> . serializable?)]
    [write/string (serializable? . -> . string?)]
-   [url->servlet-path (url? . -> . (listof string?))]
+   [url->servlet-path ((path? url?) . ->* . ((or/c path? false/c) (or/c (listof string?) false/c) (or/c (listof string?) false/c)))]
    [make-session-url (url? (listof string?) . -> . url?)]
    [split-url-path (url? url? . -> . (or/c (listof string?) false/c))])
+  
+  ;; find-binding: symbol (list (cons symbol string)) -> (union string #f)
+  ;; find the binding in the query or return false
+  (define (find-binding key qry)
+    (cond
+      [(null? qry) #f]
+      [(eqv? key (caar qry))
+       (read/string (cdar qry))]
+      [else (find-binding key (cdr qry))]))
   
   (define (read/string str)
     (read (open-input-string str)))
@@ -109,7 +119,7 @@
                       rest-of-path)]
              [else (loop new-base
                          (list* next-path-segment servlet-path)
-                         rest-of-path)]))])))
+                         rest-of-path)]))])))                            
   
   ;; split-url-path: url url -> (union (listof string) #f)
   ;; the first url's path is a prefix of the path of the second

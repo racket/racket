@@ -6,7 +6,8 @@
            (rename "abort-resume.ss" send/suspend0 send/suspend)
            (all-except "abort-resume.ss" send/suspend)
            "session.ss"
-           "stuff-url.ss")
+           "stuff-url.ss"
+           "utils.ss")
   
   (provide 
    ;; Server Interface
