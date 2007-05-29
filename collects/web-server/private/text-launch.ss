@@ -1,4 +1,5 @@
 (module text-launch mzscheme
-  (require "launch.ss")
+  (require "launch.ss"
+           "../web-server.ss")
   (serve)
-  (semaphore-wait (make-semaphore)))
+  (do-not-return))
