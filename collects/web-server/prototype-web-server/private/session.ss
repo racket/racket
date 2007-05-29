@@ -13,7 +13,7 @@
                     [namespace namespace?]
                     [servlet (request? . -> . response?)]
                     [url url?])]
-   [lookup-session (number? . -> . (union session? boolean?))]
+   [lookup-session (number? . -> . (or/c session? boolean?))]
    [new-session (custodian? namespace? url? . -> . session?)])
   
   (define current-session (make-parameter #f))
