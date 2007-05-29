@@ -2,11 +2,7 @@
   (require (lib "stuff-url.ss" "web-server" "prototype-web-server" "private")
            (lib "mod-map.ss" "web-server" "prototype-web-server" "private")
            (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (lib "url.ss" "net")
-           (lib "dirs.ss" "setup")
-           (lib "file.ss")
-           (lib "etc.ss")
            "util.ss")
   
   (provide stuff-url-suite)
