@@ -4,44 +4,12 @@
            (lib "plt-match.ss")
            "utils.ss")
   
+  ; XXX even though we allow all values to be serialized, we only protect against source modification of the servlet program.
+  
   ; XXX url: first try continuation, then turn into hash
   
   ; XXX different ways to hash, different ways to store (maybe cookie?)
 
-  ;; before reading this, familiarize yourself with serializable values
-  ;; covered in ch 36 in the MzScheme manual.
-  
-  ;; To keep things small, only serialize closure structures. Furthermore,
-  ;; any such structures must come from the current servlet. One exception is
-  ;; the kont structure.
-  
-  ;; The structure-type list (module map) will be replaced by a list of numbers. For example,
-  ;; if the third element of the list is 19, then the third structure type is
-  ;; the same as the 19th closure type defined in the servlet module.
-  
-  ;; The list described above may also contain the symbol 'k, if kont is *not*
-  ;; at position 0 in the original module map.
-  
-  ;; The labeling code is the symbol prefix that is created by labels.ss. If the
-  ;; servlet is changed in some non-trivial way (i.e. not whitespace or comment),
-  ;; then a new labeling code will be created for the servlet. Thus the labeling code
-  ;; must be kept as part of the URL. URLs with old labeling codes will simply not
-  ;; work since the refactored module will not export any identifiers based off the
-  ;; old labeling.
-  
-  ;; ****************************************
-  ;; FUTURE DESIGN
-  
-  ;; To eliminate the single module requirement, create a global module map at compile time.
-  ;; The global map must handle all struct types from any required modules. Then re-write
-  ;; the serialized value (+ any graph and fixups) substituting the global numbers for the
-  ;; local numbers.
-  
-  ;; Once the local value (+ any graph and fixups) have been translated to use the global map
-  ;; then the local map can be eliminated. The labeling code must still be preserved in the
-  ;; URL. Now the labeling code should identify the global map. Hmm... in this model the labeling
-  ;; code should somehow reflect any changes to the global map.
-  
   ;; ****************************************
   ;; URL LAYOUT
   
@@ -65,14 +33,7 @@
            extend-url-query
            unstuff-url
            find-binding)
-  
-  (define (read/string str)
-    (read (open-input-string str)))
-  (define (write/string v)
-    (define str (open-output-string))
-    (write v str)
-    (get-output-string str))
-  
+   
   ;; compress-mod-map : (listof (cons mod-spec symbol)) -> (listof (cons (or mod-spec number) symbol))
   (define (compress-mod-map mm)
     (compress-mod-map/seen empty mm))

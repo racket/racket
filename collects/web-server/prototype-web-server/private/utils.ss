@@ -1,10 +1,23 @@
 (module utils mzscheme
-  (require (lib "url.ss" "net")
+  (require (lib "contract.ss")
+           (lib "url.ss" "net")
            (lib "plt-match.ss")
-           (lib "list.ss"))
-  (provide url->servlet-path
-           make-session-url
-           split-url-path)
+           (lib "list.ss")
+           (lib "serialize.ss"))
+  
+  (provide/contract
+   [read/string (string? . -> . serializable?)]
+   [write/string (serializable? . -> . string?)]
+   [url->servlet-path (url? . -> . (listof string?))]
+   [make-session-url (url? (listof string?) . -> . url?)]
+   [split-url-path (url? url? . -> . (or/c (listof string?) false/c))])
+  
+  (define (read/string str)
+    (read (open-input-string str)))
+  (define (write/string v)
+    (define str (open-output-string))
+    (write v str)
+    (get-output-string str))
   
   ;; make-session-url: url (listof string) -> url
   ;; produce a new url for this session:
@@ -109,5 +122,4 @@
         [(string=? (car pref-path) (car suff-path))
          (loop (cdr pref-path) (cdr suff-path))]
         [else
-         (error "split-url-path: first path is not a preffix of the second")])))    
-  )
+         (error "split-url-path: first path is not a preffix of the second")]))))
