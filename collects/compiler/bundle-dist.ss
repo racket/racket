@@ -87,7 +87,7 @@
 			 "error bundling: ~a"
 			 (regexp-replace #rx"[\r\n]*$" (get-output-string cerr) ""))))))]
 	  [(windows unix)
-	   (let-values ([(base name dir?) (split-path dir)])
+	   (let-values ([(base name dir?) (split-path (path->complete-path dir))])
 	     (parameterize ([current-directory base])
 	       ((if (eq? 'unix (system-type)) tar-gzip zip) target name)))]
 	  [else (error 'bundle-directory "don't know how")])))))
