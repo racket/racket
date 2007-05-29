@@ -63,27 +63,27 @@
     
     ;; begin-session: connection request
     (define (begin-session conn req)
-      (let ([uri (request-uri req)])
-        (let-values ([(a-path url-servlet-path url-path-suffix)
-                      (url->servlet-path htdocs-path uri)])
-          (if a-path
-              (parameterize ([current-directory (directory-part a-path)])
-                (let* ([cust (make-custodian top-cust)]
-                       [ns (make-servlet-namespace)]
-                       [ses (new-session cust ns (make-session-url uri url-servlet-path))])
-                  (parameterize ([current-custodian cust]
-                                 [current-namespace ns]
-                                 [current-session ses])
-                    (let ([module-name `(file ,(path->string a-path))])
-                      (let ([start (dynamic-require module-name 'start)])
-                        (set-session-servlet! ses
-                                              (initialize-servlet start)))))
-                  (resume-session (session-id ses)
-                                  conn req)))
-              (output-response/method
-               conn
-               (responders-file-not-found uri)
-               (request-method req))))))
+      (define uri (request-uri req))
+      (define-values (a-path url-servlet-path url-path-suffix)
+        (url->servlet-path htdocs-path uri))
+      (if a-path
+          (parameterize ([current-directory (directory-part a-path)])
+            (define cust (make-custodian top-cust))
+            (define ns (make-servlet-namespace))
+            (define ses (new-session cust ns (make-session-url uri url-servlet-path)))
+            (parameterize ([current-custodian cust]
+                           [current-namespace ns]
+                           [current-session ses])
+              (define start
+                (dynamic-require `(file ,(path->string a-path))
+                                 'start))
+              (set-session-servlet! ses (initialize-servlet start)))
+            (resume-session (session-id ses)
+                            conn req))
+          (output-response/method
+           conn
+           (responders-file-not-found uri)
+           (request-method req))))
     
     ; same-servlet? : url? url? -> boolean?
     (define (same-servlet? req ses)
@@ -121,8 +121,7 @@
                                         conn
                                         (responders-servlet (request-uri req) the-exn)
                                         (request-method req)))])
-                      (output-response conn
-                                       ((session-servlet ses) req))))
+                      (output-response conn ((session-servlet ses) req))))
                   (begin-session conn req)))]
         [else
          (begin-session conn req)]))
