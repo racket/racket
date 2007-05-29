@@ -1,7 +1,5 @@
 (module session mzscheme
   (require (lib "contract.ss")
-           (lib "list.ss")
-           (lib "plt-match.ss")
            (lib "url.ss" "net")
            (lib "request-structs.ss" "web-server")
            (lib "response.ss" "web-server")
