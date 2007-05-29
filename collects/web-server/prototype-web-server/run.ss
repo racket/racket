@@ -4,7 +4,7 @@
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
            (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers"))
-           (prefix servlets2: "dispatch-servlets2.ss"))
+           (prefix servlets2: (lib "dispatch-servlets2.ss" "web-server" "prototype-web-server")))
   
   (define server-root-path (build-path "~" "Development" "plt" "default-web-root"))
   (define default-host-path (build-path server-root-path "conf"))  
