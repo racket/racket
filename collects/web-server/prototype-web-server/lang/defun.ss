@@ -6,14 +6,11 @@
            "util.ss"
            "freevars.ss"
            "../private/closure.ss")
-  (provide defun
-           defun?)
+  (provide defun)
   
   ; make-new-clouse-label : (syntax -> syntax) syntax -> syntax
   (define (make-new-closure-label labeling stx)
     (labeling stx))
-  
-  (define defun? (make-parameter (lambda _ #t)))
   
   ; defun : syntax[1] -> (values syntax?[2] (listof syntax?)[3])
   ; defunctionalizes the first syntax, returning the second and the lifted lambdas [3]
@@ -64,35 +61,29 @@
          [(lambda formals be ...)
           (let-values ([(nbes be-defs) (defun* (syntax->list #'(be ...)))])
             (with-syntax ([(nbe ...) nbes])
-              (if ((defun?) stx)
-                  (let ([fvars (free-vars stx)])
-                    (let-values ([(make-CLOSURE new-defs)
-                                  (make-closure-definition-syntax 
-                                   (make-new-closure-label (current-code-labeling) stx)
-                                   fvars 
-                                   (syntax/loc stx (lambda formals nbe ...)))])
-                      (values (if (empty? fvars)
-                                  (quasisyntax/loc stx (#,make-CLOSURE))
-                                  (quasisyntax/loc stx (#,make-CLOSURE (lambda () (values #,@fvars)))))
-                              (append be-defs new-defs))))
-                  (values (quasisyntax/loc stx (lambda formals nbe ...))
-                          be-defs))))]
+              (let ([fvars (free-vars stx)])
+                (let-values ([(make-CLOSURE new-defs)
+                              (make-closure-definition-syntax 
+                               (make-new-closure-label (current-code-labeling) stx)
+                               fvars 
+                               (syntax/loc stx (lambda formals nbe ...)))])
+                  (values (if (empty? fvars)
+                              (quasisyntax/loc stx (#,make-CLOSURE))
+                              (quasisyntax/loc stx (#,make-CLOSURE (lambda () (values #,@fvars)))))
+                          (append be-defs new-defs))))))]
          [(case-lambda [formals be ...] ...)       
           (let-values ([(nbes be-defs) (defun** (syntax->list #'((be ...) ...)))])
             (with-syntax ([((nbe ...) ...) nbes])
-              (if ((defun?) stx)
-                  (let ([fvars (free-vars stx)])
-                    (let-values ([(make-CLOSURE new-defs)
-                                  (make-closure-definition-syntax 
-                                   (make-new-closure-label (current-code-labeling) stx)
-                                   fvars 
-                                   (syntax/loc stx (case-lambda [formals nbe ...] ...)))])
-                      (values (if (empty? fvars)
-                                  (quasisyntax/loc stx (#,make-CLOSURE))
-                                  (quasisyntax/loc stx (#,make-CLOSURE (lambda () (values #,@fvars)))))
-                              (append be-defs new-defs))))
-                  (values (quasisyntax/loc stx (case-lambda [formals nbe ...] ...))
-                          be-defs))))]
+              (let ([fvars (free-vars stx)])
+                (let-values ([(make-CLOSURE new-defs)
+                              (make-closure-definition-syntax 
+                               (make-new-closure-label (current-code-labeling) stx)
+                               fvars 
+                               (syntax/loc stx (case-lambda [formals nbe ...] ...)))])
+                  (values (if (empty? fvars)
+                              (quasisyntax/loc stx (#,make-CLOSURE))
+                              (quasisyntax/loc stx (#,make-CLOSURE (lambda () (values #,@fvars)))))
+                          (append be-defs new-defs))))))]
          [(if te ce ae)
           (let-values ([(es defs) (defun* (syntax->list #'(te ce ae)))])
             (values (quasisyntax/loc stx (if #,@es))

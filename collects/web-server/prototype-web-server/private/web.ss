@@ -54,6 +54,7 @@
                      (session-url ses)
                      (session-mod-path ses)))))))
   
+  ; XXX Changing embedding to be a param
   (define embed-label 'superkont)  
   (define (embed-proc/url k-url proc)
     (define ses (current-session))

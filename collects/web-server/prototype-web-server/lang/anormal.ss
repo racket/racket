@@ -28,7 +28,7 @@
   
   (define (make-anormal-term elim-letrec-term)
     (define (anormal-term stx)
-      (anormal id stx))  
+      (anormal id stx))
     
     (define (anormal ctxt stx)
       (recertify
