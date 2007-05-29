@@ -3,9 +3,9 @@
            (lib "etc.ss")
            (lib "plt-match.ss")
            (lib "base64.ss" "net")
-           (lib "request-structs.ss" "web-server")
-           (lib "response-structs.ss" "web-server")
            (lib "url.ss" "net")
+           "../../request-structs.ss"
+           "../../response-structs.ss"
            "../private/web.ss")  
   (provide send/suspend/dispatch
            redirect/get)

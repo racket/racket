@@ -1,8 +1,8 @@
 (module session mzscheme
   (require (lib "contract.ss")
            (lib "url.ss" "net")
-           (lib "request-structs.ss" "web-server")
-           (lib "response.ss" "web-server")
+           "../../response.ss"
+           "../../request-structs.ss"
            "url-param.ss")
   (provide current-session)
   
@@ -48,7 +48,7 @@
   ;; encode-session : url number -> url
   (define (encode-session a-url ses-id)
     (insert-param a-url "s" (number->string ses-id)))
-    
+  
   ;; extract-session : url -> (union number #f)
   ;; Determine if the url encodes a session-id and extract it
   (define (extract-session a-url)

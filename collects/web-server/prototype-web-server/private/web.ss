@@ -2,9 +2,8 @@
   (require (lib "serialize.ss")
            (lib "plt-match.ss")
            (lib "url.ss" "net")           
-           (lib "request-structs.ss" "web-server")
-           (rename "abort-resume.ss" send/suspend0 send/suspend)
-           (all-except "abort-resume.ss" send/suspend)
+           "../../request-structs.ss"
+           "abort-resume.ss"
            "session.ss"
            "stuff-url.ss"
            "url-param.ss")
@@ -37,7 +36,7 @@
   ;; send/suspend/hidden: (url input-field -> response) -> request
   ;; like send/suspend except the continuation is encoded in a hidden field
   (define (send/suspend/hidden page-maker)
-    (send/suspend0
+    (send/suspend
      (lambda (k)
        (let ([p-cont (serialize k)])
          (page-maker
@@ -47,7 +46,7 @@
   ;; send/suspend/url: (url -> response) -> request
   ;; like send/suspend except the continuation is encoded in the url
   (define (send/suspend/url page-maker)
-    (send/suspend0
+    (send/suspend
      (lambda (k)
        (page-maker
         (stuff-url (serialize k)
