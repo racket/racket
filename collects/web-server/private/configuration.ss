@@ -237,11 +237,11 @@
    [error-response ((natural-number/c string? string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
    ; XXX contract
    [servlet-loading-responder (string? any/c . -> . response?)]
-   [gen-servlet-not-found (string? . -> . (string? . -> . response?))]
-   [gen-servlet-responder (string? . -> . (string? any/c . -> . response?))]
-   [gen-servlets-refreshed (string? . -> . (-> response?))]
-   [gen-passwords-refreshed (string? . -> . (-> response?))]
-   [gen-authentication-responder (string? . -> . (string? (cons/c symbol? string?) . -> . response?))]
-   [gen-protocol-responder (string? . -> . (string? . -> . response?))]
-   [gen-file-not-found-responder (string? . -> . (string? . -> . response?))]
-   [gen-collect-garbage-responder (string? . -> . (-> response?))]))
+   [gen-servlet-not-found (path-string? . -> . (string? . -> . response?))]
+   [gen-servlet-responder (path-string? . -> . (string? any/c . -> . response?))]
+   [gen-servlets-refreshed (path-string? . -> . (-> response?))]
+   [gen-passwords-refreshed (path-string? . -> . (-> response?))]
+   [gen-authentication-responder (path-string? . -> . (string? (cons/c symbol? string?) . -> . response?))]
+   [gen-protocol-responder (path-string? . -> . (string? . -> . response?))]
+   [gen-file-not-found-responder (path-string? . -> . (string? . -> . response?))]
+   [gen-collect-garbage-responder (path-string? . -> . (-> response?))]))
