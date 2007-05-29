@@ -90,10 +90,8 @@
     (or
      ; Look in url for c=<k>
      (let* ([ses (current-session)]
-            [req-url (request-uri req)]
-            [qry (url-query req-url)]
-            [l-code (find-binding 'c qry)])
-       (and l-code
+            [req-url (request-uri req)])
+       (and (stuffed-url? req-url)
             (deserialize
              (unstuff-url
               req-url (session-url ses)

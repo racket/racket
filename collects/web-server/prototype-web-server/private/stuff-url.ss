@@ -8,6 +8,7 @@
   ; XXX different ways to hash, different ways to store (maybe cookie?)
     
   (provide stuff-url
+           stuffed-url?
            extend-url-query
            unstuff-url)
   
@@ -35,6 +36,12 @@
              1024)
       (error "the url is too big: " (url->string result-uri)))
     result-uri)
+  
+  (define (stuffed-url? uri)
+    (let* ([qry (url-query uri)]
+           [l-code (find-binding 'c qry)])
+      (and l-code
+           #t)))
   
   (define (extend-url-query uri key val)
     (make-url
