@@ -4,7 +4,8 @@
            (lib "plt-match.ss")
            (lib "url.ss" "net")
            (lib "request-structs.ss" "web-server")
-           (lib "response.ss" "web-server"))
+           (lib "response.ss" "web-server")
+           "url-param.ss")
   (provide current-session)
   
   (define-struct session (id cust namespace servlet url))
@@ -48,57 +49,11 @@
   
   ;; encode-session : url number -> url
   (define (encode-session a-url ses-id)
-    (insert-param a-url 's (number->string ses-id)))
+    (insert-param a-url "s" (number->string ses-id)))
     
   ;; extract-session : url -> (union number #f)
   ;; Determine if the url encodes a session-id and extract it
   (define (extract-session a-url)
     (define id (extract-param a-url "s"))
     (with-handlers ([exn? (lambda _ #f)])
-      (string->number id)))
-  
-  ;; extract-param : url string -> string
-  (define (extract-param url key)
-    (define (match-url-params x) (regexp-match (format "^~a=(.+)$" key) x))
-    (let ([k-params (filter match-url-params
-                            (apply append
-                                   (map path/param-param (url-path url))))])
-      (if (empty? k-params)
-          #f
-          (match (match-url-params (first k-params))
-            [(list _ val)
-             val]
-            [_
-             #f]))))
-  
-  ;; insert-param : url string string -> url
-  ;; add a path/param to the path in a url
-  ;; (assumes that there is only one path/param)
-  (define (insert-param in-url key new-param-str)
-    (replace-path
-     (lambda (old-path)
-       (if (null? old-path)
-           (list (make-path/param "" (list (format "~a=~a" key new-param-str))))
-           (let* ([car-old-path (car old-path)])
-             (cons (make-path/param (if (path/param? car-old-path)
-                                        (path/param-path car-old-path)
-                                        car-old-path)
-                                    (list (format "~a=~a" key new-param-str)))
-                   (cdr old-path)))))
-     in-url))
-  
-  ;; replace-path : (url-path -> url-path) url -> url
-  ;; make a new url by replacing the path part of a url with a function
-  ;; of the url's old path
-  ;; also remove the query
-  (define (replace-path proc in-url)
-    (let ([new-path (proc (url-path in-url))])
-      (make-url
-       (url-scheme in-url)
-       (url-user in-url)
-       (url-host in-url)
-       (url-port in-url)
-       #t
-       new-path
-       (url-query in-url)
-       (url-fragment in-url)))))
+      (string->number id))))

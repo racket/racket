@@ -7,7 +7,7 @@
            (all-except "abort-resume.ss" send/suspend)
            "session.ss"
            "stuff-url.ss"
-           "utils.ss")
+           "url-param.ss")
   
   (provide 
    ;; Server Interface
@@ -53,29 +53,27 @@
         (stuff-url (serialize k)
                    (session-url (current-session)))))))
   
-  ; XXX Changing embedding to be a param
-  (define embed-label 'superkont)  
+  (define embed-label "superkont")  
   (define (embed-proc/url k-url proc)
     (define superkont-url
       (stuff-url (serialize proc)                                              
                  (session-url (current-session))))
     (define result-uri
-      (extend-url-query k-url embed-label 
-                        (url->string superkont-url)))
+      (insert-param k-url embed-label 
+                    (url->string superkont-url)))
     (begin0 result-uri
             (when (> (string-length (url->string result-uri))
                      1024)
               (error "the url is too big: " (url->string result-uri)))))
   (define (extract-proc/url request)
     (define req-url (request-uri request))
-    (define binds (url-query req-url))
-    (define maybe-embedding (assq embed-label binds))
+    (define maybe-embedding (extract-param req-url embed-label))
     (if maybe-embedding
         (let ([proc (deserialize 
                      (unstuff-url
-                      (string->url (cdr maybe-embedding))))])
+                      (string->url maybe-embedding)))])
           (proc request))
-        (error 'send/suspend/dispatch "No ~a: ~S!" embed-label binds)))
+        (error 'send/suspend/dispatch "No ~a: ~S!" embed-label)))
   
   ;; request->continuation: req -> continuation
   ;; decode the continuation from the hidden field of a request

@@ -3,6 +3,7 @@
            (lib "url.ss" "net")
            (lib "serialize.ss")
            "utils.ss"
+           "url-param.ss"
            "mod-map.ss")
   
   ; XXX url: first try continuation, then turn into hash
@@ -33,19 +34,17 @@
   ;; encode in the url
   (define (stuff-url svl uri)
     (define result-uri
-      (extend-url-query uri 'c (md5-store (write/string (compress-serial svl)))))
+      (insert-param uri "c" (md5-store (write/string (compress-serial svl)))))
     (when (> (string-length (url->string result-uri))
              1024)
       (error "the url is too big: " (url->string result-uri)))
     result-uri)
   
   (define (stuffed-url? uri)
-    (let* ([qry (url-query uri)]
-           [l-code (find-binding 'c qry)])
-      (and l-code
-           #t)))  
+    (and (extract-param uri "c")
+         #t))
   
   ;; unstuff-url: url -> serial
   ;; decode from the url and reconstruct the serial
   (define (unstuff-url req-url)
-    (decompress-serial (read/string (md5-lookup (find-binding 'c (url-query req-url)))))))
+    (decompress-serial (read/string (md5-lookup (extract-param req-url "c"))))))

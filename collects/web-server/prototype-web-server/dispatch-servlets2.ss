@@ -20,7 +20,7 @@
    [interface-version dispatcher-interface-version?])
   (provide make)
   
-  (define myprint #;printf (lambda _ (void)))
+  (define myprint printf #;(lambda _ (void)))
   
   (define top-cust (current-custodian))
   

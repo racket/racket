@@ -2,9 +2,7 @@
   (require (lib "url.ss" "net")
            (lib "request-structs.ss" "web-server"))
   (provide start)
-  
-  ;; XXX This demonstrates that if we hide the K in a query, it will be overridden.
-  
+
   ;; get-number-from-user: string -> number
   ;; ask the user for a number
   (define (gn msg)
