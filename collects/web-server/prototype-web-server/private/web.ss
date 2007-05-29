@@ -52,8 +52,7 @@
        (lambda (k)
          (page-maker
           (stuff-url (serialize k)
-                     (session-url ses)
-                     (session-mod-path ses)))))))
+                     (session-url ses)))))))
   
   ; XXX Changing embedding to be a param
   (define embed-label 'superkont)  
@@ -61,8 +60,7 @@
     (define ses (current-session))
     (define superkont-url
       (stuff-url (serialize proc)                                              
-                 (session-url ses)
-                 (session-mod-path ses)))
+                 (session-url ses)))
     (define result-uri
       (extend-url-query k-url embed-label 
                         (url->string superkont-url)))
@@ -75,12 +73,10 @@
     (define binds (url-query req-url))
     (define maybe-embedding (assq embed-label binds))
     (if maybe-embedding
-        (let* ([ses (current-session)]
-               [superkont-url (string->url (cdr maybe-embedding))]
+        (let* ([superkont-url (string->url (cdr maybe-embedding))]
                [proc (deserialize 
                       (unstuff-url
-                       superkont-url (session-url ses)
-                       (session-mod-path ses)))])
+                       superkont-url))])
           (proc request))
         (error 'send/suspend/dispatch "No ~a: ~S!" embed-label binds)))
   
@@ -89,13 +85,11 @@
   (define (request->continuation req)
     (or
      ; Look in url for c=<k>
-     (let* ([ses (current-session)]
-            [req-url (request-uri req)])
+     (let ([req-url (request-uri req)])
        (and (stuffed-url? req-url)
             (deserialize
              (unstuff-url
-              req-url (session-url ses)
-              (session-mod-path ses)))))
+              req-url))))
      ; Look in query for kont=<k>
      (match (bindings-assq #"kont" (request-bindings/raw req))
        [(struct binding:form (id kont))

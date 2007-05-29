@@ -1,5 +1,7 @@
 (module stuff-url mzscheme
-  (require (lib "url.ss" "net")
+  (require (lib "contract.ss")
+           (lib "url.ss" "net")
+           (lib "serialize.ss")
            "utils.ss"
            "mod-map.ss")
   
@@ -7,10 +9,11 @@
   
   ; XXX different ways to hash, different ways to store (maybe cookie?)
     
-  (provide stuff-url
-           stuffed-url?
-           extend-url-query
-           unstuff-url)
+  (provide/contract
+   [stuff-url (serializable? url? . -> . url?)]
+   [stuffed-url? (url? . -> . boolean?)]
+   [extend-url-query (url? symbol? string? . -> . url?)]
+   [unstuff-url (url? . -> . serializable?)])
   
   ; XXX Abstract this
   (require (lib "md5.ss"))
@@ -27,9 +30,9 @@
         (build-path (find-system-path 'home-dir) ".urls" (format "~a" hash))
       (lambda () (read))))
   
-  ;; stuff-url: serial url path -> url
+  ;; stuff-url: serial url -> url
   ;; encode in the url
-  (define (stuff-url svl uri pth)
+  (define (stuff-url svl uri)
     (define result-uri
       (extend-url-query uri 'c (md5-store (write/string (compress-serial svl)))))
     (when (> (string-length (url->string result-uri))
@@ -55,7 +58,7 @@
             (url-query uri))
      (url-fragment uri)))
   
-  ;; unstuff-url: url url path -> serial
+  ;; unstuff-url: url -> serial
   ;; decode from the url and reconstruct the serial
-  (define (unstuff-url req-url ses-url mod-path)
+  (define (unstuff-url req-url)
     (decompress-serial (read/string (md5-lookup (find-binding 'c (url-query req-url)))))))

@@ -14,9 +14,9 @@
      (compress-serial
       v)))
   
-  (define (stuff-unstuff svl uri mod-path)
-    (let ([result-uri (stuff-url svl uri mod-path)])
-      (unstuff-url result-uri uri mod-path)))
+  (define (stuff-unstuff svl uri)
+    (let ([result-uri (stuff-url svl uri)])
+      (unstuff-url result-uri)))
   
   (define the-dispatch
     `(lambda (k*v)
@@ -48,9 +48,9 @@
       "compose stuff-url and unstuff-url and recover the serial"
       (let-values ([(ev) (make-eval/mod-path m00)])
         (let* ([k0 (stuff-unstuff (ev '(serialize (dispatch-start start 'foo)))
-                                  uri0 m00)]
+                                  uri0)]
                [k1 (stuff-unstuff (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) 1))))
-                                  uri0 m00)]
+                                  uri0)]
                [k2 (stuff-unstuff (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k1) 2))))
-                                  uri0 m00)])
+                                  uri0)])
           (check-true (= 6 (ev `(dispatch ,the-dispatch (list (deserialize ',k2) 3)))))))))))
