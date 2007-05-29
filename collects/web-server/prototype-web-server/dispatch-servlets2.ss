@@ -1,27 +1,29 @@
 (module dispatch-servlets2 mzscheme
   (require (lib "kw.ss")
-           "../private/configuration.ss"           
+           (lib "contract.ss")
            (lib "connection-manager.ss" "web-server" "private")
            (lib "request-structs.ss" "web-server")
            (lib "response-structs.ss" "web-server")
            (lib "response.ss" "web-server" "private")
            (lib "util.ss" "web-server" "private")
            (lib "url.ss" "net")
-           (lib "list.ss")
            (lib "plt-match.ss")
            (lib "dispatch.ss" "web-server" "dispatchers")
            (lib "session.ss" "web-server" "prototype-web-server" "private")
            (only "private/web.ss"
                  initialize-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
+           "../private/configuration.ss"
            "private/utils.ss")
   
+  (provide/contract
+   [interface-version dispatcher-interface-version?])
   (provide make)
   
   (define myprint #;printf (lambda _ (void)))
   
   (define top-cust (current-custodian))
-    
+  
   (define make-servlet-namespace
     (make-make-servlet-namespace
      #:to-be-copied-module-specs
@@ -31,6 +33,7 @@
        (lib "session.ss" "web-server" "prototype-web-server" "private")
        (lib "request.ss" "web-server" "private"))))
   
+  (define interface-version 'v1)
   (define/kw (make #:key
                    [htdocs-path "servlets"]
                    [timeouts-servlet-connection (* 60 60 24)]
