@@ -3,19 +3,15 @@
   (require "private/dispatch-server-sig.ss")
   (provide ; XXX contract signature
    (rename dispatch-server^ web-server^) 
-   web-config^ web-config/pervasive^ web-config/local^)  
+   web-config^)  
 
-  ; more here - rename
-  (define-signature web-config/pervasive^
+  (define-signature web-config^
     (max-waiting 
      virtual-hosts
      access
      scripts
-     initial-connection-timeout))
-
-  ; more here - rename
-  (define-signature web-config/local^
-    (port listen-ip instances make-servlet-namespace))
-
-  (define-signature web-config^
-    ((open web-config/pervasive^) (open web-config/local^))))
+     initial-connection-timeout
+     port
+     listen-ip
+     instances
+     make-servlet-namespace)))

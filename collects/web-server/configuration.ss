@@ -1,7 +1,6 @@
 (module configuration mzscheme
   (require (lib "unit.ss")
            (lib "kw.ss")
-           (lib "list.ss")
            (lib "contract.ss"))
   (require "private/configuration.ss"
            "private/configuration-structures.ss"
@@ -46,36 +45,40 @@
      (directory-part default-configuration-table-path)
      (parse-configuration-table s-expr)))
   
-
+  
   ; : (listof (cons sym TST)) -> configuration
   ; more here - this is ugly.  It also does not catch "unbound identifiers" since I use symbols.
   ; I considered several other solutions:
   ; - write the compound unit multiple times (no abstraction)
   ; - use opt-lambda and pass in 'please-use-the-default for unchanged flags
   ; - write three different functional updaters and re-compound the unit 1--3 times
-  (define (update-configuration configuration flags)
-
+  (define (update-configuration configuration flags)    
     (define-unit new-local-config@
-      (import (prefix raw: web-config/local^))
-      (export web-config/local^)
-      (init-depend web-config/local^)
+      (import (prefix raw: web-config^))
+      (export web-config^)
+      (init-depend web-config^)
+      
+      (define max-waiting raw:max-waiting)
+      (define virtual-hosts raw:virtual-hosts)
+      (define access raw:access)
+      (define scripts raw:scripts)
+      (define initial-connection-timeout raw:initial-connection-timeout)
       
       (define port (extract-flag 'port flags raw:port))
       (define listen-ip (extract-flag 'ip-address flags raw:listen-ip))
       (define instances (extract-flag 'instances flags raw:instances))
       (define make-servlet-namespace (extract-flag 'namespace flags raw:make-servlet-namespace)))
-
-    (define-unit/new-import-export config@ (import) (export web-config/local^ web-config/pervasive^)
+    
+    (define-unit/new-import-export config@ (import) (export web-config^)
       ((web-config^) configuration))
     
     (define-compound-unit/infer new-config@
       (import)
-      (export NL web-config/pervasive^)
-      (link (((L : web-config/local^)) config@)
-            (((NL : web-config/local^)) new-local-config@ L)))
-      
-    (unit/new-import-export (import) (export web-config^)
-                            ((web-config/local^ web-config/pervasive^) new-config@)))
+      (export NL)
+      (link (((L : web-config^)) config@)
+            (((NL : web-config^)) new-local-config@ L)))
+    
+    new-config@)
   
   (provide ; XXX contract
    make-make-servlet-namespace

@@ -1,12 +1,9 @@
-; The main program of the "web-server" launcher.
 (module launch mzscheme
   (require (lib "cmdline.ss")
            (lib "pregexp.ss")
-           (lib "contract.ss")
            (lib "unit.ss")
            (lib "tcp-sig.ss" "net"))
   (require "util.ss"           
-           "configuration-structures.ss"
            "../web-server-unit.ss"
            "../sig.ss"
            "../configuration.ss")

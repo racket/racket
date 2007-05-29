@@ -1,6 +1,5 @@
 (module web-server-unit mzscheme
   (require (lib "tcp-sig.ss" "net")
-           (lib "contract.ss")
            (lib "unit.ss"))
   (require "sig.ss"
            "private/dispatch-server-unit.ss"
@@ -19,11 +18,7 @@
            (prefix host: "dispatchers/dispatch-host.ss"))  
   
   (provide web-server@)
-  
-  #;(provide/contract
-     ; XXX contract
-     [web-server@ unit?])  
-  
+    
   (define-unit web-config@->dispatch-server-config@
     (import (prefix config: web-config^))
     (export dispatch-server-config^)
