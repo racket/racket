@@ -19,7 +19,7 @@
     (define default-host-table (get-binding* 'default-host-table t `()))
     (define virtual-host-table (get-binding* 'virtual-host-table t `()))
     (if (and (nat? port) (nat? max-waiting) (number? initial-connection-timeout)
-             ; more here - list? isn't really picky enough
+             ; XXX - list? isn't really picky enough
              (list? virtual-host-table))
         (make-configuration-table
          port max-waiting initial-connection-timeout

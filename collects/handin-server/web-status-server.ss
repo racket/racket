@@ -9,6 +9,7 @@
            (lib "web-server-sig.ss" "web-server")
            (lib "web-config-sig.ss" "web-server")
            (lib "configuration.ss" "web-server")
+           (lib "namespace.ss" "web-server" "configuration")
            "private/config.ss")
 
   (provide serve-status)
@@ -58,7 +59,8 @@
 
     (define configuration
       (load-configuration-sexpr
-       web-dir config
+       config
+       #:web-server-root web-dir
        #:make-servlet-namespace
        (make-make-servlet-namespace
         #:to-be-copied-module-specs

@@ -163,7 +163,7 @@
         (let loop ([configuration original-configuration])
           (let* ([update-bindings (interact (request-new-configuration-table configuration original-configuration))]
                  [form-configuration
-                  (delete-hosts (update-configuration configuration update-bindings)
+                  (delete-hosts (update-table configuration update-bindings)
                                 (foldr (lambda (b acc)
                                          (if (string=? "Delete" (cdr b))
                                              (cons (symbol->string (car b)) acc)
@@ -365,8 +365,8 @@
   (define (make-field-size type label value size)
     `(input ([type ,type] [name ,(symbol->string label)] [value ,value] [size ,size])))
   
-  ; update-configuration : configuration-table bindings -> configuration-table
-  (define (update-configuration old bindings)
+  ; update-table : configuration-table bindings -> configuration-table
+  (define (update-table old bindings)
     (let ([ubp (un-build-path web-base)]) ;; web-base returned by directory-part is a path
       (make-configuration-table
        (string->nat (extract-binding/single 'port bindings))

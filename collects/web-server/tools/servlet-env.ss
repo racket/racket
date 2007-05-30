@@ -54,7 +54,7 @@
       final-value))
   
   (define (build-standalone-servlet-configuration the-port the-path the-servlet)
-    (let ([basic-configuration@ (load-developer-configuration default-configuration-table-path)]
+    (let ([basic-configuration@ (load-configuration default-configuration-table-path)]
           [the-scripts (make-cache-table)])
       (define-values/invoke-unit basic-configuration@ 
         (import) 

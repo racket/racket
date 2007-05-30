@@ -1,9 +1,7 @@
 (module configuration mzscheme
   (require (lib "unit.ss")
-           (lib "kw.ss")
-           (lib "contract.ss"))
-  (require "configuration-structures.ss"
-           "configuration-table-structs.ss"
+           (lib "kw.ss"))
+  (require "configuration-table-structs.ss"
            "util.ss"
            "cache-table.ss"
            "../configuration/namespace.ss"
@@ -11,46 +9,44 @@
            "../web-config-sig.ss")
   
   ; : str configuration-table -> configuration
-  (define (complete-configuration base table)
-    (build-configuration
-     table
-     (let ([default-host
-             (apply-default-functions-to-host-table
-              base (configuration-table-default-host table))]
-           [expanded-virtual-host-table
-            (map (lambda (x)
-                   (list (regexp (string-append (car x) "(:[0-9]*)?"))
-                         (apply-default-functions-to-host-table base (cdr x))))
-                 (configuration-table-virtual-hosts table))])
-       (gen-virtual-hosts expanded-virtual-host-table default-host))))
+  (define/kw (complete-configuration base table
+                                     #:other-keys bct-keys)
+    (define default-host
+      (apply-default-functions-to-host-table
+       base (configuration-table-default-host table)))
+    (define expanded-virtual-host-table
+      (map (lambda (x)
+             (list (regexp (string-append (car x) "(:[0-9]*)?"))
+                   (apply-default-functions-to-host-table base (cdr x))))
+           (configuration-table-virtual-hosts table)))
+    (apply build-configuration
+           table
+           (gen-virtual-hosts expanded-virtual-host-table default-host)
+           bct-keys))
   
-  ; complete-developer-configuration : str configuration-table -> configuration
-  (define (complete-developer-configuration base table)
-    (build-configuration
-     table
-     (gen-virtual-hosts null (apply-default-functions-to-host-table
-                              base
-                              (configuration-table-default-host table)))))
-  
+  (define default-make-servlet-namespace (make-make-servlet-namespace))
+
   ; : configuration-table host-table -> configuration
   (define/kw (build-configuration table the-virtual-hosts
                                   #:key
+                                  [port #f]
+                                  [listen-ip #f]
                                   [make-servlet-namespace default-make-servlet-namespace])
+    (define the-port (or port (configuration-table-port table)))
+    (define the-listen-ip (or listen-ip #f))
     (define the-make-servlet-namespace make-servlet-namespace)
     (unit
       (import)
       (export web-config^)
-      (define port (configuration-table-port table))
+      (define port the-port)
       (define max-waiting (configuration-table-max-waiting table))
-      (define listen-ip #f) ; more here - add to configuration table
+      (define listen-ip the-listen-ip)
       (define initial-connection-timeout (configuration-table-initial-connection-timeout table))
       (define virtual-hosts the-virtual-hosts)
       (define access (make-hash-table))
       (define instances (make-hash-table))
       (define scripts (box (make-cache-table)))
       (define make-servlet-namespace the-make-servlet-namespace)))
-  
-  (define default-make-servlet-namespace (make-make-servlet-namespace))
     
   ; apply-default-functions-to-host-table : str host-table -> host
   ;; Greg P: web-server-root is the directory-part of the path to the configuration-table (I don't think I like this.)
@@ -100,9 +96,4 @@
                  expanded-virtual-host-table)
           default-host)))
   
-  (provide 
-   build-configuration
-   apply-default-functions-to-host-table)
-  (provide/contract
-   [complete-configuration (path-string? configuration-table? . -> . configuration?)]
-   [complete-developer-configuration (path-string? configuration-table? . -> . configuration?)]))
+  (provide complete-configuration))

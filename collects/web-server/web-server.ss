@@ -11,15 +11,14 @@
            "web-server-sig.ss"
            "web-server-unit.ss"
 	   "configuration.ss"
-           (prefix http: "private/request.ss")
-           "private/configuration-structures.ss")
+           (prefix http: "private/request.ss"))
   (provide
    serve
    serve/ports
    serve/ips+ports)
   (provide/contract
    [do-not-return (-> void)]
-   [serve/web-config@ (configuration? . -> . (-> void?))])
+   [serve/web-config@ (unit? . -> . (-> void?))])
   
   (define (do-not-return)
     (semaphore-wait (make-semaphore 0)))

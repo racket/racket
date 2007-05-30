@@ -1,6 +1,5 @@
 (module configuration-util mzscheme
   (require (lib "contract.ss")
-           (lib "file.ss")           
            (lib "pretty.ss"))
   (require "configuration-table-structs.ss")   
   

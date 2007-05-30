@@ -1,5 +1,7 @@
 (module configuration-table-structs mzscheme
-  (require (lib "contract.ss"))
+  (require (lib "contract.ss")
+           (lib "url.ss" "net"))
+  (require "../response-structs.ss")           
   
   ; configuration-table = (make-configuration-table nat nat num host-table (listof (cons str host-table)))
   (define-struct configuration-table
@@ -8,10 +10,15 @@
   ; host-table = (make-host-table (listof str) sym messages timeouts paths)
   (define-struct host-table (indices log-format messages timeouts paths))
   
+  (define-struct host (indices log-format log-path passwords responders timeouts paths))  
+  
+  (define-struct responders
+    (servlet servlet-loading authentication servlets-refreshed passwords-refreshed file-not-found protocol collect-garbage))
+  
   ; messages = (make-messages str^6)
   (define-struct messages
     (servlet authentication servlets-refreshed passwords-refreshed file-not-found protocol collect-garbage))
-
+  
   ; timeouts = (make-timeouts nat^5)
   (define-struct timeouts (default-servlet password servlet-connection file-per-byte file-base))
   
@@ -31,6 +38,23 @@
             [messages messages?]
             [timeouts timeouts?]
             [paths paths?])]
+   [struct host 
+           ([indices (listof string?)]
+            [log-format symbol?]
+            [log-path (or/c false/c path-string?)]
+            [passwords (or/c false/c path-string?)]
+            [responders responders?]
+            [timeouts timeouts?]
+            [paths paths?])]
+   [struct responders
+           ([servlet (url? any/c . -> . response?)]
+            [servlet-loading (url? any/c . -> . response?)]
+            [authentication (url? (cons/c symbol? string?) . -> . response?)]
+            [servlets-refreshed (-> response?)]
+            [passwords-refreshed (-> response?)]
+            [file-not-found (url? . -> . response?)]
+            [protocol (url? . -> . response?)]
+            [collect-garbage (-> response?)])]
    [struct messages
            ([servlet string?]
             [authentication string?]

@@ -1,9 +1,7 @@
 (module util mzscheme
   (require (lib "contract.ss")
            (lib "string.ss")
-           (lib "list.ss")
            (lib "url.ss" "net")
-           (lib "plt-match.ss")
            (lib "uri-codec.ss" "net"))
   (require "../request-structs.ss")
   

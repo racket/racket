@@ -43,10 +43,10 @@
                   (error 'web-server "ip-address expects a numeric ip-address (i.e. 127.0.0.1); given ~s" ip-address))))
          ("Restrict access to come from ip-address" "ip-address")]))
      (lambda (flags)
-       (update-configuration
-        (load-configuration
-         (extract-flag 'config flags default-configuration-table-path))
-        flags))
+       (load-configuration
+        (extract-flag 'config flags default-configuration-table-path)
+        #:port (extract-flag 'port flags #f)
+        #:listen-ip (extract-flag 'ip-address flags #f)))
      '()))
 
   (define-compound-unit launch@
