@@ -49,13 +49,17 @@ which are then called when the contract's fields are explored
                                                clause)]))]))]
            [all-ac-ids (generate-temporaries field-names)]
            [defeat-inlining 
-             ;; makes the procedure "big enough" so
-             ;; that inlining doesn't consider it.
+             ;; makes the procedure confusing enough so that
+             ;; inlining doesn't consider it. this makes the 
+             ;; call to procedure-closure-contents-eq? work 
+             ;; properly
              (λ (e)
-               (let loop ([i 30])
-                 (cond
-                   [(zero? i) e]
-                   [else #`(values #,(loop (- i 1)))])))])
+               (let loop ([n 20])
+                 (if (zero? n)
+                     e
+                     #`(if (zero? (random 1))
+                           #,(loop (- n 1))
+                           (/ 1 0)))))])
       (let loop ([clauses (syntax->list clauses)]
                  [ac-ids all-ac-ids]
                  [prior-ac-ids '()]
