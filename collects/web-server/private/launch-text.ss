@@ -1,4 +1,4 @@
-(module text-launch mzscheme
+(module launch-text mzscheme
   (require "launch.ss"
            (only "../web-server.ss" do-not-return))
   (serve)

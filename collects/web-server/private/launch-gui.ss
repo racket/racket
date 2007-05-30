@@ -1,4 +1,4 @@
-(module gui-launch mzscheme
+(module launch-gui mzscheme
   (require (lib "class.ss")
 	   (lib "mred.ss" "mred"))
   (require "launch.ss")

@@ -5,11 +5,11 @@
     (list))
   
   (define mzscheme-launcher-libraries
-    (list "private/text-launch.ss" "private/monitor-launch.ss" "private/setup-launch.ss" ))
+    (list "private/launch-text.ss" "private/setup-launch.ss" ))
   (define mzscheme-launcher-names
-    (list "PLT Web Server Text" "PLT Web Server Monitor" "PLT Web Server Setup")) 
+    (list "PLT Web Server Text" "PLT Web Server Setup")) 
 
   (define mred-launcher-libraries
-    (list "private/gui-launch.ss"))
+    (list "private/launch-gui.ss"))
   (define mred-launcher-names
     (list "PLT Web Server")))
