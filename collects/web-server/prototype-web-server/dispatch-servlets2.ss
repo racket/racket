@@ -12,7 +12,7 @@
            "../private/connection-manager.ss"
            "../private/util.ss"
            "../private/response.ss"
-           "../private/configuration.ss"
+           "../configuration/namespace.ss"
            "../configuration/responders.ss"
            "private/utils.ss")
   
@@ -22,18 +22,11 @@
   
   (define top-cust (current-custodian))
   
-  (define make-servlet-namespace
-    (make-make-servlet-namespace
-     #:to-be-copied-module-specs
-     '(mzscheme
-       (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
-       (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
-       (lib "session.ss" "web-server" "prototype-web-server" "private")
-       (lib "request.ss" "web-server" "private"))))
-  
   (define interface-version 'v1)
   (define/kw (make #:key
                    [htdocs-path "servlets"]
+                   [make-servlet-namespace 
+                    (make-make-servlet-namespace)]
                    [timeouts-servlet-connection (* 60 60 24)]
                    [responders-servlet-loading
                     servlet-loading-responder]
@@ -71,7 +64,13 @@
       (if a-path
           (parameterize ([current-directory (directory-part a-path)])
             (define cust (make-custodian top-cust))
-            (define ns (make-servlet-namespace))
+            (define ns (make-servlet-namespace
+                        #:additional-specs
+                        '((lib "servlet.ss" "web-server")
+                          (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
+                          (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
+                          (lib "session.ss" "web-server" "prototype-web-server" "private")
+                          (lib "request.ss" "web-server" "private"))))
             (define ses (new-session cust ns (make-session-url uri url-servlet-path)))
             (parameterize ([current-custodian cust]
                            [current-namespace ns]

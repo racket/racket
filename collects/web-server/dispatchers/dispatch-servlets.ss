@@ -320,7 +320,10 @@
         (lambda (initial-request)
           (adjust-timeout! timeout)
           (start initial-request)))
-      (parameterize ([current-namespace (config:make-servlet-namespace)]
+      (parameterize ([current-namespace (config:make-servlet-namespace
+                                         #:additional-specs
+                                         '((lib "servlet.ss" "web-server")
+                                           (lib "servlet.ss" "web-server" "private")))]
                      [current-custodian (make-servlet-custodian)])
         ; XXX load/use-compiled breaks errortrace
         (define s (load/use-compiled a-path))

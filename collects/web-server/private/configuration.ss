@@ -1,12 +1,12 @@
 (module configuration mzscheme
   (require (lib "unit.ss")
            (lib "kw.ss")
-           (lib "list.ss")
            (lib "contract.ss"))
   (require "configuration-structures.ss"
            "configuration-table-structs.ss"
            "util.ss"
            "cache-table.ss"
+           "../configuration/namespace.ss"
            "../configuration/responders.ss"
            "../web-config-sig.ss")
   
@@ -49,53 +49,6 @@
       (define instances (make-hash-table))
       (define scripts (box (make-cache-table)))
       (define make-servlet-namespace the-make-servlet-namespace)))
-  
-  ; begin stolen from commander.ss, which was stolen from private/drscheme/eval.ss
-  ; FIX - abstract this out to a namespace library somewhere (ask Robby and Matthew)
-  (define default-to-be-copied-module-specs
-    '(mzscheme
-      ;; allow people (SamTH) to use MrEd primitives from servlets.
-      ;; GregP: putting mred.ss here is a bad idea because it will cause
-      ;; web-server-text to have a dependency on mred
-      ;; JM: We get around it by only doing it if the module is already attached.
-      (lib "mred.ss" "mred")
-      (lib "servlet.ss" "web-server")))
-  ; end stolen
-  
-  (define/kw (make-make-servlet-namespace
-              #:key
-              [to-be-copied-module-specs empty])
-    ; JBC : added error-handler hack; the right answer is only to transfer the 'mred'
-    ; module binding when asked to, e.g. by a field in the configuration file.
-    ; GregP: put this back in if Sam's code breaks
-    ;  (for-each (lambda (x) (with-handlers ([exn:fail? (lambda (exn) 'dont-care)])
-    ;                          ; dynamic-require will fail when running web-server-text.
-    ;                          ; maybe a warning message in the exception-handler?
-    ;                          (dynamic-require x #f)))
-    ;            to-be-copied-module-specs)
-    
-    ;; get the names of those modules.
-    (define to-be-copied-module-names
-      (let ([get-name
-             (lambda (spec)
-               (if (symbol? spec)
-                   spec
-                   (with-handlers ([exn? (lambda _ #f)])
-                     ((current-module-name-resolver) spec #f #f))))])
-        (map get-name 
-             (append default-to-be-copied-module-specs
-                     to-be-copied-module-specs))))
-    ;end stolen
-    (lambda ()
-      (define server-namespace (current-namespace))
-      (define new-namespace (make-namespace))
-      (parameterize ([current-namespace new-namespace])
-        (for-each (lambda (name)
-                    (with-handlers ([exn? void])
-                      (when name
-                        (namespace-attach-module server-namespace name))))
-                  to-be-copied-module-names)
-        new-namespace)))
   
   (define default-make-servlet-namespace (make-make-servlet-namespace))
     
@@ -149,8 +102,7 @@
   
   (provide 
    build-configuration
-   apply-default-functions-to-host-table
-   make-make-servlet-namespace)
+   apply-default-functions-to-host-table)
   (provide/contract
    [complete-configuration (path-string? configuration-table? . -> . configuration?)]
    [complete-developer-configuration (path-string? configuration-table? . -> . configuration?)]))

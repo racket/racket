@@ -17,13 +17,13 @@
   (define (get-current-servlet-instance-id)
     (define instance-id (thread-cell-ref current-servlet-instance-id))
     (unless instance-id
-      (raise (make-exn:fail:servlet:instance "" (current-continuation-marks))))
+      (raise (make-exn:fail:servlet:instance "No current servlet instance" (current-continuation-marks))))
     instance-id)
   
   (define (current-servlet-manager)
     (define servlet (thread-cell-ref current-servlet))
     (unless servlet
-      (raise (make-exn:fail:servlet:instance "" (current-continuation-marks))))
+      (raise (make-exn:fail:servlet:instance "No current servlet" (current-continuation-marks))))
     (servlet-manager servlet))
   
   (define (current-servlet-instance-data)

@@ -80,9 +80,7 @@
     
     new-config@)
   
-  (provide
-   make-make-servlet-namespace
-   load-configuration-sexpr)
+  (provide load-configuration-sexpr)
   (provide/contract
    [complete-configuration (path-string? configuration-table? . -> . configuration?)]
    [get-configuration (path-string? . -> . configuration-table?)]
