@@ -3,9 +3,9 @@
            (lib "file.ss")
            (lib "struct.ss"))
   (require "../web-config-unit.ss"
-           "configuration-table-structs.ss"
-           "util.ss"
-           "configuration-util.ss")
+           "../configuration/configuration-table-structs.ss"
+           "../configuration/configuration-table.ss"
+           "util.ss")
   
   (parse-command-line
    "web-server-setup"

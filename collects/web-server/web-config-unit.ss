@@ -2,10 +2,10 @@
   (require (lib "unit.ss")
            (lib "kw.ss")
            (lib "contract.ss"))
-  (require "private/configuration-table-structs.ss"
-           "private/util.ss"
+  (require "private/util.ss"
            "private/cache-table.ss"
-           "private/parse-table.ss"
+           "configuration/configuration-table-structs.ss"
+           "configuration/configuration-table.ss"
            "configuration/namespace.ss"
            "configuration/responders.ss"
            "web-config-sig.ss")

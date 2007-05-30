@@ -7,9 +7,8 @@
            (lib "file.ss")
            (only (lib "web-config-unit.ss" "web-server")
                  default-configuration-table-path)
-           (lib "configuration-table-structs.ss" "web-server" "private")
-           (lib "parse-table.ss" "web-server" "private")
-           (lib "configuration-util.ss" "web-server" "private")
+           (lib "configuration-table-structs.ss" "web-server" "configuration")
+           (lib "configuration-table.ss" "web-server" "configuration")           
            (lib "util.ss" "web-server" "private"))
   (provide
    interface-version timeout
@@ -42,6 +41,12 @@
                (body ,body-attributes
                      (form ([action ,k-url] [method "post"])
                            ,@content))))))
+    
+  ; write-to-file : str TST -> void
+  (define (write-to-file file-name x)
+    (call-with-output-file file-name
+      (lambda (out) (pretty-print x out))
+      'truncate))
   
   (define default-configuration-path default-configuration-table-path)
   (define (set-config-path! new)

@@ -6,7 +6,7 @@
            "private/dispatch-server-unit.ss"
            "private/dispatch-server-sig.ss"
            "private/web-server-structs.ss"
-           "private/configuration-table-structs.ss"
+           "configuration/configuration-table-structs.ss"
            "private/cache-table.ss"
            (rename "private/request.ss" 
                    the-read-request read-request))

@@ -1,8 +1,12 @@
-(module parse-table mzscheme
-  (require (lib "list.ss")
-           (lib "contract.ss"))
+(module configuration-table mzscheme
+  (require (lib "contract.ss")
+           (lib "list.ss")
+           (lib "pretty.ss"))
   (require "configuration-table-structs.ss"
            "../servlet/bindings.ss")
+  (provide/contract
+   [write-configuration-table (configuration-table? path-string? . -> . void)]
+   [parse-configuration-table (list? . -> . configuration-table?)])
   
   (define (get-binding key bindings default)
     (first (get-binding* key bindings (list default))))
@@ -18,19 +22,12 @@
     (define initial-connection-timeout (get-binding 'initial-connection-timeout t 30))
     (define default-host-table (get-binding* 'default-host-table t `()))
     (define virtual-host-table (get-binding* 'virtual-host-table t `()))
-    (if (and (nat? port) (nat? max-waiting) (number? initial-connection-timeout)
-             ; XXX - list? isn't really picky enough
-             (list? virtual-host-table))
-        (make-configuration-table
-         port max-waiting initial-connection-timeout
-         (parse-host default-host-table)
-         (map (lambda (h)
-                (if (and (pair? h) (pair? (cdr h)) (null? (cddr h)))
-                    (cons (car h) (parse-host (cdr h)))
-                    (error 'parse-configuration-table "invalid virtual-host entry ~s" h)))
-              virtual-host-table))
-        (error 'parse-configuration-table "invalid configuration values ~s"
-               (list port max-waiting initial-connection-timeout default-host-table virtual-host-table))))
+    (make-configuration-table
+     port max-waiting initial-connection-timeout
+     (parse-host default-host-table)
+     (map (lambda (h)
+            (cons (car h) (parse-host (cdr h))))
+          virtual-host-table)))
   
   ; parse-host : tst -> host-table
   (define (parse-host t)
@@ -81,9 +78,49 @@
                  mime-types
                  password-authentication)))
   
-  ; nat? : tst -> bool
-  (define (nat? x)
-    (and (number? x) (exact? x) (integer? x) (<= 0 x)))
+  ; write-configuration-table : configuration-table path -> void
+  ; writes out the new configuration file
+  (define (write-configuration-table new configuration-path)
+    (define sexpr
+      `((port ,(configuration-table-port new))
+       (max-waiting ,(configuration-table-max-waiting new))
+       (initial-connection-timeout ,(configuration-table-initial-connection-timeout new))
+       (default-host-table
+         ,(host-table->sexpr (configuration-table-default-host new)))
+       (virtual-host-table
+        . ,(map (lambda (h) (list (car h) (host-table->sexpr (cdr h))))
+                (configuration-table-virtual-hosts new)))))
+    (call-with-output-file configuration-path
+      (lambda (out) (pretty-print sexpr out))
+      'truncate))
   
-  (provide/contract
-   [parse-configuration-table (list? . -> . configuration-table?)]))
+  ; host-table->sexpr : host-table
+  (define (host-table->sexpr host)
+    (let ([t (host-table-timeouts host)]
+          [p (host-table-paths host)]
+          [m (host-table-messages host)])
+      `(host-table
+        (default-indices "index.html" "index.htm")
+        (log-format parenthesized-default)
+        (messages
+         (servlet-message ,(messages-servlet m))
+         (authentication-message ,(messages-authentication m))
+         (servlets-refreshed ,(messages-servlets-refreshed m))
+         (passwords-refreshed ,(messages-passwords-refreshed m))
+         (file-not-found-message ,(messages-file-not-found m))
+         (protocol-message ,(messages-protocol m))
+         (collect-garbage ,(messages-collect-garbage m)))
+        (timeouts
+         (default-servlet-timeout ,(timeouts-default-servlet t))
+         (password-connection-timeout ,(timeouts-password t))
+         (servlet-connection-timeout ,(timeouts-servlet-connection t))
+         (file-per-byte-connection-timeout ,(timeouts-file-per-byte t))
+         (file-base-connection-timeout ,(timeouts-file-base t)))
+        (paths
+         (configuration-root ,(paths-conf p))
+         (host-root ,(paths-host-base p))
+         (log-file-path ,(paths-log p))
+         (file-root ,(paths-htdocs p))
+         (servlet-root ,(paths-servlet p))
+         (mime-types ,(paths-mime-types p))
+         (password-authentication ,(paths-passwords p)))))))
