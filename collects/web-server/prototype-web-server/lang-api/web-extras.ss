@@ -1,23 +1,9 @@
 (module web-extras mzscheme
   (require (lib "url.ss" "net")
            "../private/web.ss"
-           (only "../../servlet/helpers.ss"
-                 extract-user-pass
-                 redirect-to
-                 permanently
-                 temporarily
-                 see-other
-                 request-bindings
-                 request-headers))
+           "../../servlet/helpers.ss")
   (provide send/suspend/dispatch
-           redirect/get
-           extract-user-pass
-           redirect-to
-           permanently
-           temporarily
-           see-other
-           request-bindings
-           request-headers)
+           redirect/get)
   
   (define-syntax send/suspend/dispatch
     (syntax-rules ()
