@@ -8,6 +8,11 @@
            "private/servlet-helpers.ss"
            "private/web-cells.ss"
            "servlet-structs.ss")  
+  (require "private/servlet-url.ss")
+  (provide (all-from "private/web-cells.ss")
+           (all-from "private/servlet-helpers.ss")
+           (all-from "private/servlet-url.ss")
+           (all-from "servlet-structs.ss"))
   
   ;; ************************************************************
   ;; HELPERS
@@ -39,13 +44,7 @@
    [send/forward ((response-generator?) (expiration-handler?) . opt-> . request?)]
    [send/suspend/dispatch ((embed/url? . -> . servlet-response?) . -> . any/c)]
    [send/suspend/callback (xexpr/callback? . -> . any/c)])
-  
-  (require "private/servlet-url.ss")
-  (provide (all-from "private/web-cells.ss")
-           (all-from "private/servlet-helpers.ss")
-           (all-from "private/servlet-url.ss")
-           (all-from "servlet-structs.ss"))
-  
+    
   ;; ************************************************************
   ;; EXPORTS
   

@@ -7,13 +7,11 @@
            (lib "plt-match.ss")
            (lib "contract.ss")
            (lib "uri-codec.ss" "net"))
-  (require (lib "pretty.ss"))         
   (require "dispatch.ss"
            "../private/configuration.ss"
            "../private/util.ss"
            "../private/mime-types.ss"
-           "../private/request.ss"
-           "../private/servlet-helpers.ss"
+           "../request-structs.ss"
            "../private/response.ss"
            "../response-structs.ss")
   (provide/contract

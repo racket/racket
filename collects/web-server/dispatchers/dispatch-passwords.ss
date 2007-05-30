@@ -4,7 +4,8 @@
   (require "dispatch.ss"
            "../private/util.ss"
            "../private/configuration.ss"
-           "../private/servlet-helpers.ss"
+           "../request-structs.ss"
+           "../private/basic-auth.ss"
            "../private/connection-manager.ss"
            "../private/response.ss")  
   (provide/contract
