@@ -52,6 +52,7 @@
       ;; serve-file : connection symbol uri host -> void
       ;; to find the file, including searching for implicit index files, and serve it out
       (define path 
+        ; XXX Abstract this
         (url-path->path htdocs-path
                         (uri-decode (url-path->string (url-path uri)))))
       (cond

@@ -1,6 +1,6 @@
 (module servlet-helpers mzscheme
   (require (lib "contract.ss")
-           (lib "etc.ss")
+           (lib "kw.ss")
            (lib "plt-match.ss")
            (lib "base64.ss" "net")
            (lib "uri-codec.ss" "net"))
@@ -36,12 +36,15 @@
   (define see-other (make-redirection-status 303 "See Other"))
   
   ; : str [redirection-status] -> response
-  (define redirect-to
-    (opt-lambda (uri [perm/temp permanently])
-      (make-response/full (redirection-status-code perm/temp)
-                          (redirection-status-message perm/temp)
-                          (current-seconds) #"text/html"
-                          `((Location . ,uri)) (list))))
+  (define/kw (redirect-to uri
+                          #:optional
+                          [perm/temp permanently]
+                          #:key
+                          [headers (list)])
+    (make-response/full (redirection-status-code perm/temp)
+                        (redirection-status-message perm/temp)
+                        (current-seconds) #"text/html"
+                        `((Location . ,uri) ,@headers) (list)))
   
   ; with-errors-to-browser 
   ; to report exceptions that occur later to the browser
@@ -87,11 +90,11 @@
   
   (provide ; all-from
    with-errors-to-browser
+   redirect-to
    (rename uri-decode translate-escapes))
   (provide/contract
    ; XXX contract maybe   
    [extract-user-pass ((listof header?) . -> . (or/c false/c (cons/c bytes? bytes?)))]
-   [redirect-to ((string?) (redirection-status?) . opt-> . response/full?)]
    [permanently redirection-status?]
    [temporarily redirection-status?]
    [see-other redirection-status?]

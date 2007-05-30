@@ -65,6 +65,7 @@
     (define (begin-session conn req)
       (define uri (request-uri req))
       (define-values (a-path url-servlet-path url-path-suffix)
+        ; XXX Abstract this, so they don't need to live on disk.
         (url->servlet-path htdocs-path uri))
       (if a-path
           (parameterize ([current-directory (directory-part a-path)])

@@ -116,6 +116,7 @@
                             (raise (make-exn:fail:filesystem:exists:servlet
                                     (exn-message e)
                                     (exn-continuation-marks e))))])
+                 ; XXX Abstract this
                  (url-path->path
                   servlet-root
                   (url-path->string (url-path uri)))))
