@@ -1,7 +1,7 @@
 (module web-extras mzscheme
   (require (lib "url.ss" "net")
            "../private/web.ss"
-           (only "../../private/servlet-helpers.ss"
+           (only "../../servlet/helpers.ss"
                  extract-user-pass
                  redirect-to
                  permanently

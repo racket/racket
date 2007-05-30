@@ -2,7 +2,7 @@
   (require (lib "list.ss")
            (lib "contract.ss"))
   (require "configuration-table-structs.ss"
-           "bindings.ss")
+           "../servlet/bindings.ss")
   
   (define (get-binding key bindings default)
     (first (get-binding* key bindings (list default))))

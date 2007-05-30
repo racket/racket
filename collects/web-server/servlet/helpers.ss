@@ -1,9 +1,9 @@
-(module servlet-helpers mzscheme
+(module helpers mzscheme
   (require (lib "contract.ss")
            (lib "kw.ss")
            (lib "plt-match.ss")
            (lib "uri-codec.ss" "net"))
-  (require "util.ss"
+  (require "../private/util.ss"
            "bindings.ss"
            "basic-auth.ss"
            "../request-structs.ss"

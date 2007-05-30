@@ -5,7 +5,7 @@
            "../private/util.ss"
            "../private/configuration.ss"
            "../request-structs.ss"
-           "../private/basic-auth.ss"
+           "../servlet/basic-auth.ss"
            "../private/connection-manager.ss"
            "../private/response.ss")  
   (provide/contract
