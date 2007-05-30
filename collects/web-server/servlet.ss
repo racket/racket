@@ -5,13 +5,13 @@
   (require "managers/manager.ss"
            "private/servlet.ss"
            "private/url.ss"
-           "private/servlet-helpers.ss"
-           "private/web-cells.ss"
+           "servlet/helpers.ss"
+           "servlet/web-cells.ss"
            "servlet-structs.ss")  
-  (require "private/servlet-url.ss")
-  (provide (all-from "private/web-cells.ss")
-           (all-from "private/servlet-helpers.ss")
-           (all-from "private/servlet-url.ss")
+  (require "servlet/servlet-url.ss")
+  (provide (all-from "servlet/web-cells.ss")
+           (all-from "servlet/helpers.ss")
+           (all-from "servlet/servlet-url.ss")
            (all-from "servlet-structs.ss"))
   
   ;; ************************************************************
