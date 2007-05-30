@@ -13,7 +13,9 @@
            syntax-ize
            syntax-ize-hook
            current-keyword-list
-           current-variable-list)
+           current-variable-list
+
+           (struct shaped-parens (val shape)))
 
   (define no-color "schemeplain")
   (define meta-color "schemeplain")
@@ -26,12 +28,13 @@
   (define opt-color "schemeopt")
 
   (define current-keyword-list 
-    (make-parameter '(define let let* letrec require provide
+    (make-parameter '(define let let* letrec require provide let-values
                        lambda new send if cond begin else and or
                        define-syntax syntax-rules define-struct
                        quote quasiquote unquote unquote-splicing
                        syntax quasisyntax unsyntax unsyntax-splicing
-                       fold-for list-for list-for* for)))
+                       for/fold for/list for*/list for for/and for/or for* for*/or for*/and for*/fold
+                       for-values for*/list-values for/first for/last)))
   (define current-variable-list 
     (make-parameter null))
 
@@ -301,6 +304,7 @@
                              (string? (syntax-e c))
                              (bytes? (syntax-e c))
                              (char? (syntax-e c))
+                             (keyword? (syntax-e c))
                              (boolean? (syntax-e c)))
                          value-color]
                         [(identifier? c) 
@@ -336,13 +340,13 @@
 
   (define-syntax (define-code stx)
     (syntax-case stx ()
-      [(_ code typeset-code uncode d->s)
+      [(_ code typeset-code uncode d->s stx-prop)
        (syntax/loc stx
 	 (define-syntax (code stx)
 	   (define (stx->loc-s-expr v)
 	     (cond
 	      [(syntax? v)
-	       (let ([mk `(d->s
+	       (let ([mk `(,#'d->s
 			   #f
 			   ,(syntax-case v (uncode)
 			      [(uncode e) #'e]
@@ -354,7 +358,7 @@
 				 ,(syntax-span v)))])
 		 (let ([prop (syntax-property v 'paren-shape)])
 		   (if prop
-		       `(syntax-property ,mk 'paren-shape ,prop)
+		       `(,#'stx-prop ,mk 'paren-shape ,prop)
 		       mk)))]
 	      [(pair? v) `(cons ,(stx->loc-s-expr (car v))
 				,(stx->loc-s-expr (cdr v)))]
@@ -365,13 +369,13 @@
 	      [(null? v) 'null]
 	      [else `(quote ,v)]))
 	   (define (cvt s)
-	     (d->s #'here (stx->loc-s-expr s) #f))
+	     (datum->syntax-object #'here (stx->loc-s-expr s) #f))
 	   (syntax-case stx ()
 	     [(_ expr) #`(typeset-code #,(cvt #'expr))]
 	     [(_ expr (... ...))
 	      #`(typeset-code #,(cvt #'(code:line expr (... ...))))])))]
       [(_ code typeset-code uncode)
-       #'(define-code code typeset-code uncode datum->syntax-object)]
+       #'(define-code code typeset-code uncode datum->syntax-object syntax-property)]
       [(_ code typeset-code) #'(define-code code typeset-code unsyntax)]))
 
   
@@ -406,10 +410,16 @@
                           (loop (cons (car r) r) (sub1 i)))))
            l))))
 
+  (define-struct shaped-parens (val shape))
+
   (define (syntax-ize v col)
     (cond
      [((syntax-ize-hook) v col)
       => (lambda (r) r)]
+     [(shaped-parens? v)
+      (syntax-property (syntax-ize (shaped-parens-val v) col)
+                       'paren-shape
+                       (shaped-parens-shape v))]
      [(and (list? v)
            (pair? v)
            (memq (car v) '(quote unquote unquote-splicing)))

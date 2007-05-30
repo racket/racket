@@ -108,15 +108,15 @@ procedures. One reason is that @scheme[map], @scheme[ormap],
 list loops.
 
 @;------------------------------------------------------------------------
-@section{Iterative Folds and Comprehensions: @scheme[fold-for] and @scheme[list-for]}
+@section{Iterative Folds and Comprehensions: @scheme[for/fold] and @scheme[for/list]}
 
 Besides iteration procedures like @scheme[foldl], Scheme provides a
 syntactic form for iteration that more closely resembles the syntax of
 other languages. The @scheme[foldl] example above can be written with
-the @scheme[fold-for] syntax as follows:
+the @scheme[for/fold] syntax as follows:
 
 @interaction[
-(fold-for ([sum 0])
+(for/fold ([sum 0])
           ([elem (list 1 2 3)])
   (+ sum (* elem elem)))
 ]
@@ -136,52 +136,52 @@ EOS
 
 The only significant difference is that the updating of @scheme[sum]
 and the return of @scheme[sum]'s value are implicit. Those implicit
-actions are why the form is called @scheme[fold-for] instead of just
+actions are why the form is called @scheme[for/fold] instead of just
 @scheme[for].
 
-Along similar lines, the @scheme[list-for] form iterates through a list
+Along similar lines, the @scheme[for/list] form iterates through a list
 and implicitly accumulates each result into a list:
 
 @interaction[
-(list-for ([i (list "peanuts" "popcorn" "crackerjack")])
+(for/list ([i (list "peanuts" "popcorn" "crackerjack")])
   (string-append i "!"))
 ]
 
-The @scheme[list-for] form is a @defterm{list compherension} form, as
+The @scheme[for/list] form is a @defterm{list compherension} form, as
 in Haskell, Ruby, Python, and other languages. One advantage over
 @scheme[map] is that it can iterate over more things than just lists.
-For example, @scheme[list-for] can iterate over a range of numbers:
+For example, @scheme[for/list] can iterate over a range of numbers:
 
 @interaction[
-(list-for ([i (in-range 0 10)])
+(for/list ([i (in-range 0 10)])
   i)
 ]
 
-The @scheme[list-for] form can even iterate over a list and a range of
+The @scheme[for/list] form can even iterate over a list and a range of
 numbers in parallel:
 
 @interaction[
-(list-for ([s (list "a" "b" "c")]
+(for/list ([s (list "a" "b" "c")]
            [n (in-range 0 3)])
   (if (= n 2)
       "oops!"
        s))
 ]
 
-Note that the binding syntax of @scheme[fold-for] and
-@scheme[list-for] is similar to that of @scheme[let] (as introduced in
+Note that the binding syntax of @scheme[for/fold] and
+@scheme[for/list] is similar to that of @scheme[let] (as introduced in
 @secref["local-binding-intro"]). In the same way that @scheme[let*]
-supports nested bindings, @scheme[list-for*] supports nested
+supports nested bindings, @scheme[for*/list] supports nested
 iterations:
 
 @interaction[
-(list-for* ([s (list "a" "b" "c")]
+(for*/list ([s (list "a" "b" "c")]
             [n (list "x" "y" "z")])
   (string-append s n))
 ]
 
-Unlike the @scheme[list-for], the nested iteration of
-@scheme[list-for*] covers patterns with lists not as easily expressed
+Unlike the @scheme[for/list], the nested iteration of
+@scheme[for*/list] covers patterns with lists not as easily expressed
 with @scheme[map]. When procedures like @scheme[map] suffice, however,
 Scheme programmers tend to use them, partly because the syntax is
 simpler (just a procedure call).
@@ -194,7 +194,7 @@ see @secref["iterations+comprehensions"].
 @;------------------------------------------------------------------------
 @section{List Iteration from Scratch}
 
-Although @scheme[map] and @scheme[list-for] are predefined, they are
+Although @scheme[map] and @scheme[for/list] are predefined, they are
 not primitive in any interesting sense. You can write equivalent
 iterations using a handful of list primitives.
 
@@ -340,11 +340,11 @@ It turns out that if you write
 
 @schemeblock[
 (define (my-map f lst)
-  (list-for ([i lst])
+  (for/list ([i lst])
     (f i)))
 ]
 
-then the @scheme[list-for] form in the procedure both is expanded to
+then the @scheme[for/list] form in the procedure both is expanded to
 essentially the same code as the @scheme[iter] local definition and
 use. The difference is merely syntactic convenience.
 
@@ -446,7 +446,7 @@ context.
 That is, a named @scheme[let] binds a procedure identifier that is
 visible only in the procedure's body, and it implicitly calls the
 procedure with the values of some initial expressions.  A named
-@scheme[let] looks similar to the start of @scheme[fold-for], but the
+@scheme[let] looks similar to the start of @scheme[for/fold], but the
 recursive calls in the body are explicit, and they are not constrained
 to tail position.
 

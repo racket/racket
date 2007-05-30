@@ -43,10 +43,16 @@
   (define (to-element/id s)
     (make-element "schemesymbol" (list (to-element/no-color s))))
 
-  (define-code scheme to-element unsyntax (lambda (ctx s v) s))
-  (define-code schemeresult to-element/result unsyntax (lambda (ctx s v) s))
-  (define-code schemeid to-element/id unsyntax (lambda (ctx s v) s))
-  (define-code schememodname to-element unsyntax (lambda (ctx s v) s))
+  (define (keep-s-expr ctx s v) s)
+  (define (add-sq-prop s name val)
+    (if (eq? name 'paren-shape)
+        (make-shaped-parens s val)
+        s))
+
+  (define-code scheme to-element unsyntax keep-s-expr add-sq-prop)
+  (define-code schemeresult to-element/result unsyntax keep-s-expr add-sq-prop)
+  (define-code schemeid to-element/id unsyntax keep-s-expr add-sq-prop)
+  (define-code schememodname to-element unsyntax keep-s-expr add-sq-prop)
 
   (define (litchar . strs)
     (unless (andmap string? strs)

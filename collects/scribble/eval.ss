@@ -46,16 +46,39 @@
                            (if (flow? p)
                                p
                                (make-flow (list p))))))
-             (append
-              (if (string? (car val-list+outputs))
-                  (map
-                   (lambda (s)
-                     (list (make-flow (list (make-paragraph
-                                             (list
-                                              (hspace 2)
-                                              (span-class "schemeerror"
-                                                          (italic s))))))))
-                   (let sloop ([s (car val-list+outputs)])
+             (if (string=? "" (cdar val-list+outputs))
+                 null
+                 (list
+                  (list
+                   (make-flow 
+                    (list
+                     (let ([s (regexp-split #rx"\n"
+                                            (regexp-replace #rx"\n$"
+                                                            (cdar val-list+outputs)
+                                                            ""))])
+                       (if (= 1 (length s))
+                           (make-paragraph
+                            (list
+                             (hspace 2)
+                             (span-class "schemestdout" (car s))))
+                           (make-table
+                            #f
+                            (map (lambda (s)
+                                   (list (make-flow (list (make-paragraph
+                                                           (list
+                                                            (hspace 2)
+                                                            (span-class "schemestdout" s)))))))
+                                 s)))))))))
+             (if (string? (caar val-list+outputs))
+                 ;; Error result case:
+                 (map
+                  (lambda (s)
+                    (list (make-flow (list (make-paragraph
+                                            (list
+                                             (hspace 2)
+                                             (span-class "schemeerror"
+                                                         (italic s))))))))
+                  (let sloop ([s (caar val-list+outputs)])
                      (if ((string-length s) . > . maxlen)
                          ;; break the error message into multiple lines:
                          (let loop ([pos (sub1 maxlen)])
@@ -67,43 +90,20 @@
                                    (sloop (substring s (add1 pos))))]
                             [else (loop (sub1 pos))]))
                          (list s))))
-                  (append
-                   (if (string=? "" (cdar val-list+outputs))
+                 ;; Normal result case:
+                 (let ([val-list (caar val-list+outputs)])
+                   (if (equal? val-list (list (void)))
                        null
-                       (list
-                        (list
-                         (make-flow 
-                          (list
-                           (let ([s (regexp-split #rx"\n"
-                                                  (regexp-replace #rx"\n$"
-                                                                  (cdar val-list+outputs)
-                                                                  ""))])
-                             (if (= 1 (length s))
-                                 (make-paragraph
-                                  (list
-                                   (hspace 2)
-                                   (span-class "schemestdout" (car s))))
-                                 (make-table
-                                  #f
-                                  (map (lambda (s)
-                                         (list (make-flow (list (make-paragraph
-                                                                 (list
-                                                                  (hspace 2)
-                                                                  (span-class "schemestdout" s)))))))
-                                       s)))))))))
-                   (let ([val-list (caar val-list+outputs)])
-                     (if (equal? val-list (list (void)))
-                         null
-                         (map (lambda (v)
-                                (list (make-flow (list (make-paragraph 
-                                                        (list
-                                                         (hspace 2)
-                                                         (span-class "schemeresult"
-                                                                     (to-element/no-color v))))))))
-                              val-list)))))
-              (loop (cdr expr-paras)
-                    (cdr val-list+outputs)
-                    #f))))))))
+                       (map (lambda (v)
+                              (list (make-flow (list (make-paragraph 
+                                                      (list
+                                                       (hspace 2)
+                                                       (span-class "schemeresult"
+                                                                   (to-element/no-color v))))))))
+                            val-list))))
+             (loop (cdr expr-paras)
+                   (cdr val-list+outputs)
+                    #f)))))))
 
   (define (do-eval s)
     (cond
@@ -121,7 +121,8 @@
       (let ([o (open-output-string)])
         (parameterize ([current-output-port o])
           (with-handlers ([exn? (lambda (e)
-                                  (exn-message e))])
+                                  (cons (exn-message e)
+                                        (get-output-string o)))])
             (cons (let ([v (do-plain-eval s #t)])
                     (copy-value v (make-hash-table)))
                   (get-output-string o)))))]))

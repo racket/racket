@@ -26,12 +26,7 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["define-struct.scrbl"]
 
-@; ----------------------------------------------------------------------
-@section[#:tag "scheme-forms"]{Programs and Expressions}
-
-@subsection{Module Basics}
-
-@subsection{Definition and Expression Forms}
+@include-section["forms.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "contracts"]{Contracts}

@@ -5,3 +5,27 @@
 
 @title[#:tag "keywords"]{Keywords}
 
+A @defterm{keyword} is similar to a symbol (see @secref["symbols"]),
+but its printed form is prefixed with @schemefont{#:}. Unlike a
+symbol, it's printed form is also its expression form.
+
+@refdetails["mz:parse-keyword"]{the syntax of keywords}
+
+@examples[
+(string->keyword "apple")
+#:apple
+(eq? #:apple (string->keyword "apple"))
+]
+
+Although keywords are values, they are intented for use as special
+markers in argument lists and in certain syntactic forms.
+
+@italic{Need some examples here, once we have more keyword-based
+procedures and syntax in place...}
+
+Keywords should not be used simply as another kind of symbol. Use
+symbols, instead of keywords, for run-time flags and enumerations.
+
+@examples[
+(code:line (bytes->path #"/usr/tmp" 'unix) (code:comment #, @t{@scheme['unix], not @scheme[#:unix]}))
+]

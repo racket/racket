@@ -1,33 +1,37 @@
 (module for mzscheme
 
-  (provide fold-for fold-for-values fold-for* fold-for*-values
+  (provide for/fold for/fold-values for*/fold for*/fold-values
            for for-values for* for*-values
-           list-for list-for-values list-for* list-for*-values 
-           lists-for lists-for-values lists-for* lists-for*-values
-           and-for and-for-values and-for* and-for*-values
-           or-for or-for-values or-for* or-for*-values
-           first-for first-for-values first-for* first-for*-values
-           last-for last-for-values last-for* last-for*-values
+           for/list for/list-values for*/list for*/list-values 
+           for/lists for/lists-values for*/lists for*/lists-values
+           for/and for/and-values for*/and for*/and-values
+           for/or for/or-values for*/or for*/or-values
+           for/first for/first-values for*/first for*/first-values
+           for/last for/last-values for*/last for*/last-values
            
            (rename *in-range in-range)
-           (rename *in-nats in-nats)
+           (rename *in-naturals in-naturals)
            (rename *in-list in-list)
            (rename *in-vector in-vector)
            (rename *in-string in-string)
            (rename *in-bytes in-bytes)
            in-input-port-bytes
            in-input-port-chars
+           in-hash-table
+           in-hash-table-keys
+           in-hash-table-values
+           in-hash-table-pairs
            
            in-parallel
            stop-before
            stop-after
            (rename *in-indexed in-indexed)
            
-           sequence-run
+           sequence-generator
            
            define-sequence-syntax
            make-do-sequence
-           :do-gen)
+           :do-in)
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
@@ -44,9 +48,9 @@
                         0))
 
     (define (create-sequence-transformer proc1 proc2 cert)
-      (unless (if (identifier? proc1)
+      (unless (or (identifier? proc1)
                   (and (procedure? proc1)
-                       (procedure-arity-includes? proc1 1))
+                       (procedure-arity-includes? proc1 1)))
         (raise-type-error 'define-sequence-syntax
                           "identifier of procedure (arity 1)"
                           0
@@ -67,18 +71,18 @@
                                                                   stx)))
                                       proc1)
                                   proc2
-                                  cert)))
+                                  cert))
     
     (define (certify-clause clause certifier introducer)
-      ;; This is slightly painful. The painsion into `:do-gen' involves a lot of pieces
+      ;; This is slightly painful. The painsion into `:do-in' involves a lot of pieces
       ;; that are no treated as sub-expressions. We have to push the certificates
       ;; down to all the relevant identifiers and expressions:
       (define (cert s) (certifier s #f introducer))
       (define (map-cert s) (map (lambda (s) (certifier s #f #;introducer))
                                 (syntax->list s)))
 
-      (syntax-case clause (:do-gen)
-        [[(id ...) (:do-gen ([(outer-id ...) outer-expr] ...)
+      (syntax-case clause (:do-in)
+        [[(id ...) (:do-in ([(outer-id ...) outer-expr] ...)
                             outer-check
                             ([loop-id loop-expr] ...)
                             pos-guard
@@ -99,7 +103,7 @@
                        [pre-guard (cert #'pre-guard)]
                        [post-guard (cert #'post-guard)]
                        [(loop-arg ...) (map-cert #'(loop-arg ...))])
-           #`[(id ...) (:do-gen ([(outer-id ...) outer-expr] ...)
+           #`[(id ...) (:do-in ([(outer-id ...) outer-expr] ...)
                                 outer-check
                                 ([loop-id loop-expr] ...)
                                 pos-guard
@@ -115,7 +119,7 @@
     
     (define (expand-clause orig-stx clause)
       (let eloop ([use-transformer? #t])
-        (syntax-case clause (values in-parallel stop-before stop-after :do-gen)
+        (syntax-case clause (values in-parallel stop-before stop-after :do-in)
           [[(id ...) rhs]
            (let ([ids (syntax->list #'(id ...))])
              (for-each (lambda (id)
@@ -149,7 +153,7 @@
                                                              certifier
                                                              introducer))
                      (eloop #f)))))]
-          [[(id ...) (:do-gen . body)]
+          [[(id ...) (:do-in . body)]
            (syntax-case #'body ()
              [(([(outer-id ...) outer-rhs] ...)
                outer-check
@@ -159,7 +163,7 @@
                pre-guard
                post-guard
                (loop-arg ...)) #'body]
-             [else (raise-syntax-error #f "bad :do-gen clause" orig-stx clause)])]
+             [else (raise-syntax-error #f "bad :do-in clause" orig-stx clause)])]
           [[(id) (values rhs)]
            (expand-clause orig-stx #'[(id) rhs])]
           [[(id ...) (in-parallel rhs ...)]
@@ -243,7 +247,7 @@
             orig-stx
             clause)]))))
 
-  (define-syntax (:do-gen stx)
+  (define-syntax (:do-in stx)
     (raise-syntax-error #f "illegal outside of a loop or comprehension binding" stx))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -284,7 +288,8 @@
         (vector? v)
         (string? v)
         (bytes? v)
-        (input-port? v)))
+        (input-port? v)
+        (hash-table? v)))
   
   (define (make-sequence who v)
     (cond
@@ -294,6 +299,7 @@
       [(string? v) (:string-gen v)]
       [(bytes? v) (:bytes-gen v)]
       [(input-port? v) (:input-port-gen v)]
+      [(hash-table? v) (:hash-table-gen v cons (lambda (p) (values (car p) (cdr p))))]
       [else (raise
              (make-exn:fail:contract
               (format "for: expected a sequence for ~a, got something else: ~v"
@@ -322,17 +328,26 @@
                                  (lambda (x) #t)
                                  (lambda (x y) #t))))]))
 
-  (define (in-nats)
-    (make-do-sequence (lambda ()
-                             (values values
-                                     add1
-                                     0
-                                     (lambda (x) #t)
-                                     (lambda (x) #t)
-                                     (lambda (x y) #t)))))
+  (define in-naturals
+    (case-lambda
+     [() (in-naturals 0)]
+     [(n)
+      (unless (and (integer? n)
+                   (exact? n)
+                   (n . >= . 0))
+        (raise-type-error 'in-naturals
+                          "exact non-negative integer"
+                          n))
+      (make-do-sequence (lambda ()
+                          (values values
+                                  add1
+                                  n
+                                  (lambda (x) #t)
+                                  (lambda (x) #t)
+                                  (lambda (x y) #t))))]))
 
   (define (in-list l)
-    (unless (list? l) (raise-type-error 'in-list "list" l))
+    ; (unless (list? l) (raise-type-error 'in-list "list" l))
     (make-do-sequence (lambda () (:list-gen l))))
   
   (define (:list-gen l)
@@ -402,6 +417,23 @@
                                      (lambda (x) (not (eof-object? x)))
                                      (lambda (x v) #t)))))
   
+  (define (in-hash-table ht)
+    (unless (hash-table? ht) (raise-type-error 'in-hash-table "hash-table" ht))
+    (make-do-sequence (lambda () (:hash-table-gen ht cons (lambda (p) (values (car p) (cdr p)))))))
+  (define (in-hash-table-keys ht)
+    (unless (hash-table? ht) (raise-type-error 'in-hash-table-keys "hash-table" ht))
+    (make-do-sequence (lambda () (:hash-table-gen ht (lambda (k v) k) values))))
+  (define (in-hash-table-values ht)
+    (unless (hash-table? ht) (raise-type-error 'in-hash-table-values "hash-table" ht))
+    (make-do-sequence (lambda () (:hash-table-gen ht (lambda (k v) v) values))))
+  (define (in-hash-table-pairs ht)
+    (unless (hash-table? ht) (raise-type-error 'in-hash-table-values "hash-table" ht))
+    (make-do-sequence (lambda () (:hash-table-gen ht cons values))))
+
+  (define (:hash-table-gen ht sel f)
+    (let ([l (hash-table-map ht sel)])
+      (values (lambda (l) (f (car l))) cdr l pair? (lambda args #t) (lambda args #t))))
+
   (define (stop-before g pred)
     (unless (sequence? g) (raise-type-error 'stop-before "sequence" g))
     (unless (and (procedure? pred)
@@ -464,7 +496,7 @@
         (make-do-sequence
          (lambda ()
            (let-values ([(pos->vals pos-nexts inits pos-cont?s pre-cont?s post-cont?s)
-                         (lists-for (p->v p-s i ps? pr? po?) ([g sequences])
+                         (for/lists (p->v p-s i ps? pr? po?) ([g sequences])
                            (make-sequence #f g))])
              (values
               (lambda (poses) (apply values (map (lambda (pos->val pos) (pos->val pos))
@@ -488,9 +520,9 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  runnign sequences outside of a loop:
 
-  (define (sequence-run g)
+  (define (sequence-generator g)
     (unless (sequence? g)
-      (raise-type-error 'sequence-run "sequence" g))
+      (raise-type-error 'sequence-generator "sequence" g))
     (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                   (make-sequence #f g)])
       (let ([pos init])
@@ -545,21 +577,21 @@
                       sequence-next)))))))
       
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;  core `fold-for' syntax
+  ;;  core `for/fold' syntax
   
   (define-syntax values*
     (syntax-rules ()
       [(_ x) x]
       [(_ x ...) (values x ...)]))
 
-  (define-syntax (fold-forX/derived stx)
+  (define-syntax (for/foldX/derived stx)
     (syntax-case stx ()
       ;; Done case (no more clauses, and no generated clauses to emit):
       [(_ [orig-stx multi? first-multi? nested? emit? ()] ([fold-var fold-init] ...) () expr1 expr ...)
        #`(let ([fold-var fold-init] ...) (let () expr1 expr ...))]
       ;; Switch-to-emit case (no more clauses to generate):
       [(_ [orig-stx multi? first-multi? nested? #f binds] ([fold-var fold-init] ...) () . body)
-       #`(fold-forX/derived [orig-stx multi? first-multi? nested? #t binds] ([fold-var fold-init] ...) () . body)]
+       #`(for/foldX/derived [orig-stx multi? first-multi? nested? #t binds] ([fold-var fold-init] ...) () . body)]
       ;; Emit case:
       [(_ [orig-stx multi? first-multi? nested? #t binds] ([fold-var fold-init] ...) rest . body)
        (with-syntax ([(([outer-binding ...]
@@ -578,7 +610,7 @@
                    (let-values (inner-binding ... ...)
                      (if (and pre-guard ...)
                          (let-values ([(fold-var ...)
-                                       (fold-forX/derived [orig-stx multi? first-multi? nested? #f ()] ([fold-var fold-var] ...) rest . body)])
+                                       (for/foldX/derived [orig-stx multi? first-multi? nested? #f ()] ([fold-var fold-var] ...) rest . body)])
                            (if (and post-guard ...)
                                (comp-loop fold-var ... loop-arg ... ...)
                                (values* fold-var ...)))
@@ -598,7 +630,7 @@
       ;; Guard case, no pending emits:
       [(_ [orig-stx multi? first-multi? nested? #f ()] ([fold-var fold-init] ...) (#:when expr . rest) . body)
        #'(if expr
-             (fold-forX/derived [orig-stx multi? first-multi? nested? #f ()] ([fold-var fold-init] ...) rest . body)
+             (for/foldX/derived [orig-stx multi? first-multi? nested? #f ()] ([fold-var fold-init] ...) rest . body)
              (values* fold-init ...))]
       ;; Guard case, pending emits need to be flushed first
       [(_ [orig-stx multi? first-multi? nested? #f binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)
@@ -606,7 +638,7 @@
       ;; Convert single-value form to multi-value form:
       [(_ [orig-stx #f #f nested? #f binds] fold-bind ([id rhs] . rest) . body)
        (identifier? #'id)
-       #'(fold-forX/derived [orig-stx #f #t nested? #f binds] fold-bind ([(id) rhs] . rest) . body)]
+       #'(for/foldX/derived [orig-stx #f #t nested? #f binds] fold-bind ([(id) rhs] . rest) . body)]
       ;; If we get here in single-value mode, then it's a bad clause:
       [(_ [orig-stx #f #f nested? #f binds] fold-bind (clause . rest) . body)
        (raise-syntax-error
@@ -621,25 +653,25 @@
       [(_ [orig-stx . _rest] . _rest2)
        (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
-  (define-syntax fold-for/derived
+  (define-syntax for/fold/derived
     (syntax-rules ()
       [(_ orig-stx . rest)
-       (fold-forX/derived [orig-stx #f #f #f #f ()] . rest)]))
+       (for/foldX/derived [orig-stx #f #f #f #f ()] . rest)]))
 
-  (define-syntax fold-for-values/derived
+  (define-syntax for/fold-values/derived
     (syntax-rules ()
       [(_ orig-stx . rest)
-       (fold-forX/derived [orig-stx #t #t #f #f ()] . rest)]))
+       (for/foldX/derived [orig-stx #t #t #f #f ()] . rest)]))
 
-  (define-syntax fold-for*/derived
+  (define-syntax for*/fold/derived
     (syntax-rules ()
       [(_ orig-stx . rest)
-       (fold-forX/derived [orig-stx #f #f #t #f ()] . rest)]))
+       (for/foldX/derived [orig-stx #f #f #t #f ()] . rest)]))
 
-  (define-syntax fold-for*-values/derived
+  (define-syntax for*/fold-values/derived
     (syntax-rules ()
       [(_ orig-stx . rest)
-       (fold-forX/derived [orig-stx #t #t #t #f ()] . rest)]))
+       (for/foldX/derived [orig-stx #t #t #t #f ()] . rest)]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  derived `for' syntax
@@ -684,23 +716,23 @@
     (syntax-rules ()
       [(_ (for for-values for* for*-values) fold-bind wrap rhs-wrap combine)
        (begin
-         (define-syntax-via-derived for fold-for/derived fold-bind wrap rhs-wrap combine #f)
-         (define-syntax-via-derived for-values fold-for-values/derived fold-bind wrap rhs-wrap combine #t)
-         (define-syntax-via-derived for* fold-for*/derived fold-bind wrap rhs-wrap combine #f)
-         (define-syntax-via-derived for*-values fold-for*-values/derived fold-bind wrap rhs-wrap combine #t))]))
+         (define-syntax-via-derived for for/fold/derived fold-bind wrap rhs-wrap combine #f)
+         (define-syntax-via-derived for-values for/fold-values/derived fold-bind wrap rhs-wrap combine #t)
+         (define-syntax-via-derived for* for*/fold/derived fold-bind wrap rhs-wrap combine #f)
+         (define-syntax-via-derived for*-values for*/fold-values/derived fold-bind wrap rhs-wrap combine #t))]))
 
-  (define-syntax (fold-for stx)
+  (define-syntax (for/fold stx)
     (syntax-case stx ()
-      [(_ . rest) (quasisyntax/loc stx (fold-for/derived #,stx . rest))]))
-  (define-syntax (fold-for-values stx)
+      [(_ . rest) (quasisyntax/loc stx (for/fold/derived #,stx . rest))]))
+  (define-syntax (for/fold-values stx)
     (syntax-case stx ()
-      [(_ . rest) (quasisyntax/loc stx (fold-for-values/derived #,stx . rest))]))
-  (define-syntax (fold-for* stx)
+      [(_ . rest) (quasisyntax/loc stx (for/fold-values/derived #,stx . rest))]))
+  (define-syntax (for*/fold stx)
     (syntax-case stx ()
-      [(_ . rest) (quasisyntax/loc stx (fold-for*/derived #,stx . rest))]))
-  (define-syntax (fold-for*-values stx)
+      [(_ . rest) (quasisyntax/loc stx (for*/fold/derived #,stx . rest))]))
+  (define-syntax (for*/fold-values stx)
     (syntax-case stx ()
-      [(_ . rest) (quasisyntax/loc stx (fold-for*-values/derived #,stx . rest))]))
+      [(_ . rest) (quasisyntax/loc stx (for*/fold-values/derived #,stx . rest))]))
 
   (define-for-variants (for for-values for* for*-values)
     ([fold-var (void)]) 
@@ -708,13 +740,13 @@
     (lambda (x) x)
     (lambda (x) `(,#'begin ,x ,#'(void))))
   
-  (define-for-variants (list-for list-for-values list-for* list-for*-values)
+  (define-for-variants (for/list for/list-values for*/list for*/list-values)
     ([fold-var null])
     (lambda (x) `(,#'reverse ,x))
     (lambda (x) x)
     (lambda (x) `(,#'cons ,x ,#'fold-var)))
   
-  (define-for-syntax (make-lists-for-values fold-for-id)
+  (define-for-syntax (make-for/lists-values for/fold-id)
     (lambda (stx)
       (syntax-case stx ()
         [(_ (id ...) bindings expr1 expr ...)
@@ -727,40 +759,40 @@
                                              id)))
                      ids)
            (with-syntax ([(id2 ...) (generate-temporaries ids)]
-                         [fold-for fold-for-id]
+                         [for/fold for/fold-id]
                          [orig-stx stx])
              #'(let-values ([(id ...)
-                             (fold-for orig-stx ([id null] ...) bindings
+                             (for/fold orig-stx ([id null] ...) bindings
                                (let-values ([(id2 ...) (let ()
                                                          expr1
                                                          expr ...)])
                                  (values* (cons id2 id) ...)))])
                  (values* (reverse id) ...))))])))
   
-  (define-syntax lists-for (make-lists-for-values #'fold-for/derived))
-  (define-syntax lists-for-values (make-lists-for-values #'fold-for-values/derived))
-  (define-syntax lists-for* (make-lists-for-values #'fold-for*/derived))
-  (define-syntax lists-for*-values (make-lists-for-values #'fold-for*-values/derived))
+  (define-syntax for/lists (make-for/lists-values #'for/fold/derived))
+  (define-syntax for/lists-values (make-for/lists-values #'for/fold-values/derived))
+  (define-syntax for*/lists (make-for/lists-values #'for*/fold/derived))
+  (define-syntax for*/lists-values (make-for/lists-values #'for*/fold-values/derived))
   
-  (define-for-variants (and-for and-for-values and-for* and-for*-values)
+  (define-for-variants (for/and for/and-values for*/and for*/and-values)
     ([result #t])
     (lambda (x) x)
     (lambda (rhs) #`(stop-after #,rhs (lambda x (not result))))
     (lambda (x) x))
   
-  (define-for-variants (or-for or-for-values or-for* or-for*-values)
+  (define-for-variants (for/or for/or-values for*/or for*/or-values)
     ([result #f])
     (lambda (x) x)
     (lambda (rhs) #`(stop-after #,rhs (lambda x result)))
     (lambda (x) x))
 
-  (define-for-variants (first-for first-for-values first-for* first-for*-values)
+  (define-for-variants (for/first for/first-values for*/first for*/first-values)
     ([val #f][stop? #f])
     (lambda (x) #`(let-values ([(val _) #,x]) val))
     (lambda (rhs) #`(stop-after #,rhs (lambda x stop?)))
     (lambda (x) #`(values #,x #t)))
   
-  (define-for-variants (last-for last-for-values last-for* last-for*-values)
+  (define-for-variants (for/last for/last-values for*/last for*/last-values)
     ([result #f])
     (lambda (x) x)
     (lambda (rhs) rhs)
@@ -775,7 +807,7 @@
       (let loop ([stx stx])
         (syntax-case stx ()
           [[(id) (_ a b step)] #`[(id)
-                                  (:do-gen
+                                  (:do-in
                                    ;; outer bindings:
                                    ([(start) a] [(end) b] [(inc) step])
                                    ;; outer check:
@@ -804,29 +836,36 @@
           [[(id) (_ b)] (loop #'[(id) (_ 0 b 1)])]
           [_else #f]))))
 
-  (define-sequence-syntax *in-nats
-    #'in-nats
+  (define-sequence-syntax *in-naturals
+    #'in-naturals
     (lambda (orig-stx stx)
-      (syntax-case stx ()
-        [[(id) (_)] #`[(id)
-                       (:do-gen
-                        ;; outer bindings:
-                        ()
-                        ;; outer check:
-                        (void)
-                        ;; loop bindings:
-                        ([pos 0])
-                        ;; pos check
-                        #t
-                        ;; inner bindings
-                        ([(id) pos])
-                        ;; pre guard
-                        #t
-                        ;; post guard
-                        #t
-                        ;; loop args
-                        ((+ pos 1)))]]
-          [_else #f])))
+      (let loop ([stx stx])
+        (syntax-case stx ()
+          [[(id) (_ start)]
+           (and (integer? (syntax-e #'start))
+                (exact? (syntax-e #'start))
+                ((syntax-e #'start) . >= . 0))
+           #`[(id)
+              (:do-in
+               ;; outer bindings:
+               ()
+               ;; outer check:
+               (void)
+               ;; loop bindings:
+               ([pos start])
+               ;; pos check
+               #t
+               ;; inner bindings
+               ([(id) pos])
+               ;; pre guard
+               #t
+               ;; post guard
+               #t
+               ;; loop args
+               ((+ pos 1)))]]
+          [[(id) (_)]
+           (loop #'[(id) (_ 0)])]
+          [_else #f]))))
 
   (define-sequence-syntax *in-list
     #'in-list
@@ -834,15 +873,15 @@
       (syntax-case stx ()
         [((id) (_ lst-expr))
          #'[(id)
-            (:do-gen
+            (:do-in
              ;;outer bindings
              ([(lst) lst-expr])
              ;; outer check
-             (unless (list? lst) (in-list lst))
+             (void) ; (unless (list? lst) (in-list lst))
              ;; loop bindings
              ([lst lst])
              ;; pos check
-             (pair? lst)
+             (not (null? lst))
              ;; inner bindings
              ([(id) (car lst)])
              ;; pre guard
@@ -865,7 +904,7 @@
          (syntax-case stx ()
            [((id) (_ vec-expr))
             #'[(id)
-               (:do-gen
+               (:do-in
                 ;;outer bindings
                 ([(vec len) (let ([vec vec-expr])
                               (unless (vector? vec)
@@ -913,4 +952,4 @@
     (lambda (orig-stx stx)
       (syntax-case stx ()
         [((id1 id2) (_ gen-expr))
-         #'[(id1 id2) (in-parallel gen-expr (*in-nats))]]))))
+         #'[(id1 id2) (in-parallel gen-expr (*in-naturals))]]))))
