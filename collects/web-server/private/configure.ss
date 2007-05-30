@@ -5,7 +5,7 @@
            (lib "list.ss")
            (lib "pretty.ss")
            (lib "file.ss")
-           (only (lib "configuration.ss" "web-server")
+           (only (lib "web-config-unit.ss" "web-server")
                  default-configuration-table-path)
            (lib "configuration-table-structs.ss" "web-server" "private")
            (lib "parse-table.ss" "web-server" "private")

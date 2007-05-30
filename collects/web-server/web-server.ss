@@ -10,7 +10,6 @@
            "web-config-sig.ss"
            "web-server-sig.ss"
            "web-server-unit.ss"
-	   "configuration.ss"
            (prefix http: "private/request.ss"))
   (provide
    serve

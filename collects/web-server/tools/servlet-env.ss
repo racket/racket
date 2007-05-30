@@ -1,8 +1,8 @@
 (module servlet-env mzscheme
   (require (lib "sendurl.ss" "net")
            (lib "unit.ss"))
-  (require "../configuration.ss"
-           "../web-server.ss"
+  (require "../web-server.ss"
+           "../web-config-unit.ss"
            "../web-config-sig.ss"
            "../private/util.ss"
            "../response-structs.ss"
@@ -54,7 +54,7 @@
       final-value))
   
   (define (build-standalone-servlet-configuration the-port the-path the-servlet)
-    (let ([basic-configuration@ (load-configuration default-configuration-table-path)]
+    (let ([basic-configuration@ (configuration-table->web-config@ default-configuration-table-path)]
           [the-scripts (make-cache-table)])
       (define-values/invoke-unit basic-configuration@ 
         (import) 

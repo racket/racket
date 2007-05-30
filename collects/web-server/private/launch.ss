@@ -4,11 +4,11 @@
            (lib "unit.ss")
            (lib "tcp-sig.ss" "net"))
   (require "util.ss"         
+           "../web-config-unit.ss"
            "../web-config-sig.ss"
            "../web-server-unit.ss"
-           "../web-server-sig.ss"
-           "../configuration.ss")
-
+           "../web-server-sig.ss")
+  
   (define configuration@
     (parse-command-line
      "web-server"
@@ -17,11 +17,11 @@
         [("-f" "--configuration-table")
          ,(lambda (flag file-name)
             (cond
-             [(not (file-exists? file-name))
-              (error 'web-server "configuration file ~s not found" file-name)]
-             [(not (memq 'read (file-or-directory-permissions file-name)))
-              (error 'web-server "configuration file ~s is not readable" file-name)]
-             [else (cons 'config (string->path file-name))]))
+              [(not (file-exists? file-name))
+               (error 'web-server "configuration file ~s not found" file-name)]
+              [(not (memq 'read (file-or-directory-permissions file-name)))
+               (error 'web-server "configuration file ~s is not readable" file-name)]
+              [else (cons 'config (string->path file-name))]))
          ("Use an alternate configuration table" "file-name")]
         [("-p" "--port")
          ,(lambda (flag port)
@@ -43,12 +43,12 @@
                   (error 'web-server "ip-address expects a numeric ip-address (i.e. 127.0.0.1); given ~s" ip-address))))
          ("Restrict access to come from ip-address" "ip-address")]))
      (lambda (flags)
-       (load-configuration
+       (configuration-table->web-config@
         (extract-flag 'config flags default-configuration-table-path)
         #:port (extract-flag 'port flags #f)
         #:listen-ip (extract-flag 'ip-address flags #f)))
      '()))
-
+  
   (define-compound-unit launch@
     (import (T : tcp^))
     (export S)
@@ -60,5 +60,5 @@
     launch@
     (import tcp^)
     (export web-server^))
-
+  
   (provide serve))

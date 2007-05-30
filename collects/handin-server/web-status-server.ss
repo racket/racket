@@ -8,7 +8,7 @@
            (lib "web-server-unit.ss" "web-server")
            (lib "web-server-sig.ss" "web-server")
            (lib "web-config-sig.ss" "web-server")
-           (lib "configuration.ss" "web-server")
+           (lib "web-config-unit.ss" "web-server")
            (lib "namespace.ss" "web-server" "configuration")
            "private/config.ss")
 
@@ -58,7 +58,7 @@
         (virtual-host-table)))
 
     (define configuration
-      (load-configuration-sexpr
+      (configuration-table-sexpr->web-config@
        config
        #:web-server-root web-dir
        #:make-servlet-namespace

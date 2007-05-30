@@ -1,12 +1,44 @@
-(module configuration mzscheme
+(module web-config-unit mzscheme
   (require (lib "unit.ss")
-           (lib "kw.ss"))
-  (require "configuration-table-structs.ss"
-           "util.ss"
-           "cache-table.ss"
-           "../configuration/namespace.ss"
-           "../configuration/responders.ss"
-           "../web-config-sig.ss")
+           (lib "kw.ss")
+           (lib "contract.ss"))
+  (require "private/configuration-table-structs.ss"
+           "private/util.ss"
+           "private/cache-table.ss"
+           "private/parse-table.ss"
+           "configuration/namespace.ss"
+           "configuration/responders.ss"
+           "web-config-sig.ss")
+  (provide configuration-table->web-config@
+           configuration-table-sexpr->web-config@)
+  (provide/contract
+   [read-configuration-table (path-string? . -> . configuration-table?)]
+   [default-configuration-table-path path?])  
+  
+  (define default-configuration-table-path
+    (build-path (collection-path "web-server") "configuration-table"))
+  
+  ; read-configuration-table : path -> configuration-table
+  (define (read-configuration-table table-file-name)
+    (parse-configuration-table (call-with-input-file table-file-name read)))
+  
+  ; configuration-table->web-config@ : path -> configuration
+  (define/kw (configuration-table->web-config@ table-file-name
+                                               #:other-keys bct-keys)
+    (apply configuration-table-sexpr->web-config@ 
+           (call-with-input-file table-file-name read)
+           #:web-server-root (directory-part table-file-name)
+           bct-keys))
+  
+  ; configuration-table-sexpr->web-config@ : string? sexp -> configuration
+  (define/kw (configuration-table-sexpr->web-config@ sexpr
+                                                     #:key
+                                                     [web-server-root (directory-part default-configuration-table-path)]
+                                                     #:other-keys bct-keys)
+    (apply complete-configuration
+           web-server-root
+           (parse-configuration-table sexpr)
+           bct-keys))
   
   ; : str configuration-table -> configuration
   (define/kw (complete-configuration base table
@@ -25,7 +57,7 @@
            bct-keys))
   
   (define default-make-servlet-namespace (make-make-servlet-namespace))
-
+  
   ; : configuration-table host-table -> configuration
   (define/kw (build-configuration table the-virtual-hosts
                                   #:key
@@ -47,7 +79,7 @@
       (define instances (make-hash-table))
       (define scripts (box (make-cache-table)))
       (define make-servlet-namespace the-make-servlet-namespace)))
-    
+  
   ; apply-default-functions-to-host-table : str host-table -> host
   ;; Greg P: web-server-root is the directory-part of the path to the configuration-table (I don't think I like this.)
   (define (apply-default-functions-to-host-table web-server-root host-table)
@@ -94,6 +126,4 @@
                    (and (regexp-match (car x) host-name-possibly-followed-by-a-collon-and-a-port-number)
                         (cadr x)))
                  expanded-virtual-host-table)
-          default-host)))
-  
-  (provide complete-configuration))
+          default-host))))

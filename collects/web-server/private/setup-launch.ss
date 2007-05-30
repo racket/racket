@@ -2,7 +2,7 @@
   (require (lib "cmdline.ss")
            (lib "file.ss")
            (lib "struct.ss"))
-  (require "../configuration.ss"
+  (require "../web-config-unit.ss"
            "configuration-table-structs.ss"
            "util.ss"
            "configuration-util.ss")
@@ -35,7 +35,7 @@
        ;; Write configuration-table into dest/configuration-table
        (write-configuration-table
         (copy-struct configuration-table 
-                     (get-configuration default-configuration-table-path)
+                     (read-configuration-table default-configuration-table-path)
                      [configuration-table-port port])
         (build-path dest "configuration-table"))))
    '()))

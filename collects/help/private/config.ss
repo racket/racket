@@ -1,6 +1,6 @@
 (module config mzscheme
   (require (lib "file.ss")
-           (lib "configuration.ss" "web-server")
+           (lib "web-config-unit.ss" "web-server")
 	   (lib "dirs.ss" "setup")
            (lib "config.ss" "planet")
            "internal-hp.ss")
@@ -42,7 +42,7 @@
                  (servlet-root ,servlet-root)
                  (mime-types "../../web-server/default-web-root/mime.types")
                  (password-authentication "passwords"))))])
-      (load-configuration-sexpr
+      (configuration-table-sexpr->web-config@
        `((port ,internal-port)
          (max-waiting 40)
          (initial-connection-timeout 30)
