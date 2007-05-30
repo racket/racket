@@ -1,9 +1,36 @@
 (module util mzscheme
-  (require (lib "contract.ss")
+  (require (lib "list.ss")
+           (lib "contract.ss")
            (lib "string.ss")
-           (lib "url.ss" "net")
-           (lib "uri-codec.ss" "net"))
-  (require "../request-structs.ss")
+           (lib "url.ss" "net"))
+  (provide
+   url-replace-path)
+  (provide/contract
+   [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
+   [extract-flag (symbol? (listof (cons/c symbol? any/c)) any/c . -> . any/c)]
+   [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
+   [path->list  (path? . -> . (cons/c (or/c path? (symbols 'up 'same))
+                                      (listof (or/c path? (symbols 'up 'same)))))]
+   [directory-part (path? . -> . path?)]
+   [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
+   [exn->string ((or/c exn? any/c) . -> . string?)]
+   [build-path-unless-absolute (path-string? path-string? . -> . path?)])
+  
+  ;; replace-path: (url-path -> url-path) url -> url
+  ;; make a new url by replacing the path part of a url with a function
+  ;; of the url's old path
+  ;; also remove the query
+  (define (url-replace-path proc in-url)
+    (let ([new-path (proc (url-path in-url))])
+      (make-url
+       (url-scheme in-url)
+       (url-user in-url)
+       (url-host in-url)
+       (url-port in-url)
+       (url-path-absolute? in-url)
+       new-path
+       empty
+       (url-fragment in-url))))
   
   ;; ripped this off from url-unit.ss
   (define (url-path->string strs)
@@ -52,7 +79,7 @@
                  s)])
       (string-lowercase! s)
       (string->symbol s)))
-   
+  
   (define (directory-part path)
     (let-values ([(base name must-be-dir) (split-path path)])
       (cond
@@ -78,15 +105,4 @@
     (let ([x (assq name flags)])
       (if x
           (cdr x)
-          default)))
-  
-  (provide/contract
-   [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
-   [extract-flag (symbol? (listof (cons/c symbol? any/c)) any/c . -> . any/c)]
-   [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
-   [path->list  (path? . -> . (cons/c (or/c path? (symbols 'up 'same))
-                                      (listof (or/c path? (symbols 'up 'same)))))]
-   [directory-part (path? . -> . path?)]
-   [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
-   [exn->string ((or/c exn? any/c) . -> . string?)]
-   [build-path-unless-absolute (path-string? path-string? . -> . path?)]))
+          default))))

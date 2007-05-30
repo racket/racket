@@ -20,7 +20,6 @@
            "../managers/timeouts.ss"
            "../managers/lru.ss"
            "../managers/none.ss"
-           "../private/url.ss"
            "../private/servlet.ss"
            "../private/cache-table.ss")  
   (provide/contract
