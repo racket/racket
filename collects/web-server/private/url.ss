@@ -5,7 +5,6 @@
            (lib "plt-match.ss"))
   
   (provide/contract
-   ; XXX contract maybe
    [match-url-params (string? . -> . (or/c false/c (list/c string? string? string? string?)))]
    [continuation-url? (url? . -> . (or/c boolean? (list/c number? number? number?)))]
    [embed-ids ((list/c number? number? number?) url? . -> . string?)])

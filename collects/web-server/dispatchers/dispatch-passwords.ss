@@ -10,8 +10,7 @@
            "../private/response.ss")  
   (provide/contract
    [interface-version dispatcher-interface-version?])
-  (provide ; XXX contract kw
-   make)
+  (provide make)
   
   (define interface-version 'v1)
   (define/kw (make #:key

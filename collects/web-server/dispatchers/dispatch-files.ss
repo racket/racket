@@ -16,8 +16,7 @@
            "../response-structs.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?])
-  (provide ; XXX contract kw
-   make)
+  (provide make)
   
   ; more here - ".." should probably raise an error instead of disappearing.
   (define (url-path->path base p)

@@ -26,9 +26,7 @@
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
    [xexpr/callback->xexpr (embed/url? xexpr/callback? . -> . xexpr?)]
-   ; XXX contract
    [current-url-transform parameter?]
-   ; XXX contract
    [current-servlet-continuation-expiration-handler parameter?]
    [redirect/get (-> request?)]
    [redirect/get/forget (-> request?)]

@@ -6,7 +6,6 @@
            "../response-structs.ss")           
   
   ; configuration is now a unit.  See sig.ss
-  ; XXX contract
   (define configuration?
     unit?)
   

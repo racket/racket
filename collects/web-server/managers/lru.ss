@@ -5,7 +5,6 @@
   (require "manager.ss"
            "../servlet-structs.ss")
   (provide/contract
-   ; XXX contract kw
    [create-LRU-manager ((expiration-handler? number? number? (-> boolean?)) any/c . ->* . (manager?))])
   
   ;; Utility

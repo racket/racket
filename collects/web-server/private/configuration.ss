@@ -227,7 +227,7 @@
                  expanded-virtual-host-table)
           default-host)))
   
-  (provide ; XXX contract
+  (provide 
    build-configuration
    apply-default-functions-to-host-table
    make-make-servlet-namespace)
@@ -236,7 +236,6 @@
    [complete-developer-configuration (path-string? configuration-table? . -> . configuration?)])
   (provide/contract
    [error-response ((natural-number/c string? string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
-   ; XXX contract
    [servlet-loading-responder (string? any/c . -> . response?)]
    [gen-servlet-not-found (path-string? . -> . (url? . -> . response?))]
    [gen-servlet-responder (path-string? . -> . (url? any/c . -> . response?))]

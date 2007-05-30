@@ -46,11 +46,8 @@
            ([connection connection?]
             [request request?]
             [suspend procedure?])]
-   ; XXX contract maybe
    [current-servlet thread-cell?]
-   ; XXX contract maybe
    [current-servlet-instance-id thread-cell?]
-   ; XXX contract maybe
    [current-execution-context thread-cell?]
    [get-current-servlet-instance-id (-> number?)]
    [current-servlet-manager (-> manager?)]

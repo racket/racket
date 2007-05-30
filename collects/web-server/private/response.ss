@@ -13,7 +13,6 @@
    [rename ext:output-response output-response (connection? any/c . -> . any)]
    [rename ext:output-response/method output-response/method (connection? response? symbol? . -> . any)]
    [rename ext:output-file output-file (connection? path? symbol? bytes? . -> . any)]
-   ; XXX add contract
    [rename ext:output-file/partial output-file/partial (connection? path? symbol? bytes? integer? integer? . -> . any)])
   
   ;; Table 1. head responses:

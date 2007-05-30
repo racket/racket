@@ -24,9 +24,7 @@
            "../private/cache-table.ss")  
   (provide/contract
    [interface-version dispatcher-interface-version?])
-  (provide ; XXX contract improve
-   ; XXX contract kw
-   make)
+  (provide make)
   
   (define (url-path->path base p)
     (path->complete-path

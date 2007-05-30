@@ -31,5 +31,4 @@
       (lambda (a) (regexp-match rx a))))
   
   (provide/contract
-   ; XXX contract maybe   
    [extract-user-pass ((listof header?) . -> . (or/c false/c (cons/c bytes? bytes?)))]))

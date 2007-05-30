@@ -61,5 +61,4 @@
     (import tcp^)
     (export web-server^))
 
-  (provide ; XXX contract
-   serve))
+  (provide serve))

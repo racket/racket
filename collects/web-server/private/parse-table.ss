@@ -86,5 +86,4 @@
     (and (number? x) (exact? x) (integer? x) (<= 0 x)))
   
   (provide/contract
-   ; XXX contract
    [parse-configuration-table (list? . -> . configuration-table?)]))

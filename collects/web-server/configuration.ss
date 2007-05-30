@@ -80,13 +80,12 @@
     
     new-config@)
   
-  (provide ; XXX contract
+  (provide
    make-make-servlet-namespace
    load-configuration-sexpr)
   (provide/contract
    [complete-configuration (path-string? configuration-table? . -> . configuration?)]
    [get-configuration (path-string? . -> . configuration-table?)]
-   ; XXX contract
    [build-developer-configuration (list? . -> . configuration?)]
    [default-configuration-table-path path?]
    [update-configuration (configuration? (listof (cons/c symbol? any/c)) . -> . configuration?)]

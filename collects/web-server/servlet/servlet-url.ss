@@ -85,7 +85,6 @@
                           path))))
   
   (provide/contract
-   ; XXX contract maybe
    [struct servlet-url ([protocol (or/c false/c string?)]
                         [host (or/c false/c string?)]
                         [port (or/c false/c natural-number/c)]
@@ -99,5 +98,4 @@
    [servlet-url->url-string/no-continuation (servlet-url? . -> . string?)]
    [servlet-url->servlet-url/no-extra-path (servlet-url? . -> . servlet-url?)]
    [request->servlet-url (request? . -> . servlet-url?)]
-   ; XXX contract maybe
    [uri->servlet-url ((url?) ((or/c false/c string?) (or/c false/c natural-number/c)) . opt-> . servlet-url?)]))

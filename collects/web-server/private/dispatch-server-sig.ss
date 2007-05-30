@@ -9,5 +9,5 @@
     (port listen-ip max-waiting initial-connection-timeout
           read-request dispatch))
   
-  (provide ; XXX contract signature
+  (provide
    dispatch-server^ dispatch-server-config^))
