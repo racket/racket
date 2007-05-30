@@ -2,11 +2,11 @@
      #| TODO -----------------------------------------------------------------------
         buttons: multiple points of returns: continuation functions 
      |# 
-     (require (lib "servlet-env.ss" "web-server" "tools")
+     (require (lib "servlet-env.ss" "web-server")
               (lib "error.ss" "htdp")
               (lib "list.ss")
               (lib "etc.ss"))
-     (provide (all-from (lib "servlet-env.ss" "web-server" "tools"))
+     (provide (all-from (lib "servlet-env.ss" "web-server"))
               
               single-query        ; FormElement -> Answer
               

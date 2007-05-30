@@ -1,10 +1,10 @@
 ; Author: Paul Graunke
 #cs(module servlet mzscheme
-     (require (lib "servlet-env.ss" "web-server" "tools")
+     (require (lib "servlet-env.ss" "web-server")
               (lib "error.ss" "htdp")
               (lib "xml.ss" "xml")
               (lib "etc.ss"))
-     (provide (all-from (lib "servlet-env.ss" "web-server" "tools"))
+     (provide (all-from (lib "servlet-env.ss" "web-server"))
               (rename wrapped-build-suspender build-suspender))
      
      ; build-suspender : (listof html) (listof html) [(listof (cons sym str))] [(listof (cons sym str))] -> str -> response
