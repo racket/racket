@@ -1504,7 +1504,7 @@
   
   ;process-inner def (list name) type-records symbol -> inner-record
   (define (process-inner def cname type-recs level)
-    (make-inner-record (filename-extension (id-string (def-name def)))
+    (make-inner-record (bytes->string/locale (filename-extension (id-string (def-name def))))
                        (id-string (def-name def))
                        (map modifier-kind (header-modifiers (def-header def)))
                        (class-def? def)))

@@ -396,6 +396,7 @@
       ;;                                            (U class-record scheme-record procedure)
       (define/public get-class-record
         (opt-lambda (ctype [container #f] [fail (lambda () null)])
+          ;(printf "get-class-record: ctype->~a container->~a ~n" ctype container)
           (let*-values (((key key-path) (normalize-key ctype))
                         ((key-inner) (when (cons? container) (string-append (car container) "." key)))
                         ((outer-record) (when (cons? container) (get-class-record container)))
