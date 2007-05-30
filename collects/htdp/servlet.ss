@@ -3,11 +3,22 @@
      (require (lib "servlet-env.ss" "web-server" "tools")
               (lib "error.ss" "htdp")
               (lib "xml.ss" "xml")
-              (lib "list.ss")
-              (lib "prim.ss" "lang")
-              (lib "unitsig.ss"))
-     (provide (all-from-except (lib "servlet-env.ss" "web-server" "tools") build-suspender)
+              (lib "etc.ss"))
+     (provide (all-from (lib "servlet-env.ss" "web-server" "tools"))
               (rename wrapped-build-suspender build-suspender))
+     
+     ; build-suspender : (listof html) (listof html) [(listof (cons sym str))] [(listof (cons sym str))] -> str -> response
+     (define build-suspender
+       (opt-lambda (title content [body-attributes '([bgcolor "white"])] [head-attributes null])
+         (lambda (k-url)
+           `(html (head ,head-attributes
+                        (meta ([http-equiv "Pragma"] [content "no-cache"])) ; don't cache in netscape
+                        (meta ([http-equiv "Expires"] [content "-1"])) ; don't cache in IE
+                        ; one site said to use -1, another said to use 0.
+                        (title . ,title))
+                  (body ,body-attributes
+                        (form ([action ,k-url] [method "post"])
+                              ,@content))))))
      
      (define wrapped-build-suspender
        (case-lambda

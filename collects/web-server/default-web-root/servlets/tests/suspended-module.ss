@@ -12,8 +12,10 @@
                  'name
                  (request-bindings
                   (send/suspend (let ([question "What is your name?"])
-                                  (build-suspender
-                                   `(,question)
-                                   `(,question (input ([type "text"] [name "name"]))))))))])
+                                  (lambda (k-url)
+                                    `(html (head (title ,question))
+                                           (body (form ([action ,k-url] [method "post"])
+                                                       ,question
+                                                       (input ([type "text"] [name "order"]))))))))))])
       `(html (head (title "Hi " ,name "!"))
              (body (p "Hello, " ,name "!  Don't you feel special now?"))))))

@@ -8,8 +8,9 @@
   (define timeout +inf.0)
   
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
-    
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(HTML 
       (HEAD ,hd-css
             ,@hd-links
@@ -26,4 +27,4 @@
                          (TARGET "_top")) "http://www.plt-scheme.org/software/mysterx/"))
        (P)
        ,(collection-doc-link "mysterx"
-                             "The MysterX collection")))))
+                             "The MysterX collection")))))))

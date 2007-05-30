@@ -6,7 +6,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "Libraries"))
       (body
@@ -30,4 +32,4 @@
        "If you write a PLT library or extension, we would like to hear about"
        " it!  Please send a message about it to Matthew Flatt at "
        (TT "mflatt@cs.utah.edu") " so we can list it. "
-       "Thanks for your efforts!"))))
+       "Thanks for your efforts!"))))))

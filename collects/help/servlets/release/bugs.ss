@@ -7,7 +7,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "Known Bugs"))
       (body
@@ -15,4 +17,4 @@
        (a ([name "bugs"] [value "Bugs"]))
        "For an up-to-date list of bug reports, see the "
        (a ([href "http://bugs.plt-scheme.org/query/"] [target "_top"])
-          "PLT bug report query page")) ".")))
+          "PLT bug report query page")) ".")))))

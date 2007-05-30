@@ -5,7 +5,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "TeachScheme! Workshops"))
       (body
@@ -28,4 +30,4 @@
        "For more information, see the "
        (a ([href "http://www.teach-scheme.org/Workshops/"]
            [TARGET "_top"])
-          "TeachScheme! Workshops page") "."))))
+          "TeachScheme! Workshops page") "."))))))

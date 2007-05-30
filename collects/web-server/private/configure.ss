@@ -30,6 +30,19 @@
   ; - change all configuration paths (in the configure servlet and in the server) to
   ;   use a platform independent representation (i.e. a listof strings)
   
+    ; build-suspender : (listof html) (listof html) [(listof (cons sym str))] [(listof (cons sym str))] -> str -> response
+  (define build-suspender
+    (opt-lambda (title content [body-attributes '([bgcolor "white"])] [head-attributes null])
+      (lambda (k-url)
+        `(html (head ,head-attributes
+                     (meta ([http-equiv "Pragma"] [content "no-cache"])) ; don't cache in netscape
+                     (meta ([http-equiv "Expires"] [content "-1"])) ; don't cache in IE
+                     ; one site said to use -1, another said to use 0.
+                     (title . ,title))
+               (body ,body-attributes
+                     (form ([action ,k-url] [method "post"])
+                           ,@content))))))
+  
   (define default-configuration-path default-configuration-table-path)
   (define (set-config-path! new)
     (set! default-configuration-path new))

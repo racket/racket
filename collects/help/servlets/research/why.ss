@@ -6,7 +6,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "Why DrScheme?"))
       (body
@@ -57,4 +59,4 @@
        " paper: "
        (a ([href "http://www.ccs.neu.edu/scheme/pubs#jfp01-fcffksf"]
            [target "_top"])
-          "DrScheme: A Programming Environment for Scheme") "."))))
+          "DrScheme: A Programming Environment for Scheme") "."))))))

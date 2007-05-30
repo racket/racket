@@ -6,7 +6,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "Downloadable Patches"))
       (body
@@ -18,4 +20,4 @@
        nbsp nbsp
        ,(let ([url (format "http://download.plt-scheme.org/patches/~a/"
                            (version))])
-          `(a ([href ,url] [target "_top"]) ,url))))))
+          `(a ([href ,url] [target "_top"]) ,url))))))))

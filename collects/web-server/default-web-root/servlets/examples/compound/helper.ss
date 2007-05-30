@@ -11,11 +11,13 @@
                'n
                (request-bindings
                 (send/suspend
-                 (let ([prompt (string-append "Enter " which-number ": ")])
-                   (build-suspender
-                    (list prompt)
-                    `(,@error-message
-                        (p ,prompt (input ([type "text"] [name "n"])))
-                        (input ([type "submit"] [value "Okay"]))))))))]
+                 (lambda (k-url)
+                   (let ([prompt (string-append "Enter " which-number ": ")])
+                     `(html (head (title ,prompt))
+                            (body (form ([action ,k-url]
+                                         [method "post"])
+                                        ,@error-message
+                                        (p ,prompt (input ([type "text"] [name "n"])))
+                                        (input ([type "submit"] [value "Okay"]))))))))))]
              [n (string->number n-str)])
         (or n (ask `((p (font ([color "red"]) ,n-str) " is not a number.  Please enter a number."))))))))

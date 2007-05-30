@@ -2,17 +2,15 @@
   (require (lib "contract.ss")
            (lib "etc.ss")
            (lib "plt-match.ss")
-           (lib "xml.ss" "xml")
            (lib "base64.ss" "net")
-           (lib "url.ss" "net")
            (lib "uri-codec.ss" "net"))
   (require "util.ss"
            "bindings.ss"
-           "../servlet-structs.ss"
            "../request-structs.ss"
            "../response-structs.ss")
   (provide (all-from "bindings.ss")
-           (all-from "../request-structs.ss"))  
+           (all-from "../response-structs.ss")
+           (all-from "../request-structs.ss"))
   
   (define (request-headers request)
     (map (match-lambda
@@ -30,31 +28,6 @@
                   value)])
          (request-bindings/raw request)))
   
-  ;; get-host : Url (listof (cons Symbol String)) -> Symbol
-  ;; host names are case insesitive---Internet RFC 1034
-  (define DEFAULT-HOST-NAME '<none>)
-  (define (get-host uri headers)
-    (cond
-      [(url-host uri) => string->symbol]
-      [(headers-assq* #"Host" headers)
-       => (match-lambda
-            [(struct header (_ v))
-             (string->symbol (bytes->string/utf-8 v))])]
-      [else DEFAULT-HOST-NAME]))
-  
-  ; build-suspender : (listof html) (listof html) [(listof (cons sym str))] [(listof (cons sym str))] -> str -> response
-  (define build-suspender
-    (opt-lambda (title content [body-attributes '([bgcolor "white"])] [head-attributes null])
-      (lambda (k-url)
-        `(html (head ,head-attributes
-                     (meta ([http-equiv "Pragma"] [content "no-cache"])) ; don't cache in netscape
-                     (meta ([http-equiv "Expires"] [content "-1"])) ; don't cache in IE
-                     ; one site said to use -1, another said to use 0.
-                     (title . ,title))
-               (body ,body-attributes
-                     (form ([action ,k-url] [method "post"])
-                           ,@content))))))
-  
   ; redirection-status = (make-redirection-status nat str)
   (define-struct redirection-status (code message))
   
@@ -68,34 +41,21 @@
       (make-response/full (redirection-status-code perm/temp)
                           (redirection-status-message perm/temp)
                           (current-seconds) #"text/html"
-                          `((Location . ,uri)) (list (redirect-page uri)))))
+                          `((Location . ,uri)) (list))))
   
-  ; : str -> str
-  (define (redirect-page url)
-    (xexpr->string `(html (head (meta ((http-equiv "refresh") (url ,url)))
-                                "Redirect to " ,url)
-                          (body (p "Redirecting to " (a ([href ,url]) ,url))))))
-  
-  ; make-html-response/incremental : ((string -> void) -> void) -> response/incremental
-  (define (make-html-response/incremental chunk-maker)
-    (make-response/incremental
-     200 "Okay" (current-seconds) #"text/html" '()
-     chunk-maker))
-  
-  ; : (response -> doesn't) -> void
+  ; with-errors-to-browser 
   ; to report exceptions that occur later to the browser
   ; this must be called at the begining of a servlet
-  (define (report-errors-to-browser send/finish-or-back)
-    (uncaught-exception-handler
-     (lambda (exn)
-       (send/finish-or-back
-        `(html (head (title "Servlet Error"))
-               (body ([bgcolor "white"])
-                     (p "The following error occured: "
-                        (pre ,(exn->string exn)))))))))
+  (define (with-errors-to-browser send/finish-or-back thunk)
+    (with-handlers ([exn? (lambda (exn)
+                            (send/finish-or-back
+                             `(html (head (title "Servlet Error"))
+                                    (body ([bgcolor "white"])
+                                          (p "The following error occured: "
+                                             (pre ,(exn->string exn)))))))])
+      (thunk)))
   
-  ; Authentication
-  
+  ; Authentication  
   (define AUTHENTICATION-REGEXP (regexp "([^:]*):(.*)"))
   (define (match-authentication x) (regexp-match AUTHENTICATION-REGEXP x))
   ;:(define match-authentication (type: (str -> (or/c false (list str str str)))))
@@ -125,20 +85,12 @@
     (let ([rx (byte-regexp #"^Basic .*")])
       (lambda (a) (regexp-match rx a))))
   
-  
-  
   (provide ; all-from
+   with-errors-to-browser
    (rename uri-decode translate-escapes))
   (provide/contract
-   [get-host (url? (listof header?) . -> . symbol?)]
-   ; XXX contract maybe
+   ; XXX contract maybe   
    [extract-user-pass ((listof header?) . -> . (or/c false/c (cons/c bytes? bytes?)))]
-   [build-suspender (((listof xexpr?) (listof xexpr?))
-                     ((listof (list/c symbol? string?)) (listof (list/c symbol? string?)))
-                     . opt-> .
-                     (k-url? . -> . xexpr?))]
-   [make-html-response/incremental (((string? . -> . void) . -> . void) . -> . response/incremental?)]
-   [report-errors-to-browser ((servlet-response? . -> . void) . -> . void)]
    [redirect-to ((string?) (redirection-status?) . opt-> . response/full?)]
    [permanently redirection-status?]
    [temporarily redirection-status?]

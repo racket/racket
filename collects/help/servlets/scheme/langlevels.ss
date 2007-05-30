@@ -6,7 +6,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "A Note on Language Levels"))
       (body
@@ -57,4 +59,4 @@
        "Please follow the links on this page for more information.  If you"
        " have additional questions or comments, please contact us at "
        (a ((href "mailto:scheme@plt-scheme.org")) "scheme@plt-scheme.org")
-       "."))))
+       "."))))))

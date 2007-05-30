@@ -22,7 +22,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "PLT release notes"))
       (body
@@ -39,4 +41,4 @@
                   ("MzScheme release notes"     "mzscheme"  "HISTORY")
                   ("MrEd release notes"         "mred"      "HISTORY")
                   ("Stepper release notes"      "stepper"   "HISTORY")
-                  ("MrFlow release notes"       "mrflow"    "HISTORY")))))))))
+                  ("MrFlow release notes"       "mrflow"    "HISTORY")))))))))))

@@ -11,7 +11,9 @@
     `(ul (li ,@(map (lambda (s) `(div ,s (br))) ss))))
   (define copyright-year 2007)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "License"))
       (body
@@ -88,4 +90,4 @@
             ("GNU lightning"
              "Copyright (c) 1994, 1995, 1996, 1999, 2000, 2001, 2002 Free Software Foundation, Inc.")
             ("GNU Classpath"
-             "GNU Public License with special exception")))))))
+             "GNU Public License with special exception")))))))))

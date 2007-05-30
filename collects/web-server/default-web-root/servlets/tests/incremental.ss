@@ -5,7 +5,8 @@
   (define timeout +inf.0)
   (define (start initial-request)
     (send/finish
-     (make-html-response/incremental
+     (make-response/incremental
+      200 "Okay" (current-seconds) #"text/html" '()
       (lambda (output-chunk)
         (output-chunk "<html><head><title>"
                       "my-title</title></head>\n")

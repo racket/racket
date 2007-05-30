@@ -10,7 +10,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "Release Information"))
       (body
@@ -29,4 +31,4 @@
        (pre nbsp nbsp
             ,(let-values ([(base file dir?)
                            (split-path (collection-path "mzlib"))])
-               (path->string base)))))))
+               (path->string base)))))))))

@@ -47,18 +47,18 @@
   (define (get-matrix-bindings rows columns)
     (request-bindings
      (send/suspend
-      (build-suspender
-       (list "Enter a " (number->string rows) " by "
-             (number->string columns) " Matrix")
-       `((table
-          . ,(build-list
-              rows
-              (lambda (r)
-                `(tr . ,(build-list
-                         columns
-                         (lambda (c)
-                           `(td (input ([type "text"] [name ,(field-name r c)])))))))))
-         (input ([type "submit"] [name "submit"] [value "Okay"])))))))
+      (lambda (k-url)
+        `(html (head (title "Enter a " ,(number->string rows) " by "
+                            ,(number->string columns) " Matrix"))
+               (body (form ([action ,k-url] [method "post"])
+                           (table ,(build-list
+                                    rows
+                                    (lambda (r)
+                                      `(tr . ,(build-list
+                                               columns
+                                               (lambda (c)
+                                                 `(td (input ([type "text"] [name ,(field-name r c)])))))))))
+                           (input ([type "submit"] [name "submit"] [value "Okay"])))))))))
   
   ; field-name : nat nat -> str
   (define (field-name row column)

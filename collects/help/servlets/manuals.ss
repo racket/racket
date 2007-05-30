@@ -5,5 +5,7 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
-    (list #"text/html" (find-manuals))))
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
+       (list #"text/html" (find-manuals))))))

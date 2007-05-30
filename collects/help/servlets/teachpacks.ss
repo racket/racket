@@ -7,11 +7,13 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
-    `(html
-      (head (title "Teachpacks"))
-      (body (h1 "Teachpacks")
-            (ul (li (b (a ([href ,(get-manual-index "teachpack")])
-                          "Teachpacks for \"How to Design Programs\"")))
-                (li (b (a ([href ,(get-manual-index "teachpack-htdc")])
-                          "Teachpacks for \"How to Design Classes\""))))))))
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
+       `(html
+         (head (title "Teachpacks"))
+         (body (h1 "Teachpacks")
+               (ul (li (b (a ([href ,(get-manual-index "teachpack")])
+                             "Teachpacks for \"How to Design Programs\"")))
+                   (li (b (a ([href ,(get-manual-index "teachpack-htdc")])
+                             "Teachpacks for \"How to Design Classes\""))))))))))

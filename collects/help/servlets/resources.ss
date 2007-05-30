@@ -5,7 +5,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "External Resources"))
       (body
@@ -29,4 +31,4 @@
        "many Scheme resources, including books, implementations, "
        "and libraries: "
        (a ([href "http://www.schemers.org/"] [target "_top"])
-          "http://www.schemers.org/") "."))))
+          "http://www.schemers.org/") "."))))))

@@ -5,7 +5,9 @@
   (define interface-version 'v1)
   (define timeout +inf.0)
   (define (start initial-request)
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "Mailing Lists"))
       (body
@@ -79,4 +81,4 @@
         (a ([href "mailto:plt-scheme-es-request@list.cs.brown.edu"])
            "plt-scheme-es-request@list.cs.brown.edu"))
        " con la palabra `help' en el asunto o en el cuerpo de tu mensaje. "
-       "Recibirás un mensaje de regreso con instrucciones."))))
+       "Recibirás un mensaje de regreso con instrucciones."))))))

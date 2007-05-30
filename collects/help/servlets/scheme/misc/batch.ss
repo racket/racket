@@ -8,9 +8,9 @@
   (define timeout +inf.0)
   
   (define (start initial-request)
-    
-    (report-errors-to-browser send/finish)
-    
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(HTML 
       (HEAD ,hd-css
             ,@hd-links
@@ -49,4 +49,4 @@
        "lines beginning with semicolons as comments, and runs the "
        "Scheme code.  When the Scheme program is "
        "done, control returns to the batch file, and the "
-       (TT  "goto") " jumps around the Scheme code."))))
+       (TT  "goto") " jumps around the Scheme code."))))))

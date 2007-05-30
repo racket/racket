@@ -13,9 +13,11 @@
                   'order
                   (request-bindings
                    (send/suspend (let ([question "Place your order"])
-                                   (build-suspender
-                                    `(,question)
-                                    `(,question (input ([type "text"] [name "order"]))))))))])
+                                   (lambda (k-url)
+                                     `(html (head (title ,question))
+                                            (body (form ([action ,k-url] [method "post"])
+                                                        ,question
+                                                        (input ([type "text"] [name "order"]))))))))))])
       (if (string=? "coconut" order)
           (continue-shopping)
           (retry-order))))
@@ -24,11 +26,12 @@
   (define (continue-shopping)
     (let* ([next-request
             (send/forward
-             (build-suspender
-              '("Keep shopping")
-              `((p "Your order has shipped to a random location.  You may not go back.")
-                (p (input ([type "submit"] [name "go"] [value "Keep Shopping"])))
-                (p (input ([type "submit"] [name "stop"] [value "Logout"]))))))]
+             (lambda (k-url)
+               `(html (head (title "Keep shopping"))
+                      (body (form ([action ,k-url] [method "post"])
+                                  (p "Your order has shipped to a random location.  You may not go back.")
+                                  (p (input ([type "submit"] [name "go"] [value "Keep Shopping"])))
+                                  (p (input ([type "submit"] [name "stop"] [value "Logout"]))))))))]
            [next (request-bindings next-request)])
       (cond
         [(exists-binding? 'go next)
@@ -50,5 +53,3 @@
   (define goodbye-page
     `(html (head (title "Goodbye"))
            (body (p "Thank you for shopping.")))))
-  
-  

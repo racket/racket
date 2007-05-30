@@ -8,7 +8,9 @@
   (define (start initial-request)
     (define (make-header-text s)
       (color-highlight `(h2 () ,s)))
-    (report-errors-to-browser send/finish)
+    (with-errors-to-browser 
+     send/finish
+     (lambda ()
     `(html
       (head ,hd-css ,@hd-links (title "Documentation"))
       (body
@@ -41,4 +43,4 @@
        (a ([href "/servlets/howtouse.ss#search"]) "Searching")
        " in Help Desk finds documenation from all sources, including "
        (a ([href "/servlets/howtodrscheme.ss"]) "DrScheme")
-       " and the language and library documentation."))))
+       " and the language and library documentation."))))))
