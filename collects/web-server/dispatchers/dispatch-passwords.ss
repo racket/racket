@@ -3,7 +3,7 @@
            (lib "contract.ss"))
   (require "dispatch.ss"
            "../private/util.ss"
-           "../private/configuration.ss"
+           "../configuration/responders.ss"
            "../request-structs.ss"
            "../servlet/basic-auth.ss"
            "../private/connection-manager.ss"

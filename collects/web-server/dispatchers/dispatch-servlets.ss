@@ -13,7 +13,7 @@
            "../response-structs.ss"
            "../servlet/web-cells.ss"
            "../servlet/web.ss"
-           "../private/configuration.ss"
+           "../configuration/responders.ss"
            "../private/util.ss"
            "../managers/manager.ss"
            "../managers/timeouts.ss"

@@ -13,6 +13,7 @@
            "../private/util.ss"
            "../private/response.ss"
            "../private/configuration.ss"
+           "../configuration/responders.ss"
            "private/utils.ss")
   
   (provide/contract

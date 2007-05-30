@@ -2,15 +2,13 @@
   (require (lib "unit.ss")
            (lib "kw.ss")
            (lib "list.ss")
-           (lib "etc.ss")
-           (lib "contract.ss")
-           (lib "url.ss" "net"))
+           (lib "contract.ss"))
   (require "configuration-structures.ss"
            "configuration-table-structs.ss"
            "util.ss"
            "cache-table.ss"
-           "../web-config-sig.ss"
-           "../response-structs.ss")
+           "../configuration/responders.ss"
+           "../web-config-sig.ss")
   
   ; : str configuration-table -> configuration
   (define (complete-configuration base table)
@@ -100,85 +98,7 @@
         new-namespace)))
   
   (define default-make-servlet-namespace (make-make-servlet-namespace))
-  
-  ; error-response : nat str str [(cons sym str) ...] -> response
-  ; more here - cache files with a refresh option.
-  ; The server should still start without the files there, so the
-  ; configuration tool still runs.  (Alternatively, find an work around.)
-  (define (error-response code short text-file . extra-headers)
-    (make-response/full code short
-                        (current-seconds) TEXT/HTML-MIME-TYPE
-                        extra-headers
-                        (list (read-file text-file))))
-  
-  ; servlet-loading-responder : url tst -> response
-  ; more here - parameterize error based on a configurable file, perhaps?
-  ; This is slightly tricky since the (interesting) content comes from the exception.
-  (define (servlet-loading-responder url exn)
-    ((error-display-handler)
-       (format "Servlet didn't load:\n~a\n" (exn-message exn))
-       exn)
-    (make-response/full 500 "Servlet didn't load"
-                        (current-seconds)
-                        TEXT/HTML-MIME-TYPE
-                        '() ; check
-                        (list "Servlet didn't load.\n")))
-  
-  ; gen-servlet-not-found : str -> url -> response
-  (define (gen-servlet-not-found file-not-found-file)
-    (lambda (url)
-      (error-response 404 "Servlet not found" file-not-found-file)))
-  
-  ; gen-servlet-responder : str -> url tst -> response
-  (define (gen-servlet-responder servlet-error-file)
-    (lambda (url exn)
-      ; XXX use separate log file
-      ((error-display-handler)
-       (format "Servlet exception:\n~a\n" (exn-message exn))
-       exn)
-      (error-response 500 "Servlet error" servlet-error-file)))
-  
-  ; gen-servlets-refreshed : str -> -> response
-  (define (gen-servlets-refreshed servlet-refresh-file)
-    (lambda ()
-      (error-response 200 "Servlet cache refreshed" servlet-refresh-file)))
-  
-  ; gen-passwords-refreshed : str -> -> response
-  (define (gen-passwords-refreshed password-refresh-file)
-    (lambda ()
-      (error-response 200 "Passwords refreshed" password-refresh-file)))
-  
-  ; gen-authentication-responder : str -> url (cons sym str) -> response
-  (define (gen-authentication-responder access-denied-file)
-    (lambda (uri recommended-header)
-      (error-response 401 "Authorization Required" access-denied-file
-                      recommended-header)))
-  
-  ; gen-protocol-responder : str -> str -> response
-  (define (gen-protocol-responder protocol-file)
-    (lambda (error-message)
-      (error-response 400 "Malformed Request" protocol-file)))
-  
-  ; gen-file-not-found-responder : str -> url -> response
-  (define (gen-file-not-found-responder file-not-found-file)
-    (lambda (url)
-      (error-response 404 "File not found" file-not-found-file)))
-  
-  ; gen-collect-garbage-responder : str -> -> response
-  (define (gen-collect-garbage-responder file)
-    (lambda ()
-      (error-response 200 "Garbage collected" file)))
-  
-  (define servlet?
-    (let ([servlets-regexp (regexp "^/servlets/.*")])
-      (lambda (str)
-        (regexp-match servlets-regexp str))))
-  
-  ; read-file : str -> str
-  (define (read-file path)
-    (call-with-input-file path
-      (lambda (in) (read-string (file-size path) in))))
-  
+    
   ; apply-default-functions-to-host-table : str host-table -> host
   ;; Greg P: web-server-root is the directory-part of the path to the configuration-table (I don't think I like this.)
   (define (apply-default-functions-to-host-table web-server-root host-table)
@@ -233,15 +153,4 @@
    make-make-servlet-namespace)
   (provide/contract
    [complete-configuration (path-string? configuration-table? . -> . configuration?)]
-   [complete-developer-configuration (path-string? configuration-table? . -> . configuration?)])
-  (provide/contract
-   [error-response ((natural-number/c string? string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
-   [servlet-loading-responder (string? any/c . -> . response?)]
-   [gen-servlet-not-found (path-string? . -> . (url? . -> . response?))]
-   [gen-servlet-responder (path-string? . -> . (url? any/c . -> . response?))]
-   [gen-servlets-refreshed (path-string? . -> . (-> response?))]
-   [gen-passwords-refreshed (path-string? . -> . (-> response?))]
-   [gen-authentication-responder (path-string? . -> . (url? (cons/c symbol? string?) . -> . response?))]
-   [gen-protocol-responder (path-string? . -> . (string? . -> . response?))]
-   [gen-file-not-found-responder (path-string? . -> . (url? . -> . response?))]
-   [gen-collect-garbage-responder (path-string? . -> . (-> response?))]))
+   [complete-developer-configuration (path-string? configuration-table? . -> . configuration?)]))

@@ -1,6 +1,6 @@
 (module run mzscheme
   (require (lib "web-server.ss" "web-server")
-           (lib "configuration.ss" "web-server" "private")
+           (lib "responders.ss" "web-server" "configuration")
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
            (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers"))

@@ -8,7 +8,7 @@
            (lib "contract.ss")
            (lib "uri-codec.ss" "net"))
   (require "dispatch.ss"
-           "../private/configuration.ss"
+           "../configuration/responders.ss"
            "../private/util.ss"
            "../private/mime-types.ss"
            "../request-structs.ss"
