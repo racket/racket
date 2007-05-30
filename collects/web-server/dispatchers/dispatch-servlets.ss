@@ -3,7 +3,8 @@
            (lib "kw.ss")
            (lib "plt-match.ss")
            (lib "string.ss")
-           (lib "contract.ss"))
+           (lib "contract.ss")
+           (lib "uri-codec.ss" "net"))
   (require "dispatch.ss"
            "../private/web-server-structs.ss"
            "../private/connection-manager.ss"
@@ -383,7 +384,7 @@
     
     ;; return dispatcher
     (lambda (conn req)
-      (define-values (uri method path) (decompose-request req))
+      (define path (uri-decode (url-path->string (url-path (request-uri req)))))
       (cond [(string=? "/conf/refresh-servlets" path)
              ;; more here - this is broken - only out of date or specifically mentioned
              ;; scripts should be flushed.  This destroys persistent state!
@@ -391,7 +392,7 @@
              (output-response/method
               conn
               (responders-servlets-refreshed)
-              method)]
+              (request-method req))]
             [(servlet-bin? path)
              (adjust-connection-timeout!
               conn

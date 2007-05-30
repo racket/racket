@@ -1,8 +1,11 @@
 (module dispatch-pathprocedure mzscheme
-  (require (lib "contract.ss"))
+  (require (lib "contract.ss")
+           (lib "url.ss" "net")
+           (lib "uri-codec.ss" "net"))
   (require "dispatch.ss"
            "../private/util.ss"
            "../private/response.ss"
+           "../request-structs.ss"
            "../response-structs.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?]
@@ -10,10 +13,10 @@
   
   (define interface-version 'v1)
   (define ((make the-path procedure) conn req)
-    (let-values ([(uri method path) (decompose-request req)])
-      (if (string=? the-path path)
-          (output-response/method
-           conn
-           (procedure)
-           method)
-          (next-dispatcher)))))
+    (define path (uri-decode (url-path->string (url-path (request-uri req)))))
+    (if (string=? the-path path)
+        (output-response/method
+         conn
+         (procedure)
+         (request-method req))
+        (next-dispatcher))))

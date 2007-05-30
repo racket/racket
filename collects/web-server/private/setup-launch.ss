@@ -13,10 +13,7 @@
    `((once-each
       [("-p" "--port")
        ,(lambda (flag port)
-          (let ([p (string->number port)])
-            (if (valid-port? p)
-                (cons 'port p)
-                (error 'web-server-setup "port expects an argument of type <exact integer in [1, 65535]>; given ~s" port))))
+          (cons 'port (string->number port)))
        ("Use an alternate network port." "port")]
       [("-d" "--destination")
        ,(lambda (flag destination)

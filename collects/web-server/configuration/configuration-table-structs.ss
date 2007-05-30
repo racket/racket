@@ -27,7 +27,7 @@
   
   (provide/contract
    [struct configuration-table
-           ([port natural-number/c]
+           ([port (between/c 1 65535)]
             [max-waiting natural-number/c]
             [initial-connection-timeout natural-number/c]
             [default-host host-table?]

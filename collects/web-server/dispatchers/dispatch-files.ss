@@ -41,7 +41,8 @@
                     (gen-file-not-found-responder "not-found.html")])
     (define get-mime-type (make-get-mime-type mime-types-path))
     (lambda (conn req)
-      (define-values (uri method _path) (decompose-request req))
+      (define uri (request-uri req))
+      (define method (request-method req))
       ;; ************************************************************
       ;; ************************************************************
       ;; SERVING FILES

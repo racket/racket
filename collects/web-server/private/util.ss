@@ -5,10 +5,6 @@
            (lib "uri-codec.ss" "net"))
   (require "../request-structs.ss")
   
-  ;; valid-port? : any/c -> boolean?
-  (define (valid-port? p)
-    (and (integer? p) (exact? p) (<= 1 p 65535)))
-  
   ;; ripped this off from url-unit.ss
   (define (url-path->string strs)
     (apply string-append
@@ -28,13 +24,6 @@
                 [(up)   ".."]
                 [else (error 'maybe-join-params
                              "bad value from path/param-path: ~e" s)])))))
-  
-  ;; decompse-request : request -> uri * symbol * string
-  (define (decompose-request req)
-    (let* ([uri (request-uri req)]
-           [method (request-method req)]
-           [path (uri-decode (url-path->string (url-path uri)))])
-      (values uri method path)))
   
   ;; network-error: symbol string . values -> void
   ;; throws a formatted exn:fail:network
@@ -63,28 +52,7 @@
                  s)])
       (string-lowercase! s)
       (string->symbol s)))
-  
-  ; prefix? : str -> str -> bool
-  ; more here - consider moving this to mzlib's string.ss
-  ;; Notes: (GregP)
-  ;; 1. What's the significance of char # 255 ???
-  ;; 2. 255 isn't an ascii character. ascii is 7-bit
-  ;; 3. OK f this. It is only used in three places, some of them
-  ;;    will involve bytes while the others may involve strings. So
-  ;;    I will just use regular expressions and get on with life.
-  (define (prefix?-old prefix)
-    (let* ([len (string-length prefix)]
-           [last (string-ref prefix (sub1 len))]
-           [ascii (char->integer last)])
-      (if (= 255 ascii)
-          ; something could be done about this - ab255 -> ac
-          ; and all 255's eliminates upper range check
-          (error 'prefix? "prefix can't end in the largest character")
-          (let ([next (string-append (substring prefix 0 (sub1 len))
-                                     (string (integer->char (add1 ascii))))])
-            (lambda (x)
-              (and (string<=? prefix x) (string<? x next)))))))      
-  
+   
   (define (directory-part path)
     (let-values ([(base name must-be-dir) (split-path path)])
       (cond
@@ -112,16 +80,9 @@
           (cdr x)
           default)))
   
-  ; hash-table-empty? : hash-table -> bool
-  (define (hash-table-empty? table)
-    (zero? (hash-table-count table)))
-  
   (provide/contract
    [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
    [extract-flag (symbol? (listof (cons/c symbol? any/c)) any/c . -> . any/c)]
-   [hash-table-empty? (any/c . -> . boolean?)]
-   [valid-port? (any/c . -> . boolean?)]
-   [decompose-request ((request?) . ->* . (url? symbol? string?))]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [path->list  (path? . -> . (cons/c (or/c path? (symbols 'up 'same))
                                       (listof (or/c path? (symbols 'up 'same)))))]
