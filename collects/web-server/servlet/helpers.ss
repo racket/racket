@@ -4,14 +4,8 @@
            (lib "plt-match.ss")
            (lib "uri-codec.ss" "net"))
   (require "../private/util.ss"
-           "bindings.ss"
-           "basic-auth.ss"
            "../request-structs.ss"
            "../response-structs.ss")
-  (provide (all-from "bindings.ss")
-           (all-from "basic-auth.ss")
-           (all-from "../response-structs.ss")
-           (all-from "../request-structs.ss"))
   
   (define (request-headers request)
     (map (match-lambda
