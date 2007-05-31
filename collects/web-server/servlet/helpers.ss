@@ -1,8 +1,7 @@
 (module helpers mzscheme
   (require (lib "contract.ss")
            (lib "kw.ss")
-           (lib "plt-match.ss")
-           (lib "uri-codec.ss" "net"))
+           (lib "plt-match.ss"))
   (require "../private/util.ss"
            "../request-structs.ss"
            "../response-structs.ss")
@@ -53,10 +52,9 @@
                                              (pre ,(exn->string exn)))))))])
       (thunk)))
   
-  (provide ; all-from
+  (provide
    with-errors-to-browser
-   redirect-to
-   (rename uri-decode translate-escapes))
+   redirect-to)
   (provide/contract
    [permanently redirection-status?]
    [temporarily redirection-status?]

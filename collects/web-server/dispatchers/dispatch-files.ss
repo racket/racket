@@ -5,8 +5,7 @@
            (lib "list.ss")
            (lib "string.ss")
            (lib "plt-match.ss")
-           (lib "contract.ss")
-           (lib "uri-codec.ss" "net"))
+           (lib "contract.ss"))
   (require "dispatch.ss"
            "../configuration/responders.ss"
            "../private/util.ss"
@@ -52,7 +51,7 @@
       (define path 
         ; XXX Abstract this
         (url-path->path htdocs-path
-                        (uri-decode (url-path->string (url-path uri)))))
+                        (url-path->string (url-path uri))))
       (cond
         [(file-exists? path)
          (match (headers-assq* #"Range" (request-headers/raw req))

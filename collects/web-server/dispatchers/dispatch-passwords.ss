@@ -1,7 +1,6 @@
 (module dispatch-passwords mzscheme
   (require (lib "kw.ss")
            (lib "url.ss" "net")
-           (lib "uri-codec.ss" "net")
            (lib "contract.ss"))
   (require "dispatch.ss"
            "../private/util.ss"
@@ -38,7 +37,7 @@
       (unbox password-cache))
     (lambda (conn req)
       (define uri (request-uri req))
-      (define path (uri-decode (url-path->string (url-path uri))))
+      (define path (url-path->string (url-path uri)))
       (define method (request-method req))
       (define denied? (read-password-cache))
       (cond
