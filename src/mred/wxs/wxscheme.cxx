@@ -3085,6 +3085,7 @@ static void wxScheme_Install(Scheme_Env *global_env)
 						    "queue-callback",
 						    1, 2),
 			   global_env);
+  wxREGGLOB(MrEd_mid_queue_key);
   MrEd_mid_queue_key = scheme_make_pair(scheme_false, scheme_false);
   scheme_install_xc_global("middle-queue-key", MrEd_mid_queue_key, global_env);
 
