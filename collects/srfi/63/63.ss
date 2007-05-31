@@ -332,9 +332,10 @@
    
    (make-shared-array
     (->* (array?
-          (unconstrained-domain-> natural-number/c))
+          (unconstrained-domain-> (listof natural-number/c)))
          (listof natural-number/c)
          any))
+   
    (list->array
     (->r ((rank natural-number/c)
           (proto array?)
