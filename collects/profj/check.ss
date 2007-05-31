@@ -2294,9 +2294,13 @@
             (if inner-lookup?
                 (inner-rec-record inner-lookup?)
                 (get-record (send type-recs get-class-record type c-class) type-recs)))
-           (methods (get-method-records #;(id-string (name-id name)) 
-                                        (car (class-record-name class-record))
+           (methods (get-method-records (if inner-lookup?
+                                            (id-string (name-id name)) 
+                                            (car (class-record-name class-record)))
                                         class-record type-recs)))
+      (unless (equal? (car (class-record-name class-record))
+                      (id-string (name-id name)))
+        (set-id-string! (name-id name) (car (class-record-name class-record))))
       (unless (or (equal? (car (class-record-name class-record)) (ref-type-class/iface type)))
         (set-id-string! (name-id name) (car (class-record-name class-record)))
         (set-class-alloc-class-inner?! exp #t))

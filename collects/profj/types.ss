@@ -261,10 +261,15 @@
 
   ;name->type: name (U (list string) #f) src symbol type-records -> type
   (define (name->type n container-class src level type-recs)
-    (let ((name (id-string (name-id n)))
-          (path (map id-string (name-path n))))
-      (type-exists? name path container-class src level type-recs)
-      (make-ref-type name (if (null? path) (send type-recs lookup-path name (lambda () null)) path)))) 
+    (let* ((name (id-string (name-id n)))
+           (path (map id-string (name-path n)))
+           (rec (get-record (type-exists? name path container-class src level type-recs) type-recs)))
+      (if (class-record? rec)
+          (make-ref-type (car (class-record-name rec))
+                         (cdr (class-record-name rec)))
+          (make-ref-type name (if (null? path)
+                                  (send type-recs lookup-path name (lambda () null)) path)))))
+
   
   ;; type-exists: string (list string) (U (list string) #f) src symbol type-records -> (U record procedure)
   (define (type-exists? name path container-class src level type-recs)
