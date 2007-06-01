@@ -8,6 +8,7 @@
   (provide
    url-replace-path)
   (provide/contract
+   [explode-path* (path? . -> . (listof (or/c symbol? path?)))]
    [path-without-base (path? path? . -> . list?)]
    [list-prefix (list? list? . -> . (or/c list? false/c))]
    [strip-prefix-ups (list? . -> . list?)] ; XXX need path-element?

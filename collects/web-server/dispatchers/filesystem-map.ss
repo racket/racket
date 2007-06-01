@@ -26,7 +26,9 @@
               ; XXX Should error?
               (strip-prefix-ups
                (map (lambda (p)
-                      (if (string=? "" p) 'same p))
+                      (if (and (string? p) (string=? "" p))
+                          'same
+                          p))
                     ; Extract the paths from the url-path
                     (map path/param-path 
                          (url-path u)))))

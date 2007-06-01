@@ -1,7 +1,20 @@
 (module configuration-table-test mzscheme
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+           (lib "file.ss")
+           (lib "configuration-table.ss" "web-server" "configuration")
+           (lib "web-config-unit.ss" "web-server"))
   (provide configuration-table-tests)
   
   (define configuration-table-tests
     (test-suite
-     "Configuration Table")))
+     "Configuration Table"
+     
+     (test-case
+      "Default configuration file may be parsed"
+      (check-not-false (read-configuration-table default-configuration-table-path)))
+     
+     (test-case
+      "Default configuration file may be written"
+      (check-not-false (write-configuration-table 
+                        (read-configuration-table default-configuration-table-path)
+                        (make-temporary-file)))))))

@@ -19,7 +19,7 @@
   (define (file-unbox fb)
     (deserialize (call-with-input-file (internal-file-box-path fb) read)))
   (define (file-box-set! fb v)
-    (with-output-to-file (internal-file-box-path fb) (lambda () (write (serialize v)))))
+    (with-output-to-file (internal-file-box-path fb) (lambda () (write (serialize v))) 'replace))
   
   (provide/contract 
    [file-box? (any/c . -> . boolean?)]
