@@ -1,7 +1,7 @@
 (module servlet mzscheme
   (require (lib "contract.ss"))
   (require "../managers/manager.ss"
-           "../servlet-structs.ss"
+           "../servlet/servlet-structs.ss"
            "connection-structs.ss"
            "../request-structs.ss")
   

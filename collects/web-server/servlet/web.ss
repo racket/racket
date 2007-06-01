@@ -10,8 +10,8 @@
            "../private/servlet.ss"
            "../servlet/helpers.ss"
            "../servlet/web-cells.ss"
-           "../request-structs.ss"
-           "../servlet-structs.ss")
+           "../servlet/servlet-structs.ss"
+           "../request-structs.ss")
   
   ;; ************************************************************
   ;; HELPERS

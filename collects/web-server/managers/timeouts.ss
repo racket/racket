@@ -3,7 +3,7 @@
            (lib "contract.ss"))
   (require "manager.ss")
   (require "../private/timer.ss"
-           "../servlet-structs.ss")
+           "../servlet/servlet-structs.ss")
   (provide/contract
    [create-timeout-manager (expiration-handler? number? number? . -> . manager?)])
   

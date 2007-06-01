@@ -1,8 +1,8 @@
 (module servlet-structs mzscheme
   (require (lib "contract.ss")
            (lib "xml.ss" "xml"))
-  (require "request-structs.ss"
-           "response-structs.ss")  
+  (require "../request-structs.ss"
+           "../response-structs.ss")  
   
   (define servlet-response?
     any/c)

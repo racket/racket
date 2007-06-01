@@ -1,7 +1,7 @@
 (module none mzscheme
   (require (lib "contract.ss"))
   (require "manager.ss")
-  (require "../servlet-structs.ss")
+  (require "../servlet/servlet-structs.ss")
   (provide/contract
    [create-none-manager (expiration-handler? . -> . manager?)])
   

@@ -7,7 +7,7 @@
            "../private/connection-manager.ss"
            "../private/response.ss"
            "../request-structs.ss"
-           "../servlet-structs.ss"
+           "../servlet/servlet-structs.ss"
            "../response-structs.ss"
            "../servlet/web-cells.ss"
            "../servlet/web.ss"

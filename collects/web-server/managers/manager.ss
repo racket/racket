@@ -1,6 +1,6 @@
 (module manager mzscheme
   (require (lib "contract.ss"))
-  (require "../servlet-structs.ss")
+  (require "../servlet/servlet-structs.ss")
   
   (define-struct manager (create-instance 
                           adjust-timeout!

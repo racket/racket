@@ -3,7 +3,7 @@
            (lib "contract.ss")
            (lib "kw.ss"))
   (require "manager.ss"
-           "../servlet-structs.ss")
+           "../servlet/servlet-structs.ss")
   (provide/contract
    [create-LRU-manager ((expiration-handler? number? number? (-> boolean?)) any/c . ->* . (manager?))])
   
