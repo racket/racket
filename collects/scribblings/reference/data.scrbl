@@ -1,10 +1,12 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title{Core Datatypes}
+@title[#:style 'toc]{Built-In Datatypes}
 
 Each of the built-in datatypes comes with a set of procedures for
 manipulating members of the datatype.
+
+@local-table-of-contents[]
 
 @; ------------------------------------------------------------
 
@@ -190,8 +192,6 @@ If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 @section[#:tag "hashtables"]{Hash Tables}
 
 @section[#:tag "procedures"]{Procedures}
-
-@section[#:tag "promises"]{Promises}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "void"]{Void and Undefined}

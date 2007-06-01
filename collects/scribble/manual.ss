@@ -137,7 +137,7 @@
 
   ;; ----------------------------------------
 
-  (provide defproc defproc* defstruct defthing defform 
+  (provide defproc defproc* defstruct defthing defform defform/none
            specsubform specsubform/inline
            var svar void-const)
 
@@ -174,7 +174,11 @@
                                                                       #'name)
                                                 #'rest)
                                                #'spec)])])
-         #'(*defform 'spec (lambda (x) (schemeblock0 new-spec)) (lambda () (list desc ...))))]))
+         #'(*defform #t 'spec (lambda (x) (schemeblock0 new-spec)) (lambda () (list desc ...))))]))
+  (define-syntax (defform/none stx)
+    (syntax-case stx ()
+      [(_ spec desc ...)
+       #'(*defform #f 'spec (lambda (ignored) (schemeblock0 spec)) (lambda () (list desc ...)))]))
   (define-syntax specsubform
     (syntax-rules ()
       [(_ spec desc ...)
@@ -375,11 +379,15 @@
                        (to-element result-contract))))))))
       (content-thunk))))
 
-  (define (*defform form form-proc content-thunk)
+  (define (meta-symbol? s) (memq s '(... ...+ ?)))
+
+  (define (*defform kw? form form-proc content-thunk)
     (parameterize ([current-variable-list
-                    (let loop ([form (cdr form)])
+                    (let loop ([form (if kw? (cdr form) form)])
                       (cond
-                       [(symbol? form) (list form)]
+                       [(symbol? form) (if (meta-symbol? form)
+                                           null
+                                           (list form))]
                        [(pair? form) (append (loop (car form))
                                              (loop (cdr form)))]
                        [else null]))])
@@ -397,26 +405,36 @@
                            (to-element
                             `(,x
                               . ,(cdr form)))))))
-                   (make-target-element
-                    #f
-                    (list (to-element (car form)))
-                    (register-scheme-form-definition (car form)))))))))
+                   (and kw?
+                        (make-target-element
+                         #f
+                         (list (to-element (car form)))
+                         (register-scheme-form-definition (car form))))))))))
         (content-thunk)))))
 
   (define (*specsubform form form-thunk content-thunk)
     (parameterize ([current-variable-list
-                    (let loop ([form form])
-                      (cond
-                       [(symbol? form) (list form)]
-                       [(pair? form) (append (loop (car form))
-                                             (loop (cdr form)))]
-                       [else null]))])
-      (make-splice
+                    (append (let loop ([form form])
+                              (cond
+                               [(symbol? form) (if (meta-symbol? form)
+                                                   null
+                                                   (list form))]
+                               [(pair? form) (append (loop (car form))
+                                                     (loop (cdr form)))]
+                               [else null]))
+                            (current-variable-list))])
+      (make-blockquote
+       "leftindent"
        (cons
-        (if form-thunk
-            (form-thunk)
-            (to-element form))
-        (content-thunk)))))
+        (make-table
+         'boxed
+         (list (list
+                (make-flow
+                 (list
+                  (if form-thunk
+                      (form-thunk)
+                      (make-paragraph (list (to-element form)))))))))
+        (flow-paragraphs (decode-flow (content-thunk)))))))
 
   (define (*var id)
     (to-element (*var-sym id)))
@@ -451,6 +469,17 @@
       (index (string-append (content->string (element-content c)) "s") 
              c)))
   (provide pidefterm)
+
+  ;; ----------------------------------------
+
+  (provide where-is-one-of
+           is-one-of)
+
+  (define (where-is-one-of id)
+    (make-element #f (list "where " id " is one of")))
+
+  (define (is-one-of id)
+    (make-element #f (list id " is one of")))
   
   ;; ----------------------------------------
 

@@ -201,6 +201,15 @@
                                                (cons #f (map (lambda (x) #f) flows)))))))
                         (table-flowss t)))))
 
+      (define/override (render-blockquote t part ht)
+        `((blockquote ,@(if (string? (blockquote-style t))
+                            `(((class ,(blockquote-style t))))
+                            null)
+                      ,@(apply append
+                               (map (lambda (i)
+                                      (render-flow-element i part ht))
+                                    (blockquote-paragraphs t))))))
+
       (define/override (render-itemization t part ht)
         `((ul
            ,@(map (lambda (flow)

@@ -14,6 +14,7 @@
       (define/override (get-suffix) #".tex")
 
       (inherit render-flow
+               render-flow-element
                render-content
                install-file
                format-number
@@ -50,6 +51,7 @@
         (printf "\\newcommand{\\textsub}[1]{$_{#1}$}\n")
         (printf "\\newcommand{\\textsuper}[1]{$^{#1}$}\n")
         (printf "\\newcommand{\\refcontent}[1]{#1}\n")
+        (printf "\\definecolor{PaleBlue}{rgb}{0.90,0.90,1.0}\n")
         (printf "\\definecolor{LightGray}{rgb}{0.90,0.90,0.90}\n")
         (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\hspace{-0.5ex}\\schemeinputcol{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\begin{document}\n")
@@ -153,7 +155,13 @@
               (if index?
                   (printf "\n\n\\begin{theindex}\n")
                   (printf "\n\n~a\\begin{~a}~a{@{}~a}\n"
-                          (if boxed? "\\vspace{4ex}\\hrule\n\\vspace{-2ex}\n" "")
+                          (if boxed? 
+                              (format "{~a\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}~a\n\\nopagebreak\n" 
+                                      "\\setlength{\\unitlength}{\\linewidth}"
+                                      (if (equal? tableform "longtable")
+                                          "\\vspace{-5ex}"
+                                          "\n\n"))
+                              "")
                           tableform
                           opt
                           (apply string-append
@@ -183,6 +191,15 @@
                     (render-flow flow part ht))
                   (itemization-flows t))
         (printf "\n\n\\end{itemize}\n")
+        null)
+
+      (define/override (render-blockquote t part ht)
+        (printf "\n\n\\begin{quote}\n")
+        (parameterize ([current-table-depth (add1 (current-table-depth))])
+          (for-each (lambda (e)
+                      (render-flow-element e part ht))
+                    (blockquote-paragraphs t)))
+        (printf "\n\n\\end{quote}\n")
         null)
 
       (define/override (render-other i part ht)

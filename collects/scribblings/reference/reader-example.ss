@@ -14,80 +14,92 @@
            metavar
            cilitchar)
 
-  (define (as-flow i) (make-flow (list (make-paragraph (if (list? i)
-                                                           i
-                                                           (list i))))))
+  (define (as-flow i) (make-flow (list (if (flow-element? i)
+                                           i
+                                           (make-paragraph (if (list? i)
+                                                               i
+                                                               (list i)))))))
   
   (define spacer (hspace 1))
 
-  (define (reader-examples . strs)
+  (define/kw (reader-examples #:key 
+                              [symbols? #t] 
+                              [example-note ""]
+                              #:body strs)
     (make-table
      #f
-     (cons
-      (list (as-flow "Examples:")
-            (as-flow "")
-            (as-flow ""))
-      (map (lambda (s)
-             (list (as-flow (list spacer
-                                  (litchar s)))
-                   (as-flow (list spacer
-                                  "reads equal to"
-                                  spacer))
-                   (as-flow (let ([v (read (open-input-string s))])
-                              (cond
-                               [(eof-object? v)
-                                (make-element 'italic '("nothing"))]
-                               [(string? v)
-                                (make-element "schemevalue"
-                                              (list (schemefont 
-                                                     (regexp-replace* #rx"[\\]\""
-                                                                      (regexp-replace*
-                                                                       #rx"[\\][\\]"
-                                                                       (format "~s" v)
-                                                                       "\\\\x5C")
-                                                                      "\\\\x22"))))]
-                               [else
-                                (let ([e (let loop ([v v])
-                                           (cond
-                                            [(memq v '(quasiquote unquote +)) `',v]
-                                            [(symbol? v) `(string->symbol ,(format "~a" v))]
-                                            [(number? v)
-                                             (let loop ([v v])
-                                               (if (inexact? v)
-                                                   `(inexact->exact ,(loop (inexact->exact v)))
-                                                   (cond
-                                                    [(integer? v) v]
-                                                    [(real? v) `(/ ,(numerator v)
-                                                                   ,(denominator v))]
-                                                    [(complex? v) `(make-complex ,(loop (real-part v))
-                                                                                 ,(loop (imag-part v)))])))]
-                                            [(list? v) `(list ,@(map loop v))]
-                                            [(vector? v) `(vector ,@(map loop (vector->list v)))]
-                                            [(box? v) `(box ,(loop (unbox v)))]
-                                            [(and (pair? v)
-                                                  (eq? v (cdr v))
-                                                  (eq? 1 (car v)))
-                                             #`(let ([v (cons 1 #f)]) (set-cdr! v v) v)]
-                                            [(pair? v) `(cons ,(loop (car v)) ,(loop (cdr v)))]
-                                            [(bytes? v) `(bytes ,@(map loop (bytes->list v)))]
-                                            [(char? v) `(integer->char ,(char->integer v))]
-                                            [(keyword? v) `(string->keyword ,(format "~a" v))]
-                                            [(or (regexp? v)
-                                                 (byte-regexp? v))
-                                             `(,(cond
-                                                 [(pregexp? v) 'pregexp]
-                                                 [(byte-pregexp? v) 'byte-pregexp]
-                                                 [(byte-regexp? v) 'byte-regexp]
-                                                 [else 'regexp])
-                                               ,(object-name v))]
-                                            [(hash-table? v)
-                                             `(make-immutable-hash-table (quote ,(hash-table-map v cons))
-                                                                         ,@(if (hash-table? v 'equal)
-                                                                               '('equal)
-                                                                               '()))]
-                                            [else v]))])
-                                  (to-element (syntax-ize e 0)))])))))
-           strs))))
+     (list
+      (list (as-flow (list "Examples" example-note ":")))
+      (list (make-flow
+             (list
+              (make-table
+               #f
+               (map (lambda (s)
+                      (list (as-flow (list spacer
+                                           (litchar s)))
+                            (as-flow (list spacer
+                                           "reads equal to"
+                                           spacer))
+                            (as-flow (let ([v (read (open-input-string s))])
+                                       (cond
+                                        [(eof-object? v)
+                                         (make-element 'italic '("nothing"))]
+                                        [(string? v)
+                                         (make-element "schemevalue"
+                                                       (list (schemefont 
+                                                              (regexp-replace* #rx"[\\]\""
+                                                                               (regexp-replace*
+                                                                                #rx"[\\][\\]"
+                                                                                (format "~s" v)
+                                                                                "\\\\x5C")
+                                                                               "\\\\x22"))))]
+                                        [else
+                                         (let ([e (let loop ([v v])
+                                                    (cond
+                                                     [(memq v '(quasiquote unquote +)) `',v]
+                                                     [(symbol? v) (if symbols?
+                                                                      `(quote ,v)
+                                                                      `(string->symbol ,(format "~a" v)))]
+                                                     [(number? v)
+                                                      (let loop ([v v])
+                                                        (if (inexact? v)
+                                                            `(inexact->exact ,(loop (inexact->exact v)))
+                                                            (cond
+                                                             [(integer? v) v]
+                                                             [(real? v) `(/ ,(numerator v)
+                                                                            ,(denominator v))]
+                                                             [(complex? v) `(make-complex ,(loop (real-part v))
+                                                                                          ,(loop (imag-part v)))])))]
+                                                     [(list? v) `(list ,@(map loop v))]
+                                                     [(vector? v) `(vector ,@(map loop (vector->list v)))]
+                                                     [(box? v) `(box ,(loop (unbox v)))]
+                                                     [(and (pair? v)
+                                                           (eq? v (cdr v))
+                                                           (eq? 1 (car v)))
+                                                      (schemeblock0 (let ([v (cons 1 #f)]) 
+                                                                      (set-cdr! v v) v))]
+                                                     [(pair? v) `(cons ,(loop (car v)) ,(loop (cdr v)))]
+                                                     [(bytes? v) `(bytes ,@(map loop (bytes->list v)))]
+                                                     [(char? v) `(integer->char ,(char->integer v))]
+                                                     [(keyword? v) `(string->keyword ,(format "~a" v))]
+                                                     [(or (regexp? v)
+                                                          (byte-regexp? v))
+                                                      `(,(cond
+                                                          [(pregexp? v) 'pregexp]
+                                                          [(byte-pregexp? v) 'byte-pregexp]
+                                                          [(byte-regexp? v) 'byte-regexp]
+                                                          [else 'regexp])
+                                                        ,(object-name v))]
+                                                     [(hash-table? v)
+                                                      `(make-... (quote ,(hash-table-map v cons))
+                                                                 ,@(if (hash-table? v 'equal)
+                                                                       '('equal)
+                                                                       '()))]
+                                                     [else v]))])
+                                           (if (flow-element? e)
+                                               e
+                                               (to-element (syntax-ize e 0))))])))))
+                    strs))))))))
 
   (define (read-quote-table . l)
     (make-table

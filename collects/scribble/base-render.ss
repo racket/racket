@@ -103,6 +103,7 @@
         (cond
          [(table? p) (collect-table p ht)]
          [(itemization? p) (collect-itemization p ht)]
+         [(blockquote? p) (collect-blockquote p ht)]
          [(delayed-flow-element? p) (void)]
          [else (collect-paragraph p ht)]))
         
@@ -113,6 +114,10 @@
       (define/public (collect-itemization i ht)
         (for-each (lambda (d) (collect-flow d ht))
                   (itemization-flows i)))
+
+      (define/public (collect-blockquote i ht)
+        (for-each (lambda (d) (collect-flow-element d ht))
+                  (blockquote-paragraphs i)))
 
       (define/public (collect-element i ht)
         (when (target-element? i)
@@ -189,6 +194,7 @@
         (cond
          [(table? p) (render-table p part ht)]
          [(itemization? p) (render-itemization p part ht)]
+         [(blockquote? p) (render-blockquote p part ht)]
          [(delayed-flow-element? p) (render-flow-element
                                      ((delayed-flow-element-render p) this part ht)
                                      part ht)]
@@ -201,6 +207,10 @@
       (define/public (render-itemization i part ht)
         (map (lambda (d) (render-flow d part ht))
              (itemization-flows i)))
+      
+      (define/public (render-blockquote i part ht)
+        (map (lambda (d) (render-flow-element d part ht))
+             (blockquote-paragraphs i)))
       
       (define/public (render-element i part ht)
         (cond

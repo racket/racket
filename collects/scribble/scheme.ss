@@ -71,22 +71,25 @@
                                         (make-element 'tt (list v)))
                                     content))
                 (set! dest-col (+ dest-col (if (string? v) (string-length v) 1)))))))
-      (define (advance c init-line!)
-        (let ([c (syntax-column c)]
-              [l (syntax-line c)]
-              [span (syntax-span c)])
-          (when (and l (l . > . line))
-            (out "\n" no-color)
-            (set! line l)
-            (init-line!))
-          (when c
-            (let ([d-col (hash-table-get col-map src-col src-col)])
-              (let ([amt (+ (- c src-col) (- d-col dest-col))])
-                (when (positive? amt)
-                  (let ([old-dest-col dest-col])
-                    (out (make-element 'hspace (list (make-string amt #\space))) #f)
-                    (set! dest-col (+ old-dest-col amt))))))
-            (set! src-col (+ c (or span 1))))))
+      (define advance 
+        (case-lambda
+         [(c init-line! delta)
+          (let ([c (+ delta (syntax-column c))]
+                [l (syntax-line c)]
+                [span (syntax-span c)])
+            (when (and l (l . > . line))
+              (out "\n" no-color)
+              (set! line l)
+              (init-line!))
+            (when c
+              (let ([d-col (hash-table-get col-map src-col src-col)])
+                (let ([amt (+ (- c src-col) (- d-col dest-col))])
+                  (when (positive? amt)
+                    (let ([old-dest-col dest-col])
+                      (out (make-element 'hspace (list (make-string amt #\space))) #f)
+                      (set! dest-col (+ old-dest-col amt))))))
+              (set! src-col (+ c (or span 1)))))]
+         [(c init-line!) (advance c init-line! 0)]))
       (define (convert-infix c quote-depth)
         (let ([l (syntax->list c)])
           (and l
@@ -240,7 +243,8 @@
                   ((loop init-line! quote-depth) (car l))
                   (lloop (cdr l))]
                  [else
-                  (out " . " (if (positive? quote-depth) value-color paren-color))
+                  (advance l init-line! -2)
+                  (out ". " (if (positive? quote-depth) value-color paren-color))
                   (set! src-col (+ src-col 3))
                   (hash-table-put! col-map src-col dest-col)
                   ((loop init-line! quote-depth) l)]))

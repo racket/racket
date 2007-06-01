@@ -26,6 +26,11 @@
                 border: 0.5em solid #F5F5DC;
                }
 
+               .leftindent { 
+                margin-left: 1em;
+                margin-right: 0em;
+               }
+
                h1,h2,h3,h4,h5,h6 {
                margin-top: .5em;
                }

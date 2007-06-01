@@ -5,7 +5,8 @@
 
 @table-of-contents[]
 
-@include-section["read.scrbl"]
 @include-section["data.scrbl"]
+@include-section["syntax.scrbl"]
+@include-section["read.scrbl"]
 
 @index-section["mzscheme-index"]

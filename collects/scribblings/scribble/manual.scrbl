@@ -159,112 +159,103 @@ in a form definition.}
 @; ------------------------------------------------------------------------
 @section{Definition Reference}
 
-@defform[(defproc (identifier arg-spec ...) result-contract-expr-datum pre-flow ...)]{Produces 
-a sequence of flow elements (encaptured in a @scheme[splice]) to
-document a procedure named @scheme[identifier]. The
-@scheme[identifier] is registered so that @scheme[scheme]-typeset uses
+@defform[(defproc (id arg-spec ...) 
+                  result-contract-expr-datum 
+                  pre-flow ...)]{
+
+Produces a sequence of flow elements (encaptured in a @scheme[splice])
+to document a procedure named @scheme[id]. The
+@scheme[id] is registered so that @scheme[scheme]-typeset uses
 of the identifier are hyperlinked to this documentation.
 
 Each @scheme[arg-spec] must have one of the following forms:
 
-@itemize{
-
- @item{@specsubform/inline[(arg-identifier contract-expr-datum)]{---
-       an argument whose contract is specified by
+@specsubform[(arg-id contract-expr-datum)]{
+       An argument whose contract is specified by
        @scheme[contract-expr-datum] which is typeset via
-       @scheme[scheme].}}
+       @scheme[scheme].}
 
- @item{@specsubform/inline[(arg-identifier contract-expr-datum
-       default-expr)]{ --- like the previous case, but with a default
-       value. All arguments with a default value must be grouped
-       together, but they can be in the middle of required
-       arguments.}}
+@specsubform[(arg-id contract-expr-datum default-expr)]{
+       Like the previous case, but with a default value. All arguments
+       with a default value must be grouped together, but they can be
+       in the middle of required arguments.}
 
- @item{@specsubform/inline[(keyword arg-identifier
-       contract-expr-datum)]{ --- like the first case, but for a
-       keyword-based argument.}}
+@specsubform[(keyword arg-id contract-expr-datum)]{
+       Like the first case, but for a keyword-based argument.}
 
- @item{@specsubform/inline[(keyword arg-identifier contract-expr-datum
-       default-expr)]{ --- like the previous case, but with a default
-       value.}}
+@specsubform[(keyword arg-id contract-expr-datum default-expr)]{
+       Like the previous case, but with a default
+       value.}
 
- @item{@scheme[...0] --- any number of the preceding argument
-      (normally at the end)}
+@specsubform[#, @schemeidfont{...0}]{ Any number of the preceding argument
+      (normally at the end).}
 
- @item{@scheme[...1] --- one or more of the preceding argument
-       (normally at the end)}
-
-}
+@specsubform[#, @schemeidfont{...1}]{One or more of the preceding argument
+       (normally at the end).}
 
 The @scheme[result-contract-expr-datum] is typeset via
 @scheme[scheme], and it represents a contract on the procedure's
 result.
 
 The @scheme[pre-flow]s list is parsed as a flow that documents the
-procedure. In this description, references to @svar[arg-identifier]s
+procedure. In this description, references to @svar[arg-id]s
 are typeset as procedure arguments.
 
 The typesetting of all data before the @scheme[pre-flow]s ignores the
 source layout.}
 
 
-@defform[(defproc* (((identifier arg-spec ...) result-contract-expr-datum) ...) pre-flow ...)]{Like
-@scheme[defproc], but for multiple cases with the same @scheme[identifier].
-}
+@defform[(defproc* ([(id arg-spec ...) 
+                     result-contract-expr-datum] ...) 
+                   pre-flow ...)]{
+
+Like @scheme[defproc], but for multiple cases with the same
+@scheme[id].  }
 
 
-@defform[(defform (identifier . datum) pre-flow ...)]{Produces a 
+@defform[(defform (id . datum) pre-flow ...)]{Produces a 
 a sequence of flow elements (encaptured in a @scheme[splice]) to
-document a syntaic form named by @scheme[identifier]. The
-@scheme[identifier] is registered so that @scheme[scheme]-typeset uses
+document a syntatic form named by @scheme[id]. The
+@scheme[id] is registered so that @scheme[scheme]-typeset uses
 of the identifier are hyperlinked to this documentation.
 
 The @scheme[pre-flow]s list is parsed as a flow that documents the
 procedure. In this description, a reference to any identifier in
 @scheme[datum] is typeset as a sub-form non-terminal.
 
-The typesetting of @scheme[(identifier . datum)] preserves the source
+The typesetting of @scheme[(id . datum)] preserves the source
 layout, like @scheme[scheme], and unlike @scheme[defproc].}
 
 
-@defform[(specsubform/inline datum pre-flow ...)]{Similar to
+@defform[(specsubform datum pre-flow ...)]{Similar to
 @scheme[defform], but without any specific identifier being defined,
-without the output format that highlights a definition, and with
-@scheme[datum] as an element rather than a table. This form is
-intended for use when refining the syntax of a non-terminal used in a
-@scheme[defform], @scheme[specsubform], or other
-@scheme[specsubform/inline]. For example, it is used in the
-documentation for @scheme[defproc] in the itemization of possible
-shapes for @svar[arg-spec].
+and the table and flow are typeset indented. This form is intended for
+use when refining the syntax of a non-terminal used in a
+@scheme[defform] or other @scheme[specsubform]. For example, it is
+used in the documentation for @scheme[defproc] in the itemization of
+possible shapes for @svar[arg-spec].
 
 The @scheme[pre-flow]s list is parsed as a flow that documents the
 procedure. In this description, a reference to any identifier in
 @scheme[datum] is typeset as a sub-form non-terminal.}
 
 
-@defform[(specsubform datum pre-flow ...)]{Like
-@scheme[specsubform/inline], but the @scheme[datum] is typeset in the
-resulting flow as a table instead of an element.}
-
-
-@defform[(defthing identifier contract-expr-datum pre-flow ...)]{Like
+@defform[(defthing id contract-expr-datum pre-flow ...)]{Like
 @scheme[defproc], but for a non-procedure binding.}
 
-@defform[(defstruct struct-name ([field-name contract-expr-datum] ...) pre-flow ...)]{Similar 
-to @scheme[defform], but for a structure definition.
+@defform[(defstruct struct-name ([field-name contract-expr-datum] ...) 
+                    pre-flow ...)]{
+
+Similar to @scheme[defform], but for a structure definition.
 
 The @scheme[struct-name] can be either of the following:
 
-@itemize{
+@specsubform[id]{A structure type with no
+       specified supertype.}
 
- @item{@specsubform/inline[identifier]{--- a structure type with no
-       specified supertype.}}
+@specsubform[(id super-id)]{A type with indicated supertype.}
 
- @item{@specsubform/inline[(identifier super-identifier)]{ --- a structure
- type with indicated supertype.}}
-
-}}
-
+}
 
 @; ------------------------------------------------------------------------
 @section{Various String Forms}

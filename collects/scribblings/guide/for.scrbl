@@ -124,7 +124,7 @@ The full syntax of @scheme[for] is
 (for (_clause ...)
   _body-expr ...+)
 code:blank
-#, @elem{where} _clause #, @elem{is one of}
+#, @where-is-one-of[@scheme[_clause]]
   [_id _sequence-expr]
   #:when _boolean-expr
 ]
@@ -381,18 +381,18 @@ iterate. Specifically, the clause should have one of the following
 @scheme[_fast-clause] forms:
 
 @schemeblock[
-#, @elem{a} _fast-clause #, @elem{is one of}
- [_id (in-range _expr)]
- [_id (in-range _expr _expr)]
- [_id (in-range _expr _expr _expr)]
- [_id (in-naturals)]
- [_id (in-naturals _expr)]
- [_id (in-list _expr)]
- [_id (in-vector _expr)]
- [_id (in-string _expr)]
- [_id (in-bytes _expr)]
- [_id (stop-before _fast-clause _predicate-expr)]
- [_id (stop-after _fast-clause _predicate-expr)]
+#, @is-one-of[@scheme[_fast-clause]]
+  [_id (in-range _expr)]
+  [_id (in-range _expr _expr)]
+  [_id (in-range _expr _expr _expr)]
+  [_id (in-naturals)]
+  [_id (in-naturals _expr)]
+  [_id (in-list _expr)]
+  [_id (in-vector _expr)]
+  [_id (in-string _expr)]
+  [_id (in-bytes _expr)]
+  [_id (stop-before _fast-clause _predicate-expr)]
+  [_id (stop-after _fast-clause _predicate-expr)]
 ]
 
 @examples[
@@ -413,11 +413,11 @@ In the case of @scheme[for-values] forms, a few more
 the obvious variants of @scheme[_fast-clause] forms:
 
 @schemeblock[
-#, @elem{a} _fast-values-clause #, @elem{is one of}
- [(_id) (in-range _expr)]
- ...
- [(_id _id) (in-indexed _fast-clause)]
- [(_id ...) (in-parallel _fast-clause ...)]
+#, @is-one-of[@scheme[_fast-values-clause]]     
+  [(_id) (in-range _expr)]
+  ...
+  [(_id _id) (in-indexed _fast-clause)]
+  [(_id ...) (in-parallel _fast-clause ...)]
 ]
 
 The grammars above are not complete, because the set of syntactic

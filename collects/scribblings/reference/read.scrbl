@@ -15,26 +15,7 @@
 @define[(graph-defn) @elem{@litchar{#}@graph-tag[]@litchar{=}}]
 @define[(graph-ref) @elem{@litchar{#}@graph-tag[]@litchar{#}}]
 
-@title{Syntax}
-
-The syntax of a Scheme program is defined by
-
-@itemize{
-
- @item{a @defterm{read} phase that processes a character stream into
-       an S-expression, and}
-
- @item{an @defterm{expand} phase that processes the S-expression based
-       on bindings in the lexical environment, where some parsing
-       steps can introduce new bindings for further parsing steps.}
-
-}
-
-Note that parsing is defined in terms of Unicode characters; see
-@secref["unicode"] for information on how a byte stream is converted
-to a character stream.
-
-@section[#:tag "reader"]{Reading Data}
+@title[#:tag "mz:reader"]{Reading Data}
 
 Scheme's reader is a recursive-descent parser that can be configured
 through a @seclink["readtable"]{readtable} and various other
@@ -55,7 +36,11 @@ object. Unless specified otherwise, this section describes the
 reader's behavior in @scheme[read] mode, and @scheme[read-syntax] mode
 does the same modulo wrapping the final result.
 
-@subsection{Delimiters and Dispatch}
+Reading is defined in terms of Unicode characters; see
+@secref["unicode"] for information on how a byte stream is converted
+to a character stream.
+
+@section{Delimiters and Dispatch}
 
 Along with @schemelink[char-whitespace?]{whitespace}, the following
 characters are @defterm{delimiters}:
@@ -168,7 +153,7 @@ on the next character or characters in the input stream as follows:
 ]
 
 
-@subsection[#:tag "mz:parse-symbol"]{Reading Symbols}
+@section[#:tag "mz:parse-symbol"]{Reading Symbols}
 
 A sequence that does not start with a delimiter or @litchar{#} is
 parsed as either a symbol or a number (see @secref["mz:parse-number"]),
@@ -185,7 +170,7 @@ case-insensitive mode. If the reader encounters @as-index{@litchar{#cs}},
 @litchar{#CS}, @litchar{#Cs}, or @litchar{#cS}, then recursively reads
 the following datum in case-sensitive mode.
 
-@reader-examples[
+@reader-examples[#:symbols? #f
 "Apple"
 "Ap#ple"
 "Ap ple"
@@ -198,7 +183,7 @@ the following datum in case-sensitive mode.
 "#%Apple"
 ]
 
-@subsection[#:tag "mz:parse-number"]{Reading Numbers}
+@section[#:tag "mz:parse-number"]{Reading Numbers}
 
 @index['("numbers" "parsing")]{A} sequence that does not start with a
 delimiter is parsed as a number when it matches the following grammar
@@ -286,14 +271,14 @@ with any other mark, double-precision IEEE floating point is used.
 "#b101"
 ]
 
-@subsection[#:tag "mz:parse-boolean"]{Reading Booleans}
+@section[#:tag "mz:parse-boolean"]{Reading Booleans}
 
 A @as-index{@litchar{#t}} or @as-index{@litchar{#T}} is the complete
 input syntax for the boolean constant true, and
 @as-index{@litchar{#f}} or @as-index{@litchar{#F}} is the complete
 input syntax for the boolean constant false.
 
-@subsection[#:tag "mz:parse-pair"]{Reading Pairs and Lists}
+@section[#:tag "mz:parse-pair"]{Reading Pairs and Lists}
 
 When the reader encounters a @as-index{@litchar{(}},
 @as-index{@litchar["["]}, or @as-index{@litchar["{"]}, it starts
@@ -361,7 +346,7 @@ If the @scheme[read-square-bracket-as-paren] parameter is set to
 then when then reader encounters @litchar["{"] and @litchar["}"], the
 @exnraise{exn:fail:read}.
 
-@subsection[#:tag "mz:parse-string"]{Reading Strings}
+@section[#:tag "mz:parse-string"]{Reading Strings}
 
 @index['("strings" "parsing")]{When} the reader encouters
 @as-index{@litchar{"}}, it begins parsing characters to form a string. The
@@ -460,7 +445,7 @@ encountered before a terminating line, the @exnraise[exn:fail:read].
 "#\"Apple\""
 ]
 
-@subsection[#:tag "mz:parse-quote"]{Reading Quotes}
+@section[#:tag "mz:parse-quote"]{Reading Quotes}
 
 When the reader enounters @as-index{@litchar{'}}, then it recursively
 reads one datum, and it forms a new list containing the symbol
@@ -483,10 +468,10 @@ way. Longer prefixes take precedence over short ones:
 @reader-examples
 [
 "'apple"
-"`(1 ,(+ 2 3))"
+"`(1 ,2)"
 ]
 
-@subsection[#:tag "mz:parse-comment"]{Reading Comments}
+@section[#:tag "mz:parse-comment"]{Reading Comments}
 
 A @as-index{@litchar{;}} starts a line comment. When the reader
 encounters @litchar{;}, then it skips past all characters until the
@@ -517,7 +502,7 @@ normally appears at the beginning of a Unix script file.
 "#! /bin/sh"
 ]
 
-@subsection[#:tag "mz:parse-vector"]{Reading Vectors}
+@section[#:tag "mz:parse-vector"]{Reading Vectors}
 
 When the reader encounters a @litchar{#(}, @litchar{#[}, or
 @litchar["#{"], it starts parsing a vector; see @secref["vectors"] for
@@ -547,7 +532,7 @@ vector's elements are also wraped as syntax objects.
 "#3()"
 ]
 
-@subsection[#:tag "mz:parse-hashtable"]{Reading Hash Tables}
+@section[#:tag "mz:parse-hashtable"]{Reading Hash Tables}
 
 A @litchar{#hash} starts an immutable hash-table constant with key
 matching based on @scheme[equal?]. The characters after @litchar{hash}
@@ -568,6 +553,7 @@ In either case, the table is constructed by adding each mapping to the
 
 @reader-examples
 [
+#:example-note @elem{, where @scheme[make-...] stands for @scheme[make-immutable-hash-table]}
 "#hash()"
 "#hasheq()"
 "#hash((\"a\" . 5))"
@@ -575,7 +561,7 @@ In either case, the table is constructed by adding each mapping to the
 "#hasheq((a . 5) (a . 7))"
 ]
 
-@subsection[#:tag "mz:parse-box"]{Reading Boxes}
+@section[#:tag "mz:parse-box"]{Reading Boxes}
 
 When the reader encounters a @litchar{#&}, it starts parsing a box;
 see @secref["boxes"] for information on boxes. The content of the box
@@ -590,14 +576,14 @@ content is also wraped as a syntax object.
 "#&17"
 ]
 
-@subsection[#:tag "mz:parse-character"]{Reading Characters}
+@section[#:tag "mz:parse-character"]{Reading Characters}
 
 A @litchar["#\\"] starts a character constant, which has one of the
 following forms:
 
 @itemize{
 
- @item{ @litchar["#\\nul"] or @litchar["#\null"]: NUL (ASCII 0)@nonalpha[]}
+ @item{ @litchar["#\\nul"] or @litchar["#\\null"]: NUL (ASCII 0)@nonalpha[]}
  @item{ @litchar["#\\backspace"]: backspace  (ASCII 8)@nonalpha[]}
  @item{ @litchar["#\\tab"]: tab (ASCII 9)@nonalpha[]}
  @item{ @litchar["#\\newline"] or @litchar["#\\linefeed"]: linefeed (ASCII 10)@nonalpha[]}
@@ -639,7 +625,7 @@ following forms:
 "#\\\u3BB"
 ]
 
-@subsection[#:tag "mz:parse-keyword"]{Reading Keywords}
+@section[#:tag "mz:parse-keyword"]{Reading Keywords}
 
 A @litchar{#:} starts a keyword. The parsing of a keyword after the
 @litchar{#:} is the same as for a symbol, including case-folding in
@@ -652,7 +638,7 @@ never parsed as a number.
 "#:1"
 ]
 
-@subsection[#:tag "mz:parse-regexp"]{Reading Regular Expressions}
+@section[#:tag "mz:parse-regexp"]{Reading Regular Expressions}
 
 A @litchar{#rx} or @litchar{#px} starts a regular expression. The
 characters immediately after @litchar{#rx} or @litchar{#px} must parse
@@ -671,7 +657,7 @@ constructed by @scheme[byte-pregexp].
 "#px#\"[\\\\s]*\""
 ]
 
-@subsection[#:tag "mz:parse-graph"]{Reading Graph Structure}
+@section[#:tag "mz:parse-graph"]{Reading Graph Structure}
 
 A @graph-defn[] tags the following datum for reference via
 @graph-ref[], which allows the reader to produce a datum that
@@ -697,7 +683,7 @@ neither defines nor uses graph tags for other top-level forms.
 "#0=(1 . #0#)"
 ]
 
-@subsection[#:tag "mz:parse-reader"]{Reading via an External Reader}
+@section[#:tag "mz:parse-reader"]{Reading via an External Reader}
 
 When the reader encounters @litchar{#reader}, then it loads an
 external reader procedure and applies it to the current input stream.

@@ -48,6 +48,7 @@
     (or (paragraph? p)
         (table? p)
         (itemization? p)
+        (blockquote? p)
         (delayed-flow-element? p)))
 
   (provide-structs 
@@ -65,6 +66,8 @@
            [flowss (listof (listof flow?))])]
    [delayed-flow-element ([render (any/c part? any/c . -> . flow-element?)])]
    [itemization ([flows (listof flow?)])]
+   [blockquote ([style any/c]
+                [paragraphs (listof flow-element?)])]
    ;; content = list of elements
    [element ([style any/c]
              [content list?])]

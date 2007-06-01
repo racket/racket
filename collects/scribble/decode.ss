@@ -71,10 +71,7 @@
               (title-decl-content (car l))
               (title-decl-tag (car l))
               (title-decl-style (car l)))]
-       [(or (paragraph? (car l))
-            (table? (car l))
-            (itemization? (car l))
-            (delayed-flow-element? (car l)))
+       [(flow-element? (car l))
         (let ([para (decode-accum-para accum)]
               [part (decode-flow* (cdr l) tag style title part-depth)])
           (make-styled-part (part-tag part)

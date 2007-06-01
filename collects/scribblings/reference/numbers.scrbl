@@ -67,6 +67,9 @@ exact, and when they are @scheme[=] (except for @scheme[+nan.0], as
 noted above). Two numbers are @scheme[equal?] when they are
 @scheme[eqv?].
 
+@; ----------------------------------------
+@section{Number Types}
+
 @defproc[(number? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
  is a number, @scheme[#f] otherwise.
 
@@ -96,6 +99,32 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(integer? 1) (integer? 2.3) (integer? 4.0) (integer? 2+3i) (integer? "hello")]}
 
 
+@defproc[(zero? [z number?]) boolean?]{ Returns @scheme[(= 0 z)].
+
+@examples[(zero? 0) (zero? -0.0)]}
+
+
+@defproc[(positive? [x real?]) boolean?]{ Returns @scheme[(> x 0)].
+
+@examples[(positive? 10) (positive? -10) (positive? 0.0)]}
+
+
+@defproc[(negative? [x real?]) boolean?]{ Returns @scheme[(< x 0)].
+
+@examples[(negative? 10) (negative? -10) (negative? -0.0)]}
+
+
+@defproc[(even? [n integer?]) boolean?]{ Returns @scheme[(zero? (modulo
+ n 2))].
+
+@examples[(even? 10.0) (even? 11) (even? +inf.0)]}
+
+
+@defproc[(odd? [n integer?]) boolean?]{ Returns @scheme[(not (even? n))].
+
+@examples[(odd? 10.0) (odd? 11) (odd? +inf.0)]}
+
+
 @defproc[(exact? [z number?]) boolean?]{ Returns @scheme[#t] if @scheme[z]
  is an exact number, @scheme[#f] otherwise.
 
@@ -121,6 +150,9 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 @examples[(exact->inexact 1) (exact->inexact 1.0)]}
 
+
+@; ----------------------------------------
+@section{Arithmetic}
 
 @defproc[(+ [z number?] ...0) number?]{ Returns the sum of the
  @scheme[z]s, adding pairwise from left to right. If no arguments are
@@ -197,60 +229,6 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 @examples[(abs 1.0) (abs -1)]}
 
-
-@defproc[(= [z number?] [w number?] ...1) boolean?]{ Returns
- @scheme[#t] if all of the arguments are numerically equal,
- @scheme[#f] otherwise.  An inexact number is numerically equal to an
- exact number when the exact coercion of the inexact number is the
- exact number. Also, @scheme[0.0] and @scheme[-0.0] are numerically
- equal, but @scheme[+nan.0] is not numerically equal to itself.
-
-@examples[(= 1 1.0) (= 1 2) (= 2+3i 2+3i 2+3i)]}
-
-
-@defproc[(< [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t] if
- the arguments in the given order are in strictly increasing,
- @scheme[#f] otherwise.
-
-@examples[(< 1 1) (< 1 2 3) (< 1 +inf.0) (< 1 +nan.0)]}
-
-
-@defproc[(<= [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t]
- if the arguments in the given order are in non-decreasing,
- @scheme[#f] otherwise.
-
-@examples[(<= 1 1) (<= 1 2 1)]}
-
-
-@defproc[(> [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t] if
- the arguments in the given order are in strictly decreasing,
- @scheme[#f] otherwise.
-
-@examples[(> 1 1) (> 3 2 1) (> +inf.0 1) (< +nan.0 1)]}
-
-
-@defproc[(>= [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t]
- if the arguments in the given order are in non-increasing,
- @scheme[#f] otherwise.
-
-@examples[(>= 1 1) (>= 1 2 1)]}
-
-
-@defproc[(zero? [z number?]) boolean?]{ Returns @scheme[(= 0 z)].
-
-@examples[(zero? 0) (zero? -0.0)]}
-
-
-@defproc[(positive? [x real?]) boolean?]{ Returns @scheme[(> x 0)].
-
-@examples[(positive? 10) (positive? -10) (positive? 0.0)]}
-
-
-@defproc[(negative? [x real?]) boolean?]{ Returns @scheme[(< x 0)].
-
-@examples[(negative? 10) (negative? -10) (negative? -0.0)]}
-
-
 @defproc[(max [x real?] ...1) boolean?]{ Returns the largest of the
  @scheme[x]s, or @scheme[+nan.0] if any @scheme[x] is @scheme[+nan.0].
  If any @scheme[x] is inexact, the result is coerced to inexact.
@@ -263,17 +241,6 @@ noted above). Two numbers are @scheme[equal?] when they are
  If any @scheme[x] is inexact, the result is coerced to inexact.
 
 @examples[(min 1 3 2) (min 1 3 2.0)]}
-
-
-@defproc[(even? [n integer?]) boolean?]{ Returns @scheme[(zero? (modulo
- n 2))].
-
-@examples[(even? 10.0) (even? 11) (even? +inf.0)]}
-
-
-@defproc[(odd? [n integer?]) boolean?]{ Returns @scheme[(not (even? n))].
-
-@examples[(odd? 10.0) (odd? 11) (odd? +inf.0)]}
 
 
 @defproc[(gcd [n integer?] ...0) integer?]{ Returns the greatest common
@@ -335,6 +302,77 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(denominator 5) (denominator 34/8) (denominator 2.3) (denominator +inf.0)]}
 
 
+@; ----------------------------------------
+@section{Number Comparison}
+
+@defproc[(= [z number?] [w number?] ...1) boolean?]{ Returns
+ @scheme[#t] if all of the arguments are numerically equal,
+ @scheme[#f] otherwise.  An inexact number is numerically equal to an
+ exact number when the exact coercion of the inexact number is the
+ exact number. Also, @scheme[0.0] and @scheme[-0.0] are numerically
+ equal, but @scheme[+nan.0] is not numerically equal to itself.
+
+@examples[(= 1 1.0) (= 1 2) (= 2+3i 2+3i 2+3i)]}
+
+
+@defproc[(< [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t] if
+ the arguments in the given order are in strictly increasing,
+ @scheme[#f] otherwise.
+
+@examples[(< 1 1) (< 1 2 3) (< 1 +inf.0) (< 1 +nan.0)]}
+
+
+@defproc[(<= [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t]
+ if the arguments in the given order are in non-decreasing,
+ @scheme[#f] otherwise.
+
+@examples[(<= 1 1) (<= 1 2 1)]}
+
+
+@defproc[(> [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t] if
+ the arguments in the given order are in strictly decreasing,
+ @scheme[#f] otherwise.
+
+@examples[(> 1 1) (> 3 2 1) (> +inf.0 1) (< +nan.0 1)]}
+
+
+@defproc[(>= [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t]
+ if the arguments in the given order are in non-increasing,
+ @scheme[#f] otherwise.
+
+@examples[(>= 1 1) (>= 1 2 1)]}
+
+
+@; ------------------------------------------------------------------------
+@section{Powers and Roots}
+
+@defproc[(sqrt [z number?]) number?]{ Returns the principal square root
+ of @scheme[z].The result is exact if @scheme[z] is exact and @scheme[z]'s
+ square root is rational. See also @scheme[integer-sqrt].
+
+@examples[(sqrt 4/9) (sqrt 2) (sqrt -1)]}
+
+
+@defproc[(integer-sqrt [n integer?]) integer?]{ Returns @scheme[(floor
+ (sqrt n))] for positive @scheme[n]. For negative @scheme[n], the result is
+ @scheme[(* (integer-sqrt (- n)) 0+i)].
+
+@examples[(integer-sqrt 4.0) (integer-sqrt 5)]}
+
+
+@defproc[(integer-sqrt/remainder [n integer?]) (values integer?
+ integer?)]{  Returns @scheme[(integer-sqrt n)] and @scheme[(- n (expt
+ (integer-sqrt n) 2))].
+
+@examples[(integer-sqrt/remainder 4.0) (integer-sqrt/remainder 5)]}
+
+@defproc[(expt [z number?] [w number?]) number?]{ Returns @scheme[z]
+ raised to the power of @scheme[w]. If @scheme[w] is exact @scheme[0],
+ the result is @scheme[1]. If @scheme[z] is exact @scheme[0] and
+ @scheme[w] is negative, the @exnraise[exn:fail:contract].
+
+@examples[(expt 2 3) (expt 4 0.5) (expt +inf.0 0)]}
+
 @defproc[(exp [z number?]) number?]{ Returns Euler's number raised to the
  power of @scheme[z]. The result is normally inexact, but it is
  @scheme[1] when @scheme[z] is an exact @scheme[0].
@@ -348,6 +386,9 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 @examples[(log (exp 1)) (log 2+3i) (log 1)]}
 
+
+@; ------------------------------------------------------------------------
+@section{Trigonometric Functions}
 
 @defproc[(sin [z number?]) number?]{ Returns the sine of @scheme[z], where
  @scheme[z] is in radians.
@@ -385,33 +426,8 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(atan 0.5) (atan 2 1) (atan -2 -1) (atan 1+05.i)]
 
 
-@defproc[(sqrt [z number?]) number?]{ Returns the principal square root
- of @scheme[z].The result is exact if @scheme[z] is exact and @scheme[z]'s
- square root is rational.
-
-@examples[(sqrt 4/9) (sqrt 2) (sqrt -1)]}
-
-
-@defproc[(integer-sqrt [n integer?]) integer?]{ Returns @scheme[(floor
- (sqrt n))] for positive @scheme[n]. For negative @scheme[n], the result is
- @scheme[(* (integer-sqrt (- n)) 0+i)].
-
-@examples[(integer-sqrt 4.0) (integer-sqrt 5)]}
-
-
-@defproc[(integer-sqrt/remainder [n integer?]) (values integer?
- integer?)]{  Returns @scheme[(integer-sqrt n)] and @scheme[(- n (expt
- (integer-sqrt n) 2))].
-
-@examples[(integer-sqrt/remainder 4.0) (integer-sqrt/remainder 5)]}
-
-
-@defproc[(expt [z number?] [w number?]) number?]{ Returns @scheme[z]
- raised to the power of @scheme[w]. If @scheme[w] is exact @scheme[0],
- the result is @scheme[1]. If @scheme[z] is exact @scheme[0] and
- @scheme[w] is negative, the @exnraise[exn:fail:contract].
-
-@examples[(expt 2 3) (expt 4 0.5) (expt +inf.0 0)]}
+@; ------------------------------------------------------------------------
+@section{Complex Numbers}
 
 @defproc[(make-rectangular [x real?] [y real?]) number?]{ Returns
  @scheme[(+ x (* y 0+1i))].
@@ -448,6 +464,8 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 @examples[(angle -3) (angle 3.0) (angle 3+4i) (angle +inf.0+inf.0i)]}
 
+@; ------------------------------------------------------------------------
+@section{Bitwise Operations}
 
 @defproc[(bitwise-ior [n exact-integer?] ...0) exact-integer?]{ Returns
  the bitwise ``inclusive or'' of the @scheme[n]s in their (semi-infinite)
@@ -498,6 +516,8 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 @examples[(integer-length 8) (integer-length -8)]}
 
+@; ------------------------------------------------------------------------
+@section{Number--String Conversions}
 
 @defproc[(number->string [z number?] [radix (one-of/c 2 8 10
  16) 10]) string?]{ Returns a string that is the printed form of @scheme[z]
