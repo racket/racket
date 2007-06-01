@@ -1,5 +1,6 @@
 (module dispatch-lang mzscheme
   (require (lib "kw.ss")
+           (lib "list.ss")
            (lib "contract.ss")
            (lib "url.ss" "net")
            (lib "session.ss" "web-server" "prototype-web-server" "private")
@@ -12,14 +13,39 @@
            "../private/util.ss"
            "../private/response.ss"
            "../configuration/namespace.ss"
-           "../configuration/responders.ss"
-           "private/utils.ss")
+           "../configuration/responders.ss")
   
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide make)
   
   (define top-cust (current-custodian))
+  
+  ; same-servlet? : url? url? -> boolean?
+  (define (same-servlet? req ses)
+    (define (abstract-url u)
+      (map path/param-path
+           (url-path u)))
+    (define ans (list-prefix (abstract-url ses) (abstract-url req)))
+    #;(printf "~S => ~S~n" `(same-servlet? ,(url->string req) ,(url->string ses)) ans)
+    (and ans #t))
+  
+  ;; make-session-url: url (listof string) -> url
+  ;; produce a new url for this session:
+  ;;   Minimal path to the servlet.
+  ;;   No query.
+  ;;   No fragment.
+  (define (make-session-url uri new-path)
+    (make-url
+     (url-scheme uri)
+     (url-user uri)
+     (url-host uri)
+     (url-port uri)
+     #t
+     (map (lambda (p) (make-path/param p empty))
+          new-path)
+     empty
+     #f))
   
   (define interface-version 'v1)
   (define/kw (make #:key
@@ -74,16 +100,7 @@
                                  'start))
               (set-session-servlet! ses (initialize-servlet start)))
             (resume-session (session-id ses)
-                            conn req)))))
-    
-    ; same-servlet? : url? url? -> boolean?
-    (define (same-servlet? req ses)
-      (define (abstract-url u)
-        (map path/param-path
-             (url-path u)))
-      (define ans (list-prefix (abstract-url ses) (abstract-url req)))
-      #;(printf "~S => ~S~n" `(same-servlet? ,(url->string req) ,(url->string ses)) ans)
-      (and ans #t))
+                            conn req)))))       
     
     ;; resume-session: number connection request
     (define (resume-session ses-id conn req)

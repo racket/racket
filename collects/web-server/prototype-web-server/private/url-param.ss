@@ -3,7 +3,6 @@
            (lib "url.ss" "net")
            (lib "plt-match.ss")
            (lib "list.ss")
-           "utils.ss"
            "../../private/util.ss")
   
   (provide/contract
