@@ -1,8 +1,5 @@
 (module info (lib "infotab.ss" "setup")
-  (define name "Web Server")
-
-  (define compile-subcollections 
-    (list))
+  (define name "Web Server")  
   
   (define mzscheme-launcher-libraries
     (list "private/launch-text.ss" "private/setup-launch.ss" ))
