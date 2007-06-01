@@ -1,6 +1,7 @@
 (module to-scheme mzscheme
   (require "ast.ss"
            "types.ss"
+           "name-utils.scm"
            "parameters.ss"
            (lib "class.ss")
            (lib "list.ss")
@@ -349,27 +350,24 @@
   (define (translate-defs defs type-recs)
     (let ((sorted-d-list (sort (map (compose id-string def-name) defs) string<?)))                                   
       (module-name (make-composite-name (car sorted-d-list))))
-    (module-require (if (to-file) 
-                        (let ((location (build-path (begin (send type-recs set-location! (def-file (car defs)))
-                                                           (send type-recs get-compilation-location) "compiled")
-                                                    (string-append (symbol->string (module-name)) ".zo"))))
-                          (for-each 
-                           (lambda (def)
-                             (send type-recs set-composite-location (id-string (def-name def)) location))
-                           defs)
-                          `(file ,(path->string (build-path (string-append (symbol->string (module-name)) ".zo")))))
-                        (module-name)))
-    (let* ((translated-defs (map (lambda (d)
-                                   (cond
-                                     ((class-def? d)
-                                      (translate-class d type-recs #f 0))
-                                     ((test-def? d)
-                                      (translate-class d type-recs #t 0))
-                                     (else
-                                      (translate-interface d type-recs))))
-                                 defs))
-           (group-reqs (apply append (map (lambda (d) 
-                                            (map (lambda (r) (list (def-file d) r)) (def-uses d)))
+    (module-require 
+     (if (to-file) 
+         (let ((location (build-path (begin (send type-recs set-location! (def-file (car defs)))
+                                            (send type-recs get-compilation-location) "compiled")
+                                     (string-append (symbol->string (module-name)) ".zo"))))
+           (for-each 
+            (lambda (def) (send type-recs set-composite-location (id-string (def-name def)) location))
+            defs)
+           `(file ,(path->string (build-path (string-append (symbol->string (module-name)) ".zo")))))
+         (module-name)))
+    (let* ((translated-defs 
+            (map (lambda (d)
+                   (cond
+                     ((class-def? d) (translate-class d type-recs #f 0))
+                     ((test-def? d) (translate-class d type-recs #t 0))
+                     (else (translate-interface d type-recs))))
+                 defs))
+           (group-reqs (apply append (map (lambda (d) (map (lambda (r) (list (def-file d) r)) (def-uses d)))
                                           defs)))
            (reqs (filter-reqs group-reqs defs type-recs)))
       (values (if (> (length translated-defs) 1)
@@ -411,7 +409,8 @@
   (define (reference req defs type-recs)
     (and (not (null? defs))
          (or (and (equal? (req-path (cadr req)) (get-package (car defs) type-recs))
-                  (equal? (req-class (cadr req)) (id-string (def-name (car defs)))))
+                  (equal? (get-leading-name (req-class (cadr req)))
+                          (id-string (def-name (car defs)))))
              (reference req (cdr defs) type-recs))))
   
   ;req-member: (list location req) (list (list location req)) -> bool
@@ -2223,11 +2222,13 @@
                                                     (translate-expression (array-access-index expr))
                                                     (expr-src expr)))
       ((post-expr? expr) (translate-post-expr (translate-expression-unannotated (post-expr-expr expr))
+                                              (post-expr-expr expr)
                                               (post-expr-op expr)
                                               (post-expr-key-src expr)
                                               (expr-src expr)))
       ((pre-expr? expr) (translate-pre-expr (pre-expr-op expr)
                                             (translate-expression-unannotated (pre-expr-expr expr))
+                                            (pre-expr-expr expr)
                                             (pre-expr-key-src expr)
                                             (expr-src expr)))
       ((unary? expr) (translate-unary (unary-op expr)
@@ -2770,23 +2771,35 @@
       (make-syntax #f `(if ,if? ,then ,else) (build-src src))))
   
   ;converted
-  ;translate-post-expr: syntax symbol src src -> syntax
-  (define (translate-post-expr expr op key src)
-    (make-syntax #f `(begin0
-                       ,expr
-                       (set! ,expr ( ,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
-                                      ,expr)))
-                 (build-src src)))
+  ;translate-post-expr: syntax expression symbol src src -> syntax
+  (define (translate-post-expr expr exp op key src)
+    (let ([setter (cond
+                    [(and (field-access? (access-name exp))
+                          (not (var-access-static? (field-access-access (access-name exp)))))
+                     (create-set-name (id-string (field-access-field (access-name exp)))
+                                   (var-access-class (field-access-access (access-name exp))))]
+                    [else 'set!])])
+      (make-syntax #f `(begin0
+                         ,expr
+                         (,setter ,expr ( ,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
+                                         ,expr)))
+                   (build-src src))))
   
   ;converted
   ;translate-pre-expr: symbol syntax src src -> syntax
-  (define (translate-pre-expr op expr key src)
-    (make-syntax #f
-                 `(begin
-                    (set! ,expr (,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
-                                  ,expr))
-                    ,expr)
-                 (build-src src)))
+  (define (translate-pre-expr op expr exp key src)
+    (let ([setter (cond
+                    [(and (field-access? (access-name exp))
+                          (not (var-access-static? (field-access-access (access-name exp)))))
+                     (create-set-name (id-string (field-access-field (access-name exp)))
+                                   (var-access-class (field-access-access (access-name exp))))]
+                    [else 'set!])])
+      (make-syntax #f
+                   `(begin
+                      (,setter ,expr (,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
+                                      ,expr))
+                      ,expr)
+                   (build-src src))))
   
   ;converted
   ;translate-unary: symbol syntax src src -> syntax
