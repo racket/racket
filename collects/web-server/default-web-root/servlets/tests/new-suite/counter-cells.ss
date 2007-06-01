@@ -7,17 +7,17 @@
   (define (start _)
     (main-page))
   
-  (define the-counter (make-web-cell:local 0))
-  (define the-header (make-web-cell:local (box "Main page")))
+  (define the-counter (make-web-cell 0))
+  (define the-header (make-web-cell (box "Main page")))
   
   (define (counter)
     (send/suspend/dispatch
      (lambda (embed/url)
-       `(html (h2 ,(number->string (web-cell:local-ref the-counter)))
+       `(html (h2 ,(number->string (web-cell-ref the-counter)))
               (a ([href ,(embed/url
                           (lambda _
-                            (web-cell:local-mask the-counter 
-                                                 (add1 (web-cell:local-ref the-counter)))
+                            (web-cell-shadow the-counter 
+                                                 (add1 (web-cell-ref the-counter)))
                             (counter)))])
                  "Increment")
               (br)
@@ -29,11 +29,11 @@
   (define (main-page)
     (send/suspend/dispatch
      (lambda (embed/url)
-       `(html (h2 ,(unbox (web-cell:local-ref the-header)))
+       `(html (h2 ,(unbox (web-cell-ref the-header)))
               (form ([method "POST"]
                      [action ,(embed/url
                                (lambda (req)
-                                 (set-box! (web-cell:local-ref the-header)
+                                 (set-box! (web-cell-ref the-header)
                                            (extract-binding/single 'header (request-bindings req)))
                                  (main-page)))])
                     (input ([type "text"] [name "header"]))
