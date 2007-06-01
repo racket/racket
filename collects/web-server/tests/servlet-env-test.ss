@@ -1,5 +1,13 @@
 (module servlet-env-test mzscheme
-  (require (lib "servlet-env.ss" "web-server"))
+  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+           (lib "servlet-env.ss" "web-server"))
+  (provide servlet-env-tests)
+  
+  (define servlet-env-tests
+    (test-suite
+     "Servlet Environment"))
+
+  ; XXX Turn below into tests
   
   ; request-number : str -> num
   (define (request-number which-number)

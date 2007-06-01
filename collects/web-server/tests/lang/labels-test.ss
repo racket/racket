@@ -77,7 +77,7 @@
   
   (define labels-tests
     (test-suite
-     "Tests for labels.ss"
+     "Module Labeling"
      
      (test-case
       "Test the tag incrementing scheme"

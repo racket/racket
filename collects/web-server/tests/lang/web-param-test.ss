@@ -10,7 +10,7 @@
   
   (define web-param-tests
     (test-suite
-     "Test Web Parameters"
+     "Web Parameters"
      
      ;; ****************************************
      ;; ****************************************

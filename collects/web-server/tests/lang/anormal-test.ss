@@ -137,7 +137,7 @@
   
   (define anormal-tests
     (test-suite
-     "Tests for Normalization Phase"
+     "Anormalization"
      (test-suite
       "Base Cases"
       

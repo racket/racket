@@ -38,13 +38,15 @@
   
   (define request-tests
     (test-suite
-     "tests for parsing bindings"
-     (test-equal? "simple test 1"
-                  (get-post-data/raw "hello world") #"hello world")
-     (test-equal? "simple test 2"
-                  (get-post-data/raw "hello=world") #"hello=world")
-     (test-equal? "simple test 3"
-                  (binding:form-value (bindings-assq #"hello" (get-bindings "hello=world")))
-                  #"world")))
+     "Request Parsing"
+     (test-suite
+      "Bindings"
+      (test-equal? "simple test 1"
+                   (get-post-data/raw "hello world") #"hello world")
+      (test-equal? "simple test 2"
+                   (get-post-data/raw "hello=world") #"hello=world")
+      (test-equal? "simple test 3"
+                   (binding:form-value (bindings-assq #"hello" (get-bindings "hello=world")))
+                   #"world"))))
   
   (provide request-tests))

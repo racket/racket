@@ -21,7 +21,7 @@
   
   (define lang-tests
     (test-suite
-     "Test the Web language"
+     "Web Language Servlets"
      
      ;; ****************************************
      ;; ****************************************

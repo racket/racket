@@ -51,7 +51,7 @@
   
   (define define-closure-tests
     (test-suite
-     "Tests for closure.ss"
+     "Define Closure"
      
      (test-case
       "serialize id procedure"

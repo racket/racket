@@ -27,7 +27,7 @@
   
   (define stuff-url-tests
     (test-suite
-     "Tests for stuff-url.ss"     
+     "Stuff URL"
      
      (test-case
       "compose url-parts and recover-serial (1)"
