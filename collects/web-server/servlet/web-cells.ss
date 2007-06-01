@@ -128,10 +128,10 @@
   (define-struct cell (id))
   (define-struct (cell:local cell) ())
   
-  (define web-cell:local? cell:local?)
+  (define web-cell? cell:local?)
   
   ; ext:make-'a 'b -> 'a
-  (define (make-web-cell:local default)
+  (define (make-web-cell default)
     (define new-name (gensym))
     (frame-set! (search-stack global-root?)
                 new-name default)
@@ -139,19 +139,12 @@
     
   ; cell:local-ref : cell:local -> any
   ; returns the value of the local cell
-  (define (web-cell:local-ref lc)
+  (define (web-cell-ref lc)
     (frame-ref (search-stack frame?)
-               (cell-id lc)))
-  ; cell:local-set! : cell:local any -> void
-  ; sets the value of the local cell at the last place it was set, including the default
-  (define (web-cell:local-set! lc nv)
-    (frame-set! (search-stack
-                 (lambda (f) (frame-set? f (cell-id lc))))
-                (cell-id lc)
-                nv))
+               (cell-id lc)))  
   ; cell:local-mask : cell:local any -> void
   ; masks the local cell to the given value
-  (define (web-cell:local-mask lc nv)
+  (define (web-cell-shadow lc nv)
     (frame-set! (search-stack frame?)
                 (cell-id lc)
                 nv))
@@ -160,8 +153,7 @@
            with-frame-after)
   (provide/contract
    [exn:fail:frame:top? (any/c . -> . boolean?)]
-   [web-cell:local? (any/c . -> . boolean?)]
-   [make-web-cell:local (any/c . -> . web-cell:local?)]
-   [web-cell:local-ref (web-cell:local? . -> . any/c)]
-   [web-cell:local-set! (web-cell:local? any/c . -> . void)]
-   [web-cell:local-mask (web-cell:local? any/c . -> . void)]))
+   [web-cell? (any/c . -> . boolean?)]
+   [make-web-cell (any/c . -> . web-cell?)]
+   [web-cell-ref (web-cell? . -> . any/c)]
+   [web-cell-shadow (web-cell? any/c . -> . void)]))
