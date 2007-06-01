@@ -7,9 +7,9 @@
                       "lang/anormal.ss"
                       "lang/elim-callcc.ss"
                       "lang/defun.ss")
-  (require "lang-api.ss")
+  (require "lang/lang-api.ss")
   (provide (rename lang-module-begin #%module-begin))
-  (provide (all-from "lang-api.ss"))
+  (provide (all-from "lang/lang-api.ss"))
   
   (define-syntax lang-module-begin 
     (make-lang-module-begin 

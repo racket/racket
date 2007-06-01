@@ -3,9 +3,9 @@
            (lib "contract.ss")
            (lib "url.ss" "net")
            (lib "session.ss" "web-server" "prototype-web-server" "private")
-           (only "lang-api/web.ss"
+           (only "lang/web.ss"
                  initialize-servlet)           
-           (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
+           (lib "web-cells.ss" "web-server" "prototype-web-server" "lang")
            "../private/request-structs.ss"
            "../dispatchers/dispatch.ss"
            "../private/connection-manager.ss"
@@ -61,7 +61,7 @@
             (define cust (make-custodian top-cust))
             (define ns (make-servlet-namespace
                         #:additional-specs
-                        '((lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
+                        '((lib "web-cells.ss" "web-server" "prototype-web-server" "lang")
                           (lib "abort-resume.ss" "web-server" "prototype-web-server" "lang")
                           (lib "session.ss" "web-server" "prototype-web-server" "private")
                           (lib "request-structs.ss" "web-server" "private"))))

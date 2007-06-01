@@ -3,7 +3,7 @@
            (lib "plt-match.ss")
            (lib "url.ss" "net")           
            "../../private/request-structs.ss"
-           "../lang/abort-resume.ss"
+           "abort-resume.ss"
            "../private/session.ss"
            "stuff-url.ss"
            "../private/url-param.ss")

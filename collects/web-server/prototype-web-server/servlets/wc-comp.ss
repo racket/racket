@@ -1,6 +1,5 @@
 (module wc-comp (lib "lang.ss" "web-server" "prototype-web-server")
-  (require (lib "web-cell-component.ss" "web-server" "prototype-web-server" "lang-api")
-           (lib "url.ss" "net"))
+  (require (lib "web-cell-component.ss" "web-server" "prototype-web-server" "lang"))
   (provide start)
   
   (define (start initial-request)

@@ -3,7 +3,7 @@
            (lib "plt-match.ss")
            (lib "serialize.ss")
            "../private/define-closure.ss"
-           "../lang-api/web-cells.ss")
+           "../lang/web-cells.ss")
   (provide
    
    ;; AUXILLIARIES
