@@ -3,10 +3,10 @@
            (lib "plt-match.ss")
            (lib "url.ss" "net")           
            "../../private/request-structs.ss"
-           "abort-resume.ss"
-           "session.ss"
+           "../lang/abort-resume.ss"
+           "../private/session.ss"
            "stuff-url.ss"
-           "url-param.ss")
+           "../private/url-param.ss")
   
   (provide 
    ;; Server Interface

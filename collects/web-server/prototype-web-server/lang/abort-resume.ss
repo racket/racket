@@ -1,8 +1,8 @@
 (module abort-resume mzscheme
-  (require "define-closure.ss"
-           (lib "list.ss")
+  (require (lib "list.ss")
            (lib "plt-match.ss")
            (lib "serialize.ss")
+           "../private/define-closure.ss"
            "../lang-api/web-cells.ss")
   (provide
    

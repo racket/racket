@@ -1,6 +1,6 @@
 (module web-extras mzscheme
   (require (lib "url.ss" "net")
-           "../private/web.ss"
+           "web.ss"
            "../../servlet/helpers.ss")
   (provide send/suspend/dispatch
            redirect/get)

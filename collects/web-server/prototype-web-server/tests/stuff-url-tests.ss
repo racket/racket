@@ -1,5 +1,5 @@
 (module stuff-url-tests mzscheme
-  (require (lib "stuff-url.ss" "web-server" "prototype-web-server" "private")
+  (require (lib "stuff-url.ss" "web-server" "prototype-web-server" "lang-api")
            (lib "mod-map.ss" "web-server" "prototype-web-server" "private")
            (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "url.ss" "net")

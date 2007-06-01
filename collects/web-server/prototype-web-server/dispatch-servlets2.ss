@@ -3,7 +3,7 @@
            (lib "contract.ss")
            (lib "url.ss" "net")
            (lib "session.ss" "web-server" "prototype-web-server" "private")
-           (only "private/web.ss"
+           (only "lang-api/web.ss"
                  initialize-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
            "../private/request-structs.ss"
@@ -62,7 +62,7 @@
             (define ns (make-servlet-namespace
                         #:additional-specs
                         '((lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
-                          (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
+                          (lib "abort-resume.ss" "web-server" "prototype-web-server" "lang")
                           (lib "session.ss" "web-server" "prototype-web-server" "private")
                           (lib "request-structs.ss" "web-server" "private"))))
             (define ses (new-session cust ns (make-session-url uri (map path->string url-servlet-path))))

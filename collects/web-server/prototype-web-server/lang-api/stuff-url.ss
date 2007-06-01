@@ -2,9 +2,9 @@
   (require (lib "contract.ss")
            (lib "url.ss" "net")
            (lib "serialize.ss")
-           "utils.ss"
-           "url-param.ss"
-           "mod-map.ss")
+           "../private/utils.ss"
+           "../private/url-param.ss"
+           "../private/mod-map.ss")
   
   ; XXX url: first try continuation, then turn into hash
   
