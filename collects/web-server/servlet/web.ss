@@ -11,7 +11,7 @@
            "../servlet/helpers.ss"
            "../servlet/web-cells.ss"
            "../servlet/servlet-structs.ss"
-           "../request-structs.ss")
+           "../private/request-structs.ss")
   
   ;; ************************************************************
   ;; HELPERS

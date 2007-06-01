@@ -1,8 +1,8 @@
 (module responders mzscheme
   (require (lib "contract.ss")
            (lib "url.ss" "net"))
-  (require "../response-structs.ss"
-           "../request-structs.ss")
+  (require "../private/response-structs.ss"
+           "../private/request-structs.ss")
   
   ; error-response : nat str str [(cons sym str) ...] -> response
   ; XXX - cache files with a refresh option.

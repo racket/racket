@@ -1,8 +1,8 @@
 (module session mzscheme
   (require (lib "contract.ss")
            (lib "url.ss" "net")
-           "../../response-structs.ss"
-           "../../request-structs.ss"
+           "../../private/response-structs.ss"
+           "../../private/request-structs.ss"
            "url-param.ss")
   (provide current-session)
   

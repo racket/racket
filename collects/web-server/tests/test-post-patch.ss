@@ -4,7 +4,7 @@
            (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2))
            (lib "connection-structs.ss" "web-server" "private")
            (lib "timer-structs.ss" "web-server" "private")
-           (lib "request-structs.ss" "web-server"))
+           (lib "request-structs.ss" "web-server" "private"))
   
   (require/expose (lib "request.ss" "web-server" "private")
                   (read-bindings&post-data/raw))

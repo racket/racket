@@ -1,8 +1,7 @@
 (module dispatch mzscheme
   (require (lib "contract.ss"))
   (require "../private/connection-structs.ss"
-           "../request-structs.ss"
-           "../response-structs.ss")
+           "../private/request-structs.ss")
   
   (define dispatcher? 
     (connection? request? . -> . void))

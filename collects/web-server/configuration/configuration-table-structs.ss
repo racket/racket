@@ -1,8 +1,8 @@
 (module configuration-table-structs mzscheme
   (require (lib "contract.ss")
            (lib "url.ss" "net"))
-  (require "../response-structs.ss"
-           "../request-structs.ss")           
+  (require "../private/response-structs.ss"
+           "../private/request-structs.ss")           
   
   ; configuration-table = (make-configuration-table nat nat num host-table (listof (cons str host-table)))
   (define-struct configuration-table

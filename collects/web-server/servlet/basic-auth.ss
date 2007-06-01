@@ -2,7 +2,7 @@
   (require (lib "contract.ss")
            (lib "plt-match.ss")
            (lib "base64.ss" "net"))
-  (require "../request-structs.ss")
+  (require "../private/request-structs.ss")
   
   ; Authentication  
   ; extract-user-pass : (listof (cons sym bytes)) -> (or/c #f (cons str str))

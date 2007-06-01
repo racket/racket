@@ -3,8 +3,8 @@
            (lib "kw.ss")
            (lib "plt-match.ss"))
   (require "../private/util.ss"
-           "../request-structs.ss"
-           "../response-structs.ss")
+           "../private/request-structs.ss"
+           "../private/response-structs.ss")
   
   (define (request-headers request)
     (map (match-lambda

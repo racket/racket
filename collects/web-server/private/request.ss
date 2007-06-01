@@ -6,7 +6,7 @@
            (lib "uri-codec.ss" "net"))
   (require "util.ss"
            "connection-manager.ss"
-           "../request-structs.ss")
+           "../private/request-structs.ss")
   
   (provide/contract
    [read-request ((connection? number? ((input-port?) . ->* . (string? string?))) . ->* . (request? boolean?))])

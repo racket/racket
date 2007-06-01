@@ -2,11 +2,11 @@
   (require (lib "kw.ss")
            (lib "contract.ss")
            (lib "url.ss" "net")
-           (lib "request-structs.ss" "web-server")
            (lib "session.ss" "web-server" "prototype-web-server" "private")
            (only "private/web.ss"
                  initialize-servlet)           
            (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
+           "../private/request-structs.ss"
            "../dispatchers/dispatch.ss"
            "../private/connection-manager.ss"
            "../private/util.ss"
@@ -61,11 +61,10 @@
             (define cust (make-custodian top-cust))
             (define ns (make-servlet-namespace
                         #:additional-specs
-                        '((lib "servlet.ss" "web-server")
-                          (lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
+                        '((lib "web-cells.ss" "web-server" "prototype-web-server" "lang-api")
                           (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
                           (lib "session.ss" "web-server" "prototype-web-server" "private")
-                          (lib "request.ss" "web-server" "private"))))
+                          (lib "request-structs.ss" "web-server" "private"))))
             (define ses (new-session cust ns (make-session-url uri (map path->string url-servlet-path))))
             (parameterize ([current-custodian cust]
                            [current-namespace ns]

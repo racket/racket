@@ -3,7 +3,7 @@
   (require "../managers/manager.ss"
            "../servlet/servlet-structs.ss"
            "connection-structs.ss"
-           "../request-structs.ss")
+           "../private/request-structs.ss")
   
   (define-struct (exn:fail:servlet:instance exn:fail) ())
   (define-struct servlet (custodian namespace manager handler))

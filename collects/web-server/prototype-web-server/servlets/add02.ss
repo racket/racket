@@ -1,6 +1,4 @@
 (module add02 (lib "lang.ss" "web-server" "prototype-web-server")
-  (require (lib "url.ss" "net")
-           (lib "request-structs.ss" "web-server"))
   (provide start)
 
   ;; get-number-from-user: string -> number

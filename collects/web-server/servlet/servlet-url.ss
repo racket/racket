@@ -2,7 +2,7 @@
   (require (lib "list.ss")
            (lib "contract.ss")
            (lib "url.ss" "net"))
-  (require "../request-structs.ss"
+  (require "../private/request-structs.ss"
            "../private/util.ss")
   
   (define-struct servlet-url (url))

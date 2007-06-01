@@ -6,7 +6,7 @@
            (lib "plt-match.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
-           "../request-structs.ss")  
+           "../private/request-structs.ss")  
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide make)  

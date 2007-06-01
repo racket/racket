@@ -6,7 +6,7 @@
   (require "dispatch.ss"
            "../private/util.ss"
            "../private/mime-types.ss"
-           "../request-structs.ss"
+           "../private/request-structs.ss"
            "../private/response.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?])

@@ -4,7 +4,7 @@
            (lib "pretty.ss")
            (lib "xml.ss" "xml")
            "connection-manager.ss"
-           "../response-structs.ss"
+           "../private/response-structs.ss"
            "util.ss")
   
   ;; Weak contracts for output-response because the response? is checked inside

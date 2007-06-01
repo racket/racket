@@ -4,8 +4,8 @@
   (require "dispatch.ss"
            "../private/util.ss"
            "../private/response.ss"
-           "../request-structs.ss"
-           "../response-structs.ss")
+           "../private/request-structs.ss"
+           "../private/response-structs.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?]
    [make (string? (request? . -> . response?) . -> . dispatcher?)])

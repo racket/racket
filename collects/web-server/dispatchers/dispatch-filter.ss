@@ -2,7 +2,7 @@
   (require (lib "contract.ss")
            (lib "url.ss" "net"))
   (require "dispatch.ss"
-           "../request-structs.ss"
+           "../private/request-structs.ss"
            "../private/util.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?]
