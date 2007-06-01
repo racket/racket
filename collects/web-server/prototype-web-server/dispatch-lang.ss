@@ -1,4 +1,4 @@
-(module dispatch-servlets2 mzscheme
+(module dispatch-lang mzscheme
   (require (lib "kw.ss")
            (lib "contract.ss")
            (lib "url.ss" "net")

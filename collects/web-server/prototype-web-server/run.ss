@@ -6,7 +6,7 @@
            (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
            (prefix const: (lib "dispatch-const.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers"))
-           (prefix servlets2: (lib "dispatch-servlets2.ss" "web-server" "prototype-web-server")))
+           (prefix lang: (lib "dispatch-lang.ss" "web-server" "prototype-web-server")))
   
   (define server-root-path (build-path "~" "Development" "plt" "default-web-root"))
   (define default-host-path (build-path server-root-path "conf"))  
@@ -22,10 +22,10 @@
    #:dispatch (sequencer:make
                (filter:make
                 #rx"\\.ss"
-                (servlets2:make #:url->path (fsmap:make-url->path/optimism url->path)
-                                #:timeouts-servlet-connection 86400
-                                #:responders-servlet-loading (gen-servlet-responder servlet-error-file)
-                                #:responders-servlet (gen-servlet-responder servlet-error-file)))
+                (lang:make #:url->path (fsmap:make-url->path/optimism url->path)
+                           #:timeouts-servlet-connection 86400
+                           #:responders-servlet-loading (gen-servlet-responder servlet-error-file)
+                           #:responders-servlet (gen-servlet-responder servlet-error-file)))
                (files:make #:url->path url->path
                            #:mime-types-path (build-path server-root-path "mime.types")
                            #:indices (list "index.html" "index.htm"))
