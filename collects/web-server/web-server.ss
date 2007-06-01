@@ -11,10 +11,9 @@
            "web-server-sig.ss"
            "web-server-unit.ss"
            (prefix http: "private/request.ss"))
-  (provide
-   serve
-   serve/ports
-   serve/ips+ports)
+  (provide serve
+           serve/ports
+           serve/ips+ports)
   (provide/contract
    [do-not-return (-> void)]
    [serve/web-config@ (unit? . -> . (-> void?))])
