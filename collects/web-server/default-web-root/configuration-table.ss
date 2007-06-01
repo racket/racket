@@ -21,7 +21,7 @@
        (file-base-connection-timeout 30))
      (paths
       (configuration-root "conf")
-      (host-root "default-web-root")
+      (host-root ".")
       (log-file-path "log")
       (file-root "htdocs")
       (servlet-root ".")

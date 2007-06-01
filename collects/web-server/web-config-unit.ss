@@ -16,7 +16,7 @@
    [default-configuration-table-path path?])  
   
   (define default-configuration-table-path
-    (build-path (collection-path "web-server") "default-configuration-table"))
+    (build-path (collection-path "web-server") "default-web-root" "configuration-table.ss"))
   
   ; read-configuration-table : path -> configuration-table
   (define (read-configuration-table table-file-name)
