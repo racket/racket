@@ -1,7 +1,3 @@
-;; this is a trivial implementation of the connection-manger interface that
-;; uses timeouts instead of a queued-model.
-
-;; the queued-model is also fully implemented but won't be used at this time.
 (module connection-manager mzscheme
   (require "connection-structs.ss"
            "timer.ss"
