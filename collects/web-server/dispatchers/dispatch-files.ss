@@ -56,7 +56,8 @@
                        (define full-name (build-path path dir-default))
                        (when (and (file-exists? full-name)
                                   (looks-like-directory? (url-path->string (url-path uri))))
-                         (esc (output-file conn full-name method (get-mime-type full-name)))))
+                         (esc (output-file conn full-name method (get-mime-type full-name)
+                                           0 +inf.0))))
                      indices)
            (next-dispatcher))]
         [else
