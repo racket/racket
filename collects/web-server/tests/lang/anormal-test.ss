@@ -1,7 +1,7 @@
 (module anormal-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           "../lang/anormal.ss"
-           "../lang/util.ss")
+           (lib "anormal.ss" "web-server" "lang")
+           (lib "util.ss" "web-server" "lang"))
   (provide anormal-tests)
   
   (define (empty-env var)

@@ -1,5 +1,5 @@
 (module servlet-env-test mzscheme
-  (require (lib "servlet-env.ss" "web-server" "tools"))
+  (require (lib "servlet-env.ss" "web-server"))
   
   ; request-number : str -> num
   (define (request-number which-number)
@@ -18,8 +18,10 @@
                          (input ([type "text"] [name "number"] [value ""]))
                          (input ([type "submit"] [name "enter"] [value "Enter"])))))))
   #;(on-web
-   `(html (head (title "Sum"))
-          (body ([bgcolor "white"])
-                (p "The sum is "
-                   ,(number->string (+ (request-number "first") (request-number "second")))))))
-  (on-web 9000 (+ (request-number "first") (request-number "second"))))
+     `(html (head (title "Sum"))
+            (body ([bgcolor "white"])
+                  (p "The sum is "
+                     ,(number->string (+ (request-number "first") (request-number "second")))))))
+  
+  (define (test)
+    (on-web 9000 (+ (request-number "first") (request-number "second")))))

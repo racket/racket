@@ -1,9 +1,9 @@
-(module closure-tests mzscheme
-  (provide closure-tests-suite)
+(module define-closure-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "serialize.ss")
            (lib "match.ss")
-           "../private/define-closure.ss")  
+           (lib "define-closure.ss" "web-server" "private"))
+  (provide define-closure-tests)
   
   (define-closure id (x) () x)
   
@@ -49,7 +49,7 @@
   (define evaluate (make-clsr:evaluate (lambda () (values evaluate eval-app))))
   (define eval-app (make-clsr:eval-app (lambda () evaluate)))
   
-  (define closure-tests-suite
+  (define define-closure-tests
     (test-suite
      "Tests for closure.ss"
      

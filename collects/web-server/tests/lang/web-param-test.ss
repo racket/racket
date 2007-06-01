@@ -1,14 +1,14 @@
-(module param-tests mzscheme
+(module web-param-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           "util.ss")
-  (provide param-suite)
+           "../util.ss")
+  (provide web-param-tests)
   
   (define the-dispatch
     `(lambda (k*v)
        (lambda (k*v)
          ((car k*v) k*v))))
   
-  (define param-suite
+  (define web-param-tests
     (test-suite
      "Test Web Parameters"
      

@@ -1,16 +1,14 @@
-(module labels-tests mzscheme
+(module labels-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (lib "etc.ss")
            (lib "file.ss")
-           "../lang/labels.ss")
-             
+           (lib "labels.ss" "web-server" "lang"))
+  (provide labels-tests)
+  
   (require/expose (lib "labels.ss" "web-server" "lang") (add1/string))
   
-  (define THE-TEST-FILENAME (make-temporary-file))
-  
-  (provide labels-tests-suite)
-  
+  (define THE-TEST-FILENAME (make-temporary-file))  
   (define l1 (make-labeling #"foo" THE-TEST-FILENAME))
   (define l2 (make-labeling #"foo" THE-TEST-FILENAME))
   (define l3 (make-labeling #"bar" THE-TEST-FILENAME))
@@ -77,7 +75,7 @@
                    (eqv? sym0 sym))
                  syms))))))
   
-  (define labels-tests-suite
+  (define labels-tests
     (test-suite
      "Tests for labels.ss"
      

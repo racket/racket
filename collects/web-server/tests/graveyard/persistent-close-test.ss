@@ -1,12 +1,11 @@
-(module persistent-close-tests mzscheme
+(module persistent-close-test mzscheme
   (require (lib "file-vector.ss" "web-server" "graveyard")
            (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "serialize.ss")
-           (lib "persistent-close.ss" "web-server" "graveyard"))
+           (lib "persistent-close.ss" "web-server" "graveyard"))  
+  (provide persistent-close-tests)
   
-  (provide persistent-close-suite)
-  
-  (define persistent-close-suite
+  (define persistent-close-tests
     (test-suite
      "Tests for persistent-close.ss"
      

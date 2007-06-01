@@ -1,7 +1,6 @@
-(module test-post-patch mzscheme
+(module request-test mzscheme
   (require (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2))
            (lib "connection-structs.ss" "web-server" "private")
            (lib "timer-structs.ss" "web-server" "private")
            (lib "request-structs.ss" "web-server" "private"))
@@ -37,7 +36,7 @@
                       (lambda (f s) s)))
   
   
-  (define binding-parse-tests
+  (define request-tests
     (test-suite
      "tests for parsing bindings"
      (test-equal? "simple test 1"
@@ -48,4 +47,4 @@
                   (binding:form-value (bindings-assq #"hello" (get-bindings "hello=world")))
                   #"world")))
   
-  (test/text-ui binding-parse-tests))
+  (provide request-tests))

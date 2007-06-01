@@ -1,11 +1,10 @@
-(module stuff-url-tests mzscheme
+(module stuff-url-test mzscheme
   (require (lib "stuff-url.ss" "web-server" "lang")
            (lib "mod-map.ss" "web-server" "private")
            (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "url.ss" "net")
-           "util.ss")
-  
-  (provide stuff-url-suite)
+           "../util.ss")  
+  (provide stuff-url-tests)
   
   (define uri0 (string->url "www.google.com"))  
   
@@ -23,10 +22,10 @@
        (lambda (k*v)
          ((car k*v) k*v))))
   
-  (define m00 '(lib "mm00.ss" "web-server" "tests" "modules")) 
-  (define m01 '(lib "mm01.ss" "web-server" "tests" "modules")) 
+  (define m00 '(lib "mm00.ss" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
+  (define m01 '(lib "mm01.ss" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
   
-  (define stuff-url-suite
+  (define stuff-url-tests
     (test-suite
      "Tests for stuff-url.ss"     
      
