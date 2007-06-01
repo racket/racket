@@ -12,8 +12,7 @@
   (provide/contract
    [rename ext:output-response output-response (connection? any/c . -> . any)]
    [rename ext:output-response/method output-response/method (connection? response? symbol? . -> . any)]
-   [rename ext:output-file output-file (connection? path? symbol? bytes? . -> . any)]
-   [rename ext:output-file/partial output-file/partial (connection? path? symbol? bytes? integer? integer? . -> . any)])
+   [rename ext:output-file output-file (connection? path? symbol? bytes? integer? integer? . -> . any)])
   
   ;; Table 1. head responses:
   ; ------------------------------------------------------------------------------
@@ -178,27 +177,12 @@
   (define (response/full->size resp/f)
     (apply + (map
               data-length
-              (response/full-body resp/f))))
-  
-  ; XXX Get rid of method restriction
-  ;; **************************************************
-  ;; output-file: connection path symbol bytes -> void
-  (define (output-file conn file-path method mime-type)
-    (output-headers conn 200 "Okay"
-                    `(("Content-Length: " ,(file-size file-path)))
-                    (file-or-directory-modify-seconds file-path)
-                    mime-type)
-    (when (eq? method 'get)
-      ; Give it one second per byte.
-      (adjust-connection-timeout! conn (file-size file-path))
-      (with-handlers ([void (lambda (e) (network-error 'output-file (exn-message e)))])
-        (call-with-input-file file-path
-          (lambda (i-port) (copy-port i-port (connection-o-port conn)))))))
+              (response/full-body resp/f))))  
   
   ;; **************************************************
-  ;; output-file/partial: connection path symbol bytes integer integer -> void
-  (define (output-file/partial conn file-path method mime-type
-                               start end-or-inf)
+  ;; output-file: connection path symbol bytes integer integer -> void
+  (define (output-file conn file-path method mime-type
+                       start end-or-inf)
     (define total-len (file-size file-path))
     (define end (if (equal? +inf.0 end-or-inf)
                     total-len
@@ -220,10 +204,7 @@
             (copy-port i-port/end (connection-o-port conn)))))))
   
   (define ext:output-file
-    (ext:wrap output-file))
-  
-  (define ext:output-file/partial    
-    (ext:wrap output-file/partial))
+    (ext:wrap output-file))  
   
   ;; **************************************************
   ;; output-response/method: connection response/full symbol -> void

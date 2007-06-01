@@ -4,7 +4,6 @@
            (lib "plt-match.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
-           "../configuration/responders.ss"
            "../private/util.ss"
            "../private/mime-types.ss"
            "../request-structs.ss"
@@ -32,7 +31,8 @@
         [(file-exists? path)
          (match (headers-assq* #"Range" (request-headers/raw req))
            [#f
-            (output-file conn path method (get-mime-type path))]
+            (output-file conn path method (get-mime-type path)
+                         0 +inf.0)]
            [range
             (match (bytes->string/utf-8 (header-value range))
               [(regexp "^bytes=(.*)-(.*)$" (list s start end))
@@ -44,11 +44,12 @@
                  (if (string=? "" end)
                      +inf.0
                      (string->number end)))               
-               (output-file/partial conn path method (get-mime-type path)
+               (output-file conn path method (get-mime-type path)
                                     startn endn)]
               [r
                ; XXX: Unhandled range: r
-               (output-file conn path method (get-mime-type path))])])]
+               (output-file conn path method (get-mime-type path)
+                            0 +inf.0)])])]
         [(directory-exists? path)
          (let/ec esc
            (for-each (lambda (dir-default)
