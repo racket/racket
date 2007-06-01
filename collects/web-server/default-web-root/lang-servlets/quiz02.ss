@@ -1,0 +1,42 @@
+(module quiz02 (lib "lang.ss" "web-server")
+  (require "quiz-lib.ss")
+  (provide start)
+  
+  ;; get-answer: mc-question -> number
+  ;; get an answer for a multiple choice question
+  (define (get-answer mc-q)
+    (string->number
+     (bytes->string/utf-8
+      (binding:form-value
+       (bindings-assq #"answs" 
+                      (request-bindings/raw 
+                       (send/suspend/hidden (make-cue-page mc-q))))))))
+    
+  ;; get-answers: (-> (listof mc-question)) -> (listof number)
+  ;; get answers for all of the quiz questions.
+  (define (get-answers get-mc-qs)
+    (cond
+      [(null? (get-mc-qs)) '()]
+      [else
+       (cons
+        (get-answer (car (get-mc-qs)))
+        (get-answers (lambda () (cdr (get-mc-qs)))))]))
+  
+  ;; tally-results: (listof mc-question) (listof number) -> number
+  ;; count the number of correct answers
+  (define (tally-results mc-qs answs)
+    (cond
+      [(null? mc-qs) 0]
+      [(= (car answs)
+          (mc-question-correct-answer (car mc-qs)))
+       (add1 (tally-results (cdr mc-qs) (cdr answs)))]
+      [else (tally-results (cdr mc-qs) (cdr answs))]))
+  
+  (define (start initial-request)
+    `(html (head (title "Final Page"))
+           (body
+            (h1 "Quiz Results")
+            (p ,(format "You got ~a correct out of ~a questions."
+                        (tally-results quiz (get-answers (lambda () quiz)))
+                        (length quiz)))
+            (p "Thank you for taking the quiz")))))
