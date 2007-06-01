@@ -3,6 +3,7 @@
            (lib "plt-match.ss")
            (lib "contract.ss")
            (lib "string.ss")
+           (lib "serialize.ss")
            (lib "url.ss" "net"))
   (provide
    url-replace-path)
@@ -16,7 +17,16 @@
    [directory-part (path? . -> . path?)]
    [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
    [exn->string ((or/c exn? any/c) . -> . string?)]
-   [build-path-unless-absolute (path-string? path-string? . -> . path?)])
+   [build-path-unless-absolute (path-string? path-string? . -> . path?)]
+   [read/string (string? . -> . serializable?)]
+   [write/string (serializable? . -> . string?)])
+    
+  (define (read/string str)
+    (read (open-input-string str)))
+  (define (write/string v)
+    (define str (open-output-string))
+    (write v str)
+    (get-output-string str))
   
   ; explode-path* : path? -> (listof path?)
   (define (explode-path* p)
