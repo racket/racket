@@ -4,4 +4,4 @@
   
   (define all-servlet-tests
     (test-suite
-     "Servlet")))
+     "Servlet (Internal)")))

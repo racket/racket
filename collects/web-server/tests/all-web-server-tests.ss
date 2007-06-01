@@ -8,6 +8,7 @@
            "managers/all-managers-tests.ss"
            "private/all-private-tests.ss"
            "servlet/all-servlet-tests.ss"
+           "servlet-test.ss"
            "servlet-env-test.ss")
   (provide all-web-server-tests)
   
@@ -22,4 +23,5 @@
      all-managers-tests
      all-private-tests
      all-servlet-tests
+     servlet-tests
      servlet-env-tests)))
