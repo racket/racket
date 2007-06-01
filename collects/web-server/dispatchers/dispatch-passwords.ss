@@ -18,9 +18,7 @@
                    [password-file "passwords"]
                    [password-connection-timeout 300]
                    [authentication-responder 
-                    (gen-authentication-responder "forbidden.html")]
-                   [passwords-refresh-responder
-                    (gen-passwords-refreshed "passwords-refresh.html")])
+                    (gen-authentication-responder "forbidden.html")])
     (define last-read-time (box #f))
     (define password-cache (box #f))
     (define (update-password-cache!)
@@ -30,12 +28,11 @@
                       (cur-mtime . > . (unbox last-read-time))
                       (not (unbox password-cache)))                
               (set-box! last-read-time cur-mtime)
-              ; more here - a malformed password file will kill the connection
               (set-box! password-cache (read-passwords password-file))))))
     (define (read-password-cache)
       (update-password-cache!)
       (unbox password-cache))
-    (lambda (conn req)
+    (define (dispatch conn req)
       (define uri (request-uri req))
       (define path (url-path->string (url-path uri)))
       (define method (request-method req))
@@ -48,15 +45,10 @@
               (request-authentication conn method uri
                                       authentication-responder
                                       realm))]
-        [(string=? "/conf/refresh-passwords" path)
-         ;; more here - send a nice error page
-         (update-password-cache!)
-         (output-response/method
-          conn
-          (passwords-refresh-responder)
-          method)]
         [else
-         (next-dispatcher)])))
+         (next-dispatcher)]))
+    (values update-password-cache!
+            dispatch))
   
   ;; ****************************************
   ;; ****************************************

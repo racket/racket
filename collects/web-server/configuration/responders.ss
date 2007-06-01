@@ -1,10 +1,11 @@
 (module responders mzscheme
   (require (lib "contract.ss")
            (lib "url.ss" "net"))
-  (require "../response-structs.ss")
+  (require "../response-structs.ss"
+           "../request-structs.ss")
   
   ; error-response : nat str str [(cons sym str) ...] -> response
-  ; more here - cache files with a refresh option.
+  ; XXX - cache files with a refresh option.
   ; The server should still start without the files there, so the
   ; configuration tool still runs.  (Alternatively, find an work around.)
   (define (error-response code short text-file . extra-headers)
@@ -14,7 +15,6 @@
                         (list (read-file text-file))))
   
   ; servlet-loading-responder : url tst -> response
-  ; more here - parameterize error based on a configurable file, perhaps?
   ; This is slightly tricky since the (interesting) content comes from the exception.
   (define (servlet-loading-responder url exn)
     ((error-display-handler)
@@ -61,9 +61,9 @@
     (lambda (error-message)
       (error-response 400 "Malformed Request" protocol-file)))
   
-  ; gen-file-not-found-responder : str -> url -> response
+  ; gen-file-not-found-responder : str -> req -> response
   (define (gen-file-not-found-responder file-not-found-file)
-    (lambda (url)
+    (lambda (req)
       (error-response 404 "File not found" file-not-found-file)))
   
   ; gen-collect-garbage-responder : str -> -> response
@@ -78,12 +78,12 @@
   
   (provide/contract
    [error-response ((natural-number/c string? string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
-   [servlet-loading-responder (string? any/c . -> . response?)]
+   [servlet-loading-responder (url? any/c . -> . response?)]
    [gen-servlet-not-found (path-string? . -> . (url? . -> . response?))]
    [gen-servlet-responder (path-string? . -> . (url? any/c . -> . response?))]
    [gen-servlets-refreshed (path-string? . -> . (-> response?))]
    [gen-passwords-refreshed (path-string? . -> . (-> response?))]
    [gen-authentication-responder (path-string? . -> . (url? (cons/c symbol? string?) . -> . response?))]
-   [gen-protocol-responder (path-string? . -> . (string? . -> . response?))]
-   [gen-file-not-found-responder (path-string? . -> . (url? . -> . response?))]
+   [gen-protocol-responder (path-string? . -> . (url? . -> . response?))]
+   [gen-file-not-found-responder (path-string? . -> . (request? . -> . response?))]
    [gen-collect-garbage-responder (path-string? . -> . (-> response?))]))

@@ -1,8 +1,6 @@
 (module dispatch-servlets mzscheme
-  (require (lib "url.ss" "net")
-           (lib "kw.ss")
+  (require (lib "kw.ss")
            (lib "plt-match.ss")
-           (lib "string.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
            "../private/web-server-structs.ss"
@@ -14,7 +12,6 @@
            "../servlet/web-cells.ss"
            "../servlet/web.ss"
            "../configuration/responders.ss"
-           "../private/util.ss"
            "../managers/manager.ss"
            "../managers/timeouts.ss"
            "../managers/lru.ss"
@@ -25,46 +22,14 @@
    [interface-version dispatcher-interface-version?])
   (provide make)
   
-  (define (url-path->path base p)
-    (path->complete-path
-     (let ([path-elems (regexp-split #rx"/" p)])
-       ;; Servlets can have extra stuff after them
-       (let ([build-path
-              (lambda (b p)
-                (if (string=? p "")
-                    b
-                    (build-path b p)))])
-         (let loop
-           ([p-e (if (string=? (car path-elems) "")
-                     (cddr path-elems)
-                     (cdr path-elems))]
-            [f (build-path base
-                           (if (string=? (car path-elems) "")
-                               (cadr path-elems)
-                               (car path-elems)))])
-           (cond
-             [(null? p-e)
-              f]
-             [(directory-exists? f)
-              (loop (cdr p-e) (build-path f (car p-e)))]
-             [(file-exists? f)
-              f]
-             [else
-              ;; Don't worry about e.g. links for now
-              f]))))))
-  
   (define interface-version 'v1)
   (define/kw (make config:instances config:scripts config:make-servlet-namespace
                    #:key
-                   [servlet-root "servlets"]
-                   [responders-servlets-refreshed
-                    (gen-servlets-refreshed "servlet-refresh.html")]
+                   url->path
                    [responders-servlet-loading
                     servlet-loading-responder]
                    [responders-servlet
                     (gen-servlet-responder "servlet-error.html")]
-                   [responders-file-not-found
-                    (gen-file-not-found-responder "not-found.html")]
                    [timeouts-servlet-connection (* 60 60 24)]
                    [timeouts-default-servlet 30])
     ;; ************************************************************
@@ -75,6 +40,10 @@
     (define (servlet-content-producer conn req)
       (define meth (request-method req))
       (define uri (request-uri req))
+      ;; XXX - make timeouts proportional to size of bindings
+      (adjust-connection-timeout!
+       conn
+       timeouts-servlet-connection)
       (case meth
         [(head)
          (output-response/method
@@ -99,7 +68,7 @@
       (with-handlers (;; couldn't find the servlet
                       [exn:fail:filesystem:exists:servlet?
                        (lambda (the-exn)
-                         (output-response/method conn (responders-file-not-found (request-uri req)) (request-method req)))]
+                         (next-dispatcher))]
                       ;; servlet won't load (e.g. syntax error)
                       [(lambda (x) #t)
                        (lambda (the-exn)
@@ -110,16 +79,13 @@
             ; Create the session frame
             (with-frame
              (define instance-custodian (make-servlet-custodian))
-             (define servlet-path 
+             (define-values (servlet-path _)
                (with-handlers
                    ([void (lambda (e)
                             (raise (make-exn:fail:filesystem:exists:servlet
                                     (exn-message e)
                                     (exn-continuation-marks e))))])
-                 ; XXX Abstract this
-                 (url-path->path
-                  servlet-root
-                  (url-path->string (url-path uri)))))
+                 (url->path uri)))
              (parameterize ([current-directory (get-servlet-base-dir servlet-path)]
                             [current-custodian instance-custodian]
                             [exit-handler
@@ -157,14 +123,6 @@
                                                   (the-exit-handler x))])
                      (with-handlers ([(lambda (x) #t)
                                       (make-servlet-exception-handler)])
-                       ;; Two possibilities:
-                       ;; - module servlet. start : Request -> Void handles
-                       ;;   output-response via send/finish, etc.
-                       ;; - unit/sig or simple xexpr servlet. These must produce a
-                       ;;   response, which is then output by the server.
-                       ;; Here, we do not know if the servlet was a module,
-                       ;; unit/sig, or Xexpr; we do know whether it produces a
-                       ;; response.
                        (send/back ((servlet-handler the-servlet) req)))
                      ((manager-instance-unlock! manager) instance-id))))))))
         (output-response conn response)
@@ -175,8 +133,7 @@
     
     ;; default-server-instance-expiration-handler : (request -> response)
     (define (default-servlet-instance-expiration-handler req)
-      (responders-file-not-found
-       (request-uri req)))
+      (next-dispatcher))
     
     ;; make-servlet-exception-handler: servlet-instance -> exn -> void
     ;; This exception handler traps all unhandled servlet exceptions
@@ -214,10 +171,7 @@
     ;; pull the continuation out of the table and apply it
     (define (invoke-servlet-continuation conn req instance-id k-id salt)
       (define uri (request-uri req))
-      (define servlet-path 
-        (url-path->path
-         servlet-root
-         (url-path->string (url-path uri))))
+      (define-values (servlet-path _) (url->path uri))
       (define the-servlet (cached-load servlet-path))
       (define manager (servlet-manager the-servlet))
       (thread-cell-set! current-servlet the-servlet)
@@ -267,10 +221,6 @@
       (thread-cell-set! current-servlet-instance-id #f)
       (thread-cell-set! current-servlet #f))
     
-    ;; ************************************************************
-    ;; ************************************************************
-    ;; Paul's ugly loading code:
-    
     ;; cached-load : path -> script, namespace
     ;; timestamps are no longer checked for performance.  The cache must be explicitly
     ;; refreshed (see dispatch).
@@ -304,7 +254,6 @@
     ;; A servlet-file will contain either
     ;;;; A signed-unit-servlet
     ;;;; A module servlet, currently only 'v1
-    ;;;;;; (XXX: I don't know what 'typed-model-split-store0 was, so it was removed.)
     ;;;; A response
     (define (load-servlet/path a-path)
       (define (v0.response->v1.lambda response-path response)
@@ -376,26 +325,8 @@
           [else
            (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))
     
-    (define svt-bin-re (regexp "^/servlets(;.*\\*.*\\*.*)?/.*"))
-    (define (servlet-bin? str)
-      (regexp-match svt-bin-re str))
-    
-    ;; return dispatcher
-    (lambda (conn req)
-      (define path (url-path->string (url-path (request-uri req))))
-      (cond [(string=? "/conf/refresh-servlets" path)
-             ;; more here - this is broken - only out of date or specifically mentioned
-             ;; scripts should be flushed.  This destroys persistent state!
-             (cache-table-clear! (unbox config:scripts))
-             (output-response/method
-              conn
-              (responders-servlets-refreshed)
-              (request-method req))]
-            [(servlet-bin? path)
-             (adjust-connection-timeout!
-              conn
-              timeouts-servlet-connection)
-             ;; more here - make timeouts proportional to size of bindings
-             (servlet-content-producer conn req)]
-            [else
-             (next-dispatcher)]))))
+    (values (lambda ()
+              ;; XXX - this is broken - only out of date or specifically mentioned
+              ;; scripts should be flushed.  This destroys persistent state!
+              (cache-table-clear! (unbox config:scripts)))
+            servlet-content-producer)))

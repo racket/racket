@@ -1,20 +1,67 @@
 (module util mzscheme
   (require (lib "list.ss")
+           (lib "plt-match.ss")
            (lib "contract.ss")
            (lib "string.ss")
            (lib "url.ss" "net"))
   (provide
    url-replace-path)
   (provide/contract
+   [path-without-base (path? path? . -> . list?)]
+   [list-prefix (list? list? . -> . (or/c list? false/c))]
+   [strip-prefix-ups (list? . -> . list?)] ; XXX need path-element?
    [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
    [extract-flag (symbol? (listof (cons/c symbol? any/c)) any/c . -> . any/c)]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
-   [path->list  (path? . -> . (cons/c (or/c path? (symbols 'up 'same))
-                                      (listof (or/c path? (symbols 'up 'same)))))]
    [directory-part (path? . -> . path?)]
    [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
    [exn->string ((or/c exn? any/c) . -> . string?)]
    [build-path-unless-absolute (path-string? path-string? . -> . path?)])
+  
+  ; explode-path* : path? -> (listof path?)
+  (define (explode-path* p)
+    (let loop ([p p] [r empty])
+      (cond 
+        [(eq? 'relative p) r]
+        [(not p) r]
+        [else
+         (let-values ([(base name dir?) (split-path p)])
+           (loop base (list* name r)))])))
+    
+  ; strip-prefix-ups : (listof path-element?) -> (listof path-element?)
+  (define (strip-prefix-ups l)
+    (define prefix? (box #t))
+    (filter (lambda (p)
+              (if (unbox prefix?)
+                  (if (eq? 'up p)
+                      #f
+                      (begin #t
+                             (set-box! prefix? #f)))
+                  #t))
+            l))
+  
+  ; list-prefix : list? list? -> (or/c list? false/c)
+  ; Is l a prefix or r?, and what is that prefix?
+  (define (list-prefix ls rs)
+    (match ls
+      [(list)
+       (list)]
+      [(list-rest l0 ls)
+       (match rs
+         [(list)
+          #f]
+         [(list-rest r0 rs)
+          (if (equal? l0 r0)
+              (let ([ps (list-prefix ls rs)])
+                (if ps (list* l0 ps) (list l0)))
+              #f)])]))  
+  
+  ; path-without-base : path? path? -> (listof path-element?)
+  ; Expects paths in normal form
+  (define (path-without-base base path)
+    (define b (explode-path* base))
+    (define p (explode-path* path))
+    (list-tail p (length (list-prefix b p))))
   
   ;; replace-path: (url-path -> url-path) url -> url
   ;; make a new url by replacing the path part of a url with a function
@@ -86,18 +133,7 @@
         [(eq? 'relative base) (current-directory)]
         [(not base) (error 'directory-part "~a is a top-level directory" path)]
         [(path? base) base])))
-  
-  ; to convert a platform dependent path into a listof path parts such that
-  ; (forall x (equal? (path->list x) (path->list (apply build-path (path->list x)))))
-  (define (path->list p)
-    (let loop ([p p] [acc null])
-      (let-values ([(base name must-be-dir?) (split-path p)])
-        (let ([new-acc (cons name acc)])
-          (cond
-            [(string? base) (loop base new-acc)]
-            [else ; conflate 'relative and #f
-             new-acc])))))
-  
+    
   ; this is used by launchers
   ; extract-flag : sym (listof (cons sym alpha)) alpha -> alpha
   ; XXX remove

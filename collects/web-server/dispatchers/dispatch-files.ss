@@ -1,9 +1,6 @@
 (module dispatch-files mzscheme
   (require (lib "url.ss" "net")
-           (lib "xml.ss" "xml")
            (lib "kw.ss")
-           (lib "list.ss")
-           (lib "string.ss")
            (lib "plt-match.ss")
            (lib "contract.ss"))
   (require "dispatch.ss"
@@ -11,47 +8,26 @@
            "../private/util.ss"
            "../private/mime-types.ss"
            "../request-structs.ss"
-           "../private/response.ss"
-           "../response-structs.ss")
+           "../private/response.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide make)
-  
-  ; more here - ".." should probably raise an error instead of disappearing.
-  (define (url-path->path base p)
-    (path->complete-path
-     (apply build-path base
-            (reverse!
-             (foldl (lambda (x acc)
-                      (cond
-                        [(string=? x "") acc]
-                        [(string=? x ".") acc]
-                        [(string=? x "..") (if (pair? acc) (cdr acc) acc)]
-                        [else (cons x acc)]))
-                    null
-                    (regexp-split #rx"/" p))))))
+    
+  ;; looks-like-directory : str -> bool
+  ;; to determine if is url style path looks like it refers to a directory
+  (define (looks-like-directory? path)
+    (eq? #\/ (string-ref path (sub1 (string-length path)))))
   
   (define interface-version 'v1)
   (define/kw (make #:key 
-                   [htdocs-path "htdocs"]
+                   url->path
                    [mime-types-path "mime.types"]
-                   [indices (list "index.html" "index.htm")]
-                   [file-not-found-responder 
-                    (gen-file-not-found-responder "not-found.html")])
+                   [indices (list "index.html" "index.htm")])
     (define get-mime-type (make-get-mime-type mime-types-path))
     (lambda (conn req)
       (define uri (request-uri req))
       (define method (request-method req))
-      ;; ************************************************************
-      ;; ************************************************************
-      ;; SERVING FILES
-      
-      ;; serve-file : connection symbol uri host -> void
-      ;; to find the file, including searching for implicit index files, and serve it out
-      (define path 
-        ; XXX Abstract this
-        (url-path->path htdocs-path
-                        (url-path->string (url-path uri))))
+      (define-values (path _) (url->path uri))
       (cond
         [(file-exists? path)
          (match (headers-assq* #"Range" (request-headers/raw req))
@@ -74,43 +50,13 @@
                ; XXX: Unhandled range: r
                (output-file conn path method (get-mime-type path))])])]
         [(directory-exists? path)
-         (let loop ([dir-defaults indices])
-           (cond
-             [(pair? dir-defaults)
-              (let ([full-name (build-path path (first dir-defaults))])
-                (if (file-exists? full-name)
-                    (cond
-                      [(looks-like-directory? (url-path->string (url-path uri)))
-                       (output-file conn full-name method (get-mime-type full-name))]
-                      [else
-                       (output-slash-message conn method (url-path->string (url-path uri)))])
-                    (loop (rest dir-defaults))))]
-             [else
-              (output-response/method conn (file-not-found-responder uri) method)]))]
+         (let/ec esc
+           (for-each (lambda (dir-default)
+                       (define full-name (build-path path dir-default))
+                       (when (and (file-exists? full-name)
+                                  (looks-like-directory? (url-path->string (url-path uri))))
+                         (esc (output-file conn full-name method (get-mime-type full-name)))))
+                     indices)
+           (next-dispatcher))]
         [else
-         (output-response/method conn (file-not-found-responder uri) method)])))
-  
-  ;; looks-like-directory : str -> bool
-  ;; to determine if is url style path looks like it refers to a directory
-  (define (looks-like-directory? path)
-    (eq? #\/ (string-ref path (sub1 (string-length path)))))
-  
-  ;; output-slash-message: connection symbol string -> void
-  ;; basically this is just a special error response
-  (define (output-slash-message conn method url-path-str)
-    (output-response/method
-     conn
-     (make-response/full
-      301 "Moved Permanently"
-      (current-seconds)
-      TEXT/HTML-MIME-TYPE
-      `([Location . ,(string-append url-path-str "/")])
-      (list
-       (xexpr->string
-        `(html
-          (head (title "Add a Slash"))
-          (body "Please use "
-                (a ([href ,(string-append
-                            url-path-str "/")])
-                   "this url") " instead.")))))
-     method)))
+         (next-dispatcher)]))))

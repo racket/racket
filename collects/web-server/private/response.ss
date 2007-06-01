@@ -180,6 +180,7 @@
               data-length
               (response/full-body resp/f))))
   
+  ; XXX Get rid of method restriction
   ;; **************************************************
   ;; output-file: connection path symbol bytes -> void
   (define (output-file conn file-path method mime-type)

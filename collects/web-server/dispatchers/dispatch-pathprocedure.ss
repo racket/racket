@@ -8,7 +8,7 @@
            "../response-structs.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?]
-   [make (string? (-> response?) . -> . dispatcher?)])
+   [make (string? (request? . -> . response?) . -> . dispatcher?)])
   
   (define interface-version 'v1)
   (define ((make the-path procedure) conn req)
@@ -16,6 +16,6 @@
     (if (string=? the-path path)
         (output-response/method
          conn
-         (procedure)
+         (procedure req)
          (request-method req))
         (next-dispatcher))))

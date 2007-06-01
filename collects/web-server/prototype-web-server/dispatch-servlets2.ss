@@ -2,7 +2,6 @@
   (require (lib "kw.ss")
            (lib "contract.ss")
            (lib "url.ss" "net")
-           (lib "plt-match.ss")
            (lib "request-structs.ss" "web-server")
            (lib "session.ss" "web-server" "prototype-web-server" "private")
            (only "private/web.ss"
@@ -24,44 +23,40 @@
   
   (define interface-version 'v1)
   (define/kw (make #:key
-                   [htdocs-path "servlets"]
+                   url->path
                    [make-servlet-namespace 
                     (make-make-servlet-namespace)]
                    [timeouts-servlet-connection (* 60 60 24)]
                    [responders-servlet-loading
                     servlet-loading-responder]
                    [responders-servlet
-                    (gen-servlet-responder "servlet-error.html")]
-                   [responders-file-not-found
-                    (gen-file-not-found-responder "not-found.html")])
+                    (gen-servlet-responder "servlet-error.html")])
     
     ;; dispatch : connection request -> void
     (define (dispatch conn req)
       (define uri (request-uri req))
       (adjust-connection-timeout! conn timeouts-servlet-connection)
       ;; XXX - make timeouts proportional to size of bindings
-      (with-handlers ([void
-                       (lambda (the-exn)
-                         (output-response/method
-                          conn
-                          (responders-servlet-loading uri the-exn)
-                          (request-method req)))])
-        (cond
-          [(extract-session uri)
-           => (lambda (session-id)
-                (resume-session session-id conn req))]
-          [else
-           (begin-session conn req)])))
+      (cond
+        [(extract-session uri)
+         => (lambda (session-id)
+              (resume-session session-id conn req))]
+        [else
+         (begin-session conn req)]))
     
     ;; XXX Currently there are just sessions, should be servlets and sessions
     
     ;; begin-session: connection request
     (define (begin-session conn req)
       (define uri (request-uri req))
-      (define-values (a-path url-servlet-path url-path-suffix)
-        ; XXX Abstract this, so they don't need to live on disk.
-        (url->servlet-path htdocs-path uri))
-      (if a-path
+      (with-handlers ([void (lambda (exn) (next-dispatcher))])
+        (define-values (a-path url-servlet-path) (url->path uri))
+        (with-handlers ([void
+                         (lambda (the-exn)
+                           (output-response/method
+                            conn
+                            (responders-servlet-loading uri the-exn)
+                            (request-method req)))])
           (parameterize ([current-directory (directory-part a-path)])
             (define cust (make-custodian top-cust))
             (define ns (make-servlet-namespace
@@ -71,7 +66,7 @@
                           (lib "abort-resume.ss" "web-server" "prototype-web-server" "private")
                           (lib "session.ss" "web-server" "prototype-web-server" "private")
                           (lib "request.ss" "web-server" "private"))))
-            (define ses (new-session cust ns (make-session-url uri url-servlet-path)))
+            (define ses (new-session cust ns (make-session-url uri (map path->string url-servlet-path))))
             (parameterize ([current-custodian cust]
                            [current-namespace ns]
                            [current-session ses])
@@ -80,33 +75,16 @@
                                  'start))
               (set-session-servlet! ses (initialize-servlet start)))
             (resume-session (session-id ses)
-                            conn req))
-          (output-response/method
-           conn
-           (responders-file-not-found uri)
-           (request-method req))))
+                            conn req)))))
     
     ; same-servlet? : url? url? -> boolean?
     (define (same-servlet? req ses)
       (define (abstract-url u)
         (map path/param-path
              (url-path u)))
-      (define ans
-        (let loop ([rp (abstract-url req)]
-                   [sp (abstract-url ses)])
-          (match sp
-            [(list)
-             #t]
-            [(list-rest s sp)
-             (match rp
-               [(list)
-                #f]
-               [(list-rest r rp)
-                (if (string=? s r)
-                    (loop rp sp)
-                    #f)])])))
+      (define ans (list-prefix (abstract-url ses) (abstract-url req)))
       #;(printf "~S => ~S~n" `(same-servlet? ,(url->string req) ,(url->string ses)) ans)
-      ans)
+      (and ans #t))
     
     ;; resume-session: number connection request
     (define (resume-session ses-id conn req)
