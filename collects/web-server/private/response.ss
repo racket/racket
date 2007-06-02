@@ -205,7 +205,8 @@
   
   (define ext:output-file
     (ext:wrap output-file))  
-  
+
+  ; XXX Check method in response
   ;; **************************************************
   ;; output-response/method: connection response/full symbol -> void
   ;; If it is a head request output headers only, otherwise output as usual

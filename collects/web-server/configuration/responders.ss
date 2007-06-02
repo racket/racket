@@ -77,7 +77,7 @@
       (lambda (in) (read-string (file-size path) in))))
   
   (provide/contract
-   [error-response ((natural-number/c string? string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
+   [error-response ((natural-number/c string? path-string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
    [servlet-loading-responder (url? any/c . -> . response?)]
    [gen-servlet-not-found (path-string? . -> . (url? . -> . response?))]
    [gen-servlet-responder (path-string? . -> . (url? any/c . -> . response?))]

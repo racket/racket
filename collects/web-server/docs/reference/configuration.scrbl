@@ -81,13 +81,14 @@ reading, writing, parsing, and printing @scheme[configuration-table]
 structures.
 
 @defproc[(sexpr->configuration-table (sexpr list?))
-         configuration-table?]
+         configuration-table?]{
+ This function converts a @scheme[configuration-table] from an S-expression.
+}
 
 @defproc[(configuration-table->sexpr (ctable configuration-table?))
-         list?]
-
-These functions do the expected and convert a @scheme[configuration-table]
-from (to) an S-expression. The format of this S-expresssion is:
+         list?]{
+ This function converts a @scheme[configuration-table] to an S-expression.
+}
 
 @schemeblock[
 `((port ,integer?)
@@ -131,12 +132,14 @@ where a @scheme[host-table-sexpr] is:
    (password-authentication ,path-string?)))]
 
 @defproc[(read-configuration-table (path path-string?))
-         configuration-table?]
-@defproc[(write-configuration-table (ctable configuration-table?) (path path-string?))
-         void]
+         configuration-table?]{
+This function reads a @scheme[configuration-table] from @scheme[path].
+}
 
-These functions do the expected and read (write) a @scheme[configuration-table]
-from (to) the given @scheme[path].
+@defproc[(write-configuration-table (ctable configuration-table?) (path path-string?))
+         void]{
+This function writes a @scheme[configuration-table] to @scheme[path].
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "namespace"]{Servlet Namespaces}
@@ -149,15 +152,22 @@ of @file{dispatchers/dispatch-servlets.ss} and @file{dispatchers/dispatch-lang.s
 
 @; XXX Use actual keyword argument syntax
 @; XXX Require for current-namespace
+@; XXX Link to module-spec?
 
-@defproc[(make-make-servlet-namespace (keyword to-be-copied-module-specs (listof module-spec?)))
+@defproc[(make-make-servlet-namespace (#:to-be-copied-module-specs to-be-copied-module-specs (listof module-spec?)))
          (key-> ([additional-specs (listof module-spec?)])
-                namespace?)]
-
+                namespace?)]{
 This function creates a function that when called will construct a new @scheme[namespace] that
 has all the modules from @scheme[to-be-copied-module-specs] and @scheme[additional-specs], as well
 as @scheme[mzscheme] and @scheme[(lib "mred.ss" "mred")], provided they are already attached
 to the @scheme[(current-namespace)] of the call-site.
+
+Example:
+@schemeblock[
+ (make-make-servlet-namespace 
+  #:to-be-copied-module-specs `((lib "database.ss" "my-module")))
+ ]
+}
 
 @subsection{Why this is useful}
 
@@ -177,4 +187,63 @@ of servlets can share different sets of modules.
 @; ------------------------------------------------------------
 @section[#:tag "responders"]{Standard Responders}
 
-XXX
+@file{configuration/responders.ss} provides some functions that help constructing HTTP responders.
+These functions are used by the default dispatcher constructor (see @secref["web-server-unit"]) to
+turn the paths given in the @scheme[configuration-table] into responders for the associated circumstance.
+
+@; XXX Include response/full
+@; XXX Rename error-response
+
+@defproc[(error-response (http-code natural-number/c) (short-version string?) (text-file string?) (extra-header (cons/c symbol? string?)) ...0)
+         response?]{
+ Generates a @scheme[response/full] with the given @scheme[http-code] and @scheme[short-version]
+as the corresponding fields; with the content of the @scheme[text-file] as the body; and, with
+the @scheme[extra-header]s as, you guessed it, extra headers.
+}
+                   
+@defproc[(servlet-loading-responder (url url?) (exn any/c))
+         response?]{
+ Prints the @scheme[exn] to standard output and responds with a "Servlet didn't load."
+message.
+}
+
+@defproc[(gen-servlet-not-found (file path-string?))
+         ((url url?) . -> . response?)]{
+ Returns a function that generates a standard "Servlet not found." error with content from @scheme[file].
+}
+
+@defproc[(gen-servlet-responder (file path-string?))
+         ((url url?) (exn any/c) . -> . response?)]{
+ Prints the @scheme[exn] to standard output and responds with a "Servlet error." message with content from @scheme[file].
+}
+                                                   
+@defproc[(gen-servlets-refreshed (file path-string?))
+         (-> response?)]{
+ Returns a function that generates a standard "Servlet cache refreshed." message with content from @scheme[file].
+}
+
+@defproc[(gen-passwords-refreshed (file path-string?))
+         (-> response?)]{
+ Returns a function that generates a standard "Passwords refreshed." message with content from @scheme[file].
+}
+
+@defproc[(gen-authentication-responder (file path-string?))
+         ((url url?) (header (cons/c symbol? string?)) . -> . response?)]{
+ Returns a function that generates an authentication failure error with content from @scheme[file] and
+@scheme[header] as the HTTP header.
+}
+
+@defproc[(gen-protocol-responder (file path-string?))
+         ((url url?) . -> . response?)]{
+ Returns a function that generates a "Malformed request" error with content from @scheme[file].
+}
+
+@defproc[(gen-file-not-found-responder (file path-string?))
+         ((req request?) . -> . response?)]{
+ Returns a function that generates a standard "File not found" error with content from @scheme[file].
+}
+
+@defproc[(gen-collect-garbage-responder (file path-string?))
+         (-> response?)]{
+ Returns a function that generates a standard "Garbage collection run" message with content from @scheme[file].
+}
