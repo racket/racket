@@ -5,4 +5,6 @@
 
 @table-of-contents[]
 
+@include-section["configuration.scrbl"]
+
 @index-section["web-server-ref-index"]
