@@ -203,8 +203,8 @@
           [has-optional? (lambda (arg)
                            (and (pair? arg)
                                 ((length arg) . > . (if (keyword? (car arg))
-                                                        2
-                                                        3))))]
+                                                        3
+                                                        2))))]
           [arg->elem (lambda (v)
                        (cond
                         [(pair? v)
@@ -221,7 +221,9 @@
       (parameterize ([current-variable-list
                       (map (lambda (i)
                              (and (pair? i)
-                                  (car i)))
+                                  (if (keyword? (car i))
+                                      (cadr i)
+                                      (car i))))
                            (apply append (map cdr prototypes)))])        
         (make-splice
          (cons

@@ -18,6 +18,7 @@
   (define on-separate-page (make-parameter #t))
   (define next-separate-page (make-parameter #f))
   (define collecting-sub (make-parameter 0))
+  (define current-no-links (make-parameter #f))
 
   ;; ----------------------------------------
   ;;  main mixin
@@ -136,28 +137,30 @@
         (cond
          [(target-element? e)
           `((a ((name ,(target-element-tag e))) ,@(render-plain-element e part ht)))]
-         [(link-element? e)
-          (let ([dest (lookup part ht (link-element-tag e))])
-            (if dest
-                `((a ((href ,(format "~a~a~a" 
-                                     (from-root (car dest)
-                                                (get-dest-directory))
-                                     (if (caddr dest)
-                                         ""
-                                         "#")
-                                     (if (caddr dest)
-                                         ""
-                                         (link-element-tag e))))
-                      ,@(if (string? (element-style e))
-                            `((class ,(element-style e)))
-                            null))
-                     ,@(if (null? (element-content e))
-                           (render-content (cadr dest) part ht)
-                           (render-content (element-content e) part ht))))
-                `((font ((class "badlink")) 
-                        ,@(if (null? (element-content e))
-                              `(,(format "~s" (link-element-tag e)))
-                              (render-plain-element e part ht))))))]
+         [(and (link-element? e)
+               (not (current-no-links)))
+          (parameterize ([current-no-links #t])
+            (let ([dest (lookup part ht (link-element-tag e))])
+              (if dest
+                  `((a ((href ,(format "~a~a~a" 
+                                       (from-root (car dest)
+                                                  (get-dest-directory))
+                                       (if (caddr dest)
+                                           ""
+                                           "#")
+                                       (if (caddr dest)
+                                           ""
+                                           (link-element-tag e))))
+                        ,@(if (string? (element-style e))
+                              `((class ,(element-style e)))
+                              null))
+                       ,@(if (null? (element-content e))
+                             (render-content (cadr dest) part ht)
+                             (render-content (element-content e) part ht))))
+                  `((font ((class "badlink")) 
+                          ,@(if (null? (element-content e))
+                                `(,(format "~s" (link-element-tag e)))
+                                (render-plain-element e part ht)))))))]
          [else (render-plain-element e part ht)]))
 
       (define/private (render-plain-element e part ht)
@@ -177,7 +180,10 @@
            [(string? style) 
             `((span ([class ,style]) ,@(super render-element e part ht)))]
            [(target-url? style)
-            `((a ((href ,(target-url-addr style))) ,@(super render-element e part ht)))]
+            (if (current-no-links)
+                (super render-element e part ht)
+                (parameterize ([current-no-links #t])
+                  `((a ((href ,(target-url-addr style))) ,@(super render-element e part ht)))))]
            [(image-file? style) `((img ((src ,(install-file (image-file-path style))))))]
            [else (super render-element e part ht)])))
 

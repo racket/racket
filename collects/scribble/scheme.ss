@@ -281,13 +281,17 @@
                               (if (and (symbol? c)
                                        (char=? (string-ref s 0) #\_))
                                   (values (substring s 1) #t #f)
-                                  (values s #f #f))))])
+                                  (values s #f #f))))]
+                         [(is-kw?) (and (identifier? c)
+                                        (memq (syntax-e c) (current-keyword-list)))]
+                         [(is-var?) (and (identifier? c)
+                                         (memq (syntax-e c) (current-variable-list)))])
               (if (element? (syntax-e c))
                   (out (syntax-e c) #f)
                   (out (if (and (identifier? c)
                                 color?
                                 (quote-depth . <= . 0)
-                                (not it?))
+                                (not (or it? is-kw? is-var?)))
                            (make-delayed-element
                             (lambda (renderer sec ht)
                               (let* ([vtag (register-scheme-definition (syntax-e c))]
@@ -313,9 +317,9 @@
                          value-color]
                         [(identifier? c) 
                          (cond
-                          [(memq (syntax-e c) (current-keyword-list))
+                          [is-kw?
                            keyword-color]
-                          [(memq (syntax-e c) (current-variable-list))
+                          [is-var?
                            variable-color]
                           [it? variable-color]
                           [else symbol-color])]
