@@ -694,7 +694,7 @@
   
   ; read-configuration : path -> configuration-table
   (define (read-configuration configuration-path)
-    (parse-configuration-table (call-with-input-file configuration-path read)))
+    (sexpr->configuration-table (call-with-input-file configuration-path read)))
   
   ; write-configuration : configuration-table path -> void
   ; writes out the new configuration file and

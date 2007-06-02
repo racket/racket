@@ -5,8 +5,10 @@
   (require "configuration-table-structs.ss"
            "../servlet/bindings.ss")
   (provide/contract
+   [read-configuration-table (path-string? . -> . configuration-table?)]
    [write-configuration-table (configuration-table? path-string? . -> . void)]
-   [parse-configuration-table (list? . -> . configuration-table?)])
+   [configuration-table->sexpr (configuration-table? . -> . list?)]
+   [sexpr->configuration-table (list? . -> . configuration-table?)])
   
   (define (get-binding key bindings default)
     (first (get-binding* key bindings (list default))))
@@ -15,8 +17,11 @@
     (with-handlers ([exn? (lambda _ default)])
       (extract-binding/single key bindings)))
   
+  (define (read-configuration-table table-file-name)
+    (sexpr->configuration-table (call-with-input-file table-file-name read)))
+  
   ; parse-configuration-table : tst -> configuration-table
-  (define (parse-configuration-table t)
+  (define (sexpr->configuration-table t)
     (define port (get-binding 'port t 80))
     (define max-waiting (get-binding 'max-waiting t 40))
     (define initial-connection-timeout (get-binding 'initial-connection-timeout t 30))
@@ -78,11 +83,8 @@
                  mime-types
                  password-authentication)))
   
-  ; write-configuration-table : configuration-table path -> void
-  ; writes out the new configuration file
-  (define (write-configuration-table new configuration-path)
-    (define sexpr
-      `((port ,(configuration-table-port new))
+  (define (configuration-table->sexpr new)
+    `((port ,(configuration-table-port new))
        (max-waiting ,(configuration-table-max-waiting new))
        (initial-connection-timeout ,(configuration-table-initial-connection-timeout new))
        (default-host-table
@@ -90,6 +92,11 @@
        (virtual-host-table
         . ,(map (lambda (h) (list (car h) (host-table->sexpr (cdr h))))
                 (configuration-table-virtual-hosts new)))))
+  
+  ; write-configuration-table : configuration-table path -> void
+  ; writes out the new configuration file
+  (define (write-configuration-table new configuration-path)
+    (define sexpr (configuration-table->sexpr new))
     (call-with-output-file configuration-path
       (lambda (out) (pretty-print sexpr out))
       'truncate))

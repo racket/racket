@@ -12,15 +12,10 @@
   (provide configuration-table->web-config@
            configuration-table-sexpr->web-config@)
   (provide/contract
-   [read-configuration-table (path-string? . -> . configuration-table?)]
    [default-configuration-table-path path?])  
   
   (define default-configuration-table-path
     (build-path (collection-path "web-server") "default-web-root" "configuration-table.ss"))
-  
-  ; read-configuration-table : path -> configuration-table
-  (define (read-configuration-table table-file-name)
-    (parse-configuration-table (call-with-input-file table-file-name read)))
   
   ; configuration-table->web-config@ : path -> configuration
   (define/kw (configuration-table->web-config@ table-file-name
@@ -37,7 +32,7 @@
                                                      #:other-keys bct-keys)
     (apply complete-configuration
            web-server-root
-           (parse-configuration-table sexpr)
+           (sexpr->configuration-table sexpr)
            bct-keys))
   
   ; : str configuration-table -> configuration
