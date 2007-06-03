@@ -265,4 +265,29 @@ that runs servlets written in Scheme.
 @; ------------------------------------------------------------
 @section[#:tag "filesystem-map"]{Mapping URLs to Paths}
 
-XXX
+@file{dispatchers/filesystem-map.ss} provides a means of mapping
+URLs to paths on the filesystem.
+
+@; XXX Change to listof path?
+@defthing[url-path? contract?]{
+ This contract is equivalent to @scheme[((url?) . ->* . (path? list?))].
+ The returned @scheme[path?] is the path on disk. The list is the list of
+ path elements that correspond to the path of the URL.}
+
+@defproc[(make-url->path (base path?))
+         url-path?]{
+ The @scheme[url-path?] returned by this procedure considers the root
+ URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
+ do not escape the @scheme[base].}                             
+
+@; XXX Rename to /valid                   
+@defproc[(make-url-path/optimism (url->path url->path?))
+         url->path?]{
+ Runs the underlying @scheme[url->path], but only returns if the path
+ refers to a file that actually exists. If it is does not, then the suffix
+ elements of the URL are removed until a file is found. If this never occurs,
+ then an error is thrown.
+ 
+ This is primarily useful for dispatchers that allow path information after
+ the name of a service to be used for data, but where the service is represented
+ by a file. The most prominent example is obviously servlets.}

@@ -7,8 +7,9 @@
     ((url?) . ->* . (path? list?)))
   
   (provide/contract
+   [url-path? contract?]
    [make-url->path (path? . -> . url-path?)]
-   [make-url->path/optimism (url-path? . -> . url-path?)])  
+   [make-url->path/optimism (url-path? . -> . url-path?)])
   
   (define (build-path* . l)
     (if (empty? l)
