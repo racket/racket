@@ -19,9 +19,8 @@ documentation will be useful.
 
 @file{dispatchers/dispatch.ss} provides a few functions for dispatchers in general.
 
-@defproc[(dispatcher? (any any/c))
-         boolean?]{
- Applies the contract @scheme[(connection? request? . -> . void)] to @scheme[any].
+@defthing[dispatcher? contract?]{
+ Equivalent to @scheme[(connection? request? . -> . void)].
 }
                   
 @defproc[(dispatcher-interface-version? (any any/c)) boolean?]{
