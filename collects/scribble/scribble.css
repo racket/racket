@@ -144,9 +144,17 @@
                }
                */
 
+               .ghost {
+               color: white;
+               }
+
                .scheme em {
                color: black;
                font-family: serif;
+               }
+
+               .highlighted {
+               background-color: #ddddff;
                }
 
                .schemeinput {

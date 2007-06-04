@@ -34,7 +34,8 @@
                        quote quasiquote unquote unquote-splicing
                        syntax quasisyntax unsyntax unsyntax-splicing
                        for/fold for/list for*/list for for/and for/or for* for*/or for*/and for*/fold
-                       for-values for*/list-values for/first for/last)))
+                       for-values for*/list-values for/first for/last
+                       set!)))
   (define current-variable-list 
     (make-parameter null))
 
@@ -50,45 +51,57 @@
            [init-col (or (syntax-column first) 0)]
            [src-col init-col]
            [dest-col 0]
+           [highlight? #f]
            [col-map (make-hash-table 'equal)]
+           [next-col-map (make-hash-table 'equal)]
            [line (or (syntax-line first) 0)])
       (define (finish-line!)
         (when multi-line?
           (set! docs (cons (make-flow (list (make-paragraph (reverse content))))
                            docs))
           (set! content null)))
-      (define (out v cls)
-        (unless (equal? v "")
-          (if (equal? v "\n")
-              (if multi-line?
-                  (begin
-                    (finish-line!)
-                    (out prefix cls))
-                  (out " " cls))
-              (begin
-                (set! content (cons (if color?
-                                        (make-element cls (list v))
-                                        (make-element 'tt (list v)))
-                                    content))
-                (set! dest-col (+ dest-col (if (string? v) (string-length v) 1)))))))
+      (define out
+        (case-lambda
+         [(v cls)
+          (out v cls (if (string? v) (string-length v) 1))]
+         [(v cls len)
+          (unless (equal? v "")
+            (if (equal? v "\n")
+                (if multi-line?
+                    (begin
+                      (finish-line!)
+                      (out prefix cls))
+                    (out " " cls))
+                (begin
+                  (set! content (cons ((if highlight?
+                                           (lambda (c)
+                                             (make-element "highlighted" (list c)))
+                                           values)
+                                       (if color?
+                                           (make-element cls (list v))
+                                           (make-element 'tt (list v))))
+                                      content))
+                  (set! dest-col (+ dest-col len)))))]))
       (define advance 
         (case-lambda
          [(c init-line! delta)
           (let ([c (+ delta (syntax-column c))]
-                [l (syntax-line c)]
-                [span (syntax-span c)])
-            (when (and l (l . > . line))
-              (out "\n" no-color)
-              (set! line l)
-              (init-line!))
-            (when c
-              (let ([d-col (hash-table-get col-map src-col src-col)])
-                (let ([amt (+ (- c src-col) (- d-col dest-col))])
+                [l (syntax-line c)])
+            (let ([new-line? (and l (l . > . line))])
+              (when new-line?
+                (out "\n" no-color)
+                (set! line l)
+                (set! col-map next-col-map)
+                (set! next-col-map (make-hash-table 'equal))
+                (init-line!))
+              (let ([d-col (hash-table-get col-map c (+ dest-col (- c src-col)))])
+                (let ([amt (- d-col dest-col)])
                   (when (positive? amt)
                     (let ([old-dest-col dest-col])
                       (out (make-element 'hspace (list (make-string amt #\space))) #f)
                       (set! dest-col (+ old-dest-col amt))))))
-              (set! src-col (+ c (or span 1)))))]
+              (set! src-col c)
+              (hash-table-put! next-col-map src-col dest-col)))]
          [(c init-line!) (advance c init-line! 0)]))
       (define (convert-infix c quote-depth)
         (let ([l (syntax->list c)])
@@ -167,21 +180,36 @@
                         l))]
            [(and (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:line))
-            (for-each (loop init-line! quote-depth) 
-                      (cdr (syntax->list c)))]
+            (let ([l (cdr (syntax->list c))])
+              (for-each (loop init-line! quote-depth) 
+                        l))]
+           [(and (pair? (syntax-e c))
+                 (eq? (syntax-e (car (syntax-e c))) 'code:hilite))
+            (let ([l (syntax->list c)]
+                  [h? highlight?])
+              (unless (and l (= 2 (length l)))
+                (error "bad code:redex: ~e" (syntax-object->datum c)))
+              (advance c init-line!)
+              (set! src-col (syntax-column (cadr l)))
+              (hash-table-put! next-col-map src-col dest-col)
+              (set! highlight? #t)
+              ((loop init-line! quote-depth) (cadr l))
+              (set! highlight? h?)
+              (set! src-col (add1 src-col)))]
            [(and (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:quote))
             (advance c init-line!)
             (out "(" (if (positive? quote-depth) value-color paren-color))
             (set! src-col (+ src-col 1))
-            (hash-table-put! col-map src-col dest-col)
+            (hash-table-put! next-col-map src-col dest-col)
             ((loop init-line! quote-depth) 
              (datum->syntax-object #'here 'quote (car (syntax-e c))))
             (for-each (loop init-line! (add1 quote-depth))
                       (cdr (syntax->list c)))
             (out ")" (if (positive? quote-depth) value-color paren-color))
             (set! src-col (+ src-col 1))
-            (hash-table-put! col-map src-col dest-col)]
+            #;
+            (hash-table-put! next-col-map src-col dest-col)]
            [(and (pair? (syntax-e c))
                  (memq (syntax-e (car (syntax-e c))) 
                        '(quote quasiquote unquote unquote-splicing
@@ -200,13 +228,14 @@
                            meta-color))
               (let ([i (cadr (syntax->list c))])
                 (set! src-col (or (syntax-column i) src-col))
-                (hash-table-put! col-map src-col dest-col)
+                (hash-table-put! next-col-map src-col dest-col)
                 ((loop init-line! (+ quote-depth quote-delta)) i)))]
            [(and (pair? (syntax-e c))
                  (convert-infix c quote-depth))
             => (lambda (converted)
                  ((loop init-line! quote-depth) converted))]
            [(or (pair? (syntax-e c))
+                (null? (syntax-e c))
                 (vector? (syntax-e c)))
             (let* ([sh (or (syntax-property c 'paren-shape)
                            #\()]
@@ -220,14 +249,20 @@
                                     paren-color))])
               (advance c init-line!)
               (when (vector? (syntax-e c))
-                (out (format "#~a" (vector-length (syntax-e c))) p-color))
+                (let ([vec (syntax-e c)])
+                  (out (format "#~a" (vector-length vec)) p-color)
+                  (if (zero? (vector-length vec))
+                      (set! src-col (+ src-col (- (syntax-span c) 2)))
+                      (set! src-col (+ src-col (- (syntax-column (vector-ref vec 0))
+                                                  (syntax-column c)
+                                                  1))))))
               (out (case sh
                      [(#\[ #\?) "["]
                      [(#\{) "{"]
                      [else "("])
                    p-color)
               (set! src-col (+ src-col 1))
-              (hash-table-put! col-map src-col dest-col)
+              (hash-table-put! next-col-map src-col dest-col)
               (let lloop ([l (if (vector? (syntax-e c))
                                  (vector->short-list (syntax-e c) syntax-e)
                                  c)])
@@ -246,7 +281,7 @@
                   (advance l init-line! -2)
                   (out ". " (if (positive? quote-depth) value-color paren-color))
                   (set! src-col (+ src-col 3))
-                  (hash-table-put! col-map src-col dest-col)
+                  (hash-table-put! next-col-map src-col dest-col)
                   ((loop init-line! quote-depth) l)]))
               (out (case sh
                      [(#\[ #\?) "]"]
@@ -254,12 +289,13 @@
                      [else ")"])
                    p-color)
               (set! src-col (+ src-col 1))
-              (hash-table-put! col-map src-col dest-col))]
+              #;
+              (hash-table-put! next-col-map src-col dest-col))]
            [(box? (syntax-e c))
             (advance c init-line!)
             (out "#&" value-color)
             (set! src-col (+ src-col 2))
-            (hash-table-put! col-map src-col dest-col)
+            (hash-table-put! next-col-map src-col dest-col)
             ((loop init-line! +inf.0) (unbox (syntax-e c)))]
            [(hash-table? (syntax-e c))
             (advance c init-line!)
@@ -269,7 +305,7 @@
                        "#hasheq")
                    value-color)
               (set! src-col (+ src-col 5 (if equal-table? 2 0)))
-              (hash-table-put! col-map src-col dest-col)
+              (hash-table-put! next-col-map src-col dest-col)
               ((loop init-line! +inf.0)
                (syntax-ize (hash-table-map (syntax-e c) cons)
                            (syntax-column c))))]
@@ -323,10 +359,14 @@
                            variable-color]
                           [it? variable-color]
                           [else symbol-color])]
-                        [else paren-color])))
-              (hash-table-put! col-map src-col dest-col))])))
-      (hash-table-put! col-map src-col dest-col)
+                        [else paren-color])
+                       (string-length s)))
+              (set! src-col (+ src-col (or (syntax-span c) 1)))
+              #;
+              (hash-table-put! next-col-map src-col dest-col))])))
       (out prefix1 #f)
+      (set! dest-col 0)
+      (hash-table-put! next-col-map init-col dest-col)
       ((loop (lambda () (set! src-col init-col) (set! dest-col 0)) 0) c)
       (unless (null? content)
         (finish-line!))

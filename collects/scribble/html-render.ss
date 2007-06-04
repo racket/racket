@@ -175,7 +175,10 @@
               [(sf) `((b (font ([size "-1"][face "Helvetica"]) ,@(super render-element e part ht))))]
               [(subscript) `((sub ,@(super render-element e part ht)))]
               [(superscript) `((sup ,@(super render-element e part ht)))]
-              [(hspace) `((tt ,@(map (lambda (c) 'nbsp) (string->list (content->string (element-content e))))))]
+              [(hspace) `((tt ,@(let ([str (content->string (element-content e))])
+                                  (if (= 1 (string-length str))
+                                      '(" ")
+                                      (map (lambda (c) 'nbsp) (string->list str))))))]
               [else (error 'html-render "unrecognized style symbol: ~e" style)])]
            [(string? style) 
             `((span ([class ,style]) ,@(super render-element e part ht)))]
@@ -195,15 +198,22 @@
                                         [(at-left) '((align "left"))]
                                         [else null]))
                  ,@(map (lambda (flows)
-                          `(tr ,@(map (lambda (d a)
-                                        `(td ,@(case a
-                                                 [(#f) null]
-                                                 [(right) '(((align "right")))]
-                                                 [(left) '(((align "left")))])
+                          `(tr ,@(map (lambda (d a va)
+                                        `(td (,@(case a
+                                                  [(#f) null]
+                                                  [(right) '((align "right"))]
+                                                  [(left) '((align "left"))])
+                                              ,@(case va
+                                                  [(#f) null]
+                                                  [(top) '((valign "top"))]
+                                                  [(bottom) '((valign "bottom"))]))
                                              ,@(render-flow d part ht)))
                                       flows
                                       (cdr (or (and (list? (table-style t))
                                                     (assoc 'alignment (or (table-style t) null)))
+                                               (cons #f (map (lambda (x) #f) flows))))
+                                      (cdr (or (and (list? (table-style t))
+                                                    (assoc 'valignment (or (table-style t) null)))
                                                (cons #f (map (lambda (x) #f) flows)))))))
                         (table-flowss t)))))
 

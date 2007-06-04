@@ -15,7 +15,7 @@
 @define[(graph-defn) @elem{@litchar{#}@graph-tag[]@litchar{=}}]
 @define[(graph-ref) @elem{@litchar{#}@graph-tag[]@litchar{#}}]
 
-@title[#:tag "mz:reader"]{Reading Data}
+@title[#:tag "mz:reader"]{Reading}
 
 Scheme's reader is a recursive-descent parser that can be configured
 through a @seclink["readtable"]{readtable} and various other

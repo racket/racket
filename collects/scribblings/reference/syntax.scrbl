@@ -1,48 +1,37 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title{Syntax}
-
-The syntax of a Scheme program is defined by
-
-@itemize{
-
- @item{a @defterm{read} phase that processes a character stream into a
-       Scheme value, especially one composed of pairs and symbols,
-       and}
-
- @item{an @defterm{expand} phase that processes the value to finish
-       parsing the code.}
-
-}
-
-For details on the read phase, see @secref["mz:reader"]. Source code is
-normally read in @scheme[read-syntax] mode, otherwise it must be
-converted to syntax using @scheme[datum->syntax-object]; the expand
-phase is defined in terms of syntax objects.
-
-Expansion recursively processes a syntax-wrapped datum; for details,
-see @secref["mz:expansion"]. Ultimately, expansion leads to the
-synactic forms described in this section.
+@title[#:tag "mz:syntax"]{Core Syntactic Forms}
 
 A syntactic form is described by a BNF-like notation that describes a
 combination of (syntax-wrapped) pairs, symbols, and other data (not a
-sequence of characters). In this notation, @scheme[...] indicates zero
-or more repetitions of the preceding datum, @scheme[...+] indicates
-one or more repetitions, and @scheme[?] means zero or one
-instance. Italic sequences of characters play the role of
-non-terminals. In particular:
+sequence of characters):
 
 @itemize{
 
- @item{A sequence that ends in @scheme[_id] refers to a syntax-wrapped
-       symbol.}
+ @item{@scheme[...] indicates zero or more
+       repetitions of the preceding datum.}
 
- @item{A sequence that ends in @scheme[_keyword] refers to a
-       syntax-wrapped keyword.}
+ @item{@scheme[...+] indicates one or
+       more repetitions of the preceding datum.}
 
- @item{A sequence that end with @scheme[_expr] refers to a sub-form
-       that is expanded as an expression.}
+ @item{@scheme[?] means zero instances or one instance
+       of the preceding datum.}
+
+ @item{Italic sequences of characters play the role of non-terminals. In
+       particular:
+
+      @itemize{
+
+        @item{A sequence that ends in @scheme[_id] refers to a
+              syntax-wrapped symbol.}
+
+        @item{A sequence that ends in @scheme[_keyword] refers to a
+              syntax-wrapped keyword.}
+
+        @item{A sequence that end with @scheme[_expr] refers to a sub-form
+              that is expanded as an expression.}
+      }}
 }
 
 @;------------------------------------------------------------------------

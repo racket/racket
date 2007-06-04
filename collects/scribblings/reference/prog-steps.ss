@@ -1,0 +1,85 @@
+
+(module prog-steps mzscheme
+  (require (lib "struct.ss" "scribble")
+           (lib "decode.ss" "scribble")
+           (lib "manual.ss" "scribble")
+           (lib "scheme.ss" "scribble")
+           (lib "kw.ss")
+           (lib "class.ss")
+           (lib "for.ss"))
+
+  (provide prog-steps
+           prog-steps/cont
+           prog-steps/no-obj)
+
+  (define-syntax prog-steps/no-obj
+    (syntax-rules ()
+      [(_ [{def ...} prog] ...)
+       (*prog-steps
+        #f
+        #f
+        (list (schemeblock0 def ...) ...)
+        (list (schemeblock0 prog) ...))]))
+
+  (define-syntax prog-steps
+    (syntax-rules ()
+      [(_ [{obj ...} {def ...} prog] ...)
+       (*prog-steps
+        #f
+        (list (schemeblock0 obj ...) ...)
+        (list (schemeblock0 def ...) ...)
+        (list (schemeblock0 prog) ...))]))
+
+  (define-syntax prog-steps/cont
+    (syntax-rules ()
+      [(_ [{obj ...} {def ...} prog] ...)
+       (*prog-steps
+        #t
+        (list (schemeblock0 obj ...) ...)
+        (list (schemeblock0 def ...) ...)
+        (list (schemeblock0 prog) ...))]))
+
+  (define (to-flow e) (make-flow (list (make-paragraph (list e)))))
+
+  (define (*prog-steps cont? objs defs progs)
+    (make-table
+     '((valignment top top top top top top))
+     (apply
+      append
+      (for/list ([obj (or objs (in-naturals))]
+                 [def defs]
+                 [prog progs]
+                 [i (in-naturals)])
+        (let ([l
+               (list
+                (list (to-flow " ")
+                      (to-flow (if (and (or (positive? i)
+                                            cont?)
+                                        (not objs))
+                                   'rarr
+                                   " "))
+                      (to-flow " ")
+                      (to-flow "defined:")
+                      (to-flow " ")
+                      (make-flow (list def)))
+                (list (to-flow " ")
+                      (to-flow " ")
+                      (to-flow " ")
+                      (to-flow "evaluate:")
+                      (to-flow " ")
+                      (make-flow (list prog))))])
+          (if objs
+              (cons (list
+                     (to-flow " ")
+                     (to-flow (if (or (positive? i)
+                                      cont?)
+                                  'rarr
+                                  " "))
+                      (to-flow " ")
+                      (to-flow "objects:")
+                      (to-flow " ")
+                      (make-flow (list obj)))
+                    l)
+              l)))))))
+
+               
