@@ -266,7 +266,7 @@ Both the @scheme[my-length] and @scheme[my-map] procedures run in
 imagining how @scheme[(my-length (list "a" "b" "c"))] must evaluate:
 
 @schemeblock[
-(my-length (list "a" "b" "c"))
+#||# (my-length (list "a" "b" "c"))
 #,step (+ 1 (my-length (list "b" "c")))
 #,step (+ 1 (+ 1 (my-length (list "c"))))
 #,step (+ 1 (+ 1 (+ 1 (my-length (list)))))
@@ -300,7 +300,7 @@ argument @scheme[len]:
 Now evaluation looks like this:
 
 @schemeblock[
-(my-length (list "a" "b" "c"))
+#||# (my-length (list "a" "b" "c"))
 #,step (iter (list "a" "b" "c") 0)
 #,step (iter (list "b" "c") 1)
 #,step (iter (list "c") 2)
@@ -397,7 +397,7 @@ duplicates, it returns the result of a @scheme[remove-dups] call
 directly, so the tail-call ``optimization'' kicks in:
 
 @schemeblock[
-(remove-dups (list "a" "b" "b" "b" "b" "b"))
+#||# (remove-dups (list "a" "b" "b" "b" "b" "b"))
 #,step (cons "a" (remove-dups (list "b" "b" "b" "b" "b")))
 #,step (cons "a" (remove-dups (list "b" "b" "b" "b")))
 #,step (cons "a" (remove-dups (list "b" "b" "b")))
