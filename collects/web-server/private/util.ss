@@ -13,7 +13,6 @@
    [list-prefix (list? list? . -> . (or/c list? false/c))]
    [strip-prefix-ups (list? . -> . list?)] ; XXX need path-element?
    [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
-   [extract-flag (symbol? (listof (cons/c symbol? any/c)) any/c . -> . any/c)]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [directory-part (path? . -> . path?)]
    [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
@@ -143,13 +142,4 @@
       (cond
         [(eq? 'relative base) (current-directory)]
         [(not base) (error 'directory-part "~a is a top-level directory" path)]
-        [(path? base) base])))
-    
-  ; this is used by launchers
-  ; extract-flag : sym (listof (cons sym alpha)) alpha -> alpha
-  ; XXX remove
-  (define (extract-flag name flags default)
-    (let ([x (assq name flags)])
-      (if x
-          (cdr x)
-          default))))
+        [(path? base) base]))))

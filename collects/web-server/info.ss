@@ -3,9 +3,9 @@
   (define post-install-collection "docs/doc-installer.ss")
   
   (define mzscheme-launcher-libraries
-    (list "private/launch-text.ss" "private/setup-launch.ss" ))
+    (list "private/launch-text.ss"))
   (define mzscheme-launcher-names
-    (list "PLT Web Server Text" "PLT Web Server Setup")) 
+    (list "PLT Web Server Text")) 
 
   (define mred-launcher-libraries
     (list "private/launch-gui.ss"))

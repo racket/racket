@@ -8,6 +8,14 @@
            "../web-config-sig.ss"
            "../web-server-unit.ss"
            "../web-server-sig.ss")
+      
+  ; this is used by launchers
+  ; extract-flag : sym (listof (cons sym alpha)) alpha -> alpha
+  (define (extract-flag name flags default)
+    (let ([x (assq name flags)])
+      (if x
+          (cdr x)
+          default)))
   
   (define configuration@
     (parse-command-line
