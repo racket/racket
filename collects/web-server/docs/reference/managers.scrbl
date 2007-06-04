@@ -87,9 +87,73 @@ Web Language. (See @secref["lang"].)
 @; ------------------------------------------------------------
 @section[#:tag "timeouts"]{Timeouts}
 
-XXX
+@file{managers/timeouts.ss} defines a manager constructor:
 
+@defproc[(create-timeout-manager [instance-exp-handler expiration-handler?]
+                                 [instance-timeout number?]
+                                 [continuation-timeout number?])
+         manager?]{
+ Instances managed by this manager will be expired @scheme[instance-timeout]
+ seconds after the last time it is accessed. If an expired instance is
+ looked up, the @scheme[exn:fail:servlet-manager:no-instance] exception
+ is thrown with @scheme[instance-exp-handler] as the expiration handler.
+ 
+ Continuations managed by this manager will be expired @scheme[continuation-timeout]
+ seconds after the last time it is accessed. If an expired continuation is looked
+ up, the @scheme[exn:fail:servlet-manager:no-continuation] exception
+ is thrown with @scheme[instance-exp-handler] as the expiration handler, if
+ no expiration-handler was passed to @scheme[continuation-store!].
+}
+
+This manager has been found to be... problematic... in large-scale
+deployments of the @file{web-server}.
+                  
 @; ------------------------------------------------------------
 @section[#:tag "lru"]{LRU}
 
-XXX
+@file{managers/lru.ss} defines a manager constructor:
+
+@; XXX Rename time0 and time1
+@; XXX Cite Continue
+@defproc[(create-LRU-manager
+              [instance-expiration-handler expiration-handler?]
+              [time0 integer?]
+              [time1 integer?]
+              [collect? (-> boolean?)]
+              [#:initial-count initial-count integer? 1]
+              [#:inform-p inform-p (integer? . -> . void) (lambda _ (void))])
+         manager?]{
+ Instances managed by this manager will be expired if there are no
+ continuations associated with them, after the instance is unlocked.
+ If an expired instance is looked up, the
+ @scheme[exn:fail:servlet-manager:no-instance] exception
+ is thrown with @scheme[instance-exp-handler] as the expiration handler.
+
+ Continuations managed by this manager are given a "Life Count" of
+ @scheme[initial-count] initially. If an expired continuation is looked
+ up, the @scheme[exn:fail:servlet-manager:no-continuation] exception
+ is thrown with @scheme[instance-exp-handler] as the expiration handler, if
+ no expiration-handler was passed to @scheme[continuation-store!].
+ 
+ Every @scheme[time0] seconds @scheme[collect?] is called to determine
+ if the collection routine should be run. Every @scheme[time1] seconds
+ the collection routine is run. 
+ 
+ Every time the collection routine runs, the "Life Count" of every
+ continuation is decremented by @scheme[1]. If a continuation's count
+ reaches @scheme[0], it is expired. The @scheme[inform-p] function
+ is called if any continuations are expired, with the number of
+ continuations expired.
+}
+                  
+The recommended use of this manager is to pass, as @scheme[collect?], a
+function that checks the memory usage of the system, through 
+@scheme[current-memory-use]. Then, @scheme[time1] should be sufficiently
+large compared to @scheme[time0]. This way, if the load on the server
+spikes---as indicated by memory usage---the server will quickly expire
+continuations, until the memory is back under control. If the load
+stays low, it will still efficiently expire old continuations.
+
+With Continue, we went from needing to restart the server a few times
+a week and having many complaints under load, to not having these complaints
+and not needing to restart the server for performance reasons.

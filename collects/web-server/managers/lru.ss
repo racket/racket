@@ -125,30 +125,30 @@
                         next-instance-id))
     
     ; Collector
-    (define (collect)
+    (define (collect just-go?)
       (define removed (box 0))
-      (when (collect?)
-        (hash-table-for-each
-         instances
-         (match-lambda*
-           [(list instance-id (struct instance (_ (struct k-table (next-id-fn htable)) use-count)))
-            (define empty? (box #t))
-            (hash-table-for-each
-             htable
-             (match-lambda*
-               [(list k-id (list s k eh count))
-                (if (zero? count)
-                    (begin (set-box! removed (add1 (unbox removed)))
-                           (hash-table-remove! htable k-id))
-                    (begin (set-box! empty? #f)
-                           (hash-table-put! htable k-id
-                                            (list s k eh (sub1 count)))))]))
-            (when (and (unbox empty?)
-                       ; XXX race condition
-                       (zero? use-count))
-              (set-box! removed (add1 (unbox removed)))
-              (hash-table-remove! instances instance-id))])))
-      (unless (zero? (unbox removed))
+      (hash-table-for-each
+       instances
+       (match-lambda*
+         [(list instance-id (struct instance (_ (struct k-table (next-id-fn htable)) use-count)))
+          (define empty? (box #t))
+          (hash-table-for-each
+           htable
+           (match-lambda*
+             [(list k-id (list s k eh count))
+              (if (zero? count)
+                  (begin (set-box! removed (add1 (unbox removed)))
+                         (hash-table-remove! htable k-id))
+                  (begin (set-box! empty? #f)
+                         (hash-table-put! htable k-id
+                                          (list s k eh (sub1 count)))))]))
+          (when (and (unbox empty?)
+                     ; XXX race condition
+                     (zero? use-count))
+            (set-box! removed (add1 (unbox removed)))
+            (hash-table-remove! instances instance-id))]))
+      (when (or just-go?
+                (not (zero? (unbox removed))))
         (inform-p (unbox removed))
         (collect-garbage)
         (collect-garbage)))
@@ -164,12 +164,12 @@
                   (alarm-evt msecs0)
                   (lambda _
                     (when (collect?)
-                      (collect))
+                      (collect #f))
                     (loop (seconds->msecs time0) msecs1)))
                  (handle-evt
                   (alarm-evt msecs1)
                   (lambda _
-                    (collect)
+                    (collect #t)
                     (loop msecs0 (seconds->msecs time1)))))))))
     
     the-manager))

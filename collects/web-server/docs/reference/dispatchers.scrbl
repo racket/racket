@@ -221,7 +221,9 @@ that invokes a sequence of dispatchers until one applies.
 @file{dispatchers/dispatch-servlets.ss} defines a dispatcher constructor
 that runs servlets written in Scheme.
 
+@; XXX Add default manager arg
 @; XXX Remove config:instances
+@; XXX Remove config:scripts
 @; XXX Define make-servlet-namespace?
 @defproc[(make [config:instances any/c]
                [config:scripts (box/c cache-table?)]
