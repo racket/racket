@@ -16,7 +16,7 @@ configuring the @file{web-server}.
 represent a standard configuration (see @secref["XXX"]) of the @file{web-server}.
 The contracts on this structure influence the valid types of values in
 the configuration table S-expression file format described in 
-@secref["configuration-table"].
+@secref["configuration-table.ss"].
 
 @defstruct[configuration-table
            ([port (between/c 1 65535)]

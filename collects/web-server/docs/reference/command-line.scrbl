@@ -14,12 +14,13 @@ are through a command-line tool or through a function call.
 Two command-line utilities are provided with the @file{web-server}:
 
 @exec{plt-web-server-text [-f <file-name> -p <port> -a <ip-address>]}
+
 @exec{plt-web-server [-f <file-name> -p <port> -a <ip-address>]}
 
 The first runs the @file{web-server} with MzScheme, while the second runs
 the server with MrEd, providing a graphical UI. The optional file-name 
 argument specifies the path to a @scheme[configuration-table] S-expression
-(see @secref["configuration-table"].) If this is not provided, the default
+(see @secref["configuration-table.ss"].) If this is not provided, the default
 configuration shipped with the server is used. The optional port and ip-address
 arguments override the corresponding portions of the @scheme[configuration-table].
 

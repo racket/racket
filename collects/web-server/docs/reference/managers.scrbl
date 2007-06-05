@@ -82,7 +82,7 @@ the users and implementers of managers.
 } 
 
 If you are considering using this manager, also consider using the
-Web Language. (See @secref["lang"].)
+Web Language. (See @secref["lang.ss"].)
 
 @; ------------------------------------------------------------
 @section[#:tag "timeouts.ss"]{Timeouts}
