@@ -19,7 +19,7 @@
   
   (define configuration@
     (parse-command-line
-     "web-server"
+     "plt-web-server"
      (current-command-line-arguments)
      `((once-each
         [("-f" "--configuration-table")

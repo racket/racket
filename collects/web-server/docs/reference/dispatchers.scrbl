@@ -15,7 +15,7 @@ documentation will be useful.
 @; XXX Include connection? and request?
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch"]{General}
+@section[#:tag "dispatch.ss"]{General}
 
 @file{dispatchers/dispatch.ss} provides a few functions for dispatchers in general.
 
@@ -45,7 +45,7 @@ otherwise.
 
 @; XXX Rename const to lift
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-const"]{Lifting Procedures}
+@section[#:tag "dispatch-const.ss"]{Lifting Procedures}
 
 @file{dispatchers/dispatch-const.ss} defines:
 
@@ -56,7 +56,7 @@ otherwise.
 } 
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-files"]{Serving Files}
+@section[#:tag "dispatch-files.ss"]{Serving Files}
 
 @file{dispatchers/dispatch-files.ss} allows files to be served.
 It defines a dispatcher construction procedure:
@@ -79,7 +79,7 @@ It defines a dispatcher construction procedure:
 
 @; XXX Change filtering to take predicate, rather than regexp
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-filter"]{Filtering Requests}
+@section[#:tag "dispatch-filter.ss"]{Filtering Requests}
 
 @file{dispatchers/dispatch-filter.ss} defines a dispatcher constructer 
 that calls an underlying dispatcher
@@ -92,7 +92,7 @@ with all requests that pass a predicate.
 } 
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-host"]{Virtual Hosts}
+@section[#:tag "dispatch-host.ss"]{Virtual Hosts}
 
 @file{dispatchers/dispatch-host.ss} defines a dispatcher constructor
 that calls a different dispatcher based upon the host requested.
@@ -106,7 +106,7 @@ that calls a different dispatcher based upon the host requested.
 }  
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-lang"]{Serving Web Language Servlets}
+@section[#:tag "dispatch-lang.ss"]{Serving Web Language Servlets}
 
 @file{dispatchers/dispatch-lang.ss} defines a dispatcher constructor
 that runs servlets written in the Web Language.
@@ -132,7 +132,7 @@ that runs servlets written in the Web Language.
 }                      
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-log"]{Logging}
+@section[#:tag "dispatch-log.ss"]{Logging}
 
 @file{dispatchers/dispatch-log.ss} defines a dispatcher constructer
 for transparent logging of requests.
@@ -161,7 +161,7 @@ for transparent logging of requests.
 }
                       
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-passwords"]{Password Protection}
+@section[#:tag "dispatch-passwords.ss"]{Password Protection}
 
 @file{dispatchers/dispatch-passwords.ss} defines a dispatcher constructor
 that performs HTTP Basic authentication filtering.
@@ -187,7 +187,7 @@ that performs HTTP Basic authentication filtering.
 }
                      
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-pathprocedure"]{Procedure Invocation upon Request}
+@section[#:tag "dispatch-pathprocedure.ss"]{Procedure Invocation upon Request}
 
 @file{dispatchers/dispatch-pathprocedure.ss} defines a dispatcher constructor
 for invoking a particular procedure when a request is given to a particular
@@ -203,7 +203,7 @@ This is used in the standard @file{web-server} pipeline to provide
 a URL that refreshes the password file, servlet cache, etc.
  
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-sequencer"]{Sequencing}
+@section[#:tag "dispatch-sequencer.ss"]{Sequencing}
 
 @file{dispatchers/dispatch-sequencer.ss} defines a dispatcher constructor
 that invokes a sequence of dispatchers until one applies.
@@ -216,7 +216,7 @@ that invokes a sequence of dispatchers until one applies.
 }
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-servlets"]{Serving Scheme Servlets}
+@section[#:tag "dispatch-servlets.ss"]{Serving Scheme Servlets}
 
 @file{dispatchers/dispatch-servlets.ss} defines a dispatcher constructor
 that runs servlets written in Scheme.
@@ -264,7 +264,7 @@ that runs servlets written in Scheme.
 }
                               
 @; ------------------------------------------------------------
-@section[#:tag "filesystem-map"]{Mapping URLs to Paths}
+@section[#:tag "filesystem-map.ss"]{Mapping URLs to Paths}
 
 @file{dispatchers/filesystem-map.ss} provides a means of mapping
 URLs to paths on the filesystem.

@@ -28,8 +28,8 @@
               [port 80]
               [listen-ip #f]
               [max-waiting 40]
-              [initial-connection-timeout 60]
-              [read-request http:read-request])
+              [initial-connection-timeout 60])
+    (define read-request http:read-request)
     (define-unit-binding a-tcp@
       tcp@ (import) (export tcp^))
     (define-compound-unit/infer dispatch-server@/tcp@
@@ -45,44 +45,29 @@
   
   (define/kw (serve/ports
               #:key
-              dispatch
-              [tcp@ raw:tcp@]
               [ports (list 80)]
-              [listen-ip #f]
-              [max-waiting 40]
-              [initial-connection-timeout 60]
-              [read-request http:read-request])
+              #:other-keys
+              serve-keys)
     (define shutdowns
       (map (lambda (port)
-             (serve #:dispatch dispatch
-                    #:tcp@ tcp@
+             (apply serve
                     #:port port
-                    #:listen-ip listen-ip
-                    #:max-waiting max-waiting
-                    #:initial-connection-timeout initial-connection-timeout
-                    #:read-request read-request))
+                    serve-keys))
            ports))
     (lambda ()
       (for-each apply shutdowns)))
   
   (define/kw (serve/ips+ports
               #:key
-              dispatch
-              [tcp@ raw:tcp@]
               [ips+ports (list (cons #f (list 80)))]
-              [max-waiting 40]
-              [initial-connection-timeout 60]
-              [read-request http:read-request])
+              #:other-keys
+              serve-keys)
     (define shutdowns
       (map (match-lambda
              [(list-rest listen-ip ports)
-              (serve/ports #:dispatch dispatch
-                           #:tcp@ tcp@
-                           #:ports ports
-                           #:listen-ip listen-ip
-                           #:max-waiting max-waiting
-                           #:initial-connection-timeout initial-connection-timeout
-                           #:read-request read-request)])
+              (apply serve/ports
+                     #:ports ports
+                     serve-keys)])
            ips+ports))
     (lambda ()
       (for-each apply shutdowns)))

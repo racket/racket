@@ -13,7 +13,7 @@ pluggable through the manager interface.
 @local-table-of-contents[]
 
 @; ------------------------------------------------------------
-@section[#:tag "manager"]{General}
+@section[#:tag "manager.ss"]{General}
 
 @file{managers/manager.ss} defines the manager interface. It is required by
 the users and implementers of managers.
@@ -69,7 +69,7 @@ the users and implementers of managers.
 }                                                       
 
 @; ------------------------------------------------------------
-@section[#:tag "none"]{No Continuations}
+@section[#:tag "none.ss"]{No Continuations}
 
 @file{managers/none.ss} defines a manager constructor:
 
@@ -85,7 +85,7 @@ If you are considering using this manager, also consider using the
 Web Language. (See @secref["lang"].)
 
 @; ------------------------------------------------------------
-@section[#:tag "timeouts"]{Timeouts}
+@section[#:tag "timeouts.ss"]{Timeouts}
 
 @file{managers/timeouts.ss} defines a manager constructor:
 
@@ -109,7 +109,7 @@ This manager has been found to be... problematic... in large-scale
 deployments of the @file{web-server}.
                   
 @; ------------------------------------------------------------
-@section[#:tag "lru"]{LRU}
+@section[#:tag "lru.ss"]{LRU}
 
 @file{managers/lru.ss} defines a manager constructor:
 

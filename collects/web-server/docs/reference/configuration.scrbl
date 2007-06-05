@@ -4,10 +4,13 @@
 
 @title[#:style 'toc]{Configuration}
 
+There are a number of libraries and utilities useful for
+configuring the @file{web-server}.
+
 @local-table-of-contents[]
 
 @; ------------------------------------------------------------
-@section[#:tag "configuration-table-structs"]{Configuration Table Structure}
+@section[#:tag "configuration-table-structs.ss"]{Configuration Table Structure}
 
 @file{configuration/configuration-table-structs.ss} provides the following structures that
 represent a standard configuration (see @secref["XXX"]) of the @file{web-server}.
@@ -74,7 +77,7 @@ the configuration table S-expression file format described in
             [passwords (or/c false/c path-string?)])]
 
 @; ------------------------------------------------------------
-@section[#:tag "configuration-table"]{Configuration Table}
+@section[#:tag "configuration-table.ss"]{Configuration Table}
 
 @file{configuration/configuration-table.ss} provides functions for 
 reading, writing, parsing, and printing @scheme[configuration-table] 
@@ -142,7 +145,7 @@ This function writes a @scheme[configuration-table] to @scheme[path].
 }
 
 @; ------------------------------------------------------------
-@section[#:tag "namespace"]{Servlet Namespaces}
+@section[#:tag "namespace.ss"]{Servlet Namespaces}
 
 @; XXX Require dispatch-servlets and dispatch-lang
 
@@ -185,7 +188,7 @@ module C to all servlet namespaces. Through other means (see @secref["pipelines"
 of servlets can share different sets of modules.
 
 @; ------------------------------------------------------------
-@section[#:tag "responders"]{Standard Responders}
+@section[#:tag "responders.ss"]{Standard Responders}
 
 @file{configuration/responders.ss} provides some functions that help constructing HTTP responders.
 These functions are used by the default dispatcher constructor (see @secref["web-server-unit"]) to
