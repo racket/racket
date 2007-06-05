@@ -29,7 +29,14 @@ non-text content that can be read.
 
 Takes an import port whose stream starts with WXME-format data and
 returns an input port that produces text content converted to bytes,
-and non-text content as "special" values.
+and non-text content as "special" values. 
+
+These special values produced by the new import port are different
+than the ones produced by reading a file into a MrEd `editor<%>'
+object. Instead of instances of the MrEd `snip%' class, the special
+values are typically simple extensions of `object%'.  See "Snip Class
+Mapping" (below) for information about the kinds of non-text content
+that can be read.
 
 If `close?' is true (the default), then closing the result port close
 the original port.
@@ -42,9 +49,6 @@ If a special value (possibly produced by the filter procedure) is an
 object implementing the `readable<%>' interface provided by "wxme.ss",
 then the object's `read-special' method is called to produce the
 special value.
-
-See "Snip Class Mapping" (below) for information about the kinds of
-non-text content that can be read.
 
 > (extract-used-classes input-port)
 
@@ -155,7 +159,7 @@ or space, and must not be "." or "..".
 
 In that case, the first quoted module path is used by MrEd for loading
 WXME files in graphical mode; the corresponding module must provide
-`snip-class' object that implements MrEd's `snip-class%' class. the
+`snip-class' object that implements MrEd's `snip-class%' class. The
 second quoted module path is used by the "wxme.ss" library for
 converting WXME streams without MrEd support; the corresponding module
 must provide a `reader' object that implements `reader<%>' interface
@@ -234,16 +238,18 @@ provides several methods:
                    data is available instead
 > (get-data) - returns bytes for a PNG, XBM,or XPM file for the
                image
-> (get-width) - returns the display width of the image, which may
-                differ from the width of the actual image secified
-                as data or by a filename
-> (get-height) - returns the display height of the image, which may
-                differ from the width of the actual image secified
-                as data or by a filename
-> (get-x-offset) - returns an offset into the actual image to be used
-                   as the left of the display image
-> (get-y-offset) - returns an offset into the actual image to be used
-                   as the top of the display image
+> (get-w) - returns the display width of the image, which may
+            differ from the width of the actual image secified
+            as data or by a filename; -1 means that the image
+            data's width should be used
+> (get-h) - returns the display height of the image, which may
+            differ from the width of the actual image secified
+            as data or by a filename; -1 means that the image
+            data's width should be used
+> (get-dx) - returns an offset into the actual image to be used
+             as the left of the display image
+> (get-dy) - returns an offset into the actual image to be used
+             as the top of the display image
 
 ======================================================================
 _comment.ss_ --- DrScheme comment boxes

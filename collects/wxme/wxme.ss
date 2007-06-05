@@ -460,7 +460,7 @@
                                   (if (= i len)
                                       null
                                       (cons
-                                       (read-a-string who port vers "image-snip image content")
+                                       (read-raw-string who port vers "image-snip image content")
                                        (loop (add1 i))))))))])
                    (if (header-plain-text? header)
                        #"."
