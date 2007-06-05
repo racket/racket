@@ -83,7 +83,7 @@
     (define (rank-choice choices) (apply max choices))
     (define-values 
       (rank-misspell rank-caps rank-class rank-wrong rank-end)
-      (4/5 9/10 2/5 1/5 2/5)))
+      (values 4/5 9/10 2/5 1/5 2/5)))
   
   (define-unit out-struct@
     (import)
