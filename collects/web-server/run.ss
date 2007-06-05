@@ -1,3 +1,4 @@
+; This file is intended to be copied and/or modified and used as a template.
 (module run mzscheme
   (require (lib "cmdline.ss")
            (lib "file.ss")

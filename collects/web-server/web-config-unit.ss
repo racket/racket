@@ -51,14 +51,12 @@
            (gen-virtual-hosts expanded-virtual-host-table default-host)
            bct-keys))
   
-  (define default-make-servlet-namespace (make-make-servlet-namespace))
-  
   ; : configuration-table host-table -> configuration
   (define/kw (build-configuration table the-virtual-hosts
                                   #:key
                                   [port #f]
                                   [listen-ip #f]
-                                  [make-servlet-namespace default-make-servlet-namespace])
+                                  [make-servlet-namespace (make-make-servlet-namespace)])
     (define the-port (or port (configuration-table-port table)))
     (define the-listen-ip (or listen-ip #f))
     (define the-make-servlet-namespace make-servlet-namespace)

@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Web Language}
+@title[#:style 'toc]{Web Language Servlets}
 
 XXX
 

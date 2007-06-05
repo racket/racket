@@ -13,10 +13,13 @@ develop Web applications in Scheme.
 @include-section["dispatchers.scrbl"]
 @include-section["web-config-unit.scrbl"]
 @include-section["web-server-unit.scrbl"]
-@include-section["servlet.scrbl"]
-@include-section["servlet-env.scrbl"]
 @include-section["managers.scrbl"]
+@include-section["servlet-env.scrbl"]
+
+@include-section["servlet.scrbl"]
+
 @include-section["lang.scrbl"]
+
 @include-section["private.scrbl"]
 
 @index-section["web-server-ref-index"]

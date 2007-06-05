@@ -12,6 +12,7 @@
   (provide (rename on-web:syntax on-web)
            (all-from "servlet.ss"))
   
+  ; XXX Change to setup temporary file and special dispatcher  
   (define-syntax (on-web:syntax stx)
     (syntax-case stx ()
       [(on-web:syntax servlet-expr)

@@ -43,6 +43,49 @@ different. For example, it may apply some test to the request object, perhaps
 checking for a valid source IP address, and error if the test is not passed, and call @scheme[next-dispatcher]
 otherwise.
 
+@; ------------------------------------------------------------
+@section[#:tag "filesystem-map.ss"]{Mapping URLs to Paths}
+
+@file{dispatchers/filesystem-map.ss} provides a means of mapping
+URLs to paths on the filesystem.
+
+@; XXX Change to listof path?
+@defthing[url-path? contract?]{
+ This contract is equivalent to @scheme[((url?) . ->* . (path? list?))].
+ The returned @scheme[path?] is the path on disk. The list is the list of
+ path elements that correspond to the path of the URL.}
+
+@defproc[(make-url->path (base path?))
+         url-path?]{
+ The @scheme[url-path?] returned by this procedure considers the root
+ URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
+ do not escape the @scheme[base].}                             
+
+@; XXX Rename to /valid                   
+@defproc[(make-url-path/optimism (url->path url->path?))
+         url->path?]{
+ Runs the underlying @scheme[url->path], but only returns if the path
+ refers to a file that actually exists. If it is does not, then the suffix
+ elements of the URL are removed until a file is found. If this never occurs,
+ then an error is thrown.
+ 
+ This is primarily useful for dispatchers that allow path information after
+ the name of a service to be used for data, but where the service is represented
+ by a file. The most prominent example is obviously servlets.}
+
+@; ------------------------------------------------------------
+@section[#:tag "dispatch-sequencer.ss"]{Sequencing}
+
+@file{dispatchers/dispatch-sequencer.ss} defines a dispatcher constructor
+that invokes a sequence of dispatchers until one applies.
+
+@defproc[(make (dispatcher dispatcher?) ...0)
+         dispatcher?]{
+ Invokes each @scheme[dispatcher], invoking the next if the first
+ calls @scheme[next-dispatcher]. If no @scheme[dispatcher] applies,
+ then it calls @scheme[next-dispatcher] itself.
+}
+                     
 @; XXX Rename const to lift
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-const.ss"]{Lifting Procedures}
@@ -54,28 +97,6 @@ otherwise.
  Constructs a dispatcher that calls @scheme[proc] on the request
  object, and outputs the response to the connection.
 } 
-
-@; ------------------------------------------------------------
-@section[#:tag "dispatch-files.ss"]{Serving Files}
-
-@file{dispatchers/dispatch-files.ss} allows files to be served.
-It defines a dispatcher construction procedure:
-
-@; XXX Change mime-types-path to path->mime-type
-@; XXX Include make-get-mime-type
-@defproc[(make [#:url->path url->path url->path?]
-               [#:mime-types-path mime-types-path path-string? "mime.types"]
-               [#:indices indices (listof string?) (list "index.html" "index.htm")])
-         dispatcher?]{
- Uses @scheme[url->path] to extract a path from the URL in the request
- object. If this path does not exist, then the dispatcher does not apply.
- If the path is a directory, then the @scheme[indices] are checked in order
- for an index file to serve. In that case, or in the case of a path that is
- a file already, the @scheme[mime-types-path] file is consulted for the MIME
- Type of the path, via @scheme[make-get-mime-type]. The file is then
- streamed out the connection object.
- 
- This dispatcher supports HTTP Range GET requests and HEAD requests.}
 
 @; XXX Change filtering to take predicate, rather than regexp
 @; ------------------------------------------------------------
@@ -92,45 +113,21 @@ with all requests that pass a predicate.
 } 
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-host.ss"]{Virtual Hosts}
+@section[#:tag "dispatch-pathprocedure.ss"]{Procedure Invocation upon Request}
 
-@file{dispatchers/dispatch-host.ss} defines a dispatcher constructor
-that calls a different dispatcher based upon the host requested.
+@file{dispatchers/dispatch-pathprocedure.ss} defines a dispatcher constructor
+for invoking a particular procedure when a request is given to a particular
+URL path.
 
-@defproc[(make (lookup-dispatcher (symbol? . -> . dispatcher?)))
+@defproc[(make (path string?) (proc (request? . -> . response?)))
          dispatcher?]{
- Extracts a host from the URL requested, or the Host HTTP header,
- calls @scheme[lookup-dispatcher] with the host, and invokes the
- returned dispatcher. If no host can be extracted, then @scheme['<none>]
- is used.
-}  
-
-@; ------------------------------------------------------------
-@section[#:tag "dispatch-lang.ss"]{Serving Web Language Servlets}
-
-@file{dispatchers/dispatch-lang.ss} defines a dispatcher constructor
-that runs servlets written in the Web Language.
-
-@; XXX Don't include timeout logic in here, put it outside.
-@; XXX Include configuration.scrbl exports
-@defproc[(make [#:url->path url->path url->path?]
-               [#:make-servlet-namespace make-servlet-namespace 
-                                         make-servlet-namespace?
-                                         (make-make-servlet-namespace)]
-               [#:timeouts-servlet-connection timeouts-servlet-connection integer? (* 60 60 24)]
-               [#:responders-servlet-loading responders-servlet-loading servlet-loading-responder]
-               [#:responders-servlet responders-servlet (gen-servlet-responder "servlet-error.html")])
-         dispatcher?]{
- Extends the timeout of the connection by @scheme[timeouts-servlet-connection].
- If the request URL contains a serialized continuation, then it is invoked with the
- request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
- The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].
- If this fails then @scheme[responders-servlet-loading] is used to format a response
- with the exception. If it succeeds, then @scheme[start] export of the module is invoked.
- If there is an error when a servlet is invoked, then @scheme[responders-servlet] is
- used to format a response with the exception.
-}                      
-
+ Checks if the request URL path as a string is equal to @scheme[path]
+ and if so, calls @scheme[proc] for a response.
+}
+                     
+This is used in the standard @file{web-server} pipeline to provide
+a URL that refreshes the password file, servlet cache, etc.
+                     
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-log.ss"]{Logging}
 
@@ -185,36 +182,43 @@ that performs HTTP Basic authentication filtering.
  requests credentials. If they are, then @scheme[next-dispatcher] is
  invoked.
 }
-                     
+
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-pathprocedure.ss"]{Procedure Invocation upon Request}
+@section[#:tag "dispatch-host.ss"]{Virtual Hosts}
 
-@file{dispatchers/dispatch-pathprocedure.ss} defines a dispatcher constructor
-for invoking a particular procedure when a request is given to a particular
-URL path.
+@file{dispatchers/dispatch-host.ss} defines a dispatcher constructor
+that calls a different dispatcher based upon the host requested.
 
-@defproc[(make (path string?) (proc (request? . -> . response?)))
+@defproc[(make (lookup-dispatcher (symbol? . -> . dispatcher?)))
          dispatcher?]{
- Checks if the request URL path as a string is equal to @scheme[path]
- and if so, calls @scheme[proc] for a response.
-}
-                     
-This is used in the standard @file{web-server} pipeline to provide
-a URL that refreshes the password file, servlet cache, etc.
+ Extracts a host from the URL requested, or the Host HTTP header,
+ calls @scheme[lookup-dispatcher] with the host, and invokes the
+ returned dispatcher. If no host can be extracted, then @scheme['<none>]
+ is used.
+}                                
+                              
+@; ------------------------------------------------------------
+@section[#:tag "dispatch-files.ss"]{Serving Files}
+
+@file{dispatchers/dispatch-files.ss} allows files to be served.
+It defines a dispatcher construction procedure:
+
+@; XXX Change mime-types-path to path->mime-type
+@; XXX Include make-get-mime-type
+@defproc[(make [#:url->path url->path url->path?]
+               [#:mime-types-path mime-types-path path-string? "mime.types"]
+               [#:indices indices (listof string?) (list "index.html" "index.htm")])
+         dispatcher?]{
+ Uses @scheme[url->path] to extract a path from the URL in the request
+ object. If this path does not exist, then the dispatcher does not apply.
+ If the path is a directory, then the @scheme[indices] are checked in order
+ for an index file to serve. In that case, or in the case of a path that is
+ a file already, the @scheme[mime-types-path] file is consulted for the MIME
+ Type of the path, via @scheme[make-get-mime-type]. The file is then
+ streamed out the connection object.
  
-@; ------------------------------------------------------------
-@section[#:tag "dispatch-sequencer.ss"]{Sequencing}
-
-@file{dispatchers/dispatch-sequencer.ss} defines a dispatcher constructor
-that invokes a sequence of dispatchers until one applies.
-
-@defproc[(make (dispatcher dispatcher?) ...0)
-         dispatcher?]{
- Invokes each @scheme[dispatcher], invoking the next if the first
- calls @scheme[next-dispatcher]. If no @scheme[dispatcher] applies,
- then it calls @scheme[next-dispatcher] itself.
-}
-
+ This dispatcher supports HTTP Range GET requests and HEAD requests.}
+                     
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-servlets.ss"]{Serving Scheme Servlets}
 
@@ -262,33 +266,29 @@ that runs servlets written in Scheme.
                        
  Servlets that do not specify timeouts are given timeouts according to @scheme[timeouts-default-servlet].
 }
-                              
+
 @; ------------------------------------------------------------
-@section[#:tag "filesystem-map.ss"]{Mapping URLs to Paths}
+@section[#:tag "dispatch-lang.ss"]{Serving Web Language Servlets}
 
-@file{dispatchers/filesystem-map.ss} provides a means of mapping
-URLs to paths on the filesystem.
+@file{dispatchers/dispatch-lang.ss} defines a dispatcher constructor
+that runs servlets written in the Web Language.
 
-@; XXX Change to listof path?
-@defthing[url-path? contract?]{
- This contract is equivalent to @scheme[((url?) . ->* . (path? list?))].
- The returned @scheme[path?] is the path on disk. The list is the list of
- path elements that correspond to the path of the URL.}
-
-@defproc[(make-url->path (base path?))
-         url-path?]{
- The @scheme[url-path?] returned by this procedure considers the root
- URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
- do not escape the @scheme[base].}                             
-
-@; XXX Rename to /valid                   
-@defproc[(make-url-path/optimism (url->path url->path?))
-         url->path?]{
- Runs the underlying @scheme[url->path], but only returns if the path
- refers to a file that actually exists. If it is does not, then the suffix
- elements of the URL are removed until a file is found. If this never occurs,
- then an error is thrown.
- 
- This is primarily useful for dispatchers that allow path information after
- the name of a service to be used for data, but where the service is represented
- by a file. The most prominent example is obviously servlets.}
+@; XXX Don't include timeout logic in here, put it outside.
+@; XXX Include configuration.scrbl exports
+@defproc[(make [#:url->path url->path url->path?]
+               [#:make-servlet-namespace make-servlet-namespace 
+                                         make-servlet-namespace?
+                                         (make-make-servlet-namespace)]
+               [#:timeouts-servlet-connection timeouts-servlet-connection integer? (* 60 60 24)]
+               [#:responders-servlet-loading responders-servlet-loading servlet-loading-responder]
+               [#:responders-servlet responders-servlet (gen-servlet-responder "servlet-error.html")])
+         dispatcher?]{
+ Extends the timeout of the connection by @scheme[timeouts-servlet-connection].
+ If the request URL contains a serialized continuation, then it is invoked with the
+ request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
+ The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].
+ If this fails then @scheme[responders-servlet-loading] is used to format a response
+ with the exception. If it succeeds, then @scheme[start] export of the module is invoked.
+ If there is an error when a servlet is invoked, then @scheme[responders-servlet] is
+ used to format a response with the exception.
+}                      

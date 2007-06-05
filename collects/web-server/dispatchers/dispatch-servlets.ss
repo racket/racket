@@ -31,15 +31,13 @@
                     (gen-servlet-responder "servlet-error.html")]
                    [timeouts-servlet-connection (* 60 60 24)]
                    [timeouts-default-servlet 30])
-    ;; ************************************************************
-    ;; ************************************************************
-    ;; SERVING SERVLETS
-    
+
     ;; servlet-content-producer: connection request -> void
     (define (servlet-content-producer conn req)
       (define meth (request-method req))
       (define uri (request-uri req))
       ;; XXX - make timeouts proportional to size of bindings
+      ; XXX Move outside
       (adjust-connection-timeout!
        conn
        timeouts-servlet-connection)
@@ -277,7 +275,7 @@
         ; XXX load/use-compiled breaks errortrace
         (define s (load/use-compiled a-path))
         (cond
-          ; FIX - reason about exceptions from dynamic require (catch and report if not already)
+          ; XXX - reason about exceptions from dynamic require (catch and report if not already)
           ;; module servlet
           [(void? s)
            (let* ([module-name `(file ,(path->string a-path))]
@@ -293,7 +291,7 @@
                                  timeouts-servlet-connection
                                  timeout)
                                 (v1.module->v1.lambda timeout start)))]
-               [(v2 v2-transitional) ; XXX: Undocumented
+               [(v2 v2-transitional) ; XXX: Depreciate v2-transitional
                 (let ([start (dynamic-require module-name 'start)]
                       [manager (with-handlers
                                    ([exn:fail:contract?
@@ -316,10 +314,8 @@
           [(response? s)
            (make-servlet (current-custodian)
                          (current-namespace)
-                         (create-timeout-manager
-                          default-servlet-instance-expiration-handler
-                          timeouts-servlet-connection
-                          timeouts-default-servlet)
+                         (create-none-manager
+                          default-servlet-instance-expiration-handler)
                          (v0.response->v1.lambda s a-path))]
           [else
            (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))
