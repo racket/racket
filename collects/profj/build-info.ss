@@ -266,11 +266,15 @@
            (send type-recs add-class-record record)
            (send type-recs add-require-syntax class-name (build-require-syntax class path dir #f #f))
            (map (lambda (ancestor)
-                  (import-class (car ancestor) (cdr ancestor)
-                                (find-directory 
-                                 (cdr ancestor)
-                                 (lambda () (error 'internal-error "Compiled parent's directory is not found")))
-                                loc type-recs level caller-src add-to-env))
+                  (let* ([ancestor-name (car ancestor)]
+                         [ancestor-path (if (null? (cdr ancestor))
+                                            (send type-recs lookup-path ancestor-name 
+                                                  (lambda () null))
+                                            (cdr ancestor))])
+                    (import-class ancestor-name ancestor-path
+                                  (find-directory ancestor-path
+                                                  (lambda () (error 'internal-error "Compiled parent's directory is not found")))
+                                  loc type-recs level caller-src add-to-env)))
                 (append (class-record-parents record) (class-record-ifaces record)))
            ))
         ((and (dynamic?) (dir-path-scheme? in-dir) (check-scheme-file-exists? class dir))
@@ -297,7 +301,8 @@
                              #;(send type-recs set-location! old-type-loc))
                      ))))
          (send type-recs add-require-syntax class-name (build-require-syntax class path dir #t #f)))
-        (else (file-error 'file (cons class path) caller-src level)))
+        (else 
+         (file-error 'file (cons class path) caller-src level)))
       (when add-to-env (send type-recs add-to-env class path loc))
       (send type-recs add-class-req class-name (not add-to-env) loc)))
 
@@ -347,13 +352,11 @@
                                          (make-dir-path (build-path 'same) #f))))))
            (classes (if dir (get-class-list dir) null)))
       ;(printf "~n~nadd-my-package package ~a loc ~a ~n" package loc)
-      ;(printf "add-my-package: dir ~a class ~a~n" dir classes)
+      ;(printf "add-my-package: dir ~a class ~a~n" (dir-path-path dir) classes)
       (let ([external-classes (filter (lambda (c) (not (contained-in? defs c))) classes)])
         (for-each (lambda (c) (send type-recs add-to-env c package loc)) external-classes)
-        (for-each (lambda (c)
-                    (import-class c package 
-                                  (make-dir-path (build-path 'same) #f) loc type-recs level #f #t))
-                  external-classes)
+        (for-each (lambda (c) 
+                    (import-class c package dir loc type-recs level #f #t)) external-classes)
         (send type-recs add-package-contents package classes))))
       
   ;contained-in? (list definition) definition -> bool
@@ -828,7 +831,7 @@
                            (apply append (cons f (map class-record-fields super-records)))
                            (apply append (cons m (map class-record-methods super-records)))
                            (apply append (cons i (map class-record-inners super-records)))
-                           (apply append (cons super-names 
+                           (apply append (cons (map class-record-name super-records) 
                                                (map class-record-parents super-records)))
                            null)))
                      (send type-recs add-class-record record)
@@ -1228,23 +1231,23 @@
   
   ;class-fully-implemented? class-record id (list class-record) (list id) (list method) type-records symbol -> bool
   (define (class-fully-implemented? super super-name ifaces ifaces-name methods type-recs level)
-    (when (memq 'abstract (class-record-modifiers super))
-      (let ((unimplemented-iface-methods (get-unimplemented-methods (class-record-methods super)
-                                                                    (class-record-ifaces super)
-                                                                    type-recs)))
-        (andmap (lambda (unimp iface)
-                  (or (null? unimp)
-                      (implements-all? unimp methods iface level)))
-                (car unimplemented-iface-methods) (cadr unimplemented-iface-methods))
+    (let ((unimplemented-iface-methods 
+           (get-unimplemented-methods (class-record-methods super) (class-record-ifaces super)
+                                      ifaces ifaces-name type-recs)))
+      (andmap (lambda (unimp iface)
+                (or (null? unimp)
+                    (implements-all? unimp methods iface level)))
+              (car unimplemented-iface-methods) (cadr unimplemented-iface-methods))
+      (when (memq 'abstract (class-record-modifiers super))
         (implements-all? (get-methods-need-implementing (class-record-methods super))
-                         methods super-name level)))
-    (andmap (lambda (iface iface-name)
-              (or (super-implements? iface (class-record-ifaces super))
-                  (implements-all? (class-record-methods iface) methods iface-name level)))
-            ifaces
-            ifaces-name))
+                         methods super-name level))
+      #;(andmap (lambda (iface iface-name)
+                (or (super-implements? iface (class-record-ifaces super) (class-record-methods super))
+                    (implements-all? (class-record-methods iface) methods iface-name level)))
+              ifaces
+              ifaces-name)))
   
-  ;super-implements?: class-record (list (list string))
+  ;super-implements?: class-record (list (list string)) -> boolean
   (define (super-implements? iface ifaces)
     (member (class-record-name iface) ifaces))
   
@@ -1283,7 +1286,7 @@
                                                                             ((name? iface) (cons (id-string (name-id iface))
                                                                                                  (map id-string (name-path iface))))))
                                                                         ifaces-name)
-                                                                   (map class-record-name ifaces))) type-recs))))
+                                                                   (map class-record-name ifaces))) null null type-recs))))
       (apply append
              (map (lambda (m-lists)
                     (map (lambda (m)
@@ -1301,8 +1304,9 @@
                          m-lists))
                   unimplemented-iface-methods))))
   
-  ;get-unimplemented-methods: (list method-record) (list (list string)) type-recs -> (list (list (list method-record)) (list string(
-  (define (get-unimplemented-methods methods ifaces type-recs)
+  ;get-unimplemented-methods: (list method-record) (list (list string)) 
+                            ; (list class-record) (list id) type-recs -> (list (list (list method-record)) (list string))
+  (define (get-unimplemented-methods methods ifaces iface-records iface-names type-recs)
     (letrec ((method-req-equal 
               (lambda (mrec1 mrec2)
                 (and (equal? (method-record-name mrec1) (method-record-name mrec2))
@@ -1315,12 +1319,11 @@
                      (or (method-req-equal mrec (car mrecs))
                          (method-rec-mem mrec (cdr mrecs)))))))
       (list (map (lambda (iface)
-                   (let ((iface-rec (send type-recs get-class-record iface)))
-                     (filter (lambda (m) (not (method-rec-mem m methods)))
-                             (class-record-methods iface-rec))))
-                 ifaces)
-            (map (lambda (iface)
-                   (make-name (make-id (car iface) #f) (cdr iface) #f)) ifaces))))
+                   (filter (lambda (m) (not (method-rec-mem m methods))) (class-record-methods iface)))       
+                 (append (map (lambda (iface-spec) (send type-recs get-class-record iface-spec)) ifaces)
+                         iface-records))
+            (append (map (lambda (iface) (make-name (make-id (car iface) #f) (cdr iface) #f)) ifaces)
+                    (map (lambda (iface) (make-name iface null #f)) iface-names)))))
   
   ;get-methods-need-implementing: (list method-record) -> (list method-record)
   (define (get-methods-need-implementing methods)
