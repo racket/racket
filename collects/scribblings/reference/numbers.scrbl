@@ -388,7 +388,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 
 @; ------------------------------------------------------------------------
-@section{Trigonometric Functions}
+@section{Trignometric Functions}
 
 @defproc[(sin [z number?]) number?]{ Returns the sine of @scheme[z], where
  @scheme[z] is in radians.

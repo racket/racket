@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title[#:style 'toc]{Built-In Datatypes}
+@title[#:style 'toc]{Core Datatypes and Procedures}
 
 Each of the built-in datatypes comes with a set of procedures for
 manipulating members of the datatype.
@@ -196,10 +196,10 @@ If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 @; ----------------------------------------------------------------------
 @section[#:tag "void"]{Void and Undefined}
 
-@defproc[(void [v any/c] ...) void?]{Returns the constant @void-const[]. Each
+@defproc[(void [v any/c] ...) void?]{Returns the constant @|void-const|. Each
  @scheme[v] argument is ignored.}
 
 @defproc[(void? [v any/c]) void?]{Returns @scheme[#t] if @scheme[v] is the
- constant @void-const[], @scheme[#f] otherwise.}
+ constant @|void-const|, @scheme[#f] otherwise.}
 
 

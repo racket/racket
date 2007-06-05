@@ -15,6 +15,7 @@ language.
 @include-section["read.scrbl"]
 @include-section["macros.scrbl"]
 @include-section["syntax.scrbl"]
+@include-section["derived.scrbl"]
 @include-section["data.scrbl"]
 
 @index-section["mzscheme-index"]

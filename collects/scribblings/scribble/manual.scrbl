@@ -307,9 +307,9 @@ for the index entry.}
 @defthing[PLaneT string?]{@scheme["PLaneT"] (to help make sure you get
 the letters in the right case).}
 
-@defproc[(void-const) any/c]{Returns @scheme["void"], as opposed to
-@scheme[(scheme void)]---but we may eventually find a clearer way to
-refer to @void-const in prose.}
+@defthing[void-const element?]{Returns an element for @|void-const|.}
+
+@defthing[undefined-const element?]{Returns an element for @|undefined-const|.}
 
 @defproc[(centerline [pre-flow any/c] ...0) table?]{Produces a
 centered table with the @scheme[pre-flow] parsed by

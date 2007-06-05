@@ -28,18 +28,18 @@
   (define opt-color "schemeopt")
 
   (define current-keyword-list 
-    (make-parameter '(define let let* letrec require provide let-values
-                       lambda new send if cond begin else and or
+    (make-parameter '(define require provide
+                       new send if cond begin else and or
                        define-syntax syntax-rules define-struct
                        quote quasiquote unquote unquote-splicing
                        syntax quasisyntax unsyntax unsyntax-splicing
-                       for/fold for/list for*/list for for/and for/or for* for*/or for*/and for*/fold
-                       for-values for*/list-values for/first for/last
                        set!)))
   (define current-variable-list 
     (make-parameter null))
 
   (define defined-names (make-hash-table))
+
+  (define-struct (sized-element element) (length))
 
   (define (typeset c multi-line? prefix1 prefix color?)
     (let* ([c (syntax-ize c 0)]
@@ -63,7 +63,10 @@
       (define out
         (case-lambda
          [(v cls)
-          (out v cls (if (string? v) (string-length v) 1))]
+          (out v cls (cond
+                      [(string? v) (string-length v)]
+                      [(sized-element? v) (sized-element-length v)]
+                      [else 1]))]
          [(v cls len)
           (unless (equal? v "")
             (if (equal? v "\n")
@@ -125,12 +128,13 @@
                                                         (datum->syntax-object 
                                                          a
                                                          (let ([val? (positive? quote-depth)])
-                                                           (make-element 
+                                                           (make-sized-element 
                                                             (if val? value-color #f)
                                                             (list
                                                              (make-element (if val? value-color paren-color) '(". "))
                                                              (typeset a #f "" "" (not val?))
-                                                             (make-element (if val? value-color paren-color) '(" .")))))
+                                                             (make-element (if val? value-color paren-color) '(" .")))
+                                                            (+ (syntax-span a) 4)))
                                                          (list (syntax-source a)
                                                                (syntax-line a)
                                                                (- (syntax-column a) 2)
@@ -327,7 +331,7 @@
                   (out (if (and (identifier? c)
                                 color?
                                 (quote-depth . <= . 0)
-                                (not (or it? is-kw? is-var?)))
+                                (not (or it? is-var?)))
                            (make-delayed-element
                             (lambda (renderer sec ht)
                               (let* ([vtag (register-scheme-definition (syntax-e c))]

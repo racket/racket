@@ -137,12 +137,14 @@
 
   ;; ----------------------------------------
 
-  (provide defproc defproc* defstruct defthing defform defform/none
+  (provide defproc defproc* defstruct defthing defform defform* defform/none
            specsubform specsubform/inline
-           var svar void-const)
+           var svar void-const undefined-const)
 
-  (define (void-const)
-    (schemefont "#<void>"))
+  (define void-const
+    (schemeresultfont "#<void>"))
+  (define undefined-const
+    (schemeresultfont "#<undefined>"))
 
   (define dots0
     (make-element #f (list "...")))
@@ -161,9 +163,9 @@
     (syntax-rules ()
       [(_ name fields desc ...)
        (*defstruct 'name 'fields (lambda () (list desc ...)))]))
-  (define-syntax (defform stx)
+  (define-syntax (defform* stx)
     (syntax-case stx ()
-      [(_ spec desc ...)
+      [(_ [spec spec1 ...] desc ...)
        (with-syntax ([new-spec
                       (syntax-case #'spec ()
                         [(name . rest)
@@ -174,11 +176,17 @@
                                                                       #'name)
                                                 #'rest)
                                                #'spec)])])
-         #'(*defform #t 'spec (lambda (x) (schemeblock0 new-spec)) (lambda () (list desc ...))))]))
+         #'(*defforms #t '(spec spec1 ...) 
+                      (list (lambda (x) (schemeblock0 new-spec))
+                            (lambda (ignored) (schemeblock0 spec1)) ...)
+                      (lambda () (list desc ...))))]))
+  (define-syntax (defform stx)
+    (syntax-case stx ()
+      [(_ spec desc ...) #'(defform* [spec] desc ...)]))
   (define-syntax (defform/none stx)
     (syntax-case stx ()
       [(_ spec desc ...)
-       #'(*defform #f 'spec (lambda (ignored) (schemeblock0 spec)) (lambda () (list desc ...)))]))
+       #'(*defforms #f '(spec) (list (lambda (ignored) (schemeblock0 spec))) (lambda () (list desc ...)))]))
   (define-syntax specsubform
     (syntax-rules ()
       [(_ spec desc ...)
@@ -383,35 +391,42 @@
 
   (define (meta-symbol? s) (memq s '(... ...+ ?)))
 
-  (define (*defform kw? form form-proc content-thunk)
+  (define (*defforms kw? forms form-procs content-thunk)
     (parameterize ([current-variable-list
-                    (let loop ([form (if kw? (cdr form) form)])
-                      (cond
-                       [(symbol? form) (if (meta-symbol? form)
-                                           null
-                                           (list form))]
-                       [(pair? form) (append (loop (car form))
-                                             (loop (cdr form)))]
-                       [else null]))])
+                    (apply 
+                     append
+                     (map (lambda (form)
+                            (let loop ([form (if kw? (cdr form) form)])
+                              (cond
+                               [(symbol? form) (if (meta-symbol? form)
+                                                   null
+                                                   (list form))]
+                               [(pair? form) (append (loop (car form))
+                                                     (loop (cdr form)))]
+                               [else null])))
+                          forms))])
       (make-splice
        (cons
         (make-table
          'boxed
-         (list
-          (list (make-flow 
-                 (list
-                  ((or form-proc
-                       (lambda (x)
-                         (make-paragraph
-                          (list
-                           (to-element
-                            `(,x
-                              . ,(cdr form)))))))
-                   (and kw?
-                        (make-target-element
-                         #f
-                         (list (to-element (car form)))
-                         (register-scheme-form-definition (car form))))))))))
+         (map (lambda (form form-proc)
+                (list
+                 (make-flow 
+                  (list
+                   ((or form-proc
+                        (lambda (x)
+                          (make-paragraph
+                           (list
+                            (to-element
+                             `(,x
+                               . ,(cdr form)))))))
+                    (and kw?
+                         (eq? form (car forms))
+                         (make-target-element
+                          #f
+                          (list (to-element (car form)))
+                          (register-scheme-form-definition (car form)))))))))
+              forms form-procs))
         (content-thunk)))))
 
   (define (*specsubform form form-thunk content-thunk)

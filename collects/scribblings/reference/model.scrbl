@@ -177,7 +177,7 @@ right-hand expression must be reduced to a value.
 [{}
  (begin (code:hilite (define x 10)) (+ x 1))]
 [{(define x 10)}
- (code:hilite (begin #,(void-const) (+ x 1)))]
+ (code:hilite (begin #,void-const (+ x 1)))]
 [{(define x 10)}
  (+ (code:hilite x) 1)]
 [{(define x 10)}
@@ -197,7 +197,7 @@ existing top-level binding:
 [{(define x 10)}
  (begin (code:hilite (set! x 8)) x)]
 [{(define x 8)}
- (code:hilite (begin #,(void-const) x))]
+ (code:hilite (begin #,void-const x))]
 [{(define x 8)}
  (code:hilite x)]
 [{(define x 8)}
@@ -217,7 +217,7 @@ values, which are the results of expressions, and @defterm{objects},
 which hold the data referenced by a value.
 
 A few kinds of objects can serve directly as values, including
-booleans, @void-const[], and small exact integers. More generally,
+booleans, @|void-const|, and small exact integers. More generally,
 however, a value is a reference to an object. For example, a value can
 be a reference to a particular vector that currently holds the value
 @scheme[10] in its first slot. If an object is modified, then the
@@ -243,7 +243,7 @@ create objects, such as @scheme[vector], add to the set of objects:
         (vector-ref y 0))]
 [{(define <o1> #(10 20))}
  {(define x <o1>)}
- (code:hilite (begin #,(void-const)
+ (code:hilite (begin #,void-const
                      (define y x)
                      (vector-set! x 0 11)
                      (vector-ref y 0)))]
@@ -260,7 +260,7 @@ create objects, such as @scheme[vector], add to the set of objects:
 [{(define <o1> #(10 20))}
  {(define x <o1>)
   (define y <o1>)}
- (code:hilite (begin #,(void-const)
+ (code:hilite (begin #,void-const
                      (vector-set! x 0 11)
                      (vector-ref y 0)))]
 [{(define <o1> #(10 20))}
@@ -276,7 +276,7 @@ create objects, such as @scheme[vector], add to the set of objects:
 [{(define <o1> #(11 20))}
  {(define x <o1>)
   (define y <o1>)}
- (code:hilite (begin #,(void-const)
+ (code:hilite (begin #,void-const
                      (vector-ref y 0)))]
 [{(define <o1> #(11 20))}
  {(define x <o1>)
@@ -432,7 +432,7 @@ the variable is always replaced with a location by the time the
 [{(define <p1> (lambda (x) (begin (set! x 3) x)))}
  {(define f <p1>)
   (define xloc 3)}
- (code:hilite (begin #,(void-const) xloc))]
+ (code:hilite (begin #,void-const xloc))]
 [{(define <p1> (lambda (x) (begin (set! x 3) x)))}
  {(define f <p1>)
   (define xloc 3)}

@@ -214,7 +214,7 @@ This pruning behavior of @scheme[#:when] is more useful with
 @scheme[for/list] than @scheme[for]. Whereas a plain @scheme[when]
 form normally suffices with @scheme[for], a @scheme[when] expression
 form in a @scheme[for/list] would cause the result list to contain
-@void-const[]s instead of omitting list elements.
+@|void-const|s instead of omitting list elements.
 
 The @scheme[for*/list] is like @scheme[for*], nesting multiple
 iterations:

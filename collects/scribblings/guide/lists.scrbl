@@ -189,7 +189,7 @@ simpler (just a procedure call).
 We have ignored several other variants of the interation
 form---including plain @scheme[for], which is used when the iteration
 body is to be run only for its effect. For more complete information,
-see @secref["iterations+comprehensions"].
+see @secref["for"].
 
 @;------------------------------------------------------------------------
 @section{List Iteration from Scratch}
