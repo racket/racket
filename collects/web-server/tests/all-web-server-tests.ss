@@ -2,7 +2,6 @@
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            "configuration/all-configuration-tests.ss"
            "dispatchers/all-dispatchers-tests.ss"           
-           "graveyard/all-graveyard-tests.ss"
            "lang/all-lang-tests.ss"
            "lang-test.ss"
            "managers/all-managers-tests.ss"
@@ -17,7 +16,6 @@
      "Web Server"
      all-configuration-tests
      all-dispatchers-tests
-     all-graveyard-tests
      all-lang-tests
      lang-tests
      all-managers-tests
