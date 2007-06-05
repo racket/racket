@@ -8,7 +8,7 @@ develop Web applications in Scheme.
 
 @table-of-contents[]
 
-@include-section["command-line.scrbl"]
+@include-section["running.scrbl"]
 @include-section["configuration.scrbl"]
 @include-section["dispatchers.scrbl"]
 @include-section["web-config-unit.scrbl"]
