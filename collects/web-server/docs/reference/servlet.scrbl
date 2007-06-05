@@ -215,26 +215,217 @@ HTTP responses.
 @; ------------------------------------------------------------
 @section[#:tag "web.ss"]{Web}
 
-XXX
+@file{servlet/web.ss} provides the primary functions of interest for the
+servlet developer.
+
+@; XXX Contract harder
+@defproc[(send/back [response any/c])
+         void?]{
+ Sends @scheme[response] to the client.
+}
+
+@defthing[current-servlet-continuation-expiration-handler parameter?]{
+ Holds the @scheme[expiration-handler?] to be used when a continuation
+ captured in this context is expired, then looked up.
+}
+
+@defproc[(send/suspend [make-response response-generator?]
+                       [exp expiration-handler? (current-servlet-continuation-expiration-handler)])
+         request?]{
+ Captures the current continuation, stores it with @scheme[exp] as the expiration
+ handler, and binds it to a URL. @scheme[make-response] is called with this URL and
+ is expected to generate a @scheme[response?], which is sent to the client. If the
+ continuation URL is invoked, the captured continuation is invoked and the request is
+ returned from this call to @scheme[send/suspend].
+}
+                  
+@defproc[(continuation-url? [u url?])
+         (or/c false/c (list/c number? number? number?))]{
+ Checks if @scheme[u] is a URL that refers to a continuation, if so
+ returns the instance id, continuation id, and nonce.
+}
+                
+@; XXX Move                                                         
+@defproc[(adjust-timeout! [t number?])
+         void?]{
+ Calls the servlet's manager's @scheme[adjust-timeout!] function.
+}
+               
+@defproc[(clear-continuation-table!)
+         void?]{
+ Calls the servlet's manager's @scheme[clear-continuation-table!] function.
+}
+               
+@defproc[(send/forward [make-response response-generator?]
+                       [exp expiration-handler? (current-servlet-continuation-expiration-handler)])
+         request?]{
+ Calls @scheme[clear-continuation-table!], then @scheme[send/suspend].
+}
+
+@; XXX Contract harder
+@defproc[(send/finish [response any/c])
+         void?]{
+ Calls @scheme[clear-continuation-table!], then @scheme[send/back].
+}
+               
+@defproc[(send/suspend/dispatch [make-response (embed/url? . -> . servlet-response?)])
+         any/c]{
+ Calls @scheme[make-response] with a function that, when called with a procedure from
+ @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call
+ the function with the @scheme[request?] object and return the result to the caller of
+ @scheme[send/suspend/dispatch].
+}                 
+ 
+@; XXX Remove
+@defproc[(xexpr/callback->xexpr [embed/url embed/url?]
+                                [xexpr/c xexpr/callback?])
+         xexpr?]{
+ Replaces the procedures in @scheme[xexpr/c] with URLs through @scheme[embed/url].
+}
+
+@defproc[(send/suspend/callback [xexpr/c xexpr/callback?])
+         any/c]{
+ Calls @scheme[send/suspend/dispatch] and @scheme[xexpr/callback->xexpr].
+}       
+
+@defproc[(redirect/get)
+         request?]{
+ Calls @scheme[send/suspend] with @scheme[redirect-to].
+}
+                  
+@defproc[(redirect/get/forget)
+         request?]{
+ Calls @scheme[send/forward] with @scheme[redirect-to].
+}
+
+@; XXX Remove                  
+@defproc[(embed-ids [ids (list/c number? number? number?)]
+                    [u url?])
+         string?]{
+ Creates a @scheme[continuation-url?].
+}
+ 
+@; XXX Remove                 
+@defthing[current-url-transform parameter?]{
+ Holds a @scheme[url-transform?] function that is called by
+ @scheme[send/suspend] to transform the URLs it generates.
+} 
 
 @; ------------------------------------------------------------
 @section[#:tag "helpers.ss"]{Helpers}
 
-XXX
+@file{servlet/helpers.ss} provides functions built on
+@file{servlet/web.ss} that are useful in many servlets.
+
+@; XXX Move into binding.ss
+@defproc[(request-bindings [req request?])
+         (listof (or/c (cons/c symbol? string?)
+                       (cons/c symbol? bytes?)))]{
+ Translates the @scheme[request-bindings/raw] of @scheme[req] by
+ interpreting @scheme[bytes?] as @scheme[string?]s, except in the case
+ of @scheme[binding:file] bindings, which are left as is. Ids are then
+ translated into lowercase symbols.
+}
+                                                 
+@defproc[(request-headers [req request?])
+         (listof (cons/c symbol? string?))]{
+ Translates the @scheme[request-headers/raw] of @scheme[req] by
+ interpreting @scheme[bytes?] as @scheme[string?]s. Ids are then
+ translated into lowercase symbols.
+}                                            
+
+@; XXX Move into http/response.ss
+@; XXX Change headers
+@defproc[(redirect-to [uri string?]
+                      [perm/temp redirection-status? temporarily]
+                      [#:headers headers (listof (cons/c symbol? string?)) (list)])
+         response?]{
+ Generates an HTTP response that redirects the browser to @scheme[uri],
+ while including the @scheme[headers] in the response.
+}
+                   
+@defproc[(redirection-status? [v any/c])
+         boolean?]{
+ Determines if @scheme[v] is one of the following values.
+}
+                  
+@defthing[permanently redirection-status?]{A @scheme[redirection-status?] for permant redirections.}
+
+@defthing[temporarily redirection-status?]{A @scheme[redirection-status?] for temporary redirections.}
+
+@defthing[see-other redirection-status?]{A @scheme[redirection-status?] for "see-other" redirections.}
+
+@defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . void?)]
+                                 [thunk (-> any)])]{
+ Calls @scheme[thunk] with an exeception handler that generates an HTML error page
+ and calls @scheme[send/finish-or-back].
+} 
 
 @; XXX Depreciate
 @; ------------------------------------------------------------
 @section[#:tag "servlet-url.ss"]{Servlet URLs}
 
-XXX
+@file{servlet/servlet-url.ss} provides a function that might be useful to you.
+This will be collapsed somewhere else eventually.
 
+@defproc[(request->servlet-url (req request?))
+         servlet-url?]{Generates a value to be passed to the next function.}
+
+@defproc[(servlet-url->url-string/no-continuation [su servlet-url?])
+         string?]{
+ Returns a URL string without the continuation information in the URL
+ that went into @scheme[su]
+}
+  
+@; XXX Support Digest                 
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth.ss"]{Basic Authentication}
 
-XXX
+@file{servlet/basic-auth.ss} provides a function for helping with
+implementation of HTTP Basic Authentication.
 
+@defproc[(extract-user-pass [heads (listof header?)])
+         (or/c false/c (cons/c bytes? bytes?))]{
+ Returns a pair of the username and password from the authentication
+ header in @scheme[heads] if they are present, or @scheme[#f]
+} 
+                                               
 @; ------------------------------------------------------------
 @section[#:tag "web-cells.ss"]{Web Cells}
 
-XXX
+@; XXX Cite paper
+@file{servlet/web-cell.ss} provides the interface to web cells.
 
+A web cell is a kind of state defined relative to the @defterm{frame tree}.
+The frame-tree is a mirror of the user's browsing session. Every time a
+continuation is invoked, a new frame (called the @defterm{current frame}) is
+created as a child of the current frame when the continuation was captured.
+
+You should use web cells if you want an effect to be encapsulated in all
+interactions linked from (in a transitive sense) the HTTP response being
+generated.
+
+@; XXX Document with-frame and with-frame-after?
+
+@defproc[(web-cell? [v any/c])
+         boolean?]{
+ Determines if @scheme[v] is a web-cell.
+}
+                  
+@defproc[(make-web-cell [v any/c])
+         web-cell?]{
+ Creates a web-cell with a default value of @scheme[v].
+}
+                   
+@defproc[(web-cell-ref [wc web-cell?])
+         any/c]{
+ Looks up the value of @scheme[wc] found in the nearest
+ frame.
+}
+               
+@defproc[(web-cell-shadow [wc web-cell?]
+                          [v any/c])
+         void]{
+ Binds @scheme[wc] to @scheme[v] in the current frame, shadowing any
+ other bindings to @scheme[wc] in the current frame.
+}       

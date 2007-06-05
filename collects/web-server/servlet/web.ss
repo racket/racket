@@ -16,7 +16,7 @@
   ;; ************************************************************
   ;; HELPERS
   (provide/contract
-   [continuation-url? (url? . -> . (or/c boolean? (list/c number? number? number?)))]
+   [continuation-url? (url? . -> . (or/c false/c (list/c number? number? number?)))]
    [embed-ids ((list/c number? number? number?) url? . -> . string?)])
   
   ;; ********************************************************************************

@@ -152,7 +152,6 @@
   (provide with-frame ; syntax
            with-frame-after)
   (provide/contract
-   [exn:fail:frame:top? (any/c . -> . boolean?)]
    [web-cell? (any/c . -> . boolean?)]
    [make-web-cell (any/c . -> . web-cell?)]
    [web-cell-ref (web-cell? . -> . any/c)]

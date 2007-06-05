@@ -32,7 +32,7 @@
   ; : str [redirection-status] -> response
   (define/kw (redirect-to uri
                           #:optional
-                          [perm/temp permanently]
+                          [perm/temp temporarily]
                           #:key
                           [headers (list)])
     (make-response/full (redirection-status-code perm/temp)
@@ -56,6 +56,7 @@
    with-errors-to-browser
    redirect-to)
   (provide/contract
+   [redirection-status? (any/c . -> . boolean?)]
    [permanently redirection-status?]
    [temporarily redirection-status?]
    [see-other redirection-status?]
