@@ -889,14 +889,26 @@ pict snip :
       
       (define orig-namespace (current-namespace))
       
+      (define (pict->image-snip p)
+        (let* ([pict-width (dynamic-require '(lib "mrpict.ss" "texpict") 'pict-width)]
+               [pict-height (dynamic-require '(lib "mrpict.ss" "texpict") 'pict-height)]
+               [draw-pict (dynamic-require '(lib "mrpict.ss" "texpict") 'draw-pict)]
+               [bm (make-object bitmap%
+                     (inexact->exact (ceiling (pict-width p)))
+                     (inexact->exact (ceiling (pict-height p))))]
+               [bdc (make-object bitmap-dc% bm)])
+          (send bdc clear)
+          (draw-pict p bdc 0 0)
+          (send bdc set-bitmap #f)
+          (make-object image-snip% bm)))
+      
       (drscheme:language:add-snip-value
        ;; Convert to print?
-       (lambda (x) (pict? x))
+       (lambda (x) ((dynamic-require '(lib "mrpict.ss" "texpict") 'pict?) x))
        ;; Converter:
-       (lambda (pict) (new pict-value-snip% (pict pict)))
+       pict->image-snip
        ;; Namespace setup:
-       (lambda ()
-         (namespace-attach-module orig-namespace '(lib "mrpict.ss" "texpict"))))
+       (λ () (dynamic-require '(lib "mrpict.ss" "texpict") #f)))
         
       (define lib-pict-snipclass (make-object lib-pict-snipclass%))
       (send lib-pict-snipclass set-version 2)
