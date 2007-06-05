@@ -4,12 +4,8 @@
   
   (define TEXT/HTML-MIME-TYPE #"text/html; charset=utf-8")
   
-  ;; **************************************************
-  ;; (make-response/basic number string number string  (listof (cons symbol string)))
   (define-struct response/basic (code message seconds mime extras))
-  ;; (make-response/full ... (listof string))
   (define-struct (response/full response/basic) (body))
-  ;; (make-response/incremental ... ((string* -> void) -> void))
   (define-struct (response/incremental response/basic) (generator))
     
   ; response = (cons string (listof string)), where the first string is a mime-type
@@ -17,22 +13,10 @@
   ;          | (make-response/full ... (listof string))
   ;          | (make-response/incremental ... ((string* -> void) -> void))
   
-  ;; **************************************************
   ;; response?: any -> boolean
   ;; Determine if an object is a response
   (define (response? x)
-    (or (and (response/basic? x)
-             (number? (response/basic-code x))
-             (string? (response/basic-message x))
-             (number? (response/basic-seconds x))
-             (bytes? (response/basic-mime x))
-             (and (list? (response/basic-extras x))
-                  (andmap
-                   (lambda (p)
-                     (and (pair? p)
-                          (symbol? (car p))
-                          (string? (cdr p))))
-                   (response/basic-extras x))))
+    (or (response/basic? x)
         ; this could fail for dotted lists - rewrite andmap
         (and (pair? x) (pair? (cdr x)) (andmap
                                         (lambda (x)
@@ -64,7 +48,6 @@
             [seconds number?]
             [mime bytes?]
             [extras (listof (cons/c symbol? string?))]
-            [generator ((() (listof (or/c bytes? string?)) . ->* . any) . ->
-                                                                         . any)])]
+            [generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]
    [response? (any/c . -> . boolean?)]
    [TEXT/HTML-MIME-TYPE bytes?]))

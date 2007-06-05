@@ -131,13 +131,87 @@ related to HTTP request data structures.
 @; ------------------------------------------------------------
 @section[#:tag "bindings.ss"]{Request Bindings}
 
-XXX
+@file{servlet/bindings.ss} provides a number of helper functions
+for accessing request bindings.
+
+@; XXX Move in request-bindings
+@; XXX Rename extract-binding
+@defproc[(extract-binding/single [id symbol?]
+                                 [binds (listof (cons/c symbol? string?))])
+         string?]{
+ Returns the single binding associated with @scheme[id] in the a-list @scheme[binds]
+ if there is exactly one binding. Otherwise errors.
+}
+                 
+@defproc[(extract-bindings [id symbol?]
+                           [binds (listof (cons/c symbol? string?))])
+         (listof string?)]{
+ Returns a list of all the bindings of @scheme[id] in the a-list @scheme[binds].
+}
+
+@defproc[(exists-binding? [id symbol?]
+                          [binds (listof (cons/c symbol? string))])
+         boolean?]{
+ Returns @scheme[#t] if @scheme[binds] contains a binding for @scheme[id].
+ Otherwise, @scheme[#f].        
+}         
 
 @; ------------------------------------------------------------
 @section[#:tag "response-structs.ss"]{HTTP Responses}
 
-XXX
+@file{private/response-structs.ss} provides structures and functions related to
+HTTP responses.
 
+@; XXX Rename extras to headers
+@; XXX Make extras a listof header?
+@defstruct[response/basic
+           ([code number?]
+            [message string?]
+            [seconds number?]
+            [mime bytes?]
+            [extras (listof (cons/c symbol? string?))])]{
+ A basic HTTP response containing no body. @scheme[code] is the response code,
+ @scheme[message] the message, @scheme[seconds] the generation time, @scheme[mime]
+ the MIME type of the file, and @scheme[extras] are the extra headers, in addition
+ to those produced by the server.
+} 
+
+@; XXX Rename string? option
+@defstruct[(response/full response/basic)
+           ([code number?]
+            [message string?]
+            [seconds number?]
+            [mime bytes?]
+            [extras (listof (cons/c symbol? string?))]
+            [body (listof (or/c string? bytes?))])]{
+ As with @scheme[response/basic], except with @scheme[body] as the response
+ body.
+}
+                                                   
+@defstruct[(response/incremental response/basic)
+           ([code number?]
+            [message string?]
+            [seconds number?]
+            [mime bytes?]
+            [extras (listof (cons/c symbol? string?))]
+            [generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]{
+ As with @scheme[response/basic], except with @scheme[generator] as a function that is
+ called to generate the response body, by being given an @scheme[output-response] function
+ that outputs the content it is called with.
+}
+
+@defproc[(response? [v any/c])
+         boolean?]{
+ Checks if @scheme[v] is a valid response. A response is either:
+ @itemize[
+  @item{A @scheme[response/basic] structure.}
+  @item{A value matching the contract @scheme[(cons/c (or/c bytes? string?) (listof (or/c bytes? string?)))].}
+  @item{A value matching @scheme[xexpr?].}
+ ]
+}
+                  
+@defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}
+                                      
 @; ------------------------------------------------------------
 @section[#:tag "web.ss"]{Web}
 

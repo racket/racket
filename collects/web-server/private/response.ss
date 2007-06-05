@@ -244,6 +244,7 @@
   ;; **************************************************
   ;; output-response/incremental: connection response/incremental -> void
   ;; Write a chunked response to an output port.
+  ; XXX How does this end?
   (define (output-response/incremental conn resp/inc)
     (let ([o-port (connection-o-port conn)])
       (cond
