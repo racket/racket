@@ -426,6 +426,7 @@ static pascal OSErr HandleSmug(const AppleEvent *evt, AppleEvent *rae, long k)
 int WNE(EventRecord *e, double sleep_secs)
 {
   int r;
+  long ticks;
 
   if (mouse_down_in_flight) {
     /* Try hard to handle a mouse-down event before calling
@@ -504,7 +505,12 @@ int WNE(EventRecord *e, double sleep_secs)
 
   waiting_for_next_event = 1;
 
-  r = WaitNextEvent(everyEvent, e, (sleep_secs < 0) ? 0x7FFFFFFF : sleep_secs * 60, mouseRgn);
+  if (sleep_secs < 0.0)
+    ticks = 0x7FFFFFFF;
+  else
+    ticks = (long)(sleep_secs * 60);
+
+  r = WaitNextEvent(everyEvent, e, ticks, mouseRgn);
 
   waiting_for_next_event = 0;
 
