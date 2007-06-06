@@ -4,7 +4,7 @@
            (lib "plt-match.ss")
            (lib "list.ss")
            "util.ss")
-  
+  ; XXX Use instead of embed-ids
   (provide/contract
    [extract-param (url? string? . -> . (or/c string? false/c))]
    [insert-param (url? string? string? . -> . url?)])

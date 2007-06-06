@@ -5,9 +5,8 @@
            (lib "string.ss")
            (lib "serialize.ss")
            (lib "url.ss" "net"))
-  (provide
-   url-replace-path)
   (provide/contract
+   [url-replace-path ((list? . -> . list?) url? . -> . url?)]
    [explode-path* (path? . -> . (listof (or/c symbol? path?)))]
    [path-without-base (path? path? . -> . list?)]
    [list-prefix (list? list? . -> . (or/c list? false/c))]
@@ -15,6 +14,7 @@
    [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [directory-part (path? . -> . path?)]
+   ; XXX Eliminate use of this
    [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
    [exn->string ((or/c exn? any/c) . -> . string?)]
    [build-path-unless-absolute (path-string? path-string? . -> . path?)]
@@ -52,6 +52,7 @@
   
   ; list-prefix : list? list? -> (or/c list? false/c)
   ; Is l a prefix or r?, and what is that prefix?
+  ; XXX Do we need to return the prefix? isn't it ls?
   (define (list-prefix ls rs)
     (match ls
       [(list)
@@ -67,7 +68,6 @@
               #f)])]))  
   
   ; path-without-base : path? path? -> (listof path-element?)
-  ; Expects paths in normal form
   (define (path-without-base base path)
     (define b (explode-path* base))
     (define p (explode-path* path))
@@ -133,7 +133,7 @@
   (define (lowercase-symbol! s)
     (let ([s (if (bytes? s)
                  (bytes->string/utf-8 s)
-                 s)])
+                 (string-copy s))])
       (string-lowercase! s)
       (string->symbol s)))
   

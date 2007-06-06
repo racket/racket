@@ -7,8 +7,6 @@
   (provide make-closure-definition-syntax
            closure->deserialize-name) 
   
-  (define myprint printf)
-  
   (define (closure->deserialize-name proc)
     (cdr (first (second (serialize proc)))))
   
