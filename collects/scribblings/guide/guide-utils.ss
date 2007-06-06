@@ -22,14 +22,12 @@
     (apply item (bold name) ", " desc))
 
   (define/kw (refdetails tag #:body s)
-    (let ([c (decode-content (append (list "For more on ")
-                                     s
-                                     (list ", see "
-                                           (refsecref tag)
-                                           ".")))])
-      (make-styled-paragraph (list (make-element "refcontent"
-                                                 c))
-                             "refpara")))
+    (apply margin-note
+           (decode-content (append (list "For more on ")
+                                   s
+                                   (list ", see "
+                                         (refsecref tag)
+                                         ".")))))
 
   (define (refsecref s)
     (make-element #f (list (secref s) " in " MzScheme))))

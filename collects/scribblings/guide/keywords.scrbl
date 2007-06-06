@@ -6,19 +6,27 @@
 @title[#:tag "keywords"]{Keywords}
 
 A @defterm{keyword} is similar to a symbol (see @secref["symbols"]),
-but its printed form is prefixed with @schemefont{#:}. Unlike a
-symbol, it's printed form is also its expression form.
+but its printed form is prefixed with @schemefont{#:}.
 
 @refdetails["mz:parse-keyword"]{the syntax of keywords}
 
 @examples[
 (string->keyword "apple")
-#:apple
-(eq? #:apple (string->keyword "apple"))
+'#:apple
+(eq? '#:apple (string->keyword "apple"))
 ]
 
-Although keywords are values, they are intented for use as special
-markers in argument lists and in certain syntactic forms.
+Although keywords are values, an unquoted keyword is not an
+expression, just as an unquoted identifier does not produce a symbol:
+
+@examples[
+not-a-symbol-expression
+#:not-a-keyword-expression
+]
+
+Despite their similarities, keywords are used differently than
+symbols. Keywords are intented for use (unquoted) as special markers
+in argument lists and in certain syntactic forms.
 
 @italic{Need some examples here, once we have more keyword-based
 procedures and syntax in place...}

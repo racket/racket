@@ -137,7 +137,7 @@ each of its sub-expression. In addtion, some procedures (notably
 a certain number of values.
 
 @;------------------------------------------------------------------------
-@section{Top-level and Module Bindings}
+@section{Top-Level and Module-Level Bindings}
 
 Given
 
@@ -187,7 +187,7 @@ right-hand expression must be reduced to a value.
 ]
 
 Most definitions in PLT Scheme are in modules. In terms of evaluation,
-a module is simply a prefix on a defined name, so that different
+a module is essentially a prefix on a defined name, so that different
 modules can define the name.
 
 Using @scheme[set!], a program can change the value associated with an
@@ -476,7 +476,13 @@ location.
 An @defterm{identifier} is source-program entity. Parsing a Scheme
 program reveals that some identifiers correspond to variables, some
 refer to syntactic forms, and some are quoted to produce a symbol or a
-syntax object.
+syntax object. An identifier @scheme[binds] another when the former is
+parsed as a variable and the latter is parsed as a reference to the
+former. An identifier is @scheme[bound] in a sub-expression if it
+binds any uses of the identifier in the sub-expression that are not
+otherwise bound within the sub-expression; conversely, a binding for a
+sub-expression @defterm{shadows} any bindings in its context, so that
+uses of an identifier refer to the shaodowing binding.
 
 Throughout the documentation, identifiers are typeset to suggest the
 way that they are parsed. A black, boldface identifier like

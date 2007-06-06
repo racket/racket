@@ -29,8 +29,8 @@ initialized. Such early references are not possible for bindings that
 corerspond to procedure arguments, @scheme[let] bindings, or
 @scheme[let*] bindings; early reference requires a recursive binding
 context, such as @scheme[letrec] or local @scheme[define]s in a
-procedure body. Also, early references to top-level and module
-top-level bindings raise an exception, instead of producing
+procedure body. Also, early references to top-level and module-level
+bindings raise an exception, instead of producing
 @|undefined-const|. For these reasons, @undefined-const rarely
 appears.
 

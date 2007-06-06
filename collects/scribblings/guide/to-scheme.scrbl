@@ -12,6 +12,6 @@ skip to @secref["datatypes"].
 @local-table-of-contents[]
 
 @include-section["simple-data.scrbl"]
-@include-section["syntax.scrbl"]
+@include-section["simple-syntax.scrbl"]
 @include-section["lists.scrbl"]
 @include-section["truth.scrbl"]

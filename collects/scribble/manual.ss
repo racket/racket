@@ -34,9 +34,9 @@
       [(_ lang rest ...)
        (with-syntax ([modtag (datum->syntax-object
                               #'here
-                              '(unsyntax (schemefont "#module "))
+                              `(unsyntax (schemefont ,(format "#module ~a" (syntax-e #'lang))))
                               #'lang)])
-         #'(schemeblock modtag lang rest ...))]))
+         #'(schemeblock modtag rest ...))]))
 
   (define (to-element/result s)
     (make-element "schemeresult" (list (to-element/no-color s))))
@@ -137,8 +137,17 @@
 
   ;; ----------------------------------------
 
+  (provide margin-note)
+  
+  (define (margin-note . c)
+    (make-styled-paragraph (list (make-element "refcontent"
+                                               c))
+                           "refpara"))
+
+  ;; ----------------------------------------
+
   (provide defproc defproc* defstruct defthing defform defform* defform/none
-           specsubform specsubform/inline
+           specform specsubform specsubform/inline
            var svar void-const undefined-const)
 
   (define void-const
@@ -190,11 +199,15 @@
   (define-syntax specsubform
     (syntax-rules ()
       [(_ spec desc ...)
-       (*specsubform 'spec (lambda () (schemeblock0 spec)) (lambda () (list desc ...)))]))
+       (*specsubform 'spec #f (lambda () (schemeblock0 spec)) (lambda () (list desc ...)))]))
+  (define-syntax specform
+    (syntax-rules ()
+      [(_ spec desc ...)
+       (*specsubform 'spec #t (lambda () (schemeblock0 spec)) (lambda () (list desc ...)))]))
   (define-syntax specsubform/inline
     (syntax-rules ()
       [(_ spec desc ...)
-       (*specsubform 'spec #f (lambda () (list desc ...)))]))
+       (*specsubform 'spec #f #f (lambda () (list desc ...)))]))
   (define-syntax defthing
     (syntax-rules ()
       [(_ id result desc ...)
@@ -429,9 +442,9 @@
               forms form-procs))
         (content-thunk)))))
 
-  (define (*specsubform form form-thunk content-thunk)
+  (define (*specsubform form has-kw? form-thunk content-thunk)
     (parameterize ([current-variable-list
-                    (append (let loop ([form form])
+                    (append (let loop ([form (if has-kw? (cdr form) form)])
                               (cond
                                [(symbol? form) (if (meta-symbol? form)
                                                    null

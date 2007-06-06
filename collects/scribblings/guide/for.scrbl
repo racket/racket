@@ -5,7 +5,7 @@
 
 @interaction-eval[(require (lib "for.ss"))]
 
-@title[#:tag "for"]{Iterations and Comprehensions}
+@title[#:tag "guide:for"]{Iterations and Comprehensions}
 
 The @scheme[for] family of syntactic forms support iteration over
 @defterm{sequences}. Lists, vectors, strings, byte strings, input
@@ -425,3 +425,5 @@ patterns that provide good performance is extensible, just like the
 set of sequence values. The documentation for a sequence constructor
 should indicate the performance impliciations of using it directly in
 a @scheme[for] @scheme[_clause].
+
+@refdetails["mz:for"]{iterations and comprehensions}

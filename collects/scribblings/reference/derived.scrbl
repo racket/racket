@@ -3,7 +3,9 @@
 
 @title[#:tag "mz:derived-syntax"]{Derived Syntactic Forms}
 
-@section{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
+@section[#:tag "mz:for"]{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
+
+@guideintro["guide:for"]{iterations and comprehensions}
 
 @defform[(for (for-clause ...) . body)]{
 

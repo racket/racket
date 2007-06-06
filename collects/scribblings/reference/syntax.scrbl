@@ -63,7 +63,7 @@ the reference evaluates to the value in the location associated with
 the binding.
 
 When the expander encounters an @scheme[id] that is not bound by a
-module or local binding, it converts the expression to @scheme[(#,
+module-level or local binding, it converts the expression to @scheme[(#,
 @schemeidfont{#%top} . id)] giving @schemeidfont{#%top} the lexical
 context of the @scheme[id]; typically, that context refers to
 @scheme[#%top].
@@ -87,7 +87,9 @@ references are disallowed anywhere within a @scheme[module] form.
 ]}
 
 @;------------------------------------------------------------------------
-@section{Procedure Applications and @scheme[#%app]}
+@section[#:tag "mz:application"]{Procedure Applications and @scheme[#%app]}
+
+@guideintro["guide:application"]{procedure applications}
 
 @defform/none[(proc-expr arg ...)]{
 
@@ -146,7 +148,9 @@ according to their order in the application form.
 
 
 @;------------------------------------------------------------------------
-@section{Procedure Expressions: @scheme[lambda] and @scheme[case-lambda]}
+@section[#:tag "mz:lambda"]{Procedure Expressions: @scheme[lambda] and @scheme[case-lambda]}
+
+@guideintro["guide:lambda"]{procedure expressions}
 
 @defform[(lambda formals* . body)]{
 
@@ -314,8 +318,9 @@ within @scheme[body] to the procedure itself.}
 
 Similar to @scheme[let], but evaluates the @scheme[val-expr]s one by
 one, creating a location for each @scheme[id] as soon as the value is
-available, and binding @scheme[id] in the remaining @scheme[val-expr]s
-as well as the @scheme[body]. The @scheme[id]s need not be distinct.
+availablek. The @scheme[id]s are bound in the remaining @scheme[val-expr]s
+as well as the @scheme[body], and the @scheme[id]s need not be
+distinct.
 
 @examples[
 (let ([x 1]

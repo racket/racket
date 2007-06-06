@@ -1,7 +1,8 @@
 (module scheme mzscheme
   (require "struct.ss"
            "basic.ss"
-           (lib "class.ss"))
+           (lib "class.ss")
+           (lib "for.ss"))
 
   (provide define-code
            to-element
@@ -92,7 +93,8 @@
                 [l (syntax-line c)])
             (let ([new-line? (and l (l . > . line))])
               (when new-line?
-                (out "\n" no-color)
+                (for ([i (in-range (- l line))])
+                  (out "\n" no-color))
                 (set! line l)
                 (set! col-map next-col-map)
                 (set! next-col-map (make-hash-table 'equal))

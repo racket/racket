@@ -28,6 +28,8 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["forms.scrbl"]
 
+@include-section["module-basics.scrbl"]
+
 @; ----------------------------------------------------------------------
 @section[#:tag "contracts"]{Contracts}
 
