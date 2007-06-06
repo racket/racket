@@ -22,7 +22,6 @@
                   [(and (res? result) (res-a result) (null? (res-rest result)))
                    (car (res-a (!!! result)))]
                   [(and (res? result) (res-a result) (res-possible-error result))
-                   (printf "res fail~n")
                    (fail-type->message (!!! (res-possible-error result)))]
                   [(and (res? result) (res-a result))
                    (make-err
@@ -32,7 +31,6 @@
                     (and src? 
                          (make-src-lst (position-token-start-pos (!!! (car (res-rest result)))))))]
                   [(res? result) 
-                   (printf "res fail2~n")
                    (fail-type->message (res-msg (!!! result)))]
                   [(or (choice-res? result) (pair? result))
                    (let* ([options (if (choice-res? result) (choice-res-matches result) result)]
@@ -47,7 +45,7 @@
                      (cond 
                        [(not (null? finished-options)) (car (res-a (!!! (car finished-options))))]
                        [(not (null? possible-errors))
-                        (printf "choice or pair fail~n")
+                        ;(printf "choice or pair fail~n")
                         (!!! (fail-type->message
                               (res-possible-error (!!! (car (sort-used possible-errors))))))]                
                        [else
@@ -62,12 +60,13 @@
                   [(and (repeat-res? result) (eq? 'out-of-input (repeat-res-stop (!!! result))))
                    (res-a (repeat-res-a result))]
                   [(and (repeat-res? result) (fail-type? (repeat-res-stop (!!! result))))
-                   (printf "repeat-fail~n")
+                   ;(printf "repeat-fail~n")
                    (!!! (fail-type->message (!!! (repeat-res-stop (!!! result)))))]
                   [else (error 'parser (format "Internal error: recieved unexpected input ~a" 
                                                (!!! result)))])])
           (cond
             [(err? out)
+             ;(printf "returning error")
              (make-err (!!! (err-msg out))
                        (list (!!! file) 
                              (!!! (first (err-src out)))

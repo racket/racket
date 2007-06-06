@@ -116,7 +116,7 @@
                              (thunk (token-value x))
                              (thunk (token-value x) (car args) (cadr args))))
                        name
-                       (lambda (token) #f)
+                       (lambda (token) 0)
                        (lambda (token) #f))) ...))))]))))
         
      (define-syntaxes (sequence choose ^)

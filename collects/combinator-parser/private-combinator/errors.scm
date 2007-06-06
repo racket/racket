@@ -24,7 +24,7 @@
              [name (fail-type-name fail-type)]
              [a (a/an name)]
              [msg (lambda (m) (make-err m (fail-type-src fail-type)))])
-        #;(printf "fail-type->message ~a~n" fail-type)
+        ;(printf "fail-type->message ~a~n" fail-type)
         (cond
           [(terminal-fail? fail-type)
            (combine-message
@@ -184,8 +184,8 @@
     (define (first-n n lst)
       (let loop ([count 0] [l lst])
         (cond
-          [(= count n) null]
-          [else (cons (car lst) (loop (add1 count) (cdr lst)))])))
+          [(>= count n) null]
+          [else (cons (car l) (loop (add1 count) (cdr l)))])))
     
     (define (get-ties lst evaluate)
       (letrec ([getter

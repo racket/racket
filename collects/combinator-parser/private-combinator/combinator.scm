@@ -26,8 +26,7 @@
                [spell? (if spell? spell? 
                            (lambda (token)
                              (when (position-token? token) (set! token (position-token-token token)))
-                             (and (token-value token)
-                                  (misspelled name (token-value token)))))]
+                             (if (token-value token) (misspelled name (token-value token)) 0)))]
                [case? (if case? case?
                           (lambda (token)
                             (when (position-token? token) (set! token (position-token-token token)))
