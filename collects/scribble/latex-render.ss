@@ -88,56 +88,65 @@
       
       (define/override (render-paragraph p part ht)
         (printf "\n\n")
-        (if (toc-paragraph? p)
-            (printf "\\newpage \\tableofcontents \\newpage")
-            (super render-paragraph p part ht))
+        (let ([margin? (and (styled-paragraph? p)
+                            (equal? "refpara" (styled-paragraph-style p)))])
+          (when margin?
+            (printf "\\marginpar{\\footnotesize "))
+          (if (toc-paragraph? p)
+              (printf "\\newpage \\tableofcontents \\newpage")
+              (super render-paragraph p part ht))
+          (when margin?
+            (printf "}")))
         (printf "\n\n")
         null)
 
       (define/override (render-element e part ht)
-        (when (and (link-element? e)
-                   (pair? (link-element-tag e))
-                   (eq? 'part (car (link-element-tag e)))
-                   (null? (element-content e)))
-          (printf "\\S")
-          (render-content (let ([dest (lookup part ht (link-element-tag e))])
-                            (if dest
-                                (format-number (cadr dest) null)
-                                (list "???")))
-                          part
-                          ht)
-          (printf " "))
-        (let ([style (and (element? e)
-                          (element-style e))]
-              [wrap (lambda (e s tt?)
-                      (printf "{\\~a{" s)
-                      (parameterize ([rendering-tt (or tt?
-                                                       (rendering-tt))])
-                        (super render-element e part ht))
-                      (printf "}}"))])
-          (cond
-           [(symbol? style)
-            (case style
-              [(italic) (wrap e "textit" #f)]
-              [(bold) (wrap e "textbf" #f)]
-              [(tt) (wrap e "texttt" #t)]
-              [(sf) (wrap e "textsf" #f)]
-              [(subscript) (wrap e "textsub" #f)]
-              [(superscript) (wrap e "textsuper" #f)]
-              [(hspace) (let ([s (content->string (element-content e))])
-                          (case (string-length s)
-                            [(0) (void)]
-                            [(1) (printf "{\\texttt{ }}")] ; allows a line break to replace the space
-                            [else
-                             (printf "{\\texttt{~a}}"
-                                     (regexp-replace* #rx"." s "~"))]))]
-              [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
-           [(string? style)
-            (wrap e style (regexp-match? #px"^scheme(?!error)" style))]
-           [(image-file? style) 
-            (let ([fn (install-file (image-file-path style))])
-              (printf "\\includegraphics{~a}" fn))]
-           [else (super render-element e part ht)]))
+        (let ([part-label? (and (link-element? e)
+                                (pair? (link-element-tag e))
+                                (eq? 'part (car (link-element-tag e)))
+                                (null? (element-content e)))])
+          (when part-label?
+            (printf "\\S")
+            (render-content (let ([dest (lookup part ht (link-element-tag e))])
+                              (if dest
+                                  (format-number (cadr dest) null)
+                                  (list "???")))
+                            part
+                            ht)
+            (printf " ``"))
+          (let ([style (and (element? e)
+                            (element-style e))]
+                [wrap (lambda (e s tt?)
+                        (printf "{\\~a{" s)
+                        (parameterize ([rendering-tt (or tt?
+                                                         (rendering-tt))])
+                          (super render-element e part ht))
+                        (printf "}}"))])
+            (cond
+             [(symbol? style)
+              (case style
+                [(italic) (wrap e "textit" #f)]
+                [(bold) (wrap e "textbf" #f)]
+                [(tt) (wrap e "texttt" #t)]
+                [(sf) (wrap e "textsf" #f)]
+                [(subscript) (wrap e "textsub" #f)]
+                [(superscript) (wrap e "textsuper" #f)]
+                [(hspace) (let ([s (content->string (element-content e))])
+                            (case (string-length s)
+                              [(0) (void)]
+                              [(1) (printf "{\\texttt{ }}")] ; allows a line break to replace the space
+                              [else
+                               (printf "{\\texttt{~a}}"
+                                       (regexp-replace* #rx"." s "~"))]))]
+                [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
+             [(string? style)
+              (wrap e style (regexp-match? #px"^scheme(?!error)" style))]
+             [(image-file? style) 
+              (let ([fn (install-file (image-file-path style))])
+                (printf "\\includegraphics{~a}" fn))]
+             [else (super render-element e part ht)]))
+          (when part-label?
+            (printf "''")))
         null)
 
       (define/override (render-table t part ht)
