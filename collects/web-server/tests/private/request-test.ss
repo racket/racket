@@ -1,7 +1,7 @@
 (module request-test mzscheme
   (require (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (lib "connection-structs.ss" "web-server" "private")
+           (lib "connection-manager.ss" "web-server" "private")
            (lib "timer.ss" "web-server" "private")
            (lib "request-structs.ss" "web-server" "private"))
   
