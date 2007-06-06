@@ -10,10 +10,12 @@
            "file-box.ss"
            "web-extras.ss")
   (provide (all-from-except mzscheme #%module-begin)
+           ; XXX Maybe restrict parameterize from mz?
            (all-from (lib "url.ss" "net"))
            (all-from "../private/request-structs.ss")
            (all-from "../private/response-structs.ss")
            (all-from "../servlet/helpers.ss")
+           ; XXX Try to remove, or only provide send/suspend
            (all-from "abort-resume.ss")
            (all-from "web.ss")
            (all-from "web-cells.ss")
