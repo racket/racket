@@ -758,7 +758,8 @@
                      (parameterize ([current-custodian nc])
                        (thread (λ () 
                                  (with-handlers ((exn? (λ (x) (set! exn x))))
-                                   (compile-file filename)))))])
+                                   (parameterize ([read-accept-reader #t])
+                                     (compile-file filename))))))])
                 (thread
                  (λ ()
                    (thread-wait t)
@@ -790,7 +791,10 @@
         (define (update-user-installed-lb)
           (let ([files
                  (if (directory-exists? teachpack-installation-dir)
-                     (map path->string (directory-list teachpack-installation-dir))
+                     (map path->string 
+                          (filter 
+                           (λ (x) (file-exists? (build-path teachpack-installation-dir x)))
+                           (directory-list teachpack-installation-dir)))
                      '())])
             (send user-installed-lb set (sort files string<=?))))
         
