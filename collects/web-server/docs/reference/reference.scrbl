@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title{Web Server Reference Manual}
+@title[#:tag "web-server-ref"]{Web Server Reference Manual}
 
 The @file{web-server} collection provides libraries that can be used to
 develop Web applications in Scheme.

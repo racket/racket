@@ -1,7 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Scheme Servlets}
+@title[#:tag "servlet"
+       #:style 'toc]{Scheme Servlets}
 
 The @file{web-server} allows servlets to be written in Scheme. It
 provides the supporting API, described below, for the construction

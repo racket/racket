@@ -1,7 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Web Config Unit}
+@title[#:tag "web-config-unit.ss"
+       #:style 'toc]{Web Config Unit}
 
 The @file{web-server} offers a unit-based approach to configuring the server.
 

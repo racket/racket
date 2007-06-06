@@ -1,7 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Internal}
+@title[#:tag "private"
+       #:style 'toc]{Internal}
 
 The @file{web-server} is a complicated piece of software and as a result,
 defines a number of interesting and independently useful sub-components.

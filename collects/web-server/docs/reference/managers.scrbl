@@ -1,7 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Continuation Managers}
+@title[#:tag "managers"
+       #:style 'toc]{Continuation Managers}
 
 Since Scheme servlets store their continuations on the server, they take
 up memory on the server. Furthermore, garbage collection can not be used

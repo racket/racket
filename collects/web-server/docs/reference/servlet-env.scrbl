@@ -1,7 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Servlet Environment}
+@title[#:tag "servlet-env.ss"
+       #:style 'toc]{Servlet Environment}
 
 The @file{web-server} provides a means of running Scheme servlets
 from within DrScheme, or any other REPL.

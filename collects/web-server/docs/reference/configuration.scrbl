@@ -2,7 +2,8 @@
 @require["../web-server.ss"]
 @; XXX require mzscheme, url.ss, and contract.ss
 
-@title[#:style 'toc]{Configuration}
+@title[#:tag "configuration"
+       #:style 'toc]{Configuration}
 
 There are a number of libraries and utilities useful for
 configuring the @file{web-server}.

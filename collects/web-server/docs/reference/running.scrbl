@@ -1,7 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Running the Web Server}
+@title[#:tag "run.ss"
+       #:style 'toc]{Running the Web Server}
 
 There are a number of ways to run the Web Server. The two primary ways
 are through a command-line tool or through a function call.
