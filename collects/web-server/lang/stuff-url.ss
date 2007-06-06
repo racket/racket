@@ -34,7 +34,7 @@
   ;; encode in the url
   (define (stuff-url svl uri)
     (define result-uri
-      (insert-param uri "c" (md5-store (write/string (compress-serial svl)))))
+      (insert-param uri "c" (md5-store (write/string (compress-serial (serialize svl))))))
     (when (> (string-length (url->string result-uri))
              1024)
       (error "the url is too big: " (url->string result-uri)))
@@ -47,4 +47,4 @@
   ;; unstuff-url: url -> serial
   ;; decode from the url and reconstruct the serial
   (define (unstuff-url req-url)
-    (decompress-serial (read/string (md5-lookup (extract-param req-url "c"))))))
+    (deserialize (decompress-serial (read/string (md5-lookup (extract-param req-url "c")))))))

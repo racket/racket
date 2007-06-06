@@ -23,7 +23,7 @@
   
   (provide/contract 
    [file-box? (any/c . -> . boolean?)]
-   [file-box (path? any/c . -> . file-box?)]
-   [file-unbox (file-box? . -> . any/c)]
+   [file-box (path? serializable? . -> . file-box?)]
+   [file-unbox (file-box? . -> . serializable?)]
    [file-box-set? (file-box? . -> . boolean?)]
-   [file-box-set! (file-box? any/c . -> . void)]))
+   [file-box-set! (file-box? serializable? . -> . void)]))

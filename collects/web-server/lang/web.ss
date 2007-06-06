@@ -35,6 +35,7 @@
   
   ;; send/suspend/hidden: (url input-field -> response) -> request
   ;; like send/suspend except the continuation is encoded in a hidden field
+  ;; XXX incorporate stuffing in some way
   (define (send/suspend/hidden page-maker)
     (send/suspend
      (lambda (k)
@@ -49,13 +50,14 @@
     (send/suspend
      (lambda (k)
        (page-maker
-        (stuff-url (serialize k)
+        (stuff-url k
                    (session-url (current-session)))))))
   
+  ; XXX Don't use stuff-url, but use the other serialize thing
   (define embed-label "superkont")  
   (define (embed-proc/url k-url proc)
     (define superkont-url
-      (stuff-url (serialize proc)                                              
+      (stuff-url proc                                              
                  (session-url (current-session))))
     (define result-uri
       (insert-param k-url embed-label 
@@ -68,9 +70,8 @@
     (define req-url (request-uri request))
     (define maybe-embedding (extract-param req-url embed-label))
     (if maybe-embedding
-        (let ([proc (deserialize 
-                     (unstuff-url
-                      (string->url maybe-embedding)))])
+        (let ([proc (unstuff-url
+                     (string->url maybe-embedding))])
           (proc request))
         (error 'send/suspend/dispatch "No ~a: ~S!" embed-label)))
   
@@ -81,9 +82,8 @@
      ; Look in url for c=<k>
      (let ([req-url (request-uri req)])
        (and (stuffed-url? req-url)
-            (deserialize
-             (unstuff-url
-              req-url))))
+            (unstuff-url
+             req-url)))
      ; Look in query for kont=<k>
      (match (bindings-assq #"kont" (request-bindings/raw req))
        [(struct binding:form (id kont))

@@ -2,7 +2,8 @@
   (require (lib "list.ss")
            (lib "contract.ss")
            (lib "async-channel.ss"))
-  (require "timer-structs.ss")
+  
+  (define-struct timer (evt expire-seconds action))
   
   (define timer-ch (make-async-channel))
   
@@ -85,8 +86,11 @@
                       (* 1000 secs))
                    (timer-action timer)))
   
+  
   (provide/contract
-   [timer? (any/c . -> . boolean?)]
+   [struct timer ([evt evt?]
+                  [expire-seconds number?]
+                  [action (-> void)])]   
    [start-timer-manager (custodian? . -> . void)]
    [start-timer (number? (-> void) . -> . timer?)]
    [reset-timer! (timer? number? . -> . void)]

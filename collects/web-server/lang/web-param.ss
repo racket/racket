@@ -1,6 +1,7 @@
 (module web-param mzscheme
   (require "../private/closure.ss"
            (lib "list.ss"))
+  ; XXX Add contract
   (provide make-web-parameter
            web-parameter?
            web-parameterize)

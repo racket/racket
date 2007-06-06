@@ -71,7 +71,7 @@
          (begin-session conn req)]))
     
     ;; XXX Currently there are just sessions, should be servlets and sessions
-    
+    ;; XXX Control extent of servlet data
     ;; begin-session: connection request
     (define (begin-session conn req)
       (define uri (request-uri req))

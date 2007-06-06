@@ -76,6 +76,7 @@ for use in servlets.
 @section[#:tag "request-structs.ss"]{HTTP Requests}
 
 @; XXX Create http sub-directory
+@; XXX Have this include read-request and write-response
 @file{private/request-structs.ss} provides a number of structures and functions
 related to HTTP request data structures.
 
@@ -177,6 +178,7 @@ HTTP responses.
 } 
 
 @; XXX Rename string? option
+@; XXX Format warning cool.                   
 @defstruct[(response/full response/basic)
            ([code number?]
             [message string?]
@@ -211,7 +213,10 @@ HTTP responses.
 }
                   
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}
-                                      
+
+Warning: If you include a Length header in a response that is inaccurate, there WILL be an error in
+transmission that the server will not catch.
+
 @; ------------------------------------------------------------
 @section[#:tag "web.ss"]{Web}
 

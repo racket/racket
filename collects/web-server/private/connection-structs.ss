@@ -1,6 +1,6 @@
 (module connection-structs mzscheme
   (require (lib "contract.ss"))
-  (require "timer-structs.ss")
+  (require "timer.ss")
   
   (define-struct connection (timer i-port o-port custodian close? mutex)
     (make-inspector))

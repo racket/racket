@@ -35,7 +35,7 @@
                                 ; A new frame has been created
                                 (define last (web-cell-ref a-counter))
                                 ; It is a child of the parent frame, so we can inspect the value
-                                (web-cell-mask a-counter (add1 last))
+                                (web-cell-shadow a-counter (add1 last))
                                 ; The new frame has been modified
                                 (generate))))])
                     "+")))))

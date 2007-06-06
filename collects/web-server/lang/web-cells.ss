@@ -64,14 +64,14 @@
     (define id (next-web-cell-id))
     (define key (string->symbol (format "~a-~a" label id)))
     (define wc (make-primitive-wc key))
-    (web-cell-mask wc default)
+    (web-cell-shadow wc default)
     wc)
   
   (define (web-cell-ref pwc)
     (env-lookup (primitive-wc-id pwc)
                 (frame-env (current-frame))))
   
-  (define (web-cell-mask wc nv)
+  (define (web-cell-shadow wc nv)
     (update-frame!
      (make-frame
       (env-replace (primitive-wc-id wc) nv
@@ -81,4 +81,4 @@
   (provide/contract
    [web-cell? (any/c . -> . boolean?)]
    [web-cell-ref (web-cell? . -> . any/c)]
-   [web-cell-mask (web-cell? any/c . -> . void)]))
+   [web-cell-shadow (web-cell? any/c . -> . void)]))
