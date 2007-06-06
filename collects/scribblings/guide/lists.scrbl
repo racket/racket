@@ -107,95 +107,16 @@ procedures. One reason is that @scheme[map], @scheme[ormap],
 @scheme[andmap], and @scheme[filter] cover the most common kinds of
 list loops.
 
-@;------------------------------------------------------------------------
-@section{Iterative Folds and Comprehensions: @scheme[for/fold] and @scheme[for/list]}
-
-Besides iteration procedures like @scheme[foldl], Scheme provides a
-syntactic form for iteration that more closely resembles the syntax of
-other languages. The @scheme[foldl] example above can be written with
-the @scheme[for/fold] syntax as follows:
-
-@interaction[
-(for/fold ([sum 0])
-          ([elem (list 1 2 3)])
-  (+ sum (* elem elem)))
-]
-
-Compare to analogous Java code, where @scheme[(list 1 2 3)] is
-replaced by a collection @scheme[lst]:
-
-@verbatim[
-#<<EOS
-  int sum = 0;
-  for (Object elem : lst) {
-    sum = sum + elem * elem;
-  }
-  return sum;
-EOS
-]
-
-The only significant difference is that the updating of @scheme[sum]
-and the return of @scheme[sum]'s value are implicit. Those implicit
-actions are why the form is called @scheme[for/fold] instead of just
-@scheme[for].
-
-Along similar lines, the @scheme[for/list] form iterates through a list
-and implicitly accumulates each result into a list:
-
-@interaction[
-(for/list ([i (list "peanuts" "popcorn" "crackerjack")])
-  (string-append i "!"))
-]
-
-The @scheme[for/list] form is a @defterm{list compherension} form, as
-in Haskell, Ruby, Python, and other languages. One advantage over
-@scheme[map] is that it can iterate over more things than just lists.
-For example, @scheme[for/list] can iterate over a range of numbers:
-
-@interaction[
-(for/list ([i (in-range 0 10)])
-  i)
-]
-
-The @scheme[for/list] form can even iterate over a list and a range of
-numbers in parallel:
-
-@interaction[
-(for/list ([s (list "a" "b" "c")]
-           [n (in-range 0 3)])
-  (if (= n 2)
-      "oops!"
-       s))
-]
-
-Note that the binding syntax of @scheme[for/fold] and
-@scheme[for/list] is similar to that of @scheme[let] (as introduced in
-@secref["local-binding-intro"]). In the same way that @scheme[let*]
-supports nested bindings, @scheme[for*/list] supports nested
-iterations:
-
-@interaction[
-(for*/list ([s (list "a" "b" "c")]
-            [n (list "x" "y" "z")])
-  (string-append s n))
-]
-
-Unlike the @scheme[for/list], the nested iteration of
-@scheme[for*/list] covers patterns with lists not as easily expressed
-with @scheme[map]. When procedures like @scheme[map] suffice, however,
-Scheme programmers tend to use them, partly because the syntax is
-simpler (just a procedure call).
-
-We have ignored several other variants of the interation
-form---including plain @scheme[for], which is used when the iteration
-body is to be run only for its effect. For more complete information,
-see @secref["guide:for"].
+Scheme provides a general @defterm{list compherension} form
+@scheme[for/list], which builds a list by iterating through
+@defterm{sequences}. List comprehensions and related iteration forms
+are described in see @secref["guide:for"].
 
 @;------------------------------------------------------------------------
 @section{List Iteration from Scratch}
 
-Although @scheme[map] and @scheme[for/list] are predefined, they are
-not primitive in any interesting sense. You can write equivalent
+Although @scheme[map] and other iteration procedures predefined, they
+are not primitive in any interesting sense. You can write equivalent
 iterations using a handful of list primitives.
 
 Since a Scheme list is a linked list, the two core operations on a
@@ -405,75 +326,4 @@ directly, so the tail-call ``optimization'' kicks in:
 #,step (cons "a" (remove-dups (list "b")))
 #,step (cons "a" (list "b"))
 #,step (list "a" "b")
-]
-
-Tail-call behavior becomes even more important when dealing with
-non-list data or when using an object-oriented style. In the latter
-case, an object must sometimes dispatch to another object; if the
-other object's result is the complete answer, there's no reason for
-the first object to wait around. We defer futher discussion of this
-point until @secref["datatypes"], after which we'll have more forms of
-data to consider.
-
-@;------------------------------------------------------------------------
-@section{Named @scheme[let]}
-
-As you start reading Scheme code, you'll discover one more form that
-is commonly used to implement iterations and recursive functions:
-@idefterm{named @scheme[let]}.  A named @scheme[let] uses the same
-syntactic keyword as a simple sequence of local bindings, but an
-@nonterm{id} after the @scheme[let] (instead of an immediate
-open parenthesis) triggers a different parsing. In general,
-
-@schemeblock[
-#, @BNF-seq[@litchar{(} @litchar{let} @nonterm{proc-id} @litchar{(}
-                        @kleenestar{@BNF-group[@litchar{[} @nonterm{arg-id} @nonterm{init-expr} @litchar{]}]}
-                        @litchar{)}
-                    @kleeneplus{@nonterm{body-expr}} @litchar{)}]
-]
-
-is equivalent to the sequence
-
-@schemeblock[
-#, @BNF-seq[@litchar{(}@litchar{define} @litchar{(} @nonterm{proc-id} @kleenestar{@nonterm{arg-id}} @litchar{)}
-                  @kleeneplus{@nonterm{body-expr}} @litchar{)}]
-#, @BNF-seq[@litchar{(}@nonterm{proc-id} @kleenestar{@nonterm{init-expr}}@litchar{)}]
-]
-
-except that the @scheme[let] form works in any expression
-context.
-
-That is, a named @scheme[let] binds a procedure identifier that is
-visible only in the procedure's body, and it implicitly calls the
-procedure with the values of some initial expressions.  A named
-@scheme[let] looks similar to the start of @scheme[for/fold], but the
-recursive calls in the body are explicit, and they are not constrained
-to tail position.
-
-As an example, here is @scheme[my-map] once again, using a named let
-to bind the local @scheme[iter] procedure:
-
-@schemeblock[
-(define (my-map f lst)
-  (let iter ([lst lst]
-             [backward-result empty])
-   (cond
-    [(empty? lst) (reverse backward-result)]
-    [else (iter (rest lst)
-                (cons (f (first lst))
-                      backward-result))])))
-]
-
-Here's another example, where the local @scheme[dup] procedure is used
-recursively and not merely iteratively, and where the traversal of a
-list stops part-way:
-
-@def+int[
-(define (duplicate pos lst)
-  (let dup ([i 0]
-            [lst lst])
-   (cond
-    [(= i pos) (cons (first lst) lst)]
-    [else (cons (first lst) (dup (+ i 1) (rest lst)))])))
-(duplicate 1 (list "apple" "cheese burger!" "banana"))
 ]

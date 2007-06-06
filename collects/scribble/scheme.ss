@@ -29,7 +29,9 @@
   (define opt-color "schemeopt")
 
   (define current-keyword-list 
+    ;; This is temporary, until the MzScheme manual is filled in...
     (make-parameter '(define require provide
+                       define-values begin0 when unless
                        new send if cond begin else and or
                        define-syntax syntax-rules define-struct
                        quote quasiquote unquote unquote-splicing

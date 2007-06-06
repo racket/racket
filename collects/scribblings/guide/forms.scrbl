@@ -16,5 +16,14 @@ complete coverage of the basic Scheme syntactic forms.
 @include-section["apply.scrbl"]
 @include-section["lambda.scrbl"]
 @include-section["define.scrbl"]
-@include-section["for.scrbl"]
+@include-section["let.scrbl"]
+@include-section["named-let.scrbl"]
+
+@section{Conditionals: @scheme[if], @scheme[cond], @scheme[and], and @scheme[or]}
+
+@section{Sequencing: @scheme[begin], @scheme[begin0], @scheme[when], and @scheme[unless]}
+
+@section{Assignment: @scheme[set!]}
+
+@section{Quoted Data: @scheme[quote] and @scheme[quasiquote]}
 

@@ -291,7 +291,7 @@ the same facility with nested iterations:
   (list book chapter))
 ]
 
-@section{@scheme[for/fold] and @scheme[for*/fold]}
+@section[#:tag "guide:for/fold"]{@scheme[for/fold] and @scheme[for*/fold]}
 
 The @scheme[for/fold] form generalizes the way to combine iteration
 results. Its syntax is slightly different than the syntax of

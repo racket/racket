@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:lambda"]{Procedures}
+@title[#:tag "guide:lambda"]{Procedures: @scheme[lambda] and @scheme[case-lambda]}
 
 A @scheme[lambda] expression creates a procedure. In the simplest
 case, a @scheme[lambda] expression has the form

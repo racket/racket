@@ -38,6 +38,10 @@ describes the acceptable arguments and the result of the procedure
 using @idefterm{contracts}.
 
 @; ----------------------------------------------------------------------
+@include-section["for.scrbl"]
+
+
+@; ----------------------------------------------------------------------
 @section[#:tag "classes"]{Classes and Objects}
 
 
