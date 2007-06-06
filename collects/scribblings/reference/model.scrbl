@@ -41,7 +41,7 @@ Scheme evaluation simplifies
 
 The arrow @reduces above replaces the more traditional @tt{=} to
 emphasize that evaluation proceeds in a particular direction towards
-simplier expressions. In particular, a @defterm{value} is an
+simpler expressions. In particular, a @defterm{value} is an
 expression that evaluation simplifies no further, such as the number
 @scheme[2].
 
@@ -310,7 +310,7 @@ existing objects.
 
 The @scheme[eq?] operator compares two values, returning @scheme[#t]
 when the values refer to the same object. This form of equality is
-suitabel for comparing objects that support imperative update (e.g.,
+suitable for comparing objects that support imperative update (e.g.,
 to determine that the effect of modifying an object through one
 reference is visible through another reference). Also, an @scheme[eq?]
 test evaluates quickly, and @scheme[eq?]-based hashing is more

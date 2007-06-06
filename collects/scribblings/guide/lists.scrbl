@@ -240,7 +240,7 @@ This evaluation behavior is sometimes called @idefterm{tail-call
 optimization}, but it's not merely an ``optimization'' in Scheme; it's
 a guarantee about the way the code will run.
 
-In the case of @scheme[my-map], @math{O(n)} space compelxity is
+In the case of @scheme[my-map], @math{O(n)} space complexity is
 reasonable, since it has to generate a result of size
 @math{O(n)}. Nevertheless, you can reduce the constant factor by
 accumulating the result list. The only catch is that the accumulated
