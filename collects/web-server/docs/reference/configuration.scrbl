@@ -197,7 +197,7 @@ turn the paths given in the @scheme[configuration-table] into responders for the
 @; XXX Include response/full
 @; XXX Rename error-response
 
-@defproc[(error-response (http-code natural-number/c) (short-version string?) (text-file string?) (extra-header (cons/c symbol? string?)) ...0)
+@defproc[(error-response (http-code natural-number/c) (short-version string?) (text-file string?) (extra-header (cons/c symbol? string?)) ...)
          response?]{
  Generates a @scheme[response/full] with the given @scheme[http-code] and @scheme[short-version]
 as the corresponding fields; with the content of the @scheme[text-file] as the body; and, with

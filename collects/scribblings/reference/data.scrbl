@@ -123,10 +123,10 @@ the empty list, @scheme[#f] otherwise.}
 
 @defproc[(empty? [v any/c]) boolean?]{The same as @scheme[(null? v)].}
 
-@defproc[(list [v any/c] ...0) list?]{Returns a newly allocated list
+@defproc[(list [v any/c] ...) list?]{Returns a newly allocated list
 containing the @scheme[v]s as its elements.}
 
-@defproc[(map [proc procedure?] [lst (listof any/c)] ...1) (listof
+@defproc[(map [proc procedure?] [lst (listof any/c)] ...+) (listof
  any/c)]{Applies @scheme[proc] to the elements of the @scheme[lst]s from the
  first elements to the last, returning @scheme[#f] as soon as any
  application returns @scheme[#f]. The @scheme[proc] argument must accept
@@ -134,7 +134,7 @@ containing the @scheme[v]s as its elements.}
  and all @scheme[lst]s must have the same number of elements.
  The result is a list containing each result of @scheme[proc].}
 
-@defproc[(andmap [proc procedure?] [lst (listof any/c)] ...1)
+@defproc[(andmap [proc procedure?] [lst (listof any/c)] ...+)
  any]{Similar to @scheme[map], except that
 
 @itemize{
@@ -159,7 +159,7 @@ If the @scheme[lst]s are empty, then @scheme[#t] is returned.}
 (andmap + '(1 2 3) '(4 5 6))
 ]
 
-@defproc[(ormap [proc procedure?] [lst (listof any/c)] ...1)
+@defproc[(ormap [proc procedure?] [lst (listof any/c)] ...+)
 any]{Similar to @scheme[map], except that
 
 @itemize{
@@ -184,7 +184,7 @@ If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 (ormap + '(1 2 3) '(4 5 6))
 ]
 
-@defproc[(for-each [proc procedure?] [lst (listof any/c)] ...1)
+@defproc[(for-each [proc procedure?] [lst (listof any/c)] ...+)
  void?]{Similar to @scheme[map], but @scheme[proc] is called only for
  its effect, and its result (which can be any number of values) is
  ignored.}
@@ -192,6 +192,9 @@ If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "hashtables"]{Hash Tables}
+
+@; ----------------------------------------------------------------------
+@include-section["sequences.scrbl"]
 
 @section[#:tag "procedures"]{Procedures}
 

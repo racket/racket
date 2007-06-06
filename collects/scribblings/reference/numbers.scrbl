@@ -156,7 +156,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ----------------------------------------
 @section{Arithmetic}
 
-@defproc[(+ [z number?] ...0) number?]{ Returns the sum of the
+@defproc[(+ [z number?] ...) number?]{ Returns the sum of the
  @scheme[z]s, adding pairwise from left to right. If no arguments are
  provided, the result is @scheme[0].
 
@@ -164,7 +164,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 
 @defproc*[([(- [z number?]) number?]
-           [(- [z number?] [w number?] ...1) number?])]{
+           [(- [z number?] [w number?] ...+) number?])]{
  When no @scheme[w]s are supplied, returns @scheme[(- 0 #, @scheme[z])].
  Otherwise, returns the subtraction of the @scheme[w]s from @scheme[z]
  working pairwise from left to right.}
@@ -172,7 +172,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(- 5 3.0) (- 1) (- 2+7i 1 3)]
 
 
-@defproc[(* [z number?] ...0) number?]{ Returns the product of the
+@defproc[(* [z number?] ...) number?]{ Returns the product of the
  @scheme[z]s, multiplying pairwise from left to right. If no arguments are
  provided, the result is @scheme[1].}
 
@@ -180,7 +180,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 
 @defproc*[([(/ [z number?]) number?]
-           [(/ [z number?] [w number?] ...1) number?])] {
+           [(/ [z number?] [w number?] ...+) number?])] {
  When no @scheme[w]s are supplied, returns @scheme[(/ 1 #, @scheme[z])].
  Otherwise, returns the division @scheme[z] by the var[w]s
  working pairwise from left to right.}
@@ -231,28 +231,28 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 @examples[(abs 1.0) (abs -1)]}
 
-@defproc[(max [x real?] ...1) boolean?]{ Returns the largest of the
+@defproc[(max [x real?] ...+) boolean?]{ Returns the largest of the
  @scheme[x]s, or @scheme[+nan.0] if any @scheme[x] is @scheme[+nan.0].
  If any @scheme[x] is inexact, the result is coerced to inexact.
 
 @examples[(max 1 3 2) (max 1 3 2.0)]}
 
 
-@defproc[(min [x real?] ...1) boolean?]{ Returns the smallest of the
+@defproc[(min [x real?] ...+) boolean?]{ Returns the smallest of the
  @scheme[x]s, or @scheme[+nan.0] if any @scheme[x] is @scheme[+nan.0].
  If any @scheme[x] is inexact, the result is coerced to inexact.
 
 @examples[(min 1 3 2) (min 1 3 2.0)]}
 
 
-@defproc[(gcd [n integer?] ...0) integer?]{ Returns the greatest common
+@defproc[(gcd [n integer?] ...) integer?]{ Returns the greatest common
  divisor of the @scheme[n]s. If no arguments are provided, the result is
  @scheme[0].
 
 @examples[(gcd 10) (gcd 12 81.0)]}
 
 
-@defproc[(lcm [n integer?] ...0) integer?]{ Returns the least common
+@defproc[(lcm [n integer?] ...) integer?]{ Returns the least common
  multiple of the @scheme[n]s. If no arguments are provided, the result is
  @scheme[1].
 
@@ -307,7 +307,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ----------------------------------------
 @section{Number Comparison}
 
-@defproc[(= [z number?] [w number?] ...1) boolean?]{ Returns
+@defproc[(= [z number?] [w number?] ...+) boolean?]{ Returns
  @scheme[#t] if all of the arguments are numerically equal,
  @scheme[#f] otherwise.  An inexact number is numerically equal to an
  exact number when the exact coercion of the inexact number is the
@@ -317,28 +317,28 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(= 1 1.0) (= 1 2) (= 2+3i 2+3i 2+3i)]}
 
 
-@defproc[(< [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t] if
+@defproc[(< [x real?] [y real?] ...+) boolean?]{ Returns @scheme[#t] if
  the arguments in the given order are in strictly increasing,
  @scheme[#f] otherwise.
 
 @examples[(< 1 1) (< 1 2 3) (< 1 +inf.0) (< 1 +nan.0)]}
 
 
-@defproc[(<= [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t]
+@defproc[(<= [x real?] [y real?] ...+) boolean?]{ Returns @scheme[#t]
  if the arguments in the given order are in non-decreasing,
  @scheme[#f] otherwise.
 
 @examples[(<= 1 1) (<= 1 2 1)]}
 
 
-@defproc[(> [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t] if
+@defproc[(> [x real?] [y real?] ...+) boolean?]{ Returns @scheme[#t] if
  the arguments in the given order are in strictly decreasing,
  @scheme[#f] otherwise.
 
 @examples[(> 1 1) (> 3 2 1) (> +inf.0 1) (< +nan.0 1)]}
 
 
-@defproc[(>= [x real?] [y real?] ...1) boolean?]{ Returns @scheme[#t]
+@defproc[(>= [x real?] [y real?] ...+) boolean?]{ Returns @scheme[#t]
  if the arguments in the given order are in non-increasing,
  @scheme[#f] otherwise.
 
@@ -469,7 +469,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ------------------------------------------------------------------------
 @section{Bitwise Operations}
 
-@defproc[(bitwise-ior [n exact-integer?] ...0) exact-integer?]{ Returns
+@defproc[(bitwise-ior [n exact-integer?] ...) exact-integer?]{ Returns
  the bitwise ``inclusive or'' of the @scheme[n]s in their (semi-infinite)
  two's complement representation. If no arguments are provided, the
  result is @scheme[0].
@@ -477,7 +477,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(bitwise-ior 1 2) (bitwise-ior -32 1)]}
 
 
-@defproc[(bitwise-and [n exact-integer?] ...0) exact-integer?]{ Returns
+@defproc[(bitwise-and [n exact-integer?] ...) exact-integer?]{ Returns
  the bitwise ``and'' of the @scheme[n]s in their (semi-infinite) two's
  complement representation. If no arguments are provided, the result
  is @scheme[-1].
@@ -485,7 +485,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(bitwise-and 1 2) (bitwise-and -32 -1)]}
 
 
-@defproc[(bitwise-xor [n exact-integer?] ...0) exact-integer?]{ Returns
+@defproc[(bitwise-xor [n exact-integer?] ...) exact-integer?]{ Returns
  the bitwise ``exclusive or'' of the @scheme[n]s in their (semi-infinite)
  two's complement representation. If no arguments are provided, the
  result is @scheme[0].

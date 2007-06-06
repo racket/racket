@@ -31,7 +31,7 @@ position in the byte string is initialized with the byte @scheme[b].
 @examples[(make-bytes 5 65)]}
 
 
-@defproc[(bytes [b byte?] ...0) bytes?]{ Returns a new mutable byte
+@defproc[(bytes [b byte?] ...) bytes?]{ Returns a new mutable byte
 string whose length is the number of provided @scheme[b]s, and whose
 positions are initialized with the given @scheme[b]s.
 
@@ -133,7 +133,7 @@ positions are initialized with the given @scheme[b]s.
           s]}
 
 
-@defproc[(bytes-append [bstr bytes?] ...0) bytes?]{  Returns a new
+@defproc[(bytes-append [bstr bytes?] ...) bytes?]{  Returns a new
  mutable byte string that is as long as the sum of the given @scheme[bstr]s'
  lengths, and that contains the concatenated bytes of the given
  @scheme[bstr]s. If no @scheme[bstr]s are provided, the result is a zero-length
@@ -164,7 +164,7 @@ positions are initialized with the given @scheme[b]s.
 @section{Byte String Comparisons}
 
 
-@defproc[(bytes=? [bstr1 bytes?] [bstr2 bytes?] ...1) boolean?]{ Returns
+@defproc[(bytes=? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{ Returns
  @scheme[#t] if all of the arguments are @scheme[eqv?].}
 
 @examples[(bytes=? #"Apple" #"apple")
@@ -173,7 +173,7 @@ positions are initialized with the given @scheme[b]s.
 @define[(bytes-sort direction)
          @elem{Like @scheme[bytes<?], but checks whether the arguments are @|direction|.}]
 
-@defproc[(bytes<? [bstr1 bytes?] [bstr2 bytes?] ...1) boolean?]{
+@defproc[(bytes<? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{
  Returns @scheme[#t] if the arguments are lexicographically sorted
  increasing, where individual bytes are ordered by @scheme[<],
  @scheme[#f] otherwise.
@@ -182,7 +182,7 @@ positions are initialized with the given @scheme[b]s.
           (bytes<? #"apple" #"Apple")
           (bytes<? #"a" #"b" #"c")]}
 
-@defproc[(bytes>? [bstr1 bytes?] [bstr2 bytes?] ...1) boolean?]{
+@defproc[(bytes>? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{
  @bytes-sort["decreasing"]
 
 @examples[(bytes>? #"Apple" #"apple")

@@ -107,10 +107,10 @@ a single line and wrapped with its enclosing paragraph, independent of
 the formatting of @scheme[datum].}
 
 @defform[(schemeresult datum ...)]{Like @scheme[scheme], but typeset
-as a REPL value (i.e., a single color with no hperlinks).}
+as a REPL value (i.e., a single color with no hyperlinks).}
 
 @defform[(schemeid datum ...)]{Like @scheme[scheme], but typeset
-as an unbound identifier (i.e., no coloring or hyperlink).}
+as an unbound identifier (i.e., no coloring or hyperlinks).}
 
 @defform[(schememodname datum ...)]{Like @scheme[scheme], but typeset
 as a @schemefont{#module} language name.}
@@ -125,24 +125,24 @@ as a table/paragraph in typewriter font with the linebreaks specified
 by newline characters in @scheme[str]. ``Here strings'' are often
 useful with @scheme[verbatim].}
 
-@defproc[(schemefont [pre-content any/c] ...0) element?]{Typesets the given
+@defproc[(schemefont [pre-content any/c] ...) element?]{Typesets the given
 content as uncolored, unhyperlinked Scheme. This procedure is useful
 for typesetting thngs like @scheme{#module}, which are not
 @scheme[read]able by themselves.}
 
-@defproc[(schemevalfont [pre-content any/c] ...0) element?]{Like
+@defproc[(schemevalfont [pre-content any/c] ...) element?]{Like
 @scheme[schemefont], but colored as a value.}
 
-@defproc[(schemeresultfont [pre-content any/c] ...0) element?]{Like
+@defproc[(schemeresultfont [pre-content any/c] ...) element?]{Like
 @scheme[schemefont], but colored as a REPL result.}
 
-@defproc[(schemeidfont [pre-content any/c] ...0) element?]{Like
+@defproc[(schemeidfont [pre-content any/c] ...) element?]{Like
 @scheme[schemefont], but colored as an identifier.}
 
-@defproc[(schemekeywordfont [pre-content any/c] ...0) element?]{Like
+@defproc[(schemekeywordfont [pre-content any/c] ...) element?]{Like
 @scheme[schemefont], but colored as a syntactic form name.}
 
-@defproc[(procedure [pre-content any/c] ...0) element?]{Typesets the given
+@defproc[(procedure [pre-content any/c] ...) element?]{Typesets the given
 content as a procedure name in a REPL result (e.g., in typewrite font
 with a @schemefont{#<procedure:} prefix and @schemefont{>} suffix.).}
 
@@ -173,7 +173,7 @@ Each @scheme[arg-spec] must have one of the following forms:
 @specsubform[(arg-id contract-expr-datum)]{
        An argument whose contract is specified by
        @scheme[contract-expr-datum] which is typeset via
-       @scheme[scheme].}
+       @scheme[schemeblock0].}
 
 @specsubform[(arg-id contract-expr-datum default-expr)]{
        Like the previous case, but with a default value. All arguments
@@ -187,14 +187,14 @@ Each @scheme[arg-spec] must have one of the following forms:
        Like the previous case, but with a default
        value.}
 
-@specsubform[#, @schemeidfont{...0}]{ Any number of the preceding argument
+@specsubform[#, @schemeidfont{...}]{ Any number of the preceding argument
       (normally at the end).}
 
-@specsubform[#, @schemeidfont{...1}]{One or more of the preceding argument
+@specsubform[#, @schemeidfont{...+}]{One or more of the preceding argument
        (normally at the end).}
 
 The @scheme[result-contract-expr-datum] is typeset via
-@scheme[scheme], and it represents a contract on the procedure's
+@scheme[schemeblock0], and it represents a contract on the procedure's
 result.
 
 The @scheme[pre-flow]s list is parsed as a flow that documents the
@@ -205,7 +205,7 @@ The typesetting of all data before the @scheme[pre-flow]s ignores the
 source layout.}
 
 
-@defform[(defproc* ([(id arg-spec ...) 
+@defform[(defproc* ([(id arg-spec ...)
                      result-contract-expr-datum] ...) 
                    pre-flow ...)]{
 
@@ -224,8 +224,11 @@ procedure. In this description, a reference to any identifier in
 @scheme[datum] is typeset as a sub-form non-terminal.
 
 The typesetting of @scheme[(id . datum)] preserves the source
-layout, like @scheme[scheme], and unlike @scheme[defproc].}
+layout, like @scheme[schemeblock], and unlike @scheme[defproc].}
 
+@defform[(specform (id . datum) pre-flow ...)]{Like @scheme[defform],
+with without registering a definition, and with indenting on the left
+for both the specification and the @scheme[pre-flow]s.}
 
 @defform[(specsubform datum pre-flow ...)]{Similar to
 @scheme[defform], but without any specific identifier being defined,
@@ -260,20 +263,20 @@ The @scheme[struct-name] can be either of the following:
 @; ------------------------------------------------------------------------
 @section{Various String Forms}
 
-@defproc[(defterm [pre-content any/c] ...0) element?]{Typesets the given
+@defproc[(defterm [pre-content any/c] ...) element?]{Typesets the given
 content as a defined term (e.g., in italic).}
 
-@defproc[(onscreen [pre-content any/c] ...0) element?]{ Typesets the given
+@defproc[(onscreen [pre-content any/c] ...) element?]{ Typesets the given
 content as a string that appears in a GUI, such as the name of a
 button.}
 
 @defproc[(menuitem [menu-name string?] [item-name string?]) element?]{
 Typesets the given combination of a GUI's menu and item name.}
 
-@defproc[(file [pre-content any/c] ...0) element?]{Typesets the given content
+@defproc[(file [pre-content any/c] ...) element?]{Typesets the given content
 as a file name (e.g., in typewriter font and in in quotes).}
 
-@defproc[(exec [pre-content any/c] ...0) element?]{Typesets the given content
+@defproc[(exec [pre-content any/c] ...) element?]{Typesets the given content
 as a command line (e.g., in typewriter font).}
 
 @; ------------------------------------------------------------------------
@@ -282,10 +285,10 @@ as a command line (e.g., in typewriter font).}
 @defproc[(secref [tag string?]) element?]{Inserts the hyperlinked
 title of the section tagged @scheme[tag].}
 
-@defproc[(seclink [tag string?] [pre-content any/c] ...0) element?]{The content from
+@defproc[(seclink [tag string?] [pre-content any/c] ...) element?]{The content from
 @scheme[pre-content] is hyperlinked to the section tagged @scheme[tag].}
 
-@defproc[(schemelink [id symbol?] [pre-content any/c] ...0) element?]{The content from
+@defproc[(schemelink [id symbol?] [pre-content any/c] ...) element?]{The content from
 @scheme[pre-content] is hyperlinked to the definition of @scheme[id].}
 
 
@@ -293,11 +296,11 @@ title of the section tagged @scheme[tag].}
 @; ------------------------------------------------------------------------
 @section{Indexing}
 
-@defproc[(idefterm [pre-content any/c] ...0) element?]{Combines
+@defproc[(idefterm [pre-content any/c] ...) element?]{Combines
 @scheme[as-index] and @scheme[defterm]. The content normally should be
 plurarl, rather than singular.}
 
-@defproc[(pidefterm [pre-content any/c] ...0) element?]{Like
+@defproc[(pidefterm [pre-content any/c] ...) element?]{Like
 @scheme[idefterm], but plural: adds an ``s'' on the end of the content
 for the index entry.}
 
@@ -311,9 +314,9 @@ the letters in the right case).}
 
 @defthing[undefined-const element?]{Returns an element for @|undefined-const|.}
 
-@defproc[(centerline [pre-flow any/c] ...0) table?]{Produces a
+@defproc[(centerline [pre-flow any/c] ...) table?]{Produces a
 centered table with the @scheme[pre-flow] parsed by
 @scheme[decode-flow].}
 
-@defproc[(commandline [pre-content any/c] ...0) paragraph?]{Produces a
+@defproc[(commandline [pre-content any/c] ...) paragraph?]{Produces
 an inset command-line example (e.g., in typewriter font).}

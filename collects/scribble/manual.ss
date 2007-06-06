@@ -160,14 +160,47 @@
   (define dots1
     (make-element #f (list "..."  (superscript "+"))))
 
+  (define-syntax (arg-contract stx)
+    (syntax-case stx (... ...+)
+      [(_ [id contract])
+       (identifier? #'id)
+       #'(schemeblock0 contract)]
+      [(_ [id contract val])
+       (identifier? #'id)
+       #'(schemeblock0 contract)]
+      [(_ [kw id contract])
+       (and (keyword? (syntax-e #'kw))
+            (identifier? #'id))
+       #'(schemeblock0 contract)]
+      [(_ [kw id contract val])
+       (and (keyword? (syntax-e #'kw))
+            (identifier? #'id))
+       #'(schemeblock0 contract)]
+      [(_ (... ...))
+       #'#f]
+      [(_ (... ...+))
+       #'#f]
+      [(_ arg)
+       (raise-syntax-error
+        'defproc
+        "bad argument form"
+        #'arg)]))
+        
+
   (define-syntax defproc 
     (syntax-rules ()
-      [(_ s-exp result desc ...)
-       (*defproc '[s-exp] '[result] (lambda () (list desc ...)))]))
+      [(_ (id arg ...) result desc ...)
+       (*defproc '[(id arg ...)]
+                 (list (list (lambda () (arg-contract arg)) ...))
+                 (list (lambda () (schemeblock0 result))) 
+                 (lambda () (list desc ...)))]))
   (define-syntax defproc* 
     (syntax-rules ()
-      [(_ [[s-exp result] ...] desc ...)
-       (*defproc '[s-exp ...] '[result ...] (lambda () (list desc ...)))]))
+      [(_ [[(id arg ...) result] ...] desc ...)
+       (*defproc '[(id arg ...) ...] 
+                 (list (list (lambda () (arg-contract arg)) ...) ...)
+                 (list (lambda () (schemeblock0 result)) ...)
+                 (lambda () (list desc ...)))]))
   (define-syntax defstruct
     (syntax-rules ()
       [(_ name fields desc ...)
@@ -219,13 +252,15 @@
     (syntax-rules ()
       [(_ id) (*var 'id)]))
 
-  (define (*defproc prototypes results content-thunk)
+  (define (*defproc prototypes arg-contractss result-contracts content-thunk)
     (let ([spacer (hspace 1)]
           [has-optional? (lambda (arg)
                            (and (pair? arg)
                                 ((length arg) . > . (if (keyword? (car arg))
                                                         3
                                                         2))))]
+          [to-flow (lambda (e)
+                     (make-flow (list (make-paragraph (list e)))))]
           [arg->elem (lambda (v)
                        (cond
                         [(pair? v)
@@ -234,9 +269,9 @@
                                                     (hspace 1)
                                                     (to-element (cadr v))))
                              (to-element (car v)))]
-                        [(eq? v '...1)
+                        [(eq? v '...+)
                          dots1]
-                        [(eq? v '...0)
+                        [(eq? v '...)
                          dots0]
                         [else v]))])
       (parameterize ([current-variable-list
@@ -253,75 +288,86 @@
            (apply 
             append
             (map 
-             (lambda (prototype result first?)
+             (lambda (prototype arg-contracts result-contract first?)
                (append
                 (list
                  (list (make-flow
                         (list
-                         (make-paragraph
+                         (make-table
+                          '((valignment top top top top top))
                           (list
-                           (let-values ([(required optional more-required)
-                                         (let loop ([a (cdr prototype)][r-accum null])
-                                           (if (or (null? a)
-                                                   (and (has-optional? (car a))))
-                                               (let ([req (reverse r-accum)])
-                                                 (let loop ([a a][o-accum null])
-                                                   (if (or (null? a)
-                                                           (not (has-optional? (car a))))
-                                                       (values req (reverse o-accum) a)
-                                                       (loop (cdr a) (cons (car a) o-accum)))))
-                                               (loop (cdr a) (cons (car a) r-accum))))])
-                             (to-element (append
-                                          (list (if first?
-                                                    (make-target-element
-                                                     #f
-                                                     (list (to-element (car prototype)))
-                                                     (register-scheme-definition (car prototype)))
-                                                    (to-element (car prototype))))
-                                          (map arg->elem required)
-                                          (if (null? optional)
-                                              null
-                                              (list
-                                               (to-element
-                                                (syntax-property
-                                                 (syntax-ize (map arg->elem optional) 0)
-                                                 'paren-shape
-                                                 #\?))))
-                                          (map arg->elem more-required))))
-                           (hspace 2)
-                           'rarr
-                           (hspace 2)
-                           (to-element result)))))))
+                           (list
+                            (to-flow
+                             (let-values ([(required optional more-required)
+                                           (let loop ([a (cdr prototype)][r-accum null])
+                                             (if (or (null? a)
+                                                     (and (has-optional? (car a))))
+                                                 (let ([req (reverse r-accum)])
+                                                   (let loop ([a a][o-accum null])
+                                                     (if (or (null? a)
+                                                             (not (has-optional? (car a))))
+                                                         (values req (reverse o-accum) a)
+                                                         (loop (cdr a) (cons (car a) o-accum)))))
+                                                 (loop (cdr a) (cons (car a) r-accum))))])
+                               (to-element (append
+                                            (list (if first?
+                                                      (make-target-element
+                                                       #f
+                                                       (list (to-element (car prototype)))
+                                                       (register-scheme-definition (car prototype)))
+                                                      (to-element (car prototype))))
+                                            (map arg->elem required)
+                                            (if (null? optional)
+                                                null
+                                                (list
+                                                 (to-element
+                                                  (syntax-property
+                                                   (syntax-ize (map arg->elem optional) 0)
+                                                   'paren-shape
+                                                   #\?))))
+                                            (map arg->elem more-required)))))
+                            (to-flow spacer)
+                            (to-flow 'rarr)
+                            (to-flow spacer)
+                            (make-flow (list (result-contract))))))))))
                 (apply append
-                       (map (lambda (v)
+                       (map (lambda (v arg-contract)
                               (cond
                                [(pair? v)
                                 (list
                                  (list
                                   (make-flow
                                    (list
-                                    (let ([v (if (keyword? (car v)) 
-                                                 (cdr v)
-                                                 v)])
-                                      (make-paragraph (append
-                                                       (list
-                                                        (hspace 2)
-                                                        (arg->elem v))
-                                                       (list
-                                                        spacer
-                                                        ":"
-                                                        spacer
-                                                        (to-element (cadr v)))
-                                                       (if (has-optional? v)
-                                                           (list spacer
-                                                                 "="
-                                                                 spacer
-                                                                 (to-element (caddr v)))
-                                                           null))))))))]
+                                    (make-table
+                                     `((valignment baseline baseline baseline baseline
+                                                   baseline baseline
+                                                   ,@(if (has-optional? v)
+                                                         '(baseline baseline baseline baseline)
+                                                         null)))
+                                     (list
+                                      (let ([v (if (keyword? (car v)) 
+                                                   (cdr v)
+                                                   v)])
+                                        (append
+                                         (list
+                                          (to-flow (hspace 2))
+                                          (to-flow (arg->elem v))
+                                          (to-flow spacer)
+                                          (to-flow ":")
+                                          (to-flow spacer)
+                                          (make-flow (list (arg-contract))))
+                                         (if (has-optional? v)
+                                             (list (to-flow spacer)
+                                                   (to-flow "=")
+                                                   (to-flow spacer)
+                                                   (to-flow (to-element (caddr v))))
+                                             null)))))))))]
                                [else null]))
-                            (cdr prototype)))))
+                            (cdr prototype)
+                            arg-contracts))))
              prototypes
-             results
+             arg-contractss
+             result-contracts
              (cons #t (map (lambda (x) #f) (cdr prototypes))))))
           (content-thunk))))))
 

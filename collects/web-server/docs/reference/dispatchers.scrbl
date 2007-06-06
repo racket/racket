@@ -79,7 +79,7 @@ URLs to paths on the filesystem.
 @file{dispatchers/dispatch-sequencer.ss} defines a dispatcher constructor
 that invokes a sequence of dispatchers until one applies.
 
-@defproc[(make (dispatcher dispatcher?) ...0)
+@defproc[(make (dispatcher dispatcher?) ...)
          dispatcher?]{
  Invokes each @scheme[dispatcher], invoking the next if the first
  calls @scheme[next-dispatcher]. If no @scheme[dispatcher] applies,

@@ -6,7 +6,7 @@
 @title{A Guide to PLT Scheme}
 
 This guide is intended for programmers who are new to Scheme, new to PLT
-Scheme, or new to some part of PLT Scheme. It assumes some
+Scheme, or new to some part of PLT Scheme. It assumes
 programming experience, so if you are new to programming, consider
 instead reading @|HtDP|. If you want a quick and pretty overview of PLT
 Scheme, start with @|Quick|. 

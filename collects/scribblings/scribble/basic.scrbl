@@ -6,13 +6,13 @@
 @define-syntax[def-title-like
                (syntax-rules ()
                  [(_ id result/c x ...) (defproc (id [#:tag tag (or/c false/c string?) #f]
-                                                     [pre-content any/c] ...0)
+                                                     [pre-content any/c] (... ...+))
                                                  result/c
                                                  x ...)])]
 
 @define-syntax[def-elem-proc
                (syntax-rules ()
-                 [(_ id x ...) (defproc (id [pre-content any/c] ...0)
+                 [(_ id x ...) (defproc (id [pre-content any/c] (... ...))
                                         element?
                                         x ...)])]
 @define-syntax[def-style-proc
@@ -66,7 +66,7 @@ have Scribble's @file{scheme.ss} and @file{manual.ss}).
  unnumbered section heading (for when the nesting gets too deep to
  include in a table of contents).}
 
-@defproc[(itemize [itm (or/c whitespace? an-item?)] ...0) itemization?]{
+@defproc[(itemize [itm (or/c whitespace? an-item?)] ...) itemization?]{
 
  Constructs an itemization given a sequence of items constructed by
  @scheme[item]. Whitespace strings among the @scheme[itm]s are
@@ -74,7 +74,7 @@ have Scribble's @file{scheme.ss} and @file{manual.ss}).
 
  }
 
-@defproc[(item pre-flow ...0) item?]{
+@defproc[(item [pre-flow any/c] ...) item?]{
  Creates an item for use with @scheme[itemize]. The
  @scheme[pre-flow] list is parsed with @scheme[decode-flow].
 }
@@ -100,7 +100,7 @@ style @scheme[#f].}
 Produces an element containing @scheme[n] spaces and style @scheme['hspace].
 }
 
-@defproc[(span-class [style-name string?] [pre-content any/c] ...0) 
+@defproc[(span-class [style-name string?] [pre-content any/c] ...) 
          element?]{
 
 Parses the @scheme[pre-content] list using @scheme[decode-content],
@@ -111,7 +111,7 @@ and produces an element with style @scheme[style-name].
 @section{Indexing}
 
 @defproc[(index [words (or/c string? (listof string?))]
-                [pre-content any/c] ...0)
+                [pre-content any/c] ...)
          index-element?] {
 
 Creates an index element given a plain-text string---or list of
@@ -126,14 +126,14 @@ refers.
 
 @defproc[(index* [words (listof string?)]
                  [word-contents (listof list?)]
-                 [pre-content any/c] ...0)
+                 [pre-content any/c] ...)
          index-element?] {
 Like @scheme[index], except that @scheme[words] must be a list, and
 the list of contents render in the index (in parallel to
 @scheme[words]) is supplied as @scheme[word-contents].
 }
 
-@defproc[(as-index [pre-content any/c] ...0)
+@defproc[(as-index [pre-content any/c] ...)
          index-element?] {
 
 Like @scheme[index], but the word to index is determined by applying

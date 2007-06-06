@@ -33,15 +33,15 @@ each position in the string is initialized with the character
 @examples[(make-string 5 #\z)]}
 
 
-@defproc[(string [char char?] ...0) string?]{ Returns a new
+@defproc[(string [char char?] ...) string?]{ Returns a new
 mutable string whose length is the number of provided @scheme[char]s, and
 whose positions are initialized with the given @scheme[char]s.
 
 @examples[(string #\A #\p #\p #\l #\e)]}
 
 
-@defproc[(string->immutable-string [str string?]) (and/c string?
- immutable?)]{  Returns an immutable string with the same content as
+@defproc[(string->immutable-string [str string?]) (and/c string? immutable?)]{
+Returns an immutable string with the same content as
  @scheme[str], returning @scheme[str] itself if @scheme[str] is
  immutable.}
 
@@ -128,7 +128,7 @@ whose positions are initialized with the given @scheme[char]s.
           s]}
 
 
-@defproc[(string-append [str string?] ...0) string?]{  Returns a new
+@defproc[(string-append [str string?] ...) string?]{  Returns a new
  mutable string that is as long as the sum of the given @scheme[str]s'
  lengths, and that contains the concatenated characters of the given
  @scheme[str]s. If no @scheme[str]s are provided, the result is a zero-length
@@ -159,7 +159,7 @@ whose positions are initialized with the given @scheme[char]s.
 @section{String Comparisons}
 
 
-@defproc[(string=? [str1 string?] [str2 string?] ...1) boolean?]{ Returns
+@defproc[(string=? [str1 string?] [str2 string?] ...+) boolean?]{ Returns
  @scheme[#t] if all of the arguments are @scheme[eqv?].}
 
 @examples[(string=? "Apple" "apple")
@@ -170,7 +170,7 @@ whose positions are initialized with the given @scheme[char]s.
              @elem{Like @scheme[string-ci<?], but checks whether the arguments would be @direction after case-folding.}
              @elem{Like @scheme[string<?], but checks whether the arguments are @|direction|.})]
 
-@defproc[(string<? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string<? [str1 string?] [str2 string?] ...+) boolean?]{
  Returns @scheme[#t] if the arguments are lexicographically sorted
  increasing, where individual characters are ordered by
  @scheme[char<?], @scheme[#f] otherwise.
@@ -179,21 +179,21 @@ whose positions are initialized with the given @scheme[char]s.
           (string<? "apple" "Apple")
           (string<? "a" "b" "c")]}
 
-@defproc[(string<=? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string<=? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["nondecreasing" #f]
 
 @examples[(string<=? "Apple" "apple")
           (string<=? "apple" "Apple")
           (string<=? "a" "b" "b")]}
 
-@defproc[(string>? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string>? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["decreasing" #f]
 
 @examples[(string>? "Apple" "apple")
           (string>? "apple" "Apple")
           (string>? "c" "b" "a")]}
 
-@defproc[(string>=? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string>=? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["nonincreasing" #f]
 
 @examples[(string>=? "Apple" "apple")
@@ -201,14 +201,14 @@ whose positions are initialized with the given @scheme[char]s.
           (string>=? "c" "b" "b")]}
 
 
-@defproc[(string-ci=? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string-ci=? [str1 string?] [str2 string?] ...+) boolean?]{
  Returns @scheme[#t] if all of the arguments are @scheme[eqv?] after
  locale-insensitive case-folding via @scheme[string-foldcase].
 
 @examples[(string-ci=? "Apple" "apple")
           (string-ci=? "a" "a" "a")]}
 
-@defproc[(string-ci<? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string-ci<? [str1 string?] [str2 string?] ...+) boolean?]{
  Like @scheme[string<?], but checks whether the arguments would be in
  increasing order if each was first case-folded using
  @scheme[string-foldcase] (which is locale-insensitive).
@@ -217,21 +217,21 @@ whose positions are initialized with the given @scheme[char]s.
           (string-ci<? "apple" "banana")
           (string-ci<? "a" "b" "c")]}
 
-@defproc[(string-ci<=? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string-ci<=? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["nondecreasing" #t]
 
 @examples[(string-ci<=? "Apple" "apple")
           (string-ci<=? "apple" "Apple")
           (string-ci<=? "a" "b" "b")]}
 
-@defproc[(string-ci>? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string-ci>? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["decreasing" #t]
 
 @examples[(string-ci>? "Apple" "apple")
           (string-ci>? "banana" "Apple")
           (string-ci>? "c" "b" "a")]}
 
-@defproc[(string-ci>=? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string-ci>=? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["nonincreasing" #t]
 
 @examples[(string-ci>=? "Apple" "apple")
@@ -304,32 +304,32 @@ allocated string).}
 @; ----------------------------------------
 @section{Locale-Specific String Operations}
 
-@defproc[(string-locale=? [str1 string?] [str2 string?] ...1)
+@defproc[(string-locale=? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string=?], but the strings are compared in a
  locale-specific way, based the value of @scheme[current-locale]. See
  @secref["locales"] for more information on locales.}
 
-@defproc[(string-locale<? [str1 string?] [str2 string?] ...1) boolean?]{
+@defproc[(string-locale<? [str1 string?] [str2 string?] ...+) boolean?]{
  Like @scheme[string<?], but the sort order compares strings in a
  locale-specific way, based the value of @scheme[current-locale]. In
  particular, the sort order may not be simply a lexicographic
  extension of character ordering.}
 
-@defproc[(string-locale>? [str1 string?] [str2 string?] ...1)
+@defproc[(string-locale>? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string>?], but locale-specific like
  @scheme[string-locale<?].}
 
-@defproc[(string-locale-ci=? [str1 string?] [str2 string?] ...1)
+@defproc[(string-locale-ci=? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string-locale=?], but strings are compared
  using rules that are both locale-specific and case-insensitive
  (depending on what ``case-insensitive'' means for the current
  locale).}
 
-@defproc[(string-locale-ci<? [str1 string?] [str2 string?] ...1)
+@defproc[(string-locale-ci<? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string<?], but both locale-sensitive and
  case-insensitive like @scheme[string-locale-ci=?].}
 
-@defproc[(string-locale-ci>? [str1 string?] [str2 string?] ...1)
+@defproc[(string-locale-ci>? [str1 string?] [str2 string?] ...+)
  boolean?]{  Like @scheme[string>?], but both locale-sensitive and
  case-insensitive like @scheme[string-locale-ci=?].}
 

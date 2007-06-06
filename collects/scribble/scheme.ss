@@ -64,10 +64,14 @@
       (define out
         (case-lambda
          [(v cls)
-          (out v cls (cond
-                      [(string? v) (string-length v)]
-                      [(sized-element? v) (sized-element-length v)]
-                      [else 1]))]
+          (out v cls (let sz-loop ([v v])
+                       (cond
+                        [(string? v) (string-length v)]
+                        [(sized-element? v) (sized-element-length v)]
+                        [(and (element? v)
+                              (= 1 (length (element-content v))))
+                         (sz-loop (car (element-content v)))]
+                        [else 1])))]
          [(v cls len)
           (unless (equal? v "")
             (if (equal? v "\n")
@@ -378,7 +382,7 @@
         (finish-line!))
       (if multi-line?
           (make-table #f (map list (reverse docs)))
-          (make-element #f (reverse content)))))
+          (make-sized-element #f (reverse content) dest-col))))
 
   (define (to-element c)
     (typeset c #f "" "" #t))

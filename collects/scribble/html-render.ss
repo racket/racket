@@ -206,6 +206,7 @@
                                               ,@(case va
                                                   [(#f) null]
                                                   [(top) '((valign "top"))]
+                                                  [(baseline) '((valign "baseline"))]
                                                   [(bottom) '((valign "bottom"))]))
                                              ,@(render-flow d part ht)))
                                       flows

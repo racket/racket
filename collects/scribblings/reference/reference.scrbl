@@ -6,7 +6,7 @@
 This manual defines the core PLT Scheme language and describes its
 most prominent libraries. The companion manual
 @italic{@link["../guide/index.html"]{A Guide to PLT Scheme}} provides
-a friendlier (though less precise and complete) overview of the
+a friendlier (though less precise and less complete) overview of the
 language.
 
 @table-of-contents[]
