@@ -14,8 +14,8 @@ case, a @scheme[lambda] expression has the form
 ]
 
 The @scheme[...+] in this syntactic sketch means ``one or more
-repetitions of the preceeding element;'' that is, one or more
-@scheme[_body-expr]s.
+repetitions of the preceeding element.'' Specifically, it means one or
+more @scheme[_body-expr]s.
 
 A @scheme[lambda] form with @math{n} @scheme[_arg-id]s accepts
 @math{n} arguments:

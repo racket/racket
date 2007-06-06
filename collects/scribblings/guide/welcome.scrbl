@@ -159,7 +159,7 @@ traditional Scheme environment, but we strongly recommend against using
 
 Writing definitions outside of a module leads to bad error messages,
 bad performance, and awkward scripting to combine and run
-programs. The problems are not in @exec{mzscheme}'s implementation;
+programs. The problems are not specific to @exec{mzscheme};
 they're fundamental limitations of the traditional top-level
 environment, which Scheme and Lisp implementations have historically
 fought with ad hoc command-line flags, compiler directives, and

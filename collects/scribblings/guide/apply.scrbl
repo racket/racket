@@ -13,8 +13,8 @@ An expression of the form
 
 is a procedure application when @scheme[_proc-expr] is not an
 identifier that is bound as a transformer. The @scheme[...] in this
-syntactic sketch means ``zero or more repetitions of the preceeding
-element;'' that is, zero or more @scheme[_arg-expr]s.
+syntactic sketch means ``zero or more repetitions of the preceding
+element.'' Specifically, it means zero or more @scheme[_arg-expr]s.
 
 A procedure application is evaluated by first evaluating the
 @scheme[_proc-expr] and all @scheme[_arg-expr]s in order (left to
