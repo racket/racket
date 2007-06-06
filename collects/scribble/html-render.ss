@@ -157,10 +157,11 @@
                        ,@(if (null? (element-content e))
                              (render-content (cadr dest) part ht)
                              (render-content (element-content e) part ht))))
-                  `((font ((class "badlink")) 
-                          ,@(if (null? (element-content e))
-                                `(,(format "~s" (link-element-tag e)))
-                                (render-plain-element e part ht)))))))]
+                  (begin (fprintf (current-error-port) "Undefined link: ~s~n" (link-element-tag e)) ; XXX Add source info
+                         `((font ((class "badlink")) 
+                                 ,@(if (null? (element-content e))
+                                       `(,(format "~s" (link-element-tag e)))
+                                       (render-plain-element e part ht))))))))]
          [else (render-plain-element e part ht)]))
 
       (define/private (render-plain-element e part ht)
