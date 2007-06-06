@@ -354,7 +354,7 @@ servlet developer.
  Determines if @scheme[v] is one of the following values.
 }
                   
-@defthing[permanently redirection-status?]{A @scheme[redirection-status?] for permant redirections.}
+@defthing[permanently redirection-status?]{A @scheme[redirection-status?] for permanent redirections.}
 
 @defthing[temporarily redirection-status?]{A @scheme[redirection-status?] for temporary redirections.}
 
@@ -362,7 +362,7 @@ servlet developer.
 
 @defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . void?)]
                                  [thunk (-> any)])]{
- Calls @scheme[thunk] with an exeception handler that generates an HTML error page
+ Calls @scheme[thunk] with an exception handler that generates an HTML error page
  and calls @scheme[send/finish-or-back].
 } 
 

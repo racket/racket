@@ -13,7 +13,7 @@ configuring the @file{web-server}.
 @section[#:tag "configuration-table-structs.ss"]{Configuration Table Structure}
 
 @file{configuration/configuration-table-structs.ss} provides the following structures that
-represent a standard configuration (see @secref["XXX"]) of the @file{web-server}.
+represent a standard configuration (see @secref["web-server-unit.ss"]) of the @file{web-server}.
 The contracts on this structure influence the valid types of values in
 the configuration table S-expression file format described in 
 @secref["configuration-table.ss"].
@@ -184,14 +184,14 @@ implements structures.
 
 Since, on occasion, a user will actually wanted servlets A and B to interact through module C.
 A custom @scheme[make-servlet-namespace] can be created, through this procedure, that attaches
-module C to all servlet namespaces. Through other means (see @secref["pipelines"]) different sets
+module C to all servlet namespaces. Through other means (see @secref["dispatchers"]) different sets
 of servlets can share different sets of modules.
 
 @; ------------------------------------------------------------
 @section[#:tag "responders.ss"]{Standard Responders}
 
 @file{configuration/responders.ss} provides some functions that help constructing HTTP responders.
-These functions are used by the default dispatcher constructor (see @secref["web-server-unit"]) to
+These functions are used by the default dispatcher constructor (see @secref["web-server-unit.ss"]) to
 turn the paths given in the @scheme[configuration-table] into responders for the associated circumstance.
 
 @; XXX Include response/full

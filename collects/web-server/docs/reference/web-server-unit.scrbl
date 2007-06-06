@@ -1,8 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@; XXX web-server-unit.ss
-@title[#:style 'toc]{Web Server Unit}
+@title[#:tag "web-server-unit.ss"
+       #:style 'toc]{Web Server Unit}
 
 The @file{web-server} offers a unit-based approach to running the server.
 
@@ -27,7 +27,7 @@ sets up one virtual host dispatcher, for each virtual host in the @scheme[web-co
 that sequences the following operations:
 @itemize[
  @item{Logs the incoming request with the given format to the given file}
- @item{Performs HTTP Basic Authentization with the given password file}
+ @item{Performs HTTP Basic Authentication with the given password file}
  @item{Allows the @scheme["/conf/refresh-passwords"] URL to refresh the password file.}
  @item{Allows the @scheme["/conf/collect-garbage"] URL to call the garbage collector.}
  @item{Allows the @scheme["/conf/refresh-servlets"] URL to refresh the servlets cache.}

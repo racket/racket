@@ -1,7 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Dispatchers}
+@title[#:tag "dispatchers"
+       #:style 'toc]{Dispatchers}
 
 The @file{web-server} is really just a peculiar configuration of a
 dispatching server. There are a number of dispatchers that are defined
@@ -102,7 +103,7 @@ that invokes a sequence of dispatchers until one applies.
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-filter.ss"]{Filtering Requests}
 
-@file{dispatchers/dispatch-filter.ss} defines a dispatcher constructer 
+@file{dispatchers/dispatch-filter.ss} defines a dispatcher constructor 
 that calls an underlying dispatcher
 with all requests that pass a predicate.
 
@@ -131,10 +132,10 @@ a URL that refreshes the password file, servlet cache, etc.
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-log.ss"]{Logging}
 
-@file{dispatchers/dispatch-log.ss} defines a dispatcher constructer
+@file{dispatchers/dispatch-log.ss} defines a dispatcher constructor
 for transparent logging of requests.
 
-@; XXX Take formating procedure
+@; XXX Take formatting procedure
 @defproc[(make [#:log-format log-format symbol? 'parenthesized-default]
                [#:log-path log-path (or/c path-string? false/c) #f])
          dispatcher?]{

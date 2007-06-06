@@ -1,7 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
 
-@title[#:style 'toc]{Web Language Servlets}
+@title[#:tag "lang"
+       #:style 'toc]{Web Language Servlets}
 
 The @file{web-server} allows servlets to be written in a special Web
 language that is nearly identical to Scheme. Herein we discuss how it
@@ -113,7 +114,7 @@ by the Web language API.
  form that includes the serialization as a hidden form.
  Calls @scheme[response-generator] with this URL and form field and delivers
  the response to the client. If the URL is invoked with form data containing
- the hiddden form,
+ the hidden form,
  the request is returned to this continuation.
  
  Note: The continuation is NOT stuffed.
@@ -128,8 +129,8 @@ by the Web language API.
               
 @defproc[(extract-proc/url [req request?])
          any/c]{
- Inspects the URL of @scheme[req] and attempts to extract the procedured
- embeded with @scheme[embed-proc/url]. If sucessful, it is invoked with
+ Inspects the URL of @scheme[req] and attempts to extract the procedure
+ embedded with @scheme[embed-proc/url]. If successful, it is invoked with
  @scheme[req] as an argument.
 } 
 
