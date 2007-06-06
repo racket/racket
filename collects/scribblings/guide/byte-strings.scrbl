@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "bytes"]{Bytes and Byte Strings}
+@title[#:tag "guide:bytestrings"]{Bytes and Byte Strings}
 
 A @defterm{byte} is an inexact integer between @scheme[0] and
 @scheme[255], inclusive. The @scheme[byte?] predicate recognizes
@@ -15,11 +15,11 @@ numbers that represent bytes.
 ]
 
 A @defterm{byte string} is similar to a string---see
-@secref["strings"]---but its content is a sequence of bytes instead of
-characters. Byte strings can be used in applications that process pure
-ASCII instead of Unicode text. The printed and form of a byte string
-supports such uses in particular, because a byte string prints like
-the ASCII decoding of the byte string, but prefixed with a
+@secref["guide:strings"]---but its content is a sequence of bytes
+instead of characters. Byte strings can be used in applications that
+process pure ASCII instead of Unicode text. The printed and form of a
+byte string supports such uses in particular, because a byte string
+prints like the ASCII decoding of the byte string, but prefixed with a
 @schemefont{#}. Unprintable ASCII characters or non-ASCII bytes in the
 byte string are written with octal notation.
 

@@ -155,6 +155,8 @@ on the next character or characters in the input stream as follows:
 
 @section[#:tag "mz:parse-symbol"]{Reading Symbols}
 
+@guideintro["guide:symbols"]{the syntax of symbols}
+
 A sequence that does not start with a delimiter or @litchar{#} is
 parsed as either a symbol or a number (see @secref["mz:parse-number"]),
 except that @litchar{.} by itself is never parsed as a symbol or
@@ -184,6 +186,8 @@ the following datum in case-sensitive mode.
 ]
 
 @section[#:tag "mz:parse-number"]{Reading Numbers}
+
+@guideintro["guide:numbers"]{the syntax of numbers}
 
 @index['("numbers" "parsing")]{A} sequence that does not start with a
 delimiter is parsed as a number when it matches the following grammar
@@ -348,6 +352,8 @@ then when then reader encounters @litchar["{"] and @litchar["}"], the
 
 @section[#:tag "mz:parse-string"]{Reading Strings}
 
+@guideintro["guide:strings"]{the syntax of strings}
+
 @index['("strings" "parsing")]{When} the reader encouters
 @as-index{@litchar{"}}, it begins parsing characters to form a string. The
 string continues until it is terminated by another @litchar{"} (that
@@ -412,8 +418,10 @@ Within a string sequence, the following escape sequences are
 
 }
 
-If the reader encounteres any other use of a backslashe in a string
+If the reader encounteres any other use of a backslash in a string
 constant, the @exnraise[exn:fail:read].
+
+@guideintro["guide:bytestrings"]{the syntax of byte strings}
 
 @index['("byte strings" "parsing")]{A} string constant preceded by
 @litchar{#} is parsed as a byte-string. (That is, @as-index{@litchar{#"}} starts
@@ -577,6 +585,8 @@ content is also wraped as a syntax object.
 ]
 
 @section[#:tag "mz:parse-character"]{Reading Characters}
+
+@guideintro["guide:characters"]{the syntax of characters}
 
 A @litchar["#\\"] starts a character constant, which has one of the
 following forms:

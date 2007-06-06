@@ -3,10 +3,10 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "strings"]{Strings (Unicode)}
+@title[#:tag "guide:strings"]{Strings (Unicode)}
 
 A @defterm{string} is a fixed-length array of
-@seclink["characters"]{characters}. It prints using doublequotes,
+@seclink["guide:characters"]{characters}. It prints using doublequotes,
 where doublequote and backslash characters within the string are
 escaped with backslashes. Other common string escapes are supported,
 incluing @schemefont["\\n"] for a linefeed, @schemefont["\\r"] for a
@@ -65,7 +65,7 @@ for an end user.
 ]
 
 For working with plain ASCII, working with raw bytes, or
-encoding/decoding Unicode strings as bytes, use @seclink["bytes"]{byte
-strings}.
+encoding/decoding Unicode strings as bytes, use
+@seclink["guide:bytestrings"]{byte strings}.
 
 @refdetails["mz:strings"]{strings and string procedures}

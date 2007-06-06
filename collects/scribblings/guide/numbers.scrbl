@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title{Numbers}
+@title[#:tag "guide:numbers"]{Numbers}
 
 A Scheme @defterm{number} is either exact or inexact:
 

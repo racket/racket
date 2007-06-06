@@ -36,6 +36,8 @@ is @scheme[#t] or @scheme[#f], @scheme[#f] otherwise.}
 @; ------------------------------------------------------------
 @section[#:tag "symbols"]{Symbols}
 
+@guideintro["guide:symbols"]{symbols}
+
 A symbol is like an immutable string, but symbols are normally
 @index["interned symbols"]{@defterm{interned}}, so that two symbols
 with the same character content are normally @scheme[eq?]. All symbols

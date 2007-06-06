@@ -3,6 +3,8 @@
 
 @title[#:tag "mz:strings"]{Strings}
 
+@guideintro["guide:string"]{strings}
+
 A @pidefterm{string} is a fixed-length arary of
 @seclink["characters"]{characters}.
 

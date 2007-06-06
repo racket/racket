@@ -3,6 +3,8 @@
 
 @title[#:tag "mz:bytestrings"]{Byte Strings}
 
+@guideintro["guide:bytestrings"]{byte strings}
+
 A @pidefterm{byte string} is a fixed-length arary of bytes. A
  @pidefterm{byte} is an exact integer between @scheme[0] and
  @scheme[255] inclusive.

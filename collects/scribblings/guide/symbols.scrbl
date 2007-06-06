@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "symbols"]{Symbols}
+@title[#:tag "guide:symbols"]{Symbols}
 
 A @defterm{symbol} is an atomic value that prints like an identifier.
 An expression that starts with @litchar{'} and continues with an

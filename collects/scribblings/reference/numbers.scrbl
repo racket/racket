@@ -3,6 +3,8 @@
 
 @title[#:tag "mz:numbers"]{Numbers}
 
+@guideintro["guide:numbers"]{numbers}
+
 All numbers are @idefterm{complex numbers}. Some of them are
 @idefterm{real numbers}, and all of the real numbers that can be
 represented are also @idefterm{rational numbers}. Among the real

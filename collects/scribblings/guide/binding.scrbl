@@ -17,7 +17,7 @@ procedure that creates a pair, @scheme[car] refers to the procedure
 that extracts the first element of a pair, and so on.
 
 @margin-note{For information on the syntax of identifiers, see
-@secref["symbols"].}
+@secref["guide:symbols"].}
 
 Forms like @scheme[define], @scheme[lambda], and @scheme[let]
 associate a meaning with one or more identifiers; that is, they
