@@ -56,7 +56,7 @@ dispatcher. See @file{run.ss} for an example of such a script.
                       [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
  Calls @scheme[serve] multiple times, once for each @scheme[port], and returns
- a function that shutdowns all of the server instances.
+ a function that shuts down all of the server instances.
 }
                    
 @defproc[(serve/ips+ports [#:dispatch dispatch dispatcher?]
@@ -66,7 +66,7 @@ dispatcher. See @file{run.ss} for an example of such a script.
                           [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
  Calls @scheme[serve/ports] multiple times, once for each @scheme[ip], and returns
- a function that shutdowns all of the server instances.
+ a function that shuts down all of the server instances.
 }                   
                    
 @defproc[(do-not-return) void]{
