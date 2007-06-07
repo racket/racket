@@ -278,10 +278,10 @@ There are a number of other miscellaneous utilities the @file{web-server}
 needs. They are provided by @file{private/util.ss}.
 
 @subsection{Lists}
-@defproc[(list-prefix [l list?]
-                      [r list?])
-         (or/c list? false/c)]{
- If @scheme[l] is a prefix of @scheme[r], then returns the prefix. Otherwise @scheme[#f].
+@defproc[(list-prefix? [l list?]
+                       [r list?])
+         boolean?]{
+ True if @scheme[l] is a prefix of @scheme[r].
 }
 
 @subsection{URLs}

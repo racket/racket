@@ -26,9 +26,8 @@
     (define (abstract-url u)
       (map path/param-path
            (url-path u)))
-    (define ans (list-prefix (abstract-url ses) (abstract-url req)))
     #;(printf "~S => ~S~n" `(same-servlet? ,(url->string req) ,(url->string ses)) ans)
-    (and ans #t))
+    (list-prefix? (abstract-url ses) (abstract-url req)))
   
   ;; make-session-url: url (listof string) -> url
   ;; produce a new url for this session:

@@ -9,7 +9,7 @@
    [url-replace-path ((list? . -> . list?) url? . -> . url?)]
    [explode-path* (path? . -> . (listof (or/c symbol? path?)))]
    [path-without-base (path? path? . -> . list?)]
-   [list-prefix (list? list? . -> . (or/c list? false/c))]
+   [list-prefix? (list? list? . -> . boolean?)]
    [strip-prefix-ups (list? . -> . list?)] ; XXX need path-element?
    [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
@@ -20,7 +20,7 @@
    [build-path-unless-absolute (path-string? path-string? . -> . path?)]
    [read/string (string? . -> . serializable?)]
    [write/string (serializable? . -> . string?)])
-    
+  
   (define (read/string str)
     (read (open-input-string str)))
   (define (write/string v)
@@ -37,7 +37,7 @@
         [else
          (let-values ([(base name dir?) (split-path p)])
            (loop base (list* name r)))])))
-    
+  
   ; strip-prefix-ups : (listof path-element?) -> (listof path-element?)
   (define (strip-prefix-ups l)
     (define prefix? (box #t))
@@ -52,26 +52,26 @@
   
   ; list-prefix : list? list? -> (or/c list? false/c)
   ; Is l a prefix or r?, and what is that prefix?
-  ; XXX Do we need to return the prefix? isn't it ls?
-  (define (list-prefix ls rs)
+  (define (list-prefix? ls rs)
     (match ls
       [(list)
-       (list)]
+       #t]
       [(list-rest l0 ls)
        (match rs
          [(list)
           #f]
          [(list-rest r0 rs)
           (if (equal? l0 r0)
-              (let ([ps (list-prefix ls rs)])
-                (if ps (list* l0 ps) (list l0)))
-              #f)])]))  
+              (list-prefix? ls rs)
+              #f)])]))
   
   ; path-without-base : path? path? -> (listof path-element?)
   (define (path-without-base base path)
     (define b (explode-path* base))
     (define p (explode-path* path))
-    (list-tail p (length (list-prefix b p))))
+    (if (list-prefix? b p)
+        (list-tail p (length b))
+        (error 'path-without-base "~a is not a prefix of ~a" base path)))
   
   ;; replace-path: (url-path -> url-path) url -> url
   ;; make a new url by replacing the path part of a url with a function
