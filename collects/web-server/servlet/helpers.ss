@@ -40,9 +40,6 @@
                         (current-seconds) #"text/html"
                         `((Location . ,uri) ,@headers) (list)))
   
-  ; with-errors-to-browser 
-  ; to report exceptions that occur later to the browser
-  ; this must be called at the begining of a servlet
   (define (with-errors-to-browser send/finish-or-back thunk)
     (with-handlers ([exn? (lambda (exn)
                             (send/finish-or-back

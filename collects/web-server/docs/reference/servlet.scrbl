@@ -338,7 +338,15 @@ servlet developer.
  Translates the @scheme[request-headers/raw] of @scheme[req] by
  interpreting @scheme[bytes?] as @scheme[string?]s. Ids are then
  translated into lowercase symbols.
-}                                            
+}                                           
+                                           
+These functions, while convenient, could introduce subtle bugs in your
+application. Examples: the fact they are case-insensitive could introduce
+a bug; if the data submitted is not in UTF-8 format, then the conversion
+to a string will fail; if an attacked submits a form field as if it were
+a file, when it is not, then the @scheme[request-bindings] will hold a
+@scheme[bytes?] object and your program will error; and, for file uploads
+you lose the filename.
 
 @; XXX Move into http/response.ss
 @; XXX Change headers
