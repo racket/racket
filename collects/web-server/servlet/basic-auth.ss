@@ -4,14 +4,6 @@
            (lib "base64.ss" "net"))
   (require "../private/request-structs.ss")
   
-  ; Authentication  
-  ; extract-user-pass : (listof (cons sym bytes)) -> (or/c #f (cons str str))
-  ;; Notes (GregP)
-  ;; 1. This is Basic Authentication (RFC 1945 SECTION 11.1)
-  ;;    e.g. an authorization header will look like this:
-  ;;         Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
-  ;; 2. Headers should be read as bytes and then translated to unicode as appropriate.
-  ;; 3. The Authorization header should have bytes (i.e. (cdr pass-pair) is bytes
   (define (extract-user-pass headers)
     (match (headers-assq* #"Authorization" headers)
       [#f #f]
