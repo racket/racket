@@ -5,7 +5,6 @@
            "file-box-test.ss"
            "labels-test.ss"
            "stuff-url-test.ss"
-           "util-test.ss"
            "web-cells-test.ss"
            "web-extras-test.ss"
            "web-param-test.ss"
@@ -20,7 +19,6 @@
      file-box-tests
      labels-tests
      stuff-url-tests
-     util-tests
      web-cells-tests
      web-extras-tests
      web-param-tests
