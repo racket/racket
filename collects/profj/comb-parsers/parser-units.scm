@@ -66,7 +66,7 @@
                    abstract native private protected public static strictfp transient volatile)))
     
     (define (close-to-keyword? t arg)
-      (printf "close-to-keyword ~a ~a~n" t arg)
+      ;(printf "close-to-keyword ~a ~a~n" t arg)
       (and (string? t)
            (member t (select-words (string->symbol arg)))))
     
@@ -311,8 +311,8 @@
               "literal expression"))
     
     (define (new-class class-name expr)
-      (choose ((sequence (new class-name O_PAREN C_PAREN) id)
-               (sequence (new class-name O_PAREN (comma-sep expr "arguments") C_PAREN) id))
+      (choose ((sequence (new class-name O_PAREN C_PAREN) id "class instantiation")
+               (sequence (new class-name O_PAREN (comma-sep expr "arguments") C_PAREN) id "class instantiation"))
               "class instantiation"))
     
     (define (new-array type-name expr)

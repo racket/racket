@@ -39,7 +39,6 @@
     (if (new-parser?)
         (lambda ()
           (let ([result (!!! (parser lexed loc))])
-            (printf "Calling new parser ~a ~n" result)
             (if (list? result)
                 (raise-read-error (cadr result)
                                   (car (car result))
