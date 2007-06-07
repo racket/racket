@@ -1,5 +1,6 @@
 (module info (lib "infotab.ss" "setup")
   (define name "Web Server")  
+  ; XXX Uncomment and change doc-installer
   #;(define post-install-collection "docs/doc-installer.ss")
   
   (define mzscheme-launcher-libraries
