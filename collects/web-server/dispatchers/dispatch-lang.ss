@@ -45,7 +45,8 @@
           new-path)
      empty
      #f))
-  
+
+  ;; XXX url->servlet, get rid of timeout, optional session manager
   (define interface-version 'v1)
   (define/kw (make #:key
                    url->path

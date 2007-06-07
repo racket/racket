@@ -14,9 +14,11 @@
       (lambda (ps)
         (map (lambda (p/p)
                (if (unbox first?)
-                   (make-path/param (path/param-path p/p) empty)
+                   (begin0 (make-path/param (path/param-path p/p) empty)
+                           (set-box! first? #f))
                    p/p))
-             ps)))))
+             ps))
+      in-url)))
   (define (request->servlet-url req)
     (make-servlet-url (request-uri req)))
   
