@@ -4,7 +4,6 @@
            "cache-table-test.ss"
            "response-test.ss"
            "connection-manager-test.ss"
-           "servlet-test.ss"
            "define-closure-test.ss"
            "session-test.ss"
            "mime-types-test.ss"
@@ -23,7 +22,6 @@
      mod-map-tests
      request-tests
      response-tests
-     servlet-tests
      session-tests
      url-param-tests
      util-tests)))
