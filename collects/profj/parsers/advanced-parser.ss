@@ -582,11 +582,11 @@
        [(new ClassOrInterfaceType DimExprs)
         (make-array-alloc #f (build-src 3) (make-type-spec $2 0 (build-src 2 2)) (reverse $3) 0)]
        ;; 1.1
-       [(new PrimitiveType Dims ArrayInitializer) 
+       #;[(new PrimitiveType Dims ArrayInitializer) 
         (begin (display $2)
                (error 'unimplemented-1.1))]
        ;; 1.1
-       [(new ClassOrInterfaceType Dims ArrayInitializer) (error 'unimplemented-1.1)])
+       #;[(new ClassOrInterfaceType Dims ArrayInitializer) (error 'unimplemented-1.1)])
       
       (DimExprs
        [(DimExpr) (list $1)]

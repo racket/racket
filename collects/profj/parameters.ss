@@ -31,6 +31,8 @@
   ;Stores the error function to trigger for parsing
   (define determine-error (make-parameter (lambda () #t)))
   
+  (define new-parser? (make-parameter #t))
+  
   ;Stores a function which when called will produce (->token) of lexed tokens
   (define lex-stream (make-parameter (lambda () null)))
   

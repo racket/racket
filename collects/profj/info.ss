@@ -8,6 +8,7 @@
   (define pre-install-collection "pre-installer.ss")
   (define compile-subcollections
     '(("profj" "parsers")
+      ("profj" "comb-parsers")
       ("profj" "libs" "java" "lang")
       ("profj" "libs" "java" "io")
       ("profj" "libs" "java" "util")))
