@@ -617,23 +617,26 @@
           
           (define/public (get-info-panel) info-panel)
           (define/public (update-memory-text)
-            (when show-memory-text?
+            (when (and show-memory-text?
+                       memory-canvas)
               (send memory-text begin-edit-sequence)
               (send memory-text lock #f)
               (send memory-text erase)
               (send memory-text insert (format-number (current-memory-use)))
+              (ensure-enough-width memory-canvas memory-text)
               (send memory-text lock #t)
               (send memory-text end-edit-sequence)))
           
           (define/private (format-number n)
-            (let loop ([n n])
-              (cond
-                [(<= n 1000) (number->string n)]
-                [else
-                 (string-append 
-                  (loop (quotient n 1000))
-                  ","
-                  (pad-to-3 (modulo n 1000)))])))
+            (let* ([mbytes (/ n 1024 1024)]
+                   [before-decimal (floor mbytes)]
+                   [after-decimal (modulo (floor (* mbytes 100)) 100)])
+              (string-append
+               (number->string before-decimal)
+               "."
+               (cond
+                 [(<= after-decimal 9) (format "0~a" after-decimal)]
+                 [else (number->string after-decimal)]))))
 
           (define/private (pad-to-3 n)
             (cond
@@ -643,13 +646,25 @@
           
             ; only for checkouts and nightly build users
           (when show-memory-text?
-            (let* ([panel (make-object horizontal-panel% (get-info-panel) '(border))]
-                   [button (make-object button% (string-constant collect-button-label) panel 
-                             (λ x
-                               (collect-garbage)
-                               (update-memory-text)))]
-                   [ec (make-object editor-canvas% panel memory-text '(no-hscroll no-vscroll))])
-              (determine-width "0,000,000,000" ec memory-text)
+            (let* ([panel (new horizontal-panel%
+                               [parent (get-info-panel)]
+                               [style '(border)]
+                               [stretchable-width #f]
+                               [stretchable-height #f])]
+                   [button (new button%
+                                [label (string-constant collect-button-label)]
+                                [parent panel]
+                                [callback
+                                 (λ x
+                                   (collect-garbage)
+                                   (update-memory-text))])]
+                   [ec (new editor-canvas%
+                            [parent panel]
+                            [editor memory-text]
+                            [line-count 1]
+                            [style '(no-hscroll no-vscroll)])])
+              (set! memory-canvas ec)
+              (determine-width "99.99" ec memory-text)
               (update-memory-text)
               (set! memory-cleanup
                     (λ ()
@@ -693,6 +708,22 @@
             (spacing 3)
             (border 3))))
       
+  (define (ensure-enough-width editor-canvas text)
+    (send editor-canvas call-as-primary-owner
+          (λ ()
+            (let ([delta (get-client-width/view-delta text editor-canvas)]
+                  [lb (box 0)]
+                  [rb (box 0)])
+              (send text position-location 
+                    (send text last-position)
+                    rb)
+              (send text position-location 0 lb)
+              (let ([nw
+                     (+ delta (- (inexact->exact (floor (unbox rb)))
+                                 (inexact->exact (floor (unbox lb)))))])
+                (when (< (send editor-canvas min-client-width) nw)
+                  (send editor-canvas min-client-width nw)))))))
+  
   (define (get-client-width/view-delta position-edit position-canvas)
     (let ([admin (send position-edit get-admin)]
           [wb (box 0)])
@@ -882,24 +913,9 @@
             (send position-edit lock #f)
             (send position-edit erase)
             (send position-edit insert str)
-            (send position-canvas call-as-primary-owner
-                  (λ ()
-                    (let ([delta (get-client-width/view-delta position-edit position-canvas)]
-                          [lb (box 0)]
-                          [rb (box 0)])
-                      (send position-edit position-location 
-                            (send position-edit last-position)
-                            rb)
-                      (send position-edit position-location 0 lb)
-                      (let ([nw
-                             (+ delta (- (inexact->exact (floor (unbox rb)))
-                                         (inexact->exact (floor (unbox lb)))))])
-                        (when (< (send position-canvas min-client-width) nw)
-                          (send position-canvas min-client-width nw))))))
+            (ensure-enough-width position-canvas position-edit)
             (send position-edit lock #t)
             (send position-edit end-edit-sequence))
-          
-          
           
           (send (get-info-panel) change-children
                 (λ (l)
@@ -2418,6 +2434,7 @@
       
       (define memory-text% (class text% (super-new)))
       (define memory-text (make-object memory-text%))
+      (define memory-canvas #f)
       (send memory-text hide-caret #t)
       (define show-memory-text?
         (or (with-handlers ([exn:fail:filesystem?
