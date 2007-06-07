@@ -17,4 +17,12 @@
       "Default configuration file may be written"
       (check-not-false (write-configuration-table 
                         (read-configuration-table default-configuration-table-path)
-                        (make-temporary-file)))))))
+                        (make-temporary-file))))
+     
+     (test-case
+      "Default configuration file may be converted to sexpr and back"
+      (check-not-false
+       (sexpr->configuration-table
+        (configuration-table->sexpr
+         (read-configuration-table
+          default-configuration-table-path))))))))

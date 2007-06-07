@@ -39,7 +39,7 @@
   ; XXX
   (define request-tests
     (test-suite
-     "Request Parsing"
+     "HTTP Requests"
      (test-suite
       "Bindings"
       (test-equal? "simple test 1"
