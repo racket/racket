@@ -46,7 +46,7 @@ A servlet has the following process performed on it automatically:
        anonymous lambda. (@file{lang/defun.ss})}
 ]
 
-This process also the continuations captured by your servlet to be serialized.
+This process allows the continuations captured by your servlet to be serialized.
 This means they may be stored on the client's browser or the server's disk.
 Thus, your servlet has no cost to the server other than execution. This is
 very attractive if you've used Scheme servlets and had memory problems.

@@ -17,4 +17,6 @@
              (list ref:doc 
                    guide:doc)
              (list "web-server-reference"
-                   "web-server-guide"))))
+                   "web-server-guide")))
+  
+  (build))

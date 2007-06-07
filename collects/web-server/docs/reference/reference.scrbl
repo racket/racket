@@ -12,9 +12,10 @@ develop Web applications in Scheme.
 @include-section["running.scrbl"]
 
 @include-section["servlet.scrbl"]
-@include-section["servlet-env.scrbl"]
-
 @include-section["lang.scrbl"]
+
+@; XXX Move in to servlet.scrbl
+@include-section["servlet-env.scrbl"]
 
 @include-section["configuration.scrbl"]
 @include-section["dispatchers.scrbl"]
