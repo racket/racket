@@ -12,9 +12,6 @@
     (test-suite
      "Web Parameters"
      
-     ;; ****************************************
-     ;; ****************************************
-     ;; BASIC TESTS  
      (test-suite
       "Basic Tests"
       
