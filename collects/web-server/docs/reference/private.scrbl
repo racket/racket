@@ -39,13 +39,14 @@ procedures after a given amount of time, that may be extended.
 @defproc[(reset-timer! [t timer?]
                        [s number?])
          void]{
- Changes @scheme[t] so that it will fire at @scheme[s].
+ Changes @scheme[t] so that it will fire after @scheme[s] seconds.
 }
               
 @defproc[(increment-timer! [t timer?]
                            [s number?])
          void]{
- Changes @scheme[t] so that it will fire after @scheme[s] seconds.
+ Changes @scheme[t] so that it will fire after @scheme[s] seconds from when
+ it does now.
 }
               
 @defproc[(cancel-timer! [t timer?])
