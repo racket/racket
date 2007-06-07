@@ -71,7 +71,7 @@
                                     (content "text-html; charset=utf-8")))
                              ,@(let ([c (part-title-content d)])
                                  (if c
-                                     `((title ,@(render-content c d ht)))
+                                     `((title ,@(format-number number '(nbsp)) ,@(render-content c d ht)))
                                      null))
                              (link ((rel "stylesheet")
                                     (type "text/css")
