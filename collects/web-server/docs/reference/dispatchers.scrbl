@@ -182,6 +182,17 @@ that performs HTTP Basic authentication filtering.
  @scheme[authentication-responder] is called with a @scheme[header] that
  requests credentials. If they are, then @scheme[next-dispatcher] is
  invoked.
+ 
+ @; XXX Separate out password-file work
+ @scheme[password-file] is parsed as:
+ @schemeblock[(list ([domain : string?]
+                     [path : string-regexp?]
+                     (list [user : symbol?]
+                           [pass : string?])
+                     ...)
+                    ...)]
+ For example:
+ @schemeblock['(("secret stuff" "/secret(/.*)?" (bubba "bbq") (|Billy| "BoB")))]
 }
 
 @; ------------------------------------------------------------
