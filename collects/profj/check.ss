@@ -306,6 +306,7 @@
                            check-env
                            type
                            (string->symbol name)
+                           "local variable"
                            type-recs)))
         ((var-decl? prog) (void))
         ((statement? prog)
@@ -485,6 +486,7 @@
                                      (if static? statics fields)
                                      type
                                      (string->symbol name)
+                                     "field"
                                      type-recs)
                      (when (field-needs-set? member level abst-class?)
                        (set! setting-fields (cons member setting-fields))))
@@ -856,18 +858,18 @@
       ((synchronized? body) (reachable-return? (synchronized-stmt body)))
       (else #f)))
 
-  ;check-var-init: expression (exp env -> type/env) type symbol type-records -> type/env
-  (define (check-var-init init check-e env dec-type name type-recs)
+  ;check-var-init: expression (exp env -> type/env) type symbol string type-records -> type/env
+  (define (check-var-init init check-e env dec-type name var-kind type-recs)
     (let ((type (if (array-init? init)
                     (if (array-type? dec-type)
                         (begin
                           (send type-recs add-req (make-req 'array null))
                           (check-array-init (array-init-vals init) check-e env
                                             (array-type-type dec-type) type-recs))
-                        (var-init-error 'array name dec-type #f (array-init-src init)))
+                        (var-init-error 'array var-kind name dec-type #f (array-init-src init)))
                     (check-e init env))))
       (unless (assignment-conversion dec-type (type/env-t type) type-recs)
-        (var-init-error 'other name dec-type (type/env-t type) (expr-src init)))
+        (var-init-error 'other var-kind name dec-type (type/env-t type) (expr-src init)))
       type))
   
   ;check-array-init (U (list array-init) (list exp)) (exp env->type) type type-records -> type/env
@@ -916,16 +918,16 @@
                    ((no-body) (format "Method ~a has no implementation and is not abstract." method)))
                  method src))
   
-  ;var-init-error: symbol symbol type type src -> void
-  (define (var-init-error kind name dec-type given src)
+  ;var-init-error: symbol string symbol type type src -> void
+  (define (var-init-error kind var-kind name dec-type given src)
     (raise-error name
                  (case kind
                    ((array)
-                    (format "Expected ~a to be of declared type ~a, given an array." 
-                            name (type->ext-name dec-type)))
+                    (format "The value of ~a ~a must be a subtype of declared type ~a, given an array." 
+                            var-kind name (type->ext-name dec-type)))
                    ((other)
-                    (format "Expected ~a to be assignable to declared type ~a, given ~a which is unrelated."
-                            name (type->ext-name dec-type) (type->ext-name given))))
+                    (format "The declared type of ~a ~a must be a super type of the expression. ~a is not a super type of ~a."
+                            var-kind name (type->ext-name dec-type) (type->ext-name given))))
                  name src))
 
   ;array-init-error: type type src -> void
@@ -1189,7 +1191,7 @@
       (when (and in-env? (not (properties-field? (var-type-properties in-env?))))
         (illegal-redefinition (field-name local) (field-src local)))
       (if is-var-init?
-          (let ((new-type/env (check-var-init (var-init-init local) check-e env type sym-name type-recs)))
+          (let ((new-type/env (check-var-init (var-init-init local) check-e env type sym-name "local variable" type-recs)))
             (unless (assignment-conversion type (type/env-t new-type/env) type-recs)
               (variable-type-error (field-name local) (type/env-t new-type/env) type (var-init-src local)))
             (add-set-to-env name (new-env (type/env-e new-type/env))))
