@@ -16,7 +16,7 @@
        (let ([ib (open-input-bytes #"")]
              [ob (open-output-bytes)])
          (new-connection 1 ib ob (current-custodian) #t)
-         (sleep 1)
+         (sleep 2)
          (with-handlers ([exn? (lambda _ #t)])
            (read ib) #f))))
      
@@ -26,7 +26,7 @@
        (let ([ib (open-input-bytes #"")]
              [ob (open-output-bytes)])
          (new-connection 1 ib ob (current-custodian) #t)
-         (sleep 1)
+         (sleep 2)
          (with-handlers ([exn? (lambda _ #t)])
            (write 1 ob) #f))))
      
@@ -49,7 +49,7 @@
               [ob (open-output-bytes)]
               [c (new-connection 1 ib ob (current-custodian) #t)])
          (adjust-connection-timeout! c 1)
-         (sleep 1)
+         (sleep 2)
          (and (with-handlers ([exn? (lambda _ #t)])
                 (read ib) #f)
               (with-handlers ([exn? (lambda _ #t)])
