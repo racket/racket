@@ -94,6 +94,10 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_remove(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_map(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_for_each(int argc, Scheme_Object *argv[]);
+static Scheme_Object *hash_table_iterate_start(int argc, Scheme_Object *argv[]);
+static Scheme_Object *hash_table_iterate_next(int argc, Scheme_Object *argv[]);
+static Scheme_Object *hash_table_iterate_value(int argc, Scheme_Object *argv[]);
+static Scheme_Object *hash_table_iterate_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[]);
 
@@ -463,6 +467,27 @@ scheme_init_list (Scheme_Env *env)
 			     scheme_make_noncm_prim(hash_table_for_each,
 						    "hash-table-for-each",
 						    2, 2),
+			     env);
+
+  scheme_add_global_constant("hash-table-iterate-first",
+			     scheme_make_noncm_prim(hash_table_iterate_start,
+						    "hash-table-iterate-first",
+                                                    1, 1),
+			     env);
+  scheme_add_global_constant("hash-table-iterate-next",
+			     scheme_make_noncm_prim(hash_table_iterate_next,
+						    "hash-table-iterate-next",
+                                                    2, 2),
+			     env);
+  scheme_add_global_constant("hash-table-iterate-value",
+			     scheme_make_noncm_prim(hash_table_iterate_value,
+						    "hash-table-iterate-value",
+                                                    2, 2),
+			     env);
+  scheme_add_global_constant("hash-table-iterate-key",
+			     scheme_make_noncm_prim(hash_table_iterate_key,
+						    "hash-table-iterate-key",
+                                                    2, 2),
 			     env);
 
   scheme_add_global_constant("eq-hash-code",
@@ -1699,6 +1724,167 @@ static Scheme_Object *hash_table_map(int argc, Scheme_Object *argv[])
 static Scheme_Object *hash_table_for_each(int argc, Scheme_Object *argv[])
 {
   return do_map_hash_table(argc, argv, "hash-table-for-each", 0);
+}
+
+static Scheme_Object *hash_table_next(const char *name, int start, int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_HASHTP(argv[0])) {
+    Scheme_Hash_Table *hash;
+    int i, sz;
+
+    hash = (Scheme_Hash_Table *)argv[0];
+
+    sz = hash->size;
+    if (start >= 0) {
+      if ((start >= sz) || !hash->vals[start])
+        return NULL;
+    }
+    for (i = start + 1; i < sz; i++) {
+      if (hash->vals[i])
+        return scheme_make_integer(i);
+    }
+
+    return scheme_false;
+  } else if (SCHEME_BUCKTP(argv[0])) {
+    Scheme_Bucket_Table *hash;
+    Scheme_Bucket *bucket;
+    int i, sz;
+
+    hash = (Scheme_Bucket_Table *)argv[0];
+
+    sz = hash->size;
+    
+    if (start >= 0) {
+      bucket = ((start < sz) ? hash->buckets[start] : NULL);
+      if (!bucket || !bucket->val || !bucket->key) 
+        return NULL;      
+    }
+    for (i = start + 1; i < sz; i++) {
+      bucket = hash->buckets[i];
+      if (bucket && bucket->val && bucket->key) {
+        return scheme_make_integer(i);
+      }
+    }
+
+    return scheme_false;
+  } else {
+    scheme_wrong_type(name, "hash table", 0, argc, argv);
+    return NULL;
+  }
+}
+
+static Scheme_Object *hash_table_iterate_start(int argc, Scheme_Object *argv[])
+{
+  return hash_table_next("hash-table-iterate-first", -1, argc, argv);
+}
+
+static Scheme_Object *hash_table_iterate_next(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[1], *v;
+  int pos;
+
+  if (SCHEME_INTP(p)) {
+    pos = SCHEME_INT_VAL(p);
+    if (pos < 0)
+      pos = 0x7FFFFFFE;
+  } else {
+    pos = 0x7FFFFFFE;
+  }
+
+  v = hash_table_next("hash-table-iterate-next", pos, argc, argv);
+
+  if (v)
+    return v;
+
+  if (SCHEME_INTP(p)) {
+    if (SCHEME_INT_VAL(p) >= 0)
+      p = NULL;
+  } else if (SCHEME_BIGNUMP(p)) {
+    if (SCHEME_BIGPOS(p))
+      p = NULL;
+  }
+
+  if (p)
+    scheme_wrong_type("hash-table-iterate-next", "exact non-negative integer", 1, argc, argv);  
+
+  scheme_arg_mismatch("hash-table-iterate-next", "no element at index: ", argv[1]);
+
+  return NULL;
+}
+
+static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object *argv[], int get_val)
+{
+  Scheme_Object *p = argv[1];
+  int pos, sz;
+
+  if (SCHEME_INTP(p)) {
+    pos = SCHEME_INT_VAL(p);
+    if (pos < 0)
+      pos = 0x7FFFFFFF;
+  } else {
+    pos = 0x7FFFFFFF;
+  }
+
+  if (SCHEME_HASHTP(argv[0])) {
+    Scheme_Hash_Table *hash;
+
+    hash = (Scheme_Hash_Table *)argv[0];
+
+    sz = hash->size;
+    if (pos < sz) {
+      if (hash->vals[pos]) {
+        if (get_val)
+          return hash->vals[pos];
+        else
+          return hash->keys[pos];
+      }
+    }
+  } else if (SCHEME_BUCKTP(argv[0])) {
+    Scheme_Bucket_Table *hash;
+    int sz;
+    Scheme_Bucket *bucket;
+
+    hash = (Scheme_Bucket_Table *)argv[0];
+
+    sz = hash->size;
+    if (pos < sz) {
+      bucket = hash->buckets[pos];
+      if (bucket && bucket->val && bucket->key) {
+        if (get_val)
+          return (Scheme_Object *)bucket->val;
+        else {
+          if (hash->weak)
+            return (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
+          else
+            return (Scheme_Object *)bucket->key;
+        }
+      }
+    }
+  } else {
+    scheme_wrong_type(name, "hash table", 0, argc, argv);
+    return NULL;
+  }
+
+  if ((SCHEME_INTP(p)
+       && (SCHEME_INT_VAL(p) >= 0))
+      || (SCHEME_BIGNUMP(p)
+          && SCHEME_BIGPOS(p))) {
+    scheme_arg_mismatch(name, "no element at index: ", p);
+    return NULL;
+  }
+
+  scheme_wrong_type(name, "exact non-negative integer", 1, argc, argv);  
+  return NULL;
+}
+
+static Scheme_Object *hash_table_iterate_value(int argc, Scheme_Object *argv[])
+{
+  return hash_table_index("hash-table-iterate-value", argc, argv, 1);
+}
+
+static Scheme_Object *hash_table_iterate_key(int argc, Scheme_Object *argv[])
+{
+  return hash_table_index("hash-table-iterate-key", argc, argv, 0);
 }
 
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[])

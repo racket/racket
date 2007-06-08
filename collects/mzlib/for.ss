@@ -27,7 +27,7 @@
            stop-after
            (rename *in-indexed in-indexed)
            
-           sequence-generator
+           sequence-generate
            
            define-sequence-syntax
            make-do-sequence
@@ -520,9 +520,9 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  runnign sequences outside of a loop:
 
-  (define (sequence-generator g)
+  (define (sequence-generate g)
     (unless (sequence? g)
-      (raise-type-error 'sequence-generator "sequence" g))
+      (raise-type-error 'sequence-generate "sequence" g))
     (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
                   (make-sequence #f g)])
       (let ([pos init])

@@ -2015,9 +2015,18 @@
 	     h1))])
 
     (let ([check-tables-equal
-	   (lambda (mode t1 t2)
+	   (lambda (mode t1 t2 flag)
 	     (test #t equal? t1 t2)
-	     (test (equal-hash-code t1) equal-hash-code t2)
+             (test (equal-hash-code t1) equal-hash-code t2)
+	     (test #t equal? t1 (hash-table-copy t1))
+             (let ([again (apply make-hash-table 'equal flag)])
+               (let loop ([i (hash-table-iterate-first t1)])
+                 (when i
+                   (hash-table-put! again
+                                    (hash-table-iterate-key t1 i)
+                                    (hash-table-iterate-value t1 i))
+                   (loop (hash-table-iterate-next t1 i))))
+               (test #t equal? t1 again))
 	     (let ([meta-ht (make-hash-table 'equal)])
 	       (hash-table-put! meta-ht t1 mode)
 	       (test mode hash-table-get meta-ht t2 (lambda () #f)))
@@ -2025,10 +2034,12 @@
 
       (check-tables-equal 'the-norm-table
                           (check-hash-tables null #f)
-			  (check-hash-tables null #t))
+			  (check-hash-tables null #t)
+                          null)
       (check-tables-equal 'the-weak-table
                           (check-hash-tables (list 'weak) #f)
-			  (check-hash-tables (list 'weak) #t)))
+			  (check-hash-tables (list 'weak) #t)
+                           (list 'weak)))
 
     (save))) ; prevents gcing of the ht-registered values
 
@@ -2103,6 +2114,21 @@
 
 (test 2 hash-table-get (hash-table-copy #hasheq((1 . 2))) 1)
 (test (void) hash-table-put! (hash-table-copy #hasheq((1 . 2))) 3 4)
+
+(test #f hash-table-iterate-first (make-hash-table))
+(test #f hash-table-iterate-first (make-hash-table 'weak))
+(err/rt-test (hash-table-iterate-next (make-hash-table) 0))
+(err/rt-test (hash-table-iterate-next (make-hash-table 'weak) 0))
+
+(let ([check-all-bad
+       (lambda (op)
+         (err/rt-test (op #f 0))
+         (err/rt-test (op (make-hash-table) -1))
+         (err/rt-test (op (make-hash-table) (- (expt 2 100))))
+         (err/rt-test (op (make-hash-table) 1.0)))])
+  (check-all-bad hash-table-iterate-next)
+  (check-all-bad hash-table-iterate-key)
+  (check-all-bad hash-table-iterate-value))
 
 (arity-test make-hash-table 0 2)
 (arity-test make-immutable-hash-table 1 2)

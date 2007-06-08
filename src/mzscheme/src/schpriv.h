@@ -1744,6 +1744,10 @@ typedef struct Optimize_Info
   int *sd_depths;
   int used_toplevel;
   char *use;
+
+  int transitive_use_pos; /* set to pos + 1 when optimizing a letrec-bound procedure */
+  mzshort **transitive_use;
+  int *transitive_use_len;
 } Optimize_Info;
 
 typedef struct Scheme_Object *(*Scheme_Syntax_Optimizer)(Scheme_Object *data, Optimize_Info *info);
@@ -1991,6 +1995,7 @@ void scheme_optimize_info_used_top(Optimize_Info *info);
 void scheme_optimize_mutated(Optimize_Info *info, int pos);
 Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_mutated);
 int scheme_optimize_is_used(Optimize_Info *info, int pos);
+int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos);
 
 Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_depth);

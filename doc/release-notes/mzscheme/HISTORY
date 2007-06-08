@@ -1,4 +1,7 @@
 Version 370.2
+Added hash-table-iterate-{first,next,key,value}
+
+Version 370.2
 Added make-sibling-inspector
 Added graph? argument to read[-syntax]/recursive
 Changed `#! ' and `#!/' to general comment forms

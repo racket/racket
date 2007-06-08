@@ -29,6 +29,7 @@
 
 #include "schpriv.h"
 #include "schminc.h"
+#include "schmach.h"
 #include "schexpobs.h"
 
 #if defined(UNIX_LIMIT_STACK) || defined(UNIX_LIMIT_FDSET_SIZE)
@@ -2650,6 +2651,8 @@ Optimize_Info *scheme_optimize_info_create()
   return info;
 }
 
+static void register_transitive_use(Optimize_Info *info, int pos, int j);
+
 static void register_stat_dist(Optimize_Info *info, int i, int j)
 {
   if (!info->stat_dists) {
@@ -2681,7 +2684,72 @@ static void register_stat_dist(Optimize_Info *info, int i, int j)
     info->sd_depths[i] = j + 1;
   }
 
+  if (info->transitive_use && info->transitive_use[i]) {
+    /* We're using a procedure that we weren't sure would be used.
+       Transitively mark everything that the procedure uses --- unless
+       a transitive accumulation is in effect, in which case we
+       don't for this one now, leaving it to be triggered when
+       the one we're accumulating is triggered. */
+    if (!info->transitive_use_pos) {
+      mzshort *map = info->transitive_use[i];
+      int len = info->transitive_use_len[i];
+      int k;
+
+      info->transitive_use[i] = NULL;
+
+      for (k = 0; k < len; k++) {
+        register_transitive_use(info, map[k], 0);
+      }
+    }
+  }
+
   info->stat_dists[i][j] = 1;
+}
+
+static Scheme_Object *transitive_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Optimize_Info *info = (Optimize_Info *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  register_transitive_use(info, p->ku.k.i1, p->ku.k.i2);
+
+  return scheme_false;
+}
+
+static void register_transitive_use(Optimize_Info *info, int pos, int j)
+{
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+
+    p->ku.k.p1 = (void *)info;
+    p->ku.k.i1 = pos;
+    p->ku.k.i2 = j;
+
+    scheme_handle_stack_overflow(transitive_k);
+
+    return;
+  }
+#endif
+
+  while (info) {
+    if (info->flags & SCHEME_LAMBDA_FRAME)
+      j++;
+    if (pos < info->new_frame)
+      break;
+    pos -= info->new_frame;
+    info = info->next;
+  }
+
+  if (info->sd_depths[pos] <= j) {
+    scheme_signal_error("bad transitive position depth: %d vs. %d",
+                        info->sd_depths[pos], j);
+  }
+
+  register_stat_dist(info, pos, j);
 }
 
 void scheme_env_make_closure_map(Optimize_Info *info, mzshort *_size, mzshort **_map)
@@ -2690,7 +2758,7 @@ void scheme_env_make_closure_map(Optimize_Info *info, mzshort *_size, mzshort **
      indices are resolved two new indicies in the second phase of
      compilation. */
   Optimize_Info *frame;
-  int i, j, pos = 0, lpos = 0;
+  int i, j, pos = 0, lpos = 0, tu;
   mzshort *map, size;
 
   /* Count vars used by this closure (skip args): */
@@ -2715,6 +2783,13 @@ void scheme_env_make_closure_map(Optimize_Info *info, mzshort *_size, mzshort **
   map = MALLOC_N_ATOMIC(mzshort, size);
   *_map = map;
 
+  if (info->next && info->next->transitive_use_pos) {
+    info->next->transitive_use[info->next->transitive_use_pos - 1] = map;
+    info->next->transitive_use_len[info->next->transitive_use_pos - 1] = size;
+    tu = 1;
+  } else
+    tu = 0;
+
   /* Build map, unmarking locals and marking deeper in parent frame */
   j = 1; pos = 0;
   for (frame = info->next; frame; frame = frame->next) {
@@ -2727,7 +2802,8 @@ void scheme_env_make_closure_map(Optimize_Info *info, mzshort *_size, mzshort **
 	  if (frame->stat_dists[i][j]) {
 	    map[pos++] = lpos;
 	    frame->stat_dists[i][j] = 0; /* This closure's done with these vars... */
-	    frame->stat_dists[i][j - 1] = 1; /* ... but ensure previous keeps */
+            if (!tu)
+              frame->stat_dists[i][j - 1] = 1; /* ... but ensure previous keeps */
 	  }
 	}
 	lpos++;
@@ -2823,6 +2899,34 @@ int scheme_optimize_is_used(Optimize_Info *info, int pos)
     for (i = info->sd_depths[pos]; i--; ) {
       if (info->stat_dists[pos][i])
 	return 1;
+    }
+  }
+
+  return 0;
+}
+
+int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
+{
+  int j, i;
+
+  if (info->stat_dists) {
+    for (i = start_pos; i < end_pos; i++) {
+      for (j = info->sd_depths[i]; j--; ) {
+        if (info->stat_dists[i][j])
+          return 1;
+      }
+    }
+  }
+
+  if (info->transitive_use) {
+    for (i = info->new_frame; i--; ) {
+      if (info->transitive_use[i]) {
+        for (j = info->transitive_use_len[i]; j--; ) {
+          if ((info->transitive_use[i][j] >= start_pos)
+              && (info->transitive_use[i][j] < end_pos))
+            return 1;
+        }
+      }
     }
   }
 

@@ -872,17 +872,21 @@
 		(break-enabled #f))
 	      (init ;; init function gets to decide whether to do the normal body:
 	       (lambda ()
+           (printf "here ~s\n"  (procedure? capture-pre))
 		 (dynamic-wind
 		     (lambda ()
+           (printf "here3 ~s\n" (procedure? capture-pre))
 		       (capture-pre
 			reset
 			(lambda ()
+           (printf "here4\n")
 			  (set! did-pre1 #t)
 			  (semaphore-post p)
 			  (pre-thunk)
 			  (pre-semaphore-wait s)
 			  (set! did-pre2 #t))))
 		     (lambda () 
+           (printf "here2\n")
 		       (capture-act
 			reset
 			(lambda ()
@@ -930,6 +934,7 @@
       ;; create fresh semaphores
       (set! s (make-semaphore))
       (set! p (make-semaphore))
+      (printf "mk ~s\n" mk-t*)
       ;; create the thread
       (let ([t (mk-t* break-off?
 		      pre-thunk act-thunk post-thunk
@@ -1016,6 +1021,9 @@
 					      (body))])
 			      ;; Grab a continuation for the dyn-wind's pre/act/post
 			      (go (lambda args
+                                    (printf "here???\n")
+                                    (printf "??? ~s\n" k+reset)
+                                    (printf "??? ~s\n" capture)
 				    (apply mk-t 
 					   (lambda (f) (f))
 					   (if (eq? which 'pre) capture no-capture)
