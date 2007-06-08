@@ -35,5 +35,5 @@ Keywords should not be used simply as another kind of symbol. Use
 symbols, instead of keywords, for run-time flags and enumerations.
 
 @examples[
-(code:line (bytes->path #"/usr/tmp" 'unix) (code:comment #, @t{@scheme['unix], not @scheme[#:unix]}))
+(code:line (bytes->path #"/usr/tmp" 'unix) (code:comment #, @t{@scheme['unix], not @scheme['#:unix]}))
 ]
