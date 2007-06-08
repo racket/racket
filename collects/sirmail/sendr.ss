@@ -200,6 +200,7 @@
       (define (get-enclosure-type-and-encoding filename mailer-frame auto?)
         (let ([types '("application/postscript"
                        "text/plain"
+                       "text/plain; charset=UTF-8"
                        "text/html"
                        "image/jpeg"
                        "image/gif"
