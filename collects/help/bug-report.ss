@@ -340,16 +340,19 @@
     (define (get-query)
       (list (cons 'help-desk "true")
             (cons 'replyto (preferences:get 'drscheme:email))
-            (cons 'originator (preferences:get 'drscheme:full-name))
-            (cons 'subject (send summary get-value))
-            (cons 'severity (send severity get-string-selection))
+            (cons 'originator (qp-encode (preferences:get 'drscheme:full-name)))
+            (cons 'subject (qp-encode (send summary get-value)))
+            (cons 'severity (qp-encode (send severity get-string-selection)))
             (cons 'class (translate-class (send bug-class get-string-selection)))
-            (cons 'release (send version get-value))
-            (cons 'description (apply string-append (map (lambda (x) (string-append x "\n")) 
-                                                         (get-strings description))))
-            (cons 'how-to-repeat (apply string-append (map (lambda (x) (string-append x "\n")) 
-                                                           (get-strings reproduce))))
-            (cons 'platform (get-environment))))
+            (cons 'release (qp-encode (send version get-value)))
+            (cons 'description (qp-encode
+                                (apply string-append (map (lambda (x) (string-append x "\n")) 
+                                                          (get-strings description)))))
+            (cons 'how-to-repeat (qp-encode
+                                  (apply string-append 
+                                         (map (lambda (x) (string-append x "\n")) 
+                                              (get-strings reproduce)))))
+            (cons 'platform (qp-encode (get-environment)))))
     
     (define (get-environment)
       (string-append (send environment get-value)
@@ -378,7 +381,7 @@
                 (string->url (format "http://~a:~a/cgi-bin/bug-report"
                                      bug-www-server
                                      bug-www-server-port))]
-               [post-data 
+               [post-data
                 (parameterize ([current-alist-separator-mode 'amp])
                   (string->bytes/utf-8 (alist->form-urlencoded query)))]
                [http-thread
@@ -420,6 +423,50 @@
         (set! cancel-kill-thread http-thread)
         (send response-abort enable #t)
         (switch-to-response-view)))
+    
+    ;; qp-encode : string -> string
+    ;; 'pre' escapes bytes that would be turned into non 7-bit values by utf8 encoding
+    ;; so that later utf-8 encoding will just leave them alone .... (ugh)
+    ;; also note that the encoding isn't quite quoted printable, since this code
+    ;; cannot ensure that the entire bug report has short lines. 
+    ;; It doesn't do any soft line breaking, in fact.
+    (define (qp-encode str)
+      (bytes->string/utf-8 (qp-encode/bytes (string->bytes/utf-8 str))))
+    
+    (define (qp-encode/bytes bytes)
+      (let loop ([blst (bytes->list bytes)]
+                 [acc null])
+        (cond
+          [(null? blst) (list->bytes (reverse! acc))]
+          [else
+           (let ([b (car blst)])
+             (cond
+               [(<= 9 b 32)
+                (if (or (null? (cdr blst))
+                        (not (equal? #\newline (cadr blst))))
+                    (loop (cdr blst) (cons b acc))
+                    (loop (cdr blst)
+                          (add-qp-bytes b acc)))]
+               [(and (<= 33 b 126) (not (= b 61)))
+                (loop (cdr blst)
+                      (cons b acc))]
+               [else 
+                (loop (cdr blst)
+                      (add-qp-bytes b acc))]))])))
+    
+    (define (add-qp-bytes b acc)
+      (append (reverse (bytes->list (string->bytes/utf-8 (qp-encode/byte b))))
+              acc))
+    
+    (define (qp-encode/byte b)
+      (format "=~a~a"
+              (hex-num->digit (quotient b 16))
+              (hex-num->digit (modulo b 16))))
+    
+    (define (hex-num->digit d)
+      (cond
+        [(<= d 9) d]
+        [else (integer->char (+ (char->integer #\A) d -9))]))
     
     (define (get-strings canvas)
       (let ([t (send canvas get-editor)])
