@@ -1,5 +1,7 @@
 (module response-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+           (lib "xml.ss" "xml")
+           (lib "file.ss")
            (lib "response.ss" "web-server" "private")
            (lib "response-structs.ss" "web-server" "private")
            (lib "connection-manager.ss" "web-server" "private")
@@ -25,7 +27,6 @@
       #"Last-Modified: XXX GMT\r\n")
      #"Date: XXX GMT\r\n"))
   
-  ; XXX
   (define response-tests
     (test-suite
      "HTTP Responses"
@@ -118,9 +119,150 @@
                     (output output-response
                             `(html (head (title "Hey!")) (body "Content")))
                     #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 66\r\n\r\n<html><head><title>Hey!</title></head><body>Content</body></html>\n")))
-     ; XXX
      (test-suite
-      "output-response/method")
+      "output-response/method"
+      (test-suite 
+       "response/full"
+       (test-equal? "response/full" 
+                    (output output-response/method 
+                            (make-response/full 404 "404" (current-seconds) #"text/html"
+                                                (list) (list))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
+       (test-equal? "response/full (header)" 
+                    (output output-response/method
+                            (make-response/full 404 "404" (current-seconds) #"text/html"
+                                                (list (cons 'Header "Value")) (list))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
+       (test-equal? "response/full (body)" 
+                    (output output-response/method
+                            (make-response/full 404 "404" (current-seconds) #"text/html"
+                                                (list) (list "Content!"))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\n")
+       (test-equal? "response/full (bytes body)"
+                    (output output-response/method 
+                            (make-response/full 404 "404" (current-seconds) #"text/html"
+                                                (list) (list #"Content!"))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\n")
+       (test-equal? "response/full (both)" 
+                    (output output-response/method
+                            (make-response/full 404 "404" (current-seconds) #"text/html"
+                                                (list (cons 'Header "Value")) (list "Content!"))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\n"))
+      (test-suite
+       "response/incremental"
+       (test-equal? "response/incremental" 
+                    (output output-response/method 
+                            (make-response/incremental 404 "404" (current-seconds) #"text/html"
+                                                       (list) (lambda (write) (void)))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
+       (test-equal? "response/incremental (header)" 
+                    (output output-response/method
+                            (make-response/incremental 404 "404" (current-seconds) #"text/html"
+                                                       (list (cons 'Header "Value"))
+                                                       (lambda (write) (void)))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
+       (test-equal? "response/incremental (body)" 
+                    (output output-response/method
+                            (make-response/incremental 404 "404" (current-seconds) #"text/html"
+                                                       (list) 
+                                                       (lambda (write) (write "Content!")))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\n")
+       (test-equal? "response/incremental (bytes body)"
+                    (output output-response/method
+                            (make-response/incremental 404 "404" (current-seconds) #"text/html"
+                                                       (list) 
+                                                       (lambda (write) (write #"Content!")))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\n")
+       (test-equal? "response/incremental (both)" 
+                    (output output-response/method
+                            (make-response/incremental 404 "404" (current-seconds) #"text/html"
+                                                       (list (cons 'Header "Value"))
+                                                       (lambda (write) (write "Content!")))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\n")
+       (test-equal? "response/incremental (twice)" 
+                    (output output-response/method
+                            (make-response/incremental 404 "404" (current-seconds) #"text/html"
+                                                       (list (cons 'Header "Value"))
+                                                       (lambda (write) 
+                                                         (write "Content!")
+                                                         (write "Content!")))
+                            'head)
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 16\r\nHeader: Value\r\n\r\n"))
+      (test-suite
+       "Simple content"
+       (test-equal? "empty"
+                    (output output-response/method
+                            (list #"text/html")
+                            'head)
+                    #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
+       (test-equal? "not"
+                    (output output-response/method
+                            (list #"text/html" "Content")
+                            'head)
+                    #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 7\r\n\r\n")
+       (test-equal? "not, bytes"
+                    (output output-response/method
+                            (list #"text/html" #"Content")
+                            'head)
+                    #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 7\r\n\r\n"))
+      (test-suite
+       "xexpr"
+       (test-equal? "any"
+                    (output output-response/method
+                            `(html (head (title "Hey!")) (body "Content"))
+                            'head)
+                    #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 66\r\n\r\n")))
      ; XXX
-     (test-suite
-      "output-file"))))
+     (let ()
+       (define tmp-file (make-temporary-file))
+       (with-output-to-file tmp-file 
+         (lambda ()
+           (display
+            (xexpr->string 
+             `(html (head (title "A title"))
+                    (body "Here's some content!")))))
+         'truncate/replace)
+       (test-suite
+        "output-file"
+        (test-equal? "(get) whole-file"
+                     (output output-file tmp-file 'get #"text/html"
+                             0 +inf.0)
+                     #"HTTP/1.1 206 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
+        (test-equal? "(get) end early"
+                     (output output-file tmp-file 'get #"text/html"
+                             0 10)
+                     #"HTTP/1.1 206 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 10\r\nContent-Range: bytes 0-10/81\r\n\r\n<html><hea")
+        (test-equal? "(get) start late"
+                     (output output-file tmp-file 'get #"text/html"
+                             10 +inf.0)
+                     #"HTTP/1.1 206 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 71\r\nContent-Range: bytes 10-81/81\r\n\r\nd><title>A title</title></head><body>Here's some content!</body></html>")
+        (test-equal? "(get) start late and end early"
+                     (output output-file tmp-file 'get #"text/html"
+                             5 10)
+                     #"HTTP/1.1 206 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 5\r\nContent-Range: bytes 5-10/81\r\n\r\n><head><ti")
+        (test-equal? "(head) whole-file"
+                     (output output-file tmp-file 'head #"text/html"
+                             0 +inf.0)
+                     #"HTTP/1.1 206 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n")
+        (test-equal? "(head) end early"
+                     (output output-file tmp-file 'head #"text/html"
+                             0 10)
+                     #"HTTP/1.1 206 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 10\r\nContent-Range: bytes 0-10/81\r\n\r\n")
+        (test-equal? "(head) start late"
+                     (output output-file tmp-file 'head #"text/html"
+                             10 +inf.0)
+                     #"HTTP/1.1 206 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 71\r\nContent-Range: bytes 10-81/81\r\n\r\n")
+        (test-equal? "(head) start late and end early"
+                     (output output-file tmp-file 'head #"text/html"
+                             1 10)
+                     #"HTTP/1.1 206 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 9\r\nContent-Range: bytes 1-10/81\r\n\r\n"))))))

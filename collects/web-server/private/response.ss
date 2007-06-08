@@ -2,14 +2,16 @@
   (require (lib "contract.ss")
            (lib "port.ss")
            (lib "pretty.ss")
+           (lib "plt-match.ss")
            (lib "xml.ss" "xml")
            "connection-manager.ss"
            "../private/response-structs.ss"
            "util.ss")
+  ; XXX Fix this insanity
   
-  ;; Weak contracts for output-response because the response? is checked inside
-  ;; output-response, handled, etc.
+  ; XXX Make return contracts correct
   (provide/contract
+   ; XXX Make contract stronger
    [rename ext:output-response output-response (connection? any/c . -> . any)]
    [rename ext:output-response/method output-response/method (connection? response? symbol? . -> . any)]
    [rename ext:output-file output-file (connection? path? symbol? bytes? integer? integer? . -> . any)])
@@ -127,7 +129,7 @@
     (cond
       [(response/full? resp)
        (output-response/basic
-        conn resp (response/full->size resp)
+        conn resp (response->size resp)
         (lambda (o-port)
           (for-each
            (lambda (str) (display str o-port))
@@ -138,15 +140,13 @@
        (output-response/basic
         conn
         (make-response/basic 200 "Okay" (current-seconds) (car resp) '())
-        (apply + (map
-                  data-length
-                  (cdr resp)))
+        (response->size resp)
         (lambda (o-port)
           (for-each
            (lambda (str) (display str o-port))
            (cdr resp))))]
       [else
-       ;; TODO: make a real exception for this.
+       ; XXX: make a real exception for this.
        (with-handlers
            ([exn:invalid-xexpr?
              (lambda (exn)
@@ -156,6 +156,7 @@
                 'ignored))]
             [exn? (lambda (exn)
                     (raise exn))])
+         ; XXX Don't validate here
          (let ([str (and (validate-xexpr resp) (xexpr->string resp))])
            (output-response/basic
             conn
@@ -172,12 +173,30 @@
   (define ext:output-response
     (ext:wrap output-response))
   
-  ;; response/full->size: response/full -> number
-  ;; compute the size for a response/full
-  (define (response/full->size resp/f)
-    (apply + (map
-              data-length
-              (response/full-body resp/f))))  
+  ;; response->size: response -> number
+  ;; compute the size for a response
+  (define (response->size resp)
+    (match resp
+      [(? response/full?)
+       (apply + (map
+                 data-length
+                 (response/full-body resp)))]
+      [(? response/incremental?)
+       (define total (box 0))
+       ((response/incremental-generator resp)
+        (lambda chunks
+          (set-box! total (apply + (unbox total) (map data-length chunks)))))
+       (unbox total)]
+      [_
+       (if (and (pair? resp) (bytes? (car resp)))
+           (apply + (map
+                     data-length
+                     (cdr resp)))
+           (add1 
+            (data-length
+             ; XXX Don't validate here
+             (and (validate-xexpr resp)
+                  (xexpr->string resp)))))]))
   
   ;; **************************************************
   ;; output-file: connection path symbol bytes integer integer -> void
@@ -205,7 +224,7 @@
   
   (define ext:output-file
     (ext:wrap output-file))  
-
+  
   ; XXX Check method in response
   ;; **************************************************
   ;; output-response/method: connection response/full symbol -> void
@@ -213,8 +232,9 @@
   (define (output-response/method conn resp meth)
     (cond
       [(eqv? meth 'head)
-       (output-headers/response conn resp `(("Content-Length: "
-                                             ,(response/full->size resp))))]
+       (output-headers/response conn resp 
+                                `(("Content-Length: "
+                                   ,(response->size resp))))]
       [else
        (output-response conn resp)]))
   
@@ -228,7 +248,7 @@
     (output-headers conn
                     (response/basic-code resp)
                     (response/basic-message resp)
-                    extras
+                    (append extras (extras->strings resp))
                     (response/basic-seconds resp)
                     (response/basic-mime resp)))
   
@@ -237,14 +257,12 @@
   ;; Write a normal response to an output port
   (define (output-response/basic conn resp size responder)
     (output-headers/response conn resp
-                             `(("Content-Length: " ,size)
-                               . ,(extras->strings resp)))
+                             `(("Content-Length: " ,size)))
     (responder (connection-o-port conn)))
   
   ;; **************************************************
   ;; output-response/incremental: connection response/incremental -> void
   ;; Write a chunked response to an output port.
-  ; XXX How does this end?
   (define (output-response/incremental conn resp/inc)
     (let ([o-port (connection-o-port conn)])
       (cond
@@ -255,8 +273,7 @@
             (for-each (lambda (chunk) (display chunk o-port)) chunks)))]
         [else
          (output-headers/response conn resp/inc
-                                  `(("Transfer-Encoding: chunked")
-                                    . ,(extras->strings resp/inc)))
+                                  `(("Transfer-Encoding: chunked")))
          ((response/incremental-generator resp/inc)
           (lambda chunks
             (fprintf o-port "~x\r\n"

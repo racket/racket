@@ -18,11 +18,11 @@
   (define (response? x)
     (or (response/basic? x)
         ; this could fail for dotted lists - rewrite andmap
-        (and (pair? x) (pair? (cdr x)) (andmap
-                                        (lambda (x)
-                                          (or (string? x)
-                                              (bytes? x)))
-                                        x))
+        (and (pair? x) (andmap
+                        (lambda (x)
+                          (or (string? x)
+                              (bytes? x)))
+                        x))
         ; insist that the xexpr has a root element
         (and (pair? x) (xexpr? x))))
   
