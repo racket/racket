@@ -201,6 +201,7 @@
     (define bresp 
       (make-response/basic 206 "Okay" (file-or-directory-modify-seconds file-path) mime-type 
                            (list (cons 'Content-Length (number->string len))
+                                 ; XXX Remove on non-gets?
                                  (cons 'Content-Range (format "bytes ~a-~a/~a" start end total-len)))))
     (output-headers+response/basic conn bresp)
     (when (eq? method 'get)

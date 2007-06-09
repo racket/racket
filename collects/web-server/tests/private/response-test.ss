@@ -4,28 +4,13 @@
            (lib "file.ss")
            (lib "response.ss" "web-server" "private")
            (lib "response-structs.ss" "web-server" "private")
-           (lib "connection-manager.ss" "web-server" "private")
-           (lib "timer.ss" "web-server" "private"))
+           "../util.ss")
   (provide response-tests)
-  
-  (define (make-mock-connection ib)
-    (define ip (open-input-bytes ib))
-    (define op (open-output-bytes))
-    (values (make-connection (make-timer never-evt +inf.0 (lambda () (void)))
-                             ip op (make-custodian) #f (make-semaphore 1))
-            ip
-            op))
-  
+    
   (define (output f . any)
     (define-values (c i o) (make-mock-connection #""))
     (apply f c any)
-    (regexp-replace 
-     #"Date: [a-zA-Z0-9:, ]+ GMT\r\n"
-     (regexp-replace
-      #"Last-Modified: [a-zA-Z0-9:, ]+ GMT\r\n"
-      (get-output-bytes o)
-      #"Last-Modified: REDACTED GMT\r\n")
-     #"Date: REDACTED GMT\r\n"))
+    (redact (get-output-bytes o)))
   
   (define response-tests
     (test-suite

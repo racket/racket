@@ -50,12 +50,12 @@
                ; XXX: Unhandled range: r
                (output-file conn path method (get-mime-type path)
                             0 +inf.0)])])]
-        [(directory-exists? path)
+        [(and (directory-exists? path)
+              (looks-like-directory? (url-path->string (url-path uri))))
          (let/ec esc
            (for-each (lambda (dir-default)
                        (define full-name (build-path path dir-default))
-                       (when (and (file-exists? full-name)
-                                  (looks-like-directory? (url-path->string (url-path uri))))
+                       (when (file-exists? full-name)
                          (esc (output-file conn full-name method (get-mime-type full-name)
                                            0 +inf.0))))
                      indices)
