@@ -212,7 +212,8 @@
           (lambda (i-port)
             (define _ (file-position i-port start))
             (define i-port/end (make-limited-input-port i-port end #t))
-            (copy-port i-port/end (connection-o-port conn)))))))
+            (copy-port i-port/end (connection-o-port conn))
+            (close-input-port i-port/end))))))
   
   (define ext:output-file
     (ext:wrap output-file))  
