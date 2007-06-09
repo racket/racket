@@ -252,19 +252,6 @@ it around flattened out.
                                 (wrap-parent-set wrapper 0 (make-synth-info '() ht (car synth-setup-stuff))))))
                           wrapper)])))))
              
-             (define (already-there/opt? val new-n new-r)
-               (cond
-                 [(and (opt-wrap-predicate val)
-                       (opt-wrap-get val 0))
-                  (let ([old-n (opt-wrap-get val 2)]
-                        [old-r (opt-wrap-get val 3)])
-                    (flattened-stronger old-n old-r new-n new-r))]
-                 [else #f]))
-             
-             (define (flattened-stronger this-val this-rank that-val that-rank)
-               (and (<= this-val that-val)
-                    (>= this-rank that-rank)))
-             
              (define (already-there? new-contract/info val depth)
                (cond
                  [(raw-predicate val) #f]
