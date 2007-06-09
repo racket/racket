@@ -77,15 +77,15 @@
       [(response/incremental? resp)
        (if close?
            resp
-       (make-response/incremental 
-        (response/basic-code resp)
-        (response/basic-message resp)
-        (response/basic-seconds resp)
-        (response/basic-mime resp)
-        (list*
-         (cons 'Transfer-Encoding "chunked")
-         (response/basic-extras resp))
-        (response/incremental-generator resp)))]
+           (make-response/incremental 
+            (response/basic-code resp)
+            (response/basic-message resp)
+            (response/basic-seconds resp)
+            (response/basic-mime resp)
+            (list*
+             (cons 'Transfer-Encoding "chunked")
+             (response/basic-extras resp))
+            (response/incremental-generator resp)))]
       [(and (pair? resp) (bytes? (car resp)))
        (response->response/basic
         close?
@@ -206,6 +206,7 @@
     (output-headers+response/basic conn bresp)
     (when (eq? method 'get)
       ; Give it one second per byte.
+      ; XXX Move out
       (adjust-connection-timeout! conn len)
       (with-handlers ([void (lambda (e) (network-error 'output-file/partial (exn-message e)))])
         (call-with-input-file file-path
