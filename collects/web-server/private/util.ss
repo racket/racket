@@ -4,8 +4,11 @@
            (lib "contract.ss")
            (lib "string.ss")
            (lib "serialize.ss")
+           (lib "pretty.ss")
+           (lib "xml.ss" "xml")
            (lib "url.ss" "net"))
   (provide/contract
+   [pretty-print-invalid-xexpr (exn:invalid-xexpr? any/c . -> . void)]
    [url-replace-path ((list? . -> . list?) url? . -> . url?)]
    [explode-path* (path? . -> . (listof (or/c symbol? path?)))]
    [path-without-base (path? path? . -> . list?)]
@@ -20,6 +23,20 @@
    [build-path-unless-absolute (path-string? path-string? . -> . path?)]
    [read/string (string? . -> . serializable?)]
    [write/string (serializable? . -> . string?)])
+  
+  (define (pretty-print-invalid-xexpr exn xexpr)
+    (define code (exn:invalid-xexpr-code exn))
+    (parameterize ([pretty-print-size-hook (lambda (v display? out)
+                                             (and (equal? v code)
+                                                  (string-length (format (if display? "~a" "~v") v))))]
+                   [pretty-print-print-hook (lambda (v display? out)
+                                              (fprintf out
+                                                       (string-append
+                                                        "<font color=\"red\">"
+                                                        (if display? "~a" "~v")
+                                                        "</font>")
+                                                       v))])
+      (pretty-print xexpr)))
   
   (define (read/string str)
     (read (open-input-string str)))

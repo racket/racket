@@ -118,7 +118,7 @@
        (test-equal? "any"
                     (output output-response
                             `(html (head (title "Hey!")) (body "Content")))
-                    #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 66\r\n\r\n<html><head><title>Hey!</title></head><body>Content</body></html>\n")))
+                    #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 65\r\n\r\n<html><head><title>Hey!</title></head><body>Content</body></html>")))
      (test-suite
       "output-response/method"
       (test-suite 
@@ -160,35 +160,35 @@
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
                                                        (list) (lambda (write) (void)))
                             'head)
-                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n")
        (test-equal? "response/incremental (header)" 
                     (output output-response/method
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
                                                        (list (cons 'Header "Value"))
                                                        (lambda (write) (void)))
                             'head)
-                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n")
        (test-equal? "response/incremental (body)" 
                     (output output-response/method
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
                                                        (list) 
                                                        (lambda (write) (write "Content!")))
                             'head)
-                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\n")
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n")
        (test-equal? "response/incremental (bytes body)"
                     (output output-response/method
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
                                                        (list) 
                                                        (lambda (write) (write #"Content!")))
                             'head)
-                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\n\r\n")
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\n\r\n")
        (test-equal? "response/incremental (both)" 
                     (output output-response/method
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
                                                        (list (cons 'Header "Value"))
                                                        (lambda (write) (write "Content!")))
                             'head)
-                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\n")
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n")
        (test-equal? "response/incremental (twice)" 
                     (output output-response/method
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
@@ -197,7 +197,7 @@
                                                          (write "Content!")
                                                          (write "Content!")))
                             'head)
-                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 16\r\nHeader: Value\r\n\r\n"))
+                    #"HTTP/1.1 404 404\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n"))
       (test-suite
        "Simple content"
        (test-equal? "empty"
@@ -221,8 +221,7 @@
                     (output output-response/method
                             `(html (head (title "Hey!")) (body "Content"))
                             'head)
-                    #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 66\r\n\r\n")))
-     ; XXX
+                    #"HTTP/1.1 200 Okay\r\nDate: XXX GMT\r\nLast-Modified: XXX GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 65\r\n\r\n")))
      (let ()
        (define tmp-file (make-temporary-file))
        (with-output-to-file tmp-file 

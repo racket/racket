@@ -8,6 +8,8 @@
     (test-suite
      "Utilities"
      
+     ; XXX test pretty-print-invalid-xexpr
+     
      (test-suite
       "url-replace-path"
       (test-case
