@@ -479,7 +479,7 @@ PROCEDURES -----------------------------------------------------------
   The sender can hold any value, though of course spoofing should be
   used with care.
 
-> (send-mail-message from-string subject-string to-list-of-strings cc-list-of-strings bcc-list-of-string body-list-of-strings [extra-headers-list-of-strings]) -> void
+> (send-mail-message from-string subject-string to-list-of-strings cc-list-of-strings bcc-list-of-string body-list-of-strings [extra-headers-strings ...]) -> void
 
   The arguments are the same as that for send-mail-message/port except
   that there is one extra input, the list of strings corresponding to
