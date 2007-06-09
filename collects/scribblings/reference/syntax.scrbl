@@ -152,15 +152,25 @@ according to their order in the application form.
 
 @guideintro["guide:lambda"]{procedure expressions}
 
-@defform[(lambda formals* . body)]{
+@defform/subs[(lambda formals* . body)
+              ([formals (id ...)
+                        (id ...+ . rest-id)
+                        rest-id]
+               [formals* formals
+                         (formal-arg ...)
+                         (formal-arg ...+ . rest-id)]
+               [formal-arg id
+                           [id default-expr]
+                           (code:line keyword id)
+                           (code:line keyword [id default-expr])])]{
 
-Procedures a procedure. The @scheme[formals*] determines the number of
+Produces a procedure. The @scheme[formals*] determines the number of
 arguments that the procedure accepts. It is either a simple
 @scheme[_formals], or one of the extended forms.
 
 A simple @scheme[_formals] has one of the following three forms:
 
-@specsubform[(id ... )]{ The procedure accepts as many non-keyword
+@specsubform[(id ...)]{ The procedure accepts as many non-keyword
        argument values as the number of @scheme[id]s. Each @scheme[id]
        is associated with an argument value by position.}
 

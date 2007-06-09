@@ -146,8 +146,9 @@
 
   ;; ----------------------------------------
 
-  (provide defproc defproc* defstruct defthing defform defform* defform/none
+  (provide defproc defproc* defstruct defthing defform defform* defform/subs defform*/subs defform/none
            specform specsubform specsubform/inline
+           schemegrammar
            var svar void-const undefined-const)
 
   (define void-const
@@ -205,9 +206,9 @@
     (syntax-rules ()
       [(_ name fields desc ...)
        (*defstruct 'name 'fields (lambda () (list desc ...)))]))
-  (define-syntax (defform* stx)
+  (define-syntax (defform*/subs stx)
     (syntax-case stx ()
-      [(_ [spec spec1 ...] desc ...)
+      [(_ [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
        (with-syntax ([new-spec
                       (syntax-case #'spec ()
                         [(name . rest)
@@ -218,17 +219,32 @@
                                                                       #'name)
                                                 #'rest)
                                                #'spec)])])
-         #'(*defforms #t '(spec spec1 ...) 
+         #'(*defforms #t
+                      '(spec spec1 ...) 
                       (list (lambda (x) (schemeblock0 new-spec))
                             (lambda (ignored) (schemeblock0 spec1)) ...)
+                      '((non-term-id non-term-form ...) ...)
+                      (list (list (lambda () (scheme non-term-id))
+                                  (lambda () (schemeblock0 non-term-form))
+                                  ...)
+                            ...)
                       (lambda () (list desc ...))))]))
+  (define-syntax (defform* stx)
+    (syntax-case stx ()
+      [(_ [spec ...] desc ...) #'(defform*/subs [spec ...] () desc ...)]))
   (define-syntax (defform stx)
     (syntax-case stx ()
-      [(_ spec desc ...) #'(defform* [spec] desc ...)]))
+      [(_ spec desc ...) #'(defform*/subs [spec] () desc ...)]))
+  (define-syntax (defform/subs stx)
+    (syntax-case stx ()
+      [(_ spec subs desc ...) #'(defform*/subs [spec] subs desc ...)]))
   (define-syntax (defform/none stx)
     (syntax-case stx ()
       [(_ spec desc ...)
-       #'(*defforms #f '(spec) (list (lambda (ignored) (schemeblock0 spec))) (lambda () (list desc ...)))]))
+       #'(*defforms #f 
+                    '(spec) (list (lambda (ignored) (schemeblock0 spec))) 
+                    null null
+                    (lambda () (list desc ...)))]))
   (define-syntax specsubform
     (syntax-rules ()
       [(_ spec desc ...)
@@ -245,6 +261,9 @@
     (syntax-rules ()
       [(_ id result desc ...)
        (*defthing 'id 'result (lambda () (list desc ...)))]))
+  (define-syntax schemegrammar
+    (syntax-rules ()
+      [(_ id clause ...) (*schemegrammar (scheme id) (schemeblock0 clause) ...)]))
   (define-syntax var
     (syntax-rules ()
       [(_ id) (*var 'id)]))
@@ -450,12 +469,13 @@
 
   (define (meta-symbol? s) (memq s '(... ...+ ?)))
 
-  (define (*defforms kw? forms form-procs content-thunk)
+  (define (*defforms kw? forms form-procs subs sub-procs content-thunk)
     (parameterize ([current-variable-list
                     (apply 
                      append
                      (map (lambda (form)
-                            (let loop ([form (if kw? (cdr form) form)])
+                            (let loop ([form (cons (if kw? (cdr form) form)
+                                                   subs)])
                               (cond
                                [(symbol? form) (if (meta-symbol? form)
                                                    null
@@ -468,24 +488,32 @@
        (cons
         (make-table
          'boxed
-         (map (lambda (form form-proc)
-                (list
-                 (make-flow 
-                  (list
-                   ((or form-proc
-                        (lambda (x)
-                          (make-paragraph
-                           (list
-                            (to-element
-                             `(,x
-                               . ,(cdr form)))))))
-                    (and kw?
-                         (eq? form (car forms))
-                         (make-target-element
-                          #f
-                          (list (to-element (car form)))
-                          (register-scheme-form-definition (car form)))))))))
-              forms form-procs))
+         (append
+          (map (lambda (form form-proc)
+                 (list
+                  (make-flow 
+                   (list
+                    ((or form-proc
+                         (lambda (x)
+                           (make-paragraph
+                            (list
+                             (to-element
+                              `(,x
+                                . ,(cdr form)))))))
+                     (and kw?
+                          (eq? form (car forms))
+                          (make-target-element
+                           #f
+                           (list (to-element (car form)))
+                           (register-scheme-form-definition (car form)))))))))
+               forms form-procs)
+          (apply
+           append
+           (map (lambda (sub)
+                  (list (list (make-flow (list (make-paragraph (list (tt 'nbsp))))))
+                        (list (make-flow (list (apply *schemegrammar 
+                                                      (map (lambda (f) (f)) sub)))))))
+                sub-procs))))
         (content-thunk)))))
 
   (define (*specsubform form has-kw? form-thunk content-thunk)
@@ -511,6 +539,26 @@
                       (form-thunk)
                       (make-paragraph (list (to-element form)))))))))
         (flow-paragraphs (decode-flow (content-thunk)))))))
+
+  (define (*schemegrammar nonterm clause1 . clauses)
+    (make-table
+     '((valignment baseline baseline baseline baseline baseline)
+       (alignment left left center left left))
+     (let ([empty-line (make-flow (list (make-paragraph (list (tt 'nbsp)))))]
+           [to-flow (lambda (i) (make-flow (list (make-paragraph (list i)))))])
+       (cons
+        (list (to-flow nonterm)
+              empty-line
+              (to-flow "=")
+              empty-line
+              (make-flow (list clause1)))
+        (map (lambda (clause)
+               (list empty-line
+                     empty-line
+                     (to-flow "|")
+                     empty-line
+                     (make-flow (list clause))))
+             clauses)))))
 
   (define (*var id)
     (to-element (*var-sym id)))

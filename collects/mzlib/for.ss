@@ -1,13 +1,13 @@
 (module for mzscheme
 
-  (provide for/fold for/fold-values for*/fold for*/fold-values
-           for for-values for* for*-values
-           for/list for/list-values for*/list for*/list-values 
-           for/lists for/lists-values for*/lists for*/lists-values
-           for/and for/and-values for*/and for*/and-values
-           for/or for/or-values for*/or for*/or-values
-           for/first for/first-values for*/first for*/first-values
-           for/last for/last-values for*/last for*/last-values
+  (provide for/fold for*/fold
+           for for*
+           for/list for*/list
+           for/lists for*/lists
+           for/and for*/and
+           for/or for*/or
+           for/first for*/first
+           for/last for*/last
            
            (rename *in-range in-range)
            (rename *in-naturals in-naturals)
@@ -587,13 +587,13 @@
   (define-syntax (for/foldX/derived stx)
     (syntax-case stx ()
       ;; Done case (no more clauses, and no generated clauses to emit):
-      [(_ [orig-stx multi? first-multi? nested? emit? ()] ([fold-var fold-init] ...) () expr1 expr ...)
+      [(_ [orig-stx nested? emit? ()] ([fold-var fold-init] ...) () expr1 expr ...)
        #`(let ([fold-var fold-init] ...) (let () expr1 expr ...))]
       ;; Switch-to-emit case (no more clauses to generate):
-      [(_ [orig-stx multi? first-multi? nested? #f binds] ([fold-var fold-init] ...) () . body)
-       #`(for/foldX/derived [orig-stx multi? first-multi? nested? #t binds] ([fold-var fold-init] ...) () . body)]
+      [(_ [orig-stx nested? #f binds] ([fold-var fold-init] ...) () . body)
+       #`(for/foldX/derived [orig-stx nested? #t binds] ([fold-var fold-init] ...) () . body)]
       ;; Emit case:
-      [(_ [orig-stx multi? first-multi? nested? #t binds] ([fold-var fold-init] ...) rest . body)
+      [(_ [orig-stx nested? #t binds] ([fold-var fold-init] ...) rest . body)
        (with-syntax ([(([outer-binding ...]
                         outer-check
                         [loop-binding ...]
@@ -610,7 +610,7 @@
                    (let-values (inner-binding ... ...)
                      (if (and pre-guard ...)
                          (let-values ([(fold-var ...)
-                                       (for/foldX/derived [orig-stx multi? first-multi? nested? #f ()] ([fold-var fold-var] ...) rest . body)])
+                                       (for/foldX/derived [orig-stx nested? #f ()] ([fold-var fold-var] ...) rest . body)])
                            (if (and post-guard ...)
                                (comp-loop fold-var ... loop-arg ... ...)
                                (values* fold-var ...)))
@@ -628,17 +628,17 @@
         "bad syntax (illegal use of `.') after sequence bindings"
         #'orig-stx)]
       ;; Guard case, no pending emits:
-      [(_ [orig-stx multi? first-multi? nested? #f ()] ([fold-var fold-init] ...) (#:when expr . rest) . body)
+      [(_ [orig-stx nested? #f ()] ([fold-var fold-init] ...) (#:when expr . rest) . body)
        #'(if expr
-             (for/foldX/derived [orig-stx multi? first-multi? nested? #f ()] ([fold-var fold-init] ...) rest . body)
+             (for/foldX/derived [orig-stx nested? #f ()] ([fold-var fold-init] ...) rest . body)
              (values* fold-init ...))]
       ;; Guard case, pending emits need to be flushed first
-      [(_ [orig-stx multi? first-multi? nested? #f binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)
-       #'(_ [orig-stx multi? first-multi? nested? #t binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)]
+      [(_ [orig-stx nested? #f binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)
+       #'(_ [orig-stx nested? #t binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)]
       ;; Convert single-value form to multi-value form:
-      [(_ [orig-stx #f #f nested? #f binds] fold-bind ([id rhs] . rest) . body)
+      [(_ [orig-stx nested? #f binds] fold-bind ([id rhs] . rest) . body)
        (identifier? #'id)
-       #'(for/foldX/derived [orig-stx #f #t nested? #f binds] fold-bind ([(id) rhs] . rest) . body)]
+       #'(for/foldX/derived [orig-stx nested? #f binds] fold-bind ([(id) rhs] . rest) . body)]
       ;; If we get here in single-value mode, then it's a bad clause:
       [(_ [orig-stx #f #f nested? #f binds] fold-bind (clause . rest) . body)
        (raise-syntax-error
@@ -647,31 +647,21 @@
         #'orig-stx
         #'clause)]
       ;; Expand one multi-value clause, and push it into the results to emit: 
-      [(_ [orig-stx multi? #t nested? #f binds] ([fold-var fold-init] ...) (clause . rest) . body)
+      [(_ [orig-stx nested? #f binds] ([fold-var fold-init] ...) (clause . rest) . body)
        (with-syntax ([bind (expand-clause #'orig-stx #'clause)])
-         #`(_ [orig-stx multi? multi? nested? nested? (bind . binds)] ([fold-var fold-init] ...) rest . body))]
+         #`(_ [orig-stx nested? nested? (bind . binds)] ([fold-var fold-init] ...) rest . body))]
       [(_ [orig-stx . _rest] . _rest2)
        (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
   (define-syntax for/fold/derived
     (syntax-rules ()
       [(_ orig-stx . rest)
-       (for/foldX/derived [orig-stx #f #f #f #f ()] . rest)]))
-
-  (define-syntax for/fold-values/derived
-    (syntax-rules ()
-      [(_ orig-stx . rest)
-       (for/foldX/derived [orig-stx #t #t #f #f ()] . rest)]))
+       (for/foldX/derived [orig-stx #f #f ()] . rest)]))
 
   (define-syntax for*/fold/derived
     (syntax-rules ()
       [(_ orig-stx . rest)
-       (for/foldX/derived [orig-stx #f #f #t #f ()] . rest)]))
-
-  (define-syntax for*/fold-values/derived
-    (syntax-rules ()
-      [(_ orig-stx . rest)
-       (for/foldX/derived [orig-stx #t #t #t #f ()] . rest)]))
+       (for/foldX/derived [orig-stx #t #f ()] . rest)]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  derived `for' syntax
@@ -714,39 +704,31 @@
   
   (define-syntax define-for-variants
     (syntax-rules ()
-      [(_ (for for-values for* for*-values) fold-bind wrap rhs-wrap combine)
+      [(_ (for for*) fold-bind wrap rhs-wrap combine)
        (begin
          (define-syntax-via-derived for for/fold/derived fold-bind wrap rhs-wrap combine #f)
-         (define-syntax-via-derived for-values for/fold-values/derived fold-bind wrap rhs-wrap combine #t)
-         (define-syntax-via-derived for* for*/fold/derived fold-bind wrap rhs-wrap combine #f)
-         (define-syntax-via-derived for*-values for*/fold-values/derived fold-bind wrap rhs-wrap combine #t))]))
+         (define-syntax-via-derived for* for*/fold/derived fold-bind wrap rhs-wrap combine #f))]))
 
   (define-syntax (for/fold stx)
     (syntax-case stx ()
       [(_ . rest) (quasisyntax/loc stx (for/fold/derived #,stx . rest))]))
-  (define-syntax (for/fold-values stx)
-    (syntax-case stx ()
-      [(_ . rest) (quasisyntax/loc stx (for/fold-values/derived #,stx . rest))]))
   (define-syntax (for*/fold stx)
     (syntax-case stx ()
       [(_ . rest) (quasisyntax/loc stx (for*/fold/derived #,stx . rest))]))
-  (define-syntax (for*/fold-values stx)
-    (syntax-case stx ()
-      [(_ . rest) (quasisyntax/loc stx (for*/fold-values/derived #,stx . rest))]))
 
-  (define-for-variants (for for-values for* for*-values)
+  (define-for-variants (for for*)
     ([fold-var (void)]) 
     (lambda (x) x)
     (lambda (x) x)
     (lambda (x) `(,#'begin ,x ,#'(void))))
   
-  (define-for-variants (for/list for/list-values for*/list for*/list-values)
+  (define-for-variants (for/list for*/list)
     ([fold-var null])
     (lambda (x) `(,#'reverse ,x))
     (lambda (x) x)
     (lambda (x) `(,#'cons ,x ,#'fold-var)))
   
-  (define-for-syntax (make-for/lists-values for/fold-id)
+  (define-for-syntax (make-for/lists for/fold-id)
     (lambda (stx)
       (syntax-case stx ()
         [(_ (id ...) bindings expr1 expr ...)
@@ -769,30 +751,28 @@
                                  (values* (cons id2 id) ...)))])
                  (values* (reverse id) ...))))])))
   
-  (define-syntax for/lists (make-for/lists-values #'for/fold/derived))
-  (define-syntax for/lists-values (make-for/lists-values #'for/fold-values/derived))
-  (define-syntax for*/lists (make-for/lists-values #'for*/fold/derived))
-  (define-syntax for*/lists-values (make-for/lists-values #'for*/fold-values/derived))
+  (define-syntax for/lists (make-for/lists #'for/fold/derived))
+  (define-syntax for*/lists (make-for/lists #'for*/fold/derived))
   
-  (define-for-variants (for/and for/and-values for*/and for*/and-values)
+  (define-for-variants (for/and for*/and)
     ([result #t])
     (lambda (x) x)
     (lambda (rhs) #`(stop-after #,rhs (lambda x (not result))))
     (lambda (x) x))
   
-  (define-for-variants (for/or for/or-values for*/or for*/or-values)
+  (define-for-variants (for/or for*/or)
     ([result #f])
     (lambda (x) x)
     (lambda (rhs) #`(stop-after #,rhs (lambda x result)))
     (lambda (x) x))
 
-  (define-for-variants (for/first for/first-values for*/first for*/first-values)
+  (define-for-variants (for/first for*/first)
     ([val #f][stop? #f])
     (lambda (x) #`(let-values ([(val _) #,x]) val))
     (lambda (rhs) #`(stop-after #,rhs (lambda x stop?)))
     (lambda (x) #`(values #,x #t)))
   
-  (define-for-variants (for/last for/last-values for*/last for*/last-values)
+  (define-for-variants (for/last for*/last)
     ([result #f])
     (lambda (x) x)
     (lambda (rhs) rhs)

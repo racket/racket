@@ -203,6 +203,7 @@
                                         `(td (,@(case a
                                                   [(#f) null]
                                                   [(right) '((align "right"))]
+                                                  [(center) '((align "center"))]
                                                   [(left) '((align "left"))])
                                               ,@(case va
                                                   [(#f) null]

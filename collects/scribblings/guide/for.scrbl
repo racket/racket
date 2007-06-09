@@ -347,21 +347,21 @@ elements.  For example, a hash table as a sequence generates two
 values for each iteration: a key and a value.
 
 In the same way that @scheme[let-values] binds multiple results to
-multiple identifiers, @scheme[for-values] binds multiple sequence
-elements to multiple iteration identifiers:
+multiple identifiers, @scheme[for] can bind multiple sequence elements
+to multiple iteration identifiers:
 
 @interaction[
-(for-values ([(k v) #hash(("apple" . 1) ("banana" . 3))])
+(for ([(k v) #hash(("apple" . 1) ("banana" . 3))])
   (printf "~a count: ~a\n" k v))
 ]
 
-A @schemekeywordfont{-values} variant exists for all @scheme[for]
-variants. For example, @scheme[for*/list-values] nests iterations,
-builds a list, and works with multiple-valued sequences:
+This extension to multiple-value bindings works for all @scheme[for]
+variants. For example, @scheme[for*/list] nests iterations, builds a
+list, and also works with multiple-valued sequences:
 
 @interaction[
-(for*/list-values ([(k v) #hash(("apple" . 1) ("banana" . 3))]
-                   [(i) (in-range v)])
+(for*/list ([(k v) #hash(("apple" . 1) ("banana" . 3))]
+            [(i) (in-range v)])
   k)
 ]
 
@@ -380,19 +380,36 @@ loops when enough information is apparent about the sequences to
 iterate. Specifically, the clause should have one of the following
 @scheme[_fast-clause] forms:
 
-@schemeblock[
-#, @is-one-of[@scheme[_fast-clause]]
-  [_id (in-range _expr)]
-  [_id (in-range _expr _expr)]
-  [_id (in-range _expr _expr _expr)]
-  [_id (in-naturals)]
-  [_id (in-naturals _expr)]
-  [_id (in-list _expr)]
-  [_id (in-vector _expr)]
-  [_id (in-string _expr)]
-  [_id (in-bytes _expr)]
-  [_id (stop-before _fast-clause _predicate-expr)]
-  [_id (stop-after _fast-clause _predicate-expr)]
+@schemegrammar[
+_fast-clause [_id _fast-seq]
+             [(_id) _fast-seq]
+             [(_id _id) _fast-indexed-seq]
+             [(_id ...) _fast-parallel-seq]
+]
+
+@schemegrammar[
+_fast-seq (in-range _expr _expr)
+          (in-range _expr _expr _expr)
+          (in-naturals)
+          (in-naturals _expr)
+          (in-list _expr)
+          (in-vector _expr)
+          (in-string _expr)
+          (in-bytes _expr)
+          (stop-before _fast-seq _predicate-expr)
+          (stop-after _fast-seq _predicate-expr)
+]
+
+@schemegrammar[
+_fast-indexed-seq (in-indexed _fast-seq)
+                  (stop-before _fast-indexed-seq _predicate-expr)
+                  (stop-after _fast-indexed-seq _predicate-expr)
+]
+
+@schemegrammar[
+_fast-parallel-seq (in-parallel _fast-seq ...)
+                   (stop-before _fast-parallel-seq _predicate-expr)
+                   (stop-after _fast-parallel-seq _predicate-expr)
 ]
 
 @examples[
@@ -406,18 +423,6 @@ iterate. Specifically, the clause should have one of the following
         (for ([i (in-range 100000)])
           (for ([elem seq])                        (code:comment #, @elem{slower})
             (void)))))
-]
-
-In the case of @scheme[for-values] forms, a few more
-@scheme[_fast-values-clause]s provide good performance, in addition to
-the obvious variants of @scheme[_fast-clause] forms:
-
-@schemeblock[
-#, @is-one-of[@scheme[_fast-values-clause]]     
-  [(_id) (in-range _expr)]
-  ...
-  [(_id _id) (in-indexed _fast-clause)]
-  [(_id ...) (in-parallel _fast-clause ...)]
 ]
 
 The grammars above are not complete, because the set of syntactic

@@ -241,6 +241,9 @@
                   [(#\<) (if (rendering-tt)
                              (display "{\\texttt <}")
                              (display "$<$"))]
+                  [(#\|) (if (rendering-tt)
+                             (display "{\\texttt |}")
+                             (display "$|$"))]
                   [(#\? #\! #\. #\:) (if (rendering-tt)
                                          (printf "{\\hbox{\\texttt{~a}}}" c)
                                          (display c))]

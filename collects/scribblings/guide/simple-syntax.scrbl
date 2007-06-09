@@ -471,8 +471,8 @@ procedure. In other words, the @scheme[lambda]-generated procedure
 @interaction[
 (define louder (make-add-suffix "!"))
 (define less-sure (make-add-suffix "?"))
-(twice less-sure "yeah")
-(twice louder "yeah")
+(twice less-sure "really")
+(twice louder "really")
 ]
 
 We have so far referred to definitions of the form @scheme[(define #,

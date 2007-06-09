@@ -1,40 +1,47 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
+@interaction-eval[(require (lib "for.ss"))]
+
 @title[#:tag "mz:derived-syntax"]{Derived Syntactic Forms}
 
 @section[#:tag "mz:for"]{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
 
 @guideintro["guide:for"]{iterations and comprehensions}
 
-@defform[(for (for-clause ...) . body)]{
+@defform/subs[(for (for-clause ...) . body)
+              ([for-clause [id seq-expr]
+                           [(id ...) seq-expr]
+                           (code:line #:when guard-expr)])]{
 
 Iteratively evaluates @scheme[body]. The @scheme[for-clause]s
 introduce bindings whose scope inculdes @scheme[body] and that
 determine the number of times that @scheme[body] is evaluated.
 
-In the simple case, each @scheme[for-clause] has the form
+In the simple case, each @scheme[for-clause] has one of its first two
+forms, where @scheme[[id seq-expr]] is a shorthand for @scheme[[(id
+...) seq-expr]].  In this simple case, the @scheme[seq-expr]s are
+evaluated left-to-right, and each must produce a sequence value (see
+@secref["mz:sequences"]).
 
-@specsubform[[id seq-expr]]{}
+The @scheme[for] form iterates by drawing an element from each
+sequence; if any sequence is empty, then the iteration stops, and
+@|void-const| is the result of the @scheme[for] expression. Otherwise
+a location is created for each @scheme[id] to hold the values of each
+element; the sequence produced by a @scheme[seq-expr] must return as
+many values for each iteration as corresponding @scheme[id]s.
 
-In this case, the @scheme[_seq-expr]s are evaluated left-to-right, and
-each must produce a sequence value (see @secref["mz:sequences"]).  The
-@scheme[for] form iterates by drawing an element from each sequence;
-if any sequence is empty, then the iteration stops, and @|void-const|
-is the result of the @scheme[for] expression. Otherwise a location is
-created for each @scheme[_id] to hold the corresponding element. The
-@scheme[_id]s are then bound in the @scheme[body], which is evaluated,
-and whose result(s) is(are) ignored. Iteration continues with the next
-element in each sequence and with fresh locations for each
-@scheme[_id]. Zero @scheme[for-clause]s is equivalent to a single
-@scheme[for-clause] that binds an unreferenced @scheme[_id] to a
-sequence containing one element. All of the @scheme[_id]s must be
-distinct according to @scheme[bound-identifier=?].
+The @scheme[id]s are then bound in the @scheme[body], which is
+evaluated, and whose results are ignored. Iteration continues with the
+next element in each sequence and with fresh locations for each
+@scheme[id].
 
-If any @scheme[for-clause] has the form
+A @scheme[for] form with zero @scheme[for-clause]s is equivalent to a
+single @scheme[for-clause] that binds an unreferenced @scheme[id] to
+a sequence containing a single element. All of the @scheme[id]s must
+be distinct according to @scheme[bound-identifier=?].
 
-@specsubform[(code:line #:when guard-expr)]{}
-
+If any @scheme[for-clause] has the form @scheme[#:when guard-expr],
 then only the preceding clauses (containing no @scheme[#:when])
 determine iteration as above, and the @scheme[body] is effectively
 wrapped as
@@ -52,6 +59,8 @@ using the remaining @scheme[for-clauses].
       #:when (odd? i)
       [k #2(#t #f)])
   (display (list i j k)))
+(for ([(i j) #hash(("a" . 1) ("b" . 20))])
+  (display (list i j)))
 (for ()
   (display "here"))
 (for ([i '()])
@@ -146,8 +155,8 @@ for each @scheme[accum-id], and the correspinding current accumulator
 value is placed into the location. The last expression in
 @scheme[body] must produce as many values as @scheme[accum-id]s, and
 those values become the current accumulator values. When iteration
-terminates, the result of the @scheme[fold/for] expression is(are) the
-accumulator value(s).
+terminates, the results of the @scheme[fold/for] expression are the
+accumulator values.
 
 @examples[
 (for/fold ([sum 0]
@@ -189,64 +198,3 @@ Like @scheme[for/last], but with the implicit nesting of @scheme[for*].}
 
 @defform[(for*/fold ([accum-id init-expr] ...) (for-clause ...) . body)]{
 Like @scheme[for/fold], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for-values (for-values-clause ...) . body)]{ Like
-@scheme[for], but each @scheme[for-values-clause] has one of the
-following two forms:
-
- @specsubform[[(id ...) seq-expr]]{ The sequence produced by
- @scheme[_seq-expr] must return as many values for each iteration as
- @scheme[id]s, and the values are placed in the locations generated
- for the @scheme[id]s.}
-
- @specsubform[(code:line #:when guard-expr)]{As in @scheme[for].}
-
-@examples[
-(for-values ([(i j) #hash(("a" . 1) ("b" . 20))])
-  (display (list i j)))
-]}
-
-@defform[(for/list-values (for-values-clause ...) . body)]{ Like
-@scheme[for/list], but with multiple-value clauses like
-@scheme[for-values].}
-
-@defform[(for/and-values (for-values-clause ...) . body)]{ Like
-@scheme[for-and], but with multiple-value clauses like
-@scheme[for-values].}
-
-@defform[(for/or-values (for-values-clause ...) . body)]{ Like
-@scheme[for/or], but with multiple-value clauses like
-@scheme[for-values].}
-
-@defform[(for/first-values (for-values-clause ...) . body)]{ Like
-@scheme[for/first], but with multiple-value clauses like
-@scheme[for-values].}
-
-@defform[(for/last-values (for-values-clause ...) . body)]{ Like
-@scheme[for/last], but with multiple-value clauses like
-@scheme[for-values].}
-
-@defform[(for/fold-values ([id expr] ...) (for-values-clause ...) . body)]{ Like
-@scheme[for/fold], but with multiple-value clauses like
-@scheme[for-values].}
-
-@defform[(for*-values (for-values-clause ...) . body)]{
-Like @scheme[for-values], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/list-values (for-values-clause ...) . body)]{
-Like @scheme[for/list-values], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/and-values (for-values-clause ...) . body)]{
-Like @scheme[for/and-values], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/or-values (for-values-clause ...) . body)]{
-Like @scheme[for/or-values], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/first-values (for-values-clause ...) . body)]{
-Like @scheme[for/first-values], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/last-values (for-values-clause ...) . body)]{
-Like @scheme[for/last-values], but with the implicit nesting of @scheme[for*].}
-
-@defform[(for*/fold-values ([id expr] ...) (for-values-clause ...) . body)]{
-Like @scheme[for/fold-values], but with the implicit nesting of @scheme[for*].}

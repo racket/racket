@@ -105,7 +105,10 @@
                 (set! col-map next-col-map)
                 (set! next-col-map (make-hash-table 'equal))
                 (init-line!))
-              (let ([d-col (hash-table-get col-map c (+ dest-col (- c src-col)))])
+              (let ([d-col (let ([def-val (+ dest-col (- c src-col))])
+                             (if new-line?
+                                 (hash-table-get col-map c def-val)
+                                 def-val))])
                 (let ([amt (- d-col dest-col)])
                   (when (positive? amt)
                     (let ([old-dest-col dest-col])
