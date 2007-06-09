@@ -263,7 +263,10 @@
        (*defthing 'id 'result (lambda () (list desc ...)))]))
   (define-syntax schemegrammar
     (syntax-rules ()
-      [(_ id clause ...) (*schemegrammar (scheme id) (schemeblock0 clause) ...)]))
+      [(_ #:literals (lit ...) id clause ...) (*schemegrammar '(lit ...) 
+                                                              '(id clause ...)
+                                                              (lambda () (list (scheme id) (schemeblock0 clause) ...)))]
+      [(_ id clause ...) (schemegrammar #:literals () id clause ...)]))
   (define-syntax var
     (syntax-rules ()
       [(_ id) (*var 'id)]))
@@ -511,7 +514,7 @@
            append
            (map (lambda (sub)
                   (list (list (make-flow (list (make-paragraph (list (tt 'nbsp))))))
-                        (list (make-flow (list (apply *schemegrammar 
+                        (list (make-flow (list (apply *schemerawgrammar 
                                                       (map (lambda (f) (f)) sub)))))))
                 sub-procs))))
         (content-thunk)))))
@@ -540,7 +543,7 @@
                       (make-paragraph (list (to-element form)))))))))
         (flow-paragraphs (decode-flow (content-thunk)))))))
 
-  (define (*schemegrammar nonterm clause1 . clauses)
+  (define (*schemerawgrammar nonterm clause1 . clauses)
     (make-table
      '((valignment baseline baseline baseline baseline baseline)
        (alignment left left center left left))
@@ -559,6 +562,18 @@
                      empty-line
                      (make-flow (list clause))))
              clauses)))))
+
+  (define (*schemegrammar lits s-expr clauses-thunk)
+    (parameterize ([current-variable-list
+                    (let loop ([form s-expr])
+                      (cond
+                       [(symbol? form) (if (memq form lits)
+                                           null
+                                           (list form))]
+                       [(pair? form) (append (loop (car form))
+                                             (loop (cdr form)))]
+                       [else null]))])
+      (apply *schemerawgrammar (clauses-thunk))))
 
   (define (*var id)
     (to-element (*var-sym id)))

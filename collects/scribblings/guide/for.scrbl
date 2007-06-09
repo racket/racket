@@ -371,9 +371,9 @@ list, and also works with multiple-valued sequences:
 Ideally, a @scheme[for] iteration should run as fast as a loop that
 your write by hand as a recursive-function invocation. A hand-written
 loop, however, is normally specific to a particular kind of data, such
-as lists. In that case, the hand-written loop uses @scheme[car] and
-@scheme[cdr] directly, instead of handling all forms of sequences and
-dispatching to an appropriate iterator.
+as lists. In that case, the hand-written loop uses selectors like
+@scheme[car] and @scheme[cdr] directly, instead of handling all forms
+of sequences and dispatching to an appropriate iterator.
 
 The @scheme[for] forms can provide the performance of hand-written
 loops when enough information is apparent about the sequences to
@@ -381,35 +381,38 @@ iterate. Specifically, the clause should have one of the following
 @scheme[_fast-clause] forms:
 
 @schemegrammar[
-_fast-clause [_id _fast-seq]
-             [(_id) _fast-seq]
-             [(_id _id) _fast-indexed-seq]
-             [(_id ...) _fast-parallel-seq]
+fast-clause [id fast-seq]
+            [(id) fast-seq]
+            [(id id) fast-indexed-seq]
+            [(id ...) fast-parallel-seq]
 ]
 
 @schemegrammar[
-_fast-seq (in-range _expr _expr)
-          (in-range _expr _expr _expr)
-          (in-naturals)
-          (in-naturals _expr)
-          (in-list _expr)
-          (in-vector _expr)
-          (in-string _expr)
-          (in-bytes _expr)
-          (stop-before _fast-seq _predicate-expr)
-          (stop-after _fast-seq _predicate-expr)
+#:literals [in-range in-naturals in-list in-vector in-string in-bytes stop-before stop-after]
+fast-seq (in-range expr expr)
+         (in-range expr expr expr)
+         (in-naturals)
+         (in-naturals expr)
+         (in-list expr)
+         (in-vector expr)
+         (in-string expr)
+         (in-bytes expr)
+         (stop-before fast-seq predicate-expr)
+         (stop-after fast-seq predicate-expr)
 ]
 
 @schemegrammar[
-_fast-indexed-seq (in-indexed _fast-seq)
-                  (stop-before _fast-indexed-seq _predicate-expr)
-                  (stop-after _fast-indexed-seq _predicate-expr)
+#:literals [in-indexed stop-before stop-after]
+fast-indexed-seq (in-indexed fast-seq)
+                  (stop-before fast-indexed-seq predicate-expr)
+                  (stop-after fast-indexed-seq predicate-expr)
 ]
 
 @schemegrammar[
-_fast-parallel-seq (in-parallel _fast-seq ...)
-                   (stop-before _fast-parallel-seq _predicate-expr)
-                   (stop-after _fast-parallel-seq _predicate-expr)
+#:literals [in-parallel stop-before stop-after]
+fast-parallel-seq (in-parallel fast-seq ...)
+                  (stop-before fast-parallel-seq predicate-expr)
+                  (stop-after fast-parallel-seq predicate-expr)
 ]
 
 @examples[

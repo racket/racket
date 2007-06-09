@@ -226,6 +226,18 @@ procedure. In this description, a reference to any identifier in
 The typesetting of @scheme[(id . datum)] preserves the source
 layout, like @scheme[schemeblock], and unlike @scheme[defproc].}
 
+@defform[(defform* [(id . datum) ..+] pre-flow ...)]{Like @scheme[defform],
+but for multiple forms using the same @scheme[id].}
+
+@defform[(defform/subs (id . datum) 
+           ([nonterm-id clause-datum ...+] ...) 
+           pre-flow ...)]{
+Like @scheme[defform], but including an auxiliary grammar of
+non-terminals shown with the @scheme[id] form. Each
+@scheme[nonterm-id] is specified as being any of the corresponding
+@scheme[clause-datum]s, where the formatting of each
+@scheme[clause-datum] is preserved.}
+
 @defform[(specform (id . datum) pre-flow ...)]{Like @scheme[defform],
 with without registering a definition, and with indenting on the left
 for both the specification and the @scheme[pre-flow]s.}
@@ -242,22 +254,23 @@ The @scheme[pre-flow]s list is parsed as a flow that documents the
 procedure. In this description, a reference to any identifier in
 @scheme[datum] is typeset as a sub-form non-terminal.}
 
-
 @defform[(defthing id contract-expr-datum pre-flow ...)]{Like
 @scheme[defproc], but for a non-procedure binding.}
 
-@defform[(defstruct struct-name ([field-name contract-expr-datum] ...) 
-                    pre-flow ...)]{
+@defform/subs[(defstruct struct-name ([field-name contract-expr-datum] ...)
+                pre-flow ...)
+              ([struct-name id
+                            (id super-id)])]{
 
-Similar to @scheme[defform], but for a structure definition.
+Similar to @scheme[defform] or @scheme[defproc], but for a structure
+definition.}
 
-The @scheme[struct-name] can be either of the following:
-
-@specsubform[id]{A structure type with no
-       specified supertype.}
-
-@specsubform[(id super-id)]{A type with indicated supertype.}
-
+@defform/subs[(schemegrammar literals ? id clause-datum ...+)
+              ([literals (code:line #:literals (literal-id ...))])]{
+Creates a table to define the grammar of @scheme[id]. Each identifier mentioned
+in a @scheme[clause-datum] is typeset as a non-terminal, except for the
+identifiers listed as @scheme[literal-id]s, which are typeset as with 
+@scheme[scheme].
 }
 
 @; ------------------------------------------------------------------------
