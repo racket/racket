@@ -10,7 +10,7 @@ values. Unlike a list, a vector supports constant-time access and
 update of its elements.
 
 A vector prints similar to a list---as a parenthesized sequence of its
-elements---but a vector is prefixed with @schemefont{#} and the length
+elements---but a vector is prefixed with @litchar{#} and the length
 of the vector. The vector length is optional for a vector as an
 expression. Also, a vector as an expression implicitly quotes the
 forms for its content, which means that identifiers and parenthesized
@@ -28,7 +28,7 @@ forms in a vector constant represent symbols and lists.
 When the last @math{n} vector elements of a vector are the same value
 (as determined by @scheme[eq?]), then the last @math{n-1} instances
 are omitted from the printed form. The vector length shown after the
-leading @scheme{#} effectively indicates when repeated trailing
+leading @litchar{#} effectively indicates when repeated trailing
 elements are omitted. The same conventions apply for vectors as
 expressions.
 

@@ -9,11 +9,11 @@ A @defterm{string} is a fixed-length array of
 @seclink["guide:characters"]{characters}. It prints using doublequotes,
 where doublequote and backslash characters within the string are
 escaped with backslashes. Other common string escapes are supported,
-incluing @schemefont["\\n"] for a linefeed, @schemefont["\\r"] for a
-carriage return, octal escapes using @schemefont["\\"] followed by up
-to three octal digits, and hexadimal escapes with @schemefont["\\u"]
+including @litchar["\\n"] for a linefeed, @litchar["\\r"] for a
+carriage return, octal escapes using @litchar["\\"] followed by up
+to three octal digits, and hexadimal escapes with @litchar["\\u"]
 (up to four digits).  Unprintable characters in a string normally
-shown with @schemefont["\\u"] when the string is printed.
+shown with @litchar["\\u"] when the string is printed.
 
 @refdetails["mz:parse-string"]{the syntax of strings}
 

@@ -21,10 +21,10 @@ the hash table is created with the @scheme['equal] flag.
 ]
 
 A literal hash table can be written as an expression by using
-@schemefont{#hash} (for an @scheme[equal?]-based table) or
-@schemefont{#hasheq} (for an @scheme[eq?]-based table). A parenthesized
-sequence must immediately follow @schemefont{#hash} or
-@schemefont{#hasheq}, where each element is a sequence is a dotted
+@litchar{#hash} (for an @scheme[equal?]-based table) or
+@litchar{#hasheq} (for an @scheme[eq?]-based table). A parenthesized
+sequence must immediately follow @litchar{#hash} or
+@litchar{#hasheq}, where each element is a sequence is a dotted
 key--value pair. Literal hash tables are immutable.
 
 @examples[

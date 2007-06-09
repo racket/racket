@@ -176,10 +176,9 @@
               [(sf) `((b (font ([size "-1"][face "Helvetica"]) ,@(super render-element e part ht))))]
               [(subscript) `((sub ,@(super render-element e part ht)))]
               [(superscript) `((sup ,@(super render-element e part ht)))]
-              [(hspace) `((tt ,@(let ([str (content->string (element-content e))])
-                                  (if (= 1 (string-length str))
-                                      '(" ")
-                                      (map (lambda (c) 'nbsp) (string->list str))))))]
+              [(hspace) `((span ([class "hspace"])
+                                ,@(let ([str (content->string (element-content e))])
+                                    (map (lambda (c) 'nbsp) (string->list str)))))]
               [else (error 'html-render "unrecognized style symbol: ~e" style)])]
            [(string? style) 
             `((span ([class ,style]) ,@(super render-element e part ht)))]

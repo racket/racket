@@ -17,7 +17,7 @@ scalar values.
 Despite the occasional encoding problems, most paths can be converted
 to and fom strings. Thus, procedures that accept a path argument
 always accept a string, and the printed form of a path uses the string
-decodin of the path inside @schemefont{#<path:} and @scheme{>}. The
+decodin of the path inside @litchar{#<path:} and @litchar{>}. The
 @scheme[display] form of a path is the same as the @scheme[display]
 form of its string encodings.
 

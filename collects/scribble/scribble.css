@@ -1,12 +1,11 @@
 
                body {
                color: black;
-               /*   background-color: #e5e5e5;*/
                background-color: #ffffff;
-               /*background-color: beige;*/
                max-width: 35em;
                margin-left: auto;
                margin-right: auto;
+               font-family: Times;
                }
 
                .refpara { 
@@ -130,19 +129,13 @@
                list-style-type: upper-alpha;
                }
 
-               tt i {
+               i {
                font-family: serif;
                }
 
                .verbatim em {
                font-family: serif;
                }
-
-               /*
-               .verbatim {
-               color: #4d0000;
-               }
-               */
 
                .ghost {
                color: white;
@@ -157,15 +150,19 @@
                background-color: #ddddff;
                }
 
+               .hspace {
+               font-family: Courier; font-size: 80%;
+               }
+
                .schemeinput {
                color: brown;
                background-color: #eeeeee;
-               font-family: monospace;
+               font-family: Courier; font-size: 80%;
                }
 
                .schemeparen {
-               color: brown;
-               font-family: monospace;
+               color: #843c24;
+               font-family: Courier; font-size: 80%;
                }
 
                .schemeopt {
@@ -175,7 +172,7 @@
                .schemekeyword {
                color: black;
                font-weight: bold;
-               font-family: monospace;
+               font-family: Courier; font-size: 80%;
                }
 
                .schemeerror {
@@ -184,27 +181,25 @@
                }
 
                .schemevariable {
-               color: navy;
+               color: #262680;
                font-style: italic;             
-               font-family: monospace;
+               font-family: Courier; font-size: 80%;
                }
 
                .schemesymbol {
-               color: navy;
-               font-family: monospace;
+               color: #262680;
+               font-family: Courier; font-size: 80%;
                }
 
                .schemevaluelink { 
                text-decoration: none;
                color: blue;
-               font-family: monospace;
                }
 
                .schemesyntaxlink { 
                text-decoration: none;
                color: black;
                font-weight: bold;
-               font-family: monospace;
                }
 
                .badlink { 
@@ -213,23 +208,23 @@
                }
 
                .schemeresult {
-               color: navy;
-               font-family: monospace;
+               color: #0000af;
+               font-family: Courier; font-size: 80%;
                }
 
                .schemestdout {
-               color: purple;
-               font-family: monospace;
+               color: #960096;
+               font-family: Courier; font-size: 80%;
                }
 
                .schemecomment {
-               color:  teal;
-               font-family: monospace;
+               color: #c2741f;
+               font-family: Courier; font-size: 80%;
                }
 
                .schemevalue {
-               color: green;
-               font-family: monospace;
+               color: #228b22;
+               font-family: Courier; font-size: 80%;
                }
 
                .nonavigation {
@@ -250,13 +245,6 @@
                font-size: 75%;
                text-align: right;
                }
-
-               /*
-               .smallprint hr {
-               text-align: left;
-               width: 40%;
-               }
-               */
 
                .footnoterule {
                text-align: left;

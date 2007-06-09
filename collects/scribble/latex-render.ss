@@ -35,15 +35,21 @@
         (define-color "schemeplain" "black")
         (printf "\\newcommand{\\schemekeyword}[1]{{\\color{black}{\\texttt{\\textbf{#1}}}}}\n")
         (printf "\\newcommand{\\schemesyntaxlink}[1]{\\schemekeyword{#1}}\n")
-        (define-color "schemecomment" "Brown")
-        (define-color "schemeparen" "BrickRed")
-        (define-color "schemeinputcol" "BrickRed")
-        (define-color "schemesymbol" "NavyBlue")
-        (define-color "schemevalue" "ForestGreen")
+        (printf "\\definecolor{CommentColor}{rgb}{0.76,0.45,0.12}\n")
+        (printf "\\definecolor{ParenColor}{rgb}{0.52,0.24,0.14}\n")
+        (printf "\\definecolor{IdentifierColor}{rgb}{0.15,0.15,0.50}\n")
+        (printf "\\definecolor{ResultColor}{rgb}{0.0,0.0,0.69}\n")
+        (printf "\\definecolor{ValueColor}{rgb}{0.13,0.55,0.13}\n")
+        (printf "\\definecolor{OutputColor}{rgb}{0.59,0.00,0.59}\n")
+        (define-color "schemecomment" "CommentColor")
+        (define-color "schemeparen" "ParenColor")
+        (define-color "schemeinputcol" "ParenColor")
+        (define-color "schemesymbol" "IdentifierColor")
+        (define-color "schemevalue" "ValueColor")
         (define-color "schemevaluelink" "blue")
-        (define-color "schemeresult" "NavyBlue")
-        (define-color "schemestdout" "Purple")
-        (define-color "schemevariablecol" "NavyBlue")
+        (define-color "schemeresult" "ResultColor")
+        (define-color "schemestdout" "OutputColor")
+        (define-color "schemevariablecol" "IdentifierColor")
         (printf "\\newcommand{\\schemevariable}[1]{{\\schemevariablecol{\\textsl{#1}}}}\n")
         (define-color "schemeerrorcol" "red")
         (printf "\\newcommand{\\schemeerror}[1]{{\\schemeerrorcol{\\textrm{\\textit{#1}}}}}\n")
@@ -134,7 +140,6 @@
                 [(hspace) (let ([s (content->string (element-content e))])
                             (case (string-length s)
                               [(0) (void)]
-                              [(1) (printf "{\\texttt{ }}")] ; allows a line break to replace the space
                               [else
                                (printf "{\\texttt{~a}}"
                                        (regexp-replace* #rx"." s "~"))]))]

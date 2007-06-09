@@ -20,7 +20,7 @@ instead of characters. Byte strings can be used in applications that
 process pure ASCII instead of Unicode text. The printed and form of a
 byte string supports such uses in particular, because a byte string
 prints like the ASCII decoding of the byte string, but prefixed with a
-@schemefont{#}. Unprintable ASCII characters or non-ASCII bytes in the
+@litchar{#}. Unprintable ASCII characters or non-ASCII bytes in the
 byte string are written with octal notation.
 
 @refdetails["mz:parse-string"]{the syntax of byte strings}

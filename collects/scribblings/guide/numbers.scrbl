@@ -47,10 +47,10 @@ A Scheme @defterm{number} is either exact or inexact:
 
 Inexact numbers print with a decimal point or exponent specifier, and
 exact numbers print as integers and fractions.  The same conventions
-apply for reading number constants, but @schemefont{#e} or
-@schemefont{#i} can prefix a number to force its parsing as an exact
-or inexact number. The prefixes @schemefont{#b}, @schemefont{#o}, and
-@schemefont{#x} specificy binary, octal, and hexadecimal
+apply for reading number constants, but @litchar{#e} or
+@litchar{#i} can prefix a number to force its parsing as an exact
+or inexact number. The prefixes @litchar{#b}, @litchar{#o}, and
+@litchar{#x} specificy binary, octal, and hexadecimal
 interprertation of digits.
 
 @refdetails["mz:parse-number"]{the syntax of numbers}

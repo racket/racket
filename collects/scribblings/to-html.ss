@@ -16,6 +16,12 @@
                          (build-path main-doc-dir (car names)))])
         (unless multi?
           (make-directory* doc-dir))
+        (when multi?
+          (for-each (lambda (name)
+                      (let ([out-dir (build-path doc-dir name)])
+                        (when (directory-exists? out-dir)
+                          (delete-directory/files out-dir))))
+                    names))
         (parameterize ([current-directory dir]
                        [current-dest-directory doc-dir]
                        [current-render-mixin (if multi?

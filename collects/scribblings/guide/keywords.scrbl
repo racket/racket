@@ -6,7 +6,7 @@
 @title[#:tag "keywords"]{Keywords}
 
 A @defterm{keyword} is similar to a symbol (see @secref["symbols"]),
-but its printed form is prefixed with @schemefont{#:}.
+but its printed form is prefixed with @litchar{#:}.
 
 @refdetails["mz:parse-keyword"]{the syntax of keywords}
 

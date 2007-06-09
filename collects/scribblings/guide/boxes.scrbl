@@ -6,8 +6,8 @@
 @title[#:tag "boxes"]{Boxes}
 
 A @defterm{box} is like a single-element vector. It prints as
-@schemefont{#&} followed by the printed form of the boxed value.  A
-@schemefont{#&} form can also be used as an expression, but since the
+@litchar{#&} followed by the printed form of the boxed value.  A
+@litchar{#&} form can also be used as an expression, but since the
 resulting box is constant, it has practically no use.
 
 @examples[

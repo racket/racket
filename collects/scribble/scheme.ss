@@ -89,7 +89,7 @@
                                            values)
                                        (if color?
                                            (make-element cls (list v))
-                                           (make-element 'tt (list v))))
+                                           (make-element #f (list v))))
                                       content))
                   (set! dest-col (+ dest-col len)))))]))
       (define advance 
@@ -112,7 +112,10 @@
                 (let ([amt (- d-col dest-col)])
                   (when (positive? amt)
                     (let ([old-dest-col dest-col])
-                      (out (make-element 'hspace (list (make-string amt #\space))) #f)
+                      (out (if (and (= 1 amt) (not multi-line?))
+                               (make-element 'tt (list " ")) ; allows a line break to replace the space
+                               (make-element 'hspace (list (make-string amt #\space))))
+                           #f)
                       (set! dest-col (+ old-dest-col amt))))))
               (set! src-col c)
               (hash-table-put! next-col-map src-col dest-col)))]
@@ -178,7 +181,10 @@
             (out "; " comment-color)
             (let ([v (syntax-object->datum (cadr (syntax->list c)))])
               (if (paragraph? v)
-                  (map (lambda (v) (out v comment-color)) (paragraph-content v))
+                  (map (lambda (v) (if (string? v)
+                                       (out v comment-color)
+                                       (out v #f)))
+                       (paragraph-content v))
                   (out v comment-color)))]
            [(and (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:contract))

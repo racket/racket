@@ -52,7 +52,8 @@ A single document is reprsented as a @defterm{part}:
                          output may be collapsed togther or replaced
                          with a line break. In the style
                          @scheme['hspace], all text is converted to
-                         uncollapsable spaces.}
+                         uncollapsable spaces that cannot be broken
+                         across lines.}
 
                    @item{A symbol element is either @scheme['mdash],
                          @scheme['ndash], @scheme['ldquo],
