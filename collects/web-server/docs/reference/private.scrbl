@@ -4,7 +4,7 @@
 @title[#:tag "private"
        #:style 'toc]{Internal}
 
-The @file{web-server} is a complicated piece of software and as a result,
+The @web-server is a complicated piece of software and as a result,
 defines a number of interesting and independently useful sub-components.
 Some of these are documented here.
 
@@ -106,7 +106,7 @@ for doing this.
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-server-unit.ss"]{Dispatching Server}
 
-The @file{web-server} is just a configuration of a dispatching server.
+The @web-server is just a configuration of a dispatching server.
 This dispatching server component is useful on its own.
 
 @file{private/dispatch-server-sig.ss} defines the following signatures:
@@ -253,7 +253,7 @@ values. @file{private/mod-map.ss} compresses the serialized representation.
 @; ------------------------------------------------------------
 @section[#:tag "url-param.ss"]{URL Param}
 
-The @file{web-server} needs to encode information in URLs. If this data
+The @web-server needs to encode information in URLs. If this data
 is stored in the query string, than it will be overridden by browsers that
 make GET requests to those URLs with more query data. So, it must be encoded
 in URL params. @file{private/url-param.ss} provides functions for helping
@@ -277,7 +277,7 @@ with this process.
 @; ------------------------------------------------------------
 @section[#:tag "util.ss"]{Miscellaneous Utilities}
 
-There are a number of other miscellaneous utilities the @file{web-server}
+There are a number of other miscellaneous utilities the @web-server
 needs. They are provided by @file{private/util.ss}.
 
 @subsection{Lists}

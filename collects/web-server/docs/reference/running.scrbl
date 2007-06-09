@@ -3,7 +3,7 @@
 
 @title[#:tag "run.ss"
        #:style 'toc]{Running the Web Server}
-
+                    
 There are a number of ways to run the Web Server. The two primary ways
 are through a command-line tool or through a function call.
 
@@ -12,13 +12,13 @@ are through a command-line tool or through a function call.
 @; ------------------------------------------------------------
 @section[#:tag "command-line-tools"]{Command-line Tools}
 
-Two command-line utilities are provided with the @file{web-server}:
+Two command-line utilities are provided with the @web-server :
 
 @exec{plt-web-server-text [-f <file-name> -p <port> -a <ip-address>]}
 
 @exec{plt-web-server [-f <file-name> -p <port> -a <ip-address>]}
 
-The first runs the @file{web-server} with MzScheme, while the second runs
+The first runs the @web-server with MzScheme, while the second runs
 the server with MrEd, providing a graphical UI. The optional file-name 
 argument specifies the path to a @scheme[configuration-table] S-expression
 (see @secref["configuration-table.ss"].) If this is not provided, the default
@@ -34,7 +34,7 @@ the server runs until the process is killed.
 @section[#:tag "web-server.ss"]{Functional}
 
 @file{web-server.ss} provides a number of functions for easing embedding
-of the @file{web-server} in other applications, or loading a custom
+of the @web-server in other applications, or loading a custom
 dispatcher. See @file{run.ss} for an example of such a script.
 
 @defproc[(serve [#:dispatch dispatch dispatcher?]
@@ -70,6 +70,6 @@ dispatcher. See @file{run.ss} for an example of such a script.
 }                   
                    
 @defproc[(do-not-return) void]{
- This function does not return. If you are writing a script to load the @file{web-server}
+ This function does not return. If you are writing a script to load the @web-server
  you are likely to want to call this functions at the end of your script.
 }

@@ -4,7 +4,7 @@
 @title[#:tag "servlet"
        #:style 'toc]{Scheme Servlets}
 
-The @file{web-server} allows servlets to be written in Scheme. It
+The @web-server allows servlets to be written in Scheme. It
 provides the supporting API, described below, for the construction
 of these servlets. This API is provided by @file{servlet.ss}.
 
@@ -15,7 +15,7 @@ of these servlets. This API is provided by @file{servlet.ss}.
 
 A @defterm{servlet} is a module that provides the following:
 
-@defthing[interface-version symbol?]{
+@defthing[interface-version (or/c 'v1 'v2)]{
  A symbol indicating the servlet interface the servlet conforms
  to. This influences the other provided identifiers.
 }
@@ -57,15 +57,14 @@ for use in servlets.
 @defthing[servlet-response? contract?]{Equivalent to @scheme[any/c].}
 
 @; XXX Remove callbacks
-@defproc[(xexpr/callback? [v any/c])
-         boolean?]{
- Checks if @scheme[v] matches @scheme[xexpr?], except that embedded
+@defthing[xexpr/callback? contract?]{
+ Checks if the value matches @scheme[xexpr?], except that embedded
  procedures are allowed.
 }
                   
-@defthing[response-generator? contract?]{Equivalent to @scheme[(k-url? . -> . servlet-response?)].}
+@defthing[k-url? contract?]{Equivalent to @scheme[string?].}
 
-@defthing[k-url? (any/c . -> . boolean?)]{Equivalent to @scheme[string?].}
+@defthing[response-generator? contract?]{Equivalent to @scheme[(k-url? . -> . servlet-response?)].}
 
 @defthing[url-transform? contract?]{Equivalent to @scheme[(k-url? . -> . k-url?)].}
 
@@ -142,7 +141,7 @@ for accessing request bindings.
                                  [binds (listof (cons/c symbol? string?))])
          string?]{
  Returns the single binding associated with @scheme[id] in the a-list @scheme[binds]
- if there is exactly one binding. Otherwise errors.
+ if there is exactly one binding. Otherwise raises @scheme[exn:fail].
 }
                  
 @defproc[(extract-bindings [id symbol?]
@@ -379,8 +378,8 @@ you lose the filename.
 @; ------------------------------------------------------------
 @section[#:tag "servlet-url.ss"]{Servlet URLs}
 
-@file{servlet/servlet-url.ss} provides a function that might be useful to you.
-This will be collapsed somewhere else eventually.
+@file{servlet/servlet-url.ss} provides functions that might be useful to you.
+They may eventually provided by another module.
 
 @defproc[(request->servlet-url (req request?))
          servlet-url?]{Generates a value to be passed to the next function.}

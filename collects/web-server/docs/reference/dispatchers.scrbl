@@ -4,11 +4,11 @@
 @title[#:tag "dispatchers"
        #:style 'toc]{Dispatchers}
 
-The @file{web-server} is really just a peculiar configuration of a
+The @web-server is really just a particular configuration of a
 dispatching server. There are a number of dispatchers that are defined
-to support the @file{web-server}. Other dispatching servers, or variants
-of the @file{web-server}, may find these useful. In particular, if you want
-a peculiar processing pipeline for your @file{web-server} installation, this
+to support the @web-server . Other dispatching servers, or variants
+of the @web-server , may find these useful. In particular, if you want
+a peculiar processing pipeline for your @web-server installation, this
 documentation will be useful.
 
 @local-table-of-contents[]
@@ -43,6 +43,19 @@ some response and output it on the connection, but it may do something
 different. For example, it may apply some test to the request object, perhaps
 checking for a valid source IP address, and error if the test is not passed, and call @scheme[next-dispatcher]
 otherwise.
+
+Consider the following example dispatcher, that captures the essence of URL rewriting:
+@schemeblock[
+ (code:comment "(url? -> url?) dispatcher? -> dispatcher?")
+ (lambda (rule inner)
+   (lambda (conn req)
+     (code:comment "Call the inner dispatcher...")
+     (inner conn
+            (code:comment "with a new request object...")
+            (copy-struct request req
+                         (code:comment "with a new URL!")
+                         [request-uri (rule (request-uri req))]))))
+] 
 
 @; ------------------------------------------------------------
 @section[#:tag "filesystem-map.ss"]{Mapping URLs to Paths}
@@ -126,7 +139,7 @@ URL path.
  and if so, calls @scheme[proc] for a response.
 }
                      
-This is used in the standard @file{web-server} pipeline to provide
+This is used in the standard @web-server pipeline to provide
 a URL that refreshes the password file, servlet cache, etc.
                      
 @; ------------------------------------------------------------

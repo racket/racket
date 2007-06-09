@@ -4,7 +4,7 @@
 @title[#:tag "web-config-unit.ss"
        #:style 'toc]{Web Config Unit}
 
-The @file{web-server} offers a unit-based approach to configuring the server.
+The @web-server offers a unit-based approach to configuring the server.
 
 @file{web-config-sig.ss} provides the signature
 @defthing[web-config^ signature?] signature, which contains the following

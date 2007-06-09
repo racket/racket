@@ -4,7 +4,7 @@
 @title[#:tag "lang"
        #:style 'toc]{Web Language Servlets}
 
-The @file{web-server} allows servlets to be written in a special Web
+The @web-server allows servlets to be written in a special Web
 language that is nearly identical to Scheme. Herein we discuss how it
 is different and what API is provided.
 

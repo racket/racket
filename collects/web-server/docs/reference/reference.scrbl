@@ -4,7 +4,7 @@
 @title[#:tag "web-server-ref"]{Web Server Reference Manual}
 @author{Jay McCarthy (jay\@plt-scheme.org)}
 
-The @file{web-server} collection provides libraries that can be used to
+The @web-server collection provides libraries that can be used to
 develop Web applications in Scheme.
 
 @table-of-contents[]
@@ -29,7 +29,7 @@ develop Web applications in Scheme.
 @section[#:tag "ack"]{Acknowledgements}
 
 We thank Matthew Flatt for his superlative work on MzScheme.
-We thank the previous maintainers of the PLT Web Server: Paul T. Graunke, Mike Burns, and Greg Pettyjohn
+We thank the previous maintainers of the @web-server : Paul T. Graunke, Mike Burns, and Greg Pettyjohn
 Numerous people have 
 provided invaluable feedback on the server, including Eli Barzilay, Ryan Culpepper, Robby 
 Findler, Dan Licata, Matt Jadud, Jacob Matthews, Matthias Radestock, Andrey Skylar, 

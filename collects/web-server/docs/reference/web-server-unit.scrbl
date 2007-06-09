@@ -4,7 +4,7 @@
 @title[#:tag "web-server-unit.ss"
        #:style 'toc]{Web Server Unit}
 
-The @file{web-server} offers a unit-based approach to running the server.
+The @web-server offers a unit-based approach to running the server.
 
 @file{web-server-sig.ss} provides the @defthing[web-server^ signature?] signature
 with two elements:

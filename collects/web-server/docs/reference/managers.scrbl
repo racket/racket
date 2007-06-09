@@ -107,7 +107,7 @@ Web Language. (See @secref["lang"].)
 }
 
 This manager has been found to be... problematic... in large-scale
-deployments of the @file{web-server}.
+deployments of the @web-server .
                   
 @; ------------------------------------------------------------
 @section[#:tag "lru.ss"]{LRU}

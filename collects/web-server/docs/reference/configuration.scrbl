@@ -6,7 +6,7 @@
        #:style 'toc]{Configuration}
 
 There are a number of libraries and utilities useful for
-configuring the @file{web-server}.
+configuring the @web-server .
 
 @local-table-of-contents[]
 
@@ -14,7 +14,7 @@ configuring the @file{web-server}.
 @section[#:tag "configuration-table-structs.ss"]{Configuration Table Structure}
 
 @file{configuration/configuration-table-structs.ss} provides the following structures that
-represent a standard configuration (see @secref["web-server-unit.ss"]) of the @file{web-server}.
+represent a standard configuration (see @secref["web-server-unit.ss"]) of the @web-server .
 The contracts on this structure influence the valid types of values in
 the configuration table S-expression file format described in 
 @secref["configuration-table.ss"].
@@ -176,11 +176,11 @@ Example:
 @subsection{Why this is useful}
 
 A different namespace is needed for each servlet, so that if servlet A and servlet B both use
-a stateful module C, they will be isolated from one another. We see the @file{web-server} as
+a stateful module C, they will be isolated from one another. We see the @web-server as
 an operating system for servlets, so we inherit the isolation requirement on operating systems.
 
 However, there are some modules which must be shared. If they were not, then structures cannot
-be passed from the @file{web-server} to the servlets, due to a subtlety in the way MzScheme
+be passed from the @web-server to the servlets, due to a subtlety in the way MzScheme
 implements structures.
 
 Since, on occasion, a user will actually wanted servlets A and B to interact through module C.

@@ -11,6 +11,11 @@
   ; XXX @require
   ; XXX editting mode drscheme or emacs
   
+  ; XXX @scheme in code:comment
+  
+  (define web-server "Web Server")
+  (define webserver "Web Server")
+  
   ; XXX Make look good
   (define (author x) 
     (elem (hspace 4)
@@ -18,4 +23,5 @@
 
   (provide (all-from (lib "manual.ss" "scribble"))
            (all-from (lib "eval.ss" "scribble"))
+           web-server
            author))
