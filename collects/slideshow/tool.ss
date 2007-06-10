@@ -904,7 +904,14 @@ pict snip :
       
       (drscheme:language:add-snip-value
        ;; Convert to print?
-       (lambda (x) ((dynamic-require '(lib "mrpict.ss" "texpict") 'pict?) x))
+       (lambda (x) 
+         ;; if the require fails, then we cannot display the pict.
+         ;; this can happen when, for example, there is no mred module
+         ;; in the namespace
+         (let ([pict? (with-handlers ((exn? (λ (x) #f)))
+                        (dynamic-require '(lib "mrpict.ss" "texpict") 'pict?))])
+           (and pict?
+                (pict? x))))
        ;; Converter:
        pict->image-snip
        ;; Namespace setup:
