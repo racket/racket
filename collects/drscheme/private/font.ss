@@ -80,7 +80,7 @@
                                        [(< selection (length mono-list))
                                         (preferences:set 
                                          'framework:standard-style-list:font-name
-                                         (list-ref selection mono-list))]
+                                         (list-ref mono-list selection))]
                                        [else
                                         (let* ([all-faces (get-face-list)]
                                                [init-choices
@@ -98,7 +98,7 @@
                                                [choice (get-choices-from-user
                                                         (string-constant select-font-name)
                                                         (string-constant select-font-name)
-                                                        (get-face-list 'mono)
+                                                        all-faces
                                                         #f
                                                         init-choices)])
                                           (when choice
