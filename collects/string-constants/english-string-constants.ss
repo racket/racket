@@ -433,6 +433,7 @@ please adhere to these guidelines:
 
  (change-font-button-label "Change")
  (fonts "Fonts")
+ (other... "Other...") ;; used in the font choice menu item
 
  ; filled with type of font, eg modern, swiss, etc.
  (choose-a-new-font "Please choose a new \"~a\" font")

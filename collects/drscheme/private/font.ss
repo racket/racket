@@ -66,57 +66,54 @@
                   
                   [choice-panel (new vertical-panel% (parent options-panel))]
                   [font-name-control
-                   (case (system-type)
-                     [(windows macos macosx)
-                      (let* ([choice
-                              (new choice%
-                                   (label (string-constant font-name))
-                                   (choices (get-face-list 'mono))
-                                   (parent choice-panel)
-                                   (stretchable-width #t)
-                                   (callback
-                                    (λ (font-name evt)
-                                      (preferences:set 
-                                       'framework:standard-style-list:font-name
-                                       (send font-name get-string-selection)))))]
-                             [font-name (preferences:get 'framework:standard-style-list:font-name)])
-                        (preferences:add-callback
-                         'framework:standard-style-list:font-name
-                         (λ (p v)
-                           (when (send choice find-string v)
-                             (send choice set-string-selection v))))
-                        (when (send choice find-string font-name)
-                          (send choice set-string-selection font-name))
-                        choice)]
-                     [(unix)
-                      (make-object button%
-                        (string-constant set-font)
-                        choice-panel
-                        (λ xxx
-                          (let* ([faces (get-face-list 'mono)]
-                                 [init-choices
-                                  (let ([init (preferences:get 'framework:standard-style-list:font-name)])
-                                    (let loop ([faces faces]
-                                               [num 0])
-                                      (cond
-                                        [(null? faces) null]
-                                        [else
-                                         (let ([face (car faces)])
-                                           (if (equal? init face)
-                                               (list num)
-                                               (loop (cdr faces)
-                                                     (+ num 1))))])))]
-                                 [choice (get-choices-from-user
-                                          (string-constant select-font-name)
-                                          (string-constant select-font-name)
-                                          (get-face-list 'mono)
-                                          #f
-                                          init-choices)])
-                            (when choice
-                              (preferences:set 
-                               'framework:standard-style-list:font-name 
-                               (list-ref (get-face-list 'mono) (car choice)))))))]
-                     [else (error 'font-name-control "unknown system type: ~s~n" (system-type))])]
+                   (let* ([mono-list (get-face-list 'mono)]
+                          [choice
+                           (new choice%
+                                (label (string-constant font-name))
+                                (choices (append mono-list (list (string-constant other...))))
+                                (parent choice-panel)
+                                (stretchable-width #t)
+                                (callback
+                                 (λ (font-name evt)
+                                   (let ([selection (send font-name get-selection)])
+                                     (cond
+                                       [(< selection (length mono-list))
+                                        (preferences:set 
+                                         'framework:standard-style-list:font-name
+                                         (list-ref selection mono-list))]
+                                       [else
+                                        (let* ([all-faces (get-face-list)]
+                                               [init-choices
+                                                (let ([init (preferences:get 'framework:standard-style-list:font-name)])
+                                                  (let loop ([faces all-faces]
+                                                             [num 0])
+                                                    (cond
+                                                      [(null? faces) null]
+                                                      [else
+                                                       (let ([face (car faces)])
+                                                         (if (equal? init face)
+                                                             (list num)
+                                                             (loop (cdr faces)
+                                                                   (+ num 1))))])))]
+                                               [choice (get-choices-from-user
+                                                        (string-constant select-font-name)
+                                                        (string-constant select-font-name)
+                                                        (get-face-list 'mono)
+                                                        #f
+                                                        init-choices)])
+                                          (when choice
+                                            (preferences:set 
+                                             'framework:standard-style-list:font-name 
+                                             (list-ref all-faces (car choice)))))])))))]
+                          [font-name (preferences:get 'framework:standard-style-list:font-name)])
+                     (preferences:add-callback
+                      'framework:standard-style-list:font-name
+                      (λ (p v)
+                        (when (send choice find-string v)
+                          (send choice set-string-selection v))))
+                     (when (send choice find-string font-name)
+                       (send choice set-string-selection font-name))
+                     choice)]
                   [smoothing-contol
                    (new choice%
                         (label sc-smoothing-label)
