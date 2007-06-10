@@ -34,6 +34,7 @@
 	[on-size (lambda () (void))]
 	[enable (lambda () (void))]
 	[show (lambda (on?) (void))]
+        [is-shown? (lambda () #f)]
 	[is-shown-to-root? (lambda () (send parent is-shown-to-root?))]
 	[is-enabled-to-root? (lambda () (send parent is-enabled-to-root?))]
 	[get-parent (lambda () parent)]
@@ -454,7 +455,9 @@
 		     child-infos
 		     placements))])
 	       (sequence
-		 (super-init style parent -1 -1 0 0 style))))
+		 (super-init style parent -1 -1 0 0 (cons 'deleted style))
+                 (unless (memq 'deleted style)
+                   (send (get-top-level) show-control this #t)))))
 
   (define (wx-make-pane% wx:panel% stretch?)
     (class100 (make-container-glue% (make-glue% (wx-make-basic-panel% wx:panel% stretch?))) args

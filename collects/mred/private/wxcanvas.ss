@@ -62,6 +62,7 @@
   (define wx-canvas% 
     (make-canvas-glue%
      (class100 (make-control% wx:canvas% 0 0 #t #t) (parent x y w h style gl-config)
+       (inherit get-top-level)
        (private-field
 	[tabable? #f])
        (public
@@ -74,13 +75,16 @@
 	  (lambda (code alpha? meta?)
 	    (or meta? (not tabable?)))])
        (sequence
-	 (super-init style parent x y w h style "canvas" gl-config)))))
+	 (super-init style parent x y w h (cons 'deleted style) "canvas" gl-config)
+         (unless (memq 'deleted style)
+           (send (get-top-level) show-control this #t))))))
 
   (define (make-editor-canvas% %)
     (class100 % (parent x y w h name style spp init-buffer)
       (inherit get-editor force-redraw
 	       call-as-primary-owner min-height get-size
-	       get-hard-minimum-size set-min-height)
+	       get-hard-minimum-size set-min-height
+               get-top-level)
       (private-field
        [fixed-height? #f]
        [fixed-height-lines 0]
@@ -195,7 +199,9 @@
 			(when fixed-height? (update-size)))])
       
       (sequence
-	(super-init style parent x y w h (or name "") style spp init-buffer)
+	(super-init style parent x y w h (or name "") (cons 'deleted style) spp init-buffer)
+        (unless (memq 'deleted style)
+          (send (get-top-level) show-control this #t))
 	(when init-buffer
 	  (let ([mred (wx->mred this)])
 	    (when mred

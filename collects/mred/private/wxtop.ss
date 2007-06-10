@@ -95,7 +95,8 @@
 
        [parent-for-center parent]
 
-       [show-ht (make-hash-table)])
+       [show-ht (make-hash-table)]
+       [fake-show-ht (make-hash-table)])
       
       (override
 	[enable
@@ -196,6 +197,13 @@
 	   (when perform-updates?
 	     (when pending-redraws?
 	       (force-redraw))
+	     (when (positive? (hash-table-count fake-show-ht))
+	       (let ([t fake-show-ht])
+		 (set! fake-show-ht (make-hash-table))
+		 (hash-table-for-each
+		  t
+		  (lambda (win v?)
+		    (send win really-show #t)))))
 	     (when (positive? (hash-table-count show-ht))
 	       (let ([t show-ht])
 		 (set! show-ht (make-hash-table))
@@ -219,6 +227,21 @@
 	   (if perform-updates?
 	       (send child show show?)
 	       (hash-table-put! show-ht child show?)))]
+
+        [show-control
+         (lambda (child on?)
+           (if (or perform-updates?
+                   (not on?)
+                   (child . is-a? . wx-frame%)
+                   (child . is-a? . wx-dialog%))
+               (send child really-show on?)
+               (begin
+                 (if on?
+                     (hash-table-put! fake-show-ht child #t)
+                     (begin
+                       (hash-table-remove! show-ht child)
+                       (hash-table-remove! fake-show-ht child)))
+                 (send child fake-show on?))))]
 
 	;; force-redraw: receives a message from to redraw the
 	;; entire frame.

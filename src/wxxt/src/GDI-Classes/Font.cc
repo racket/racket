@@ -76,30 +76,38 @@ static int complete_face_list_size;
 static char **complete_face_list;
 static wxFontStruct **complete_font_list;
 
-char **wxGetCompleteFaceList(int *_len)
+char **wxGetCompleteFaceList(int *_len, int mono_only)
 {
   char buf[256], *s, *copy;
   int ssize, i, j, pos, len, scalable;
   XftFontSet *fs;
+  int face_list_size;
+  char **face_list;
+  wxFontStruct **font_list;
 
-  if (complete_face_list) {
+  if (complete_face_list && !mono_only) {
     if (_len)
       *_len = complete_face_list_size;
     return complete_face_list;
   }
 
-  fs = XftListFonts(wxAPP_DISPLAY, DefaultScreen(wxAPP_DISPLAY), NULL,
-		    /* I'm assuming that every family is either
-		       scalable or not. We inspect scalability
-		       to bias substitution to scalable fonts */
-		    XFT_FAMILY, XFT_SCALABLE, 
-		    NULL);
+  if (mono_only) {
+    fs = XftListFonts(wxAPP_DISPLAY, DefaultScreen(wxAPP_DISPLAY), 
+                      XFT_SPACING, XftTypeInteger, XFT_MONO, NULL,
+                      /* I'm assuming that every family is either
+                         scalable or not. We inspect scalability
+                         to bias substitution to scalable fonts */
+                      XFT_FAMILY, XFT_SCALABLE,
+                      NULL);
+  } else {
+    fs = XftListFonts(wxAPP_DISPLAY, DefaultScreen(wxAPP_DISPLAY), NULL,
+                      XFT_FAMILY, XFT_SCALABLE,
+                      NULL);
+  }
 
-  complete_face_list_size = fs->nfont;
-  wxREGGLOB(complete_face_list);
-  wxREGGLOB(complete_font_list);
-  complete_face_list = new WXGC_PTRS char*[complete_face_list_size];
-  complete_font_list = (wxFontStruct **)(new WXGC_ATOMIC char[sizeof(wxFontStruct*) * complete_face_list_size]);
+  face_list_size = fs->nfont;
+  face_list = new WXGC_PTRS char*[face_list_size];
+  font_list = (wxFontStruct **)(new WXGC_ATOMIC char[sizeof(wxFontStruct*) * face_list_size]);
 
   pos = 0;
   for (i = 0; i < fs->nfont; i++) {
@@ -130,19 +138,29 @@ char **wxGetCompleteFaceList(int *_len)
     copy[len + 1] = 0;
 
     if (scalable) {
-      complete_face_list[pos] = copy;
-      complete_font_list[pos] = NULL;
+      face_list[pos] = copy;
+      font_list[pos] = NULL;
       pos++;
     } else {
       /* unscalable at end, to discourage use in substitutions */
       j = fs->nfont - (i - pos) - 1;
-      complete_face_list[j] = copy;
-      complete_font_list[j] = NULL;
+      face_list[j] = copy;
+      font_list[j] = NULL;
     }
   }
   XftFontSetDestroy(fs);
 
-  return wxGetCompleteFaceList(_len);
+  if (!mono_only) {
+    wxREGGLOB(complete_face_list);
+    wxREGGLOB(complete_font_list);
+    complete_face_list_size = face_list_size;
+    complete_face_list = face_list;
+    complete_font_list = font_list;
+  }
+
+  if (_len)
+    *_len = face_list_size;
+  return face_list;
 }
 
 static wxFontStruct *prev_subs;
@@ -153,7 +171,7 @@ static wxFontStruct *doFindAAFont(Display *dpy, wxFontStruct *xfont, int c, int 
   wxFontStruct *naya;
   int i;
 
-  wxGetCompleteFaceList(NULL);
+  wxGetCompleteFaceList(NULL, 0);
 
   for (i = 0; i < complete_face_list_size; i++) {
     if (!complete_font_list[i]) {
@@ -590,7 +608,7 @@ void *wxFont::GetNextAASubstitution(int index, int cval, double scale_x, double 
     }
     if (!name[i]) {
       if (index == c + 1) {
-	wxGetCompleteFaceList(NULL);
+	wxGetCompleteFaceList(NULL, 0);
 	c = -1;
 	doFindAAFont(wxAPP_DISPLAY, NULL, cval, &c);
 	if (c >= 0) {

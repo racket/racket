@@ -147,6 +147,8 @@ OBJS = \
    wx_image.o \
    wx_xbm.o \
 \
+   wx_font.o \
+\
    $(MIN_OBJS)
 
 libwxmac.a: $(OBJS)
@@ -387,6 +389,13 @@ ALHeirarchical.o : $(ALISTDEPS) $(ALISTDIR)/ALHeirarchical.c
 	$(CC) $(ALISTCCFLAGS) -o ALHeirarchical.o -c $(ALISTDIR)/ALHeirarchical.c
 ALSelectors.o : $(ALISTDEPS) $(ALISTDIR)/ALSelectors.c
 	$(CC) $(ALISTCCFLAGS) -o ALSelectors.o -c $(ALISTDIR)/ALSelectors.c
+
+########################################
+#             Cocoa fonts             #
+########################################
+
+wx_font.o : $(srcdir)/mac/wx_font.m
+	$(CXX) -o wx_font.o -c $(srcdir)/mac/wx_font.m
 
 ########################################
 #             Make Depends             #

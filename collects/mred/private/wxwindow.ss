@@ -52,7 +52,8 @@
 	(rename [super-enable enable])
 	
 	(private-field
-	 [can-accept-drag? #f])
+	 [can-accept-drag? #f]
+         [fake-shown? #f])
 
 	(public
 	  [accept-drag? (lambda () can-accept-drag?)]
@@ -77,11 +78,24 @@
 		   (set! top-level window)]
 		  [else (loop (send window get-parent))])))
 	     top-level)])
+        (public
+          [really-show
+           (lambda (on?)
+             (set! fake-shown? #f)
+             (super show on?))]
+          [fake-show
+           (lambda (on?)
+             (set! fake-shown? on?))])
 	(override
 	  [show
 	   (lambda (on?)
 	     (queue-visible)
-	     (super show on?))]
+             (send (get-top-level) show-control this on?))]
+          [is-shown?
+           (lambda ()
+             (or fake-shown?
+                 (super is-shown?)))]
+
 	  [enable
 	   (lambda (on?)
 	     (queue-active)

@@ -59,7 +59,7 @@ ZLIB_INC = -I$(srcdir)/../wxcommon/zlib
 PNG_A = ../wxcommon/libpng/libpng.@LIBSFX@
 
 EXTRALDFLAGS_wx_xt =
-EXTRALDFLAGS_wx_mac = -framework Carbon -framework QuickTime -framework AGL -framework OpenGL -lz
+EXTRALDFLAGS_wx_mac = -framework Carbon -framework Cocoa -framework QuickTime -framework AGL -framework OpenGL -lz
 MREDLDFLAGS = $(LDFLAGS) $(EXTRALDFLAGS_@WXVARIANT@)
 WXLIBS_wx_xt = ../wxxt/src/libwx_xt.@LIBSFX@ ../wxxt/contrib/xpm/lib/libXpm.@LIBSFX@ ../wxxt/utils/image/src/libimage_xt.@LIBSFX@ 
 MREDX_wx_xt = mredx.@LTO@

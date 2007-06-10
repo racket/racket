@@ -61,7 +61,7 @@ extern void wx_release_lazy_regions();
 
 #ifdef WX_USE_XFT
 #include <X11/Xft/Xft.h>
-extern char **wxGetCompleteFaceList(int *_len);
+extern char **wxGetCompleteFaceList(int *_len, int mono_only);
 #endif
 
 #ifdef wx_mac
@@ -1021,6 +1021,20 @@ static int indirect_strcmp(const void *a, const void *b)
 {
   return strcmp(*(char **)a, *(char **)b);
 }
+
+static int is_x_monospace(char *s)
+{
+  if (s[0] == '-') {
+    /* Full X font name. Check for "-m-" in name. */
+    int j;
+    for (j = 0; s[j+2]; j++) {
+      if ((s[j] == '-') && (s[j+1] == 'm') && (s[j+2] == '-'))
+        return 1;
+    }
+  }
+  
+  return 0;
+}
 #endif
 
 
@@ -1141,12 +1155,16 @@ char *wx_get_mac_font_name(FMFontFamily fam, unsigned char *fname, int *_l)
 
 typedef int (*Indirect_Cmp_Proc)(const void *, const void *);
 
+#ifdef wx_mac
+extern "C" int wx_isFamilyFixedWidth(FMFontFamily fam);
+#endif
+
 static Scheme_Object *wxSchemeGetFontList(int argc, Scheme_Object **argv)
 {
   Scheme_Object *first = scheme_null, *last = NULL;
   int mono_only = 0;
 #ifdef wx_x
-  int count, i = 0;
+  int count, i = 0, pos;
   char **xnames, **names;
   int last_pos = -1, last_len = 0;
 #endif
@@ -1180,11 +1198,13 @@ static Scheme_Object *wxSchemeGetFontList(int argc, Scheme_Object **argv)
   xnames = XListFonts(wxAPP_DISPLAY, "*", 50000, &count);
 
   names = (char **)scheme_malloc_atomic(sizeof(char*)*count);
+  pos = 0;
   for (i = 0; i < count; i++) {
-    names[i] = xnames[i];
+    if (!mono_only || is_x_monospace(xnames[i]))
+      names[pos++] = xnames[i];
   }
 
-  qsort(names, count, sizeof(char *), 
+  qsort(names, pos, sizeof(char *), 
 	(Indirect_Cmp_Proc)indirect_strcmp);
 
   i = 0;
@@ -1211,12 +1231,12 @@ static Scheme_Object *wxSchemeGetFontList(int argc, Scheme_Object **argv)
     Scheme_Object *pr;
 
 #ifdef wx_x
-    while ((i < count)
+    while ((i < pos)
 	   && ((last_pos >= 0) 
 	       && !strncmp(names[i], names[last_pos], last_len))) {
       i++;
     }
-    if (i >= count)
+    if (i >= pos)
       break;
 
     last_pos = i;
@@ -1249,6 +1269,8 @@ static Scheme_Object *wxSchemeGetFontList(int argc, Scheme_Object **argv)
 #ifdef wx_mac
     if (FMGetNextFontFamily(&iterator, &fam) != noErr)
       break;
+    if (mono_only && !wx_isFamilyFixedWidth(fam))
+      continue;
     s = wx_get_mac_font_name(fam, fname, &l);
 #endif
 #ifdef wx_msw
@@ -1271,8 +1293,8 @@ static Scheme_Object *wxSchemeGetFontList(int argc, Scheme_Object **argv)
   }
 
 #ifdef wx_x
-   XFreeFontNames(xnames);
-   xnames = NULL;
+  XFreeFontNames(xnames);
+  xnames = NULL;
 #endif
 #ifdef wx_msw
    ReleaseDC(NULL, dc);
@@ -1289,7 +1311,7 @@ static Scheme_Object *wxSchemeGetFontList(int argc, Scheme_Object **argv)
     char **fl;
     int len, i;
 
-    fl = wxGetCompleteFaceList(&len);
+    fl = wxGetCompleteFaceList(&len, mono_only);
 
     for (i = 0; i < len; i++) {
       first = scheme_make_pair(scheme_make_utf8_string(fl[i]), first);
