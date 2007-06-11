@@ -596,7 +596,7 @@ though it had been downloaded from the PLaneT server with the given
 owner name and major and minor versions. After you run this command,
 you can require your package on your local machine using
 
-  (require (planet (<owner name> <.plt file name without path> <maj> <min>)))
+  (require (planet <.ss file in your package> (<owner name> <.plt file name without path> <maj> <min>)))
 
 to verify everything works. After you do so, you can use
 
