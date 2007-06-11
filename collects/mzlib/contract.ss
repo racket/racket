@@ -15,15 +15,49 @@
 
    (all-from-except "private/contract-arrow.ss"
                     check-procedure)
-   (all-from-except "private/contract-guts.ss"
-                    build-compound-type-name
-                    first-order-prop
-                    first-order-get
-                    check-flat-contract
-                    check-flat-named-contract)
    (all-from-except "private/contract.ss"
                     check-between/c
-                    check-unary-between/c)))
+                    check-unary-between/c))
+  
+  ;; from contract-guts.ss
+  
+  (provide and/c
+           any/c
+           none/c
+           make-none/c 
+           
+           guilty-party
+           contract-violation->string
+           
+           contract?
+           contract-name
+           contract-proc
+           
+           flat-contract?
+           flat-contract
+           flat-contract-predicate
+           flat-named-contract
+           
+           contract-first-order-passes?
+           
+           ;; below need docs
+           
+           make-proj-contract
+           
+           contract-stronger?
+           
+           coerce-contract 
+           flat-contract/predicate?
+
+           build-compound-type-name
+           raise-contract-error
+
+           proj-prop proj-pred? proj-get
+           name-prop name-pred? name-get
+           stronger-prop stronger-pred? stronger-get
+           flat-prop flat-pred? flat-get
+           first-order-prop first-order-get))
+  
 
 ;; ======================================================================
 ;; The alternate implementation disables contracts. Its useful mainly to
