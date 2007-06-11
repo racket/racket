@@ -23,7 +23,7 @@ prints like the ASCII decoding of the byte string, but prefixed with a
 @litchar{#}. Unprintable ASCII characters or non-ASCII bytes in the
 byte string are written with octal notation.
 
-@refdetails["mz:parse-string"]{the syntax of byte strings}
+@refdetails/gory["mz:parse-string"]{the syntax of byte strings}
 
 @examples[
 #"Apple"
@@ -37,7 +37,7 @@ b
 ]
 
 The @scheme[display] form of a byte string writes its raw bytes to the
-current output port (see @secref["output"]). Technically,
+current output port (see @secref["guide:i/o"]). Technically,
 @scheme[display] of a normal (i.e,. character) string prints the UTF-8
 encoding of the string to the current output port, since output is
 ultimately defined in terms of bytes; @scheme[display] of a byte

@@ -7,6 +7,7 @@
   (provide Quick MzScheme HtDP
            tool
            refdetails
+           refdetails/gory
            refsecref)
 
   (define Quick
@@ -21,13 +22,19 @@
   (define (tool name . desc)
     (apply item (bold name) ", " desc))
 
-  (define/kw (refdetails tag #:body s)
+  (define/kw (refdetails* tag what #:body s)
     (apply margin-note
-           (decode-content (append (list "For more on ")
+           (decode-content (append (list "For " what " on ")
                                    s
                                    (list ", see "
                                          (refsecref tag)
                                          ".")))))
+
+  (define/kw (refdetails tag #:body s)
+    (apply refdetails* tag "more" s))
+
+  (define/kw (refdetails/gory tag #:body s)
+    (apply refdetails* tag "gory details" s))
 
   (define (refsecref s)
     (make-element #f (list (secref s) " in " MzScheme))))

@@ -3,6 +3,8 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
+@interaction-eval[(require (rename (lib "etc.ss") lambda opt-lambda))]
+
 @title[#:tag "guide:lambda"]{Procedures: @scheme[lambda] and @scheme[case-lambda]}
 
 A @scheme[lambda] expression creates a procedure. In the simplest
@@ -10,12 +12,8 @@ case, a @scheme[lambda] expression has the form
 
 @specform[
 (lambda (arg-id ...)
-  body-expr ...+)
+  body ...+)
 ]
-
-The @scheme[...+] in this syntactic sketch means ``one or more
-repetitions of the preceeding element.'' Specifically, it means one or
-more @scheme[_body-expr]s.
 
 A @scheme[lambda] form with @math{n} @scheme[_arg-id]s accepts
 @math{n} arguments:
@@ -29,11 +27,14 @@ A @scheme[lambda] form with @math{n} @scheme[_arg-id]s accepts
  1)
 ]
 
+@;------------------------------------------------------------------------
+@section{Rest Arguments}
+
 A @scheme[lambda] expression can also have the form
 
 @specform[
 (lambda rest-id
-  body-expr ...+)
+  body ...+)
 ]
 
 That is, a @scheme[lambda] expression can have a single
@@ -49,108 +50,160 @@ into a list bound to @scheme[_rest-id].
  1 2 3)
 ]
 
-Combining thes two styles, a @scheme[lambda] expression can have the
-form
+Procedures of this form often use @scheme[apply] to call another
+procedure that accepts any number of arguments.
+
+@margin-note{See @secref["guide:apply"] for more information on
+@scheme[apply].}
+
+@defexamples[
+(define max-mag 
+  (lambda nums
+    (apply max (map magnitude nums))))
+
+(max 1 -2 0)
+(max-mag 1 -2 0)
+]
+
+Generalizing the fixed-arity and any-arity style, a @scheme[lambda]
+expression can have the form
 
 @specform[
 (lambda (arg-id ...+ . rest-id)
-  body-expr ...+)
+  body ...+)
 ]
 
 The result is a procedure that requires at least as many arguments as
 @scheme[_arg-id]s, and also accepts any number of additional
 arguments.
 
-@examples[
-((lambda (a b . x) (cons (/ a b) x))
- 1 2 3 4)
-((lambda (a b . x) (cons (/ a b) x))
- 1 2)
-((lambda (a b . x) (cons (/ a b) x)) 
- 1)
+@defexamples[
+(define max-mag 
+  (lambda (num . nums)
+    (apply max (map magnitude (cons num nums)))))
+
+(max-mag 1 -2 0)
+(max-mag)
 ]
 
-Support for optional and keyword arguments lead to even more
-possibilities:
+A @scheme[_rest-id] variable is sometimes called a @defterm{rest
+argument}, because it accepts the ``rest'' of the procedure arguments.
 
-@itemize{
+@;------------------------------------------------------------------------
+@section{Optional Arguments}
 
- @item{Instead of just an @scheme[_arg-id], an form argument can be
-       @scheme[[_arg-id _default-expr]], which means that the argument
-       is optional. When the argument is not supplied,
-       @scheme[_default-expr] produces the default value. The
-       @scheme[_default-expr] can refer to any preceding
-       @scheme[_arg-id], and every following @scheme[_arg-id] must
-       have a default as well.
+Instead of just an identifier, an argument (other than a rest
+argument) in a @scheme[lambda] form can be specified with an
+identifier and a default value:
 
-       @examples[
-         ((lambda (x [y 5]) (list x y))
-          1 2)
-         ((lambda (x [y 5]) (list x y)) 
-          1)
-         ((lambda (x [y (+ x 1)]) (list x y))
-          1)
-         (lambda ([x 5] y) (list x y))
-       ]}
+@specform/subs[
+(lambda (arg ...+ . rest-id)
+  body ...+)
+([arg arg-id
+      [arg-id default-expr]])
+]{}
 
- @item{Instead of just an @scheme[_arg-id], an form argument can be
-       @scheme[(code:line _keyword _arg-id)], which indicates a
-       by-keyword argument instead of a by-position argument. The
-       position of the keyword--identifier pair in the argument list
-       does not matter for matching with arguments in an application,
-       because it will be matched to an argument value by keyword
-       insteda of by position.
+A argument of the form @scheme[[arg-id default-expr]] is
+optional. When the argument is not supplied in an application,
+@scheme[_default-expr] produces the default value. The
+@scheme[_default-expr] can refer to any preceding @scheme[_arg-id],
+and every following @scheme[_arg-id] must have a default as well.
 
-       @examples[
-         ((lambda (x #:second y) (list x y))
-          1 #:second 2)
-         ((lambda (x #:second y) (list x y)) 
-          #:second 2 1)
-         ((lambda (#:second y x) (list x y)) 
-          1 #:second 2)
-         ((lambda (x #:second y) (list x y)) 
-          1 2)
-         ((lambda (x #:second y) (list x y))
-          #:second 2)
-       ]}
+@defexamples[
+(define greet
+  (lambda (given [surname "Smith"])
+    (string-append "Hello, " given " " surname)))
 
- @item{The previous two possibilities can be combined to specify a
-       by-keyword argument with a default value.
+(greet "John")
+(greet "John" "Doe")
+]
 
-       @examples[
-         ((lambda (x #:second [y 5]) (list x y))
-          1 #:second 2)
-         ((lambda (x #:second [y 5]) (list x y))
-          1)
-       ]}
+@def+int[
+(define greet
+  (lambda (given [surname (if (equal? given "John")
+                              "Doe"
+                              "Smith")])
+    (string-append "Hello, " given " " surname)))
 
-}
+(greet "John")
+(greet "Adam")
+]
+
+@section{Keyword Arguments}
+
+A @scheme[lambda] form can declare an argument to be passed by
+keyword, instead of position. Keyword arguments can be mixed with
+by-position arguments, and default-value expressions can be supplied
+for either kind of argument:
+
+@specform/subs[
+(lambda (arg ...+ . rest-id)
+  body ...+)
+([arg arg-id
+      [arg-id default-expr]
+      (code:line arg-keyword arg-id)
+      (code:line arg-keyword [arg-id default-expr])])
+]{}
+
+As argument specified as @scheme[(code:line _arg-keyword _arg-id)] is
+supplied by an application using the same @scheme[_arg-keyword].  The
+position of the keyword--identifier pair in the argument list does not
+matter for matching with arguments in an application, because it will
+be matched to an argument value by keyword instead of by position.
+
+@def+int[
+(define greet
+  (lambda (given #:last surname)
+    (string-append "Hello, " given " " surname)))
+
+(greet "John" #:last "Smith")
+(greet #:last "Doe" "John")
+]
+
+A @scheme[(code:line _arg-keyword [_arg-id _default-expr])] argument
+specifies a keyword-based argument with a default value.
+
+@defexamples[
+(define greet
+  (lambda (#:hi [hi "Hello"] given #:last [surname "Smith"])
+    (string-append hi ", " given " " surname)))
+
+(greet "John")
+(greet "Karl" #:last "Marx")
+(greet "John" #:hi "Howdy")
+(greet "Karl" #:last "Marx" #:hi "Guten Tag")
+]
+
+@;------------------------------------------------------------------------
+@section{Arity-Sensitive Procedures: @scheme[case-lambda]}
 
 The @scheme[case-lambda] form creates a procedure that can have
 completely different behaviors depending on the number of arguments
 that are supplied. A case-lambda expression has the form
 
-@specform[
+@specform/subs[
 (case-lambda
-  [formals body-expr ...+]
+  [formals body ...+]
   ...)
+([formals (arg-id ...)
+          rest-id
+          (arg-id ...+ . rest-id)])
 ]
 
-where each @scheme[_formals _body-expr ...+] is anlogous to
-@scheme[(lambda _formals _body-expr ...+)]. That is, a
-@scheme[_formals] can be @scheme[(_arg-id ...)], @scheme[_rest-id], or 
-@scheme[(_arg-id ... . _rest-id)].
+where each @scheme[_formals _body ...+] is anlogous to @scheme[(lambda
+_formals _body ...+)]. Applying a procedure produced by
+@scheme[case-lambda] is like applying a @scheme[lambda] for the first
+case that matches the number of given arguments.
 
-Applying a procedure produced by @scheme[case-lambda] is like applying
-a @scheme[lambda] for the first case that matches the number of given
-arguments.
+@defexamples[
+(define greet
+  (case-lambda
+    [(name) (string-append "Hello, " name)]
+    [(given surname) (string-append "Hello, " given " " surname)]))
 
-@examples[
-((case-lambda [() 10][(x y) (+ x y)])
- 1 2)
-((case-lambda [() 10][(x y) (+ x y)]))
-((case-lambda [() 10][(x y) (+ x y)])
- 1)
+(greet "John")
+(greet "John" "Smith")
+(greet)
 ]
 
 A @scheme[case-lambda] procedure cannot directly support optional or

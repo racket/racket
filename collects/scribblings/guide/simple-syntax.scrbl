@@ -47,7 +47,7 @@ a sequence as an element for repetition.
 @define[and-expr-stx @BNF-seq[@litchar{(} @litchar{and} @kleenestar{@nonterm{expr}} @litchar{)}]]
 @define[or-expr-stx @BNF-seq[@litchar{(} @litchar{or} @kleenestar{@nonterm{expr}} @litchar{)}]]
 @define[cond-expr-stx @BNF-seq[@litchar{(} @litchar{cond}
-                                              @kleenestar{@BNF-group[@litchar{[} @nonterm{expr} @nonterm{expr} @litchar{]}]}
+                                              @kleenestar{@BNF-group[@litchar{[} @nonterm{expr} @kleenestar{@nonterm{expr}} @litchar{]}]}
                                               @litchar{)}]]
 @define[(make-let-expr-stx kw)
          @BNF-seq[@litchar{(} kw @litchar{(}
@@ -328,13 +328,13 @@ The shorthand for a sequence of tests is the @scheme[cond] form:
 
 A @scheme[cond] form contains a sequence of clauses between square
 brackets. In each clause, the first @nonterm{expr} is a test
-expression. If it produces true, then the clause's second
-@nonterm{expr} provides the answer for the entire @scheme[cond]
-expression, and the rest of the clauses are ignored. If the test
-@nonterm{expr} produces @scheme[#f], then the clause's second
-@nonterm{expr} is ignored, and evaluation continues with the
-next clause. The last clause can use @scheme[else] as a synonym for
-a @scheme[#t] test expression.
+expression. If it produces true, then the clause's remaining
+@nonterm{expr}s are evaluated, and the last one in the clause provides
+the answer for the entire @scheme[cond] expression; the rest of the
+clauses are ignored. If the test @nonterm{expr} produces @scheme[#f],
+then the clause's remaining @nonterm{expr}s are ignored, and
+evaluation continues with the next clause. The last clause can use
+@scheme[else] as a synonym for a @scheme[#t] test expression.
 
 Using @scheme[cond], the @scheme[reply-more] procedure can be more
 clearly written as follows:

@@ -18,7 +18,7 @@
 @title[#:tag "mz:reader"]{Reading}
 
 Scheme's reader is a recursive-descent parser that can be configured
-through a @seclink["readtable"]{readtable} and various other
+through a @seclink["mz:readtables"]{readtable} and various other
 @seclink["parameters"]{parameters}. This section describes the reader's
 parsing when using the default readtable.
 
@@ -37,10 +37,10 @@ reader's behavior in @scheme[read] mode, and @scheme[read-syntax] mode
 does the same modulo wrapping the final result.
 
 Reading is defined in terms of Unicode characters; see
-@secref["unicode"] for information on how a byte stream is converted
+@secref["mz:char-input"] for information on how a byte stream is converted
 to a character stream.
 
-@section{Delimiters and Dispatch}
+@section[#:tag "mz:default-readtable-dispatch"]{Delimiters and Dispatch}
 
 Along with @schemelink[char-whitespace?]{whitespace}, the following
 characters are @defterm{delimiters}:
@@ -286,7 +286,7 @@ input syntax for the boolean constant false.
 
 When the reader encounters a @as-index{@litchar{(}},
 @as-index{@litchar["["]}, or @as-index{@litchar["{"]}, it starts
-parsing a pair or list; see @secref["pairs"] for information on pairs
+parsing a pair or list; see @secref["mz:pairs"] for information on pairs
 and lists.
 
 To parse the pair or list, the reader recursively reads data
@@ -720,3 +720,11 @@ information on special-comment results and recursive reads.
 If the @scheme[read-accept-reader] parameter is set to @scheme[#f],
 then if the reader encounters @litchar{#reader}, the
 @exnraise[exn:fail:read].
+
+@section[#:tag "mz:readtables"]{Readtables}
+
+The dispatch table in @secref["mz:default-readtable-dispatch"]
+corresponds to the default @idefterm{readtable}.
+
+@section[#:tag "mz:parse-honu"]{Honu Parsing}
+

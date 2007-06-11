@@ -53,7 +53,7 @@ or inexact number. The prefixes @litchar{#b}, @litchar{#o}, and
 @litchar{#x} specificy binary, octal, and hexadecimal
 interprertation of digits.
 
-@refdetails["mz:parse-number"]{the syntax of numbers}
+@refdetails/gory["mz:parse-number"]{the syntax of numbers}
 
 @examples[
 0.5

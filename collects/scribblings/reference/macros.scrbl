@@ -101,6 +101,10 @@ possible contexts are as follows:
 
 }
 
+@section[#:tag "mz:intdef-body"]{Internal Definitions}
+
+@section{Fully Expanded Programs}
+
 A fully expanded program---that is, a parsed program---is represented
 in the same way as an unparsed program: as a syntax-wrapped
 combination of symbols, pairs, and other values. However, a fully

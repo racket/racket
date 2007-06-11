@@ -24,14 +24,14 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["data.scrbl"]
 
-@include-section["define-struct.scrbl"]
-
 @include-section["forms.scrbl"]
+
+@include-section["define-struct.scrbl"]
 
 @include-section["module-basics.scrbl"]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "contracts"]{Contracts}
+@section[#:tag "guide:contracts"]{Contracts}
 
 In the reference manual, the documentation for each procedure
 describes the acceptable arguments and the result of the procedure
@@ -54,7 +54,11 @@ using @idefterm{contracts}.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "i/o"]{I/O and Networking}
+@section[#:tag "guide:i/o"]{Input and Output}
+
+
+@; ----------------------------------------------------------------------
+@section[#:tag "guide:networking"]{Networking}
 
 
 @; ----------------------------------------------------------------------
@@ -88,6 +92,9 @@ using @idefterm{contracts}.
 @; ----------------------------------------------------------------------
 @section[#:tag "memory-management"]{Memory Management}
 
+@subsection[#:tag "guide:weakboxes"]{Weak Boxes}
+
+@subsection[#:tag "guide:ephemerons"]{Ephemerons}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "performance"]{Performance}

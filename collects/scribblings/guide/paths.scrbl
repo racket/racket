@@ -43,7 +43,9 @@ with @file{~}---which looks like a reference to the current user's
 home directory, instead of a relative path to a file of directory
 named @file{~}. Windows path manipulation, furthermore, is far
 trickier, because path elements like @file{aux} can have special
-meanings (see @secref["windows-path"]).
+meanings.
+
+@refdetails/gory["mz:windows-path"]{Windows filesystem paths}
 
 Use procedures like @scheme[split-path] and @scheme[build-path] to
 deconstruct and construct paths. When you must manipulate the name of

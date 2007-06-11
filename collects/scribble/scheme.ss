@@ -369,7 +369,6 @@
                              (string? (syntax-e c))
                              (bytes? (syntax-e c))
                              (char? (syntax-e c))
-                             (keyword? (syntax-e c))
                              (boolean? (syntax-e c)))
                          value-color]
                         [(identifier? c) 
@@ -389,7 +388,12 @@
       (set! dest-col 0)
       (hash-table-put! next-col-map init-col dest-col)
       ((loop (lambda () (set! src-col init-col) (set! dest-col 0)) 0) c)
-      (out suffix #f)
+      (if (list? suffix)
+          (map (lambda (sfx)
+                 (finish-line!)
+                 (out sfx #f))
+               suffix)
+          (out suffix #f))
       (unless (null? content)
         (finish-line!))
       (if multi-line?

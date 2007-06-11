@@ -8,6 +8,8 @@
            for/or for*/or
            for/first for*/first
            for/last for*/last
+
+           for/fold/derived for*/fold/derived
            
            (rename *in-range in-range)
            (rename *in-naturals in-naturals)

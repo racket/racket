@@ -179,7 +179,7 @@ With these pieces, you can write your own versions of the
 ]
 
 If the derivation of the above definitions is mysterious to you,
-consider reading @|HtDP|. But if you are merely suspicious of the use
+consider reading @|HtDP|. If you are merely suspicious of the use
 of recursive calls instead of a looping construct, then read on.
 
 Both the @scheme[my-length] and @scheme[my-map] procedures run in

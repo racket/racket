@@ -34,14 +34,14 @@ is @scheme[#t] or @scheme[#f], @scheme[#f] otherwise.}
 @include-section["chars.scrbl"]
 
 @; ------------------------------------------------------------
-@section[#:tag "symbols"]{Symbols}
+@section[#:tag "mz:symbols"]{Symbols}
 
 @guideintro["guide:symbols"]{symbols}
 
 A symbol is like an immutable string, but symbols are normally
 @index["interned symbols"]{@defterm{interned}}, so that two symbols
 with the same character content are normally @scheme[eq?]. All symbols
-produced by the default reader (see @secref["parse-symbol"]) are
+produced by the default reader (see @secref["mz:parse-symbol"]) are
 interned.
 
 @index['("symbols" "generating")]{@index['("symbols" "unique")]{The}} two
@@ -54,8 +54,8 @@ Regular (interned) symbols are only weakly held by the internal symbol
 table. This weakness can never affect the result of an @scheme[eq?],
 @scheme[eqv?], or @scheme[equal?] test, but a symbol may disappear
 when placed into a weak box (see @secref["weakbox"]) used as the key
-in a weak hash table (see @secref["hashtable"]), or used as an
-ephemeron key (see @secref["ephemeron"]).
+in a weak hash table (see @secref["mz:hashtables"]), or used as an
+ephemeron key (see @secref["mz:ephemerons"]).
 
 @defproc[(symbol? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
  a symbol, @scheme[#f] otherwise.}
@@ -190,13 +190,19 @@ If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
  ignored.}
 
 
+@; ------------------------------------------------------------
+@section[#:tag "mz:vectors"]{Vectors}
+
+@; ------------------------------------------------------------
+@section[#:tag "mz:boxes"]{Boxes}
+
 @; ----------------------------------------------------------------------
-@section[#:tag "hashtables"]{Hash Tables}
+@section[#:tag "mz:hashtables"]{Hash Tables}
 
 @; ----------------------------------------------------------------------
 @include-section["sequences.scrbl"]
 
-@section[#:tag "procedures"]{Procedures}
+@section[#:tag "mz:procedures"]{Procedures}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "void"]{Void and Undefined}

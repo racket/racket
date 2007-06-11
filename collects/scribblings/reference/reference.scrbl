@@ -18,4 +18,20 @@ language.
 @include-section["derived.scrbl"]
 @include-section["data.scrbl"]
 
+@;------------------------------------------------------------------------
+
+@section["Input and Output"]
+
+@subsection[#:tag "mz:char-input"]{Form Bytes to Characters}
+
+@;------------------------------------------------------------------------
+
+@section{Platform-Specific Path Conventions}
+
+@subsection[#:tag "mz:unix-path"]{Unix and Mac OS X Paths}
+
+@subsection[#:tag "mz:windows-path"]{Windows Paths}
+
+@;------------------------------------------------------------------------
+
 @index-section["mzscheme-index"]

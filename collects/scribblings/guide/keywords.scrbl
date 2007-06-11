@@ -5,10 +5,10 @@
 
 @title[#:tag "keywords"]{Keywords}
 
-A @defterm{keyword} is similar to a symbol (see @secref["symbols"]),
+A @defterm{keyword} is similar to a symbol (see @secref["guide:symbols"]),
 but its printed form is prefixed with @litchar{#:}.
 
-@refdetails["mz:parse-keyword"]{the syntax of keywords}
+@refdetails/gory["mz:parse-keyword"]{the syntax of keywords}
 
 @examples[
 (string->keyword "apple")

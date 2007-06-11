@@ -183,7 +183,7 @@ Beware, however, that the REPL's printer recognizes the symbol
 ]
 
 @;------------------------------------------------------------------------
-@section{Lists and Scheme Syntax}
+@section[#:tag "guide:lists-and-syntax"]{Lists and Scheme Syntax}
 
 Now that you know the truth about pairs and lists, and now that you've
 seen @scheme[quote], you're ready to understand the main way in which

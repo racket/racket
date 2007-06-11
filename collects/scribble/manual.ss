@@ -150,7 +150,8 @@
   ;; ----------------------------------------
 
   (provide defproc defproc* defstruct defthing defform defform* defform/subs defform*/subs defform/none
-           specform specsubform specsubform/inline
+           specform specform/subs 
+           specsubform specspecsubform specsubform/inline
            schemegrammar
            var svar void-const undefined-const)
 
@@ -250,15 +251,30 @@
   (define-syntax specsubform
     (syntax-rules ()
       [(_ spec desc ...)
-       (*specsubform 'spec #f (lambda () (schemeblock0 spec)) (lambda () (list desc ...)))]))
+       (*specsubform 'spec #f (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
+  (define-syntax specspecsubform
+    (syntax-rules ()
+      [(_ spec desc ...)
+       (make-blockquote "leftindent" (list (specsubform spec desc ...)))]))
   (define-syntax specform
     (syntax-rules ()
       [(_ spec desc ...)
-       (*specsubform 'spec #t (lambda () (schemeblock0 spec)) (lambda () (list desc ...)))]))
+       (*specsubform 'spec #t (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
+  (define-syntax specform/subs
+    (syntax-rules ()
+      [(_ spec ([non-term-id non-term-form ...] ...) desc ...)
+       (*specsubform 'spec #t 
+                     (lambda () (schemeblock0 spec)) 
+                     '((non-term-id non-term-form ...) ...)
+                     (list (list (lambda () (scheme non-term-id))
+                                 (lambda () (schemeblock0 non-term-form))
+                                 ...)
+                           ...)
+                     (lambda () (list desc ...)))]))
   (define-syntax specsubform/inline
     (syntax-rules ()
       [(_ spec desc ...)
-       (*specsubform 'spec #f #f (lambda () (list desc ...)))]))
+       (*specsubform 'spec #f #f null null (lambda () (list desc ...)))]))
   (define-syntax defthing
     (syntax-rules ()
       [(_ id result desc ...)
@@ -523,9 +539,10 @@
                 sub-procs))))
         (content-thunk)))))
 
-  (define (*specsubform form has-kw? form-thunk content-thunk)
+  (define (*specsubform form has-kw? form-thunk subs sub-procs content-thunk)
     (parameterize ([current-variable-list
-                    (append (let loop ([form (if has-kw? (cdr form) form)])
+                    (append (let loop ([form (cons (if has-kw? (cdr form) form)
+                                                   subs)])
                               (cond
                                [(symbol? form) (if (meta-symbol? form)
                                                    null
@@ -539,12 +556,20 @@
        (cons
         (make-table
          'boxed
-         (list (list
-                (make-flow
-                 (list
-                  (if form-thunk
-                      (form-thunk)
-                      (make-paragraph (list (to-element form)))))))))
+         (cons
+          (list
+           (make-flow
+            (list
+             (if form-thunk
+                 (form-thunk)
+                 (make-paragraph (list (to-element form)))))))
+          (apply
+           append
+           (map (lambda (sub)
+                  (list (list (make-flow (list (make-paragraph (list (tt 'nbsp))))))
+                        (list (make-flow (list (apply *schemerawgrammar 
+                                                      (map (lambda (f) (f)) sub)))))))
+                sub-procs))))
         (flow-paragraphs (decode-flow (content-thunk)))))))
 
   (define (*schemerawgrammar nonterm clause1 . clauses)
@@ -642,6 +667,30 @@
                                                (list (make-element 'italic (list i)))))]
                                         [else (list i)])))
                                    c)))))
+
+  ;; ----------------------------------------
+
+  (provide cite)
+
+  (define/kw (cite #:key key title author location date)
+    "[...]"
+    #;
+    (make-bibliography-element
+     #f
+     (list "[...]")
+     key
+     (list (string-append
+            (content->string (list author))
+            ", "
+            (content->string (list title))))
+     (list (make-element #f (list author
+                                  ", "
+                                  title
+                                  ", "
+                                  date
+                                  ". "
+                                  location
+                                  ".")))))
 
   ;; ----------------------------------------
   )

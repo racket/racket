@@ -17,9 +17,9 @@ objects to @secref["classes"].
 
 To a first approximation, the syntax of @scheme[define-struct] is
 
-@schemeblock[
-(define-struct _struct-id (_field-id ...))
-]
+@specform[
+(define-struct struct-id (field-id ...))
+]{}
 
 Such a definition binds @scheme[_struct-id], but only to static
 information about the structure type that cannot be used directly:
@@ -71,13 +71,13 @@ are built from @scheme[_struct-id] and the @scheme[_field-id]s:
 }
 
 A @scheme[define-struct] form places no constraints on the kinds of
-values that can appears for fields in an instance of the structure
+values that can appear for fields in an instance of the structure
 type. For example, @scheme[(make-posn "apple" #f)] produces an
 instance of @scheme[posn], even though @scheme["apple"] and
-@scheme[#f] are not valid co-ordinates for the obvious uses of
+@scheme[#f] are not valid coordinates for the obvious uses of
 @scheme[posn] instances. Enforcing constraints on field values, such
 as requiring them to be numbers, is the job of a contract, as
-discussed later in @secref["contracts"].
+discussed later in @secref["guide:contracts"].
 
 @; ------------------------------------------------------------
 @section{Structure Subtypes}
@@ -86,8 +86,8 @@ An extended form of @scheme[defin-struct] can be used to define a
 @defterm{structure subtype}, which is a structure type that extends an
 existing structure type:
 
-@schemeblock[
-(define-struct (_struct-id _super-id) (_field-id ...))
+@specform[
+(define-struct (struct-id super-id) (field-id ...))
 ]
 
 The @scheme[_super-id] must be a structure type name bound by
@@ -133,13 +133,19 @@ To make a structure type @defterm{transparent}, use the
 field-name sequence:
 
 @def+int[
-(define-struct posn (x y) 
-               #f)
+'(define-struct posn (x y) 
+                #:inspector #f)
 (make-posn 1 2)
 ]
 
 An instance of a transparent structure type prints like a vector, and
 it shows the content of the structure's fields. A transparent
-structure type allows allows reflective operations like
-@scheme[struct?] and @scheme[struct-info] to be used on its
+structure type also allows reflective operations, like
+@scheme[struct?] and @scheme[struct-info], to be used on its
 instances (see @secref["reflection"]).
+
+Structure types are opaque by default, because opaque structure
+instances provide more encapsulation guarantees. That is, a library
+can use an opaque structure to encapsulate data, and clients of the
+library cannot manipulate the data in the structure except as allowed
+by the library.

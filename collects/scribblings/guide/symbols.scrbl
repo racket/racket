@@ -59,7 +59,7 @@ special characters or that might otherwise look like numbers.
 (string->symbol "6")
 ]
 
-@refdetails["mz:parse-symbol"]{the syntax of symbols}
+@refdetails/gory["mz:parse-symbol"]{the syntax of symbols}
 
 The @scheme[display] form of a symbol is the same as the corresponding
 string.

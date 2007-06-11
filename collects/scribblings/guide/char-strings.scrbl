@@ -15,10 +15,10 @@ to three octal digits, and hexadimal escapes with @litchar["\\u"]
 (up to four digits).  Unprintable characters in a string normally
 shown with @litchar["\\u"] when the string is printed.
 
-@refdetails["mz:parse-string"]{the syntax of strings}
+@refdetails/gory["mz:parse-string"]{the syntax of strings}
 
 The @scheme[display] procedure directly writes the characters of a
-string to the current output port (see @secref["output"]), in contrast
+string to the current output port (see @secref["guide:i/o"]), in contrast
 to the string-constant syntax used to print a string result.
 
 @examples[

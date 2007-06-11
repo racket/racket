@@ -27,9 +27,6 @@ Within such specifications,
  @item{@scheme[...+] indicates one or
        more repetitions of the preceding datum.}
 
- @item{@scheme[?] means zero instances or one instance
-       of the preceding datum.}
-
  @item{italic meta-identifier play the role of non-terminals; in
        particular,
 
@@ -48,7 +45,7 @@ Within such specifications,
               for a non-empty syntax-wrapped list of sub-forms; the
               list is expanded as internal-definition sequence
               followed by at least one expression (see
-              @secref["intdef-body"] for details).}
+              @secref["mz:intdef-body"] for details).}
 
               }} }
 
@@ -230,7 +227,7 @@ a sequence of @scheme[_formal-arg]s optionally ending with a
        list that is associated to @scheme[rest-id].}
 
 The @scheme[formals*] identifiers are bound in the @scheme[body]. (See
-@secref["intdef-body"] for information on @scheme[body] forms.) When
+@secref["mz:intdef-body"] for information on @scheme[body] forms.) When
 the procedure is applied, a new location is created for each
 identifier, and the location is filled with the associated argument
 value.
@@ -299,7 +296,7 @@ support keyword and optional arguments.
 The first form evaluates the @scheme[val-expr]s left-to-right, creates
 a new location for each @scheme[id], and places the values into the
 locations. It then evaluates the @scheme[body], in which the
-@scheme[id]s are bound.  (See @secref["intdef-body"] for information
+@scheme[id]s are bound.  (See @secref["mz:intdef-body"] for information
 on @scheme[body] forms.)  The last expression in @scheme[body] is in
 tail position with respect to the @scheme[let] form. The @scheme[id]s
 must be distinct according to @scheme[bound-identifier=?].

@@ -188,13 +188,13 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(/ 3 4) (/ 81 3 3) (/ 10.0) (/ 1+2i 3+4i)]
 
 
-@defproc[(quotient [n integer?] [m integer?]) number?]{ Returns 
+@defproc[(quotient [n integer?] [m integer?]) integer?]{ Returns 
  @scheme[(truncate (/ n m))].}
 
 @examples[(quotient 10 3) (quotient -10.0 3) (quotient +inf.0 3)]
 
 
-@defproc[(remainder [n integer?] [m integer?]) number?]{ Returns
+@defproc[(remainder [n integer?] [m integer?]) integer?]{ Returns
  @scheme[q] with the same sign as @scheme[n] such that
 
 @itemize{
@@ -206,6 +206,15 @@ noted above). Two numbers are @scheme[equal?] when they are
 }
 
 @examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (remainder +inf.0 3)]}
+
+
+@defproc[(quotient/remainder [n integer?] [m integer?]) (values number? number?)]{ Returns
+ @scheme[(values (quotient n m) (remainder n m))], but the combination is computed
+ more efficiently than separate calls to @scheme[quotient] and @scheme[remainder].
+
+@examples[
+(quotient/remainder 10 3)
+]}
 
 
 @defproc[(modulo [n integer?] [m integer?]) number?]{  Returns
@@ -534,7 +543,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 @defproc[(string->number [s string?] [radix (exact-integer-in/c 2 16)
  10]) (or/c number? false/c)]{ Reads and returns a number datum from
- @scheme[s] (see @secref["parse-number"]), returning @scheme[#f] if
+ @scheme[s] (see @secref["mz:parse-number"]), returning @scheme[#f] if
  @scheme[s] does not parse exactly as a number datum (with no
  whitespace). The optional @scheme[radix] argument specifies the default
  base for the number, which can be overriden by @litchar{#b},

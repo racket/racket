@@ -75,7 +75,7 @@
                      (pair? number))
             (printf "\\~a~a{"
                     (case (length number)
-                      [(0 1) "section"]
+                      [(0 1) "newpage\n\n\\section"]
                       [(2) "subsection"]
                       [(3) "subsubsection"]
                       [else "subsubsection*"])

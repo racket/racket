@@ -210,9 +210,9 @@
       [(_ (eval:alts a b)) (schemeinput* a)]
       [(_ e) (schemeinput e)]))
 
-  (define (defspace p)
-    (make-flow (list p
-                     (make-paragraph null))))
+  (define-code schemeblock+line (to-paragraph/prefix (hspace 2) 
+                                                     (hspace 2)
+                                                     (list " ")))
 
   (define-syntax (schemedefinput* stx)
     (syntax-case stx (eval-example-string define define-struct)
@@ -220,13 +220,13 @@
        #'(schemeinput* (eval-example-string s))]
       [(_ (define . rest))
        (syntax-case stx ()
-         [(_ e) #'(defspace (schemeblock e))])]
+         [(_ e) #'(schemeblock+line e)])]
       [(_ (define-struct . rest))
        (syntax-case stx ()
-         [(_ e) #'(defspace (schemeblock e))])]
+         [(_ e) #'(schemeblock+line e)])]
       [(_ (code:line (define . rest) . rest2))
        (syntax-case stx ()
-         [(_ e) #'(defspace (schemeblock e))])]
+         [(_ e) #'(schemeblock+line e)])]
       [(_ e) #'(schemeinput e)]))
 
   (define-syntax titled-interaction

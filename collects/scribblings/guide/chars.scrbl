@@ -26,7 +26,7 @@ number. A few characters are printed specially; for example, the space
 and linefeed characters print as @scheme[#\space] and
 @scheme[#\newline], respectively.
 
-@refdetails["mz:parse-character"]{the syntax of characters}
+@refdetails/gory["mz:parse-character"]{the syntax of characters}
 
 @examples[
 (integer->char 65)
@@ -38,7 +38,7 @@ and linefeed characters print as @scheme[#\space] and
 ]
 
 The @scheme[display] procedure directly writes a character to the
-current output port (see @secref["output"]), in contrast to the
+current output port (see @secref["guide:i/o"]), in contrast to the
 character-constant syntax used to print a character result.
 
 @examples[
