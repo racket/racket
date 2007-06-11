@@ -26,7 +26,8 @@ provides:
 @defthing[timeout integer?]{
  This number is used as the @scheme[continuation-timeout] argument to
  a timeout-based continuation manager used for this servlet. (See
- @secref["timeouts.ss"].)
+ @secref["timeouts.ss"].) (i.e., you do not have a choice of the manager
+ for this servlet and will be given a timeout-based manager.)
 }
 
 @defproc[(start [initial-request request?])

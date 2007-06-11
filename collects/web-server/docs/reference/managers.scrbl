@@ -28,7 +28,8 @@ the users and implementers of managers.
                     [continuation-store! (number? any/c expiration-handler? . -> . (list/c number? number?))]
                     [continuation-lookup (number? number? number? . -> . any/c)])]{
  @scheme[create-instance] is called to initialize a instance, to hold the
- continuations of one servlet session. It is passed some arbitrary data and 
+ continuations of one servlet session. It is passed some internal data to store
+ for the server and 
  a function to call when the instance is expired. It runs the id of the
  instance.
  
@@ -47,7 +48,7 @@ the users and implementers of managers.
  @scheme[continuation-store!] is given an instance-id, a continuation value,
  and a function to include in the exception thrown if the continuation is 
  looked up and has been expired. The two numbers returned are a
- continuation-id and a random nonce.
+ continuation-id and a nonce.
  
  @scheme[continuation-lookup] finds the continuation value associated with
  the instance-id, continuation-id, and nonce triple it is given.
