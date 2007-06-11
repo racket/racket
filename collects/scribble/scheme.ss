@@ -369,6 +369,8 @@
                              (string? (syntax-e c))
                              (bytes? (syntax-e c))
                              (char? (syntax-e c))
+                             (regexp? (syntax-e c))
+                             (byte-regexp? (syntax-e c))
                              (boolean? (syntax-e c)))
                          value-color]
                         [(identifier? c) 

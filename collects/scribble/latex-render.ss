@@ -240,6 +240,7 @@
                 (case c
                   [(#\\) (display "$\\backslash$")]
                   [(#\_) (display "$\\_$")]
+                  [(#\^) (display "{\\char'136}")]
                   [(#\>) (if (rendering-tt)
                              (display "{\\texttt >}")
                              (display "$>$"))]
@@ -253,7 +254,7 @@
                                          (printf "{\\hbox{\\texttt{~a}}}" c)
                                          (display c))]
                   [(#\~) (display "$\\sim$")]
-                  [(#\{ #\} #\# #\% #\&) (display "\\") (display c)]
+                  [(#\{ #\} #\# #\% #\& #\$) (display "\\") (display c)]
                   [(#\uDF) (display "{\\ss}")]
                   [(#\u039A) (display "K")] ; kappa
                   [(#\u0391) (display "A")] ; alpha
