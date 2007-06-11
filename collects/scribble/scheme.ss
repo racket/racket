@@ -44,7 +44,7 @@
 
   (define-struct (sized-element element) (length))
 
-  (define (typeset c multi-line? prefix1 prefix color?)
+  (define (typeset c multi-line? prefix1 prefix suffix color?)
     (let* ([c (syntax-ize c 0)]
            [content null]
            [docs null]
@@ -146,7 +146,7 @@
                                                             (if val? value-color #f)
                                                             (list
                                                              (make-element (if val? value-color paren-color) '(". "))
-                                                             (typeset a #f "" "" (not val?))
+                                                             (typeset a #f "" "" "" (not val?))
                                                              (make-element (if val? value-color paren-color) '(" .")))
                                                             (+ (syntax-span a) 4)))
                                                          (list (syntax-source a)
@@ -389,6 +389,7 @@
       (set! dest-col 0)
       (hash-table-put! next-col-map init-col dest-col)
       ((loop (lambda () (set! src-col init-col) (set! dest-col 0)) 0) c)
+      (out suffix #f)
       (unless (null? content)
         (finish-line!))
       (if multi-line?
@@ -396,16 +397,16 @@
           (make-sized-element #f (reverse content) dest-col))))
 
   (define (to-element c)
-    (typeset c #f "" "" #t))
+    (typeset c #f "" "" "" #t))
 
   (define (to-element/no-color c)
-    (typeset c #f "" "" #f))
+    (typeset c #f "" "" "" #f))
 
   (define (to-paragraph c)
-    (typeset c #t "" "" #t))
+    (typeset c #t "" "" "" #t))
 
-  (define ((to-paragraph/prefix pfx1 pfx) c)
-    (typeset c #t pfx1 pfx #t))
+  (define ((to-paragraph/prefix pfx1 pfx sfx) c)
+    (typeset c #t pfx1 pfx sfx #t))
 
   (define-syntax (define-code stx)
     (syntax-case stx ()

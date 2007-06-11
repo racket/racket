@@ -136,7 +136,8 @@
       (define/override (render-element e part ht)
         (cond
          [(target-element? e)
-          `((a ((name ,(target-element-tag e))) ,@(render-plain-element e part ht)))]
+          `((a ((name ,(target-element-tag e))))
+            ,@(render-plain-element e part ht))]
          [(and (link-element? e)
                (not (current-no-links)))
           (parameterize ([current-no-links #t])

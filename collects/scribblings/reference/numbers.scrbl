@@ -362,8 +362,9 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(integer-sqrt 4.0) (integer-sqrt 5)]}
 
 
-@defproc[(integer-sqrt/remainder [n integer?]) (values integer?
- integer?)]{  Returns @scheme[(integer-sqrt n)] and @scheme[(- n (expt
+@defproc[(integer-sqrt/remainder [n integer?]) 
+         (values integer? integer?)]{
+ Returns @scheme[(integer-sqrt n)] and @scheme[(- n (expt
  (integer-sqrt n) 2))].
 
 @examples[(integer-sqrt/remainder 4.0) (integer-sqrt/remainder 5)]}
@@ -521,8 +522,9 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ------------------------------------------------------------------------
 @section{Number--String Conversions}
 
-@defproc[(number->string [z number?] [radix (one-of/c 2 8 10
- 16) 10]) string?]{ Returns a string that is the printed form of @scheme[z]
+@defproc[(number->string [z number?] 
+                         [radix (one-of/c 2 8 10 16) 10]) string?]{
+ Returns a string that is the printed form of @scheme[z]
  in the base specific by @scheme[radix]. If @scheme[z] is inexact,
  @scheme[radix] must be @scheme[10], otherwise the
  @exnraise[exn:fail:contract].
