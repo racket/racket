@@ -1312,11 +1312,12 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      if (ch == '"') {
 		Scheme_Object *str;
 		int is_err;
+                long sline = 0, scol = 0, spos = 0;
 
 		/* Skip #rx[#]: */
-		scheme_tell_all(port, &line, &col, &pos);
+		scheme_tell_all(port, &sline, &scol, &spos);
 
-		str = read_string(is_byte, 0, port, stxsrc, line, col, pos, ht, indentation, params, 1);
+		str = read_string(is_byte, 0, port, stxsrc, sline, scol, spos, ht, indentation, params, 1);
 
 		if (stxsrc)
 		  str = SCHEME_STX_VAL(str);
@@ -1324,7 +1325,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 		str = scheme_make_regexp(str, is_byte, (orig_ch == 'p'), &is_err);
 
 		if (is_err) {
-		  scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation,
+		  scheme_read_err(port, stxsrc, sline, scol, spos, 2, 0, indentation,
 				  "read: bad %sregexp string: %s", 
 				  (orig_ch == 'r') ? "" : "p",
 				  (char *)str);
