@@ -1,6 +1,8 @@
 
 (module mrpict mzscheme
-  (require (lib "unit.ss"))
+  (require (lib "unit.ss")
+           (lib "contract.ss")
+           (lib "mred.ss" "mred"))
 
   (require (lib "mred-sig.ss" "mred")
 	   (lib "mred-unit.ss" "mred"))
@@ -16,4 +18,32 @@
   
   (define-values/invoke-unit/infer mrpict+mred@)
 
-  (provide-signature-elements texpict-common^ mrpict-extra^))
+  (provide-signature-elements texpict-common^)
+  (provide
+   dc-for-text-size
+   show-pict
+   caps-text current-expected-text-scale
+   dc
+   linewidth
+   
+   draw-pict
+   make-pict-drawer)
+  
+  (define text-style/c
+    (flat-rec-contract
+     text-style/c
+     (or/c null?
+           (is-a?/c font%)
+           (symbols 'base 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system)
+           string? ;; could be more specific, I guess.
+           (cons/c (symbols 'bold 'italic 'superscript 'subscript 'combine 'no-combine)
+                   text-style/c))))
+  
+  (provide/contract
+   [text (opt-> (string?)
+                (text-style/c 
+                 (and/c (between/c 1 255) integer?)
+                 number?)
+                pict?)])
+  
+  (provide text-style/c))

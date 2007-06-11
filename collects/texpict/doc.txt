@@ -223,6 +223,10 @@ Basic Constructors:
      are specified, the first one takes precedence
       [MrEd only]
 
+> text-style/c :: contract?
+
+  This is a contract that matches the second argument of `text'.
+
 >  (caps-text string [text-style null] [size 12] [angle 0]) -> pict
 
    Same as `text', but use small caps:
