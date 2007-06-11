@@ -198,3 +198,14 @@ Like @scheme[for/last], but with the implicit nesting of @scheme[for*].}
 
 @defform[(for*/fold ([accum-id init-expr] ...) (for-clause ...) . body)]{
 Like @scheme[for/fold], but with the implicit nesting of @scheme[for*].}
+
+@defform[(for/fold/derived orig-datum 
+           ([accum-id init-expr] ...) (for-clause ...) . body)]{
+Like @scheme[fold/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
+}
+
+@defform[(for*/fold/derived orig-datum 
+           ([accum-id init-expr] ...) (for-clause ...) . body)]{
+Like @scheme[fold*/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
+}
+

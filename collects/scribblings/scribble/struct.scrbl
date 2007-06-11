@@ -4,7 +4,7 @@
 
 @title[#:tag "struct"]{Document Structures}
 
-A single document is reprsented as a @defterm{part}:
+A single document is represented as a @defterm{part}:
 
 @itemize{
 
@@ -19,7 +19,7 @@ A single document is reprsented as a @defterm{part}:
        of @defterm{flow element}s.}
 
  @item{A @defterm{flow element} is either a @defterm{table}, an
-       @defterm{itemization}, @defterm{paragraph}, or a
+       @defterm{itemization}, @defterm{blockquote}, @defterm{paragraph}, or a
        @defterm{delayed flow element}.
 
        @itemize{
@@ -29,6 +29,10 @@ A single document is reprsented as a @defterm{part}:
 
        @item{A @defterm{itemization} is an instance of @scheme[itemization];
              it has a list of flows.}
+
+       @item{A @defterm{blockquote} is an instance of
+             @scheme[blockquote]; it has list of flow elements that
+             are indented according to a specified style.}
 
        @item{A @defterm{paragraph} is an instance of @scheme[paragraph]; it
              has a list of @defterm{element}s.
@@ -128,12 +132,19 @@ particular source module just as easily defines a subsection
 
 }
 
+@defstruct[(styled-part part) ([style any/c])]{
+
+}
+
 @defstruct[flow ([paragraphs (listof flow-element?)])]{
 
 }
 
 @defstruct[paragraph ([content list?])]{
 
+}
+
+@defstruct[(styled-paragraph paragraph) ([style any/c])]{
 }
 
 
@@ -154,6 +165,11 @@ section, and the last argument correspond to global information
 
 
 @defstruct[itemization ([flows (listof flow?)])]{
+
+}
+
+@defstruct[blockquote ([style any/c]
+                       [flows (listof flow-element?)])]{
 
 }
 
@@ -198,7 +214,7 @@ rendered first.
 @defproc[(flow-element? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @scheme[paragraph],
-@scheme[table], @scheme[itemization], or
+@scheme[table], @scheme[itemization], @scheme[blockquote], or
 @scheme[delayed-flow-element], @scheme[#f] otherwise.
 
 }

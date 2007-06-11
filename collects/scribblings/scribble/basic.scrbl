@@ -3,7 +3,7 @@
 @require["utils.ss"]
 @require-for-syntax[mzscheme]
 
-@define-syntax[def-title-like
+@define-syntax[def-section-like
                (syntax-rules ()
                  [(_ id result/c x ...) (defproc (id [#:tag tag (or/c false/c string?) #f]
                                                      [pre-content any/c] (... ...+))
@@ -44,24 +44,27 @@ have Scribble's @file{scheme.ss} and @file{manual.ss}).
 
 @section{Document Structure}
 
-@def-title-like[title title-decl?]{ Generates a @scheme[title-decl] to
+@defproc[(title [#:tag tag (or/c false/c string?) #f]
+                [#:style style any/c #f]
+                [pre-content any/c] ...+)
+         title-decl?]{ Generates a @scheme[title-decl] to
  be picked up by @scheme[decode] or @scheme[decode-part].  The
  @scheme[pre-content]s list is parsed with @scheme[decode-content] for
  the title content. If @scheme[tag] is @scheme[#f], a tag string is
  generated automatically from the content. The tag string is combined
- with the symbol @scheme['section] to form the full tag.}
+ with the symbol @scheme['part] to form the full tag.}
 
-@def-title-like[section section-start?]{ Like @scheme[title], but
- generates a @scheme[section-start] of depth @scheme[0] to be by
+@def-section-like[section part-start?]{ Like @scheme[title], but
+ generates a @scheme[part-start] of depth @scheme[0] to be by
  @scheme[decode] or @scheme[decode-part].}
 
-@def-title-like[subsection section-start?]{ Like @scheme[section], but
- generates a @scheme[section-start] of depth @scheme[1].}
+@def-section-like[subsection part-start?]{ Like @scheme[section], but
+ generates a @scheme[part-start] of depth @scheme[1].}
 
-@def-title-like[subsubsection section-start?]{ Like @scheme[section], but
- generates a @scheme[section-start] of depth @scheme[2].}
+@def-section-like[subsubsection part-start?]{ Like @scheme[section], but
+ generates a @scheme[part-start] of depth @scheme[2].}
 
-@def-title-like[subsubsub*section paragraph?]{ Similar to
+@def-section-like[subsubsub*section paragraph?]{ Similar to
  @scheme[section], but merely generates a paragraph that looks like an
  unnumbered section heading (for when the nesting gets too deep to
  include in a table of contents).}
