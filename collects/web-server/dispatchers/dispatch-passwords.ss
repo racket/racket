@@ -15,7 +15,9 @@
   
   (define interface-version 'v1)
   (define/kw (make #:key
+                   ; XXX Take authorized? function
                    [password-file "passwords"]
+                   ; XXX Move out
                    [password-connection-timeout 300]
                    [authentication-responder 
                     (gen-authentication-responder "forbidden.html")])

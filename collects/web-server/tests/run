@@ -1,0 +1,16 @@
+#!/bin/bash
+FILE=$1
+T=$2
+
+if [ "x$2" == "x" ] ; then
+    T=$(basename $FILE .ss)s
+fi
+
+MODE=graphical
+
+PROG=mzscheme
+if [ "x${MODE}" == "xgraphical" ] ; then
+    PROG=mred
+fi
+
+${PROG} -mvt ${FILE} -e "(begin (require (planet \"${MODE}-ui.ss\" (\"schematics\" \"schemeunit.plt\" 2))) (test/${MODE}-ui ${T}))"
