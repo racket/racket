@@ -32,11 +32,6 @@
                 #:mime-types-path (build-path "/etc/httpd/mime.types")
                 #:indices (list (if i? (file-name-from-path tmp-file) not-there))))
   
-  (define (collect d req)
-    (define-values (c i o) (make-mock-connection #""))
-    (d c req)
-    (redact (get-output-bytes o)))
-  
   (define file-url (string->url "http://test.com/foo"))
   (define dir-url (string->url "http://test.com/foo/"))
   (define (req d? meth heads)

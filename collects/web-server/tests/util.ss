@@ -4,7 +4,13 @@
   (provide make-module-eval
            make-eval/mod-path
            make-mock-connection
-           redact)
+           redact
+           collect)
+  
+  (define (collect d req)
+    (define-values (c i o) (make-mock-connection #""))
+    (d c req)
+    (redact (get-output-bytes o)))
   
   (define (make-mock-connection ib)
     (define ip (open-input-bytes ib))
