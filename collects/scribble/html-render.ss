@@ -192,12 +192,16 @@
            [else (super render-element e part ht)])))
 
       (define/override (render-table t part ht)
-        `((table ((cellspacing "0") ,@(case (table-style t)
-                                        [(boxed) '((width "100%") (bgcolor "#E8E8FF"))]
-                                        [(centered) '((align "center"))]
-                                        [(at-right) '((align "right"))]
-                                        [(at-left) '((align "left"))]
-                                        [else null]))
+        `((table ((cellspacing "0") 
+                  ,@(case (table-style t)
+                      [(boxed) '((class "boxed"))]
+                      [(centered) '((align "center"))]
+                      [(at-right) '((align "right"))]
+                      [(at-left) '((align "left"))]
+                      [else null])
+                  ,@(if (string? (table-style t))
+                        `((class ,(table-style t)))
+                        null))
                  ,@(map (lambda (flows)
                           `(tr ,@(map (lambda (d a va)
                                         `(td (,@(case a

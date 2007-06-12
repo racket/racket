@@ -2,7 +2,6 @@
 (module mreval mzscheme
   (require (lib "eval.ss" "scribble")
            (lib "struct.ss" "scribble")
-           (lib "config.ss" "scribble")
            (lib "scheme.ss" "scribble")
            (lib "class.ss")
            (lib "file.ss")
@@ -135,11 +134,11 @@
                [dc (make-object (mred:bitmap-dc%) bm)])
           (send dc set-smoothing 'aligned)
           (send dc clear)
-          (((ss:make-pict-drawer) ((ss:colorize) v value-color)) dc 0 0)
+          (((ss:make-pict-drawer) v) dc 0 0)
           (send bm save-file fn 'png)
           (make-element #f (list (make-element (make-image-file fn) (list "[image]"))))))]
      [(pair? v) (cons (fixup-picts (car v))
                       (fixup-picts (cdr v)))]
      [(serializable? v) v]
-     [else (make-element value-color (list (format "~s" v)))])))
+     [else (make-element #f (list (format "~s" v)))])))
 

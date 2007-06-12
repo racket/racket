@@ -405,7 +405,7 @@
       (unless (null? content)
         (finish-line!))
       (if multi-line?
-          (make-table #f (map list (reverse docs)))
+          (make-table "schemeblock" (map list (reverse docs)))
           (make-sized-element #f (reverse content) dest-col))))
 
   (define (to-element c)

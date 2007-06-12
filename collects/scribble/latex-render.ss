@@ -49,6 +49,7 @@
         (define-color "schemevaluelink" "blue")
         (define-color "schemeresult" "ResultColor")
         (define-color "schemestdout" "OutputColor")
+        (define-color "schememeta" "IdentifierColor")
         (define-color "schemevariablecol" "IdentifierColor")
         (printf "\\newcommand{\\schemevariable}[1]{{\\schemevariablecol{\\textsl{#1}}}}\n")
         (define-color "schemeerrorcol" "red")

@@ -141,6 +141,27 @@
                font-family: serif;
                }
 
+               .boxed { 
+                 width: 100%;
+                 background-color: #E8E8FF;
+               }
+
+               .prototype td { 
+                 vertical-align: baseline;
+               }
+
+               .schemeblock td { 
+                 vertical-align: baseline;
+               }
+
+               .argcontract td { 
+                 vertical-align: baseline;
+               }
+
+               .centered { 
+                 horiz-align: center;
+               }
+
                .verbatim em {
                font-family: serif;
                }

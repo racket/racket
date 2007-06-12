@@ -338,7 +338,7 @@
                  (list (make-flow
                         (list
                          (make-table
-                          '((valignment top top top top top))
+                          "prototype"
                           (list
                            (list
                             (to-flow
@@ -383,11 +383,7 @@
                                   (make-flow
                                    (list
                                     (make-table
-                                     `((valignment baseline baseline baseline baseline
-                                                   baseline baseline
-                                                   ,@(if (has-optional? v)
-                                                         '(baseline baseline baseline baseline)
-                                                         null)))
+                                     "argcontract"
                                      (list
                                       (let ([v (if (keyword? (car v)) 
                                                    (cdr v)
