@@ -44,6 +44,8 @@
     (test-suite
      "Servlets"
      
+     ; XXX test update cache
+     
      (test-pred "configure.ss"
                 string?
                 (let* ([d (mkd (build-path example-servlets 'up "configure.ss"))]
@@ -88,7 +90,7 @@
      
      (test-suite
       "servlet/web.ss"
-      ; XXX
+      ; XXX test web.ss
       )
      
      )))

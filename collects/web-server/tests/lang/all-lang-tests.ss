@@ -4,10 +4,7 @@
            "file-box-test.ss"
            "labels-test.ss"
            "stuff-url-test.ss"
-           "web-cells-test.ss"
-           "web-extras-test.ss"
-           "web-param-test.ss"
-           "web-test.ss")
+           "web-param-test.ss")
   (provide all-lang-tests)
   
   (define all-lang-tests  
@@ -17,7 +14,4 @@
      file-box-tests
      labels-tests
      stuff-url-tests
-     web-cells-tests
-     web-extras-tests
-     web-param-tests
-     web-tests)))
+     web-param-tests)))
