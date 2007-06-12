@@ -20,13 +20,27 @@
        "Basic (succ)"
        (check-true (with-errors-to-browser (lambda (x) x) (lambda () #t)))))
      
-     ; XXX Test redirection status
-     ; XXX Test optional headers
      (test-suite
       "redirect-to"
-      (test-case
-       "Basic"
-       (check-pred response/full? (redirect-to "http://test.com/foo"))))
+      (test-equal? "Code (temp)"  
+                   (response/basic-code (redirect-to "http://test.com/foo"))
+                   302)
+      (test-equal? "Message (temp)" 
+                   (response/basic-message (redirect-to "http://test.com/foo"))
+                   "Moved Temporarily")
+      (test-equal? "Code" 
+                   (response/basic-code (redirect-to "http://test.com/foo" permanently))
+                   301)
+      (test-equal? "Message" 
+                   (response/basic-message (redirect-to "http://test.com/foo" permanently))
+                   "Moved Permanently")
+      (test-equal? "URL"
+                   (response/basic-extras (redirect-to "http://test.com/foo"))
+                   `((Location . "http://test.com/foo")))
+      (test-equal? "Headers"
+                   (response/basic-extras (redirect-to "http://test.com/foo" #:headers `((Header . "Value"))))
+                   `((Location . "http://test.com/foo")
+                     (Header . "Value"))))
      
      (test-suite
       "redirection-status?"
