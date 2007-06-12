@@ -105,6 +105,9 @@ Web Language. (See @secref["lang"].)
  up, the @scheme[exn:fail:servlet-manager:no-continuation] exception
  is thrown with @scheme[instance-exp-handler] as the expiration handler, if
  no expiration-handler was passed to @scheme[continuation-store!].
+ 
+ @scheme[adjust-timeout!] corresponds to @scheme[reset-timer!] on the timer 
+ responsible for the servlet instance.
 }
 
 This manager has been found to be... problematic... in large-scale

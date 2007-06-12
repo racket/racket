@@ -51,6 +51,7 @@
      "Servlets"
      
      ; XXX test update cache
+     ; XXX redirect/get
      
      (test-pred "configure.ss"
                 string?
@@ -112,10 +113,9 @@
                    (list "Expired"
                          "Done."
                          "Expired"))
-      )
-     
-     ; XXX redirect/get
-     ; XXX redirect/get/forget
-     ; XXX adjust-timeout!
-     
-     )))
+      (test-equal? "adjust.ss - adjust-timeout!"
+                   (let* ([d (mkd (build-path example-servlets "adjust.ss"))]
+                          [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))])
+                     (sleep 3)
+                     (call d k0 empty))
+                   "#")))))
