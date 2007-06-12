@@ -1,6 +1,5 @@
 (module all-lang-tests mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           "abort-resume-test.ss"
            "anormal-test.ss"
            "file-box-test.ss"
            "labels-test.ss"
@@ -14,7 +13,6 @@
   (define all-lang-tests  
     (test-suite
      "Web Language"
-     abort-resume-tests
      anormal-tests
      file-box-tests
      labels-tests
