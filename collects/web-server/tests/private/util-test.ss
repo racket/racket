@@ -1,6 +1,7 @@
 (module util-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "url.ss" "net")
+           (lib "xml.ss" "xml")
            (lib "util.ss" "web-server" "private"))
   (provide util-tests)
   
@@ -8,7 +9,18 @@
     (test-suite
      "Utilities"
      
-     ; XXX test pretty-print-invalid-xexpr
+     (test-equal? "pretty-print-invalid-xexpr"
+                  (let ([os (open-output-string)]
+                        [txe `(html (head (title "Foo"))
+                                    (body (a ([href url]) "Text")))])
+                    (parameterize ([current-output-port os])
+                      (with-handlers ([exn:invalid-xexpr? 
+                                       (lambda (exn)
+                                         (pretty-print-invalid-xexpr exn txe))])
+                        (validate-xexpr txe)
+                        #f))
+                    (get-output-string os))
+                  "(html (head (title \"Foo\")) (body (a ((href <font color=\"red\">url</font>)) \"Text\")))\n")
      
      (test-suite
       "url-replace-path"
