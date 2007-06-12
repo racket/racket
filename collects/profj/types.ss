@@ -263,7 +263,7 @@
   (define (name->type n container-class src level type-recs)
     (let* ((name (id-string (name-id n)))
            (path (map id-string (name-path n)))
-           (rec (get-record (type-exists? name path container-class src level type-recs) type-recs)))
+           (rec (type-exists? name path container-class src level type-recs)))
       (if (class-record? rec)
           (make-ref-type (car (class-record-name rec))
                          (cdr (class-record-name rec)))
