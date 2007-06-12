@@ -1,11 +1,26 @@
 (module util mzscheme
   (require (lib "connection-manager.ss" "web-server" "private")
+           (only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
+                 ssax:xml->sxml)
+           (lib "request-structs.ss" "web-server" "private")
+           (lib "url.ss" "net")
+           (lib "pretty.ss")
+           (lib "list.ss")
            (lib "timer.ss" "web-server" "private"))
   (provide make-module-eval
            make-eval/mod-path
            make-mock-connection
            redact
-           collect)
+           collect
+           htxml
+           call)
+  
+  (define (call d u bs)
+    (htxml (collect d (make-request 'get (string->url u) empty bs #"" "127.0.0.1" 80 "127.0.0.1"))))
+  (define (htxml bs)
+    (define sx (ssax:xml->sxml (open-input-bytes (second (regexp-match #"^.+\r\n\r\n(.+)$" bs))) empty))
+    (pretty-print sx)
+    sx)
   
   (define (collect d req)
     (define-values (c i o) (make-mock-connection #""))
