@@ -100,40 +100,12 @@
   ;; alph=: target-expr target-expr -> boolean
   ;; are two target expressions alpha-equivalent?
   (define (alpha= expr1 expr2)
-    (alpha=/env empty-env empty-env expr1 expr2))
+    (define r (alpha=/env empty-env empty-env expr1 expr2))
+    (unless r
+      (error 'alpha= "Not alpha=:\t~S~n\t~S~n" (syntax-object->datum expr1) (syntax-object->datum expr2)))
+    r)
   
   (define normalize-term (make-anormal-term (lambda _ (error 'anormal "No elim-letrec given."))))
-  
-  (define-syntax (check-unsupported-lambda stx)
-    (syntax-case stx ()
-      [(_ expr)
-       #'(with-handlers ([(lambda (x) #t)
-                          (lambda (the-exn)
-                            (and (regexp-match "normalize: Not all lambda-expressions supported"
-                                               (exn-message the-exn))
-                                 #t))])
-           expr)]))
-  
-  (define-syntax (check-supported stx)
-    (syntax-case stx ()
-      [(_ expr)
-       #'(with-handlers ([(lambda (x) #t)
-                          (lambda (the-exn) #f)])
-           expr
-           #t)]))
-  
-  (define-syntax (check-unsupported-let stx)
-    (syntax-case stx ()
-      [(_ expr)
-       #'(with-handlers ([(lambda (x) #t)
-                          (lambda (the-exn)
-                            (string=? "let-values: Not all let-values-expressions supported"
-                                      (exn-message the-exn)))])
-           expr)]))
-  
-  ;; **************************************************
-  ;; **************************************************
-  ;; ACTUAL TESTS
   
   (define anormal-tests
     (test-suite
@@ -144,63 +116,63 @@
       (test-case
        "Top level identifier"
        (check alpha= (normalize-term (expand (syntax car)))
-               (expand (syntax car))))
+              (expand (syntax car))))
       
       (test-case
        "Simple arithmetic expression"
        (check alpha= (normalize-term (expand (syntax (+ 1 1))))
-               (expand (syntax (+ 1 1)))))
+              (expand (syntax (+ 1 1)))))
       
       (test-case
        "lambda-expression with constant body"
        (check alpha= (normalize-term (expand (syntax (lambda (x) 3))))
-               (expand (syntax (lambda (x) 3)))))
+              (expand (syntax (lambda (x) 3)))))
       
       (test-case
        "lambda-expression with var-ref body"
        (check alpha= (normalize-term (expand (syntax (lambda (x) x))))
-               (expand (syntax (lambda (x) x)))))
+              (expand (syntax (lambda (x) x)))))
       
       (test-case
        "lambda-expression/constant-body/multiple formals"
        (check alpha= (normalize-term (expand (syntax (lambda (x y z) 3))))
-               (expand (syntax (lambda (x y z) 3)))))
+              (expand (syntax (lambda (x y z) 3)))))
       
       (test-case
        "one-armed-if"
        (check alpha= (normalize-term (expand (syntax (if #t 1))))
-               (expand (syntax (if #t 1 (void))))))
+              (expand (syntax (if #t 1 (void))))))
       
       
       (test-case
        "two-armed-if"
        (check alpha= (normalize-term (expand (syntax (if #t 1 2))))
-               (expand (syntax (if #t 1 2)))))
+              (expand (syntax (if #t 1 2)))))
       
       (test-case
        "let/var-ref in body"
        (check alpha= (normalize-term (expand (syntax (let ([x 1]) x))))
-               (expand (syntax ((lambda (x) x) 1)))))
+              (expand (syntax ((lambda (x) x) 1)))))
       
       (test-case
        "call to void"
        (check alpha= (normalize-term (expand (syntax (void))))
-               (expand (syntax (void)))))
+              (expand (syntax (void)))))
       
       (test-case
        "primitive application/multiple arguments"
        (check alpha= (normalize-term (expand (syntax (+ 1 2 3))))
-               (expand (syntax (+ 1 2 3)))))
+              (expand (syntax (+ 1 2 3)))))
       
       (test-case
        "empty-list"
        (check alpha= (normalize-term (expand (syntax ())))
-               (expand (syntax ()))))
+              (expand (syntax ()))))
       
       (test-case
        "quoted list of constants"
        (check alpha= (normalize-term (expand (syntax '(1 2 3))))
-               (expand (syntax '(1 2 3))))))
+              (expand (syntax '(1 2 3))))))
      
      (test-suite
       "Inductive Cases"
@@ -208,111 +180,117 @@
       (test-case
        "nested primitive applications with multiple arguments"
        (check alpha= (normalize-term (expand (syntax (* (+ 1 2) 3))))
-               (expand (syntax ((lambda (x) (* x 3)) (+ 1 2))))))
+              (expand (syntax ((lambda (x) (* x 3)) (+ 1 2))))))
       
       (test-case
        "one-armed if with prim-app in test posn"
        (check alpha= (normalize-term (expand (syntax (if (+ 1 2) 3))))
-               (expand (syntax ((lambda (x) (if x 3 (void))) (+ 1 2))))))
+              (expand (syntax ((lambda (x) (if x 3 (void))) (+ 1 2))))))
       
       (test-case
        "two-armed if with prim-app in test posn"
        (check alpha= (normalize-term (expand (syntax (if (+ 1 2) 3 4))))
-               (expand (syntax ((lambda (x) (if x 3 4)) (+ 1 2))))))
+              (expand (syntax ((lambda (x) (if x 3 4)) (+ 1 2))))))
       
       (test-case
        "nested single argument primitive applications"
        (check alpha= (normalize-term (expand (syntax (* (+ 1)))))
-               (expand (syntax ((lambda (x0) (* x0)) (+ 1))))))
+              (expand (syntax ((lambda (x0) (* x0)) (+ 1))))))
       
       (test-case
        "deeply nested primitive applications"
        (check alpha= (normalize-term (expand (syntax (* (+ (+ (+ 1 2) 3) 4) (+ 5 6)))))
-               (expand (syntax ((lambda (x0)
-                                  ((lambda (x1)
-                                     ((lambda (x2)
-                                        ((lambda (x3) (* x2 x3))
-                                         (+ 5 6)))
-                                      (+ x1 4)))
-                                   (+ x0 3)))
-                                (+ 1 2))))))
+              (expand (syntax ((lambda (x0)
+                                 ((lambda (x1)
+                                    ((lambda (x2)
+                                       ((lambda (x3) (* x2 x3))
+                                        (+ 5 6)))
+                                     (+ x1 4)))
+                                  (+ x0 3)))
+                               (+ 1 2))))))
       
       (test-case
        "deeply nested primitive applications"
        (check alpha= (normalize-term (expand (syntax (* (+ 1 2) (+ 1 (+ 2 (+ 3 4)))))))
-               (expand (syntax ((lambda (x0)
-                                  ((lambda (x1)
-                                     ((lambda (x2)
-                                        ((lambda (x3)
-                                           (* x0 x3))
-                                         (+ 1 x2)))
-                                      (+ 2 x1)))
-                                   (+ 3 4)))
-                                (+ 1 2))))))
+              (expand (syntax ((lambda (x0)
+                                 ((lambda (x1)
+                                    ((lambda (x2)
+                                       ((lambda (x3)
+                                          (* x0 x3))
+                                        (+ 1 x2)))
+                                     (+ 2 x1)))
+                                  (+ 3 4)))
+                               (+ 1 2))))))
       
       (test-case
        "if nested in test position"
        (check alpha= (normalize-term (expand (syntax (if (if #t #f #t) #t #t))))
-               (expand (syntax ((lambda (x) (if x #t #t)) (if #t #f #t))))))
+              (expand (syntax ((lambda (x) (if x #t #t)) (if #t #f #t))))))
       
       (test-case
        "procedure/body has nested if"
        (check alpha= (normalize-term (expand (syntax (lambda (x) (if (if x 1 2) 3 4)))))
-               (expand (syntax (lambda (x)
-                                 ((lambda (y0) (if y0 3 4))
-                                  (if x 1 2)))))))
+              (expand (syntax (lambda (x)
+                                ((lambda (y0) (if y0 3 4))
+                                 (if x 1 2)))))))
       
       (test-case
        "constant 0-arg procedure application"
        (check alpha= (normalize-term (expand (syntax ((lambda () 3)))))
-               (expand (syntax ((lambda () 3))))))
+              (expand (syntax ((lambda () 3))))))
       
       (test-case
        "if with function application in test"
        (check alpha= (normalize-term (expand (syntax (if ((lambda () 7)) 1 2))))
-               (expand (syntax ((lambda (x) (if x 1 2))
-                                ((lambda () 7)))))))
+              (expand (syntax ((lambda (x) (if x 1 2))
+                               ((lambda () 7)))))))
       
       (test-case
        "if with lambda-expression in consequent and alternative"
        (check alpha= (normalize-term (expand (syntax ((if #t (lambda () 1) (lambda () 2))))))
-               (expand (syntax ((lambda (x) (x)) (if #t (lambda () 1) (lambda () 2)))))))
+              (expand (syntax ((lambda (x) (x)) (if #t (lambda () 1) (lambda () 2)))))))
       
       (test-case
        "call/cc with value argument"
        (check alpha= (normalize-term (expand (syntax (call/cc (lambda (x) x)))))
-               (expand (syntax (call/cc (lambda (x) x))))))
+              (expand (syntax (call/cc (lambda (x) x))))))
       
       (test-case
        "call/cc with complex expression in argument"
        (check alpha= (normalize-term (expand (syntax (call/cc (f (g 7))))))
-               (expand (syntax ((lambda (x0)
-                                  ((lambda (x1) (call/cc x1))
-                                   (f x0)))
-                                (g 7)))))))
+              (expand (syntax ((lambda (x0)
+                                 ((lambda (x1) (call/cc x1))
+                                  (f x0)))
+                               (g 7)))))))
      
      (test-suite
-      "Check that certain errors are raised"
+      "Additional tests"
       
-      ; XXX Turn these tests into checking versions
       (test-case
-         "multiple body expressions in lambda"
-         (check-true (check-supported
-                       (normalize-term (expand (syntax (lambda (x y z) 3 4)))))))
+       "multiple body expressions in lambda"
+       (check alpha= (normalize-term (expand (syntax (lambda (x y z) 3 4))))
+              (expand (syntax (lambda (x y z) 
+                                (call-with-values (lambda () 3)
+                                                  (lambda throw-away 4)))))))
       
       (test-case
        "zero-or-more argument lambda"
-       (check-true (check-supported
-                     (normalize-term (expand (syntax (lambda x x)))))))
+       (check alpha= (normalize-term (expand (syntax (lambda x x))))
+              (expand (syntax (lambda x x)))))
       
       (test-case
-          "multi-valued let-values"
-          (check-true (check-supported
-                        (normalize-term (expand (syntax (let-values ([(x y) (values 1 2)]) (+ x y))))))))
+       "multi-valued let-values"
+       (check alpha= (normalize-term (expand (syntax (let-values ([(x y) (values 1 2)]) (+ x y)))))
+              (expand (syntax (call-with-values (lambda () (values 1 2))
+                                                (lambda (x y) (+ x y)))))))
       (test-case
-          "let/multiple clauses before body"
-          (check-true (check-supported
-                        (normalize-term (expand (syntax (let ([x 1] [y 2]) (+ x y)))))))))
+       "let/multiple clauses before body"
+       (check alpha= (normalize-term (expand (syntax (let ([x 1] [y 2]) (+ x y)))))
+              (expand (syntax ((lambda (x)
+                                 ((lambda (y)
+                                    (+ x y))
+                                  2))
+                               1))))))
      
      (test-suite
       "Miscellaneous tests"
@@ -320,23 +298,23 @@
       (test-case
        "empty begin"
        (check alpha= (normalize-term (expand (syntax (begin))))
-               (syntax (#%app (#%top . void)))))
+              (syntax (#%app (#%top . void)))))
       
       (test-case
        "begin with one expression"
        (check alpha= (normalize-term (expand (syntax (begin 1))))
-               (syntax (#%datum . 1))))
+              (syntax (#%datum . 1))))
       
       (test-case
        "begin with multiple expressions"
        (check alpha= (normalize-term (expand (syntax (begin 1 2 3))))
-               (normalize-term (expand (syntax (call-with-values
-                                                (lambda () 1)
-                                                (lambda throw-away
-                                                  (call-with-values
-                                                   (lambda () 2)
-                                                   (lambda throw-away
-                                                     3)))))))))
+              (normalize-term (expand (syntax (call-with-values
+                                               (lambda () 1)
+                                               (lambda throw-away
+                                                 (call-with-values
+                                                  (lambda () 2)
+                                                  (lambda throw-away
+                                                    3)))))))))
       
       (test-case
        "cond expression"
