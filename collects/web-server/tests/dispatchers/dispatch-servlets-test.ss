@@ -35,6 +35,7 @@
      "Servlets"
      
      ; XXX test update cache
+     ; XXX test different versions
      
      (test-pred "configure.ss"
                 string?

@@ -120,6 +120,7 @@
       "add06.ss - send/suspend/dispatch"
       (build-path example-servlets "add06.ss"))
      
+     ; XXX test something is not d-c
      (test-double-counters
       "wc-fake.ss - no cells"
       (build-path example-servlets "wc-fake.ss"))
@@ -132,7 +133,13 @@
       "wc-comp.ss - make-web-cell web-cell-ref web-cell-shadow web-cell-component"
       (build-path example-servlets "wc-comp.ss"))
      
+     (test-equal? "check-dir.ss"
+                   (let* ([d (mkd (build-path example-servlets "check-dir.ss"))]
+                          [t0 (first ((sxpath "//h2/text()") (call d url0 empty)))])
+                     t0)
+                   (format "The current directory: ~a" (path->string example-servlets)))
+     
      ; XXX test web-extras.ss - redirect/get
      ; XXX test web-cells.ss - web-cell?
-     ; XXX test check-dir.ss quiz-lib.ss quiz01.ss quiz02.ss
+     ; XXX test quiz-lib.ss quiz01.ss quiz02.ss
      )))
