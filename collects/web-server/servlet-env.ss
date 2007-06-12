@@ -1,5 +1,5 @@
 (module servlet-env mzscheme
-  (require (lib "sendurl.ss" "net")
+  (require (prefix net: (lib "sendurl.ss" "net"))
            (lib "unit.ss"))
   (require "web-server.ss"
            "web-config-unit.ss"
@@ -10,7 +10,10 @@
            "private/cache-table.ss")
   (require "servlet.ss")
   (provide (rename on-web:syntax on-web)
+           send-url
            (all-from "servlet.ss"))
+  
+  (define send-url (make-parameter net:send-url))
   
   ; XXX Change to setup temporary file and special dispatcher  
   (define-syntax (on-web:syntax stx)
@@ -45,7 +48,7 @@
                            (body (p "This servlet has ended, please return to the interaction window."))))))]
            [shutdown-server
             (serve/web-config@ (build-standalone-servlet-configuration the-port the-path new-servlet))])
-      (send-url standalone-url #t)
+      ((send-url) standalone-url #t)
       ; Wait for final call
       (semaphore-wait sema)
       ; XXX: Find a way to wait for final HTML to be sent
