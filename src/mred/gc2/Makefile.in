@@ -1341,7 +1341,7 @@ wx_font.o : $(srcdir)/../../wxmac/src/mac/wx_font.m
 	$(CXX) -o wx_font.o -c $(srcdir)/../../wxmac/src/mac/wx_font.m
 
 wx_xt_LIBS = ../../wxxt/contrib/xpm/lib/libXpm.@LTA@ @JPEG_A@ @PNG_A@ @ZLIB_A@ 
-wx_mac_LIBS = -framework Carbon -framework Cocoa -framework QuickTime -framework AGL -framework OpenGL @JPEG_A@ @PNG_A@ -lz -lobjc @LIBS@
+wx_mac_LIBS = -framework Carbon -framework Cocoa -framework QuickTime -framework AGL -framework OpenGL @JPEG_A@ @PNG_A@ -lz @LIBS@
 
 MREDLINKER = @MREDLINKER@
 
