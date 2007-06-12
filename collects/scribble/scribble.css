@@ -15,12 +15,13 @@
                }
 
                .refpara { 
-                display: block;
                 position: relative;
-                left: 37em;
+                float: right;
+                left: 1em;
                 top: -1em;
                 height: 0em;
-               }
+                width: 0em;
+                }
 
                .refcontent { 
                 background-color: #F5F5DC;
