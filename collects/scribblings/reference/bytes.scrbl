@@ -19,6 +19,10 @@ Two byte strings are @scheme[eq?] when mutating one would mutate the
 other.  Two byte strings are @scheme[eqv?] and @scheme[equal?] when
 they have the same length and contain the same sequence of bytes.
 
+A byte string can be used as a single-valued sequence (see
+@secref["mz:sequences"]). The bytes of the string serve as elements
+of the sequence. See also @scheme[in-bytes].
+
 See also: @scheme[immutable].
 
 @; ----------------------------------------

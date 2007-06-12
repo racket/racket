@@ -96,6 +96,13 @@ ephemeron key (see @secref["mz:ephemerons"]).
 @; ----------------------------------------------------------------------
 @section[#:tag "mz:pairs"]{Pairs and Lists}
 
+A list can be used as a single-valued sequence (see
+@secref["mz:sequences"]). The elements of the list serve as elements
+of the sequence. See also @scheme[in-list].
+
+@; ----------------------------------------
+@subsection{Pair Constructors, Selectors, and Mutators}
+
 @defproc[(cons [a any/c] [d any/c]) pair?]{Returns a pair whose first
 element is @scheme[a] and second element is @scheme[d].}
 
@@ -193,11 +200,27 @@ If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 @; ------------------------------------------------------------
 @section[#:tag "mz:vectors"]{Vectors}
 
+A vector can be used as a single-valued sequence (see
+@secref["mz:sequences"]). The elements of the vector serve as elements
+of the sequence. See also @scheme[in-vector].
+
+
 @; ------------------------------------------------------------
 @section[#:tag "mz:boxes"]{Boxes}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "mz:hashtables"]{Hash Tables}
+
+A hash table can be used as a two-valued sequence (see
+@secref["mz:sequences"]). The keys and values of the hash table serve
+as elements of the sequence (i.e., each element is a key and its
+associated value). If a mapping is added to or removed from the hash
+table during iteration, then an iteration step may fail with
+@scheme[exn:fail:contract], or the iteration may skip or duplicate
+keys and values.  See also @scheme[in-hash-table],
+@scheme[in-hash-table-keys], @scheme[in-hash-table-values], and
+@scheme[in-hash-table-pairs].
+
 
 @; ----------------------------------------------------------------------
 @include-section["sequences.scrbl"]

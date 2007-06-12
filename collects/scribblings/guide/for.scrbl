@@ -16,15 +16,15 @@ Variants of @scheme[for] accumulate iteration results in different
 ways, but they all have the same syntactic shape. Simplifying, for
 now, the syntax of @scheme[for] is
 
-@schemeblock[
-(for ([_id _sequence-expr])
-  _body-expr)
-]
+@specform[
+(for ([id sequence-expr] ...)
+  body ...+)
+]{}
 
 A @scheme[for] loop iterates through the sequence produced by the
 @scheme[_sequence-expr]. For each element of the sequence,
 @scheme[for] binds the element to @scheme[_id], and then it evaluates
-the @scheme[_body-expr] for side effects.
+the @scheme[_body]s for side effects.
 
 @examples[
 (for ([i '(1 2 3)])
@@ -34,8 +34,8 @@ the @scheme[_body-expr] for side effects.
 ]
 
 The @scheme[for/list] variant of @scheme[for] is more Scheme-like. It
-accumulates @scheme[_body-expr] results into a list, instead of
-evaluating @scheme[_body-expr] only for side effects. In more
+accumulates @scheme[_body] results into a list, instead of
+evaluating @scheme[_body] only for side effects. In more
 technical terms, @scheme[for/list] implements a @defterm{list
 comprehension}.
 
@@ -49,14 +49,14 @@ comprehension}.
 The full syntax of @scheme[for] accomodates multiple sequences to
 iterate in parallel, and the @scheme[for*] variant nests the
 iterations instead of running them in parallel. More variants of
-@scheme[for] and @scheme[for*] accumulate @scheme[_body-expr] results
+@scheme[for] and @scheme[for*] accumulate @scheme[_body] results
 in different ways.  In all of these variants, predicates that prune
 iterations can be included along with bindings.
 
 Before details on the variations of @scheme[for], though, it's best to
 see the kinds of sequence generators that make interesting examples.
 
-@section{Sequence Constructors}
+@section[#:tag "guide:sequences"]{Sequence Constructors}
 
 The @scheme[in-range] procedure generates a sequence of numbers, given
 an optional starting number (which defaults to @scheme[0]), a number
@@ -80,7 +80,8 @@ The @scheme[in-naturals] procedure is similar, except that the
 starting number must be an exact non-negative integer (which defaults
 to @scheme[0]), the step is always @scheme[1], and there is no upper
 limit. A @scheme[for] loop using just @scheme[in-naturals] will never
-terminate.
+terminate unless a body expression raises an exception or otherwise
+escapes.
 
 @examples[
 (for ([i (in-naturals)])
@@ -104,9 +105,9 @@ true.
 Sequence constructors like @scheme[in-list], @scheme[in-vector] and
 @scheme[in-string] simply make explicit the use of a list, vector, or
 string as a sequence. Since they raise an exception when given the
-wrong kind of value and otherwise avoid a run-time dispatch to
-determine the sequence type, they enable more efficient code
-generation; see @secref["for-performance"] for more information.
+wrong kind of value, and since they otherwise avoid a run-time
+dispatch to determine the sequence type, they enable more efficient
+code generation; see @secref["for-performance"] for more information.
 
 @examples[
 (for ([i (in-string "abc")])
@@ -115,19 +116,18 @@ generation; see @secref["for-performance"] for more information.
   (display i))
 ]
 
+@refdetails["mz:sequences"]{sequences}
 
 @section{@scheme[for] and @scheme[for*]}
 
-The full syntax of @scheme[for] is
+A more complete syntax of @scheme[for] is
 
-@schemeblock[
-(for (_clause ...)
-  _body-expr ...+)
-code:blank
-#, @where-is-one-of[@scheme[_clause]]
-  [_id _sequence-expr]
-  #:when _boolean-expr
-]
+@specform/subs[
+(for (clause ...)
+  body ...+)
+([clause [id sequence-expr]
+         (code:line #:when boolean-expr)])
+]{}
 
 When multiple @scheme[[_id _sequence-expr]] clauses are provided
 in a @scheme[for] form, the corresponding sequences are traversed in
@@ -163,7 +163,7 @@ Thus, @scheme[for*] is a shorthand for nested @scheme[for]s in the
 same way that @scheme[let*] is a shorthand for nested @scheme[let]s.
 
 The @scheme[#:when _boolean-expr] form of a @scheme[_clause] is
-another shorthand. It allows the @scheme[_body-expr]s to evaluate only
+another shorthand. It allows the @scheme[_body]s to evaluate only
 when the @scheme[_boolean-expr] produces a true value:
 
 @interaction[
@@ -191,7 +191,7 @@ mutually nested, instead of in parallel, even with @scheme[for].
 @section{@scheme[for/list] and @scheme[for*/list]}
 
 The @scheme[for/list] form, which has the same syntax as @scheme[for],
-evaluates the @scheme[_body-expr]s to obtain values that go into a
+evaluates the @scheme[_body]s to obtain values that go into a
 newly constructed list:
 
 @interaction[
@@ -201,7 +201,7 @@ newly constructed list:
 ]
 
 A @scheme[#:when] clause in a @scheme[for-list] form prunes the result
-list along with evaluations of the @scheme[_body-expr]s:
+list along with evaluations of the @scheme[_body]s:
 
 @interaction[
 (for/list ([i (in-naturals 1)]
@@ -255,7 +255,7 @@ same facility with nested iterations.
 @section{@scheme[for/first] and @scheme[for/last]}
 
 The @scheme[for/first] form returns the result of the first time that
-the @scheme[_body-expr]s are evaluated, skipping further iterations.
+the @scheme[_body]s are evaluated, skipping further iterations.
 This form is most useful with a @scheme[#:when] clause.
 
 @interaction[
@@ -264,7 +264,7 @@ This form is most useful with a @scheme[#:when] clause.
   chapter)
 ]
 
-If the @scheme[_body-expr]s are evaluated zero time, then the result
+If the @scheme[_body]s are evaluated zero time, then the result
 is @scheme[#f].
 
 The @scheme[for/last] form runs all iterations, returning the value of
@@ -301,15 +301,15 @@ beginning:
 @schemeblock[
 (for/fold ([_accum-id _init-expr] ...)
           (_clause ...)
-  _body-expr ...+)
+  _body ...+)
 ]
 
 In the simple case, only one @scheme[[_accum-id _init-expr]] is
 provided, and the result of the @scheme[for/fold] is the final value
 for @scheme[_accum-id], which starts out with the value of
 @scheme[_init-expr]. In the @scheme[_clause]s and
-@scheme[_body-expr]s, @scheme[_accum-id] can be referenced to gets its
-current value, and the last @scheme[_body-expr] provides the value of
+@scheme[_body]s, @scheme[_accum-id] can be referenced to gets its
+current value, and the last @scheme[_body] provides the value of
 @scheme[_accum-id] for the netx iteration.
 
 @examples[
@@ -325,7 +325,7 @@ current value, and the last @scheme[_body-expr] provides the value of
 ]
 
 When multiple @scheme[_accum-id]s are specified, then the last
-@scheme[_body-expr] must produce multiple values, one for each
+@scheme[_body] must produce multiple values, one for each
 @scheme[_accum-id]. The @scheme[for/fold] expression itself produces
 multiple values for the results.
 
@@ -349,6 +349,11 @@ values for each iteration: a key and a value.
 In the same way that @scheme[let-values] binds multiple results to
 multiple identifiers, @scheme[for] can bind multiple sequence elements
 to multiple iteration identifiers:
+
+@margin-note{While @scheme[let] must be changed to @scheme[let-values]
+             to bind multiple identifier, @scheme[for] simply allows a
+             parenthesized list of identifiers instead of a single
+             identifier in any clause.}
 
 @interaction[
 (for ([(k v) #hash(("apple" . 1) ("banana" . 3))])
@@ -431,7 +436,7 @@ fast-parallel-seq (in-parallel fast-seq ...)
 The grammars above are not complete, because the set of syntactic
 patterns that provide good performance is extensible, just like the
 set of sequence values. The documentation for a sequence constructor
-should indicate the performance impliciations of using it directly in
+should indicate the performance benefits of using it directly in
 a @scheme[for] @scheme[_clause].
 
 @refdetails["mz:for"]{iterations and comprehensions}

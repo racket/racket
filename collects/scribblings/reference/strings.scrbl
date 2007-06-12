@@ -19,6 +19,10 @@ Two strings are @scheme[eq?] when mutating one would mutate the other.
 Two strings are @scheme[eqv?] and @scheme[equal?] when they have the
 same length and contain the same sequence of characters.
 
+A string can be used as a single-valued sequence (see
+@secref["mz:sequences"]). The characters of the string serve as elements
+of the sequence. See also @scheme[in-string].
+
 See also: @scheme[immutable], @scheme[symbol->string],
 @scheme[bytes->string/utf-8].
 
