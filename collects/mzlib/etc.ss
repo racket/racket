@@ -25,6 +25,8 @@
 
            opt-lambda
            define-opt
+           keyword-apply
+           make-keyword-procedure
 
            local
            recur
@@ -191,6 +193,34 @@
      [(_ (id . args) body1 body ...)
       (define id (opt-lambda args body1 body ...))]
      [(_ . rest) (define . rest)]))
+
+ (define (keyword-apply f kw-args normal-args . normal-argss)
+   (apply f (append (apply append
+                           (map (lambda (p) (list (car p) (cdr p))) kw-args))
+                    (if (null? normal-argss)
+                        normal-args
+                        (cons normal-args
+                              (let loop ([normal-argss normal-argss])
+                                (if (null? (cdr normal-argss))
+                                    (car normal-argss)
+                                    (cons (car normal-argss)
+                                          (loop (cdr normal-argss))))))))))
+
+ (define (make-keyword-procedure f)
+   (lambda args
+     (let loop ([args args]
+                [normal null]
+                [kw null])
+       (cond
+        [(null? args) (apply f kw (reverse normal))]
+        [(and (keyword? (car args)) 
+              (pair? (cdr args)))
+         (loop (cddr args)
+               normal
+               (cons (cons (car args) (cadr args)) kw))]
+        [else (loop (cdr args)
+                    (cons (car args) normal)
+                    kw)]))))
 
  (define (sort-kws len need-kw l)
    (for-each (lambda (kw)

@@ -92,7 +92,7 @@
 
   (provide onscreen menuitem defterm
            schemefont schemevalfont schemeresultfont schemeidfont 
-           schemeparenfont schemekeywordfont
+           schemeparenfont schemekeywordfont schememetafont
            file exec
            link procedure
            idefterm)
@@ -116,6 +116,8 @@
     (make-element "schemesymbol" (decode-content str)))
   (define/kw (schemeparenfont #:body str)
     (make-element "schemeparen" (decode-content str)))
+  (define/kw (schememetafont #:body str)
+    (make-element "schememeta" (decode-content str)))
   (define/kw (schemekeywordfont #:body str)
     (make-element "schemekeyword" (decode-content str)))
   (define/kw (file #:body str)
@@ -161,9 +163,9 @@
     (schemeresultfont "#<undefined>"))
 
   (define dots0
-    (make-element "schemeparen" (list "...")))
+    (make-element "schememeta" (list "...")))
   (define dots1
-    (make-element "schemeparen" (list "..."  (superscript "+"))))
+    (make-element "schememeta" (list "...+")))
 
   (define-syntax (arg-contract stx)
     (syntax-case stx (... ...+)
@@ -322,7 +324,7 @@
                                   (if (keyword? (car i))
                                       (cadr i)
                                       (car i))))
-                           (apply append (map cdr prototypes)))])        
+                           (apply append (map cdr prototypes)))])
         (make-splice
          (cons
           (make-table
@@ -437,21 +439,22 @@
                 (make-paragraph
                  (list
                   (to-element
-                   `(struct ,(make-target-element*
-                              (to-element name)
-                              (let ([name (if (pair? name)
-                                              (car name)
-                                              name)])
-                                (list* (list name)
-                                       (list name '?)
-                                       (list 'make- name)
-                                       (append
-                                        (map (lambda (f)
-                                               (list name '- (car f)))
-                                             fields)
-                                        (map (lambda (f)
-                                               (list 'set- name '- (car f) '!))
-                                             fields)))))
+                   `(,(schemeparenfont "struct")
+                     ,(make-target-element*
+                       (to-element name)
+                       (let ([name (if (pair? name)
+                                       (car name)
+                                       name)])
+                         (list* (list name)
+                                (list name '?)
+                                (list 'make- name)
+                                (append
+                                 (map (lambda (f)
+                                        (list name '- (car f)))
+                                      fields)
+                                 (map (lambda (f)
+                                        (list 'set- name '- (car f) '!))
+                                      fields)))))
                             ,(map car fields))))))))
         (map (lambda (v)
                (cond
@@ -506,7 +509,8 @@
                                [(pair? form) (append (loop (car form))
                                                      (loop (cdr form)))]
                                [else null])))
-                          forms))])
+                          forms))]
+                     [current-meta-list '(... ...+)])
       (make-splice
        (cons
         (make-table
@@ -550,7 +554,8 @@
                                [(pair? form) (append (loop (car form))
                                                      (loop (cdr form)))]
                                [else null]))
-                            (current-variable-list))])
+                            (current-variable-list))]
+                   [current-meta-list '(... ...+)])
       (make-blockquote
        "leftindent"
        (cons

@@ -15,14 +15,16 @@
            syntax-ize-hook
            current-keyword-list
            current-variable-list
+           current-meta-list
 
            (struct shaped-parens (val shape)))
 
   (define no-color "schemeplain")
-  (define meta-color "schemeplain")
+  (define reader-color "schemeplain")
   (define keyword-color "schemekeyword")
   (define comment-color "schemecomment")
   (define paren-color "schemeparen")
+  (define meta-color "schememeta")
   (define value-color "schemevalue")
   (define symbol-color "schemesymbol")
   (define variable-color "schemevariable")
@@ -38,6 +40,8 @@
                        syntax quasisyntax unsyntax unsyntax-splicing
                        set!)))
   (define current-variable-list 
+    (make-parameter null))
+  (define current-meta-list 
     (make-parameter null))
 
   (define defined-names (make-hash-table))
@@ -246,7 +250,7 @@
                             [(unsyntax) (values "#," 0)])])
               (out str (if (positive? (+ quote-depth quote-delta))
                            value-color
-                           meta-color))
+                           reader-color))
               (let ([i (cadr (syntax->list c))])
                 (set! src-col (or (syntax-column i) src-col))
                 (hash-table-put! next-col-map src-col dest-col)
@@ -339,8 +343,6 @@
                                        (char=? (string-ref s 0) #\_))
                                   (values (substring s 1) #t #f)
                                   (values s #f #f))))]
-                         [(is-kw?) (and (identifier? c)
-                                        (memq (syntax-e c) (current-keyword-list)))]
                          [(is-var?) (and (identifier? c)
                                          (memq (syntax-e c) (current-variable-list)))])
               (if (element? (syntax-e c))
@@ -375,8 +377,12 @@
                          value-color]
                         [(identifier? c) 
                          (cond
-                          [is-kw?
+                          [(and (identifier? c)
+                                (memq (syntax-e c) (current-keyword-list)))
                            keyword-color]
+                          [(and (identifier? c)
+                                (memq (syntax-e c) (current-meta-list)))
+                           meta-color]
                           [is-var?
                            variable-color]
                           [it? variable-color]
@@ -526,7 +532,9 @@
                                 (list #f 1 col (+ 1 col)
                                       (+ 2
                                          vec-sz
-                                         (sub1 (length l))
+                                         (if (zero? (length l))
+                                             0
+                                             (sub1 (length l)))
                                          (apply + (map syntax-span l)))))))]
      [(pair? v)
       (let* ([a (syntax-ize (car v) (+ col 1))]

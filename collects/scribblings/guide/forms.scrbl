@@ -51,10 +51,10 @@ forms, where square brackets are normally used (by convention). That
 is square brackets @italic{do not} mean optional parts of the
 syntactic form.
 
-A @scheme[...] indicates zero or more repetitions of the preceding
-form, and @scheme[...+] indicates one or more repetitions of the
-preceding datum. Otherwise, non-italicized identifiers stand form
-themselves.
+A @schememetafont{...} indicates zero or more repetitions of the
+preceding form, and @schememetafont{...+} indicates one or more
+repetitions of the preceding datum. Otherwise, non-italicized
+identifiers stand form themselves.
 
 Based on the above grammar, then, here are a few legal uses of
 @schemekeywordfont{something}:

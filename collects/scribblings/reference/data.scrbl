@@ -202,7 +202,8 @@ If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 @; ----------------------------------------------------------------------
 @include-section["sequences.scrbl"]
 
-@section[#:tag "mz:procedures"]{Procedures}
+@; ----------------------------------------------------------------------
+@include-section["procedures.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "void"]{Void and Undefined}

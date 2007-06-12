@@ -37,12 +37,14 @@ procedure's @idefterm{arity} is the number(s) of arguments that it
 accepts.
 
 @;------------------------------------------------------------------------
-@section{Keyword Arguments}
+@section[#:tag "guide:keyword-args"]{Keyword Arguments}
 
 Some procedures accept @defterm{keyword arguments} in addition to
 by-position arguments. For that case, an @scheme[_arg] can be an
 @scheme[_arg-keyword _arg-expr] sequence instead of just a
 @scheme[_arg-expr]:
+
+@margin-note{For an introduction to keywords, see @secref["guide:keywords"].}
 
 @specform/subs[
 (_proc-expr _arg ...)
@@ -55,23 +57,24 @@ For example,
 @schemeblock[(go "super.ss" #:mode 'fast)]
 
 calls the procedure bound to @scheme[go] with @scheme["super.ss"] as a
-by-position argument, and with @scheme['fast] as an argument associated
-with the @scheme[#:mode] keyword. Thus, a keyword is implicitly paired
-with the expression that follows it. Since a keyword by itself is not
-an expression, then
+by-position argument, and with @scheme['fast] as an argument
+associated with the @scheme[#:mode] keyword. A keyword is implicitly
+paired with the expression that follows it.
+
+Since a keyword by itself is not an expression, then
 
 @schemeblock[(go "super.ss" #:mode #:fast)]
 
-is a syntax error---because @scheme[#:fast] is not an expression.
+is a syntax error. The @scheme[#:mode] keyword must be followed by an
+expression to produce an argument value, and @scheme[#:fast] is not an
+expression.
 
 The order of keyword @scheme[_arg]s determines the order in which
-@scheme[_arg-expr]s are evaluated, but a procedure accepts (or
-declines) keyword arguments independent of their position in the
-argument list. That is, keyword arguments are recognized by an applied
-procedure using only the associated keyword. The above call to
-@scheme[go] can be equivalently written
+@scheme[_arg-expr]s are evaluated, but a procedure accepts keyword
+arguments independent of their position in the argument list. The
+above call to @scheme[go] can be equivalently written
 
-@schemeblock[(go #:mode #:fast "super.ss")]
+@schemeblock[(go #:mode 'fast "super.ss")]
 
 @refdetails["mz:application"]{procedure applications}
 
@@ -98,8 +101,8 @@ of the items in the list:
 (avg '(1 2))
 ]
 
-The @scheme[apply] procedure offers a way around this restriction, It
-takes another procedure a @italic{list} arguments, and it applies the
+The @scheme[apply] procedure offers a way around this restriction. It
+takes a procedure and a @italic{list} arguments, and it applies the
 procedure to the arguments:
 
 @def+int[
@@ -108,4 +111,27 @@ procedure to the arguments:
 (avg '(1 2 3))
 (avg '(1 2))
 (avg '(1 2 3 4))
+]
+
+As a convenience, the @scheme[apply] produce accepts additional
+arguments between the procedure and the list. The additional arguments
+are effectively @scheme[cons]ed onto the argument list:
+
+@def+int[
+(define (anti-sum lst)
+  (apply - 0 lst))
+(anti-sum '(1 2 3))
+]
+
+The @scheme[apply] procedure supports only by-position arguments. To
+apply a procedure with keyword arguments, use the
+@scheme[keyword-apply] procedure, which accepts a procedure to apply
+and two lists. The first list contains contains pairs, each matching a
+keyword with its corresponding value. The second list contains
+by-position procedure arguments, as for @scheme[apply].
+
+@schemeblock[
+(keyword-apply go 
+               (list (cons '#:mode 'fast))
+               (list "super.ss"))
 ]

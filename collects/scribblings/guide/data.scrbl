@@ -23,5 +23,6 @@ built-in datatypes for simple forms of data.
 @include-section["boxes.scrbl"]
 @include-section["hash-tables.scrbl"]
 @include-section["paths.scrbl"]
+@include-section["regexps-data.scrbl"]
 @include-section["keywords.scrbl"]
 @include-section["void-and-undef.scrbl"]

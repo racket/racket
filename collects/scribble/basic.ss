@@ -96,7 +96,7 @@
     (make-element 'subscript (decode-content str)))
 
   (define/kw (superscript #:body str)
-    (make-element superscript (decode-content str)))
+    (make-element 'superscript (decode-content str)))
 
   ;; ----------------------------------------
 

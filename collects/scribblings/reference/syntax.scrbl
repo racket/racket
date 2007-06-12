@@ -27,25 +27,24 @@ Within such specifications,
  @item{@scheme[...+] indicates one or
        more repetitions of the preceding datum.}
 
- @item{italic meta-identifier play the role of non-terminals; in
+ @item{italic meta-identifiers play the role of non-terminals; in
        particular,
 
       @itemize{
 
-        @item{a meta-identifier that ends in @scheme[_id] stands for a
-              syntax-wrapped symbol.}
+        @item{a meta-identifier that ends in @scheme[_id] stands for an
+              identifier.}
 
         @item{a meta-identifier that ends in @scheme[_keyword] stands
-              for a syntax-wrapped keyword.}
+              for a keyword.}
 
         @item{a meta-identifier that ends with @scheme[_expr] stands
               for a sub-form that is expanded as an expression.}
 
-        @item{a meta-identifier that ends with @scheme[_body] stands
-              for a non-empty syntax-wrapped list of sub-forms; the
-              list is expanded as internal-definition sequence
-              followed by at least one expression (see
-              @secref["mz:intdef-body"] for details).}
+        @item{A meta-identifier that ends with @scheme[_body] stands
+              for a sub-form that is expanded in an
+              internal-definition context (see
+              @secref["mz:intdef-body"]).}
 
               }} }
 
@@ -149,21 +148,21 @@ according to their order in the application form.
 
 @guideintro["guide:lambda"]{procedure expressions}
 
-@defform/subs[(lambda formals* . body)
+@defform/subs[(lambda gen-formals body ...+)
               ([formals (id ...)
                         (id ...+ . rest-id)
                         rest-id]
-               [formals* formals
-                         (formal-arg ...)
-                         (formal-arg ...+ . rest-id)]
-               [formal-arg id
-                           [id default-expr]
-                           (code:line keyword id)
-                           (code:line keyword [id default-expr])])]{
+               [gen-formals formals
+                            (arg ...)
+                            (arg ...+ . rest-id)]
+               [arg id
+                    [id default-expr]
+                    (code:line keyword id)
+                    (code:line keyword [id default-expr])])]{
 
-Produces a procedure. The @scheme[formals*] determines the number of
+Produces a procedure. The @scheme[gen-formals] determines the number of
 arguments that the procedure accepts. It is either a simple
-@scheme[_formals], or one of the extended forms.
+@scheme[formals], or one of the extended forms.
 
 A simple @scheme[_formals] has one of the following three forms:
 
@@ -182,11 +181,11 @@ A simple @scheme[_formals] has one of the following three forms:
        arguments. All arguments are placed into a list that is
        associated with @scheme[rest-id].}
 
-Besides the three @scheme[_formals] forms, a @scheme[formals*] can be
-a sequence of @scheme[_formal-arg]s optionally ending with a
+Besides the three @scheme[formals] forms, a @scheme[gen-formals] can be
+a sequence of @scheme[arg]s optionally ending with a
 @scheme[rest-id]:
 
-@specsubform[(formal-arg ...)]{ Each @scheme[formal-arg] has the following
+@specsubform[(arg ...)]{ Each @scheme[arg] has the following
        four forms:
 
         @specsubform[id]{Adds one to both the minimum and maximum
@@ -199,7 +198,7 @@ a sequence of @scheme[_formal-arg]s optionally ending with a
         @scheme[id] is associated with an actual argument by position,
         and if no such argument is provided, the @scheme[default-expr]
         is evaluated to produce a value associated with @scheme[id].
-        No @scheme[formal-arg] with a @scheme[default-expr] can appear
+        No @scheme[arg] with a @scheme[default-expr] can appear
         before an @scheme[id] without a @scheme[default-expr] and
         without a @scheme[keyword].}
 
@@ -215,41 +214,40 @@ a sequence of @scheme[_formal-arg]s optionally ending with a
        otherwise, the @scheme[default-expr] is evaluated to obtain a
        value to associate with @scheme[id].}
 
-      The position of a @scheme[_keyword] @scheme[formal-arg] in
-      @scheme[formals*] does not matter, but each specified
+      The position of a @scheme[_keyword] @scheme[arg] in
+      @scheme[gen-formals] does not matter, but each specified
       @scheme[_keyword] must be distinct.}
 
-@specsubform[(formal-arg ...+ . rest-id)]{ Like the previous case, but
+@specsubform[(arg ...+ . rest-id)]{ Like the previous case, but
        the procedure accepts any number of non-keyword arguments
        beyond its minimum number of arguments. When more arguments are
        provided than non-@scheme[_keyword] arguments among the
-       @scheme[formal-arg]s, the extra arguments are placed into a
+       @scheme[arg]s, the extra arguments are placed into a
        list that is associated to @scheme[rest-id].}
 
-The @scheme[formals*] identifiers are bound in the @scheme[body]. (See
-@secref["mz:intdef-body"] for information on @scheme[body] forms.) When
+The @scheme[gen-formals] identifiers are bound in the @scheme[body]s. When
 the procedure is applied, a new location is created for each
 identifier, and the location is filled with the associated argument
 value.
 
-If any identifier appears in @scheme[body] that is not one of the
-identifiers in @scheme[formals*], then it refers to the same location
+If any identifier appears in the @scheme[body]s that is not one of the
+identifiers in @scheme[gen-formals], then it refers to the same location
 that it would if it appeared in place of the @scheme[lambda]
 expression. (In other words, variable reference is lexically scoped.)
 
-When multiple identifiers appear in a @scheme[formals*], they must be
+When multiple identifiers appear in a @scheme[gen-formals], they must be
 distinct according to @scheme[bound-identifier=?].
 
 If the procedure procedure by @scheme[lambda] is applied to fewer or
 more arguments than it accepts, the @exnraise[exn:fail:contract].  If
-@scheme[formals*] includes @scheme[keyword]s and an application
+@scheme[gen-formals] includes @scheme[keyword]s and an application
 includes too few arguments before the keyword section, the same
 keyword in multiple positions, or a keyword that is not among the
-@scheme[formals*] @scheme[_keyword]s, then the
+@scheme[gen-formals] @scheme[_keyword]s, then the
 @exnraise[exn:fail:contract].
 
-The last expression in @scheme[body] is in tail position with respect
-to the procedure body.
+The last @scheme[body] expression is in tail position with respect to
+the procedure body.
 
 @examples[
 ((lambda (x) x) 10)
@@ -260,9 +258,9 @@ to the procedure body.
        (f #:arg 2 1)))
 ]}
 
-@defform[(case-lambda [formals . body] ...)]{
+@defform[(case-lambda [formals body ...+] ...)]{
 
-Produces a procedure. Each @scheme[[forms body]]
+Produces a procedure. Each @scheme[[forms body ...+]]
 clause is analogous to a single @scheme[lambda] procedure; applying
 the @scheme[case-lambda]-generated procedure is the same as applying a
 procedure that corresponds to one of the clauses---the first procedure
@@ -271,7 +269,7 @@ procedure accepts the given number of arguments, the
 @exnraise[exn:fail:contract].
 
 Note that a @scheme[case-lambda] clause supports only
-@scheme[formals], not the more general @scheme[_formals*] of
+@scheme[formals], not the more general @scheme[_gen-formals] of
 @scheme[lambda]. That is, @scheme[case-lambda] does not directly
 support keyword and optional arguments.
 
@@ -290,14 +288,13 @@ support keyword and optional arguments.
 @;------------------------------------------------------------------------
 @section{Local Binding: @scheme[let], @scheme[let*], and @scheme[letrec]}
 
-@defform*[[(let ([id val-expr] ...) . body)
-           (let proc-id ([id init-expr] ...) . body)]]{
+@defform*[[(let ([id val-expr] ...) body ...+)
+           (let proc-id ([id init-expr] ...) body ...+)]]{
 
 The first form evaluates the @scheme[val-expr]s left-to-right, creates
 a new location for each @scheme[id], and places the values into the
-locations. It then evaluates the @scheme[body], in which the
-@scheme[id]s are bound.  (See @secref["mz:intdef-body"] for information
-on @scheme[body] forms.)  The last expression in @scheme[body] is in
+locations. It then evaluates the @scheme[body]s, in which the
+@scheme[id]s are bound. The last @scheme[body] expression is in
 tail position with respect to the @scheme[let] form. The @scheme[id]s
 must be distinct according to @scheme[bound-identifier=?].
 
@@ -311,8 +308,8 @@ must be distinct according to @scheme[bound-identifier=?].
 
 The second form evaluates the @scheme[init-expr]s; the resulting
 values become arguments in an application of a procedure
-@scheme[(lambda (id ...) . body)], where @scheme[proc-id] is bound
-within @scheme[body] to the procedure itself.}
+@scheme[(lambda (id ...) body ...+)], where @scheme[proc-id] is bound
+within the @scheme[body]s to the procedure itself.}
 
 @examples[
 (let fac ([n 10])
@@ -321,12 +318,12 @@ within @scheme[body] to the procedure itself.}
       (* n (fac (sub1 n)))))
 ]
 
-@defform[(let* ([id val-expr] ...) . body)]{
+@defform[(let* ([id val-expr] ...) body ...+)]{
 
 Similar to @scheme[let], but evaluates the @scheme[val-expr]s one by
 one, creating a location for each @scheme[id] as soon as the value is
 availablek. The @scheme[id]s are bound in the remaining @scheme[val-expr]s
-as well as the @scheme[body], and the @scheme[id]s need not be
+as well as the @scheme[body]s, and the @scheme[id]s need not be
 distinct.
 
 @examples[
@@ -335,12 +332,12 @@ distinct.
   (list y x))
 ]}
 
-@defform[(letrec ([id val-expr] ...) . body)]{
+@defform[(letrec ([id val-expr] ...) body ...+)]{
 
 Similar to @scheme[let], but the locations for all @scheme[id]s are
 created first and filled with @|undefined-const|, and all
-@scheme[id]s are bound in all @scheme[val-expr]s as well as
-@scheme[body]. The @scheme[id]s must be distinct according to
+@scheme[id]s are bound in all @scheme[val-expr]s as well as the
+@scheme[body]s. The @scheme[id]s must be distinct according to
 @scheme[bound-identifier=?].
 
 @examples[
@@ -353,21 +350,21 @@ created first and filled with @|undefined-const|, and all
   (is-odd? 11))
 ]}
 
-@defform[(let-values ([(id ...) val-expr] ...) . body)]{ Like
+@defform[(let-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @scheme[let], except that each @scheme[val-expr] must produce as many
 values as corresponding @scheme[id]s. A separate location is created
-for each @scheme[id], all of which are bound in the @scheme[body].
+for each @scheme[id], all of which are bound in the @scheme[body]s.
 
 @examples[
 (let-values ([(x y) (quotient/remainder 10 3)])
   (list y x))
 ]}
 
-@defform[(let*-values ([(id ...) val-expr] ...) . body)]{ Like
+@defform[(let*-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @scheme[let*], except that each @scheme[val-expr] must produce as many
 values as corresponding @scheme[id]s. A separate location is created
 for each @scheme[id], all of which are bound in the later
-@scheme[val-expr]s and in the @scheme[body].
+@scheme[val-expr]s and in the @scheme[body]s.
 
 @examples[
 (let*-values ([(x y) (quotient/remainder 10 3)]
@@ -375,12 +372,12 @@ for each @scheme[id], all of which are bound in the later
   z)
 ]}
 
-@defform[(letrec-values ([(id ...) val-expr] ...) . body)]{ Like
+@defform[(letrec-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @scheme[letrec], except that each @scheme[val-expr] must produce as
 many values as corresponding @scheme[id]s. A separate location is
 created for each @scheme[id], all of which are initialized to
 @|undefined-const| and bound in all @scheme[val-expr]s
-and in the @scheme[body].
+and in the @scheme[body]s.
 
 @examples[
 (letrec-values ([(is-even? is-odd?)

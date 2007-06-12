@@ -5,7 +5,7 @@
 
 @interaction-eval[(require (rename (lib "etc.ss") define define-opt))]
 
-@title{Definitions: @scheme[define] and @scheme[define-values]}
+@title{Definitions: @scheme[define]}
 
 A basic definition has the form
 
@@ -65,7 +65,7 @@ which is a shorthand
 ]
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:multiple-values"]{Multiple Values}
+@section[#:tag "guide:multiple-values"]{Multiple Values and @scheme[define-values]}
 
 A Scheme expression normally produces a single result, but some
 expressions can produce multiple results. For example,
@@ -78,7 +78,7 @@ but @scheme[quotient/remainder] produces the same two values at once:
 (quotient/remainder 13 3)
 ]
 
-As shown abpve, the REPL prints each result value on its own line.
+As shown above, the REPL prints each result value on its own line.
 
 Multiple-valued procedures can be implemented in terms of the
 @scheme[values] procedure, which takes any number of values and

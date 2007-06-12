@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "paths"]{Paths}
+@title[#:tag "guide:paths"]{Paths}
 
 A @defterm{path} encapsulates a filesystem path that (potentially)
 names a file or directory. Although paths can be converted to and from
