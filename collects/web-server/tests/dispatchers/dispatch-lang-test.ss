@@ -3,6 +3,7 @@
            (planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
            (lib "etc.ss")
            (lib "list.ss")
+           (lib "dispatch.ss" "web-server" "dispatchers")
            (lib "request-structs.ss" "web-server" "private")
            (lib "namespace.ss" "web-server" "configuration")
            (prefix lang: (lib "dispatch-lang.ss" "web-server" "dispatchers"))
@@ -70,10 +71,20 @@
   (define dispatch-lang-tests
     (test-suite
      "Web Language"
-          
-     (test-add-two-numbers
+     
+     (test-exn
       "add-param.ss - Parameters, s/s/u (should fail)"
-      (build-path example-servlets "add-param.ss"))
+      exn:dispatcher?
+      (lambda ()
+        (let* ([xs #"10"]
+               [ys #"17"]
+               [d (mkd (build-path example-servlets "add-param.ss"))]
+               [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
+               [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?number=~a" k0 xs)
+                                                                  (list (make-binding:form #"number" xs)))))]
+               [n (first ((sxpath "//p/text()") (call d (format "~a?number=~a" k1 ys)
+                                                      (list (make-binding:form #"number" ys)))))])
+          n)))
      
      (test-add-two-numbers
       "add-simple.ss - Web Parameters, s/s/u"
@@ -83,7 +94,6 @@
       "add.ss - s/s/u"
       (build-path example-servlets "add.ss"))
      
-     ; XXX
      (let* ([x (random 500)]
             [xs (string->bytes/utf-8 (number->string x))]
             [y (random 500)]
@@ -92,18 +102,18 @@
         "add01.ss - no s/s, uri"
         (let* ([d (mkd (build-path example-servlets "add01.ss"))]
                [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
-               [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?first=~a" k0 xs) (list (make-binding:form #"first" xs)))))]
-               [n (first ((sxpath "//p/text()") (call d (format "~a?first=~a&second=~a" k1 xs ys)
+               [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?first=~a" url0 xs) (list (make-binding:form #"first" xs)))))]
+               [n (first ((sxpath "//p/text()") (call d (format "~a?first=~a&second=~a" url0 xs ys)
                                                       (list (make-binding:form #"first" xs)
                                                             (make-binding:form #"second" ys)))))])
           n)
-        (format "The answer is ~a" (+ x y))))
+        (format "The answer is: ~a" (+ x y))))
      
      (test-add-two-numbers
       "add02.ss - s/s/u, uri"
       (build-path example-servlets "add02.ss"))
      
-     ; XXX
+     ; XXX Use kont
      (test-add-two-numbers
       "add03.ss - s/s/h"
       (build-path example-servlets "add03.ss"))
@@ -134,12 +144,31 @@
       (build-path example-servlets "wc-comp.ss"))
      
      (test-equal? "check-dir.ss"
-                   (let* ([d (mkd (build-path example-servlets "check-dir.ss"))]
-                          [t0 (first ((sxpath "//h2/text()") (call d url0 empty)))])
-                     t0)
-                   (format "The current directory: ~a" (path->string example-servlets)))
+                  (let* ([d (mkd (build-path example-servlets "check-dir.ss"))]
+                         [t0 (first ((sxpath "//h2/text()") (call d url0 empty)))])
+                    t0)
+                  (format "The current directory: ~a" (path->string example-servlets)))
+     
+     ; XXX Use kont
+     (test-equal? "quiz01.ss"
+                  (let* ([d (mkd (build-path example-servlets "quiz01.ss"))]
+                         [last
+                          (foldl (lambda (_ k)
+                                   (first ((sxpath "//form/@action/text()") (call d k (list (make-binding:form #"answer" #"0"))))))
+                                 url0
+                                 (build-list 7 (lambda (i) i)))])
+                    (first ((sxpath "//h1/text()") (call d last (list (make-binding:form #"answer" #"0"))))))
+                  "Quiz Results")
+     ; XXX Use kont
+     (test-equal? "quiz02.ss"
+                  (let* ([d (mkd (build-path example-servlets "quiz02.ss"))]
+                         [last
+                          (foldl (lambda (_ k)
+                                   (first ((sxpath "//form/@action/text()") (call d k (list (make-binding:form #"answer" #"0"))))))
+                                 url0
+                                 (build-list 7 (lambda (i) i)))])
+                    (first ((sxpath "//h1/text()") (call d last (list (make-binding:form #"answer" #"0"))))))
+                  "Quiz Results")
      
      ; XXX test web-extras.ss - redirect/get
-     ; XXX test web-cells.ss - web-cell?
-     ; XXX test quiz-lib.ss quiz01.ss quiz02.ss
      )))
