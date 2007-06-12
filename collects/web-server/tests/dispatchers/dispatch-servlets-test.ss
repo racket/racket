@@ -3,15 +3,11 @@
            (only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
                  ssax:xml->sxml)
            (planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
-           (lib "file.ss")
            (lib "etc.ss")
            (lib "url.ss" "net")
            (lib "list.ss")
-           (lib "xml.ss" "xml")
            (lib "pretty.ss")
            (lib "request-structs.ss" "web-server" "private")
-           (lib "util.ss" "web-server" "private")
-           (lib "dispatch.ss" "web-server" "dispatchers")
            (lib "cache-table.ss" "web-server" "private")
            (lib "web-server-structs.ss" "web-server" "private")
            (lib "namespace.ss" "web-server" "configuration")
@@ -44,7 +40,6 @@
   (define test-servlets (build-path (collection-path "web-server") "tests" "servlets"))
   (define example-servlets (build-path (collection-path "web-server") "default-web-root" "servlets" "examples/"))
   
-  ; XXX
   (define dispatch-servlets-tests
     (test-suite
      "Servlets"
@@ -90,5 +85,10 @@
                             (first ((sxpath "//form/@action/text()") (call d k (list (make-binding:form #"answer" #"0"))))))
                           url0
                           (build-list 7 (lambda (i) i))))))
+     
+     (test-suite
+      "servlet/web.ss"
+      ; XXX
+      )
      
      )))

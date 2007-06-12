@@ -3,8 +3,7 @@
            "bindings-test.ss"
            "servlet-url-test.ss"
            "basic-auth-test.ss"
-           "helpers-test.ss"
-           "web-test.ss")
+           "helpers-test.ss")
   (provide all-servlet-tests)
   
   (define all-servlet-tests
@@ -13,5 +12,4 @@
      bindings-tests
      servlet-url-tests
      basic-auth-tests
-     helpers-tests
-     web-tests)))
+     helpers-tests)))
