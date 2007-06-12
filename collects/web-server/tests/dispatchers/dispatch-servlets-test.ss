@@ -27,6 +27,22 @@
   (define url0 "http://test.com/servlets/example.ss")
   (define url0s (list (build-path "servlets") (build-path "example.ss")))
   
+  (define (test-add-two-numbers t p)
+    (let* ([x (random 500)]
+           [xs (string->bytes/utf-8 (number->string x))]
+           [y (random 500)]
+           [ys (string->bytes/utf-8 (number->string y))])
+      (test-equal? 
+       t
+       (let* ([d (mkd p)]
+              [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
+              [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?number=~a" k0 xs)
+                                                                 (list (make-binding:form #"number" xs)))))]
+              [n (first ((sxpath "//p/text()") (call d (format "~a?number=~a" k1 ys)
+                                                     (list (make-binding:form #"number" ys)))))])
+         n)
+       (format "The sum is ~a" (+ x y)))))
+  
   (define test-servlets (build-path (collection-path "web-server") "tests" "servlets"))
   (define example-servlets (build-path (collection-path "web-server") "default-web-root" "servlets" "examples/"))
   
@@ -35,7 +51,6 @@
      "Servlets"
      
      ; XXX test update cache
-     ; XXX test different versions
      
      (test-pred "configure.ss"
                 string?
@@ -45,19 +60,20 @@
      
      (test-suite
       "Examples"
-      (test-equal? "hello.ss"
+      (test-equal? "hello.ss - loading"
                    (let* ([d (mkd (build-path example-servlets "hello.ss"))]
                           [t0 (first ((sxpath "//p/text()") (call d url0 empty)))])
                      t0)
                    "Hello, Web!")
-      (test-equal? "add.ss"
-                   (let* ([d (mkd (build-path example-servlets "add.ss"))]
-                          [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
-                          [k1 (first ((sxpath "//form/@action/text()") (call d k0 (list (make-binding:form #"number" #"23")))))]
-                          [n (first ((sxpath "//p/text()") (call d k1 (list (make-binding:form #"number" #"12")))))])
-                     n)
-                   "The sum is 35")
-      (test-equal? "count.ss"
+      (test-add-two-numbers "add.ss - send/suspend"
+                            (build-path example-servlets "add.ss"))
+      (test-add-two-numbers "add-v2.ss - send/suspend, version 2"
+                            (build-path example-servlets "add-v2.ss"))
+      (test-add-two-numbers "add-ssd.ss - send/suspend/dispatch"
+                            (build-path example-servlets "add-ssd.ss"))
+      (test-add-two-numbers "add-call.ss - send/suspend/callback"
+                            (build-path example-servlets "add-call.ss"))
+      (test-equal? "count.ss - state"
                    (let* ([d (mkd (build-path example-servlets "count.ss"))]
                           [ext (lambda (c)
                                  (rest (regexp-match #rx"This servlet was called (.+) times and (.+) times since loaded on" c)))]
@@ -66,33 +82,40 @@
                      (list c1 c2))
                    (list (list "1" "1")
                          (list "2" "1")))
-      (test-equal? "dir.ss"
+      (test-equal? "dir.ss - current-directory"
                    (let* ([d (mkd (build-path example-servlets "dir.ss"))]
                           [t0 (first ((sxpath "//p/em/text()") (call d url0 empty)))])
                      t0)
                    (path->string example-servlets))
-      (test-pred "quiz.ss"
+      (test-pred "quiz.ss - send/suspend"
                  string?
                  (let* ([d (mkd (build-path example-servlets "quiz.ss"))])
                    (foldl (lambda (_ k)
                             (first ((sxpath "//form/@action/text()") (call d k (list (make-binding:form #"answer" #"0"))))))
                           url0
-                          (build-list 7 (lambda (i) i))))))
-     
-     (test-suite
-      "servlet/web.ss"
-      ; XXX current-url-transform
-      ; XXX current-servlet-continuation-expiration-handler
-      ; XXX redirect/get
-      ; XXX redirect/get/forget
-      ; XXX adjust-timeout!
-      ; XXX clear-continuation-table!
-      ; XXX send/back
-      ; XXX send/finish
-      ; XXX send/suspend
-      ; XXX send/forward
-      ; XXX send/suspend/dispatch
-      ; XXX send/suspend/callback
+                          (build-list 7 (lambda (i) i)))))
+      (test-equal? "cut.ss - current-url-transform"
+                   (let* ([d (mkd (build-path example-servlets "cut.ss"))]
+                          [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))])
+                     k0)
+                   "#")
+      (test-equal? "clear.ss - current-servlet-continuation-expiration-handler, clear-continuation-table!, send/finish, send/forward"
+                   (let* ([d (mkd (build-path example-servlets "clear.ss"))]
+                          [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))]
+                          [k1 (first ((sxpath "//a/@href/text()") (call d k0 empty)))]
+                          [k0-expired (first ((sxpath "//body/text()") (call d k0 empty)))]
+                          [done (first ((sxpath "//body/text()") (call d k1 empty)))]
+                          [k1-expired (first ((sxpath "//body/text()") (call d k1 empty)))])
+                     (list k0-expired
+                           done
+                           k1-expired))
+                   (list "Expired"
+                         "Done."
+                         "Expired"))
       )
+     
+     ; XXX redirect/get
+     ; XXX redirect/get/forget
+     ; XXX adjust-timeout!
      
      )))
