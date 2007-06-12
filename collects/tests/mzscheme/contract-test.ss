@@ -5088,6 +5088,18 @@ so that propagation occurs.
       (eval 'pc19-ans))
    1)
 
+  ;; test that unit & contract don't collide over the name `struct'
+  (test/spec-passed
+   'provide/contract20
+   '(eval '(module tmp mzscheme
+             (require (lib "contract.ss")
+                      (lib "unit.ss"))
+             
+             (define-struct s (a b))
+             
+             (provide/contract
+              [struct s ([a number?]
+                         [b symbol?])]))))
   
   (contract-error-test
    #'(begin

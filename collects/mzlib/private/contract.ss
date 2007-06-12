@@ -174,7 +174,8 @@ improve method arity mismatch contract violation error messages?
              [(null? clauses) null]
              [else
               (let ([clause (car clauses)])
-                (syntax-case clause (struct rename)
+                ;; compare raw identifiers for `struct' and `rename' just like provide does
+                (syntax-case* clause (struct rename) (λ (x y) (eq? (syntax-e x) (syntax-e y))) 
                   [(rename this-name new-name contract)
                    (and (identifier? (syntax this-name))
                         (identifier? (syntax new-name)))
