@@ -7,7 +7,14 @@
      "Web Language"
      
      ; XXX test web.ss
+     (test-suite
+      "web.ss")
+
      ; XXX test web-extras.ss
-     ; XXX test web-cells.ss
+     (test-suite
+      "web-extras.ss")
      
+     ; XXX test web-cells.ss
+     (test-suite
+      "web-cell.ss")
      )))

@@ -76,7 +76,7 @@
       [(procedure? p-exp) (p->a p-exp)]
       [else p-exp])) 
   
-  ;; Weak contracts: the input is checked in output-response, and a message is
+  ;; XXX Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
    [xexpr/callback->xexpr (embed/url? xexpr/callback? . -> . xexpr?)]

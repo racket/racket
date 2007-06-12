@@ -90,7 +90,18 @@
      
      (test-suite
       "servlet/web.ss"
-      ; XXX test web.ss
+      ; XXX current-url-transform
+      ; XXX current-servlet-continuation-expiration-handler
+      ; XXX redirect/get
+      ; XXX redirect/get/forget
+      ; XXX adjust-timeout!
+      ; XXX clear-continuation-table!
+      ; XXX send/back
+      ; XXX send/finish
+      ; XXX send/suspend
+      ; XXX send/forward
+      ; XXX send/suspend/dispatch
+      ; XXX send/suspend/callback
       )
      
      )))
