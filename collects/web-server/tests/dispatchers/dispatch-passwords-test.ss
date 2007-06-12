@@ -1,17 +1,18 @@
 (module dispatch-passwords-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+           (planet "util.ss" ("schematics" "schemeunit.plt" 2))
            (lib "file.ss")
            (lib "url.ss" "net")
            (lib "list.ss")
-           (lib "xml.ss" "xml")
            (lib "request-structs.ss" "web-server" "private")
-           (lib "util.ss" "web-server" "private")
            (lib "dispatch.ss" "web-server" "dispatchers")
            (prefix passwords: (lib "dispatch-passwords.ss" "web-server" "dispatchers"))
            "../util.ss")
   (provide dispatch-passwords-tests)
   
-  ; XXX Backwards way of testing distribution file
+  (require/expose (lib "dispatch-passwords.ss" "web-server" "dispatchers")
+                  (read-passwords))
+  
   (define default-passwords (build-path (collection-path "web-server") "default-web-root" "passwords"))
   (define test-passwords (make-temporary-file))
   (define (write-test-passwords!)
@@ -44,6 +45,10 @@
     (test-suite
      "Passwords"
      
+     (test-not-false
+      "Distribution file parses"
+      (read-passwords default-passwords))
+     
      (test-exn "authorized"
                exn:dispatcher?
                (lambda () (runt #t #t)))
@@ -59,6 +64,6 @@
                (lambda ()
                  (runt #f #t)))
      
-     ; XXX refresh cache
+     ; XXX test refresh cache
      
      )))
