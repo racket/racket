@@ -11,7 +11,7 @@
 A @defterm{pair} joins two arbitrary values. The @scheme[cons]
 procedure constructs pairs, and the @scheme[car] and @scheme[cdr]
 procedures extract the first and second elements of the pair,
-respectively. The @scheme[pair?] predicate recogizes pairs.
+respectively. The @scheme[pair?] predicate recognizes pairs.
 
 Some pairs print by wrapping parentheses around the printed forms of
 the two pair elements, putting a @litchar{.} between them.

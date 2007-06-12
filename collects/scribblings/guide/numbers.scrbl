@@ -76,9 +76,10 @@ types of numbers.
 (inexact->exact 0.1)
 ]
 
-Inexact results are also produced by trancendental procedures such as
-@scheme[sin] and @scheme[cos], in part because Scheme can only
-represent rational numbers.
+Inexact results are also produced by procedures such as @scheme[sqrt],
+@scheme[log], and @scheme[sin] when an exact result would require
+representing real numbers that are not rational. Scheme can represent
+only rational numbers and complex numbers with rational parts.
 
 @examples[
 (code:line (sin 0)   (code:comment #, @t{rational...}))
@@ -131,6 +132,18 @@ compares numbers considering both exactness and numerical equality.
 @examples[
 (= 1 1.0)
 (eqv? 1 1.0)
+]
+
+Beware of comparisons involving inexact numbers, which by their nature
+can have surprising behavior. Even apparently simple inexact numbers
+may not mean what you think they mean; for example, while a base-2
+IEEE floating-point number can represent @scheme[1/2] exactly, it
+can only approximate @scheme[1/10]:
+
+@examples[
+(= 1/2 0.5)
+(= 1/10 0.1)
+(inexact->exact 0.1)
 ]
 
 @refdetails["mz:numbers"]{numbers and number procedures}
