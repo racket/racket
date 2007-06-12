@@ -113,7 +113,7 @@ procedure to the arguments:
 (avg '(1 2 3 4))
 ]
 
-As a convenience, the @scheme[apply] produce accepts additional
+As a convenience, the @scheme[apply] procedure accepts additional
 arguments between the procedure and the list. The additional arguments
 are effectively @scheme[cons]ed onto the argument list:
 
@@ -126,7 +126,7 @@ are effectively @scheme[cons]ed onto the argument list:
 The @scheme[apply] procedure supports only by-position arguments. To
 apply a procedure with keyword arguments, use the
 @scheme[keyword-apply] procedure, which accepts a procedure to apply
-and two lists. The first list contains contains pairs, each matching a
+and two lists. The first list contains pairs, each matching a
 keyword with its corresponding value. The second list contains
 by-position procedure arguments, as for @scheme[apply].
 

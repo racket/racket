@@ -2,11 +2,16 @@
                body {
                color: black;
                background-color: #ffffff;
-               max-width: 35em;
+               font-family: Times;
+               text-align: center;
+               width: 35em;
                margin-left: auto;
                margin-right: auto;
-               padding-left: 0.5em;
-               font-family: Times;
+               }
+
+               .main {
+               width: 35em;
+               text-align: left;
                }
 
                .refpara { 

@@ -77,7 +77,7 @@
                                     (type "text/css")
                                     (href "scribble.css")
                                     (title "default"))))
-                            (body ,@(render-part d ht)))])
+                            (body (div ((class "main")) ,@(render-part d ht))))])
             (install-file scribble-css)
             (xml:write-xml/content (xml:xexpr->xml xpr)))))
 
