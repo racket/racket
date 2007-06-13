@@ -26,7 +26,7 @@ identifiers:
  Specifies the initial timeout given to a connection.
 }
 
-@defthing[port (between/c 1 65535)]{
+@defthing[port port-number?]{
  Specifies the port to serve HTTP on.
 }
 
@@ -40,12 +40,11 @@ identifiers:
 
 @file{web-config-unit.ss} provides the following:
 
-@; XXX Move to configuration/configuration-table.ss
+@; XXX Move to configuration/configuration-table.ss ?
 @defthing[default-configuration-table-path path?]{The default configuration table.}
 
-@; XXX Make port?
 @defproc[(configuration-table->web-config\@ [path path?]
-                                           [#:port port (or/c false/c (between/c 1 65535)) #f]
+                                           [#:port port (or/c false/c port-number?) #f]
                                            [#:listen-ip listen-ip (or/c false/c string?) #f]
                                            [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace? (make-make-servlet-namespace)])
          (unit? web-config^)]{
@@ -54,7 +53,7 @@ identifiers:
 
 @defproc[(configuration-table-sexpr->web-config\@ [sexpr list?]
                                                  [#:web-server-root web-server-root path? (directory-part default-configuration-table-path)]
-                                                 [#:port port (or/c false/c (between/c 1 65535)) #f]
+                                                 [#:port port (or/c false/c port-number?) #f]
                                                  [#:listen-ip listen-ip (or/c false/c string?) #f]
                                                  [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace? (make-make-servlet-namespace)])
          (unit? web-config^)]{

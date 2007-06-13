@@ -280,6 +280,9 @@ with this process.
 There are a number of other miscellaneous utilities the @web-server
 needs. They are provided by @file{private/util.ss}.
 
+@subsection{Contracts}
+@defthing[port-number? contract?]{Equivalent to @scheme[(between/c 1 65535)].}
+
 @subsection{Lists}
 @defproc[(list-prefix? [l list?]
                        [r list?])

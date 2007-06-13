@@ -8,6 +8,7 @@
            (lib "xml.ss" "xml")
            (lib "url.ss" "net"))
   (provide/contract
+   [port-number? contract?]
    [pretty-print-invalid-xexpr (exn:invalid-xexpr? any/c . -> . void)]
    [url-replace-path ((list? . -> . list?) url? . -> . url?)]
    ; XXX need path-element?
@@ -28,6 +29,8 @@
    [read/string (string? . -> . serializable?)]
    [write/string (serializable? . -> . string?)])
   
+  (define port-number? (between/c 1 65535))
+      
   (define (pretty-print-invalid-xexpr exn xexpr)
     (define code (exn:invalid-xexpr-code exn))
     (parameterize ([pretty-print-size-hook (lambda (v display? out)

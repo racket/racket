@@ -2,12 +2,20 @@
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "url.ss" "net")
            (lib "xml.ss" "xml")
+           (lib "contract.ss")
            (lib "util.ss" "web-server" "private"))
   (provide util-tests)
   
   (define util-tests
     (test-suite
      "Utilities"
+     
+     (test-suite
+      "port-number?"
+      (test-not-exn "80" (lambda () (contract port-number? 80 'pos 'neg)))
+      (test-not-exn "8080" (lambda () (contract port-number? 8080 'pos 'neg)))
+      (test-exn "0" exn:fail:contract? (lambda () (contract port-number? 0 'pos 'neg)))
+      (test-exn "10000000" exn:fail:contract? (lambda () (contract port-number? 10000000 'pos 'neg))))
      
      (test-equal? "pretty-print-invalid-xexpr"
                   (let ([os (open-output-string)]

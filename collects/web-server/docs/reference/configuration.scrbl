@@ -19,7 +19,7 @@ the configuration table S-expression file format described in
 @secref["configuration-table.ss"].
 
 @defstruct[configuration-table
-           ([port (between/c 1 65535)]
+           ([port port-number?]
             [max-waiting natural-number/c]
             [initial-connection-timeout natural-number/c]
             [default-host host-table?]

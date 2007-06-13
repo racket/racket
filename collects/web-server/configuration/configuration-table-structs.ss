@@ -2,7 +2,8 @@
   (require (lib "contract.ss")
            (lib "url.ss" "net"))
   (require "../private/response-structs.ss"
-           "../private/request-structs.ss")           
+           "../private/request-structs.ss"
+           "../private/util.ss")           
   
   ; configuration-table = (make-configuration-table nat nat num host-table (listof (cons str host-table)))
   (define-struct configuration-table
@@ -28,7 +29,7 @@
   
   (provide/contract
    [struct configuration-table
-           ([port (between/c 1 65535)]
+           ([port port-number?]
             [max-waiting natural-number/c]
             [initial-connection-timeout natural-number/c]
             [default-host host-table?]
