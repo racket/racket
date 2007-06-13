@@ -42,16 +42,16 @@
      
      (test-equal? "file, exists, whole, get"
                   (collect (dispatch #t tmp-file) (req #f 'get empty))
-                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
+                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
      (test-equal? "file, exists, whole, head"
                   (collect (dispatch #t tmp-file) (req #f 'head empty))
-                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n")
+                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n")
      (test-equal? "file, exists, part, get"
                   (collect (dispatch #t tmp-file) (req #f 'get (list (make-header #"Range" #"bytes=5-10"))))
-                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 5\r\nContent-Range: bytes 5-10/81\r\n\r\n><head><ti")
+                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 5\r\nContent-Range: bytes 5-10/81\r\n\r\n><head><ti")
      (test-equal? "file, exists, part, head"
                   (collect (dispatch #t tmp-file) (req #f 'head (list (make-header #"Range" #"bytes=5-10"))))
-                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 5\r\nContent-Range: bytes 5-10/81\r\n\r\n")
+                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 5\r\nContent-Range: bytes 5-10/81\r\n\r\n")
      
      (test-exn "path, non"
                exn:dispatcher?
@@ -59,10 +59,10 @@
      
      (test-equal? "dir, exists, get"
                   (collect (dispatch #t a-dir) (req #t 'get empty))
-                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
+                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
      (test-equal? "dir, exists, head"
                   (collect (dispatch #t a-dir) (req #t 'head empty))
-                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n")
+                  #"HTTP/1.1 206 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 81\r\nContent-Range: bytes 0-81/81\r\n\r\n")
      (test-exn "dir, not dir-url, get"
                exn:dispatcher?
                (lambda () (collect (dispatch #t a-dir) (req #f 'get empty))))

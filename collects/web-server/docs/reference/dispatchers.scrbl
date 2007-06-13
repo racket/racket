@@ -224,7 +224,7 @@ that calls a different dispatcher based upon the host requested.
 It defines a dispatcher construction procedure:
 
 @defproc[(make [#:url->path url->path url->path?]
-               [#:path->mime-type path->mime-type (path? . -> . bytes?) (lambda (path) #"text/plain; charset=utf-8")]
+               [#:path->mime-type path->mime-type (path? . -> . bytes?) (lambda (path) TEXT/HTML-MIME-TYPE)]
                [#:indices indices (listof string?) (list "index.html" "index.htm")])
          dispatcher?]{
  Uses @scheme[url->path] to extract a path from the URL in the request

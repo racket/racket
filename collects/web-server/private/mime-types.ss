@@ -2,7 +2,8 @@
   (require (lib "contract.ss")
            (lib "plt-match.ss")
            (lib "string.ss"))
-  (require "util.ss")
+  (require "util.ss"
+           "response-structs.ss")
   (provide/contract
    [read-mime-types (path? . -> . hash-table?)]
    [make-path->mime-type (path? . -> . (path? . -> . bytes?))])
@@ -36,12 +37,11 @@
   ;; 2. Assuming that 7-bit ASCII is correct for mime-type
   (define (make-path->mime-type a-path)
     (define MIME-TYPE-TABLE (read-mime-types a-path))
-    (define DEFAULT-MIME-TYPE #"text/plain; charset=utf-8")
     (define file-suffix-regexp (byte-regexp #".*\\.([^\\.]*$)"))
     (lambda (path)
       (match (regexp-match file-suffix-regexp (path->bytes path))
         [(list path-bytes sffx)
          (hash-table-get MIME-TYPE-TABLE
                          (lowercase-symbol! sffx)
-                         (lambda () DEFAULT-MIME-TYPE))]
-        [_ DEFAULT-MIME-TYPE]))))
+                         (lambda () TEXT/HTML-MIME-TYPE))]
+        [_ TEXT/HTML-MIME-TYPE]))))

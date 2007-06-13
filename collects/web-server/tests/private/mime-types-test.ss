@@ -1,7 +1,8 @@
 (module mime-types-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "file.ss")
-           (lib "mime-types.ss" "web-server" "private"))
+           (lib "mime-types.ss" "web-server" "private")
+           (lib "response-structs.ss" "web-server" "private"))
   (provide mime-types-tests)
   
   (define test-file (make-temporary-file))
@@ -27,7 +28,7 @@ END
       (check-not-false (read-mime-types test-file)))
      (test-case
       "Default mime-type given"
-      (check-equal? ((make-path->mime-type test-file) (build-path "test.html")) #"text/plain; charset=utf-8"))
+      (check-equal? ((make-path->mime-type test-file) (build-path "test.html")) TEXT/HTML-MIME-TYPE))
      (test-case
       "MIME type resolves (single in file)"
       (check-equal? ((make-path->mime-type test-file) (build-path "test.mp4")) #"video/mp4"))

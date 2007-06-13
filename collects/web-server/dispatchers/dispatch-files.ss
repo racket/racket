@@ -5,8 +5,8 @@
            (lib "contract.ss"))
   (require "dispatch.ss"
            "../private/util.ss"
-           "../private/mime-types.ss"
            "../private/request-structs.ss"
+           "../private/response-structs.ss"
            "../private/response.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?])
@@ -20,8 +20,7 @@
   (define interface-version 'v1)
   (define/kw (make #:key 
                    url->path
-                   ; XXX Make the default a define from response.ss
-                   [path->mime-type (lambda (path) #"text/plain; charset=utf-8")]
+                   [path->mime-type (lambda (path) TEXT/HTML-MIME-TYPE)]
                    [indices (list "index.html" "index.htm")])
     (lambda (conn req)
       (define uri (request-uri req))
