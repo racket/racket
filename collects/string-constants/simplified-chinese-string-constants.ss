@@ -17,7 +17,7 @@
 ;           #                   #                    #######   
 ;                                                              
 (module simplified-chinese-string-constants "string-constant-lang.ss"
-  (is-this-your-native-language "你的母语是简体中文吗？")
+  (is-this-your-native-language "中文是你的母语吗？")
   
   (are-you-sure-you-want-to-switch-languages
    "为了改变界面语言，现在需要重新启动DrScheme。你确定吗？")
@@ -356,10 +356,11 @@
   ; title of the color choosing dialog
   
   ; should have entire alphabet
-  (font-example-string "简体中文 by 朱崇恺") 
+  (font-example-string "中文 by 朱崇恺") 
   
   (change-font-button-label "更改")
   (fonts "字体")
+  (other... "其他...") ;; used in the font choice menu item
   
   ; filled with type of font, eg modern, swiss, etc.
   (choose-a-new-font "请选择一种新的“~a”字体")

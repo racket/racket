@@ -1,27 +1,27 @@
-           ;                                                       
-;;               ;     ;     ;;       ;;   ;   ;;       
-;;   ;;               ;     ;     ;        ;    ;   ;    ;   
-;    ;;     ;        ;;     ;     ;;       ;    ;   ;    ;   
-;;;;;;;;;;;;;;         ;;;;;;;;;;;;        ; ;  ;   ;    ;   
-;     ;;                     ;            ; ; ;;; ;;; ;;;;    
-;      ;;             ;;;;;;;;;;;;;;;;;   ;; ;              ;  
-;;      ;     ;;              ;    ;  ;   ;;;;;;;;;;;   
-;;;;;;;;;;;;;;;; ;                 ;          ;    ;       ;    
-;;;;               ;;;;;;;;;           ;     ;;;;;;;;    
-; ;; ;                          ;;      ;     ;      ;    
-;  ;;  ;         ;;;;;;;;;;;;;;;;        ;     ;      ;    
-;   ;;   ;;            ;   ;  ;           ;    ;;;;;;;;;    
-;    ;;    ;;;         ;    ;   ;;         ;      ;    ;     
-;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
-;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
-;;                    ;               ;   ;;; ;; ;;;;   
+;            ;                                                       
+;            ;;               ;     ;     ;;       ;;   ;   ;;       
+;       ;;   ;;               ;     ;     ;        ;    ;   ;    ;   
+;       ;    ;;     ;        ;;     ;     ;;       ;    ;   ;    ;   
+;       ;;;;;;;;;;;;;;         ;;;;;;;;;;;;        ; ;  ;   ;    ;   
+;      ;     ;;                     ;            ; ; ;;; ;;; ;;;;    
+;     ;      ;;             ;;;;;;;;;;;;;;;;;   ;; ;              ;  
+;            ;;      ;     ;;              ;    ;  ;   ;;;;;;;;;;;   
+;    ;;;;;;;;;;;;;;;; ;                 ;          ;    ;       ;    
+;           ;;;;               ;;;;;;;;;           ;     ;;;;;;;;    
+;          ; ;; ;                          ;;      ;     ;      ;    
+;         ;  ;;  ;         ;;;;;;;;;;;;;;;;        ;     ;      ;    
+;        ;   ;;   ;;            ;   ;  ;           ;    ;;;;;;;;;    
+;       ;    ;;    ;;;         ;    ;   ;;         ;      ;    ;     
+;     ;;     ;;      ;;      ;;     ;     ;;       ;;     ;;  ;      
+;   ;;       ;;             ;    ;;;;      ;       ;;     ;  ;    ;  
+;            ;;                    ;               ;   ;;; ;; ;;;;   
 (module traditional-chinese-string-constants "string-constant-lang.ss"
-  (is-this-your-native-language "你的母語是繁體中文嗎？")
+  (is-this-your-native-language "中文是你的母語嗎？")
   
   (are-you-sure-you-want-to-switch-languages
    "為了改變界面語言，現在需要重新啟動DrScheme。你確定嗎？")
   
-  (interact-with-drscheme-in-language "使用簡體中文作DrScheme界面語言")
+  (interact-with-drscheme-in-language "使用繁體中文作DrScheme界面語言")
   
   ;; these two should probably be the same in all languages excepet English.
   ;; they are the button labels (under macos and windows, respectively)
@@ -355,10 +355,11 @@
   ; title of the color choosing dialog
   
   ; should have entire alphabet
-  (font-example-string "簡體中文 by 朱崇愷") 
+  (font-example-string "中文 by 朱崇愷") 
   
   (change-font-button-label "更改")
   (fonts "字體")
+  (other... "其他...") ;; used in the font choice menu item
   
   ; filled with type of font, eg modern, swiss, etc.
   (choose-a-new-font "請選擇一種新的「~a」字體")
