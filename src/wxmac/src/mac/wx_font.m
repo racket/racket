@@ -9,6 +9,8 @@ int wx_isFamilyFixedWidth(FMFontFamily fam)
 {
   FMFont fnt;
   StyleParameter intrinsic;
+  int is_fw = 0;
+  id pool = [[NSAutoreleasePool alloc] init];
 
   if (!FMGetFontFromFontFamilyInstance(fam, 0, &fnt, &intrinsic)) {
     ATSFontRef ats;
@@ -19,10 +21,13 @@ int wx_isFamilyFixedWidth(FMFontFamily fam)
       if (!ATSFontGetPostScriptName(ats, kATSOptionFlagsDefault, &ref)) {
         nsfnt = [NSFont fontWithName: (NSString *)ref size: 12];
         CFRelease(ref);
-        return [nsfnt isFixedPitch];
+        [pool release];
+        is_fw = [nsfnt isFixedPitch];
       }
     }
   }
 
-  return 0;
+  [pool release];
+
+  return is_fw;
 }

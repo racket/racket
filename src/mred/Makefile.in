@@ -134,7 +134,7 @@ $(MRFW) : $(MZSCHEMEDEPS) $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
 	$(MREDLINKER) $(MREDLDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names ../mzscheme/libmzscheme.@LIBSFX@ ../mzscheme/libmzgc.@LIBSFX@ $(@WXLIBS@) $(GUILIBS_@WXVARIANT@) @X_EXTRA_LIBS@
 
 MrEd@CGC@.app/Contents/MacOS/MrEd@CGC@: $(MRFWRES) $(MRFW) mrmain.@LTO@ 
-	$(MREDLINKER) -o MrEd@CGC@.app/Contents/MacOS/MrEd@CGC@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon @PROFFLAGS@
+	$(MREDLINKER) -o MrEd@CGC@.app/Contents/MacOS/MrEd@CGC@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon -framework Cocoa @PROFFLAGS@
 	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)/PLT_MrEd" MrEd@CGC@.app/Contents/MacOS/MrEd@CGC@
 
 $(MRFWRES): $(srcdir)/../mac/osx_appl.ss $(srcdir)/../mac/cw/MrEd.r

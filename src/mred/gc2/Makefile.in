@@ -1371,7 +1371,7 @@ MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd
 MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
 
 ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@: $(MRFWRES) $(MRFW) mrmain.@LTO@
-	$(MREDLINKER) -o ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon
+	$(MREDLINKER) -o ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon -framework Cocoa
 	mkdir -p "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m"
 	cp "$(MRFW)" "../$(MRFW)"
 	rm -rf "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources"
