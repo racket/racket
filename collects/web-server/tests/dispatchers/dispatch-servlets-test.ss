@@ -15,7 +15,7 @@
   
   (define (mkd p)
     (define-values (! d)
-      (servlets:make #f (box (make-cache-table)) (make-make-servlet-namespace)
+      (servlets:make (box (make-cache-table))
                      #:url->path (lambda _ (values p url0s))
                      #:responders-servlet-loading
                      (lambda (u exn)

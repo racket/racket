@@ -65,7 +65,8 @@
                               (collect-garbage)
                               ((responders-collect-garbage (host-responders host-info)))))
        (let-values ([(clear-cache! servlet-dispatch)
-                     (servlets:make config:instances config:scripts config:make-servlet-namespace
+                     (servlets:make config:scripts 
+                                    #:make-servlet-namespace config:make-servlet-namespace
                                     #:url->path
                                     (fsmap:make-url->valid-path
                                      (fsmap:make-url->path (paths-servlet (host-paths host-info))))                                    

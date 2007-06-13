@@ -246,13 +246,13 @@ It defines a dispatcher construction procedure:
 that runs servlets written in Scheme.
 
 @; XXX Add default manager arg
-@; XXX Remove config:instances
 @; XXX Remove config:scripts
-@; XXX Define make-servlet-namespace?
-@defproc[(make [config:instances any/c]
-               [config:scripts (box/c cache-table?)]
-               [config:make-servlet-namespace make-servlet-namespace?]
+@defproc[(make [config:scripts (box/c cache-table?)]
                [#:url->path url->path url->path?]
+               [#:make-servlet-namespace 
+                make-servlet-namespace
+                make-servlet-namespace?
+                (make-make-servlet-namespace)]
                [#:responders-servlet-loading 
                 responders-servlet-loading
                 ((url url?) (exn any/c) . -> . response?)
@@ -294,7 +294,6 @@ that runs servlets written in Scheme.
 that runs servlets written in the Web Language.
 
 @; XXX Don't include timeout logic in here, put it outside.
-@; XXX Include configuration.scrbl exports
 @defproc[(make [#:url->path url->path url->path?]
                [#:make-servlet-namespace make-servlet-namespace 
                                          make-servlet-namespace?

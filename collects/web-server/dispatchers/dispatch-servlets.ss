@@ -11,10 +11,9 @@
            "../servlet/web-cells.ss"
            "../servlet/web.ss"
            "../configuration/responders.ss"
+           "../configuration/namespace.ss"
            "../managers/manager.ss"
            "../managers/timeouts.ss"
-           "../managers/lru.ss"
-           "../managers/none.ss"
            "../private/servlet.ss"
            "../private/cache-table.ss"
            "../private/util.ss")  
@@ -23,9 +22,11 @@
   (provide make)
   
   (define interface-version 'v1)
-  (define/kw (make config:instances config:scripts config:make-servlet-namespace
+  (define/kw (make config:scripts 
                    #:key
                    url->path
+                   [make-servlet-namespace
+                    (make-make-servlet-namespace)]
                    [responders-servlet-loading
                     servlet-loading-responder]
                    [responders-servlet
@@ -183,7 +184,7 @@
     
     ;; load-servlet/path path -> servlet
     (define (load-servlet/path a-path)
-      (parameterize ([current-namespace (config:make-servlet-namespace
+      (parameterize ([current-namespace (make-servlet-namespace
                                          #:additional-specs
                                          '((lib "servlet.ss" "web-server")
                                            (lib "servlet.ss" "web-server" "private")
@@ -210,17 +211,7 @@
                                 (v1.module->v1.lambda timeout start)))]
                [(v2 v2-transitional) ; XXX: Depreciate v2-transitional
                 (let ([start (dynamic-require module-name 'start)]
-                      [manager (with-handlers
-                                   ([exn:fail:contract?
-                                     (lambda (exn)
-                                       (define timeout (dynamic-require module-name 'timeout))
-                                       (define instance-expiration-handler
-                                         (dynamic-require module-name 'instance-expiration-handler))
-                                       (create-timeout-manager
-                                        instance-expiration-handler
-                                        timeouts-servlet-connection
-                                        timeout))])
-                                 (dynamic-require module-name 'manager))])
+                      [manager (dynamic-require module-name 'manager)])
                   (make-servlet (current-custodian)
                                 (current-namespace)
                                 manager
@@ -230,8 +221,10 @@
           [(response? s)
            (make-servlet (current-custodian)
                          (current-namespace)
-                         (create-none-manager
-                          default-servlet-instance-expiration-handler)
+                         (create-timeout-manager
+                          default-servlet-instance-expiration-handler
+                          timeouts-servlet-connection
+                          timeouts-servlet-connection)
                          (v0.response->v1.lambda s a-path))]
           [else
            (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))

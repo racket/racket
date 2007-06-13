@@ -151,6 +151,8 @@ This function writes a @scheme[configuration-table] to @scheme[path].
 @scheme[make-servlet-namespace] procedure needed by the @scheme[make] functions
 of @file{dispatchers/dispatch-servlets.ss} and @file{dispatchers/dispatch-lang.ss}.
 
+@; XXX Define make-servlet-namespace?
+
 @; XXX Use actual keyword argument syntax
 
 @defproc[(make-make-servlet-namespace (#:to-be-copied-module-specs to-be-copied-module-specs (listof module-spec?)))
