@@ -8,7 +8,11 @@
    [read-configuration-table (path-string? . -> . configuration-table?)]
    [write-configuration-table (configuration-table? path-string? . -> . void)]
    [configuration-table->sexpr (configuration-table? . -> . list?)]
-   [sexpr->configuration-table (list? . -> . configuration-table?)])
+   [sexpr->configuration-table (list? . -> . configuration-table?)]
+   [default-configuration-table-path path?])  
+  
+  (define default-configuration-table-path
+    (build-path (collection-path "web-server") "default-web-root" "configuration-table.ss"))
   
   (define (get-binding key bindings default)
     (first (get-binding* key bindings (list default))))
@@ -85,13 +89,13 @@
   
   (define (configuration-table->sexpr new)
     `((port ,(configuration-table-port new))
-       (max-waiting ,(configuration-table-max-waiting new))
-       (initial-connection-timeout ,(configuration-table-initial-connection-timeout new))
-       (default-host-table
-         ,(host-table->sexpr (configuration-table-default-host new)))
-       (virtual-host-table
-        . ,(map (lambda (h) (list (car h) (host-table->sexpr (cdr h))))
-                (configuration-table-virtual-hosts new)))))
+      (max-waiting ,(configuration-table-max-waiting new))
+      (initial-connection-timeout ,(configuration-table-initial-connection-timeout new))
+      (default-host-table
+        ,(host-table->sexpr (configuration-table-default-host new)))
+      (virtual-host-table
+       . ,(map (lambda (h) (list (car h) (host-table->sexpr (cdr h))))
+               (configuration-table-virtual-hosts new)))))
   
   ; write-configuration-table : configuration-table path -> void
   ; writes out the new configuration file

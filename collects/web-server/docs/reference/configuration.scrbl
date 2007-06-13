@@ -83,6 +83,8 @@ the configuration table S-expression file format described in
 reading, writing, parsing, and printing @scheme[configuration-table] 
 structures.
 
+@defthing[default-configuration-table-path path?]{The default configuration table S-expression file.}
+
 @defproc[(sexpr->configuration-table (sexpr list?))
          configuration-table?]{
  This function converts a @scheme[configuration-table] from an S-expression.
@@ -152,7 +154,6 @@ This function writes a @scheme[configuration-table] to @scheme[path].
 of @file{dispatchers/dispatch-servlets.ss} and @file{dispatchers/dispatch-lang.ss}.
 
 @; XXX Define make-servlet-namespace?
-
 @; XXX Use actual keyword argument syntax
 
 @defproc[(make-make-servlet-namespace (#:to-be-copied-module-specs to-be-copied-module-specs (listof module-spec?)))

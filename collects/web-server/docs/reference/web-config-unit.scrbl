@@ -40,9 +40,6 @@ identifiers:
 
 @file{web-config-unit.ss} provides the following:
 
-@; XXX Move to configuration/configuration-table.ss ?
-@defthing[default-configuration-table-path path?]{The default configuration table.}
-
 @defproc[(configuration-table->web-config\@ [path path?]
                                            [#:port port (or/c false/c port-number?) #f]
                                            [#:listen-ip listen-ip (or/c false/c string?) #f]

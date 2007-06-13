@@ -2,6 +2,7 @@
   (require (prefix net: (lib "sendurl.ss" "net"))
            (lib "unit.ss"))
   (require "web-server.ss"
+           "configuration/configuration-table.ss"
            "web-config-unit.ss"
            "web-config-sig.ss"
            "private/util.ss"

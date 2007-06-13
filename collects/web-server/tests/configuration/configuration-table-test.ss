@@ -1,8 +1,7 @@
 (module configuration-table-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "file.ss")
-           (lib "configuration-table.ss" "web-server" "configuration")
-           (lib "web-config-unit.ss" "web-server"))
+           (lib "configuration-table.ss" "web-server" "configuration"))
   (provide configuration-table-tests)
   
   (define configuration-table-tests

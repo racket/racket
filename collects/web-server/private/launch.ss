@@ -3,7 +3,7 @@
            (lib "pregexp.ss")
            (lib "unit.ss")
            (lib "tcp-sig.ss" "net"))
-  (require "util.ss"         
+  (require "../configuration/configuration-table.ss"
            "../web-config-unit.ss"
            "../web-config-sig.ss"
            "../web-server-unit.ss"

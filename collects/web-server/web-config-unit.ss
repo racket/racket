@@ -1,7 +1,6 @@
 (module web-config-unit mzscheme
   (require (lib "unit.ss")
-           (lib "kw.ss")
-           (lib "contract.ss"))
+           (lib "kw.ss"))
   (require "private/util.ss"
            "private/cache-table.ss"
            "configuration/configuration-table-structs.ss"
@@ -11,11 +10,6 @@
            "web-config-sig.ss")
   (provide configuration-table->web-config@
            configuration-table-sexpr->web-config@)
-  (provide/contract
-   [default-configuration-table-path path?])  
-  
-  (define default-configuration-table-path
-    (build-path (collection-path "web-server") "default-web-root" "configuration-table.ss"))
   
   ; configuration-table->web-config@ : path -> configuration
   (define/kw (configuration-table->web-config@ table-file-name
