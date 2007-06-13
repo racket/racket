@@ -128,8 +128,22 @@ related to HTTP request data structures.
 @file{servlet/bindings.ss} provides a number of helper functions
 for accessing request bindings.
 
-@; XXX Move in request-bindings
-@; XXX Rename extract-binding
+@defproc[(request-bindings [req request?])
+         (listof (or/c (cons/c symbol? string?)
+                       (cons/c symbol? bytes?)))]{
+ Translates the @scheme[request-bindings/raw] of @scheme[req] by
+ interpreting @scheme[bytes?] as @scheme[string?]s, except in the case
+ of @scheme[binding:file] bindings, which are left as is. Ids are then
+ translated into lowercase symbols.
+}
+                                                 
+@defproc[(request-headers [req request?])
+         (listof (cons/c symbol? string?))]{
+ Translates the @scheme[request-headers/raw] of @scheme[req] by
+ interpreting @scheme[bytes?] as @scheme[string?]s. Ids are then
+ translated into lowercase symbols.
+}                                           
+                                           
 @defproc[(extract-binding/single [id symbol?]
                                  [binds (listof (cons/c symbol? string?))])
          string?]{
@@ -150,6 +164,14 @@ for accessing request bindings.
  Otherwise, @scheme[#f].        
 }         
 
+These functions, while convenient, could introduce subtle bugs into your
+application. Examples: that they are case-insensitive could introduce
+a bug; if the data submitted is not in UTF-8 format, then the conversion
+to a string will fail; if an attacked submits a form field as if it were
+a file, when it is not, then the @scheme[request-bindings] will hold a
+@scheme[bytes?] object and your program will error; and, for file uploads
+you lose the filename.
+                  
 @; ------------------------------------------------------------
 @section[#:tag "response-structs.ss"]{HTTP Responses}
 
@@ -299,31 +321,6 @@ servlet developer.
 
 @file{servlet/helpers.ss} provides functions built on
 @file{servlet/web.ss} that are useful in many servlets.
-
-@; XXX Move into binding.ss
-@defproc[(request-bindings [req request?])
-         (listof (or/c (cons/c symbol? string?)
-                       (cons/c symbol? bytes?)))]{
- Translates the @scheme[request-bindings/raw] of @scheme[req] by
- interpreting @scheme[bytes?] as @scheme[string?]s, except in the case
- of @scheme[binding:file] bindings, which are left as is. Ids are then
- translated into lowercase symbols.
-}
-                                                 
-@defproc[(request-headers [req request?])
-         (listof (cons/c symbol? string?))]{
- Translates the @scheme[request-headers/raw] of @scheme[req] by
- interpreting @scheme[bytes?] as @scheme[string?]s. Ids are then
- translated into lowercase symbols.
-}                                           
-                                           
-These functions, while convenient, could introduce subtle bugs in your
-application. Examples: the fact they are case-insensitive could introduce
-a bug; if the data submitted is not in UTF-8 format, then the conversion
-to a string will fail; if an attacked submits a form field as if it were
-a file, when it is not, then the @scheme[request-bindings] will hold a
-@scheme[bytes?] object and your program will error; and, for file uploads
-you lose the filename.
 
 @; XXX Move into http/response.ss
 @; XXX Change headers to make-header struct

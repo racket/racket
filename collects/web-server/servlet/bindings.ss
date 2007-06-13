@@ -1,6 +1,25 @@
 (module bindings mzscheme
   (require (lib "list.ss")
-           (lib "contract.ss"))
+           (lib "contract.ss")
+           (lib "plt-match.ss"))
+  (require "../private/util.ss"
+           "../private/request-structs.ss")
+  
+  (define (request-headers request)
+    (map (match-lambda
+           [(struct header (field value))
+            (cons (lowercase-symbol! (bytes->string/utf-8 field))
+                  (bytes->string/utf-8 value))])
+         (request-headers/raw request)))
+  (define (request-bindings request)
+    (map (match-lambda
+           [(struct binding:form (id value))
+            (cons (lowercase-symbol! (bytes->string/utf-8 id))
+                  (bytes->string/utf-8 value))]
+           [(struct binding:file (id fname value))
+            (cons (lowercase-symbol! (bytes->string/utf-8 id))
+                  value)])
+         (request-bindings/raw request)))
   
   ; extract-binding/single : sym (listof (cons str str)) -> str
   (define (extract-binding/single name bindings)
@@ -27,4 +46,7 @@
   (provide/contract
    [extract-binding/single (symbol? (listof (cons/c symbol? any/c)) . -> . any/c)]
    [extract-bindings (symbol? (listof (cons/c symbol? any/c)) . -> . (listof any/c))]
-   [exists-binding? (symbol? (listof (cons/c symbol? any/c)) . -> . boolean?)]))
+   [exists-binding? (symbol? (listof (cons/c symbol? any/c)) . -> . boolean?)]   
+   [request-bindings (request? . -> . (listof (or/c (cons/c symbol? string?)
+                                                    (cons/c symbol? bytes?))))]
+   [request-headers (request? . -> . (listof (cons/c symbol? string?)))]))

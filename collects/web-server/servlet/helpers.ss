@@ -1,27 +1,9 @@
 (module helpers mzscheme
   (require (lib "contract.ss")
-           (lib "kw.ss")
-           (lib "plt-match.ss"))
+           (lib "kw.ss"))
   (require "../private/util.ss"
-           "../private/request-structs.ss"
            "../private/response-structs.ss")
-  
-  (define (request-headers request)
-    (map (match-lambda
-           [(struct header (field value))
-            (cons (lowercase-symbol! (bytes->string/utf-8 field))
-                  (bytes->string/utf-8 value))])
-         (request-headers/raw request)))
-  (define (request-bindings request)
-    (map (match-lambda
-           [(struct binding:form (id value))
-            (cons (lowercase-symbol! (bytes->string/utf-8 id))
-                  (bytes->string/utf-8 value))]
-           [(struct binding:file (id fname value))
-            (cons (lowercase-symbol! (bytes->string/utf-8 id))
-                  value)])
-         (request-bindings/raw request)))
-  
+    
   ; redirection-status = (make-redirection-status nat str)
   (define-struct redirection-status (code message))
   
@@ -56,7 +38,4 @@
    [redirection-status? (any/c . -> . boolean?)]
    [permanently redirection-status?]
    [temporarily redirection-status?]
-   [see-other redirection-status?]
-   [request-bindings (request? . -> . (listof (or/c (cons/c symbol? string?)
-                                                    (cons/c symbol? bytes?))))]
-   [request-headers (request? . -> . (listof (cons/c symbol? string?)))]))
+   [see-other redirection-status?]))
