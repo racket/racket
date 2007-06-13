@@ -4,11 +4,11 @@
   (require "../private/response-structs.ss"
            "../private/request-structs.ss")
   
-  ; error-response : nat str str [(cons sym str) ...] -> response
+  ; file-response : nat str str [(cons sym str) ...] -> response
   ; XXX - cache files with a refresh option.
   ; The server should still start without the files there, so the
   ; configuration tool still runs.  (Alternatively, find an work around.)
-  (define (error-response code short text-file . extra-headers)
+  (define (file-response code short text-file . extra-headers)
     (make-response/full code short
                         (current-seconds) TEXT/HTML-MIME-TYPE
                         extra-headers
@@ -29,7 +29,7 @@
   ; gen-servlet-not-found : str -> url -> response
   (define (gen-servlet-not-found file-not-found-file)
     (lambda (url)
-      (error-response 404 "Servlet not found" file-not-found-file)))
+      (file-response 404 "Servlet not found" file-not-found-file)))
   
   ; gen-servlet-responder : str -> url tst -> response
   (define (gen-servlet-responder servlet-error-file)
@@ -38,38 +38,38 @@
       ((error-display-handler)
        (format "Servlet exception:\n~a\n" (exn-message exn))
        exn)
-      (error-response 500 "Servlet error" servlet-error-file)))
+      (file-response 500 "Servlet error" servlet-error-file)))
   
   ; gen-servlets-refreshed : str -> -> response
   (define (gen-servlets-refreshed servlet-refresh-file)
     (lambda ()
-      (error-response 200 "Servlet cache refreshed" servlet-refresh-file)))
+      (file-response 200 "Servlet cache refreshed" servlet-refresh-file)))
   
   ; gen-passwords-refreshed : str -> -> response
   (define (gen-passwords-refreshed password-refresh-file)
     (lambda ()
-      (error-response 200 "Passwords refreshed" password-refresh-file)))
+      (file-response 200 "Passwords refreshed" password-refresh-file)))
   
   ; gen-authentication-responder : str -> url (cons sym str) -> response
   (define (gen-authentication-responder access-denied-file)
     (lambda (uri recommended-header)
-      (error-response 401 "Authorization Required" access-denied-file
+      (file-response 401 "Authorization Required" access-denied-file
                       recommended-header)))
   
   ; gen-protocol-responder : str -> str -> response
   (define (gen-protocol-responder protocol-file)
     (lambda (error-message)
-      (error-response 400 "Malformed Request" protocol-file)))
+      (file-response 400 "Malformed Request" protocol-file)))
   
   ; gen-file-not-found-responder : str -> req -> response
   (define (gen-file-not-found-responder file-not-found-file)
     (lambda (req)
-      (error-response 404 "File not found" file-not-found-file)))
+      (file-response 404 "File not found" file-not-found-file)))
   
   ; gen-collect-garbage-responder : str -> -> response
   (define (gen-collect-garbage-responder file)
     (lambda ()
-      (error-response 200 "Garbage collected" file)))
+      (file-response 200 "Garbage collected" file)))
   
   ; read-file : str -> str
   (define (read-file path)
@@ -77,7 +77,7 @@
       (lambda (in) (read-string (file-size path) in))))
   
   (provide/contract
-   [error-response ((natural-number/c string? path-string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
+   [file-response ((natural-number/c string? path-string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
    [servlet-loading-responder (url? any/c . -> . response?)]
    [gen-servlet-not-found (path-string? . -> . (url? . -> . response?))]
    [gen-servlet-responder (path-string? . -> . (url? any/c . -> . response?))]

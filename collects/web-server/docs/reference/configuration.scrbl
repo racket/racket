@@ -1,6 +1,5 @@
 #reader(lib "docreader.ss" "scribble")
 @require["../web-server.ss"]
-@; XXX require mzscheme, url.ss, and contract.ss
 
 @title[#:tag "configuration"
        #:style 'toc]{Configuration}
@@ -148,15 +147,11 @@ This function writes a @scheme[configuration-table] to @scheme[path].
 @; ------------------------------------------------------------
 @section[#:tag "namespace.ss"]{Servlet Namespaces}
 
-@; XXX Require dispatch-servlets and dispatch-lang
-
 @file{configuration/namespace.ss} provides a function to help create the
 @scheme[make-servlet-namespace] procedure needed by the @scheme[make] functions
 of @file{dispatchers/dispatch-servlets.ss} and @file{dispatchers/dispatch-lang.ss}.
 
 @; XXX Use actual keyword argument syntax
-@; XXX Require for current-namespace
-@; XXX Link to module-spec?
 
 @defproc[(make-make-servlet-namespace (#:to-be-copied-module-specs to-be-copied-module-specs (listof module-spec?)))
          (key-> ([additional-specs (listof module-spec?)])
@@ -195,10 +190,7 @@ of servlets can share different sets of modules.
 These functions are used by the default dispatcher constructor (see @secref["web-server-unit.ss"]) to
 turn the paths given in the @scheme[configuration-table] into responders for the associated circumstance.
 
-@; XXX Include response/full
-@; XXX Rename error-response
-
-@defproc[(error-response (http-code natural-number/c) (short-version string?) (text-file string?) (extra-header (cons/c symbol? string?)) ...)
+@defproc[(file-response (http-code natural-number/c) (short-version string?) (text-file string?) (extra-header (cons/c symbol? string?)) ...)
          response?]{
  Generates a @scheme[response/full] with the given @scheme[http-code] and @scheme[short-version]
 as the corresponding fields; with the content of the @scheme[text-file] as the body; and, with

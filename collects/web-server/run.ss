@@ -7,7 +7,7 @@
            (prefix fsmap: (lib "filesystem-map.ss" "web-server" "dispatchers"))
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
            (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
-           (prefix const: (lib "dispatch-const.ss" "web-server" "dispatchers"))
+           (prefix lift: (lib "dispatch-const.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers"))
            (prefix lang: (lib "dispatch-lang.ss" "web-server" "dispatchers")))
   
@@ -41,13 +41,13 @@
          (sequencer:make
           (filter:make
            #rx"\\.ss"
-           (lang:make #:url->path (fsmap:make-url->path/optimism url->path)
+           (lang:make #:url->path (fsmap:make-url->valid-path url->path)
                       #:timeouts-servlet-connection 86400
                       #:responders-servlet-loading (gen-servlet-responder servlet-error-file)
                       #:responders-servlet (gen-servlet-responder servlet-error-file)))
           (files:make #:url->path url->path
                       #:mime-types-path (build-path (server-root-path) "mime.types")
                       #:indices (list "index.html" "index.htm"))
-          (const:make (gen-file-not-found-responder file-not-found-file))))
+          (lift:make (gen-file-not-found-responder file-not-found-file))))
   
   (do-not-return))

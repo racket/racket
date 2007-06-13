@@ -18,7 +18,7 @@
            (prefix log: "dispatchers/dispatch-log.ss")
            (prefix host: "dispatchers/dispatch-host.ss")
            (prefix filter: "dispatchers/dispatch-filter.ss")
-           (prefix const: "dispatchers/dispatch-const.ss"))
+           (prefix lift: "dispatchers/dispatch-lift.ss"))
   
   (provide web-server@)
   
@@ -67,7 +67,7 @@
        (let-values ([(clear-cache! servlet-dispatch)
                      (servlets:make config:instances config:scripts config:make-servlet-namespace
                                     #:url->path
-                                    (fsmap:make-url->path/optimism
+                                    (fsmap:make-url->valid-path
                                      (fsmap:make-url->path (paths-servlet (host-paths host-info))))                                    
                                     #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
                                     #:responders-servlet (responders-servlet (host-responders host-info))
@@ -84,7 +84,7 @@
        (files:make #:url->path (fsmap:make-url->path (paths-htdocs (host-paths host-info)))
                    #:mime-types-path (paths-mime-types (host-paths host-info))
                    #:indices (host-indices host-info))
-       (const:make (responders-file-not-found (host-responders host-info))))))
+       (lift:make (responders-file-not-found (host-responders host-info))))))
   
   (define-compound-unit/infer web-server@
     (import tcp^ web-config^)

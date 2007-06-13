@@ -4,12 +4,13 @@
            (lib "contract.ss"))
   (require "../private/util.ss")
   (define url-path?
+    ; XXX should be (listof path-element?)
     ((url?) . ->* . (path? list?)))
   
   (provide/contract
    [url-path? contract?]
    [make-url->path (path? . -> . url-path?)]
-   [make-url->path/optimism (url-path? . -> . url-path?)])
+   [make-url->valid-path (url-path? . -> . url-path?)])
   
   (define (build-path* . l)
     (if (empty? l)
@@ -38,9 +39,9 @@
     #;(printf "~S~n" `(url->path ,base ,nbase ,(url->string u) ,the-path ,w/o-base))
     (values the-path w/o-base))
   
-  (define ((make-url->path/optimism url->path) u)
+  (define ((make-url->valid-path url->path) u)
     (let loop ([up (url-path u)])
-      #;(printf "~S~n" `(url->path/optimism ,(url->string u) ,up))
+      #;(printf "~S~n" `(url->valid-path ,(url->string u) ,up))
       (with-handlers ([exn? (lambda (exn)
                               #;((error-display-handler) (exn-message exn) exn)
                               (if (empty? up)

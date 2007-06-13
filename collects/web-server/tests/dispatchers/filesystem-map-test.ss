@@ -8,7 +8,7 @@
   
   (define base-dir (collection-path "web-server"))
   (define test-map (make-url->path base-dir))
-  (define test-map/optimism (make-url->path/optimism test-map))
+  (define test-valid-map (make-url->valid-path test-map))
   
   (define/kw (test-url->path url->path file
                              #:key
@@ -39,19 +39,19 @@
                  (test-url->path test-map (build-path "dispatchers/../dispatchers/filesystem-map.ss"))))
      
      (test-suite
-      "url->path/optimism"
+      "url->valid-path"
       (test-suite
        "Preserves url->path"
        (test-case "Simple case"
-                  (test-url->path test-map/optimism (build-path "dispatchers/filesystem-map.ss")))
+                  (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.ss")))
        (test-case "Strips parameters"
-                  (test-url->path test-map/optimism (build-path "dispatchers/filesystem-map.ss")
+                  (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.ss")
                                   #:url-string "http://test.com/dispatchers/filesystem-map.ss;foo"))
        (test-case "Strips outs bad '..'s"
-                  (test-url->path test-map/optimism (build-path "dispatchers/filesystem-map.ss")
+                  (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.ss")
                                   #:url-string "http://test.com/../../dispatchers/filesystem-map.ss"))
        (test-case "Leaves in good '..'s"
-                  (test-url->path test-map/optimism (build-path "dispatchers/../dispatchers/filesystem-map.ss"))))
+                  (test-url->path test-valid-map (build-path "dispatchers/../dispatchers/filesystem-map.ss"))))
       (test-case "Finds valid path underneath"
-                  (test-url->path test-map/optimism (build-path "dispatchers/filesystem-map.ss/not-a-file")
+                  (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.ss/not-a-file")
                                   #:expected (build-path "dispatchers/filesystem-map.ss")))))))

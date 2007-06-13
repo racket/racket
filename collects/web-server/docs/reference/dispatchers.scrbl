@@ -13,8 +13,6 @@ documentation will be useful.
 
 @local-table-of-contents[]
 
-@; XXX Include connection? and request?
-
 @; ------------------------------------------------------------
 @section[#:tag "dispatch.ss"]{General}
 
@@ -63,9 +61,8 @@ Consider the following example dispatcher, that captures the essence of URL rewr
 @file{dispatchers/filesystem-map.ss} provides a means of mapping
 URLs to paths on the filesystem.
 
-@; XXX Change to listof path?
 @defthing[url-path? contract?]{
- This contract is equivalent to @scheme[((url?) . ->* . (path? list?))].
+ This contract is equivalent to @scheme[((url?) . ->* . (path? (listof path-element?)))].
  The returned @scheme[path?] is the path on disk. The list is the list of
  path elements that correspond to the path of the URL.}
 
@@ -75,8 +72,7 @@ URLs to paths on the filesystem.
  URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
  do not escape the @scheme[base].}                             
 
-@; XXX Rename to /valid                   
-@defproc[(make-url-path/optimism (url->path url->path?))
+@defproc[(make-url->valid-path (url->path url->path?))
          url->path?]{
  Runs the underlying @scheme[url->path], but only returns if the path
  refers to a file that actually exists. If it is does not, then the suffix
@@ -100,11 +96,10 @@ that invokes a sequence of dispatchers until one applies.
  then it calls @scheme[next-dispatcher] itself.
 }
                      
-@; XXX Rename const to lift
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-const.ss"]{Lifting Procedures}
+@section[#:tag "dispatch-lift.ss"]{Lifting Procedures}
 
-@file{dispatchers/dispatch-const.ss} defines:
+@file{dispatchers/dispatch-lift.ss} defines:
 
 @defproc[(make (proc (request? . -> . response?)))
          dispatcher?]{

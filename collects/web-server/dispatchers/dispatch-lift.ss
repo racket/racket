@@ -1,4 +1,4 @@
-(module dispatch-const mzscheme
+(module dispatch-lift mzscheme
   (require (lib "contract.ss"))
   (require "dispatch.ss"
            "../private/response.ss"
