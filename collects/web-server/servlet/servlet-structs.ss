@@ -3,15 +3,12 @@
            (lib "xml.ss" "xml"))
   (require "../private/request-structs.ss"
            "../private/response-structs.ss")  
-  
-  (define servlet-response?
-    any/c)
-    
+      
   (define k-url?
     string?)
 
   (define response-generator?
-    (k-url? . -> . servlet-response?))
+    (k-url? . -> . response?))
   
   (define url-transform?
     (k-url? . -> . k-url?))
@@ -24,7 +21,6 @@
     (((request? . -> . any/c)) (expiration-handler?) . opt-> . string?))
   
   (provide/contract
-   [servlet-response? contract?]
    [response-generator? contract?]
    [k-url? (any/c . -> . boolean?)]
    [url-transform? contract?]

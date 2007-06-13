@@ -3,14 +3,14 @@
            (lib "list.ss")
            (lib "plt-match.ss")
            (lib "contract.ss")
-           (lib "etc.ss")
-           (lib "xml.ss" "xml"))
+           (lib "etc.ss"))
   (require "../managers/manager.ss"
            "../private/util.ss"
            "../private/servlet.ss"
            "../servlet/helpers.ss"
            "../servlet/web-cells.ss"
            "../servlet/servlet-structs.ss"
+           "../private/response-structs.ss"
            "../private/request-structs.ss")
   
   ;; ************************************************************
@@ -67,8 +67,6 @@
                    (rest old-path))))
       in-url)))   
   
-  ;; XXX Weak contracts: the input is checked in output-response, and a message is
-  ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
    [current-url-transform parameter?]
    [current-servlet-continuation-expiration-handler parameter?]
@@ -76,11 +74,11 @@
    [redirect/get/forget (-> request?)]
    [adjust-timeout! (number? . -> . void?)]
    [clear-continuation-table! (-> void?)]
-   [send/back (any/c . -> . void?)]
-   [send/finish (any/c . -> . void?)]
+   [send/back (response? . -> . void?)]
+   [send/finish (response? . -> . void?)]
    [send/suspend ((response-generator?) (expiration-handler?) . opt-> . request?)]
    [send/forward ((response-generator?) (expiration-handler?) . opt-> . request?)]
-   [send/suspend/dispatch ((embed/url? . -> . servlet-response?) . -> . any/c)])
+   [send/suspend/dispatch ((embed/url? . -> . response?) . -> . any/c)])
   
   ;; ************************************************************
   ;; EXPORTS

@@ -54,12 +54,10 @@ provides:
 
 @file{servlet/servlet-structs.ss} provides a number of contracts
 for use in servlets.
-
-@defthing[servlet-response? contract?]{Equivalent to @scheme[any/c].}
                   
 @defthing[k-url? contract?]{Equivalent to @scheme[string?].}
 
-@defthing[response-generator? contract?]{Equivalent to @scheme[(k-url? . -> . servlet-response?)].}
+@defthing[response-generator? contract?]{Equivalent to @scheme[(k-url? . -> . response?)].}
 
 @defthing[url-transform? contract?]{Equivalent to @scheme[(k-url? . -> . k-url?)].}
 
@@ -217,8 +215,7 @@ transmission that the server will not catch.}
 @file{servlet/web.ss} provides the primary functions of interest for the
 servlet developer.
 
-@; XXX Contract harder
-@defproc[(send/back [response any/c])
+@defproc[(send/back [response response?])
          void?]{
  Sends @scheme[response] to the client.
 }
@@ -261,13 +258,12 @@ servlet developer.
  Calls @scheme[clear-continuation-table!], then @scheme[send/suspend].
 }
 
-@; XXX Contract harder
-@defproc[(send/finish [response any/c])
+@defproc[(send/finish [response response?])
          void?]{
  Calls @scheme[clear-continuation-table!], then @scheme[send/back].
 }
                
-@defproc[(send/suspend/dispatch [make-response (embed/url? . -> . servlet-response?)])
+@defproc[(send/suspend/dispatch [make-response (embed/url? . -> . response?)])
          any/c]{
  Calls @scheme[make-response] with a function that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call

@@ -1,9 +1,8 @@
 (module servlet mzscheme
   (require (lib "contract.ss"))
   (require "../managers/manager.ss"
-           "../servlet/servlet-structs.ss"
-           "connection-manager.ss"
-           "../private/request-structs.ss")
+           "../private/request-structs.ss"
+           "../private/response-structs.ss")
   
   (define servlet-prompt (make-continuation-prompt-tag 'servlet))
   (provide servlet-prompt)
@@ -28,7 +27,7 @@
            ([custodian custodian?]
             [namespace namespace?]
             [manager manager?]
-            [handler (request? . -> . servlet-response?)])]
+            [handler (request? . -> . response?)])]
    [struct servlet-instance-data
            ([mutex semaphore?])]
    [struct execution-context 
