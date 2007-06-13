@@ -9,6 +9,11 @@
                margin-right: auto;
                }
 
+               table td { 
+                 padding-left: 0;
+                 padding-right: 0;
+               }
+
                .main {
                width: 35em;
                text-align: left;
@@ -147,7 +152,7 @@
                }
 
                .prototype td { 
-                 vertical-align: baseline;
+                 vertical-align: top;
                }
 
                .schemeblock td { 
@@ -155,7 +160,7 @@
                }
 
                .argcontract td { 
-                 vertical-align: baseline;
+                 vertical-align: top;
                }
 
                .centered { 

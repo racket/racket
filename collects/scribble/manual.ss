@@ -294,7 +294,13 @@
     (syntax-rules ()
       [(_ id) (*var 'id)]))
 
-
+  (define (make-table-if-necessary style content)
+    (if (= 1 (length content))
+        (let ([paras (apply append (map flow-paragraphs (car content)))])
+          (if (andmap paragraph? paras)
+              (list (make-paragraph (apply append (map paragraph-content paras))))
+              (list (make-table style content))))
+        (list (make-table style content))))
 
   (define (*defproc prototypes arg-contractss result-contracts content-thunk)
     (let ([spacer (hspace 1)]
@@ -336,44 +342,43 @@
                (append
                 (list
                  (list (make-flow
-                        (list
-                         (make-table
-                          "prototype"
+                        (make-table-if-necessary
+                         "prototype"
+                         (list
                           (list
-                           (list
-                            (to-flow
-                             (let-values ([(required optional more-required)
-                                           (let loop ([a (cdr prototype)][r-accum null])
-                                             (if (or (null? a)
-                                                     (and (has-optional? (car a))))
-                                                 (let ([req (reverse r-accum)])
-                                                   (let loop ([a a][o-accum null])
-                                                     (if (or (null? a)
-                                                             (not (has-optional? (car a))))
-                                                         (values req (reverse o-accum) a)
-                                                         (loop (cdr a) (cons (car a) o-accum)))))
-                                                 (loop (cdr a) (cons (car a) r-accum))))])
-                               (to-element (append
-                                            (list (if first?
-                                                      (make-target-element
-                                                       #f
-                                                       (list (to-element (car prototype)))
-                                                       (register-scheme-definition (car prototype)))
-                                                      (to-element (car prototype))))
-                                            (map arg->elem required)
-                                            (if (null? optional)
-                                                null
-                                                (list
-                                                 (to-element
-                                                  (syntax-property
-                                                   (syntax-ize (map arg->elem optional) 0)
-                                                   'paren-shape
-                                                   #\?))))
-                                            (map arg->elem more-required)))))
-                            (to-flow spacer)
-                            (to-flow 'rarr)
-                            (to-flow spacer)
-                            (make-flow (list (result-contract))))))))))
+                           (to-flow
+                            (let-values ([(required optional more-required)
+                                          (let loop ([a (cdr prototype)][r-accum null])
+                                            (if (or (null? a)
+                                                    (and (has-optional? (car a))))
+                                                (let ([req (reverse r-accum)])
+                                                  (let loop ([a a][o-accum null])
+                                                    (if (or (null? a)
+                                                            (not (has-optional? (car a))))
+                                                        (values req (reverse o-accum) a)
+                                                        (loop (cdr a) (cons (car a) o-accum)))))
+                                                (loop (cdr a) (cons (car a) r-accum))))])
+                              (to-element (append
+                                           (list (if first?
+                                                     (make-target-element
+                                                      #f
+                                                      (list (to-element (car prototype)))
+                                                      (register-scheme-definition (car prototype)))
+                                                     (to-element (car prototype))))
+                                           (map arg->elem required)
+                                           (if (null? optional)
+                                               null
+                                               (list
+                                                (to-element
+                                                 (syntax-property
+                                                  (syntax-ize (map arg->elem optional) 0)
+                                                  'paren-shape
+                                                  #\?))))
+                                           (map arg->elem more-required)))))
+                           (to-flow spacer)
+                           (to-flow 'rarr)
+                           (to-flow spacer)
+                           (make-flow (list (result-contract)))))))))
                 (apply append
                        (map (lambda (v arg-contract)
                               (cond
@@ -381,27 +386,26 @@
                                 (list
                                  (list
                                   (make-flow
-                                   (list
-                                    (make-table
-                                     "argcontract"
-                                     (list
-                                      (let ([v (if (keyword? (car v)) 
-                                                   (cdr v)
-                                                   v)])
-                                        (append
-                                         (list
-                                          (to-flow (hspace 2))
-                                          (to-flow (arg->elem v))
-                                          (to-flow spacer)
-                                          (to-flow ":")
-                                          (to-flow spacer)
-                                          (make-flow (list (arg-contract))))
-                                         (if (has-optional? v)
-                                             (list (to-flow spacer)
-                                                   (to-flow "=")
-                                                   (to-flow spacer)
-                                                   (to-flow (to-element (caddr v))))
-                                             null)))))))))]
+                                   (make-table-if-necessary
+                                    "argcontract"
+                                    (list
+                                     (let ([v (if (keyword? (car v)) 
+                                                  (cdr v)
+                                                  v)])
+                                       (append
+                                        (list
+                                         (to-flow (hspace 2))
+                                         (to-flow (arg->elem v))
+                                         (to-flow spacer)
+                                         (to-flow ":")
+                                         (to-flow spacer)
+                                         (make-flow (list (arg-contract))))
+                                        (if (has-optional? v)
+                                            (list (to-flow spacer)
+                                                  (to-flow "=")
+                                                  (to-flow spacer)
+                                                  (to-flow (to-element (caddr v))))
+                                            null))))))))]
                                [else null]))
                             (cdr prototype)
                             arg-contracts))))

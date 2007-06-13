@@ -85,8 +85,8 @@ Returns an immutable string with the same content as
 
 @defproc[(substring [str string?] [start exact-nonnegative-integer?]
  [end exact-nonnegative-integer? (string-length str)]) string?]{
- Returns a new mutable string that is @scheme[(- @scheme[end]
- @scheme[start])] characters long, and that contains the same characters
+ Returns a new mutable string that is @scheme[(- end start)]
+ characters long, and that contains the same characters
  as @scheme[str] from @scheme[start] inclusive to @scheme[end] exclusive.  The
  @scheme[start] and @scheme[end] arguments must be less than the length of
  @scheme[str], and @scheme[end] must be greater than or equal to @scheme[str],

@@ -405,7 +405,9 @@
       (unless (null? content)
         (finish-line!))
       (if multi-line?
-          (make-table "schemeblock" (map list (reverse docs)))
+          (if (= 1 (length docs))
+              (car (flow-paragraphs (car docs)))
+              (make-table "schemeblock" (map list (reverse docs))))
           (make-sized-element #f (reverse content) dest-col))))
 
   (define (to-element c)
