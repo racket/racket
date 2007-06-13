@@ -282,7 +282,7 @@ needs. They are provided by @file{private/util.ss}.
 
 @subsection{Contracts}
 @defthing[port-number? contract?]{Equivalent to @scheme[(between/c 1 65535)].}
-@defthing[path-element? contract?]{Equivalent to @scheme[(or/c path? (symbols 'up 'same))].}
+@defthing[path-element? contract?]{Equivalent to @scheme[(or/c string? path? (symbols 'up 'same))].}
 
 @subsection{Lists}
 @defproc[(list-prefix? [l list?]

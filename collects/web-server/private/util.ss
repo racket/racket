@@ -7,7 +7,7 @@
            (lib "xml.ss" "xml")
            (lib "url.ss" "net"))
   (define path-element?
-    (or/c path? (symbols 'up 'same)))
+    (or/c string? path? (symbols 'up 'same)))
   
   (define port-number? (between/c 1 65535))
   

@@ -4,8 +4,7 @@
            (lib "contract.ss"))
   (require "../private/util.ss")
   (define url-path?
-    ; XXX should be (listof path-element?)
-    ((url?) . ->* . (path? list?)))
+    ((url?) . ->* . (path? (listof path-element?))))
   
   (provide/contract
    [url-path? contract?]
