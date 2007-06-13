@@ -5,32 +5,21 @@
            "connection-manager.ss"
            "../private/request-structs.ss")
   
+  (define servlet-prompt (make-continuation-prompt-tag 'servlet))
+  (provide servlet-prompt)
+  
   (define-struct (exn:fail:servlet:instance exn:fail) ())
   (define-struct servlet (custodian namespace manager handler))
-  (define-struct servlet-instance-data (mutex))  
-  (define-struct execution-context (connection request suspend))
+  (define-struct servlet-instance-data (mutex))
+  (define-struct execution-context (request))
   
-  (define current-servlet (make-thread-cell #f))
-  (define current-servlet-instance-id (make-thread-cell #f))
-  (define current-execution-context (make-thread-cell #f))
-  
-  (define (get-current-servlet-instance-id)
-    (define instance-id (thread-cell-ref current-servlet-instance-id))
-    (unless instance-id
-      (raise (make-exn:fail:servlet:instance "No current servlet instance" (current-continuation-marks))))
-    instance-id)
-  
+  (define current-servlet (make-parameter #f))
+  (define current-servlet-instance-id (make-parameter #f))
+  (define current-execution-context (make-parameter #f))
+    
   (define (current-servlet-manager)
-    (define servlet (thread-cell-ref current-servlet))
-    (unless servlet
-      (raise (make-exn:fail:servlet:instance "No current servlet" (current-continuation-marks))))
-    (servlet-manager servlet))
-  
-  (define (current-servlet-instance-data)
-    (define manager (current-servlet-manager))
-    (define instance-id (thread-cell-ref current-servlet-instance-id))
-    ((manager-instance-lookup-data manager) instance-id))
-  
+    (servlet-manager (current-servlet)))
+    
   (provide/contract
    [struct (exn:fail:servlet:instance exn:fail)
            ([message string?]
@@ -43,12 +32,8 @@
    [struct servlet-instance-data
            ([mutex semaphore?])]
    [struct execution-context 
-           ([connection connection?]
-            [request request?]
-            [suspend procedure?])]
-   [current-servlet thread-cell?]
-   [current-servlet-instance-id thread-cell?]
-   [current-execution-context thread-cell?]
-   [get-current-servlet-instance-id (-> number?)]
-   [current-servlet-manager (-> manager?)]
-   [current-servlet-instance-data (-> servlet-instance-data?)]))
+           ([request request?])]
+   [current-servlet parameter?]
+   [current-servlet-instance-id parameter?]
+   [current-execution-context parameter?]
+   [current-servlet-manager (-> manager?)]))

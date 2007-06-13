@@ -15,7 +15,7 @@
   (define-struct (exn:fail:servlet-manager:no-continuation exn:fail) (expiration-handler))
   
   (provide/contract
-   [struct manager ([create-instance (any/c (-> void) . -> . number?)]
+   [struct manager ([create-instance (any/c (any/c . -> . void) . -> . number?)]
                     [adjust-timeout! (number? number? . -> . void)]
                     [instance-lookup-data (number? . -> . any/c)]
                     [instance-lock! (number? . -> . void)]
