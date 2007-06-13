@@ -6,7 +6,6 @@
            "../private/request-structs.ss")
   
   ; file-response : nat str str [(cons sym str) ...] -> response
-  ; XXX - cache files with a refresh option.
   ; The server should still start without the files there, so the
   ; configuration tool still runs.  (Alternatively, find an work around.)
   (define (file-response code short text-file . headers)
@@ -35,7 +34,6 @@
   ; gen-servlet-responder : str -> url tst -> response
   (define (gen-servlet-responder servlet-error-file)
     (lambda (url exn)
-      ; XXX use separate log file
       ((error-display-handler)
        (format "Servlet exception:\n~a\n" (exn-message exn))
        exn)
