@@ -28,7 +28,6 @@
   (define (runt applies? authorized?)
     (let/ec esc
       (define-values (_ d) (passwords:make #:password-file test-passwords
-                                           #:password-connection-timeout +inf.0
                                            #:authentication-responder 
                                            (lambda (u h) (esc h))))
       (define-values (c i o) (make-mock-connection #""))

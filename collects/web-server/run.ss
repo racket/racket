@@ -6,6 +6,7 @@
            (lib "responders.ss" "web-server" "configuration")
            (lib "mime-types.ss" "web-server" "private")
            (prefix fsmap: (lib "filesystem-map.ss" "web-server" "dispatchers"))
+           (prefix timeout: (lib "dispatch-timeout.ss" "web-server" "dispatchers"))
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
            (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
            (prefix lift: (lib "dispatch-lift.ss" "web-server" "dispatchers"))
@@ -40,10 +41,10 @@
   (serve #:port (port)
          #:dispatch
          (sequencer:make
+          (timeout:make (* 5 60))
           (filter:make
            #rx"\\.ss"
            (lang:make #:url->path (fsmap:make-url->valid-path url->path)
-                      #:timeouts-servlet-connection 86400
                       #:responders-servlet-loading (gen-servlet-responder servlet-error-file)
                       #:responders-servlet (gen-servlet-responder servlet-error-file)))
           (files:make #:url->path url->path

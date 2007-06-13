@@ -203,9 +203,8 @@
                                  (make-header #"Content-Range" (string->bytes/utf-8 (format "bytes ~a-~a/~a" start end total-len))))))
     (output-headers+response/basic conn bresp)
     (when (eq? method 'get)
-      ; Give it one second per byte.
-      ; XXX Move out
-      (adjust-connection-timeout! conn len)
+      ; XXX Move out?
+      (adjust-connection-timeout! conn len) ; Give it one second per byte.
       (with-handlers ([void (lambda (e) (network-error 'output-file/partial (exn-message e)))])
         (call-with-input-file file-path
           (lambda (i-port)

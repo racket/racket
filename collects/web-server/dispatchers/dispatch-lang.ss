@@ -9,7 +9,6 @@
            (lib "web-cells.ss" "web-server" "lang")
            "../private/request-structs.ss"
            "dispatch.ss"
-           "../private/connection-manager.ss"
            "../private/util.ss"
            "../private/response.ss"
            "../configuration/namespace.ss"
@@ -46,13 +45,13 @@
      empty
      #f))
 
-  ;; XXX url->servlet, get rid of timeout, optional session manager
+  ; XXX url->servlet
+  ; XXX optional session manager
   (define interface-version 'v1)
   (define/kw (make #:key
                    url->path
                    [make-servlet-namespace 
                     (make-make-servlet-namespace)]
-                   [timeouts-servlet-connection (* 60 60 24)]
                    [responders-servlet-loading
                     servlet-loading-responder]
                    [responders-servlet
@@ -61,8 +60,6 @@
     ;; dispatch : connection request -> void
     (define (dispatch conn req)
       (define uri (request-uri req))
-      (adjust-connection-timeout! conn timeouts-servlet-connection)
-      ;; XXX - make timeouts proportional to size of bindings
       (cond
         [(extract-session uri)
          => (lambda (session-id)

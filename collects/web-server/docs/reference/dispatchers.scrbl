@@ -95,6 +95,20 @@ that invokes a sequence of dispatchers until one applies.
  calls @scheme[next-dispatcher]. If no @scheme[dispatcher] applies,
  then it calls @scheme[next-dispatcher] itself.
 }
+ 
+@; XXX Kind of timeout that is proportional to bindings
+@; ------------------------------------------------------------
+@section[#:tag "dispatch-timeout.ss"]{Timeouts}
+
+@file{dispatchers/dispatch-timeout.ss} defines a dispatcher constructor
+that changes the timeout on the connection and calls the next
+dispatcher.
+
+@defproc[(make [new-timeout integer?])
+         dispatcher?]{
+ Changes the timeout on the connection with @scheme[adjust-connection-timeout!]
+ called with @scheme[new-timeout].
+}
                      
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-lift.ss"]{Lifting Procedures}
@@ -173,7 +187,6 @@ for transparent logging of requests.
 that performs HTTP Basic authentication filtering.
 
 @defproc[(make [#:password-file password-file path-string? "passwords"]
-               [#:password-connection-timeout password-connection-timeout integer? 300]
                [#:authentication-responder 
                 authentication-responder 
                 ((url url?) (header (cons/c symbol? string?)) . -> . response?)
@@ -184,7 +197,6 @@ that performs HTTP Basic authentication filtering.
  file used by the dispatcher.
  
  The dispatcher that is returned does the following:                               
- Extends connection timeout by @scheme[password-connection-timeout].                     
  Checks if the request contains Basic authentication credentials, and that
  they are included in @scheme[password-file]. If they are not, 
  @scheme[authentication-responder] is called with a @scheme[header] that
@@ -259,10 +271,6 @@ that runs servlets written in Scheme.
                 responders-servlet
                 ((url url?) (exn any/c) . -> . response?)
                 (gen-servlet-responder "servlet-error.html")]
-               [#:timeouts-servlet-connection
-                timeouts-servlet-connection
-                integer?
-                (* 60 60 24)]
                [#:timeouts-default-servlet
                 timeouts-default-servlet
                 integer?
@@ -273,7 +281,6 @@ that runs servlets written in Scheme.
  code cache.
                                
  The dispatcher does the following:                               
- Extends the timeout of the connection by @scheme[timeouts-servlet-connection].
  If the request URL contains a continuation reference, then it is invoked with the
  request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
  The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].
@@ -291,16 +298,13 @@ that runs servlets written in Scheme.
 @file{dispatchers/dispatch-lang.ss} defines a dispatcher constructor
 that runs servlets written in the Web Language.
 
-@; XXX Don't include timeout logic in here, put it outside.
 @defproc[(make [#:url->path url->path url->path?]
                [#:make-servlet-namespace make-servlet-namespace 
                                          make-servlet-namespace?
                                          (make-make-servlet-namespace)]
-               [#:timeouts-servlet-connection timeouts-servlet-connection integer? (* 60 60 24)]
                [#:responders-servlet-loading responders-servlet-loading servlet-loading-responder]
                [#:responders-servlet responders-servlet (gen-servlet-responder "servlet-error.html")])
          dispatcher?]{
- Extends the timeout of the connection by @scheme[timeouts-servlet-connection].
  If the request URL contains a serialized continuation, then it is invoked with the
  request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
  The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].

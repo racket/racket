@@ -107,7 +107,6 @@ related to HTTP request data structures.
  Returns the binding with an id equal to @scheme[id] from @scheme[binds] or @scheme[#f].
 }
                                  
-@; XXX Subtypes of request?                          
 @defstruct[request ([method symbol?] 
                     [uri url?] 
                     [headers/raw (listof header?)]

@@ -66,7 +66,6 @@
                        (raise e))])
       (let connection-loop ()
         (define-values (req close?) (config:read-request conn config:port port-addresses))
-        (adjust-connection-timeout! conn config:initial-connection-timeout)
         (config:dispatch conn req)
         (unless (connection-close? conn)
           (set-connection-close?! conn close?))

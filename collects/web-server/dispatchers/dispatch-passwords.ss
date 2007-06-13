@@ -7,7 +7,6 @@
            "../configuration/responders.ss"
            "../private/request-structs.ss"
            "../servlet/basic-auth.ss"
-           "../private/connection-manager.ss"
            "../private/response.ss")  
   (provide/contract
    [interface-version dispatcher-interface-version?])
@@ -17,8 +16,6 @@
   (define/kw (make #:key
                    ; XXX Take authorized? function
                    [password-file "passwords"]
-                   ; XXX Move out
-                   [password-connection-timeout 300]
                    [authentication-responder 
                     (gen-authentication-responder "forbidden.html")])
     (define last-read-time (box #f))
@@ -43,7 +40,6 @@
         [(and denied?
               (access-denied? method path (request-headers/raw req) denied?))
          => (lambda (realm)
-              (adjust-connection-timeout! conn password-connection-timeout)
               (request-authentication conn method uri
                                       authentication-responder
                                       realm))]
