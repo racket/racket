@@ -177,7 +177,6 @@ In the future, we will offer the facilities to:
 @scheme[embed-proc/url] + @scheme[extract-proc/url] and
 @scheme[send/suspend/url] respectively.
 
-@; XXX Make warning cool
 @; ------------------------------------------------------------
 @section[#:tag "lang/file-box.ss"]{File Boxes}
 
@@ -212,8 +211,8 @@ boxes in a safe way.
  Saves @scheme[v] in the file represented by @scheme[fb].
 }
               
-Warning: If you plan on using a load-balancer, make sure your file-boxes
-are on a shared medium.
+@warning{If you plan on using a load-balancer, make sure your file-boxes
+are on a shared medium.}
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-param.ss"]{Web Parameters}

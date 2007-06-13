@@ -109,7 +109,7 @@ related to HTTP request data structures.
  Returns the binding with an id equal to @scheme[id] from @scheme[binds] or @scheme[#f].
 }
                                  
-@; XXX Subtypes of request                                 
+@; XXX Subtypes of request?                          
 @defstruct[request ([method symbol?] 
                     [uri url?] 
                     [headers/raw (listof header?)]
@@ -173,7 +173,6 @@ HTTP responses.
 } 
 
 @; XXX Rename string? option
-@; XXX Format warning cool.                   
 @defstruct[(response/full response/basic)
            ([code number?]
             [message string?]
@@ -209,8 +208,8 @@ HTTP responses.
                   
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}
 
-Warning: If you include a Length header in a response that is inaccurate, there WILL be an error in
-transmission that the server will not catch.
+@warning{If you include a Length header in a response that is inaccurate, there WILL be an error in
+transmission that the server will not catch.}
 
 @; ------------------------------------------------------------
 @section[#:tag "web.ss"]{Web}
@@ -331,7 +330,7 @@ a file, when it is not, then the @scheme[request-bindings] will hold a
 you lose the filename.
 
 @; XXX Move into http/response.ss
-@; XXX Change headers
+@; XXX Change headers to make-header struct
 @defproc[(redirect-to [uri string?]
                       [perm/temp redirection-status? temporarily]
                       [#:headers headers (listof (cons/c symbol? string?)) (list)])
