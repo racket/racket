@@ -113,14 +113,13 @@ deployments of the @web-server .
 
 @file{managers/lru.ss} defines a manager constructor:
 
-@; XXX Rename time0 and time1
 @; XXX Cite Continue
 @defproc[(create-LRU-manager
-              [instance-expiration-handler expiration-handler?]
-              [time0 integer?]
-              [time1 integer?]
-              [collect? (-> boolean?)]
-              [#:initial-count initial-count integer? 1]
+          [instance-expiration-handler expiration-handler?]
+          [check-interval integer?]
+          [collect-interval integer?]
+          [collect? (-> boolean?)]
+          [#:initial-count initial-count integer? 1]
               [#:inform-p inform-p (integer? . -> . void) (lambda _ (void))])
          manager?]{
  Instances managed by this manager will be expired if there are no
@@ -135,8 +134,8 @@ deployments of the @web-server .
  is thrown with @scheme[instance-exp-handler] as the expiration handler, if
  no expiration-handler was passed to @scheme[continuation-store!].
  
- Every @scheme[time0] seconds @scheme[collect?] is called to determine
- if the collection routine should be run. Every @scheme[time1] seconds
+ Every @scheme[check-interval] seconds @scheme[collect?] is called to determine
+ if the collection routine should be run. Every @scheme[collect-interval] seconds
  the collection routine is run. 
  
  Every time the collection routine runs, the "Life Count" of every
@@ -148,8 +147,8 @@ deployments of the @web-server .
                   
 The recommended use of this manager is to pass, as @scheme[collect?], a
 function that checks the memory usage of the system, through 
-@scheme[current-memory-use]. Then, @scheme[time1] should be sufficiently
-large compared to @scheme[time0]. This way, if the load on the server
+@scheme[current-memory-use]. Then, @scheme[collect-interval] should be sufficiently
+large compared to @scheme[check-interval]. This way, if the load on the server
 spikes---as indicated by memory usage---the server will quickly expire
 continuations, until the memory is back under control. If the load
 stays low, it will still efficiently expire old continuations.

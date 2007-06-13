@@ -20,7 +20,7 @@
                                         next-instance-id))
   (define/kw (create-LRU-manager
               instance-expiration-handler
-              time0 time1
+              check-interval collect-interval
               collect?
               #:key 
               [initial-count 1]
@@ -154,18 +154,18 @@
          (define (seconds->msecs s)
            (+ (current-inexact-milliseconds)
               (* s 1000)))
-         (let loop ([msecs0 (seconds->msecs time0)]
-                    [msecs1 (seconds->msecs time1)])
+         (let loop ([msecs0 (seconds->msecs check-interval)]
+                    [msecs1 (seconds->msecs collect-interval)])
            (sync (handle-evt
                   (alarm-evt msecs0)
                   (lambda _
                     (when (collect?)
                       (collect #f))
-                    (loop (seconds->msecs time0) msecs1)))
+                    (loop (seconds->msecs check-interval) msecs1)))
                  (handle-evt
                   (alarm-evt msecs1)
                   (lambda _
                     (collect #t)
-                    (loop msecs0 (seconds->msecs time1)))))))))
+                    (loop msecs0 (seconds->msecs collect-interval)))))))))
     
     the-manager))
