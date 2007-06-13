@@ -7,7 +7,7 @@
            (prefix fsmap: (lib "filesystem-map.ss" "web-server" "dispatchers"))
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
            (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
-           (prefix lift: (lib "dispatch-const.ss" "web-server" "dispatchers"))
+           (prefix lift: (lib "dispatch-lift.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers"))
            (prefix lang: (lib "dispatch-lang.ss" "web-server" "dispatchers")))
   
