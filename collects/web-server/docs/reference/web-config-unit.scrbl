@@ -18,9 +18,6 @@ identifiers:
  Contains the configuration of individual virtual hosts.
 }
 
-@; XXX Remove access
-@defthing[access any/c]{Unused.}
-
 @defthing[scripts (box/c (cache-table? path? servlet?))]{
  Contains initially loaded servlets.
 }
@@ -36,9 +33,6 @@ identifiers:
 @defthing[listen-ip string?]{
  Passed to @scheme[tcp-accept].
 }
-
-@; XXX Remove instances
-@defthing[instances any/c]{Unused.}
 
 @defthing[make-servlet-namespace make-servlet-namespace?]{
  Passed to @scheme[servlets:make].

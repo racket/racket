@@ -85,7 +85,5 @@
         (define listen-ip i:listen-ip)
         (define initial-connection-timeout i:initial-connection-timeout)
         (define virtual-hosts i:virtual-hosts)
-        (define access i:access)
-        (define instances i:instances)
         (define scripts (box the-scripts))
         (define make-servlet-namespace i:make-servlet-namespace)))))
