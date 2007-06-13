@@ -255,7 +255,6 @@ It defines a dispatcher construction procedure:
 @file{dispatchers/dispatch-servlets.ss} defines a dispatcher constructor
 that runs servlets written in Scheme.
 
-@; XXX Add default manager arg
 @; XXX Remove config:scripts
 @defproc[(make [config:scripts (box/c cache-table?)]
                [#:url->path url->path url->path?]
