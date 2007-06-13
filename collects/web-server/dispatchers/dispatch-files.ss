@@ -11,7 +11,7 @@
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide make)
-    
+  
   ;; looks-like-directory : str -> bool
   ;; to determine if is url style path looks like it refers to a directory
   (define (looks-like-directory? path)
@@ -44,9 +44,11 @@
                      +inf.0
                      (string->number end)))               
                (output-file conn path method (path->mime-type path)
-                                    startn endn)]
+                            startn endn)]
               [r
-               ; XXX: Unhandled range: r
+               (fprintf (current-error-port) 
+                        "dispatch-files.ss: Received a range that was not parseable(~S). If you see this message, please file a PLT bug report."
+                        r)
                (output-file conn path method (path->mime-type path)
                             0 +inf.0)])])]
         [(and (directory-exists? path)
