@@ -50,7 +50,6 @@
                    (list instance/n
                          k-id/n
                          salt/n)
-                   ; XXX: Maybe log this in some way?
                    #f))]))))
   
   ;; insert-param: url string -> string
@@ -110,12 +109,6 @@
   ;; send a response and clear the continuation table
   (define (send/finish resp)
     (clear-continuation-table!)
-    ; If we readjust the timeout to something small, the session will expire shortly
-    ; we cannot wait for send/back to return, because it doesn't
-    ; Also, we cannot get the initial-connection-timeout variable from here
-    ; In the future, we should use the servlet's specific default-timeout
-    ; XXX
-    (adjust-timeout! 10)
     (send/back resp))
   
   ;; send/suspend: (url -> response) [(request -> response)] -> request
