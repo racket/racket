@@ -10,7 +10,6 @@
            "file-box.ss"
            "web-extras.ss")
   (provide (all-from-except mzscheme #%module-begin)
-           ; XXX Maybe restrict parameterize from mz?
            (all-from (lib "url.ss" "net"))
            (all-from "../private/request-structs.ss")
            (all-from "../private/response-structs.ss")
