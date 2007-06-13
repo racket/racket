@@ -225,7 +225,7 @@ files.
  hash table mapping extensions to MIME types.
 }
                                        
-@defproc[(make-get-mime-type [p path?])
+@defproc[(make-path->mime-type [p path?])
          (path? . -> . bytes?)]{
  Uses a @scheme[read-mime-types] with @scheme[p] and constructs a
  function from paths to their MIME type.

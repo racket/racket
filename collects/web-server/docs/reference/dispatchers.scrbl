@@ -223,18 +223,16 @@ that calls a different dispatcher based upon the host requested.
 @file{dispatchers/dispatch-files.ss} allows files to be served.
 It defines a dispatcher construction procedure:
 
-@; XXX Change mime-types-path to path->mime-type
-@; XXX Include make-get-mime-type
 @defproc[(make [#:url->path url->path url->path?]
-               [#:mime-types-path mime-types-path path-string? "mime.types"]
+               [#:path->mime-type path->mime-type (path? . -> . bytes?) (lambda (path) #"text/plain; charset=utf-8")]
                [#:indices indices (listof string?) (list "index.html" "index.htm")])
          dispatcher?]{
  Uses @scheme[url->path] to extract a path from the URL in the request
  object. If this path does not exist, then the dispatcher does not apply.
  If the path is a directory, then the @scheme[indices] are checked in order
  for an index file to serve. In that case, or in the case of a path that is
- a file already, the @scheme[mime-types-path] file is consulted for the MIME
- Type of the path, via @scheme[make-get-mime-type]. The file is then
+ a file already, @scheme[path->mime-type] is consulted for the MIME
+ Type of the path. The file is then
  streamed out the connection object.
  
  This dispatcher supports HTTP Range GET requests and HEAD requests.}

@@ -6,6 +6,7 @@
            "private/dispatch-server-unit.ss"
            "private/dispatch-server-sig.ss"
            "private/web-server-structs.ss"
+           "private/mime-types.ss"
            "configuration/configuration-table-structs.ss"
            "private/cache-table.ss"
            (prefix http: "private/request.ss"))
@@ -83,7 +84,7 @@
            #rx"^/servlets"
            servlet-dispatch)))
        (files:make #:url->path (fsmap:make-url->path (paths-htdocs (host-paths host-info)))
-                   #:mime-types-path (paths-mime-types (host-paths host-info))
+                   #:path->mime-type (make-path->mime-type (paths-mime-types (host-paths host-info)))
                    #:indices (host-indices host-info))
        (lift:make (responders-file-not-found (host-responders host-info))))))
   

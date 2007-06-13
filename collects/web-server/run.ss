@@ -4,6 +4,7 @@
            (lib "file.ss")
            (lib "web-server.ss" "web-server")
            (lib "responders.ss" "web-server" "configuration")
+           (lib "mime-types.ss" "web-server" "private")
            (prefix fsmap: (lib "filesystem-map.ss" "web-server" "dispatchers"))
            (prefix files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
            (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
@@ -46,7 +47,7 @@
                       #:responders-servlet-loading (gen-servlet-responder servlet-error-file)
                       #:responders-servlet (gen-servlet-responder servlet-error-file)))
           (files:make #:url->path url->path
-                      #:mime-types-path (build-path (server-root-path) "mime.types")
+                      #:path->mime-type (make-path->mime-type (build-path (server-root-path) "mime.types"))
                       #:indices (list "index.html" "index.htm"))
           (lift:make (gen-file-not-found-responder file-not-found-file))))
   

@@ -5,7 +5,7 @@
   (require "util.ss")
   (provide/contract
    [read-mime-types (path? . -> . hash-table?)]
-   [make-get-mime-type (path? . -> . (path? . -> . bytes?))])
+   [make-path->mime-type (path? . -> . (path? . -> . bytes?))])
   
   ; read-mime-types : path? -> hash-table?
   (define (read-mime-types a-path)
@@ -34,15 +34,14 @@
   ;; Notes (GregP):
   ;; 1. Can we determine the mime type based on file contents?
   ;; 2. Assuming that 7-bit ASCII is correct for mime-type
-  (define (make-get-mime-type a-path)
-    (let ([MIME-TYPE-TABLE (read-mime-types a-path)]
-          [DEFAULT-MIME-TYPE #"text/plain; charset=utf-8"]
-          [file-suffix-regexp (byte-regexp #".*\\.([^\\.]*$)")])
-      
-      (lambda (path)
-        (match (regexp-match file-suffix-regexp (path->bytes path))
-          [(list path-bytes sffx)
-           (hash-table-get MIME-TYPE-TABLE
-                           (lowercase-symbol! sffx)
-                           (lambda () DEFAULT-MIME-TYPE))]
-          [_ DEFAULT-MIME-TYPE])))))
+  (define (make-path->mime-type a-path)
+    (define MIME-TYPE-TABLE (read-mime-types a-path))
+    (define DEFAULT-MIME-TYPE #"text/plain; charset=utf-8")
+    (define file-suffix-regexp (byte-regexp #".*\\.([^\\.]*$)"))
+    (lambda (path)
+      (match (regexp-match file-suffix-regexp (path->bytes path))
+        [(list path-bytes sffx)
+         (hash-table-get MIME-TYPE-TABLE
+                         (lowercase-symbol! sffx)
+                         (lambda () DEFAULT-MIME-TYPE))]
+        [_ DEFAULT-MIME-TYPE]))))

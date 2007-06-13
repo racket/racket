@@ -27,16 +27,16 @@ END
       (check-not-false (read-mime-types test-file)))
      (test-case
       "Default mime-type given"
-      (check-equal? ((make-get-mime-type test-file) (build-path "test.html")) #"text/plain; charset=utf-8"))
+      (check-equal? ((make-path->mime-type test-file) (build-path "test.html")) #"text/plain; charset=utf-8"))
      (test-case
       "MIME type resolves (single in file)"
-      (check-equal? ((make-get-mime-type test-file) (build-path "test.mp4")) #"video/mp4"))
+      (check-equal? ((make-path->mime-type test-file) (build-path "test.mp4")) #"video/mp4"))
      (test-case
       "MIME type resolves (multiple in file)"
-      (check-equal? ((make-get-mime-type test-file) (build-path "test.mpeg")) #"video/mpeg"))
+      (check-equal? ((make-path->mime-type test-file) (build-path "test.mpeg")) #"video/mpeg"))
      (test-case
       "MIME type resolves (multiple in file)"
-      (check-equal? ((make-get-mime-type test-file) (build-path "test.mpg")) #"video/mpeg"))
+      (check-equal? ((make-path->mime-type test-file) (build-path "test.mpg")) #"video/mpeg"))
      (test-case
       "MIME type resolves (multiple in file)"
-      (check-equal? ((make-get-mime-type test-file) (build-path "test.mpe")) #"video/mpeg")))))
+      (check-equal? ((make-path->mime-type test-file) (build-path "test.mpe")) #"video/mpeg")))))

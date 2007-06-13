@@ -20,9 +20,9 @@
   (define interface-version 'v1)
   (define/kw (make #:key 
                    url->path
-                   [mime-types-path "mime.types"]
+                   ; XXX Make the default a define from response.ss
+                   [path->mime-type (lambda (path) #"text/plain; charset=utf-8")]
                    [indices (list "index.html" "index.htm")])
-    (define get-mime-type (make-get-mime-type mime-types-path))
     (lambda (conn req)
       (define uri (request-uri req))
       (define method (request-method req))
@@ -31,7 +31,7 @@
         [(file-exists? path)
          (match (headers-assq* #"Range" (request-headers/raw req))
            [#f
-            (output-file conn path method (get-mime-type path)
+            (output-file conn path method (path->mime-type path)
                          0 +inf.0)]
            [range
             (match (bytes->string/utf-8 (header-value range))
@@ -44,11 +44,11 @@
                  (if (string=? "" end)
                      +inf.0
                      (string->number end)))               
-               (output-file conn path method (get-mime-type path)
+               (output-file conn path method (path->mime-type path)
                                     startn endn)]
               [r
                ; XXX: Unhandled range: r
-               (output-file conn path method (get-mime-type path)
+               (output-file conn path method (path->mime-type path)
                             0 +inf.0)])])]
         [(and (directory-exists? path)
               (looks-like-directory? (url-path->string (url-path uri))))
@@ -56,7 +56,7 @@
            (for-each (lambda (dir-default)
                        (define full-name (build-path path dir-default))
                        (when (file-exists? full-name)
-                         (esc (output-file conn full-name method (get-mime-type full-name)
+                         (esc (output-file conn full-name method (path->mime-type full-name)
                                            0 +inf.0))))
                      indices)
            (next-dispatcher))]

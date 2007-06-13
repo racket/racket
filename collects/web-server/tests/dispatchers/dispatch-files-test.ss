@@ -29,7 +29,6 @@
                 (lambda (url)
                   (begin0 (values (list-ref paths (min (unbox b) (sub1 (length paths)))) empty)
                           (set-box! b (add1 (unbox b)))))
-                #:mime-types-path (build-path "/etc/httpd/mime.types")
                 #:indices (list (if i? (file-name-from-path tmp-file) not-there))))
   
   (define file-url (string->url "http://test.com/foo"))

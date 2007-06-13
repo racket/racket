@@ -22,8 +22,7 @@
     (parameterize ([current-custodian server-cust])
       (serve #:port (port)
              #:dispatch
-             (files:make #:url->path (lambda _ (values *test-file* empty))
-                         #:mime-types-path (build-path "/etc/httpd/mime.types")))))
+             (files:make #:url->path (lambda _ (values *test-file* empty))))))
   
   (define before/s (current-memory-use server-cust))
   (define before (current-memory-use))
