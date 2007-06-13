@@ -2,7 +2,6 @@
   (require (lib "list.ss")
            (lib "plt-match.ss")
            (lib "contract.ss")
-           (lib "string.ss")
            (lib "serialize.ss")
            (lib "pretty.ss")
            (lib "xml.ss" "xml")
@@ -155,11 +154,11 @@
   
   ; lowercase-symbol! : (or/c string bytes) -> symbol
   (define (lowercase-symbol! s)
-    (let ([s (if (bytes? s)
-                 (bytes->string/utf-8 s)
-                 (string-copy s))])
-      (string-lowercase! s)
-      (string->symbol s)))
+    (string->symbol
+     (string-downcase
+      (if (bytes? s)
+          (bytes->string/utf-8 s)
+          (string-copy s)))))
   
   (define (directory-part path)
     (let-values ([(base name must-be-dir) (split-path path)])
