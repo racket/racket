@@ -46,8 +46,6 @@
          (servlet-content-producer/path conn req uri)]))
     
     ;; servlet-content-producer/path: connection request url -> void
-    ;; This is not a continuation url so the loading behavior is determined
-    ;; by the url path. Build the servlet path and then load the servlet
     (define (servlet-content-producer/path conn req uri)
       (define servlet-mutex (make-semaphore 1))
       (define response
@@ -136,32 +134,15 @@
       (output-response conn response))
     
     ;; cached-load : path -> script, namespace
-    ;; timestamps are no longer checked for performance.  The cache must be explicitly
-    ;; refreshed (see dispatch).
     (define (cached-load servlet-path)
-      (define entry-id (string->symbol (path->string servlet-path)))
-      (cache-table-lookup! 
-       (unbox config:scripts)
-       entry-id
-       (lambda ()
-         (reload-servlet-script servlet-path))))
+      (cache-table-lookup! (unbox config:scripts)
+                           (string->symbol (path->string servlet-path))
+                           (lambda () (load-servlet/path servlet-path))))
     
     ;; exn:i/o:filesystem:servlet-not-found =
     ;; (make-exn:fail:filesystem:exists:servlet str continuation-marks str sym)
     (define-struct (exn:fail:filesystem:exists:servlet
                     exn:fail:filesystem:exists) ())
-    
-    ;; reload-servlet-script : str -> cache-entry
-    ;; The servlet is not cached in the servlet-table, so reload it from the filesystem.
-    (define (reload-servlet-script servlet-filename)
-      (cond
-        [(load-servlet/path servlet-filename)
-         => (lambda (entry)
-              entry)]
-        [else
-         (raise (make-exn:fail:filesystem:exists:servlet
-                 (format "Couldn't find ~a" servlet-filename)
-                 (current-continuation-marks) ))]))
     
     (define (v0.response->v1.lambda response response-path)
       (define go
@@ -171,6 +152,7 @@
            response)))
       (lambda (initial-request)
         ((unbox go))))
+    
     (define (v1.module->v1.lambda timeout start)
       (lambda (initial-request)
         (adjust-timeout! timeout)
@@ -188,7 +170,6 @@
         ; XXX load/use-compiled breaks errortrace
         (define s (load/use-compiled a-path))
         (cond
-          ; XXX - reason about exceptions from dynamic require (catch and report if not already)
           [(void? s)
            (let* ([module-name `(file ,(path->string a-path))]
                   [version (dynamic-require module-name 'interface-version)])
@@ -203,7 +184,7 @@
                                  timeout
                                  timeout)
                                 (v1.module->v1.lambda timeout start)))]
-               [(v2 v2-transitional) ; XXX: Depreciate v2-transitional
+               [(v2)
                 (let ([start (dynamic-require module-name 'start)]
                       [manager (dynamic-require module-name 'manager)])
                   (make-servlet (current-custodian)
@@ -224,7 +205,6 @@
            (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of a servlet." a-path s)])))
     
     (values (lambda ()
-              ;; XXX - this is broken - only out of date or specifically mentioned
-              ;; scripts should be flushed.  This destroys persistent state!
+              ;; XXX - this is broken - only out of date or specifically mentioned scripts should be flushed.  This destroys persistent state!
               (cache-table-clear! (unbox config:scripts)))
             servlet-content-producer)))
