@@ -414,3 +414,5 @@ generated. For more information on their semantics, consult the paper @href-link
  Binds @scheme[wc] to @scheme[v] in the current frame, shadowing any
  other bindings to @scheme[wc] in the current frame.
 }       
+
+@include-section["servlet-env.scrbl"]

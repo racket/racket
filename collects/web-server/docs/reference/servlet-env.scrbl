@@ -2,7 +2,7 @@
 @require["../web-server.ss"]
 
 @title[#:tag "servlet-env.ss"
-       #:style 'toc]{Scheme Servlet Environment}
+       #:style 'toc]{Environment}
 
 The @web-server provides a means of running Scheme servlets
 from within DrScheme, or any other REPL.
@@ -23,5 +23,4 @@ as well as the following:
  @scheme[send-url] with a URL for the constructed servlet. The call blocks until the
  servlet finishes its computation, i.e. @scheme[servlet-expr] is evaluated, and
  returns its result. @scheme[servlet-expr] may use the entire Scheme servlet API.
- (See @secref["servlet"].)
 }
