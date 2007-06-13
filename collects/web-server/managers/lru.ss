@@ -25,16 +25,17 @@
               #:key 
               [initial-count 1]
               [inform-p (lambda _ (void))])
+    (define lock (make-semaphore 1))
     ;; Instances
     (define instances (make-hash-table))
     (define next-instance-id (make-counter))    
     
-    (define-struct instance (data k-table use-count))  
+    (define-struct instance (data k-table))  
     (define (create-instance data expire-fn)
       (define instance-id (next-instance-id))
       (hash-table-put! instances
                        instance-id
-                       (make-instance data (create-k-table) 0))
+                       (make-instance data (create-k-table)))
       instance-id)
     (define (adjust-timeout! instance-id secs)
       (void))
@@ -49,15 +50,6 @@
                                   instance-expiration-handler)))))
       instance)
     
-    (define (instance-lock! instance-id)
-      (define instance (instance-lookup instance-id))
-      (set-instance-use-count! instance
-                               (add1 (instance-use-count instance))))      
-    (define (instance-unlock! instance-id)
-      (define instance (instance-lookup instance-id))
-      (set-instance-use-count! instance
-                               (sub1 (instance-use-count instance))))      
-    
     ;; Continuation table
     (define-struct k-table (next-id-fn htable))
     (define (create-k-table)
@@ -69,7 +61,7 @@
     
     (define (clear-continuations! instance-id)
       (match (instance-lookup instance-id)
-        [(struct instance (data (and k-table (struct k-table (next-id-fn htable))) locked?))
+        [(struct instance (data (and k-table (struct k-table (next-id-fn htable)))))
          (hash-table-for-each
           htable
           (match-lambda*
@@ -79,7 +71,7 @@
     
     (define (continuation-store! instance-id k expiration-handler)
       (match (instance-lookup instance-id)
-        [(struct instance (data (struct k-table (next-id-fn htable)) _))
+        [(struct instance (data (struct k-table (next-id-fn htable))))
          (define k-id (next-id-fn))
          (define salt (random 100000000))
          (hash-table-put! htable
@@ -88,7 +80,7 @@
          (list k-id salt)]))
     (define (continuation-lookup instance-id a-k-id a-salt)
       (match (instance-lookup instance-id)
-        [(struct instance (data (struct k-table (next-id-fn htable)) _))
+        [(struct instance (data (struct k-table (next-id-fn htable))))
          (match
              (hash-table-get htable a-k-id
                              (lambda ()
@@ -109,15 +101,17 @@
                             instance-expiration-handler)))
                 k)])]))
     
+    (define (wrap f)
+      (lambda args
+        (call-with-semaphore lock (lambda () (apply f args)))))
+    
     (define the-manager
-      (make-LRU-manager create-instance 
+      (make-LRU-manager (wrap create-instance)
                         adjust-timeout!
-                        instance-lookup-data
-                        instance-lock!
-                        instance-unlock!
-                        clear-continuations!
-                        continuation-store!
-                        continuation-lookup
+                        (wrap instance-lookup-data)
+                        (wrap clear-continuations!)
+                        (wrap continuation-store!)
+                        (wrap continuation-lookup)
                         ; Specific
                         instance-expiration-handler
                         ; Private
@@ -126,32 +120,34 @@
     
     ; Collector
     (define (collect just-go?)
-      (define removed (box 0))
-      (hash-table-for-each
-       instances
-       (match-lambda*
-         [(list instance-id (struct instance (_ (struct k-table (next-id-fn htable)) use-count)))
-          (define empty? (box #t))
-          (hash-table-for-each
-           htable
-           (match-lambda*
-             [(list k-id (list s k eh count))
-              (if (zero? count)
-                  (begin (set-box! removed (add1 (unbox removed)))
-                         (hash-table-remove! htable k-id))
-                  (begin (set-box! empty? #f)
-                         (hash-table-put! htable k-id
-                                          (list s k eh (sub1 count)))))]))
-          (when (and (unbox empty?)
-                     ; XXX race condition
-                     (zero? use-count))
-            (set-box! removed (add1 (unbox removed)))
-            (hash-table-remove! instances instance-id))]))
-      (when (or just-go?
-                (not (zero? (unbox removed))))
-        (inform-p (unbox removed))
-        (collect-garbage)
-        (collect-garbage)))
+      (call-with-semaphore
+       lock
+       (lambda ()
+         (define removed (box 0))
+         (hash-table-for-each
+          instances
+          (match-lambda*
+            [(list instance-id (struct instance (_ (struct k-table (next-id-fn htable)))))
+             (define empty? (box #t))
+             (hash-table-for-each
+              htable
+              (match-lambda*
+                [(list k-id (list s k eh count))
+                 (if (zero? count)
+                     (begin (set-box! removed (add1 (unbox removed)))
+                            (hash-table-remove! htable k-id))
+                     (begin (set-box! empty? #f)
+                            (hash-table-put! htable k-id
+                                             (list s k eh (sub1 count)))))]))
+             (when (unbox empty?)
+               (set-box! removed (add1 (unbox removed)))
+               (hash-table-remove! instances instance-id))]))
+         (when (or just-go?
+                   (not (zero? (unbox removed))))
+           (inform-p (unbox removed))
+           (collect-garbage)
+           (collect-garbage)))))
+    
     (define manager-thread
       (thread
        (lambda ()

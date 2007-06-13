@@ -5,8 +5,6 @@
   (define-struct manager (create-instance 
                           adjust-timeout!
                           instance-lookup-data
-                          instance-lock!
-                          instance-unlock!
                           clear-continuations!
                           continuation-store!
                           continuation-lookup))
@@ -18,8 +16,6 @@
    [struct manager ([create-instance (any/c (any/c . -> . void) . -> . number?)]
                     [adjust-timeout! (number? number? . -> . void)]
                     [instance-lookup-data (number? . -> . any/c)]
-                    [instance-lock! (number? . -> . void)]
-                    [instance-unlock! (number? . -> . void)]
                     [clear-continuations! (number? . -> . void)]
                     [continuation-store! (number? any/c expiration-handler? . -> . (list/c number? number?))]
                     [continuation-lookup (number? number? number? . -> . any/c)])]

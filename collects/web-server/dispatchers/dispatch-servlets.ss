@@ -99,16 +99,10 @@
                      (define manager (servlet-manager the-servlet))
                      (parameterize ([current-execution-context (make-execution-context req)])
                        (define instance-id ((manager-create-instance manager) (make-servlet-instance-data servlet-mutex) (exit-handler)))
-                       ; XXX Locking is broken
-                       ((manager-instance-lock! manager) instance-id)
-                       (parameterize ([current-servlet-instance-id instance-id]
-                                      [exit-handler (lambda (v)
-                                                      ((manager-instance-unlock! manager) instance-id)
-                                                      (exit v))])
-                         (begin0 (with-handlers ([(lambda (x) #t)
-                                                  (make-servlet-exception-handler)])
-                                   ((servlet-handler the-servlet) req))
-                                 ((manager-instance-unlock! manager) instance-id))))))))
+                       (parameterize ([current-servlet-instance-id instance-id])
+                         (with-handlers ([(lambda (x) #t)
+                                          (make-servlet-exception-handler)])
+                           ((servlet-handler the-servlet) req))))))))
               servlet-prompt)))))
       (output-response conn response))
     
@@ -138,11 +132,16 @@
       (define the-servlet (cached-load servlet-path))
       (define manager (servlet-manager the-servlet))
       (define data ((manager-instance-lookup-data manager) instance-id))
-      (define _v ((manager-instance-lock! manager) instance-id))
       (define response
         (parameterize ([current-servlet the-servlet]
+                       [current-directory (get-servlet-base-dir servlet-path)]
                        [current-servlet-instance-id instance-id]
-                       [current-custodian (servlet-custodian the-servlet)])
+                       [current-custodian (servlet-custodian the-servlet)]
+                       [current-namespace (servlet-namespace the-servlet)]
+                       [exit-handler
+                        (lambda (v)
+                          (kill-connection! conn)
+                          (custodian-shutdown-all (servlet-custodian the-servlet)))])
           (with-handlers ([exn:fail:servlet-manager:no-instance?
                            (lambda (the-exn)
                              ((exn:fail:servlet-manager:no-instance-expiration-handler the-exn) req))]
@@ -161,8 +160,7 @@
                     (define kcb ((manager-continuation-lookup manager) instance-id k-id salt))
                     ((custodian-box-value kcb) req))
                   servlet-prompt)))))))
-      (output-response conn response)
-      ((manager-instance-unlock! manager) instance-id))
+      (output-response conn response))
     
     ;; cached-load : path -> script, namespace
     ;; timestamps are no longer checked for performance.  The cache must be explicitly

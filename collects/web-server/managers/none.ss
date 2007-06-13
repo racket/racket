@@ -22,11 +22,6 @@
               (current-continuation-marks)
               instance-expiration-handler)))
     
-    (define (instance-lock! instance-id)
-      (void))
-    (define (instance-unlock! instance-id)
-      (void))
-    
     (define (instance-lookup-data instance-id)
       (thread-cell-ref the-data))
     
@@ -41,8 +36,6 @@
     (make-none-manager create-instance 
                        adjust-timeout!
                        instance-lookup-data
-                       instance-lock!
-                       instance-unlock!
                        clear-continuations!
                        continuation-store!
                        continuation-lookup

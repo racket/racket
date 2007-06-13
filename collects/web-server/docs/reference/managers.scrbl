@@ -22,8 +22,6 @@ the users and implementers of managers.
 @defstruct[manager ([create-instance (any/c (-> void) . -> . number?)]
                     [adjust-timeout! (number? number? . -> . void)]
                     [instance-lookup-data (number? . -> . any/c)]
-                    [instance-lock! (number? . -> . void)]
-                    [instance-unlock! (number? . -> . void)]
                     [clear-continuations! (number? . -> . void)]
                     [continuation-store! (number? any/c expiration-handler? . -> . (list/c number? number?))]
                     [continuation-lookup (number? number? number? . -> . any/c)])]{
@@ -39,9 +37,6 @@ the users and implementers of managers.
  
  @scheme[instance-lookup-data] accesses the arbitrary data passed into
  @scheme[create-instance] match by the given instance-id.
- 
- @scheme[instance-lock!] and @scheme[instance-unlock!] lock and unlock
- access to a particular instance.
  
  @scheme[clear-continuations!] expires all the continuations of an instance.
  
