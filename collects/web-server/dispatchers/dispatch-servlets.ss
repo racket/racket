@@ -16,7 +16,8 @@
            "../managers/lru.ss"
            "../managers/none.ss"
            "../private/servlet.ss"
-           "../private/cache-table.ss")  
+           "../private/cache-table.ss"
+           "../private/util.ss")  
   (provide/contract
    [interface-version dispatcher-interface-version?])
   (provide make)
@@ -41,23 +42,13 @@
       (adjust-connection-timeout!
        conn
        timeouts-servlet-connection)
-      ; XXX Allow servlet to respond
-      (case meth
-        [(head)
-         (output-response/method
-          conn
-          (make-response/full
-           200 "Okay" (current-seconds) TEXT/HTML-MIME-TYPE
-           '() (list "ignored"))
-          meth)]
+      (cond
+        [(continuation-url? uri)
+         => (match-lambda
+              [(list instance-id k-id salt)
+               (invoke-servlet-continuation conn req instance-id k-id salt)])]
         [else
-         (cond
-           [(continuation-url? uri)
-            => (match-lambda
-                 [(list instance-id k-id salt)
-                  (invoke-servlet-continuation conn req instance-id k-id salt)])]
-           [else
-            (servlet-content-producer/path conn req uri)])]))
+         (servlet-content-producer/path conn req uri)]))
     
     ;; servlet-content-producer/path: connection request url -> void
     ;; This is not a continuation url so the loading behavior is determined
@@ -84,7 +75,7 @@
                                         (exn-message e)
                                         (exn-continuation-marks e))))])
                      (url->path uri)))
-                 (parameterize ([current-directory (get-servlet-base-dir servlet-path)]
+                 (parameterize ([current-directory (directory-part servlet-path)]
                                 [current-custodian instance-custodian]
                                 [exit-handler
                                  (lambda (v)
@@ -101,7 +92,10 @@
                        (define instance-id ((manager-create-instance manager) (make-servlet-instance-data servlet-mutex) (exit-handler)))
                        (parameterize ([current-servlet-instance-id instance-id])
                          (with-handlers ([(lambda (x) #t)
-                                          (make-servlet-exception-handler)])
+                                          (lambda (exn)
+                                            (responders-servlet
+                                             (request-uri req)
+                                             exn))])
                            ((servlet-handler the-servlet) req))))))))
               servlet-prompt)))))
       (output-response conn response))
@@ -109,22 +103,6 @@
     ;; default-server-instance-expiration-handler : (request -> response)
     (define (default-servlet-instance-expiration-handler req)
       (next-dispatcher))
-    
-    ;; make-servlet-exception-handler: servlet-instance -> exn -> void
-    (define ((make-servlet-exception-handler) the-exn)
-      (responders-servlet
-       (request-uri (execution-context-request (current-execution-context)))
-       the-exn))
-    
-    ;; path -> path
-    ;; The actual servlet's parent directory.
-    (define (get-servlet-base-dir servlet-path)
-      (let loop ([path servlet-path])
-        (define-values (base name must-be-dir?) (split-path path))
-        (or (if must-be-dir?
-                (and (directory-exists? path) path)
-                (and (directory-exists? base) base))
-            (loop base))))
     
     (define (invoke-servlet-continuation conn req instance-id k-id salt)
       (define uri (request-uri req))
@@ -134,7 +112,7 @@
       (define data ((manager-instance-lookup-data manager) instance-id))
       (define response
         (parameterize ([current-servlet the-servlet]
-                       [current-directory (get-servlet-base-dir servlet-path)]
+                       [current-directory (directory-part servlet-path)]
                        [current-servlet-instance-id instance-id]
                        [current-custodian (servlet-custodian the-servlet)]
                        [current-namespace (servlet-namespace the-servlet)]
@@ -190,25 +168,21 @@
                  (format "Couldn't find ~a" servlet-filename)
                  (current-continuation-marks) ))]))
     
-    ;; load-servlet/path path -> (or/c #f cache-entry)
-    ;; given a string path to a filename attempt to load a servlet
-    ;; A servlet-file will contain either
-    ;;;; A signed-unit-servlet
-    ;;;; A module servlet, currently only 'v1
-    ;;;; A response
+    (define (v0.response->v1.lambda response response-path)
+      (define go
+        (box
+         (lambda ()
+           (set-box! go (lambda () (load/use-compiled response-path)))
+           response)))
+      (lambda (initial-request)
+        ((unbox go))))
+    (define (v1.module->v1.lambda timeout start)
+      (lambda (initial-request)
+        (adjust-timeout! timeout)
+        (start initial-request)))
+    
+    ;; load-servlet/path path -> servlet
     (define (load-servlet/path a-path)
-      (define (v0.response->v1.lambda response-path response)
-        (define go
-          (box
-           (lambda ()
-             (set-box! go (lambda () (load/use-compiled a-path)))
-             response)))
-        (lambda (initial-request)
-          ((unbox go))))
-      (define (v1.module->v1.lambda timeout start)
-        (lambda (initial-request)
-          (adjust-timeout! timeout)
-          (start initial-request)))
       (parameterize ([current-namespace (config:make-servlet-namespace
                                          #:additional-specs
                                          '((lib "servlet.ss" "web-server")
@@ -220,7 +194,6 @@
         (define s (load/use-compiled a-path))
         (cond
           ; XXX - reason about exceptions from dynamic require (catch and report if not already)
-          ;; module servlet
           [(void? s)
            (let* ([module-name `(file ,(path->string a-path))]
                   [version (dynamic-require module-name 'interface-version)])
@@ -254,7 +227,6 @@
                                 start))]
                [else
                 (error 'load-servlet/path "unknown servlet version ~e" version)]))]
-          ;; response
           [(response? s)
            (make-servlet (current-custodian)
                          (current-namespace)
