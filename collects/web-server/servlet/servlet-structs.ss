@@ -6,16 +6,7 @@
   
   (define servlet-response?
     any/c)
-  
-  (define (xexpr/callback? x)
-    (correct-xexpr? x 
-                    (lambda () #t)
-                    (lambda (exn)
-                      (if (procedure? (exn:invalid-xexpr-code exn))
-                          #t
-                          (begin ((error-display-handler) (exn-message exn) exn)
-                                 #f)))))
-  
+    
   (define k-url?
     string?)
 
@@ -34,7 +25,6 @@
   
   (provide/contract
    [servlet-response? contract?]
-   [xexpr/callback? (any/c . -> . boolean?)]
    [response-generator? contract?]
    [k-url? (any/c . -> . boolean?)]
    [url-transform? contract?]

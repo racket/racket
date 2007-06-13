@@ -15,15 +15,4 @@
       (test-false "not k-url" (continuation-url? url0))
       (test-equal? "identity"
                    (continuation-url? (string->url (embed-ids (list 1 2 3) url0)))
-                   (list 1 2 3)))
-     
-     (test-suite
-      "xexpr/callback->xexpr"
-      
-      (test-equal? "Simple"
-                   (xexpr/callback->xexpr 
-                    (lambda _ "#")
-                    `(html (head (title "Hello!"))
-                           (body (a ([href ,(lambda (request) "Hey!")]) "A link"))))
-                   `(html (head (title "Hello!"))
-                           (body (a ([href "#"]) "A link"))))))))
+                   (list 1 2 3))))))

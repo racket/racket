@@ -56,12 +56,6 @@ provides:
 for use in servlets.
 
 @defthing[servlet-response? contract?]{Equivalent to @scheme[any/c].}
-
-@; XXX Remove callbacks
-@defthing[xexpr/callback? contract?]{
- Checks if the value matches @scheme[xexpr?], except that embedded
- procedures are allowed.
-}
                   
 @defthing[k-url? contract?]{Equivalent to @scheme[string?].}
 
@@ -282,18 +276,6 @@ servlet developer.
  @scheme[send/suspend/dispatch].
 }                 
  
-@; XXX Remove
-@defproc[(xexpr/callback->xexpr [embed/url embed/url?]
-                                [xexpr/c xexpr/callback?])
-         xexpr?]{
- Replaces the procedures in @scheme[xexpr/c] with URLs through @scheme[embed/url].
-}
-
-@defproc[(send/suspend/callback [xexpr/c xexpr/callback?])
-         any/c]{
- Calls @scheme[send/suspend/dispatch] and @scheme[xexpr/callback->xexpr].
-}       
-
 @defproc[(redirect/get)
          request?]{
  Calls @scheme[send/suspend] with @scheme[redirect-to].

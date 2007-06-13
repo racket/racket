@@ -65,21 +65,11 @@
             (list* (make-path/param (path/param-path (first old-path))
                                     (list new-param-str))
                    (rest old-path))))
-      in-url)))
-  
-  ;; replace-procedures : (proc -> url) xexpr/callbacks? -> xexpr?
-  ;; Change procedures to the send/suspend of a k-url
-  (define (xexpr/callback->xexpr p->a p-exp)
-    (cond
-      [(list? p-exp) (map (lambda (p-e) (xexpr/callback->xexpr p->a p-e))
-                          p-exp)]
-      [(procedure? p-exp) (p->a p-exp)]
-      [else p-exp])) 
+      in-url)))   
   
   ;; XXX Weak contracts: the input is checked in output-response, and a message is
   ;; sent directly to the client (Web browser) instead of the terminal/log.
   (provide/contract
-   [xexpr/callback->xexpr (embed/url? xexpr/callback? . -> . xexpr?)]
    [current-url-transform parameter?]
    [current-servlet-continuation-expiration-handler parameter?]
    [redirect/get (-> request?)]
@@ -90,8 +80,7 @@
    [send/finish (any/c . -> . void?)]
    [send/suspend ((response-generator?) (expiration-handler?) . opt-> . request?)]
    [send/forward ((response-generator?) (expiration-handler?) . opt-> . request?)]
-   [send/suspend/dispatch ((embed/url? . -> . servlet-response?) . -> . any/c)]
-   [send/suspend/callback (xexpr/callback? . -> . any/c)])
+   [send/suspend/dispatch ((embed/url? . -> . servlet-response?) . -> . any/c)])
   
   ;; ************************************************************
   ;; EXPORTS
@@ -176,14 +165,7 @@
                       (k0 (lambda () (proc new-request)))))))))
             servlet-prompt)])
       (thunk)))
-  
-  ;; send/suspend/callback : xexpr/callback? -> void
-  ;; send/back a response with callbacks in it; send/suspend those callbacks.
-  (define (send/suspend/callback p-exp)
-    (send/suspend/dispatch
-     (lambda (embed/url)
-       (xexpr/callback->xexpr embed/url p-exp))))
-  
+    
   ;; ************************************************************
   ;; HIGHER-LEVEL EXPORTS
   
