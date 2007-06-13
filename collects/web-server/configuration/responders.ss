@@ -1,5 +1,6 @@
 (module responders mzscheme
   (require (lib "contract.ss")
+           (lib "list.ss")
            (lib "url.ss" "net"))
   (require "../private/response-structs.ss"
            "../private/request-structs.ss")
@@ -8,10 +9,10 @@
   ; XXX - cache files with a refresh option.
   ; The server should still start without the files there, so the
   ; configuration tool still runs.  (Alternatively, find an work around.)
-  (define (file-response code short text-file . extra-headers)
+  (define (file-response code short text-file . headers)
     (make-response/full code short
                         (current-seconds) TEXT/HTML-MIME-TYPE
-                        extra-headers
+                        headers
                         (list (read-file text-file))))
   
   ; servlet-loading-responder : url tst -> response
@@ -23,7 +24,7 @@
     (make-response/full 500 "Servlet didn't load"
                         (current-seconds)
                         TEXT/HTML-MIME-TYPE
-                        '() ; check
+                        empty
                         (list "Servlet didn't load.\n")))
   
   ; gen-servlet-not-found : str -> url -> response
@@ -54,7 +55,7 @@
   (define (gen-authentication-responder access-denied-file)
     (lambda (uri recommended-header)
       (file-response 401 "Authorization Required" access-denied-file
-                      recommended-header)))
+                     recommended-header)))
   
   ; gen-protocol-responder : str -> str -> response
   (define (gen-protocol-responder protocol-file)
@@ -77,13 +78,13 @@
       (lambda (in) (read-string (file-size path) in))))
   
   (provide/contract
-   [file-response ((natural-number/c string? path-string?) (listof (cons/c symbol? string?)) . ->* . (response?))]
+   [file-response ((natural-number/c string? path-string?) (listof header?) . ->* . (response?))]
    [servlet-loading-responder (url? any/c . -> . response?)]
    [gen-servlet-not-found (path-string? . -> . (url? . -> . response?))]
    [gen-servlet-responder (path-string? . -> . (url? any/c . -> . response?))]
    [gen-servlets-refreshed (path-string? . -> . (-> response?))]
    [gen-passwords-refreshed (path-string? . -> . (-> response?))]
-   [gen-authentication-responder (path-string? . -> . (url? (cons/c symbol? string?) . -> . response?))]
+   [gen-authentication-responder (path-string? . -> . (url? header? . -> . response?))]
    [gen-protocol-responder (path-string? . -> . (url? . -> . response?))]
    [gen-file-not-found-responder (path-string? . -> . (request? . -> . response?))]
    [gen-collect-garbage-responder (path-string? . -> . (-> response?))]))

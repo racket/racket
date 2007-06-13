@@ -193,11 +193,11 @@ of servlets can share different sets of modules.
 These functions are used by the default dispatcher constructor (see @secref["web-server-unit.ss"]) to
 turn the paths given in the @scheme[configuration-table] into responders for the associated circumstance.
 
-@defproc[(file-response (http-code natural-number/c) (short-version string?) (text-file string?) (extra-header (cons/c symbol? string?)) ...)
+@defproc[(file-response (http-code natural-number/c) (short-version string?) (text-file string?) (header header?) ...)
          response?]{
  Generates a @scheme[response/full] with the given @scheme[http-code] and @scheme[short-version]
 as the corresponding fields; with the content of the @scheme[text-file] as the body; and, with
-the @scheme[extra-header]s as, you guessed it, extra headers.
+the @scheme[header]s as, you guessed it, headers.
 }
                    
 @defproc[(servlet-loading-responder (url url?) (exn any/c))
@@ -227,7 +227,7 @@ message.
 }
 
 @defproc[(gen-authentication-responder (file path-string?))
-         ((url url?) (header (cons/c symbol? string?)) . -> . response?)]{
+         ((url url?) (header header?) . -> . response?)]{
  Returns a function that generates an authentication failure error with content from @scheme[file] and
 @scheme[header] as the HTTP header.
 }

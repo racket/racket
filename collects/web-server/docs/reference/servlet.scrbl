@@ -178,14 +178,13 @@ you lose the filename.
 @file{private/response-structs.ss} provides structures and functions related to
 HTTP responses.
 
-@; XXX Rename extras to headers
-@; XXX Make extras a listof header?
+@; XXX Only use bytes
 @defstruct[response/basic
            ([code number?]
             [message string?]
             [seconds number?]
             [mime bytes?]
-            [extras (listof (cons/c symbol? string?))])]{
+            [headers (listof header?)])]{
  A basic HTTP response containing no body. @scheme[code] is the response code,
  @scheme[message] the message, @scheme[seconds] the generation time, @scheme[mime]
  the MIME type of the file, and @scheme[extras] are the extra headers, in addition
@@ -198,7 +197,7 @@ HTTP responses.
             [message string?]
             [seconds number?]
             [mime bytes?]
-            [extras (listof (cons/c symbol? string?))]
+            [headers (listof header?)]
             [body (listof (or/c string? bytes?))])]{
  As with @scheme[response/basic], except with @scheme[body] as the response
  body.
@@ -209,7 +208,7 @@ HTTP responses.
             [message string?]
             [seconds number?]
             [mime bytes?]
-            [extras (listof (cons/c symbol? string?))]
+            [headers (listof header?)]
             [generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]{
  As with @scheme[response/basic], except with @scheme[generator] as a function that is
  called to generate the response body, by being given an @scheme[output-response] function
@@ -228,7 +227,7 @@ HTTP responses.
                   
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}
 
-@warning{If you include a Length header in a response that is inaccurate, there WILL be an error in
+@warning{If you include a Content-Length header in a response that is inaccurate, there WILL be an error in
 transmission that the server will not catch.}
 
 @; ------------------------------------------------------------
@@ -323,10 +322,9 @@ servlet developer.
 @file{servlet/web.ss} that are useful in many servlets.
 
 @; XXX Move into http/response.ss
-@; XXX Change headers to make-header struct
 @defproc[(redirect-to [uri string?]
                       [perm/temp redirection-status? temporarily]
-                      [#:headers headers (listof (cons/c symbol? string?)) (list)])
+                      [#:headers headers (listof header?) (list)])
          response?]{
  Generates an HTTP response that redirects the browser to @scheme[uri],
  while including the @scheme[headers] in the response.

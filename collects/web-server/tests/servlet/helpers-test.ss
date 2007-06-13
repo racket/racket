@@ -1,8 +1,15 @@
 (module helpers-test mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (lib "response-structs.ss" "web-server" "private")
+           (lib "request-structs.ss" "web-server" "private")
            (lib "helpers.ss" "web-server" "servlet"))
   (provide helpers-tests)
+  
+  (define (dehead hs)
+    (map (lambda (h)
+           (list (header-field h)
+                 (header-value h)))
+         hs))
   
   (define helpers-tests
     (test-suite
@@ -32,12 +39,12 @@
                    (response/basic-message (redirect-to "http://test.com/foo" permanently))
                    "Moved Permanently")
       (test-equal? "URL"
-                   (response/basic-extras (redirect-to "http://test.com/foo"))
-                   `((Location . "http://test.com/foo")))
+                   (dehead (response/basic-headers (redirect-to "http://test.com/foo")))
+                   (list (list #"Location" #"http://test.com/foo")))
       (test-equal? "Headers"
-                   (response/basic-extras (redirect-to "http://test.com/foo" #:headers `((Header . "Value"))))
-                   `((Location . "http://test.com/foo")
-                     (Header . "Value"))))
+                   (dehead (response/basic-headers (redirect-to "http://test.com/foo" #:headers (list (make-header #"Header" #"Value")))))
+                   (list (list #"Location" #"http://test.com/foo")
+                         (list #"Header" #"Value"))))
      
      (test-suite
       "redirection-status?"

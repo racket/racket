@@ -5,6 +5,7 @@
            (lib "plt-match.ss")
            (lib "xml.ss" "xml")
            "connection-manager.ss"
+           "../private/request-structs.ss"
            "../private/response-structs.ss"
            "util.ss")
   
@@ -70,9 +71,8 @@
         (response/basic-message resp)
         (response/basic-seconds resp)
         (response/basic-mime resp)
-        (list* 
-         (cons 'Content-Length (number->string (response/full->size resp)))
-         (response/basic-extras resp))
+        (list* (make-header #"Content-Length" (string->bytes/utf-8 (number->string (response/full->size resp))))
+               (response/basic-headers resp))
         (response/full-body resp))]
       [(response/incremental? resp)
        (if close?
@@ -82,9 +82,8 @@
             (response/basic-message resp)
             (response/basic-seconds resp)
             (response/basic-mime resp)
-            (list*
-             (cons 'Transfer-Encoding "chunked")
-             (response/basic-extras resp))
+            (list* (make-header #"Transfer-Encoding" #"chunked")
+                   (response/basic-headers resp))
             (response/incremental-generator resp)))]
       [(and (pair? resp) (bytes? (car resp)))
        (response->response/basic
@@ -102,19 +101,18 @@
   ;;       header for *all* clients.
   (define (output-headers+response/basic conn bresp)
     (define o-port (connection-o-port conn))
-    (for-each (lambda (line)
-                (for-each (lambda (word) (display word o-port))
-                          line)
-                (fprintf o-port "\r\n"))
-              (list* `("HTTP/1.1 " ,(response/basic-code bresp) " " ,(response/basic-message bresp))
-                     `("Date: " ,(seconds->gmt-string (current-seconds)))
-                     `("Last-Modified: " ,(seconds->gmt-string (response/basic-seconds bresp)))
-                     `("Server: PLT Scheme")
-                     `("Content-Type: " ,(response/basic-mime bresp))
+    (fprintf o-port "HTTP/1.1 ~a ~a\r\n" (response/basic-code bresp) (response/basic-message bresp))
+    (for-each (match-lambda
+                [(struct header (field value))
+                 (fprintf o-port "~a: ~a\r\n" field value)])
+              (list* (make-header #"Date" (string->bytes/utf-8 (seconds->gmt-string (current-seconds))))
+                     (make-header #"Last-Modified" (string->bytes/utf-8 (seconds->gmt-string (response/basic-seconds bresp))))
+                     (make-header #"Server" #"PLT Scheme")
+                     (make-header #"Content-Type" (response/basic-mime bresp))
                      (append (if (connection-close? conn)
-                                 `(("Connection: close"))
+                                 (list (make-header #"Connection" #"close"))
                                  empty)
-                             (extras->strings bresp))))
+                             (response/basic-headers bresp))))
     (fprintf o-port "\r\n"))
   
   (define (output-response/basic conn bresp)
@@ -200,9 +198,9 @@
     (define len (- end start))
     (define bresp 
       (make-response/basic 206 "Okay" (file-or-directory-modify-seconds file-path) mime-type 
-                           (list (cons 'Content-Length (number->string len))
+                           (list (make-header #"Content-Length" (string->bytes/utf-8 (number->string len)))
                                  ; XXX Remove on non-gets?
-                                 (cons 'Content-Range (format "bytes ~a-~a/~a" start end total-len)))))
+                                 (make-header #"Content-Range" (string->bytes/utf-8 (format "bytes ~a-~a/~a" start end total-len))))))
     (output-headers+response/basic conn bresp)
     (when (eq? method 'get)
       ; Give it one second per byte.
@@ -220,12 +218,4 @@
     (ext:wrap output-file))  
   
   (define ext:output-response/method
-    (ext:wrap output-response/method))
-  
-  ;; extras->strings: response/basic -> (listof (listof string))
-  ;; convert the response/basic-extras to the form used by output-headers
-  (define (extras->strings r/bas)
-    (map
-     (lambda (xtra)
-       (list (symbol->string (car xtra)) ": " (cdr xtra)))
-     (response/basic-extras r/bas))))
+    (ext:wrap output-response/method)))

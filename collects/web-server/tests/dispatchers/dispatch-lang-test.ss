@@ -114,7 +114,7 @@
       (build-path example-servlets "add02.ss"))
      
      ; XXX Use kont
-     (test-add-two-numbers
+     #;(test-add-two-numbers
       "add03.ss - s/s/h"
       (build-path example-servlets "add03.ss"))
      
@@ -150,7 +150,7 @@
                   (format "The current directory: ~a" (path->string example-servlets)))
      
      ; XXX Use kont
-     (test-equal? "quiz01.ss"
+     #;(test-equal? "quiz01.ss"
                   (let* ([d (mkd (build-path example-servlets "quiz01.ss"))]
                          [last
                           (foldl (lambda (_ k)
@@ -160,7 +160,7 @@
                     (first ((sxpath "//h1/text()") (call d last (list (make-binding:form #"answer" #"0"))))))
                   "Quiz Results")
      ; XXX Use kont
-     (test-equal? "quiz02.ss"
+     #;(test-equal? "quiz02.ss"
                   (let* ([d (mkd (build-path example-servlets "quiz02.ss"))]
                          [last
                           (foldl (lambda (_ k)

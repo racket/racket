@@ -2,6 +2,7 @@
   (require (lib "contract.ss")
            (lib "kw.ss"))
   (require "../private/util.ss"
+           "../private/request-structs.ss"
            "../private/response-structs.ss")
     
   ; redirection-status = (make-redirection-status nat str)
@@ -20,7 +21,9 @@
     (make-response/full (redirection-status-code perm/temp)
                         (redirection-status-message perm/temp)
                         (current-seconds) #"text/html"
-                        `((Location . ,uri) ,@headers) (list)))
+                        (list* (make-header #"Location" (string->bytes/utf-8 uri))
+                               headers)
+                        (list)))
   
   (define (with-errors-to-browser send/finish-or-back thunk)
     (with-handlers ([exn? (lambda (exn)

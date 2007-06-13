@@ -3,6 +3,7 @@
            (lib "xml.ss" "xml")
            (lib "file.ss")
            (lib "response.ss" "web-server" "private")
+           (lib "request-structs.ss" "web-server" "private")
            (lib "response-structs.ss" "web-server" "private")
            "../util.ss")
   (provide response-tests)
@@ -28,7 +29,7 @@
        (test-equal? "response/full (header)" 
                     (output output-response 
                             (make-response/full 404 "404" (current-seconds) #"text/html"
-                                                (list (cons 'Header "Value")) (list)))
+                                                (list (make-header #"Header" #"Value")) (list)))
                     #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
        (test-equal? "response/full (body)" 
                     (output output-response 
@@ -43,7 +44,7 @@
        (test-equal? "response/full (both)" 
                     (output output-response 
                             (make-response/full 404 "404" (current-seconds) #"text/html"
-                                                (list (cons 'Header "Value")) (list "Content!")))
+                                                (list (make-header #"Header" #"Value")) (list "Content!")))
                     #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\nContent!"))
       (test-suite
        "response/incremental"
@@ -55,7 +56,7 @@
        (test-equal? "response/incremental (header)" 
                     (output output-response 
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
-                                                       (list (cons 'Header "Value"))
+                                                       (list (make-header #"Header" #"Value"))
                                                        (lambda (write) (void))))
                     #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n0\r\n\r\n")
        (test-equal? "response/incremental (body)" 
@@ -73,13 +74,13 @@
        (test-equal? "response/incremental (both)" 
                     (output output-response 
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
-                                                       (list (cons 'Header "Value"))
+                                                       (list (make-header #"Header" #"Value"))
                                                        (lambda (write) (write "Content!"))))
                     #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n8\r\nContent!\r\n0\r\n\r\n")
        (test-equal? "response/incremental (twice)" 
                     (output output-response 
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
-                                                       (list (cons 'Header "Value"))
+                                                       (list (make-header #"Header" #"Value"))
                                                        (lambda (write) 
                                                          (write "Content!")
                                                          (write "Content!"))))
@@ -117,7 +118,7 @@
        (test-equal? "response/full (header)" 
                     (output output-response/method
                             (make-response/full 404 "404" (current-seconds) #"text/html"
-                                                (list (cons 'Header "Value")) (list))
+                                                (list (make-header #"Header" #"Value")) (list))
                             'head)
                     #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
        (test-equal? "response/full (body)" 
@@ -135,7 +136,7 @@
        (test-equal? "response/full (both)" 
                     (output output-response/method
                             (make-response/full 404 "404" (current-seconds) #"text/html"
-                                                (list (cons 'Header "Value")) (list "Content!"))
+                                                (list (make-header #"Header" #"Value")) (list "Content!"))
                             'head)
                     #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\n"))
       (test-suite
@@ -149,7 +150,7 @@
        (test-equal? "response/incremental (header)" 
                     (output output-response/method
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
-                                                       (list (cons 'Header "Value"))
+                                                       (list (make-header #"Header" #"Value"))
                                                        (lambda (write) (void)))
                             'head)
                     #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n")
@@ -170,14 +171,14 @@
        (test-equal? "response/incremental (both)" 
                     (output output-response/method
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
-                                                       (list (cons 'Header "Value"))
+                                                       (list (make-header #"Header" #"Value"))
                                                        (lambda (write) (write "Content!")))
                             'head)
                     #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n")
        (test-equal? "response/incremental (twice)" 
                     (output output-response/method
                             (make-response/incremental 404 "404" (current-seconds) #"text/html"
-                                                       (list (cons 'Header "Value"))
+                                                       (list (make-header #"Header" #"Value"))
                                                        (lambda (write) 
                                                          (write "Content!")
                                                          (write "Content!")))
