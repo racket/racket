@@ -12,6 +12,7 @@
                             generate-class-expand-context))
 
   (provide (rename :trait trait)
+           trait?
            trait->mixin
            trait-sum 
            trait-exclude trait-exclude-field 
@@ -65,7 +66,7 @@
                                            (augride)
                                            (overment)
                                            (inherit) (inherit/super) (inherit/inner)
-                                           (inherit-fields)))))]
+                                           (inherit-field)))))]
                         [(fields)
                          (extract-fields expanded-clauses)])
              ;; Every declaration implies direct use for other declarations:

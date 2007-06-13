@@ -31,6 +31,9 @@
               (trait (field [x 'x]))
               (trait (field [x 'y]))))
 
+(test #t trait? (trait
+                 (inherit-field f)))
+
 ;; ----------------------------------------
 ;; internal and external names
 
