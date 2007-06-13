@@ -113,7 +113,6 @@ deployments of the @web-server .
 
 @file{managers/lru.ss} defines a manager constructor:
 
-@; XXX Cite Continue
 @defproc[(create-LRU-manager
           [instance-expiration-handler expiration-handler?]
           [check-interval integer?]
@@ -153,6 +152,6 @@ spikes---as indicated by memory usage---the server will quickly expire
 continuations, until the memory is back under control. If the load
 stays low, it will still efficiently expire old continuations.
 
-With Continue, we went from needing to restart the server a few times
+With @href-link["http://continue.cs.brown.edu/" "Continue"], we went from needing to restart the server a few times
 a week and having many complaints under load, to not having these complaints
 and not needing to restart the server for performance reasons.

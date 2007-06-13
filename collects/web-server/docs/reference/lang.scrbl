@@ -23,7 +23,6 @@ the following identifier:
  The argument is the HTTP request that initiated the servlet.
 }
 
-@; XXX Cite paper
 @; ------------------------------------------------------------
 @section[#:tag "considerations"]{Usage Considerations}
                    
@@ -87,6 +86,10 @@ your own @scheme[map] function, there would be no problem.
 Fifth, the store is NOT serialized. If you rely on the store you will
 be taking huge risks. You will be assuming that the serialized continuation
 is invoked before the server is restarted or the memory is garbage collected.
+
+This process is derived from the paper 
+@href-link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/pcmkf-cont-from-gen-stack-insp/" "\"Continuations from Generalized Stack Inspection\""].
+We thank Greg Pettyjohn for his initial implementation of this algorithm.
 
 @; ------------------------------------------------------------
 @section[#:tag "reprovided"]{Reprovided API}

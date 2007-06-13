@@ -388,7 +388,6 @@ implementation of HTTP Basic Authentication.
 @; ------------------------------------------------------------
 @section[#:tag "web-cells.ss"]{Web Cells}
 
-@; XXX Cite paper
 @file{servlet/web-cell.ss} provides the interface to web cells.
 
 A web cell is a kind of state defined relative to the @defterm{frame tree}.
@@ -398,7 +397,8 @@ created as a child of the current frame when the continuation was captured.
 
 You should use web cells if you want an effect to be encapsulated in all
 interactions linked from (in a transitive sense) the HTTP response being
-generated.
+generated. For more information on their semantics, consult the paper @href-link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/mk-int-safe-state-web/"
+"\"Interaction-Safe State for the Web\""].
 
 @; XXX Document with-frame and with-frame-after?
 

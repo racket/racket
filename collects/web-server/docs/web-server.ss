@@ -12,9 +12,14 @@
   ; XXX Format better
   (define (warning . x)
     (apply elem "Warning:" x))
+  
+  ; XXX Actually display link
+  (define (href-link url label)
+    (elem label " (" url ")"))
 
   (provide (all-from (lib "manual.ss" "scribble"))
            (all-from (lib "eval.ss" "scribble"))
            web-server
            author
-           warning))
+           warning
+           href-link))
