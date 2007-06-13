@@ -303,16 +303,14 @@ needs. They are provided by @file{private/util.ss}.
 } 
 
 @subsection{Paths}
-@; XXX path-element?
 @defproc[(explode-path* [p path?])
-         (listof (or/c symbol? path?))]{
+         (listof path-element?)]{
  Like @scheme[normalize-path], but does not resolve symlinks.
 }
 
-@; XXX path-element? or no list?
 @defproc[(path-without-base [base path?]
                             [p path?])
-         list?]{
+         (listof path-element?)]{
  Returns, as a list, the portion of @scheme[p] after @scheme[base],
  assuming @scheme[base] is a prefix of @scheme[p].
 }
@@ -329,9 +327,8 @@ needs. They are provided by @file{private/util.ss}.
  Prepends @scheme[base] to @scheme[p], unless @scheme[p] is absolute.
 }
                
-@; XXX path-element?               
-@defproc[(strip-prefix-ups [p list?])
-         list?]{
+@defproc[(strip-prefix-ups [p (listof path-element?)])
+         (listof path-element?)]{
  Removes all the prefix @scheme[".."]s from @scheme[p].
 }
                

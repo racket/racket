@@ -10,10 +10,14 @@
   (provide/contract
    [pretty-print-invalid-xexpr (exn:invalid-xexpr? any/c . -> . void)]
    [url-replace-path ((list? . -> . list?) url? . -> . url?)]
+   ; XXX need path-element?
    [explode-path* (path? . -> . (listof (or/c symbol? path?)))]
+   ; XXX need path-element?
    [path-without-base (path? path? . -> . list?)]
+   ; XXX need path-element?
    [list-prefix? (list? list? . -> . boolean?)]
-   [strip-prefix-ups (list? . -> . list?)] ; XXX need path-element?
+   ; XXX need path-element?
+   [strip-prefix-ups (list? . -> . list?)] 
    [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [directory-part (path? . -> . path?)]
