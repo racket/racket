@@ -7,19 +7,21 @@
            (lib "pretty.ss")
            (lib "xml.ss" "xml")
            (lib "url.ss" "net"))
+  (define path-element?
+    (or/c path? (symbols 'up 'same)))
+  
+  (define port-number? (between/c 1 65535))
+  
   (provide/contract
+   [path-element? contract?]
    [port-number? contract?]
    [pretty-print-invalid-xexpr (exn:invalid-xexpr? any/c . -> . void)]
-   [url-replace-path ((list? . -> . list?) url? . -> . url?)]
-   ; XXX need path-element?
-   [explode-path* (path? . -> . (listof (or/c symbol? path?)))]
-   ; XXX need path-element?
-   [path-without-base (path? path? . -> . list?)]
-   ; XXX need path-element?
+   [url-replace-path (((listof path/param?) . -> . (listof path/param?)) url? . -> . url?)]
+   [explode-path* (path? . -> . (listof path-element?))]
+   [path-without-base (path? path? . -> . (listof path-element?))]
    [list-prefix? (list? list? . -> . boolean?)]
-   ; XXX need path-element?
-   [strip-prefix-ups (list? . -> . list?)] 
-   [url-path->string ((listof (or/c string? path/param?)) . -> . string?)]
+   [strip-prefix-ups ((listof path-element?) . -> . (listof path-element?))] 
+   [url-path->string ((listof path/param?) . -> . string?)]
    [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
    [directory-part (path? . -> . path?)]
    ; XXX Eliminate use of this
@@ -29,8 +31,6 @@
    [read/string (string? . -> . serializable?)]
    [write/string (serializable? . -> . string?)])
   
-  (define port-number? (between/c 1 65535))
-      
   (define (pretty-print-invalid-xexpr exn xexpr)
     (define code (exn:invalid-xexpr-code exn))
     (parameterize ([pretty-print-size-hook (lambda (v display? out)

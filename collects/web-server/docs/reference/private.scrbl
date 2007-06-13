@@ -282,6 +282,7 @@ needs. They are provided by @file{private/util.ss}.
 
 @subsection{Contracts}
 @defthing[port-number? contract?]{Equivalent to @scheme[(between/c 1 65535)].}
+@defthing[path-element? contract?]{Equivalent to @scheme[(or/c path? (symbols 'up 'same))].}
 
 @subsection{Lists}
 @defproc[(list-prefix? [l list?]
@@ -292,14 +293,14 @@ needs. They are provided by @file{private/util.ss}.
 
 @subsection{URLs}
 
-@defproc[(url-replace-path [proc (list? . -> . list?)]
+@defproc[(url-replace-path [proc ((listof path/param?) . -> . (listof path/param?))]
                            [u url?])
          url?]{
  Replaces the URL path of @scheme[u] with @scheme[proc] of the former path.
 }
       
 @; XXX Remove use or take url?              
-@defproc[(url-path->string [url-path (listof (or/c string? path/param?))])
+@defproc[(url-path->string [url-path (listof path/param?)])
          string?]{
  Formats @scheme[url-path] as a string with @scheme["/"] as a delimiter
  and no params.
