@@ -70,7 +70,7 @@ URLs to paths on the filesystem.
          url-path?]{
  The @scheme[url-path?] returned by this procedure considers the root
  URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
- do not escape the @scheme[base].}                             
+ do not escape the @scheme[base] and removes them silently otherwise.}                             
 
 @defproc[(make-url->valid-path (url->path url->path?))
          url->path?]{

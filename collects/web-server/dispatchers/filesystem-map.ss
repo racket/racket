@@ -24,7 +24,6 @@
        ; Build a path
        (apply build-path*
               ; Remove all ".."s
-              ; XXX Should error?
               (strip-prefix-ups
                (map (lambda (p)
                       (if (and (string? p) (string=? "" p))
