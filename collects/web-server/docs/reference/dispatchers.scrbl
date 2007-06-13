@@ -225,7 +225,7 @@ that calls a different dispatcher based upon the host requested.
          dispatcher?]{
  Extracts a host from the URL requested, or the Host HTTP header,
  calls @scheme[lookup-dispatcher] with the host, and invokes the
- returned dispatcher. If no host can be extracted, then @scheme['<none>]
+ returned dispatcher. If no host can be extracted, then @scheme['none]
  is used.
 }                                
                               

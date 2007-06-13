@@ -3,6 +3,7 @@
            (lib "plt-match.ss")
            (lib "url.ss" "net")
            "../private/request-structs.ss"
+           "../private/util.ss"
            "dispatch.ss")
   (provide/contract
    [interface-version dispatcher-interface-version?]
@@ -14,12 +15,12 @@
     ((lookup-dispatcher host) conn req))
   
   ;; get-host : Url (listof (cons Symbol String)) -> Symbol
-  ;; XXX host names are case insesitive---Internet RFC 1034
   (define (get-host uri headers)
     (cond
-      [(url-host uri) => string->symbol]
+      [(url-host uri) 
+       => lowercase-symbol!]
       [(headers-assq* #"Host" headers)
        => (match-lambda
             [(struct header (_ v))
-             (string->symbol (bytes->string/utf-8 v))])]
-      [else '<none>])))
+             (lowercase-symbol! v)])]
+      [else 'none])))
