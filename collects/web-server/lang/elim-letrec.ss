@@ -14,7 +14,7 @@
     (recertify
      stx
      (kernel-syntax-case
-         stx #f
+         stx (transformer?)
        [(begin be ...)
         (with-syntax ([(be ...) (map (elim-letrec ids) (syntax->list #'(be ...)))])
           (syntax/loc stx
@@ -28,13 +28,15 @@
           (syntax/loc stx
             (define-values (v ...) ve)))]
        [(define-syntaxes (v ...) ve)
-        (with-syntax ([ve ((elim-letrec ids) #'ve)])
-          (syntax/loc stx
-            (define-syntaxes (v ...) ve)))]
+        (parameterize ([transformer? #t])
+          (with-syntax ([ve ((elim-letrec ids) #'ve)])
+            (syntax/loc stx
+              (define-syntaxes (v ...) ve))))]
        [(define-values-for-syntax (v ...) ve)       
-        (with-syntax ([ve ((elim-letrec ids) #'ve)])
-          (syntax/loc stx
-            (define-values-for-syntax (v ...) ve)))]
+        (parameterize ([transformer? #t])
+          (with-syntax ([ve ((elim-letrec ids) #'ve)])
+            (syntax/loc stx
+              (define-values-for-syntax (v ...) ve))))]
        [(set! v ve)
         (with-syntax ([ve ((elim-letrec ids) #'ve)])
           (if (bound-identifier-member? #'id ids)

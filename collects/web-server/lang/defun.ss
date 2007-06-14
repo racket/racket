@@ -19,7 +19,7 @@
      stx
      (lambda ()
        (kernel-syntax-case
-           stx #f 
+           stx (transformer?)
          [(begin be ...)
           (let-values ([(nbes defs) (defun* (syntax->list #'(be ...)))])
             (values (quasisyntax/loc stx (begin #,@nbes))
@@ -33,13 +33,15 @@
             (values (quasisyntax/loc stx (define-values (v ...) #,nve))
                     defs))]
          [(define-syntaxes (v ...) ve)
-          (let-values ([(nve defs) (defun #'ve)])
-            (values (quasisyntax/loc stx (define-syntaxes (v ...) #,nve))
-                    defs))]
+          (parameterize ([transformer? #t])
+            (let-values ([(nve defs) (defun #'ve)])
+              (values (quasisyntax/loc stx (define-syntaxes (v ...) #,nve))
+                      defs)))]
          [(define-values-for-syntax (v ...) ve)
-          (let-values ([(nve defs) (defun #'ve)])
-            (values (quasisyntax/loc stx (define-values-for-syntax (v ...) #,nve))
-                    defs))]
+          (parameterize ([transformer? #t])
+            (let-values ([(nve defs) (defun #'ve)])
+              (values (quasisyntax/loc stx (define-values-for-syntax (v ...) #,nve))
+                      defs)))]
          [(set! v ve)
           (let-values ([(nve defs) (defun #'ve)])
             (values (quasisyntax/loc stx (set! v #,nve))

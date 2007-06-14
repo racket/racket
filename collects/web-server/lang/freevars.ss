@@ -12,7 +12,7 @@
   ;; Find the free variables in an expression
   (define (free-vars stx)  
     (kernel-syntax-case 
-        stx #f 
+        stx (transformer?)
       [(begin be ...)
        (free-vars* (syntax->list #'(be ...)))]
       [(begin0 be ...)
@@ -21,11 +21,13 @@
        (set-diff (free-vars #'ve)
                  (syntax->list #'(v ...)))]
       [(define-syntaxes (v ...) ve)
-       (set-diff (free-vars #'ve)
-                 (syntax->list #'(v ...)))]
+       (parameterize ([transformer? #t])
+         (set-diff (free-vars #'ve)
+                   (syntax->list #'(v ...))))]
       [(define-values-for-syntax (v ...) ve)
-       (set-diff (free-vars #'ve)
-                 (syntax->list #'(v ...)))]
+       (parameterize ([transformer? #t])
+         (set-diff (free-vars #'ve)
+                   (syntax->list #'(v ...))))]
       [(set! v ve)
        (free-vars #'ve)]
       [(let-values ([(v ...) ve] ...) be ...)

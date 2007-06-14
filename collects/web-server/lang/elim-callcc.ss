@@ -32,7 +32,7 @@
     (recertify
      stx
      (kernel-syntax-case*
-      stx #f (call/cc call-with-values)
+      stx (transformer?) (call/cc call-with-values)
       [(begin be ...)
        (raise-syntax-error 'elim-callcc/mark "Not in ANF" stx)]
       [(begin0 be ...)
@@ -42,13 +42,15 @@
          (syntax/loc stx
            (define-values (v ...) ve)))]
       [(define-syntaxes (v ...) ve)
-       (with-syntax ([ve (mark-lambda-as-safe (elim-callcc #'ve))])
-         (syntax/loc stx
-           (define-values (v ...) ve)))]
+       (parameterize ([transformer? #t])
+         (with-syntax ([ve (mark-lambda-as-safe (elim-callcc #'ve))])
+           (syntax/loc stx
+             (define-values (v ...) ve))))]
       [(define-values-for-syntax (v ...) ve)
-       (with-syntax ([ve (mark-lambda-as-safe (elim-callcc #'ve))])
-         (syntax/loc stx
-           (define-values-for-syntax (v ...) ve)))]
+       (parameterize ([transformer? #t])
+         (with-syntax ([ve (mark-lambda-as-safe (elim-callcc #'ve))])
+           (syntax/loc stx
+             (define-values-for-syntax (v ...) ve))))]
       [(set! v ve)
        (with-syntax ([ve (elim-callcc #'ve)])
          (syntax/loc stx (set! v ve)))]

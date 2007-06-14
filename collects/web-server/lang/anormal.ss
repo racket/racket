@@ -34,7 +34,7 @@
       (recertify
        stx
        (kernel-syntax-case
-           stx #f 
+           stx (transformer?)
          [(begin)
           (anormal ctxt (syntax/loc stx (#%app (#%top . void))))]
          [(begin lbe)
@@ -64,13 +64,15 @@
             (syntax/loc stx 
               (define-values (v ...) ve)))]
          [(define-syntaxes (v ...) ve)
-          (with-syntax ([ve (anormal-term #'ve)])
-            (syntax/loc stx 
-              (define-values (v ...) ve)))]
+          (parameterize ([transformer? #t])
+            (with-syntax ([ve (anormal-term #'ve)])
+              (syntax/loc stx 
+                (define-syntaxes (v ...) ve))))]
          [(define-values-for-syntax (v ...) ve)
-          (with-syntax ([ve (anormal-term #'ve)])
-            (syntax/loc stx 
-              (define-values-for-syntax (v ...) ve)))]
+          (parameterize ([transformer? #t])
+            (with-syntax ([ve (anormal-term #'ve)])
+              (syntax/loc stx 
+                (define-values-for-syntax (v ...) ve))))]
          [(set! v ve)
           (anormal
            (compose ctxt

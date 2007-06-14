@@ -330,4 +330,6 @@
                 [(zero? (car l)) (k 0)]
                 [else
                  (* (car l) (cdr l))])))))
-         #t)))))))
+         #t)))
+      
+      (test-not-exn "define-struct" (lambda () (normalize-term (expand (syntax (define-struct posn (x y)))))))))))

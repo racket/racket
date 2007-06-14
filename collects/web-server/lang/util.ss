@@ -4,6 +4,8 @@
            (lib "list.ss"))
   (provide (all-defined-except template))
   
+  (define transformer? (make-parameter #f))
+  
   (define (recertify old-expr expr)
     (syntax-recertify expr old-expr (current-code-inspector) #f))
   
@@ -50,13 +52,15 @@
           (syntax/loc stx
             (define-values (v ...) ve)))]
        [(define-syntaxes (v ...) ve)
-        (with-syntax ([ve (inner #'ve)])
-          (syntax/loc stx
-            (define-syntaxes (v ...) ve)))]      
+        (parameterize ([transformer? #t])
+          (with-syntax ([ve (inner #'ve)])
+            (syntax/loc stx
+              (define-syntaxes (v ...) ve))))]      
        [(define-values-for-syntax (v ...) ve)
-        (with-syntax ([ve (inner #'ve)])
-          (syntax/loc stx
-            (define-values-for-syntax (v ...) ve)))]
+        (parameterize ([transformer? #t])
+          (with-syntax ([ve (inner #'ve)])
+            (syntax/loc stx
+              (define-values-for-syntax (v ...) ve))))]
        [_
         (raise-syntax-error 'define-case "Dropped through:" stx)])))
   
@@ -126,7 +130,7 @@
     (recertify
      stx
      (kernel-syntax-case 
-         stx #f 
+         stx (transformer?)
        [(begin be ...)
         (with-syntax ([(be ...) (map template (syntax->list #'(be ...)))])
           (syntax/loc stx
@@ -140,13 +144,15 @@
           (syntax/loc stx
             (define-values (v ...) ve)))]
        [(define-syntaxes (v ...) ve)
-        (with-syntax ([ve (template #'ve)])
-          (syntax/loc stx
-            (define-values (v ...) ve)))]
+        (parameterize ([transformer? #t])
+          (with-syntax ([ve (template #'ve)])
+            (syntax/loc stx
+              (define-values (v ...) ve))))]
        [(define-values-for-syntax (v ...) ve)
-        (with-syntax ([ve (template #'ve)])
-          (syntax/loc stx 
-            (define-values-for-syntax (v ...) ve)))]
+        (parameterize ([transformer? #t])
+          (with-syntax ([ve (template #'ve)])
+            (syntax/loc stx 
+              (define-values-for-syntax (v ...) ve))))]
        [(set! v ve)
         (with-syntax ([ve (template #'ve)])
           (syntax/loc stx
