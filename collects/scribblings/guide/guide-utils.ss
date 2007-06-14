@@ -2,7 +2,11 @@
   (require (lib "manual.ss" "scribble")
            (lib "struct.ss" "scribble")
            (lib "decode.ss" "scribble")
-           (lib "kw.ss"))
+           (lib "kw.ss")
+           (lib "eval.ss" "scribble"))
+
+  (interaction-eval (require (lib "new-lambda.ss" "scribblings")))
+
   
   (provide Quick MzScheme HtDP
            tool

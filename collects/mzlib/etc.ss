@@ -24,9 +24,6 @@
            loop-until
 
            opt-lambda
-           define-opt
-           keyword-apply
-           make-keyword-procedure
 
            local
            recur
@@ -133,110 +130,52 @@
     (eq? x y))
 
  (define-syntax (opt-lambda stx)
-   (syntax-case stx ()
-     [(_ args body1 body ...)
-      (with-syntax ([((plain ...) (opt ...) (kw ...) need-kw rest)
-                     (let loop ([args (syntax args)]
-                                [needs-default? #f])
-                       (syntax-case args ()
-                         [id
-                          (identifier? (syntax id))
-                          #'(() () () () (#:body id))]
-                         [()
-                          #'(() () () () ())]
-                         [(id . rest)
-                          (identifier? (syntax id))
-                          (begin
-                            (when needs-default?
-                              (raise-syntax-error
-                               #f "default value missing" stx (syntax id)))
-                            (with-syntax ([(plain opts kws need-kw rest) (loop #'rest #f)])
-                              #'((id . plain) opts kws need-kw rest)))]
-                         [([id default] . rest)
-                          (identifier? (syntax id))
-                          (with-syntax ([(plain opts kws need-kw rest) (loop #'rest #t)])
-                            #'(plain ([id default] . opts) kws need-kw rest))]
-                         [(kw id . rest)
-                          (and (identifier? #'id)
-                               (keyword? (syntax-e #'kw)))
-                          (with-syntax ([(plain opts kws need-kw rest) (loop #'rest needs-default?)])
-                            #'(plain opts ([id kw #f] . kws) (kw . need-kw) rest))]
-                         [(kw [id default] . rest)
-                          (and (identifier? #'id)
-                               (keyword? (syntax-e #'kw)))
-                          (with-syntax ([(plain opts kws need-kw rest) (loop #'rest needs-default?)])
-                            #'(plain opts ([id kw default] . kws) need-kw rest))]
-                         [(bad . rest)
-                          (raise-syntax-error
-                           #f
-                           "not an identifier or identifier with default"
-                           stx
-                           (syntax bad))]
-                         [else
-                          (raise-syntax-error
-                           #f "bad identifier sequence" stx (syntax args))]))])
-        (let ([kw-proc (syntax/loc stx
-                         (lambda/kw [plain ... #:optional opt ... #:key kw ... . rest] body1 body ...))])
-          (if (null? (syntax-e #'(kw ...)))
-              kw-proc
-              (with-syntax ([name (or (syntax-local-infer-name stx)
-                                      (quote-syntax opt-lambda-proc))]
-                            [kw-proc kw-proc]
-                            [len (length (syntax->list #'(plain ...)))])
-                (syntax/loc stx
-                  (let ([name kw-proc])
-                    (lambda all-args
-                      (apply name (sort-kws len 'need-kw all-args)))))))))]))
-
- (define-syntax define-opt
-   (syntax-rules ()
-     [(_ (id . args) body1 body ...)
-      (define id (opt-lambda args body1 body ...))]
-     [(_ . rest) (define . rest)]))
-
- (define (keyword-apply f kw-args normal-args . normal-argss)
-   (apply f (append (apply append
-                           (map (lambda (p) (list (car p) (cdr p))) kw-args))
-                    (if (null? normal-argss)
-                        normal-args
-                        (cons normal-args
-                              (let loop ([normal-argss normal-argss])
-                                (if (null? (cdr normal-argss))
-                                    (car normal-argss)
-                                    (cons (car normal-argss)
-                                          (loop (cdr normal-argss))))))))))
-
- (define (make-keyword-procedure f)
-   (lambda args
-     (let loop ([args args]
-                [normal null]
-                [kw null])
-       (cond
-        [(null? args) (apply f kw (reverse normal))]
-        [(and (keyword? (car args)) 
-              (pair? (cdr args)))
-         (loop (cddr args)
-               normal
-               (cons (cons (car args) (cadr args)) kw))]
-        [else (loop (cdr args)
-                    (cons (car args) normal)
-                    kw)]))))
-
- (define (sort-kws len need-kw l)
-   (for-each (lambda (kw)
-               (unless (memq kw l)
-                 (error "missing required argument for" kw)))
-             need-kw)
-   (let loop ([len len][l l][kws null])
-     (cond
-      [(null? l) (append kws l)]
-      [(zero? len) (append kws l)]
-      [(and (keyword? (car l))
-            (pair? (cdr l)))
-       (loop len (cddr l) (list* (car l) 
-                                 (cadr l)
-                                 kws))]
-      [else (cons (car l) (loop (sub1 len) (cdr l) kws))])))
+   (with-syntax ([name (or (syntax-local-infer-name stx)
+                           (quote-syntax opt-lambda-proc))])
+     (syntax-case stx ()
+       [(_ args body1 body ...)
+        (let ([clauses (let loop ([pre-args null]
+                                  [args (syntax args)]
+                                  [needs-default? #f])
+                         (syntax-case args ()
+                           [id
+                            (identifier? (syntax id))
+                            (with-syntax ([(pre-arg ...) pre-args])
+                              (syntax ([(pre-arg ... . id)
+                                        body1 body ...])))]
+                           [()
+                            (with-syntax ([(pre-arg ...) pre-args])
+                              (syntax ([(pre-arg ...)
+                                        body1 body ...])))]
+                           [(id . rest)
+                            (identifier? (syntax id))
+                            (begin
+                              (when needs-default?
+                                (raise-syntax-error
+                                 #f "default value missing" stx (syntax id)))
+                              (loop (append pre-args (list (syntax id)))
+                                    (syntax rest)
+                                    #f))]
+                           [([id default] . rest)
+                            (identifier? (syntax id))
+                            (with-syntax ([rest (loop (append pre-args (list (syntax id)))
+                                                      (syntax rest)
+                                                      #t)]
+                                          [(pre-arg ...) pre-args])
+                              (syntax ([(pre-arg ...) (name pre-arg ... default)]
+                                       . rest)))]
+                           [(bad . rest)
+                            (raise-syntax-error
+                             #f
+                             "not an identifier or identifier with default"
+                             stx
+                             (syntax bad))]
+                           [else
+                            (raise-syntax-error
+                             #f "bad identifier sequence" stx (syntax args))]))])
+          (with-syntax ([clauses clauses])
+            (syntax/loc stx
+              (letrec ([name (case-lambda . clauses)]) name))))])))
 
  (define-syntax (local stx)
    (syntax-case stx ()

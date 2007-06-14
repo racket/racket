@@ -1,10 +1,6 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@interaction-eval[(require (rename (lib "etc.ss") lambda opt-lambda))]
-@interaction-eval[(require (only (lib "etc.ss") keyword-apply
-                                                make-keyword-procedure))]
-
 @title[#:tag "mz:procedures"]{Procedures}
 
 @defproc[(procedure? [v any/c]) boolean]{ Returns @scheme[#t] if
@@ -30,27 +26,31 @@ is called in tail position with respect to the @scheme[apply] call.
 
 
 @defproc[(keyword-apply [proc procedure?] 
-                        [kw-lst (listof (cons/c keyword? any/c))] 
+                        [kw-lst (listof keyword?)]
+                        [kw-val-lst list?]
                         [v any/c] ... 
                         [lst list?])
          any]{
 
 @guideintro["guide:apply"]{@scheme[keyword-apply]}
 
-Like @scheme[apply], but @scheme[kw-lst] supplies by-keyword arguments
-in addition to the by-position arguments of the @scheme[v]s and
-@scheme[lst]. The given @scheme[kw-lst] must be sorted using
-@scheme[keyword<] on the @scheme[car] of each pair in the list, and no
-keyword can appear twice in the @scheme[car]s of @scheme[kw-lst]. The
+Like @scheme[apply], but @scheme[kw-lst] and @scheme[kw-val-lst]
+supply by-keyword arguments in addition to the by-position arguments
+of the @scheme[v]s and @scheme[lst]. The given @scheme[kw-lst] must be
+sorted using @scheme[keyword<], and no keyword can appear twice in
+@scheme[kw-lst], otherwise, the @exnraise[exn:fail:contract]. The
+given @scheme[kw-val-lst] must have the same length as
+@scheme[kw-lst], otherwise, the @exnraise[exn:fail:contract]. The
 given @scheme[proc] must accept all of the keywords in
-@scheme[kw-lst], and it must not require any other keywords;
-otherwise, the @exnraise[exn:fail:contract].
+@scheme[kw-lst], it must not require any other keywords, and it must
+accept as many by-position arguments as supplied via the @scheme[v]s
+and @scheme[lst]; otherwise, the @exnraise[exn:fail:contract].
 
 @defexamples[
 (define (f x #:y y #:z [z 10])
   (list x y z))
-(keyword-apply f '((#:y . 2)) '(1))
-(keyword-apply f '((#:y . 2) (#:z . 3)) '(1))
+(keyword-apply f '(#:y) '(2) '(1))
+(keyword-apply f '(#:y #:z) '(2 3) '(1))
 ]}
 
 @defproc[(procedure-arity [proc procedure?]) 
@@ -125,21 +125,27 @@ to mean that any keyword is accepted. The last result is as for
 are required.}
 
 @defproc[(make-keyword-procedure
-          [proc (((listof (cons/c keyword? any/c))) list? . ->* . any)])
+          [proc (((listof keyword?) list?) list? . ->* . any)]
+          [plain-proc procedure? (lambda args (apply proc null null args))])
          procedure?]{
 
-Returns a procedure that accepts any number of arguments and all
-keyword arguments (without requiring any keyword arguments). The
-resulting procedure calls @scheme[proc], supplying to @scheme[proc]
-all keyword arguments given in the original application as a list of
-keyword--value pairs, sorted by @scheme[keyword<] on the keywords. All
-by-position arguments supplied in the original application are
-supplied to @scheme[proc] after the list for keyword arguments.
+Returns a procedure that accepts all keyword arguments (without
+requiring any keyword arguments).
+
+When the result is called with keyword arguments, then @scheme[proc]
+is called; the first argument is a list of keywords sorted by
+@scheme[keyword<], the second argument is a parllel list containing a
+value for each keyword, and the remaining arguments are the
+by-position arguments.
+
+When the result is called without keyword arguments, then
+@scheme[plain-proc] is called. Furthermore, @scheme[procedure-arity]
+obtains its result frmo @scheme[plain-proc].
 
 @defexamples[
 (define show
-  (make-keyword-procedure (lambda (kw-args . rest)
-                            (list kw-args rest))))
+  (make-keyword-procedure (lambda (kws kw-args . rest)
+                            (list kws kw-args rest))))
 
 (show 1)
 (show #:init 0 1 2 3 #:extra 4)

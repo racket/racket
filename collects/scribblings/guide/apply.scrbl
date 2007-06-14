@@ -126,12 +126,14 @@ are effectively @scheme[cons]ed onto the argument list:
 The @scheme[apply] procedure supports only by-position arguments. To
 apply a procedure with keyword arguments, use the
 @scheme[keyword-apply] procedure, which accepts a procedure to apply
-and two lists. The first list contains pairs, each matching a
-keyword with its corresponding value. The second list contains
-by-position procedure arguments, as for @scheme[apply].
+and three lists. The first two lists are in parallel, where the first
+list contains keywords (sorted by @scheme[keyword<]), and the second
+list contains a corresponding argument for each keyword. The third
+list contains by-position procedure arguments, as for @scheme[apply].
 
 @schemeblock[
 (keyword-apply go 
-               (list (cons '#:mode 'fast))
+               '(#:mode)
+               '(fast)
                (list "super.ss"))
 ]

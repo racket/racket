@@ -5,6 +5,8 @@
            (lib "decode.ss" "scribble")
            (lib "kw.ss"))
 
+  (interaction-eval (require (lib "new-lambda.ss" "scribblings")))
+
   (provide (all-from (lib "manual.ss" "scribble"))
            (all-from (lib "eval.ss" "scribble")))
 

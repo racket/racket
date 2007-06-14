@@ -3,8 +3,6 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@interaction-eval[(require (rename (lib "etc.ss") define define-opt))]
-
 @title{Definitions: @scheme[define]}
 
 A basic definition has the form

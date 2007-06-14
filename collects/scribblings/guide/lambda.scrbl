@@ -3,10 +3,6 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@interaction-eval[(require (rename (lib "etc.ss") lambda opt-lambda))]
-@interaction-eval[(require (only (lib "etc.ss") keyword-apply
-                                                make-keyword-procedure))]
-
 @title[#:tag "guide:lambda"]{Procedures: @scheme[lambda]}
 
 Such a @scheme[lambda] expression creates a procedure. In the simplest
@@ -186,8 +182,8 @@ The @scheme[lambda] form does not directly support the creation
 of a procedure that accepts ``rest'' keywords. To construct a
 procedure that accepts any and all keyword arguments, use
 @scheme[make-keyword-procedure]. The procedure supplied to
-@scheme[make-keyword-procedure] receives all keyword arguments as
-a list of pairs through the first (by-position) argument, and
+@scheme[make-keyword-procedure] receives keyword arguments throw
+two parallel lists in the first two (by-position) arguments, and
 then all by-position arguments from an application as the
 remaining by-position arguments.
 
@@ -197,9 +193,9 @@ remaining by-position arguments.
 @defexamples[
 (define (trace-wrap f)
   (make-keyword-procedure
-   (lambda (kw-args . rest)
-     (printf "Called with ~s ~s\n" kw-args rest)
-     (keyword-apply f kw-args rest))))
+   (lambda (kws kw-args . rest)
+     (printf "Called with ~s ~s ~s\n" kws kw-args rest)
+     (keyword-apply f kws kw-args rest))))
 ((trace-wrap greet) "John" #:hi "Howdy")
 ]
 
