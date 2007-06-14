@@ -176,10 +176,8 @@
           (with-handlers ([exn? (lambda (exn)
                                   (kill-connection! conn)
                                   (raise exn))])
-            (call-with-semaphore (connection-mutex conn)
-                                 (lambda ()
-                                   (apply f conn args)
-                                   (flush-output (connection-o-port conn))))))))
+            (apply f conn args)
+            (flush-output (connection-o-port conn))))))
   
   (define ext:output-response
     (ext:wrap output-response))

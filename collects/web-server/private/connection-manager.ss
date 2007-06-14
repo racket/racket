@@ -2,14 +2,11 @@
   (require (lib "contract.ss")
            "timer.ss")
   
-  (define-struct connection (timer i-port o-port custodian close? mutex)
-    (make-inspector))
+  (define-struct connection (timer i-port o-port custodian close?))
   
   (provide/contract
    [struct connection
-           ([timer timer?]
-            [i-port input-port?] [o-port output-port?] [custodian custodian?]
-            [close? boolean?] [mutex semaphore?])]
+           ([timer timer?] [i-port input-port?] [o-port output-port?] [custodian custodian?] [close? boolean?])]
    [start-connection-manager (custodian? . -> . void)]
    [new-connection (number? input-port? output-port? custodian? boolean? . -> . connection?)]
    [kill-connection! (connection? . -> . void)]
@@ -27,8 +24,7 @@
               (make-connection
                (start-timer time-to-live
                             (lambda () (kill-connection! conn)))
-               i-port o-port cust close?
-               (make-semaphore 1))])
+               i-port o-port cust close?)])
       conn))
   
   ;; kill-connection!: connection -> void

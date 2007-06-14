@@ -19,7 +19,7 @@
            [ip (open-input-bytes b)]
            [op (open-output-bytes)])
       (values (make-connection (make-timer ip +inf.0 (lambda () (void)))
-                               ip op (make-custodian) #f (make-semaphore))
+                               ip op (make-custodian) #f)
               headers)))
   
   (define (get-bindings post-data)

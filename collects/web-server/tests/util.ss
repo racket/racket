@@ -31,7 +31,7 @@
     (define ip (open-input-bytes ib))
     (define op (open-output-bytes))
     (values (make-connection (make-timer never-evt +inf.0 (lambda () (void)))
-                             ip op (current-custodian) #f (make-semaphore 1))
+                             ip op (current-custodian) #f)
             ip
             op))
   

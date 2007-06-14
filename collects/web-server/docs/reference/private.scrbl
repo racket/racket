@@ -66,12 +66,11 @@ for doing this.
 @defstruct[connection
            ([timer timer?]
             [i-port input-port?] [o-port output-port?] [custodian custodian?]
-            [close? boolean?] [mutex semaphore?])]{
+            [close? boolean?])]{
  A connection is a pair of ports (@scheme[i-port] and @scheme[o-port]) that is
  ready to close after the current job if @scheme[close?] is @scheme[#t]. Resources
- associated with the connection should be allocated under @scheme[custodian] and
- locked by @scheme[mutex]---including access to the ports. The connection will last
- until @scheme[timer] triggers.
+ associated with the connection should be allocated under @scheme[custodian].
+ The connection will last until @scheme[timer] triggers.
 }
   
 @; XXX Don't pass in parent-cust
