@@ -3399,13 +3399,28 @@
   
   (contract-eval '(define-contract-struct couple (hd tl)))
   
+  (test/spec-passed
+   'd-c-s-match1
+   '(begin
+      (eval '(module d-c-s-match1 mzscheme
+               (require (lib "contract.ss")
+                        (lib "match.ss"))
+               
+               (define-contract-struct foo (bar baz))
+               
+               (match (make-foo #t #f)
+                 [($ foo bar baz) #t]
+                 [_ #f])))
+      (eval '(require d-c-s-match1))))
+
+  
   (test/pos-blame 'd-c-s1
                   '(begin
-                     (eval '(module m mzscheme
+                     (eval '(module d-c-s1 mzscheme
                               (require (lib "contract.ss"))
                               (define-contract-struct couple (hd tl))
                               (contract (couple/c any/c any/c) 1 'pos 'neg)))
-                     (eval '(require m))))
+                     (eval '(require d-c-s1))))
   
   (test/spec-passed 'd-c-s2
                     '(contract (couple/c any/c any/c) (make-couple 1 2) 'pos 'neg))

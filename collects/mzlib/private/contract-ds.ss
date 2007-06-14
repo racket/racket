@@ -58,7 +58,7 @@ it around flattened out.
                                                 #f
                                                 #t
                                                 stx)]
-              [struct:-name (list-ref struct-names 0)]
+              [struct:-name/val (list-ref struct-names 0)]
               [struct-maker/val (list-ref struct-names 1)]
               [predicate/val (list-ref struct-names 2)]
               [selectors/val (cdddr struct-names)]
@@ -72,6 +72,7 @@ it around flattened out.
                        [struct/dc struct/dc-name/val]
                        [field-count field-count/val]
                        [(selectors ...) selectors/val]
+                       [struct:-name struct:-name/val]
                        [struct-maker struct-maker/val]
                        [predicate predicate/val]
                        [contract-name (add-suffix "-contract")]
@@ -93,6 +94,13 @@ it around flattened out.
                                                       already-there? burrow-in rewrite-fields wrap-get)
                         (values))))
                     (list))
+             
+             (define-syntax name (list-immutable #'struct:-name 
+                                                 #'struct-maker 
+                                                 #'predicate
+                                                 (list-immutable #'selectors ...)
+                                                 (list-immutable #,@(map (λ (x) #f) (syntax->list #'(selectors ...))))
+                                                 #t))
              
              (define (evaluate-attrs stct contract/info)
                (when (wrap-parent-get stct 0) ;; test to make sure this even has attributes
