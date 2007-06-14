@@ -182,8 +182,8 @@ The @scheme[lambda] form does not directly support the creation
 of a procedure that accepts ``rest'' keywords. To construct a
 procedure that accepts any and all keyword arguments, use
 @scheme[make-keyword-procedure]. The procedure supplied to
-@scheme[make-keyword-procedure] receives keyword arguments throw
-two parallel lists in the first two (by-position) arguments, and
+@scheme[make-keyword-procedure] receives keyword arguments through
+parallel lists in the first two (by-position) arguments, and
 then all by-position arguments from an application as the
 remaining by-position arguments.
 

@@ -7,7 +7,8 @@
            (rename new-define define)
            (rename new-app #%app)
            (rename *make-keyword-procedure make-keyword-procedure)
-           keyword-apply)
+           keyword-apply
+           procedure-keywords)
   
   ;; ----------------------------------------
   
@@ -103,6 +104,16 @@
              (apply list-immutable kws)
              (apply list-immutable kw-vals)
              normal-args)))))
+
+  (define (procedure-keywords p)
+    (cond
+     [(keyword-procedure? p)
+      (values (keyword-procedure-required p)
+              (keyword-procedure-allowed p))]
+     [(procedure? p) (values null null)]
+     [else (raise-type-error 'procedure-keywords
+                             "procedure"
+                             p)]))
   
   ;; ----------------------------------------
 
@@ -372,7 +383,7 @@
                            (mk-id
                             with-kws
                             'needed-kws
-                            '(kw ...)))))]))))))]))
+                            'kws))))]))))))]))
   
   (define (missing-kw proc . args)
     (printf "~s\n" args)

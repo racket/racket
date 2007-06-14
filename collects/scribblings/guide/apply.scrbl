@@ -135,5 +135,5 @@ list contains by-position procedure arguments, as for @scheme[apply].
 (keyword-apply go 
                '(#:mode)
                '(fast)
-               (list "super.ss"))
+               '("super.ss"))
 ]

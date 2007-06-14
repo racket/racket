@@ -60,27 +60,23 @@ and @scheme[lst]; otherwise, the @exnraise[exn:fail:contract].
                 (or/c exact-nonnegative-integer?
                       arity-at-least?)))]{
 
-Returns information about the number of arguments accepted by
-@scheme[proc] when called without keyword arguments. The result
-@scheme[_a] is one of the following:
+Returns information about the number of by-position arguments accepted
+by @scheme[proc]. The result @scheme[_a] is one of the following:
 
 @itemize{
 
   @item{An exact non-negative integer, which means that the procedure
-        always accepts exactly @scheme[_a] arguments.}
+        accepts @scheme[_a] arguments, only.}
 
  @item{A @scheme[arity-at-least] instance, which means that the
-       procedure takes @scheme[(arity-at-least-value _a)] or more
+       procedure accepts @scheme[(arity-at-least-value _a)] or more
        arguments.}
 
  @item{A list containing integers and @scheme[arity-at-least]
-       instances, which means that the procedure takes any number of
+       instances, which means that the procedure accepts any number of
        arguments that can match one of the elements of @scheme[_a].}
 
 }
-
-If a procedure requires at least one keyword argument, then
-@scheme[procedure-arity] returns @scheme['()] for the procedure.
 
 @examples[
 (procedure-arity cons)
@@ -101,28 +97,25 @@ when no keyword arguments are supplied, @scheme[#f] otherwise.
 (procedure-arity-includes? display 3)
 ]}
 
-@defproc[(keyword-procedure-arity [proc procedure?]) 
+@defproc[(procedure-keywords [proc procedure?])
          (values
           (listof keyword?)
           (or/c (listof keyword?) 
-                false/c)
-          (or/c 
-           exact-nonnegative-integer?
-           arity-at-least?
-           (listof 
-            (or/c 
-             exact-nonnegative-integer?
-             arity-at-least?))))]{
+                false/c))]{
 
-Similar to @scheme[keyword-procedure-arity], but for the case
-that keywords are supplied to @scheme[proc]. The first result is
-a list of keywords (sorted by @scheme[keyword<]) that are
-required when applying @scheme[proc]. The second result is a list
-of accepted keyword (sorted by @scheme[keyword<]), or @scheme[#f]
-to mean that any keyword is accepted. The last result is as for
-@scheme[procedure-arity] for the by-position arguments of
-@scheme[proc], except that it is not @scheme['()] when keywords
-are required.}
+Returns information about the keyword arguments required and accepted
+by a procedure. The first result is a list of keywords (sorted by
+@scheme[keyword<]) that are required when applying @scheme[proc]. The
+second result is a list of accepted keywords (sorted by
+@scheme[keyword<]), or @scheme[#f] to mean that any keyword is
+accepted. When the second result is a list, every element in the first
+list is also in the second list.
+
+@examples[
+(procedure-keywords +)
+(procedure-keywords (lambda (#:tag t #:mode m) t))
+(procedure-keywords (lambda (#:tag t #:mode [m #f]) t))
+]}
 
 @defproc[(make-keyword-procedure
           [proc (((listof keyword?) list?) list? . ->* . any)]
