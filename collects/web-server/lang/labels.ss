@@ -14,5 +14,5 @@
     (define tag (md5 pgm))
     (lambda ()
       (begin0
-        (string->symbol (format "~a~a" tag (unbox count)))
+        (string->symbol (format "~a:~a" tag (unbox count)))
         (set-box! count (add1 (unbox count)))))))
