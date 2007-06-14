@@ -1,6 +1,7 @@
 (module elim-letrec mzscheme
   (require-for-template mzscheme
                         "../lang/abort-resume.ss")
+  (require-for-syntax "../lang/abort-resume.ss")
   (require (lib "kerncase.ss" "syntax")
            (lib "etc.ss")
            (lib "list.ss")
@@ -28,15 +29,9 @@
           (syntax/loc stx
             (define-values (v ...) ve)))]
        [(define-syntaxes (v ...) ve)
-        (parameterize ([transformer? #t])
-          (with-syntax ([ve ((elim-letrec ids) #'ve)])
-            (syntax/loc stx
-              (define-syntaxes (v ...) ve))))]
+        stx]
        [(define-values-for-syntax (v ...) ve)       
-        (parameterize ([transformer? #t])
-          (with-syntax ([ve ((elim-letrec ids) #'ve)])
-            (syntax/loc stx
-              (define-values-for-syntax (v ...) ve))))]
+        stx]
        [(set! v ve)
         (with-syntax ([ve ((elim-letrec ids) #'ve)])
           (if (bound-identifier-member? #'id ids)

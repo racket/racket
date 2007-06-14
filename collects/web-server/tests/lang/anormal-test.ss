@@ -332,4 +332,9 @@
                  (* (car l) (cdr l))])))))
          #t)))
       
-      (test-not-exn "define-struct" (lambda () (normalize-term (expand (syntax (define-struct posn (x y)))))))))))
+      (test-not-exn "define-struct" (lambda () (normalize-term (expand (syntax (define-struct posn (x y)))))))
+      (test-not-exn "quote-syntax: #f" (lambda () (parameterize ([transformer? #f])
+                                                (normalize-term (expand (syntax #'provide/contract-id-set-a-date-day!))))))
+      (test-not-exn "quote-syntax: #t" (lambda () (parameterize ([transformer? #t])
+                                                (normalize-term (expand (syntax #'provide/contract-id-set-a-date-day!))))))
+      ))))

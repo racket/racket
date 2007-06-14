@@ -64,15 +64,9 @@
             (syntax/loc stx 
               (define-values (v ...) ve)))]
          [(define-syntaxes (v ...) ve)
-          (parameterize ([transformer? #t])
-            (with-syntax ([ve (anormal-term #'ve)])
-              (syntax/loc stx 
-                (define-syntaxes (v ...) ve))))]
+          stx]
          [(define-values-for-syntax (v ...) ve)
-          (parameterize ([transformer? #t])
-            (with-syntax ([ve (anormal-term #'ve)])
-              (syntax/loc stx 
-                (define-values-for-syntax (v ...) ve))))]
+          stx]
          [(set! v ve)
           (anormal
            (compose ctxt

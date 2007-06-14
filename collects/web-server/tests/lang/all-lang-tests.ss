@@ -1,6 +1,7 @@
 (module all-lang-tests mzscheme
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            "anormal-test.ss"
+           "defun-test.ss"
            "file-box-test.ss"
            "labels-test.ss"
            "stuff-url-test.ss"
@@ -11,6 +12,7 @@
     (test-suite
      "Web Language"
      anormal-tests
+     defun-tests
      file-box-tests
      labels-tests
      stuff-url-tests

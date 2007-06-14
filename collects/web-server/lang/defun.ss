@@ -33,15 +33,11 @@
             (values (quasisyntax/loc stx (define-values (v ...) #,nve))
                     defs))]
          [(define-syntaxes (v ...) ve)
-          (parameterize ([transformer? #t])
-            (let-values ([(nve defs) (defun #'ve)])
-              (values (quasisyntax/loc stx (define-syntaxes (v ...) #,nve))
-                      defs)))]
+          (values stx
+                  empty)]
          [(define-values-for-syntax (v ...) ve)
-          (parameterize ([transformer? #t])
-            (let-values ([(nve defs) (defun #'ve)])
-              (values (quasisyntax/loc stx (define-values-for-syntax (v ...) #,nve))
-                      defs)))]
+          (values stx
+                  empty)]
          [(set! v ve)
           (let-values ([(nve defs) (defun #'ve)])
             (values (quasisyntax/loc stx (set! v #,nve))

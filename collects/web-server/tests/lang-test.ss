@@ -497,4 +497,34 @@
          
          (let ([k0 (ta-eval '(dispatch-start start 'foo))])
            (check = 3 (ta-eval `(dispatch ,the-dispatch (list ,k0 2))))
-           (check = 0 (ta-eval `(dispatch ,the-dispatch (list ,k0 -1)))))))))))
+           (check = 0 (ta-eval `(dispatch ,the-dispatch (list ,k0 -1))))))))
+     
+     (test-suite
+      "Weird Cases"
+      
+      (test-case
+       "provide/contract: simple"
+       (check-not-exn
+        (lambda ()
+          (make-module-eval
+           (module data (lib "lang.ss" "web-server")
+             (require (lib "contract.ss"))
+             
+             (define x 1)
+             (provide/contract
+              [x integer?]))))))
+      
+      
+      (test-case
+       "provide/contract: struct"
+       (check-not-exn
+        (lambda ()
+          (make-module-eval
+           (module data (lib "lang.ss" "web-server")
+             (require (lib "contract.ss"))
+             
+             (define-struct posn (x y))
+             (provide/contract
+              [struct posn ([x integer?] [y integer?])])))))))
+     
+     )))

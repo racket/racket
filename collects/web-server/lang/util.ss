@@ -103,10 +103,10 @@
      stx
      (syntax-case stx ()                     
        ((mb forms ...)
-        (with-syntax ([(pmb rfs body ...)
+        (with-syntax ([(pmb rfs0 body ...)
                        (local-expand (quasisyntax/loc stx
                                        (#%plain-module-begin 
-                                        #,(syntax-local-introduce #'(require-for-syntax mzscheme)) 
+                                        #,(syntax-local-introduce #'(require-for-syntax mzscheme))
                                         forms ...))
                                      'module-begin 
                                      empty)])
@@ -116,7 +116,7 @@
                               (datum->syntax-object stx (base-labeling)))])
               (let ([new-defs (apply append (map transform (syntax->list #'(body ...))))])
                 (quasisyntax/loc stx
-                  (pmb rfs
+                  (pmb rfs0
                        #,@new-defs))))))))))
   
   (define (bound-identifier-member? id ids)
@@ -147,7 +147,7 @@
         (parameterize ([transformer? #t])
           (with-syntax ([ve (template #'ve)])
             (syntax/loc stx
-              (define-values (v ...) ve))))]
+              (define-syntaxes (v ...) ve))))]
        [(define-values-for-syntax (v ...) ve)
         (parameterize ([transformer? #t])
           (with-syntax ([ve (template #'ve)])

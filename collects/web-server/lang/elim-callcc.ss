@@ -1,6 +1,7 @@
 (module elim-callcc mzscheme
   (require-for-template mzscheme
                         "../lang/abort-resume.ss")
+  (require-for-syntax "../lang/abort-resume.ss")
   (require (lib "kerncase.ss" "syntax")
            "util.ss")
   (provide elim-callcc)
@@ -42,15 +43,9 @@
          (syntax/loc stx
            (define-values (v ...) ve)))]
       [(define-syntaxes (v ...) ve)
-       (parameterize ([transformer? #t])
-         (with-syntax ([ve (mark-lambda-as-safe (elim-callcc #'ve))])
-           (syntax/loc stx
-             (define-values (v ...) ve))))]
+       stx]
       [(define-values-for-syntax (v ...) ve)
-       (parameterize ([transformer? #t])
-         (with-syntax ([ve (mark-lambda-as-safe (elim-callcc #'ve))])
-           (syntax/loc stx
-             (define-values-for-syntax (v ...) ve))))]
+       stx]
       [(set! v ve)
        (with-syntax ([ve (elim-callcc #'ve)])
          (syntax/loc stx (set! v ve)))]
@@ -158,7 +153,7 @@
       [(#%app w rest ...)
        (markit
         (quasisyntax/loc stx
-          (with-continuation-mark safe-call? '(#f #,stx)
+          (with-continuation-mark safe-call? '(#f stx)
             (#%app #,(mark-lambda-as-safe (elim-callcc #'w))
                    #,@(map 
                        (lambda (an-expr)
