@@ -8,10 +8,8 @@
   (define-struct (none-manager manager) (instance-expiration-handler))
   (define (create-none-manager
            instance-expiration-handler)
-    (define the-data (make-thread-cell #f))
     
-    (define (create-instance data expire-fn)
-      (thread-cell-set! the-data data)
+    (define (create-instance expire-fn)
       0)
     (define (adjust-timeout! instance-id secs)
       (void))
@@ -21,9 +19,6 @@
               (format "No instance for id: ~a" instance-id)
               (current-continuation-marks)
               instance-expiration-handler)))
-    
-    (define (instance-lookup-data instance-id)
-      (thread-cell-ref the-data))
     
     (define (clear-continuations! instance-id)
       (instance-lookup instance-id))
@@ -35,7 +30,6 @@
     
     (make-none-manager create-instance 
                        adjust-timeout!
-                       instance-lookup-data
                        clear-continuations!
                        continuation-store!
                        continuation-lookup

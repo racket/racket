@@ -28,13 +28,12 @@
     (define instances (make-hash-table))
     (define next-instance-id (make-counter))    
     
-    (define-struct instance (data k-table timer))  
-    (define (create-instance data expire-fn)
+    (define-struct instance (k-table timer))  
+    (define (create-instance expire-fn)
       (define instance-id (next-instance-id))
       (hash-table-put! instances
                        instance-id
-                       (make-instance data
-                                      (create-k-table)
+                       (make-instance (create-k-table)
                                       (start-timer instance-timer-length
                                                    (lambda ()
                                                      (expire-fn)
@@ -61,13 +60,10 @@
     (define (create-k-table)
       (make-k-table (make-counter) (make-hash-table)))
     
-    ;; Interface
-    (define (instance-lookup-data instance-id)
-      (instance-data (instance-lookup instance-id)))
-    
+    ;; Interface    
     (define (clear-continuations! instance-id)
       (match (instance-lookup instance-id)
-        [(struct instance (data (and k-table (struct k-table (next-id-fn htable))) instance-timer))
+        [(struct instance ((and k-table (struct k-table (next-id-fn htable))) instance-timer))
          (hash-table-for-each
           htable
           (match-lambda*
@@ -77,7 +73,7 @@
     
     (define (continuation-store! instance-id k expiration-handler)
       (match (instance-lookup instance-id)
-        [(struct instance (data (struct k-table (next-id-fn htable)) instance-timer))
+        [(struct instance ((struct k-table (next-id-fn htable)) instance-timer))
          (define k-id (next-id-fn))
          (define salt (random 100000000))
          (hash-table-put! htable
@@ -91,7 +87,7 @@
          (list k-id salt)]))
     (define (continuation-lookup instance-id a-k-id a-salt)
       (match (instance-lookup instance-id)
-        [(struct instance (data (struct k-table (next-id-fn htable)) instance-timer))
+        [(struct instance ((struct k-table (next-id-fn htable)) instance-timer))
          (match
              (hash-table-get htable a-k-id
                              (lambda ()
@@ -114,7 +110,6 @@
     
     (make-timeout-manager create-instance 
                           adjust-timeout!
-                          instance-lookup-data
                           clear-continuations!
                           continuation-store!
                           continuation-lookup

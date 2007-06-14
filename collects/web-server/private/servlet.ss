@@ -9,7 +9,6 @@
   
   (define-struct (exn:fail:servlet:instance exn:fail) ())
   (define-struct servlet (custodian namespace manager handler))
-  (define-struct servlet-instance-data (mutex))
   (define-struct execution-context (request))
   
   (define current-servlet (make-parameter #f))
@@ -28,8 +27,6 @@
             [namespace namespace?]
             [manager manager?]
             [handler (request? . -> . response?)])]
-   [struct servlet-instance-data
-           ([mutex semaphore?])]
    [struct execution-context 
            ([request request?])]
    [current-servlet parameter?]

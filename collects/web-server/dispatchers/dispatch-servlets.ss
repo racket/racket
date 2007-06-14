@@ -47,50 +47,46 @@
     
     ;; servlet-content-producer/path: connection request url -> void
     (define (servlet-content-producer/path conn req uri)
-      (define servlet-mutex (make-semaphore 1))
       (define response
         (with-handlers ([exn:fail:filesystem:exists:servlet?
                          (lambda (the-exn) (next-dispatcher))]
                         [(lambda (x) #t)
                          (lambda (the-exn) (responders-servlet-loading uri the-exn))])
-          (call-with-semaphore 
-           servlet-mutex
+          (call-with-continuation-prompt
            (lambda ()
-             (call-with-continuation-prompt
-              (lambda ()
-                ; Create the session frame
-                (with-frame
-                 (define instance-custodian (make-servlet-custodian))
-                 (define-values (servlet-path _)
-                   (with-handlers
-                       ([void (lambda (e)
-                                (raise (make-exn:fail:filesystem:exists:servlet
-                                        (exn-message e)
-                                        (exn-continuation-marks e))))])
-                     (url->path uri)))
-                 (parameterize ([current-directory (directory-part servlet-path)]
-                                [current-custodian instance-custodian]
-                                [exit-handler
-                                 (lambda (v)
-                                   (kill-connection! conn)
-                                   (custodian-shutdown-all instance-custodian))])
-                   ;; any resources (e.g. threads) created when the
-                   ;; servlet is loaded should be within the dynamic
-                   ;; extent of the servlet custodian
-                   (define the-servlet (cached-load servlet-path))
-                   (parameterize ([current-servlet the-servlet]
-                                  [current-namespace (servlet-namespace the-servlet)])
-                     (define manager (servlet-manager the-servlet))
-                     (parameterize ([current-execution-context (make-execution-context req)])
-                       (define instance-id ((manager-create-instance manager) (make-servlet-instance-data servlet-mutex) (exit-handler)))
-                       (parameterize ([current-servlet-instance-id instance-id])
-                         (with-handlers ([(lambda (x) #t)
-                                          (lambda (exn)
-                                            (responders-servlet
-                                             (request-uri req)
-                                             exn))])
-                           ((servlet-handler the-servlet) req))))))))
-              servlet-prompt)))))
+             ; Create the session frame
+             (with-frame
+              (define instance-custodian (make-servlet-custodian))
+              (define-values (servlet-path _)
+                (with-handlers
+                    ([void (lambda (e)
+                             (raise (make-exn:fail:filesystem:exists:servlet
+                                     (exn-message e)
+                                     (exn-continuation-marks e))))])
+                  (url->path uri)))
+              (parameterize ([current-directory (directory-part servlet-path)]
+                             [current-custodian instance-custodian]
+                             [exit-handler
+                              (lambda (v)
+                                (kill-connection! conn)
+                                (custodian-shutdown-all instance-custodian))])
+                ;; any resources (e.g. threads) created when the
+                ;; servlet is loaded should be within the dynamic
+                ;; extent of the servlet custodian
+                (define the-servlet (cached-load servlet-path))
+                (parameterize ([current-servlet the-servlet]
+                               [current-namespace (servlet-namespace the-servlet)])
+                  (define manager (servlet-manager the-servlet))
+                  (parameterize ([current-execution-context (make-execution-context req)])
+                    (define instance-id ((manager-create-instance manager) (exit-handler)))
+                    (parameterize ([current-servlet-instance-id instance-id])
+                      (with-handlers ([(lambda (x) #t)
+                                       (lambda (exn)
+                                         (responders-servlet
+                                          (request-uri req)
+                                          exn))])
+                        ((servlet-handler the-servlet) req))))))))
+           servlet-prompt)))
       (output-response conn response))
     
     ;; default-server-instance-expiration-handler : (request -> response)
@@ -102,7 +98,6 @@
       (define-values (servlet-path _) (url->path uri))
       (define the-servlet (cached-load servlet-path))
       (define manager (servlet-manager the-servlet))
-      (define data ((manager-instance-lookup-data manager) instance-id))
       (define response
         (parameterize ([current-servlet the-servlet]
                        [current-directory (directory-part servlet-path)]
@@ -122,15 +117,12 @@
                           [exn:fail:servlet:instance?
                            (lambda (the-exn)
                              (default-servlet-instance-expiration-handler req))])
-            (call-with-semaphore
-             (servlet-instance-data-mutex data)
-             (lambda ()
-               (parameterize ([current-execution-context (make-execution-context req)])
-                 (call-with-continuation-prompt
-                  (lambda ()
-                    (define kcb ((manager-continuation-lookup manager) instance-id k-id salt))
-                    ((custodian-box-value kcb) req))
-                  servlet-prompt)))))))
+            (parameterize ([current-execution-context (make-execution-context req)])
+              (call-with-continuation-prompt
+               (lambda ()
+                 (define kcb ((manager-continuation-lookup manager) instance-id k-id salt))
+                 ((custodian-box-value kcb) req))
+               servlet-prompt)))))
       (output-response conn response))
     
     ;; cached-load : path -> script, namespace

@@ -19,24 +19,19 @@ pluggable through the manager interface.
 @file{managers/manager.ss} defines the manager interface. It is required by
 the users and implementers of managers.
 
-@defstruct[manager ([create-instance (any/c (-> void) . -> . number?)]
+@defstruct[manager ([create-instance ((-> void) . -> . number?)]
                     [adjust-timeout! (number? number? . -> . void)]
-                    [instance-lookup-data (number? . -> . any/c)]
                     [clear-continuations! (number? . -> . void)]
                     [continuation-store! (number? any/c expiration-handler? . -> . (list/c number? number?))]
                     [continuation-lookup (number? number? number? . -> . any/c)])]{
  @scheme[create-instance] is called to initialize a instance, to hold the
- continuations of one servlet session. It is passed some internal data to store
- for the server and 
+ continuations of one servlet session. It is passed 
  a function to call when the instance is expired. It runs the id of the
  instance.
  
  @scheme[adjust-timeout!] is a to-be-deprecated function that takes an
  instance-id and a number. It is specific to the timeout-based manager
  and will be removed.
- 
- @scheme[instance-lookup-data] accesses the arbitrary data passed into
- @scheme[create-instance] match by the given instance-id.
  
  @scheme[clear-continuations!] expires all the continuations of an instance.
  
