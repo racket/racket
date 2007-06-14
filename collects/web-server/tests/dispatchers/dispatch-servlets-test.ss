@@ -52,6 +52,7 @@
      
      ; XXX test update cache
      ; XXX redirect/get
+     ; XXX web-cells
      
      (test-pred "configure.ss"
                 string?
