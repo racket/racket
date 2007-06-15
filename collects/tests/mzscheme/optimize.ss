@@ -438,6 +438,10 @@
               (+ x y))
            3)
 
+(test-comp '(let-values ([() (values)])
+              5)
+           5)
+
 (test-comp '(letrec ([x 3]
                      [f (lambda (y) x)])
               f)

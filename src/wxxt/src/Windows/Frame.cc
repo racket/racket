@@ -149,11 +149,11 @@ extern "C" void *scheme_current_process;
 
 /* Copied off a newsgroup somewhere: */
 typedef struct {
-  int flags;
-  int functions;
-  int decorations;
-  int inputMode;
-  int unknown;
+  long flags;
+  long functions;
+  long decorations;
+  long inputMode;
+  long unknown;
 } wxMWM_Hints;
 
 /* bit definitions for MwmHints.decorations */
@@ -291,7 +291,7 @@ Bool wxFrame::Create(wxFrame *frame_parent, char *title,
 
 	XChangeProperty(display, window, WM_HINTS, WM_HINTS, 32,
 			PropModeReplace, (unsigned char *)&MWMHints,
-			sizeof(MWMHints)/4);
+			sizeof(MWMHints)/sizeof(long));
       }
       /* Now try to set KWM hints */
       if (_style & wxNO_CAPTION) {
@@ -304,7 +304,7 @@ Bool wxFrame::Create(wxFrame *frame_parent, char *title,
 	  
 	  XChangeProperty(display, window, WM_HINTS, WM_HINTS, 32,
 			  PropModeReplace, (unsigned char *)&KWMHints,
-			  sizeof(KWMHints)/4);
+			  sizeof(KWMHints)/sizeof(long));
 	}
       }
       /* Now try to set GNOME hints */
@@ -316,7 +316,7 @@ Bool wxFrame::Create(wxFrame *frame_parent, char *title,
 	  
 	  XChangeProperty(display, window, WM_HINTS, XA_CARDINAL, 32,
 			  PropModeReplace, (unsigned char *)&GNOMEHints,
-			  sizeof(GNOMEHints)/4);
+			  sizeof(GNOMEHints)/sizeof(long));
 	}
       }
     }

@@ -2794,11 +2794,19 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
         head->body = (Scheme_Object *)naya;
       head->num_clauses += (pre_body->count - 1);
       i += (pre_body->count - 1);
-      pre_body = naya;
-      body = (Scheme_Object *)naya;
-      value = pre_body->value;
+      if (pre_body->count) {
+        pre_body = naya;
+        body = (Scheme_Object *)naya;
+        value = pre_body->value;
+      } else {
+        /* We've dropped this clause entirely. */
+        if (i > 0)
+          continue;
+        else
+          break;
+      }
     }
-  
+
     if ((pre_body->count == 1)
 	&& !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
 
@@ -2951,6 +2959,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   }
 
   scheme_optimize_info_done(body_info);
+
+  /* Optimized away all clauses? */
+  if (!head->num_clauses)
+    return head->body;
 
   if (is_rec && !not_simply_let_star) {
     /* We can simplify letrec to let* */

@@ -423,14 +423,22 @@ static Scheme_Object *foreign_ffi_obj_name(int argc, Scheme_Object *argv[])
  * mzscheme's fixnums are longs. */
 inline int scheme_get_realint_val(Scheme_Object *o, int *v)
 {
-  if (SCHEME_INTP(o)) { *v = (int)(SCHEME_INT_VAL(o)); return 1; }
-  else return 0;
+  if (SCHEME_INTP(o)) {
+    unsigned long lv = SCHEME_INT_VAL(o);
+    int i = (int)lv;
+    if (i != lv)
+      return 0;
+    *v = i;
+    return 1;
+  } else return 0;
 }
 inline int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 {
   if (SCHEME_INTP(o)) {
-    int i = (int)(SCHEME_INT_VAL(o));
-    if (i < 0) return 0;
+    unsigned long lv = SCHEME_INT_VAL(o);
+    unsigned int i = (unsigned int)lv;
+    if (i != lv)
+      return 0;
     *v = i;
     return 1;
   } else return 0;
