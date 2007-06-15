@@ -372,7 +372,7 @@
         (preferences:add-callback 'framework:standard-style-list:font-name (λ (p v) (set-font-name v)))
         (preferences:add-callback 'framework:standard-style-list:smoothing (λ (p v) (set-font-smoothing v)))
         
-        (unless (member (preferences:get 'framework:standard-style-list:font-name) (get-face-list 'mono))
+        (unless (member (preferences:get 'framework:standard-style-list:font-name) (get-face-list))
           (preferences:set 'framework:standard-style-list:font-name (get-family-builtin-face 'modern))))
       
       ;; set-standard-style-list-delta : string (is-a?/c style-delta<%>) -> void

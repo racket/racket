@@ -105,14 +105,20 @@
                                             (preferences:set 
                                              'framework:standard-style-list:font-name 
                                              (list-ref all-faces (car choice)))))])))))]
-                          [font-name (preferences:get 'framework:standard-style-list:font-name)])
+                          [font-name (preferences:get 'framework:standard-style-list:font-name)]
+                          [set-choice-selection
+                           (λ (font-name)
+                             (cond
+                               [(send choice find-string font-name)
+                                (send choice set-string-selection font-name)]
+                               [else
+                                (send choice set-selection (- (send choice get-number) 1))]))])
+
                      (preferences:add-callback
                       'framework:standard-style-list:font-name
                       (λ (p v)
-                        (when (send choice find-string v)
-                          (send choice set-string-selection v))))
-                     (when (send choice find-string font-name)
-                       (send choice set-string-selection font-name))
+                        (set-choice-selection v)))
+                     (set-choice-selection font-name)
                      choice)]
                   [smoothing-contol
                    (new choice%
