@@ -293,17 +293,17 @@ as a file name (e.g., in typewriter font and in in quotes).}
 as a command line (e.g., in typewriter font).}
 
 @; ------------------------------------------------------------------------
-@section{Section Links}
+@section[#:tag "scribble:manual:section-links"]{Section Links}
 
 @defproc[(secref [tag string?]) element?]{Inserts the hyperlinked
-title of the section tagged @scheme[tag].}
+title of the section tagged @scheme[tag], but @scheme{aux-element}
+items in the title content are omitted in the hyperlink label.}
 
 @defproc[(seclink [tag string?] [pre-content any/c] ...) element?]{The content from
 @scheme[pre-content] is hyperlinked to the section tagged @scheme[tag].}
 
 @defproc[(schemelink [id symbol?] [pre-content any/c] ...) element?]{The content from
 @scheme[pre-content] is hyperlinked to the definition of @scheme[id].}
-
 
 
 @; ------------------------------------------------------------------------

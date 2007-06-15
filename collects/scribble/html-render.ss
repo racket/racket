@@ -31,6 +31,7 @@
                install-file
                get-dest-directory
                format-number
+               strip-aux
                lookup)
 
       (define/override (get-suffix) #".html")
@@ -71,7 +72,7 @@
                                     (content "text-html; charset=utf-8")))
                              ,@(let ([c (part-title-content d)])
                                  (if c
-                                     `((title ,@(format-number number '(nbsp)) ,@(render-content c d ht)))
+                                     `((title ,@(format-number number '(nbsp)) ,(content->string c this d ht)))
                                      null))
                              (link ((rel "stylesheet")
                                     (type "text/css")
@@ -156,7 +157,7 @@
                               `((class ,(element-style e)))
                               null))
                        ,@(if (null? (element-content e))
-                             (render-content (cadr dest) part ht)
+                             (render-content (strip-aux (cadr dest)) part ht)
                              (render-content (element-content e) part ht))))
                   (begin (fprintf (current-error-port) "Undefined link: ~s~n" (link-element-tag e)) ; XXX Add source info
                          `((font ((class "badlink")) 

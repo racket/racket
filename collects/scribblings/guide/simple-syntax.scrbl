@@ -68,23 +68,23 @@ binds @nonterm{id} to the result of @nonterm{expr}, while
 
 @schemeblock[#, @fun-defn-stx]
 
-binds the first @nonterm{id} to a procedure that takes
-arguments as named by the remaining @nonterm{id}s. In the
-procedure case, the @nonterm{expr}s are the body of the
-procedure. When the procedure is called, it returns the result of the
-last @nonterm{expr}.
+binds the first @nonterm{id} to a function (also called a
+@defterm{procedure}) that takes arguments as named by the remaining
+@nonterm{id}s. In the function case, the @nonterm{expr}s are the body
+of the function. When the function is called, it returns the result of
+the last @nonterm{expr}.
 
 @defexamples[
 (code:line (define five 5)            (code:comment #, @t{defines @scheme[five] to be @scheme[5]}))
-(code:line (define (piece str)        (code:comment #, @t{defines @scheme[piece] as a procedure})
+(code:line (define (piece str)        (code:comment #, @t{defines @scheme[piece] as a function})
              (substring str 0 five))  (code:comment #, @t{of one argument}))
 five
 (piece "hello world")
 ]
 
-Under the hood, a procedure definition is really the same as a
-non-procedure definition, and a procedure name does not have to be
-used in a procedure call. A procedure is just another kind of value,
+Under the hood, a function definition is really the same as a
+non-function definition, and a function name does not have to be
+used in a function call. A function is just another kind of value,
 though the printed form is necessarily less complete than the printed
 form of a number or string.
 
@@ -93,9 +93,9 @@ piece
 substring
 ]
 
-A procedure definition can include multiple expressions for the
-procedure's body. In that case, only the value of the last expression
-is returned when the procedure is called. The other expressions are
+A function definition can include multiple expressions for the
+function's body. In that case, only the value of the last expression
+is returned when the function is called. The other expressions are
 evaluated only for some side-effect, such as printing.
 
 @defexamples[
@@ -108,7 +108,7 @@ evaluated only for some side-effect, such as printing.
 Scheme programmers prefer to avoid assignment statements; it's
 important, though, to understand that multiple expressions are allowed
 in a definition body, because it explains why the following
-@scheme[nogreet] procedure simply returns its argument:
+@scheme[nogreet] function simply returns its argument:
 
 @def+int[
 (define (nogreet name)
@@ -118,9 +118,9 @@ in a definition body, because it explains why the following
 
 Withing @scheme[nogreet], there are no parentheses around
 @scheme[string-append "hello " name], so they are three separate
-expressions instead of one procedure-call expression. The expressions
+expressions instead of one function-call expression. The expressions
 @scheme[string-append] and @scheme["hello "] are evaluated, but the
-results are never used. Instead, the result of the procedure is just
+results are never used. Instead, the result of the function is just
 the result of the expression @scheme[name].
 
 @; ----------------------------------------------------------------------
@@ -145,7 +145,7 @@ support.
 Re-indenting not only makes the code easier to read, it gives you
 extra feedback that your parentheses are matched in the way that you
 intended. For example, if you leave out a closing parenthesis after
-the last argument to a procedure, automatic indentation starts the
+the last argument to a function, automatic indentation starts the
 next line under the first argument, instead of under the
 @scheme[define] keyword:
 
@@ -188,20 +188,20 @@ more examples:
 ]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section{Procedure Applications}
+@section{Function Calls@aux-elem{ (Procedure Applications)}}
 
-We have already seen many procedure calls---or @defterm{procedure
-applications} in Scheme termonology. The syntax of a procedure
-application is
+We have already seen many function calls---or @defterm{procedure
+applications} in more traditional Scheme terminology. The syntax of a
+function call is
 
 @schemeblock[
 #, app-expr-stx
 ]
 
 where the number of @nonterm{expr}s determines the number of
-arguments supplied to the procedure named by @nonterm{id}.
+arguments supplied to the function named by @nonterm{id}.
 
-The @schememodname[big] language pre-defines many procedure
+The @schememodname[big] language pre-defines many function
 identifiers, such as @scheme[substring] and
 @scheme[string-append]. More examples are below.
 
@@ -257,7 +257,7 @@ the third @nonterm{expr} is evaluated for the result.
 ]
 
 Complex conditionals can be formed by nesting @scheme[if]
-expressions. For example, you could make the @scheme[reply] procedure
+expressions. For example, you could make the @scheme[reply] function
 work when given non-strings:
 
 @schemeblock[
@@ -269,7 +269,7 @@ work when given non-strings:
       "huh?"))
 ]
 
-Instead of duplicating the @scheme["huh?"] case, this procedure is
+Instead of duplicating the @scheme["huh?"] case, this function is
 better written as
 
 @schemeblock[
@@ -336,7 +336,7 @@ then the clause's remaining @nonterm{expr}s are ignored, and
 evaluation continues with the next clause. The last clause can use
 @scheme[else] as a synonym for a @scheme[#t] test expression.
 
-Using @scheme[cond], the @scheme[reply-more] procedure can be more
+Using @scheme[cond], the @scheme[reply-more] function can be more
 clearly written as follows:
 
 @def+int[
@@ -362,11 +362,11 @@ interchangable, as long as @litchar{(} is matched with @litchar{)} and
 few key places makes Scheme code even more readable.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section{Procedure Applications, Again}
+@section{Function Calls, Again}
 
-In our earlier grammar procedure applications, we oversimplified.  The
-actual syntax of a procedure application allows an arbitrary
-expression for the procedure, instead of just an @nonterm{id}:
+In our earlier grammar of function calls, we oversimplified.  The
+actual syntax of a function call allows an arbitrary
+expression for the function, instead of just an @nonterm{id}:
 
 @schemeblock[
 #, app2-expr-stx
@@ -374,7 +374,7 @@ expression for the procedure, instead of just an @nonterm{id}:
 
 The first @nonterm{expr} is often an @nonterm{id}, such
 as @scheme[string-append] or @scheme[+], but it can be anything that
-evaluates to an procedure. For example, it can be a conditional
+evaluates to a function. For example, it can be a conditional
 expression:
 
 @def+int[
@@ -384,18 +384,18 @@ expression:
 (double 5)
 ]
 
-Syntactically, the first expression in a procedure application could
+Syntactically, the first expression in a function call could
 even be a number---but that leads to an error, since a number is not a
-procedure.
+function.
 
 @interaction[(1 2 3 4)]
 
-When you accidentally omit a procedure name or when you use
+When you accidentally omit a function name or when you use
 parentheses around an expression, you'll most often get an ``expected
 a procedure'' error like this one.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section{Anonymous Procedures with @scheme[lambda]}
+@section{Anonymous Functions with @scheme[lambda]}
 
 Programming in Scheme would be tedious if you had to name all of your
 numbers. Instead of writing @scheme[(+ 1 2)], you'd have to write
@@ -406,10 +406,10 @@ numbers. Instead of writing @scheme[(+ 1 2)], you'd have to write
 (+ a b)
 ]
 
-It turns out that having to name all your procedures can be tedious,
-too. For example, you might have a procedure @scheme[twice] that takes
-a procedure and an argument. Using @scheme[twice] is convenient if you
-already have a name for the procedure, such as @scheme[sqrt]:
+It turns out that having to name all your functions can be tedious,
+too. For example, you might have a function @scheme[twice] that takes
+a function and an argument. Using @scheme[twice] is convenient if you
+already have a name for the function, such as @scheme[sqrt]:
 
 @def+int[
 (define (twice f v)
@@ -417,7 +417,7 @@ already have a name for the procedure, such as @scheme[sqrt]:
 (twice sqrt 16)
 ]
 
-If you want to apply a procedure that is not yet defined, you could
+If you want to call a function that is not yet defined, you could
 define it, and then pass it to @scheme[twice]:
 
 @def+int[
@@ -429,15 +429,15 @@ define it, and then pass it to @scheme[twice]:
 But if the call to @scheme[twice] is the only place where
 @scheme[louder] is used, it's a shame to have to write a whole
 definition. In Scheme, you can use a @scheme[lambda] expression to
-produce a procedure directly. The @scheme[lambda] form is followed by
-identifiers for the procedure's arguments, and then the procedure's
+produce a function directly. The @scheme[lambda] form is followed by
+identifiers for the function's arguments, and then the function's
 body expressions:
 
 @schemeblock[
 #, lambda-expr-stx
 ]
 
-Evaluating a @scheme[lambda] form by itself produces a procedure:
+Evaluating a @scheme[lambda] form by itself produces a function:
 
 @interaction[(lambda (s) (string-append s "!"))]
 
@@ -451,8 +451,8 @@ re-written as
        "hello")
 ]
 
-Another use of @scheme[lambda] is as a result for a procedure that
-generates procedures:
+Another use of @scheme[lambda] is as a result for a function that
+generates functions:
 
 @def+int[
 (define (make-add-suffix s2)
@@ -463,9 +463,9 @@ generates procedures:
 ]
 
 Scheme is a @defterm{lexically scoped} language, which means that
-@scheme[s2] in the procedure returned by @scheme[make-add-suffix]
+@scheme[s2] in the function returned by @scheme[make-add-suffix]
 always refers to the argument for the call that created the
-procedure. In other words, the @scheme[lambda]-generated procedure
+function. In other words, the @scheme[lambda]-generated function
 ``remembers'' the right @scheme[s2]:
 
 @interaction[
@@ -476,10 +476,10 @@ procedure. In other words, the @scheme[lambda]-generated procedure
 ]
 
 We have so far referred to definitions of the form @scheme[(define #,
-@nonterm{id} #, @nonterm{expr})] as ``non-procedure
+@nonterm{id} #, @nonterm{expr})] as ``non-function
 definitions.'' This characterization is misleading, because the
 @nonterm{expr} could be a @scheme[lambda] form, in which case
-the definition is equivalent to using the ``procedure'' definition
+the definition is equivalent to using the ``function'' definition
 form. For example, the following two definitions of @scheme[louder]
 are equivalent:
 
@@ -494,7 +494,7 @@ louder
 ]
 
 Note that the expression for @scheme[louder] in the second case is an
-``anonymous'' procedure written with @scheme[lambda], but, if
+``anonymous'' function written with @scheme[lambda], but, if
 possible, the compiler infers a name, anyway, to make printing and
 error reporting as informative as possible.
 
@@ -503,7 +503,7 @@ error reporting as informative as possible.
          @scheme[define], @scheme[let], and @scheme[let*]}
 
 It's time to retract another simplification in our grammar of
-Scheme. In the body of a procedure, definitions can appear before the
+Scheme. In the body of a function, definitions can appear before the
 body expressions:
 
 @schemeblock[
@@ -511,8 +511,8 @@ body expressions:
 #, lambda2-expr-stx
 ]
 
-Definitions at the start of a procedure body are local to the
-procedure body.
+Definitions at the start of a function body are local to the
+function body.
 
 @defexamples[
 (define (converse s)

@@ -58,7 +58,7 @@ see the kinds of sequence generators that make interesting examples.
 
 @section[#:tag "guide:sequences"]{Sequence Constructors}
 
-The @scheme[in-range] procedure generates a sequence of numbers, given
+The @scheme[in-range] function generates a sequence of numbers, given
 an optional starting number (which defaults to @scheme[0]), a number
 before which the sequences ends, and an optional step (which defaults
 to @scheme[1]).
@@ -76,7 +76,7 @@ to @scheme[1]).
   (printf " ~a " i))
 ]
 
-The @scheme[in-naturals] procedure is similar, except that the
+The @scheme[in-naturals] function is similar, except that the
 starting number must be an exact non-negative integer (which defaults
 to @scheme[0]), the step is always @scheme[1], and there is no upper
 limit. A @scheme[for] loop using just @scheme[in-naturals] will never
@@ -90,7 +90,7 @@ escapes.
       (display i)))
 ]
 
-The @scheme[stop-before] and @scheme[stop-after] procedures construct
+The @scheme[stop-before] and @scheme[stop-after] functions construct
 a new sequence given a sequence and a predicate. The new sequence is
 like the given sequence, but truncated either immediately before or
 immediately after the first element for which the predicate returns
@@ -341,7 +341,7 @@ multiple values for the results.
 
 @section{Multiple-Valued Sequences}
 
-In the same way that a procedure or expression can produce multiple
+In the same way that a function or expression can produce multiple
 values, individual iterations of a sequence can produce multiple
 elements.  For example, a hash table as a sequence generates two
 values for each iteration: a key and a value.

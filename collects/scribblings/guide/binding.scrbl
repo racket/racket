@@ -13,7 +13,7 @@ the language @schememodname[big], as in
 
 means that, within the module, the identifiers described in this guide
 have the the meaning described here: @scheme[cons] refers to the
-procedure that creates a pair, @scheme[car] refers to the procedure
+function that creates a pair, @scheme[car] refers to the function
 that extracts the first element of a pair, and so on.
 
 @margin-note{For information on the syntax of identifiers, see

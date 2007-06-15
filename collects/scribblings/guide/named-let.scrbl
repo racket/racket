@@ -25,9 +25,9 @@ is equivalent to
   (_proc-id _init-expr ...))
 ]
 
-That is, a named @scheme[let] binds a procedure identifier that is
-visible only in the procedure's body, and it implicitly calls the
-procedure with the values of some initial expressions. 
+That is, a named @scheme[let] binds a function identifier that is
+visible only in the function's body, and it implicitly calls the
+function with the values of some initial expressions. 
 
 @defexamples[
 (define (duplicate pos lst)

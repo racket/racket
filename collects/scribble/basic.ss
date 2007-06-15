@@ -69,7 +69,7 @@
   ;; ----------------------------------------
 
   (provide hspace
-           elem
+           elem aux-elem
            italic bold
            tt span-class
            subscript superscript)
@@ -79,6 +79,9 @@
 
   (define/kw (elem #:body str)
     (make-element #f (decode-content str)))
+
+  (define/kw (aux-elem #:body s)
+    (make-aux-element #f (decode-content s)))
 
   (define/kw (italic #:body str)
     (make-element 'italic (decode-content str)))

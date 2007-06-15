@@ -4,11 +4,9 @@
 
   (provide normalize-definition)
 
-  ;; This code was shamefully copied from MzScheme's startup.ss!
-
   (define normalize-definition
     (case-lambda 
-     [(stx lambda-stx check-context?)
+     [(stx lambda-stx check-context? allow-key+opt?)
       (when (and check-context?
 		 (memq (syntax-local-context) '(expression)))
 	(raise-syntax-error 
@@ -45,35 +43,91 @@
 				 ;;  a proc maker instead of a final proc to enable
 				 ;;  left-to-right checking of the function protos
 				 (lambda (proto)
-				   (let-values ([(args mk-rhs)
+				   (let-values ([(args rests mk-rhs)
 						 (syntax-case proto ()
 						   [(id arg ...)
 						    (values (syntax->list #'(arg ...))
+                                                            null
 							    (lambda (body)
 							      (quasisyntax/loc stx (#,lambda-stx (arg ...)
 												 . #,body))))]
 						   [(id arg ... . rest)
-						    (values (syntax->list #'(arg ... rest))
+						    (values (syntax->list #'(arg ...))
+                                                            (list #'rest)
 							    (lambda (body)
 							      (quasisyntax/loc stx 
 								(#,lambda-stx (arg ... . rest)
 									      . #,body))))])])
-				     (for-each (lambda (a)
-						 (unless (identifier? a)
-						   (raise-syntax-error
-						    #f
-						    "not an identifier for procedure argument"
-						    stx
-						    a)))
-					       args)
-				     (let ([dup (check-duplicate-identifier args)])
-				       (when dup
-					 (raise-syntax-error
-					  #f
-					  "duplicate argument identifier"
-					  stx
-					  dup)))
-				     mk-rhs))]
+                                     (let* ([args (if allow-key+opt?
+                                                      (let* ([kw-ht (make-hash-table)]
+                                                             [check-kw
+                                                              (lambda (kw)
+                                                                (when (hash-table-get kw-ht (syntax-e kw) #f)
+                                                                  (raise-syntax-error
+                                                                   #f
+                                                                   "duplicate keyword for argument"
+                                                                   stx
+                                                                   kw))
+                                                                (hash-table-put! kw-ht (syntax-e kw) #t))])
+                                                        (let loop ([args args][need-def? #f])
+                                                          (syntax-case args ()
+                                                            [() null]
+                                                            [(id . more)
+                                                             (identifier? #'id)
+                                                             (if need-def?
+                                                                 (raise-syntax-error
+                                                                  #f
+                                                                  "default-value expression missing"
+                                                                  stx
+                                                                  #'id)
+                                                                 (cons #'id (loop #'more #f)))]
+                                                            [([id def-expr] . more)
+                                                             (identifier? #'id)
+                                                             (cons #'id (loop #'more #t))]
+                                                            [(kw id . more)
+                                                             (and (keyword? (syntax-e #'kw))
+                                                                  (identifier? #'id))
+                                                             (begin
+                                                               (check-kw #'kw)
+                                                               (cons #'id (loop #'more #t)))]
+                                                            [(kw [id def-expr] . more)
+                                                             (and (keyword? (syntax-e #'kw))
+                                                                  (identifier? #'id))
+                                                             (begin
+                                                               (check-kw #'kw)
+                                                               (cons #'id (loop #'more #t)))]
+                                                            [(kw . more)
+                                                             (keyword? (syntax-e #'kw))
+                                                             (raise-syntax-error #f
+                                                                                 "missing argument identifier after keyword"
+                                                                                 stx
+                                                                                 #'kw)]
+                                                            [(x . more)
+                                                             (raise-syntax-error
+                                                              #f
+                                                              "not an identifier, identifier with default, or keyword for procedure argument"
+                                                              stx
+                                                              #'x)])))
+                                                      args)]
+                                            [all-args (if (null? rests)
+                                                          args
+                                                          (append args rests))])
+                                       (for-each (lambda (a)
+                                                   (unless (identifier? a)
+                                                     (raise-syntax-error
+                                                      #f
+                                                      "not an identifier for procedure argument"
+                                                      stx
+                                                      a)))
+                                                 all-args)
+                                       (let ([dup (check-duplicate-identifier all-args)])
+                                         (when dup
+                                           (raise-syntax-error
+                                            #f
+                                            "duplicate argument identifier"
+                                            stx
+                                            dup)))
+                                       mk-rhs)))]
 				[general-proto
 				 ;; proto is guaranteed to be a stx-pair
 				 (lambda (proto)
@@ -106,4 +160,5 @@
 	      "bad syntax (no expressions for procedure body)"
 	      stx))
 	   (values id (mk-rhs #'body)))])]
-     [(stx lambda-stx) (normalize-definition stx lambda-stx #t)])))
+     [(stx lambda-stx check-context?) (normalize-definition stx lambda-stx check-context? #f)]
+     [(stx lambda-stx) (normalize-definition stx lambda-stx #t #f)])))

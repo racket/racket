@@ -76,6 +76,7 @@
    [(index-element element) ([tag tag?]
                              [plain-seq (listof string?)]
                              [entry-seq list?])]
+   [(aux-element element) ()]
    ;; specific renders support other elements, especially strings
 
    [collected-info ([number (listof (or/c false/c integer?))]
@@ -132,22 +133,35 @@
 
   (provide content->string)
 
-  (define (content->string c)
-    (apply string-append
-           (map (lambda (e)
-                  (element->string e))
-                c)))
+  (define content->string
+    (case-lambda
+     [(c) (c->s c element->string)]
+     [(c renderer sec ht) (c->s c (lambda (e)
+                                    (element->string e renderer sec ht)))]))
 
-  (define (element->string c)
-    (cond
-     [(element? c) (content->string (element-content c))]
-     [(string? c) c]
-     [else (case c
-             [(ndash) "--"]
-             [(ldquo rdquo) "\""]
-             [(rsquo) "'"]
-             [(rarr) "->"]
-             [else (format "~s" c)])]))
+  (define (c->s c do-elem)
+    (apply string-append
+           (map do-elem c)))
+
+  (define element->string
+    (case-lambda
+     [(c)
+      (cond
+       [(element? c) (content->string (element-content c))]
+       [(string? c) c]
+       [else (case c
+               [(ndash) "--"]
+               [(ldquo rdquo) "\""]
+               [(rsquo) "'"]
+               [(rarr) "->"]
+               [else (format "~s" c)])])]
+     [(c renderer sec ht)
+      (cond
+       [(element? c) (content->string (element-content c) renderer sec ht)]
+       [(delayed-element? c) 
+        (content->string (force-delayed-element c renderer sec ht)
+                         renderer sec ht)]
+       [else (element->string c)])]))
 
   )
 

@@ -7,7 +7,7 @@
 
 @title{Pairs, Lists, and Scheme Syntax}
 
-The @scheme[cons] procedure actually accepts any two values, not just
+The @scheme[cons] function actually accepts any two values, not just
 a list for the second argument. When the second argument is not
 @scheme[empty] and not itself produced by @scheme[cons], the result prints
 in a special way. The two values joined with @scheme[cons] are printed
@@ -18,7 +18,7 @@ whitespace) in between:
 
 Thus, a value produced by @scheme[cons] is not always a list. In
 general, the result of @scheme[cons] is a @defterm{pair}. The more
-traditional name for the @scheme[cons?] procedure is @scheme[pair?],
+traditional name for the @scheme[cons?] function is @scheme[pair?],
 and we'll use the traditional name from now on.
 
 The name @scheme[rest] also makes less sense for non-list pairs; the
@@ -48,7 +48,7 @@ mistake, such as accidentally reversing the arguments to
 @interaction[(cons (list 2 3) 1) (cons 1 (list 2 3))]
 
 Non-list pairs are used intentionally, sometimes. For example, the
-@scheme[make-immutable-hash-table] procedure takes a list of pairs,
+@scheme[make-immutable-hash-table] function takes a list of pairs,
 where the @scheme[car] of each pair is a key and the @scheme[cdr] is an
 arbitrary value.
 
@@ -119,7 +119,7 @@ to be made up of the same letters.
 
 Indeed, the intrinsic value of a symbol is nothing more than its
 character content. In this sense, symbols and strings are almost the
-same thing, and the main difference is how they print. The procedures
+same thing, and the main difference is how they print. The functions
 @scheme[symbol->string] and @scheme[string->symbol] convert between
 them.
 

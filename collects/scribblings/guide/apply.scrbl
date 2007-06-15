@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:application"]{Procedure Applications}
+@title[#:tag "guide:application"]{Function Calls@aux-elem{ (Procedure Applications)}}
 
 An expression of the form
 
@@ -11,16 +11,18 @@ An expression of the form
 (_proc-expr _arg-expr ...)
 ]
 
-is a procedure application when @scheme[_proc-expr] is not an
-identifier that is bound as a transformer.
+is a function call---also known as a @defterm{procedure
+application}---when @scheme[_proc-expr] is not an identifier that is
+bound as a syntax transformer (such as @scheme[if] or
+@scheme[define]).
 
 @section{Evaluation Order and Arity}
 
-A procedure application is evaluated by first evaluating the
+A function call is evaluated by first evaluating the
 @scheme[_proc-expr] and all @scheme[_arg-expr]s in order (left to
-right). Then, if @scheme[_proc-expr] produced a procedure that accepts
-as many arguments as supplied @scheme[_arg-expr]s, the procedure is
-applied. Otherwise, an exception is raised.
+right). Then, if @scheme[_proc-expr] produced a function that accepts
+as many arguments as supplied @scheme[_arg-expr]s, the function is
+called. Otherwise, an exception is raised.
 
 @examples[
 (cons 1 null)
@@ -29,17 +31,17 @@ applied. Otherwise, an exception is raised.
 (1 2 3)
 ]
 
-Some procedures, such as @scheme[cons], accept a fixed number of
-arguments. Some procedures, such as @scheme[list], accept any number
-of arguments. Some procedures accept a range of argument counts; for
+Some functions, such as @scheme[cons], accept a fixed number of
+arguments. Some functions, such as @scheme[list], accept any number
+of arguments. Some functions accept a range of argument counts; for
 example @scheme[substring] accepts either two or three arguments. A
-procedure's @idefterm{arity} is the number(s) of arguments that it
+function's @idefterm{arity} is the number of arguments that it
 accepts.
 
 @;------------------------------------------------------------------------
 @section[#:tag "guide:keyword-args"]{Keyword Arguments}
 
-Some procedures accept @defterm{keyword arguments} in addition to
+Some functions accept @defterm{keyword arguments} in addition to
 by-position arguments. For that case, an @scheme[_arg] can be an
 @scheme[_arg-keyword _arg-expr] sequence instead of just a
 @scheme[_arg-expr]:
@@ -56,7 +58,7 @@ For example,
 
 @schemeblock[(go "super.ss" #:mode 'fast)]
 
-calls the procedure bound to @scheme[go] with @scheme["super.ss"] as a
+calls the function bound to @scheme[go] with @scheme["super.ss"] as a
 by-position argument, and with @scheme['fast] as an argument
 associated with the @scheme[#:mode] keyword. A keyword is implicitly
 paired with the expression that follows it.
@@ -70,7 +72,7 @@ expression to produce an argument value, and @scheme[#:fast] is not an
 expression.
 
 The order of keyword @scheme[_arg]s determines the order in which
-@scheme[_arg-expr]s are evaluated, but a procedure accepts keyword
+@scheme[_arg-expr]s are evaluated, but a function accepts keyword
 arguments independent of their position in the argument list. The
 above call to @scheme[go] can be equivalently written
 
@@ -79,13 +81,12 @@ above call to @scheme[go] can be equivalently written
 @refdetails["mz:application"]{procedure applications}
 
 @;------------------------------------------------------------------------
-@section[#:tag "guide:apply"]{The @scheme[apply] Procedure}
+@section[#:tag "guide:apply"]{The @scheme[apply] Function}
 
-The syntax for procedure applications supports any number of
-arguments, but a specific application expression always specifies a
-fixed number of arguments. As a result, a procedure that takes a list
-of arguments cannot directly apply a procedure like @scheme[+] to all
-of the items in the list:
+The syntax for function calls supports any number of arguments, but a
+specific call always specifies a fixed number of arguments. As a
+result, a function that takes a list of arguments cannot directly
+apply a function like @scheme[+] to all of the items in the list:
 
 @def+int[
 (define (avg lst) (code:comment #, @elem{doesn't work...})
@@ -101,9 +102,9 @@ of the items in the list:
 (avg '(1 2))
 ]
 
-The @scheme[apply] procedure offers a way around this restriction. It
-takes a procedure and a @italic{list} arguments, and it applies the
-procedure to the arguments:
+The @scheme[apply] function offers a way around this restriction. It
+takes a function and a @italic{list} arguments, and it applies the
+function to the arguments:
 
 @def+int[
 (define (avg lst)
@@ -113,8 +114,8 @@ procedure to the arguments:
 (avg '(1 2 3 4))
 ]
 
-As a convenience, the @scheme[apply] procedure accepts additional
-arguments between the procedure and the list. The additional arguments
+As a convenience, the @scheme[apply] function accepts additional
+arguments between the function and the list. The additional arguments
 are effectively @scheme[cons]ed onto the argument list:
 
 @def+int[
@@ -123,13 +124,13 @@ are effectively @scheme[cons]ed onto the argument list:
 (anti-sum '(1 2 3))
 ]
 
-The @scheme[apply] procedure supports only by-position arguments. To
-apply a procedure with keyword arguments, use the
-@scheme[keyword-apply] procedure, which accepts a procedure to apply
+The @scheme[apply] function supports only by-position arguments. To
+apply a function with keyword arguments, use the
+@scheme[keyword-apply] function, which accepts a function to apply
 and three lists. The first two lists are in parallel, where the first
 list contains keywords (sorted by @scheme[keyword<]), and the second
 list contains a corresponding argument for each keyword. The third
-list contains by-position procedure arguments, as for @scheme[apply].
+list contains by-position function arguments, as for @scheme[apply].
 
 @schemeblock[
 (keyword-apply go 

@@ -42,7 +42,7 @@ convention implicitly defines the meaning of many meta-variables:
        sub-form; it will be parsed as either a local definition or an
        expression. A @scheme[_body] can parse as a definition only if
        it is not preceded by any expression, and the last
-       @scheme[_body] must be an expression.}
+       @scheme[_body] must be an expression; see also @secref["guide:intdefs"].}
 
 }
 

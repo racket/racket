@@ -3,9 +3,9 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title[#:tag "guide:lambda"]{Procedures: @scheme[lambda]}
+@title[#:tag "guide:lambda"]{Functions@aux-elem{ (Procedures)}: @scheme[lambda]}
 
-Such a @scheme[lambda] expression creates a procedure. In the simplest
+Such a @scheme[lambda] expression creates a function. In the simplest
 case, a @scheme[lambda] expression has the form
 
 @specform[
@@ -37,7 +37,7 @@ A @scheme[lambda] expression can also have the form
 
 That is, a @scheme[lambda] expression can have a single
 @scheme[_rest-id] that is not surrounded by parentheses. The resulting
-procedure accepts any number of arguments, and the arguments are put
+function accepts any number of arguments, and the arguments are put
 into a list bound to @scheme[_rest-id].
 
 @examples[
@@ -48,8 +48,8 @@ into a list bound to @scheme[_rest-id].
  1 2 3)
 ]
 
-Procedures with a @scheme[_rest-id] often use @scheme[apply] to call
-another procedure that accepts any number of arguments.
+Functions with a @scheme[_rest-id] often use @scheme[apply] to call
+another function that accepts any number of arguments.
 
 @margin-note{See @secref["guide:apply"] for more information on
 @scheme[apply].}
@@ -71,7 +71,7 @@ with a @scheme[_rest-id]:
   body ...+)
 ]
 
-The result of this form is a procedure that requires at least as many
+The result of this form is a function that requires at least as many
 arguments as @scheme[_arg-id]s, and also accepts any number of
 additional arguments.
 
@@ -85,7 +85,7 @@ additional arguments.
 ]
 
 A @scheme[_rest-id] variable is sometimes called a @defterm{rest
-argument}, because it accepts the ``rest'' of the procedure arguments.
+argument}, because it accepts the ``rest'' of the function arguments.
 
 @;------------------------------------------------------------------------
 @section{Declaring Optional Arguments}
@@ -179,9 +179,9 @@ specifies a keyword-based argument with a default value.
 ]
 
 The @scheme[lambda] form does not directly support the creation
-of a procedure that accepts ``rest'' keywords. To construct a
-procedure that accepts any and all keyword arguments, use
-@scheme[make-keyword-procedure]. The procedure supplied to
+of a function that accepts ``rest'' keywords. To construct a
+function that accepts any and all keyword arguments, use
+@scheme[make-keyword-procedure]. The function supplied to
 @scheme[make-keyword-procedure] receives keyword arguments through
 parallel lists in the first two (by-position) arguments, and
 then all by-position arguments from an application as the
@@ -199,12 +199,12 @@ remaining by-position arguments.
 ((trace-wrap greet) "John" #:hi "Howdy")
 ]
 
-@refdetails["mz:lambda"]{procedure expressions}
+@refdetails["mz:lambda"]{function expressions}
 
 @;------------------------------------------------------------------------
-@section{Arity-Sensitive Procedures: @scheme[case-lambda]}
+@section{Arity-Sensitive Functions: @scheme[case-lambda]}
 
-The @scheme[case-lambda] form creates a procedure that can have
+The @scheme[case-lambda] form creates a function that can have
 completely different behaviors depending on the number of arguments
 that are supplied. A case-lambda expression has the form
 
@@ -218,7 +218,7 @@ that are supplied. A case-lambda expression has the form
 ]
 
 where each @scheme[[_formals _body ...+]] is analogous to @scheme[(lambda
-_formals _body ...+)]. Applying a procedure produced by
+_formals _body ...+)]. Applying a function produced by
 @scheme[case-lambda] is like applying a @scheme[lambda] for the first
 case that matches the number of given arguments.
 
@@ -233,5 +233,5 @@ case that matches the number of given arguments.
 (greet)
 ]
 
-A @scheme[case-lambda] procedure cannot directly support optional or
+A @scheme[case-lambda] function cannot directly support optional or
 keyword arguments.

@@ -80,10 +80,10 @@ written with double quotes at the start and end of the string:
 @interaction["hello world"]
 
 Scheme uses parentheses to wrap larger expressions---almost any kind
-of expression, other than simple constants. For example, a procedure
-call is written: open parenthesis, procedure name, argument
+of expression, other than simple constants. For example, a function
+call is written: open parenthesis, function name, argument
 expression, and closing parenthesis. The following expression calls
-the built-in procedure @scheme[substring] with the arguments
+the built-in function @scheme[substring] with the arguments
 @scheme["hello world"], @scheme[0], and @scheme[5]:
 
 @interaction[(substring "hello world" 0 5)]
@@ -91,7 +91,7 @@ the built-in procedure @scheme[substring] with the arguments
 @; ----------------------------------------------------------------------
 @section{Definitions and Interactions}
 
-You can define your own procedures that work like @scheme[subtring] by
+You can define your own functions that work like @scheme[subtring] by
 using the @scheme[define] form, like this:
 
 @def+int[
@@ -131,7 +131,7 @@ sequence:
 (piece "howdy universe")
 ]
 
-The @scheme[enter!] procedure both loads the code and switches the
+The @scheme[enter!] function both loads the code and switches the
 evaluation context to the inside of the module, just like DrScheme's
 @onscreen{Run} button.
 

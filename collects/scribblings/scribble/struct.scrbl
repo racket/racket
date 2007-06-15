@@ -194,6 +194,14 @@ section, and the last argument correspond to global information
 
 }
 
+@defstruct[(aux-element element) ()]{
+
+Instances of this structure type are intended for use in titles, where
+the auxiliary part of the title can be omitted in hyperlinks. See, for
+example, @scheme[secref].
+
+}
+
 @defstruct[delayed-element ([render (any/c part? any/c . -> . list?)])]{
 
 The @scheme[render] procedure's arguments are the same as for

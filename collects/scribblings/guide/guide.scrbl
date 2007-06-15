@@ -62,7 +62,7 @@ using @idefterm{contracts}.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "regexp"]{Regular-Expression Matching (Regexps)}
+@section[#:tag "regexp"]{Regular-Expression Matching@aux-elem{ (Regexps)}}
 
 
 @; ----------------------------------------------------------------------
@@ -70,11 +70,11 @@ using @idefterm{contracts}.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "units"]{Higher-Order Modules (Units)}
+@section[#:tag "units"]{Units (Higher-Order Modules)}
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "macros"]{Syntactic Extension (Modules and Macros)}
+@section[#:tag "guide:macros"]{Syntactic Extension@aux-elem{ (Modules and Macros)}}
 
 
 @; ----------------------------------------------------------------------
@@ -101,7 +101,7 @@ using @idefterm{contracts}.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "ffi"]{Foreign-Function Interface (FFI)}
+@section[#:tag "ffi"]{Foreign-Function Interface@aux-elem{ (FFI)}}
 
 
 @; ----------------------------------------------------------------------
@@ -109,7 +109,7 @@ using @idefterm{contracts}.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "gui"]{Graphical User Interfaces (GUIs)}
+@section[#:tag "gui"]{Graphical User Interfaces@aux-elem{ (GUIs)}}
 
 
 @; ----------------------------------------------------------------------

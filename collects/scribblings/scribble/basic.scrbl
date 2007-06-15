@@ -93,6 +93,9 @@ have Scribble's @file{scheme.ss} and @file{manual.ss}).
 @scheme[decode-content], and wraps the result as an element with
 style @scheme[#f].}
 
+@def-elem-proc[aux-elem]{Like @scheme[elem], but creates an
+@scheme[aux-element].}
+
 @def-style-proc[italic]
 @def-style-proc[bold]
 @def-style-proc[tt]

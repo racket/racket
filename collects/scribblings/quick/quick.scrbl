@@ -57,17 +57,17 @@ string @scheme["art gallery"]:
 
 @mr-interaction[5 "art gallery"]
 
-An expression can also be a procedure call. To call a procedure, put
-an open parenthesis before the procedure name, then expressions for the
-procedure arguments, and then a close parenthesis, like this:
+An expression can also be a function call. To call a function, put
+an open parenthesis before the function name, then expressions for the
+function arguments, and then a close parenthesis, like this:
 
 @mr-interaction[(circle 10)]
 
-A result from the @scheme[circle] procedure is a picture value, which
+A result from the @scheme[circle] function is a picture value, which
 prints as an expression result in much the same way that numbers or
 strings print.  The argument to @scheme[circle] determines the
 circle's size in pixels.  As you might guess, there's a
-@scheme[rectangle] procedure that takes two arguments instead of one:
+@scheme[rectangle] function that takes two arguments instead of one:
 
 @mr-interaction[(rectangle 10 20)]
 
@@ -79,14 +79,14 @@ what happens:
 Note that DrScheme highlights the source of the error in pink.
 
 In addition to basic picture constructors like @scheme[circle] and
-@scheme[rectangle], there's a @scheme[hc-append] procedure that
-combines pictures. When you start composing procedure calls in Scheme,
+@scheme[rectangle], there's a @scheme[hc-append] function that
+combines pictures. When you start composing function calls in Scheme,
 it looks like this:
 
 @mr-interaction[(hc-append (circle 10) (rectangle 10 20))]
 
 The hyphen in the name @scheme[hc-append] is just a part of the
-identifier; it's not @scheme[hc] minus @scheme[append]. The procedure
+identifier; it's not @scheme[hc] minus @scheme[append]. The function
 name starts with @scheme[h] because it combines pictures horizontally,
 and the next letter is @scheme[c] because the pictures are centered
 vertically. If you wonder what other functions exist (perhaps a way to
@@ -126,10 +126,10 @@ area. In practice, though, the definitions area is where your program
 lives---it's the file that you save---while the interaction area is
 for transient explorations and debugging tasks.
 
-Let's add a procedure definition to the program. A procedure
+Let's add a function definition to the program. A function
 definition uses @scheme[define], just like our shape definitions, but with
-an open parenthesis before the procedure name, and names for the
-procedure arguments before the matching close parenthesis:
+an open parenthesis before the function name, and names for the
+function arguments before the matching close parenthesis:
 
 @mr-schemeblock+eval[
 (define (square n)
@@ -138,7 +138,7 @@ procedure arguments before the matching close parenthesis:
   (filled-rectangle n n))
 ]
 
-The syntax of the definition mirrors the syntax of a procedure
+The syntax of the definition mirrors the syntax of a function
 call:
 
 @mr-interaction[(square 10)]
@@ -156,7 +156,7 @@ definition area.
 @section{Local Binding}
 
 The @scheme[define] form can be used in some places to create local
-bindings. For example, it can be used inside a procedure body:
+bindings. For example, it can be used inside a function body:
 
 @mr-def+int[
 (define (four p)
@@ -194,21 +194,22 @@ contrast, allows later bindings to use earlier bindings:
 ]
 
 @; ----------------------------------------------------------------------
-@section{Procedures are Values}
+@section{Functions are Values}
 
-Instead of calling @scheme[circle] as a procedure, try evaluating just
+Instead of calling @scheme[circle] as a function, try evaluating just
 @scheme[circle] as an expression:
 
 @mr-interaction[circle]
 
-That is, the identifier @scheme[circle] is bound to a procedure, just
-like @scheme[c] is bound to a circle. Unlike a cicrle picture, there's
-not a simple way of completely printing the procedure, so DrScheme just
-prints @procedure{circle}.
+That is, the identifier @scheme[circle] is bound to a function
+(a.k.a. ``procedure''), just like @scheme[c] is bound to a
+circle. Unlike a cicrle picture, there's not a simple way of
+completely printing the function, so DrScheme just prints
+@procedure{circle}.
 
-This example shows that procedures are values, just like numbers and
-pictures (even if they don't print as nicely). Since procedures are
-values, you can define procedures that expect other procedures as
+This example shows that functions are values, just like numbers and
+pictures (even if they don't print as nicely). Since functions are
+values, you can define functions that expect other functions as
 arguments:
 
 @mr-def+int[
@@ -218,21 +219,21 @@ arguments:
 (series square)
 ]
 
-When calling a procedure that accepts a procedure argument, the
-argument procedure often isn't needed anywhere else. Having to write
+When calling a function that accepts a function argument, the
+argument function often isn't needed anywhere else. Having to write
 down the function via @scheme[define] would be a hassle, because you
-have to make up a name and find a place to put the procedure
+have to make up a name and find a place to put the function
 definition. The alternative is to use @scheme[lambda], which creates an
-anonymous procedure:
+anonymous function:
 
 @mr-interaction[(series (lambda (size) (checkerboard (square size))))]
 
 The parenthesized names after a @scheme[lambda] are the arguments to
-the procedure, and the expression after the argument names is the
-procedure body. Using the word ``lambda'' instead of ``function'' or
+the function, and the expression after the argument names is the
+function body. Using the word ``lambda'' instead of ``function'' or
 ``procedure'' is part of Scheme's history and culture.
 
-A procedure-form @scheme[define] is really a shorthand for a simple
+A function @scheme[define] is really a shorthand for a simple
 @scheme[define] using @scheme[lambda] as the value. For example, the
 @scheme[series] definition could be written as
 
@@ -242,7 +243,7 @@ A procedure-form @scheme[define] is really a shorthand for a simple
     (hc-append 4 (mk 5) (mk 10) (mk 20))))
 ]
 
-Most Schemers prefer to use the shorthand procedure form with
+Most Schemers prefer to use the shorthand function form with
 @scheme[define] instead of expanding to @scheme[lambda].
 
 @; ----------------------------------------------------------------------
@@ -254,7 +255,7 @@ environment of the expression determines the identifier's
 binding. This rule applies to identifiers in a @scheme[lambda] body as
 well as anywhere else.
 
-For example, in the following @scheme[color-series] procedure the uses
+For example, in the following @scheme[color-series] function the uses
 of @scheme[mk] in each @scheme[lambda] form to refer to the argument of
 @scheme[color-series], since that's the binding that is textually in
 scope:
@@ -269,8 +270,8 @@ scope:
 (rgb-series square)
 ]
 
-Here's another example, where @scheme[rgb-maker] takes a procedure and
-returns a new one that remembers and uses the original procedure.
+Here's another example, where @scheme[rgb-maker] takes a function and
+returns a new one that remembers and uses the original function.
 
 @mr-def+int[
 (define (rgb-maker mk)
@@ -282,7 +283,7 @@ returns a new one that remembers and uses the original procedure.
 (series (rgb-maker square))
 ]
 
-Note how composing procedures via @scheme[rgb-maker] creates a
+Note how composing functions via @scheme[rgb-maker] creates a
 different alignment of objects within the picture compared to using
 @scheme[rgb-series].
 
@@ -293,7 +294,7 @@ Scheme inherits much of its style from the langauge Lisp, whose name
 originally stood for ``LISt Processor,'' and lists remain an important
 part of Scheme.
 
-The @scheme[list] procedure takes any number of arguments and returns
+The @scheme[list] function takes any number of arguments and returns
 a list containing the given values:
 
 @mr-interaction[(list "red" "green" "blue")
@@ -310,9 +311,9 @@ documentation and in DrScheme, result parentheses are printed in blue,
 unlike expression parentheses.
 
 If you have a list, then you'll eventually want to do something with
-each of the elements. The @scheme[map] procedure takes a list and a
-procedure to apply to each element of the list; it returns a new list
-to combine the procedure's results:
+each of the elements. The @scheme[map] function takes a list and a
+function to apply to each element of the list; it returns a new list
+to combine the function's results:
 
 @mr-def+int[
 (define (rainbow p)
@@ -322,8 +323,8 @@ to combine the procedure's results:
 (rainbow (square 5))
 ]
 
-Another procedure that works with lists is @scheme[apply]. Like
-@scheme[map], it takes a procedure and a list, but a procedure given
+Another function that works with lists is @scheme[apply]. Like
+@scheme[map], it takes a function and a list, but a function given
 to @scheme[apply] should take all of the arguments at once, instead of
 each one individually. The @scheme[apply] function is especially
 useful with functions that take any number of arguments, such as
@@ -336,8 +337,8 @@ useful with functions that take any number of arguments, such as
 Note that @scheme[(vc-append (rainbow (square 5)))] would not work,
 because @scheme[vc-append] does not want a list as an argument; it
 wants a picture as an argument, and it is willing to accept any number
-of them. The @scheme[apply] procedure bridges the gap between a
-procedure that wants many arguments and a list of those arguments as a
+of them. The @scheme[apply] function bridges the gap between a
+function that wants many arguments and a list of those arguments as a
 single value.
 
 @; ----------------------------------------------------------------------
@@ -350,12 +351,12 @@ Since your program in the definitions window starts with
 all of the code that you put in the definitions window is inside a
 module. Furthermore, the module intially imports everything from the
 module designated by @schememodname[slideshow], which exports
-picture-making procedures as well as more commonly used procedures
+picture-making functions as well as more commonly used functions
 such as @scheme[list] and @scheme[map].
 
 To import additional libraries, use the @scheme[require] form. For
 example, the library @scheme[(lib "flash.ss" "texpict")] provides a
-@scheme[filled-flash] procedure:
+@scheme[filled-flash] function:
 
 @mr-def+int[
 (require (lib "flash.ss" "texpict"))
@@ -408,8 +409,8 @@ Modules are named and distributed in various ways:
         and when you run this later program, a rainbow list of squares
         is the output. Note that @file{use.ss} is written using the
         initial import @schememodname[little], which does not
-        supply any picture-making procedures itself---but does provide
-        @scheme[require] and the procedure-calling syntax.}
+        supply any picture-making functions itself---but does provide
+        @scheme[require] and the function-calling syntax.}
 
 ]
 
@@ -433,15 +434,15 @@ Here's another library to try:
 
 Instead of a circle, the result is a picture of the code that, if it
 were used as an expression, would produce a circle. In other words,
-@scheme[code] is not a procedure, but instead a new syntactic form for
+@scheme[code] is not a function, but instead a new syntactic form for
 creating pictures; the bit between the opening parenthesese with
 @scheme[code] is not an expression, but instead manipulated by the
 @scheme[code] syntactic form.
 
 This helps explain what we meant in the previous section when we said
 that @schememodname[little] provides @scheme[require] and the
-procedure-calling syntax. Libraries are not restricted to exporting
-values, such as procedures; they can also define new syntax. In this
+function-calling syntax. Libraries are not restricted to exporting
+values, such as functions; they can also define new syntax. In this
 sense, Scheme isn't exactly language at all; it's more of an idea for
 how to structure a language so that you can extend it or create
 entirely new languages.
@@ -487,7 +488,7 @@ take you a long way!
 
 An object system is another example of a sophisticated language
 extension that is worth learning and using for a Scheme users. Objects
-are sometimes better than procedures, even when you have
+are sometimes better than functions, even when you have
 @scheme[lambda], and objects work especially well for graphical user
 interfaces. The API for Scheme's GUI and graphics system is expressed
 in terms of objects and classes.
@@ -518,8 +519,8 @@ argument @scheme[#t] in this case is the boolean constant ``true.''
 Pictures generated with @schememodname[slideshow] encapsulate a
 function that uses MrEd's drawing commands to render the picture to a
 drawing context, such as a canvas in a frame. The
-@scheme[make-pict-drawer] procedure from @schememodname[slideshow]
-exposes a picture's drawing procedure. We can use
+@scheme[make-pict-drawer] function from @schememodname[slideshow]
+exposes a picture's drawing function. We can use
 @scheme[make-pict-drawer] in a canvas-painting callback to draw a
 picture into a canvas:
 
@@ -550,7 +551,7 @@ is really just a @scheme[lambda] in disguise. While those are all part
 of PLT Scheme, they are not the main ingredients of day-to-day programming
 in PLT Scheme.
 
-Instead, PLT Scheme programmers typically program with procedures,
+Instead, PLT Scheme programmers typically program with functions,
 records, objects, exceptions, regular expressions, modules, and
 threads. That is, instead of a ``minimalist'' language---which is the
 way that Scheme is often described---PLT Scheme offers a rich language

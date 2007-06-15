@@ -114,9 +114,9 @@ _toplevel.ss_: helper for moduleless compilation and expansion
 _define.ss_: handling all the same function forms as `define'
 ======================================================================
 
-> (normalize-definition defn-stx lambda-id-stx [check-context?]) -
+> (normalize-definition defn-stx lambda-id-stx [check-context? opt+kws?]) -
   takes a definition form whose shape is like `define' (though
-  possibly with a different keyword) and returns two values: the
+  possibly with a different name) and returns two values: the
   defined identifier and the right-hand side expression.
 
   To generate the right-hand side, this function may need to insert
@@ -127,6 +127,10 @@ _define.ss_: handling all the same function forms as `define'
   `check-context?' is true, then a syntax error is raised if
   `(syntax-local-context)' indicates that the current context is an
   expression context. The default value of `check-context?' is #t.
+
+  If `opt-kws?' is #t, then arguments of the form `[id expr]',
+  `keyword id', and `keyword [id expr]' are allowed, and they are
+  preserved in the expansion.
 
 ======================================================================
 _struct.ss_: generating the same names as `define-struct'

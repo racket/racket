@@ -394,3 +394,6 @@ and in the @scheme[body]s.
 @;------------------------------------------------------------------------
 @section{Sequencing: @scheme[begin]}
 
+@;------------------------------------------------------------------------
+@section[#:tag "mz:define"]{Definitions: @scheme[define] and @scheme[define-values]}
+

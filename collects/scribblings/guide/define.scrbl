@@ -3,6 +3,8 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
+@interaction-eval[(require (lib "string.ss"))]
+
 @title{Definitions: @scheme[define]}
 
 A basic definition has the form
@@ -18,9 +20,9 @@ salutation
 ]
 
 @;------------------------------------------------------------------------
-@section{Procedure Shorthand}
+@section{Function Shorthand}
 
-The @scheme[define] form also supports a shorthand for procedure
+The @scheme[define] form also supports a shorthand for function
 definitions:
 
 @specform[(define (id arg ...) body ...+)]{}
@@ -45,8 +47,9 @@ which is a shorthand for
 (greet "John" "Doe")
 ]
 
-The procedure shorthand via @scheme[define] also supports a final
-argument to collect extra arguments in a list:
+The function shorthand via @scheme[define] also supports a ``rest''
+argument (i.e., a final argument to collect extra arguments in a
+list):
 
 @specform[(define (id arg ... . rest-id) expr)]{}
 
@@ -61,6 +64,65 @@ which is a shorthand
   (/ (apply + l) (length l)))
 (avg 1 2 3)
 ]
+
+@;------------------------------------------------------------------------
+@section{Curried Function Shorthand}
+
+Consider the following @scheme[make-add-suffix] function that takes a
+string and returns another function that takes a string. Normally, the
+result of @scheme[make-add-suffix] would be sent to some other
+function, but it could be called directly, like this:
+
+@def+int[
+(define make-add-suffix
+  (lambda (s2)
+    (lambda (s) (string-append s s2))))
+
+((make-add-suffix "!") "hello")
+]
+
+In a sense, the @scheme[make-add-suffix] function takes two arguments,
+but it takes them one at a time. A function that takes some of its
+arguments and returns a function to consume more is sometimes called a
+@defterm{curried function}.
+
+Using the function-shorthand form of @scheme[define],
+@scheme[make-add-suffix] can be written equivalently as
+
+@schemeblock[
+(define (make-add-suffix s2)
+  (lambda (s) (string-append s s2)))
+]
+
+This shorthand reflects the shape of the function call
+@scheme[(make-add-suffix "!")]. The @scheme[define] form further
+supports a shorthand for defining curried functions that reflects
+nested function calls:
+
+@def+int[
+(define ((make-add-suffix s2) s)
+  (string-append s s2))
+((make-add-suffix "!") "hello")
+]
+@defs+int[
+[(define louder (make-add-suffix "!"))
+ (define less-sure (make-add-suffix "?"))]
+(less-sure "really")
+(louder "really")
+]
+
+The full syntax of the function shorthand for @scheme[define] is as follows:
+
+@specform/subs[(define (head args) body ...+)
+               ([head id
+                      (head args)]
+                [args (code:line arg ...)
+                      (code:line arg ... #, @schemeparenfont{.} rest-id)])]{}
+
+The expansion of this shorthand has one nested @scheme[lambda] form
+for each @scheme[_head] in the definition, where the innermost
+@scheme[_head] corresponds to the outermost @scheme[lambda].
+
 
 @;------------------------------------------------------------------------
 @section[#:tag "guide:multiple-values"]{Multiple Values and @scheme[define-values]}
@@ -78,8 +140,8 @@ but @scheme[quotient/remainder] produces the same two values at once:
 
 As shown above, the REPL prints each result value on its own line.
 
-Multiple-valued procedures can be implemented in terms of the
-@scheme[values] procedure, which takes any number of values and
+Multiple-valued functions can be implemented in terms of the
+@scheme[values] function, which takes any number of values and
 returns them as the results:
 
 @interaction[
@@ -87,8 +149,10 @@ returns them as the results:
 ]
 @def+int[
 (define (split-name name)
-  (let ([m (regexp-match #rx"^([^ ]*) (.*)$" name)])
-    (values (list-ref m 1) (list-ref m 2))))
+  (let ([parts (regexp-split " " name)])
+    (if (= (length parts) 2)
+        (values (list-ref parts 0) (list-ref parts 1))
+        (error "not a <first> <last> name"))))
 (split-name "Adam Smith")
 ]
 
@@ -106,12 +170,74 @@ given
 surname
 ]
 
-A @scheme[define] form (that is not a procedure shorthand) is
-equivalent to a @scheme[define-values] form with a single @scheme[id].
+A @scheme[define] form (that is not a function shorthand) is
+equivalent to a @scheme[define-values] form with a single @scheme[_id].
+
+@refdetails["mz:define"]{definitions}
 
 @;------------------------------------------------------------------------
 @section[#:tag "guide:intdefs"]{Internal Definitions}
 
-When the grammar for a syntactic form specified @scheme[_body], then
-the corresponding position in an instance of the grammar can be either
-a definition or an expression.
+When the grammar for a syntactic form specifies @scheme[_body], then
+the corresponding form can be either a definition or an expression.
+A definition as a @scheme[_body] is an @defterm{internal definition}.
+
+All internal definitions in a @scheme[_body] sequence must appear
+before any expression, and the last @scheme[_body] must be an
+expression.
+
+For example, the syntax of @scheme[lambda] is
+
+@specform[
+(lambda gen-formals
+  body ...+)
+]
+
+so the following are valid instances of the grammar:
+
+@schemeblock[
+(lambda (f)                (code:comment #, @elem{no definitions})
+  (printf "running\n")
+  (f 0))
+
+(lambda (f)                (code:comment #, @elem{one definition})
+  (define (log-it what)
+    (printf "~a\n"))
+  (log-it "running")
+  (f 0)
+  (log-it "done"))
+
+(lambda (f n)              (code:comment #, @elem{two definitions})
+  (define (call n)
+    (if (zero? n)
+        (log-it "done")
+        (begin
+          (log-it "running")
+          (f 0)
+          (call (- n 1)))))
+  (define (log-it what)
+    (printf "~a\n"))
+  (call f n))
+]
+
+Internal definitions in a particular @scheme[_body] sequence are
+mutually recursive; that is, any definition can refer to any other
+definition---as long as the reference isn't actually evaluated before
+its definition takes place. If a definition is referenced too early,
+the result is a special value @|undefined-const|.
+
+@defexamples[
+(define (weird)
+  (define x x)
+  x)
+(weird)
+]
+
+A sequence of internal definitions using just @scheme[define] is
+easily translated to an equivalent @scheme[letrec] form (as introduced
+in the next section). However, other definition forms can appear as a
+@scheme[_body], including @scheme[define-struct] (see
+@secref["guide:define-struct"]) or @scheme[define-syntax] (see
+@secref["guide:macros"]).
+
+@refdetails/gory["mz:intdef-body"]{internal definitions}

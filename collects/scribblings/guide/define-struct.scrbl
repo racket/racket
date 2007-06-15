@@ -4,7 +4,7 @@
 @require[(lib "bnf.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title{Programmer-Defined Datatypes}
+@title[#:tag "guide:define-struct"]{Programmer-Defined Datatypes}
 
 This section introduces the @scheme[define-struct] form for creating
 your own datatypes. The class-based object system offers an alternate
@@ -33,20 +33,20 @@ We explain one use of the @scheme[_struct-id] binding in the next
 section.
 
 In addition to defining @scheme[_struct-id], however,
-@scheme[define-struct] also defines a number of procedures whose names
+@scheme[define-struct] also defines a number of functions whose names
 are built from @scheme[_struct-id] and the @scheme[_field-id]s:
 
 @itemize{
 
  @item{@schemeidfont{make-}@scheme[_struct-id] : a
-       @defterm{constructor} procedure that takes as many arguments as
+       @defterm{constructor} function that takes as many arguments as
        the number of @scheme[_field-id]s, and returns an instance of
        the structure type.
 
        @examples[(make-posn 1 2)]}
 
  @item{@scheme[_struct-id]@schemeidfont{?} : a @defterm{predicate}
-       procedure that takes a single argument and returns @scheme[#t]
+       function that takes a single argument and returns @scheme[#t]
        if it is an instance of the structure type, @scheme[#f]
        otherwise.
 

@@ -34,6 +34,14 @@
                (substring s 0 (sub1 (string-length s))))
              sep)))
 
+      (define/public (strip-aux content)
+        (cond
+         [(null? content) null]
+         [(aux-element? (car content))
+          (strip-aux (cdr content))]
+         [else (cons (car content)
+                     (strip-aux (cdr content)))]))
+
       ;; ----------------------------------------
       ;; global-info collection
 
@@ -218,7 +226,7 @@
                (null? (element-content i)))
           (let ([v (lookup part ht (link-element-tag i))])
             (if v
-                (render-content (car v) part ht)
+                (render-content (strip-aux (car v)) part ht)
                 (render-content (list "[missing]") part ht)))]
          [(element? i)
           (render-content (element-content i) part ht)]

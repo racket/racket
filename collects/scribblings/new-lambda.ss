@@ -1,5 +1,6 @@
 (module new-lambda mzscheme
-  (require-for-syntax (lib "name.ss" "syntax"))
+  (require-for-syntax (lib "name.ss" "syntax")
+                      (lib "define.ss" "syntax"))
 
   (provide (all-from-except mzscheme #%datum lambda define #%app)
            (rename new-datum #%datum)
@@ -203,7 +204,7 @@
            (begin
              (when needs-default?
                (raise-syntax-error
-                #f "default value missing" stx (syntax id)))
+                #f "default-value expression missing" stx (syntax id)))
              (with-syntax ([(plain opt-ids opts kws need-kw rest) (loop #'rest #f)])
                #'((id . plain) opt-ids ([id #f #:plain] . opts) kws need-kw rest)))]
           [([id default] . rest)
@@ -386,7 +387,6 @@
                             'kws))))]))))))]))
   
   (define (missing-kw proc . args)
-    (printf "~s\n" args)
     (apply
      (keyword-procedure-extract null 0 proc)
      null
@@ -522,17 +522,11 @@
   ;; ----------------------------------------
   ;; `define' with keyword arguments
   
-  ;; Not enough syntax checking here, yet.
-  ;; Also, the currying notation needs to be
-  ;; supported.
-  
   (define-syntax (new-define stx)
-    (syntax-case stx ()
-      [(_ (id . formals) . body)
-       (identifier? #'id)
-       (syntax/loc stx (define id (new-lambda formals . body)))]
-      [(_ . rest)
-       (syntax/loc stx (define . rest))]))      
+    (let-values ([(id rhs)
+                  (normalize-definition stx #'new-lambda #t #t)])
+      (quasisyntax/loc stx
+        (define #,id #,rhs))))
   
   ;; ----------------------------------------
   ;; `#%app' with keyword arguments
@@ -657,14 +651,18 @@
                             (check-kw-args p kws)
                             (values #f (car kws)))])
             (let ([args-str
-                   ;; Hack to format arguments:
-                   (with-handlers ([exn:fail?
-                                    (lambda (exn)
-                                      (cadr (regexp-match #rx"other arguments were: (.*)$"
-                                                          (exn-message exn))))])
-                     (apply raise-type-error 'x "x" 0 'x
-                            (append (apply append (map list kws kw-args))
-                                    args)))])
+                   (if (null? args)
+                       "no arguments supplied"
+                       ;; Hack to format arguments:
+                       (with-handlers ([exn:fail?
+                                        (lambda (exn)
+                                          (format "arguments were: ~a"
+                                                  (cadr (regexp-match 
+                                                         #rx"other arguments were: (.*)$"
+                                                         (exn-message exn)))))])
+                         (apply raise-type-error 'x "x" 0 'x
+                                (append (apply append (map list kws kw-args))
+                                        args))))])
               (raise
                (make-exn:fail:contract
                 (if extra-kw
@@ -672,28 +670,28 @@
                         (format 
                          (string-append
                           "procedure application: procedure: ~e;"
-                          " does not expect an argument with keyword ~a; arguments were: ~a")
+                          " does not expect an argument with keyword ~a; ~a")
                          p
                          extra-kw
                          args-str)
                         (format 
                          (string-append
                           "procedure application: expected a procedure that"
-                          " accepts keyword arguments, given ~e; arguments were: ~a")
+                          " accepts keyword arguments, given ~e; ~a")
                          p
                          args-str))
                     (if missing-kw
                         (format 
                          (string-append
                           "procedure application: procedure: ~e; requires"
-                          " an argument with keyword ~a, not supplied; arguments were: ~a")
+                          " an argument with keyword ~a, not supplied; ~a")
                          p
                          missing-kw
                          args-str)
                         (format 
                          (string-append
                           "procedure application: no case matching ~a non-keyword"
-                          " arguments for: ~e; arguments were: ~a")
+                          " arguments for: ~e; ~a")
                          (- n 2)
                          p
                          args-str)))
