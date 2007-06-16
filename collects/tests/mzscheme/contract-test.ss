@@ -3412,6 +3412,25 @@
                  [($ foo bar baz) #t]
                  [_ #f])))
       (eval '(require d-c-s-match1))))
+  
+  (test/spec-passed/result
+   'd-c-s-match2
+   '(begin
+      (eval '(module d-c-s-match2 mzscheme
+               (require (lib "contract.ss")
+                        (lib "match.ss"))
+               
+               (define-contract-struct foo (bar baz))
+               
+               (provide d-c-s-match2-f1)
+               (define d-c-s-match2-f1
+                 (match (make-foo 'first 'second)
+                   [($ foo bar baz) (list bar baz)]
+                   [_ #f]))))
+      (eval '(require d-c-s-match2))
+      (eval 'd-c-s-match2-f1))
+   '(first second))
+   
 
   
   (test/pos-blame 'd-c-s1
