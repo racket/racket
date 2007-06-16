@@ -254,7 +254,7 @@ profile todo:
                 (write-special note (current-error-port))
                 (display #\space (current-error-port)))))))
       
-    (define (show-error-and-highlight msg exn highlight-errors)
+      (define (show-error-and-highlight msg exn highlight-errors)
         (let ([cms
                (and (exn? exn) 
                     (continuation-mark-set? (exn-continuation-marks exn))
