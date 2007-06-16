@@ -232,9 +232,7 @@ TODO
               (parameterize ([current-eventspace drscheme:init:system-eventspace])
                 (queue-callback
                  (λ ()
-                   (send rep highlight-errors
-                         src-locs 
-                         (filter (λ (x) (is-a? (car x) text%)) stack)))))))))
+                   (send rep highlight-errors src-locs stack))))))))
       
       (define (main-user-eventspace-thread?)
         (let ([rep (current-rep)])
@@ -754,7 +752,10 @@ TODO
           ;;                       (union #f (listof (list (is-a?/c text:basic<%>) number number)))
           ;;                    -> (void)
           (define/public (highlight-errors raw-locs error-arrows)
-            (let ([locs (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
+            (let ([locs (filter (λ (loc) (and (or (is-a? (srcloc-source loc) text:basic<%>)
+                                                  (and (path? (srcloc-source loc))
+                                                       (equal? (normalize-path (srcloc-source loc))
+                                                               (send (get-definitions-text) get-filename))))
                                               (number? (srcloc-position loc))
                                               (number? (srcloc-span loc))))
                                 raw-locs)])
@@ -762,7 +763,12 @@ TODO
               
               (set! error-ranges locs)
               
-              (for-each (λ (loc) (send (srcloc-source loc) begin-edit-sequence)) locs)
+              (for-each (λ (loc) 
+                          (let ([ed (if (path? (srcloc-source loc))
+                                        (get-definitions-text)
+                                        (srcloc-source loc))])
+                            (send ed begin-edit-sequence)))
+                        locs)
               
               (when color?
                 (let ([resets
@@ -802,7 +808,11 @@ TODO
                       (send first-file set-position first-start first-start))
                     (send first-file scroll-to-position first-start #f first-finish)))
                 
-                (for-each (λ (loc) (send (srcloc-source loc) end-edit-sequence)) locs)
+                (λ (loc) 
+                          (let ([ed (if (path? (srcloc-source loc))
+                                        (get-definitions-text)
+                                        (srcloc-source loc))])
+                            (send ed end-edit-sequence)))
                 
                 (when first-loc
                   (send first-file set-caret-owner (get-focus-snip) 'global)))))

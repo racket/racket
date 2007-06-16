@@ -3456,14 +3456,15 @@ module browser threading seems wrong.
             (compute-new-string))
           (let ([dc (get-dc)])
             (send dc set-font small-control-font)
-            (let-values ([(w h) (get-client-size)])
+            (let*-values ([(tw th _1 _2) (send dc get-text-extent to-draw-message)]
+                          [(w h) (values (+ tw (get-left-side-padding)) th)])
               (send dc set-pen (get-panel-background) 1 'transparent)
               (send dc set-brush (get-panel-background) 'transparent)
               (send dc draw-rectangle 0 0 w h)
               (when yellow?
                 (send dc set-pen "black" 1 'transparent)
                 (send dc set-brush "yellow" 'solid)
-                (send dc draw-rectangle (get-left-side-padding) 0 (- w (get-left-side-padding)) h))
+                (send dc draw-rectangle (get-left-side-padding) 0 tw th))
               (send dc draw-text to-draw-message (get-left-side-padding) 0))))
         
         (super-new [style '(transparent)])
@@ -3473,7 +3474,7 @@ module browser threading seems wrong.
         
         (inherit min-height)
         (let ([dc (get-dc)])
-          (let-values ([(w2 h2 _3 _4) (send dc get-text-extent message small-control-font)])
+          (let-values ([(w2 h2 _3 _4) (send dc get-text-extent "x" small-control-font)])
             (min-height (inexact->exact (floor h2)))))))
     
     (define language-label-message%
