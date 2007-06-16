@@ -3237,16 +3237,14 @@ module browser threading seems wrong.
                    [vp (new vertical-panel% 
                             [parent info-panel]
                             [alignment '(left center)]
-                            [stretchable-width #f]
+                            [stretchable-width #t]
                             [stretchable-height #f])]
-                   [spacer (new horizontal-panel% [parent info-panel])]
                    [l-m-label (new language-label-message% [parent vp] [frame this])]
                    [language-message (new language-message% [parent vp])])
               (send info-panel change-children 
                     (λ (l)
                       (list* vp
-                             spacer 
-                             (remq* (list spacer vp) l))))
+                             (remq* (list vp) l))))
               language-message))
           
 	  (update-save-message)
@@ -3408,10 +3406,11 @@ module browser threading seems wrong.
       (class canvas%
         (inherit get-dc get-client-size refresh)
         (define message "")
+        (define to-draw-message #f)
         (define/public (set-lang l)
           (unless (equal? l message)
             (set! message l)
-            (update-min-widths)
+            (compute-new-string)
             (refresh)))
         
         (define yellow? #f)
@@ -3421,16 +3420,42 @@ module browser threading seems wrong.
                        (equal? l message))
             (set! yellow? y?)
             (set! message l)
-            (update-min-widths)
+            (compute-new-string)
             (refresh)))
+        
+        (define/override (on-size w h)
+          (compute-new-string)
+          (refresh))
+        
+        (define/private (compute-new-string)
+          (let-values ([(cw ch) (get-client-size)])
+            (let ([width-to-use (- cw (get-left-side-padding))])
+              (let loop ([c (string-length message)])
+                (cond
+                  [(= c 0) (set! to-draw-message "")]
+                  [else 
+                   (let ([candidate (if (= c (string-length message))
+                                        message
+                                        (string-append (substring message 0 c) "..."))])
+                     (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent candidate small-control-font)])
+                       (cond
+                         [(tw . <= . width-to-use) (set! to-draw-message candidate)]
+                         [else
+                          (loop (- c 1))])))])))))
         
         (define/public (set-yellow y?)
           (unless (equal? y? yellow?)
             (set! yellow? y?)
             (refresh)))
         
+        (define last-time-width 0)
+        (define last-time-string "")
+        
         (define/override (on-paint)
+          (unless to-draw-message
+            (compute-new-string))
           (let ([dc (get-dc)])
+            (send dc set-font small-control-font)
             (let-values ([(w h) (get-client-size)])
               (send dc set-pen (get-panel-background) 1 'transparent)
               (send dc set-brush (get-panel-background) 'transparent)
@@ -3439,20 +3464,17 @@ module browser threading seems wrong.
                 (send dc set-pen "black" 1 'transparent)
                 (send dc set-brush "yellow" 'solid)
                 (send dc draw-rectangle (get-left-side-padding) 0 (- w (get-left-side-padding)) h))
-              (send dc set-font small-control-font)
-              (send dc draw-text message (get-left-side-padding) 0))))
+              (send dc draw-text to-draw-message (get-left-side-padding) 0))))
         
         (super-new [style '(transparent)])
         (inherit stretchable-width stretchable-height)
-        (stretchable-width #f)
+        (stretchable-width #t)
         (stretchable-height #f)
         
-        (inherit min-width min-height)
-        (define (update-min-widths)
-          (let ([dc (get-dc)])
-            (let-values ([(w2 h2 _3 _4) (send dc get-text-extent message small-control-font)])
-              (min-width (inexact->exact (floor (+ (get-left-side-padding) w2))))
-              (min-height (inexact->exact (floor h2))))))))
+        (inherit min-height)
+        (let ([dc (get-dc)])
+          (let-values ([(w2 h2 _3 _4) (send dc get-text-extent message small-control-font)])
+            (min-height (inexact->exact (floor h2)))))))
     
     (define language-label-message%
       (class name-message%
