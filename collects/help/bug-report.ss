@@ -11,7 +11,6 @@
            (lib "uri-codec.ss" "net")
            (lib "htmltext.ss" "browser")
            (lib "dirs.ss" "setup")
-           (lib "qp.ss" "net")
            "private/buginfo.ss"
            "private/manuals.ss")
 
@@ -341,19 +340,17 @@
     (define (get-query)
       (list (cons 'help-desk "true")
             (cons 'replyto (preferences:get 'drscheme:email))
-            (cons 'originator (qp-encode-string (preferences:get 'drscheme:full-name)))
-            (cons 'subject (qp-encode-string (send summary get-value)))
-            (cons 'severity (qp-encode-string (send severity get-string-selection)))
+            (cons 'originator (preferences:get 'drscheme:full-name))
+            (cons 'subject (send summary get-value))
+            (cons 'severity (send severity get-string-selection))
             (cons 'class (translate-class (send bug-class get-string-selection)))
-            (cons 'release (qp-encode-string (send version get-value)))
-            (cons 'description (qp-encode-string
-                                (apply string-append (map (lambda (x) (string-append x "\n")) 
-                                                          (get-strings description)))))
-            (cons 'how-to-repeat (qp-encode-string
-                                  (apply string-append 
-                                         (map (lambda (x) (string-append x "\n")) 
-                                              (get-strings reproduce)))))
-            (cons 'platform (qp-encode-string (get-environment)))))
+            (cons 'release (send version get-value))
+            (cons 'description (apply string-append (map (lambda (x) (string-append x "\n")) 
+                                                         (get-strings description))))
+            (cons 'how-to-repeat (apply string-append 
+                                        (map (lambda (x) (string-append x "\n")) 
+                                             (get-strings reproduce))))
+            (cons 'platform (get-environment))))
     
     (define (get-environment)
       (string-append (send environment get-value)
@@ -425,13 +422,6 @@
         (send response-abort enable #t)
         (switch-to-response-view)))
     
-    ;; qp-encode : string -> string
-    ;; 'pre' escapes bytes that would be turned into non 7-bit values by utf8 encoding
-    ;; so that later utf-8 encoding will just leave them alone .... (ugh)
-    (define (qp-encode-string str)
-      (bytes->string/utf-8 (qp-encode (string->bytes/utf-8 str))))
-
-
     (define (get-strings canvas)
       (let ([t (send canvas get-editor)])
         (let loop ([n 0])
