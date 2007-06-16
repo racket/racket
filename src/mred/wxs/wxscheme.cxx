@@ -1025,10 +1025,12 @@ static int indirect_strcmp(const void *a, const void *b)
 static int is_x_monospace(char *s)
 {
   if (s[0] == '-') {
-    /* Full X font name. Check for "-m-" in name. */
+    /* Full X font name. Check for "-m-" or "-c-" in name. */
     int j;
     for (j = 0; s[j+2]; j++) {
-      if ((s[j] == '-') && (s[j+1] == 'm') && (s[j+2] == '-'))
+      if ((s[j] == '-') 
+          && ((s[j+1] == 'm') || (s[j+1] == 'c'))
+          && (s[j+2] == '-'))
         return 1;
     }
   }
