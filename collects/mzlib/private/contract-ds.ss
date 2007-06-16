@@ -98,7 +98,7 @@ it around flattened out.
              (define-syntax name (list-immutable #'struct:-name 
                                                  #'struct-maker 
                                                  #'predicate
-                                                 (list-immutable #'selectors ...)
+                                                 (reverse (list-immutable #'selectors ...))
                                                  (list-immutable #,@(map (λ (x) #f) (syntax->list #'(selectors ...))))
                                                  #t))
              
