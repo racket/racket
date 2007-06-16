@@ -57,6 +57,12 @@
                                      (finder:default-filters)))
       (application:current-app-name (string-constant drscheme))
 
+  (preferences:set-default 'drscheme:frame:initial-position #f 
+                           (λ (x) (or (not x)
+                                      (and (pair? x)
+                                           (number? (car x))
+                                           (number? (cdr x))))))
+  
   (preferences:set-default 'drscheme:limit-memory #f
                            (λ (x) (or (boolean? x)
                                       (integer? x)
@@ -462,8 +468,8 @@
              [no-dups (remove-duplicates normalized/filtered)]
 	     [frames
 	      (map (λ (f) (handler:edit-file
-				f
-				(λ () (drscheme:unit:open-drscheme-window f))))
+                           f
+                           (λ () (drscheme:unit:open-drscheme-window f))))
 		   no-dups)])
 	(when (null? (filter (λ (x) x) frames))
 	  (make-basic))))

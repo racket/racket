@@ -1156,6 +1156,9 @@ module browser threading seems wrong.
                    file-menu:get-save-as-item
                    file-menu:get-revert-item
                    file-menu:get-print-item)
+          
+          (define/override (on-move x y)
+            (preferences:set 'drscheme:frame:initial-position (cons x y)))
 
           ;; logging : (union #f string[directory-name])
           (field [logging #f]
@@ -3606,10 +3609,16 @@ module browser threading seems wrong.
                    (create-new-drscheme-frame name)))]
             [else
              (create-new-drscheme-frame name)])]))
-      
+    
+    (define first-frame? #t)
       (define (create-new-drscheme-frame filename)
         (let* ([drs-frame% (drscheme:get/extend:get-unit-frame)]
                [frame (new drs-frame% (filename filename))])
           (send (send frame get-interactions-text) initialize-console)
+          (when first-frame?
+            (let ([pos (preferences:get 'drscheme:frame:initial-position)])
+              (when pos
+                (send frame move (car pos) (cdr pos)))))
+          (set! first-frame? #f)
           (send frame show #t)
           frame))))
