@@ -57,6 +57,7 @@
                                      (finder:default-filters)))
       (application:current-app-name (string-constant drscheme))
 
+  (preferences:set-default 'drscheme:unit-window-max? #f boolean?)
   (preferences:set-default 'drscheme:frame:initial-position #f 
                            (λ (x) (or (not x)
                                       (and (pair? x)
