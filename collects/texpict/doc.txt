@@ -208,6 +208,7 @@ Basic Constructors:
       `(superscript . ,text-style),
       `(combine . ,text-style), or
       `(no-combine . ,text-style).
+      `(caps . ,text-style).
     A size is an exact number in [1, 255] in pixels; the
      default size is 12, but the size is ignored if
      a font% object is provided in the text-style.
@@ -221,6 +222,7 @@ Basic Constructors:
      'no-combine text-style symbol overrides the default to
      disable combining; if both 'combine and 'no-combine
      are specified, the first one takes precedence
+    If caps is specified, the angle must be zero.
       [MrEd only]
 
 > text-style/c :: contract?

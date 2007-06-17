@@ -110,12 +110,31 @@
 		  'default
 		  #t)))
 
-      (define text
-	(case-lambda
-	 [(string) (text string '() 12)]
-	 [(string style) (text string style 12)]
-	 [(string style size) (text string style size 0)]
-	 [(string orig-style size angle)
+  (define text
+    (case-lambda
+      [(string) (text string '() 12)]
+      [(string style) (text string style 12)]
+      [(string style size) (text string style size 0)]
+      [(str style size angle)
+       (if (il-memq 'caps style)
+           (begin
+             (unless (zero? angle) 
+               (error 'text "the style cannot include 'caps with a non-zero angle"))
+             (caps-text str (il-remq 'caps style) size))
+           (not-caps-text str style size angle))]))
+  
+  (define (il-memq sym s)
+    (and (pair? s)
+         (or (eq? sym (car s))
+             (il-memq sym (cdr s)))))
+  (define (il-remq sym s)
+    (if (pair? s)
+        (if (eq? sym (car s))
+            (cdr s)
+            (cons (car s) (il-remq sym (cdr s))))
+        s))
+  
+      (define (not-caps-text string orig-style size angle)
 	  (let ([font
 		 (let loop ([style orig-style])
 		   (cond
@@ -237,7 +256,7 @@
 					      (send dc draw-text string (+ x dx) (+ y dy)
 						    combine? 0 angle)
 					      (send dc set-font f)))
-					  pw ph ph 0))))))))]))
+					  pw ph ph 0)))))))))
 
       (define caps-text
 	(case-lambda
@@ -269,9 +288,10 @@
 		   (let loop ([l strings][up? #f])
 		     (if (null? l)
 			 null
-			 (cons (text (list->string (map char-upcase (car l)))
-				     (if up? style cap-style)
-				     (if up? size cap-size))
+			 (cons (not-caps-text (list->string (map char-upcase (car l)))
+                                              (if up? style cap-style)
+                                              (if up? size cap-size)
+                                              0)
 			       (loop (cdr l) (not up?)))))])
 	      (apply hbl-append 0 picts)))]))
 

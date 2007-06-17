@@ -36,7 +36,7 @@
            (is-a?/c font%)
            (symbols 'base 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system)
            string? ;; could be more specific, I guess.
-           (cons/c (symbols 'bold 'italic 'superscript 'subscript 'combine 'no-combine)
+           (cons/c (symbols 'bold 'italic 'superscript 'subscript 'combine 'no-combine 'caps)
                    text-style/c))))
   
   (provide/contract
