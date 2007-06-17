@@ -1,6 +1,7 @@
 (module cgi-unit (lib "a-unit.ss")
   (require (lib "etc.ss")
-           "cgi-sig.ss")
+           "cgi-sig.ss"
+           "uri-codec.ss")
 
   (import)
   (export cgi^)
@@ -34,33 +35,7 @@
   ;; with all the characters converted back.
 
   (define (query-chars->string chars)
-    (list->string
-     (let loop ([chars chars])
-       (if (null? chars) null
-           (let ([first (car chars)]
-                 [rest (cdr chars)])
-             (let-values ([(this rest)
-                           (cond
-                             [(char=? first #\+)
-                              (values #\space rest)]
-                             [(char=? first #\%)
-                              (if (and (pair? rest) (pair? (cdr rest)))
-                                (values
-                                 (integer->char
-                                  (or (string->number
-                                       (string (car rest) (cadr rest))
-                                       16)
-                                      (raise (make-invalid-%-suffix
-                                              (if (string->number
-                                                   (string (car rest))
-                                                   16)
-                                                (cadr rest)
-                                                (car rest))))))
-                                 (cddr rest))
-                                (raise (make-incomplete-%-suffix rest)))]
-                             [else
-                              (values first rest)])])
-               (cons this (loop rest))))))))
+    (form-urlencoded-decode (list->string chars)))
 
   ;; string->html : string -> string
   ;; -- the input is raw text, the output is HTML appropriately quoted
