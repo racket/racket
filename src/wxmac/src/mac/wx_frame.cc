@@ -646,13 +646,15 @@ void wxFrame::Maximize(Bool maximize)
 	size.h = (rect.right - rect.left);
 	size.v = (rect.bottom - rect.top);
 	
-        if (size.v + pam_dv == cWindowHeight) {
+        if ((size.v + pam_dv == cWindowHeight)
+            && (size.h + pam_dh == cWindowWidth)) {
           zoom_window_hack = 1;
         }
       } else {
         Rect r;
 	GetWindowIdealUserState(theMacWindow, &r);
-        if ((r.bottom - r.top + pam_dv) == cWindowHeight) {
+        if (((r.bottom - r.top + pam_dv) == cWindowHeight)
+            && ((r.right - r.left + pam_dh) == cWindowWidth)) {
           zoom_window_hack = 1;
         }
       }
