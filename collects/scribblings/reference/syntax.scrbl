@@ -1,6 +1,8 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
+@define[cvt (schemefont "CVT")]
+
 @title[#:tag "mz:syntax" #:style 'toc]{Core Syntactic Forms}
 
 This section describes core syntax forms that apear in a fully
@@ -89,7 +91,7 @@ references are disallowed anywhere within a @scheme[module] form.
 
 @defform/none[(proc-expr arg ...)]{
 
-Applies a procedure, normally, when @scheme[proc-expr] is not an
+Applies a procedure, when @scheme[proc-expr] is not an
 identifier that has a transformer binding (see
 @secref["mz:expansion"]).
 
@@ -126,8 +128,8 @@ in the application, then the procedure is called with the values of
 the @scheme[arg-expr]s. Otherwise, the @exnraise[exn:fail:contract].
 
 The continuation of the procedure call is the same as the continuation
-of the application expression, so the result(s) of the application
-expression is(are) the result(s) of the procedure.
+of the application expression, so the results of the procedure are the
+results of the application expression.
 
 The relative order of @scheme[_keyword]-based arguments matters only
 for the order of @scheme[_arg-expr] evaluations; the arguments are
@@ -162,7 +164,7 @@ according to their order in the application form.
 
 Produces a procedure. The @scheme[gen-formals] determines the number of
 arguments that the procedure accepts. It is either a simple
-@scheme[formals], or one of the extended forms.
+@scheme[formals] or one of the extended forms.
 
 A simple @scheme[_formals] has one of the following three forms:
 
@@ -239,12 +241,9 @@ When multiple identifiers appear in a @scheme[gen-formals], they must be
 distinct according to @scheme[bound-identifier=?].
 
 If the procedure procedure by @scheme[lambda] is applied to fewer or
-more arguments than it accepts, the @exnraise[exn:fail:contract].  If
-@scheme[gen-formals] includes @scheme[keyword]s and an application
-includes too few arguments before the keyword section, the same
-keyword in multiple positions, or a keyword that is not among the
-@scheme[gen-formals] @scheme[_keyword]s, then the
-@exnraise[exn:fail:contract].
+more by-position or arguments than it accepts, to by-keyword arguments
+that it does not accept, or without required by-keyword arguments, then
+the @exnraise[exn:fail:contract].
 
 The last @scheme[body] expression is in tail position with respect to
 the procedure body.
@@ -322,9 +321,9 @@ within the @scheme[body]s to the procedure itself.}
 
 Similar to @scheme[let], but evaluates the @scheme[val-expr]s one by
 one, creating a location for each @scheme[id] as soon as the value is
-availablek. The @scheme[id]s are bound in the remaining @scheme[val-expr]s
+available. The @scheme[id]s are bound in the remaining @scheme[val-expr]s
 as well as the @scheme[body]s, and the @scheme[id]s need not be
-distinct.
+distinct; later bindings shadow earlier bindings.
 
 @examples[
 (let ([x 1]
@@ -352,8 +351,9 @@ created first and filled with @|undefined-const|, and all
 
 @defform[(let-values ([(id ...) val-expr] ...) body ...+)]{ Like
 @scheme[let], except that each @scheme[val-expr] must produce as many
-values as corresponding @scheme[id]s. A separate location is created
-for each @scheme[id], all of which are bound in the @scheme[body]s.
+values as corresponding @scheme[id]s, otherwise the
+@exnraise[exn:fail:contract]. A separate location is created for each
+@scheme[id], all of which are bound in the @scheme[body]s.
 
 @examples[
 (let-values ([(x y) (quotient/remainder 10 3)])
@@ -392,8 +392,131 @@ and in the @scheme[body]s.
 ]}
 
 @;------------------------------------------------------------------------
-@section{Sequencing: @scheme[begin]}
+@section[#:tag "mz:if"]{Conditionals: @scheme[if]}
+
+@defform[(if test-expr then-expr else-expr)]{
+
+Evaluates @scheme[test-expr]. If it produces any value other than
+@scheme[#f], then @scheme[then-expr] is evaluated, and its results are
+the result for the @scheme[if] form. Otherwise, @scheme[else-expr] is
+evaluated, and its results are the result for the @scheme[if]
+form. The @scheme[then-expr] and @scheme[else-expr] are in tail
+position with respect to the @scheme[if] form.
+
+@examples[
+(if (positive? -5) (error "doesn't get here") 2)
+(if (positive? 5) 1 (error "doesn't get here"))
+]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:define"]{Definitions: @scheme[define] and @scheme[define-values]}
 
+@defform*/subs[[(define id expr)
+                (define (head args) body ...+)]
+                ([head id
+                       (head args)]
+                 [args (code:line arg ...)
+                       (code:line arg ... #, @schemeparenfont{.} rest-id)]
+                 [arg arg-id
+                      [arg-id default-expr]
+                      (code:line keyword arg-id)
+                      (code:line keyword [arg-id default-expr])])]{
+
+The first form binds @scheme[id] to the result of @scheme[expr], and
+the second form binds @scheme[id] to a procedure. In the second case,
+the generation procedure is @scheme[(#,cvt (head args) body ...+)],
+using the @|cvt| meta-function defined as follows:
+
+@schemeblock[
+(#,cvt (id . _gen-formals) . _datum)   = (lambda _gen-formals . _datum)
+(#,cvt (head . _gen-formals) . _datum) = (lambda _gen-formals expr) 
+                                         #, @elem{if} (#,cvt head . _datum) = expr
+]
+
+At the top level, the top-level binding @scheme[id] is created after
+evaluating @scheme[expr], if it does not exist already, and the
+top-level mapping of @scheme[id] (see @secref["mz:namespace"]) is set
+to the binding at the same time.
+
+@defexamples[
+(define x 10)
+x
+]
+@def+int[
+(define (f x)
+  (+ x 1))
+(f 10)
+]
+
+@def+int[
+(define ((f x) [y 20])
+  (+ x y))
+((f 10) 30)
+((f 10))
+]
+}
+
+@defform[(define-values (id ...) expr)]{
+
+Evaluates the @scheme[expr], and binds the results to the
+@scheme[id]s, in order, if the number of results matches the number of
+@scheme[id]s; if @scheme[expr] produces a different number of results,
+the @exnraise[exn:fail:contract].
+
+At the top level, the top-level binding for each @scheme[id] is
+created after evaluating @scheme[expr], if it does not exist already,
+and the top-level mapping of each @scheme[id] (see
+@secref["mz:namespace"]) is set to the binding at the same time.
+
+@defexamples[
+(define-values () (values))
+(define-values (x y z) (values 1 2 3))
+z
+]
+}
+
+@;------------------------------------------------------------------------
+@section{Sequencing: @scheme[begin] and @scheme[begin0]}
+
+@defform*[[(begin form ...)
+           (begin expr ...+)]]{
+
+The first form applies when @scheme[begin] appears at the top level,
+at module level, or in an internal-definition position (before any
+expression in the internal-definition sequence). In that case, the
+@scheme[begin] form is equivalent to splicing the @scheme[form]s into
+the enclosing context.
+
+The second form applies for @scheme[begin] in an expression position.
+In that case, the @scheme[expr]s are evaluated in order, and the
+results are ignored for all but the last @scheme[expr]. The last
+@scheme[expr] is in tail position with respect to the @scheme[begin]
+form.
+
+@examples[
+(begin
+  (define x 10)
+  x)
+(+ 1 (begin 
+       (printf "hi\n")
+       2))
+(let-values ([(x y) (begin
+                      (values 1 2 3)
+                      (values 1 2))])
+ (list x y))
+]}
+
+@defform[(begin0 expr body ...+)]{
+
+Evaluates the @scheme[expr], then evaluates the @scheme[body]s,
+ignoring the @scheme[body] results. The results of the @scheme[expr]
+are the results of the @scheme[begin0] form, but the @scheme[expr] is
+in tail position only if no @scheme[body]s are present.
+
+
+
+@examples[
+(begin0
+  (values 1 2)
+  (printf "hi\n"))
+]}

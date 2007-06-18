@@ -30,7 +30,7 @@ definitions:
 which is a shorthand for
 
 @schemeblock[
-(define id (lambda (arg ...) _body ...+))
+(define _id (lambda (_arg ...) _body ...+))
 ]
 
 @defexamples[
@@ -51,12 +51,12 @@ The function shorthand via @scheme[define] also supports a ``rest''
 argument (i.e., a final argument to collect extra arguments in a
 list):
 
-@specform[(define (id arg ... . rest-id) expr)]{}
+@specform[(define (id arg ... . rest-id) body ...+)]{}
 
 which is a shorthand
 
 @schemeblock[
-(define id (lambda (id arg ... . rest-id) body-expr ...+))
+(define _id (lambda (_arg ... . _rest-id) _body ...+))
 ]
 
 @defexamples[
@@ -69,22 +69,25 @@ which is a shorthand
 @section{Curried Function Shorthand}
 
 Consider the following @scheme[make-add-suffix] function that takes a
-string and returns another function that takes a string. Normally, the
-result of @scheme[make-add-suffix] would be sent to some other
-function, but it could be called directly, like this:
+string and returns another function that takes a string:
 
 @def+int[
 (define make-add-suffix
   (lambda (s2)
     (lambda (s) (string-append s s2))))
+]
 
+Although it's not common, result of @scheme[make-add-suffix] could be
+called directly, like this:
+
+@interaction[
 ((make-add-suffix "!") "hello")
 ]
 
-In a sense, the @scheme[make-add-suffix] function takes two arguments,
-but it takes them one at a time. A function that takes some of its
-arguments and returns a function to consume more is sometimes called a
-@defterm{curried function}.
+In a sense, @scheme[make-add-suffix] is a function takes two
+arguments, but it takes them one at a time. A function that takes some
+of its arguments and returns a function to consume more is sometimes
+called a @defterm{curried function}.
 
 Using the function-shorthand form of @scheme[define],
 @scheme[make-add-suffix] can be written equivalently as
@@ -236,7 +239,7 @@ the result is a special value @|undefined-const|.
 A sequence of internal definitions using just @scheme[define] is
 easily translated to an equivalent @scheme[letrec] form (as introduced
 in the next section). However, other definition forms can appear as a
-@scheme[_body], including @scheme[define-struct] (see
+@scheme[_body], including @scheme[define-values], @scheme[define-struct] (see
 @secref["guide:define-struct"]) or @scheme[define-syntax] (see
 @secref["guide:macros"]).
 

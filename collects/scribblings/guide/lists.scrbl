@@ -182,6 +182,9 @@ If the derivation of the above definitions is mysterious to you,
 consider reading @|HtDP|. If you are merely suspicious of the use
 of recursive calls instead of a looping construct, then read on.
 
+@;------------------------------------------------------------------------
+@section[#:tag "guide:tail-recursion"]{Tail Recursion}
+
 Both the @scheme[my-length] and @scheme[my-map] functions run in
 @math{O(n)} time for a list of length @math{n}. This is easy to see by
 imagining how @scheme[(my-length (list "a" "b" "c"))] must evaluate:
@@ -238,7 +241,10 @@ one, because that takes up space for no good reason.
 
 This evaluation behavior is sometimes called @idefterm{tail-call
 optimization}, but it's not merely an ``optimization'' in Scheme; it's
-a guarantee about the way the code will run.
+a guarantee about the way the code will run. More precisely, an
+expression in @idefterm{tail position} with respect to another
+expression does not take extra computation space over the other
+expression.
 
 In the case of @scheme[my-map], @math{O(n)} space complexity is
 reasonable, since it has to generate a result of size

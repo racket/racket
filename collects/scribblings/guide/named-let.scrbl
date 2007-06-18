@@ -10,18 +10,16 @@ same syntactic keyword @scheme[let] as for local binding, but an
 identifier after the @scheme[let] (instead of an immediate open
 parenthesis) triggers a different parsing.
 
-In general,
-
-@schemeblock[
+@specform[
 (let _proc-id ([_arg-id _init-expr] ...)
-  _body-expr ...+)
+  _body ...+)
 ]
 
-is equivalent to
+A named @scheme[let] form is equivalent to
 
 @schemeblock[
 (letrec ([_proc-id (lambda (_arg-id ...)
-                     _body-expr ...+)])
+                     _body ...+)])
   (_proc-id _init-expr ...))
 ]
 

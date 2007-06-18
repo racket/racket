@@ -20,7 +20,7 @@ bound as a syntax transformer (such as @scheme[if] or
 
 A function call is evaluated by first evaluating the
 @scheme[_proc-expr] and all @scheme[_arg-expr]s in order (left to
-right). Then, if @scheme[_proc-expr] produced a function that accepts
+right). Then, if @scheme[_proc-expr] produces a function that accepts
 as many arguments as supplied @scheme[_arg-expr]s, the function is
 called. Otherwise, an exception is raised.
 
@@ -32,11 +32,11 @@ called. Otherwise, an exception is raised.
 ]
 
 Some functions, such as @scheme[cons], accept a fixed number of
-arguments. Some functions, such as @scheme[list], accept any number
-of arguments. Some functions accept a range of argument counts; for
-example @scheme[substring] accepts either two or three arguments. A
-function's @idefterm{arity} is the number of arguments that it
-accepts.
+arguments. Some functions, such as @scheme[+] or @scheme[list], accept
+any number of arguments. Some functions accept a range of argument
+counts; for example @scheme[substring] accepts either two or three
+arguments. A function's @idefterm{arity} is the number of arguments
+that it accepts.
 
 @;------------------------------------------------------------------------
 @section[#:tag "guide:keyword-args"]{Keyword Arguments}

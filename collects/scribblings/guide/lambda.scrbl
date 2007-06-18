@@ -5,7 +5,7 @@
 
 @title[#:tag "guide:lambda"]{Functions@aux-elem{ (Procedures)}: @scheme[lambda]}
 
-Such a @scheme[lambda] expression creates a function. In the simplest
+A @scheme[lambda] expression creates a function. In the simplest
 case, a @scheme[lambda] expression has the form
 
 @specform[
@@ -180,11 +180,11 @@ specifies a keyword-based argument with a default value.
 
 The @scheme[lambda] form does not directly support the creation
 of a function that accepts ``rest'' keywords. To construct a
-function that accepts any and all keyword arguments, use
+function that accepts all keyword arguments, use
 @scheme[make-keyword-procedure]. The function supplied to
-@scheme[make-keyword-procedure] receives keyword arguments through
-parallel lists in the first two (by-position) arguments, and
-then all by-position arguments from an application as the
+@scheme[make-keyword-procedure] receives keyword arguments
+through parallel lists in the first two (by-position) arguments,
+and then all by-position arguments from an application as the
 remaining by-position arguments.
 
 @margin-note{For an introduction to @scheme[keyword-apply], see

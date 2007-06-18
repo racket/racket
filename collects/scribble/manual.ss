@@ -213,7 +213,7 @@
        (*defstruct 'name 'fields (lambda () (list desc ...)))]))
   (define-syntax (defform*/subs stx)
     (syntax-case stx ()
-      [(_ [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
+      [(_ #:literals (lit ...) [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
        (with-syntax ([new-spec
                       (syntax-case #'spec ()
                         [(name . rest)
@@ -224,7 +224,7 @@
                                                                       #'name)
                                                 #'rest)
                                                #'spec)])])
-         #'(*defforms #t
+         #'(*defforms #t '(lit ...)
                       '(spec spec1 ...) 
                       (list (lambda (x) (schemeblock0 new-spec))
                             (lambda (ignored) (schemeblock0 spec1)) ...)
@@ -233,7 +233,9 @@
                                   (lambda () (schemeblock0 non-term-form))
                                   ...)
                             ...)
-                      (lambda () (list desc ...))))]))
+                      (lambda () (list desc ...))))]
+      [(fm [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
+       #'(fm #:literals () [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)]))
   (define-syntax (defform* stx)
     (syntax-case stx ()
       [(_ [spec ...] desc ...) #'(defform*/subs [spec ...] () desc ...)]))
@@ -242,41 +244,49 @@
       [(_ spec desc ...) #'(defform*/subs [spec] () desc ...)]))
   (define-syntax (defform/subs stx)
     (syntax-case stx ()
+      [(_ #:literals lits spec subs desc ...) #'(defform*/subs #:literals lits [spec] subs desc ...)]
       [(_ spec subs desc ...) #'(defform*/subs [spec] subs desc ...)]))
   (define-syntax (defform/none stx)
     (syntax-case stx ()
       [(_ spec desc ...)
-       #'(*defforms #f 
+       #'(*defforms #f null
                     '(spec) (list (lambda (ignored) (schemeblock0 spec))) 
                     null null
                     (lambda () (list desc ...)))]))
   (define-syntax specsubform
     (syntax-rules ()
+      [(_ #:literals (lit ...) spec desc ...)
+       (*specsubform 'spec #f '(lit ...) (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]
       [(_ spec desc ...)
-       (*specsubform 'spec #f (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
+       (*specsubform 'spec #f null (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
   (define-syntax specspecsubform
     (syntax-rules ()
       [(_ spec desc ...)
        (make-blockquote "leftindent" (list (specsubform spec desc ...)))]))
   (define-syntax specform
     (syntax-rules ()
+      [(_ #:literals (lit ...) spec desc ...)
+       (*specsubform 'spec #t '(lit ...) (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]
       [(_ spec desc ...)
-       (*specsubform 'spec #t (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
+       (*specsubform 'spec #t null (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
   (define-syntax specform/subs
     (syntax-rules ()
-      [(_ spec ([non-term-id non-term-form ...] ...) desc ...)
+      [(_ #:literals (lit ...) spec ([non-term-id non-term-form ...] ...) desc ...)
        (*specsubform 'spec #t 
+                     '(lit ...)
                      (lambda () (schemeblock0 spec)) 
                      '((non-term-id non-term-form ...) ...)
                      (list (list (lambda () (scheme non-term-id))
                                  (lambda () (schemeblock0 non-term-form))
                                  ...)
                            ...)
-                     (lambda () (list desc ...)))]))
+                     (lambda () (list desc ...)))]
+      [(_ spec ([non-term-id non-term-form ...] ...) desc ...)
+       (specform/subs #:literals () spec ([non-term-id non-term-form ...] ...) desc ...)]))
   (define-syntax specsubform/inline
     (syntax-rules ()
       [(_ spec desc ...)
-       (*specsubform 'spec #f #f null null (lambda () (list desc ...)))]))
+       (*specsubform 'spec #f null #f null null (lambda () (list desc ...)))]))
   (define-syntax defthing
     (syntax-rules ()
       [(_ id result desc ...)
@@ -495,7 +505,7 @@
 
   (define (meta-symbol? s) (memq s '(... ...+ ?)))
 
-  (define (*defforms kw? forms form-procs subs sub-procs content-thunk)
+  (define (*defforms kw? lits forms form-procs subs sub-procs content-thunk)
     (parameterize ([current-variable-list
                     (apply 
                      append
@@ -503,7 +513,8 @@
                             (let loop ([form (cons (if kw? (cdr form) form)
                                                    subs)])
                               (cond
-                               [(symbol? form) (if (meta-symbol? form)
+                               [(symbol? form) (if (or (meta-symbol? form)
+                                                       (memq form lits))
                                                    null
                                                    (list form))]
                                [(pair? form) (append (loop (car form))
@@ -543,12 +554,13 @@
                 sub-procs))))
         (content-thunk)))))
 
-  (define (*specsubform form has-kw? form-thunk subs sub-procs content-thunk)
+  (define (*specsubform form has-kw? lits form-thunk subs sub-procs content-thunk)
     (parameterize ([current-variable-list
                     (append (let loop ([form (cons (if has-kw? (cdr form) form)
                                                    subs)])
                               (cond
-                               [(symbol? form) (if (meta-symbol? form)
+                               [(symbol? form) (if (or (meta-symbol? form)
+                                                       (memq form lits))
                                                    null
                                                    (list form))]
                                [(pair? form) (append (loop (car form))

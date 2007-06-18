@@ -34,7 +34,7 @@
     ;; This is temporary, until the MzScheme manual is filled in...
     (make-parameter '(define require provide
                        define-values begin0 when unless
-                       new send if cond begin else and or
+                       new send if cond begin else => and or
                        define-syntax syntax-rules define-struct
                        quote quasiquote unquote unquote-splicing
                        syntax quasisyntax unsyntax unsyntax-splicing
@@ -377,14 +377,14 @@
                          value-color]
                         [(identifier? c) 
                          (cond
+                          [is-var?
+                           variable-color]
                           [(and (identifier? c)
                                 (memq (syntax-e c) (current-keyword-list)))
                            keyword-color]
                           [(and (identifier? c)
                                 (memq (syntax-e c) (current-meta-list)))
                            meta-color]
-                          [is-var?
-                           variable-color]
                           [it? variable-color]
                           [else symbol-color])]
                         [else paren-color])

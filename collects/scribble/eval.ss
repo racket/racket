@@ -215,10 +215,13 @@
                                                      (list " ")))
 
   (define-syntax (schemedefinput* stx)
-    (syntax-case stx (eval-example-string define define-struct)
+    (syntax-case stx (eval-example-string define define-values define-struct)
       [(_ (eval-example-string s))
        #'(schemeinput* (eval-example-string s))]
       [(_ (define . rest))
+       (syntax-case stx ()
+         [(_ e) #'(schemeblock+line e)])]
+      [(_ (define-values . rest))
        (syntax-case stx ()
          [(_ e) #'(schemeblock+line e)])]
       [(_ (define-struct . rest))

@@ -69,7 +69,7 @@ application of @scheme[-] cannot be reduced until the sub-expression
 @scheme[(+ 1 1)] is reduced.
 
 Thus, the specification of each syntactic form specifies how (some of)
-it's sub-expressions are evaluated, and then how the results are
+its sub-expressions are evaluated, and then how the results are
 combined to reduce the form away.
 
 The @defterm{dynamic extent} of an expression is the sequence of
@@ -177,7 +177,7 @@ right-hand expression must be reduced to a value.
 [{}
  (begin (code:hilite (define x 10)) (+ x 1))]
 [{(define x 10)}
- (code:hilite (begin #,void-const (+ x 1)))]
+ (code:hilite (begin (void) (+ x 1)))]
 [{(define x 10)}
  (+ (code:hilite x) 1)]
 [{(define x 10)}
@@ -197,7 +197,7 @@ existing top-level binding:
 [{(define x 10)}
  (begin (code:hilite (set! x 8)) x)]
 [{(define x 8)}
- (code:hilite (begin #,void-const x))]
+ (code:hilite (begin (void) x))]
 [{(define x 8)}
  (code:hilite x)]
 [{(define x 8)}
@@ -217,7 +217,7 @@ values, which are the results of expressions, and @defterm{objects},
 which hold the data referenced by a value.
 
 A few kinds of objects can serve directly as values, including
-booleans, @|void-const|, and small exact integers. More generally,
+booleans, @scheme[(void)], and small exact integers. More generally,
 however, a value is a reference to an object. For example, a value can
 be a reference to a particular vector that currently holds the value
 @scheme[10] in its first slot. If an object is modified, then the
@@ -235,58 +235,58 @@ create objects, such as @scheme[vector], add to the set of objects:
         (define y x)
         (vector-set! x 0 11)
         (vector-ref y 0))]
-[{(define <o1> #(10 20))}
+[{(define <o1> (vector 10 20))}
  {}
  (begin (code:hilite (define x <o1>))
         (define y x)
         (vector-set! x 0 11)
         (vector-ref y 0))]
-[{(define <o1> #(10 20))}
+[{(define <o1> (vector 10 20))}
  {(define x <o1>)}
- (code:hilite (begin #,void-const
+ (code:hilite (begin (void)
                      (define y x)
                      (vector-set! x 0 11)
                      (vector-ref y 0)))]
-[{(define <o1> #(10 20))}
+[{(define <o1> (vector 10 20))}
  {(define x <o1>)}
  (begin (define y (code:hilite x))
         (vector-set! x 0 11)
         (vector-ref y 0))]
-[{(define <o1> #(10 20))}
+[{(define <o1> (vector 10 20))}
  {(define x <o1>)}
  (begin (code:hilite (define y <o1>))
         (vector-set! x 0 11)
         (vector-ref y 0))]
-[{(define <o1> #(10 20))}
+[{(define <o1> (vector 10 20))}
  {(define x <o1>)
   (define y <o1>)}
- (code:hilite (begin #,void-const
+ (code:hilite (begin (void)
                      (vector-set! x 0 11)
                      (vector-ref y 0)))]
-[{(define <o1> #(10 20))}
+[{(define <o1> (vector 10 20))}
  {(define x <o1>)
   (define y <o1>)}
  (begin (vector-set! (code:hilite x) 0 11)
         (vector-ref y 0))]
-[{(define <o1> #(10 20))}
+[{(define <o1> (vector 10 20))}
  {(define x <o1>)
   (define y <o1>)}
  (begin (code:hilite (vector-set! <o1> 0 11))
         (vector-ref y 0))]
-[{(define <o1> #(11 20))}
+[{(define <o1> (vector 11 20))}
  {(define x <o1>)
   (define y <o1>)}
- (code:hilite (begin #,void-const
+ (code:hilite (begin (void)
                      (vector-ref y 0)))]
-[{(define <o1> #(11 20))}
+[{(define <o1> (vector 11 20))}
  {(define x <o1>)
   (define y <o1>)}
  (vector-ref (code:hilite y) 0)]
-[{(define <o1> #(11 20))}
+[{(define <o1> (vector 11 20))}
  {(define x <o1>)
   (define y <o1>)}
  (code:hilite (vector-ref <o1> 0))]
-[{(define <o1> #(11 20))}
+[{(define <o1> (vector 11 20))}
  {(define x <o1>)
   (define y <o1>)}
  11]
@@ -334,8 +334,8 @@ specified with the datatype and its associated procedures.
 In the program state
 
 @prog-steps[
-[{(define <o1> #(10 20))
-  (define <o2> #(0))}
+[{(define <o1> (vector 10 20))
+  (define <o2> (vector 0))}
  {(define x <o1>)}
  (+ 1 x)]
 ]
@@ -432,7 +432,7 @@ the variable is always replaced with a location by the time the
 [{(define <p1> (lambda (x) (begin (set! x 3) x)))}
  {(define f <p1>)
   (define xloc 3)}
- (code:hilite (begin #,void-const xloc))]
+ (code:hilite (begin (void) xloc))]
 [{(define <p1> (lambda (x) (begin (set! x 3) x)))}
  {(define f <p1>)
   (define xloc 3)}
@@ -463,7 +463,7 @@ in an initial program refer to variables. A top-level binding is both
 a variable and a location. Any other variable is always replaced by a
 location at run-time, so that evaluation of expressions involves only
 locations. A single non-top-level variable, such as a procedure
-argument, can correspond to multiple locations at different times.
+argument, can correspond to different locations at different times.
 
 The replacement of a variable with a location during evaluation
 implements Scheme's @defterm{lexical scoping}. For example, when the
@@ -473,12 +473,14 @@ procedure, including with any nested @scheme[lambda] forms. As a
 result, future references of the variable always access the same
 location.
 
+@guideintro["guide:binding"]{binding}
+
 An @defterm{identifier} is source-program entity. Parsing a Scheme
 program reveals that some identifiers correspond to variables, some
 refer to syntactic forms, and some are quoted to produce a symbol or a
-syntax object. An identifier @scheme[binds] another when the former is
+syntax object. An identifier @defterm{binds} another when the former is
 parsed as a variable and the latter is parsed as a reference to the
-former. An identifier is @scheme[bound] in a sub-expression if it
+former. An identifier is @defterm{bound} in a sub-expression if it
 binds any uses of the identifier in the sub-expression that are not
 otherwise bound within the sub-expression; conversely, a binding for a
 sub-expression @defterm{shadows} any bindings in its context, so that

@@ -48,7 +48,7 @@ convention implicitly defines the meaning of many meta-variables:
 
 Square brackets in the grammar indicate a parenthesized sequence of
 forms, where square brackets are normally used (by convention). That
-is square brackets @italic{do not} mean optional parts of the
+is, square brackets @italic{do not} mean optional parts of the
 syntactic form.
 
 A @schememetafont{...} indicates zero or more repetitions of the
@@ -56,7 +56,7 @@ preceding form, and @schememetafont{...+} indicates one or more
 repetitions of the preceding datum. Otherwise, non-italicized
 identifiers stand form themselves.
 
-Based on the above grammar, then, here are a few legal uses of
+Based on the above grammar, then, here are a few conforming uses of
 @schemekeywordfont{something}:
 
 @schemeblock[
@@ -65,9 +65,10 @@ Based on the above grammar, then, here are a few legal uses of
 (#,(schemekeywordfont "something") [x my-favorite-martian x] (+ 1 2) #f)
 ]
 
-Some syntactic forms refer to meta-variables that are not implicitly
-defined and not previously defined. Such meta-variables are defined
-using a BNF-like format for alternatives:
+Some syntactic-form specifications refer to meta-variables that are
+not implicitly defined and not previously defined. Such meta-variables
+are defined after the main form, using a BNF-like format for
+alternatives:
 
 @specform/subs[(#,(schemekeywordfont "something-else") [thing ...+] an-expr ...)
                ([thing thing-id
@@ -83,11 +84,9 @@ form, a @scheme[_thing] is either an identifier or a keyword.
 @include-section["lambda.scrbl"]
 @include-section["define.scrbl"]
 @include-section["let.scrbl"]
-@include-section["named-let.scrbl"]
+@include-section["cond.scrbl"]
 
-@section{Conditionals: @scheme[if], @scheme[cond], @scheme[and], and @scheme[or]}
-
-@section{Sequencing: @scheme[begin], @scheme[begin0], @scheme[when], and @scheme[unless]}
+@section[#:tag "guide:begin"]{Sequencing: @scheme[begin], @scheme[begin0], @scheme[when], and @scheme[unless]}
 
 @section{Assignment: @scheme[set!]}
 

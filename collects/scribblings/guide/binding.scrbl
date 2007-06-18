@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title{Identifiers and Binding}
+@title[#:tag "guide:binding"]{Identifiers and Binding}
 
 The context of an expression determines the meaning of identifiers
 that appear in the expression. In particular, starting a module with
@@ -12,7 +12,7 @@ the language @schememodname[big], as in
 @schememod[big]
 
 means that, within the module, the identifiers described in this guide
-have the the meaning described here: @scheme[cons] refers to the
+start with the meaning described here: @scheme[cons] refers to the
 function that creates a pair, @scheme[car] refers to the function
 that extracts the first element of a pair, and so on.
 
@@ -21,7 +21,7 @@ that extracts the first element of a pair, and so on.
 
 Forms like @scheme[define], @scheme[lambda], and @scheme[let]
 associate a meaning with one or more identifiers; that is, they
-@defterm{bind} identifier. The part of the program for which the
+@defterm{bind} identifiers. The part of the program for which the
 binding applies is the @defterm{scope} of the binding. The set of
 bindings in effect for a given expression is the expression's
 @defterm{environment}.
@@ -67,7 +67,7 @@ existing binding.
 
 Even identifiers like @scheme[define] and @scheme[lambda] get their
 meanings from bindings, though they have @defterm{transformer}
-bindings (whcih means that they define syntactic forms) instead of
+bindings (which means that they indicate syntactic forms) instead of
 value bindings. Since @scheme[define] has a transformer binding, the
 identifier @schemeidfont{define} cannot be used by itself to get a
 value. However, the normal binding for @schemeidfont{define} can be
