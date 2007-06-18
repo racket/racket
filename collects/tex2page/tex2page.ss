@@ -7,6 +7,6 @@
      (parameterize
        ((current-namespace (make-namespace)))
        (namespace-require
-         `(file
-           ,(build-path (this-expression-source-directory) "tex2page-aux.ss")))
+        `(path->string (file ,(build-path (this-expression-source-directory)
+                                          "tex2page-aux.ss"))))
        ((namespace-variable-value 'tex2page) f)))))
