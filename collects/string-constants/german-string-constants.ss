@@ -330,6 +330,7 @@
 
  (change-font-button-label "Ändern")
  (fonts "Schriften")
+ (other... "Andere...") ;; used in the font choice menu item
 
  ; filled with type of font, eg modern, swiss, etc.
  (choose-a-new-font "Neuen Font für \"~a\" wählen")
