@@ -7,15 +7,14 @@
 	   (rename *read-syntax read-syntax))
 
   (define (call-with-scribble-params t)
-    (parameterize ([scribble:read-accept-=-keyword #f]
-                   [scribble:read-insert-indents #f])
+    (parameterize ([scribble:read-insert-indents #f])
       (t)))
 
   (define/kw (*read #:optional [inp (current-input-port)])
     (call-with-scribble-params
      (lambda ()
        (wrap inp (scribble:read-inside inp)))))
-     
+
   (define/kw (*read-syntax #:optional src [port (current-input-port)])
     (call-with-scribble-params
      (lambda ()

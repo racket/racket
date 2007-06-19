@@ -5,10 +5,8 @@
 (module reader mzscheme
   (require (lib "string.ss") (lib "kw.ss") (lib "readerr.ss" "syntax"))
 
-  (provide read-insert-indents
-           read-accept-=-keyword)
+  (provide read-insert-indents)
   (define read-insert-indents (make-parameter #t))
-  (define read-accept-=-keyword (make-parameter #t))
 
   (define cmd-char #\@)
 
@@ -24,7 +22,6 @@
   (define close-lines*  '(#"^(?:[ \t]*\r?\n[ \t]*)?" #""))
   (define comment-start #rx#"^[ \t]*;")
   (define comment-line  #rx#"^[^\r\n]*\r?\n[ \t]*") ; like tex's `%' nl & space
-  (define attr-sep      #rx#"^[ \t\r\n]*=[ \t\r\n]*")
   (define sub-start     #rx#"^[@]")
   (define line-item     #rx#"^(?:[^{}@\r\n]*[^\\{}@\r\n]|[\\]+[{}@])+")
   (define line-item* '(#"^(?:[^{}@\r\n]*[^\\{}@\r\n]|[\\]+(?:[@]|" #"))+"))
@@ -132,29 +129,12 @@
             (loop (sub1 i))))
         r))
     (define eol-token "\n")
-    (define (get-attr)
-      (if (regexp-match/fail-without-reading close-attrs inp) #f
-          (let* ([fst (next-syntax
-                       ;; hack: if we see an open paren or other nested
-                       ;; constructs, use the usual readtable so a nested `='
-                       ;; behaves correctly
-                       (if (or (not (read-accept-=-keyword))
-                               (regexp-match-peek-positions
-                                #rx#"^[ \t\r\n]*['`,]*[[({@]" inp))
-                         at-readtable attr-readtable)
-                       #t)]
-                 [snd (and (read-accept-=-keyword)
-                           (symbol? (syntax-e fst))
-                           (regexp-match/fail-without-reading attr-sep inp)
-                           (next-syntax at-readtable))])
-            (if snd
-              (list (string->keyword (symbol->string (syntax-e fst))) snd)
-              (list fst)))))
     (define (get-attrs)
       (and (regexp-match/fail-without-reading open-attrs inp)
            (let loop ([attrs '()])
-             (let ([a (get-attr)])
-               (if a (loop (append! (reverse! a) attrs)) (reverse! attrs))))))
+             (if (regexp-match/fail-without-reading close-attrs inp)
+               (reverse! attrs)
+               (loop (cons (next-syntax at-readtable #t) attrs))))))
     (define ((get-line open open-re close close-re item-re unquote-re level))
       (let-values ([(line col pos) (port-next-location inp)])
         (define (make-stx sexpr)
@@ -351,14 +331,6 @@
             #f (string->symbol (bytes->string/utf-8 (cadr m)))
             (list source-name line-num col-num position
                   (add1 (bytes-length (car m)))))))))
-
-  ;; similar to plain Scheme, but with `=' always parsed as a separate symbol
-  (define attr-readtable
-    (make-readtable at-readtable #\= 'terminating-macro
-      (lambda (char inp source-name line-num col-num position)
-        (datum->syntax-object
-         #f (string->symbol (string char))
-         (list source-name line-num col-num position 1)))))
 
   (provide use-at-readtable)
   (define (use-at-readtable)
