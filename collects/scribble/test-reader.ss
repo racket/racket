@@ -28,21 +28,21 @@ exec mzscheme -r "$0" "$@"
     [@'foo{bar}
      '(foo "bar")]
 
-    ,'
+    ,@'( ; <- avoid the above openning quasiquote for these
+
     [@'`,foo{bar}
      '`,(foo "bar")]
 
-    ,' ; <- to avoid the above openning quasiquote
     [@'`,@,foo{bar}
      '`,@,(foo "bar")]
 
-    ,'
     [@`',@foo{blah}
      `@',@foo{blah}]
 
-    ,'
     [@`',@foo{blah}
      `',@@foo{blah}]
+
+    )
 
     [@(lambda (x) x){blah}
      ((lambda (x) x) "blah")]
@@ -102,13 +102,11 @@ exec mzscheme -r "$0" "$@"
     [@foo{a @bar{b} c}
      (foo "a " (bar "b") " c")]
 
-    ;; !!! to be fixed
+    [@foo{a @bar c}
+     (foo "a " bar " c")]
 
-    ;; [@foo{a @bar c}
-    ;;  (foo "a " bar " c")]
-
-    ;; [@foo{a @(bar 2) c}
-    ;;  (foo "a " (bar 2) " c")]
+    [@foo{a @(bar 2) c}
+     (foo "a " (bar 2) " c")]
 
     ))
 

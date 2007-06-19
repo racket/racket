@@ -45,14 +45,67 @@
             (let ([s (make-string n #\space)])
               (hash-table-put! t n s) s))))))
 
+  ;; Skips whitespace characters, sensitive to the current readtable's
+  ;; definition of whitespace; optimizes common spaces when possible
+  (define/kw skip-whitespace
+    (let* ([plain-readtables (make-hash-table 'weak)]
+           [plain-spaces '(#\space #\tab #\newline #\return #\page)]
+           [plain-spaces-re
+            (regexp (string-append "^["(apply string plain-spaces)"]*"))])
+      (define (skip-plain-spaces port)
+        ;; hack: according to the specs, this might consume more characters
+        ;; than needed, but it seems to work fine with a simple <ch>* regexp
+        (regexp-match-positions plain-spaces-re port))
+      (define (whitespace? ch rt)
+        (if rt
+          (let-values ([(like-ch/sym _1 _2) (readtable-mapping rt ch)])
+            ;; if like-ch/sym is whitespace, then ch is whitespace
+            (and (char? like-ch/sym) (char-whitespace? like-ch/sym)))
+          ;; `char-whitespace?' is fine for the default readtable
+          (char-whitespace? ch)))
+      (define (plain-readtable? rt)
+        (hash-table-get plain-readtables rt
+          (lambda ()
+            (let ([plain? (andmap (lambda (ch) (whitespace? ch rt))
+                                  plain-spaces)])
+              (hash-table-put! plain-readtables rt #t)
+              rt))))
+      (lambda/kw (#:optional [port (current-input-port)])
+        (let* ([rt (current-readtable)] [plain? (plain-readtable? rt)])
+          (let loop ()
+            (when plain? (skip-plain-spaces port))
+            (let ([ch (peek-char port)])
+              (unless (eof-object? ch)
+                (when (whitespace? ch rt) (read-char port) (loop)))))))))
+
+  ;; Wrappers for placeholders, to keep source information for them.  (MzScheme
+  ;; provides nothing for them -- there's not even a predicate.  Hopefully, if
+  ;; something is added it will use the same name, so there's a compiler error
+  ;; here and this code is adapted.)
+  (define-struct placeholder (p loc))
+  (define (syntax/placeholder-line sp)
+    (if (placeholder? sp) (cadr (placeholder-loc sp)) (syntax-line sp)))
+  (define (syntax/placeholder-column sp)
+    (if (placeholder? sp) (caddr (placeholder-loc sp)) (syntax-column sp)))
+  (define (syntax/placeholder-strip sp)
+    (if (placeholder? sp) (placeholder-p sp) sp))
+  (define (datum->syntax-object/placeholder sp d)
+    (if (placeholder? sp)
+      ;; using the syntax for lexical context is not possible for placeholders,
+      ;; but we don't need it since we're a reader
+      (datum->syntax-object #f d (placeholder-loc sp))
+      (datum->syntax-object sp d sp)))
+
   (define ((dispatcher start-inside?)
            char inp source-name line-num col-num position)
     (define/kw (next-syntax readtable #:optional plain?)
       (let ([read (if plain? read-syntax read-syntax/recursive)])
         (parameterize ([current-readtable readtable])
-          (let loop ()
-            (let ([x (read source-name inp)])
-              (if (special-comment? x) (loop) x))))))
+          (if plain?
+            (read source-name inp) ; read-syntax never returns special comments
+            (let loop ()
+              (let ([x (read source-name inp)])
+                (if (special-comment? x) (loop) x)))))))
     (define (cur-pos)
       (let-values ([(line col pos) (port-next-location inp)])
         pos))
@@ -119,7 +172,13 @@
                     (set-box! level (add1 (unbox level)))
                     (make-stx (car m)))]
               [(regexp-match-peek-positions sub-start inp)
-               (read-syntax source-name inp)] ; include comment objs
+               ;; read the next value, include comment objs, keep source
+               ;; location manually (see above)
+               (let ([x (read-syntax/recursive source-name inp)])
+                 (if (or (syntax? x) (special-comment? x))
+                   x
+                   (make-placeholder x
+                     (list source-name line col pos (span-from pos)))))]
               [(regexp-match/fail-without-reading end-of-line inp)
                => (lambda (m)
                     (if (cadr m) ; backslashes?
@@ -137,7 +196,7 @@
                     (make-stx (car m)))]
               [(regexp-match/fail-without-reading #rx#"^$" inp)
                (if eof-ok? #f (read-error "missing `~a'" close))]
-              [else (read-error "internal error")])))
+              [else (read-error "internal error [get-line]")])))
     ;; adds stx (new syntax) to the list of stxs, merging it if both are
     ;; strings, except for newline markers
     (define (maybe-merge stx stxs)
@@ -157,24 +216,27 @@
                 (cdr stxs)))
         (cons stx stxs)))
     (define (add-indents stxs)
-      (if (or (not (read-insert-indents))
-              (null? stxs)
-              (not (andmap (lambda (s) (and (syntax-line s) (syntax-column s)))
-                           stxs)))
+      (unless (andmap (lambda (x)
+                        (or (and (syntax? x) (syntax-line x) (syntax-column x))
+                            (placeholder? x)))
+                      stxs)
+        (read-error "internal error [add-indents] ~s" stxs))
+      (if (or (not (read-insert-indents)) (null? stxs))
         stxs
-        (let ([mincol (apply min (map syntax-column stxs))])
+        (let ([mincol (apply min (map syntax/placeholder-column stxs))])
           (let loop ([curline line-num] [stxs stxs] [r '()])
             (if (null? stxs)
               (reverse! r)
-              (let* ([stx (car stxs)] [line (syntax-line stx)])
+              (let* ([stx (car stxs)] [line (syntax/placeholder-line stx)])
                 (loop line (cdr stxs)
-                      (if (and (< curline line) (< mincol (syntax-column stx)))
-                        (list* stx
-                               (datum->syntax-object stx
-                                 (make-spaces (- (syntax-column stx) mincol))
-                                 stx)
-                               r)
-                        (cons stx r)))))))))
+                      (let ([stxcol (syntax/placeholder-column stx)]
+                            [stx*   (syntax/placeholder-strip stx)])
+                        (if (and (< curline line) (< mincol stxcol))
+                          (list* stx*
+                                 (datum->syntax-object/placeholder stx*
+                                   (make-spaces (- stxcol mincol)))
+                                 r)
+                          (cons stx* r))))))))))
     (define (get-lines inside?)
       (define get
         (cond [inside?
@@ -229,9 +291,10 @@
                                                     [#","  unquote]
                                                     [#",@" unquote-splicing]))
                                          => cadr]
-                                        [else (error "internal error")]))
+                                        [else (read-error
+                                               "internal error [rpfxs]")]))
                                     r)))]
-                  [else (error "internal error")])))]
+                  [else (read-error "internal error [rpfxs]")])))]
         [else '()]))
     (define (get-command) ; #f means no command
       (let-values ([(line col pos) (port-next-location inp)])
@@ -266,7 +329,7 @@
                          cmd  ; no attrs/lines => simple expression (no parens)
                          ;; impossible: either we saw []s or {}s, or we read a
                          ;; scheme expression
-                         (error "internal error"))]
+                         (read-error "internal error [dispatcher]"))]
               [stx   (let loop ([pfx pfx] [stx stx])
                        (if (null? pfx) stx
                            (loop (cdr pfx) (list (car pfx) stx))))])
@@ -281,7 +344,7 @@
   (define cmd-readtable
     (make-readtable at-readtable #\| 'terminating-macro
       (lambda (char inp source-name line-num col-num position)
-        (let ([m (regexp-match #rx#"^([^|]*)\\|" inp)])
+        (let ([m (regexp-match/fail-without-reading #rx#"^([^|]*)\\|" inp)])
           (unless m
             (raise-read-error
              "unbalanced `|'" source-name line-num col-num position #f))
