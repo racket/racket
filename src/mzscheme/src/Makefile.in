@@ -8,8 +8,6 @@ builddir = @builddir@
 CC = @CC@
 PERL = @PERL@
 
-XMAKE = $(MAKE) $(EXPORT)
-
 MZSRC = $(srcdir)
 
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ -I$(builddir)/.. -I$(srcdir)/../include
@@ -98,8 +96,8 @@ wrong:
 	echo Make from the directory above this one
 
 all:
-	$(XMAKE) mzheaders
-	$(XMAKE) mzobjects
+	$(MAKE) mzheaders
+	$(MAKE) mzobjects
 
 mzheaders: $(srcdir)/schemex.h $(srcdir)/schemexm.h $(srcdir)/schemex.inc $(srcdir)/schexn.h schsys.h \
            $(srcdir)/../include/mzscheme.exp $(srcdir)/../include/mzwin.def $(srcdir)/../include/gmzwin.def \
