@@ -85,10 +85,8 @@ form, a @scheme[_thing] is either an identifier or a keyword.
 @include-section["define.scrbl"]
 @include-section["let.scrbl"]
 @include-section["cond.scrbl"]
-
-@section[#:tag "guide:begin"]{Sequencing: @scheme[begin], @scheme[begin0], @scheme[when], and @scheme[unless]}
-
-@section{Assignment: @scheme[set!]}
+@include-section["begin.scrbl"]
+@include-section["set.scrbl"]
 
 @section{Quoted Data: @scheme[quote] and @scheme[quasiquote]}
 

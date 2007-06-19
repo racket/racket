@@ -16,7 +16,9 @@
            def+int
            defs+int
            examples
+           examples*
            defexamples
+           defexamples*
            as-examples
 
            current-int-namespace
@@ -35,7 +37,7 @@
     (make-table
      #f
      (append
-      (if title (list (list title)) null)
+      (if title (list (list (make-flow (list title)))) null)
       (let loop ([expr-paras expr-paras]
                  [val-list+outputs val-list+outputs]
                  [first? #t])
@@ -270,19 +272,36 @@
                           (interaction e ...)))]))
 
   (define example-title
-    (make-flow (list (make-paragraph (list "Examples:")))))
+    (make-paragraph (list "Examples:")))
   (define-syntax examples
     (syntax-rules ()
       [(_ e ...)
+       (titled-interaction example-title schemeinput* e ...)]))
+  (define-syntax examples*
+    (syntax-rules ()
+      [(_ example-title e ...)
        (titled-interaction example-title schemeinput* e ...)]))
   (define-syntax defexamples
     (syntax-rules ()
       [(_ e ...)
        (titled-interaction example-title schemedefinput* e ...)]))
+  (define-syntax defexamples*
+    (syntax-rules ()
+      [(_ example-title e ...)
+       (titled-interaction example-title schemedefinput* e ...)]))
 
-  (define (as-examples t)
-    (make-table #f
-                (list
-                 (list example-title)
-                 (list (make-flow (list t)))))))
+  (define (do-splice l)
+    (cond
+     [(null? l) null]
+     [(splice? (car l)) (append (splice-run (car l))
+                                (do-splice (cdr l)))]
+     [else (cons (car l) (do-splice (cdr l)))]))
 
+  (define as-examples
+    (case-lambda
+     [(t) (as-examples example-title t)]
+     [(example-title t)
+      (make-table #f
+                  (list
+                   (list (make-flow (list example-title)))
+                   (list (make-flow (do-splice (list t))))))])))

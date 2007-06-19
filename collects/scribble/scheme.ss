@@ -32,13 +32,13 @@
 
   (define current-keyword-list 
     ;; This is temporary, until the MzScheme manual is filled in...
-    (make-parameter '(define require provide
-                       define-values begin0 when unless
-                       new send if cond begin else => and or
-                       define-syntax syntax-rules define-struct
-                       quote quasiquote unquote unquote-splicing
-                       syntax quasisyntax unsyntax unsyntax-splicing
-                       set!)))
+    (make-parameter '(require 
+                      provide
+                      new send else => and or
+                      define-syntax syntax-rules define-struct
+                      quote quasiquote unquote unquote-splicing
+                      syntax quasisyntax unsyntax unsyntax-splicing
+                      set! set!-values)))
   (define current-variable-list 
     (make-parameter null))
   (define current-meta-list 

@@ -116,7 +116,7 @@ position with respect to the original @scheme[or] form.
 @;------------------------------------------------------------------------
 @section{Guarded Evaluation: @scheme[when] and @scheme[unless]}
 
-@defform[(while test-expr expr ...)]{
+@defform[(when test-expr expr ...)]{
 
 Evaluates the @scheme[text-expr]. If the result is any value other
 than @scheme[#f], the @scheme[expr]s are evaluated, and the results
