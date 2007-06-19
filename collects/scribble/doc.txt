@@ -24,8 +24,8 @@ the input to the current output port.  `format' is a symbol that
 specifies the kind of output rendering (use the `scribble' commad to
 find the list of available formatters).
 
-A Scribble document is a MzScheme module file, which provides a `content'
-binding.
+A Scribble document is a MzScheme module file, which provides a
+`content' binding.
 
 
 The Scribble Reader
@@ -120,15 +120,20 @@ and the ";"), then the construct is a comment.  There are two comment
 forms, one for arbitrary-text and possibly nested comments, and another
 one for a -to-the-end-of-the-line comment:
 
-  @; <any-space>* { ...any-text-including-newlines... }
+  @; <whitespace>* { ...any-text-including-newlines... }
 
   @; <anything-that-doesn't-begin-with-a-brace-to-the-end-of-the-line>
 
-Note that in the first form the commented body must still parse
-correctly (see the description of the body syntax below).
+Note that the first form is analogous to a "#;" comment: the commented
+body must still parse correctly.  Also note that in the second form all
+text from the "@;" to the end of the line an all following (non-newline)
+whitespaces are part of the comment.  For example:
 
-Tip: if you're editing in some Scheme-mode, it is useful to comment out
-blocks like this:
+  @foo{bar @; comment    --is-read-as-->    (foo "bar baz")
+       baz}
+
+Tip: if you're editing in a Scheme-aware editor, it is useful to comment
+out blocks like this:
 
   @;
   {
@@ -154,8 +159,10 @@ command itself, which can lead to things like:
 
   @@foo{bar}{baz}    --is-read-as-->    ((foo "bar") "baz")
 
-but you should not rely on such behavior, since "@@" might be used
-differently in the future (eg, making "@@" be "@" in a body text).
+To use "@" as in plain Scheme code, you need to quote it as you would
+quote other characters, for example:
+
+  (define |@foo| '\@bar)
 
 ** Concrete Syntax: the body part
 
@@ -166,7 +173,7 @@ backslash can have special meanings but only in a few contexts.  As
 described above, the text turns to a sequence of string arguments for
 the resulting form.  Spaces at the beginning of lines are discarded (but
 see the information about indentation below), and newlines turn to
-individual "\n" strings.  (Spcaces are preserved on a single-line text.)
+individual "\n" strings.  (Spaces are preserved on a single-line text.)
 As part of trying to do the `right thing', an empty line at the
 beginning and at the end are discarded, so
 
