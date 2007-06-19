@@ -45,7 +45,8 @@
             (let ([s (make-string n #\space)])
               (hash-table-put! t n s) s))))))
 
-  (define ((dispatcher start-inside?) char inp source-name line-num col-num position)
+  (define ((dispatcher start-inside?)
+           char inp source-name line-num col-num position)
     (define/kw (next-syntax readtable #:optional plain?)
       (let ([read (if plain? read-syntax read-syntax/recursive)])
         (parameterize ([current-readtable readtable])
@@ -101,7 +102,8 @@
            (let loop ([attrs '()])
              (let ([a (get-attr)])
                (if a (loop (append! (reverse! a) attrs)) (reverse! attrs))))))
-    (define ((get-line eof-ok? open open-re close close-re item-re unquote-re level))
+    (define ((get-line eof-ok? open open-re close close-re item-re unquote-re
+                       level))
       (let-values ([(line col pos) (port-next-location inp)])
         (define (make-stx sexpr)
           (datum->syntax-object #f
@@ -134,9 +136,7 @@
                => (lambda (m)
                     (make-stx (car m)))]
               [(regexp-match/fail-without-reading #rx#"^$" inp)
-               (if eof-ok?
-                   #f
-                   (read-error "missing `~a'" close))]
+               (if eof-ok? #f (read-error "missing `~a'" close))]
               [else (read-error "internal error")])))
     ;; adds stx (new syntax) to the list of stxs, merging it if both are
     ;; strings, except for newline markers
@@ -212,26 +212,27 @@
                          [else (loop (maybe-merge line lines) more)])))))
     (define (get-rprefixes) ; return punctuation prefixes in reverse
       (cond
-       [(regexp-match/fail-without-reading
-         #rx#"^(?:[ \t\r\n]*(?:'|`|,@?))+" inp)
-        => (lambda (m)
-             ;; accumulate prefixes in reverse
-             (let loop ([s (car m)] [r '()])
-               (cond
-                [(equal? #"" s) r]
-                [(regexp-match #rx#"^[ \t\r\n]*('|`|,@?)(.*)$" s)
-                 => (lambda (m)
-                      (loop (caddr m)
-                            (cons (let ([m (cadr m)])
-                                    (cadr (or (assoc
-                                               m '([#"'"  quote]
-                                                   [#"`"  quasiquote]
-                                                   [#","  unquote]
-                                                   [#",@" unquote-splicing]))
-                                              (error "something bad"))))
-                                  r)))]
-                [else (error "something bad happened")])))]
-       [else '()]))
+        [(regexp-match/fail-without-reading
+          #rx#"^(?:[ \t\r\n]*(?:'|`|,@?))+" inp)
+         => (lambda (m)
+              ;; accumulate prefixes in reverse
+              (let loop ([s (car m)] [r '()])
+                (cond
+                  [(equal? #"" s) r]
+                  [(regexp-match #rx#"^[ \t\r\n]*('|`|,@?)(.*)$" s)
+                   => (lambda (m)
+                        (loop (caddr m)
+                              (cons (let ([m (cadr m)])
+                                      (cond
+                                        [(assoc m '([#"'"  quote]
+                                                    [#"`"  quasiquote]
+                                                    [#","  unquote]
+                                                    [#",@" unquote-splicing]))
+                                         => cadr]
+                                        [else (error "internal error")]))
+                                    r)))]
+                  [else (error "internal error")])))]
+        [else '()]))
     (define (get-command) ; #f means no command
       (let-values ([(line col pos) (port-next-location inp)])
         (cond [(regexp-match-peek-positions open-attr/lines inp)
@@ -244,34 +245,34 @@
                             #t))]
               [else (values (next-syntax cmd-readtable) #f)])))
     (cond
-     [start-inside?
-      (datum->syntax-object #f 
-                            (get-lines #t)
-                            (list source-name line-num col-num position (span-from position)))]
-     [(regexp-match/fail-without-reading comment-start inp)
-      (if (regexp-match-peek-positions open-lines inp)
-        (get-lines #f) (regexp-match comment-line inp))
-      (make-special-comment #f)]
-     [else
-      (let* ([pfx   (get-rprefixes)]
-             [bars? #f]
-             [cmd   (let-values ([(cmd bs?) (get-command)])
-                      (set! bars? bs?) cmd)] ; #f means no command
-             [attrs (and (not bars?) (get-attrs))]
-             [lines (and (not bars?) (get-lines #f))]
-             [stx   (and (or attrs lines)
-                         (append (or attrs '()) (or lines '())))]
-             [stx   (or (and cmd stx (cons cmd stx)) ; all parts
-                        stx  ; no cmd part => just a parenthesized expression
-                        cmd  ; no attrs/lines => simple expression (no parens)
-                        ;; impossible: either we saw []s or {}s, or we read a
-                        ;; scheme expression
-                        (error "something bad happened"))]
-             [stx   (let loop ([pfx pfx] [stx stx])
-                      (if (null? pfx) stx
-                          (loop (cdr pfx) (list (car pfx) stx))))])
-        (datum->syntax-object #f stx
-          (list source-name line-num col-num position (span-from position))))]))
+      [start-inside?
+       (datum->syntax-object #f (get-lines #t)
+         (list source-name line-num col-num position (span-from position)))]
+      [(regexp-match/fail-without-reading comment-start inp)
+       (if (regexp-match-peek-positions open-lines inp)
+         (get-lines #f) (regexp-match comment-line inp))
+       (make-special-comment #f)]
+      [else
+       (let* ([pfx   (get-rprefixes)]
+              [bars? #f]
+              [cmd   (let-values ([(cmd bs?) (get-command)])
+                       (set! bars? bs?) cmd)] ; #f means no command
+              [attrs (and (not bars?) (get-attrs))]
+              [lines (and (not bars?) (get-lines #f))]
+              [stx   (and (or attrs lines)
+                          (append (or attrs '()) (or lines '())))]
+              [stx   (or (and cmd stx (cons cmd stx)) ; all parts
+                         stx  ; no cmd part => just a parenthesized expression
+                         cmd  ; no attrs/lines => simple expression (no parens)
+                         ;; impossible: either we saw []s or {}s, or we read a
+                         ;; scheme expression
+                         (error "internal error"))]
+              [stx   (let loop ([pfx pfx] [stx stx])
+                       (if (null? pfx) stx
+                           (loop (cdr pfx) (list (car pfx) stx))))])
+         (datum->syntax-object #f stx
+           (list source-name line-num col-num position
+                 (span-from position))))]))
 
   (define at-readtable
     (make-readtable #f cmd-char 'terminating-macro (dispatcher #f)))
@@ -312,7 +313,8 @@
     (parameterize ([current-readtable at-readtable])
       (read inp)))
 
-  (define/kw (*read-syntax #:optional [src default-src] [port (current-input-port)])
+  (define/kw (*read-syntax #:optional [src default-src]
+                                      [port (current-input-port)])
     (parameterize ([current-readtable at-readtable])
       (read-syntax (src-name src port) port)))
 
@@ -322,7 +324,8 @@
         (syntax-object->datum
          ((dispatcher #t) #f inp (object-name inp) line col pos)))))
 
-  (define/kw (read-inside-syntax #:optional [src default-src] [port (current-input-port)])
+  (define/kw (read-inside-syntax #:optional [src default-src]
+                                            [port (current-input-port)])
     (let-values ([(line col pos) (port-next-location port)])
       (parameterize ([current-readtable at-readtable])
         ((dispatcher #t) #f port (src-name src port) line col pos))))
