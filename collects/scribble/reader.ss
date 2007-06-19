@@ -11,13 +11,13 @@
   (define cmd-char #\@)
 
   (define bars-quoted   #rx#"^[ \t\r\n]*\\|([^|]*)\\|")
+  ;; attrs open with a `[', and read in one shot as a list
   (define open-attrs    #rx#"^[ \t\r\n]*[[][ \t\r\n]*")
   (define open-lines    #rx#"^[ \t\r\n]*[{](?:[ \t]*\r?\n[ \t]*)?") ; 1 newline
   (define open-lines*   '(#"^[ \t\r\n]*" #"(?:[ \t]*\r?\n[ \t]*)?"))
   (define open-lines-special ; a special ending expected: @foo{<{ ... }>} etc
     #rx#"^[ \t\r\n]*([|][^a-zA-Z0-9 \t\r\n@\\]*?[{])(?:[ \t]*\r?\n[ \t]*)?")
   (define open-attr/lines #rx#"^[ \t\r\n]*[[{][ \t\r\n]*")
-  (define close-attrs   #rx#"^[ \t\r\n]*[]]")
   (define close-lines   #rx#"^(?:[ \t]*\r?\n[ \t]*)?[}]") ; swallow 1 newline
   (define close-lines*  '(#"^(?:[ \t]*\r?\n[ \t]*)?" #""))
   (define comment-start #rx#"^[ \t]*;")
@@ -95,14 +95,11 @@
 
   (define ((dispatcher start-inside?)
            char inp source-name line-num col-num position)
-    (define/kw (next-syntax readtable #:optional plain?)
-      (let ([read (if plain? read-syntax read-syntax/recursive)])
-        (parameterize ([current-readtable readtable])
-          (if plain?
-            (read source-name inp) ; read-syntax never returns special comments
-            (let loop ()
-              (let ([x (read source-name inp)])
-                (if (special-comment? x) (loop) x)))))))
+    (define (next-syntax readtable)
+      (parameterize ([current-readtable readtable])
+        (let loop ()
+          (let ([x (read-syntax/recursive source-name inp)])
+            (if (special-comment? x) (loop) x)))))
     (define (cur-pos)
       (let-values ([(line col pos) (port-next-location inp)])
         pos))
@@ -130,11 +127,8 @@
         r))
     (define eol-token "\n")
     (define (get-attrs)
-      (and (regexp-match/fail-without-reading open-attrs inp)
-           (let loop ([attrs '()])
-             (if (regexp-match/fail-without-reading close-attrs inp)
-               (reverse! attrs)
-               (loop (cons (next-syntax at-readtable #t) attrs))))))
+      (and (regexp-match-peek-positions open-attrs inp)
+           (syntax->list (read-syntax/recursive source-name inp))))
     (define ((get-line open open-re close close-re item-re unquote-re level))
       (let-values ([(line col pos) (port-next-location inp)])
         (define (make-stx sexpr)
