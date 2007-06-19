@@ -155,8 +155,7 @@
            (let loop ([attrs '()])
              (let ([a (get-attr)])
                (if a (loop (append! (reverse! a) attrs)) (reverse! attrs))))))
-    (define ((get-line eof-ok? open open-re close close-re item-re unquote-re
-                       level))
+    (define ((get-line open open-re close close-re item-re unquote-re level))
       (let-values ([(line col pos) (port-next-location inp)])
         (define (make-stx sexpr)
           (datum->syntax-object #f
@@ -195,7 +194,7 @@
                => (lambda (m)
                     (make-stx (car m)))]
               [(regexp-match/fail-without-reading #rx#"^$" inp)
-               (if eof-ok? #f (read-error "missing `~a'" close))]
+               (if start-inside? #f (read-error "missing `~a'" close))]
               [else (read-error "internal error [get-line]")])))
     ;; adds stx (new syntax) to the list of stxs, merging it if both are
     ;; strings, except for newline markers
@@ -237,10 +236,10 @@
                                    (make-spaces (- stxcol mincol)))
                                  r)
                           (cons stx* r))))))))))
-    (define (get-lines inside?)
+    (define (get-lines)
       (define get
-        (cond [inside?
-               (get-line #t "{" open-lines "}" close-lines
+        (cond [start-inside?
+               (get-line "{" open-lines "}" close-lines
                          line-item bslash-unquote (box 0))]
               [(regexp-match/fail-without-reading open-lines-special inp)
                => (lambda (m)
@@ -254,13 +253,13 @@
                                    (bytes-append (car pfx/sfx)
                                                  re
                                                  (cadr pfx/sfx))))])
-                      (get-line #f open (bre open-lines* open-re)
+                      (get-line open  (bre open-lines*  open-re)
                                 close (bre close-lines* close-re)
                                 (bre line-item* either-re)
                                 (bre bslash-unquote* either-re)
                                 (box 0))))]
               [(regexp-match/fail-without-reading open-lines inp)
-               (get-line #f "{" open-lines "}" close-lines
+               (get-line "{" open-lines "}" close-lines
                          line-item bslash-unquote (box 0))]
               [else #f]))
       (and get (let loop ([lines '()] [more '()])
@@ -309,11 +308,11 @@
               [else (values (next-syntax cmd-readtable) #f)])))
     (cond
       [start-inside?
-       (datum->syntax-object #f (get-lines #t)
+       (datum->syntax-object #f (get-lines)
          (list source-name line-num col-num position (span-from position)))]
       [(regexp-match/fail-without-reading comment-start inp)
        (if (regexp-match-peek-positions open-lines inp)
-         (get-lines #f) (regexp-match comment-line inp))
+         (get-lines) (regexp-match comment-line inp))
        (make-special-comment #f)]
       [else
        (let* ([pfx   (get-rprefixes)]
@@ -321,7 +320,7 @@
               [cmd   (let-values ([(cmd bs?) (get-command)])
                        (set! bars? bs?) cmd)] ; #f means no command
               [attrs (and (not bars?) (get-attrs))]
-              [lines (and (not bars?) (get-lines #f))]
+              [lines (and (not bars?) (get-lines))]
               [stx   (and (or attrs lines)
                           (append (or attrs '()) (or lines '())))]
               [stx   (or (and cmd stx (cons cmd stx)) ; all parts
