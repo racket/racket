@@ -144,6 +144,9 @@ according to their order in the application form.
 (#%app cons)
 ]}
 
+@defform[(#%plain-app proc-expr arg-expr ...)]{
+Like @scheme[#%app], but without support for keyword arguments.
+}
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:lambda"]{Procedure Expressions: @scheme[lambda] and @scheme[case-lambda]}
@@ -283,6 +286,10 @@ support keyword and optional arguments.
         (f 1 2)
         (f 1 2 3)))
 ]}
+
+@defform[(#%plain-lambda formals body ...+)]{
+Like @scheme[lambda], but without support for keyword or optional arguments.
+}
 
 @;------------------------------------------------------------------------
 @section{Local Binding: @scheme[let], @scheme[let*], and @scheme[letrec]}
@@ -513,10 +520,31 @@ ignoring the @scheme[body] results. The results of the @scheme[expr]
 are the results of the @scheme[begin0] form, but the @scheme[expr] is
 in tail position only if no @scheme[body]s are present.
 
-
-
 @examples[
 (begin0
   (values 1 2)
   (printf "hi\n"))
 ]}
+
+@;------------------------------------------------------------------------
+@section{Continuation Marks: @scheme[with-continuation-marks]}
+
+@defform[(with-continuation-mark key-expr val-expr result-expr)]{
+Evaluates @scheme[key-expr] and @scheme[val-expr] in order to obtain a key and
+value, respectively. The key and value are attached as a mark to the
+current continuation frame (see @secref["mz:contmarks"]), and then
+@scheme[result-expr] is evaluated in tail position.
+}
+
+@;------------------------------------------------------------------------
+@section{Syntax Quoting: @scheme[quote-syntax]}
+
+@defform[(quote-syntax datum)]{
+Produces a syntax object that preserves
+ lexical and source-location information attached to @scheme[datum] 
+ at expansion time.
+
+@examples[
+(syntax? (quote-syntax x))
+]
+}

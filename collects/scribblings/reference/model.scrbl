@@ -137,7 +137,7 @@ each of its sub-expression. In addtion, some procedures (notably
 a certain number of values.
 
 @;------------------------------------------------------------------------
-@section{Top-Level and Module-Level Bindings}
+@section{Top-Level and Module-Level Variables}
 
 Given
 
@@ -147,7 +147,7 @@ then an algebra student simplifies @tt{x + 1} as follows:
 
 @verbatim{  x + 1 = 10 + 1 = 11}
 
-Scheme works much the same way, in that a set of top-level bindings
+Scheme works much the same way, in that a set of top-level variables
 are available for substitutions on demand during evaluation. For
 example, given
 
@@ -191,7 +191,7 @@ a module is essentially a prefix on a defined name, so that different
 modules can define the name.
 
 Using @scheme[set!], a program can change the value associated with an
-existing top-level binding:
+existing top-level variable:
 
 @prog-steps/no-obj[
 [{(define x 10)}
@@ -208,7 +208,7 @@ existing top-level binding:
 @section{Objects and Imperative Update}
 
 In addition to @scheme[set!] for imperative update of top-level
-bindings, various procedures enable the modification of elements
+variables, various procedures enable the modification of elements
 within a compound data structure. For example, @scheme[vector-set!]
 modifies the content of a vector.
 
@@ -292,8 +292,8 @@ create objects, such as @scheme[vector], add to the set of objects:
  11]
 ]
 
-The distinction between a top-level binding is an object reference is
-crucial. A top-level binding is not a value; each time a binding
+The distinction between a top-level variable is an object reference is
+crucial. A top-level variable is not a value; each time a variable
 expression is evaluated, the value is extracted from the current set
 of definitions. An object reference, in contrast is a value, and
 therefore needs no further evaluation. The model evaluation steps
@@ -409,14 +409,14 @@ new location:
  17]
 ]
 
-A location is the same as a top-level binding, but when a location is
+A location is the same as a top-level variable, but when a location is
 generated, it (conceptually) uses a name that has not been used before
 and that cannot not be generated again or accessed directly.
 
 Generating a location in this way means that @scheme[set!] evaluates
-for local variables in the same way as for top-level bindings, because
-the variable is always replaced with a location by the time the
-@scheme[set!] form is evaluated:
+for local variables in the same way as for top-level variables,
+because the local variable is always replaced with a location by the
+time the @scheme[set!] form is evaluated:
 
 @prog-steps[
 [{(define <p1> (lambda (x) (begin (set! x 3) x)))}
@@ -459,7 +459,7 @@ instance of @scheme[x] in @scheme[_expr].
 @section{Identifiers, Variables, and Locations}
 
 A @defterm{variable} is a placeholder for a value, and an expressions
-in an initial program refer to variables. A top-level binding is both
+in an initial program refer to variables. A top-level variable is both
 a variable and a location. Any other variable is always replaced by a
 location at run-time, so that evaluation of expressions involves only
 locations. A single non-top-level variable, such as a procedure
@@ -509,21 +509,87 @@ The syntax of a Scheme program is defined by
 
 }
 
-For details on the read phase, see @secref["mz:reader"]. Source code is
-normally read in @scheme[read-syntax] mode, otherwise it must be
-converted to syntax using @scheme[datum->syntax-object]; the expand
-phase is defined in terms of syntax objects.
+For details on the read phase, see @secref["mz:reader"]. Source code
+is normally read in @scheme[read-syntax] mode, otherwise it must be
+converted to syntax using @scheme[datum->syntax]; the expand phase is
+defined in terms of syntax objects.
 
-Expansion recursively processes a syntax-wrapped datum; for details,
-see @secref["mz:expansion"]. Ultimately, expansion leads to the
-synactic forms described in @secref["mz:syntax"].
+An identifier, for example, is a syntax-object symbol, and the
+identifier's binding is determined by lexical information attached to
+the identifier. Expansion recursively processes a syntax object,
+both using its lexical information and extending the information for
+nested objects. For details, see @secref["mz:expansion"].
 
-...
+Ultimately, expansion produces a syntax object matching the grammar
+of the forms in @secref["mz:fully-expanded"]. This fully-expanded
+datum corresponds to a parsed expression, and lexical information on
+its identifiers indicates the parse. For example, a @scheme[car]
+identifier might have lexical information that designates it as the
+@scheme[car] from the @schememodname[big] language (i.e., the built-in
+@scheme[car]). Similarly, a @scheme[lambda] identifier's lexical
+information may indicate that it represents a procedure form.
 
 @;------------------------------------------------------------------------
 @section{Namespaces}
 
+A @idefterm{namespace} is a top-level mapping from symbols to binding
+information. It is the starting point for expanding an expression; a
+syntax object produced by @scheme[read-syntax] has no initial
+lexical context; the syntax object can be expanded after
+initializing it with the mappings of a particular namespace.
+
+A namespace maps each symbol to one of three possible bindings:
+
+@itemize{
+
+ @item{a particular module-level binding from a particular module}
+
+ @item{a top-level transformer binding named by the symbol}
+
+ @item{a top-level variable named by the symbol}
+
+}
+
+An ``empty'' namespace maps all symbols to top-level
+variables. Importing a module into the top-level adjusts the namespace
+bindings for all of the imported named. Evaluating a top-level
+@scheme[define] form updates the namespace's mapping to refer to a
+variable (if it does not already) and installs a value into the
+variable.
+
+In addition to its main mapping, each namespace encapsulates a
+distinct set of top-level variables, as well as a potentially distinct
+set of module instances. After a namespace is created, module
+instances from existing namespaces can be attached to the new
+namespace.
+
+At all times during evaluation, some namespace is designated as the
+@defterm{current namespace}. The current namespace has no particular
+relationship, however, with the namespace used to expand the code that
+is executing. Furthermore, a namespace is purely a top-level concept;
+it does not encapsulate the full environment of an expression within
+local binding forms.
+
+In terms of the evaluation model, top-level variables from different
+namespaces essentially correspond to definitions with different
+prefixes. In particular, changing the current namespace during
+evaluation does not change the variables to which executing
+expressions refer.
 
 @;------------------------------------------------------------------------
 @section{Threads}
 
+Scheme supports multiple, pre-emptive threads of evaluation. In terms
+of the evaluation model, this means that each step in evaluation
+actually consists of multiple concurrent expressions, rather than a
+single expression. The expressions all share the same objects and
+top-level variables, so that they can communicate through shared
+state. Most evaluation steps involve a single step in a single
+expression, but certain synchronization primitives require multiple
+threads to progress together in one step.
+
+In addition to shared state, each thread has its own private state
+that is accessed through @defterm{thread cells} and
+@defterm{parameters}. In particular, the current namespace is a
+thread-specific property implemented by a parameter; it is not a
+global property.

@@ -157,7 +157,7 @@ an @scheme[_id] is referenced before its value is ready, the result is
 @include-section["named-let.scrbl"]
 
 @; ----------------------------------------
-@section{Multiple Values: @scheme[let-values], @scheme[let*-values], and @scheme[letrec-values]}
+@section{Multiple Values: @scheme[let-values], @scheme[let*-values], @scheme[letrec-values]}
 
 In the same way that @scheme[define-values] binds multiple
 results in a definition (see @secref["guide:multiple-values"]),

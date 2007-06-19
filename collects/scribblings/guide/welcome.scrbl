@@ -164,5 +164,5 @@ they're fundamental limitations of the traditional top-level
 environment, which Scheme and Lisp implementations have historically
 fought with ad hoc command-line flags, compiler directives, and
 build tools. The module system is to designed to avoid the problems,
-so start with @schemefont{#module}, and you'll be happier with Scheme
-in the long run.
+so start with @schemefont{#module}, and you'll be happier with 
+PLT Scheme in the long run.

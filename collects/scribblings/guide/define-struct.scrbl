@@ -13,7 +13,7 @@ nevertheless implemented as structures, and we defer discussion of
 objects to @secref["classes"].
 
 @; ------------------------------------------------------------
-@section{Simple Structure Types}
+@section{Simple Structure Types: @scheme[define-struct]}
 
 To a first approximation, the syntax of @scheme[define-struct] is
 

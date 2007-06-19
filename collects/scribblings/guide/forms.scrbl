@@ -87,6 +87,4 @@ form, a @scheme[_thing] is either an identifier or a keyword.
 @include-section["cond.scrbl"]
 @include-section["begin.scrbl"]
 @include-section["set.scrbl"]
-
-@section{Quoted Data: @scheme[quote] and @scheme[quasiquote]}
-
+@include-section["quote.scrbl"]

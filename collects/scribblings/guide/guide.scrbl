@@ -38,10 +38,6 @@ describes the acceptable arguments and the result of the procedure
 using @idefterm{contracts}.
 
 @; ----------------------------------------------------------------------
-@include-section["for.scrbl"]
-
-
-@; ----------------------------------------------------------------------
 @section[#:tag "classes"]{Classes and Objects}
 
 
@@ -50,15 +46,11 @@ using @idefterm{contracts}.
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "threads"]{Threads}
+@include-section["for.scrbl"]
 
 
 @; ----------------------------------------------------------------------
-@section[#:tag "guide:i/o"]{Input and Output}
-
-
-@; ----------------------------------------------------------------------
-@section[#:tag "guide:networking"]{Networking}
+@include-section["io.scrbl"]
 
 
 @; ----------------------------------------------------------------------
@@ -68,10 +60,21 @@ using @idefterm{contracts}.
 @; ----------------------------------------------------------------------
 @section[#:tag "match"]{Pattern Matching}
 
+@subsection{Simple Dispatch: @scheme[case]}
+
+The @scheme[case] form dispatches to a clause by matching the result
+of an expression to the values for the clause:
+
+@specform[(case [(_datum ...+) expr ...+] 
+                ...)]
+
 
 @; ----------------------------------------------------------------------
 @section[#:tag "units"]{Units (Higher-Order Modules)}
 
+
+@; ----------------------------------------------------------------------
+@section[#:tag "threads"]{Threads}
 
 @; ----------------------------------------------------------------------
 @section[#:tag "guide:macros"]{Syntactic Extension@aux-elem{ (Modules and Macros)}}
@@ -83,7 +86,6 @@ using @idefterm{contracts}.
 
 @; ----------------------------------------------------------------------
 @section[#:tag "macros"]{Reader Extension}
-
 
 @; ----------------------------------------------------------------------
 @section[#:tag "security"]{Security}

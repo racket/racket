@@ -154,7 +154,7 @@
   (provide defproc defproc* defstruct defthing defform defform* defform/subs defform*/subs defform/none
            specform specform/subs 
            specsubform specspecsubform specsubform/inline
-           schemegrammar
+           schemegrammar schemegrammar*
            var svar void-const undefined-const)
 
   (define void-const
@@ -295,8 +295,16 @@
     (syntax-rules ()
       [(_ #:literals (lit ...) id clause ...) (*schemegrammar '(lit ...) 
                                                               '(id clause ...)
-                                                              (lambda () (list (scheme id) (schemeblock0 clause) ...)))]
+                                                              (lambda () (list (list (scheme id) (schemeblock0 clause) ...))))]
       [(_ id clause ...) (schemegrammar #:literals () id clause ...)]))
+  (define-syntax schemegrammar*
+    (syntax-rules ()
+      [(_ #:literals (lit ...) [id clause ...] ...) (*schemegrammar '(lit ...) 
+                                                                    '(id ... clause ... ...)
+                                                                    (lambda () 
+                                                                      (list
+                                                                       (list (scheme id) (schemeblock0 clause) ...) ...)))]
+      [(_ [id clause ...] ...) (schemegrammar #:literals () [id clause ...] ...)]))
   (define-syntax var
     (syntax-rules ()
       [(_ id) (*var 'id)]))
@@ -589,27 +597,34 @@
                 sub-procs))))
         (flow-paragraphs (decode-flow (content-thunk)))))))
 
-  (define (*schemerawgrammar nonterm clause1 . clauses)
+  (define (*schemerawgrammars nonterms clauseses)
     (make-table
      '((valignment baseline baseline baseline baseline baseline)
-       (alignment left left center left left))
+       (alignment right left center left left))
      (let ([empty-line (make-flow (list (make-paragraph (list (tt 'nbsp)))))]
            [to-flow (lambda (i) (make-flow (list (make-paragraph (list i)))))])
-       (cons
-        (list (to-flow nonterm)
-              empty-line
-              (to-flow "=")
-              empty-line
-              (make-flow (list clause1)))
-        (map (lambda (clause)
-               (list empty-line
-                     empty-line
-                     (to-flow "|")
-                     empty-line
-                     (make-flow (list clause))))
-             clauses)))))
+       (apply append
+              (map
+               (lambda (nonterm clauses)
+                 (cons
+                  (list (to-flow nonterm)
+                        empty-line
+                        (to-flow "=")
+                        empty-line
+                        (make-flow (list (car clauses))))
+                  (map (lambda (clause)
+                         (list empty-line
+                               empty-line
+                               (to-flow "|")
+                               empty-line
+                               (make-flow (list clause))))
+                       (cdr clauses))))
+               nonterms clauseses)))))
 
-  (define (*schemegrammar lits s-expr clauses-thunk)
+  (define (*schemerawgrammar nonterm clause1 . clauses)
+    (*schemerawgrammars (list nonterm) (list (cons clause1 clauses))))
+
+  (define (*schemegrammar lits s-expr clauseses-thunk)
     (parameterize ([current-variable-list
                     (let loop ([form s-expr])
                       (cond
@@ -619,7 +634,8 @@
                        [(pair? form) (append (loop (car form))
                                              (loop (cdr form)))]
                        [else null]))])
-      (apply *schemerawgrammar (clauses-thunk))))
+      (let ([l (clauseses-thunk)])
+        (*schemerawgrammars (map car l) (map cdr l)))))
 
   (define (*var id)
     (to-element (*var-sym id)))
