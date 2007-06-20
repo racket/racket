@@ -532,6 +532,7 @@ static int size_on_free_list(void *p)
 /******************************************************************************/
 
 static int is_marked(void *p);
+#define weak_box_resolve(p) (p)
 
 #include "weak.c"
 

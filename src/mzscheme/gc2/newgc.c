@@ -1170,6 +1170,8 @@ static unsigned short ephemeron_tag;
 #define is_marked(p) marked(p)
 typedef short Type_Tag;
 
+#define weak_box_resolve(p) GC_resolve(p)
+
 #include "weak.c"
 
 /*****************************************************************************/

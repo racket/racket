@@ -223,7 +223,9 @@ static void zero_weak_boxes()
     if (!is_marked(wb->val)) {
       wb->val = NULL;
       if (wb->secondary_erase) {
-	*(wb->secondary_erase + wb->soffset) = NULL;
+        void **p;
+        p = (void **)GC_resolve(wb->secondary_erase);
+	*(p + wb->soffset) = NULL;
 	wb->secondary_erase = NULL;
       }
     }
