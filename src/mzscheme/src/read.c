@@ -65,6 +65,7 @@ static Scheme_Object *read_accept_box(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_pipe_quote(int, Scheme_Object *[]);
 static Scheme_Object *read_decimal_as_inexact(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_dot(int, Scheme_Object *[]);
+static Scheme_Object *read_accept_infix_dot(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_quasi(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_reader(int, Scheme_Object *[]);
 #ifdef LOAD_ON_DEMAND
@@ -125,6 +126,7 @@ typedef struct ReadParams {
   int curly_braces_are_parens;
   int read_decimal_inexact;
   int can_read_dot;
+  int can_read_infix_dot;
   int can_read_quasi;
   int honu_mode;
   Readtable *table;
@@ -480,6 +482,11 @@ void scheme_init_read(Scheme_Env *env)
 						       "read-accept-dot",
 						       MZCONFIG_CAN_READ_DOT),
 			     env);
+  scheme_add_global_constant("read-accept-infix-dot",
+			     scheme_register_parameter(read_accept_infix_dot,
+						       "read-accept-infix-dot",
+						       MZCONFIG_CAN_READ_INFIX_DOT),
+			     env);
   scheme_add_global_constant("read-accept-quasiquote",
 			     scheme_register_parameter(read_accept_quasi,
 						       "read-accept-quasiquote",
@@ -678,6 +685,12 @@ static Scheme_Object *
 read_accept_dot(int argc, Scheme_Object *argv[])
 {
   DO_CHAR_PARAM("read-accept-dot", MZCONFIG_CAN_READ_DOT);
+}
+
+static Scheme_Object *
+read_accept_infix_dot(int argc, Scheme_Object *argv[])
+{
+  DO_CHAR_PARAM("read-accept-infix-dot", MZCONFIG_CAN_READ_INFIX_DOT);
 }
 
 static Scheme_Object *
@@ -1983,6 +1996,8 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int h
   params.can_read_quasi = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CAN_READ_DOT);
   params.can_read_dot = SCHEME_TRUEP(v);
+  v = scheme_get_param(config, MZCONFIG_CAN_READ_INFIX_DOT);
+  params.can_read_infix_dot = SCHEME_TRUEP(v);
   if (!delay_load_info)
     delay_load_info = scheme_get_param(config, MZCONFIG_DELAY_LOAD_INFO);
   if (SCHEME_TRUEP(delay_load_info))
@@ -2535,7 +2550,9 @@ read_list(Scheme_Object *port,
       ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params);
       effective_ch = readtable_effective_char(params->table, ch);
       if (effective_ch != closer) {
-	if ((effective_ch == '.') && next_is_delim(port, params, brackets, braces)) {
+	if (params->can_read_infix_dot 
+            && (effective_ch == '.') 
+            && next_is_delim(port, params, brackets, braces)) {
 	  /* Parse as infix: */
 
 	  if (shape == mz_shape_hash_elem) {
@@ -4261,6 +4278,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	params.curly_braces_are_parens = 1;
 	params.read_decimal_inexact = 1;
 	params.can_read_dot = 1;
+	params.can_read_infix_dot = 1;
 	params.can_read_quasi = 1;
 	params.honu_mode = 0;
 	params.table = NULL;

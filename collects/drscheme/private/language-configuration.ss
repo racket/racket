@@ -1300,6 +1300,7 @@
              (λ ()
                (read-square-bracket-as-paren #f)
                (read-curly-brace-as-paren #f)
+               (read-accept-infix-dot #f)
                (print-vector-length #f))))
           (define/override (default-settings) 
             (drscheme:language:make-simple-settings #f 'write 'mixed-fraction-e #f #t 'debug))

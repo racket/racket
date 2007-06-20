@@ -2061,6 +2061,16 @@
 (test #f hash-table? (make-hash-table 'weak) 'weak 'equal)
 (test #t hash-table? (make-hash-table 'weak 'equal) 'weak 'equal)
 
+;; Check for proper clearing of weak hash tables
+;; (internally, value should get cleared along with key):
+(let ([ht (make-hash-table 'weak)])
+  (let loop ([n 10])
+    (unless (zero? n)
+      (hash-table-put! ht (make-string 10) #f)
+      (loop (sub1 n))))
+  (collect-garbage)
+  (map (lambda (i) (format "~a" i)) (hash-table-map ht cons)))
+
 ;; Double check that table are equal after deletions
 (let ([test-del-eq
        (lambda (flags)

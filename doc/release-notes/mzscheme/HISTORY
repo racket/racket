@@ -1,3 +1,7 @@
+Version 370.4
+Added read-accept-infix-dot
+Added make-derived-parameter
+
 Version 370.3
 Added hash-table-iterate-{first,next,key,value}
 

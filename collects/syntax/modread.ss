@@ -15,6 +15,7 @@
                    [read-accept-graph #t]
                    [read-decimal-as-inexact #t]
                    [read-accept-dot #t]
+                   [read-accept-infix-dot #t]
                    [read-accept-quasiquote #t]
                    [read-accept-reader #t]
                    [current-readtable #f])
