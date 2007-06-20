@@ -224,7 +224,6 @@
       (if (or (not (read-insert-indents)) (null? stxs))
         stxs
         (let ([mincol (apply min (map syntax/placeholder-column stxs))])
-          ;;!!!
           (let loop ([curline line-num] [stxs stxs] [r '()])
             (if (null? stxs)
               (reverse! r)
@@ -376,25 +375,29 @@
     (if (eq? src default-src) (object-name port) src))
 
   (define/kw (*read #:optional [inp (current-input-port)])
+    (port-count-lines! inp)
     (parameterize ([current-readtable at-readtable])
       (read inp)))
 
   (define/kw (*read-syntax #:optional [src default-src]
-                                      [port (current-input-port)])
+                                      [inp (current-input-port)])
+    (port-count-lines! inp)
     (parameterize ([current-readtable at-readtable])
-      (read-syntax (src-name src port) port)))
+      (read-syntax (src-name src inp) inp)))
 
   (define/kw (read-inside #:optional [inp (current-input-port)])
+    (port-count-lines! inp)
     (let-values ([(line col pos) (port-next-location inp)])
       (parameterize ([current-readtable at-readtable])
         (syntax-object->datum
          ((dispatcher #t) #f inp (object-name inp) line col pos)))))
 
   (define/kw (read-inside-syntax #:optional [src default-src]
-                                            [port (current-input-port)])
-    (let-values ([(line col pos) (port-next-location port)])
+                                            [inp (current-input-port)])
+    (port-count-lines! inp)
+    (let-values ([(line col pos) (port-next-location inp)])
       (parameterize ([current-readtable at-readtable])
-        ((dispatcher #t) #f port (src-name src port) line col pos))))
+        ((dispatcher #t) #f inp (src-name src inp) line col pos))))
 
   (provide (rename *read read) (rename *read-syntax read-syntax)
            read-inside read-inside-syntax)
