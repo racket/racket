@@ -1,12 +1,17 @@
-;; temporary copy of the scribble reader, so that we can experiment
-;;  without having to modify the main PLT tree
-
+;; ============================================================================
 ;; Implements the @-reader macro for embedding text in Scheme code.
+
 (module reader mzscheme
   (require (lib "string.ss") (lib "kw.ss") (lib "readerr.ss" "syntax"))
 
+  ;; --------------------------------------------------------------------------
+  ;; customization
+
   (provide read-insert-indents)
   (define read-insert-indents (make-parameter #t))
+
+  ;; --------------------------------------------------------------------------
+  ;; syntax
 
   (define cmd-char #\@)
 
@@ -18,6 +23,7 @@
   (define open-lines-special ; a special ending expected: @foo{<{ ... }>} etc
     #rx#"^[ \t\r\n]*([|][^a-zA-Z0-9 \t\r\n@\\]*?[{])(?:[ \t]*\r?\n[ \t]*)?")
   (define open-attr/lines #rx#"^[ \t\r\n]*[[{][ \t\r\n]*")
+  (define close-attrs   #rx#"^[]]")
   (define close-lines   #rx#"^(?:[ \t]*\r?\n[ \t]*)?[}]") ; swallow 1 newline
   (define close-lines*  '(#"^(?:[ \t]*\r?\n[ \t]*)?" #""))
   (define comment-start #rx#"^[ \t]*;")
@@ -33,6 +39,9 @@
   (define byte-pairs
     (map (lambda (b) (cons (bytes-ref b 0) (bytes-ref b 1)))
          '(#"()" #"[]" #"{}" #"<>")))
+
+  ;; --------------------------------------------------------------------------
+  ;; utilities
 
   (define make-spaces
     (let ([t (make-hash-table)])
@@ -67,7 +76,7 @@
                                   plain-spaces)])
               (hash-table-put! plain-readtables rt #t)
               rt))))
-      (lambda/kw (#:optional [port (current-input-port)])
+      (lambda (port)
         (let* ([rt (current-readtable)] [plain? (plain-readtable? rt)])
           (let loop ()
             (when plain? (skip-plain-spaces port))
@@ -93,16 +102,33 @@
       (datum->syntax-object #f d (placeholder-loc sp))
       (datum->syntax-object sp d sp)))
 
+  ;; --------------------------------------------------------------------------
+  ;; main reader function for @ constructs
+
   (define ((dispatcher start-inside?)
            char inp source-name line-num col-num position)
+
     (define (read-error msg . xs)
       (let-values ([(line col pos) (port-next-location inp)])
         (raise-read-error (apply format msg xs) source-name line col pos #f)))
+
     (define (cur-pos)
       (let-values ([(line col pos) (port-next-location inp)])
         pos))
+
     (define (span-from start)
       (and start (- (cur-pos) start)))
+
+    (define (read-delimited-list end-re)
+      (let loop ([r '()])
+        (skip-whitespace inp)
+        (if (regexp-match/fail-without-reading end-re inp)
+          (reverse! r)
+          (let ([x (read-syntax/recursive source-name inp)])
+            (if (eof-object? x)
+              (read-error "expected a ']'")
+              (loop (cons x r)))))))
+
     (define (read-from-bytes-exact-or-identifier bs)
       (let ([inp (open-input-bytes bs)]
             [default (lambda _ (string->symbol (bytes->string/utf-8 bs)))])
@@ -110,6 +136,7 @@
           (let ([x (read inp)])
             ;; must match all -- otherwise: default
             (if (regexp-match #rx#"^[ \t\r\n]*$" inp) x (default))))))
+
     (define (reverse-bytes bytes)
       (define (rev-byte b)
         (cond [(assq b byte-pairs) => cdr]
@@ -120,10 +147,13 @@
             (bytes-set! r i (rev-byte (bytes-ref bytes (- len i 1))))
             (loop (sub1 i))))
         r))
+
     (define eol-token "\n")
+
     (define (get-attrs)
-      (and (regexp-match-peek-positions open-attrs inp)
-           (syntax->list (read-syntax/recursive source-name inp))))
+      (and (regexp-match/fail-without-reading open-attrs inp)
+           (read-delimited-list close-attrs)))
+
     (define ((get-line open open-re close close-re item-re unquote-re level))
       (let-values ([(line col pos) (port-next-location inp)])
         (define (make-stx sexpr)
@@ -165,6 +195,7 @@
               [(regexp-match/fail-without-reading #rx#"^$" inp)
                (if start-inside? #f (read-error "missing `~a'" close))]
               [else (read-error "internal error [get-line]")])))
+
     ;; adds stx (new syntax) to the list of stxs, merging it if both are
     ;; strings, except for newline markers
     (define (maybe-merge stx stxs)
@@ -183,6 +214,7 @@
                         (span-from (syntax-position fst))))
                 (cdr stxs)))
         (cons stx stxs)))
+
     (define (add-indents stxs)
       (unless (andmap (lambda (x)
                         (or (and (syntax? x) (syntax-line x) (syntax-column x))
@@ -206,6 +238,7 @@
                                    (make-spaces (- stxcol mincol)))
                                  r)
                           (cons stx* r))))))))))
+
     (define (get-lines)
       (define get
         (cond [start-inside?
@@ -241,6 +274,7 @@
                          [(special-comment? line) (loop lines more)]
                          [(list? line) (loop lines (append line more))]
                          [else (loop (maybe-merge line lines) more)])))))
+
     (define (get-rprefixes) ; return punctuation prefixes in reverse
       (cond
         [(regexp-match/fail-without-reading
@@ -265,6 +299,7 @@
                                     r)))]
                   [else (read-error "internal error [rpfxs]")])))]
         [else '()]))
+
     (define (get-command) ; #f means no command
       (let-values ([(line col pos) (port-next-location inp)])
         (cond [(regexp-match-peek-positions open-attr/lines inp)
@@ -281,6 +316,7 @@
                          (let ([x (read-syntax/recursive source-name inp)])
                            (if (special-comment? x) (loop) x))))
                      #f)])))
+
     (cond
       [start-inside?
        (datum->syntax-object #f (get-lines)
@@ -311,6 +347,9 @@
            (list source-name line-num col-num position
                  (span-from position))))]))
 
+  ;; --------------------------------------------------------------------------
+  ;; readtables
+
   (define at-readtable
     (make-readtable #f cmd-char 'terminating-macro (dispatcher #f)))
 
@@ -334,9 +373,7 @@
 
   (define default-src (gensym))
   (define (src-name src port)
-    (if (eq? src default-src)
-        (object-name port)
-        src))
+    (if (eq? src default-src) (object-name port) src))
 
   (define/kw (*read #:optional [inp (current-input-port)])
     (parameterize ([current-readtable at-readtable])
