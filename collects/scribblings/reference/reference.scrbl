@@ -12,8 +12,8 @@ language.
 @table-of-contents[]
 
 @include-section["model.scrbl"]
+@include-section["syntax-model.scrbl"]
 @include-section["read.scrbl"]
-@include-section["macros.scrbl"]
 @include-section["syntax.scrbl"]
 @include-section["derived.scrbl"]
 @include-section["data.scrbl"]
@@ -22,7 +22,7 @@ language.
 
 @section["Input and Output"]
 
-@subsection[#:tag "mz:char-input"]{Form Bytes to Characters}
+@subsection[#:tag "mz:char-input"]{From Bytes to Characters}
 
 @;------------------------------------------------------------------------
 

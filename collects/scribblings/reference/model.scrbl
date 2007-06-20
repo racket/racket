@@ -23,9 +23,11 @@
 @define[(*state c e) (make-element #f (list langle c comma e rangle))]
 @define-syntax[state (syntax-rules ()
                        [(_ a b) (*state (scheme a) (scheme b))])]
+@define[(frame n) (make-element "schemevariable" 
+                                (list "C" (make-element 'subscript (list (format "~a" n)))))]
 
 @;------------------------------------------------------------------------
-@title{Language Model}
+@title{Evaluation Model}
 
 Scheme evaluation can be viewed as the simplification of expressions
 to obtain values. For example, just as an elementary-school student
@@ -41,12 +43,12 @@ Scheme evaluation simplifies
 
 The arrow @reduces above replaces the more traditional @tt{=} to
 emphasize that evaluation proceeds in a particular direction towards
-simpler expressions. In particular, a @defterm{value} is an
+simpler expressions. In particular, a @deftech{value} is an
 expression that evaluation simplifies no further, such as the number
 @scheme[2].
 
 @;------------------------------------------------------------------------
-@section{Sub-expression Evaluation}
+@section{Sub-expression Evaluation and Continuations}
 
 Some simplifications require more than one step. For example:
 
@@ -54,14 +56,14 @@ Some simplifications require more than one step. For example:
 (- 4 #,(redex (+ 1 1))) #,reduces #,(redex (- 4 2)) #,reduces 2
 ]
 
-An expression that is not a value can always be partitioned into two
-parts: a @defterm{redex}, which is the part that changed in a
+An expression that is not a @tech{value} can always be partitioned
+into two parts: a @deftech{redex}, which is the part that changed in a
 single-step simplification (show in blue), and the
-@defterm{continuation}, which is the surrounding expression
+@deftech{continuation}, which is the surrounding expression
 context. In @scheme[(- 4 (+ 1 1))], the redex is @scheme[(+ 1 1)], and
 the continuation is @scheme[(- 4 #, @hole)], where @hole takes the
 place of the redex. That is, the continuation says how to ``continue''
-after the redex is reduced to a value.
+after the @tech{redex} is reduced to a @tech{value}.
 
 Before some things can be evaluated, some sub-expressions must be
 evaluated; for example, in the application @scheme[(- 4 (+ 1 1))], the
@@ -72,69 +74,72 @@ Thus, the specification of each syntactic form specifies how (some of)
 its sub-expressions are evaluated, and then how the results are
 combined to reduce the form away.
 
-The @defterm{dynamic extent} of an expression is the sequence of
-evaluation steps during which an expression contains the redex.
+The @deftech{dynamic extent} of an expression is the sequence of
+evaluation steps during which an expression contains the @tech{redex}.
 
 @;------------------------------------------------------------------------
 @section{Tail Position}
 
-An expression @scheme[_expr1] is in @defterm{tail position} with
+An expression @scheme[_expr1] is in @deftech{tail position} with
 respect to an enclosing expression @scheme[_expr2] if, whenever
-@scheme[_expr1] becomes a redex, its continuation is the same as was
-the enclosing @scheme[_expr2]'s continuation.
+@scheme[_expr1] becomes a redex, its @tech{continuation} is the same
+as was the enclosing @scheme[_expr2]'s @tech{continuation}.
 
-For example, the @scheme[(+ 1 1)] expression is @italic{not} in tail
-position with respect to @scheme[(- 4 (+ 1 1))]. To illustrate, we use
+For example, the @scheme[(+ 1 1)] expression is @italic{not} in @tech{tail
+position} with respect to @scheme[(- 4 (+ 1 1))]. To illustrate, we use
 the notation @sub[_C _expr] to mean the expression that is produced by
-substituing @scheme[_expr] in place of @hole in the continuation
+substituting @scheme[_expr] in place of @hole in the @tech{continuation}
 @scheme[_C]:
 
 @schemeblock[
 #, @sub[_C (- 4 (+ 1 1))] #, @reduces #, @sub[_C (- 4 2)]
 ]
 
-In this case, the continuation for reducing @scheme[(+ 1 1)] is @sub[_C (+
-4 #, @hole)], not just @scheme[_C].
+In this case, the @tech{continuation} for reducing @scheme[(+ 1 1)] is
+@sub[_C (+ 4 #, @hole)], not just @scheme[_C].
 
-In contrast, @scheme[(+ 1 1)] is in tail position with respect to
-@scheme[(if (zero? 0) (+ 1 1) 3)], because, for any continuation @scheme[_C],
+In contrast, @scheme[(+ 1 1)] is in @tech{tail position} with respect
+to @scheme[(if (zero? 0) (+ 1 1) 3)], because, for any continuation
+@scheme[_C],
 
 @schemeblock[
 #, @sub[_C (if (zero? 0) (+ 1 1) 3)] #, @reduces #, @sub[_C (if #t (+ 1 1) 3)] #, @reduces #, @sub[_C (+ 1 1)]
 ]
 
 The steps in this reduction sequence are driven by the definition of
-@scheme[if], and they do not depend on the continuation
+@scheme[if], and they do not depend on the @tech{continuation}
 @scheme[_C]. The ``then'' branch of an @scheme[if] form is always in
-tail position with respect to the @scheme[if] form. Due to a similar
-reduction rule for @scheme[if] and @scheme[#f], the ``else'' branch of
-an @scheme[if] form is also in tail position.
+@tech{tail position} with respect to the @scheme[if] form. Due to a
+similar reduction rule for @scheme[if] and @scheme[#f], the ``else''
+branch of an @scheme[if] form is also in @tech{tail position}.
 
-Tail-position specifications provide a guarantee about the asymtotic
-space consumption of a computation. In general, the specification of
-tail positions goes with each syntactic form, like @scheme[if].
+@tech{Tail-position} specifications provide a guarantee about the
+asymptotic space consumption of a computation. In general, the
+specification of @tech{tail positions} goes with each syntactic form,
+like @scheme[if].
 
 @;------------------------------------------------------------------------
 @section{Multiple Return Values}
 
-A Scheme expression can evaluate to @defterm{multiple values}, in the
+A Scheme expression can evaluate to @deftech{multiple values}, in the
 same way that a procedure can accept multiple arguments.
 
-Most continuations expect a particular number of result values.
-Indeed, most continuations, such as @scheme[(+ #, @hole 1)] expect a
-single value. The continuation @scheme[(let-values ([(x y) #, @hole])
-_expr)] expects two result values; the first result replaces
-@scheme[x] in the body @scheme[_expr], and the second replaces
-@scheme[y] in @scheme[_expr]. The continuation @scheme[(begin #, @hole
-(+ 1 2))] accepts any number of result values, because it ignores the
-result(s).
+Most @tech{continuations} expect a particular number of result
+@tech{values}.  Indeed, most @tech{continuations}, such as @scheme[(+
+#, @hole 1)] expect a single @tech{value}. The @tech{continuation}
+@scheme[(let-values ([(x y) #, @hole]) _expr)] expects two result
+@tech{values}; the first result replaces @scheme[x] in the body
+@scheme[_expr], and the second replaces @scheme[y] in
+@scheme[_expr]. The @tech{continuation} @scheme[(begin #, @hole (+ 1
+2))] accepts any number of result @tech{values}, because it ignores
+the result(s).
 
 In general, the specification of a syntactic form inidicates the
-number of values that it produces and the number that it expects from
-each of its sub-expression. In addtion, some procedures (notably
-@scheme[values]) produce multiple values, and some procedures (notably
-@scheme[call-with-values]) create continuations internally that accept
-a certain number of values.
+number of @tech{values} that it produces and the number that it
+expects from each of its sub-expression. In addtion, some procedures
+(notably @scheme[values]) produce multiple @tech{values}, and some
+procedures (notably @scheme[call-with-values]) create continuations
+internally that accept a certain number of @tech{values}.
 
 @;------------------------------------------------------------------------
 @section{Top-Level and Module-Level Variables}
@@ -147,9 +152,9 @@ then an algebra student simplifies @tt{x + 1} as follows:
 
 @verbatim{  x + 1 = 10 + 1 = 11}
 
-Scheme works much the same way, in that a set of top-level variables
-are available for substitutions on demand during evaluation. For
-example, given
+Scheme works much the same way, in that a set of @tech{top-level
+variables} are available for substitutions on demand during
+evaluation. For example, given
 
 @schemeblock[
 (define x 10)
@@ -169,7 +174,7 @@ definitions in response to evaluating forms such as @scheme[define].
 Each evaluation step, then, takes the current set of definitions and
 program to a new set of definitions and program. Before a
 @scheme[define] can be moved into the set of definitions, its
-right-hand expression must be reduced to a value.
+right-hand expression must be reduced to a @tech{value}.
 
 @prog-steps/no-obj[
 [{}
@@ -191,7 +196,7 @@ a module is essentially a prefix on a defined name, so that different
 modules can define the name.
 
 Using @scheme[set!], a program can change the value associated with an
-existing top-level variable:
+existing @tech{top-level variable}:
 
 @prog-steps/no-obj[
 [{(define x 10)}
@@ -207,26 +212,27 @@ existing top-level variable:
 @;------------------------------------------------------------------------
 @section{Objects and Imperative Update}
 
-In addition to @scheme[set!] for imperative update of top-level
-variables, various procedures enable the modification of elements
+In addition to @scheme[set!] for imperative update of @tech{top-level
+variables}, various procedures enable the modification of elements
 within a compound data structure. For example, @scheme[vector-set!]
 modifies the content of a vector.
 
 To allow such modifications to data, we must distingiush between
-values, which are the results of expressions, and @defterm{objects},
-which hold the data referenced by a value.
+@tech{values}, which are the results of expressions, and
+@deftech{objects}, which hold the data referenced by a value.
 
-A few kinds of objects can serve directly as values, including
+A few kinds of @tech{objects} can serve directly as values, including
 booleans, @scheme[(void)], and small exact integers. More generally,
-however, a value is a reference to an object. For example, a value can
-be a reference to a particular vector that currently holds the value
-@scheme[10] in its first slot. If an object is modified, then the
-modification is visible through all copies of the value that reference
-the same object.
+however, a @tech{value} is a reference to an @tech{object}. For
+example, a @tech{value} can be a reference to a particular vector that
+currently holds the value @scheme[10] in its first slot. If an
+@tech{object} is modified, then the modification is visible through
+all copies of the @tech{value} that reference the same @tech{object}.
 
-In the evaluation model, a set of objects must be carried along with
-each step in evaluation, just like the definition set. Operations that
-create objects, such as @scheme[vector], add to the set of objects:
+In the evaluation model, a set of @tech{objects} must be carried along
+with each step in evaluation, just like the definition set. Operations
+that create @tech{objects}, such as @scheme[vector], add to the set of
+@tech{objects}:
 
 @prog-steps[
 [{}
@@ -292,38 +298,39 @@ create objects, such as @scheme[vector], add to the set of objects:
  11]
 ]
 
-The distinction between a top-level variable is an object reference is
-crucial. A top-level variable is not a value; each time a variable
-expression is evaluated, the value is extracted from the current set
-of definitions. An object reference, in contrast is a value, and
-therefore needs no further evaluation. The model evaluation steps
-above use angle-bracketed @scheme[<o1>] for an object reference to
-distinguish it from a variable name.
+The distinction between a @tech{top-level variable} and an object
+reference is crucial. A @tech{top-level variable} is not a
+@tech{value}; each time a @tech{variable} expression is evaluated, the
+value is extracted from the current set of definitions. An object
+reference, in contrast is a value, and therefore needs no further
+evaluation. The model evaluation steps above use angle-bracketed
+@scheme[<o1>] for an object reference to distinguish it from a
+@tech{variable} name.
 
 A direct object reference can never appear in a text-based source
 program. A program representation created with
 @scheme[datum->syntax-object], however, can embed direct references to
-existing objects.
+existing @tech{objects}.
 
 @;------------------------------------------------------------------------
 @section{Object Identity and Comparisons}
 
-The @scheme[eq?] operator compares two values, returning @scheme[#t]
-when the values refer to the same object. This form of equality is
-suitable for comparing objects that support imperative update (e.g.,
-to determine that the effect of modifying an object through one
-reference is visible through another reference). Also, an @scheme[eq?]
-test evaluates quickly, and @scheme[eq?]-based hashing is more
-lightweight than @scheme[equal?]-based hashing in hash tables.
+The @scheme[eq?] operator compares two @tech{values}, returning
+@scheme[#t] when the values refer to the same @tech{object}. This form
+of equality is suitable for comparing objects that support imperative
+update (e.g., to determine that the effect of modifying an object
+through one reference is visible through another reference). Also, an
+@scheme[eq?]  test evaluates quickly, and @scheme[eq?]-based hashing
+is more lightweight than @scheme[equal?]-based hashing in hash tables.
 
 In some cases, however, @scheme[eq?] is unsuitable as a comparison
-operator, because the generation of objects is not clearly defined. In
-particular, two applications of @scheme[+] to the same two exact
-integers may or may not produce results that are @scheme[eq?],
+operator, because the generation of @tech{objects} is not clearly
+defined. In particular, two applications of @scheme[+] to the same two
+exact integers may or may not produce results that are @scheme[eq?],
 although the results are always @scheme[equal?]. Similarly, evaluation
-of a @scheme[lambda] form typically generates a new procedure object,
-but it may re-use a procedure object previously generated by the same
-source @scheme[lambda] form.
+of a @scheme[lambda] form typically generates a new procedure
+@tech{object}, but it may re-use a procedure @tech{object} previously
+generated by the same source @scheme[lambda] form.
 
 The behavior of a datatype with respect to @scheme[eq?] is generally
 specified with the datatype and its associated procedures.
@@ -342,16 +349,17 @@ In the program state
 
 evaluation cannot depend on @scheme[<o2>], because it is not part of
 the program to evaluate, and it is not referenced by any definition
-that is accessible in the program. The object @scheme[<o2>] may
-therefore be removed from the evaluation by @defterm{garbage
+that is accessible in the program. The @tech{object} @scheme[<o2>] may
+therefore be removed from the evaluation by @deftech{garbage
 collection}.
 
-A few special compound datatypes hold @defterm{weak references} to
-objects. Such weak references are treated specialy by the garbage
-collector in determining which objects are reachable for the remainder
-of the computation. If an object is reachable only via a weak
-reference, then the object can be reclaimed, and the weak reference is
-replaced by a different value (typically @scheme[#f]).
+A few special compound datatypes hold @deftech{weak references} to
+objects. Such weak references are treated specially by the garbage
+collector in determining which @tech{objects} are reachable for the
+remainder of the computation. If an @tech{object} is reachable only
+via a @tech{weak reference}, then the object can be reclaimed, and the
+@tech{weak reference} is replaced by a different @tech{value}
+(typically @scheme[#f]).
 
 @;------------------------------------------------------------------------
 @section{Procedure Applications and Local Bindings}
@@ -365,11 +373,12 @@ then an algebra student simplifies @tt{f(1)} as follows:
 @verbatim{  f(7) = 7 + 10 = 17}
 
 The key step in this simplification is take the body of the defined
-function @tt{f}, and then replace each @tt{x} with the actual value
-@tt{1}.
+function @tt{f}, and then replace each @tt{x} with the actual
+@tech{value} @tt{1}.
 
 Scheme procedure application works much the same way. A procedure is
-an object, so evaluating @scheme[(f 7)] starts with a variable lookup:
+an @tech{object}, so evaluating @scheme[(f 7)] starts with a
+@tech{variable} lookup:
 
 @prog-steps[
 [{(define <p1> (lambda (x) (+ x 10)))}
@@ -380,16 +389,17 @@ an object, so evaluating @scheme[(f 7)] starts with a variable lookup:
  (code:hilite (<p1> 7))]
 ]
 
-Unlike in algebra, however, the value associated with an argument can
-be changed in the body of a procedure by using @scheme[set!], as in
-the example @scheme[(lambda (x) (begin (set! x 3) x))]. Since the value
-associated with @scheme[x] can be changed, an actual value for cannot
-be substituted for @scheme[x] when the procedure is applied.
+Unlike in algebra, however, the @tech{value} associated with an
+argument can be changed in the body of a procedure by using
+@scheme[set!], as in the example @scheme[(lambda (x) (begin (set! x 3)
+x))]. Since the @tech{value} associated with @scheme[x] can be
+changed, an actual value for cannot be substituted for @scheme[x] when
+the procedure is applied.
 
-Instead, a new @defterm{location} is created for each variable on each
-application. The argument value is placed in the location, and each
-insteace of the variable in the procedure body is replaced with the
-new location:
+Instead, a new @deftech{location} is created for each @tech{variable}
+on each application. The argument @tech{value} is placed in the
+@tech{location}, and each instance of the @tech{variable} in the
+procedure body is replaced with the new @tech{location}:
 
 @prog-steps[
 [{(define <p1> (lambda (x) (+ x 10)))}
@@ -409,14 +419,16 @@ new location:
  17]
 ]
 
-A location is the same as a top-level variable, but when a location is
-generated, it (conceptually) uses a name that has not been used before
-and that cannot not be generated again or accessed directly.
+A @tech{location} is the same as a @tech{top-level variable}, but when
+a @tech{location} is generated, it (conceptually) uses a name that has
+not been used before and that cannot not be generated again or
+accessed directly.
 
-Generating a location in this way means that @scheme[set!] evaluates
-for local variables in the same way as for top-level variables,
-because the local variable is always replaced with a location by the
-time the @scheme[set!] form is evaluated:
+Generating a @tech{location} in this way means that @scheme[set!]
+evaluates for @tech{local variables} in the same way as for
+@tech{top-level variables}, because the @tech{local variable} is
+always replaced with a @tech{location} by the time the @scheme[set!]
+form is evaluated:
 
 @prog-steps[
 [{(define <p1> (lambda (x) (begin (set! x 3) x)))}
@@ -443,138 +455,85 @@ time the @scheme[set!] form is evaluated:
  3]
 ]
 
-The substition and location-generation step of procedure application
-requires that the argument is a value. Therefore, in @scheme[((lambda
-(x) (+ x 10)) (+ 1 2))], the @scheme[(+ 1 2)] sub-expression must be
-simplified to the value @scheme[3], and then @scheme[3] can be placed
-into a location for @scheme[x]. In other words, Scheme is a
-@defterm{call-by-value} language.
+The substition and @tech{location}-generation step of procedure
+application requires that the argument is a @tech{value}. Therefore,
+in @scheme[((lambda (x) (+ x 10)) (+ 1 2))], the @scheme[(+ 1 2)]
+sub-expression must be simplified to the @tech{value} @scheme[3], and
+then @scheme[3] can be placed into a @tech{location} for
+@scheme[x]. In other words, Scheme is a @deftech{call-by-value}
+language.
 
 Evaluation of a local binding, such as @scheme[(let ([x (+ 1 2)])
 _expr)], is the same as for a procedure call. After @scheme[(+ 1 2)]
-produces a value, it is stored in a fresh location that replaces every
-instance of @scheme[x] in @scheme[_expr].
+produces a @tech{value}, it is stored in a fresh @tech{location} that
+replaces every instance of @scheme[x] in @scheme[_expr].
 
 @;------------------------------------------------------------------------
-@section{Identifiers, Variables, and Locations}
+@section{Variables and Locations}
 
-A @defterm{variable} is a placeholder for a value, and an expressions
-in an initial program refer to variables. A top-level variable is both
-a variable and a location. Any other variable is always replaced by a
-location at run-time, so that evaluation of expressions involves only
-locations. A single non-top-level variable, such as a procedure
-argument, can correspond to different locations at different times.
+A @deftech{variable} is a placeholder for a @tech{value}, and an
+expressions in an initial program refer to @tech{variables}. A
+@deftech{top-level variable} is both a @tech{variable} and a
+@tech{location}. Any other @tech{variable} is always replaced by a
+@tech{location} at run-time, so that evaluation of expressions
+involves only @tech{locations}. A single @deftech{local variable}
+(i.e., a non-top-level, non-module-level @tech{variable}), such as a
+procedure argument, can correspond to different @tech{locations}
+through different instantiations.
 
-The replacement of a variable with a location during evaluation
-implements Scheme's @defterm{lexical scoping}. For example, when the
-procedure-argument variable @scheme[x] is replaced by the location
-@scheme[xloc], then it is replaced throughout the body of the
-procedure, including with any nested @scheme[lambda] forms. As a
-result, future references of the variable always access the same
-location.
+For example, in the program
 
-@guideintro["guide:binding"]{binding}
+@schemeblock[(define y (+ (let ([x 5]) x) 6))]
 
-An @defterm{identifier} is source-program entity. Parsing a Scheme
-program reveals that some identifiers correspond to variables, some
-refer to syntactic forms, and some are quoted to produce a symbol or a
-syntax object. An identifier @defterm{binds} another when the former is
-parsed as a variable and the latter is parsed as a reference to the
-former. An identifier is @defterm{bound} in a sub-expression if it
-binds any uses of the identifier in the sub-expression that are not
-otherwise bound within the sub-expression; conversely, a binding for a
-sub-expression @defterm{shadows} any bindings in its context, so that
-uses of an identifier refer to the shaodowing binding.
+both @scheme[y] and @scheme[x] are @tech{variables}. The @scheme[y]
+@tech{variable} is a @tech{top-level variable}, and the @scheme[x] is
+a @tech{local variable}. When this code is evaluated, a
+@tech{location} is created for @scheme[x] to hold the value
+@scheme[5], and a @tech{location} is also created for @scheme[y] to
+hold the value @scheme[6].
 
-Throughout the documentation, identifiers are typeset to suggest the
-way that they are parsed. A black, boldface identifier like
-@scheme[lambda] indicates as a reference to a syntactic form. A plain
-blue identifer like @schemeidfont{x} is a variable or a reference to
-an unspecified top-level definition. A hyperlinked identifier
-@scheme[cons] is a reference to a specific top-level definition.
+The replacement of a @tech{variable} with a @tech{location} during
+evaluation implements Scheme's @deftech{lexical scoping}. For example,
+when a procedure-argument @tech{variable} @scheme[x] is replaced by
+the @tech{location} @scheme[xloc], then it is replaced throughout the
+body of the procedure, including with any nested @scheme[lambda]
+forms. As a result, future references of the @tech{variable} always
+access the same @tech{location}.
 
 @;------------------------------------------------------------------------
-@section{Parsing and Compilation}
+@section{Continuation Frames and Marks}
 
-The syntax of a Scheme program is defined by
+Every continuation @scheme[_C] can be partitioned into
+@deftech{continuation frames} @frame[1], @frame[2], ..., @frame["n"]
+such that @scheme[_C] = @*sub[@frame[1] @*sub[@frame[2] @*sub["..."
+@frame["n"]]]], and no frame @frame["i"] can be itself partitioned
+into smaller continuations. Evaluation steps add an remove frames to
+the current continuation, typically one at a time.
 
-@itemize{
-
- @item{a @defterm{read} phase that processes a character stream into a
-       Scheme value, especially one composed of pairs and symbols,
-       and}
-
- @item{an @defterm{expand} phase that processes the value to finish
-       parsing the code.}
-
-}
-
-For details on the read phase, see @secref["mz:reader"]. Source code
-is normally read in @scheme[read-syntax] mode, otherwise it must be
-converted to syntax using @scheme[datum->syntax]; the expand phase is
-defined in terms of syntax objects.
-
-An identifier, for example, is a syntax-object symbol, and the
-identifier's binding is determined by lexical information attached to
-the identifier. Expansion recursively processes a syntax object,
-both using its lexical information and extending the information for
-nested objects. For details, see @secref["mz:expansion"].
-
-Ultimately, expansion produces a syntax object matching the grammar
-of the forms in @secref["mz:fully-expanded"]. This fully-expanded
-datum corresponds to a parsed expression, and lexical information on
-its identifiers indicates the parse. For example, a @scheme[car]
-identifier might have lexical information that designates it as the
-@scheme[car] from the @schememodname[big] language (i.e., the built-in
-@scheme[car]). Similarly, a @scheme[lambda] identifier's lexical
-information may indicate that it represents a procedure form.
+Each frame is conceptually annotated with a set of
+@deftech{continuation marks}. A mark consists of a key and its value;
+the key is an arbitrary value, and each frame includes at most one
+mark for any key. Various operations set and extract marks from
+continuations, so that marks can be used to attach information to a
+dynamic extent. For example, marks can be used to record information
+for a ``stack trace'' to be used when an exception is raised, or
+implement dynamically scoped bindings.
 
 @;------------------------------------------------------------------------
-@section{Namespaces}
+@section{Prompts and Delimited Continuations}
 
-A @idefterm{namespace} is a top-level mapping from symbols to binding
-information. It is the starting point for expanding an expression; a
-syntax object produced by @scheme[read-syntax] has no initial
-lexical context; the syntax object can be expanded after
-initializing it with the mappings of a particular namespace.
-
-A namespace maps each symbol to one of three possible bindings:
-
-@itemize{
-
- @item{a particular module-level binding from a particular module}
-
- @item{a top-level transformer binding named by the symbol}
-
- @item{a top-level variable named by the symbol}
-
-}
-
-An ``empty'' namespace maps all symbols to top-level
-variables. Importing a module into the top-level adjusts the namespace
-bindings for all of the imported named. Evaluating a top-level
-@scheme[define] form updates the namespace's mapping to refer to a
-variable (if it does not already) and installs a value into the
-variable.
-
-In addition to its main mapping, each namespace encapsulates a
-distinct set of top-level variables, as well as a potentially distinct
-set of module instances. After a namespace is created, module
-instances from existing namespaces can be attached to the new
-namespace.
-
-At all times during evaluation, some namespace is designated as the
-@defterm{current namespace}. The current namespace has no particular
-relationship, however, with the namespace used to expand the code that
-is executing. Furthermore, a namespace is purely a top-level concept;
-it does not encapsulate the full environment of an expression within
-local binding forms.
-
-In terms of the evaluation model, top-level variables from different
-namespaces essentially correspond to definitions with different
-prefixes. In particular, changing the current namespace during
-evaluation does not change the variables to which executing
-expressions refer.
+A @deftech{prompt} is a special kind of continuation frame that is
+annotated with a specific @deftech{prompt-tag} (essentially a
+continuation mark). Various operations allow the capture of frames in
+the continuation from the redex position out to the nearest enclosing
+prompt with a particular prompt tag; such a continuation is sometimes
+called a @deftech{delimited continuation}. Other operations allow the
+current continuation to be extended with a captured continuation
+(specifically, a @deftech{composable continuation}). Yet other
+operations abort the computation to the nearest enclosing prompt with
+a particular tag, or replace the continuation to the nearest enclosing
+prompt with another one. When a delimited continuation is captured,
+the marks associated with the relevant frames are also captured.
 
 @;------------------------------------------------------------------------
 @section{Threads}
@@ -588,8 +547,64 @@ state. Most evaluation steps involve a single step in a single
 expression, but certain synchronization primitives require multiple
 threads to progress together in one step.
 
-In addition to shared state, each thread has its own private state
-that is accessed through @defterm{thread cells} and
-@defterm{parameters}. In particular, the current namespace is a
-thread-specific property implemented by a parameter; it is not a
-global property.
+In addition to the state that is shared among all threads, each thread
+has its own private state that is accessed through @deftech{thread
+cells}. A thread cell is similar to a normal mutable object, but a
+change to the value inside a thread cell is seen only when extracting
+a value from the cell from the same thread. A thread cell can be
+@deftech{preserved}; when a new thread is created, the creating
+thread's value for a preserved thread cell serves as the initial value
+for the cell in the created thread. For a non-preserved thread cell, a
+new thread sees the same initial value (specified when the thread cell
+is created) as all other threads.
+
+@;------------------------------------------------------------------------
+@section{Parameters}
+
+A @deftech{parameter} is essentially a derived concept in Scheme; they
+are defined in terms of continuation marks and thread cells. However,
+parameters are also built in, in the sense that some primitive
+procedures consult parameter values. For example, the default output
+stream for primitive output operations is determined by a parameter.
+
+A parameter is a setting that is both thread-specific and
+continuation-specific. In the empty continuation, each parameter
+corresponds to a preserved thread cell; a corresponding
+@deftech{parameter procedure} accesses and sets the thread cell's
+value for the current thread.
+
+In a non-empty continuation, a parameter's value is determined through
+a @deftech{parameterization} that is associated with the nearest
+enclosing continuation frame though a continuation mark (whose key is
+not directly accessible). A parameterization maps each parameter to a
+preserved thread cell, and the combination of thread cell and current
+thread yields the parameter's value. A parameter procedure sets or
+accesses the relevant thread cell for its parameter.
+
+Various operations, such as @scheme[parameterize] or
+@scheme[with-parameterization], install a parameterization into the
+current continuation's frame.
+
+@;------------------------------------------------------------------------
+@section{Exceptions}
+
+@deftech{Exceptions} are essentially a derived concept in Scheme; they
+are defined in terms of continuations, prompts, and continuation
+marks.  However, exceptions are also built in, in the sense that
+primitive forms and procedures may raise exceptions.
+
+A handler for uncaught exceptions is designated through a built-in
+parameter. A handler to catch exceptions can be associated with a
+continuation frame though a continuation mark (whose key is not
+directly accessible). When an exception is raised, the current
+continuation's marks determine a chain of handler procedures that are
+consulted to handle the exception.
+
+One potential action of an exception handler is to abort the current
+continuation up to an enclosing prompt with a particular tag.  The
+default handler for uncaught exceptions, in particular, aborts to a
+particular tag for which a prompt is always present, because the
+prompt is installed in the outermost frame of the continuation for any
+new thread.
+
+

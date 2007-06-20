@@ -246,6 +246,15 @@
                color: red;
                }
 
+               .techlink { 
+               text-decoration: none;
+               color: black;
+               }
+               .techlink:hover { 
+               text-decoration: underline;
+               color: blue;
+               }
+
                .schemeresult {
                color: #0000af;
                font-family: Courier; font-size: 80%;

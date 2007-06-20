@@ -22,19 +22,20 @@ through a @seclink["mz:readtables"]{readtable} and various other
 @seclink["parameters"]{parameters}. This section describes the reader's
 parsing when using the default readtable.
 
-Reading from a stream produces one datum. If the result datum is a
-compound value, then reading the datum typically requires the reader
-to call itself recursively to read the component data.
+Reading from a stream produces one @defterm{datum}. If the result
+datum is a compound value, then reading the datum typically requires
+the reader to call itself recursively to read the component data.
 
 The reader can be invoked in either of two modes: @scheme[read] mode,
 or @scheme[read-syntax] mode. In @scheme[read-syntax] mode, the result
 is always a @seclink["stxobj"]{syntax object} that includes
-source-location information wrapped around the sort of datum that
-@scheme[read] mode would produce. In the case of pairs, vectors, and
-boxes, morever, the content is also wrapped recursively as a syntax
-object. Unless specified otherwise, this section describes the
-reader's behavior in @scheme[read] mode, and @scheme[read-syntax] mode
-does the same modulo wrapping the final result.
+source-location and (initially empty) lexical information wrapped
+around the sort of datum that @scheme[read] mode would produce. In the
+case of pairs, vectors, and boxes, morever, the content is also
+wrapped recursively as a syntax object. Unless specified otherwise,
+this section describes the reader's behavior in @scheme[read] mode,
+and @scheme[read-syntax] mode does the same modulo wrapping the final
+result.
 
 Reading is defined in terms of Unicode characters; see
 @secref["mz:char-input"] for information on how a byte stream is converted

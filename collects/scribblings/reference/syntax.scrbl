@@ -527,7 +527,7 @@ in tail position only if no @scheme[body]s are present.
 ]}
 
 @;------------------------------------------------------------------------
-@section{Continuation Marks: @scheme[with-continuation-marks]}
+@section{Continuation Marks: @scheme[with-continuation-mark]}
 
 @defform[(with-continuation-mark key-expr val-expr result-expr)]{
 Evaluates @scheme[key-expr] and @scheme[val-expr] in order to obtain a key and

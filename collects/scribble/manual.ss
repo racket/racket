@@ -151,6 +151,28 @@
 
   ;; ----------------------------------------
 
+  (provide deftech tech)
+
+  (define (*tech make-elem style s)
+    (let* ([c (decode-content s)]
+           [s (regexp-replace* #px"[-\\s]+" 
+                               (regexp-replace 
+                                #rx"s$" 
+                                (string-foldcase (content->string c))
+                                "")
+                               " ")])
+      (make-elem style
+                 c
+                 (format "tech-term:~a" s))))
+
+  (define/kw (deftech #:body s)
+    (*tech make-target-element #f (list (apply defterm s))))
+
+  (define/kw (tech #:body s)
+    (*tech make-link-element "techlink" s))
+
+  ;; ----------------------------------------
+
   (provide defproc defproc* defstruct defthing defform defform* defform/subs defform*/subs defform/none
            specform specform/subs 
            specsubform specspecsubform specsubform/inline
