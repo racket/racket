@@ -4132,11 +4132,10 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
                                       Scheme_Object *prompt_tag,
                                       Scheme_Cont *sub_cont, Scheme_Prompt *prompt,
                                       Scheme_Meta_Continuation *prompt_cont, MZ_MARK_POS_TYPE prompt_pos,
-                                      Scheme_Prompt *barrier_prompt,
+                                      Scheme_Prompt *barrier_prompt, Scheme_Prompt *effective_barrier_prompt,
                                       Scheme_Meta_Continuation *barrier_cont, MZ_MARK_POS_TYPE barrier_pos)
 {
   Scheme_Cont *cont;
-  Scheme_Prompt *effective_barrier_prompt;
   
   cont = MALLOC_ONE_TAGGED(Scheme_Cont);
   cont->so.type = scheme_cont_type;
@@ -4196,12 +4195,6 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   } else
     cont->meta_continuation = p->meta_continuation;
 
-  effective_barrier_prompt = barrier_prompt;
-  if (effective_barrier_prompt && prompt) {
-    if (scheme_is_cm_deeper(barrier_cont, barrier_pos,
-                            prompt_cont, prompt_pos))
-      effective_barrier_prompt = NULL;
-  }
   if (effective_barrier_prompt) {
     cont->barrier_prompt = effective_barrier_prompt;
     scheme_prompt_capture_count++;
@@ -4655,7 +4648,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   Scheme_Meta_Continuation *prompt_cont, *barrier_cont;
   MZ_MARK_POS_TYPE prompt_pos, barrier_pos;
   Scheme_Thread *p = scheme_current_thread;
-  Scheme_Prompt *prompt, *barrier_prompt;
+  Scheme_Prompt *prompt, *barrier_prompt, *effective_barrier_prompt;
   GC_CAN_IGNORE void *stack_start;
   int composable;
 
@@ -4691,14 +4684,22 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     }
   }
 
+  effective_barrier_prompt = barrier_prompt;
+  if (effective_barrier_prompt && prompt) {
+    if (scheme_is_cm_deeper(barrier_cont, barrier_pos,
+                            prompt_cont, prompt_pos))
+      effective_barrier_prompt = NULL;
+  }
+
   if (composable)
     sub_cont = NULL;
   else
     sub_cont = (Scheme_Cont *)scheme_extract_one_cc_mark(NULL, cont_key);
   if (sub_cont && ((sub_cont->save_overflow != p->overflow)
 		   || (sub_cont->prompt_tag != prompt_tag)
-		   || (sub_cont->barrier_prompt != barrier_prompt)))
+		   || (sub_cont->barrier_prompt != effective_barrier_prompt))) {
     sub_cont = NULL;
+  }
   if (sub_cont && (sub_cont->ss.cont_mark_pos == MZ_CONT_MARK_POS)) {
     Scheme_Object *argv2[1];
 #ifdef MZ_USE_JIT
@@ -4749,7 +4750,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 
   cont = grab_continuation(p, 0, composable, prompt_tag, sub_cont, 
                            prompt, prompt_cont, prompt_pos,
-                           barrier_prompt, barrier_cont, barrier_pos);
+                           barrier_prompt, effective_barrier_prompt, barrier_cont, barrier_pos);
 
   scheme_zero_unneeded_rands(p);
 
@@ -5140,7 +5141,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
 
   /* Grab a continuation so that we capture the current Scheme stack,
      etc.: */
-  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0);
+  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, 0);
   
   overflow = MALLOC_ONE_RT(Scheme_Overflow);
 #ifdef MZTAG_REQUIRED
