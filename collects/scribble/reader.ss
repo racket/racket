@@ -44,7 +44,7 @@
 
   ;; Skips whitespace characters, sensitive to the current readtable's
   ;; definition of whitespace; optimizes common spaces when possible
-  (define/kw skip-whitespace
+  (define skip-whitespace
     (let* ([plain-readtables (make-hash-table 'weak)]
            [plain-spaces '(#\space #\tab #\newline #\return #\page)]
            [plain-spaces-re
@@ -95,19 +95,14 @@
 
   (define ((dispatcher start-inside?)
            char inp source-name line-num col-num position)
-    (define (next-syntax readtable)
-      (parameterize ([current-readtable readtable])
-        (let loop ()
-          (let ([x (read-syntax/recursive source-name inp)])
-            (if (special-comment? x) (loop) x)))))
+    (define (read-error msg . xs)
+      (let-values ([(line col pos) (port-next-location inp)])
+        (raise-read-error (apply format msg xs) source-name line col pos #f)))
     (define (cur-pos)
       (let-values ([(line col pos) (port-next-location inp)])
         pos))
     (define (span-from start)
       (and start (- (cur-pos) start)))
-    (define (read-error msg . xs)
-      (let-values ([(line col pos) (port-next-location inp)])
-        (raise-read-error (apply format msg xs) source-name line col pos #f)))
     (define (read-from-bytes-exact-or-identifier bs)
       (let ([inp (open-input-bytes bs)]
             [default (lambda _ (string->symbol (bytes->string/utf-8 bs)))])
@@ -197,6 +192,7 @@
       (if (or (not (read-insert-indents)) (null? stxs))
         stxs
         (let ([mincol (apply min (map syntax/placeholder-column stxs))])
+          ;;!!!
           (let loop ([curline line-num] [stxs stxs] [r '()])
             (if (null? stxs)
               (reverse! r)
@@ -279,7 +275,12 @@
                               (read-from-bytes-exact-or-identifier (cadr m))
                               (list source-name line col pos (span-from pos)))
                             #t))]
-              [else (values (next-syntax cmd-readtable) #f)])))
+              [else (values
+                     (parameterize ([current-readtable cmd-readtable])
+                       (let loop ()
+                         (let ([x (read-syntax/recursive source-name inp)])
+                           (if (special-comment? x) (loop) x))))
+                     #f)])))
     (cond
       [start-inside?
        (datum->syntax-object #f (get-lines)

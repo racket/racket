@@ -83,8 +83,8 @@ string for each end of line.  For example:
        blah}
 
 It is your responsibility to make sure that `foo' is bound (in any way:
-it can be either a function or a macro).  To see the forms, you can use
-quote as usual, for example:
+it can be either a function or a macro, or in quoted forms).  To see the
+forms, you can use quote as usual, for example:
 
   '@foo{bar}
 
@@ -97,8 +97,9 @@ wrapping the *whole* expression.  For example:
 
 When writing Scheme code, this means that @`',@foo{blah} is exactly the
 same as `@',@foo{blah} and `',@@foo{blah}, but unlike the latter two,
-the first construct can appear in body texts with the same meaning,
-whereas the other two would not work (see below).
+the first construct can appear in @-body texts with the same meaning,
+whereas the other two would not work (the punctuations will be taken as
+part of the text).
 
 The command itself is not limited to a Scheme identifier -- it can be
 any Scheme expression:
@@ -120,14 +121,15 @@ and the ";"), then the construct is a comment.  There are two comment
 forms, one for arbitrary-text and possibly nested comments, and another
 one for a -to-the-end-of-the-line comment:
 
-  @; <whitespace>* { ...any-text-including-newlines... }
+  @;{ ...any-text-including-tested-scribble-pieces... }
 
   @; <anything-that-doesn't-begin-with-a-brace-to-the-end-of-the-line>
 
 Note that the first form is analogous to a "#;" comment: the commented
 body must still parse correctly.  Also note that in the second form all
-text from the "@;" to the end of the line an all following (non-newline)
-whitespaces are part of the comment.  For example:
+text from the "@;" to the end of the line and all following
+(non-newline) whitespaces are part of the comment (as with TeX `%'
+comments).  For example:
 
   @foo{bar @; comment    --is-read-as-->    (foo "bar baz")
        baz}
