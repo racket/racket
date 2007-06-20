@@ -221,22 +221,24 @@
                             (placeholder? x)))
                       stxs)
         (read-error "internal error [add-indents] ~s" stxs))
-      (if (or (not (read-insert-indents)) (null? stxs))
-        stxs
-        (let ([mincol (apply min (map syntax/placeholder-column stxs))])
-          (let loop ([curline line-num] [stxs stxs] [r '()])
-            (if (null? stxs)
-              (reverse! r)
-              (let* ([stx (car stxs)] [line (syntax/placeholder-line stx)])
-                (loop line (cdr stxs)
-                      (let ([stxcol (syntax/placeholder-column stx)]
-                            [stx*   (syntax/placeholder-strip stx)])
-                        (if (and (< curline line) (< mincol stxcol))
-                          (list* stx*
-                                 (datum->syntax-object/placeholder stx*
-                                   (make-spaces (- stxcol mincol)))
-                                 r)
-                          (cons stx* r))))))))))
+      (cond
+        [(not (read-insert-indents)) (map syntax/placeholder-strip stxs)]
+        [(null? stxs) '()]
+        [else (let ([mincol (apply min (map syntax/placeholder-column stxs))])
+                (let loop ([curline line-num] [stxs stxs] [r '()])
+                  (if (null? stxs)
+                    (reverse! r)
+                    (let* ([stx (car stxs)]
+                           [line (syntax/placeholder-line stx)])
+                      (loop line (cdr stxs)
+                            (let ([stxcol (syntax/placeholder-column stx)]
+                                  [stx*   (syntax/placeholder-strip stx)])
+                              (if (and (< curline line) (< mincol stxcol))
+                                (list* stx*
+                                       (datum->syntax-object/placeholder stx*
+                                         (make-spaces (- stxcol mincol)))
+                                       r)
+                                (cons stx* r))))))))]))
 
     (define (get-lines)
       (define get
