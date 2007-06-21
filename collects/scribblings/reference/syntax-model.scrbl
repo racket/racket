@@ -11,8 +11,6 @@ The syntax of a Scheme program is defined by
 @itemize{
 
  @item{a @deftech{read} phase that processes a character stream into a
-       Scheme value, especially one composed of pairs and symbols, and
-       possibly with source-location information to form a
        @tech{syntax object}; and}
 
  @item{an @deftech{expand} phase that processes a syntax object to
@@ -21,35 +19,39 @@ The syntax of a Scheme program is defined by
 }
 
 For details on the @tech{read} phase, see @secref["mz:reader"]. Source
-code is normally read in @scheme[read-syntax] mode. Otherwise, it must
-be converted to syntax using @scheme[datum->syntax], because the
-@tech{expand} phase is defined in terms of @tech{syntax objects}.
+code is normally read in @scheme[read-syntax] mode, which produces a
+@tech{syntax object}.
 
-Expansion recursively processes a @tech{syntax object}. Binding
-information on a syntax object drives the expansion process, and the
-expansion process generates new syntax objects that are like old ones,
-but enriched with new binding information.
+The @tech{expand} phase recursively processes a @tech{syntax object}
+to produce a complete @tech{parse} of the program. @tech{Binding}
+information in a @tech{syntax object} drives the @tech{expansion}
+process, and when the @tech{expansion} process encounters a
+@tech{binding} form, it extends syntax objects for sub-expression with
+new binding information.
 
 @;------------------------------------------------------------------------
 @section{Identifiers and Binding}
 
 @guideintro["guide:binding"]{binding}
 
-An @deftech{identifier} is source-program entity. Parsing a Scheme
-program reveals that some @tech{identifiers} correspond to
-@tech{variables}, some refer to syntactic forms, and some are quoted
-to produce a symbol or a syntax object. An identifier @deftech{binds}
-another (i.e., it is a @deftech{binding}) when the former is parsed as
-a @tech{variable} and the latter is parsed as a reference to the
-former. An @tech{identifier} is @deftech{bound} in a sub-expression if
-it @tech{binds} any uses of the @tech{identifier} in the
-sub-expression that are not otherwise @tech{bound} within the
-sub-expression; conversely, a binding for a sub-expression
+An @deftech{identifier} is source-program entity. Parsing (i.e.,
+expanding) a Scheme program reveals that some @tech{identifiers}
+correspond to @tech{variables}, some refer to syntactic forms, and
+some are quoted to produce a symbol or a syntax object.
+
+An identifier @deftech{binds} another (i.e., it is a
+@deftech{binding}) when the former is parsed as a @tech{variable} and
+the latter is parsed as a reference to the former.  The
+@deftech{scope} of a binding is the set of source forms to which it
+applies. The @deftech{environment} of a form is the set of bindings
+whose @tech{scope} includes the form. A binding for a sub-expression
 @deftech{shadows} any @tech{bindings} (i.e., it is
-@deftech{shadowing}) in its context, so that uses of an
-@tech{identifier} refer to the @tech{shadowing} @tech{binding}.  The
-@deftech{environment} of a form is the set of bindings whose scope
-includes the form.
+@deftech{shadowing}) in its @tech{environment}, so that uses of an
+@tech{identifier} refer to the @tech{shadowing} @tech{binding}.  A
+@deftech{top-level binding} is a @tech{binding} from a definition at
+the top-level; a @deftech{module binding} is a binding from a
+definition in a module; and a @deftech{local binding} is another other
+kind of binding.
 
 For example, as a bit of source, the text
 
@@ -69,50 +71,64 @@ is a @tech{variable} or a reference to an unspecified @tech{top-level
 variable}. A hyperlinked @tech{identifier} @scheme[cons] is a
 reference to a specific @tech{top-level variable}.
 
+Every binding has a @deftech{phase level} in which it can be
+referenced, where a phase level corresponds to an integer. Phase level
+0 corresponds to the run time of the enclosing module (or the run time
+of top-level expression); phase level 1 corresponds to the time during
+which the enclosing module (or top-level expression) is expanded;
+phase level -1 corresponds to the run time of a different module for
+which the enclosing module is imported for use at phase level 1
+(relative to the importing module). If an identifier has a @tech{local
+binding}, then it is the same for all phase levels, though the
+reference is allowed only at a particular phase level. If an
+identifier has a @tech{top-level binding} or @tech{module binding},
+then it can have different such bindings in different phase levels.
+
 @;------------------------------------------------------------------------
 @section{Syntax Objects}
 
 A @deftech{syntax object} combines a simpler Scheme value, such as a
-symbol or pair, which information about bindings and (optionally)
-source-location information. In particular, an @tech{identifier} is
-represented as a symbol object that combines a symbol and
-lexical/source information.
+symbol or pair, with @deftech{lexical information} about bindings and
+(optionally) source-location information. In particular, an
+@tech{identifier} is represented as a symbol object that combines a
+symbol and lexical/source information.
 
-For example, a @schemeidfont{car} @tech{identifier} might have lexical
-information that designates it as the @scheme[car] from the
-@schememodname[big] language (i.e., the built-in
-@scheme[car]). Similarly, a @schemeidfont{lambda} identifier's lexical
-information may indicate that it represents a procedure form. Some
-other @tech{identifier}'s lexical information may indicate that it
-references a @tech{top-level variable}.
+For example, a @schemeidfont{car} @tech{identifier} might have
+@tech{lexical information} that designates it as the @scheme[car] from
+the @schememodname[big] language (i.e., the built-in
+@scheme[car]). Similarly, a @schemeidfont{lambda} identifier's
+@tech{lexical information} may indicate that it represents a procedure
+form. Some other @tech{identifier}'s @tech{lexical information} may
+indicate that it references a @tech{top-level variable}.
 
 When a @tech{syntax object} represents a more complex expression than
-am identifier or simple constant, its internal pieces can be
-extracted. Detailed information about binding is available mostly
-indirectly. For example, two identifiers, perhaps extracted from a
-larger expression, can be compared to see if they refer to the same
-binding (i.e., @scheme[free-identifier=?]). A slightly different test
-is whether each identifier would bind the other if one was in a
-binding position and the other in an expression position (i.e.,
-@scheme[bound-identifier=?]).
+an @tech{identifier} or simple constant, its internal components can
+be extracted. Even for extracted identifier, detailed information
+about binding is available mostly indirectly; two identifiers can be
+compared to see if they refer to the same binding (i.e.,
+@scheme[free-identifier=?]), or whether each identifier would bind the
+other if one was in a binding position and the other in an expression
+position (i.e., @scheme[bound-identifier=?]).
 
 For example, the when the program written as
 
 @schemeblock[(let ([x 5]) (+ x 6))]
 
-is represented as a syntax object, then two @tech{syntax objects} can
-be extracted for the two @scheme[x]s. Both the
+is represented as a @tech{syntax object}, then two @tech{syntax
+objects} can be extracted for the two @scheme[x]s. Both the
 @scheme[free-identifier=?] and @scheme[bound-identifier=?] predicates
 will indicate that the @scheme[x]s are the same. In contrast, the
-@scheme[let] identifier is not @scheme[free-identifier=?] or
+@scheme[let] @tech{identifier} is not @scheme[free-identifier=?] or
 @scheme[bound-identifier=?] to either @scheme[x].
 
-The lexical information in a syntax object is independent of the other
-half, and it can be transferred to a new syntax object, combined with
-an arbitrary other Scheme value. Thus, identifier-binding information
-in a syntax object is predicated on the symbolic name of the
-identifier; the same question with the same lexical information but
-different base value can produce a different answer.
+The @tech{lexical information} in a @tech{syntax object} is
+independent of the other half, and it can be copied to a new syntax
+object in combination with an arbitrary other Scheme value. Thus,
+identifier-@tech{binding} information in a @tech{syntax object} is
+predicated on the symbolic name of the @tech{identifier} as well as
+the identifier's @tech{lexical information}; the same question with
+the same @tech{lexical information} but different base value can
+produce a different answer.
 
 For example, combining the lexical information from @scheme[let] in
 the program above to @scheme['x] would not produce an identifier that
@@ -124,16 +140,19 @@ an identifier that is @scheme[bound-identifier=?] to both @scheme[x]s.
 The @scheme[quote-syntax] form bridges the evaluation of a program and
 the representation of a program. Specifically, @scheme[(quote-syntax
 _datum)] produces a syntax object that preserves all of the lexical
-information that @scheme[_datum] had when it was parsed as part of a
+information that @scheme[_datum] had when it was parsed as part of the
 @scheme[quote-syntax] form.
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:expansion"]{Expansion@aux-elem{ (Parsing)}}
 
-Expansion recursively processes a @tech{syntax object}. Binding
-information on a syntax object drives the expansion process, and the
-expansion process generates new syntax objects that are like old ones,
-but enriched with new binding information.
+@deftech{Expansion} recursively processes a @tech{syntax object} in a
+particular phase level, starting with phase level 0. @tech{Bindings}
+from the @tech{syntax object}'s @tech{lexical information} drive the
+expansion process, and cause new bindings to be introduced for the
+lexical information of sub-expressions. In some cases, a
+sub-expression is expanded in a deeper phase than the enclosing
+expression.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "mz:fully-expanded"]{Fully Expanded Programs}
@@ -186,120 +205,298 @@ following grammar:
          (id ...+ . id)
          id]]
 
-This fully-expanded @tech{syntax object} corresponds to a
-@deftech{parse} of the expression (i.e., a @deftech{parsed}
-expression), and lexical information on its @tech{identifiers}
-indicates the @tech{parse}.
+A fully-expanded @tech{syntax object} corresponds to a @deftech{parse}
+of a program (i.e., a @deftech{parsed} program), and @tech{lexical
+information} on its @tech{identifiers} indicates the @tech{parse}.
+
+More specifically, the typesetting of identifiers in the above grammar
+is significant. For example, the second case for @scheme[_expr] is a
+@tech{syntax-object} list whose first element is an @tech{identifier},
+where the @tech{identifier}'s @tech{lexical information} specifies a
+binding to the @scheme[define-values] of the @schememodname[big]
+language (i.e., the @tech{identifier} is @scheme[free-identifier=?] to
+one whose binding is @scheme[define-values]). In all cases,
+identifiers above typeset as syntactic-form names refer to the
+bindings defined in @secref["mz:syntax"].
+
+Only phase levels 0 and 1 are relevant for following the parse of a
+program (though the @scheme[_datum] in a @scheme[quote-syntax] form
+preserves its information for all phase levels). In particular, the
+relevant phase level is 0, except for the @scheme[_expr]s in a
+@scheme[define-syntaxes] @scheme[define-values-for-syntax], in which
+case the relevant phase is 1 (for which comparisons are made using
+@scheme[free-transformer-identifier=?] instead of
+@scheme[free-identifier=?]).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection{Expansion Steps}
+@subsection[#:tag "mz:expand-steps"]{Expansion Steps}
 
-A step in parsing a form represented as a syntax object depends on its
-outermost shape:
+In a recursive expansion, each single step in expanding a @tech{syntax
+object} at a particular phase level depends on the immediate shape of
+the @tech{syntax object} being expanded:
 
 @itemize{
 
- @item{If it is an @tech{identifier} (i.e., a syntax-object symbol), then a
-       binding is determined using symbol along with the lexical
-       information in the identifier. If the identifier has a binding
-       other than as a top-level variable, it is used to continue. If
-       the identifier has no binding, a new syntax-object symbol
-       @scheme['#%top] is created using the lexical context of the
-       identifier; if this @schemeidfont{#%top} identifier has no
-       binding (other than as a top-level variable), then parsing
-       fails with an @scheme[exn:fail:syntax] exception. Otherwise,
-       the new identifier is combined with the original identifier in
-       a new syntax-object pair (using the same context as the
-       original identifier), and the @schemeidfont{#%top} binding is
-       used to continue.}
+ @item{If it is an @tech{identifier} (i.e., a syntax-object symbol),
+       then a @tech{binding} is determined by the @tech{identifier}'s
+       @tech{lexical information}. If the @tech{identifier} has a
+       @tech{binding} other than as a @tech{top-level variable}, that
+       @tech{binding} is used to continue. If the @tech{identifier}
+       has no @tech{binding}, a new @tech{syntax-object} symbol
+       @scheme['#%top] is created using the @tech{lexical information}
+       of the @tech{identifier}; if this @schemeidfont{#%top}
+       @tech{identifier} has no @tech{binding} (other than as a
+       @tech{top-level variable}), then parsing fails with an
+       @scheme[exn:fail:syntax] exception. Otherwise, the new
+       @tech{identifier} is combined with the original
+       @tech{identifier} in a new @tech{syntax-object} pair (also
+       using the same @tech{lexical information} as the original
+       @tech{identifier}), and the @schemeidfont{#%top} @tech{binding}
+       is used to continue.}
 
- @item{If it is a syntax-object pair whose first element is an
-      identifier, and if the identifier has a binding other than as a
-      top-level variable, then the identifier's binding is used to
-      continue.}
+ @item{If it is a @tech{syntax-object} pair whose first element is an
+      @tech{identifier}, and if the @tech{identifier} has a
+      @tech{binding} other than as a @tech{top-level variable}, then
+      the @tech{identifier}'s @tech{binding} is used to continue.}
 
- @item{If it is a syntax-object pair of any other form, then a new
-       syntax-object symbol @scheme['#%app] is created using the
-       lexical context of the pair. If the resulting
-       @schemeidfont{#%app} identifier has no binding, parsing fails
-       with an @scheme[exn:fail:syntax] exception. Otherwise, the new
-       identifier is combined with the original pair to form a new
-       syntax-object pair (using the same context as the original
-       pair), and the @schemeidfont{#%app} binding is used to
+ @item{If it is a @tech{syntax-object} pair of any other form, then a
+       new @tech{syntax-object} symbol @scheme['#%app] is created
+       using the @tech{lexical information} of the pair. If the
+       resulting @schemeidfont{#%app} @tech{identifier} has no
+       binding, parsing fails with an @scheme[exn:fail:syntax]
+       exception. Otherwise, the new @tech{identifier} is combined
+       with the original pair to form a new @tech{syntax-object} pair
+       (also using the same @tech{lexical information} as the original
+       pair), and the @schemeidfont{#%app} @tech{binding} is used to
        continue.}
 
- @item{If it is any other syntax object, then a new syntax-object
-       symbol @scheme['#%datum] is created using the lexical context
-       of the original syntax object. If the resulting
-       @schemeidfont{#%datum} identifier has no binding, parsing fails
-       with an @scheme[exn:fail:syntax] exception. Otherwise, the new
-       identifier is combined with the original syntax object in a new
-       syntax-object pair (using the same context as the original
-       pair), and the @schemeidfont{#%datum} binding is used to
-       continue.}
+ @item{If it is any other syntax object, then a new
+       @tech{syntax-object} symbol @scheme['#%datum] is created using
+       the @tech{lexical information} of the original @tech{syntax
+       object}. If the resulting @schemeidfont{#%datum}
+       @tech{identifier} has no @tech{binding}, parsing fails with an
+       @scheme[exn:fail:syntax] exception. Otherwise, the new
+       @tech{identifier} is combined with the original @tech{syntax
+       object} in a new @tech{syntax-object} pair (using the same
+       @tech{lexical information} as the original pair), and the
+       @schemeidfont{#%datum} @tech{binding} is used to continue.}
 
 }
 
-Thus, the possibilities that do not fail lead to an identifier with a
-particular binding. This binding refers to one of three things:
+Thus, the possibilities that do not fail lead to an @tech{identifier}
+with a particular @tech{binding}. This binding refers to one of three
+things:
 
 @itemize{
 
- @item{A transformer binding, such as introduced by
+ @item{A @tech{transformer binding}, such as introduced by
        @scheme[define-syntax] or @scheme[let-syntax]. If the
-       associated value is to a procedure of one argument, the
-       procedure is called as a syntax transformer (see
-       @secref["transformers"]), and parsing starts again with the
-       syntax-object result. If the transformer binding is to any
-       other kind of value, parsing fails with an
-       @scheme[exn:fail:syntax] exception.}
+       associated value is a procedure of one argument, the procedure
+       is called as a @tech{syntax transformer} (described below), and
+       parsing starts again with the @tech{syntax-object} result. If
+       the @tech{transformer binding} is to any other kind of value,
+       parsing fails with an @scheme[exn:fail:syntax] exception.}
 
- @item{A variable binding, such as introduced by a module-level
-       @scheme[define] or by @scheme[let]. In this case, if the form
-       being parsed is just an identifier, then it is parsed as a
-       run-time reference to the location of the corresponding
-       variable. If the form being parsed is a syntax-object list,
-       then an @scheme[#%app] is added to the front of the
-       syntax-object list in the same way as when the first item in
-       the syntax-object list is not an identifier (third case in the
-       previous enumeration), and parsing continues.}
+ @item{A @tech{variable} @tech{binding}, such as introduced by a
+       module-level @scheme[define] or by @scheme[let]. In this case,
+       if the form being parsed is just an @tech{identifier}, then it
+       is parsed as a reference to the corresponding
+       @tech{variable}. If the form being parsed is a
+       @tech{syntax-object} pair, then an @scheme[#%app] is added to
+       the front of the @tech{syntax-object} pair in the same way as
+       when the first item in the @tech{syntax-object} pair is not an
+       identifier (third case in the previous enumeration), and
+       parsing continues.}
 
- @item{Core syntax, which is parsed as described in
-       @secref["mz:syntax"]. Parsing core syntactic forms typically
-       involves recursive parsing of sub-forms, and may introduce
-       bindings that control the parsing of sub-forms.}
+ @item{A core syntactic form, which is parsed as described for each
+       form in @secref["mz:syntax"]. Parsing a core syntactic form
+       typically involves recursive parsing of sub-forms, and may
+       introduce @tech{bindings} that determine the parsing of
+       sub-forms.}
 
 }
 
-Each expansion step occurs in a particular context, and transformers
-and core-syntax parsing can depend on the context. For example, a
-@scheme[module] form is allowed only in a top-level context. The
-possible contexts are as follows:
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection{Expansion Context}
+
+Each expansion step occurs in a particular @deftech{context}, and
+transformers and core syntactic forms may expand differently for
+different @tech{contexts}. For example, a @scheme[module] form is
+allowed only in a @tech{top-level context}, and it fails in other
+contexts. The possible @tech{contexts} are as follows:
 
 @itemize{
 
- @item{@defterm{top level} : outside of any module, definition, or
+ @item{@deftech{top-level context} : outside of any module, definition, or
        expression, except that sub-expressions of a top-level
        @scheme[begin] form are also expanded as top-level forms.}
 
- @item{@defterm{module begin} : inside the body of a module, as the
+ @item{@deftech{module-begin context} : inside the body of a module, as the
        only form within the module.}
 
- @item{@defterm{module body} : in the body of a module (inside the
-       moudule-begin layer).}
+ @item{@deftech{module context} : in the body of a module (inside the
+       module-begin layer).}
 
- @item{@defterm{internal definition} : in a nested context that allows
+ @item{@deftech{internal-definition context} : in a nested context that allows
        both definitions and expressions.}
 
- @item{@defterm{expression} : in a context where only expressions are
-       allowed.}
+ @item{@deftech{expression content} : in a context where only
+       expressions are allowed.}
 
 }
 
-Different core syntax forms parse sub-forms in different contexts. For
-example, a @scheme[let] form always parses the right-hand expressions
-of a binding in an expression context, but it starts parsing the body
-in an internal-definition context.
+Different core @tech{syntactic forms} parse sub-forms using different
+@tech{contexts}. For example, a @scheme[let] form always parses the
+right-hand expressions of a binding in an @tech{expression context},
+but it starts parsing the body in an @tech{internal-definition
+context}.
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "mz:intro-binding"]{Introducing Bindings}
+
+@tech{Bindings} are introduced during @tech{expansion} when certain
+core syntactic forms are encountered:
+
+@itemize{
+
+ @item{When a @scheme[require] form is encountered at the top level or
+       module level, all lexical information derived from the top
+       level or the specific module's level are extended with bindings
+       from the specified modules, and at the phase levels (normally
+       0) specified by the exporting modules.}
+
+ @item{When a @scheme[require-for-syntax] form is encountered at the
+       top level or module level, it is treated like @scheme[require],
+       except that the phase level for all bindings is incremented by
+       1.}
+
+ @item{When a @scheme[require-for-template] form is encountered at the
+       top level or module level, it is treated like @scheme[require],
+       except that the phase level for all bindings is decremented by
+       1.}
+
+ @item{When a @scheme[define-values] or @scheme[define-syntaxes] form
+       is encountered at the top level or module level, all lexical
+       information derived from the top level or the specific module's
+       level are extended with bindings for the specified identifiers
+       at phase level 0.}
+
+ @item{When a @scheme[define-values-for-syntax] form is encountered at
+       the top level or module level, bindings are introduced as for
+       @scheme[define-values], but at phase level 1.}
+
+ @item{When a @scheme[let-values] form is encountered, the body of the
+       @scheme[let-values] form is extended (by creating new
+       @tech{syntax objects}) with bindings for the specified
+       identifiers. The same bindings are added to the identifiers
+       themselves, so that the identifiers in binding position are
+       @scheme[bound-identifier=?] to uses in the fully expanded form,
+       and so they are not @scheme[bound-identifier=?] t other
+       identifiers. The bindings are available for use at the
+       @tech{phase level} at which the @scheme[let-values] form is
+       expanded.}
+
+ @item{When a @scheme[letrec-values] or
+       @scheme[letrec-syntaxes+values] form is encountered, bindings
+       are added as for @scheme[let-values], except that the
+       right-hand-side expressions are also extended with the
+       bindings.}
+
+ @item{Definitions in @scheme[internal-definition contexts] introduce
+       bindings as described in @secref["mz:intdef-body"].}
+
+}
+
+A new binding in lexical information maps to a new variable. The
+identifiers mapped to this variable are those that currently have the
+same binding (i.e., that are currently @scheme[bound-identifier=?]) to
+the identifier associated with the binding.
+
+For example, in
+
+@schemeblock[
+(let-values ([(x) 10]) (+ x y))
+]
+
+the binding introduced for @scheme[x] applies to the @scheme[x] in the
+body, but not the @scheme[y] n the body, because (at the point in
+expansion where the @scheme[let-values] form is encountered) the
+binding @scheme[x] and the body @scheme[y] are not
+@scheme[bound-identifier=?].
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection{Transformer Bindings}
+
+In a @tech{top-level context} or @tech{module context}, when the
+expander encounters a @scheme[define-syntaxes] form, the binding that
+it introduces for the defined identifiers is a @deftech{transformer
+binding}. The @tech{value} of the @tech{binding} exists at expansion
+time, rather than run time (though the two times can overlap), though
+the binding itself is introduced with phase level 0.
+
+The @deftech{value} for the binding is obtained by evaluating the
+expression in the @scheme[define-syntaxes] form. This expression must
+be @tech{expand}ed (i.e. parsed) before it can be evaluated, and it is
+expanded at @tech{phase level} 1 instead of @tech{phase level} 0.
+
+The if resulting @scheme[value] is a procedure of one argument, then
+is it used as a @deftech{transformer procedure}.  The procedure is
+expected to accept a syntax object and return a syntax object. A use
+of the binding (at @tech{phase level} 0) triggers a call of the
+@tech{transformer procedure} by the expander; see
+@secref["mz:expand-steps"].
+
+Before the expander passes a @tech{syntax object} to a transformer,
+the @tech{syntax object} is extend with a @deftech{syntax mark} (that
+applies to all sub-@tech{syntax objects}). The result of the
+transformer is similarly extended with the same @tech{syntax
+mark}. When a @tech{syntax object}'s @tech{lexical information}
+includes the same mark twice in a row, the marks effectively
+cancel. Otherwise, two identifiers are @scheme[bound-identifier=?]
+(that is, one can bind the other) only if they have the same binding
+and if they have the same marks---counting only marks that were added
+after the binding.
+
+This marking process helps keep binding in an expanded program
+consistent with the lexical structure of the source program. For
+example, the expanded form of the program
+
+@schemeblock[
+(define x 12)
+(define-syntax m
+  (syntax-rules ()
+    [(_ id) (let ([x 10]) id)]))
+(m x)
+]
+
+is
+
+@schemeblock[
+(define x 12)
+(define-syntax m
+  (syntax-rules ()
+    [(_ id) (let ([x 10]) id)]))
+(let-values ([(x) 10]) x)
+]
+
+However, the result of the last expression is @scheme[12], not
+@scheme[10]. The reason is that the transformer bound to @scheme[m]
+introduces the binding @scheme[x], but the referencing @scheme[x] is
+present in the argument to the transformer. The introduced @scheme[x]
+is the one left with a mark, and the reference @scheme[x] has no mark,
+so the binding @scheme[x] is not @scheme[bound-identifier=?] to the
+body @scheme[x].
+
+The expander's handling of @scheme[letrec-values+syntaxes] is similar
+to its handling of @scheme[define-syntaxes]. A
+@scheme[letrec-values+syntaxes] mist be expanded in an arbitrary phase
+level @math{n} (not just 0), in which case the expression for the
+@tech{transformer binding} is expanded at phase level @math{n+1}.
+
+The expression in a @scheme[define-values-for-syntax] form is expanded
+and evaluated in the same way as for @scheme[syntax]. However, the
+introduced binding is a normal binding at phase level 1 (not a
+@tech{transformer binding} at phase level 0).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "mz:intdef-body"]{Internal Definitions}
@@ -327,8 +524,10 @@ one of the following:
        immediately enriched with bindings for the
        @scheme[define-values] form before expansion continues. When a
        @scheme[define-syntaxes] form is discovered, the right-hand
-       side is executed and a transformer binding is installed for the
-       body sequence before expansion continues.}
+       side is expanded and evaluated (as for a
+       @scheme[letrec-values+syntaxes] form_, and a transformer
+       binding is installed for the body sequence before expansion
+       continues.}
 
  @item{A primitive expression form other than @scheme[begin]: The
        expression is expanded in an expression context, along with all
@@ -347,6 +546,34 @@ one of the following:
 If the last expression form turns out to be a @scheme[define-values]
 or @scheme[define-syntaxes] form, expansion fails with a syntax error.
 
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection{Module Phases}
+
+A @scheme[require] form not only introduces @tech{bindings} at
+expansion time, but also @deftech{visits} the referenced module when
+it is encountered by the expander. That is, the expander
+@tech{instantiate}s any @scheme[define-for-syntax]ed variables defined
+in the module, and also evaluates all expressions for
+@scheme[define-syntaxes] @tech{transformer bindings}.
+
+Module @tech{visits} propagate through @scheme[require]s in the same
+way as module @tech{instantiation}. Moreover, when a module is
+@tech{visit}ed, any module that it @scheme[require-for-syntax]es is
+@tech{instantiate}d at @tech{phase} 1, which the adjustment that
+@scheme[require-for-template] leading back to @tech{phase} 0 causes
+the required module to be merely visited at @tech{phase} 0, not
+@tech{instantiate}d.
+
+When the expander encounters @scheme[require-for-syntax], it
+immediately instantiates the required module at @tech{phase} 1, in
+addition to adding bindings scheme @tech{phase level} 1.
+
+When the expander encounters @scheme[require] and
+@scheme[require-for-syntax] within a @tech{module context}, the
+resulting @tech{visits} and @tech{instantiations} are specific to the
+expansion of the enclosing module, and are kept separate from
+@tech{visits} and @tech{instantiations} triggered from a
+@tech{top-level context} or from the expansion of a different module.
 
 @;------------------------------------------------------------------------
 @section{Compilation}

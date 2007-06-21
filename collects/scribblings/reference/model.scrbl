@@ -142,7 +142,7 @@ procedures (notably @scheme[call-with-values]) create continuations
 internally that accept a certain number of @tech{values}.
 
 @;------------------------------------------------------------------------
-@section{Top-Level and Module-Level Variables}
+@section{Top-Level Variables}
 
 Given
 
@@ -190,10 +190,6 @@ right-hand expression must be reduced to a @tech{value}.
 [{(define x 10)}
  11]
 ]
-
-Most definitions in PLT Scheme are in modules. In terms of evaluation,
-a module is essentially a prefix on a defined name, so that different
-modules can define the name.
 
 Using @scheme[set!], a program can change the value associated with an
 existing @tech{top-level variable}:
@@ -362,7 +358,7 @@ via a @tech{weak reference}, then the object can be reclaimed, and the
 (typically @scheme[#f]).
 
 @;------------------------------------------------------------------------
-@section{Procedure Applications and Local Bindings}
+@section{Procedure Applications and Local Variables}
 
 Given
 
@@ -463,10 +459,10 @@ then @scheme[3] can be placed into a @tech{location} for
 @scheme[x]. In other words, Scheme is a @deftech{call-by-value}
 language.
 
-Evaluation of a local binding, such as @scheme[(let ([x (+ 1 2)])
-_expr)], is the same as for a procedure call. After @scheme[(+ 1 2)]
-produces a @tech{value}, it is stored in a fresh @tech{location} that
-replaces every instance of @scheme[x] in @scheme[_expr].
+Evaluation of a local-variable form, such as @scheme[(let ([x (+ 1
+2)]) _expr)], is the same as for a procedure call. After @scheme[(+ 1
+2)] produces a @tech{value}, it is stored in a fresh @tech{location}
+that replaces every instance of @scheme[x] in @scheme[_expr].
 
 @;------------------------------------------------------------------------
 @section{Variables and Locations}
@@ -501,6 +497,70 @@ forms. As a result, future references of the @tech{variable} always
 access the same @tech{location}.
 
 @;------------------------------------------------------------------------
+@section{Modules and Module-Level Variables}
+
+Most definitions in PLT Scheme are in modules. In terms of evaluation,
+a module is essentially a prefix on a defined name, so that different
+modules can define the name.
+
+One difference between a module an a top-level definition is that a
+module can be declared without instantiating its module-level
+definitions. Evaluation of a @scheme[require] @deftech{instantiates}
+(i.e., triggers the @deftech{instantiation} of) a declared module,
+which creates variables that correspond to its module-level
+definitions.
+
+For example, given the module declaration
+
+@schemeblock[
+(module m mzscheme
+  (define x 10))
+]
+
+the evaluation of @scheme[(require m)] creates the variable @scheme[x]
+and installs @scheme[10] as its value. This @scheme[x] is unrelated to
+any top-level definition of @scheme[x].
+
+Another difference is that a module can be @tech{instantiate}d in
+multiple @deftech{phases}. A phase is an integer that, again, is
+effectively a prefix on the names of module-level definitions. A
+top-level @scheme[require] @tech{instantiates} a module at
+@tech{phase} 0, if the module is not already @tech{instantiate}d at
+phase 0.  A top-level @scheme[require-for-syntax] @tech{instantiates}
+a module at @tech{phase} 1 (if it is not already @tech{instantiate}d
+at that level); a @scheme[require-for-syntax] also has a different
+binding effect on further program parsing, as described in
+@secref["mz:intro-binding"].
+
+Within a module, some definitions are shifted by a phase already; the
+@scheme[define-for-syntax] form is like @scheme[define], but it
+defines a variable at relative @tech{phase} 1, instead of relative
+@tech{phase} 0. Thus, if the module is @tech{instantiate}d at phase 1,
+the variables for @scheme[define-for-syntax] are created at phase 2,
+and so on. Moreover, this relative phase acts as another layer of
+prefixing, so that a @scheme[define] of @scheme[x] and a
+@scheme[define-for-syntax] of @scheme[x] can co-exist in a module
+without colliding. Again, the higher phases are mainly related to
+program parsing, instead of normal evaluation.
+
+If a module @tech{instantiate}d at @tech{phase} @math{n}
+@scheme[require]s another module, then the @scheme[require]d module is
+first @tech{instantiate}d at phase @math{n}, and so on
+transitively. (Module @scheme[require]s cannot form cycles.) If a
+module @tech{instantiate}d at phase @math{n}
+@scheme[require-for-syntax]es another module, the other module is
+first @tech{instantiate}d at @tech{phase} @math{n+1}, and so on.  If a
+module @tech{instantiate}d at phase @math{n} for non-zero @math{n}
+@scheme[require-for-template]s another module, the other module is
+first @tech{instantiate}d at @tech{phase} @math{n-1}, and so on.
+
+A final distinction among module @tech{instantiations} is that
+multiple @tech{instantiations} may exist at phase 1 and higher. These
+@tech{instantiations} are created by the parsing of module forms (see
+@secref["mz:mod-parse"]), and are, again, conceptually distinguished
+by prefixes.
+
+@;------------------------------------------------------------------------
 @section{Continuation Frames and Marks}
 
 Every continuation @scheme[_C] can be partitioned into
@@ -517,7 +577,7 @@ mark for any key. Various operations set and extract marks from
 continuations, so that marks can be used to attach information to a
 dynamic extent. For example, marks can be used to record information
 for a ``stack trace'' to be used when an exception is raised, or
-implement dynamically scoped bindings.
+to implement dynamic scope.
 
 @;------------------------------------------------------------------------
 @section{Prompts and Delimited Continuations}
