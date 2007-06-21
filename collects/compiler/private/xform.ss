@@ -1651,9 +1651,10 @@
                (let ([name (tok-n (car e))]
                      [type (let loop ([t (reverse type)])
                              (if (pair? t)
-                                 (if (memq (tok-n (car t)) '(extern static virtual __stdcall __cdecl 
-								    inline _inline __inline __inline__
-								    __xform_nongcing__))
+                                 (if (or (memq (tok-n (car t)) '(extern static virtual __stdcall __cdecl 
+                                                                        inline _inline __inline __inline__
+                                                                        __xform_nongcing__))
+                                         (equal? "C" (tok-n (car t))))
                                      (loop (cdr t))
                                      (cons (car t) (loop (cdr t))))
                                  t))]
