@@ -102,6 +102,12 @@
       (datum->syntax-object #f d (placeholder-loc sp))
       (datum->syntax-object sp d sp)))
 
+  (define eol-token "\n")
+  (define (eol-syntax? stx) (eq? eol-token (syntax-e stx)))
+  ;; sanity check, in case this gets violated in the future
+  (unless (eol-syntax? (datum->syntax-object #f eol-token))
+    (error 'reader "internal error [invalid assumption]"))
+
   ;; --------------------------------------------------------------------------
   ;; main reader function for @ constructs
 
@@ -127,7 +133,7 @@
           (let ([x (read-syntax/recursive source-name inp)])
             (if (eof-object? x)
               (read-error "expected a ']'")
-              (loop (cons x r)))))))
+              (loop (if (special-comment? x) r (cons x r))))))))
 
     (define (read-from-bytes-exact-or-identifier bs)
       (let ([inp (open-input-bytes bs)]
@@ -147,8 +153,6 @@
             (bytes-set! r i (rev-byte (bytes-ref bytes (- len i 1))))
             (loop (sub1 i))))
         r))
-
-    (define eol-token "\n")
 
     (define (get-attrs)
       (and (regexp-match/fail-without-reading open-attrs inp)
@@ -202,8 +206,8 @@
       (if (and (pair? stxs) (syntax? stx) (syntax? (car stxs))
                (string? (syntax-e stx))
                (string? (syntax-e (car stxs)))
-               (not (eq? eol-token (syntax-e stx)))
-               (not (eq? eol-token (syntax-e (car stxs)))))
+               (not (eol-syntax? stx))
+               (not (eol-syntax? (car stxs))))
         (let ([fst (car stxs)])
           (cons (datum->syntax-object stx
                   (string-append (syntax-e fst) (syntax-e stx))
