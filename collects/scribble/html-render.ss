@@ -272,12 +272,16 @@
                         (current-subdirectory))
             (super get-dest-directory)))
 
-      (define/private (derive-filename d)
-        (format "~a.html" (regexp-replace*
-                           "[^-a-zA-Z0-9_=]"
-                           (or (format "~a" (part-tag d))
-                               (content->string (part-title-content d)))
-                           "_")))
+      (define/private (derive-filename d ht)
+        (let ([fn (format "~a.html" (regexp-replace*
+                                     "[^-a-zA-Z0-9_=]"
+                                     (or (format "~a" (part-tag d))
+                                         (content->string (part-title-content d)
+                                                          this d ht))
+                                     "_"))])
+          (when ((string-length fn) . >= . 100)
+            (error "file name too long (need a tag):" fn))
+          fn))
 
       (define/override (collect ds fns)
         (super collect ds (map (lambda (fn)
@@ -297,7 +301,7 @@
                                              1
                                              (add1 prev-sub))])
             (if (= 1 prev-sub)
-                (let ([filename (derive-filename d)])
+                (let ([filename (derive-filename d ht)])
                   (parameterize ([current-output-file (build-path (path-only (current-output-file))
                                                                   filename)])
                     (super collect-part d parent ht number)))
@@ -417,7 +421,7 @@
                                      (make-element
                                       (if parent
                                           (make-target-url (if prev
-                                                               (derive-filename prev)
+                                                               (derive-filename prev ht)
                                                                "index.html"))
                                           "nonavigation")
                                       prev-content)
@@ -426,14 +430,14 @@
                                       (if parent
                                           (make-target-url 
                                            (if (toc-part? parent)
-                                               (derive-filename parent)
+                                               (derive-filename parent ht)
                                                "index.html"))
                                           "nonavigation")
                                       up-content)
                                      sep-element
                                      (make-element
                                       (if next
-                                          (make-target-url (derive-filename next))
+                                          (make-target-url (derive-filename next ht))
                                           "nonavigation")
                                       next-content))))))))
                               d
@@ -447,7 +451,7 @@
                      (next-separate-page)))
             ;; Render as just a link, and put the actual 
             ;; content in a new file:
-            (let* ([filename (derive-filename d)]
+            (let* ([filename (derive-filename d ht)]
                    [full-path (build-path (path-only (current-output-file))
                                           filename)])
               (parameterize ([on-separate-page #t])

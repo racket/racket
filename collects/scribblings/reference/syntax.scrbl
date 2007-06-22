@@ -354,7 +354,7 @@ Like @scheme[lambda], but without support for keyword or optional arguments.
 }
 
 @;------------------------------------------------------------------------
-@section{Local Binding: @scheme[let], @scheme[let*], and @scheme[letrec]}
+@section[#:tag "mz:let"]{Local Binding: @scheme[let], @scheme[let*], and @scheme[letrec]}
 
 @defform*[[(let ([id val-expr] ...) body ...+)
            (let proc-id ([id init-expr] ...) body ...+)]]{

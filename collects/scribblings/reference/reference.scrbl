@@ -17,6 +17,7 @@ language.
 @include-section["syntax.scrbl"]
 @include-section["derived.scrbl"]
 @include-section["data.scrbl"]
+@include-section["struct.scrbl"]
 
 @;------------------------------------------------------------------------
 
