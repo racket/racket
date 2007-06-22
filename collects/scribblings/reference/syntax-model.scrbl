@@ -308,9 +308,9 @@ things:
        identifier (third case in the previous enumeration), and
        parsing continues.}
 
- @item{A core syntactic form, which is parsed as described for each
-       form in @secref["mz:syntax"]. Parsing a core syntactic form
-       typically involves recursive parsing of sub-forms, and may
+ @item{A core @deftech{syntactic form}, which is parsed as described
+       for each form in @secref["mz:syntax"]. Parsing a core syntactic
+       form typically involves recursive parsing of sub-forms, and may
        introduce @tech{bindings} that determine the parsing of
        sub-forms.}
 
@@ -340,7 +340,7 @@ contexts. The possible @tech{contexts} are as follows:
  @item{@deftech{internal-definition context} : in a nested context that allows
        both definitions and expressions.}
 
- @item{@deftech{expression content} : in a context where only
+ @item{@deftech{expression context} : in a context where only
        expressions are allowed.}
 
 }
@@ -440,10 +440,10 @@ be @tech{expand}ed (i.e. parsed) before it can be evaluated, and it is
 expanded at @tech{phase level} 1 instead of @tech{phase level} 0.
 
 The if resulting @scheme[value] is a procedure of one argument, then
-is it used as a @deftech{transformer procedure}.  The procedure is
+is it used as a @deftech{syntax transformer}.  The procedure is
 expected to accept a syntax object and return a syntax object. A use
 of the binding (at @tech{phase level} 0) triggers a call of the
-@tech{transformer procedure} by the expander; see
+@tech{syntax transformer} by the expander; see
 @secref["mz:expand-steps"].
 
 Before the expander passes a @tech{syntax object} to a transformer,
@@ -547,7 +547,7 @@ If the last expression form turns out to be a @scheme[define-values]
 or @scheme[define-syntaxes] form, expansion fails with a syntax error.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection{Module Phases}
+@subsection[#:tag "mz:mod-parse"]{Module Phases}
 
 A @scheme[require] form not only introduces @tech{bindings} at
 expansion time, but also @deftech{visits} the referenced module when

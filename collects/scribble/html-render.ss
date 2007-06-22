@@ -200,6 +200,11 @@
                       [(at-right) '((align "right"))]
                       [(at-left) '((align "left"))]
                       [else null])
+                  ,@(let ([a (and (list? (table-style t))
+                                  (assoc 'style (table-style t)))])
+                      (if (and a (string? (cadr a)))
+                          `((class ,(cadr a)))
+                          null))
                   ,@(if (string? (table-style t))
                         `((class ,(table-style t)))
                         null))

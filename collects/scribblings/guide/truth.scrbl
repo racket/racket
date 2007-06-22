@@ -2,8 +2,7 @@
 @require[(lib "manual.ss" "scribble")]
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
-
-@interaction-eval[(require (lib "list.ss"))]
+@require[(lib "list.ss")]
 
 @title{Pairs, Lists, and Scheme Syntax}
 

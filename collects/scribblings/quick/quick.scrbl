@@ -7,9 +7,16 @@
 @require[(lib "manual.ss" "scribble")]
 @require["mreval.ss"]
 @require[(lib "urls.ss" "scribble")]
+@require[(lib "class.ss")]
+@require["slideshow-doc.ss"]
+@require["slideshow-code-doc.ss"]
+@require["mred-doc.ss"]
+@require-for-syntax[mzscheme]
 
-@mr-interaction-eval[(require (lib "slideshow.ss" "slideshow"))]
-@mr-interaction-eval[(require-for-syntax mzscheme)]
+@define[filled-flash (lambda args (apply (eval 'filled-flash) args))]
+@define[random-gaussian (lambda args (apply (eval 'random-gaussian) args))]
+@define-syntax[code (syntax-rules () [(_ v) (typeset-code (quote-syntax v))])]
+@provide[filled-flash random-gaussian code]
 
 @; ----------------------------------------------------------------------
 @section{Why Pictures? Why DrScheme?}

@@ -1,13 +1,10 @@
-(module guide-utils mzscheme
+(module guide-utils (lib "new-lambda.ss" "scribblings")
   (require (lib "manual.ss" "scribble")
            (lib "struct.ss" "scribble")
            (lib "decode.ss" "scribble")
            (lib "kw.ss")
            (lib "eval.ss" "scribble"))
 
-  (interaction-eval (require (lib "new-lambda.ss" "scribblings")))
-
-  
   (provide Quick MzScheme HtDP
            tool
            refdetails
@@ -26,7 +23,7 @@
   (define (tool name . desc)
     (apply item (bold name) ", " desc))
 
-  (define/kw (refdetails* tag what #:body s)
+  (define (refdetails* tag what . s)
     (apply margin-note
            (decode-content (append (list "For " what " on ")
                                    s
@@ -34,10 +31,10 @@
                                          (refsecref tag)
                                          ".")))))
 
-  (define/kw (refdetails tag #:body s)
+  (define (refdetails tag . s)
     (apply refdetails* tag "more" s))
 
-  (define/kw (refdetails/gory tag #:body s)
+  (define (refdetails/gory tag . s)
     (apply refdetails* tag "gory details" s))
 
   (define (refsecref s)

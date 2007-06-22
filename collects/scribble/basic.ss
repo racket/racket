@@ -1,9 +1,8 @@
 
-(module basic mzscheme
+(module basic (lib "new-lambda.ss" "scribblings")
   (require "decode.ss"
            "struct.ss"
            "config.ss"
-           (lib "kw.ss")
            (lib "list.ss")
            (lib "class.ss"))
   
@@ -19,23 +18,23 @@
                      (content->string content)
                      "_"))
 
-  (define/kw (title #:key [tag #f] [style #f] #:body str)
+  (define (title #:tag [tag #f] #:style [style #f] . str)
     (let ([content (decode-content str)])
       (make-title-decl (or tag (gen-tag content)) style content)))
   
-  (define/kw (section #:key [tag #f] #:body str)
+  (define (section #:tag [tag #f] . str)
     (let ([content (decode-content str)])
       (make-part-start 0 (or tag (gen-tag content)) content)))
 
-  (define/kw (subsection #:key [tag #f] #:body str)
+  (define (subsection #:tag [tag #f] . str)
     (let ([content (decode-content str)])
       (make-part-start 1 (or tag (gen-tag content)) content)))
 
-  (define/kw (subsubsection #:key [tag #f] #:body str)
+  (define (subsubsection #:tag [tag #f] . str)
     (let ([content (decode-content str)])
       (make-part-start 2 (or tag (gen-tag content)) content)))
 
-  (define/kw (subsubsub*section #:key [tag #f] #:body str)
+  (define (subsubsub*section #:tag [tag #f] . str)
     (let ([content (decode-content str)])
       (make-paragraph (list (make-element 'bold content)))))
 
@@ -50,7 +49,7 @@
 
   (provide itemize item item?)
 
-  (define/kw (itemize #:body items)
+  (define (itemize . items)
     (let ([items (filter (lambda (v) (not (whitespace? v))) items)])
       (for-each (lambda (v)
                   (unless (an-item? v)
@@ -63,7 +62,7 @@
   (define-struct an-item (flow))
   (define (item? x) (an-item? x))
 
-  (define/kw (item #:body str)
+  (define (item . str)
     (make-an-item (decode-flow str)))
 
   ;; ----------------------------------------
@@ -77,28 +76,28 @@
   (define (hspace n)
     (make-element 'hspace (list (make-string n #\space))))
 
-  (define/kw (elem #:body str)
+  (define (elem . str)
     (make-element #f (decode-content str)))
 
-  (define/kw (aux-elem #:body s)
+  (define (aux-elem . s)
     (make-aux-element #f (decode-content s)))
 
-  (define/kw (italic #:body str)
+  (define (italic . str)
     (make-element 'italic (decode-content str)))
 
-  (define/kw (bold #:body str)
+  (define (bold . str)
     (make-element 'bold (decode-content str)))
 
-  (define/kw (tt #:body str)
+  (define (tt . str)
     (make-element 'tt (decode-content str)))
 
-  (define/kw (span-class classname #:body str)
+  (define (span-class classname . str)
     (make-element classname (decode-content str)))
 
-  (define/kw (subscript #:body str)
+  (define (subscript . str)
     (make-element 'subscript (decode-content str)))
 
-  (define/kw (superscript #:body str)
+  (define (superscript . str)
     (make-element 'superscript (decode-content str)))
 
   ;; ----------------------------------------
@@ -116,20 +115,20 @@
      word-seq
      element-seq))
 
-  (define/kw (index* word-seq content-seq #:body s)
+  (define (index* word-seq content-seq . s)
     (let ([key (gen-target)])
       (record-index word-seq
                     content-seq
                     key
                     (decode-content s))))
 
-  (define/kw (index word-seq #:body s)
+  (define (index word-seq . s)
     (let ([word-seq (if (string? word-seq)
                         (list word-seq)
                         word-seq)])
       (apply index* word-seq word-seq s)))
 
-  (define/kw (as-index #:body s)
+  (define (as-index . s)
     (let ([key (gen-target)]
           [content (decode-content s)])
       (record-index (list (content->string content))

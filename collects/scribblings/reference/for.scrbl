@@ -1,7 +1,6 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
-
-@interaction-eval[(require (lib "for.ss"))]
+@require[(lib "for.ss")]
 
 @title[#:tag "mz:for"]{Iterations and Comprehensions: @scheme[for], @scheme[for/list], ...}
 

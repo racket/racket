@@ -3,8 +3,6 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@interaction-eval[(require (lib "file.ss"))]
-
 @title{Local Binding}
 
 Although internal @scheme[define]s can be used for local binding,

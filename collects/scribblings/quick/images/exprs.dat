@@ -1,7 +1,3 @@
-(0 () 0 () () (c! require c! (c! lib c! "slideshow.ss" c! "slideshow")))
-(0 () 0 () () (void))
-(0 () 0 () () (c! require-for-syntax c! mzscheme))
-(0 () 0 () () (void))
 (0 () 0 () () 5)
 (0 () 0 () () 5)
 (0 () 0 () () "art gallery")

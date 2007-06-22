@@ -3,9 +3,9 @@
 @require[(lib "eval.ss" "scribble")]
 @require[(lib "bnf.ss" "scribble")]
 @require["guide-utils.ss"]
+@require[(lib "list.ss")]
+@require[(lib "for.ss")]
 
-@interaction-eval[(require (lib "list.ss"))]
-@interaction-eval[(require (lib "for.ss"))]
 @define[step @elem{=}]
 
 @title{Lists, Iteration, and Recursion}
@@ -212,12 +212,12 @@ argument @scheme[len]:
 
 @schemeblock[
 (define (my-length lst)
-  (code:comment #, @elem{local function @scheme[iter]:})
+  (code:comment #, @t{local function @scheme[iter]:})
   (define (iter lst len)
     (cond
      [(empty? lst) len]
      [else (iter (rest lst) (+ len 1))]))
-  (code:comment #, @elem{body of @scheme[my-length] calls @scheme[iter]:})
+  (code:comment #, @t{body of @scheme[my-length] calls @scheme[iter]:})
   (iter lst 0))
 ]
 

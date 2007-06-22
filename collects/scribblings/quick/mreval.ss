@@ -7,6 +7,8 @@
            (lib "file.ss")
            (lib "runtime-path.ss")
            (lib "serialize.ss")
+           "slideshow-doc.ss"
+           "mred-doc.ss"
            (lib "exn.ss" "scribblings" "quick"))
 
   (define-syntax define-mr
@@ -17,8 +19,7 @@
          (define-syntax mr
            (syntax-rules ()
              [(_ x (... ...))
-              (parameterize ([scribble-eval-handler mr-eval-handler]
-                             [current-int-namespace mr-namespace])
+              (parameterize ([scribble-eval-handler mr-eval-handler])
                 (orig x (... ...)))])))]))
   
   (define-mr mr-interaction interaction)
@@ -46,7 +47,7 @@
         (let ([eh (scribble-eval-handler)]
               [log-file (open-output-file exprs-dat-file 'truncate/replace)])
           (lambda (catching-exns? expr)
-            (write (serialize expr) log-file)
+            (write (serialize (syntax-object->datum expr)) log-file)
             (newline log-file)
             (flush-output log-file)
             (let ([result
@@ -76,7 +77,7 @@
                 (if (eof-object? v)
                     (error "expression not in log file")
                     (let ([v (deserialize v)])
-                      (if (equal? v expr)
+                      (if (equal? v (syntax-object->datum expr))
                           (let ([v (read log-file)])
                             (if (eof-object? v)
                                 (error "expression result missing in log file")
@@ -91,50 +92,22 @@
                                  expr
                                  v))))))))))
   
-  (define mr-namespace
-    (if mred?
-        ((dynamic-require '(lib "mred.ss" "mred") 'make-namespace-with-mred))
-        (let ([ns (make-namespace)])
-          (namespace-attach-module (current-namespace)
-                                   '(lib "struct.ss" "scribble")
-                                   ns)
-          (namespace-attach-module (current-namespace)
-                                   '(lib "exn.ss" "scribblings" "quick")
-                                   ns)
-          ns)))
+  (define mr-namespace (current-namespace))
   
   (define image-counter 0)
 
-  (define (ss:pict?)
-    (with-handlers ([exn:fail? (lambda (x) (lambda (x) #f))])
-      (eval 'pict? mr-namespace)))
-  (define (ss:pict-width)
-    (eval 'pict-width mr-namespace))
-  (define (ss:pict-height)
-    (eval 'pict-height mr-namespace))
-  (define (ss:make-pict-drawer)
-    (eval 'make-pict-drawer mr-namespace))
-  (define (ss:colorize)
-    (eval 'colorize mr-namespace))
-  (define (mred:canvas%)
-    (dynamic-require '(lib "mred.ss" "mred") 'canvas%))
-  (define (mred:bitmap%)
-    (dynamic-require '(lib "mred.ss" "mred") 'bitmap%))
-  (define (mred:bitmap-dc%)
-    (dynamic-require '(lib "mred.ss" "mred") 'bitmap-dc%))
-
   (define (fixup-picts v)
     (cond
-     [((ss:pict?) v)
+     [(pict? v)
       (let ([fn (format "~a/img~a.png" img-dir image-counter)])
         (set! image-counter (add1 image-counter))
-        (let* ([bm (make-object (mred:bitmap%)
-                                (inexact->exact (ceiling ((ss:pict-width) v)))
-                                (inexact->exact (ceiling ((ss:pict-height) v))))]
-               [dc (make-object (mred:bitmap-dc%) bm)])
+        (let* ([bm (make-object bitmap%
+                                (inexact->exact (ceiling (pict-width v)))
+                                (inexact->exact (ceiling (pict-height v))))]
+               [dc (make-object bitmap-dc% bm)])
           (send dc set-smoothing 'aligned)
           (send dc clear)
-          (((ss:make-pict-drawer) v) dc 0 0)
+          ((make-pict-drawer (colorize v (make-object color% 0 0 #xAF))) dc 0 0)
           (send bm save-file fn 'png)
           (make-element #f (list (make-element (make-image-file fn) (list "[image]"))))))]
      [(pair? v) (cons (fixup-picts (car v))

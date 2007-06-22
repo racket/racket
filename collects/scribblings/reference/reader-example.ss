@@ -1,10 +1,9 @@
 
-(module reader-example mzscheme
+(module reader-example (lib "new-lambda.ss" "scribblings")
   (require (lib "struct.ss" "scribble")
            (lib "decode.ss" "scribble")
            (lib "manual.ss" "scribble")
            (lib "scheme.ss" "scribble")
-           (lib "kw.ss")
            (lib "class.ss"))
 
   (provide reader-examples
@@ -22,10 +21,9 @@
   
   (define spacer (hspace 1))
 
-  (define/kw (reader-examples #:key 
-                              [symbols? #t] 
-                              [example-note ""]
-                              #:body strs)
+  (define (reader-examples #:symbols? [symbols? #t] 
+                           #:example-note [example-note ""]
+                           . strs)
     (make-table
      #f
      (list
@@ -125,7 +123,7 @@
   (define (dispatch a . b)
     (list a (make-element #f (decode-content b))))
 
-  (define/kw (metavar #:body s)
+  (define (metavar . s)
     (make-element 'italic (decode-content s)))
 
   (define (cilitchar s)

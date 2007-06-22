@@ -133,8 +133,8 @@ To make a structure type @defterm{transparent}, use the
 field-name sequence:
 
 @def+int[
-'(define-struct posn (x y) 
-                #:inspector #f)
+(define-struct posn (x y) 
+               #:inspector #f)
 (make-posn 1 2)
 ]
 

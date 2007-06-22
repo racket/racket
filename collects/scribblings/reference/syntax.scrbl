@@ -51,6 +51,48 @@ Within such specifications,
               }} }
 
 @;------------------------------------------------------------------------
+@section{Literals: @scheme[quote] and @scheme[#%datum]}
+
+@defform[(quote datum)]{
+
+Produces a constant value corresponding to @scheme[datum] (i.e., the
+actual representation of the program fragment) without its
+@tech{lexical information} or source location.
+
+@examples[
+(eval:alts (#,(schemekeywordfont "quote") x) 'x)
+(eval:alts (#,(schemekeywordfont "quote") (+ 1 2)) '(+ 1 2))
+]
+
+}
+
+@defform[(#%datum . datum)]{
+
+Expands to @scheme[(#,(schemekeywordfont "quote") datum)]. See also @secref["mz:expand-steps"]
+for information on how the expander introduces @schemeidfont{#%datum}
+identifiers.
+
+@examples[
+(#%datum . 10)
+(#%datum . x)
+]
+}
+
+@;------------------------------------------------------------------------
+@section{Expression Wrapper: @scheme[#%expression]}
+
+@defform[(#%expression expr)]{
+
+Produces the same result as @scheme[expr]. The only use of
+@scheme[#%expression] is to force the parsing of a form as an
+expression.
+
+@examples[
+(#%expression (+ 1 2))
+(#%expression (define x 10))
+]}
+
+@;------------------------------------------------------------------------
 @section{Variable References and @scheme[#%top]}
 
 @defform/none[id]{
@@ -64,7 +106,7 @@ When the expander encounters an @scheme[id] that is not bound by a
 module-level or local binding, it converts the expression to @scheme[(#,
 @schemeidfont{#%top} . id)] giving @schemeidfont{#%top} the lexical
 context of the @scheme[id]; typically, that context refers to
-@scheme[#%top].
+@scheme[#%top]. See also @secref["mz:expand-steps"].
 
 @examples[
 (define x 10)
@@ -75,14 +117,30 @@ x
 
 @defform[(#%top . id)]{
 
-Refers to a top-level definition that could bind @scheme[id],
-even if @scheme[id] has a local binding in its context. Such
-references are disallowed anywhere within a @scheme[module] form.
+Refers to a top-level definition that could bind @scheme[id], even if
+@scheme[id] has a local binding in its context. Such references are
+disallowed anywhere within a @scheme[module] form.  See also
+@secref["mz:expand-steps"] for information on how the expander
+introduces @schemeidfont{#%top} identifiers.
 
 @examples[
 (define x 12)
 (let ([x 5]) (#%top . x))
 ]}
+
+@;------------------------------------------------------------------------
+@section{Locations: @scheme[#%variable-reference]}
+
+@defform*[#:literals (#%top)
+          [(#%variable-reference id)
+           (#%variable-reference (#%top . id))]]{
+
+Produces an opaque value representing the location of @scheme[id],
+which must be bound as a @tech{top-level variable} or
+@tech{module-level variable}.
+
+The result is useful only to low-level extensions; see
+@secref["inside-mzscheme"].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:application"]{Procedure Applications and @scheme[#%app]}
@@ -100,7 +158,8 @@ More precisely, the expander converts this form to @scheme[(#,
 the lexical context that is associated with the original form (i.e.,
 the pair that combines @scheme[proc-expr] and its
 arguments). Typically, the lexical context of the pair indicates the
-procedure-application @scheme[#%app] that is described next.
+procedure-application @scheme[#%app] that is described next. See also
+@secref["mz:expand-steps"].
 
 @examples[
 (+ 1 2)
@@ -137,6 +196,9 @@ associated with argument variables in the applied procedure based on
 the @scheme[_keyword]s, and not their positions. The other
 @scheme[_arg-expr] values, in contrast, are associated with variables
 according to their order in the application form.
+
+See also @secref["mz:expand-steps"] for information on how the
+expander introduces @schemeidfont{#%app} identifiers.
 
 @examples[
 (#%app + 1 2)
@@ -442,8 +504,8 @@ using the @|cvt| meta-function defined as follows:
 
 At the top level, the top-level binding @scheme[id] is created after
 evaluating @scheme[expr], if it does not exist already, and the
-top-level mapping of @scheme[id] (see @secref["mz:namespace"]) is set
-to the binding at the same time.
+top-level mapping of @scheme[id] (in the @techlink{namespace} linked
+with the compiled definition) is set to the binding at the same time.
 
 @defexamples[
 (define x 10)
@@ -472,8 +534,9 @@ the @exnraise[exn:fail:contract].
 
 At the top level, the top-level binding for each @scheme[id] is
 created after evaluating @scheme[expr], if it does not exist already,
-and the top-level mapping of each @scheme[id] (see
-@secref["mz:namespace"]) is set to the binding at the same time.
+and the top-level mapping of each @scheme[id] (in the
+@techlink{namespace} linked with the compiled definition) is set to
+the binding at the same time.
 
 @defexamples[
 (define-values () (values))
@@ -527,6 +590,42 @@ in tail position only if no @scheme[body]s are present.
 ]}
 
 @;------------------------------------------------------------------------
+@section{Assignment: @scheme[set!] and @scheme[set!-values]}
+
+@defform[(set! id expr)]{
+
+Evaluates @scheme[expr] and installs the result into the location for
+@scheme[id], which must be bound as a local variable or defined as a
+@tech{top-level variable} or @tech{module-level variable}. If
+@scheme[id] refers to a @tech{top-level variable} that has not been
+defined, the @exnraise[exn:fail:contract].
+
+@defexamples[
+(define x 12)
+(set! x (add1 x))
+x
+(let ([x 5]) 
+  (set! x (add1 x)) 
+  x)
+(set! i-am-not-defined 10)
+]}
+
+@defform[(set!-values (id ...) expr)]{
+
+Evaluates @scheme[expr], which must produce as many values as supplied
+@scheme[id]s.  The location of each @scheme[id] is filled wih to the
+corresponding value from @scheme[expr] in the same way as for
+@scheme[set!].
+
+@examples[
+(let ([a 1]
+      [b 2])
+  (set!-values (a b) (values b a))
+  (list a b))
+]}
+
+
+@;------------------------------------------------------------------------
 @section{Continuation Marks: @scheme[with-continuation-mark]}
 
 @defform[(with-continuation-mark key-expr val-expr result-expr)]{
@@ -540,11 +639,196 @@ current continuation frame (see @secref["mz:contmarks"]), and then
 @section{Syntax Quoting: @scheme[quote-syntax]}
 
 @defform[(quote-syntax datum)]{
-Produces a syntax object that preserves
- lexical and source-location information attached to @scheme[datum] 
- at expansion time.
+
+Produces a @tech{syntax object} that preserves the @tech{lexical
+information} and source-location information attached to
+@scheme[datum] at expansion time.
 
 @examples[
 (syntax? (quote-syntax x))
 ]
 }
+
+@;------------------------------------------------------------------------
+@section[#:tag "mz:require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}
+
+@defform/subs[#:literals (only prefix all-except prefix-all-except rename lib file planet)
+              (require require-spec ...)
+              ([require-spec module-path
+                             (only require-spec id-maybe-renamed ...)
+                             (except require-spec id ...)
+                             (prefix require-spec prefix-id)
+                             (rename require-spec [orig-id bind-id] ...)]
+               [module-path id
+                            rel-string
+                            (lib rel-string)
+                            (file string)
+                            (planet rel-string (user-string pkg-string vers ...))]
+               [id-maybe-renamed id
+                                 [orig-id bind-id]]
+               [vers nat
+                     (nat nat)
+                     (= nat)
+                     (+ nat)
+                     (- nat)])]{
+
+In a @tech{top-level context}, @scheme[require] instantiates modules
+(see @secref["mz:module-eval-model"]). In a @tech{module context},
+@scheme[require] visits modules (see @secref["mz:mod-parse"]). In both
+contexts, @scheme[require] introduces bindings into a @tech{namespace}
+or a module (see @secref["mz:intro-binding"]). A @scheme[require] form
+in a @tech{expression context} or @tech{internal-definition context}
+is a syntax error.
+
+A @scheme[require-spec] designates a particular set of identifiers to
+be bound in the importing context. Each identifier is mapped to a
+particular export of a particular module; the identifier to bind may
+be different from the symbolic name of the originally exported
+identifier.
+
+ @specsubform[module-path]{ Imports all exported bindings from the
+  named module, using the export identifier as the local identifiers.}
+
+ @specsubform[#:literals (only) (only require-spec id-maybe-renamed ...)]{
+  Like @scheme[require-spec], but constrained to those exports for
+  which the identifiers to bind match @scheme[id-maybe-renamed]: as
+  @scheme[id] or as @scheme[orig-id] in @scheme[[orig-id bind-id]]. If
+  the @scheme[id] of @scheme[orig-id] of any @scheme[id-maybe-renamed]
+  is not in the set that @scheme[require-spec] describes, a syntax
+  error is reported.}
+
+ @specsubform[#:literals (except) (except require-spec id ...)]{ Like
+  @scheme[require-spec], but omitting those exports for which
+  @scheme[id]s are the identifiers to bind; if any @scheme[id] is not
+  in the set that @scheme[require-spec] describes, a syntax error is
+  reported.}
+
+ @specsubform[#:literals (prefix) (prefix require-spec prefix-id)]{
+  Like @scheme[require-spec], but adjusting each identifier to be bound
+  by prefixing it with @scheme[prefix-id].}
+
+ @specsubform[#:literals (rename) 
+              (rename require-spec [orig-id bind-id] ...)]{
+  Like @scheme[require-spec], but replacing the identifier to
+  bind @scheme[orig-id] with @scheme[bind-id]; if any
+  @scheme[orig-id] is not in the set that @scheme[require-spec]
+  describes, a syntax error is reported.}
+
+A @scheme[module-path] identifies a module, either through a concrete
+name in the form of an identifier, or through an indirect name that
+can trigger automatic loading of the module declaration:
+
+ @specsubform[id]{ Refers to a module previously declared with the name
+  @scheme[id].}
+
+ @specsubform[rel-string]{A path relative to the containing source (as
+ determined by @scheme[current-load-relative-directory] or
+ @scheme[current-directory]).  Regardless of the current platform,
+ @scheme[rel-string] is always parsed as a Unix-format relative path:
+ @litchar{/} is the path delimiter (multiple adjacent @litchar{/}s are
+ treated as a single delimiter), @litchar{..} accesses the parent
+ directory, and @litchar{.}  accesses the current directory. The path
+ cannot be empty or contain a leading or trailing slash.}
+
+ @specsubform[#:literals (lib) (lib rel-string)]{Like the plain
+ @scheme[rel-string] case, but @scheme[rel-string] must contain at
+ least two path elements. All path elements up to the last one form a
+ @tech{collection} path, which is used to locate the relevant
+ directory (not relative to the containing source), and the last path
+ element refers to a file.}
+
+ @specsubform[#:literals (file) (file string)]{Similar to the plain
+ @scheme[rel-string] case, but @scheme[string] is a path (possibly
+ absolute) using the current platform's path conventions.}
+
+ @specsubform[#:literals(planet) 
+              (planet rel-string (user-string pkg-string vers ...))]{
+ Specifies a library available via the @PLaneT server.
+ }
+
+No identifier can be bound multiple times by an import, unless all of
+the bindings refer to the same original definition in the same module.
+In a @tech{module context}, an identifier can be either imported or
+defined for a given @tech{phase level}, but not both.}
+
+@defform[(require-for-syntax require-spec ...)]{
+Like @scheme[require], but @tech{instantiate}s a module at phase 1
+(see @secref["mz:module-eval-model"]) in a @tech{top-level context} or
+@tech{module context}, and introduces bindings at phase level 1 (see
+@secref["mz:intro-binding"] and @secref["mz:mod-parse"]).
+}
+
+@defform[(require-for-template require-spec ...)]{ Like
+@scheme[require], but without @tech{instantiation} (see
+@secref["mz:module-eval-model"]) in a @tech{top-level context}, and
+introduces bindings at phase level -1 (see @secref["mz:intro-binding"]
+and @secref["mz:mod-parse"]).
+}
+
+@;------------------------------------------------------------------------
+@section{Exporting: @scheme[provide] and @scheme[provide-for-syntax]}
+
+@defform/subs[#:literals (protect all-defined all-from rename except prefix)
+              (provide protected-provide-spec ...)
+              ([protected-provide-spec provide-spec
+                                       (protect provide-spec)]
+               [provide-spec id
+                             (all-defined)
+                             (all-from module-name)
+                             (rename [orig-id export-id] ...)
+                             (except provide-spec id ...)
+                             (prefix provide-spec prefix-id)])]{
+
+Declares exports from a module. A @scheme[provide] form must appear in
+a @tech{module context} or a @tech{module-begin} context.
+
+A @scheme[provide-spec] indicates one or more bindings to provide,
+specifying for each an export symbol that can be different from
+the symbolic form of the identifier bound within the module:
+
+ @specsubform[id]{ Exports @scheme[id], which must be @tech{bound}
+ within the module (i.e., either defined or imported), at @tech{phase
+ level} 0 using the symbolic form of @scheme[id] as the external
+ name.}
+
+ @specsubform[#:literals (all-defined) (all-defined)]{ Exports all
+ identifiers that are defined at @tech{phase level} 0 within the
+ exporting module. The external name for each identifier is the
+ symbolic form of the identifier; note that this can lead to an
+ illegal multiple export for a single symbolic name if different
+ defined identifiers use the same symbolic name.}
+
+ @specsubform[#:literals (all-from) (all-from module-name)]{ Exports
+ all identifiers that are imported into the exporting module at
+ @tech{phase level} 0 using a @scheme[require-spec] built on
+ @scheme[module-name] (see @secref["mz:require"]). The symbolic name
+ for export is derived from the name that is bound within the module,
+ as opposed to the symbolic name of the export from
+ @scheme[module-name].}
+
+ @specsubform[#:literals (rename) (rename [orig-id export-id] ...)]{
+ Exports each @scheme[orig-id], which must be @tech{bound} within the
+ module at @tech{phase level} 0.  The symbolic name for each export is
+ @scheme[export-id] instead @scheme[orig-d].}
+
+ @specsubform[#:literals (except) (except provide-spec id ...)]{ Like
+ @scheme[provide-spec], but omitting an export for each binding
+ @scheme[id]. If @scheme[id] is not specified as an export by
+ @scheme[provide-spec], a syntax error is reported.}
+
+ @specsubform[#:literals (prefix) (prefix provide-spec prefix-id)]{
+ Like @scheme[provide-spec], but with each symbolic export name from
+ @scheme[provide-spec] prefixed with @scheme[prefix-id].}
+
+If @scheme[provide] wraps a @scheme[provide-spec], then the exports of
+the @scheme[provide-spec] are protected; see
+@secref["mz:protected-exports"]. The @scheme[provide-spec] must
+specify only bindings that are defined within the exporting module.
+
+Each export specified within a module must have a distinct symbolic
+export name, though the same binding can be specified with the
+multiple symbolic names.}
+
+@defform[(provide-for-syntax protected-provide-spec ...)]{Like
+@scheme[provide], but exports at @tech{phase level} 1 bindings within
+the module at @tech{phase level} 1.}

@@ -14,7 +14,7 @@ more...
 @defform[(schemeblock datum ...)]{
 
 Typesets the @scheme[datum] sequence as a table of Scheme code inset
-by two spaces. The source locations of the @scheme[datum]s determines
+by two spaces. The source locations of the @scheme[datum]s determine
 the generated layout. For example,
 
 @schemeblock[
@@ -32,10 +32,13 @@ produces the output
 
 with the @scheme[(loop (not x))] indented under @scheme[define],
 because that's the way it is idented the use of @scheme[schemeblock].
+
 Furthermore, @scheme[define] is typeset as a keyword (bold and black)
 and as a hyperlink to @scheme[define]'s definition in the reference
 manual, because this document was built using information about the
-MzScheme manual. Similarly, @scheme[not] is a hyperlink to the its
+reference manual, and because the lexical binding of @scheme[define]
+(in the source) matches the lexical binding of the definition in the
+reference manual. Similarly, @scheme[not] is a hyperlink to the its
 definition in the reference manual.
 
 Use @scheme[unsyntax] to escape back to an expression that produces an
@@ -127,7 +130,7 @@ useful with @scheme[verbatim].}
 
 @defproc[(schemefont [pre-content any/c] ...) element?]{Typesets the given
 content as uncolored, unhyperlinked Scheme. This procedure is useful
-for typesetting thngs like @scheme{#module}, which are not
+for typesetting things like @scheme{#module}, which are not
 @scheme[read]able by themselves.}
 
 @defproc[(schemevalfont [pre-content any/c] ...) element?]{Like
@@ -143,7 +146,7 @@ for typesetting thngs like @scheme{#module}, which are not
 @scheme[schemefont], but colored as a syntactic form name.}
 
 @defproc[(procedure [pre-content any/c] ...) element?]{Typesets the given
-content as a procedure name in a REPL result (e.g., in typewrite font
+content as a procedure name in a REPL result (e.g., in typewriter font
 with a @schemefont{#<procedure:} prefix and @schemefont{>} suffix.).}
 
 @defform[(var datum)]{Typesets @scheme[var] as an identifier that is
@@ -164,9 +167,9 @@ in a form definition.}
                   pre-flow ...)]{
 
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
-to document a procedure named @scheme[id]. The
-@scheme[id] is registered so that @scheme[scheme]-typeset uses
-of the identifier are hyperlinked to this documentation.
+to document a procedure named @scheme[id]. The @scheme[id] is
+registered so that @scheme[scheme]-typeset uses of the identifier
+(with the same lexical binding) are hyperlinked to this documentation.
 
 Each @scheme[arg-spec] must have one of the following forms:
 
@@ -213,39 +216,54 @@ Like @scheme[defproc], but for multiple cases with the same
 @scheme[id].  }
 
 
-@defform[(defform (id . datum) pre-flow ...)]{Produces a 
-a sequence of flow elements (encaptured in a @scheme[splice]) to
-document a syntatic form named by @scheme[id]. The
-@scheme[id] is registered so that @scheme[scheme]-typeset uses
-of the identifier are hyperlinked to this documentation.
+@defform/subs[(defform maybe-literals (id . datum) pre-flow ...)
+              ([maybe-literals code:blank
+                               (code:line #:literals (literal-id ...))])]{
+
+Produces a a sequence of flow elements (encaptured in a
+@scheme[splice]) to document a syntatic form named by @scheme[id]. The
+@scheme[id] is registered so that @scheme[scheme]-typeset uses of the
+identifier (with the same lexical binding) are hyperlinked to this
+documentation.
 
 The @scheme[pre-flow]s list is parsed as a flow that documents the
 procedure. In this description, a reference to any identifier in
-@scheme[datum] is typeset as a sub-form non-terminal.
+@scheme[datum] is typeset as a sub-form non-terminal. If
+@scheme[#:literals] clause is provided, however, instances of the
+@scheme[literal-id]s are typeset normally.
 
 The typesetting of @scheme[(id . datum)] preserves the source
 layout, like @scheme[schemeblock], and unlike @scheme[defproc].}
 
-@defform[(defform* [(id . datum) ..+] pre-flow ...)]{Like @scheme[defform],
-but for multiple forms using the same @scheme[id].}
+@defform[(defform* maybe-literals [(id . datum) ..+] pre-flow ...)]{
 
-@defform[(defform/subs (id . datum) 
-           ([nonterm-id clause-datum ...+] ...) 
-           pre-flow ...)]{
+Like @scheme[defform], but for multiple forms using the same
+@scheme[id].}
+
+@defform/subs[(defform/subs maybe-literals (id . datum) 
+                ([nonterm-id clause-datum ...+] ...) 
+                pre-flow ...)
+              ([maybe-literals code:blank
+                               (code:line #:literals (literal-id ...))])]{
 Like @scheme[defform], but including an auxiliary grammar of
 non-terminals shown with the @scheme[id] form. Each
 @scheme[nonterm-id] is specified as being any of the corresponding
 @scheme[clause-datum]s, where the formatting of each
 @scheme[clause-datum] is preserved.}
 
-@defform[(specform (id . datum) pre-flow ...)]{Like @scheme[defform],
-with without registering a definition, and with indenting on the left
-for both the specification and the @scheme[pre-flow]s.}
+@defform/subs[(specform maybe-literals (id . datum) pre-flow ...)
+              ([maybe-literals code:blank
+                               (code:line #:literals (literal-id ...))])]{
 
-@defform[(specsubform datum pre-flow ...)]{Similar to
-@scheme[defform], but without any specific identifier being defined,
-and the table and flow are typeset indented. This form is intended for
-use when refining the syntax of a non-terminal used in a
+Like @scheme[defform], with without registering a definition, and with
+indenting on the left for both the specification and the
+@scheme[pre-flow]s.}
+
+@defform[(specsubform maybe-literals datum pre-flow ...)]{
+
+Similar to @scheme[defform], but without any specific identifier being
+defined, and the table and flow are typeset indented. This form is
+intended for use when refining the syntax of a non-terminal used in a
 @scheme[defform] or other @scheme[specsubform]. For example, it is
 used in the documentation for @scheme[defproc] in the itemization of
 possible shapes for @svar[arg-spec].
@@ -254,8 +272,9 @@ The @scheme[pre-flow]s list is parsed as a flow that documents the
 procedure. In this description, a reference to any identifier in
 @scheme[datum] is typeset as a sub-form non-terminal.}
 
-@defform[(defthing id contract-expr-datum pre-flow ...)]{Like
-@scheme[defproc], but for a non-procedure binding.}
+@defform[(defthing id contract-expr-datum pre-flow ...)]{
+
+Like @scheme[defproc], but for a non-procedure binding.}
 
 @defform/subs[(defstruct struct-name ([field-name contract-expr-datum] ...)
                 pre-flow ...)
@@ -265,13 +284,19 @@ procedure. In this description, a reference to any identifier in
 Similar to @scheme[defform] or @scheme[defproc], but for a structure
 definition.}
 
-@defform/subs[(schemegrammar literals ? id clause-datum ...+)
-              ([literals (code:line #:literals (literal-id ...))])]{
-Creates a table to define the grammar of @scheme[id]. Each identifier mentioned
-in a @scheme[clause-datum] is typeset as a non-terminal, except for the
-identifiers listed as @scheme[literal-id]s, which are typeset as with 
-@scheme[scheme].
-}
+@defform/subs[(schemegrammar maybe-literals id clause-datum ...+)
+              ([maybe-literals code:blank
+                               (code:line #:literals (literal-id ...))])]{
+
+Creates a table to define the grammar of @scheme[id]. Each identifier
+mentioned in a @scheme[clause-datum] is typeset as a non-terminal,
+except for the identifiers listed as @scheme[literal-id]s, which are
+typeset as with @scheme[scheme].}
+
+@defform[(schemegrammar* maybe-literals [id clause-datum ...+] ...)]{
+
+Like @scheme[schemegrammar], but for typesetting multiple productions
+at once, aligned around the @litchar{=} and @litchar{|}.}
 
 @; ------------------------------------------------------------------------
 @section{Various String Forms}

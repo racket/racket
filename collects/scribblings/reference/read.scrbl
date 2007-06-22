@@ -19,8 +19,8 @@
 
 Scheme's reader is a recursive-descent parser that can be configured
 through a @seclink["mz:readtables"]{readtable} and various other
-@seclink["parameters"]{parameters}. This section describes the reader's
-parsing when using the default readtable.
+@tech{parameters}. This section describes the reader's parsing when
+using the default readtable.
 
 Reading from a stream produces one @defterm{datum}. If the result
 datum is a compound value, then reading the datum typically requires
@@ -28,7 +28,7 @@ the reader to call itself recursively to read the component data.
 
 The reader can be invoked in either of two modes: @scheme[read] mode,
 or @scheme[read-syntax] mode. In @scheme[read-syntax] mode, the result
-is always a @seclink["stxobj"]{syntax object} that includes
+is always a @techlink{syntax object} that includes
 source-location and (initially empty) lexical information wrapped
 around the sort of datum that @scheme[read] mode would produce. In the
 case of pairs, vectors, and boxes, morever, the content is also
@@ -164,7 +164,7 @@ except that @litchar{.} by itself is never parsed as a symbol or
 character. A @as-index{@litchar{#%}} also starts a symbol. A successful
 number parse takes precedence over a symbol parse.
 
-When the @scheme[read-case-sensitive] parameter is set to @scheme[#f],
+When the @scheme[read-case-sensitive] @tech{parameter} is set to @scheme[#f],
 characters in the sequence that are not quoted by @litchar["|"] or
 @litchar["\\"] are first case-normalized. If the reader encounters
 @as-index{@litchar{#ci}}, @litchar{#CI}, @litchar{#Ci}, or @litchar{#cI},
@@ -202,7 +202,7 @@ which specifies its parsing as an exact or inexact number; see
 non-terminal names suggest, a number that has no exactness specifier
 and matches only @nunterm{inexact-number} is normally parsed as an
 inexact number, otherwise it is parsed as an excat number. If the
-@scheme[read-decimal-as-inexact] parameter is set to @scheme[#f], then
+@scheme[read-decimal-as-inexact] @tech{parameter} is set to @scheme[#f], then
 all numbers without an exactness specifier are instead parsed as
 exact.
 
@@ -344,10 +344,10 @@ being parsed, then the @exnraise[exn:fail:read].
 "(1 . 2 . 3)"
 ]
 
-If the @scheme[read-square-bracket-as-paren] parameter is set to
+If the @scheme[read-square-bracket-as-paren] @tech{parameter} is set to
 @scheme[#f], then when then reader encounters @litchar{[} and
 @litchar{]}, the @exnraise{exn:fail:read}. Similarly, If the
-@scheme[read-curly-brace-as-paren] parameter is set to @scheme[#f],
+@scheme[read-curly-brace-as-paren] @tech{parameter} is set to @scheme[#f],
 then when then reader encounters @litchar["{"] and @litchar["}"], the
 @exnraise{exn:fail:read}.
 
@@ -701,7 +701,7 @@ external reader procedure and applies it to the current input stream.
 
 The reader recursively reads the next datum after @litchar{#reader},
 and passes it to the procedure that is the value of the
-@scheme[current-reader-guard] parameter; the result is used as a
+@scheme[current-reader-guard] @tech{parameter}; the result is used as a
 module path. The module path is passed to @scheme[dynamic-require]
 with either @scheme['read] or @scheme['read-syntax] (depending on
 whether the reader is in @scheme[read] or @scheme[read-syntax]
@@ -718,7 +718,7 @@ converted to one using @scheme[datum->syntax-object]. See also
 @secref["special-comments"] and @secref["recursive-reads"] for
 information on special-comment results and recursive reads.
 
-If the @scheme[read-accept-reader] parameter is set to @scheme[#f],
+If the @scheme[read-accept-reader] @tech{parameter} is set to @scheme[#f],
 then if the reader encounters @litchar{#reader}, the
 @exnraise[exn:fail:read].
 

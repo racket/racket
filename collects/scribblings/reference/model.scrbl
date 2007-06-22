@@ -497,11 +497,13 @@ forms. As a result, future references of the @tech{variable} always
 access the same @tech{location}.
 
 @;------------------------------------------------------------------------
-@section{Modules and Module-Level Variables}
+@section[#:tag "mz:module-eval-model"]{Modules and Module-Level Variables}
 
 Most definitions in PLT Scheme are in modules. In terms of evaluation,
 a module is essentially a prefix on a defined name, so that different
-modules can define the name.
+modules can define the name. That is, a @deftech{module-level
+variable} is like a @tech{top-level variable} from the perspective of
+evaluation.
 
 One difference between a module an a top-level definition is that a
 module can be declared without instantiating its module-level
@@ -621,7 +623,7 @@ is created) as all other threads.
 @;------------------------------------------------------------------------
 @section{Parameters}
 
-A @deftech{parameter} is essentially a derived concept in Scheme; they
+@deftech{Parameters} are essentially a derived concept in Scheme; they
 are defined in terms of continuation marks and thread cells. However,
 parameters are also built in, in the sense that some primitive
 procedures consult parameter values. For example, the default output

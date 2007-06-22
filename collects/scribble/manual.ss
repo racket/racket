@@ -1,12 +1,11 @@
 
-(module manual mzscheme
+(module manual (lib "new-lambda.ss" "scribblings")
   (require "decode.ss"
            "struct.ss"
            "scheme.ss"
            "config.ss"
            "basic.ss"
            (lib "string.ss")
-           (lib "kw.ss")
            (lib "list.ss")
            (lib "class.ss"))
 
@@ -46,7 +45,10 @@
   (define (to-element/id s)
     (make-element "schemesymbol" (list (to-element/no-color s))))
 
-  (define (keep-s-expr ctx s v) s)
+  (define (keep-s-expr ctx s v) 
+    (if (symbol? s)
+        (make-just-context s ctx)
+        s))
   (define (add-sq-prop s name val)
     (if (eq? name 'paren-shape)
         (make-shaped-parens s val)
@@ -97,41 +99,41 @@
            link procedure
            idefterm)
 
-  (define/kw (onscreen #:body str)
+  (define (onscreen . str)
     (make-element 'sf (decode-content str)))
   (define (menuitem menu item)
     (make-element 'sf (list menu "|" item)))
-  (define/kw (defterm #:body str)
+  (define (defterm . str)
     (make-element 'italic (decode-content str)))
-  (define/kw (idefterm #:body str)
+  (define (idefterm . str)
     (let ([c (decode-content str)])
       (make-element 'italic c)))
-  (define/kw (schemefont #:body str)
+  (define (schemefont . str)
     (apply tt str))
-  (define/kw (schemevalfont #:body str)
+  (define (schemevalfont . str)
     (make-element "schemevalue" (decode-content str)))
-  (define/kw (schemeresultfont #:body str)
+  (define (schemeresultfont . str)
     (make-element "schemeresult" (decode-content str)))
-  (define/kw (schemeidfont #:body str)
+  (define (schemeidfont . str)
     (make-element "schemesymbol" (decode-content str)))
-  (define/kw (schemeparenfont #:body str)
+  (define (schemeparenfont . str)
     (make-element "schemeparen" (decode-content str)))
-  (define/kw (schememetafont #:body str)
+  (define (schememetafont . str)
     (make-element "schememeta" (decode-content str)))
-  (define/kw (schemekeywordfont #:body str)
+  (define (schemekeywordfont . str)
     (make-element "schemekeyword" (decode-content str)))
-  (define/kw (file #:body str)
+  (define (file . str)
     (make-element 'tt (append (list "\"") (decode-content str) (list "\""))))
-  (define/kw (exec #:body str)
+  (define (exec . str)
     (make-element 'tt (decode-content str)))
-  (define/kw (procedure #:body str)
+  (define (procedure . str)
     (make-element "schemeresult" (append (list "#<procedure:") (decode-content str) (list ">"))))
 
-  (define/kw (link url #:body str)
+  (define (link url . str)
     (make-element (make-target-url url) (decode-content str)))
 
   (provide t)
-  (define/kw (t #:body str)
+  (define (t . str)
     (decode-paragraph str))
 
   (provide schememodule)
@@ -151,7 +153,7 @@
 
   ;; ----------------------------------------
 
-  (provide deftech tech)
+  (provide deftech tech techlink)
 
   (define (*tech make-elem style s)
     (let* ([c (decode-content s)]
@@ -165,11 +167,14 @@
                  c
                  (format "tech-term:~a" s))))
 
-  (define/kw (deftech #:body s)
+  (define (deftech . s)
     (*tech make-target-element #f (list (apply defterm s))))
 
-  (define/kw (tech #:body s)
+  (define (tech . s)
     (*tech make-link-element "techlink" s))
+
+  (define (techlink . s)
+    (*tech make-link-element #f s))
 
   ;; ----------------------------------------
 
@@ -218,21 +223,23 @@
   (define-syntax defproc 
     (syntax-rules ()
       [(_ (id arg ...) result desc ...)
-       (*defproc '[(id arg ...)]
+       (*defproc (list (quote-syntax id))
+                 '[(id arg ...)]
                  (list (list (lambda () (arg-contract arg)) ...))
                  (list (lambda () (schemeblock0 result))) 
                  (lambda () (list desc ...)))]))
   (define-syntax defproc* 
     (syntax-rules ()
       [(_ [[(id arg ...) result] ...] desc ...)
-       (*defproc '[(id arg ...) ...] 
+       (*defproc (list (quote-syntax id) ...)
+                 '[(id arg ...) ...] 
                  (list (list (lambda () (arg-contract arg)) ...) ...)
                  (list (lambda () (schemeblock0 result)) ...)
                  (lambda () (list desc ...)))]))
   (define-syntax defstruct
     (syntax-rules ()
       [(_ name fields desc ...)
-       (*defstruct 'name 'fields (lambda () (list desc ...)))]))
+       (*defstruct (quote-syntax name) 'name 'fields (lambda () (list desc ...)))]))
   (define-syntax (defform*/subs stx)
     (syntax-case stx ()
       [(_ #:literals (lit ...) [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
@@ -245,8 +252,11 @@
                                                                       '(unsyntax x)
                                                                       #'name)
                                                 #'rest)
-                                               #'spec)])])
-         #'(*defforms #t '(lit ...)
+                                               #'spec)])]
+                     [spec-id
+                      (syntax-case #'spec ()
+                        [(name . rest) #'name])])
+         #'(*defforms (quote-syntax spec-id) '(lit ...)
                       '(spec spec1 ...) 
                       (list (lambda (x) (schemeblock0 new-spec))
                             (lambda (ignored) (schemeblock0 spec1)) ...)
@@ -260,6 +270,7 @@
        #'(fm #:literals () [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)]))
   (define-syntax (defform* stx)
     (syntax-case stx ()
+      [(_ #:literals lits [spec ...] desc ...) #'(defform*/subs #:literals lits [spec ...] () desc ...)]
       [(_ [spec ...] desc ...) #'(defform*/subs [spec ...] () desc ...)]))
   (define-syntax (defform stx)
     (syntax-case stx ()
@@ -312,7 +323,7 @@
   (define-syntax defthing
     (syntax-rules ()
       [(_ id result desc ...)
-       (*defthing 'id 'result (lambda () (list desc ...)))]))
+       (*defthing (quote-syntax id) 'id 'result (lambda () (list desc ...)))]))
   (define-syntax schemegrammar
     (syntax-rules ()
       [(_ #:literals (lit ...) id clause ...) (*schemegrammar '(lit ...) 
@@ -342,7 +353,7 @@
               (list (make-table style content))))
         (list (make-table style content))))
 
-  (define (*defproc prototypes arg-contractss result-contracts content-thunk)
+  (define (*defproc stx-ids prototypes arg-contractss result-contracts content-thunk)
     (let ([spacer (hspace 1)]
           [has-optional? (lambda (arg)
                            (and (pair? arg)
@@ -378,7 +389,7 @@
            (apply 
             append
             (map 
-             (lambda (prototype arg-contracts result-contract first?)
+             (lambda (stx-id prototype arg-contracts result-contract first?)
                (append
                 (list
                  (list (make-flow
@@ -403,7 +414,7 @@
                                                      (make-target-element
                                                       #f
                                                       (list (to-element (car prototype)))
-                                                      (register-scheme-definition (car prototype)))
+                                                      (register-scheme-definition stx-id))
                                                      (to-element (car prototype))))
                                            (map arg->elem required)
                                            (if (null? optional)
@@ -449,25 +460,29 @@
                                [else null]))
                             (cdr prototype)
                             arg-contracts))))
+             stx-ids
              prototypes
              arg-contractss
              result-contracts
              (cons #t (map (lambda (x) #f) (cdr prototypes))))))
           (content-thunk))))))
 
-  (define (make-target-element* content wrappers)
+  (define (make-target-element* stx-id content wrappers)
     (if (null? wrappers)
         content
         (make-target-element*
+         stx-id
          (make-target-element
           #f
           (list content)
-          (register-scheme-definition (string->symbol
-                                       (apply string-append
-                                              (map symbol->string (car wrappers))))))
+          (register-scheme-definition 
+           (datum->syntax-object stx-id
+                                 (string->symbol
+                                  (apply string-append
+                                         (map symbol->string (car wrappers)))))))
          (cdr wrappers))))
 
-  (define (*defstruct name fields content-thunk)
+  (define (*defstruct stx-id name fields content-thunk)
     (define spacer (hspace 1))
     (make-splice
      (cons
@@ -481,6 +496,7 @@
                   (to-element
                    `(,(schemeparenfont "struct")
                      ,(make-target-element*
+                       stx-id
                        (to-element name)
                        (let ([name (if (pair? name)
                                        (car name)
@@ -515,7 +531,7 @@
              fields)))
       (content-thunk))))
 
-  (define (*defthing name result-contract content-thunk)
+  (define (*defthing stx-id name result-contract content-thunk)
     (define spacer (hspace 1))
     (make-splice
      (cons
@@ -528,19 +544,19 @@
                  (list (make-target-element
                         #f
                         (list (to-element name))
-                        (register-scheme-definition name))
+                        (register-scheme-definition stx-id))
                        spacer ":" spacer
                        (to-element result-contract))))))))
       (content-thunk))))
 
   (define (meta-symbol? s) (memq s '(... ...+ ?)))
 
-  (define (*defforms kw? lits forms form-procs subs sub-procs content-thunk)
+  (define (*defforms kw-id lits forms form-procs subs sub-procs content-thunk)
     (parameterize ([current-variable-list
                     (apply 
                      append
                      (map (lambda (form)
-                            (let loop ([form (cons (if kw? (cdr form) form)
+                            (let loop ([form (cons (if kw-id (cdr form) form)
                                                    subs)])
                               (cond
                                [(symbol? form) (if (or (meta-symbol? form)
@@ -568,22 +584,25 @@
                              (to-element
                               `(,x
                                 . ,(cdr form)))))))
-                     (and kw?
+                     (and kw-id
                           (eq? form (car forms))
                           (make-target-element
                            #f
-                           (list (to-element (car form)))
-                           (register-scheme-form-definition (car form)))))))))
+                           (list (to-element (make-just-context (car form) kw-id)))
+                           (register-scheme-form-definition kw-id))))))))
                forms form-procs)
-          (apply
-           append
-           (map (lambda (sub)
-                  (list (list (make-flow (list (make-paragraph (list (tt 'nbsp))))))
-                        (list (make-flow (list (apply *schemerawgrammar 
-                                                      (map (lambda (f) (f)) sub)))))))
-                sub-procs))))
+          (if (null? sub-procs)
+              null
+              (list (list (make-flow (list (make-paragraph (list (tt 'nbsp))))))
+                    (list (make-flow (list (let ([l (map (lambda (sub)
+                                                           (map (lambda (f) (f)) sub))
+                                                         sub-procs)])
+                                             (*schemerawgrammars
+                                              "specgrammar"
+                                              (map car l)
+                                              (map cdr l))))))))))
         (content-thunk)))))
-
+  
   (define (*specsubform form has-kw? lits form-thunk subs sub-procs content-thunk)
     (parameterize ([current-variable-list
                     (append (let loop ([form (cons (if has-kw? (cdr form) form)
@@ -610,41 +629,47 @@
              (if form-thunk
                  (form-thunk)
                  (make-paragraph (list (to-element form)))))))
-          (apply
-           append
-           (map (lambda (sub)
-                  (list (list (make-flow (list (make-paragraph (list (tt 'nbsp))))))
-                        (list (make-flow (list (apply *schemerawgrammar 
-                                                      (map (lambda (f) (f)) sub)))))))
-                sub-procs))))
+          (if (null? sub-procs)
+              null
+              (list (list (make-flow (list (make-paragraph (list (tt 'nbsp))))))
+                    (list (make-flow (list (let ([l (map (lambda (sub)
+                                                           (map (lambda (f) (f)) sub))
+                                                         sub-procs)])
+                                             (*schemerawgrammars
+                                              "specgrammar"
+                                              (map car l)
+                                              (map cdr l))))))))))
         (flow-paragraphs (decode-flow (content-thunk)))))))
 
-  (define (*schemerawgrammars nonterms clauseses)
+  (define (*schemerawgrammars style nonterms clauseses)
     (make-table
-     '((valignment baseline baseline baseline baseline baseline)
-       (alignment right left center left left))
+     `((valignment baseline baseline baseline baseline baseline)
+       (alignment right left center left left)
+       (style ,style))
      (let ([empty-line (make-flow (list (make-paragraph (list (tt 'nbsp)))))]
            [to-flow (lambda (i) (make-flow (list (make-paragraph (list i)))))])
-       (apply append
-              (map
-               (lambda (nonterm clauses)
-                 (cons
-                  (list (to-flow nonterm)
-                        empty-line
-                        (to-flow "=")
-                        empty-line
-                        (make-flow (list (car clauses))))
-                  (map (lambda (clause)
-                         (list empty-line
-                               empty-line
-                               (to-flow "|")
-                               empty-line
-                               (make-flow (list clause))))
-                       (cdr clauses))))
-               nonterms clauseses)))))
+       (cdr
+        (apply append
+               (map
+                (lambda (nonterm clauses)
+                  (list*
+                   (list empty-line empty-line empty-line empty-line empty-line)
+                   (list (to-flow nonterm)
+                         empty-line
+                         (to-flow "=")
+                         empty-line
+                         (make-flow (list (car clauses))))
+                   (map (lambda (clause)
+                          (list empty-line
+                                empty-line
+                                (to-flow "|")
+                                empty-line
+                                (make-flow (list clause))))
+                        (cdr clauses))))
+                nonterms clauseses))))))
 
-  (define (*schemerawgrammar nonterm clause1 . clauses)
-    (*schemerawgrammars (list nonterm) (list (cons clause1 clauses))))
+  (define (*schemerawgrammar style nonterm clause1 . clauses)
+    (*schemerawgrammars style (list nonterm) (list (cons clause1 clauses))))
 
   (define (*schemegrammar lits s-expr clauseses-thunk)
     (parameterize ([current-variable-list
@@ -657,7 +682,7 @@
                                              (loop (cdr form)))]
                        [else null]))])
       (let ([l (clauseses-thunk)])
-        (*schemerawgrammars (map car l) (map cdr l)))))
+        (*schemerawgrammars #f (map car l) (map cdr l)))))
 
   (define (*var id)
     (to-element (*var-sym id)))
@@ -668,26 +693,26 @@
   ;; ----------------------------------------
 
   (provide centerline)
-  (define/kw (centerline #:body s)
+  (define (centerline . s)
     (make-table 'centered (list (list (make-flow (list (decode-paragraph s)))))))
 
   (provide commandline)
-  (define/kw (commandline #:body s)
+  (define (commandline . s)
     (make-paragraph (list (hspace 2) (apply tt s))))
            
 
   (define (secref s)
     (make-link-element #f null `(part ,s)))
-  (define/kw (seclink tag #:body s)
+  (define (seclink tag . s)
     (make-link-element #f (decode-content s) `(part ,tag)))
-  (define/kw (*schemelink id #:body s)
-    (make-link-element #f (decode-content s) (register-scheme-definition id)))
+  (define (*schemelink stx-id id . s)
+    (make-link-element #f (decode-content s) (register-scheme-definition stx-id)))
   (define-syntax schemelink
     (syntax-rules ()
-      [(_ id . content) (*schemelink 'id . content)]))
+      [(_ id . content) (*schemelink (quote-syntax id) 'id . content)]))
   (provide secref seclink schemelink)
 
-  (define/kw (pidefterm #:body s)
+  (define (pidefterm . s)
     (let ([c (apply defterm s)])
       (index (string-append (content->string (element-content c)) "s") 
              c)))
@@ -707,7 +732,7 @@
   ;; ----------------------------------------
 
   (provide math)
-  (define/kw (math #:body s)
+  (define (math . s)
     (let ([c (decode-content s)])
       (make-element #f (apply append
                               (map (lambda (i)
@@ -727,7 +752,7 @@
 
   (provide cite)
 
-  (define/kw (cite #:key key title author location date)
+  (define (cite #:key key #:title title #:author author #:location location #:date date)
     "[...]"
     #;
     (make-bibliography-element

@@ -26,7 +26,7 @@
 
            scribble-eval-handler)
 
-  (define current-int-namespace (make-parameter (make-namespace)))
+  (define current-int-namespace (make-parameter (current-namespace)))
   (define scribble-eval-handler (make-parameter (lambda (c? x) (eval x))))
 
   (define image-counter 0)
@@ -108,17 +108,11 @@
                     #f)))))))
 
   (define (do-eval s)
-    (cond
-     [(and (list? s)
-           (eq? 'code:line (car s))
-           (= (length s) 3)
-           (list? (caddr s))
-           (eq? 'code:comment (caaddr s)))
-      (do-eval (cadr s))]
-     [(and (list? s)
-           (eq? 'eval:alts (car s))
-           (= (length s) 3))
-      (do-eval (caddr s))]
+    (syntax-case s (code:comment eval:alts)
+     [(code:line v (code:comment . rest))
+      (do-eval #'v)]
+     [(eval:alts p e)
+      (do-eval #'e)]
      [else
       (let ([o (open-output-string)])
         (parameterize ([current-output-port o])
@@ -160,17 +154,19 @@
                  v2)]
      [else v]))
             
-  (define (strip-comments s)
-    (cond
-     [(and (pair? s)
-           (pair? (car s))
-           (eq? (caar s) 'code:comment))
-      (strip-comments (cdr s))]
-     [(pair? s)
-      (cons (strip-comments (car s))
-            (strip-comments (cdr s)))]
-     [(eq? s 'code:blank) (void)]
-     [else s]))
+  (define (strip-comments stx)
+    (syntax-case stx (code:comment code:blank)
+     [((code:comment . _) . rest)
+      (strip-comments #'rest)]
+     [(a . b)
+      (datum->syntax-object stx
+                            (cons (strip-comments #'a)
+                                  (strip-comments #'b))
+                            stx
+                            stx
+                            stx)]
+     [code:blank #'(void)]
+     [else stx]))
       
 
   (define (do-plain-eval s catching-exns?)
@@ -181,7 +177,7 @@
     (syntax-rules ()
       [(_ e) (#%expression
               (begin (parameterize ([current-command-line-arguments #()])
-                       (do-plain-eval (quote e) #f))
+                       (do-plain-eval (quote-syntax e) #f))
                      ""))]))
 
 
@@ -193,7 +189,7 @@
     (syntax-rules ()
       [(_ e) (#%expression
               (parameterize ([current-command-line-arguments #()])
-                (show-val (car (do-plain-eval (quote e) #f)))))]))
+                (show-val (car (do-plain-eval (quote-syntax e) #f)))))]))
 
   (define (eval-example-string s)
     (eval (read (open-input-string s))))
@@ -239,7 +235,7 @@
       [(_ t schemeinput* e ...)
        (interleave t
                    (list (schemeinput* e) ...)
-                   (map do-eval (list (quote e) ...)))]))
+                   (map do-eval (list (quote-syntax e) ...)))]))
 
     (define-syntax interaction
       (syntax-rules ()

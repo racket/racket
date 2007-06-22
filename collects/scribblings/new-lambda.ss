@@ -1,15 +1,18 @@
 (module new-lambda mzscheme
   (require-for-syntax (lib "name.ss" "syntax")
                       (lib "define.ss" "syntax"))
+  (require "new-struct.ss")
 
-  (provide (all-from-except mzscheme #%datum lambda define #%app)
+  (provide (all-from-except mzscheme #%datum lambda define #%app define-struct)
            (rename new-datum #%datum)
            (rename new-lambda lambda)
            (rename new-define define)
            (rename new-app #%app)
            (rename *make-keyword-procedure make-keyword-procedure)
            keyword-apply
-           procedure-keywords)
+           procedure-keywords
+           (rename define-struct* define-struct)
+           struct-field-index)
   
   ;; ----------------------------------------
   
@@ -366,7 +369,7 @@
                            (make-optional-keyword-procedure
                             with-kws
                             null
-                            '(kw ...)
+                            'kws
                             no-kws))))]
                      [else
                       ;; just the keywords part dispatches to core,

@@ -2,9 +2,8 @@
 @require[(lib "manual.ss" "scribble")]
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
-
-@interaction-eval[(require (lib "list.ss"))]
-@interaction-eval[(define mutable-cons cons)]
+@require[(lib "list.ss")]
+@define[mutable-cons cons]
 
 @title{Pairs and Lists}
 

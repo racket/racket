@@ -10,24 +10,24 @@ especially to show example uses of defined procedures and syntax.
 
 @defform[(interaction datum ...)]{Like @scheme[schemeinput], except
 that the result for each input @scheme[datum] is shown on the next
-line. The result is determined by evaluating the quoted form of the
-datum.
+line. The result is determined by evaluating the syntax-quoted form of
+the @scheme[datum].
 
 Uses of @scheme[code:comment] and @schemeidfont{code:blank} are
 stipped from each @scheme[datum] before evaluation.
 
-If a datum has the form @scheme[(#,(scheme code:line) #,(svar datum)
-(#,(scheme code:comment) ...))], then only the @svar[datum] is
-evaluated.
+If a @scheme[datum] has the form @scheme[(#,(scheme code:line)
+_code-datum (#,(scheme code:comment) ...))], then only
+@scheme[_code-datum] is evaluated.
 
 If a datum has the form @scheme[(eval:alts #,(svar show-datum) #,(svar
 eval-datum))], then @svar[show-datum] is typeset, while
 @svar[eval-datum] is evaluated.}
 
-@defform[(interaction-eval datum)]{Evaluates the quoted form of
+@defform[(interaction-eval datum)]{Evaluates the syntax-quoted form of
 each @scheme[datum] via @scheme[do-eval] and returns the empty string.}
 
-@defform[(interaction-eval-show datum)]{Evaluates the quoted form of
+@defform[(interaction-eval-show datum)]{Evaluates the syntax-quoted form of
 @scheme[datum] and produces an element represeting the printed form of
 the result.}
 

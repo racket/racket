@@ -184,6 +184,10 @@
                background-color: #ddddff;
                }
 
+               .specgrammar {
+               float: right;
+               }
+
                .hspace {
                font-family: Courier; font-size: 80%;
                }

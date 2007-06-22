@@ -2,8 +2,7 @@
 @require[(lib "manual.ss" "scribble")]
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
-
-@interaction-eval[(require (lib "string.ss"))]
+@require[(lib "string.ss")]
 
 @title{Definitions: @scheme[define]}
 

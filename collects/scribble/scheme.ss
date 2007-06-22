@@ -2,7 +2,8 @@
   (require "struct.ss"
            "basic.ss"
            (lib "class.ss")
-           (lib "for.ss"))
+           (lib "for.ss")
+           (lib "modcollapse.ss" "syntax"))
 
   (provide define-code
            to-element
@@ -17,7 +18,8 @@
            current-variable-list
            current-meta-list
 
-           (struct shaped-parens (val shape)))
+           (struct shaped-parens (val shape))
+           (struct just-context (val ctx)))
 
   (define no-color "schemeplain")
   (define reader-color "schemeplain")
@@ -32,13 +34,12 @@
 
   (define current-keyword-list 
     ;; This is temporary, until the MzScheme manual is filled in...
-    (make-parameter '(require 
+    (make-parameter null #;'(require 
                       provide
                       new send else => and or
                       define-syntax syntax-rules define-struct
-                      quote quasiquote unquote unquote-splicing
-                      syntax quasisyntax unsyntax unsyntax-splicing
-                      set! set!-values)))
+                      quasiquote unquote unquote-splicing
+                      syntax quasisyntax unsyntax unsyntax-splicing)))
   (define current-variable-list 
     (make-parameter null))
   (define current-meta-list 
@@ -353,8 +354,8 @@
                                 (not (or it? is-var?)))
                            (make-delayed-element
                             (lambda (renderer sec ht)
-                              (let* ([vtag (register-scheme-definition (syntax-e c))]
-                                     [stag (register-scheme-form-definition (syntax-e c))]
+                              (let* ([vtag (register-scheme-definition c)]
+                                     [stag (register-scheme-form-definition c)]
                                      [vd (hash-table-get ht vtag #f)]
                                      [sd (hash-table-get ht stag #f)])
                                 (list
@@ -431,7 +432,7 @@
 	     (cond
 	      [(syntax? v)
 	       (let ([mk `(,#'d->s
-			   #f
+			   (quote-syntax ,v)
 			   ,(syntax-case v (uncode)
 			      [(uncode e) #'e]
 			      [else (stx->loc-s-expr (syntax-e v))])
@@ -463,11 +464,22 @@
       [(_ code typeset-code) #'(define-code code typeset-code unsyntax)]))
 
   
-  (define (register-scheme-definition sym)
-    (format "definition:~s" sym))
+  (define (register-scheme-definition stx)
+    (unless (identifier? stx)
+      (error 'register-scheme-definition "not an identifier: ~e" (syntax-object->datum stx)))
+    (format "definition:~s" 
+            (let ([b (identifier-binding stx)])
+              (cond
+               [(not b) (format "top:~a" (syntax-e stx))]
+               [(eq? b 'lexical) (format "lexical:~a" (syntax-e stx))]
+               [else (format "module:~a:~a" 
+                             (if (module-path-index? (car b))
+                                 (collapse-module-path-index (car b) '(lib "ack.ss" "scribble"))
+                                 (car b))
+                             (cadr b))]))))
 
-  (define (register-scheme-form-definition sym)
-    (format "formdefinition:~s" sym))
+  (define (register-scheme-form-definition stx)
+    (format "form~s" (register-scheme-definition stx)))
 
   (define syntax-ize-hook (make-parameter (lambda (v col) #f)))
 
@@ -495,6 +507,7 @@
            l))))
 
   (define-struct shaped-parens (val shape))
+  (define-struct just-context (val ctx))
 
   (define (syntax-ize v col)
     (cond
@@ -504,6 +517,13 @@
       (syntax-property (syntax-ize (shaped-parens-val v) col)
                        'paren-shape
                        (shaped-parens-shape v))]
+     [(just-context? v)
+      (let ([s (syntax-ize (just-context-val v) col)])
+        (datum->syntax-object (just-context-ctx v)
+                              (syntax-e s)
+                              s
+                              s
+                              (just-context-ctx v)))]
      [(and (list? v)
            (pair? v)
            (memq (car v) '(quote unquote unquote-splicing)))
