@@ -87,8 +87,9 @@
                         ""))
             (render-content (part-title-content d) d ht)
             (printf "}"))
+          #;
           (when (part-tag d)
-            (printf "\\label{section:~a}" (part-tag d)))
+            (printf "\\label{section:~a}" (protect-tag (part-tag d))))
           (render-flow (part-flow d) d ht)
           (for-each (lambda (sec) (render-part sec ht))
                     (part-parts d))

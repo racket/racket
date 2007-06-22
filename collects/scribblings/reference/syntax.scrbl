@@ -51,7 +51,7 @@ Within such specifications,
               }} }
 
 @;------------------------------------------------------------------------
-@section{Literals: @scheme[quote] and @scheme[#%datum]}
+@section[#:tag "mz:quote"]{Literals: @scheme[quote] and @scheme[#%datum]}
 
 @defform[(quote datum)]{
 
@@ -79,7 +79,7 @@ identifiers.
 }
 
 @;------------------------------------------------------------------------
-@section{Expression Wrapper: @scheme[#%expression]}
+@section[#:tag "mz:#%expression"]{Expression Wrapper: @scheme[#%expression]}
 
 @defform[(#%expression expr)]{
 
@@ -93,7 +93,7 @@ expression.
 ]}
 
 @;------------------------------------------------------------------------
-@section{Variable References and @scheme[#%top]}
+@section[#:tag "mz:#%top"]{Variable References and @scheme[#%top]}
 
 @defform/none[id]{
 
@@ -546,7 +546,7 @@ z
 }
 
 @;------------------------------------------------------------------------
-@section{Sequencing: @scheme[begin] and @scheme[begin0]}
+@section[#:tag "mz:begin"]{Sequencing: @scheme[begin] and @scheme[begin0]}
 
 @defform*[[(begin form ...)
            (begin expr ...+)]]{
@@ -590,7 +590,7 @@ in tail position only if no @scheme[body]s are present.
 ]}
 
 @;------------------------------------------------------------------------
-@section{Assignment: @scheme[set!] and @scheme[set!-values]}
+@section[#:tag "mz:set!"]{Assignment: @scheme[set!] and @scheme[set!-values]}
 
 @defform[(set! id expr)]{
 
@@ -626,7 +626,7 @@ corresponding value from @scheme[expr] in the same way as for
 
 
 @;------------------------------------------------------------------------
-@section{Continuation Marks: @scheme[with-continuation-mark]}
+@section[#:tag "mz:wcm"]{Continuation Marks: @scheme[with-continuation-mark]}
 
 @defform[(with-continuation-mark key-expr val-expr result-expr)]{
 Evaluates @scheme[key-expr] and @scheme[val-expr] in order to obtain a key and
@@ -766,7 +766,7 @@ and @secref["mz:mod-parse"]).
 }
 
 @;------------------------------------------------------------------------
-@section{Exporting: @scheme[provide] and @scheme[provide-for-syntax]}
+@section[#:tag "mz:provide"]{Exporting: @scheme[provide] and @scheme[provide-for-syntax]}
 
 @defform/subs[#:literals (protect all-defined all-from rename except prefix)
               (provide protected-provide-spec ...)

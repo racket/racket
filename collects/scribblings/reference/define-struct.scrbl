@@ -1,7 +1,7 @@
 #reader(lib "docreader.ss" "scribble")
 @require["mz.ss"]
 
-@title{Structure Types: @scheme[define-struct]}
+@title[#:tag "mz:define-struct"]{Structure Types: @scheme[define-struct]}
 
 @defform/subs[(define-struct id-maybe-super (field ...) 
                              struct-option ...)

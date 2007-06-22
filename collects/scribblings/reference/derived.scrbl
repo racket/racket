@@ -66,7 +66,7 @@ returned as the result of the @scheme[cond] form. The
 ]}
 
 @;------------------------------------------------------------------------
-@section{Boolean Combination: @scheme[and] and @scheme[or]}
+@section[#:tag "mz:and+or"]{Boolean Combination: @scheme[and] and @scheme[or]}
 
 @defform[(and expr ...)]{
 
@@ -114,7 +114,7 @@ position with respect to the original @scheme[or] form.
 
 
 @;------------------------------------------------------------------------
-@section{Guarded Evaluation: @scheme[when] and @scheme[unless]}
+@section[#:tag "mz:when+unless"]{Guarded Evaluation: @scheme[when] and @scheme[unless]}
 
 @defform[(when test-expr expr ...)]{
 

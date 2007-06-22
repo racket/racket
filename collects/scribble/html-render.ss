@@ -279,7 +279,7 @@
                                          (content->string (part-title-content d)
                                                           this d ht))
                                      "_"))])
-          (when ((string-length fn) . >= . 100)
+          (when ((string-length fn) . >= . 48)
             (error "file name too long (need a tag):" fn))
           fn))
 
