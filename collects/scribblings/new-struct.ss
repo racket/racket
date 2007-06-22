@@ -110,6 +110,7 @@
              (when immutable?
                (bad "redundant" (car ps) " for field"))
              (loop (cdr ps) def-val auto? #t)]
+            #;
             [(eq? #:default (syntax-e (car ps)))
              (check-exprs 1 ps)
              (when def-val

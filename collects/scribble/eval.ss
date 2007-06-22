@@ -1,5 +1,5 @@
 
-(module eval mzscheme
+(module eval (lib "new-lambda.ss" "scribblings")
   (require "manual.ss"
            "struct.ss"
            "scheme.ss"

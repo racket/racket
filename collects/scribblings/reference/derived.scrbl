@@ -144,4 +144,7 @@ Equivalent to @scheme[(when (not test-expr) expr ...)].
 ]}
 
 @;------------------------------------------------------------------------
+@include-section["define-struct.scrbl"]
+
+@;------------------------------------------------------------------------
 @include-section["for.scrbl"]
