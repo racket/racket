@@ -16,6 +16,9 @@ Scheme. From @seclink["datatypes"]{Chapter 3} on, this guide dives
 into details---covering much of the PLT Scheme toolbox, but leaving
 precise details to @|MzScheme| and other reference manuals.
 
+@bold{This guide describes a potential future version of PLT Scheme.
+      It does not match the current implementation.}
+
 @table-of-contents[]
 
 @include-section["welcome.scrbl"]

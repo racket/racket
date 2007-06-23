@@ -9,6 +9,9 @@ most prominent libraries. The companion manual
 a friendlier (though less precise and less complete) overview of the
 language.
 
+@bold{This reference describes a potential future version of PLT Scheme.
+      It does not match the current implementation.}
+
 @table-of-contents[]
 
 @include-section["model.scrbl"]
