@@ -53,6 +53,8 @@ Within such specifications,
 @;------------------------------------------------------------------------
 @section[#:tag "mz:quote"]{Literals: @scheme[quote] and @scheme[#%datum]}
 
+@guideintro["guide:quote"]{@scheme[quote]}
+
 @defform[(quote datum)]{
 
 Produces a constant value corresponding to @scheme[datum] (i.e., the
@@ -356,6 +358,8 @@ Like @scheme[lambda], but without support for keyword or optional arguments.
 @;------------------------------------------------------------------------
 @section[#:tag "mz:let"]{Local Binding: @scheme[let], @scheme[let*], and @scheme[letrec]}
 
+@guideintro["guide:let"]{local binding}
+
 @defform*[[(let ([id val-expr] ...) body ...+)
            (let proc-id ([id init-expr] ...) body ...+)]]{
 
@@ -463,6 +467,8 @@ and in the @scheme[body]s.
 @;------------------------------------------------------------------------
 @section[#:tag "mz:if"]{Conditionals: @scheme[if]}
 
+@guideintro["guide:conditionals"]{conditionals}
+
 @defform[(if test-expr then-expr else-expr)]{
 
 Evaluates @scheme[test-expr]. If it produces any value other than
@@ -479,6 +485,8 @@ position with respect to the @scheme[if] form.
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:define"]{Definitions: @scheme[define] and @scheme[define-values]}
+
+@guideintro["guide:define"]{definitions}
 
 @defform*/subs[[(define id expr)
                 (define (head args) body ...+)]
@@ -548,6 +556,8 @@ z
 @;------------------------------------------------------------------------
 @section[#:tag "mz:begin"]{Sequencing: @scheme[begin] and @scheme[begin0]}
 
+@guideintro["guide:begin"]{@scheme[begin] and @scheme[begin0]}
+
 @defform*[[(begin form ...)
            (begin expr ...+)]]{
 
@@ -591,6 +601,8 @@ in tail position only if no @scheme[body]s are present.
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:set!"]{Assignment: @scheme[set!] and @scheme[set!-values]}
+
+@guideintro["guide:set!"]{@scheme[set!]}
 
 @defform[(set! id expr)]{
 

@@ -3,6 +3,8 @@
 
 @title[#:tag "mz:define-struct"]{Structure Types: @scheme[define-struct]}
 
+@guideintro["guide:define-struct"]{@scheme[define-struct]}
+
 @defform/subs[(define-struct id-maybe-super (field ...) 
                              struct-option ...)
               ([id-maybe-super id

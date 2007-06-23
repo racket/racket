@@ -9,6 +9,8 @@
 @;------------------------------------------------------------------------
 @section[#:tag "mz:cond"]{Conditionals: @scheme[cond]}
 
+@guideintro["guide:cond"]{@scheme[cond]}
+
 @defform/subs[#:literals (else =>)
               (cond cond-clause ...)
               ([cond-clause [test-expr then-expr ...+]
@@ -68,6 +70,8 @@ returned as the result of the @scheme[cond] form. The
 @;------------------------------------------------------------------------
 @section[#:tag "mz:and+or"]{Boolean Combination: @scheme[and] and @scheme[or]}
 
+@guideintro["guide:and+or"]{@scheme[and] and @scheme[or]}
+
 @defform[(and expr ...)]{
 
 If no @scheme[expr]s are provided, then result is @scheme[#f].
@@ -115,6 +119,8 @@ position with respect to the original @scheme[or] form.
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:when+unless"]{Guarded Evaluation: @scheme[when] and @scheme[unless]}
+
+@guideintro["guide:when+unless"]{@scheme[when] and @scheme[unless]}
 
 @defform[(when test-expr expr ...)]{
 

@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title{Quoting: @scheme[quote] and @schemevalfont{'}}
+@title[#:tag "guide:quote"]{Quoting: @scheme[quote] and @schemevalfont{'}}
 
 @refalso["mz:quote"]{@scheme[quote]}
 

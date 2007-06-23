@@ -93,7 +93,7 @@ computation produces an unknown number of results.
 ]
 
 @;------------------------------------------------------------------------
-@section{Effects If...: @scheme[when] and @scheme[unless]}
+@section[#:tag "guide:when+unless"]{Effects If...: @scheme[when] and @scheme[unless]}
 
 @refalso["mz:when+unless"]{@scheme[when] and @scheme[unless]}
 
