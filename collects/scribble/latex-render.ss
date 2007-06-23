@@ -63,6 +63,8 @@
         (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\hspace{-0.5ex}\\schemeinputcol{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\newcommand{\\highlighted}[1]{\\colorbox{PaleBlue}{\\hspace{-0.5ex}\\schemeinputcol{#1}\\hspace{-0.5ex}}}\n")
         (printf "\\newcommand{\\techlink}[1]{#1}\n")
+        (printf "\\newcommand{\\imageleft}[1]{#1}\n")
+        (printf "\\newcommand{\\imageright}[1]{#1}\n")
         (printf "\\begin{document}\n")
         (when (part-title-content d)
           (printf "\\title{")

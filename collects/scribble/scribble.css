@@ -282,6 +282,11 @@
                font-family: Courier; font-size: 80%;
                }
 
+               .imageleft { 
+                 float: left;
+                 margin-right: 0.3em;
+               }
+
                .nonavigation {
                color: #EEEEEE;
                }

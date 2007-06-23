@@ -57,8 +57,8 @@ depends on the current inspector.)
 
 @defproc[(make-struct-type [name symbol?]
                            [super-type (or/c struct-type? false/c)]
-                           [init-field-k non-negative-exact-integer?]
-                           [auto-field-k non-negative-exact-integer?]
+                           [init-field-cnt non-negative-exact-integer?]
+                           [auto-field-cnt non-negative-exact-integer?]
                            [auto-v any/c #f]
                            [props (listof (cons/c struct-type-property?
                                                   any/c))
@@ -83,9 +83,9 @@ Creates a new structure type.  The @scheme[name] argument is used as
 the type name. If @scheme[super-type] is not @scheme[#f], the new type
 is a subtype of the corresponding structure type.
 
-The new structure type has @scheme[(+ init-field-k auto-field-k)]
+The new structure type has @scheme[(+ init-field-cnt auto-field-cnt)]
 fields (in addition to any fields from @scheme[super-type]), but only
-@scheme[init-field-k] constructor arguments (in addition to any
+@scheme[init-field-cnt] constructor arguments (in addition to any
 constructor arguments from @scheme[super-type]). The remaining
 fields are initialized with @scheme[auto-v].
  
@@ -109,12 +109,12 @@ further information.  Providing a non-@scheme[#f] value for
 The @scheme[immutables] argument provides a list of field
 positions. Each element in the list must be unique, otherwise
 @exnraise[exn:fail:contract]. Each element must also fall in the range
-@scheme[0] (inclusive) to @scheme[init-field-k] (exclusive), otherwise
+@scheme[0] (inclusive) to @scheme[init-field-cnt] (exclusive), otherwise
 @exnraise[exn:fail:contract].
 
 The @scheme[guard] argument is either a procedure of @math{n}
 arguments or @scheme[#f], where @math{n} is the number of arguments
-for the new structure type's constructor (i.e., @scheme[init-field-k]
+for the new structure type's constructor (i.e., @scheme[init-field-cnt]
 plus constructor arguments implied by @scheme[super-type], if any). If
 @scheme[guard] is a procedure, then the procedure is called
 whenever an instance of the type is constructed, or whenever an
@@ -142,7 +142,7 @@ The result of @scheme[make-struct-type] is five values:
 
  @item{an @tech{accessor} procedure, which consumes a structure and a field
  index between @math{0} (inclusive) and
- @math{@scheme[init-field-k]+@scheme[auto-field-k]} (exclusive),
+ @math{@scheme[init-field-cnt]+@scheme[auto-field-cnt]} (exclusive),
  and}
 
  @item{a @tech{mutator} procedure, which consumes a structure, a field
@@ -365,11 +365,11 @@ Returns eight values that provide information about the structure type
 
   @item{@scheme[name]: the structure type's name as a symbol;}
 
-  @item{@scheme[init-field-k]: the number of fields defined by the
+  @item{@scheme[init-field-cnt]: the number of fields defined by the
    structure type provided to the constructor procedure (not counting
    fields created by its ancestor types);}
 
-  @item{@scheme[auto-field-k]: the number of fields defined by the
+  @item{@scheme[auto-field-cnt]: the number of fields defined by the
    structure type without a counterpart in the constructor procedure
    (not counting fields created by its ancestor types);}
 

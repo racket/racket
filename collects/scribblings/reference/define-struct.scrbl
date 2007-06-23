@@ -69,7 +69,7 @@ of the same sort bound to @scheme[id] (see @secref["mz:structinfo"]),
 and it specifies a supertype for the new structure type. Alternately,
 the @scheme[#:super] option can be used to specify an expression that
 must produce a @tech{structure type descriptor}. See
-@scheme[make-struct-type] for more information on structure subtypes
+@secref["mz:structures"] for more information on structure subtypes
 and supertypes. If both @scheme[super-id] and @scheme[#:super] are
 provided, a syntax error is reported.
 
@@ -83,12 +83,12 @@ a syntax error is reported.
 
 The @scheme[#:inspector], @scheme[#:auto-value], and @scheme[#:guard]
 options specify an inspector, value for automatic fields, and guard
-procedure, respectively. See @scheme[make-struct-type] for more
-information on these properties of a structure type. The
-@scheme[#:property] option, which is the only one that can be
-specified multiple times, attaches a property value to the structure
-type; see @scheme[make-struct-type] for more information on
-properties.
+procedure, respectively. See @scheme[make-struct-type] (in
+@secref["mz:creatingmorestructs"]) for more information on these
+properties of a structure type. The @scheme[#:property] option, which
+is the only one that can be specified multiple times, attaches a
+property value to the structure type; see @secref["mz:structprops"]
+for more information on properties.
 
 If the @scheme[#:omit-define-syntaxes] option is supplied, then
 @scheme[id] is not bound as a transformer. If the

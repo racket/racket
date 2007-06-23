@@ -12,6 +12,8 @@ in color), value expression are shown in green.
 @defterm{Numbers} are written in the usual way, including fractions
 and imagnary numbers:
 
+@moreguide["guide:numbers"]{numbers}
+
 @schemeblock[
 1                        1.0
 1/2                      0.5
@@ -23,11 +25,15 @@ and imagnary numbers:
 false. In conditionals, however, all non-@scheme[#f] values are
 treated as true.
 
+@moreguide["guide:booleans"]{booleans}
+
 @defterm{Strings} are written between doublequotes. Within a string,
 backslash is an escaping character; for example, a backslash followed
 by a doublequote includes a little doublequote in the string. Except
 for an unescaped doublequote or backslash, any Unicode character can
 appear in a string constant.
+
+@moreguide["guide:strings"]{strings}
 
 @schemeblock[
 "hello world"

@@ -14,6 +14,8 @@ display, opening a graphical window, or manipulating a file on disk.
 @;------------------------------------------------------------------------
 @section{Effects Before: @scheme[begin]}
 
+@refalso["mz:begin"]{@scheme[begin]}
+
 A @scheme[begin] expression sequences expressions:
 
 @specform[(begin expr ...+)]{}
@@ -67,6 +69,8 @@ later in @secref["guide:macros"].
 @;------------------------------------------------------------------------
 @section{Effects After: @scheme[begin0]}
 
+@refalso["mz:begin"]{@scheme[begin0]}
+
 A @scheme[begin0] expression has the same syntax as a @scheme[begin]
 expression:
 
@@ -90,6 +94,8 @@ computation produces an unknown number of results.
 
 @;------------------------------------------------------------------------
 @section{Effects If...: @scheme[when] and @scheme[unless]}
+
+@refalso["mz:when+unless"]{@scheme[when] and @scheme[unless]}
 
 The @scheme[when] form combines an @scheme[if]-style conditional with
 sequencing for the ``then'' clause and no ``else'' clause:

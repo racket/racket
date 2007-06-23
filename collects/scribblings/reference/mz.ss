@@ -3,7 +3,8 @@
            (lib "manual.ss" "scribble")
            (lib "eval.ss" "scribble")
            (lib "decode.ss" "scribble")
-           (lib "kw.ss"))
+           (lib "kw.ss")
+           "../icons.ss")
 
   (provide (all-from (lib "manual.ss" "scribble"))
            (all-from (lib "eval.ss" "scribble")))
@@ -25,10 +26,6 @@
 
   (define/kw (guideintro tag #:body s)
     (apply margin-note
-           (decode-content (append (list "For an introduction to ")
-                                   s
-                                   (list ", see "
-                                         (secref tag)
-                                         " in "
-                                         Guide
-                                         "."))))))
+           (decode-content (append (list finger (secref tag) " in " Guide " introduces ")
+                                   s)))))
+

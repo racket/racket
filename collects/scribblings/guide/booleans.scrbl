@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title{Booleans}
+@title[#:tag "guide:booleans"]{Booleans}
 
 Scheme has two distinguished constants to represent boolean values:
 @scheme[#t] for true and @scheme[#f] for false. Uppercase

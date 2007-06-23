@@ -46,7 +46,7 @@ by-position arguments. For that case, an @scheme[_arg] can be an
 @scheme[_arg-keyword _arg-expr] sequence instead of just a
 @scheme[_arg-expr]:
 
-@margin-note{For an introduction to keywords, see @secref["guide:keywords"].}
+@guideother{@secref["guide:keywords"] introduces keywords.}
 
 @specform/subs[
 (_proc-expr _arg ...)

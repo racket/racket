@@ -51,8 +51,7 @@ into a list bound to @scheme[_rest-id].
 Functions with a @scheme[_rest-id] often use @scheme[apply] to call
 another function that accepts any number of arguments.
 
-@margin-note{See @secref["guide:apply"] for more information on
-@scheme[apply].}
+@guideother{@secref["guide:apply"] describes @scheme[apply].}
 
 @defexamples[
 (define max-mag 
@@ -137,8 +136,8 @@ keyword, instead of position. Keyword arguments can be mixed with
 by-position arguments, and default-value expressions can be supplied
 for either kind of argument:
 
-@margin-note{For an introduction to applications with keywords,
-             see @secref["guide:keyword-args"].}
+@guideother{@secref["guide:keyword-args"] introduces function
+calls with keywords.}
 
 @specform/subs[
 (lambda gen-formals
@@ -187,8 +186,7 @@ through parallel lists in the first two (by-position) arguments,
 and then all by-position arguments from an application as the
 remaining by-position arguments.
 
-@margin-note{For an introduction to @scheme[keyword-apply], see
-@secref["guide:apply"].}
+@guideother{@secref["guide:apply"] inroduces @scheme[keyword-apply].}
 
 @defexamples[
 (define (trace-wrap f)

@@ -4,7 +4,7 @@
 @require["guide-utils.ss"]
 @require[(lib "string.ss")]
 
-@title{Definitions: @scheme[define]}
+@title[#:tag "guide:define"]{Definitions: @scheme[define]}
 
 A basic definition has the form
 

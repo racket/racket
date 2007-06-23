@@ -3,7 +3,7 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title{Conditionals}
+@title[#:tag "guide:conditionals"]{Conditionals}
 
 Most functions used for branching, such as @scheme[<] and
 @scheme[string?], produce either @scheme[#t] or @scheme[#f]. Scheme's
@@ -35,6 +35,8 @@ list:
 @;------------------------------------------------------------------------
 @section{Simple Branching: @scheme[if]}
 
+@refalso["mz:if"]{@scheme[if]}
+
 In an @scheme[if] form,
 
 @specform[(if test-expr then-expr else-expr)]
@@ -49,7 +51,9 @@ side-effects based on a @scheme[_test-expr], use @scheme[when] or
 @scheme[unless], which we describe later in @secref["guide:begin"].
 
 @;------------------------------------------------------------------------
-@section{Combining Tests: @scheme[and] and @scheme[or]}
+@section[#:tag "guide:and+or"]{Combining Tests: @scheme[and] and @scheme[or]}
+
+@refalso["mz:and+or"]{@scheme[and] and @scheme[or]}
 
 Scheme's @scheme[and] and @scheme[or] are syntactic forms, rather than
 functions. Unlike a function, the @scheme[and] and @scheme[or] forms
@@ -86,15 +90,16 @@ the @scheme[and] or @scheme[or] result. Therefore, the last
 @scheme[expr] is in tail position, which means that the above
 @scheme[got-milk?] function runs in constant space.
 
-@margin-note{For an introduction to tail calls and tail positions, see
-@secref["guide:tail-recursion"].}
+@guideother{@secref["guide:tail-recursion"] introduces tail calls and tail positions.}
 
 @;------------------------------------------------------------------------
-@section{Chaining Tests: @scheme[cond]}
+@section[#:tag "guide:cond"]{Chaining Tests: @scheme[cond]}
 
 The @scheme[cond] form chains a series of tests to select a result
 expression. To a first approximation, the syntax of @scheme[cond] is
 as follows:
+
+@refalso["mz:cond"]{@scheme[cond]}
 
 @specform[(cond [test-expr expr ...+] 
                 ...)]

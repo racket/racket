@@ -5,6 +5,8 @@
 
 @title{Quoting: @scheme[quote] and @schemevalfont{'}}
 
+@refalso["mz:quote"]{@scheme[quote]}
+
 The @scheme[quote] form produces a constant:
 
 @specform[(#,(schemekeywordfont "quote") datum)]
@@ -56,6 +58,8 @@ is a shorthand for
 and this shorthand is almost always used instead of
 @scheme[quote]. The shorthand applies even within the @scheme[_datum],
 so it can produce a list containing @scheme[quote].
+
+@refdetails["mz:parse-quote"]{the @schemevalfont{'} shorthand}
 
 @examples[
 'apple

@@ -62,6 +62,8 @@ a sequence as an element for repetition.
 
 A definition of the form
 
+@moreguide["guide:define"]{definitions}
+
 @schemeblock[#, @val-defn-stx]
 
 binds @nonterm{id} to the result of @nonterm{expr}, while
@@ -164,6 +166,8 @@ source's indentation information to suggest where it might be missing.
 Scheme's syntax for identifiers is especially liberal. Excluding the
 special characters
 
+@moreguide["guide:binding"]{identifiers}
+
 @t{
   @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]} 
   @litchar["{"] @litchar["}"]
@@ -193,6 +197,8 @@ more examples:
 We have already seen many function calls---or @defterm{procedure
 applications} in more traditional Scheme terminology. The syntax of a
 function call is
+
+@moreguide["guide:application"]{function calls}
 
 @schemeblock[
 #, app-expr-stx
@@ -235,6 +241,8 @@ The next simplest kind of expression is an @scheme[if] conditional:
 @schemeblock[
 #, if-expr-stx
 ]
+
+@moreguide["guide:conditionals"]{conditionals}
 
 The first @nonterm{expr} is always evaluted. If it produces a
 non-@scheme[#f] value, then the second @nonterm{expr} is
@@ -285,6 +293,8 @@ but these kinds of nested @scheme[if]s are difficult to read.  Scheme
 provides more readable shortcuts through the @scheme[and] and
 @scheme[or] forms, which work with any number of expressions:
 
+@moreguide["guide:and+or"]{@scheme[and] and @scheme[or]}
+
 @schemeblock[
 #, and-expr-stx
 #, or-expr-stx
@@ -321,6 +331,8 @@ tests, each with its own result:
 ]
 
 The shorthand for a sequence of tests is the @scheme[cond] form:
+
+@moreguide["guide:cond"]{@scheme[cond]}
 
 @schemeblock[
 #, cond-expr-stx
@@ -368,6 +380,8 @@ In our earlier grammar of function calls, we oversimplified.  The
 actual syntax of a function call allows an arbitrary
 expression for the function, instead of just an @nonterm{id}:
 
+@moreguide["guide:application"]{function calls}
+
 @schemeblock[
 #, app2-expr-stx
 ]
@@ -399,6 +413,8 @@ a procedure'' error like this one.
 
 Programming in Scheme would be tedious if you had to name all of your
 numbers. Instead of writing @scheme[(+ 1 2)], you'd have to write
+
+@moreguide["guide:lambda"]{@scheme[lambda]}
 
 @interaction[
 (define a 1)
@@ -506,6 +522,8 @@ It's time to retract another simplification in our grammar of
 Scheme. In the body of a function, definitions can appear before the
 body expressions:
 
+@moreguide["guide:intdefs"]{local (internal) definitions}
+
 @schemeblock[
 #, fun-defn2-stx
 #, lambda2-expr-stx
@@ -533,6 +551,8 @@ Another way to create local bindings is the @scheme[let] form. An
 advantage of @scheme[let] is that it can be used in any expression
 position. Also, @scheme[let] binds many identifiers at once, instead
 of requiring a separate @scheme[define] for each identifier.
+
+@moreguide["guide:intdefs"]{@scheme[let] and @scheme[let*]}
 
 @schemeblock[
 #, let-expr-stx
