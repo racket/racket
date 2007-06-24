@@ -38,7 +38,7 @@
 
   (define (guideother . s)
     (apply margin-note
-           (cons magnify (decode-content s))))
+           (cons finger (decode-content s))))
 
   (define (refdetails* tag what . s)
     (apply margin-note

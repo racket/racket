@@ -5,7 +5,7 @@
                font-family: Times;
                text-align: center;
                width: 35em;
-               margin-left: auto;
+               margin-left: 13em;
                margin-right: auto;
                }
 
@@ -37,6 +37,35 @@
                 font-size: 85%;
                 border: 0.5em solid #F5F5DC;
                }
+
+               .tocview { 
+                 position: relative;
+                 float: left;
+                 width: 10em;
+                 margin: 0em 0em 0em -12em;
+                 text-align: left;
+                 background-color: #ddffdd;
+               }
+
+               .tocviewtitle { 
+                  font-size: 80%;
+                  font-weight: bold;
+                  margin: 0.2em 0.2em 0.2em 0.2em;
+                }
+
+               .tocviewlist { 
+                  font-size: 80%;
+                  margin: 0.2em 0.2em 0.2em 0.2em;
+                }
+
+               .tocviewitem { 
+                  margin-left: 1em;
+                  text-indent: -1em;
+               }
+
+               .tocviewlink { 
+                  text-decoration: none;
+                }
 
                .leftindent { 
                 margin-left: 1em;
