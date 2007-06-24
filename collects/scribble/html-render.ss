@@ -64,6 +64,9 @@
 
       ;; ----------------------------------------
 
+      (define/public (render-toc-view d ht)
+        null)
+
       (define/public (render-one-part d ht fn number)
         (parameterize ([current-output-file fn])
           (let ([xpr `(html () 
@@ -78,7 +81,8 @@
                                     (type "text/css")
                                     (href "scribble.css")
                                     (title "default"))))
-                            (body (div ((class "main")) ,@(render-part d ht))))])
+                            (body (div ((class "main")) ,@(render-part d ht))
+                                  ,@(render-toc-view d ht)))])
             (install-file scribble-css)
             (xml:write-xml/content (xml:xexpr->xml xpr)))))
 
@@ -263,7 +267,8 @@
     (class %
       (inherit render-one
                render-one-part
-               render-content)
+               render-content
+               lookup)
 
       (define/override (get-suffix) #"")
 
@@ -282,6 +287,27 @@
           (when ((string-length fn) . >= . 48)
             (error "file name too long (need a tag):" fn))
           fn))
+
+      #;
+      (define/override (render-toc-view d ht)
+        (let-values ([(top mine)
+                      (let loop ([d d][mine d])
+                        (let ([p (collected-info-parent (part-collected-info d))])
+                          (if p
+                              (loop p d)
+                              (values d mine))))])
+          `((div ((class "tocview"))
+                 (div ((class "tocviewtitle"))
+                      ,@(render-content (part-title-content top) d ht))
+                 (ul
+                  ((class "tocviewlist"))
+                  ,@(map (lambda (p)
+                           `(li (a ((href ,(let ([dest (lookup p ht `(part ,(part-tag p)))])
+                                             (from-root (car dest)
+                                                        (get-dest-directory))))
+                                    (class "tocviewlink"))
+                                   ,@(render-content (part-title-content p) d ht))))
+                         (part-parts top)))))))
 
       (define/override (collect ds fns)
         (super collect ds (map (lambda (fn)
