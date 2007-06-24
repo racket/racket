@@ -330,6 +330,7 @@ $(MZFWMMM): ../libmzscheme3m.@LIBSFX@
 
 clean:
 	/bin/rm -f ../mzscheme@MMM@ *.@LTO@ $(XSRCDIR)/*
+	/bin/rm -rf xform-collects
 	/bin/rm -rf PLT_MzScheme.framework
 
 #--------------------------------------------------

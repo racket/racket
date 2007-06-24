@@ -234,7 +234,8 @@ CLEANDIR_wx_mac = ../wxmac/src
 clean:
 	cd $(CLEANDIR_@WXVARIANT@); $(MAKE) clean
 	rm -f *.@LTO@ *.d core mred mred3m
-	rm -f gc2/*.@LTO@ gc2/xsrc/*.c gc2/xsrc/*.cc gc2/*.d
+	rm -f gc2/*.@LTO@ gc2/xsrc/* gc2/macxsrc/* gc2/*.d gc2/*.dd
+	rm -rf gc2/xform-collects
 	cd wxme; $(MAKE) clean
 	cd wxs; $(MAKE) clean
 	if [ -f ../wxcommon/jpeg/Makefile ] ; then cd ../wxcommon/jpeg; $(MAKE) clean ; fi
