@@ -7,6 +7,11 @@
            "java-signatures.scm"
            (lib "string.ss"))
 
+    
+  (define-signature language-forms^ (program statement expression field))
+  
+  (define-signature token-proc^ (old-tokens->new))
+  
   (define-unit java-dictionary@
     (import)
     (export language-dictionary^ 
@@ -179,7 +184,7 @@
     
 
   (define-unit types@
-    (import combinator-parser^ java-type-keywords^ java-ids^ java-separators^ id^)
+    (import combinator-parser^ java-type-keywords^ java-variables^ java-separators^ id^)
     (export java-types^)
     
     (define integer-types
@@ -193,7 +198,7 @@
     
     (define (other-type-base types) (choice types "type"))
     
-    (define (value+name-type base-type name)
+    (define (value+name-type base-type)
       (choose (base-type name) "type"))
     
     (define (method-type base-t)
@@ -277,10 +282,31 @@
     
     )
   
+  (define-unit unqualified-java-variables@
+    (import combinator-parser^ general-productions^ java-separators^ java-operators^ java-ids^ id^)
+    (export java-variables^)
+    
+    (define name IDENTIFIER)
+    (define identifier IDENTIFIER)
+    
+    (define (variable-declaration type expr share-type? name)
+      (let* ([f (choose (identifier (sequence ((^ identifier) EQUAL expr) id)) (string-append name " declaration"))]
+             [s&e (sequence (type (comma-sep f name) SEMI_COLON) id (string-append name " definition"))]
+             [s (sequence (type (comma-sep identifier name) SEMI_COLON) id (string-append name " definition"))]
+             [e (sequence (type (^ identifier) EQUAL expr SEMI_COLON) id (string-append name " definition"))]
+             [base (sequence (type (^ identifier) SEMI_COLON) id (string-append name " definition"))])
+        (cond
+          [(and expr share-type?) s&e]
+          [share-type? s]
+          [expr (choose (e base) (string-append name " definition"))]
+          [else base])))
+    )
+  
   (define-unit expressions@ 
     (import combinator-parser^ general-productions^ id^
-            java-literals^ java-expression-keywords^ java-vals^ java-ids^ java-separators^
-            java-operators^ java-extras^)
+            java-literals^ java-expression-keywords^ java-vals^ java-ids^ 
+            java-variables^ java-separators^
+            java-operators^ java-extras^ language-forms^)
     (export expression-maker^ expr-lits^ expr-terms+^ expr-tails^)
             
     (define (simple-expression exprs)
@@ -310,9 +336,9 @@
       (choose (NULL_LIT boolean-lits textual-lits prim-numeric-lits double-lits numeric-lits)
               "literal expression"))
     
-    (define (new-class class-name expr)
-      (choose ((sequence (new class-name O_PAREN C_PAREN) id "class instantiation")
-               (sequence (new class-name O_PAREN (comma-sep expr "arguments") C_PAREN) id "class instantiation"))
+    (define (new-class expr)
+      (choose ((sequence (new name O_PAREN C_PAREN) id "class instantiation")
+               (sequence (new name O_PAREN (comma-sep expression "arguments") C_PAREN) id "class instantiation"))
               "class instantiation"))
     
     (define (new-array type-name expr)
@@ -320,7 +346,7 @@
                 id "array instantiation"))
     
     (define field-access-end
-      (sequence (PERIOD IDENTIFIER) id "field access"))
+      (sequence (PERIOD identifier) id "field access"))
     
     (define (array-access-end expr)
       (sequence (O_BRACKET expr C_BRACKET) id "array access"))
@@ -342,18 +368,18 @@
     
     (define (simple-method-call expr)
       (choose
-       ((sequence ((^ IDENTIFIER) O_PAREN C_PAREN) id "method invocation")
-        (sequence ((^ IDENTIFIER) O_PAREN (comma-sep expr "argument list") C_PAREN) id "method invocation"))
+       ((sequence ((^ identifier) O_PAREN C_PAREN) id "method invocation")
+        (sequence ((^ identifier) O_PAREN (comma-sep expr "argument list") C_PAREN) id "method invocation"))
        "method invocation"))
     
     (define (method-call-end expr)
       (choose
-       ((sequence (PERIOD (^ IDENTIFIER) O_PAREN C_PAREN) id "method invocation")
-        (sequence (PERIOD (^ IDENTIFIER) O_PAREN (comma-sep expr "argument list") C_PAREN) id "method invocation"))
+       ((sequence (PERIOD (^ identifier) O_PAREN C_PAREN) id "method invocation")
+        (sequence (PERIOD (^ identifier) O_PAREN (comma-sep expr "argument list") C_PAREN) id "method invocation"))
        "method invocation"))
     
-    (define (assignment name op expr)
-      (sequence ((^ name) op expr) id "assignment"))
+    (define (assignment asignee op expr)
+      (sequence ((^ asignee) op expr) id "assignment"))
     
     (define (unary-assignment-front expr)
       (choose ((sequence (++ expr) id "unary modification")
@@ -366,12 +392,12 @@
     (define (cast type expr)
       (sequence (O_PAREN type C_PAREN expr) "cast expression"))
     
-    (define (instanceof-back name)
+    (define instanceof-back
       (sequence (instanceof name) "instanceof expression"))
     
     (define (super-call expr)
-      (choose ((sequence (super PERIOD IDENTIFIER O_PAREN C_PAREN) id "super method invocation")
-               (sequence (super PERIOD IDENTIFIER O_PAREN (comma-sep expr "arguments") C_PAREN) id "super method invocation"))
+      (choose ((sequence (super PERIOD identifier O_PAREN C_PAREN) id "super method invocation")
+               (sequence (super PERIOD identifier O_PAREN (comma-sep expr "arguments") C_PAREN) id "super method invocation"))
               "super method invocation"))
     
     (define (checks expr)
@@ -459,23 +485,23 @@
     (define init
       (sequence (this PERIOD IDENTIFIER EQUAL IDENTIFIER SEMI_COLON) id "field initialization"))
     
-    (define (statement statements)
+    (define (make-statement statements)
       (choice statements "statement"))
 
     )
     
   (define-unit members@
     (import combinator-parser^ general-productions^ id^ java-types^
-            java-separators^ java-ids^ java-definition-keywords^)
+            java-separators^ java-ids^ java-definition-keywords^ java-variables^)
     (export fields^ methods^ ctors^)
 
-    (define (field mods type expr share-types?)
+    (define (make-field mods type expr share-types?)
       (cond 
         [mods (sequence ((repeat mods) (variable-declaration type expr share-types? "field"))
                         id "field definition")]
         [else (variable-declaration type expr share-types? "field")]))  
     
-    (define arg (sequence ((value+name-type prim-type IDENTIFIER) IDENTIFIER) id "argument"))
+    (define arg (sequence ((value+name-type prim-type) identifier) id "argument"))
     
     (define args (comma-sep arg "parameter list"))
     
@@ -485,10 +511,10 @@
                                (choose ((sequence (O_PAREN C_PAREN) id)
                                         (sequence (O_PAREN a C_PAREN) id)) "method parameter list")
                                (sequence (O_PAREN C_PAREN) id "method parameter list"))]
-             [full (sequence ((repeat m) ret (^ IDENTIFIER) method-parms throws (comma-sep n "thrown type")) id "method signature")]
-             [full-no-t (sequence ((repeat m) ret (^ IDENTIFIER) method-parms) id "method signature")]
-             [no-mods-t (sequence (ret (^ IDENTIFIER) method-parms throws (comma-sep n "thrown type")) id "method signature")]
-             [no-mods (sequence (ret (^ IDENTIFIER) method-parms) id "method signature")])
+             [full (sequence ((repeat m) ret (^ identifier) method-parms throws (comma-sep n "thrown type")) id "method signature")]
+             [full-no-t (sequence ((repeat m) ret (^ identifier) method-parms) id "method signature")]
+             [no-mods-t (sequence (ret (^ identifier) method-parms throws (comma-sep n "thrown type")) id "method signature")]
+             [no-mods (sequence (ret (^ identifier) method-parms) id "method signature")])
          (cond 
            [(and m t?) (choose (full full-no-t) "method signature")]
            [m full-no-t]
@@ -498,19 +524,19 @@
     (define (method-header method-sig)
       (sequence (method-sig SEMI_COLON) id "method declaration"))
         
-    (define (method signature statement)
+    (define (make-method signature statement)
       (sequence ((^ signature) O_BRACE statement C_BRACE) id "method definition"))
     
-    (define (constructor mod body)
+    (define (make-constructor mod body)
       (let ([ctor (choose
-                   ((sequence ((^ IDENTIFIER) O_PAREN C_PAREN O_BRACE body C_BRACE) id)
-                    (sequence ((^ IDENTIFIER) O_PAREN args C_PAREN O_BRACE body C_BRACE) id))
+                   ((sequence ((^ identifier) O_PAREN C_PAREN O_BRACE body C_BRACE) id)
+                    (sequence ((^ identifier) O_PAREN args C_PAREN O_BRACE body C_BRACE) id))
                    "constructor definition")])
         (cond 
           [mod (sequence ((repeat mod) ctor) id "constructor definition")]
           [else ctor])))
     
-    )            
+    )
             
   (define-unit interface@
     (import combinator-parser^ id^ java-definition-keywords^ java-ids^ java-separators^)
@@ -567,18 +593,19 @@
 
   (define-unit top-forms@
     (import combinator-parser^ id^ java-definition-keywords^ java-separators^
-            general-productions^)
+            java-variables^ general-productions^)
     (export top-forms^)
   
     (define (top-member mems)
       (choice mems "program body"))
     
+    ;Note -- should enfore name to be identifier.identifier instead of name
     (define import-dec
       (choose
        ((sequence (import name PERIOD TIMES SEMI_COLON) id)
         (sequence (import name SEMI_COLON) id)) "import declaration"))
     
-    (define (program package import body)
+    (define (make-program package import body)
       (let ([p&i (sequence (package import body) id "program")]
             [p (sequence (package body) id "program")]
             [i (sequence (import body) id "program")])
@@ -593,286 +620,288 @@
     
     ) 
   
-  (define-signature language-forms^
-    (beginner-program beginner-statement beginner-expression beginner-field
-     intermediate-program intermediate+access-program intermediate-statement intermediate-expression
-     advanced-program advanced-statement advanced-expression
-     ))
-  (define-signature token-proc^ (old-tokens->new))
+  ;Remembered Unsupported Features
+  ;throws clause
+  ;strictfp
+  ;allowing static fields in interface
   
-  (define-signature parsers^ 
-    (parse-beginner parse-intermediate parse-intermediate+access parse-advanced))
-  
-  (define-unit java-grammars@
+  (define-unit beginner-grammar@
     (import combinator-parser^ java-operators^ java-separators^ 
-            java-statement-keywords^ java-definition-keywords^ 
-            java-type-keywords^ java-ids^
-            java-types^ java-access^ java-ops^ general-productions^
+            java-statement-keywords^ java-type-keywords^ java-ids^
+            java-types^ java-access^ java-ops^ general-productions^ java-variables^
             expression-maker^ expr-lits^ expr-terms+^ expr-tails^ statements^
             fields^ methods^ ctors^ interfaces^ classes^ top-forms^ id^)
-    (export language-forms^ token-proc^)
+    (export language-forms^)
     
-    ;Remembered Unsupported Features
-    ;throws clause
-    ;strictfp
-    ;allowing static fields in interface
-    
-    ;Beginner definition
-    
-    (define beginner-unique-base
+    (define unique-base
       (simple-expression
        (list (literals (list boolean-lits textual-lits prim-numeric-lits double-lits))
              this
-             IDENTIFIER
-             (new-class IDENTIFIER (eta beginner-expression))
-             (simple-method-call (eta beginner-expression))
-             (sequence (O_PAREN (eta beginner-expression) C_PAREN) id "expression")
-             (sequence (! (eta beginner-expression)) id "conditional expression")
-             (sequence (MINUS (eta beginner-expression)) id "negation expression")
-             (checks (eta beginner-expression)))))
+             identifier
+             (new-class (eta expression))
+             (simple-method-call (eta expression))
+             (sequence (O_PAREN (eta expression) C_PAREN) id "expression")
+             (sequence (! (eta expression)) id "conditional expression")
+             (sequence (MINUS (eta expression)) id "negation expression")
+             (checks (eta expression)))))
     
-    (define beginner-unique-end
+    (define unique-end
       (simple-expression
        (list field-access-end
-             (method-call-end (eta beginner-expression))
+             (method-call-end (eta expression))
              (binary-expression-end (bin-ops (list math-ops compare-ops bool-ops))
-                                    (eta beginner-expression)))))
+                                    (eta expression)))))
     
-    (define beginner-expression
-      (sequence (beginner-unique-base (repeat beginner-unique-end)) id "expression"))
+    (define expression
+      (sequence (unique-base (repeat unique-end)) id "expression"))
     
-    (define beginner-statement
-      (statement (list (if-s beginner-expression (eta beginner-statement) #f)
-                       (return-s beginner-expression #f))))
+    (define statement
+      (make-statement (list (if-s expression (eta statement) #f)
+                       (return-s expression #f))))
     
-    (define beginner-field (field #f (value+name-type prim-type IDENTIFIER) beginner-expression #f))
+    (define field (make-field #f (value+name-type prim-type) expression #f))
     
-    (define beginner-method-sig
-      (method-signature #f (value+name-type prim-type IDENTIFIER) args #f IDENTIFIER))
+    (define method-sig
+      (method-signature #f (value+name-type prim-type) args #f identifier))
     
-    (define beginner-method
-      (method beginner-method-sig beginner-statement))
+    (define method (make-method method-sig statement))
     
-    (define beginner-constructor (constructor #f (repeat init)))
+    (define constructor (make-constructor #f (repeat init)))
     
-    (define beginner-interface
-      (interface-def #f #f (repeat beginner-method-sig)))
+    (define interface (interface-def #f #f (repeat method-sig)))
     
-    (define beginner-class
-      (class-def #f #f (implements-dec IDENTIFIER)
-                 (repeat (class-body (list beginner-field beginner-method beginner-constructor)))))
+    (define class
+      (class-def #f #f (implements-dec identifier)
+                 (repeat (class-body (list field method constructor)))))
     
-    (define beginner-program 
-      (program #f (repeat import-dec) 
-               (repeat (top-member (list beginner-class beginner-interface)))))
+    (define program 
+      (make-program #f (repeat import-dec) (repeat (top-member (list class interface)))))
+    )
+
+  (define-signature int+acc^ (intermediate+access-prog))
+  
+  (define-unit intermediate-grammar@
+    (import combinator-parser^ java-operators^ java-separators^ (prefix tok: java-definition-keywords^)
+            java-statement-keywords^ java-type-keywords^ java-ids^
+            java-types^ java-access^ java-ops^ general-productions^ java-variables^
+            expression-maker^ expr-lits^ expr-terms+^ expr-tails^ statements^
+            fields^ methods^ ctors^ interfaces^ classes^ top-forms^ id^)
+    (export language-forms^ int+acc^)
     
-    
-    ;
-    ;Intermediate definition
-    ;
-    
-    (define intermediate-unique-base
+    (define unique-base
       (simple-expression 
        (list (literals (list null-lit boolean-lits textual-lits prim-numeric-lits double-lits))
              this
-             IDENTIFIER
-             (new-class IDENTIFIER (eta intermediate-expression))
-             (simple-method-call (eta intermediate-expression))
-             (sequence (O_PAREN (eta intermediate-expression) C_PAREN) id "expression")
-             (sequence (! (eta intermediate-expression)) id "conditional expression")
-             (sequence (MINUS (eta intermediate-expression)) id "negation expression")
-             (cast (value+name-type prim-type IDENTIFIER) (eta intermediate-expression))
-             (super-call (eta intermediate-expression))
-             (checks (eta intermediate-expression)))))
+             identifier
+             (new-class (eta expression))
+             (simple-method-call (eta expression))
+             (sequence (O_PAREN (eta expression) C_PAREN) id "expression")
+             (sequence (! (eta expression)) id "conditional expression")
+             (sequence (MINUS (eta expression)) id "negation expression")
+             (cast (value+name-type prim-type) (eta expression))
+             (super-call (eta expression))
+             (checks (eta expression)))))
     
-    (define intermediate-unique-end
+    (define unique-end
       (simple-expression
        (list field-access-end
-             (method-call-end (eta intermediate-expression))
+             (method-call-end (eta expression))
              (binary-expression-end (bin-ops (list math-ops compare-ops bool-ops bit-ops))
-                                    (eta intermediate-expression))
-             (instanceof-back (value+name-type prim-type IDENTIFIER)))))
+                                    (eta expression))
+             instanceof-back)))
     
-    (define intermediate-expression
-      (sequence (intermediate-unique-base (repeat intermediate-unique-end))
-                id "expression"))
+    (define expression
+      (sequence (unique-base (repeat unique-end)) id "expression"))
     
-    (define intermediate-stmt-expr
-      (simple-expression (list (new-class IDENTIFIER intermediate-expression)
-                               (super-call intermediate-expression)
-                               (sequence (intermediate-expression 
-                                          (method-call-end intermediate-expression))
+    (define stmt-expr
+      (simple-expression (list (new-class expression)
+                               (super-call expression)
+                               (sequence (expression (method-call-end expression))
                                          id "method call")
                                (assignment 
-                                (choose (IDENTIFIER 
-                                         (sequence (intermediate-unique-base field-access-end) id))
+                                (choose (identifier
+                                         (sequence (unique-base field-access-end) id))
                                         "assignee")
-                                EQUAL intermediate-expression))))
+                                EQUAL expression))))
     
-    (define intermediate-statement
-      (statement (list (if-s intermediate-expression (eta intermediate-statement)  #f)
-                       (return-s intermediate-expression #t)
-                       (variable-declaration (value+name-type prim-type IDENTIFIER) intermediate-expression #f "local variable")
-                       (block (repeat (eta intermediate-statement)))
-                       (sequence (intermediate-stmt-expr SEMI_COLON) id "statement"))))
+    (define statement
+      (make-statement (list (if-s expression (eta statement)  #f)
+                       (return-s expression #t)
+                       (variable-declaration (value+name-type prim-type) expression #f "local variable")
+                       (block (repeat (eta statement)))
+                       (sequence (stmt-expr SEMI_COLON) id "statement"))))
     
-    (define intermediate-field (field #f (value+name-type prim-type IDENTIFIER) intermediate-expression #t))
-    (define intermediate+access-field (field access-mods (value+name-type prim-type IDENTIFIER) intermediate-expression #t))
+    (define field (make-field #f (value+name-type prim-type) expression #t))
+    (define intermediate+access-field (make-field access-mods (value+name-type prim-type) expression #t))
     
-    (define intermediate-method-sig-no-abs
-      (method-signature #f (method-type (value+name-type prim-type IDENTIFIER)) args #f IDENTIFIER))
-    (define intermediate-method-sig-abs
-      (method-signature abstract (method-type (value+name-type prim-type IDENTIFIER)) args #f IDENTIFIER))
+    (define method-sig-no-abs
+      (method-signature #f (method-type (value+name-type prim-type)) args #f identifier))
+    (define method-sig-abs
+      (method-signature tok:abstract (method-type (value+name-type prim-type)) args #f identifier))
     
     (define intermediate+access-method-sig-no-abs
-      (method-signature access-mods (method-type (value+name-type prim-type IDENTIFIER)) args #f IDENTIFIER))
+      (method-signature access-mods (method-type (value+name-type prim-type)) args #f identifier))
     (define intermediate+access-method-sig-abs
-      (method-signature (method-mods access-mods) (method-type (value+name-type prim-type IDENTIFIER)) args #f IDENTIFIER))
+      (method-signature (method-mods access-mods) 
+                        (method-type (value+name-type prim-type)) args #f identifier))
     
-    (define intermediate-method
-      (choose ((method intermediate-method-sig-no-abs intermediate-statement)
-               (method-header intermediate-method-sig-abs)) "method definition"))
+    (define method
+      (choose ((make-method method-sig-no-abs statement)
+               (method-header method-sig-abs)) "method definition"))
     
     (define intermediate+access-method
-      (choose ((method intermediate+access-method-sig-no-abs intermediate-statement)
+      (choose ((make-method intermediate+access-method-sig-no-abs statement)
                (method-header intermediate+access-method-sig-abs)) "method definition"))
 
-    (define intermediate-constructor
-      (constructor #f
-                   (choose ((sequence ((super-call intermediate-expression) (repeat intermediate-statement)) id)
-                            (sequence ((this-call intermediate-expression) (repeat intermediate-statement)) id)
-                            (repeat intermediate-statement)) "constructor body")))
+    (define constructor
+      (make-constructor #f
+                        (choose ((sequence ((super-call expression) (repeat statement)) id)
+                                 (sequence ((this-call expression) (repeat statement)) id)
+                            (repeat statement)) "constructor body")))
     
     (define intermediate+access-constructor
-      (constructor access-mods
-                   (choose ((sequence ((super-call intermediate-expression) (repeat intermediate-statement)) id)
-                            (sequence ((this-call intermediate-expression) (repeat intermediate-statement)) id)
-                            (repeat intermediate-statement)) "constructor body")))
+      (make-constructor access-mods
+                   (choose ((sequence ((super-call expression) (repeat statement)) id)
+                            (sequence ((this-call expression) (repeat statement)) id)
+                            (repeat statement)) "constructor body")))
     
-    (define intermediate-interface 
+    (define interface 
       (interface-def
        #f
-       (sequence (extends (comma-sep IDENTIFIER "interfaces")) id "extends")
-       (repeat intermediate-method-sig-no-abs)))
+       (sequence (tok:extends (comma-sep identifier "interfaces")) id "extends")
+       (repeat method-sig-no-abs)))
     
-    (define intermediate-class
-      (class-def abstract (extend-dec IDENTIFIER) (implements-dec (comma-sep IDENTIFIER "interfaces"))
-                 (repeat (class-body (list intermediate-field intermediate-method intermediate-constructor)))))
+    (define class
+      (class-def tok:abstract (extend-dec identifier) (implements-dec (comma-sep identifier "interfaces"))
+                 (repeat (class-body (list field method constructor)))))
 
     (define intermediate+access-class
-      (class-def abstract (extend-dec IDENTIFIER) (implements-dec (comma-sep IDENTIFIER "interfaces"))
+      (class-def tok:abstract (extend-dec identifier) (implements-dec (comma-sep identifier "interfaces"))
                  (repeat (class-body (list intermediate+access-field 
                                            intermediate+access-method 
                                            intermediate+access-constructor)))))
     
-    (define intermediate-program
+    (define program
+      (program #f (repeat import-dec) (repeat (top-member (list class interface)))))
+    
+    (define intermediate+access-prog
       (program #f (repeat import-dec)
-               (repeat (top-member (list intermediate-class intermediate-interface)))))
+               (repeat (top-member (list intermediate+access-class interface)))))
+
+    )
     
-    (define intermediate+access-program
-      (program #f (repeat import-dec)
-               (repeat (top-member (list intermediate+access-class intermediate-interface)))))
-    
-    
-    (define advanced-unique-base
+  (define-unit advanced-grammar@
+    (import combinator-parser^ java-operators^ java-separators^ (prefix tok: java-definition-keywords^)
+            java-statement-keywords^ java-type-keywords^ java-ids^
+            java-types^ java-access^ java-ops^ general-productions^ java-variables^
+            expression-maker^ expr-lits^ expr-terms+^ expr-tails^ statements^
+            fields^ methods^ ctors^ interfaces^ classes^ top-forms^ id^)
+    (export language-forms^)
+
+        
+    (define unique-base
       (simple-expression 
        (list (literals (list null-lit boolean-lits textual-lits prim-numeric-lits double-lits))
              this
              IDENTIFIER
-             (new-class IDENTIFIER (eta advanced-expression))
-             (simple-method-call (eta advanced-expression))
-             (new-array (value+name-type prim-type IDENTIFIER) (eta advanced-expression))
-             (sequence (O_PAREN (eta advanced-expression) C_PAREN) id "expression")
-             (sequence (! (eta advanced-expression)) id "conditional expression")
-             (sequence (MINUS (eta advanced-expression)) id "negation exxpression")
-             (cast (value+name-type prim-type IDENTIFIER) (eta advanced-expression))
-             (super-call (eta advanced-expression))
-             (checks (eta advanced-expression)))))
+             (new-class (eta expression))
+             (simple-method-call (eta expression))
+             (new-array (value+name-type prim-type) (eta expression))
+             (sequence (O_PAREN (eta expression) C_PAREN) id "expression")
+             (sequence (! (eta expression)) id "conditional expression")
+             (sequence (MINUS (eta expression)) id "negation exxpression")
+             (cast (value+name-type prim-type) (eta expression))
+             (super-call (eta expression))
+             (checks (eta expression)))))
     
-    (define advanced-unique-end
+    (define unique-end
       (simple-expression
        (list field-access-end
-             (array-access-end (eta advanced-expression))
-             (method-call-end (eta advanced-expression))
-             (if-expr-end (eta advanced-expression))
+             (array-access-end (eta expression))
+             (method-call-end (eta expression))
+             (if-expr-end (eta expression))
              (binary-expression-end (bin-ops (list math-ops compare-ops bool-ops bit-ops))
-                                    (eta advanced-expression))
-             (instanceof-back (value+name-type prim-type IDENTIFIER)))))
-
+                                    (eta expression))
+             instanceof-back)))
     
-    (define advanced-expression
-      (sequence (advanced-unique-base (repeat advanced-unique-end)) id "expression"))
+    (define expression
+      (sequence (unique-base (repeat unique-end)) id "expression"))    
     
-    
-    (define advanced-stmt-expr
-      (simple-expression (list (new-class IDENTIFIER advanced-expression)
-                               (super-call advanced-expression)
-                               (sequence (advanced-expression
-                                          (method-call-end advanced-expression)) id "method call")
+    (define stmt-expr
+      (simple-expression (list (new-class expression)
+                               (super-call expression)
+                               (sequence (expression
+                                          (method-call-end expression)) id "method call")
                                (assignment 
-                                (choose (IDENTIFIER
-                                         (sequence (advanced-expression field-access-end) id)
-                                         (sequence (advanced-expression array-access-end) id))
+                                (choose (identifier
+                                         (sequence (expression field-access-end) id)
+                                         (sequence (expression array-access-end) id))
                                         "asignee")
-                                assignment-ops advanced-expression)
-                               (sequence (advanced-expression ++) id "unary mutation")
-                               (sequence (advanced-expression --) id "unary mutation")
-                               (sequence (++ advanced-expression) id "unary mutation")
-                               (sequence (-- advanced-expression) id "unary mutation"))))
+                                assignment-ops expression)
+                               (sequence (expression ++) id "unary mutation")
+                               (sequence (expression --) id "unary mutation")
+                               (sequence (++ expression) id "unary mutation")
+                               (sequence (-- expression) id "unary mutation"))))
     
-    (define advanced-statement
-      (statement (list (if-s advanced-expression (eta advanced-statement) #t)
-                       (return-s advanced-expression #t)
-                       (variable-declaration (value+name-type prim-type IDENTIFIER) advanced-expression #t "local variable")
-                       (block (repeat (eta advanced-statement)))
-                       (sequence (advanced-stmt-expr SEMI_COLON) id "statement")
-                       (for-l (choose ((variable-declaration (value+name-type prim-type IDENTIFIER) advanced-expression #t "for loop variable")
-                                       (comma-sep advanced-stmt-expr "initializations")) "for loop initialization") 
+    (define statement
+      (make-statement (list (if-s expression (eta statement) #t)
+                       (return-s expression #t)
+                       (variable-declaration (value+name-type prim-type) expression #t "local variable")
+                       (block (repeat (eta statement)))
+                       (sequence (stmt-expr SEMI_COLON) id "statement")
+                       (for-l (choose ((variable-declaration (value+name-type prim-type) expression #t "for loop variable")
+                                       (comma-sep stmt-expr "initializations")) "for loop initialization") 
                               #t
-                              advanced-expression #t
-                              (comma-sep advanced-stmt-expr "for loop increments") #t (eta advanced-statement))
-                       (while-l advanced-expression (eta advanced-statement))
-                       (do-while advanced-expression (eta advanced-statement))
+                              expression #t
+                              (comma-sep stmt-expr "for loop increments") #t (eta statement))
+                       (while-l expression (eta statement))
+                       (do-while expression (eta statement))
                        (break-s #f)
                        (cont-s #f))))
     
-    (define advanced-field (field (global-mods access-mods) (value+name-type prim-type IDENTIFIER) advanced-expression #t))
+    (define field (make-field (global-mods access-mods) (value+name-type prim-type) expression #t))
     
-    (define advanced-method-sig-no-abs
+    (define method-sig-no-abs
       (method-signature (global-mods access-mods) 
-                        (method-type (value+name-type prim-type IDENTIFIER)) args #f IDENTIFIER))
-    (define advanced-method-sig-abs
+                        (method-type (value+name-type prim-type)) args #f IDENTIFIER))
+    (define method-sig-abs
       (method-signature (method-mods (global-mods access-mods)) 
-                        (method-type (value+name-type prim-type IDENTIFIER)) args #f IDENTIFIER))
+                        (method-type (value+name-type prim-type)) args #f IDENTIFIER))
     
-    (define advanced-method
-      (choose ((method advanced-method-sig-no-abs advanced-statement)
-               (method-header advanced-method-sig-abs)) "method definition"))
+    (define method
+      (choose ((make-method method-sig-no-abs statement)
+               (method-header method-sig-abs)) "method definition"))
     
-    (define advanced-constructor
-      (constructor access-mods
-                   (choose ((sequence ((super-call advanced-expression) (repeat advanced-statement)) id)
-                            (sequence ((this-call advanced-expression) (repeat advanced-statement)) id)
-                            (repeat advanced-statement)) "constructor body")))
+    (define constructor
+      (make-constructor access-mods
+                   (choose ((sequence ((super-call expression) (repeat statement)) id)
+                            (sequence ((this-call expression) (repeat statement)) id)
+                            (repeat statement)) "constructor body")))
     
-    (define advanced-interface 
+    (define interface 
       (interface-def
        #f
-       (sequence (extends (comma-sep IDENTIFIER "interfaces")) id "extends")
-       (repeat (choose (advanced-method-sig-no-abs
-                        (field (global-mods access-mods) (value+name-type prim-type IDENTIFIER) advanced-expression #t))
+       (sequence (tok:extends (comma-sep IDENTIFIER "interfaces")) id "extends")
+       (repeat (choose (method-sig-no-abs
+                        (make-field (global-mods access-mods) (value+name-type prim-type) expression #t))
                        "interface member definition"))))
     
-    (define advanced-class
-      (class-def (choose (abstract public) "class modifier")
+    (define class
+      (class-def (choose (tok:abstract tok:public) "class modifier")
                  (extend-dec IDENTIFIER) (implements-dec (comma-sep IDENTIFIER "interfaces"))
-                 (repeat (class-body (list advanced-field advanced-method advanced-constructor
-                                           (method-header advanced-method-sig-abs))))))
+                 (repeat (class-body (list field method constructor
+                                           (method-header method-sig-abs))))))
     
-    (define advanced-program
-      (program (sequence (package name SEMI_COLON) id "package specification")
+    (define program
+      (program (sequence (tok:package name SEMI_COLON) id "package specification")
                (repeat import-dec)
-               (repeat (top-member (list advanced-class advanced-interface)))))
+               (repeat (top-member (list class interface)))))
+    )
+  
+  (define-unit token@
+    (import java-operators^ java-separators^ java-definition-keywords^
+            java-statement-keywords^ java-type-keywords^ java-ids^)
+    (export token-proc^)
     
     (define (old-tokens->new tok-list)
       (cond
@@ -903,33 +932,45 @@
           (old-tokens->new (cdr tok-list)))]))  
     
     )
+
+  (define-signature parsers^ (parse-program))
   
-  
-  (define-unit full-program-parsers@
+  (define-unit definition-parsers@
     (import language-forms^ combinator-parser^)
     (export parsers^)
-    
-    (define parse-beginner (parser beginner-program))
-    (define parse-intermediate (parser intermediate-program))
-    (define parse-intermediate+access (parser intermediate+access-program))
-    (define parse-advanced (parser advanced-program))
-    
-    )
+    (define parse-program (parser program)))
   
-  (define-unit interaction-parsers@
+  (define-unit interactions-parsers@
     (import language-forms^ combinator-parser^)
     (export parsers^)
-    
-    (define parse-beginner (parser (choose (beginner-expression beginner-statement beginner-field) 
-                                           "interactions program")))
+    (define parse-program (parser (choose (expression statement field) "interactions program"))))
+
   
-    (define parse-intermediate (parser (choose (intermediate-expression intermediate-statement) 
-                                               "interactions program")))
-    (define parse-intermediate+access parse-intermediate)
-  
-    (define parse-advanced
-      (parser (choose (advanced-expression advanced-statement) "interactions program")))
-    )
+;  (define-unit full-program-parsers@
+;    (import language-forms^ combinator-parser^)
+;    (export parsers^)
+;    
+;    (define parse-beginner (parser beginner-program))
+;    (define parse-intermediate (parser intermediate-program))
+;    (define parse-intermediate+access (parser intermediate+access-program))
+;    (define parse-advanced (parser advanced-program))
+;    
+;    )
+;  
+;  (define-unit interaction-parsers@
+;    (import language-forms^ combinator-parser^)
+;    (export parsers^)
+;    
+;    (define parse-beginner (parser (choose (beginner-expression beginner-statement beginner-field) 
+;                                           "interactions program")))
+;  
+;    (define parse-intermediate (parser (choose (intermediate-expression intermediate-statement) 
+;                                               "interactions program")))
+;    (define parse-intermediate+access parse-intermediate)
+;  
+;    (define parse-advanced
+;      (parser (choose (advanced-expression advanced-statement) "interactions program")))
+;    )
 
   (define-unit file-constants@
     (import)
@@ -963,31 +1004,112 @@
     (export id^)
     (define (id x . args) x)) 
   
-  (define-compound-unit/infer java-file-parsers@
+  (define-compound-unit/infer beginner-file-parser@
     (import)
     (export parsers^ token-proc^ err^)
     (link java-dictionary@ combinator-parser-tools@ file-constants@ id@
-          java-terminals@ types@ mods@ operators@ general@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
           expressions@ statements@ members@ interface@ class@ top-forms@
-          java-grammars@ full-program-parsers@))
+          beginner-grammar@ token@ definition-parsers@))
   
-  (define-compound-unit/infer java-definitions-parsers@
+  
+  (define-compound-unit/infer beginner-definitions-parser@
     (import)
     (export parsers^ token-proc^ err^)
     (link java-dictionary@ combinator-parser-tools@ de-constants@ id@
-          java-terminals@ types@ mods@ operators@ general@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
           expressions@ statements@ members@ interface@ class@ top-forms@
-          java-grammars@ full-program-parsers@))
+          beginner-grammar@ token@ definition-parsers@))
   
-  (define-compound-unit/infer java-interactions-parsers@
+  (define-compound-unit/infer beginner-interactions-parsers@
     (import)
     (export parsers^ token-proc^ err^)
     (link java-dictionary@ combinator-parser-tools@ interact-constants@ id@
-          java-terminals@ types@ mods@ operators@ general@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
           expressions@ statements@ members@ interface@ class@ top-forms@
-          java-grammars@ interaction-parsers@))
+          beginner-grammar@ token@ interactions-parsers@))
   
-  (provide java-definitions-parsers@ java-interactions-parsers@ parsers^ token-proc^)
+  (define-compound-unit/infer intermediate-file-parser@
+    (import)
+    (export parsers^ token-proc^ err^)
+    (link java-dictionary@ combinator-parser-tools@ file-constants@ id@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+          expressions@ statements@ members@ interface@ class@ top-forms@
+          intermediate-grammar@ token@ definition-parsers@))
+  
+  
+  (define-compound-unit/infer intermediate-definitions-parser@
+    (import)
+    (export parsers^ token-proc^ err^)
+    (link java-dictionary@ combinator-parser-tools@ de-constants@ id@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+          expressions@ statements@ members@ interface@ class@ top-forms@
+          intermediate-grammar@ token@ definition-parsers@))
+  
+  (define-compound-unit/infer intermediate-interactions-parsers@
+    (import)
+    (export parsers^ token-proc^ err^)
+    (link java-dictionary@ combinator-parser-tools@ interact-constants@ id@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+          expressions@ statements@ members@ interface@ class@ top-forms@
+          intermediate-grammar@ token@ interactions-parsers@))
+
+  (define-compound-unit/infer advanced-file-parser@
+    (import)
+    (export parsers^ token-proc^ err^)
+    (link java-dictionary@ combinator-parser-tools@ file-constants@ id@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+          expressions@ statements@ members@ interface@ class@ top-forms@
+          advanced-grammar@ token@ definition-parsers@))
+  
+  
+  (define-compound-unit/infer advanced-definitions-parser@
+    (import)
+    (export parsers^ token-proc^ err^)
+    (link java-dictionary@ combinator-parser-tools@ de-constants@ id@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+          expressions@ statements@ members@ interface@ class@ top-forms@
+          advanced-grammar@ token@ definition-parsers@))
+  
+  (define-compound-unit/infer advanced-interactions-parsers@
+    (import)
+    (export parsers^ token-proc^ err^)
+    (link java-dictionary@ combinator-parser-tools@ interact-constants@ id@
+          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+          expressions@ statements@ members@ interface@ class@ top-forms@
+          advanced-grammar@ token@ interactions-parsers@))
+  
+;  
+  (provide advanced-file-parser@ advanced-definitions-parser@ advanced-interactions-parsers@
+           intermediate-file-parser@ intermediate-definitions-parser@ intermediate-interactions-parsers@
+           beginner-file-parser@ beginner-definitions-parser@ beginner-interactions-parsers@
+           parsers^ token-proc^)
+           
+;  (define-compound-unit/infer java-file-parsers@
+;    (import)
+;    (export parsers^ token-proc^ err^)
+;    (link java-dictionary@ combinator-parser-tools@ file-constants@ id@
+;          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+;          expressions@ statements@ members@ interface@ class@ top-forms@
+;          java-grammars@ full-program-parsers@))
+;  
+;  (define-compound-unit/infer java-definitions-parsers@
+;    (import)
+;    (export parsers^ token-proc^ err^)
+;    (link java-dictionary@ combinator-parser-tools@ de-constants@ id@
+;          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+;          expressions@ statements@ members@ interface@ class@ top-forms@
+;          java-grammars@ full-program-parsers@))
+;  
+;  (define-compound-unit/infer java-interactions-parsers@
+;    (import)
+;    (export parsers^ token-proc^ err^)
+;    (link java-dictionary@ combinator-parser-tools@ interact-constants@ id@
+;          java-terminals@ types@ mods@ operators@ general@ unqualified-java-variables@
+;          expressions@ statements@ members@ interface@ class@ top-forms@
+;          java-grammars@ interaction-parsers@))
+;  
+;  (provide java-definitions-parsers@ java-interactions-parsers@ parsers^ token-proc^)
   
   )
 

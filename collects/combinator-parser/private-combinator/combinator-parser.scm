@@ -68,11 +68,13 @@
             [(err? out)
              ;(printf "returning error")
              (make-err (!!! (err-msg out))
-                       (list (!!! file) 
-                             (!!! (first (err-src out)))
-                             (!!! (second (err-src out)))
-                             (!!! (third (err-src out)))
-                             (!!! (fourth (err-src out)))))]
+                       (if (err-src out)
+                           (list (!!! file) 
+                                 (!!! (first (err-src out)))
+                                 (!!! (second (err-src out)))
+                                 (!!! (third (err-src out)))
+                                 (!!! (fourth (err-src out))))
+                           (list (!!! file) 1 0 1 0)))]
             [else (!!! out)]))))
     )
   

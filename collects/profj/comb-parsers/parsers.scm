@@ -323,13 +323,35 @@
 ;     ))
 ;  
 
-  (define-values/invoke-unit java-definitions-parsers@
-    (import)
-    (export (prefix def: parsers^) (prefix def: err^) token-proc^))
+;  (define-values/invoke-unit java-definitions-parsers@
+;    (import)
+;    (export (prefix def: parsers^) (prefix def: err^) token-proc^))
+;  
+;  (define-values/invoke-unit java-interactions-parsers@
+;    (import)
+;    (export (prefix int: parsers^) (prefix int: err^)))
   
-  (define-values/invoke-unit java-interactions-parsers@
+  (define-values/invoke-unit beginner-definitions-parser@
     (import)
-    (export (prefix int: parsers^) (prefix int: err^)))
+    (export (prefix beginner-def: parsers^) (prefix beginner-def: err^) token-proc^))  
+  (define-values/invoke-unit beginner-interactions-parsers@
+    (import)
+    (export (prefix beginner-int: parsers^) (prefix beginner-int: err^)))
+
+  (define-values/invoke-unit intermediate-definitions-parser@
+    (import)
+    (export (prefix intermediate-def: parsers^) (prefix intermediate-def: err^)))
+  (define-values/invoke-unit intermediate-interactions-parsers@
+    (import)
+    (export (prefix intermediate-int: parsers^) (prefix intermediate-int: err^)))
+
+  (define-values/invoke-unit advanced-definitions-parser@
+    (import)
+    (export (prefix advanced-def: parsers^) (prefix advanced-def: err^)))
+  (define-values/invoke-unit advanced-interactions-parsers@
+    (import)
+    (export (prefix advanced-int: parsers^) (prefix advanced-int: err^) ))
+
   
   (define (parse parser err? err-src err-msg)
     (lambda (program-stream location)
@@ -341,13 +363,19 @@
                (!!! ((!!! parser) (old-tokens->new program-stream) location))]);)])
         (if (err? output) (list (err-msg output) (!!! (err-src output)))))))
   
-  (define parse-beginner (parse def:parse-beginner def:err? def:err-msg def:err-src))
-  (define parse-intermediate (parse def:parse-intermediate def:err? def:err-msg def:err-src))
-  (define parse-intermediate+access (parse def:parse-intermediate+access def:err? def:err-msg def:err-src))
-  (define parse-advanced (parse def:parse-advanced def:err? def:err-msg def:err-src))
-  (define parse-beginner-interact (parse int:parse-beginner int:err? int:err-msg int:err-src))
-  (define parse-intermediate-interact (parse int:parse-intermediate int:err? int:err-msg int:err-src))
-  (define parse-advanced-interact (parse int:parse-advanced int:err? int:err-msg int:err-src))
+  (define parse-beginner (parse beginner-def:parse-program 
+                                beginner-def:err? beginner-def:err-msg beginner-def:err-src))
+  (define parse-intermediate (parse intermediate-def:parse-program
+                                    intermediate-def:err? intermediate-def:err-msg intermediate-def:err-src))
+  (define parse-intermediate+access null #;(parse def:parse-intermediate+access def:err? def:err-msg def:err-src))
+  (define parse-advanced (parse advanced-def:parse-program
+                                advanced-def:err? advanced-def:err-msg advanced-def:err-src))
+  (define parse-beginner-interact (parse beginner-int:parse-program
+                                         beginner-int:err? beginner-int:err-msg beginner-int:err-src))
+  (define parse-intermediate-interact (parse intermediate-int:parse-program
+                                             intermediate-int:err? intermediate-int:err-msg intermediate-int:err-src))
+  (define parse-advanced-interact (parse advanced-int:parse-program
+                                         advanced-int:err? advanced-int:err-msg advanced-int:err-src))
 
   
   

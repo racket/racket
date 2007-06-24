@@ -55,7 +55,9 @@
     ((terminals special-toks (EXAMPLE TEST_SUITE IMAGE_SPECIAL OTHER_SPECIAL)))) 
   
   ;General purpose signatures
-  (define-signature general-productions^ (comma-sep variable-declaration name))
+  (define-signature general-productions^ (comma-sep #;variable-declaration #;name))
+  
+  (define-signature java-variables^ (identifier name variable-declaration))
   
   ;Types, modifiers, operator signatures
   
@@ -84,17 +86,17 @@
   
   ;Statement signatures
 
-  (define-signature statements^ (statement if-s return-s this-call super-ctor-call
+  (define-signature statements^ (make-statement if-s return-s this-call super-ctor-call
                                            block expression-stmt while-l do-while for-l
                                            break-s cont-s init))
   
   ;Member signatures
   
-  (define-signature fields^ (field arg args))
+  (define-signature fields^ (make-field arg args))
   
-  (define-signature methods^ (method-signature method-header method))
+  (define-signature methods^ (method-signature method-header make-method))
   
-  (define-signature ctors^ (constructor))
+  (define-signature ctors^ (make-constructor))
   
   ;Definition signatures
   
@@ -102,7 +104,7 @@
   
   (define-signature classes^ (class-body implements-dec extend-dec class-def))
   
-  (define-signature top-forms^ (top-member import-dec program))
+  (define-signature top-forms^ (top-member import-dec make-program))
   
   )
 ;    
