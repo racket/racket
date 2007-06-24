@@ -3,10 +3,6 @@
                color: black;
                background-color: #ffffff;
                font-family: Times;
-               text-align: center;
-               width: 35em;
-               margin-left: 13em;
-               margin-right: auto;
                }
 
                table td { 
@@ -16,6 +12,7 @@
 
                .main {
                width: 35em;
+               margin-left: 12em;
                text-align: left;
                }
 
@@ -42,7 +39,7 @@
                  position: relative;
                  float: left;
                  width: 10em;
-                 margin: 0em 0em 0em -12em;
+                 margin-right: 2em;
                  text-align: left;
                  background-color: #ddffdd;
                }
