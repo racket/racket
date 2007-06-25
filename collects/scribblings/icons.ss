@@ -1,4 +1,4 @@
-(module icons (lib "new-lambda.ss" "scribblings")
+(module icons (lib "lang.ss" "big")
   (require (lib "manual.ss" "scribble")
            (lib "struct.ss" "scribble"))
 
