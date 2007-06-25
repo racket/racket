@@ -19,7 +19,19 @@
       [(_ s) (scheme s)]))
   (provide exnraise Exn)
 
-  (provide Guide guideintro)
+  (provide refalso moreref Guide guideintro)
+
+  (define/kw (refalso tag #:body s)
+    (apply margin-note
+           (decode-content (append (list magnify (secref tag) " also provides information on ")
+                                   s
+                                   (list ".")))))
+
+  (define/kw (moreref tag #:body s)
+    (apply margin-note
+           (decode-content (append (list magnify (secref tag) " provides more information on ")
+                                   s
+                                   (list ".")))))
 
   (define Guide
     (italic (link "../guide/index.html" "A Guide to PLT Scheme")))
@@ -27,5 +39,6 @@
   (define/kw (guideintro tag #:body s)
     (apply margin-note
            (decode-content (append (list finger (secref tag) " in " Guide " introduces ")
-                                   s)))))
+                                   s
+                                   (list "."))))))
 

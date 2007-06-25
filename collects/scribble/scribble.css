@@ -41,7 +41,7 @@
                  width: 10em;
                  margin-right: 2em;
                  text-align: left;
-                 background-color: #ddffdd;
+                 background-color: #F5F5DC;
                }
 
                .tocviewtitle { 
@@ -234,6 +234,11 @@
 
                .schememeta {
                color: #262680;
+               font-family: Courier; font-size: 80%;
+               }
+
+               .schememod {
+               color: black;
                font-family: Courier; font-size: 80%;
                }
 

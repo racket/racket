@@ -22,38 +22,42 @@
                [field-option #:immutable
                              #:auto])]{
 
-Creates a new structure type, and binds transformers and
-variables related to the new structure type. A
+@moreref["mz:structures"]{structures}
+
+Creates a new @techlink{structure type}, and binds transformers and
+variables related to the new @tech{structure type}. A
 @scheme[define-struct] form with @math{n} @scheme[field]s defines
 up to @math{4+2n} names:
 
 @itemize{
 
- @item{@schemeidfont{struct:}@scheme[id], a @tech{structure type descriptor}
-       value that represents the new datatype.}
+ @item{@schemeidfont{struct:}@scheme[id], a @deftech{structure type
+       descriptor} value that represents the new @tech{structure
+       type}.}
 
  @item{@schemeidfont{make-}@scheme[id], a @deftech{constructor}
        procedure that takes @math{m} arguments and returns a new
-       instance of the structure type, where @math{m} is the number of
-       @scheme[field]s that do not include an @scheme[#:auto] option.}
+       instance of the @tech{structure type}, where @math{m} is the
+       number of @scheme[field]s that do not include an
+       @scheme[#:auto] option.}
 
  @item{@scheme[id]@schemeidfont{?}, a @deftech{predicate} procedure
-       that returns @scheme[#t] for instances of the structure type
-       (constructed by @schemeidfont{make-}@scheme[id] or the
+       that returns @scheme[#t] for instances of the @tech{structure
+       type} (constructed by @schemeidfont{make-}@scheme[id] or the
        @tech{constructor} for a subtype) and @scheme[#f] for any other
        value.}
 
  @item{@scheme[id]@schemeidfont{-}@scheme[field-id], for each
        @scheme[field]; an @deftech{accessor} procedure that takes an
-       instance of the structure type and extracts the value for the
-       corresponding field.}
+       instance of the @tech{structure type} and extracts the value
+       for the corresponding field.}
 
  @item{@schemeidfont{set-}@scheme[id]@schemeidfont{-}@scheme[field-id]@schemeidfont{!},
        for each @scheme[field] that does not include a
        @scheme[#:immutable] option, and only when the
        @scheme[#:immutable] option is not specified as a
        @scheme[struct-option]; a @deftech{mutator} procedure that
-       takes an instance of the structure type and a new field
+       takes an instance of the @tech{structure type} and a new field
        value. The structure is destructively updated with the new
        value, and @|void-const| is returned.}
 

@@ -326,7 +326,7 @@
                                fns)))
 
       (define/override (part-whole-page? d)
-        (= 2 (collecting-sub)))
+        ((collecting-sub) . <= . 2))
 
       (define/private (toc-part? d)
         (and (styled-part? d)

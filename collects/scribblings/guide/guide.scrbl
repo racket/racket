@@ -31,7 +31,7 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["define-struct.scrbl"]
 
-@include-section["module-basics.scrbl"]
+@include-section["modules.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "guide:contracts"]{Contracts}
@@ -80,7 +80,7 @@ of an expression to the values for the clause:
 @section[#:tag "threads"]{Threads}
 
 @; ----------------------------------------------------------------------
-@section[#:tag "guide:macros"]{Syntactic Extension@aux-elem{ (Modules and Macros)}}
+@section[#:tag "guide:macros"]{Syntactic Extension@aux-elem{ (Macros)}}
 
 
 @; ----------------------------------------------------------------------

@@ -6,14 +6,18 @@
 
 @title[#:tag "guide:define-struct"]{Programmer-Defined Datatypes}
 
-This section introduces the @scheme[define-struct] form for creating
-your own datatypes. The class-based object system offers an alternate
-mechanism for creating new datatypes; the resulting objects are
-nevertheless implemented as structures, and we defer discussion of
-objects to @secref["classes"].
+@refalso["mz:structures"]{structure types}
+
+New datatypes are normally created with the @scheme[define-struct]
+form, which is the topic of this chapter. The class-based object
+system, which we defer to @secref["classes"], offers an alternate
+mechanism for creating new datatypes, but even classes and objects are
+implemented in terms of structure types.
 
 @; ------------------------------------------------------------
 @section{Simple Structure Types: @scheme[define-struct]}
+
+@refalso["mz:define-struct"]{@scheme[define-struct]}
 
 To a first approximation, the syntax of @scheme[define-struct] is
 
@@ -21,8 +25,9 @@ To a first approximation, the syntax of @scheme[define-struct] is
 (define-struct struct-id (field-id ...))
 ]{}
 
-Such a definition binds @scheme[_struct-id], but only to static
-information about the structure type that cannot be used directly:
+A @scheme[define-struct] declaration binds @scheme[_struct-id], but
+only to static information about the structure type that cannot be
+used directly:
 
 @def+int[
 (define-struct posn (x y))
@@ -30,11 +35,11 @@ posn
 ]
 
 We explain one use of the @scheme[_struct-id] binding in the next
-section.
+section, @secref["guide:struct-subtypes"].
 
-In addition to defining @scheme[_struct-id], however,
-@scheme[define-struct] also defines a number of functions whose names
-are built from @scheme[_struct-id] and the @scheme[_field-id]s:
+Meanwhile, in addition to defining @scheme[_struct-id],
+@scheme[define-struct] also defines a number of identifiers that are
+built from @scheme[_struct-id] and the @scheme[_field-id]s:
 
 @itemize{
 
@@ -71,8 +76,9 @@ are built from @scheme[_struct-id] and the @scheme[_field-id]s:
 
  @item{@schemeidfont{struct:}@scheme[_struct-id] : a
        @deftech{structure type descriptor}, which is a value that
-       represents the structure type (as opposed to a single instance)
-       for certain reflective operations.}
+       represents the structure type as a first-class value (with
+       @scheme[#:super], as discussed later in
+       @secref["guide:struct-options"]).}
 
 }
 
@@ -86,9 +92,9 @@ as requiring them to be numbers, is normally the job of a contract, as
 discussed later in @secref["guide:contracts"].
 
 @; ------------------------------------------------------------
-@section{Structure Subtypes}
+@section[#:tag "guide:struct-subtypes"]{Structure Subtypes}
 
-An extended form of @scheme[defin-struct] can be used to define a
+An extended form of @scheme[define-struct] can be used to define a
 @defterm{structure subtype}, which is a structure type that extends an
 existing structure type:
 
@@ -97,8 +103,8 @@ existing structure type:
 ]
 
 The @scheme[_super-id] must be a structure type name bound by
-@scheme[define-struct] (i.e., the name bound by @scheme[define-struct]
-that cannot be used directly as an expression).
+@scheme[define-struct] (i.e., the name that cannot be used directly as
+an expression).
 
 @as-examples[@schemeblock+eval[
 (define-struct posn (x y))
@@ -146,7 +152,7 @@ field-name sequence:
 
 An instance of a transparent structure type prints like a vector, and
 it shows the content of the structure's fields. A transparent
-structure type also allows reflective operations, like
+structure type also allows reflective operations, such as
 @scheme[struct?] and @scheme[struct-info], to be used on its instances
 (see @secref["reflection"]). Different values for @scheme[#:inspector]
 support more controlled access to reflective operations.
@@ -158,7 +164,7 @@ library cannot manipulate the data in the structure except as allowed
 by the library.
 
 @; ------------------------------------------------------------
-@section{More Structure Type Options}
+@section[#:tag "guide:struct-options"]{More Structure Type Options}
 
 The full syntax of @scheme[define-struct] supports many options, both
 at the structure-type level and at the level of individual fields:
@@ -199,8 +205,8 @@ A @scheme[_struct-option] always starts with a keyword:
 
   Specifies a value to be used for all automatic fields in the
   structure type, where an automatic field is indicated by the
-  @scheme[#:auto] @scheme[_field-option]. The structure type's
-  constructor omits arguments for automatic fields.
+  @scheme[#:auto] field option. The constructor procedure does not
+  accept arguments for automatic fields.
 
   @defexamples[
     (define-struct posn (x y [z #:auto])
@@ -302,7 +308,7 @@ times.
 
 @defexamples[
 (define (add-bigger-fish lst)
-  (define-struct fish (size) #:inspector #f)
+  (define-struct fish (size) #:inspector #f) (code:comment #,(t "new every time"))
   (cond
    [(null? lst) (list (make-fish 1))]
    [else (cons (make-fish (* 2 (fish-size (car lst))))
@@ -320,3 +326,5 @@ times.
                 lst)]))]
 (add-bigger-fish (add-bigger-fish null))
 ]
+
+@refdetails["mz:structures"]{structure types}

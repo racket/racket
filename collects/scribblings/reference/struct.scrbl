@@ -3,7 +3,9 @@
 
 @title[#:tag "mz:structures"]{Structures}
 
-A @pidefterm{structure type} is a record datatype composing a number
+@guideintro["guide:define-struct"]{structure types via @scheme[define-struct]}
+
+A @deftech{structure type} is a record datatype composing a number
 of @idefterm{fields}. A @pidefterm{structure}, an instance of a
 structure type, is a first-class value that contains a value for each
 field of the structure type. A structure instance is created with a
@@ -12,6 +14,8 @@ accessed and changed with type-specific @tech{accessor} and
 @tech{mutator} procedures. In addition, each structure type has a
 @tech{predicate} procedure that answers @scheme[#t] for instances of
 the structure type and @scheme[#f] for any other value.
+
+@refalso["mz:define-struct"]{structure types via @scheme[define-struct]}
 
 A structure type's fields are essentially unnamed, though names are
 supported for error-reporting purposes. The constructor procedure
@@ -83,13 +87,13 @@ Creates a new structure type.  The @scheme[name] argument is used as
 the type name. If @scheme[super-type] is not @scheme[#f], the new type
 is a subtype of the corresponding structure type.
 
-The new structure type has @scheme[(+ init-field-cnt auto-field-cnt)]
+The new structure type has @math{@scheme[init-field-cnt]+@scheme[auto-field-cnt]}
 fields (in addition to any fields from @scheme[super-type]), but only
 @scheme[init-field-cnt] constructor arguments (in addition to any
 constructor arguments from @scheme[super-type]). The remaining
 fields are initialized with @scheme[auto-v].
  
-The @scheme{props} argument is a list of pairs, where the @scheme[car]
+The @scheme[props] argument is a list of pairs, where the @scheme[car]
 of each pair is a structure type property descriptor, and the
 @scheme[cdr] is an arbitrary value. See @secref["mz:structprops"] for
 more information about properties.
@@ -131,7 +135,7 @@ subtype's guard procedure become the first @math{n} arguments to
 @scheme[guard].
 
 The result of @scheme[make-struct-type] is five values:
-%
+
 @itemize{
 
  @item{a @tech{structure type descriptor},}
@@ -158,7 +162,9 @@ The result of @scheme[make-struct-type] is five values:
 (a-ref an-a 2)
 (define a-first (make-struct-field-accessor a-ref 0)) 
 (a-first an-a)
+]
 
+@interaction[
 (define-values (struct:b make-b b? b-ref b-set!) 
   (make-struct-type 'b struct:a 1 2 'b-uninitialized))
 (define a-b (make-b 'x 'y 'z)) 
@@ -167,7 +173,9 @@ The result of @scheme[make-struct-type] is five values:
 (b-ref a-b 0)
 (b-ref a-b 1)
 (b-ref a-b 2)
+]
 
+@interaction[
 (define-values (struct:c make-c c? c-ref c-set!) 
   (make-struct-type 
    'c struct:b 0 0 #f null (make-inspector) #f null
@@ -235,7 +243,7 @@ A @index['("structure type properties")]{@defterm{structure type
 
 @itemize{
 
- @item{a @deftech{structure property type descriptor}, for use with
+ @item{a @deftech{structure type property descriptor}, for use with
        @scheme[make-struct-type] and @scheme[define-struct];}
 
  @item{a @deftech{property predicate} procedure, which takes an

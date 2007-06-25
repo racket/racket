@@ -3,19 +3,12 @@
 @require[(lib "eval.ss" "scribble")]
 @require["guide-utils.ss"]
 
-@title{Modules}
+@title[#:tag "guide:module-basics"]{Module Basics}
 
-Scheme definitions and expressions are normally written inside of a
-module. Although a REPL evaluates definitions and expressions outide
-of a module, and although @scheme[load] can evaluate definitions and
-expressions from a file as if they appeared in a REPL interaction,
-code that is meant to last for more than a few seconds belongs in a
-module.
-
-The space of modules is distinct from the space of normal Scheme
-definitions. Since modules typically reside in files, the space of
-module names is explicitly tied to the filesystem at run time. For
-example, if the file @file{/home/molly/cake.ss} contains
+The space of module names is distinct from the space of normal Scheme
+definitions. Indeed, since modules typically reside in files, the
+space of module names is explicitly tied to the filesystem at run
+time. For example, if the file @file{/home/molly/cake.ss} contains
 
 @schememod[
 big
@@ -31,10 +24,14 @@ big
 ]
 
 then it can be used as the source of a module whose full name is based
-on the path @file{/home/molly/cake.ss}. Instead of using the full
-path, however, the module is likely to be referenced by a releative
-path. For example, a file @file{/home/molly/random-cake.ss} could use
-the module like this:
+on the path @file{/home/molly/cake.ss}. The @scheme[provide] line
+exports the definition @scheme[print-cake] so that it can be used
+outside the module.
+
+Instead of using its full path, a module is more likely to be
+referenced by a relative path. For example, a file
+@file{/home/molly/random-cake.ss} could use the @file{cake.ss} module
+like this:
 
 @schememod[
 big
@@ -44,10 +41,40 @@ big
 (print-cake (random 30))
 ]
 
-The relative reference @scheme[(require "cake.ss")] works because the
-@file{cake.ss} module source is in the same directory as the
-@file{random-cake.ss} file.
+The relative reference @scheme["cake.ss"] in the import
+@scheme[(require "cake.ss")] works because the @file{cake.ss} module
+source is in the same directory as the @file{random-cake.ss}
+file. (Unix-style relative paths are used for relative module
+references on all platforms, much like relative URLs.)
 
-As you see in the above examples, @scheme[provide] and
-@scheme[require] are module-level declarations that export and import
-bindings between modules.
+Library modules that are distributed with PLT Scheme are referenced
+through a @scheme[lib] path. A @scheme[lib] path is like a relative
+path, but it is relative (roughly) to the library installation
+directory.
+
+@schememod[
+big
+
+(require (lib "mzlib/date.ss"))
+
+(printf "Today is ~s\n" 
+        (date->string (seconds->date (current-seconds))))
+]
+
+Additional third-party libraries that are distributed through
+@|PLaneT| can be imported using a @scheme[planet] form:
+
+@schememod[
+big
+
+(require "cake.ss"
+         (planet "random.ss" ("schematics" "random.plt" 1 0)))
+
+(print-cake (inexact->exact
+             (round (* 30 (random-gaussian)))))
+]
+
+A @|PLaneT| reference starts like a @scheme[lib] reference, with a
+relative path, but the path is followed by information about the
+producer, archive, and version of the library. The specified archive
+is downloaded and installed on demand.

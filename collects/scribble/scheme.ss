@@ -49,6 +49,8 @@
 
   (define-struct (sized-element element) (length))
 
+  (define-struct spaces (pre cnt post))
+
   (define (typeset c multi-line? prefix1 prefix suffix color?)
     (let* ([c (syntax-ize c 0)]
            [content null]
@@ -78,26 +80,35 @@
                         [(and (element? v)
                               (= 1 (length (element-content v))))
                          (sz-loop (car (element-content v)))]
+                        [(spaces? v)
+                         (+ (sz-loop (spaces-pre v))
+                            (spaces-cnt v)
+                            (sz-loop (spaces-post v)))]
                         [else 1])))]
          [(v cls len)
           (unless (equal? v "")
-            (if (equal? v "\n")
-                (if multi-line?
-                    (begin
-                      (finish-line!)
-                      (out prefix cls))
-                    (out " " cls))
-                (begin
-                  (set! content (cons ((if highlight?
-                                           (lambda (c)
-                                             (make-element "highlighted" (list c)))
-                                           values)
-                                       (if color?
-                                           (make-element cls (list v))
-                                           (make-element #f (list v))))
-                                      content))
-                  (set! dest-col (+ dest-col len)))))]))
-      (define advance 
+            (cond
+             [(spaces? v)
+              (out (spaces-pre v) cls 0)
+              (out (make-element 'hspace (list (make-string (spaces-cnt v) #\space))) #f 0)
+              (out (spaces-post v) cls len)]
+             [(equal? v "\n")
+              (if multi-line?
+                  (begin
+                    (finish-line!)
+                    (out prefix cls))
+                  (out " " cls))]
+             [else
+              (set! content (cons ((if highlight?
+                                       (lambda (c)
+                                         (make-element "highlighted" (list c)))
+                                       values)
+                                   (if color?
+                                       (make-element cls (list v))
+                                       (make-element #f (list v))))
+                                  content))
+              (set! dest-col (+ dest-col len))]))]))
+      (define advance
         (case-lambda
          [(c init-line! delta)
           (let ([c (+ delta (syntax-column c))]
@@ -168,12 +179,9 @@
       (define (literalize-spaces i)
         (let ([m (regexp-match-positions #rx"  +" i)])
           (if m
-              (make-element
-               #f
-               (list (literalize-spaces (substring i 0 (caar m)))
-                     (make-element 'hspace
-                                   (list (substring i (caar m) (cdar m))))
-                     (literalize-spaces (substring i (cdar m)))))
+              (make-spaces (literalize-spaces (substring i 0 (caar m)))
+                           (- (cdar m) (caar m))
+                           (literalize-spaces (substring i (cdar m))))
               i)))
       (define (loop init-line! quote-depth)
         (lambda (c)

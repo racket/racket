@@ -94,7 +94,7 @@
 
   (provide onscreen menuitem defterm
            schemefont schemevalfont schemeresultfont schemeidfont 
-           schemeparenfont schemekeywordfont schememetafont
+           schemeparenfont schemekeywordfont schememetafont schememodfont
            file exec
            link procedure
            idefterm)
@@ -120,6 +120,8 @@
     (make-element "schemeparen" (decode-content str)))
   (define (schememetafont . str)
     (make-element "schememeta" (decode-content str)))
+  (define (schememodfont . str)
+    (make-element "schememod" (decode-content str)))
   (define (schemekeywordfont . str)
     (make-element "schemekeyword" (decode-content str)))
   (define (file . str)
@@ -808,12 +810,15 @@
                                      (let loop ([i i])
                                        (cond
                                         [(string? i)
-                                         (let ([m (regexp-match #rx"^(.*)([()])(.*)$" i)])
-                                           (if m
-                                               (append (loop (cadr m))
-                                                       (list (caddr m))
-                                                       (loop (cadddr m)))
-                                               (list (make-element 'italic (list i)))))]
+                                         (cond
+                                          [(regexp-match #rx"^(.*)([()])(.*)$" i)
+                                           => (lambda (m)
+                                                (append (loop (cadr m))
+                                                        (list (caddr m))
+                                                        (loop (cadddr m))))]
+                                          [else
+                                           (list (make-element 'italic (list i)))])]
+                                        [(eq? i 'rsquo) (list 'prime)]
                                         [else (list i)])))
                                    c)))))
 

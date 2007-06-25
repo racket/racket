@@ -50,6 +50,7 @@
         (define-color "schemeresult" "ResultColor")
         (define-color "schemestdout" "OutputColor")
         (define-color "schememeta" "IdentifierColor")
+        (define-color "schememod" "black")
         (define-color "schemevariablecol" "IdentifierColor")
         (printf "\\newcommand{\\schemevariable}[1]{{\\schemevariablecol{\\textsl{#1}}}}\n")
         (define-color "schemeerrorcol" "red")
@@ -232,6 +233,7 @@
                          [(ldquo) "``"]
                          [(rdquo) "''"]
                          [(rsquo) "'"]
+                         [(prime) "$'$"]
                          [(rarr) "$\\rightarrow$"]))]
          [else (display-protected (format "~s" i))])
         null)
