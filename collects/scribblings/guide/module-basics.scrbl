@@ -61,20 +61,5 @@ big
         (date->string (seconds->date (current-seconds))))
 ]
 
-Additional third-party libraries that are distributed through
-@|PLaneT| can be imported using a @scheme[planet] form:
-
-@schememod[
-big
-
-(require "cake.ss"
-         (planet "random.ss" ("schematics" "random.plt" 1 0)))
-
-(print-cake (inexact->exact
-             (round (* 30 (random-gaussian)))))
-]
-
-A @|PLaneT| reference starts like a @scheme[lib] reference, with a
-relative path, but the path is followed by information about the
-producer, archive, and version of the library. The specified archive
-is downloaded and installed on demand.
+We discuss more forms of module reference later in
+@secref["guide:module-paths"].

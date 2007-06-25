@@ -1,5 +1,5 @@
 
-(module manual (lib "new-lambda.ss" "scribblings")
+(module manual (lib "lang.ss" "big")
   (require "decode.ss"
            "struct.ss"
            "scheme.ss"
@@ -182,7 +182,7 @@
 
   (provide defproc defproc* defstruct defthing defform defform* defform/subs defform*/subs defform/none
            specform specform/subs 
-           specsubform specspecsubform specsubform/inline
+           specsubform specsubform/subs specspecsubform specsubform/inline
            schemegrammar schemegrammar*
            var svar void-const undefined-const)
 
@@ -294,6 +294,18 @@
        (*specsubform 'spec #f '(lit ...) (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]
       [(_ spec desc ...)
        (*specsubform 'spec #f null (lambda () (schemeblock0 spec)) null null (lambda () (list desc ...)))]))
+  (define-syntax specsubform/subs
+    (syntax-rules ()
+      [(_ #:literals (lit ...) spec ([non-term-id non-term-form ...] ...) desc ...)
+       (*specsubform 'spec #f '(lit ...) (lambda () (schemeblock0 spec)) 
+                     '((non-term-id non-term-form ...) ...)
+                     (list (list (lambda () (scheme non-term-id))
+                                 (lambda () (schemeblock0 non-term-form))
+                                 ...)
+                           ...)
+                     (lambda () (list desc ...)))]
+      [(_ spec subs desc ...)
+       (specsubform/subs #:literals () spec subs desc ...)]))
   (define-syntax specspecsubform
     (syntax-rules ()
       [(_ spec desc ...)

@@ -1,18 +1,14 @@
 (module new-lambda mzscheme
   (require-for-syntax (lib "name.ss" "syntax")
                       (lib "define.ss" "syntax"))
-  (require "new-struct.ss")
 
-  (provide (all-from-except mzscheme #%datum lambda define #%app define-struct)
-           (rename new-datum #%datum)
-           (rename new-lambda lambda)
-           (rename new-define define)
-           (rename new-app #%app)
+  (provide new-datum 
+           new-lambda
+           new-define
+           new-app
            (rename *make-keyword-procedure make-keyword-procedure)
            keyword-apply
-           procedure-keywords
-           (rename define-struct* define-struct)
-           struct-field-index)
+           procedure-keywords)
   
   ;; ----------------------------------------
   

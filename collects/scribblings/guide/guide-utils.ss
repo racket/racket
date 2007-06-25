@@ -1,4 +1,4 @@
-(module guide-utils (lib "new-lambda.ss" "scribblings")
+(module guide-utils (lib "lang.ss" "big")
   (require (lib "manual.ss" "scribble")
            (lib "struct.ss" "scribble")
            (lib "decode.ss" "scribble")

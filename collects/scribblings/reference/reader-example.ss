@@ -1,5 +1,5 @@
 
-(module reader-example (lib "new-lambda.ss" "scribblings")
+(module reader-example (lib "lang.ss" "big")
   (require (lib "struct.ss" "scribble")
            (lib "decode.ss" "scribble")
            (lib "manual.ss" "scribble")

@@ -1,5 +1,5 @@
 
-(module basic (lib "new-lambda.ss" "scribblings")
+(module basic (lib "lang.ss" "big")
   (require "decode.ss"
            "struct.ss"
            "config.ss"

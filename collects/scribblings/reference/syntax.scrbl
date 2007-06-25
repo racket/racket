@@ -662,6 +662,18 @@ information} and source-location information attached to
 }
 
 @;------------------------------------------------------------------------
+@section[#:tag "mz:module"]{Modules: @scheme[module]}
+
+@defform[(module id require-spec form ...)]{
+
+Declares a module named by @scheme[id]. The @scheme[require-spec] must
+be as for @scheme[require] (see @secref["mz:require"]), and it
+supplies the initial bindings for the body @scheme[form]s. Each
+@scheme[form] is expanded in a @tech{module context}.
+
+}
+
+@;------------------------------------------------------------------------
 @section[#:tag "mz:require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}
 
 @defform/subs[#:literals (only prefix all-except prefix-all-except rename lib file planet)
@@ -739,7 +751,7 @@ can trigger automatic loading of the module declaration:
  @scheme[rel-string] is always parsed as a Unix-format relative path:
  @litchar{/} is the path delimiter (multiple adjacent @litchar{/}s are
  treated as a single delimiter), @litchar{..} accesses the parent
- directory, and @litchar{.}  accesses the current directory. The path
+ directory, and @litchar{.} accesses the current directory. The path
  cannot be empty or contain a leading or trailing slash.}
 
  @specsubform[#:literals (lib) (lib rel-string)]{Like the plain

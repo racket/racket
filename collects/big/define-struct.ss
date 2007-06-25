@@ -4,7 +4,7 @@
 ;; though, strangely and embarassingly, Matthew didn't know that until
 ;; after he had mostly re-implemented it.
 
-(module new-struct mzscheme
+(module define-struct mzscheme
   (require (lib "stxparam.ss"))
 
   (provide define-struct*

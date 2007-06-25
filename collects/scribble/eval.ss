@@ -1,5 +1,5 @@
 
-(module eval (lib "new-lambda.ss" "scribblings")
+(module eval (lib "lang.ss" "big")
   (require "manual.ss"
            "struct.ss"
            "scheme.ss"
@@ -171,7 +171,15 @@
 
   (define (do-plain-eval s catching-exns?)
     (parameterize ([current-namespace (current-int-namespace)])
-        (call-with-values (lambda () ((scribble-eval-handler) catching-exns? (strip-comments s))) list)))
+        (call-with-values (lambda () 
+                            ((scribble-eval-handler) 
+                             catching-exns? 
+                             (let ([s (strip-comments s)])
+                               (syntax-case s (module)
+                                 [(module . _rest)
+                                  (syntax-object->datum s)]
+                                 [_else s]))))
+          list)))
 
   (define-syntax interaction-eval
     (syntax-rules ()

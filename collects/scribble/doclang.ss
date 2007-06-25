@@ -1,11 +1,11 @@
 
-(module doclang (lib "new-lambda.ss" "scribblings") ; <--- temporary
+(module doclang (lib "lang.ss" "big")
   (require "struct.ss"
            "decode.ss"
            (lib "kw.ss"))
   (require-for-syntax (lib "kerncase.ss" "syntax"))
 
-  (provide (all-from-except (lib "new-lambda.ss" "scribblings") #%module-begin)
+  (provide (all-from-except (lib "lang.ss" "big") #%module-begin)
            (rename *module-begin #%module-begin))
 
   ;; Module wrapper ----------------------------------------

@@ -16,3 +16,6 @@ more than a few seconds belongs in a module.
 
 @include-section["module-basics.scrbl"]
 @include-section["module-syntax.scrbl"]
+@include-section["module-paths.scrbl"]
+@include-section["module-require.scrbl"]
+@include-section["module-provide.scrbl"]
