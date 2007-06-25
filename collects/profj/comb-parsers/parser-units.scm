@@ -338,7 +338,7 @@
     
     (define (new-class expr)
       (choose ((sequence (new name O_PAREN C_PAREN) id "class instantiation")
-               (sequence (new name O_PAREN (comma-sep expression "arguments") C_PAREN) id "class instantiation"))
+               (sequence (new name O_PAREN (comma-sep expr "arguments") C_PAREN) id "class instantiation"))
               "class instantiation"))
     
     (define (new-array type-name expr)
@@ -725,11 +725,12 @@
                                 EQUAL expression))))
     
     (define statement
-      (make-statement (list (if-s expression (eta statement)  #f)
-                       (return-s expression #t)
-                       (variable-declaration (value+name-type prim-type) expression #f "local variable")
-                       (block (repeat (eta statement)))
-                       (sequence (stmt-expr SEMI_COLON) id "statement"))))
+      (make-statement 
+       (list (if-s expression (eta statement)  #f)
+             (return-s expression #t)
+             (variable-declaration (value+name-type prim-type) expression #f "local variable")
+             (block (repeat (eta statement)))
+             (sequence (stmt-expr SEMI_COLON) id "statement"))))
     
     (define field (make-field #f (value+name-type prim-type) expression #t))
     (define intermediate+access-field (make-field access-mods (value+name-type prim-type) expression #t))
@@ -772,7 +773,8 @@
        (repeat method-sig-no-abs)))
     
     (define class
-      (class-def tok:abstract (extend-dec identifier) (implements-dec (comma-sep identifier "interfaces"))
+      (class-def tok:abstract (extend-dec identifier) 
+                 (implements-dec (comma-sep identifier "interfaces"))
                  (repeat (class-body (list field method constructor)))))
 
     (define intermediate+access-class
@@ -782,10 +784,10 @@
                                            intermediate+access-constructor)))))
     
     (define program
-      (program #f (repeat import-dec) (repeat (top-member (list class interface)))))
+      (make-program #f (repeat import-dec) (repeat (top-member (list class interface)))))
     
     (define intermediate+access-prog
-      (program #f (repeat import-dec)
+      (make-program #f (repeat import-dec)
                (repeat (top-member (list intermediate+access-class interface)))))
 
     )
@@ -893,7 +895,7 @@
                                            (method-header method-sig-abs))))))
     
     (define program
-      (program (sequence (tok:package name SEMI_COLON) id "package specification")
+      (make-program (sequence (tok:package name SEMI_COLON) id "package specification")
                (repeat import-dec)
                (repeat (top-member (list class interface)))))
     )

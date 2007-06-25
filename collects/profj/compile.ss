@@ -307,6 +307,7 @@
             ;(printf "looping in order-cus: ~a ~a ~n" (empty-queue? queue) (length ordered))
             (unless (empty-queue? queue)
               (let ((cu (send queue pop)))
+                ;(printf "cu ~a~n" cu)
                 (if (ok-to-add? cu ordered cus type-recs)
                     (set! ordered (cons cu ordered))
                     (send queue push cu)))
