@@ -1,5 +1,6 @@
 (module dispatch-log mzscheme
   (require (lib "url.ss" "net")
+           (prefix srfi-date: (lib "19.ss" "srfi"))
            (lib "date.ss")
            (lib "kw.ss")
            (lib "async-channel.ss")
@@ -7,34 +8,67 @@
            (lib "contract.ss"))
   (require "dispatch.ss"
            "../private/request-structs.ss")  
+  (define format-req/c (request? . -> . string?))
+  
   (provide/contract
+   [format-req/c contract?]
+   [log-format->format (symbol? . -> . format-req/c)]
+   [paren-format format-req/c]
+   [extended-format format-req/c]
+   [apache-default-format format-req/c]
    [interface-version dispatcher-interface-version?])
   (provide make)  
   
   (define interface-version 'v1)
   (define/kw (make #:key 
-                   [log-format 'parenthesized-default]
-                   [log-path #f])
-    (if log-path
-        (case log-format
-          [(parenthesized-default extended)
-           (let ([log-message (gen-log-message log-format log-path)])
-             (lambda (conn req)
-               (log-message req)
-               (next-dispatcher)))]
-          [else
-           (lambda (conn req)
-             (next-dispatcher))])
-        (lambda (conn req)
-          (next-dispatcher))))
+                   [format paren-format]
+                   [log-path "log"])
+    (define log-message (make-log-message log-path format))
+    (lambda (conn req)
+      (log-message req)
+      (next-dispatcher)))
   
-  ; gen-log-message : sym str -> str str sym url str -> str
-  ; XXX: check apache log configuration formats
-  ; other server's include the original request line,
-  ; including the major and minor HTTP version numbers
-  ; to produce a string that is displayed into the log file
-  ; This is a kill-safe wait-less abstraction
-  (define (gen-log-message log-format log-path)
+  (define (log-format->format log-format)
+    (case log-format
+      [(parenthesized-default)
+       paren-format]
+      [(extended)
+       extended-format]
+      [(apache-default)
+       apache-default-format]))
+  
+  (define (request-line-raw req)
+    (format "~a ~a HTTP/1.1"
+            (string-upcase (symbol->string (request-method req)))
+            (url->string (request-uri req))))
+  (define (apache-default-format req)
+    (define request-time (srfi-date:current-date))
+    (format "~a - - [~a] \"~a\" ~a ~a~n"
+            (request-host-ip req)
+            (srfi-date:date->string request-time "~d/~b/~Y:~T ~z")
+            (request-line-raw req)
+            200
+            512))
+  
+  (define (paren-format req)
+    (format "~s~n"
+            (list 'from (request-client-ip req)
+                  'to (request-host-ip req)
+                  'for (url->string (request-uri req)) 'at
+                  (date->string (seconds->date (current-seconds)) #t))))
+  
+  (define (extended-format req)
+    (format "~s~n"
+            `((client-ip ,(request-client-ip req))
+              (host-ip ,(request-host-ip req))
+              (referer ,(let ([R (headers-assq* #"Referer" (request-headers/raw req))])
+                          (if R
+                              (header-value R)
+                              #f)))                                              
+              (uri ,(url->string (request-uri req)))
+              (time ,(current-seconds)))))
+  
+  (define (make-log-message log-path format-req)
     (define log-ch (make-async-channel))
     (define log-thread
       (thread/suspend-to-kill
@@ -60,24 +94,7 @@
                              (file-stream-buffer-mode new-log-p 'line)
                              new-log-p))
                          log-p))
-                   (display
-                    (format "~s~n"
-                            (case log-format
-                              [(parenthesized-default)
-                               (list 'from (request-client-ip req)
-                                     'to (request-host-ip req)
-                                     'for (url->string (request-uri req)) 'at
-                                     (date->string (seconds->date (current-seconds)) #t))]
-                              [(extended)
-                               `((client-ip ,(request-client-ip req))
-                                 (host-ip ,(request-host-ip req))
-                                 (referer ,(let ([R (headers-assq* #"Referer" (request-headers/raw req))])
-                                             (if R
-                                                 (header-value R)
-                                                 #f)))                                              
-                                 (uri ,(url->string (request-uri req)))
-                                 (time ,(current-seconds)))]))
-                    the-log-p)
+                   (display (format-req req) the-log-p)
                    the-log-p))])))))))
     (lambda args
       (thread-resume log-thread (current-custodian))

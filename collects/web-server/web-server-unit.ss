@@ -51,7 +51,7 @@
     (define (host-info->dispatcher host-info)
       (sequencer:make
        (timeout:make initial-connection-timeout)
-       (log:make #:log-format (host-log-format host-info)
+       (log:make #:format (log:log-format->format (host-log-format host-info))
                  #:log-path (host-log-path host-info))
        (let-values ([(update-password-cache! password-check)
                      (passwords:make #:password-file (host-passwords host-info)

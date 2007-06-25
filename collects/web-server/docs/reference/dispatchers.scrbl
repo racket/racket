@@ -157,27 +157,50 @@ a URL that refreshes the password file, servlet cache, etc.
 @file{dispatchers/dispatch-log.ss} defines a dispatcher constructor
 for transparent logging of requests.
 
-@; XXX Take formatting procedure
-@defproc[(make [#:log-format log-format symbol? 'parenthesized-default]
-               [#:log-path log-path (or/c path-string? false/c) #f])
-         dispatcher?]{
- If @scheme[log-path] is not @scheme[#f] and @scheme[log-format] is
- @scheme['parenthesized-default] or @scheme[extended], then the request
- is logged to the @scheme[log-path]. In either case, @scheme[next-dispatcher]
- is invoked after this.
- 
- If @scheme[log-format] is @scheme['parenthesized-default], then the 
- log looks like: @scheme[(list 'from (request-client-ip req)
-                               'to (request-host-ip req)
-                               'for (url->string (request-uri req)) 'at
-                               (date->string (seconds->date (current-seconds)) #t))].
+@defthing[format-req/c contract?]{
+ Equivalent to @scheme[(request? . -> . string?)].
+}
 
- If @scheme[log-format] is @scheme['extended], then the log looks like: 
- @scheme[`((client-ip ,(request-client-ip req))
-           (host-ip ,(request-host-ip req))
-           (referer ,(or/c bytes? false/c))                                              
-           (uri ,(url->string (request-uri req)))
-           (time ,(current-seconds)))].
+@defthing[paren-format format-req/c]{
+ Formats a request by:
+ @schemeblock[
+  (format "~s~n"
+            (list 'from (request-client-ip req)
+                  'to (request-host-ip req)
+                  'for (url->string (request-uri req)) 'at
+                  (date->string (seconds->date (current-seconds)) #t)))
+ ]}
+
+@defthing[extended-format format-req/c]{
+ Formats a request by:
+ @schemeblock[
+  (format "~s~n"
+            `((client-ip ,(request-client-ip req))
+              (host-ip ,(request-host-ip req))
+              (referer ,(let ([R (headers-assq* #"Referer" (request-headers/raw req))])
+                          (if R
+                              (header-value R)
+                              #f)))                                              
+              (uri ,(url->string (request-uri req)))
+              (time ,(current-seconds))))
+ ]}
+
+@defthing[apache-default-format format-req/c]{
+ Formats a request like Apache's default.
+}
+
+@defproc[(log-format->format [id symbol?])
+         format-req/c]{
+ Maps @scheme['parenthesized-default] to @scheme[paren-format],
+ @scheme['extended] to @scheme[extended-format], and
+ @scheme['apache-default] to @scheme[apache-default-format].
+}
+                      
+@defproc[(make [#:format format format-req/c paren-format]
+               [#:log-path log-path path-string? "log"])
+         dispatcher?]{
+ Logs requests to @scheme[log-path] by using @scheme[format] to format the requests.
+ Then invokes @scheme[next-dispatcher].
 }
                       
 @; ------------------------------------------------------------
