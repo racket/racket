@@ -41,9 +41,9 @@ appear in a string constant.
 "\u03BBx:(\u03BC\u03B1.\u03B1\u2192\u03B1).xx"
 ]
 
-When a constant is evaluated in the REPL, it typically prints the same
+When a constant is evaluated in the @tech{REPL}, it typically prints the same
 as its input syntax. In some cases, the printed form is a normalized
-version of the input syntax. In documentation and in DrScheme's REPL,
+version of the input syntax. In documentation and in DrScheme's @tech{REPL},
 results are printed in blue instead of green to highlight the
 difference between an input expression and a printed result.
 

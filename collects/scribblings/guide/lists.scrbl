@@ -20,7 +20,7 @@ a list containing the values:
 @interaction[(list "red" "green" "blue")
              (list 1 2 3 4 5)]
 
-As you can see, a list result prints in the REPL as a pair of
+As you can see, a list result prints in the @tech{REPL} as a pair of
 parentheses wrapped around the printed form of the list
 elements. There's an opportunity for confusion here, because
 parentheses are used for both expressions, such as @scheme[(list "red"

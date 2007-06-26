@@ -8,15 +8,15 @@
 The @litchar{#module} at the start of a module file begins a shorthand
 for a @scheme[module] form, much like @litchar{'} is a shorthand for a
 @scheme[quote] form. Unlike @litchar{'}, the @litchar{#module}
-shorthand does not work well in a REPL, in part because it must be
+shorthand does not work well in a @tech{REPL}, in part because it must be
 terminated by an end-of-file, but also because the longhand expansion
 of @litchar{#module} depends on the name of the enclosing file.
 
 @;------------------------------------------------------------------------
 @section{The @scheme[module] Form}
 
-The longhand form of a module declaration, which works in a REPL as
-well as a file, is
+The longhand form of a module declaration, which works in a
+@tech{REPL} as well as a file, is
 
 @specform[
 (module name-id initial-module-path
@@ -51,8 +51,22 @@ For example, the @file{cake.ss} example of the
     (printf "---~a---\n" (make-string n #\-))))
 ]
 
-Furthermore, this @scheme[module] form can be evaluated in a REPL to
-declare a @scheme[cake] module that is not associated with any file.
+Furthermore, this @scheme[module] form can be evaluated in a
+@tech{REPL} to declare a @scheme[cake] module that is not associated
+with any file.
+
+Declaring a module does not immediately evaluate the body definitions
+and expressions of the module. The most must be explicitly
+@scheme[require]d at the top level to trigger evaluation. After
+evaluation is triggered once, later @scheme[require]s have no effect
+(other than binding).
+
+@examples[
+(module hi (lib "big/lang.ss")
+  (printf "Hello\n"))
+(require hi)
+(require hi)
+]
 
 @;------------------------------------------------------------------------
 @section{The @schememodfont{#module} Shorthand}

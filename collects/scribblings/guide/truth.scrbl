@@ -171,7 +171,7 @@ way. You can see this if you put a @litchar{'} in front of a form that has a
 (car ''road)
 ]
 
-Beware, however, that the REPL's printer recognizes the symbol
+Beware, however, that the @tech{REPL}'s printer recognizes the symbol
 @schemeidfont{quote} when printing output, and then it uses
 @schemeidfont{'} in the output:
 

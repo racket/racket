@@ -116,7 +116,8 @@
          [else (collect-paragraph p ht)]))
         
       (define/public (collect-table i ht)
-        (for-each (lambda (d) (collect-flow d ht))
+        (for-each (lambda (d) (when (flow? d)
+                                (collect-flow d ht)))
                   (apply append (table-flowss i))))
       
       (define/public (collect-itemization i ht)
@@ -209,7 +210,9 @@
          [else (render-paragraph p part ht)]))
         
       (define/public (render-table i part ht)
-        (map (lambda (d) (render-flow d part ht)) 
+        (map (lambda (d) (if (flow? i)
+                             (render-flow d part ht)
+                             null))
              (apply append (table-flowss i))))
       
       (define/public (render-itemization i part ht)

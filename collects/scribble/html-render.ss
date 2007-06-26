@@ -245,27 +245,53 @@
                   ,@(if (string? (table-style t))
                         `((class ,(table-style t)))
                         null))
-                 ,@(map (lambda (flows)
-                          `(tr ,@(map (lambda (d a va)
-                                        `(td (,@(case a
-                                                  [(#f) null]
-                                                  [(right) '((align "right"))]
-                                                  [(center) '((align "center"))]
-                                                  [(left) '((align "left"))])
-                                              ,@(case va
-                                                  [(#f) null]
-                                                  [(top) '((valign "top"))]
-                                                  [(baseline) '((valign "baseline"))]
-                                                  [(bottom) '((valign "bottom"))]))
-                                             ,@(render-flow d part ht)))
-                                      flows
-                                      (cdr (or (and (list? (table-style t))
-                                                    (assoc 'alignment (or (table-style t) null)))
-                                               (cons #f (map (lambda (x) #f) flows))))
-                                      (cdr (or (and (list? (table-style t))
-                                                    (assoc 'valignment (or (table-style t) null)))
-                                               (cons #f (map (lambda (x) #f) flows)))))))
-                        (table-flowss t)))))
+                 ,@(map (lambda (flows style)
+                          `(tr (,@(if style
+                                      `((class ,style))
+                                      null))
+                               ,@(let loop ([ds flows]
+                                            [as (cdr (or (and (list? (table-style t))
+                                                              (assoc 'alignment (or (table-style t) null)))
+                                                         (cons #f (map (lambda (x) #f) flows))))]
+                                            [vas
+                                             (cdr (or (and (list? (table-style t))
+                                                           (assoc 'valignment (or (table-style t) null)))
+                                                      (cons #f (map (lambda (x) #f) flows))))])
+                                   (if (null? ds)
+                                       null
+                                       (if (eq? (car ds) 'cont)
+                                           (loop (cdr ds) (cdr as) (cdr vas))
+                                           (let ([d (car ds)]
+                                                 [a (car as)]
+                                                 [va (car vas)])
+                                             (cons
+                                              `(td (,@(case a
+                                                        [(#f) null]
+                                                        [(right) '((align "right"))]
+                                                        [(center) '((align "center"))]
+                                                        [(left) '((align "left"))])
+                                                    ,@(case va
+                                                        [(#f) null]
+                                                        [(top) '((valign "top"))]
+                                                        [(baseline) '((valign "baseline"))]
+                                                        [(bottom) '((valign "bottom"))])
+                                                    ,@(if (and (pair? (cdr ds))
+                                                               (eq? 'cont (cadr ds)))
+                                                          `((colspan
+                                                             ,(number->string
+                                                               (let loop ([n 2]
+                                                                          [ds (cddr ds)])
+                                                                 (cond
+                                                                  [(null? ds) n]
+                                                                  [(eq? 'cont (car ds)) (loop (+ n 1) (cdr ds))]
+                                                                  [else n])))))
+                                                          null))
+                                                   ,@(render-flow d part ht))
+                                              (loop (cdr ds) (cdr as) (cdr vas)))))))))
+                        (table-flowss t)
+                        (cdr (or (and (list? (table-style t))
+                                      (assoc 'row-styles (or (table-style t) null)))
+                                 (cons #f (map (lambda (x) #f) (table-flowss t)))))))))
 
       (define/override (render-blockquote t part ht)
         `((blockquote ,@(if (string? (blockquote-style t))
@@ -286,6 +312,7 @@
         (cond
          [(string? i) (list i)]
          [(eq? i 'mdash) `(" " ndash " ")]
+         [(eq? i 'hline) `((hr))]
          [(symbol? i) (list i)]
          [else (list (format "~s" i))]))
       

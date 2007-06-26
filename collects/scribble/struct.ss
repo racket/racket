@@ -63,7 +63,7 @@
    [paragraph ([content list?])]
    [(styled-paragraph paragraph) ([style any/c])]
    [table ([style any/c]
-           [flowss (listof (listof flow?))])]
+           [flowss (listof (listof (or/c flow? (one-of/c 'cont))))])]
    [delayed-flow-element ([render (any/c part? any/c . -> . flow-element?)])]
    [itemization ([flows (listof flow?)])]
    [blockquote ([style any/c]

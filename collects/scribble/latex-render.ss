@@ -59,6 +59,7 @@
         (printf "\\newcommand{\\textsub}[1]{$_{#1}$}\n")
         (printf "\\newcommand{\\textsuper}[1]{$^{#1}$}\n")
         (printf "\\newcommand{\\refcontent}[1]{#1}\n")
+        (printf "\\newcommand{\\smaller}[1]{{\\footnotesize #1}}\n")
         (printf "\\definecolor{PaleBlue}{rgb}{0.90,0.90,1.0}\n")
         (printf "\\definecolor{LightGray}{rgb}{0.90,0.90,0.90}\n")
         (printf "\\newcommand{\\schemeinput}[1]{\\colorbox{LightGray}{\\hspace{-0.5ex}\\schemeinputcol{#1}\\hspace{-0.5ex}}}\n")
@@ -170,7 +171,8 @@
                [opt (if (zero? (current-table-depth))
                         "[l]"
                         "")])
-          (unless (null? (table-flowss t))
+          (unless (or (null? (table-flowss t))
+                      (null? (car (table-flowss t))))
             (parameterize ([current-table-depth (add1 (current-table-depth))])
               (if index?
                   (printf "\n\n\\begin{theindex}\n")
@@ -185,18 +187,41 @@
                           tableform
                           opt
                           (apply string-append
-                                 (map (lambda (i) "l@{}")
-                                      (car (table-flowss t))))))
-              (for-each (lambda (flows)
+                                 (map (lambda (i align) "~a@{}"
+                                              (case align
+                                               [(center) "c"]
+                                               [(right) "r"]
+                                               [else "l"]))
+                                      (car (table-flowss t))
+                                      (cdr (or (and (list? (table-style t))
+                                                    (assoc 'alignment (or (table-style t) null)))
+                                               (cons #f (map (lambda (x) #f) (car (table-flowss t))))))))))
+              (for-each (lambda (flows row-style)
                           (let loop ([flows flows])
                             (unless (null? flows)
-                              (render-flow (car flows) part ht)
+                              (unless (eq? 'cont (car flows))
+                                (let ([cnt (let loop ([flows (cdr flows)][n 1])
+                                             (cond
+                                              [(null? flows) n]
+                                              [(eq? (car flows) 'cont) (loop (cdr flows) (add1 n))]
+                                              [else n]))])
+                                  (unless (= cnt 1)
+                                    (printf "\\multicolumn{~a}{l}{" cnt))
+                                  (render-flow (car flows) part ht)
+                                  (unless (= cnt 1)
+                                    (printf "}"))
+                                  (unless (null? (list-tail flows cnt))
+                                    (printf " &\n"))))
                               (unless (null? (cdr flows))
-                                (printf " &\n")
                                 (loop (cdr flows)))))
                           (unless index?
-                            (printf " \\\\\n")))
-                        (table-flowss t))
+                            (printf " \\\\\n")
+                            (when (equal? row-style "inferencetop")
+                              (printf "\\hline\n"))))
+                        (table-flowss t)
+                        (cdr (or (and (list? (table-style t))
+                                      (assoc 'row-styles (table-style t)))
+                                 (cons #f (map (lambda (x) #f) (table-flowss t))))))
               (printf "\n\n\\end{~a}~a\n" 
                       tableform
                       (if (equal? tableform "longtable")
@@ -234,7 +259,10 @@
                          [(rdquo) "''"]
                          [(rsquo) "'"]
                          [(prime) "$'$"]
-                         [(rarr) "$\\rightarrow$"]))]
+                         [(rarr) "$\\rightarrow$"]
+                         [(alpha) "$\\alpha$"]
+                         [(infin) "$\\infty$"]
+                         [else (error 'render "unknown symbol element: ~e" i)]))]
          [else (display-protected (format "~s" i))])
         null)
 

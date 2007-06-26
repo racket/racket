@@ -6,10 +6,10 @@
 @title[#:tag "guide:modules" #:style 'toc]{Modules}
 
 Scheme definitions and expressions are normally written inside of a
-module. Although a REPL evaluates definitions and expressions outside
+module. Although a @tech{REPL} evaluates definitions and expressions outside
 of a module for exploration and debugging purposes, and although
 @scheme[load] can evaluate definitions and expressions from a file as
-if they appeared in a REPL interaction, code that is meant to last for
+if they appeared in a @tech{REPL} interaction, code that is meant to last for
 more than a few seconds belongs in a module.
 
 @local-table-of-contents[]
@@ -19,3 +19,4 @@ more than a few seconds belongs in a module.
 @include-section["module-paths.scrbl"]
 @include-section["module-require.scrbl"]
 @include-section["module-provide.scrbl"]
+@include-section["module-set.scrbl"]

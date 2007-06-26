@@ -13,7 +13,7 @@ A program module is written as
 ]
 
 where a @nonterm{topform} is either a @nonterm{definition} or an
-@nonterm{expr}. The REPL also evaluates @nonterm{topform}s.
+@nonterm{expr}. The @tech{REPL} also evaluates @nonterm{topform}s.
 
 In syntax specifications, text with a gray background, such as
 @litchar{#module}, represents literal text. Whitespace must appear
@@ -136,7 +136,7 @@ are written immediately after an open parenthesis with no extra space,
 and closing parentheses never go on their own line.
 
 DrScheme automatically indents according to the standard style when
-you type Enter in a program or REPL expression. For example, if you
+you type Enter in a program or @tech{REPL} expression. For example, if you
 hit Enter after typing @litchar{(define (greet name)}, then DrScheme
 automatically inserts two spaces for the next line.  If you change a
 region of code, you can select it in DrScheme and hit Tab, and

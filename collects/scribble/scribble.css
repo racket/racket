@@ -221,6 +221,18 @@
                font-family: Courier; font-size: 80%;
                }
 
+               .smaller {
+               font-size: 80%;
+               }
+
+               .inferencetop td { 
+                border-bottom: 1px solid black;
+                text-align: center;
+               }
+               .inferencebottom td { 
+                text-align: center;
+               }
+
                .schemeinput {
                color: brown;
                background-color: #eeeeee;

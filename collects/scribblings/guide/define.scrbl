@@ -140,7 +140,8 @@ but @scheme[quotient/remainder] produces the same two values at once:
 (quotient/remainder 13 3)
 ]
 
-As shown above, the REPL prints each result value on its own line.
+As shown above, the @tech{REPL} prints each result value on its own
+line.
 
 Multiple-valued functions can be implemented in terms of the
 @scheme[values] function, which takes any number of values and

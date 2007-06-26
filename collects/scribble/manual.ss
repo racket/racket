@@ -182,7 +182,7 @@
 
   (provide defproc defproc* defstruct defthing defform defform* defform/subs defform*/subs defform/none
            specform specform/subs 
-           specsubform specsubform/subs specspecsubform specsubform/inline
+           specsubform specsubform/subs specspecsubform specspecsubform/subs specsubform/inline
            schemegrammar schemegrammar*
            var svar void-const undefined-const)
 
@@ -310,6 +310,10 @@
     (syntax-rules ()
       [(_ spec desc ...)
        (make-blockquote "leftindent" (list (specsubform spec desc ...)))]))
+  (define-syntax specspecsubform/subs
+    (syntax-rules ()
+      [(_ spec subs desc ...)
+       (make-blockquote "leftindent" (list (specsubform/subs spec subs desc ...)))]))
   (define-syntax specform
     (syntax-rules ()
       [(_ #:literals (lit ...) spec desc ...)

@@ -676,7 +676,7 @@ supplies the initial bindings for the body @scheme[form]s. Each
 @;------------------------------------------------------------------------
 @section[#:tag "mz:require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}
 
-@defform/subs[#:literals (only prefix all-except prefix-all-except rename lib file planet)
+@defform/subs[#:literals (only only-rename prefix all-except prefix-all-except rename lib file planet)
               (require require-spec ...)
               ([require-spec module-path
                              (only require-spec id-maybe-renamed ...)
@@ -798,7 +798,7 @@ and @secref["mz:mod-parse"]).
                                        (protect provide-spec)]
                [provide-spec id
                              (all-defined)
-                             (all-from module-name)
+                             (all-from module-path)
                              (rename [orig-id export-id] ...)
                              (except provide-spec id ...)
                              (prefix provide-spec prefix-id)])]{
@@ -822,13 +822,13 @@ the symbolic form of the identifier bound within the module:
  illegal multiple export for a single symbolic name if different
  defined identifiers use the same symbolic name.}
 
- @specsubform[#:literals (all-from) (all-from module-name)]{ Exports
+ @specsubform[#:literals (all-from) (all-from module-path)]{ Exports
  all identifiers that are imported into the exporting module at
  @tech{phase level} 0 using a @scheme[require-spec] built on
- @scheme[module-name] (see @secref["mz:require"]). The symbolic name
+ @scheme[module-path] (see @secref["mz:require"]). The symbolic name
  for export is derived from the name that is bound within the module,
  as opposed to the symbolic name of the export from
- @scheme[module-name].}
+ @scheme[module-path].}
 
  @specsubform[#:literals (rename) (rename [orig-id export-id] ...)]{
  Exports each @scheme[orig-id], which must be @tech{bound} within the
@@ -836,9 +836,9 @@ the symbolic form of the identifier bound within the module:
  @scheme[export-id] instead @scheme[orig-d].}
 
  @specsubform[#:literals (except) (except provide-spec id ...)]{ Like
- @scheme[provide-spec], but omitting an export for each binding
- @scheme[id]. If @scheme[id] is not specified as an export by
- @scheme[provide-spec], a syntax error is reported.}
+ @scheme[provide-spec], but omitting the export of each binding with
+ external name @scheme[id]. If @scheme[id] is not specified as an
+ export by @scheme[provide-spec], a syntax error is reported.}
 
  @specsubform[#:literals (prefix) (prefix provide-spec prefix-id)]{
  Like @scheme[provide-spec], but with each symbolic export name from

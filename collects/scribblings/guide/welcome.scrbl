@@ -67,7 +67,7 @@ DrScheme's bottom text area and the @exec{mzscheme} command-line
 program (when started with no options) both act as a kind of
 calculator. You type a Scheme expression, hit return, and the answer
 is printed. In the terminology of Scheme, this kind of calculator is
-called a @idefterm{read-eval-print loop} or @idefterm{REPL}.
+called a @idefterm{read-eval-print loop} or @deftech{REPL}.
 
 A number by itself is an expression, and the answer is just the
 number:
@@ -100,7 +100,7 @@ using the @scheme[define] form, like this:
 (piece "howdy universe")
 ]
 
-Although you can evaluate the @scheme[define] form in the REPL,
+Although you can evaluate the @scheme[define] form in the @tech{REPL},
 definitions are normally a part of a program that you want to keep and
 use later. So, in DrScheme, you'd normally put the definition in the
 top text area---called the @defterm{definitions area}---along with the
@@ -119,7 +119,7 @@ was just an example expression that you were using to explore
 @scheme[piece], then you'd more likely leave the definitions area as
 above, click @onscreen{Run}, and then evaluate
 @scheme[(piece "howdy universe")]
-in the REPL.
+in the @tech{REPL}.
 
 With @exec{mzscheme}, you'd save the above text in a file using your
 favorite editor. If you save it as @file{piece.ss}, then after starting
