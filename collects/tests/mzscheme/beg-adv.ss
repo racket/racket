@@ -67,6 +67,7 @@
 (htdp-test 15 'app-f (f 10))
 (htdp-top-pop 1)
 (htdp-top-pop 1)
+(htdp-top-pop 1)
 
 (htdp-top (define-struct a0 ()))
 (htdp-top (define-struct a1 (b)))
@@ -247,3 +248,14 @@
 (htdp-syntax-test #'(require (lib "a" "b/")) #rx"end with a slash")
 (htdp-syntax-test #'(require (lib "a" 2)) #rx"string for a lib path")
 (htdp-syntax-test #'(require (planet "a" 2)) #rx"not a valid planet path")
+
+(define rx:placeholder "found a placeholder")
+
+;; CCE: These test the error handling for ...
+;; They should be duplicated for .. through ......
+;; but (for-each (lambda foo bar) baz) won't work here.
+(htdp-err/rt-test ... rx:placeholder)
+(htdp-err/rt-test (+ 1 ... 2) rx:placeholder)
+(htdp-err/rt-test (... 1 2) rx:placeholder)
+(htdp-err/rt-test (if false 1 ...) rx:placeholder)
+(htdp-test 1 'ok-dots (if true 1 ...))

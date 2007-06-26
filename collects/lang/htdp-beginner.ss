@@ -26,6 +26,11 @@
 	   (rename beginner-quote quote)
 	   (rename beginner-module-begin #%module-begin)
            (rename beginner-require require)
+           (rename beginner-dots ..)
+           (rename beginner-dots ...)
+           (rename beginner-dots ....)
+           (rename beginner-dots .....)
+           (rename beginner-dots ......)
 	   ; (rename beginner-contract contract)
 	   ; (rename beginner-define-data define-data)
 	   #%datum
