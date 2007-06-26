@@ -1,4 +1,4 @@
-#cs(module graphing mzscheme
+(module graphing mzscheme
   (require (lib "error.ss" "htdp")
 	   (lib "unit.ss")
 	   (lib "draw-sig.ss" "htdp")

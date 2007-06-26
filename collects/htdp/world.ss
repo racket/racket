@@ -282,12 +282,18 @@ Matthew
     (for-each (lambda (cand) 
                 (check-image 'run-movie cand "first" "list of images"))
               movie)
-    (let run-movie ([movie movie])
-      (cond [(null? movie) #t]
-            [(pair? movie)
-             (update-frame (car movie))
-             (sleep/yield .05)
-             (run-movie (cdr movie))])))
+    (let* ([fst (car movie)]
+	   [wdt (image-width fst)]
+	   [hgt (image-height fst)]
+	   [nxt (lambda (w) (if (null? w) (end-of-time "") (cdr w)))])
+      (big-bang wdt hgt (/ 1 27) movie)
+      (let run-movie ([movie movie])
+	(cond
+	  [(null? movie) #t]
+	  [(pair? movie)
+	   (update-frame (car movie))
+	   (sleep/yield .05)
+	   (run-movie (cdr movie))]))))
   
   (define (run-simulation width height rate f)
     (check-pos 'run-simulation width "first")

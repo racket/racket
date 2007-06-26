@@ -135,7 +135,8 @@ students to simulate a small world of animated drawings and games:
    
 <li><code>{(idx run-movie)}   : (Listof Image) -> true </code><br>
    <code>(run-movie loi)</code>
-   shows the list of images in loi, time-delayed
+   shows the list of images in loi in a time-delayed manner; 
+   assume: all images are of the same size 
 </menu></p>
 
 <hr />
