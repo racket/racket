@@ -668,7 +668,8 @@
     
     (define constructor (make-constructor #f (repeat init)))
     
-    (define interface (interface-def #f #f (repeat method-sig)))
+    (define interface (interface-def #f #f 
+                                     (repeat (sequence (method-sig SEMI_COLON) id "method signature"))))
     
     (define class
       (class-def #f #f (implements-dec identifier)
@@ -770,7 +771,7 @@
       (interface-def
        #f
        (sequence (tok:extends (comma-sep identifier "interfaces")) id "extends")
-       (repeat method-sig-no-abs)))
+       (repeat (sequence (method-sig-no-abs SEMI_COLON) id "method signature"))))
     
     (define class
       (class-def tok:abstract (extend-dec identifier) 
