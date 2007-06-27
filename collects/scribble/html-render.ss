@@ -130,7 +130,8 @@
                   `((,(case (length number)
                         [(0) 'h2]
                         [(1) 'h3]
-                        [else 'h4])
+                        [(2) 'h4]
+                        [else 'h5])
                      ,@(format-number number '((tt nbsp)))
                      ,@(if (part-tag d)
                            `((a ((name ,(format "~a" `(part ,(part-tag d)))))))

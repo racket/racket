@@ -332,7 +332,7 @@ The behavior of a datatype with respect to @scheme[eq?] is generally
 specified with the datatype and its associated procedures.
 
 @;------------------------------------------------------------------------
-@section{Garbage Collection}
+@section[#:tag "mz:gc-model"]{Garbage Collection}
 
 In the program state
 
@@ -523,15 +523,18 @@ the evaluation of @scheme[(require m)] creates the variable @scheme[x]
 and installs @scheme[10] as its value. This @scheme[x] is unrelated to
 any top-level definition of @scheme[x].
 
-Another difference is that a module can be @tech{instantiate}d in
-multiple @deftech{phases}. A phase is an integer that, again, is
-effectively a prefix on the names of module-level definitions. A
-top-level @scheme[require] @tech{instantiates} a module at
-@tech{phase} 0, if the module is not already @tech{instantiate}d at
-phase 0.  A top-level @scheme[require-for-syntax] @tech{instantiates}
-a module at @tech{phase} 1 (if it is not already @tech{instantiate}d
-at that level); a @scheme[require-for-syntax] also has a different
-binding effect on further program parsing, as described in
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "mz:module-phase"]{Module Phases}
+
+A module can be @tech{instantiate}d in multiple @deftech{phases}. A
+phase is an integer that, again, is effectively a prefix on the names
+of module-level definitions. A top-level @scheme[require]
+@tech{instantiates} a module at @tech{phase} 0, if the module is not
+already @tech{instantiate}d at phase 0.  A top-level
+@scheme[require-for-syntax] @tech{instantiates} a module at
+@tech{phase} 1 (if it is not already @tech{instantiate}d at that
+level); a @scheme[require-for-syntax] also has a different binding
+effect on further program parsing, as described in
 @secref["mz:intro-binding"].
 
 Within a module, some definitions are shifted by a phase already; the
@@ -561,6 +564,21 @@ multiple @tech{instantiations} may exist at phase 1 and higher. These
 @tech{instantiations} are created by the parsing of module forms (see
 @secref["mz:mod-parse"]), and are, again, conceptually distinguished
 by prefixes.
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "mz:module-redeclare"]{Module Re-declarations}
+
+When a module is declared using a name for which a module is already
+declared, the new declaration's definitions replace and extend the old
+declarations. If a variable in the old declaration has no counterpart
+in the new declaration, the old variable continues to exist, but its
+binding is not included in the @tech{lexical information} for the
+module body. If a new variable definition has a counterpart in the old
+declaration, it effectively assigns to the old variable.
+
+If a module is @tech{instantiate}d in any @tech{phase}s before it is
+re-declared, each re-declaration of the module is immediately
+@tech{instantiate}d in the same @tech{phase}s.
 
 @;------------------------------------------------------------------------
 @section{Continuation Frames and Marks}
@@ -598,7 +616,7 @@ prompt with another one. When a delimited continuation is captured,
 the marks associated with the relevant frames are also captured.
 
 @;------------------------------------------------------------------------
-@section{Threads}
+@section[#:tag "mz:thread-model"]{Threads}
 
 Scheme supports multiple, pre-emptive threads of evaluation. In terms
 of the evaluation model, this means that each step in evaluation
@@ -621,7 +639,7 @@ new thread sees the same initial value (specified when the thread cell
 is created) as all other threads.
 
 @;------------------------------------------------------------------------
-@section{Parameters}
+@section[#:tag "mz:parameter-model"]{Parameters}
 
 @deftech{Parameters} are essentially a derived concept in Scheme; they
 are defined in terms of continuation marks and thread cells. However,
@@ -648,7 +666,7 @@ Various operations, such as @scheme[parameterize] or
 current continuation's frame.
 
 @;------------------------------------------------------------------------
-@section{Exceptions}
+@section[#:tag "mz:exn-model"]{Exceptions}
 
 @deftech{Exceptions} are essentially a derived concept in Scheme; they
 are defined in terms of continuations, prompts, and continuation
@@ -669,4 +687,67 @@ particular tag for which a prompt is always present, because the
 prompt is installed in the outermost frame of the continuation for any
 new thread.
 
+@;------------------------------------------------------------------------
+@section[#:tag "mz:custodian-model"]{Custodians}
 
+A @deftech{custodian} manages a collection of threads, file-stream
+ports, TCP ports, TCP listeners, UDP sockets, and byte converters.
+Whenever a thread, file-stream port, TCP port, TCP listener, or UDP
+socket is created, it is placed under the management of the
+@deftech{current custodian} as determined by the
+@scheme[current-custodian] @tech{parameter}.
+
+@margin-note{In MrEd, custodians also manage eventspaces.}
+
+Except for the root custodian, every @tech{custodian} itself it
+managed by a @tech{custodian}, so that custodians form a hierarchy.
+Every object managed by a subordinate custodian is also managed by the
+custodian's owner.
+
+When a @tech{custodian} is shut down via
+@scheme[custodian-shutdown-all], it forcibly and immediately closes
+the ports, TCP connections, etc. that it manages, as well as
+terminating (or suspending) its threads. A custodian that has been
+shut down cannot manage new objects.  If the current custodian is shut
+down before a procedure is called to create a managed resource (e.g.,
+@scheme[open-input-port], @scheme[thread]), the
+@exnraise[exn:fail:contract].
+
+A thread can have multiple managing custodians, and a suspended thread
+created with @scheme[thread/suspend-to-kill] can have zero
+custodians. Extra custodians become associated with a thread through
+@scheme[thread-resume] (see @secref["mz:threadkill"]). When a thread
+has multiple custodians, it is not necessarily killed by a
+@scheme[custodian-shutdown-all], but shut-down custodians are removed
+from the thread's managing set, and the thread is killed when its
+managing set becomes empty.
+
+The values managed by a custodian are only weakly held by the
+custodian. As a result, a @tech{will} can be executed for a value that
+is managed by a custodian. In addition, a custodian only weakly
+references its subordinate custodians; if a subordinate custodian is
+unreferenced but has its own subordinates, then the custodian may be
+collected, at which point its subordinates become immediately
+subordinate to the collected custodian's superordinate custodian.
+
+In addition to the other entities managed by a custodian, a
+@defterm{custodian box} created with @scheme[make-custodian-box]
+strongly holds onto a value placed in the box until the box's
+custodian is shut down. The custodian only weakly retains the box
+itself, however (so the box and its content can be collected if there
+are no other references to them).
+
+When MzScheme is compiled with support for per-custodian memory
+accounting (see @scheme[custodian-memory-accounting-available?]), the
+@scheme[current-memory-use] procedure can report a custodian-specific
+result.  This result determines how much memory is occupied by objects
+that are reachable from the custodian's managed values, especially its
+threads, and including its sub-custodians' managed values. If an
+object is reachable from two custodians where neither is an ancestor
+of the other, an object is arbitrarily charged to one of the other,
+and the choice can change after each collection; objects reachable
+from both a custodian and its descendant, however, are reliably
+charged to the descendant.  Reachability for per-custodian accounting
+does not include weak references, references to threads managed by
+non-descendant custodians, references to non-descendant custodians, or
+references to custodian boxes for non-descendant custodians.

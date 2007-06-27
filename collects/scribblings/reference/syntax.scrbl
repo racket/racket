@@ -499,10 +499,11 @@ position with respect to the @scheme[if] form.
                       (code:line keyword arg-id)
                       (code:line keyword [arg-id default-expr])])]{
 
-The first form binds @scheme[id] to the result of @scheme[expr], and
-the second form binds @scheme[id] to a procedure. In the second case,
-the generation procedure is @scheme[(#,cvt (head args) body ...+)],
-using the @|cvt| meta-function defined as follows:
+The first form @tech{bind}s @scheme[id] to the result of
+@scheme[expr], and the second form @tech{bind}s @scheme[id] to a
+procedure. In the second case, the generation procedure is
+@scheme[(#,cvt (head args) body ...+)], using the @|cvt| meta-function
+defined as follows:
 
 @schemeblock[
 (#,cvt (id . _gen-formals) . _datum)   = (lambda _gen-formals . _datum)
@@ -535,7 +536,7 @@ x
 
 @defform[(define-values (id ...) expr)]{
 
-Evaluates the @scheme[expr], and binds the results to the
+Evaluates the @scheme[expr], and @tech{bind}s the results to the
 @scheme[id]s, in order, if the number of results matches the number of
 @scheme[id]s; if @scheme[expr] produces a different number of results,
 the @exnraise[exn:fail:contract].
@@ -609,7 +610,8 @@ in tail position only if no @scheme[body]s are present.
 Evaluates @scheme[expr] and installs the result into the location for
 @scheme[id], which must be bound as a local variable or defined as a
 @tech{top-level variable} or @tech{module-level variable}. If
-@scheme[id] refers to a @tech{top-level variable} that has not been
+@scheme[id] refers to an imported binding, a syntax error is reported.
+If @scheme[id] refers to a @tech{top-level variable} that has not been
 defined, the @exnraise[exn:fail:contract].
 
 @defexamples[
@@ -668,10 +670,88 @@ information} and source-location information attached to
 
 Declares a module named by @scheme[id]. The @scheme[require-spec] must
 be as for @scheme[require] (see @secref["mz:require"]), and it
-supplies the initial bindings for the body @scheme[form]s. Each
-@scheme[form] is expanded in a @tech{module context}.
+supplies the initial bindings for the body @scheme[form]s. That is, it
+is treated like a @scheme[(require require-spec)] prefix on
+@scheme[form], where @scheme[require] is the preimitive
+@scheme[require] form.
+
+If a single @scheme[form] is provided, then it is partially expanded
+in a @tech{module-begin context}. If the expansion leads to
+@scheme[#%plain-module-begin], then the body of the
+@scheme[#%plain-module-begin] is the body of the module. If partial
+expansion leads to any other primitive form, then the form is wrapped
+with @schemeidfont{#%module-begin} using the lexical context of the
+module body; this identifier must be bound by the initial
+@scheme[require-spec] import, and its expansion must produce a
+@scheme[#%plain-module-begin] to supply the module body. Finally, if
+multiple @scheme[form]s are provided, they are wrapped with
+@schemeidfont{#%module-begin}, as in the case where a single
+@scheme[form] does not expand to @scheme[#%plain-module-begin].
+
+Each @scheme[form] is partially expanded (see
+@secref["mz:partial-expansion"]) in a @tech{module context}. Further
+action depends on the shape of the form:
+
+@itemize{
+
+ @item{If it is a @scheme[begin] form, so the sub-forms are flattened
+  out into the module's body and immediately processed in place of the
+  @scheme[begin].}
+
+ @item{If it is a @scheme[define-syntaxes] or
+  @scheme[define-values-for-syntax] form, then the right-hand side is
+  evaluated (in @tech{phase} 1), and the binding is immediately
+  installed for further partial expansion within the module.}
+
+ @item{If the form is a @scheme[require], @scheme[require-for-syntax],
+   or @scheme[require-for-template] form, bindings are introduced
+   immediately, and the imported modules are @tech{instantiate}d or
+   @tech{visit}ed as appropriate.}
+
+ @item{If the form is a @scheme[provide] or
+   @scheme[provide-for-syntax] form, then it is recorded for
+   processing after the rest of the body.}
+
+ @item{If the form is a @scheme[define-values] form, then the binding
+   is installed immediately, but the right-hand expression is not
+   expanded further.}
+
+ @item{Similarly, if the form is an expression, it is
+   not expanded further.}
 
 }
+
+After all @scheme[form]s have been partially expanded this way, then
+the remaining expression forms (including those on the right-hand side
+of a definition) are expanded in an expression context.
+
+The scope of all imported identifiers covers the entire module body,
+as does the scope of any identifier defined within the module body.
+The ordering of syntax definitions does not affect the scope of the
+syntax names; a transformer for @scheme[A] can produce expressions
+containing @scheme[B], while the transformer for @scheme[B] produces
+expressions containing @scheme[A], regardless of the order of
+declarations for @scheme[A] and @scheme[B]. However, a syntactic form
+that produces syntax definitions must be defined before it is used.
+
+No identifier can be imported or defined more than once at any
+@tech{phase level}. Every exported identifier must be imported or
+defined. No expression can refer to a @tech{top-level variable}.
+
+The evaluation of a @scheme[module] form does not evaluate the
+expressions in the body of the module. Evaluation merely declares a
+module, whose full name depends both on @scheme[id] and
+@scheme[(current-module-name-prefix)].
+
+The module body is executed only when the module is explicitly
+@techlink{instantiate}d via @scheme[require],
+@scheme[require-for-syntax], @scheme[require-for-template], or
+@scheme[dynamic-require]. On invocation, expressions and definitions
+are evaluated in order as they appear within the module; accessing a
+@tech{module-level variable} before it is defined signals a run-time
+error, just like accessing an undefined global variable.
+
+See also @secref["mz:module-eval-model"] and @secref["mz:mod-parse"].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "mz:require"]{Importing: @scheme[require], @scheme[require-for-syntax], @scheme[require-for-template]}

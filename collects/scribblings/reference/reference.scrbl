@@ -29,6 +29,9 @@ language.
 
 @;------------------------------------------------------------------------
 @include-section["regexps.scrbl"]
+@include-section["exns.scrbl"]
+@include-section["threads.scrbl"]
+@include-section["custodians.scrbl"]
 
 @;------------------------------------------------------------------------
 

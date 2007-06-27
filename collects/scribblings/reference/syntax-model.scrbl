@@ -499,13 +499,28 @@ introduced binding is a normal binding at phase level 1 (not a
 @tech{transformer binding} at phase level 0).
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "mz:partial-expansion"]{Partial Expansion}
+
+In certain contexts, such as an @tech{internal-definition context} or
+@tech{module context}, forms are partially expanded to determine
+whether they represent definitions, expressions, or other declaration
+forms. Partial expansion works by cutting off the normal recursion
+expansion when the relevant binding is for a primitive syntactic form.
+
+As a special case, when expansion would otherwise add an
+@schemeidfont{#%app}, @schemeidfont{#%datum}, or @schemeidfont{#%top}
+identifier to an expression, and when the binding turns out to be the
+primitive @scheme[#%app], @scheme[#%datum], or @scheme[#%top] form,
+then expansion stops without adding the identifier.
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "mz:intdef-body"]{Internal Definitions}
 
-An internal-definition context corresponds to a partial expansion
-step. A form that supports internal definitions starts by expanding
-its first form in an internal-definition context, but only
-partially. That is, it recursively expands only until the form becomes
-one of the following:
+An internal-definition context corresponds to a partial expansion step
+(see @secref["mz:partial-expansion"]). A form that supports internal
+definitions starts by expanding its first form in an
+internal-definition context, but only partially. That is, it
+recursively expands only until the form becomes one of the following:
 
 @itemize{
 

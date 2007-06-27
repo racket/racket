@@ -180,7 +180,8 @@
 
   ;; ----------------------------------------
 
-  (provide defproc defproc* defstruct defthing defform defform* defform/subs defform*/subs defform/none
+  (provide defproc defproc* defstruct defthing defparam
+           defform defform* defform/subs defform*/subs defform/none
            specform specform/subs 
            specsubform specsubform/subs specspecsubform specspecsubform/subs specsubform/inline
            schemegrammar schemegrammar*
@@ -240,8 +241,10 @@
                  (lambda () (list desc ...)))]))
   (define-syntax defstruct
     (syntax-rules ()
+      [(_ name fields #:immutable desc ...)
+       (*defstruct (quote-syntax name) 'name 'fields #t (lambda () (list desc ...)))]
       [(_ name fields desc ...)
-       (*defstruct (quote-syntax name) 'name 'fields (lambda () (list desc ...)))]))
+       (*defstruct (quote-syntax name) 'name 'fields #f (lambda () (list desc ...)))]))
   (define-syntax (defform*/subs stx)
     (syntax-case stx ()
       [(_ #:literals (lit ...) [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
@@ -342,6 +345,10 @@
     (syntax-rules ()
       [(_ id result desc ...)
        (*defthing (quote-syntax id) 'id 'result (lambda () (list desc ...)))]))
+  (define-syntax defparam
+    (syntax-rules ()
+      [(_ id arg contract desc ...)
+       (defproc* ([(id) contract] [(id [arg contract]) void?]) desc ...)]))
   (define-syntax schemegrammar
     (syntax-rules ()
       [(_ #:literals (lit ...) id clause ...) (*schemegrammar '(lit ...) 
@@ -587,7 +594,7 @@
                                          (map symbol->string (car wrappers)))))))
          (cdr wrappers))))
 
-  (define (*defstruct stx-id name fields content-thunk)
+  (define (*defstruct stx-id name fields immutable? content-thunk)
     (define spacer (hspace 1))
     (make-splice
      (cons
@@ -613,10 +620,13 @@
                                  (map (lambda (f)
                                         (list name '- (car f)))
                                       fields)
-                                 (map (lambda (f)
-                                        (list 'set- name '- (car f) '!))
-                                      fields)))))
-                            ,(map car fields))))))))
+                                 (if immutable?
+                                     null
+                                     (map (lambda (f)
+                                            (list 'set- name '- (car f) '!))
+                                          fields))))))
+                     ,(map car fields)
+                     ,@(if immutable? '(#:immutable) null))))))))
         (map (lambda (v)
                (cond
                 [(pair? v)

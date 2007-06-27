@@ -111,7 +111,7 @@
       (define advance
         (case-lambda
          [(c init-line! delta)
-          (let ([c (+ delta (syntax-column c))]
+          (let ([c (+ delta (or (syntax-column c) 0))]
                 [l (syntax-line c)])
             (let ([new-line? (and l (l . > . line))])
               (when new-line?
