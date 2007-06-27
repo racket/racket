@@ -10,7 +10,8 @@
            "configuration/configuration-table-structs.ss"
            "private/cache-table.ss"
            (prefix http: "private/request.ss"))
-  (require (prefix fsmap: "dispatchers/filesystem-map.ss")
+  (require "dispatchers/dispatch.ss"
+           (prefix fsmap: "dispatchers/filesystem-map.ss")
            (prefix sequencer: "dispatchers/dispatch-sequencer.ss")
            (prefix timeout: (lib "dispatch-timeout.ss" "web-server" "dispatchers"))
            (prefix passwords: "dispatchers/dispatch-passwords.ss")
@@ -51,8 +52,11 @@
     (define (host-info->dispatcher host-info)
       (sequencer:make
        (timeout:make initial-connection-timeout)
-       (log:make #:format (log:log-format->format (host-log-format host-info))
-                 #:log-path (host-log-path host-info))
+       (if (and (host-log-format host-info)
+                (host-log-path host-info))
+           (log:make #:format (log:log-format->format (host-log-format host-info))
+                     #:log-path (host-log-path host-info))
+           (lambda (conn req) (next-dispatcher)))
        (let-values ([(update-password-cache! password-check)
                      (passwords:make #:password-file (host-passwords host-info)
                                      #:authentication-responder (responders-authentication (host-responders host-info)))])
