@@ -2675,6 +2675,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   Scheme_Object *body, *value;
   int i, j, pos, is_rec, not_simply_let_star = 0;
   int size_before_opt, did_set_value;
+  int remove_last_one = 0;
 
   /* Special case: (let ([x E]) x) where E is lambda, case-lambda, or
      a constant. (If we allowed arbitrary E here, it would affect the
@@ -2769,41 +2770,50 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
     if ((pre_body->count != 1)
         && is_values_apply(value)
         && scheme_omittable_expr(value, pre_body->count)) {
-      Scheme_Compiled_Let_Value *naya;
-      Scheme_Object *rest = pre_body->body;
-      int *new_flags;
-      int cnt = pre_body->count;
-
-      while (cnt--) {
-        naya = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
-        naya->so.type = scheme_compiled_let_value_type;
-        naya->body = rest;
-        naya->count = 1;
-        naya->position = pre_body->position + cnt;
-        new_flags = (int *)scheme_malloc_atomic(sizeof(int));
-        new_flags[0] = pre_body->flags[cnt];
-        naya->flags = new_flags;
-        rest = (Scheme_Object *)naya;
-      }
-
-      naya = (Scheme_Compiled_Let_Value *)rest;
-      unpack_values_application(value, naya);
-      if (prev_body)
-        prev_body->body = (Scheme_Object *)naya;
-      else
-        head->body = (Scheme_Object *)naya;
-      head->num_clauses += (pre_body->count - 1);
-      i += (pre_body->count - 1);
-      if (pre_body->count) {
-        pre_body = naya;
-        body = (Scheme_Object *)naya;
-        value = pre_body->value;
+      if (!pre_body->count && !i && (head->num_clauses > 1)) {
+        /* We want to drop the clause entirely, but doing it
+           here messes up the loop for letrec. So wait and 
+           remove it at the end. */
+        remove_last_one = 1;
       } else {
-        /* We've dropped this clause entirely. */
-        if (i > 0)
-          continue;
+        Scheme_Compiled_Let_Value *naya;
+        Scheme_Object *rest = pre_body->body;
+        int *new_flags;
+        int cnt = pre_body->count;
+
+        while (cnt--) {
+          naya = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
+          naya->so.type = scheme_compiled_let_value_type;
+          naya->body = rest;
+          naya->count = 1;
+          naya->position = pre_body->position + cnt;
+          new_flags = (int *)scheme_malloc_atomic(sizeof(int));
+          new_flags[0] = pre_body->flags[cnt];
+          naya->flags = new_flags;
+          rest = (Scheme_Object *)naya;
+        }
+
+        naya = (Scheme_Compiled_Let_Value *)rest;
+        unpack_values_application(value, naya);
+        if (prev_body)
+          prev_body->body = (Scheme_Object *)naya;
         else
-          break;
+          head->body = (Scheme_Object *)naya;
+        head->num_clauses += (pre_body->count - 1);
+        i += (pre_body->count - 1);
+        if (pre_body->count) {
+          pre_body = naya;
+          body = (Scheme_Object *)naya;
+          value = pre_body->value;
+        } else {
+          /* We've dropped this clause entirely. */
+          i++;
+          if (i > 0) {
+            body = (Scheme_Object *)naya;
+            continue;
+          } else
+            break;
+        }
       }
     }
 
@@ -2911,6 +2921,19 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
       }
       retry_start = NULL;
       did_set_value = 0;
+    }
+
+    if (remove_last_one) {
+      head->num_clauses -= 1;
+      body = (Scheme_Object *)pre_body->body;
+      if (prev_body) {
+        prev_body->body = body;
+        pre_body = prev_body;
+      } else {
+        head->body = body;
+        pre_body = NULL;
+      }
+      break;
     }
 
     pos += pre_body->count;
