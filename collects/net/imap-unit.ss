@@ -383,6 +383,25 @@
     (unless (tree-empty? (imap-expunges imap))
       (raise-mismatch-error who "session has pending expunge reports: " imap)))
 
+  (define (msg-set msgs)
+    (apply
+     string-append
+     (let loop ([prev #f][msgs msgs])
+       (cond
+        [(null? msgs) null]
+        [(and prev
+              (pair? (cdr msgs))
+              (= (add1 prev) (car msgs)))
+         (loop (car msgs) (cdr msgs))]
+        [prev (cons (format ":~a," prev)
+                    (loop #f msgs))]
+        [(null? (cdr msgs)) (list (format "~a" (car msgs)))]
+        [(= (add1 (car msgs)) (cadr msgs))
+         (cons (format "~a" (car msgs))
+               (loop (car msgs) (cdr msgs)))]
+        [else (cons (format "~a," (car msgs))
+                    (loop #f (cdr msgs)))]))))
+
   (define (imap-get-messages imap msgs field-list)
     (no-expunges 'imap-get-messages imap)
     (when (or (not (list? msgs))
@@ -399,7 +418,7 @@
         ;; FETCH request adds info to `(imap-fectches imap)':
         (imap-send imap
                    (list "FETCH"
-                         (box (splice msgs ","))
+                         (box (msg-set msgs))
                          (box
                           (format "(~a)"
                                   (splice (map (lambda (f)
@@ -434,7 +453,7 @@
     (check-ok
      (imap-send imap
                 (list "STORE"
-                      (box (splice msgs ","))
+                      (box (msg-set msgs))
                       (case mode
                         [(+) "+FLAGS.SILENT"]
                         [(-) "-FLAGS.SILENT"]
@@ -447,7 +466,7 @@
   (define (imap-copy imap msgs dest-mailbox)
     (no-expunges 'imap-copy imap)
     (check-ok
-     (imap-send imap (list "COPY" (box (splice msgs ",")) dest-mailbox)
+     (imap-send imap (list "COPY" (box (msg-set msgs)) dest-mailbox)
                 void)))
 
   (define (imap-append imap dest-mailbox msg)
