@@ -28,25 +28,7 @@ language.
 @subsection[#:tag "mz:char-input"]{From Bytes to Characters}
 
 @;------------------------------------------------------------------------
-@section["Regular Expressions"]
-
-@require["rx.ss"]
-
-Common grammar:
-
-@common-table
-
-Rx table:
-
-@rx-table
-
-Px table:
-
-@px-table
-
-Types:
-
-@type-table
+@include-section["regexps.scrbl"]
 
 @;------------------------------------------------------------------------
 

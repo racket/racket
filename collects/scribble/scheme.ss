@@ -372,7 +372,8 @@
                                    (make-link-element "schemesyntaxlink" (list s) stag)]
                                   [vd
                                    (make-link-element "schemevaluelink" (list s) vtag)]
-                                  [else s])))))
+                                  [else s]))))
+                            (lambda () s))
                            (literalize-spaces s))
                        (cond
                         [(positive? quote-depth) value-color]

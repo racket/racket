@@ -76,12 +76,11 @@ depends on the current inspector.)
                            [immutables (listof non-negative-exact-integer?)
                                        null]
                            [guard (or/c procedure? false/c) #f])
-          (values 
-           struct-type?
-           struct-constructor-procedure?
-           struct-predicate-procedure?
-           struct-accessor-procedure?
-           struct-mutator-procedure?)]{
+          (values struct-type?
+                  struct-constructor-procedure?
+                  struct-predicate-procedure?
+                  struct-accessor-procedure?
+                  struct-mutator-procedure?)]{
 
 Creates a new structure type.  The @scheme[name] argument is used as
 the type name. If @scheme[super-type] is not @scheme[#f], the new type
@@ -234,10 +233,9 @@ A @index['("structure type properties")]{@defterm{structure type
 
 @defproc[(make-struct-type-property [name symbol?]
                                     [guard (or/c procedure? false/c) #f]) 
-         (values 
-          struct-type-property?
-          procedure?
-          procedure?)]{
+         (values struct-type-property?
+                 procedure?
+                 procedure?)]{
 
  Creates a new structure type property and returns three values:
 
@@ -355,15 +353,14 @@ Returns two values:
 }}
 
 @defproc[(struct-type-info [struct-type struct-type?])
-         (values 
-          symbol?
-          nonnegative-exact-integer?
-          nonnegative-exact-integer?
-          struct-accessor-procedure?
-          struct-mutator-procedure?
-          (listof nonnegative-exact-integer?)
-          (or/c struct-type? false/c)
-          boolean?)]{
+         (values symbol?
+                 nonnegative-exact-integer?
+                 nonnegative-exact-integer?
+                 struct-accessor-procedure?
+                 struct-mutator-procedure?
+                 (listof nonnegative-exact-integer?)
+                 (or/c struct-type? false/c)
+                 boolean?)]{
 
 Returns eight values that provide information about the structure type
  descriptor @scheme[struct-type], assuming that the type is controlled

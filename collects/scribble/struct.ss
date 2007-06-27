@@ -95,28 +95,33 @@
                   delayed-element-ref
                   delayed-element-set!)
     (make-struct-type 'delayed-element #f
-                      1 1 #f
+                      2 1 #f
                       (list (cons prop:serializable 
                                   (make-serialize-info
                                    (lambda (d)
-                                     (unless (delayed-element-ref d 1)
+                                     (unless (delayed-element-ref d 2)
                                        (error 'serialize-delayed-element
                                               "cannot serialize a delayed element that was not resolved: ~e"
                                               d))
-                                     (vector (delayed-element-ref d 1)))
+                                     (vector (delayed-element-ref d 2)))
                                    #'deserialize-delayed-element
                                    #f
                                    (or (current-load-relative-directory) (current-directory)))))))
   (define-syntax delayed-element (list-immutable #'struct:delayed-element
                                                  #'make-delayed-element
                                                  #'delayed-element?
-                                                 (list-immutable #'delayed-element-render)
-                                                 (list-immutable #'set-delayed-element-render!)
+                                                 (list-immutable #'delayed-element-sizer 
+                                                                 #'delayed-element-render)
+                                                 (list-immutable #'set-delayed-element-sizer!
+                                                                 #'set-delayed-element-render!)
                                                  #t))
   (define delayed-element-render (make-struct-field-accessor delayed-element-ref 0))
+  (define delayed-element-sizer (make-struct-field-accessor delayed-element-ref 1))
   (define set-delayed-element-render! (make-struct-field-mutator delayed-element-set! 0))
+  (define set-delayed-element-sizer! (make-struct-field-mutator delayed-element-set! 1))
   (provide/contract
-   (struct delayed-element ([render (any/c part? any/c . -> . list?)])))
+   (struct delayed-element ([render (any/c part? any/c . -> . list?)]
+                            [sizer (-> any)])))
 
   (provide deserialize-delayed-element)
   (define deserialize-delayed-element
@@ -124,9 +129,9 @@
   
   (provide force-delayed-element)
   (define (force-delayed-element d renderer sec ht)
-    (or (delayed-element-ref d 1)
+    (or (delayed-element-ref d 2)
         (let ([v ((delayed-element-ref d 0) renderer sec ht)])
-          (delayed-element-set! d 1 v)
+          (delayed-element-set! d 2 v)
           v)))
 
   ;; ----------------------------------------
@@ -162,6 +167,53 @@
         (content->string (force-delayed-element c renderer sec ht)
                          renderer sec ht)]
        [else (element->string c)])]))
+
+  ;; ----------------------------------------
+  
+  (provide flow-element-width
+           element-width)
+
+  (define (element-width s)
+    (cond
+     [(string? s) (string-length s)]
+     [(element? s) (apply + (map element-width (element-content s)))]
+     [(delayed-element? s) (element-width ((delayed-element-sizer s)))]
+     [else 1]))
+
+  (define (paragraph-width s)
+    (apply + (map element-width (paragraph-content s))))
+
+  (define (flow-width f)
+    (apply max 0 (map flow-element-width (flow-paragraphs f))))
+
+  (define (flow-element-width p)
+    (cond
+     [(paragraph? p) (paragraph-width p)]
+     [(table? p) (table-width p)]
+     [(itemization? p) (itemization-width p)]
+     [(blockquote? p) (blockquote-width p)]
+     [(delayed-flow-element? p) 1]))
+
+  (define (table-width p)
+    (let ([flowss (table-flowss p)])
+      (if (null? flowss)
+          0
+          (let loop ([flowss flowss])
+            (if (null? (car flowss))
+                0
+                (+ (apply max 
+                          0
+                          (map flow-width
+                               (map car flowss)))
+                   (loop (map cdr flowss))))))))
+
+  (define (itemization-width p)
+    (apply max 0 (map flow-width (itemization-flows p))))
+
+  (define (blockquote-width p)
+    (+ 4 (apply max 0 (map paragraph-width (blockquote-paragraphs p)))))
+
+  ;; ----------------------------------------
 
   )
 
