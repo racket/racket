@@ -224,7 +224,7 @@ Note: Xexpr is the only important one to understand.  Even then,
           |  Entity
           |  Misc
 
-  Misc = Comment
+>  Misc = Comment
        |  Processing-instruction
 
 > Pcdata = (make-pcdata Location Location String)
@@ -245,10 +245,10 @@ Note: Xexpr is the only important one to understand.  Even then,
 > Comment = (make-comment String)
   (define-struct comment (text))
 
-  Source = (make-source Location Location)
+>  Source = (make-source Location Location)
   (define-struct source (start stop))
 
-  Location = (make-location Nat Nat Nat) | Symbol
+>  Location = (make-location Nat Nat Nat) | Symbol
   (define-struct location (line char offset))
   Note: read-xml records location structures, while xexpr->xml inserts a
         symbol.  Other functions that must fabricate XML Locations
