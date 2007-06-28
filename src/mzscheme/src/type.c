@@ -26,6 +26,9 @@
 #include "schpriv.h"
 #include <string.h>
 
+/* REMOVEME */
+# define scheme_stx_placeholder_type scheme_multiple_values_type
+
 Scheme_Type_Reader *scheme_type_readers;
 Scheme_Type_Writer *scheme_type_writers;
 Scheme_Equal_Proc *scheme_type_equals;
@@ -170,8 +173,8 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_bucket_table_type, "<hash-table>");
   set_name(scheme_module_registry_type, "<module-registry>");
   set_name(scheme_case_closure_type, "<procedure>");
-  set_name(scheme_multiple_values_type, "<multiple-values>");
   set_name(scheme_placeholder_type, "<placeholder>");
+  set_name(scheme_stx_placeholder_type, "<syntax<->datum-placeholder>");
   set_name(scheme_weak_box_type, "<weak-box>");
   set_name(scheme_ephemeron_type, "<ephemeron>");
   set_name(scheme_rational_type, "<fractional-number>");
@@ -558,8 +561,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_eval_waiting_type, bad_trav);
   GC_REG_TRAV(scheme_tail_call_waiting_type, bad_trav);
   GC_REG_TRAV(scheme_undefined_type, char_obj); /* small */
-  GC_REG_TRAV(scheme_multiple_values_type, bad_trav);
   GC_REG_TRAV(scheme_placeholder_type, small_object);
+  GC_REG_TRAV(scheme_stx_placeholder_type, small_object);
   GC_REG_TRAV(scheme_case_lambda_sequence_type, case_closure);
   GC_REG_TRAV(scheme_begin0_sequence_type, seq_rec);
 

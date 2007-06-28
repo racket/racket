@@ -33,6 +33,31 @@
 
   (define maxlen 60)
 
+  (define (format-output str style)
+    (if (string=? "" str)
+        null
+        (list
+         (list
+          (make-flow 
+           (list
+            (let ([s (regexp-split #rx"\n"
+                                   (regexp-replace #rx"\n$"
+                                                   str
+                                                   ""))])
+              (if (= 1 (length s))
+                  (make-paragraph
+                   (list
+                    (hspace 2)
+                    (span-class style (car s))))
+                  (make-table
+                   #f
+                   (map (lambda (s)
+                          (list (make-flow (list (make-paragraph
+                                                  (list
+                                                   (hspace 2)
+                                                   (span-class style s)))))))
+                        s))))))))))
+
   (define (interleave title expr-paras val-list+outputs)
     (make-table
      #f
@@ -48,29 +73,8 @@
                            (if (flow? p)
                                p
                                (make-flow (list p))))))
-             (if (string=? "" (cdar val-list+outputs))
-                 null
-                 (list
-                  (list
-                   (make-flow 
-                    (list
-                     (let ([s (regexp-split #rx"\n"
-                                            (regexp-replace #rx"\n$"
-                                                            (cdar val-list+outputs)
-                                                            ""))])
-                       (if (= 1 (length s))
-                           (make-paragraph
-                            (list
-                             (hspace 2)
-                             (span-class "schemestdout" (car s))))
-                           (make-table
-                            #f
-                            (map (lambda (s)
-                                   (list (make-flow (list (make-paragraph
-                                                           (list
-                                                            (hspace 2)
-                                                            (span-class "schemestdout" s)))))))
-                                 s)))))))))
+             (format-output (cadar val-list+outputs) "schemestdout")
+             (format-output (caddar val-list+outputs) "schemeerror")
              (if (string? (caar val-list+outputs))
                  ;; Error result case:
                  (map
@@ -114,14 +118,18 @@
      [(eval:alts p e)
       (do-eval #'e)]
      [else
-      (let ([o (open-output-string)])
-        (parameterize ([current-output-port o])
+      (let ([o (open-output-string)]
+            [o2 (open-output-string)])
+        (parameterize ([current-output-port o]
+                       [current-error-port o2])
           (with-handlers ([exn? (lambda (e)
-                                  (cons (exn-message e)
-                                        (get-output-string o)))])
-            (cons (let ([v (do-plain-eval s #t)])
+                                  (list (exn-message e)
+                                        (get-output-string o)
+                                        (get-output-string o2)))])
+            (list (let ([v (do-plain-eval s #t)])
                     (copy-value v (make-hash-table)))
-                  (get-output-string o)))))]))
+                  (get-output-string o)
+                  (get-output-string o2)))))]))
 
   (define (install ht v v2)
     (hash-table-put! ht v v2)

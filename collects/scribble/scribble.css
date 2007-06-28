@@ -51,13 +51,12 @@
                 }
 
                .tocviewlist { 
-                  font-size: 80%;
                   margin: 0.2em 0.2em 0.2em 0.2em;
                 }
 
-               .tocviewitem { 
-                  margin-left: 1em;
-                  text-indent: -1em;
+               .tocviewlist td { 
+                  font-size: 80%;
+                  vertical-align: top;
                }
 
                .tocviewlink { 

@@ -24,7 +24,7 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
 #endif
 
 /* ========== FreeBSD/NetBSD/OpenBSD signal handler ========== */
-/*  As of 2007/04/28, this is a guess for NetBSD and OpenBSD!  */
+/*  As of 2007/06/29, this is a guess for NetBSD!  */
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # include <signal.h>
 void fault_handler(int sn, siginfo_t *si, void *ctx)
@@ -33,7 +33,11 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
     abort();
 }
 #  define NEED_SIGACTION
-#  define USE_SIGACTON_SIGNAL_KIND SIGBUS
+#  defined(__FreeBSD__)
+#    define USE_SIGACTON_SIGNAL_KIND SIGBUS
+#  else
+#    define USE_SIGACTON_SIGNAL_KIND SIGSEGV
+#  endif
 #endif
 
 /* ========== Solaris signal handler ========== */

@@ -33,6 +33,8 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["modules.scrbl"]
 
+@include-section["io.scrbl"]
+
 @; ----------------------------------------------------------------------
 @section[#:tag "guide:contracts"]{Contracts}
 
@@ -53,10 +55,6 @@ using @idefterm{contracts}.
 
 
 @; ----------------------------------------------------------------------
-@include-section["io.scrbl"]
-
-
-@; ----------------------------------------------------------------------
 @section[#:tag "regexp"]{Regular-Expression Matching@aux-elem{ (Regexps)}}
 
 
@@ -71,6 +69,8 @@ of an expression to the values for the clause:
 @specform[(case [(_datum ...+) expr ...+] 
                 ...)]
 
+@; ----------------------------------------------------------------------
+@include-section["qq.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "units"]{Units (Higher-Order Modules)}

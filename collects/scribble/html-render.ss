@@ -77,27 +77,29 @@
                           (class "tocviewlink"))
                          ,@(render-content (part-title-content top) d ht)))
                  (div nbsp)
-                 (div
-                  ((class "tocviewlist"))
+                 (table 
+                  ((class "tocviewlist")
+                   (cellspacing "0"))
                   ,@(map (lambda (p)
-                           `(div
-                             ((class "tocviewitem"))
-                             (a ((href ,(let ([dest (lookup p ht `(part ,(part-tag p)))])
-                                          (format "~a~a~a" 
-                                                  (from-root (car dest)
-                                                             (get-dest-directory))
-                                                  (if (caddr dest)
-                                                      ""
-                                                      "#")
-                                                  (if (caddr dest)
-                                                      ""
-                                                      `(part ,(part-tag p))))))
-                                 (class ,(if (eq? p mine)
-                                             "tocviewselflink"
-                                             "tocviewlink")))
-                                ,@(format-number (collected-info-number (part-collected-info p))
-                                                 '((tt nbsp)))
-                                ,@(render-content (part-title-content p) d ht))))
+                           `(tr
+                             (td
+                              ,@(format-number (collected-info-number (part-collected-info p))
+                                               '((tt nbsp))))
+                             (td
+                              (a ((href ,(let ([dest (lookup p ht `(part ,(part-tag p)))])
+                                           (format "~a~a~a" 
+                                                   (from-root (car dest)
+                                                              (get-dest-directory))
+                                                   (if (caddr dest)
+                                                       ""
+                                                       "#")
+                                                   (if (caddr dest)
+                                                       ""
+                                                       `(part ,(part-tag p))))))
+                                  (class ,(if (eq? p mine)
+                                              "tocviewselflink"
+                                              "tocviewlink")))
+                                 ,@(render-content (part-title-content p) d ht)))))
                          (part-parts top)))))))
 
       (define/public (render-one-part d ht fn number)

@@ -442,6 +442,30 @@
               5)
            5)
 
+(test-comp '(letrec-values ([() (values)])
+              5)
+           5)
+
+(test-comp '(let-values ([() (values)]
+                         [(x) 10])
+              x)
+           10)
+
+(test-comp '(letrec-values ([() (values)]
+                            [(x) 10])
+              x)
+           10)
+
+(test-comp '(letrec-values ([(x) 10]
+                            [() (values)])
+              x)
+           10)
+
+(test-comp '(let-values ([(x) 10]
+                         [() (values)])
+              x)
+           10)
+
 (test-comp '(letrec ([x 3]
                      [f (lambda (y) x)])
               f)

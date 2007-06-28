@@ -338,11 +338,14 @@
                        "#hash"
                        "#hasheq")
                    value-color)
-              (set! src-col (+ src-col 5 (if equal-table? 2 0)))
-              (hash-table-put! next-col-map src-col dest-col)
-              ((loop init-line! +inf.0)
-               (syntax-ize (hash-table-map (syntax-e c) cons)
-                           (syntax-column c))))]
+              (let ([delta (+ 5 (if equal-table? 2 0))]
+                    [orig-col src-col])
+                (set! src-col (+ src-col delta))
+                (hash-table-put! next-col-map src-col dest-col)
+                ((loop init-line! +inf.0)
+                 (syntax-ize (hash-table-map (syntax-e c) cons)
+                             (+ (syntax-column c) delta)))
+                (set! src-col (+ orig-col (syntax-span c)))))]
            [else
             (advance c init-line!)
             (let-values ([(s it? sub?)

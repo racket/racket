@@ -982,6 +982,16 @@
         (read (open-input-string
                "!#hash((apple . (red round)) * (banana . (yellow long)))"))))
 
+(test #t hash-table?
+      (parameterize ([current-readtable
+                      (make-readtable #f
+                                      #\% 'terminating-macro
+                                      (lambda (char port . args)
+                                        (let ([v (read-syntax/recursive #f port)])
+                                          v)))])
+        (let ([ht (eval (read-syntax #f (open-input-string "#0=' % % #hash((a . #0#) (b . \"banana\"))")))])
+          (cadr (hash-table-get ht 'a)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

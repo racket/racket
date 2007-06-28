@@ -1,5 +1,6 @@
 (module cm mzscheme
-  (require (lib "moddep.ss" "syntax")
+  (require (lib "modcode.ss" "syntax")
+           (lib "modresolve.ss" "syntax")
 	   (lib "main-collects.ss" "setup")
 	   (lib "file.ss"))
 

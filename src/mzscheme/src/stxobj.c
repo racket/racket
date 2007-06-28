@@ -22,6 +22,9 @@
 #include "schpriv.h"
 #include "schmach.h"
 
+/* REMOVEME */
+# define scheme_stx_placeholder_type scheme_multiple_values_type
+
 /* The implementation of syntax objects is extremely complex due to
    two levels of optimization:
 
@@ -2433,7 +2436,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp, Sch
 	  return ph;
 	else {
 	  ph = scheme_alloc_small_object();
-	  ph->type = scheme_placeholder_type;
+	  ph->type = scheme_stx_placeholder_type;
       
 	  scheme_hash_set(*ht, key, (Scheme_Object *)ph);
 	}
@@ -2500,7 +2503,7 @@ static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active)
     o = add_certs(o, certs, NULL, as_active);
 
   if (ht)
-    o = scheme_resolve_placeholders(o, 1);
+    o = scheme_resolve_placeholders(o, 1, scheme_stx_placeholder_type);
 
   return o;
 }
@@ -4413,7 +4416,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       return ph;
     else {
       ph = scheme_alloc_small_object();
-      ph->type = scheme_placeholder_type;
+      ph->type = scheme_stx_placeholder_type;
       
       scheme_hash_set(*ht, key, (Scheme_Object *)ph);
     }
@@ -4595,7 +4598,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_marks,
   }
 
   if (ht)
-    v = scheme_resolve_placeholders(v, 0);
+    v = scheme_resolve_placeholders(v, 0, scheme_stx_placeholder_type);
 
   return v;
 }
@@ -5137,7 +5140,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       if (val != 1) {
 	if (val & 0x1) {
 	  ph = scheme_alloc_small_object();
-	  ph->type = scheme_placeholder_type;
+	  ph->type = scheme_stx_placeholder_type;
 	  scheme_hash_set(ht, o, (Scheme_Object *)ph);
 	} else {
 	  return (Scheme_Object *)val;
@@ -5351,7 +5354,7 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
   }
 
   if (ht)
-    v = scheme_resolve_placeholders(v, 1);
+    v = scheme_resolve_placeholders(v, 1, scheme_stx_placeholder_type);
 
   if (copy_props > 0)
     ((Scheme_Stx *)v)->props = ((Scheme_Stx *)stx_src)->props;
