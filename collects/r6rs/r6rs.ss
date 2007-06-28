@@ -1,6 +1,6 @@
 
 (module r6rs mzscheme
-  (require (prefix r5rs: (lib "r5rs.ss" "r5rs")))
+  (require (prefix r5rs: (lib "r5rs.ss" "lang")))
 
   ;; R5RS values
   (provide car cdr caar cadr cdar cddr
