@@ -453,7 +453,10 @@
       
       ;; NOTE: drscheme-normal.ss sets current-command-line-arguments to
       ;; the list of files to open, after parsing out flags like -h
-      (let* ([files-to-open (reverse (vector->list (current-command-line-arguments)))]
+      (let* ([files-to-open 
+              (if (preferences:get 'drscheme:open-in-tabs)
+                  (vector->list (current-command-line-arguments))
+                  (reverse (vector->list (current-command-line-arguments))))]
              [normalized/filtered
               (let loop ([files files-to-open])
                 (cond
@@ -472,5 +475,8 @@
                            f
                            (λ () (drscheme:unit:open-drscheme-window f))))
 		   no-dups)])
-	(when (null? (filter (λ (x) x) frames))
-	  (make-basic))))
+        (when (null? (filter (λ (x) x) frames))
+          (make-basic))
+        (when (and (preferences:get 'drscheme:open-in-tabs)
+                   (not (null? no-dups)))
+          (handler:edit-file (car no-dups)))))

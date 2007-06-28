@@ -24,6 +24,7 @@ module browser threading seems wrong.
            (lib "name-message.ss" "mrlib")
            (lib "bitmap-label.ss" "mrlib")
            
+           "stick-figures.ss"
            "drsig.ss"
            "auto-language.ss"
            
@@ -1112,7 +1113,11 @@ module browser threading seems wrong.
             (inner (void) clear-annotations)
             (send ints reset-highlighting))
           
-          (define/public (update-running b?) (send frame update-running b?))
+          (define running? #f)
+          (define/public-final (is-running?) running?)
+          (define/public (update-running b?) 
+            (set! running? b?)
+            (send frame update-running b?))
           
           (define/public-final (is-current-tab?) (eq? this (send frame get-current-tab)))
           
@@ -1503,10 +1508,7 @@ module browser threading seems wrong.
           [define/override get-canvas% (λ () (drscheme:get/extend:get-definitions-canvas))]
           
           (define/public (update-running running?)
-            (send running-message set-label 
-                  (if running?
-                      (string-constant running)
-                      (string-constant not-running))))
+            (send running-canvas set-running running?))
           (define/public (ensure-defs-shown)
             (unless definitions-shown?
               (toggle-show/hide-definitions)
@@ -2145,6 +2147,7 @@ module browser threading seems wrong.
               
               (send definitions-text update-frame-filename)
               (send definitions-text set-delegate old-delegate)
+              (update-running (send current-tab is-running?))
               (on-tab-change old-tab current-tab)
               (end-container-sequence)))
           
@@ -3203,8 +3206,8 @@ module browser threading seems wrong.
           [define/public get-button-panel (λ () button-panel)]
           
           (inherit get-info-panel)
-          (define running-message
-            (make-object message% (string-constant not-running) (get-info-panel)))
+          (define running-canvas
+            (new running-canvas% [parent (get-info-panel)]))
 
           
           [define func-defs-canvas (new func-defs-canvas% 
