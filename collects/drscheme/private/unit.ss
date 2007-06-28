@@ -458,10 +458,12 @@ module browser threading seems wrong.
                       (let-values ([(creator type) (file-creator-and-type filename)])
                         (file-creator-and-type filename #"DrSc" type))))))
               (when save-file-metadata
-                (delete 0 (string-length save-file-metadata))
-                (set! save-file-metadata #f)
-                (end-edit-sequence)
-                (set-modified #f))
+                (let ([modified? (is-modified?)])
+                  (delete 0 (string-length save-file-metadata))
+                  (set! save-file-metadata #f)
+                  (end-edit-sequence)
+                  ;; restore modification status to where it was before the metadata is removed
+                  (set-modified modified?)))
               (inner (void) after-save-file success?))
             
             (define/augment (on-load-file filename format)
