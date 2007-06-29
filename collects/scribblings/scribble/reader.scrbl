@@ -347,7 +347,7 @@ preserved in the text as usual.
   "@foo{b\\@ar}"
   "@foo{b\\\\@ar}"
   "@foo{b\\\\\\@ar}"
-  "@foo{b\\{\\@\\@ar}"
+  "@foo{b\\@\\@ar}"
   "@foo{b\\ar}"
   "@foo{b\\\\ar}"
 ]
