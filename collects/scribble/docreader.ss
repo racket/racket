@@ -10,7 +10,7 @@
     (wrap inp (scribble:read-inside inp)))
 
   (define/kw (*read-syntax #:optional src [port (current-input-port)])
-    (wrap port (scribble:read-inside-syntax src port))))
+    (wrap port (scribble:read-inside-syntax src port)))
 
   (define (wrap port body)
     (let* ([p-name (object-name port)]
