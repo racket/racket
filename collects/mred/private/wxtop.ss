@@ -236,13 +236,11 @@
                    (not on?)
                    (child . is-a? . wx-frame%)
                    (child . is-a? . wx-dialog%))
-               (send child really-show on?)
+	       (begin
+		 (hash-table-remove! fake-show-ht child)
+		 (send child really-show on?))
                (begin
-                 (if on?
-                     (hash-table-put! fake-show-ht child #t)
-                     (begin
-                       (hash-table-remove! show-ht child)
-                       (hash-table-remove! fake-show-ht child)))
+		 (hash-table-put! fake-show-ht child #t)
                  (send child fake-show on?))))]
 
 	;; force-redraw: receives a message from to redraw the
