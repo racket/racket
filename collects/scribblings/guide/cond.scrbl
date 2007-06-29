@@ -101,7 +101,7 @@ as follows:
 
 @refalso["mz:cond"]{@scheme[cond]}
 
-@specform[(cond [test-expr expr ...+] 
+@specform[(cond [test-expr expr ...+]
                 ...)]
 
 Each @scheme[_test-expr] is evaluated in order. If it produces

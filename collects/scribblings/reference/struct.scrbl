@@ -69,7 +69,7 @@ depends on the current inspector.)
                                   null]
                            [inspector (or/c inspector? false/c)
                                       (current-inspector)]
-                           [proc-spec (or/c procedure? 
+                           [proc-spec (or/c procedure?
                                             non-negative-exact-integer?
                                             false/c)
                                       #f]
@@ -91,7 +91,7 @@ fields (in addition to any fields from @scheme[super-type]), but only
 @scheme[init-field-cnt] constructor arguments (in addition to any
 constructor arguments from @scheme[super-type]). The remaining
 fields are initialized with @scheme[auto-v].
- 
+
 The @scheme[props] argument is a list of pairs, where the @scheme[car]
 of each pair is a structure type property descriptor, and the
 @scheme[cdr] is an arbitrary value. See @secref["mz:structprops"] for
@@ -154,19 +154,19 @@ The result of @scheme[make-struct-type] is five values:
 }
 
 @examples[
-(define-values (struct:a make-a a? a-ref a-set!) 
-  (make-struct-type 'a #f 2 1 'uninitialized)) 
-(define an-a (make-a 'x 'y)) 
+(define-values (struct:a make-a a? a-ref a-set!)
+  (make-struct-type 'a #f 2 1 'uninitialized))
+(define an-a (make-a 'x 'y))
 (a-ref an-a 1)
 (a-ref an-a 2)
-(define a-first (make-struct-field-accessor a-ref 0)) 
+(define a-first (make-struct-field-accessor a-ref 0))
 (a-first an-a)
 ]
 
 @interaction[
-(define-values (struct:b make-b b? b-ref b-set!) 
+(define-values (struct:b make-b b? b-ref b-set!)
   (make-struct-type 'b struct:a 1 2 'b-uninitialized))
-(define a-b (make-b 'x 'y 'z)) 
+(define a-b (make-b 'x 'y 'z))
 (a-ref a-b 1)
 (a-ref a-b 2)
 (b-ref a-b 0)
@@ -175,8 +175,8 @@ The result of @scheme[make-struct-type] is five values:
 ]
 
 @interaction[
-(define-values (struct:c make-c c? c-ref c-set!) 
-  (make-struct-type 
+(define-values (struct:c make-c c? c-ref c-set!)
+  (make-struct-type
    'c struct:b 0 0 #f null (make-inspector) #f null
    (code:comment #,(t "guard checks for a number, and makes it inexact"))
    (lambda (a1 a2 b1 name)
@@ -232,7 +232,7 @@ A @index['("structure type properties")]{@defterm{structure type
  property value with a new value.
 
 @defproc[(make-struct-type-property [name symbol?]
-                                    [guard (or/c procedure? false/c) #f]) 
+                                    [guard (or/c procedure? false/c) #f])
          (values struct-type-property?
                  procedure?
                  procedure?)]{
@@ -278,17 +278,17 @@ returning a structure type descriptor.
 @examples[
 (define-values (prop:p p? p-ref) (make-struct-type-property 'p))
 
-(define-values (struct:a make-a a? a-ref a-set!) 
-  (make-struct-type 'a #f 2 1 'uninitialized 
+(define-values (struct:a make-a a? a-ref a-set!)
+  (make-struct-type 'a #f 2 1 'uninitialized
                     (list (cons prop:p 8))))
 (p? struct:a)
 (p? 13)
-(define an-a (make-a 'x 'y)) 
+(define an-a (make-a 'x 'y))
 (p? an-a)
 (p-ref an-a)
 
-(define-values (struct:b make-b b? b-ref b-set!) 
-  (make-struct-type 'b #f 0 0 #f)) 
+(define-values (struct:b make-b b? b-ref b-set!)
+  (make-struct-type 'b #f 0 0 #f))
 (p? struct:b)
 ]}
 
@@ -402,7 +402,7 @@ Returns eight values that provide information about the structure type
 If the type for @scheme[struct-type] is not controlled by the current inspector,
 the @exnraise[exn:fail:contract].}
 
-@defproc[(struct-type-make-constructor [struct-type struct-type?]) 
+@defproc[(struct-type-make-constructor [struct-type struct-type?])
          struct-constructor-procedure?]{
 
 Returns a @tech{constructor} procedure to create instances of the type

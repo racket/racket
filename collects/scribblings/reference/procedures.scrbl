@@ -25,10 +25,10 @@ is called in tail position with respect to the @scheme[apply] call.
 ]}
 
 
-@defproc[(keyword-apply [proc procedure?] 
+@defproc[(keyword-apply [proc procedure?]
                         [kw-lst (listof keyword?)]
                         [kw-val-lst list?]
-                        [v any/c] ... 
+                        [v any/c] ...
                         [lst list?])
          any]{
 
@@ -53,10 +53,10 @@ and @scheme[lst]; otherwise, the @exnraise[exn:fail:contract].
 (keyword-apply f '(#:y #:z) '(2 3) '(1))
 ]}
 
-@defproc[(procedure-arity [proc procedure?]) 
+@defproc[(procedure-arity [proc procedure?])
          (or/c exact-nonnegative-integer?
                arity-at-least?
-               (listof 
+               (listof
                 (or/c exact-nonnegative-integer?
                       arity-at-least?)))]{
 
@@ -100,7 +100,7 @@ when no keyword arguments are supplied, @scheme[#f] otherwise.
 @defproc[(procedure-keywords [proc procedure?])
          (values
           (listof keyword?)
-          (or/c (listof keyword?) 
+          (or/c (listof keyword?)
                 false/c))]{
 
 Returns information about the keyword arguments required and accepted

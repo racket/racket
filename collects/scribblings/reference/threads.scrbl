@@ -55,7 +55,7 @@ thread created to invoke @scheme[thunk] terminates.
 @defproc[(current-thread) thread?]{Returns the @tech{thread
  descriptor} for the currently executing thread.}
 
-@defproc[(thread/suspend-to-kill [thunk (-> any)]) thread]{ 
+@defproc[(thread/suspend-to-kill [thunk (-> any)]) thread]{
 
 Like @scheme[thread], except that ``killing'' the thread through
 @scheme[kill-thread] or @scheme[custodian-shutdown-all] merely

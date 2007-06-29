@@ -67,7 +67,7 @@ previous element. The sequence starts before an element that would be
 greater or equal to @scheme[end] if @scheme[step] is non-negative, or
 less or equal to @scheme[end] if @scheme[step] is negative.
 @speed[in-range "number"]}
-         
+
 @defproc[(in-naturals [start exact-nonnegative-integer? 0]) sequence?]{
 Returns an infinite sequence of exact integers starting with
 @scheme[start], where each element is one more than the preceeding

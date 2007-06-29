@@ -133,7 +133,7 @@ list contains a corresponding argument for each keyword. The third
 list contains by-position function arguments, as for @scheme[apply].
 
 @schemeblock[
-(keyword-apply go 
+(keyword-apply go
                '(#:mode)
                '(fast)
                '("super.ss"))

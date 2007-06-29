@@ -107,7 +107,7 @@ guidelines may help explain when using @scheme[set!] is appropriate.
            s))
        (sum '(1 2 3))
        ]]
-        
+
        @as-examples[@t{Ok example:}
        @def+int[
        (define (sum lst)

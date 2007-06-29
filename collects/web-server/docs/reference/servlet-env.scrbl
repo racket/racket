@@ -10,7 +10,7 @@ from within DrScheme, or any other REPL.
 @file{servlet-env.ss} provides the servlet API from @file{servlet.ss}
 as well as the following:
 
-@defthing[send-url (parameter/c ([url string?] [separate-window? boolean?] . -> . void))]{ 
+@defthing[send-url (parameter/c ([url string?] [separate-window? boolean?] . -> . void))]{
  Should open @scheme[url]. In another window if @scheme[separate-window?] is true.
  By default this is from @scheme[(lib "sendurl.ss" "net")].
 }

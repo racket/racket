@@ -19,9 +19,9 @@ A @scheme[lambda] form with @math{n} @scheme[_arg-id]s accepts
 @interaction[
 ((lambda (x) x)
  1)
-((lambda (x y) (+ x y)) 
+((lambda (x y) (+ x y))
  1 2)
-((lambda (x y) (+ x y)) 
+((lambda (x y) (+ x y))
  1)
 ]
 
@@ -41,7 +41,7 @@ function accepts any number of arguments, and the arguments are put
 into a list bound to @scheme[_rest-id].
 
 @examples[
-((lambda x x) 
+((lambda x x)
  1 2 3)
 ((lambda x x))
 ((lambda x (car x))
@@ -54,7 +54,7 @@ another function that accepts any number of arguments.
 @guideother{@secref["guide:apply"] describes @scheme[apply].}
 
 @defexamples[
-(define max-mag 
+(define max-mag
   (lambda nums
     (apply max (map magnitude nums))))
 
@@ -75,7 +75,7 @@ arguments as @scheme[_arg-id]s, and also accepts any number of
 additional arguments.
 
 @defexamples[
-(define max-mag 
+(define max-mag
   (lambda (num . nums)
     (apply max (map magnitude (cons num nums)))))
 

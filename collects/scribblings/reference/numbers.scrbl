@@ -146,7 +146,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 @examples[(inexact->exact 1) (inexact->exact 1.0)]}
 
- 
+
 @defproc[(exact->inexact [z number?]) inexact?]{ Coerces @scheme[z] to an
  inexact number. If @scheme[z] is already inexact, it is returned.
 
@@ -188,7 +188,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(/ 3 4) (/ 81 3 3) (/ 10.0) (/ 1+2i 3+4i)]
 
 
-@defproc[(quotient [n integer?] [m integer?]) integer?]{ Returns 
+@defproc[(quotient [n integer?] [m integer?]) integer?]{ Returns
  @scheme[(truncate (/ n m))].}
 
 @examples[(quotient 10 3) (quotient -10.0 3) (quotient +inf.0 3)]
@@ -371,7 +371,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @examples[(integer-sqrt 4.0) (integer-sqrt 5)]}
 
 
-@defproc[(integer-sqrt/remainder [n integer?]) 
+@defproc[(integer-sqrt/remainder [n integer?])
          (values integer? integer?)]{
  Returns @scheme[(integer-sqrt n)] and @scheme[(- n (expt
  (integer-sqrt n) 2))].
@@ -531,7 +531,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ------------------------------------------------------------------------
 @section{Number--String Conversions}
 
-@defproc[(number->string [z number?] 
+@defproc[(number->string [z number?]
                          [radix (one-of/c 2 8 10 16) 10]) string?]{
  Returns a string that is the printed form of @scheme[z]
  in the base specific by @scheme[radix]. If @scheme[z] is inexact,
@@ -549,6 +549,6 @@ noted above). Two numbers are @scheme[equal?] when they are
  base for the number, which can be overriden by @litchar{#b},
  @litchar{#o}, @litchar{#d}, or @litchar{#x} in the string.
 
-@examples[(string->number "3.0+2.5i") (string->number "hello") 
+@examples[(string->number "3.0+2.5i") (string->number "hello")
           (string->number "111" 7)  (string->number "#b111" 7)]
 }

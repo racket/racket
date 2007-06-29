@@ -169,8 +169,8 @@ following grammar:
             #%plain-app #%datum #%top #%variable-reference)
 [top-level-form general-top-level-form
                 (#%expression expr)
-                (module id name-id 
-                  (#%plain-module-begin 
+                (module id name-id
+                  (#%plain-module-begin
                    module-level-form ...))
                 (begin top-level-form ...)]
 [module-level-form general-top-level-form
@@ -189,9 +189,9 @@ following grammar:
       (if expr expr expr)
       (begin expr ...+)
       (begin0 expr expr ...)
-      (let-values (((id ...) expr) ...) 
+      (let-values (((id ...) expr) ...)
         expr ...+)
-      (letrec-values (((id ...) expr) ...) 
+      (letrec-values (((id ...) expr) ...)
         expr ...+)
       (set! id expr)
       (#, @scheme[quote] datum)
@@ -533,7 +533,7 @@ recursively expands only until the form becomes one of the following:
        were found) or @scheme[letrec-syntaxes+values] form, moving the
        expression forms to the body to be expanded in expression
        context.
-       
+
        When a @scheme[define-values] form is discovered, the lexical
        context of all syntax objects for the body sequence is
        immediately enriched with bindings for the

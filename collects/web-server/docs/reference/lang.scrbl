@@ -13,7 +13,7 @@ is different and what API is provided.
 @; ------------------------------------------------------------
 @section[#:tag "lang-servlets"]{Definition}
 
-A @defterm{Web language servlet} is a module written in the 
+A @defterm{Web language servlet} is a module written in the
 @scheme[(lib "lang.ss" "web-server")] module language. It should provide
 the following identifier:
 
@@ -25,7 +25,7 @@ the following identifier:
 
 @; ------------------------------------------------------------
 @section[#:tag "considerations"]{Usage Considerations}
-                   
+
 
 A servlet has the following process performed on it automatically:
 @itemize[
@@ -33,7 +33,7 @@ A servlet has the following process performed on it automatically:
        @scheme[let] and imperative features. (@file{lang/elim-letrec.ss})}
  @item{The program is converted into ANF (Administrative Normal Form),
        making all continuations explicit. (@file{lang/anormal.ss})}
- @item{All continuations (and other continuations marks) are recorded in the 
+ @item{All continuations (and other continuations marks) are recorded in the
        continuation marks of the expression
        they are the continuation of. (@file{lang/elim-callcc.ss})}
  @item{All calls to external modules are identified and marked.
@@ -87,7 +87,7 @@ Fifth, the store is NOT serialized. If you rely on the store you will
 be taking huge risks. You will be assuming that the serialized continuation
 is invoked before the server is restarted or the memory is garbage collected.
 
-This process is derived from the paper 
+This process is derived from the paper
 @href-link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/pcmkf-cont-from-gen-stack-insp/" "\"Continuations from Generalized Stack Inspection\""].
 We thank Greg Pettyjohn for his initial implementation of this algorithm.
 
@@ -119,7 +119,7 @@ by the Web language API.
  the response to the client. If the URL is invoked with form data containing
  the hidden form,
  the request is returned to this continuation.
- 
+
  Note: The continuation is NOT stuffed.
 }
 
@@ -129,13 +129,13 @@ by the Web language API.
  Serializes and stuffs @scheme[proc] into @scheme[k-url]. For use with
  @scheme[extract-proc/url].
 }
-              
+
 @defproc[(extract-proc/url [req request?])
          any/c]{
  Inspects the URL of @scheme[req] and attempts to extract the procedure
  embedded with @scheme[embed-proc/url]. If successful, it is invoked with
  @scheme[req] as an argument.
-} 
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/stuff-url.ss"]{Stuff URL}
@@ -153,12 +153,12 @@ the future.
  @file{$HOME/.urls/M} where `M' is the MD5. `M' is then
  placed in @scheme[u] as a URL param.
 }
-              
+
 @defproc[(stuffed-url? [u url?])
          boolean?]{
  Checks if @scheme[u] appears to be produced by @scheme[stuff-url].
 }
-                  
+
 @defproc[(unstuff-url [u url?])
          serializable?]{
  Extracts the value previously serialized into @scheme[u] by @scheme[stuff-url].
@@ -190,37 +190,37 @@ boxes in a safe way.
 
 @defproc[(file-box? [v any/c])
          boolean?]{Checks if @scheme[v] is a file-box.}
-                  
+
 @defproc[(file-box [p path?]
                    [v serializable?])
          file-box?]{
  Creates a file-box that is stored at @scheme[p], with the default
  contents of @scheme[v].
 }
-                   
+
 @defproc[(file-unbox [fb file-box?])
          serializable?]{
  Returns the value inside @scheme[fb]
 }
-                       
+
 @defproc[(file-box-set? [fb file-box?])
          boolean?]{
  Returns @scheme[#t] if @scheme[fb] contains a value.
 }
-                  
+
 @defproc[(file-box-set! [fb file-box?]
                         [v serializable?])
          void]{
  Saves @scheme[v] in the file represented by @scheme[fb].
 }
-              
+
 @warning{If you plan on using a load-balancer, make sure your file-boxes
 are on a shared medium.}
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/web-param.ss"]{Web Parameters}
 
-As mentioned earlier, it is not easy to use @scheme[parameterize] in the 
+As mentioned earlier, it is not easy to use @scheme[parameterize] in the
 Web Language. @file{lang/web-param.ss} provides (roughly) the same
 functionality in a way that is serializable. Like other serializable
 things in the Web Language, they are sensitive to source code modification.
@@ -231,15 +231,15 @@ things in the Web Language, they are sensitive to source code modification.
  a procedure that, when called with zero arguments, returns @scheme[default]
  or the last value @scheme[web-parameterize]d in the dynamic context
  of the call.
-} 
+}
 
 @defproc[(web-parameter? [v any/c])
          boolean?]{
  Checks if @scheme[v] appears to be a web-parameter.
-} 
+}
 
 @defform[(web-parameterize ([web-parameter-expr value-expr] ...) expr ...)]{
- Runs @scheme[(begin expr ...)] such that the web-parameters that 
+ Runs @scheme[(begin expr ...)] such that the web-parameters that
  the @scheme[web-parameter-expr]s evaluate to are bound to the @scheme[value-expr]s.
  From the perspective of the @scheme[value-expr]s, this is like @scheme[let].
 }

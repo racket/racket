@@ -20,7 +20,7 @@ A @defterm{servlet} is a module that provides the following:
  to. This influences the other provided identifiers.
 }
 
-If @scheme[interface-version] is @scheme['v1], then the servlet 
+If @scheme[interface-version] is @scheme['v1], then the servlet
 provides:
 
 @defthing[timeout integer?]{
@@ -36,7 +36,7 @@ provides:
  The argument is the HTTP request that initiated the instance.
 }
 
-If @scheme[interface-version] is @scheme['v2], then the servlet 
+If @scheme[interface-version] is @scheme['v2], then the servlet
 provides:
 
 @defthing[manager manager?]{
@@ -54,7 +54,7 @@ provides:
 
 @file{servlet/servlet-structs.ss} provides a number of contracts
 for use in servlets.
-                  
+
 @defthing[k-url? contract?]{Equivalent to @scheme[string?].}
 
 @defthing[response-generator? contract?]{Equivalent to @scheme[(k-url? . -> . response?)].}
@@ -94,21 +94,21 @@ related to HTTP request data structures.
                                    [value bytes?])]{
  Represents a form binding of @scheme[id] to @scheme[value].
 }
-                                                   
+
 @defstruct[(binding:file binding) ([id bytes?]
                                    [filename bytes?]
                                    [content bytes?])]{
  Represents the uploading of the file @scheme[filename] with the id @scheme[id]
  and the content @scheme[content].
-} 
+}
 
 @defproc[(bindings-assq [id bytes?] [binds (listof binding?)])
          (or/c false/c binding?)]{
  Returns the binding with an id equal to @scheme[id] from @scheme[binds] or @scheme[#f].
 }
-                                 
-@defstruct[request ([method symbol?] 
-                    [uri url?] 
+
+@defstruct[request ([method symbol?]
+                    [uri url?]
                     [headers/raw (listof header?)]
                     [bindings/raw (listof binding?)]
                     [post-data/raw (or/c false/c bytes?)]
@@ -135,21 +135,21 @@ for accessing request bindings.
  of @scheme[binding:file] bindings, which are left as is. Ids are then
  translated into lowercase symbols.
 }
-                                                 
+
 @defproc[(request-headers [req request?])
          (listof (cons/c symbol? string?))]{
  Translates the @scheme[request-headers/raw] of @scheme[req] by
  interpreting @scheme[bytes?] as @scheme[string?]s. Ids are then
  translated into lowercase symbols.
-}                                           
-                                           
+}
+
 @defproc[(extract-binding/single [id symbol?]
                                  [binds (listof (cons/c symbol? string?))])
          string?]{
  Returns the single binding associated with @scheme[id] in the a-list @scheme[binds]
  if there is exactly one binding. Otherwise raises @scheme[exn:fail].
 }
-                 
+
 @defproc[(extract-bindings [id symbol?]
                            [binds (listof (cons/c symbol? string?))])
          (listof string?)]{
@@ -160,8 +160,8 @@ for accessing request bindings.
                           [binds (listof (cons/c symbol? string))])
          boolean?]{
  Returns @scheme[#t] if @scheme[binds] contains a binding for @scheme[id].
- Otherwise, @scheme[#f].        
-}         
+ Otherwise, @scheme[#f].
+}
 
 These functions, while convenient, could introduce subtle bugs into your
 application. Examples: that they are case-insensitive could introduce
@@ -170,7 +170,7 @@ to a string will fail; if an attacked submits a form field as if it were
 a file, when it is not, then the @scheme[request-bindings] will hold a
 @scheme[bytes?] object and your program will error; and, for file uploads
 you lose the filename.
-                  
+
 @; ------------------------------------------------------------
 @section[#:tag "response-structs.ss"]{HTTP Responses}
 
@@ -188,7 +188,7 @@ HTTP responses.
  @scheme[message] the message, @scheme[seconds] the generation time, @scheme[mime]
  the MIME type of the file, and @scheme[extras] are the extra headers, in addition
  to those produced by the server.
-} 
+}
 
 @; XXX Rename string? option
 @defstruct[(response/full response/basic)
@@ -201,7 +201,7 @@ HTTP responses.
  As with @scheme[response/basic], except with @scheme[body] as the response
  body.
 }
-                                                   
+
 @defstruct[(response/incremental response/basic)
            ([code number?]
             [message string?]
@@ -223,7 +223,7 @@ HTTP responses.
   @item{A value matching @scheme[xexpr?].}
  ]
 }
-                  
+
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}
 
 @warning{If you include a Content-Length header in a response that is inaccurate, there WILL be an error in
@@ -254,24 +254,24 @@ servlet developer.
  continuation URL is invoked, the captured continuation is invoked and the request is
  returned from this call to @scheme[send/suspend].
 }
-                  
+
 @defproc[(continuation-url? [u url?])
          (or/c false/c (list/c number? number? number?))]{
  Checks if @scheme[u] is a URL that refers to a continuation, if so
  returns the instance id, continuation id, and nonce.
 }
-                
-@; XXX Move                                                         
+
+@; XXX Move
 @defproc[(adjust-timeout! [t number?])
          void?]{
  Calls the servlet's manager's @scheme[adjust-timeout!] function.
 }
-               
+
 @defproc[(clear-continuation-table!)
          void?]{
  Calls the servlet's manager's @scheme[clear-continuation-table!] function.
 }
-               
+
 @defproc[(send/forward [make-response response-generator?]
                        [exp expiration-handler? (current-servlet-continuation-expiration-handler)])
          request?]{
@@ -282,37 +282,37 @@ servlet developer.
          void?]{
  Calls @scheme[clear-continuation-table!], then @scheme[send/back].
 }
-               
+
 @defproc[(send/suspend/dispatch [make-response (embed/url? . -> . response?)])
          any/c]{
  Calls @scheme[make-response] with a function that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call
  the function with the @scheme[request?] object and return the result to the caller of
  @scheme[send/suspend/dispatch].
-}                 
- 
+}
+
 @defproc[(redirect/get)
          request?]{
  Calls @scheme[send/suspend] with @scheme[redirect-to].
 }
-                  
+
 @defproc[(redirect/get/forget)
          request?]{
  Calls @scheme[send/forward] with @scheme[redirect-to].
 }
 
-@; XXX Remove                  
+@; XXX Remove
 @defproc[(embed-ids [ids (list/c number? number? number?)]
                     [u url?])
          string?]{
  Creates a @scheme[continuation-url?].
 }
- 
-@; XXX Remove                 
+
+@; XXX Remove
 @defthing[current-url-transform parameter?]{
  Holds a @scheme[url-transform?] function that is called by
  @scheme[send/suspend] to transform the URLs it generates.
-} 
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "helpers.ss"]{Helpers}
@@ -328,12 +328,12 @@ servlet developer.
  Generates an HTTP response that redirects the browser to @scheme[uri],
  while including the @scheme[headers] in the response.
 }
-                   
+
 @defproc[(redirection-status? [v any/c])
          boolean?]{
  Determines if @scheme[v] is one of the following values.
 }
-                  
+
 @defthing[permanently redirection-status?]{A @scheme[redirection-status?] for permanent redirections.}
 
 @defthing[temporarily redirection-status?]{A @scheme[redirection-status?] for temporary redirections.}
@@ -344,7 +344,7 @@ servlet developer.
                                  [thunk (-> any)])]{
  Calls @scheme[thunk] with an exception handler that generates an HTML error page
  and calls @scheme[send/finish-or-back].
-} 
+}
 
 @; XXX Depreciate
 @; ------------------------------------------------------------
@@ -361,8 +361,8 @@ They may eventually provided by another module.
  Returns a URL string without the continuation information in the URL
  that went into @scheme[su]
 }
-  
-@; XXX Support Digest                 
+
+@; XXX Support Digest
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth.ss"]{Basic Authentication}
 
@@ -373,8 +373,8 @@ implementation of HTTP Basic Authentication.
          (or/c false/c (cons/c bytes? bytes?))]{
  Returns a pair of the username and password from the authentication
  header in @scheme[heads] if they are present, or @scheme[#f]
-} 
-                                               
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "web-cells.ss"]{Web Cells}
 
@@ -396,23 +396,23 @@ generated. For more information on their semantics, consult the paper @href-link
          boolean?]{
  Determines if @scheme[v] is a web-cell.
 }
-                  
+
 @defproc[(make-web-cell [v any/c])
          web-cell?]{
  Creates a web-cell with a default value of @scheme[v].
 }
-                   
+
 @defproc[(web-cell-ref [wc web-cell?])
          any/c]{
  Looks up the value of @scheme[wc] found in the nearest
  frame.
 }
-               
+
 @defproc[(web-cell-shadow [wc web-cell?]
                           [v any/c])
          void]{
  Binds @scheme[wc] to @scheme[v] in the current frame, shadowing any
  other bindings to @scheme[wc] in the current frame.
-}       
+}
 
 @include-section["servlet-env.scrbl"]

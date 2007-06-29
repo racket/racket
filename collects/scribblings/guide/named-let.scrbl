@@ -25,7 +25,7 @@ A named @scheme[let] form is equivalent to
 
 That is, a named @scheme[let] binds a function identifier that is
 visible only in the function's body, and it implicitly calls the
-function with the values of some initial expressions. 
+function with the values of some initial expressions.
 
 @defexamples[
 (define (duplicate pos lst)

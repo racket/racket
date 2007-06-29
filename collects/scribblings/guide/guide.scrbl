@@ -9,7 +9,7 @@ This guide is intended for programmers who are new to Scheme, new to PLT
 Scheme, or new to some part of PLT Scheme. It assumes
 programming experience, so if you are new to programming, consider
 instead reading @|HtDP|. If you want a quick and pretty overview of PLT
-Scheme, start with @|Quick|. 
+Scheme, start with @|Quick|.
 
 @seclink["to-scheme"]{Chapter 2} provides a brief introduction to
 Scheme. From @seclink["datatypes"]{Chapter 3} on, this guide dives
@@ -66,7 +66,7 @@ using @idefterm{contracts}.
 The @scheme[case] form dispatches to a clause by matching the result
 of an expression to the values for the clause:
 
-@specform[(case [(_datum ...+) expr ...+] 
+@specform[(case [(_datum ...+) expr ...+]
                 ...)]
 
 @; ----------------------------------------------------------------------

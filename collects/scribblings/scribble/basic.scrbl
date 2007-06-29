@@ -106,7 +106,7 @@ style @scheme[#f].}
 Produces an element containing @scheme[n] spaces and style @scheme['hspace].
 }
 
-@defproc[(span-class [style-name string?] [pre-content any/c] ...) 
+@defproc[(span-class [style-name string?] [pre-content any/c] ...)
          element?]{
 
 Parses the @scheme[pre-content] list using @scheme[decode-content],

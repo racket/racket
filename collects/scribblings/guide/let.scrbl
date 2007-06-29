@@ -123,9 +123,9 @@ The @scheme[_expr]s in a @scheme[letrec] form are most often
 (letrec ([swing
           (lambda (t)
             (if (eq? (car t) 'tarzan)
-                (cons 'vine 
+                (cons 'vine
                       (cons 'tarzan (cddr t)))
-                (cons (car t) 
+                (cons (car t)
                       (swing (cdr t)))))])
   (swing '(vine tarzan vine vine)))
 ]

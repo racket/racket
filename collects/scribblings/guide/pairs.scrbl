@@ -80,9 +80,9 @@ iterate through the lists elements:
        '(1 2 3))
 (for-each (lambda (i) (display i))
           '(1 2 3))
-(member "Keys" 
+(member "Keys"
         '("Florida" "Keys" "U.S.A."))
-(assoc 'where 
+(assoc 'where
        '((when "3:30") (where "Florida") (who "Mickey")))
 ]
 

@@ -208,17 +208,17 @@ Like @scheme[for/fold], but with the implicit nesting of @scheme[for*].}
 @;------------------------------------------------------------------------
 @section{Deriving New Iteration Forms}
 
-@defform[(for/fold/derived orig-datum 
+@defform[(for/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) . body)]{
 Like @scheme[fold/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
 }
 
-@defform[(for*/fold/derived orig-datum 
+@defform[(for*/fold/derived orig-datum
            ([accum-id init-expr] ...) (for-clause ...) . body)]{
 Like @scheme[fold*/fold], but the extra @scheme[orig-datum] is used as the source for all syntax errors.
 }
 
-@defform[(define-sequence-syntax id 
+@defform[(define-sequence-syntax id
            expr-transform-expr
            clause-transform-expr)]{
 
@@ -255,7 +255,7 @@ use @scheme[:do-in].}
                  (loop-arg ...))]{
 
 A form that can only be used as a @scheme[_seq-expr] in a
-@scheme[_clause] of @scheme[for] (or one of its variants). 
+@scheme[_clause] of @scheme[for] (or one of its variants).
 
 Within a @scheme[for], the pieces of the @scheme[:do-in] form are
 spliced into the iteration essentially as follows:

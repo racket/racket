@@ -105,11 +105,11 @@ The @scheme[only], @scheme[except], @scheme[rename], and
 @scheme[prefix] forms can be nested to implement more complex
 manipulations of imported bindings. For example,
 
-@schemeblock[(require (prefix (except m ghost) m:))] 
+@schemeblock[(require (prefix (except m ghost) m:))]
 
 imports all bindings that @scheme[m]
 exports, except for the @scheme[ghost] binding, and with local names
-that are prefixed with @scheme[m:]. 
+that are prefixed with @scheme[m:].
 
 Equivalently, the @scheme[prefix] could be applied before
 @scheme[except], as long as the omission with @scheme[except] is

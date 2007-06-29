@@ -41,10 +41,10 @@ in the enclosing flow.
 
 }
 
-@defproc[(decode-part [lst list?] 
-                      [tag string?] 
-                      [title (or/c false/c list?)] 
-                      [depth excat-nonnegative-integer?]) 
+@defproc[(decode-part [lst list?]
+                      [tag string?]
+                      [title (or/c false/c list?)]
+                      [depth excat-nonnegative-integer?])
          part?]{
 
 Like @scheme[decode], but given a tag for the section, a title (if

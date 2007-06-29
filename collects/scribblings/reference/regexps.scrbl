@@ -225,7 +225,7 @@ The first [byte] string in a result list is the portion of
 @scheme[input] that matched @scheme[pattern]. If two portions of
 @scheme[input] can match @scheme[pattern], then the match that starts
 earliest is found.
- 
+
 Additional [byte] strings are returned in the list if @scheme[pattern]
 contains parenthesized sub-expressions (but not when the open
 parenthesis is followed by @litchar{?:}). Matches for the
@@ -313,7 +313,7 @@ match succeeds, @scheme[#f] otherwise.}
           (or/c (listof (or/c (cons bytes? bytes?)
                               false/c))
                 false/c)]{
-         
+
 Like @scheme[regexp-match] on input ports, but only peeks bytes from
 @scheme[input-port] instead of reading them. Furthermore, instead of
 an output port, the last optional argument is a progress event for
@@ -379,7 +379,7 @@ then returns a string in which the matching portion of @scheme[input]
 is replaced with @scheme[insert-string].  If @scheme[char-pattern]
 matches no part of @scheme[string], then @scheme[string] is returned
 unmodified.
- 
+
  The @scheme[char-pattern] must be a string or a character regexp value
  (not a byte string or a byte regexp value).
 

@@ -169,7 +169,7 @@ special characters
 @moreguide["guide:binding"]{identifiers}
 
 @t{
-  @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]} 
+  @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]}
   @litchar["{"] @litchar["}"]
   @litchar{"} @litchar{,} @litchar{'} @litchar{`}
   @litchar{;} @litchar{#} @litchar["|"] @litchar["\\"]
@@ -250,7 +250,7 @@ evaluted for the result of the whole @scheme[if] expression, otherwise
 the third @nonterm{expr} is evaluated for the result.
 
 @examples[
-(if (> 2 3) 
+(if (> 2 3)
     "bigger"
     "smaller")
 ]
@@ -354,11 +354,11 @@ clearly written as follows:
 @def+int[
 (define (reply-more s)
   (cond
-   [(equal? "hello" (substring s 0 5)) 
+   [(equal? "hello" (substring s 0 5))
     "hi!"]
-   [(equal? "goodbye" (substring s 0 7)) 
+   [(equal? "goodbye" (substring s 0 7))
     "bye!"]
-   [(equal? "?" (substring s (- (string-length s) 1))) 
+   [(equal? "?" (substring s (- (string-length s) 1)))
     "I don't know"]
    [else "huh?"]))
 (reply-more "hello scheme")

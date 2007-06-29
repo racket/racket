@@ -63,14 +63,14 @@ as part of PLT Scheme.
 (module m (lib "big/lang.ss")
   (require (lib "mzlib/date.ss"))
 
-  (printf "Today is ~s\n" 
+  (printf "Today is ~s\n"
           (date->string (seconds->date (current-seconds)))))
 (require m)
 ]}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @specsubform/subs[#:literals (planet)
-                  (planet rel-string (user-string pkg-string vers ...))                  
+                  (planet rel-string (user-string pkg-string vers ...))
                   ([vers nat
                          (nat nat)
                          (= nat)

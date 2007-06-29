@@ -8,17 +8,17 @@ The @web-server offers a unit-based approach to running the server.
 
 @file{web-server-sig.ss} provides the @defthing[web-server^ signature?] signature
 with two elements:
-     
+
  @defproc[(serve) (-> void)]{
   Runs the server and returns a procedure that shuts down the server.
  }
- 
+
  @defproc[(serve-ports [ip input-port?]
                        [op output-port?])
           void]{
  Serves a single connection represented by the ports @scheme[ip] and
  @scheme[op].
- }                              
+ }
 
 @file{web-server-unit.ss} provides the @defthing[web-server\@ unit?] unit. It
 imports a @scheme[web-config^] unit and a @scheme[tcp^] unit. It uses the

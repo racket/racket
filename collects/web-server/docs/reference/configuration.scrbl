@@ -15,7 +15,7 @@ configuring the @web-server .
 @file{configuration/configuration-table-structs.ss} provides the following structures that
 represent a standard configuration (see @secref["web-server-unit.ss"]) of the @web-server .
 The contracts on this structure influence the valid types of values in
-the configuration table S-expression file format described in 
+the configuration table S-expression file format described in
 @secref["configuration-table.ss"].
 
 @defstruct[configuration-table
@@ -25,14 +25,14 @@ the configuration table S-expression file format described in
             [default-host host-table?]
             [virtual-hosts (listof (cons/c string? host-table?))])]
 
-@defstruct[host-table 
+@defstruct[host-table
            ([indices (listof string?)]
             [log-format symbol?]
             [messages messages?]
             [timeouts timeouts?]
             [paths paths?])]
 
-@defstruct[host 
+@defstruct[host
            ([indices (listof string?)]
             [log-format symbol?]
             [log-path (or/c false/c path-string?)]
@@ -60,14 +60,14 @@ the configuration table S-expression file format described in
             [protocol string?]
             [collect-garbage string?])]
 
-@defstruct[timeouts 
+@defstruct[timeouts
            ([default-servlet number?]
             [password number?]
             [servlet-connection number?]
             [file-per-byte number?]
             [file-base number?])]
 
-@defstruct[paths 
+@defstruct[paths
            ([conf (or/c false/c path-string?)]
             [host-base (or/c false/c path-string?)]
             [log (or/c false/c path-string?)]
@@ -79,8 +79,8 @@ the configuration table S-expression file format described in
 @; ------------------------------------------------------------
 @section[#:tag "configuration-table.ss"]{Configuration Table}
 
-@file{configuration/configuration-table.ss} provides functions for 
-reading, writing, parsing, and printing @scheme[configuration-table] 
+@file{configuration/configuration-table.ss} provides functions for
+reading, writing, parsing, and printing @scheme[configuration-table]
 structures.
 
 @defthing[default-configuration-table-path path?]{The default configuration table S-expression file.}
@@ -166,7 +166,7 @@ to the @scheme[(current-namespace)] of the call-site.
 
 Example:
 @schemeblock[
- (make-make-servlet-namespace 
+ (make-make-servlet-namespace
   #:to-be-copied-module-specs `((lib "database.ss" "my-module")))
  ]
 }
@@ -199,7 +199,7 @@ turn the paths given in the @scheme[configuration-table] into responders for the
 as the corresponding fields; with the content of the @scheme[text-file] as the body; and, with
 the @scheme[header]s as, you guessed it, headers.
 }
-                   
+
 @defproc[(servlet-loading-responder (url url?) (exn any/c))
          response?]{
  Prints the @scheme[exn] to standard output and responds with a "Servlet didn't load."
@@ -215,7 +215,7 @@ message.
          ((url url?) (exn any/c) . -> . response?)]{
  Prints the @scheme[exn] to standard output and responds with a "Servlet error." message with content from @scheme[file].
 }
-                                                   
+
 @defproc[(gen-servlets-refreshed (file path-string?))
          (-> response?)]{
  Returns a function that generates a standard "Servlet cache refreshed." message with content from @scheme[file].

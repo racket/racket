@@ -48,7 +48,7 @@ string. The different forms produce the error string in different
 ways:
 
 @itemize{
- 
+
  @item{@scheme[(error sym)] creates a message string by concatenating
   @scheme["error: "] with the string form of @scheme[sym].}
 
@@ -84,7 +84,7 @@ for end users.}
 
 @defproc*[([(raise-type-error [name symbol?][expected string?][v any/c]) any]
            [(raise-type-error [name symbol?][expected string?][bad-pos non-negative-exact-integer?][v any/c]) any])]{
- 
+
 Creates an @scheme[exn:fail:contract] value and @scheme[raise]s it as
 an exception.  The @scheme[name] argument is used as the source
 procedure's name in the error message. The @scheme[expected] argument
@@ -113,7 +113,7 @@ the procedure. The printed form of @scheme[v] is appended to
 @defproc[(raise-arity-error [name (or/c symbol? procedure?)]
                             [arity-v (or/c exact-nonnegative-integer?
                                            arity-at-least?
-                                           (listof 
+                                           (listof
                                             (or/c exact-nonnegative-integer?
                                                   arity-at-least?)))]
                             [arg-v any/c #f] ...)
@@ -134,7 +134,7 @@ message.}
 @defproc[(raise-syntax-error [name (or/c symbol? false/c)]
                              [message string?]
                              [expr any/c #f]
-                             [sub-expr any/c #f]) 
+                             [sub-expr any/c #f])
          any]{
 
 Creates an @scheme[exn:fail:syntax] value and @scheme[raise]s it as an
@@ -191,7 +191,7 @@ extension of the current continuation that does not have its own
 exception handler), then @scheme[f] is applied to the @scheme[raise]d
 value in the continuation of the @scheme[raise] call (but extended
 with a continuation barrier; see @secref["mz:continuations"]).
- 
+
 Any procedure that takes one argument can be an exception handler.  If
 the exception handler returns a value when invoked by @scheme[raise],
 then @scheme[raise] propagates the value to the ``previous'' exception

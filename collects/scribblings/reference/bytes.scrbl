@@ -42,7 +42,7 @@ positions are initialized with the given @scheme[b]s.
 @examples[(bytes 65 112 112 108 101)]}
 
 
-@defproc[(bytes->immutable-bytes [bstr bytes?]) 
+@defproc[(bytes->immutable-bytes [bstr bytes?])
          (and/c bytes?
                 immutable?)]{
  Returns an immutable byte string with the same content
@@ -110,9 +110,9 @@ positions are initialized with the given @scheme[b]s.
 @defproc[(bytes-copy! [dest (and/c bytes? (not/c immutable?))]
                       [dest-start exact-nonnegative-integer?]
                       [src bytes?]
-                      [src-start exact-nonnegative-integer? 0] 
+                      [src-start exact-nonnegative-integer? 0]
                       [src-end exact-nonnegative-integer? (bytes-length src)])
-         void?]{ 
+         void?]{
  Changes the bytes of @scheme[dest] from positions
  @scheme[dest-start] (inclusive) to @scheme[dest-end] (exclusive) to
  match the bytes in @scheme[src] from @scheme[src-start]
@@ -199,8 +199,8 @@ positions are initialized with the given @scheme[b]s.
 @section{Bytes to/from Characters, Decoding and Encoding}
 
 
-@defproc[(bytes->string/utf-8 [bstr bytes?] 
-                              [err-char (or/c false/c char?) #f] 
+@defproc[(bytes->string/utf-8 [bstr bytes?]
+                              [err-char (or/c false/c char?) #f]
                               [start exact-nonnegative-integer? 0]
                               [end exact-nonnegative-integer? (bytes-length bstr)])
          string?]{
@@ -214,7 +214,7 @@ positions are initialized with the given @scheme[b]s.
  @scheme[start] to @scheme[end] substring of @scheme[bstr] is not a valid
  UTF-8 encoding overall, then the @exnraise[exn:fail:contract].}
 
-@defproc[(bytes->string/locale [bstr bytes?] 
+@defproc[(bytes->string/locale [bstr bytes?]
                                [err-char (or/c false/c char?) #f]
                                [start exact-nonnegative-integer? 0]
                                [end exact-nonnegative-integer? (bytes-length bstr)])
@@ -239,9 +239,9 @@ positions are initialized with the given @scheme[b]s.
  Latin-1 footnote of @secref["encodings"].)  The @scheme[err-char]
  argument is ignored, but present for consistency with the other
  operations.}
- 
+
 @defproc[(string->bytes/utf-8 [str string?]
-                              [err-byte (or/c false/c byte?) #f] 
+                              [err-byte (or/c false/c byte?) #f]
                               [start exact-nonnegative-integer? 0]
                               [end exact-nonnegative-integer? (string-length str)])
          bytes?]{
@@ -250,8 +250,8 @@ positions are initialized with the given @scheme[b]s.
  @scheme[err-byte] argument is ignored, but included for consistency with
  the other operations.}
 
-@defproc[(string->bytes/locale [str string?] 
-                               [err-byte (or/c false/c byte?) #f] 
+@defproc[(string->bytes/locale [str string?]
+                               [err-byte (or/c false/c byte?) #f]
                                [start exact-nonnegative-integer? 0]
                                [end exact-nonnegative-integer? (string-length str)])
          bytes?]{
@@ -264,7 +264,7 @@ positions are initialized with the given @scheme[b]s.
  then the @exnraise[exn:fail:contract].}
 
 @defproc[(string->bytes/latin-1 [str string?]
-                                [err-byte (or/c false/c byte?) #f] 
+                                [err-byte (or/c false/c byte?) #f]
                                 [start exact-nonnegative-integer? 0]
                                 [end exact-nonnegative-integer? (string-length str)])
          bytes?]{
@@ -298,7 +298,7 @@ positions are initialized with the given @scheme[b]s.
  result is @scheme[#f]. Otherwise, @scheme[err-char] is used to resolve
  decoding errors as in @scheme[bytes->string/utf-8].}
 
-@defproc[(bytes-utf-8-ref [bstr bytes?] 
+@defproc[(bytes-utf-8-ref [bstr bytes?]
                           [skip exact-nonnegative-integer? 0]
                           [err-char (or/c false/c char?) #f]
                           [start exact-nonnegative-integer? 0]

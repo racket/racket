@@ -7,7 +7,7 @@
 
 @define[(twocolumn a b)
         (make-table #f
-         (list (list (make-flow (list a)) 
+         (list (list (make-flow (list a))
                      (make-flow (list (make-paragraph (list (hspace 1)))))
                      (make-flow (list b)))))]
 @interaction-eval[(print-hash-table #t)]
@@ -81,7 +81,7 @@ with the output port; when the function returns, the port is closed.
   ]}
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- 
+
  @item{@bold{TCP Connections:} The @scheme[tcp-connect] function
  creates both an input port and an output port for the client side of
  a TCP communication. The @scheme[tcp-listen] function creates a
@@ -100,7 +100,7 @@ with the output port; when the function returns, the port is closed.
   ]}
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- 
+
  @item{@bold{Process Pipes:} The @scheme[process] function runs a new
   process at the OS level and returns ports that correspond to the
   subprocess's stdin, stdout, and stderr. (The first three arguments
@@ -121,7 +121,7 @@ with the output port; when the function returns, the port is closed.
   ]}
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- 
+
  @item{@bold{Internal Pipes:} The @scheme[make-pipe] function returns
  two ports that are ends of a pipe. This kind of pipe is internal to
  Scheme, and not related to OS-level pipes for communicating between

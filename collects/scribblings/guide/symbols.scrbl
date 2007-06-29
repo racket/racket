@@ -39,7 +39,7 @@ input, any character can appear directly in an identifier, except for
 whitespace and the following special characters:
 
 @t{
-  @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]} 
+  @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]}
   @litchar["{"] @litchar["}"]
   @litchar{"} @litchar{,} @litchar{'} @litchar{`}
   @litchar{;} @litchar{#} @litchar["|"] @litchar["\\"]

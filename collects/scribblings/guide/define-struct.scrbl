@@ -145,7 +145,7 @@ To make a structure type @defterm{transparent}, use the
 field-name sequence:
 
 @def+int[
-(define-struct posn (x y) 
+(define-struct posn (x y)
                #:inspector #f)
 (make-posn 1 2)
 ]
@@ -169,7 +169,7 @@ by the library.
 The full syntax of @scheme[define-struct] supports many options, both
 at the structure-type level and at the level of individual fields:
 
-@specform/subs[(define-struct id-maybe-super (field ...) 
+@specform/subs[(define-struct id-maybe-super (field ...)
                               struct-option ...)
                ([id-maybe-super struct-id
                                 (struct-id super-id)]
@@ -229,7 +229,7 @@ A @scheme[_struct-option] always starts with a keyword:
                   #:guard (lambda (name type-name)
                             (cond
                               [(string? name) name]
-                              [(number? name) 
+                              [(number? name)
                                (number->string name)]
                               [else (error "bad name" name)])))
    (make-thing "apple")
@@ -260,7 +260,7 @@ A @scheme[_struct-option] always starts with a keyword:
 
  @defexamples[
    (define-struct greeter (name)
-                  #:property prop:procedure 
+                  #:property prop:procedure
                              (lambda (self other)
                                (string-append
                                 "Hi " other
@@ -269,7 +269,7 @@ A @scheme[_struct-option] always starts with a keyword:
    (greeter-name joe-greet)
    (joe-greet "Mary")
    (joe-greet "John")]}
-                               
+
  @specspecsubform[(code:line #:super super-expr)]{
 
   An alternative to supplying a @scheme[super-id] next to

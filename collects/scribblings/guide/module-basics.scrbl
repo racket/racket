@@ -57,7 +57,7 @@ big
 
 (require (lib "mzlib/date.ss"))
 
-(printf "Today is ~s\n" 
+(printf "Today is ~s\n"
         (date->string (seconds->date (current-seconds))))
 ]
 

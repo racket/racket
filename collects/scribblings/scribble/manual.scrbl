@@ -162,8 +162,8 @@ in a form definition.}
 @; ------------------------------------------------------------------------
 @section{Definition Reference}
 
-@defform[(defproc (id arg-spec ...) 
-                  result-contract-expr-datum 
+@defform[(defproc (id arg-spec ...)
+                  result-contract-expr-datum
                   pre-flow ...)]{
 
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
@@ -209,7 +209,7 @@ source layout.}
 
 
 @defform[(defproc* ([(id arg-spec ...)
-                     result-contract-expr-datum] ...) 
+                     result-contract-expr-datum] ...)
                    pre-flow ...)]{
 
 Like @scheme[defproc], but for multiple cases with the same
@@ -240,8 +240,8 @@ layout, like @scheme[schemeblock], and unlike @scheme[defproc].}
 Like @scheme[defform], but for multiple forms using the same
 @scheme[id].}
 
-@defform/subs[(defform/subs maybe-literals (id . datum) 
-                ([nonterm-id clause-datum ...+] ...) 
+@defform/subs[(defform/subs maybe-literals (id . datum)
+                ([nonterm-id clause-datum ...+] ...)
                 pre-flow ...)
               ([maybe-literals code:blank
                                (code:line #:literals (literal-id ...))])]{

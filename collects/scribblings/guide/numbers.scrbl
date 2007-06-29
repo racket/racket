@@ -94,7 +94,7 @@ non-integer exact numbers can be much more expensive than computation
 with inexact numbers.
 
 @def+int[
-(define (sigma f a b) 
+(define (sigma f a b)
   (if (= a b)
       0
       (+ (f a) (sigma f (+ a 1) b))))

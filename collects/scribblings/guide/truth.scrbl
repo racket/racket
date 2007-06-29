@@ -61,7 +61,7 @@ In general, the rule for printing a pair is as follows: use the dot
 notation always, but if the dot is immediately followed by an open
 parenthesis, then remove the dot, the open parenthesis, and the
 matching close parenthesis. Thus, @schemeresultfont{(0 . (1 . 2))}
-becomes @schemeresult[(0 1 . 2)], and 
+becomes @schemeresult[(0 1 . 2)], and
 @schemeresultfont{(1 . (2 . (3 . ())))} becomes @schemeresult[(1 2 3)].
 
 @;------------------------------------------------------------------------

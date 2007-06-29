@@ -10,7 +10,7 @@ Some of these are documented here.
 
 @local-table-of-contents[]
 
-                  
+
 @; ------------------------------------------------------------
 @section[#:tag "timer.ss"]{Timers}
 
@@ -23,38 +23,38 @@ procedures after a given amount of time, that may be extended.
  @scheme[evt] is an @scheme[alarm-evt] that is ready at @scheme[expire-seconds].
  @scheme[action] should be called when this @scheme[evt] is ready.
 }
-                                      
+
 @defproc[(start-timer-manager [cust custodian?])
          void]{
  Handles the execution and management of timers. Resources are charged to
  @scheme[cust].
 }
-              
+
 @defproc[(start-timer [s number?]
                       [action (-> void)])
          timer?]{
  Registers a timer that runs @scheme[action] after @scheme[s] seconds.
 }
-                
+
 @defproc[(reset-timer! [t timer?]
                        [s number?])
          void]{
  Changes @scheme[t] so that it will fire after @scheme[s] seconds.
 }
-              
+
 @defproc[(increment-timer! [t timer?]
                            [s number?])
          void]{
  Changes @scheme[t] so that it will fire after @scheme[s] seconds from when
  it does now.
 }
-              
+
 @defproc[(cancel-timer! [t timer?])
          void]{
  Cancels the firing of @scheme[t] ever and frees resources used by @scheme[t].
 }
 
-              
+
 @; XXX Generalize
 @; ------------------------------------------------------------
 @section[#:tag "connection-manager.ss"]{Connection Manager}
@@ -72,14 +72,14 @@ for doing this.
  associated with the connection should be allocated under @scheme[custodian].
  The connection will last until @scheme[timer] triggers.
 }
-  
+
 @; XXX Don't pass in parent-cust
 @defproc[(start-connection-manager [parent-cust custodian?])
          void]{
  Runs the connection manager (now just the timer manager) will @scheme[parent-cust]
  as the custodian.
-} 
-              
+}
+
 @defproc[(new-connection [timeout number?]
                          [i-port input-port?]
                          [o-port output-port?]
@@ -89,18 +89,18 @@ for doing this.
  Constructs a connection with a timer with a trigger of @scheme[timeout] that calls
  @scheme[kill-connection!].
 }
-                     
+
 @defproc[(kill-connection! [c connection?])
          void]{
  Closes the ports associated with @scheme[c], kills the timer, and shuts down
  the custodian.
 }
-              
+
 @defproc[(adjust-connection-timeout! [c connection?]
                                      [t number?])
          void]{
  Calls @scheme[reset-timer!] with the timer behind @scheme[c] with @scheme[t].
-}       
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-server-unit.ss"]{Dispatching Server}
@@ -147,7 +147,7 @@ which actually implements a dispatching server.
 @defthing[dispatch-server\@ (unit/c (tcp^ dispatch-server-config^) (dispatch-server^))]{
  Runs the dispatching server config in a very basic way, except that it uses
  @secref["connection-manager.ss"] to manage connections.
-} 
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "closure.ss"]{Serializable Closures}
@@ -166,12 +166,12 @@ requires an explicit representation of closures that is serializable.
  @scheme[proc], which is assumed to be syntax of @scheme[lambda]
  or @scheme[case-lambda].
 }
-                 
+
 @defproc[(closure->deserialize-name [c closure?])
          symbol?]{
  Extracts the unique tag of a closure @scheme[c]
 }
-                 
+
 These are difficult to use directly, so @file{private/define-closure.ss}
 defines a helper form:
 
@@ -179,7 +179,7 @@ defines a helper form:
  Defines a closure, constructed with @scheme[make-tag] that accepts
  @scheme[freevars ...], that when invoked with @scheme[formals]
  executes @scheme[body].
-} 
+}
 
 @; XXX Example
 
@@ -193,7 +193,7 @@ functions.
          cache-table?]{
  Constructs a cache-table.
 }
-                      
+
 @defproc[(cache-table-lookup! [ct cache-table?]
                               [id symbol?]
                               [mk (-> any/c)])
@@ -201,17 +201,17 @@ functions.
  Looks up @scheme[id] in @scheme[ct]. If it is not present, then @scheme[mk] is
  called to construct the value and add it to @scheme[ct].
 }
-               
+
 @defproc[(cache-table-clear! [ct cache-table?])
          void?]{
  Clears all entries in @scheme[ct].
 }
-                              
+
 @defproc[(cache-table? [v any/c])
          boolean?]{
  Determines if @scheme[v] is a cache table.
-}            
-                  
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "mime-types.ss"]{MIME Types}
 
@@ -223,12 +223,12 @@ files.
  Reads the @file{mime.types} file from @scheme[p] and constructs a
  hash table mapping extensions to MIME types.
 }
-                                       
+
 @defproc[(make-path->mime-type [p path?])
          (path? . -> . bytes?)]{
  Uses a @scheme[read-mime-types] with @scheme[p] and constructs a
  function from paths to their MIME type.
-} 
+}
 
 @; XXX Rename mod-map.ss
 @; ------------------------------------------------------------
@@ -241,14 +241,14 @@ values. @file{private/mod-map.ss} compresses the serialized representation.
          compressed-serialized-value?]{
  Collapses multiple occurrences of the same module in the module
  map of the serialized representation, @scheme[sv].
-} 
-  
+}
+
 @defproc[(decompress-serial [csv compressed-serialized-value?])
          serialized-value?]{
  Expands multiple occurrences of the same module in the module
  map of the compressed serialized representation, @scheme[csv].
-}       
-              
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "url-param.ss"]{URL Param}
 
@@ -265,14 +265,14 @@ with this process.
  Associates @scheme[k] with @scheme[v] in the final URL param of @scheme[u],
  overwritting any current binding for @scheme[k].
 }
-    
+
 @defproc[(extract-param [u url?]
                         [k string?])
          (or/c string? false/c)]{
  Extracts the string associated with @scheme[k] in the final URL param of
  @scheme[u], if there is one, returning @scheme[#f] otherwise.
-} 
-                                
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "util.ss"]{Miscellaneous Utilities}
 
@@ -297,13 +297,13 @@ needs. They are provided by @file{private/util.ss}.
          url?]{
  Replaces the URL path of @scheme[u] with @scheme[proc] of the former path.
 }
-      
-@; XXX Remove use or take url?              
+
+@; XXX Remove use or take url?
 @defproc[(url-path->string [url-path (listof path/param?)])
          string?]{
  Formats @scheme[url-path] as a string with @scheme["/"] as a delimiter
  and no params.
-} 
+}
 
 @subsection{Paths}
 @defproc[(explode-path* [p path?])
@@ -317,24 +317,24 @@ needs. They are provided by @file{private/util.ss}.
  Returns, as a list, the portion of @scheme[p] after @scheme[base],
  assuming @scheme[base] is a prefix of @scheme[p].
 }
-               
+
 @defproc[(directory-part [p path?])
          path?]{
  Returns the directory part of @scheme[p], returning @scheme[(current-directory)]
  if it is relative.
 }
-               
+
 @defproc[(build-path-unless-absolute [base path-string?]
                                      [p path-string?])
          path?]{
  Prepends @scheme[base] to @scheme[p], unless @scheme[p] is absolute.
 }
-               
+
 @defproc[(strip-prefix-ups [p (listof path-element?)])
          (listof path-element?)]{
  Removes all the prefix @scheme[".."]s from @scheme[p].
 }
-               
+
 @subsection{Exceptions}
 
 @defproc[(pretty-print-invalid-xexpr [exn exn:invalid-xexpr?]
@@ -342,7 +342,7 @@ needs. They are provided by @file{private/util.ss}.
          void]{
  Prints @scheme[v] as if it were almost an X-expression highlighting the error
  according to @scheme[exn].
-} 
+}
 
 @; XXX Remove
 @defproc[(network-error [s symbol?]
@@ -351,25 +351,25 @@ needs. They are provided by @file{private/util.ss}.
          void]{
  Like @scheme[error], but throws a @scheme[exn:fail:network].
 }
-              
+
 @defproc[(exn->string [exn (or/c exn? any/c)])
          string?]{
  Formats @scheme[exn] with @scheme[(error-display-handler)] as a string.
 }
-                 
+
 @subsection{Strings}
 
 @defproc[(lowercase-symbol! [sb (or/c string? bytes?)])
          symbol?]{
  Returns @scheme[sb] as a lowercase symbol.
 }
-                 
+
 @defproc[(read/string [s string?])
          serializable?]{
  @scheme[read]s a value from @scheme[s] and returns it.
 }
-                       
+
 @defproc[(write/string [v serializable?])
          string?]{
  @scheme[write]s @scheme[v] to a string and returns it.
-}        
+}

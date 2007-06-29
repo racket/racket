@@ -103,9 +103,9 @@ Returns an immutable string with the same content as
 @defproc[(string-copy! [dest (and/c string? (not/c immutable?))]
                        [dest-start exact-nonnegative-integer?]
                        [src string?]
-                       [src-start exact-nonnegative-integer? 0] 
+                       [src-start exact-nonnegative-integer? 0]
                        [src-end exact-nonnegative-integer? (string-length src)])
-         void?]{ 
+         void?]{
  Changes the characters of @scheme[dest] from positions
  @scheme[dest-start] (inclusive) to @scheme[dest-end] (exclusive) to
  match the characters in @scheme[src] from @scheme[src-start]
@@ -169,7 +169,7 @@ Returns an immutable string with the same content as
 @examples[(string=? "Apple" "apple")
           (string=? "a" "as" "a")]
 
-@define[(string-sort direction folded?) 
+@define[(string-sort direction folded?)
          (if folded?
              @elem{Like @scheme[string-ci<?], but checks whether the arguments would be @direction after case-folding.}
              @elem{Like @scheme[string<?], but checks whether the arguments are @|direction|.})]

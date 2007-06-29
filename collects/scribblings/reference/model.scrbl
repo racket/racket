@@ -23,7 +23,7 @@
 @define[(*state c e) (make-element #f (list langle c comma e rangle))]
 @define-syntax[state (syntax-rules ()
                        [(_ a b) (*state (scheme a) (scheme b))])]
-@define[(frame n) (make-element "schemevariable" 
+@define[(frame n) (make-element "schemevariable"
                                 (list "C" (make-element 'subscript (list (format "~a" n)))))]
 
 @;------------------------------------------------------------------------

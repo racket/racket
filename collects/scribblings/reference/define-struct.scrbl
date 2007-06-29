@@ -5,7 +5,7 @@
 
 @guideintro["guide:define-struct"]{@scheme[define-struct]}
 
-@defform/subs[(define-struct id-maybe-super (field ...) 
+@defform/subs[(define-struct id-maybe-super (field ...)
                              struct-option ...)
               ([id-maybe-super id
                                (id super-id)]
@@ -137,7 +137,7 @@ cp
 This form can only appear as an expression within a
 @scheme[define-struct] form; normally, it is used with
 @scheme[#:property], especially for a property like
-@scheme[prop:procedure]. The result of 
+@scheme[prop:procedure]. The result of
 
 @defexamples[
 (define-struct mood-procedure ([base #:immutable] rating)

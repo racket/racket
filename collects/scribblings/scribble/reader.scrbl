@@ -61,7 +61,7 @@ constructs on an interactive REPL since reading an expression succeeds
 only when there is a new expression available.)  In the readtable,
 @litchar["@"] is set as a terminating reader macro, so if you want to
 use it in Scheme code, you need to quote it as @scheme{\@} or the whole
-identifier with @scheme[|ba@rs|]. Of course, @litchar["@"] is not treated 
+identifier with @scheme[|ba@rs|]. Of course, @litchar["@"] is not treated
 specially in Scheme strings, character constants, etc.
 
 Roughly, a form matching the grammar above is read as
@@ -120,7 +120,7 @@ the surrounding context must provide a binding for @scheme[foo]
 
 @scribble-examples[(list @litchar["'@foo{bar}"] @scheme['(foo "bar")])]
 
-@; - - -  - - -  - - -  - - -  - - -  - - -  - - -  - - - 
+@; - - -  - - -  - - -  - - -  - - -  - - -  - - -  - - -
 @subsection{The Command Part}
 
 Besides being a Scheme identifier, the @nonterm{cmd} part of an @at
@@ -332,7 +332,7 @@ instead.
   "@foo[\"@literally{}\"]"
 ]
 
-@; - - -  - - -  - - -  - - -  - - -  - - -  - - -  - - - 
+@; - - -  - - -  - - -  - - -  - - -  - - -  - - -  - - -
 @subsubsub*section{Quoting in Body Texts}
 
 To quote braces or @at, precede them with a backslash.  Note that this
@@ -352,7 +352,7 @@ preserved in the text as usual.
   "@foo{b\\\\ar}"
 ]
 
-@; - - -  - - -  - - -  - - -  - - -  - - -  - - -  - - - 
+@; - - -  - - -  - - -  - - -  - - -  - - -  - - -  - - -
 @subsubsub*section{Newlines and Indentation}
 
 When indentation is used, all-space indentation string syntaxes are

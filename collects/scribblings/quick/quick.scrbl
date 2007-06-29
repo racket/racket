@@ -182,7 +182,7 @@ instead of requiring a separate @scheme[define] for each identifier:
   (let ([p12 (hc-append p1 p2)]
         [p21 (hc-append p2 p1)])
     (vc-append p12 p21)))
-(checker (colorize (square 10) "red") 
+(checker (colorize (square 10) "red")
          (colorize (square 10) "black"))
 ]
 

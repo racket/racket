@@ -6,7 +6,7 @@
 
 @title[#:tag "classes"]{Classes and Objects}
 
-A @scheme[class] expression denotes a first-class value, 
+A @scheme[class] expression denotes a first-class value,
 just like a @scheme[lambda] expression:
 
 @specform[(class superclass-expr decl-or-expr ...)]
@@ -31,7 +31,7 @@ public methods @scheme[get-size], @scheme[grow], and @scheme[eat]:
 
   (super-new)                (code:comment #,(t "superclass initialization"))
 
-  (define/public (get-size) 
+  (define/public (get-size)
     current-size)
 
   (define/public (grow amt)
@@ -47,13 +47,13 @@ public methods @scheme[get-size], @scheme[grow], and @scheme[eat]:
   (init size)
   (define current-size size)
   (super-new)
-  (define/public (get-size) 
+  (define/public (get-size)
     current-size)
   (define/public (grow amt)
     (set! current-size (+ amt current-size)))
   (define/public (eat other-fish)
     (grow (send other-fish get-size)))))]
- 
+
 The @scheme[size] initialization argument must be supplied via a named
  argument when instantiating the class through the @scheme[new] form:
 
@@ -61,7 +61,7 @@ The @scheme[size] initialization argument must be supplied via a named
 (new (class object% (init size) ...) [size 10])
 ]
 
-Of course, we can also name the class and its instance: 
+Of course, we can also name the class and its instance:
 
 @schemeblock[
 (define fish% (class object% (init size) ...))
@@ -150,7 +150,7 @@ finding a method in the target object's class at run time, making
 contrast, @scheme[inherit]-based method invocations use an offset
 within the class's method table that is computed when the class is
 created.
- 
+
 To achieve performance similar to @scheme[inherit]-based method calls when
 invoking a method from outside the method's class, the programmer must use the
 @scheme[generic] form, which produces a class- and method-specific
@@ -168,7 +168,7 @@ method name to a location in the class's method table. As illustrated
 by the last example, sending through a generic method checks that its
 argument is an instance of the generic's class.
 
-Whether a method is called directly within a @scheme[class], 
+Whether a method is called directly within a @scheme[class],
 through a generic method,
 or through @scheme[send], method overriding works in the usual way:
 

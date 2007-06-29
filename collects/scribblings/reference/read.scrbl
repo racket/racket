@@ -47,10 +47,10 @@ Along with @schemelink[char-whitespace?]{whitespace}, the following
 characters are @defterm{delimiters}:
 
 @t{
-  @hspace[2] @ilitchar{(} @ilitchar{)} @ilitchar{[} @ilitchar{]} 
+  @hspace[2] @ilitchar{(} @ilitchar{)} @ilitchar{[} @ilitchar{]}
   @ilitchar["["] @ilitchar["]"]
   @ilitchar{"} @ilitchar{,} @ilitchar{'} @ilitchar{`}
-  @ilitchar{;} 
+  @ilitchar{;}
 }
 
 A delimited sequence that starts with any other character is typically
@@ -235,7 +235,7 @@ with any other mark, double-precision IEEE floating point is used.
                                   @BNF-seq[@nonterm{sign} @nunterm{inexact-special}])
      (list @nunterm{inexact-unsigned} @BNF-alt[@nunterm{inexact-normal}
                                                @nunterm{inexact-special}])
-     (list @nunterm{inexact-normal} @BNF-seq[@nunterm{inexact-simple} @optional{@nunterm{exp-mark} 
+     (list @nunterm{inexact-normal} @BNF-seq[@nunterm{inexact-simple} @optional{@nunterm{exp-mark}
                                                                                 @optional[@nonterm{sign}] @nunterm{digits#}}])
      (list @nunterm{inexact-simple} @BNF-seq[@nunterm{digits#} @optional{@litchar{.}} @kleenestar{@litchar{#}}]
                                     @BNF-seq[@optional{@nunterm{exact-integer}} @litchar{.} @nunterm{digits#}]
@@ -364,7 +364,7 @@ Within a string sequence, the following escape sequences are
  recognized:
 
 @itemize{
- 
+
  @item{@as-index{@litchar["\\a"]}: alarm (ASCII 7)}
  @item{@as-index{@litchar["\\b"]}: backspace (ASCII 8)}
  @item{@as-index{@litchar["\\t"]}: tab (ASCII 9)}
@@ -625,7 +625,7 @@ following forms:
        do not match any of the previous cases, and as long as the
        character after @nonterm{c} is not
        @schemelink[char-alphabetic?]{alphabetic}.}
- 
+
 }
 
 @reader-examples

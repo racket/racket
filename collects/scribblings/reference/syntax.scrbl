@@ -507,7 +507,7 @@ defined as follows:
 
 @schemeblock[
 (#,cvt (id . _gen-formals) . _datum)   = (lambda _gen-formals . _datum)
-(#,cvt (head . _gen-formals) . _datum) = (lambda _gen-formals expr) 
+(#,cvt (head . _gen-formals) . _datum) = (lambda _gen-formals expr)
                                          #, @elem{if} (#,cvt head . _datum) = expr
 ]
 
@@ -578,7 +578,7 @@ form.
 (begin
   (define x 10)
   x)
-(+ 1 (begin 
+(+ 1 (begin
        (printf "hi\n")
        2))
 (let-values ([(x y) (begin
@@ -618,8 +618,8 @@ defined, the @exnraise[exn:fail:contract].
 (define x 12)
 (set! x (add1 x))
 x
-(let ([x 5]) 
-  (set! x (add1 x)) 
+(let ([x 5])
+  (set! x (add1 x))
   x)
 (set! i-am-not-defined 10)
 ]}
@@ -811,7 +811,7 @@ identifier.
   Like @scheme[require-spec], but adjusting each identifier to be bound
   by prefixing it with @scheme[prefix-id].}
 
- @specsubform[#:literals (rename) 
+ @specsubform[#:literals (rename)
               (rename require-spec [orig-id bind-id] ...)]{
   Like @scheme[require-spec], but replacing the identifier to
   bind @scheme[orig-id] with @scheme[bind-id]; if any
@@ -845,7 +845,7 @@ can trigger automatic loading of the module declaration:
  @scheme[rel-string] case, but @scheme[string] is a path (possibly
  absolute) using the current platform's path conventions.}
 
- @specsubform[#:literals(planet) 
+ @specsubform[#:literals(planet)
               (planet rel-string (user-string pkg-string vers ...))]{
  Specifies a library available via the @PLaneT server.
  }

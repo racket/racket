@@ -312,10 +312,10 @@ current value, and the last @scheme[_body] provides the value of
 @scheme[_accum-id] for the netx iteration.
 
 @examples[
-(for/fold ([len 0]) 
+(for/fold ([len 0])
           ([chapter '("Intro" "Conclusion")])
   (+ len (string-length chapter)))
-(for/fold ([prev #f]) 
+(for/fold ([prev #f])
           ([i (in-naturals 1)]
            [chapter '("Intro" "Details" "Details" "Conclusion")]
            #:when (not (equal? chapter prev)))
@@ -334,7 +334,7 @@ multiple values for the results.
           ([chapter '("Intro" "Details" "Details" "Conclusion")]
            #:when (not (equal? chapter prev)))
   (printf "~a. ~a\n" counter chapter)
-  (values chapter 
+  (values chapter
           (add1 counter)))
 ]
 
