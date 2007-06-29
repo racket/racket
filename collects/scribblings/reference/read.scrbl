@@ -474,8 +474,7 @@ way. Longer prefixes take precedence over short ones:
                   (list @as-index{@litchar{#,}} @scheme[unsyntax])
                   (list @as-index{@litchar["#,@"]} @scheme[unsyntax-splicing])]
 
-@reader-examples
-[
+@reader-examples[
 "'apple"
 "`(1 ,2)"
 ]
@@ -501,8 +500,7 @@ A @litchar{#! } (which is @litchar{#!} followed by a space) or
 line by ending a line with @litchar["\\"]. This form of comment
 normally appears at the beginning of a Unix script file.
 
-@reader-examples
-[
+@reader-examples[
 "; comment"
 "#| a |# 1"
 "#| #| a |# 1 |# 2"
@@ -534,8 +532,7 @@ In @scheme[read-syntax] mode, each recursive read for the vector
 elements is also in @scheme[read-syntax] mode, so that the wrapped
 vector's elements are also wraped as syntax objects.
 
-@reader-examples
-[
+@reader-examples[
 "#(1 apple 3)"
 "#3(\"apple\" \"banana\")"
 "#3()"
@@ -560,8 +557,7 @@ In either case, the table is constructed by adding each mapping to the
  hash table from left to right, so later mappings can hide earlier
  mappings if the keys are equivalent.
 
-@reader-examples
-[
+@reader-examples[
 #:example-note @elem{, where @scheme[make-...] stands for @scheme[make-immutable-hash-table]}
 "#hash()"
 "#hasheq()"
@@ -580,8 +576,7 @@ In @scheme[read-syntax] mode, the recursive read for the box content
 is also in @scheme[read-syntax] mode, so that the wrapped box's
 content is also wraped as a syntax object.
 
-@reader-examples
-[
+@reader-examples[
 "#&17"
 ]
 
@@ -628,8 +623,7 @@ following forms:
 
 }
 
-@reader-examples
-[
+@reader-examples[
 "#\\newline"
 "#\\n"
 "#\\u3BB"
@@ -643,8 +637,7 @@ A @litchar{#:} starts a keyword. The parsing of a keyword after the
 case-insensitive mode, except that the part after @litchar{#:} is
 never parsed as a number.
 
-@reader-examples
-[
+@reader-examples[
 "#:Apple"
 "#:1"
 ]
@@ -660,8 +653,7 @@ constructed by @scheme[pregexp], @litchar{#rx#} as
 constructed by @scheme[byte-regexp], and @litchar{#px#} as
 constructed by @scheme[byte-pregexp].
 
-@reader-examples
-[
+@reader-examples[
 "#rx\".*\""
 "#px\"[\\\\s]*\""
 "#rx#\".*\""
@@ -688,8 +680,7 @@ both the comment and the reference are grouped together by some other
 form (i.e., some recursive read); a top-level @litchar{#;} comment
 neither defines nor uses graph tags for other top-level forms.
 
-@reader-examples
-[
+@reader-examples[
 "(#1=100 #1# #1#)"
 "#0=(1 . #0#)"
 ]
