@@ -1538,6 +1538,19 @@
        1)
       x)
    (reverse '(1 3 4 2)))
+
+  (test/neg-blame
+   'parameter/c1
+   '((contract (parameter/c integer?)
+               (make-parameter 1)
+               'pos 'neg)
+     #f))
+  
+  (test/pos-blame
+   'parameter/c1
+   '((contract (parameter/c integer?)
+               (make-parameter 'not-an-int)
+               'pos 'neg)))
   
   (test/spec-passed
    'define/contract1
@@ -4398,6 +4411,8 @@ so that propagation occurs.
   (test-name '(cons-immutable/c (-> boolean? boolean?) (cons-immutable/c integer? null?))
              (list-immutable/c (-> boolean? boolean?) integer?))
   
+  (test-name '(parameter/c integer?) (parameter/c integer?))
+  
   (test-name '(box/c boolean?) (box/c boolean?))
   (test-name '(box/c boolean?) (box/c (flat-contract boolean?)))
   (test-name 'the-name (flat-rec-contract the-name))
@@ -4509,6 +4524,10 @@ so that propagation occurs.
   
   (ctest #t contract-stronger? number? number?)
   (ctest #f contract-stronger? boolean? number?)
+    
+  (ctest #t contract-stronger? (parameter/c (between/c 0 5)) (parameter/c (between/c 0 5)))
+  (ctest #f contract-stronger? (parameter/c (between/c 0 5)) (parameter/c (between/c 1 4)))
+  (ctest #f contract-stronger? (parameter/c (between/c 1 4)) (parameter/c (between/c 0 5)))
   
   (ctest #t contract-stronger? (symbols 'x 'y) (symbols 'x 'y 'z))
   (ctest #f contract-stronger? (symbols 'x 'y 'z) (symbols 'x 'y))

@@ -825,7 +825,8 @@ improve method arity mismatch contract violation error messages?
 	   syntax/c
            
            check-between/c
-           check-unary-between/c)
+           check-unary-between/c
+           parameter/c)
   
   (define-syntax (flat-rec-contract stx)
     (syntax-case stx  ()
@@ -1976,4 +1977,44 @@ improve method arity mismatch contract violation error messages?
                    (and (predicate-id val)
                         (ctc-pred-x (selector-id val)) ...))))))))]
       [(_ struct-name anything ...)
-       (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))])))
+       (raise-syntax-error 'struct/c "expected a struct identifier" stx (syntax struct-name))]))
+  
+  
+  (define (parameter/c x)
+    (make-parameter/c (coerce-contract 'parameter/c x)))
+  
+  (define-struct/prop parameter/c (ctc)
+    ((proj-prop (λ (ctc)
+                  (let ([c-proc ((proj-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
+                    (λ (pos-blame neg-blame src-info orig-str)
+                      (let ([partial-neg-contract (c-proc neg-blame pos-blame src-info orig-str)]
+                            [partial-pos-contract (c-proc neg-blame pos-blame src-info orig-str)])
+                        (λ (val)
+                          (cond
+                            [(parameter? val)
+                             (make-derived-parameter 
+                              val 
+                              #;partial-pos-contract
+                              partial-neg-contract)]
+                            [else
+                             (raise-contract-error val src-info pos-blame orig-str 
+                                                   "expected a parameter")])))))))
+     (name-prop (λ (ctc) (build-compound-type-name 'parameter/c (parameter/c-ctc ctc))))
+     (first-order-prop
+      (λ (ctc)
+        (let ([tst ((first-order-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
+          (λ (x)
+            (and (parameter? x)
+                 (tst (x)))))))
+     
+     (stronger-prop
+      (λ (this that)
+        ;; must be invariant (because the library doesn't currently split out pos/neg contracts
+        ;; which could be tested individually ....)
+        (and (parameter/c? that)
+             (contract-stronger? (parameter/c-ctc this) 
+                                 (parameter/c-ctc that))
+             (contract-stronger? (parameter/c-ctc that) 
+                                 (parameter/c-ctc this)))))))
+  
+  )
