@@ -4,21 +4,13 @@
            (lib "kw.ss"))
 
   (provide (rename *read read)
-	   (rename *read-syntax read-syntax))
-
-  (define (call-with-scribble-params t)
-    (parameterize ([scribble:read-insert-indents #f])
-      (t)))
+           (rename *read-syntax read-syntax))
 
   (define/kw (*read #:optional [inp (current-input-port)])
-    (call-with-scribble-params
-     (lambda ()
-       (wrap inp (scribble:read-inside inp)))))
+    (wrap inp (scribble:read-inside inp)))
 
   (define/kw (*read-syntax #:optional src [port (current-input-port)])
-    (call-with-scribble-params
-     (lambda ()
-       (wrap port (scribble:read-inside-syntax src port)))))
+    (wrap port (scribble:read-inside-syntax src port))))
 
   (define (wrap port body)
     (let* ([p-name (object-name port)]

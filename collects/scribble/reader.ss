@@ -2,66 +2,114 @@
 ;; Implements the @-reader macro for embedding text in Scheme code.
 
 (module reader mzscheme
-  (require (lib "string.ss") (lib "kw.ss") (lib "readerr.ss" "syntax"))
+
+  (require (lib "kw.ss") (lib "string.ss") (lib "readerr.ss" "syntax"))
 
   ;; --------------------------------------------------------------------------
-  ;; customization
+  ;; utilities for syntax specifications below
 
-  (provide read-insert-indents)
-  (define read-insert-indents (make-parameter #t))
+  ;; regexps
+  (define (px . args)
+    (let* ([args (let loop ([xs args])
+                   (if (list? xs) (apply append (map loop xs)) (list xs)))]
+           [args (map (lambda (x)
+                        (cond
+                          [(bytes? x) x]
+                          [(string? x) (string->bytes/utf-8 x)]
+                          [(char? x) (regexp-quote (bytes (char->integer x)))]
+                          [else (error 'reader "internal error [px]")]))
+                      args)])
+      (byte-pregexp (apply bytes-append args))))
+  (define (^px . args) (px #"^" args))
+
+  ;; reverses a byte string visually
+  (define reverse-bytes
+    (let ([pairs (let ([xs (bytes->list #"([{<")]
+                       [ys (bytes->list #")]}>")])
+                   (append (map cons xs ys) (map cons ys xs)))])
+      (define (rev-byte b)
+        (cond [(assq b pairs) => cdr]
+              [else b]))
+      (lambda (bs) (list->bytes (map rev-byte (reverse! (bytes->list bs)))))))
 
   ;; --------------------------------------------------------------------------
   ;; syntax
 
-  (define cmd-char #\@)
+  ;; basic customization
+  (define ch:command     #\@)
+  (define ch:comment     #\;)
+  (define ch:bar-quote   #\|)
+  (define ch:command-quote #\\)
+  (define ch:attrs-begin #\[)
+  (define ch:attrs-end   #\])
+  (define ch:lines-begin #\{)
+  (define ch:lines-end   #\})
 
-  (define bars-quoted   #rx#"^[ \t\r\n]*\\|([^|]*)\\|")
-  ;; attrs open with a `[', and read in one shot as a list
-  (define open-attrs    #rx#"^[ \t\r\n]*[[][ \t\r\n]*")
-  (define open-lines    #rx#"^[ \t\r\n]*[{](?:[ \t]*\r?\n[ \t]*)?") ; 1 newline
-  (define open-lines*   '(#"^[ \t\r\n]*" #"(?:[ \t]*\r?\n[ \t]*)?"))
-  (define open-lines-special ; a special ending expected: @foo{<{ ... }>} etc
-    #rx#"^[ \t\r\n]*([|][^a-zA-Z0-9 \t\r\n@\\]*?[{])(?:[ \t]*\r?\n[ \t]*)?")
-  (define open-attr/lines #rx#"^[ \t\r\n]*[[{][ \t\r\n]*")
-  (define close-attrs   #rx#"^[]]")
-  (define close-lines   #rx#"^(?:[ \t]*\r?\n[ \t]*)?[}]") ; swallow 1 newline
-  (define close-lines*  '(#"^(?:[ \t]*\r?\n[ \t]*)?" #""))
-  (define comment-start #rx#"^[ \t]*;")
-  (define comment-line  #rx#"^[^\r\n]*\r?\n[ \t]*") ; like tex's `%' nl & space
-  (define sub-start     #rx#"^[@]")
-  (define line-item     #rx#"^(?:[^{}@\r\n]*[^\\{}@\r\n]|[\\]+[{}@])+")
-  (define line-item* '(#"^(?:[^{}@\r\n]*[^\\{}@\r\n]|[\\]+(?:[@]|" #"))+"))
-  (define end-of-line   #rx#"^([\\]+)?\r?\n[ \t]*") ; make \-eoln possible
-  (define bar-pfx-remove  #rx#"^[|]")
-  (define bslash-unquote  #rx#"[\\]([\\]*[{}@])")
-  (define bslash-unquote* '(#"[\\]([\\]+(?:[@]|" #"))"))
+  (define str:lines-begin* #"\\|[^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*\\{")
 
-  (define byte-pairs
-    (map (lambda (b) (cons (bytes-ref b 0) (bytes-ref b 1)))
-         '(#"()" #"[]" #"{}" #"<>")))
+  (define re:command       (^px ch:command
+                                ;; the following identifies string escapes, see
+                                ;; hoe it is used below
+                                "("ch:bar-quote"?\")?"))
+  (define re:whitespaces   (^px "\\s+"))
+  (define re:comment-start (^px ch:comment))
+  (define re:comment-line  (^px "[^\n]*\n[ \t]*")) ; like tex's `%'
+  (define re:expr-escape   (^px ch:bar-quote))
+  (define re:attrs-begin   (^px ch:attrs-begin))
+  (define re:attrs-end     (^px ch:attrs-end))
+  (define re:lines-begin   (^px ch:lines-begin))
+  (define re:lines-begin*  (^px str:lines-begin*))
+  (define re:lines-end     (^px ch:lines-end))
+  (define str:end-of-line  "[ \t]*\r?\n[ \t]*") ; eat spaces on the next line
+  (define re:end-of-line   (^px str:end-of-line))
+  (define (re:line-item* bgn end)
+    (^px "(.+?)(?:"bgn"|"end
+                "|"ch:command-quote"*"ch:command
+                "|"str:end-of-line")"))
+  (define re:line-item (re:line-item* ch:lines-begin ch:lines-end))
+  (define re:line-item-no-nests (^px "(.+?)(?:"ch:command-quote"*"ch:command
+                                            "|"str:end-of-line")"))
+  (define re:command-unquote (^px ch:command-quote
+                                  "("ch:command-quote"*"ch:command")"))
 
   ;; --------------------------------------------------------------------------
   ;; utilities
 
-  (define make-spaces
-    (let ([t (make-hash-table)])
-      (lambda (n)
-        (hash-table-get t n
-          (lambda ()
-            (let ([s (make-string n #\space)])
-              (hash-table-put! t n s) s))))))
+  ;; like `regexp-match/fail-without-reading', without extras; the regexp that
+  ;; is used must be anchored -- nothing is dropped
+  (define (*regexp-match-peek-positions pattern input-port)
+    (unless (and (byte-regexp? pattern)
+                 (regexp-match? #rx#"^\\^" (object-name pattern)))
+      (error 'reader "internal error [invalid bregexp] ~e" pattern))
+    (regexp-match-peek-positions pattern input-port))
+  ;; the following doesn't work -- must peek first
+  ;; (define (*regexp-match-positions pattern input-port)
+  ;;   (unless (and (byte-regexp? pattern)
+  ;;                (regexp-match? #rx#"^\\^" (object-name pattern)))
+  ;;     (error 'reader "internal error [invalid bregexp] ~e" pattern))
+  ;;   (regexp-match-peek-positions pattern input-port))
+  (define (*regexp-match pattern input-port)
+    (let ([m (*regexp-match-peek-positions pattern input-port)])
+      (and m (let ([s (read-bytes (cdar m) input-port)])
+               (cons s (map (lambda (p) (and p (subbytes s (car p) (cdr p))))
+                            (cdr m)))))))
+  ;; like regexp-match, but returns the whole match
+  (define (*regexp-match1 pattern input-port)
+    (let ([m (*regexp-match-peek-positions pattern input-port)])
+      (and m (read-bytes (cdar m) input-port))))
 
   ;; Skips whitespace characters, sensitive to the current readtable's
   ;; definition of whitespace; optimizes common spaces when possible
   (define skip-whitespace
-    (let* ([plain-readtables (make-hash-table 'weak)]
-           [plain-spaces '(#\space #\tab #\newline #\return #\page)]
-           [plain-spaces-re
-            (regexp (string-append "^["(apply string plain-spaces)"]*"))])
+    (let* ([plain-readtables  (make-hash-table 'weak)]
+           [plain-spaces      " \t\n\r\f"]
+           [plain-spaces-list (string->list " \t\n\r\f")]
+           [plain-spaces-re   (^px "[" plain-spaces "]*")])
       (define (skip-plain-spaces port)
         ;; hack: according to the specs, this might consume more characters
-        ;; than needed, but it seems to work fine with a simple <ch>* regexp
-        (regexp-match-positions plain-spaces-re port))
+        ;; than needed, but it works fine with a simple <ch>* regexp (because
+        ;; it can always match an empty string)
+        (*regexp-match-peek-positions plain-spaces-re port))
       (define (whitespace? ch rt)
         (if rt
           (let-values ([(like-ch/sym _1 _2) (readtable-mapping rt ch)])
@@ -73,7 +121,7 @@
         (hash-table-get plain-readtables rt
           (lambda ()
             (let ([plain? (andmap (lambda (ch) (whitespace? ch rt))
-                                  plain-spaces)])
+                                  plain-spaces-list)])
               (hash-table-put! plain-readtables rt #t)
               rt))))
       (lambda (port)
@@ -102,9 +150,19 @@
       (datum->syntax-object #f d (placeholder-loc sp))
       (datum->syntax-object sp d sp)))
 
+  ;; make n spaces, cached for n
+  (define make-spaces
+    (let ([t (make-hash-table)])
+      (lambda (n)
+        (hash-table-get t n
+          (lambda ()
+            (let ([s (make-string n #\space)])
+              (hash-table-put! t n s) s))))))
+
+  ;; a unique eol string
   (define eol-token "\n")
-  (define (eol-syntax? stx) (eq? eol-token (syntax-e stx)))
-  ;; sanity check, in case this gets violated in the future
+  (define (eol-syntax? x) (and (syntax? x) (eq? eol-token (syntax-e x))))
+  ;; sanity check, in case this property gets violated in the future
   (unless (eol-syntax? (datum->syntax-object #f eol-token))
     (error 'reader "internal error [invalid assumption]"))
 
@@ -114,9 +172,20 @@
   (define ((dispatcher start-inside?)
            char inp source-name line-num col-num position)
 
+    (define (read-error* line col pos span msg . xs)
+      (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
+             [msg  (apply format (if eof? xs (cons msg xs)))])
+        ((if eof? raise-read-error raise-read-eof-error)
+         msg source-name line col pos span)))
     (define (read-error msg . xs)
       (let-values ([(line col pos) (port-next-location inp)])
-        (raise-read-error (apply format msg xs) source-name line col pos #f)))
+        (apply read-error* line col pos #f msg xs)))
+
+    (define (*match  rx) (*regexp-match rx inp))
+    (define (*match1 rx) (*regexp-match1 rx inp))
+    ;; (define (*skip   rx) (*regexp-match-positions rx inp)) <- see above
+    (define (*skip   rx) (*regexp-match1 rx inp))
+    (define (*peek   rx) (*regexp-match-peek-positions rx inp))
 
     (define (cur-pos)
       (let-values ([(line col pos) (port-next-location inp)])
@@ -125,229 +194,252 @@
     (define (span-from start)
       (and start (- (cur-pos) start)))
 
-    (define (read-delimited-list end-re)
+    (define (read-delimited-list end-re end-ch)
       (let loop ([r '()])
         (skip-whitespace inp)
-        (if (regexp-match/fail-without-reading end-re inp)
+        (if (*skip end-re)
           (reverse! r)
           (let ([x (read-syntax/recursive source-name inp)])
             (if (eof-object? x)
-              (read-error "expected a ']'")
+              (read-error 'eof "expected a '~a'" end-ch)
               (loop (if (special-comment? x) r (cons x r))))))))
 
-    (define (read-from-bytes-exact-or-identifier bs)
-      (let ([inp (open-input-bytes bs)]
-            [default (lambda _ (string->symbol (bytes->string/utf-8 bs)))])
-        (with-handlers ([void default])
-          (let ([x (read inp)])
-            ;; must match all -- otherwise: default
-            (if (regexp-match #rx#"^[ \t\r\n]*$" inp) x (default))))))
+    ;; adds indentation (as new syntaxes, not merged); if the first line was
+    ;; not empty, then it is treated specially.  called with at least two items
+    ;; (see below).
+    (define (add-indents stxs 1st-eol?)
+      (unless (andmap (lambda (x)
+                        (and (or (syntax? x) (placeholder? x))
+                             (syntax/placeholder-column x)
+                             (syntax/placeholder-line x)))
+                      stxs)
+        ;; the reader always turns on line counting
+        (read-error "internal error [add-indents] ~s" stxs))
+      (let* ([mincol
+              (let loop ([min #f] [stxs (if 1st-eol? stxs (cdr stxs))])
+                (if (null? stxs)
+                  (or min (error "internal error [add-indents]"))
+                  (loop (if (eol-syntax? (car stxs))
+                          min
+                          (let ([c (syntax/placeholder-column (car stxs))])
+                            (if (or (not min) (< c min)) c min)))
+                        (cdr stxs))))]
+             [mincol (if 1st-eol?
+                       mincol
+                       (min mincol (syntax/placeholder-column (car stxs))))])
+        (let loop (;; no indentation for text on the first '{' line
+                   [newline? 1st-eol?] [curline -1] [stxs stxs] [r '()])
+          (if (null? stxs)
+            (reverse! r)
+            (let* ([stx  (car stxs)]
+                   [line (syntax/placeholder-line stx)])
+              (loop (eol-syntax? stx) line (cdr stxs)
+                    (let ([stxcol (syntax/placeholder-column stx)]
+                          [stx*   (syntax/placeholder-strip stx)])
+                      (if (and newline? (< curline line) (< mincol stxcol))
+                        (list* stx*
+                               (datum->syntax-object/placeholder stx
+                                 (make-spaces (- stxcol mincol)))
+                               r)
+                        (cons stx* r)))))))))
 
-    (define (reverse-bytes bytes)
-      (define (rev-byte b)
-        (cond [(assq b byte-pairs) => cdr]
-              [else b]))
-      (let* ([len (bytes-length bytes)] [r (make-bytes len)])
-        (let loop ([i (sub1 len)])
-          (when (<= 0 i)
-            (bytes-set! r i (rev-byte (bytes-ref bytes (- len i 1))))
-            (loop (sub1 i))))
-        r))
+    ;; gets an accumulated (reversed) list of syntaxes, sorts things out
+    ;; (remove prefix and suffix newlines, adds indentation if needed)
+    (define (done-lines rlines)
+      (cond
+        [(andmap eol-syntax? rlines)
+         ;; nothing to do (includes null, so the code below can assume a pair)
+         (reverse! rlines)]
+        [start-inside?
+         ;; no newlines removed
+         (add-indents (reverse! rlines) #t)] ; don't ignore the 1st line
+        [else
+         ;; strip off leading and trailing newlines
+         (let* ([rlines   (if (eol-syntax? (car rlines)) (cdr rlines) rlines)]
+                [lines    (reverse! rlines)]
+                [1st-eol? (eol-syntax? (car lines))]
+                [lines    (if 1st-eol? (cdr lines) lines)])
+           (if (null? (cdr lines)) ; common case: one string
+             (list (syntax/placeholder-strip (car lines)))
+             (add-indents lines 1st-eol?)))]))
 
-    (define (get-attrs)
-      (and (regexp-match/fail-without-reading open-attrs inp)
-           (read-delimited-list close-attrs)))
-
-    (define ((get-line open open-re close close-re item-re unquote-re level))
-      (let-values ([(line col pos) (port-next-location inp)])
-        (define (make-stx sexpr)
-          (datum->syntax-object #f
-            (if (bytes? sexpr) (bytes->string/utf-8 sexpr) sexpr)
-            (list source-name line col pos (span-from pos))))
-        (cond [(regexp-match/fail-without-reading close-re inp)
-               => (lambda (m)
-                    (let ([l (sub1 (unbox level))])
-                      (set-box! level l)
-                      (and (<= 0 l) (make-stx (car m)))))]
-              [(regexp-match/fail-without-reading open-re inp)
-               => (lambda (m)
-                    (set-box! level (add1 (unbox level)))
-                    (make-stx (car m)))]
-              [(regexp-match-peek-positions sub-start inp)
-               ;; read the next value, include comment objs, keep source
-               ;; location manually (see above)
-               (let ([x (read-syntax/recursive source-name inp)])
-                 (if (or (syntax? x) (special-comment? x))
-                   x
-                   (make-placeholder x
-                     (list source-name line col pos (span-from pos)))))]
-              [(regexp-match/fail-without-reading end-of-line inp)
-               => (lambda (m)
-                    (if (cadr m) ; backslashes?
-                      (list (make-stx (cadr m)) (make-stx eol-token))
-                      (make-stx eol-token)))]
-              [(regexp-match/fail-without-reading item-re inp)
-               => (lambda (m)
-                    (let* ([m (car m)]
-                           [m (regexp-replace bar-pfx-remove m #"")]
-                           [m (regexp-replace* unquote-re m #"\\1")])
-                      (make-stx m)))]
-              [(and (not (eq? item-re line-item))
-                    (regexp-match/fail-without-reading #rx#"[{}]" inp))
-               => (lambda (m)
-                    (make-stx (car m)))]
-              [(regexp-match/fail-without-reading #rx#"^$" inp)
-               (if start-inside? #f (read-error "missing `~a'" close))]
-              [else (read-error "internal error [get-line]")])))
-
-    ;; adds stx (new syntax) to the list of stxs, merging it if both are
+    ;; cons stx (new syntax) to the list of stxs, merging it if both are
     ;; strings, except for newline markers
     (define (maybe-merge stx stxs)
-      (if (and (pair? stxs) (syntax? stx) (syntax? (car stxs))
-               (string? (syntax-e stx))
-               (string? (syntax-e (car stxs)))
-               (not (eol-syntax? stx))
-               (not (eol-syntax? (car stxs))))
-        (let ([fst (car stxs)])
-          (cons (datum->syntax-object stx
-                  (string-append (syntax-e fst) (syntax-e stx))
-                  (list (syntax-source fst)
-                        (syntax-line   fst)
-                        (syntax-column fst)
-                        (syntax-position fst)
-                        (span-from (syntax-position fst))))
-                (cdr stxs)))
-        (cons stx stxs)))
+      (let* ([2nd  (and (syntax? stx) (syntax-e stx))]
+             [stx0 (and (pair? stxs) (car stxs))]
+             [1st  (and (syntax? stx0) (syntax-e stx0))])
+        (if (and (string? 1st) (not (eq? eol-token 1st))
+                 (string? 2nd) (not (eq? eol-token 2nd)))
+          (cons (datum->syntax-object stx0
+                  (string-append 1st 2nd)
+                  (list (syntax-source stx0)
+                        (syntax-line   stx0)
+                        (syntax-column stx0)
+                        (syntax-position stx0)
+                        ;; this is called right after reading stx
+                        (span-from (syntax-position stx0))))
+                (cdr stxs))
+          (cons stx stxs))))
 
-    (define (add-indents stxs)
-      (unless (andmap (lambda (x)
-                        (or (and (syntax? x) (syntax-line x) (syntax-column x))
-                            (placeholder? x)))
-                      stxs)
-        (read-error "internal error [add-indents] ~s" stxs))
-      (cond
-        [(not (read-insert-indents)) (map syntax/placeholder-strip stxs)]
-        [(null? stxs) '()]
-        [else (let ([mincol (apply min (map syntax/placeholder-column stxs))])
-                (let loop ([curline line-num] [stxs stxs] [r '()])
-                  (if (null? stxs)
-                    (reverse! r)
-                    (let* ([stx (car stxs)]
-                           [line (syntax/placeholder-line stx)])
-                      (loop line (cdr stxs)
-                            (let ([stxcol (syntax/placeholder-column stx)]
-                                  [stx*   (syntax/placeholder-strip stx)])
-                              (if (and (< curline line) (< mincol stxcol))
-                                (list* stx*
-                                       (datum->syntax-object/placeholder stx
-                                         (make-spaces (- stxcol mincol)))
-                                       r)
-                                (cons stx* r))))))))]))
+    (define (get-lines* re:begin re:end re:item end-token)
+      ;; re:begin, re:end, end-token can be false if start-inside? is #t
+      (let loop ([lvl 0] [r '()])
+        (let-values ([(line col pos) (port-next-location inp)])
+          (define (make-stx sexpr)
+            (datum->syntax-object #f
+              (if (bytes? sexpr) (bytes->string/utf-8 sexpr) sexpr)
+              (list source-name line col pos (span-from pos))))
+          (cond [(and re:begin (*match1 re:begin))
+                 => (lambda (m) (loop (add1 lvl) (maybe-merge (make-stx m) r)))]
+                [(and re:end (*match1 re:end))
+                 => (lambda (m)
+                      (if (and (zero? lvl) (not start-inside?))
+                        (done-lines r)
+                        (loop (sub1 lvl) (maybe-merge (make-stx m) r))))]
+                [(*skip re:end-of-line)
+                 (loop lvl (cons (make-stx eol-token) r))] ; no merge needed
+                [(*match re:command-unquote)
+                 => (lambda (m)
+                      (loop lvl (maybe-merge (make-stx (cadr m)) r)))]
+                [(*peek re:command)
+                 ;; read the next value, include comment objs, keep source
+                 ;; location manually (see above)
+                 => (lambda (m)
+                      ;; if the command is a string escape, use `read-syntax',
+                      ;; so that we don't get a placeholder, and we can merge
+                      ;; the string to others
+                      (let* ([reader (if (cadr m)
+                                       read-syntax read-syntax/recursive)]
+                             [x (reader source-name inp)])
+                        (loop lvl
+                              (cond [(special-comment? x) r]
+                                    [(syntax? x) (maybe-merge x r)]
+                                    ;; otherwise it's a placeholder to wrap
+                                    [else (cons (make-placeholder x ; no merge
+                                                  (list source-name line col pos
+                                                        (span-from pos)))
+                                                r)]))))]
+                ;; must be last, since it will always succeed with 1 char
+                [(*peek re:item) ; don't read: regexp grabs the following text
+                 => (lambda (m)
+                      (loop lvl
+                            (maybe-merge (make-stx (read-bytes (cdadr m) inp))
+                                         r)))]
+                [(*peek #rx#"^$")
+                 (if end-token
+                   (read-error 'eof "missing closing `~a'" end-token)
+                   (done-lines r))]
+                [else (read-error "internal error [get-lines*]")]))))
 
     (define (get-lines)
-      (define get
-        (cond [start-inside?
-               (get-line "{" open-lines "}" close-lines
-                         line-item bslash-unquote (box 0))]
-              [(regexp-match/fail-without-reading open-lines-special inp)
-               => (lambda (m)
-                    (let* ([open     (cadr m)]
-                           [close    (reverse-bytes open)]
-                           [open-re  (regexp-quote open)]
-                           [close-re (regexp-quote close)]
-                           [either-re (bytes-append open-re #"|" close-re)]
-                           [bre (lambda (pfx/sfx re)
-                                  (byte-regexp
-                                   (bytes-append (car pfx/sfx)
-                                                 re
-                                                 (cadr pfx/sfx))))])
-                      (get-line open  (bre open-lines*  open-re)
-                                close (bre close-lines* close-re)
-                                (bre line-item* either-re)
-                                (bre bslash-unquote* either-re)
-                                (box 0))))]
-              [(regexp-match/fail-without-reading open-lines inp)
-               (get-line "{" open-lines "}" close-lines
-                         line-item bslash-unquote (box 0))]
-              [else #f]))
-      (and get (let loop ([lines '()] [more '()])
-                 (let-values ([(line more) (if (pair? more)
-                                             (values (car more) (cdr more))
-                                             (values (get) more))])
-                   (cond [(not line) (add-indents (reverse! lines))]
-                         ;; can happen from a sub @;{...} comment
-                         [(special-comment? line) (loop lines more)]
-                         [(list? line) (loop lines (append line more))]
-                         [else (loop (maybe-merge line lines) more)])))))
+      (cond [(*skip re:lines-begin)
+             (get-lines* re:lines-begin re:lines-end re:line-item ch:lines-end)]
+            [(*match1 re:lines-begin*)
+             => (lambda (bgn)
+                  (let* ([end  (reverse-bytes bgn)]
+                         [bgn* (regexp-quote bgn)]
+                         [end* (regexp-quote end)])
+                    (get-lines* (^px bgn*) (^px end*)
+                                (re:line-item* bgn* end*)
+                                end)))]
+            [else #f]))
+
+    (define (get-attrs)
+      (and (*skip re:attrs-begin)
+           (read-delimited-list re:attrs-end ch:attrs-end)))
+
+    (define (get-escape-expr)
+      (define-values (line col pos) (port-next-location inp))
+      (and (*skip re:expr-escape)
+           (begin
+             (skip-whitespace inp)
+             (begin0 (parameterize ([current-readtable command-readtable])
+                       (let loop ()
+                         (let ([expr
+                                ;; should be `read-syntax/recursive', but see
+                                ;; the next comment (this also means that we
+                                ;; never get a special-comment)
+                                (read-syntax)])
+                           (if (special-comment? expr)
+                             (loop)
+                             ;; we need to use the proper source location,
+                             ;; including the initial "@|" so if an escape is
+                             ;; at the beginning of a line no bogus indentation
+                             ;; is added later
+                             (datum->syntax-object expr (syntax-e expr)
+                               (list source-name line-num col-num position
+                                     (span-from position)))))))
+               (skip-whitespace inp)
+               (unless (*skip re:expr-escape)
+                 (read-error* line col pos #f
+                              "expecting a terminating '~a'" ch:bar-quote))))))
+
+    ;; called only when we must see a command in the input
+    (define (get-command)
+      (define-values (line col pos) (port-next-location inp))
+      (let ([cmd (parameterize ([current-readtable command-readtable])
+                   (read-syntax/recursive source-name inp))])
+        (if (special-comment? cmd)
+          (read-error* line col pos (span-from pos)
+                       "expecting a command expression, got a comment")
+          cmd)))
 
     (define (get-rprefixes) ; return punctuation prefixes in reverse
-      (cond
-        [(regexp-match/fail-without-reading
-          #rx#"^(?:[ \t\r\n]*(?:'|`|,@?))+" inp)
-         => (lambda (m)
-              ;; accumulate prefixes in reverse
-              (let loop ([s (car m)] [r '()])
-                (cond
-                  [(equal? #"" s) r]
-                  [(regexp-match #rx#"^[ \t\r\n]*('|`|,@?)(.*)$" s)
-                   => (lambda (m)
-                        (loop (caddr m)
-                              (cons (let ([m (cadr m)])
-                                      (cond
-                                        [(assoc m '([#"'"  quote]
-                                                    [#"`"  quasiquote]
-                                                    [#","  unquote]
-                                                    [#",@" unquote-splicing]))
-                                         => cadr]
-                                        [else (read-error
-                                               "internal error [rpfxs]")]))
-                                    r)))]
-                  [else (read-error "internal error [rpfxs]")])))]
-        [else '()]))
-
-    (define (get-command) ; #f means no command
-      (let-values ([(line col pos) (port-next-location inp)])
-        (cond [(regexp-match-peek-positions open-attr/lines inp)
-               (values #f #f)]
-              [(regexp-match/fail-without-reading bars-quoted inp)
-               => (lambda (m)
-                    (values (datum->syntax-object #f
-                              (read-from-bytes-exact-or-identifier (cadr m))
-                              (list source-name line col pos (span-from pos)))
-                            #t))]
-              [else (values
-                     (parameterize ([current-readtable cmd-readtable])
-                       (let loop ()
-                         (let ([x (read-syntax/recursive source-name inp)])
-                           (if (special-comment? x) (loop) x))))
-                     #f)])))
+      (let loop ([r '()])
+        (let-values ([(line col pos) (port-next-location inp)])
+          (cond
+            [(*match1 #rx#"^(?:'|`|,@?)")
+             => (lambda (m)
+                  (let ([sym (cond
+                               [(assoc m '([#"'"  quote]
+                                           [#"`"  quasiquote]
+                                           [#","  unquote]
+                                           [#",@" unquote-splicing]))
+                                => cadr]
+                               [else (read-error "internal error [rpfxs]")])])
+                    (loop (cons (datum->syntax-object #f sym
+                                  (list source-name line col pos
+                                        (span-from pos)))
+                                r))))]
+            [(*peek re:whitespaces)
+             (read-error "unexpected whitespace after ~a" ch:command)]
+            [else r]))))
 
     (cond
       [start-inside?
-       (datum->syntax-object #f (get-lines)
+       (datum->syntax-object #f (get-lines* #f #f re:line-item-no-nests #f)
          (list source-name line-num col-num position (span-from position)))]
-      [(regexp-match/fail-without-reading comment-start inp)
-       (if (regexp-match-peek-positions open-lines inp)
-         (get-lines) (regexp-match comment-line inp))
+      [(*peek re:whitespaces)
+       (read-error "unexpected whitespace after ~a" ch:command)]
+      [(*skip re:comment-start)
+       (unless (get-lines) (*skip re:comment-line))
        (make-special-comment #f)]
       [else
-       (let* ([pfx   (get-rprefixes)]
-              [bars? #f]
-              [cmd   (let-values ([(cmd bs?) (get-command)])
-                       (set! bars? bs?) cmd)] ; #f means no command
-              [attrs (and (not bars?) (get-attrs))]
-              [lines (and (not bars?) (get-lines))]
-              [stx   (and (or attrs lines)
-                          (append (or attrs '()) (or lines '())))]
-              [stx   (or (and cmd stx (cons cmd stx)) ; all parts
-                         stx  ; no cmd part => just a parenthesized expression
-                         cmd  ; no attrs/lines => simple expression (no parens)
-                         ;; impossible: either we saw []s or {}s, or we read a
-                         ;; scheme expression
-                         (read-error "internal error [dispatcher]"))]
-              [stx   (let loop ([pfx pfx] [stx stx])
-                       (if (null? pfx) stx
-                           (loop (cdr pfx) (list (car pfx) stx))))])
+       (let*-values
+           ([(rpfxs) (get-rprefixes)]
+            [(cmd attrs lines)
+             (cond
+               ;; try get-lines first -- so @|{...}| is not used as a
+               ;; simple expression escape, same for get-attrs
+               [(get-lines) => (lambda (lines) (values #f #f lines))]
+               [(get-attrs) => (lambda (attrs) (values #f attrs (get-lines)))]
+               [(get-escape-expr) => (lambda (expr) (values expr #f #f))]
+               [else (values (get-command) (get-attrs) (get-lines))])]
+            [(stx) (and (or attrs lines)
+                        (append (or attrs '()) (or lines '())))]
+            [(stx) (or (and cmd stx (cons cmd stx)) ; all parts
+                       stx  ; no cmd part => just a parenthesized expression
+                       cmd  ; no attrs/lines => simple expression (no parens)
+                       ;; impossible: either we saw []s or {}s, or we read a
+                       ;; scheme expression
+                       (read-error "internal error [dispatcher]"))]
+            [(stx)
+             ;; wrap the prefixes around the result
+             (let loop ([rpfxs rpfxs] [stx stx])
+               (if (null? rpfxs)
+                 stx
+                 (loop (cdr rpfxs) (list (car rpfxs) stx))))])
          (datum->syntax-object #f stx
            (list source-name line-num col-num position
                  (span-from position))))]))
@@ -356,13 +448,20 @@
   ;; readtables
 
   (define at-readtable
-    (make-readtable #f cmd-char 'terminating-macro (dispatcher #f)))
+    (make-readtable #f ch:command 'terminating-macro (dispatcher #f)))
 
-  ;; similar to plain Scheme, but with `|' as a terminating macro
-  (define cmd-readtable
+  (provide use-at-readtable)
+  (define (use-at-readtable)
+    (port-count-lines! (current-input-port))
+    (current-readtable at-readtable))
+
+  ;; similar to plain Scheme (scribble, actually), but with `|' as a
+  ;; terminating macro (otherwise it behaves the same; the only difference is
+  ;; that `a|b|c' is three symbols)
+  (define command-readtable
     (make-readtable at-readtable #\| 'terminating-macro
       (lambda (char inp source-name line-num col-num position)
-        (let ([m (regexp-match/fail-without-reading #rx#"^([^|]*)\\|" inp)])
+        (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
           (unless m
             (raise-read-error
              "unbalanced `|'" source-name line-num col-num position #f))
@@ -370,11 +469,6 @@
             #f (string->symbol (bytes->string/utf-8 (cadr m)))
             (list source-name line-num col-num position
                   (add1 (bytes-length (car m)))))))))
-
-  (provide use-at-readtable)
-  (define (use-at-readtable)
-    (port-count-lines! (current-input-port))
-    (current-readtable at-readtable))
 
   (define default-src (gensym))
   (define (src-name src port)
