@@ -3,6 +3,7 @@
            (only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
                  ssax:xml->sxml)
            (lib "request-structs.ss" "web-server" "private")
+           (lib "web-server-structs.ss" "web-server" "private")
            (lib "url.ss" "net")
            (lib "pretty.ss")
            (lib "list.ss")
@@ -24,7 +25,8 @@
   
   (define (collect d req)
     (define-values (c i o) (make-mock-connection #""))
-    (d c req)
+    (parameterize ([current-server-custodian (current-custodian)])
+      (d c req))
     (redact (get-output-bytes o)))
   
   (define (make-mock-connection ib)

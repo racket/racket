@@ -335,3 +335,19 @@ that runs servlets written in the Web Language.
  If there is an error when a servlet is invoked, then @scheme[responders-servlet] is
  used to format a response with the exception.
 }
+
+@; ------------------------------------------------------------
+@section[#:tag "dispatch-stat.ss"]{Statistics}
+
+@file{dispatchers/dispatch-stat.ss} provides services related to performance
+statistics.
+
+@defproc[(make-gc-thread [time integer?])
+         thread?]{
+ Starts a thread that calls @scheme[(collect-garbage)] every @scheme[time] seconds.
+}
+                 
+@defproc[(make)
+         dispatcher?]{
+ Returns a dispatcher that prints memory usage on every request.
+}

@@ -11,7 +11,7 @@
   (provide dispatch-lang-tests)
   
   (define (mkd p)
-    (lang:make #:url->path (lambda _ (values p url0s))
+    (lang:make #:url->path (lambda _ (values p (list p)))
                #:make-servlet-namespace
                (make-make-servlet-namespace)
                #:responders-servlet-loading
@@ -23,7 +23,6 @@
                  ((error-display-handler) (exn-message exn) exn)
                  (raise exn))))
   (define url0 "http://test.com/servlets/example.ss")
-  (define url0s (list (build-path "servlets") (build-path "example.ss")))
   
   (define example-servlets (build-path (collection-path "web-server") "default-web-root" "htdocs" "lang-servlets/"))
   

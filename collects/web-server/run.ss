@@ -11,7 +11,8 @@
            (prefix filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
            (prefix lift: (lib "dispatch-lift.ss" "web-server" "dispatchers"))
            (prefix sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers"))
-           (prefix lang: (lib "dispatch-lang.ss" "web-server" "dispatchers")))
+           (prefix lang: (lib "dispatch-lang.ss" "web-server" "dispatchers"))
+           (prefix stat: (lib "dispatch-stat.ss" "web-server" "dispatchers")))
   
   (define server-root-path (make-parameter (collection-path "web-server" "default-web-root")))
   (define port (make-parameter 8080))
@@ -38,10 +39,13 @@
     (fsmap:make-url->path 
      (build-path (server-root-path) "htdocs")))
   
+  (define gc-thread (stat:make-gc-thread 30))
+  
   (serve #:port (port)
          #:dispatch
-         (sequencer:make
+         (sequencer:make          
           (timeout:make (* 5 60))
+          (stat:make)
           (filter:make
            #rx"\\.ss"
            (lang:make #:url->path (fsmap:make-url->valid-path url->path)
