@@ -30,7 +30,7 @@
   (define (make-mock-connection ib)
     (define ip (open-input-bytes ib))
     (define op (open-output-bytes))
-    (values (make-connection (make-timer never-evt +inf.0 (lambda () (void)))
+    (values (make-connection 0 (make-timer never-evt +inf.0 (lambda () (void)))
                              ip op (current-custodian) #f)
             ip
             op))

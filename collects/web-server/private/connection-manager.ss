@@ -2,11 +2,16 @@
   (require (lib "contract.ss")
            "timer.ss")
   
-  (define-struct connection (timer i-port o-port custodian close?))
+  (define-struct connection (id timer i-port o-port custodian close?))
   
   (provide/contract
    [struct connection
-           ([timer timer?] [i-port input-port?] [o-port output-port?] [custodian custodian?] [close? boolean?])]
+           ([id integer?]
+            [timer timer?]
+            [i-port input-port?]
+            [o-port output-port?]
+            [custodian custodian?]
+            [close? boolean?])]
    [start-connection-manager (custodian? . -> . void)]
    [new-connection (number? input-port? output-port? custodian? boolean? . -> . connection?)]
    [kill-connection! (connection? . -> . void)]
@@ -19,24 +24,34 @@
   
   ;; new-connection: number i-port o-port custodian -> connection
   ;; ask the connection manager for a new connection
+  (define i (box 0))
   (define (new-connection time-to-live i-port o-port cust close?)
-    (letrec ([conn
-              (make-connection
-               (start-timer time-to-live
-                            (lambda () (kill-connection! conn)))
-               i-port o-port cust close?)])
-      conn))
+    (define conn
+      (make-connection
+       (begin0 (unbox i) (set-box! i (add1 (unbox i))))
+       #f i-port o-port cust close?))
+    (define conn-wb (make-weak-box conn))
+    (set-connection-timer! 
+     conn
+     (start-timer time-to-live
+                  (lambda () 
+                    (cond
+                      [(weak-box-value conn-wb)
+                       => kill-connection!]))))
+    conn)
   
   ;; kill-connection!: connection -> void
   ;; kill this connection
-  (define (kill-connection! conn-demned)
-    (cancel-timer! (connection-timer conn-demned))
+  (define (kill-connection! conn)
+    #;(printf "K: ~a~n" (connection-id conn))
+    ; XXX Don't need to do this when called from timer
+    (with-handlers ([exn? void])
+      (cancel-timer! (connection-timer conn)))
     (with-handlers ([exn:fail:network? void])
-      (close-output-port (connection-o-port conn-demned)))
+      (close-output-port (connection-o-port conn)))
     (with-handlers ([exn:fail:network? void])
-      (close-input-port (connection-i-port conn-demned)))
-    (set-connection-close?! conn-demned #t)
-    (custodian-shutdown-all (connection-custodian conn-demned)))
+      (close-input-port (connection-i-port conn)))
+    (custodian-shutdown-all (connection-custodian conn)))
   
   ;; adjust-connection-timeout!: connection number -> void
   ;; change the expiration time for this connection

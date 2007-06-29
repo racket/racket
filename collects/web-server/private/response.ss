@@ -171,13 +171,11 @@
   
   (define (ext:wrap f)
     (lambda (conn . args)
-      (if (connection-close? conn)
-          (error 'output-response "Attempt to write to closed connection.")
-          (with-handlers ([exn? (lambda (exn)
-                                  (kill-connection! conn)
-                                  (raise exn))])
-            (apply f conn args)
-            (flush-output (connection-o-port conn))))))
+      (with-handlers ([exn? (lambda (exn)
+                              (kill-connection! conn)
+                              (raise exn))])
+        (apply f conn args)
+        (flush-output (connection-o-port conn)))))
   
   (define ext:output-response
     (ext:wrap output-response))

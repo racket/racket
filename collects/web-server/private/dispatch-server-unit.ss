@@ -18,14 +18,16 @@
     (start-connection-manager the-server-custodian)
     (parameterize ([current-custodian the-server-custodian]
                    [current-server-custodian the-server-custodian]
-                   [current-thread-initial-stack-size 3])
+                   #;[current-thread-initial-stack-size 3])
       (thread
        (lambda ()
          (run-server config:port 
                      handle-connection
                      #f
                      (lambda (exn)
-                       #f)
+                       ((error-display-handler) 
+                        (format "Connection error: ~a" (exn-message exn))
+                        exn))
                      (lambda (p mw re)
                        (tcp-listen p config:max-waiting #t config:listen-ip))
                      tcp-close
@@ -60,15 +62,11 @@
     (define conn
       (new-connection config:initial-connection-timeout
                       ip op (current-custodian) #f))
-    (with-handlers ([exn:fail:network?
-                     (lambda (e)
-                       (kill-connection! conn)
-                       (raise e))])
-      (let connection-loop ()
-        (define-values (req close?) (config:read-request conn config:port port-addresses))
+    (let connection-loop ()
+      #;(printf "C: ~a~n" (connection-id conn))
+      (let-values ([(req close?) (config:read-request conn config:port port-addresses)])
+        (set-connection-close?! conn close?)
         (config:dispatch conn req)
-        (unless (connection-close? conn)
-          (set-connection-close?! conn close?))
-        (cond
-          [(connection-close? conn) (kill-connection! conn)]
-          [else (connection-loop)])))))
+        (if (connection-close? conn)
+            (kill-connection! conn)
+            (connection-loop))))))

@@ -9,7 +9,13 @@
            "../private/request-structs.ss")
   
   (provide/contract
-   [read-request ((connection? number? ((input-port?) . ->* . (string? string?))) . ->* . (request? boolean?))])
+   [rename ext:read-request read-request ((connection? number? ((input-port?) . ->* . (string? string?))) . ->* . (request? boolean?))])
+  
+  (define (ext:read-request conn host-port port-addresses)
+    (with-handlers ([exn? (lambda (exn)
+                            (kill-connection! conn)
+                            (raise exn))])
+      (read-request conn host-port port-addresses)))
   
   ;; **************************************************
   ;; read-request: connection number (input-port -> string string) -> request boolean?
