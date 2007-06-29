@@ -174,7 +174,10 @@
 
     (define (read-error* line col pos span msg . xs)
       (let* ([eof? (and (eq? 'eof msg) (pair? xs))]
-             [msg  (apply format (if eof? xs (cons msg xs)))])
+             [msg  (apply format (if eof? xs (cons msg xs)))]
+             [msg  (if source-name
+                     (format "~a (when reading ~a)" msg source-name)
+                     msg)])
         ((if eof? raise-read-error raise-read-eof-error)
          msg source-name line col pos span)))
     (define (read-error msg . xs)
@@ -314,6 +317,8 @@
                              [x (reader source-name inp)])
                         (loop lvl
                               (cond [(special-comment? x) r]
+                                    [(eof-object? x)
+                                     (read-error 'eof "missing command")]
                                     [(syntax? x) (maybe-merge x r)]
                                     ;; otherwise it's a placeholder to wrap
                                     [else (cons (make-placeholder x ; no merge
@@ -360,16 +365,19 @@
                                 ;; should be `read-syntax/recursive', but see
                                 ;; the next comment (this also means that we
                                 ;; never get a special-comment)
-                                (read-syntax)])
-                           (if (special-comment? expr)
-                             (loop)
-                             ;; we need to use the proper source location,
-                             ;; including the initial "@|" so if an escape is
-                             ;; at the beginning of a line no bogus indentation
-                             ;; is added later
-                             (datum->syntax-object expr (syntax-e expr)
-                               (list source-name line-num col-num position
-                                     (span-from position)))))))
+                                (read-syntax source-name inp)])
+                           (cond
+                             [(special-comment? expr) (loop)]
+                             [(eof-object? expr)
+                              (read-error 'eof "missing escape expression")]
+                             [else
+                              ;; we need to use the proper source location,
+                              ;; including the initial "@|" so if an escape is
+                              ;; at the beginning of a line no bogus
+                              ;; indentation is added later
+                              (datum->syntax-object expr (syntax-e expr)
+                                (list source-name line-num col-num position
+                                      (span-from position)))]))))
                (skip-whitespace inp)
                (unless (*skip re:expr-escape)
                  (read-error* line col pos #f
@@ -380,10 +388,11 @@
       (define-values (line col pos) (port-next-location inp))
       (let ([cmd (parameterize ([current-readtable command-readtable])
                    (read-syntax/recursive source-name inp))])
-        (if (special-comment? cmd)
-          (read-error* line col pos (span-from pos)
-                       "expecting a command expression, got a comment")
-          cmd)))
+        (cond [(special-comment? cmd)
+               (read-error* line col pos (span-from pos)
+                            "expecting a command expression, got a comment")]
+              [(eof-object? cmd) (read-error 'eof "missing command")]
+              [else cmd])))
 
     (define (get-rprefixes) ; return punctuation prefixes in reverse
       (let loop ([r '()])
@@ -470,7 +479,7 @@
             (list source-name line-num col-num position
                   (add1 (bytes-length (car m)))))))))
 
-  (define default-src (gensym))
+  (define default-src (gensym 'scribble-reader))
   (define (src-name src port)
     (if (eq? src default-src) (object-name port) src))
 
