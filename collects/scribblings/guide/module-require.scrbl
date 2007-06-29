@@ -86,7 +86,7 @@ bindings from the set specified by @scheme[require-spec].
 
 @;------------------------------------------------------------------------
 @specspecsubform[#:literals (rename)
-                 (rename require-spec [orig-id bind-id] ...)] {
+                 (rename require-spec [orig-id bind-id] ...)]{
 
 The form supports renaming like @scheme[only], but leaving alone
 identifiers from @scheme[require-spec] that are not mentioned as an
@@ -94,7 +94,7 @@ identifiers from @scheme[require-spec] that are not mentioned as an
 
 @;------------------------------------------------------------------------
 @specspecsubform[#:literals (prefix)
-                 (prefix require-spec prefix-id)] {
+                 (prefix require-spec prefix-id)]{
 
 This is a shorthand for renaming, where @scheme[prefix-id] is added to
 the front each identifier specified by @scheme[require-spec].

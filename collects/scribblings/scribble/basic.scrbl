@@ -118,7 +118,7 @@ and produces an element with style @scheme[style-name].
 
 @defproc[(index [words (or/c string? (listof string?))]
                 [pre-content any/c] ...)
-         index-element?] {
+         index-element?]{
 
 Creates an index element given a plain-text string---or list of
 strings for a hierarchy, such as @scheme['("strings" "plain")] for a
@@ -133,14 +133,14 @@ refers.
 @defproc[(index* [words (listof string?)]
                  [word-contents (listof list?)]
                  [pre-content any/c] ...)
-         index-element?] {
+         index-element?]{
 Like @scheme[index], except that @scheme[words] must be a list, and
 the list of contents render in the index (in parallel to
 @scheme[words]) is supplied as @scheme[word-contents].
 }
 
 @defproc[(as-index [pre-content any/c] ...)
-         index-element?] {
+         index-element?]{
 
 Like @scheme[index], but the word to index is determined by applying
 @scheme[content->string] on the parsed @scheme[pre-content] list.

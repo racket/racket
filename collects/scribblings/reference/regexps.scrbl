@@ -300,7 +300,7 @@ positions indicate the number of bytes that were read, including
                         [start-pos nonnegative-exact-integer? 0]
                         [end-pos (or/c nonnegative-exact-integer? false/c) #f]
                         [output-port (or/c output-port? false/c) #f])
-           boolean?] {
+           boolean?]{
 
 Like @scheme[regexp-match], but returns merely @scheme[#t] when the
 match succeeds, @scheme[#f] otherwise.}

@@ -117,7 +117,7 @@ the procedure. The printed form of @scheme[v] is appended to
                                             (or/c exact-nonnegative-integer?
                                                   arity-at-least?)))]
                             [arg-v any/c #f] ...)
-         any] {
+         any]{
 
 Creates an @scheme[exn:fail:contract:arity] value and @scheme[raise]s
 it as an exception.  The @scheme[name] is used for the source

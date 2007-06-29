@@ -180,7 +180,7 @@ noted above). Two numbers are @scheme[equal?] when they are
 
 
 @defproc*[([(/ [z number?]) number?]
-           [(/ [z number?] [w number?] ...+) number?])] {
+           [(/ [z number?] [w number?] ...+) number?])]{
  When no @scheme[w]s are supplied, returns @scheme[(/ 1 #, @scheme[z])].
  Otherwise, returns the division @scheme[z] by the var[w]s
  working pairwise from left to right.}
