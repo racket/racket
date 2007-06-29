@@ -239,7 +239,7 @@
                                   [stx*   (syntax/placeholder-strip stx)])
                               (if (and (< curline line) (< mincol stxcol))
                                 (list* stx*
-                                       (datum->syntax-object/placeholder stx*
+                                       (datum->syntax-object/placeholder stx
                                          (make-spaces (- stxcol mincol)))
                                        r)
                                 (cons stx* r))))))))]))
