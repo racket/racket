@@ -39,7 +39,6 @@
   (define ch:command     #\@)
   (define ch:comment     #\;)
   (define ch:bar-quote   #\|)
-  (define ch:command-quote #\\)
   (define ch:attrs-begin #\[)
   (define ch:attrs-end   #\])
   (define ch:lines-begin #\{)
@@ -63,14 +62,9 @@
   (define str:end-of-line  "[ \t]*\r?\n[ \t]*") ; eat spaces on the next line
   (define re:end-of-line   (^px str:end-of-line))
   (define (re:line-item* bgn end)
-    (^px "(.+?)(?:"bgn"|"end
-                "|"ch:command-quote"*"ch:command
-                "|"str:end-of-line")"))
+    (^px "(.+?)(?:"bgn"|"end"|"ch:command"|"str:end-of-line")"))
   (define re:line-item (re:line-item* ch:lines-begin ch:lines-end))
-  (define re:line-item-no-nests (^px "(.+?)(?:"ch:command-quote"*"ch:command
-                                            "|"str:end-of-line")"))
-  (define re:command-unquote (^px ch:command-quote
-                                  "("ch:command-quote"*"ch:command")"))
+  (define re:line-item-no-nests (^px "(.+?)(?:"ch:command"|"str:end-of-line")"))
 
   ;; --------------------------------------------------------------------------
   ;; utilities
@@ -302,9 +296,6 @@
                         (loop (sub1 lvl) (maybe-merge (make-stx m) r))))]
                 [(*skip re:end-of-line)
                  (loop lvl (cons (make-stx eol-token) r))] ; no merge needed
-                [(*match re:command-unquote)
-                 => (lambda (m)
-                      (loop lvl (maybe-merge (make-stx (cadr m)) r)))]
                 [(*peek re:command)
                  ;; read the next value, include comment objs, keep source
                  ;; location manually (see above)
