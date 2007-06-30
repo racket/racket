@@ -2626,7 +2626,7 @@ module browser threading seems wrong.
           (define/override (file-menu:between-close-and-quit file-menu)
             (set! close-tab-menu-item
                   (new (get-menu-item%)
-                       (label (string-constant close-tab-no-amp))
+                       (label (string-constant close-tab))
                        (demand-callback
                         (λ (item)
                           (send item enable (1 . < . (send tabs-panel get-number)))))
