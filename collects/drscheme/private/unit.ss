@@ -2318,10 +2318,16 @@ module browser threading seems wrong.
           
           (define/private (update-close-tab-menu-item-shortcut item)
             (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
+              (send item set-label (if just-one? 
+                                       (string-constant close-tab)
+                                       (string-constant close-tab-amp)))
               (send item set-shortcut (if just-one? #f #\w))))
           
           (define/private (update-close-menu-item-shortcut item)
             (let ([just-one? (and (pair? tabs) (null? (cdr tabs)))])
+              (send item set-label (if just-one? 
+                                       (string-constant close-menu-item)
+                                       (string-constant close)))
               (send item set-shortcut (if just-one? #\w #f))))
 
           
@@ -2620,7 +2626,7 @@ module browser threading seems wrong.
           (define/override (file-menu:between-close-and-quit file-menu)
             (set! close-tab-menu-item
                   (new (get-menu-item%)
-                       (label (string-constant close-tab))
+                       (label (string-constant close-tab-no-amp))
                        (demand-callback
                         (λ (item)
                           (send item enable (1 . < . (send tabs-panel get-number)))))

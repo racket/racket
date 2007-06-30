@@ -800,7 +800,8 @@ please adhere to these guidelines:
  (print-interactions "Print Interactions...")
  (new-tab "New Tab")
  (close-tab "Close Tab") ;; must not have any &s in it.
- 
+ (close-tab-amp "&Close Tab") ;; like close-tab, but with an ampersand on the same letter as the one in close-menu-item
+  
  ;;; edit-menu
  (split-menu-item-label "&Split")
  (collapse-menu-item-label "C&ollapse")
