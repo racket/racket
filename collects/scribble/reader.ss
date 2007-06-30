@@ -448,18 +448,21 @@
   ;; readtables
 
   (define at-readtable
-    (make-readtable #f ch:command 'terminating-macro (dispatcher #f)))
+    (make-readtable #f ch:command 'non-terminating-macro (dispatcher #f)))
 
   (provide use-at-readtable)
   (define (use-at-readtable)
     (port-count-lines! (current-input-port))
     (current-readtable at-readtable))
 
-  ;; similar to plain Scheme (scribble, actually), but with `|' as a
-  ;; terminating macro (otherwise it behaves the same; the only difference is
-  ;; that `a|b|c' is three symbols)
+  ;; similar to plain Scheme (scribble, actually), but with `@' and `|' as
+  ;; terminating macro characters (otherwise it behaves the same; the only
+  ;; difference is that `a|b|c' is three symbols and `@foo@bar' are two
+  ;; @-forms)
   (define command-readtable
-    (make-readtable at-readtable #\| 'terminating-macro
+    (make-readtable at-readtable
+      ch:command 'terminating-macro (dispatcher #f)
+      #\| 'terminating-macro
       (lambda (char inp source-name line-num col-num position)
         (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
           (unless m
