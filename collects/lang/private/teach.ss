@@ -906,7 +906,7 @@
 	      'unknown
 	      #'id
 	      #f
-	      "name is not defined, not an argument, and not a primitive name")
+	      "name is not defined, not a parameter, and not a primitive name")
 	     ;; Don't use #%top here; id might have become bound to something
 	     ;;  that isn't a value.
 	     #'id)]))
