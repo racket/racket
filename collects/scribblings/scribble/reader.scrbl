@@ -60,7 +60,7 @@ should be present.  (Since the reader will try to see if there is a
 constructs on an interactive REPL since reading an expression succeeds
 only when there is a new expression available.)  In the readtable,
 @litchar["@"] is set as a terminating reader macro, so if you want to
-use it in Scheme code, you need to quote it as @scheme{\@} or the whole
+use it in Scheme code, you need to quote it as @scheme{\@"@"} or the whole
 identifier with @scheme[|ba@rs|]. Of course, @litchar["@"] is not treated
 specially in Scheme strings, character constants, etc.
 
