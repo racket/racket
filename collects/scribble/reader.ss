@@ -235,8 +235,10 @@
                           [stx*   (syntax/placeholder-strip stx)])
                       (if (and newline? (< curline line) (< mincol stxcol))
                         (list* stx*
-                               (datum->syntax-object/placeholder stx
-                                 (make-spaces (- stxcol mincol)))
+                               (syntax-property
+                                (datum->syntax-object/placeholder stx
+                                  (make-spaces (- stxcol mincol)))
+                                'scribble 'indentation)
                                r)
                         (cons stx* r)))))))))
 
@@ -294,8 +296,12 @@
                       (if (and (zero? lvl) (not start-inside?))
                         (done-lines r)
                         (loop (sub1 lvl) (maybe-merge (make-stx m) r))))]
-                [(*skip re:end-of-line)
-                 (loop lvl (cons (make-stx eol-token) r))] ; no merge needed
+                [(*match1 re:end-of-line)
+                 => (lambda (m)
+                      (loop lvl (cons ; no merge needed
+                                 (syntax-property (make-stx eol-token)
+                                                  'scribble `(newline ,m))
+                                 r)))]
                 [(*peek re:command)
                  ;; read the next value, include comment objs, keep source
                  ;; location manually (see above)
