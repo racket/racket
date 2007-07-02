@@ -294,6 +294,7 @@
     (define f (new frame% [label ""]))
     (define m (new message% [label (get-running-bitmap)] [parent f]))
     (new grow-box-spacer-pane% [parent f])
+    (send (get-running-bitmap) save-file (build-path (collection-path "icons") "run.png") 'png)
     (send f show #t))
   
   #;(edit-points waiting-points)
