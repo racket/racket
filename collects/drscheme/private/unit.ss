@@ -282,8 +282,7 @@ module browser threading seems wrong.
       
       (define make-execute-bitmap 
         (bitmap-label-maker (string-constant execute-button-label) 
-                            #;(get-running-bitmap)
-                            (build-path (collection-path "icons") "run.png")))
+                            (get-running-bitmap)))
       (define make-save-bitmap 
         (bitmap-label-maker (string-constant save-button-label) 
                             (build-path (collection-path "icons") "save.png")))
