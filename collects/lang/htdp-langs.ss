@@ -414,24 +414,7 @@
                     #:literal-expression `(require ,(filename->require-symbol program-filename))
                     #:cmdline '("-Zmvq")
                     #:src-filter
-                    (λ (path)
-                      (call-with-input-file path
-                        (λ (port) 
-                          (let ([ok-to-compile-names 
-                                 (map (λ (x) (format "~s" x))
-                                      '(wxtext
-                                        (lib "comment-snip.ss" "framework")
-                                        (lib "xml-snipclass.ss" "xml")
-                                        (lib "scheme-snipclass.ss" "xml")))])
-                            (and (is-wxme-stream? port)
-                                 (let-values ([(snip-class-names data-class-names)
-                                               (extract-used-classes port)])
-                                   (not (and (andmap
-                                              (λ (used-name) (member used-name ok-to-compile-names))
-                                              snip-class-names)
-                                             (andmap
-                                              (λ (used-name) (member used-name ok-to-compile-names))
-                                              data-class-names)))))))))
+                    (λ (path) (cannot-compile? path))
                     #:get-extra-imports
                     (λ (path cm)
                       (call-with-input-file path
@@ -655,6 +638,27 @@
           
           (super-new)))
       
+      ;; cannot-compile? : path -> boolean
+      ;; returns #t if the file cannot be compiled, #f otherwise
+      (define (cannot-compile? path)
+        (call-with-input-file path
+          (λ (port) 
+            (let ([ok-to-compile-names 
+                   (map (λ (x) (format "~s" x))
+                        '(wxtext
+                          (lib "comment-snip.ss" "framework")
+                          (lib "xml-snipclass.ss" "xml")
+                          (lib "scheme-snipclass.ss" "xml")))])
+              (and (is-wxme-stream? port)
+                   (let-values ([(snip-class-names data-class-names)
+                                 (extract-used-classes port)])
+                     (not (and (andmap
+                                (λ (used-name) (member used-name ok-to-compile-names))
+                                snip-class-names)
+                               (andmap
+                                (λ (used-name) (member used-name ok-to-compile-names))
+                                data-class-names)))))))))
+      
       (define (get-teachpack-from-user parent)
         (define tp-dir (collection-path "teachpack" "htdp"))
         (define columns 2)
@@ -748,34 +752,42 @@
         
         (define (compile-new-teachpack filename)
           (let-values ([(_1 short-name _2) (split-path filename)])
-            (send compiling-message set-label
-                  (format (string-constant compiling-teachpack) 
-                          (path->string short-name)))
-            (starting-compilation)
-            (let ([nc (make-custodian)]
-                  [exn #f])
-              (let ([t 
-                     (parameterize ([current-custodian nc])
-                       (thread (λ () 
-                                 (with-handlers ((exn? (λ (x) (set! exn x))))
-                                   (compile-file filename)))))])
-                (thread
-                 (λ ()
-                   (thread-wait t)
-                   (queue-callback
-                    (λ () 
-                      (cond
-                        [exn
-                         (message-box (string-constant drscheme)
-                                      (exn-message exn))
-                         (delete-file filename)
-                         (update-user-installed-lb)]
-                        [else
-                         (update-user-installed-lb)
-                         (clear-selection pre-installed-lb)
-                         (send user-installed-lb set-string-selection (path->string short-name))])
-                      (done-compilation)
-                      (send compiling-message set-label "")))))))))
+            (cond
+              [(cannot-compile? filename)
+               (post-compilation-gui-cleanup short-name)]
+              [else
+               (send compiling-message set-label
+                     (format (string-constant compiling-teachpack) 
+                             (path->string short-name)))
+               (starting-compilation)
+               (let ([nc (make-custodian)]
+                     [exn #f])
+                 (let ([t 
+                        (parameterize ([current-custodian nc])
+                          (thread (λ () 
+                                    (with-handlers ((exn? (λ (x) (set! exn x))))
+                                      (parameterize ([read-accept-reader #t])
+                                        (compile-file filename))))))])
+                   (thread
+                    (λ ()
+                      (thread-wait t)
+                      (queue-callback
+                       (λ () 
+                         (cond
+                           [exn
+                            (message-box (string-constant drscheme)
+                                         (exn-message exn))
+                            (delete-file filename)
+                            (update-user-installed-lb)]
+                           [else
+                            (post-compilation-gui-cleanup short-name)])
+                         (done-compilation)
+                         (send compiling-message set-label "")))))))])))
+        
+        (define (post-compilation-gui-cleanup short-name)
+          (update-user-installed-lb)
+          (clear-selection pre-installed-lb)
+          (send user-installed-lb set-string-selection (path->string short-name)))
         
         (define (starting-compilation)
           (set! compiling? #t)
@@ -790,7 +802,10 @@
         (define (update-user-installed-lb)
           (let ([files
                  (if (directory-exists? teachpack-installation-dir)
-                     (map path->string (directory-list teachpack-installation-dir))
+                     (map path->string 
+                          (filter 
+                           (λ (x) (file-exists? (build-path teachpack-installation-dir x)))
+                           (directory-list teachpack-installation-dir)))
                      '())])
             (send user-installed-lb set (sort files string<=?))))
         

@@ -158,7 +158,10 @@
                           "there can only be one expression in the definitions window"
                           super-result)))]
                   [(= 4 iteration-number)
-                   #`(eval '(current-namespace (module->namespace '#,(get-full-module-name))))]
+                   #`(eval #,#`(#%app current-namespace 
+                                      (#%app 
+                                       module->namespace
+                                       '#,(get-full-module-name))))]
                   [else eof]))))
           
           ;; printer settings are just ignored here.
@@ -405,18 +408,7 @@
                (check-filename-matches filename
                                        (syntax-object->datum (syntax name)) 
                                        unexpanded-stx))
-             
-             
-             (values v-name
-                     stx)
-             
-             ;; this isn't working ...
-             #;
-             (let ([new-name (if filename 
-                                 (build-name filename)
-                                 v-name)])
-               (values new-name
-                       #`(module #,new-name lang (#%plain-module-begin bodies ...)))))]
+             (values v-name stx))]
           [else
            (raise-syntax-error 'module-language
                                "only module expressions are allowed"

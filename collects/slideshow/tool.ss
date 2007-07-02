@@ -279,8 +279,8 @@ pict snip :
           (error 'pict-snip "expected a pict to be the result of each embedded snip, got ~e"
                  pict))
         (let* ([bm (make-object bitmap% 
-                     (inexact->exact (ceiling w))
-                     (inexact->exact (ceiling h)))]
+                     (max 1 (inexact->exact (ceiling w)))
+                     (max 1 (inexact->exact (ceiling h))))]
                [bdc (make-object bitmap-dc% bm)])
           (send bdc clear)
           (draw-pict pict bdc 0 0)
@@ -889,14 +889,33 @@ pict snip :
       
       (define orig-namespace (current-namespace))
       
+      (define (pict->image-snip p)
+        (let* ([pict-width (dynamic-require '(lib "mrpict.ss" "texpict") 'pict-width)]
+               [pict-height (dynamic-require '(lib "mrpict.ss" "texpict") 'pict-height)]
+               [draw-pict (dynamic-require '(lib "mrpict.ss" "texpict") 'draw-pict)]
+               [bm (make-object bitmap%
+                     (max 1 (inexact->exact (ceiling (pict-width p))))
+                     (max 1 (inexact->exact (ceiling (pict-height p)))))]
+               [bdc (make-object bitmap-dc% bm)])
+          (send bdc clear)
+          (draw-pict p bdc 0 0)
+          (send bdc set-bitmap #f)
+          (make-object image-snip% bm)))
+      
       (drscheme:language:add-snip-value
        ;; Convert to print?
-       (lambda (x) (pict? x))
+       (lambda (x) 
+         ;; if the require fails, then we cannot display the pict.
+         ;; this can happen when, for example, there is no mred module
+         ;; in the namespace
+         (let ([pict? (with-handlers ((exn? (λ (x) #f)))
+                        (dynamic-require '(lib "mrpict.ss" "texpict") 'pict?))])
+           (and pict?
+                (pict? x))))
        ;; Converter:
-       (lambda (pict) (new pict-value-snip% (pict pict)))
+       pict->image-snip
        ;; Namespace setup:
-       (lambda ()
-         (namespace-attach-module orig-namespace '(lib "mrpict.ss" "texpict"))))
+       (λ () (dynamic-require '(lib "mrpict.ss" "texpict") #f)))
         
       (define lib-pict-snipclass (make-object lib-pict-snipclass%))
       (send lib-pict-snipclass set-version 2)
