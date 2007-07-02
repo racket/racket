@@ -426,7 +426,9 @@
           (define/public (update-frame-filename)
             (let* ([filename (get-filename)]
                    [name (if filename
-                             (path->string (file-name-from-path (normalize-path filename)))
+                             (path->string 
+                              (file-name-from-path 
+                               filename))
                              (get-filename/untitled-name))])
               (for-each (λ (canvas)
                           (let ([tlw (send canvas get-top-level-window)])

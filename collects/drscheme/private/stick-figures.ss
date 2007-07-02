@@ -20,6 +20,22 @@
       (left-hand 59 73)
       (right-hand 58 18)
       (waist 35 77)
+      (left-knee 16 116)
+      (right-knee 55 113)
+      (left-ankle 16 155)
+      (right-ankle 61 154)
+      (left-toe -3 152)
+      (right-toe 80 145)) 
+    
+    #;
+    '((head 47 -4)
+      (neck 40 14)
+      (shoulders 38 29)
+      (left-elbow 6 65)
+      (right-elbow 63 66)
+      (left-hand 59 73)
+      (right-hand 58 18)
+      (waist 35 77)
       (left-knee 19 125)
       (right-knee 58 123)
       (left-ankle 15 161)
@@ -205,7 +221,7 @@
         (define orig-x 0)
         (define orig-y 0)
         (define/override (on-paint)
-          (draw-callback (get-dc) 1 #t points 0 0))
+          (draw-callback (get-dc) 1 #t points 0 0 line-size))
         (define/override (on-event evt)
           (cond
             [(send evt button-down? 'left)
@@ -256,10 +272,10 @@
       (new canvas%
            [parent cp]
            [paint-callback (λ (c dc) 
-                             (draw-callback dc small-factor #f running-points 0 0)
-                             (draw-callback dc small-factor #f waiting-points 30 0)
-                             (draw-callback dc small-factor #f points 30 50)
-                             (draw-callback dc small-factor #f points 0 50))]))
+                             (draw-callback dc small-factor #f running-points 0 0 line-size)
+                             (draw-callback dc small-factor #f waiting-points 30 0 line-size)
+                             (draw-callback dc small-factor #f points 30 50 line-size)
+                             (draw-callback dc small-factor #f points 0 50 line-size))]))
     (define bp (new horizontal-panel% [parent f] [stretchable-height #f]))
     (new button%
          [parent bp]
