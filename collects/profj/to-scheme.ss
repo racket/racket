@@ -2,6 +2,7 @@
   (require "ast.ss"
            "types.ss"
            "name-utils.scm"
+           "graph-scc.ss"
            "parameters.ss"
            (lib "class.ss")
            (lib "list.ss")
@@ -250,7 +251,8 @@
             (lambda (def)
               (filter (lambda (x) x) (map find (def-uses def)))))
            )
-      (get-strongly-connected-components defs for-each-def get-requires)))
+      (get-scc defs get-requires for-each)
+      #;(get-strongly-connected-components defs for-each-def get-requires)))
   
   ;get-strongly-connected-components: GRAPH (GRAPH (NODE -> void) -> void) (NODE -> (list NODE)) -> (list (list NODE))
   (define (get-strongly-connected-components graph for-each-node get-connected-nodes)
@@ -265,8 +267,7 @@
                (in-current-cycle?
                 (lambda (n) (hash-table-get current-cycle n (lambda () #f))))
                (current-cycle-memq
-                (lambda (nodes)
-                  (ormap in-current-cycle? nodes)))
+                (lambda (nodes) (ormap in-current-cycle? nodes)))
                (add-to-current-cycle
                 (lambda (n) 
                   (set! cur-cycle-length (add1 cur-cycle-length))
@@ -274,10 +275,15 @@
                (retrieve-current-cycle
                 (lambda () (hash-table-map current-cycle (lambda (key v) key))))
                
+               ;; componetize : NODE (list NODE) bool -> void
                (componentize 
                 (lambda (node successors member?)
                   (unless (already-in-cycle? node)
-                    ;(printf "componentize ~a ~a ~a~n" node successors member?)
+                    (printf "componentize ~a ~a ~a~n" 
+                            (id-string (def-name node))
+                            (map id-string (map def-name successors)) 
+                            (map id-string (map def-name (retrieve-current-cycle)))
+                            )
                     (let ((added? #f)
                           (cur-length cur-cycle-length)
                           (old-mark (hash-table-get marks node)))
@@ -291,7 +297,10 @@
                                      (eq? 'in-progress (hash-table-get marks successor)))
                            (componentize successor (get-connected-nodes successor) #f)))
                        successors)
-                      ;(printf "finished successors for ~a~n" node)
+                      (printf "finished successors for ~a~n" (id-string (def-name node)))
+                      (when (not (= cur-length cur-cycle-length))
+                        (add-to-current-cycle node))
+                      
                       (if (or added? (= cur-length cur-cycle-length))
                           (hash-table-put! marks node old-mark)
                           (componentize node successors #f)))))))
@@ -300,14 +309,21 @@
         
         (for-each-node graph
                        (lambda (node)
-                         ;(hash-table-for-each marks (lambda (key val) (printf "~a -> ~a~n" (eq-hash-code key) val)))
-                         ;(printf "Working on ~a~n~n" (eq-hash-code node)) 
+                         #;(hash-table-for-each 
+                          marks 
+                          (lambda (key val) (printf "~a -> ~a~n" (eq-hash-code key) val)))
+                         #;(printf "Working on ~a~n~n" (eq-hash-code node))
+                         #;(printf "node: ~a successors: ~a" (def-name node) (map def-name (get-connected-nodes node)))
                          (when (eq? (hash-table-get marks node) 'no-info)
                            (set! current-cycle (make-hash-table))
                            (add-to-current-cycle node)
+                           (set! cur-cycle-length 0)
+                           (printf "calling componetice ~a~n" (id-string (def-name node)))
                            (for-each (lambda (node) (componentize node (get-connected-nodes node) #f))
                                      (get-connected-nodes node))
-                           (set! strongly-connecteds (cons (retrieve-current-cycle) strongly-connecteds))
+                           (set! strongly-connecteds 
+                                 (cons (retrieve-current-cycle) strongly-connecteds))
+                           (printf "~a~n~n" (map id-string (map def-name (car strongly-connecteds))))
                            (hash-table-for-each
                             current-cycle
                             (lambda (n v) (hash-table-put! marks n 'in-a-cycle))))))

@@ -338,7 +338,7 @@
     
     (define (new-class expr)
       (choose ((sequence (new name O_PAREN C_PAREN) id "class instantiation")
-               (sequence (new name O_PAREN (comma-sep expr "arguments") C_PAREN) id "class instantiation"))
+               (sequence (new name O_PAREN (comma-sep expression "arguments") C_PAREN) id "class instantiation"))
               "class instantiation"))
     
     (define (new-array type-name expr)
@@ -838,7 +838,7 @@
                                (assignment 
                                 (choose (identifier
                                          (sequence (expression field-access-end) id)
-                                         (sequence (expression array-access-end) id))
+                                         (sequence (expression (array-access-end expression)) id))
                                         "asignee")
                                 assignment-ops expression)
                                (sequence (expression ++) id "unary mutation")

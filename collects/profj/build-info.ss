@@ -1323,7 +1323,8 @@
                  (append (map (lambda (iface-spec) (send type-recs get-class-record iface-spec)) ifaces)
                          iface-records))
             (append (map (lambda (iface) (make-name (make-id (car iface) #f) (cdr iface) #f)) ifaces)
-                    (map (lambda (iface) (make-name iface null #f)) iface-names)))))
+                    (map (lambda (iface) 
+                           (if (name? iface) iface (make-name iface null #f))) iface-names)))))
   
   ;get-methods-need-implementing: (list method-record) -> (list method-record)
   (define (get-methods-need-implementing methods)

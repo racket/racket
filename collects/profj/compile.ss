@@ -165,7 +165,8 @@
     (unless (null? (check-list))
       (check-defs (car (check-list)) level type-recs))
     (remove-from-packages ast type-recs)
-    (order-cus (translate-program ast type-recs)
+    (reverse (translate-program ast type-recs))
+    #;(order-cus (translate-program ast type-recs)
                type-recs))
   
   (define (compile-to-ast port location type-recs file? level)
@@ -194,7 +195,8 @@
       (unless (null? (check-list))
         (check-defs (car (check-list)) level type-recs))
       (remove-from-packages ast type-recs)
-      (order-cus (translate-program ast type-recs) type-recs)))
+      (reverse (translate-program ast type-recs))
+      #;(order-cus (translate-program ast type-recs) type-recs)))
   
   ;compile-interactions: port location type-records level -> syntax
   (define (compile-interactions port location type-recs level)

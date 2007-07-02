@@ -635,6 +635,7 @@
                                     (examples (if (testcase-ext?)
                                                   (list (send execute-types get-test-classes) null)
                                                   (find-examples compilation-units))))
+                               (printf "ProfJ compilation complete~n")
                                (let ((name-to-require #f)
                                      (tests-run? #f))
                                  (let loop ((mods (order compilation-units))
